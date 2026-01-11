@@ -25,10 +25,52 @@
   padding: 2rem;
 }
 
-.auth-placeholder {
+.content-container {
   text-align: center;
   padding: 2rem;
-  border: 2px dashed #333;
   border-radius: 8px;
-  min-width: 300px;
+  max-width: 500px;
+}
+
+.content-container h2 {
+  margin: 0 0 1rem 0;
+  color: #fff;
+}
+
+.content-container p {
+  margin: 0 0 2rem 0;
+  color: #888;
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.auth-wrapper {
+  width: 100%;
+}
+
+.auth-status {
+  width: 100%;
+}
+
+.user-info {
+  background-color: #1a1a1a;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 2rem;
+}
+
+.user-info p {
+  margin: 0.5rem 0;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.wallet-info {
+  color: #888 !important;
+  font-family: monospace;
+  font-size: 0.8rem !important;
 }
