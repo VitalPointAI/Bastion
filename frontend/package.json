@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@noble/ciphers": "^2.1.1",
+    "@noble/hashes": "^2.0.1",
     "@privy-io/react-auth": "^3.10.1",
     "@privy-io/server-auth": "^1.32.5",
     "axios": "^1.13.2",
