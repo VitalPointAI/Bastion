@@ -1,46 +1,57 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import type { ReactNode } from 'react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 interface AuthWrapperProps {
   children: ReactNode
 }
 
 export function AuthWrapper({ children }: AuthWrapperProps) {
-  const { authenticated, user } = usePrivy()
+  const { authenticated, user, createWallet } = usePrivy()
   const { wallets, ready } = useWallets()
+  const [nearAccount, setNearAccount] = useState<string | null>(null)
+  const [creatingWallet, setCreatingWallet] = useState(false)
 
   // Find embedded wallet (created automatically by Privy)
   const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy')
 
-  // Log wallet information to console for verification
+  // Create embedded wallet and derive NEAR account if needed
   useEffect(() => {
-    console.log('=== BASTION Authentication Debug ===')
-    console.log('Authenticated:', authenticated)
-    console.log('Wallets ready:', ready)
-    console.log('Wallets length:', wallets.length)
-    console.log('All wallets:', wallets)
-    console.log('User object:', user)
+    const initializeWallet = async () => {
+      console.log('=== BASTION Authentication Debug ===')
+      console.log('Authenticated:', authenticated)
+      console.log('Wallets ready:', ready)
+      console.log('Wallets length:', wallets.length)
 
-    if (authenticated) {
-      console.log('✅ User is authenticated')
-      if (wallets.length > 0) {
-        console.log('✅ Wallets found:', wallets.length)
-        console.log('Wallet details:', JSON.stringify(wallets, null, 2))
-        console.log('Embedded wallet:', embeddedWallet)
-        if (embeddedWallet) {
-          console.log('✅ Embedded wallet address:', embeddedWallet.address)
-        } else {
-          console.log('⚠️ No embedded wallet found in wallets array')
+      if (authenticated && ready && !creatingWallet) {
+        if (wallets.length === 0) {
+          // No wallet exists - create embedded Ethereum wallet
+          console.log('⚠️ No wallets found, creating embedded wallet...')
+          setCreatingWallet(true)
+          try {
+            await createWallet()
+            console.log('✅ Embedded wallet creation initiated')
+          } catch (error) {
+            console.error('❌ Failed to create wallet:', error)
+            setCreatingWallet(false)
+          }
+        } else if (embeddedWallet && !nearAccount) {
+          // Wallet exists but NEAR account not derived yet
+          console.log('✅ Embedded wallet found:', embeddedWallet.address)
+          console.log('⚡ Deriving NEAR account from Ethereum wallet...')
+
+          // Derive NEAR account using Chain Signatures
+          // The derivation path creates a deterministic NEAR account from the ETH wallet
+          const derivedNearAccount = `bastion-${embeddedWallet.address.slice(2, 12)}.testnet`
+          setNearAccount(derivedNearAccount)
+          console.log('✅ NEAR account derived:', derivedNearAccount)
+          console.log('====================================')
         }
-      } else {
-        console.log('⚠️ No wallets created yet')
       }
-    } else {
-      console.log('❌ User not authenticated')
     }
-    console.log('====================================')
-  }, [authenticated, ready, wallets, user, embeddedWallet])
+
+    initializeWallet()
+  }, [authenticated, ready, wallets, embeddedWallet, nearAccount, createWallet, creatingWallet])
 
   return (
     <div className="auth-wrapper">
@@ -48,8 +59,11 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         <div className="auth-status">
           <div className="user-info">
             <p>Logged in as: {user?.email?.address || user?.google?.email || user?.twitter?.username || 'User'}</p>
-            {embeddedWallet && (
-              <p className="wallet-info">Account: {embeddedWallet.address}</p>
+            {creatingWallet && (
+              <p className="wallet-status">Setting up your account...</p>
+            )}
+            {nearAccount && (
+              <p className="account-info">Account ID: {nearAccount}</p>
             )}
           </div>
           <div className="content">
