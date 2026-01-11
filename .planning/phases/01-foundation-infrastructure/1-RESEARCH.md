@@ -606,6 +606,440 @@ pub fn execute_upgrade(&mut self, proposal_id: ProposalId) {
 
 </near_shade_agents>
 
+<chain_abstraction>
+## NEAR Chain Abstraction & Intents - Zero Blockchain UX
+
+### Overview
+
+NEAR Chain Abstraction enables applications that work seamlessly across multiple blockchains while completely abstracting complexity from users. Combined with NEAR Intents and FastAuth, it creates an experience where users never encounter wallets, gas fees, seed phrases, or blockchain terminology.
+
+**Core principle:** Users express WHAT they want (intent), not HOW to execute it. The system finds the optimal path across any blockchain, presents a simple quote, and handles all technical complexity invisibly.
+
+### Three-Layer Architecture
+
+**1. FastAuth - Web2 Authentication**
+
+Eliminates crypto onboarding friction:
+- Login with email + biometric (FaceID, fingerprint, device passkey)
+- No wallet apps, no seed phrases, no private key management
+- Email-based account recovery (familiar Web2 pattern)
+- Zero balance accounts (users transact before acquiring crypto)
+- Meta transactions (third party pays gas fees invisibly)
+
+**Technical implementation:**
+- Uses WebAuthn/Passkeys standard (FIDO2)
+- Biometric authentication device-local (never transmitted)
+- Email links to NEAR account (internal mapping, invisible to user)
+- Being revamped with MPC + Auth0 for improved security
+
+**2. NEAR Intents - Transaction Abstraction**
+
+Users describe desired outcomes, solvers execute optimally:
+
+```
+Traditional blockchain:
+User → Select chain → Get native token → Approve token → Swap → Bridge → Confirm
+
+NEAR Intents:
+User → "I want X" → Approve quote → Done
+```
+
+**Architecture:**
+- **Intent Creation**: User/agent expresses desired outcome via 1Click API
+- **Solver Network**: Off-chain market makers compete for best execution (3-second quote window)
+- **Verification**: On-chain verifier contract validates and settles transaction
+
+**Solver competition benefits:**
+- Access to DeFi, CeFi, and off-chain liquidity
+- Best pricing through market competition
+- Optimal routing across 25+ chains
+- Near-instant settlement despite cross-chain complexity
+
+**3. Chain Signatures - Multi-Chain Control**
+
+Single NEAR account signs transactions for ANY blockchain:
+- Bitcoin, Ethereum, Solana, Cosmos, XRP, Aptos, Sui, BNB, Avalanche, Polygon, Arbitrum, Base, etc.
+- 8-node MPC network (threshold signatures)
+- Secp256k1 + Ed25519 support (covers vast majority of chains)
+- Deterministic key derivation (one account → multiple chain addresses)
+
+### Complete Abstraction Example
+
+**What user sees:**
+```
+Commander Interface:
+┌────────────────────────────────────┐
+│ Transfer to Coalition Partner      │
+├────────────────────────────────────┤
+│ Recipient: Alpha Team Lead         │
+│ Amount: $10,000                    │
+│ Purpose: Equipment procurement     │
+│                                    │
+│ [Authorize Transfer]               │
+└────────────────────────────────────┘
+
+Quote appears:
+┌────────────────────────────────────┐
+│ Transfer Details                   │
+├────────────────────────────────────┤
+│ Recipient receives: $9,998         │
+│ Processing fee: $2                 │
+│ Estimated time: 5 seconds          │
+│                                    │
+│ [Approve] [Cancel]                 │
+└────────────────────────────────────┘
+```
+
+**What actually happens (invisible to user):**
+1. FastAuth validates commander identity (biometric)
+2. Frontend creates intent: "Transfer $10k USDC to account X"
+3. Intent broadcast to solver network
+4. Solvers evaluate:
+   - USDC on Polygon → bridge to Ethereum → transfer (Cost: $5, Time: 30s)
+   - USDC on Arbitrum → transfer directly (Cost: $2, Time: 5s) ← Best
+   - USDC on Base → bridge to recipient's chain (Cost: $3, Time: 15s)
+5. Best quote presented (user just sees $2 fee, 5 seconds)
+6. Commander approves
+7. Verifier contract on NEAR validates intent
+8. Chain Signatures signs transaction on Arbitrum
+9. Transaction executes
+10. Confirmation shown: "Transfer complete"
+
+**Blockchain complexity hidden:**
+- No chain selection
+- No gas fees in ETH/MATIC/etc
+- No bridging UI
+- No transaction hashes
+- No "pending confirmations"
+- Just: request → approve → done
+
+### Developer Integration Patterns
+
+**Intent Creation API:**
+```typescript
+// 1Click API for NEAR Intents
+import { createIntent } from '@near/intents-sdk';
+
+// User wants to transfer USDC
+const intent = await createIntent({
+  type: 'transfer',
+  asset: 'USDC',
+  amount: '10000',
+  recipient: 'coalition-partner.near',
+  metadata: {
+    purpose: 'equipment_procurement',
+    authorization: commanderSignature
+  }
+});
+
+// Get quotes from solver network
+const quotes = await intent.requestQuotes({
+  timeout: 3000, // 3 second quote window
+  minSolvers: 3  // require at least 3 competitive quotes
+});
+
+// Present best quote to user (abstracted)
+const bestQuote = quotes.sort((a, b) => a.cost - b.cost)[0];
+displayQuote({
+  fee: `$${bestQuote.cost}`,
+  time: `${bestQuote.estimatedTime} seconds`,
+  // User never sees: chain routing, gas details, etc.
+});
+
+// User approves
+if (await userApproves()) {
+  const result = await intent.execute(bestQuote);
+  // result.status === 'completed'
+  // result.txHash (available for audit, not shown to user)
+}
+```
+
+**FastAuth Integration:**
+```typescript
+// FastAuth SDK for authentication
+import { FastAuth } from '@near/fast-auth-sdk';
+
+const auth = new FastAuth({
+  network: 'testnet',
+  // Optional: custom relayer for gas sponsorship
+  relayer: 'coalition-ops.near'
+});
+
+// Web2-style login (no wallet popup)
+const session = await auth.signIn({
+  email: 'commander@coalition.mil',
+  // Triggers email link + biometric prompt
+});
+
+// User now has NEAR account (invisible to them)
+// Can immediately create intents, no crypto needed
+const account = session.account; // Used internally for intents
+```
+
+**Custom Intent Types:**
+```rust
+// Verifier contract for mission orders
+use near_sdk::{near_bindgen, AccountId, env};
+
+#[near_bindgen]
+pub struct MissionOrderVerifier {
+    authorized_commanders: Vec<AccountId>,
+}
+
+#[near_bindgen]
+impl MissionOrderVerifier {
+    // Custom intent: "Execute mission order"
+    pub fn verify_mission_order(
+        &self,
+        intent: MissionOrderIntent,
+        solver_solution: Solution,
+    ) -> bool {
+        // Verify commander authorization
+        require!(
+            self.authorized_commanders.contains(&env::predecessor_account_id()),
+            "Unauthorized commander"
+        );
+
+        // Verify mission order validity
+        require!(
+            self.validate_order(&intent.order),
+            "Invalid mission order"
+        );
+
+        // Verify solver solution meets requirements
+        require!(
+            solver_solution.meets_constraints(&intent.constraints),
+            "Solution doesn't meet mission constraints"
+        );
+
+        // Execute via Chain Signatures on target chain
+        self.execute_on_target_chain(solver_solution)
+    }
+}
+```
+
+### Solver Network Integration
+
+**Becoming a solver (for custom liquidity/routing):**
+
+```typescript
+// Solver listens for intents, provides quotes
+import { SolverBus } from '@near/intents-solver';
+
+const solver = new SolverBus({
+  endpoint: 'https://solver-relay-v2.chaindefuser.com/rpc',
+  solverId: 'coalition-logistics-solver'
+});
+
+// Listen for intents
+solver.on('quoteRequest', async (intent) => {
+  // Evaluate if we can fulfill
+  if (canFulfill(intent)) {
+    // Calculate optimal route
+    const route = await calculateRoute(intent);
+
+    // Submit competitive quote
+    return {
+      cost: route.totalCost,
+      estimatedTime: route.estimatedTime,
+      execution: route.executionPlan,
+      // Solver signs quote (committed to execute if selected)
+      signature: await signQuote(route)
+    };
+  }
+});
+
+// Execute winning intent
+solver.on('intentSelected', async (intent, ourQuote) => {
+  // We won the competitive quote
+  // Execute according to our proposed route
+  await executeRoute(ourQuote.execution);
+
+  // Settlement on NEAR verifier contract
+  await verifier.settle(intent.id, proof);
+});
+```
+
+### Coalition Operations Use Cases
+
+**Use Case 1: Cross-Coalition Payments**
+
+*Scenario:* US commander needs to pay South Korean logistics provider for fuel delivery.
+
+**User experience:**
+```
+UI: "Transfer $50,000 to ROK Logistics"
+[Approve] → "Transfer complete"
+```
+
+**Behind the scenes:**
+- US account holds USDC on Ethereum
+- ROK provider prefers USDC on Polygon (cheaper local exchange rates)
+- Solver finds optimal path: Ethereum → Polygon bridge
+- Chain Signatures signs on both chains
+- ROK provider receives USDC on Polygon
+- Full audit trail on NEAR blockchain
+
+**Traditional approach would require:**
+- Commander buys ETH for gas
+- Approves USDC spend
+- Uses bridge UI (15+ steps)
+- Monitors bridge transaction
+- Confirms receipt
+- Training on: MetaMask, bridging, gas, networks
+
+**Use Case 2: AI Agent Financial Operations**
+
+*Scenario:* Shade agent optimizes logistics budget across multiple vendors on different chains.
+
+```typescript
+// Shade agent creates intent
+const optimizationIntent = await agent.createIntent({
+  type: 'multi_vendor_payment',
+  budget: '$500,000',
+  vendors: [
+    { id: 'vendor_a', amount: '$200k', preferredChain: 'Ethereum' },
+    { id: 'vendor_b', amount: '$150k', preferredChain: 'Solana' },
+    { id: 'vendor_c', amount: '$150k', preferredChain: 'Polygon' },
+  ],
+  constraints: {
+    maxTotalFees: '$500', // Solver must minimize fees
+    maxTime: '5 minutes',
+    splitOptimally: true  // Solver can adjust amounts if better pricing
+  }
+});
+
+// Solver network competes
+// Best solver routes across multiple chains optimally
+// DAO approves (human oversight)
+// Chain Signatures executes all three transactions
+// Total fees: $247 (solver competition found optimal routing)
+```
+
+**Agent interface shows:**
+```
+Logistics Optimization Proposal:
+- Vendor A: $200,000 (Approved)
+- Vendor B: $150,000 (Approved)
+- Vendor C: $150,000 (Approved)
+- Total Fees: $247
+- Estimated Completion: 3 minutes
+
+[Submit for DAO Approval]
+```
+
+**Commander DAO vote:**
+```
+Approve logistics payment optimization?
+Total: $500,000
+Processing fee: $247 (0.05%)
+Vendors: 3
+[Approve] [Reject] [Review Details]
+```
+
+No blockchain terminology anywhere.
+
+**Use Case 3: Intelligence Product Verification**
+
+*Scenario:* Intelligence fusion agent produces classified analysis, submits for verification on-chain.
+
+```typescript
+// Shade agent in TEE generates intelligence product
+const intelProduct = await agent.analyzeClassifiedData(sources);
+
+// Create verification intent
+const verificationIntent = await agent.createIntent({
+  type: 'intel_verification',
+  productHash: hash(intelProduct),
+  classification: 'SECRET//NOFORN',
+  sources: sources.map(s => s.id), // Source IDs, not actual data
+  attestation: agent.getTEEAttestation(),
+  requestVerificationFrom: ['US_INTEL', 'UK_INTEL', 'JOINT_COMMAND']
+});
+
+// Intent broadcast to verifiers
+// Verifiers independently check TEE attestation + source validity
+// Consensus reached via solver network
+// On-chain verification recorded
+// Intelligence consumers can verify provenance
+```
+
+**Analyst sees:**
+```
+Intelligence Product #1847
+Classification: SECRET
+Status: VERIFIED ✓
+Verified by: 3 coalition partners
+Confidence: HIGH
+
+[View Product] [View Verification Details]
+```
+
+Blockchain mechanics completely hidden, yet full verification available.
+
+### Performance & Ecosystem
+
+**Current metrics (Nov 2025):**
+- $5 billion all-time transaction volume
+- 25+ chains supported
+- 3-second quote window (solver competition)
+- Near-instant settlement (typically <10 seconds)
+- No testnet yet (mainnet only currently)
+
+**NEAR 2026 roadmap:**
+- Expand to 200+ assets
+- Grow NEAR Intents into leading venue for on-chain transactions
+- Integration with AI agents (Shade agents natively support intents)
+- Further UX improvements
+
+### Critical Defense Requirements
+
+**Complete abstraction maintained:**
+- ✅ No wallet installation
+- ✅ No seed phrases
+- ✅ No gas fee exposure
+- ✅ No chain selection
+- ✅ No bridging UI
+- ✅ Email + biometric only
+- ✅ Audit trail preserved (but hidden unless explicitly accessed)
+
+**Intuitive UX:**
+- Interface matches commercial apps (Gmail, not MetaMask)
+- Natural language intent expression where possible
+- Simple approve/reject for transactions
+- Familiar Web2 patterns throughout
+
+**Training requirements:**
+- Zero blockchain training for end users
+- Operators learn mission-specific workflows only
+- System administrators understand blockchain layer (for troubleshooting)
+- But abstraction never broken for operators
+
+**Testnet compatibility:**
+- FastAuth works on testnet
+- Chain Signatures work on testnet
+- Intents currently mainnet only (solver network)
+- Phase 1 solution: Implement testnet solver or mock intent resolution for demo
+
+### Implementation Strategy
+
+**Phase 1 foundations:**
+- Integrate FastAuth SDK for authentication
+- Set up Chain Signatures for multi-chain control
+- Establish verifier contracts on NEAR testnet
+- Mock intent solver for testnet demo (or partner with solver)
+
+**Subsequent phases:**
+- All financial operations via intents (Phases 4, 7, 9, 12)
+- Shade agents express intents for autonomous operations (Phases 5, 7, 8)
+- DAO governance via intents (Phase 3)
+- Coalition payments via intents (Phase 12)
+
+**Key principle:**
+Every phase maintains complete blockchain abstraction. If users see blockchain terminology, it's a bug.
+
+</chain_abstraction>
+
 <code_examples>
 ## Code Examples
 
@@ -881,6 +1315,16 @@ Things that couldn't be fully resolved:
 - [Chain Signatures Launch | NEAR Protocol](https://pages.near.org/blog/chain-signatures-launch-to-enable-transactions-on-any-blockchain-from-a-near-account/) - Chain Signatures announcement and use cases
 - [Build Trustworthy Fintech AI Agents With TEE | Phala](https://phala.com/posts/Build-Trustworthy-Fintech-AI-Agents-With-TEE) - Phala TEE integration patterns for AI agents
 - [NearDeFi/shade-agent-template | GitHub](https://github.com/NearDeFi/shade-agent-template) - Official Shade agent template repository
+
+**NEAR Chain Abstraction & Intents:**
+- [What is Chain Abstraction? | NEAR Documentation](https://docs.near.org/chain-abstraction/what-is) - Chain abstraction overview, multi-chain accounts, developer benefits
+- [NEAR Intents | NEAR Documentation](https://docs.near.org/chain-abstraction/intents/overview) - Intents architecture, solver network, integration guide
+- [Introducing NEAR Intents | NEAR Protocol](https://pages.near.org/blog/introducing-near-intents/) - Official announcement, use cases
+- [NEAR Intents - DefiLlama](https://defillama.com/protocol/near-intents) - Performance metrics, TVL tracking
+- [FastAuth SDK | NEAR Documentation](https://docs.near.org/chain-abstraction/fastauth-sdk) - Email + passkey authentication
+- [Market Makers | NEAR Intents](https://docs.near-intents.org/near-intents/market-makers) - Solver integration guide
+- [Create a Solver | NEAR Documentation](https://docs.near.org/chain-abstraction/intents/solvers) - Custom solver development
+- [They solved crypto's janky UX problem | Cointelegraph](https://cointelegraph.com/magazine/solved-crypto-janky-ux-problem-intents-passkeys-chain-abstraction/) - UX improvements overview
 
 ### Tertiary (LOW confidence - flagged for validation during implementation)
 None - all findings cross-verified with official documentation

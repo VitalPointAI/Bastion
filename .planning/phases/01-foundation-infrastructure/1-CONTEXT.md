@@ -90,6 +90,155 @@ These are foundational pillars - compromising on any of them undermines the enti
 
 </shade_agents>
 
+<chain_abstraction>
+## NEAR Intents & Chain Abstraction
+
+**Core principle:** Complete blockchain abstraction - users and operators never see wallets, gas fees, bridging, or blockchain terminology. The system must be as intuitive as any modern web or mobile application.
+
+**What they are:**
+
+**Chain Abstraction** - NEAR's framework enabling applications that work seamlessly across multiple blockchains while abstracting underlying complexity. Three core technologies:
+- **Multi-Chain Accounts (Chain Signatures)** - Single NEAR account signs transactions for all chains (Bitcoin, Ethereum, Solana, etc.)
+- **NEAR Intents** - Users express desired outcomes ("transfer funds", "execute mission order"), solvers compete to fulfill optimally
+- **FastAuth** - Email + biometric login (FaceID, fingerprint) with automatic account recovery, no seed phrases or wallet apps required
+
+**NEAR Intents** - Multichain transaction protocol where users/agents specify WHAT they want (intent), not HOW to do it:
+1. **Intent Creation** - Express desired outcome ("pay coalition partner", "authorize equipment purchase")
+2. **Solver Competition** - Off-chain network of market makers compete for best solution (routing, pricing, execution)
+3. **Verification** - On-chain verifier contract validates and settles transaction
+
+**Key capabilities:**
+
+**Zero blockchain knowledge required:**
+- Users never see: gas fees, transaction hashes, wallet addresses, seed phrases, bridging, network selection
+- Login with email + biometric (FastAuth passkeys)
+- Intents expressed in natural language or simple UI actions
+- System handles all blockchain complexity invisibly in background
+
+**Seamless multi-chain operations:**
+- Single account works across 25+ chains (Bitcoin, Ethereum, Solana, Polygon, Arbitrum, etc.)
+- Assets accessible from any chain without manual bridging/wrapping
+- Best pricing through solver competition (DeFi + CeFi + off-chain liquidity)
+- Near-instant settlement despite cross-chain complexity
+
+**Account abstraction features:**
+- Meta transactions - third party pays gas fees (users never see them)
+- Zero balance accounts - users can transact before acquiring crypto
+- Email-based account recovery (no seed phrase backup needed)
+- Biometric authentication instead of passwords/private keys
+
+**Architecture for coalition operations:**
+
+**Operator experience:**
+- Commander logs in with email + FaceID
+- Issues mission order → system creates intent
+- Solver network finds optimal execution path
+- Transaction verified on-chain, fully auditable
+- No blockchain training required
+
+**Financial transactions:**
+- "Transfer 10,000 USDC to coalition partner Alpha" → Intent created
+- Solvers compete to find best route (may cross multiple chains invisibly)
+- Commander approves quote, transaction executes
+- Full audit trail on NEAR blockchain
+- Partners receive funds on their preferred chain
+
+**Agent transactions:**
+- Shade agents express intents ("optimize logistics budget allocation")
+- Solver network evaluates options across all available chains/protocols
+- Intent submitted to DAO for approval
+- Executed with best pricing/routing
+- Human operators never see blockchain mechanics
+
+**Integration architecture:**
+
+```
+User Interface Layer
+├── FastAuth (email + biometric login)
+├── Intent Expression (natural language / simple UI)
+└── No blockchain terminology exposed
+
+↓
+
+NEAR Intents Layer
+├── Intent Creation API
+├── Solver Network (off-chain competition)
+├── Quote Presentation (user approves outcome, not transaction details)
+└── Verifier Contract (on-chain settlement)
+
+↓
+
+Chain Signatures Layer
+├── Single NEAR account
+├── Multi-chain transaction signing (Bitcoin, ETH, Solana, etc.)
+├── MPC threshold signatures (8 nodes)
+└── Deterministic key derivation
+
+↓
+
+Execution Layer
+├── Any blockchain (transparently selected by solver)
+├── Optimal routing/pricing
+├── Cross-chain settlement
+└── Audit trail
+```
+
+**Concrete use cases:**
+
+**Phase 4 - Strategic Planning:**
+- Planners never create wallets or buy crypto
+- System issues intents for document verification on-chain
+- All blockchain operations invisible
+
+**Phase 7 - Tactical Execution:**
+- Commanders issue mission orders via intuitive interface
+- Orders become intents executed on optimal chain
+- Vehicle control payments/authorizations abstracted completely
+- Operators focus on tactics, not transactions
+
+**Phase 9 - Assessment & Dashboard:**
+- Financial dashboards show "USD" not "ETH on Arbitrum"
+- Cross-chain asset visibility unified in single view
+- No chain-specific sections or complexity
+
+**Phase 12 - Coalition Operations:**
+- Coalition partners from different nations, different chains
+- Universal account system (everyone uses email + biometric)
+- Assets flow between partners transparently
+- Information sharing via intents (solver finds optimal path)
+- No training on crypto/blockchain for any participant
+
+**Performance metrics:**
+- $5 billion all-time transaction volume (Nov 2025)
+- 25+ chains supported
+- Near-instant settlement (seconds)
+- Solver competition ensures best pricing
+- NEAR 2026 roadmap: expand to 200+ assets, leading venue for on-chain transactions
+
+**Developer integration:**
+- 1Click API for intent creation
+- FastAuth SDK for authentication
+- Verifier contracts for custom intent types
+- Solver network automatically available
+- Documentation: docs.near.org/chain-abstraction
+
+**Critical requirements for defense:**
+- Complete abstraction maintained across ALL phases
+- No blockchain training materials for end users
+- Intuitive UI/UX matching commercial applications (think: Gmail, not MetaMask)
+- Audit trail preserved despite abstraction (commanders can review if needed)
+- Works on NEAR testnet (soldiers not handling real crypto in demo)
+
+**Status:**
+- Production-ready (2024-2025)
+- Active ecosystem ($5B volume)
+- NEAR 2026 strategy prioritizes Intents expansion
+- FastAuth being revamped with MPC + Auth0
+
+**Decision:** Use NEAR Intents + Chain Abstraction + FastAuth as the universal UX layer for ALL user interactions. Zero blockchain exposure for operators. Complete abstraction from Phase 1 through Phase 12.
+
+</chain_abstraction>
+
 <notes>
 ## Additional Context
 
