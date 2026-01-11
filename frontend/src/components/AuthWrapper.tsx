@@ -15,15 +15,30 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
 
   // Log wallet information to console for verification
   useEffect(() => {
-    if (authenticated && wallets.length > 0) {
-      console.log('=== BASTION Authentication Status ===')
-      console.log('User authenticated:', authenticated)
-      console.log('User info:', user)
-      console.log('All wallets:', wallets)
-      console.log('NEAR wallet:', nearWallet)
-      console.log('NEAR wallet address:', nearWallet?.address)
-      console.log('====================================')
+    console.log('=== BASTION Authentication Debug ===')
+    console.log('Authenticated:', authenticated)
+    console.log('Wallets length:', wallets.length)
+    console.log('All wallets:', wallets)
+    console.log('User object:', user)
+
+    if (authenticated) {
+      console.log('✅ User is authenticated')
+      if (wallets.length > 0) {
+        console.log('✅ Wallets found:', wallets.length)
+        console.log('Wallet details:', JSON.stringify(wallets, null, 2))
+        console.log('NEAR wallet:', nearWallet)
+        if (nearWallet) {
+          console.log('✅ NEAR wallet address:', nearWallet.address)
+        } else {
+          console.log('⚠️ No NEAR wallet found in wallets array')
+        }
+      } else {
+        console.log('⚠️ No wallets created yet - Privy may need embedded wallet configuration')
+      }
+    } else {
+      console.log('❌ User not authenticated')
     }
+    console.log('====================================')
   }, [authenticated, wallets, user, nearWallet])
 
   return (

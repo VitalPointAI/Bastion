@@ -20,6 +20,21 @@ createRoot(document.getElementById('root')!).render(
           theme: 'dark',
           accentColor: '#646cff',
         },
+        embeddedWallets: {
+          createOnLogin: 'users-without-wallets',
+          requireUserPasswordOnCreate: false,
+        },
+        supportedChains: [
+          {
+            id: 1,
+            name: 'Ethereum',
+            network: 'mainnet',
+            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+            rpcUrls: {
+              default: { http: ['https://cloudflare-eth.com'] },
+            },
+          },
+        ],
       }}
     >
       <App />
