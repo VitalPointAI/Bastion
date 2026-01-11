@@ -27,6 +27,7 @@ The established libraries/tools for this domain:
 | cargo-near | Latest | Build tool for Rust contracts | Official build tool, handles WASM compilation |
 | near-cli-rs | Latest | CLI for deployment and interaction | Official CLI, replaces legacy near-cli |
 | workspaces-rs | Latest | Rust testing framework | Sandbox and testnet testing, official testing solution |
+| Chain Signatures | v1.signer | Decentralized MPC for multi-chain control | Official NEAR cross-chain key management, 8-node MPC network |
 
 ### Phala Network Core
 | Library | Version | Purpose | Why Standard |
@@ -392,6 +393,219 @@ Problems that look simple but have existing solutions:
 **Warning signs:** Race conditions between chains, stale data in TEE processing
 </common_pitfalls>
 
+<near_shade_agents>
+## NEAR Shade Agents - Autonomous AI Integration
+
+### Overview
+
+NEAR Shade Agents are multichain AI-powered smart contracts that combine NEAR Protocol contracts with Phala TEE worker agents, using Chain Signatures for decentralized key management. They represent the intersection of autonomous AI, verifiable computation, and blockchain security.
+
+**Key innovation:** Eliminates single points of failure by using NEAR's Chain Signatures (threshold MPC with 8 nodes) so multiple independent TEE worker agents can collectively control the same keys across any blockchain.
+
+### Architecture
+
+**Dual-component design:**
+
+1. **Worker Agent (Off-chain in TEE)**
+   - NextJS application running in Phala Cloud TEE
+   - Can access LLMs, external APIs, off-chain data
+   - Proposes transactions based on AI reasoning
+   - Generates remote attestation proving it runs expected code in genuine hardware
+
+2. **Smart Contract (On-chain on NEAR)**
+   - Verifies worker agent TEE attestation against stored code hash
+   - Authorizes operations only after cryptographic verification
+   - Uses Chain Signatures to sign transactions across any blockchain
+   - Enables DAO governance for upgrading AI models
+
+### Chain Signatures Technology
+
+**What it solves:** Traditional AI agents require custodial key management (single point of failure). Chain Signatures enable decentralized control.
+
+**How it works:**
+- MPC (Multi-Party Computation) service with 8 independent nodes
+- Each node creates signature-shares aggregated across multiple rounds
+- No single node can sign alone - requires threshold consensus
+- Supports Secp256k1 (Bitcoin, Ethereum, etc.) and Ed25519 (Solana, etc.)
+- Deterministic key derivation: single NEAR account controls multiple blockchain addresses
+
+**Example derivation:**
+```
+NEAR account: coalition.near
+Path: "ethereum-1"
+→ Unique Ethereum address: 0x1234...
+Path: "bitcoin-1"
+→ Unique Bitcoin address: bc1q...
+```
+
+### Key Capabilities for Coalition Operations
+
+**Autonomous Decision-Making:**
+- AI agents analyze sensor data, intelligence reports, operational context
+- Run inference using private LLMs in TEE (data never leaves secure enclave)
+- Propose tactical decisions, resource allocations, mission adjustments
+- Submit proposals for human approval via smart contract governance
+
+**Verifiable Execution:**
+- Every agent operation backed by TEE remote attestation
+- On-chain audit trail of all decisions and approvals
+- Hardware-backed proof that code runs unmodified
+- DAO can verify agent authenticity before trusting recommendations
+
+**Multi-Chain Asset Control:**
+- Single agent can custody assets across Bitcoin, Ethereum, Solana, NEAR
+- Manage coalition resources with cryptographic proof of execution
+- Execute cross-chain transactions with threshold signature security
+- No custodial risk - keys controlled by decentralized MPC network
+
+**Privacy-Preserving Intelligence:**
+- Process classified data within TEE hardware isolation
+- Run AI models on sensitive information without exposure
+- Generate intelligence products with verifiable provenance
+- Coalition partners can trust results without seeing raw data
+
+### Deployment Model
+
+**Development:**
+```bash
+# NEAR testnet account
+NEAR_ACCOUNT_ID=my-account.testnet
+NEAR_NETWORK=testnet
+
+# Local development uses ac-proxy prefix
+CONTRACT_ID=ac-proxy.my-account.testnet
+
+# Deploy to local Phala (DevPHAse)
+# TEE runs at http://localhost:8000
+# NEAR RPC at https://rpc.testnet.near.org
+```
+
+**Production (Testnet):**
+```bash
+# Production TEE uses ac-sandbox prefix
+CONTRACT_ID=ac-sandbox.my-account.testnet
+
+# Deploy to Phala Cloud TEE
+# Worker agent runs in hardware TEE
+# Generates remote attestation
+# NEAR contract verifies attestation before authorization
+```
+
+### Governance & Upgradeability
+
+**Code hash verification:**
+```rust
+// Smart contract stores expected code hash
+pub struct ShadeAgent {
+    expected_code_hash: Hash,
+    authorized_workers: Vec<WorkerId>,
+}
+
+impl ShadeAgent {
+    pub fn verify_worker(&self, attestation: Attestation) -> bool {
+        // 1. Verify TEE signature
+        verify_tee_signature(&attestation)?;
+
+        // 2. Check code hash matches expected
+        require!(
+            attestation.code_hash == self.expected_code_hash,
+            "Unauthorized code"
+        );
+
+        // 3. Verify hardware identity
+        verify_hardware(&attestation.hw_identity)?;
+
+        true
+    }
+}
+```
+
+**DAO upgrade pattern:**
+```rust
+// DAO votes to upgrade AI model
+pub fn propose_upgrade(&mut self, new_code_hash: Hash) -> ProposalId {
+    // Create governance proposal
+    self.dao.create_proposal(
+        ProposalType::CodeHashUpgrade(new_code_hash),
+        self.voting_period
+    )
+}
+
+pub fn execute_upgrade(&mut self, proposal_id: ProposalId) {
+    require!(self.dao.is_approved(proposal_id), "Not approved");
+
+    let new_hash = self.dao.get_upgrade_hash(proposal_id);
+    self.expected_code_hash = new_hash;
+
+    // Worker agents automatically pull new code
+    // Next attestation will show new hash
+}
+```
+
+### Use Cases for This Project
+
+**Phase 5 - Operational Planning:**
+- Shade agents analyze strategic guidance, generate operational plans
+- Run JP 5-0 planning algorithms in TEE with classified data
+- Propose courses of action with AI-driven war gaming
+- Human commanders approve via smart contract governance
+
+**Phase 7 - Tactical Execution:**
+- Agents analyze real-time sensor feeds from autonomous vehicles
+- Make tactical recommendations (target prioritization, asset allocation)
+- Generate mission orders for approval
+- Execute approved orders with cryptographic audit trail
+
+**Phase 8 - Sensor Fusion & Intelligence:**
+- Multiple agents process data at tactical/operational/strategic levels
+- Fuse intelligence from classified sources in TEE
+- Produce intelligence products with verifiable provenance
+- Coalition partners trust results through attestation
+
+**Cross-cutting - Asset Management:**
+- Agents manage coalition funds across multiple chains
+- Optimize resource allocation based on mission priorities
+- Execute approved financial transactions with MPC security
+- Full audit trail for accountability
+
+### Security Considerations
+
+**Strengths:**
+- Hardware-backed TEE isolation (Intel SGX/TDX, AMD SEV)
+- Decentralized key management (8-node MPC, no single point of failure)
+- On-chain verification of every agent operation
+- Transparent code hash governance via DAO
+
+**Limitations:**
+- TEE vulnerabilities possible (though rare, requires sophisticated attacks)
+- MPC network security depends on node operator incentives
+- Smart contract bugs could authorize malicious agents
+- Technology under active development (launched Feb 2025)
+
+**Mitigations for defense use:**
+- Multiple agent consensus for critical decisions
+- Human approval required for lethal actions (smart contract enforced)
+- Regular attestation verification (continuous monitoring)
+- DAO governance for systematic agent upgrades
+- Incident response: DAO can revoke agent authorization instantly
+
+### Current Status & Support
+
+**Production-ready (Feb 2025):**
+- NEAR Shade Agent template on Phala Cloud
+- Official NEAR Foundation support ($20M AI Agent Fund)
+- Active development and community support
+- Templates on GitHub: NearDeFi/shade-agent-template
+
+**Ecosystem alignment:**
+- Integrated with NEAR's 2026 roadmap (Shade AI Agents Mainnet Q1 2026)
+- Phala's 2026 strategy includes enterprise AI TEE
+- Both platforms targeting defense/enterprise use cases
+
+**Recommendation:** Use Shade agents as the primary pattern for autonomous AI decision-making throughout the platform. Start with Phase 1 foundation (NEAR + Phala + Chain Signatures), then leverage Shade agent templates for each autonomous component in subsequent phases.
+
+</near_shade_agents>
+
 <code_examples>
 ## Code Examples
 
@@ -651,6 +865,7 @@ Things that couldn't be fully resolved:
 
 ### Secondary (MEDIUM confidence - verified with official sources)
 
+**NEAR & Phala Core:**
 - [Smart Contracts on Near Protocol: A Developer's Guide | Medium](https://innakondratova.medium.com/smart-contracts-on-near-protocol-a-developers-guide-668cb38355cf) - Best practices overview
 - [Phat Contract 2.0: Smart Contracts, Now Connected | Phala](https://phala.network/posts/phat-contract-20-smart-contracts-now-connected) - Cross-chain connectivity patterns
 - [How TEE Verification Works | Phala](https://phala.com/learn/How-TEE-Verification-Works) - TEE attestation mechanisms
@@ -658,6 +873,14 @@ Things that couldn't be fully resolved:
 - [NEAR's 2026 Strategy Targets AI and Scalable Trading | Crypto News Flash](https://www.crypto-news-flash.com/near-protocol-unveils-2026-strategy/) - NEAR 2026 roadmap
 - [Testing with Chain Snapshots | Documentation | ink!](https://use.ink/docs/v6/contract-testing/chain-snapshot/) - ink! v6 testing approaches
 - [Full E2E | Documentation | ink!](https://use.ink/docs/v6/contract-testing/end-to-end-e2e-testing/) - End-to-end testing patterns
+
+**NEAR Shade Agents:**
+- [Shade Agents: The First Truly Autonomous AI Agents | NEAR Protocol](https://pages.near.org/blog/shade-agents-the-first-truly-autonomous-ai-agents/) - Official Shade agents announcement, architecture, capabilities
+- [NEAR Shade Agent | Phala Cloud](https://cloud.phala.com/templates/near-shade-agent) - Template and deployment guide
+- [What are Chain Signatures? | NEAR Documentation](https://docs.near.org/chain-abstraction/chain-signatures/) - Chain Signatures technical details, MPC architecture
+- [Chain Signatures Launch | NEAR Protocol](https://pages.near.org/blog/chain-signatures-launch-to-enable-transactions-on-any-blockchain-from-a-near-account/) - Chain Signatures announcement and use cases
+- [Build Trustworthy Fintech AI Agents With TEE | Phala](https://phala.com/posts/Build-Trustworthy-Fintech-AI-Agents-With-TEE) - Phala TEE integration patterns for AI agents
+- [NearDeFi/shade-agent-template | GitHub](https://github.com/NearDeFi/shade-agent-template) - Official Shade agent template repository
 
 ### Tertiary (LOW confidence - flagged for validation during implementation)
 None - all findings cross-verified with official documentation
