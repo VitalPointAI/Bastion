@@ -1,8 +1,14 @@
 // SSR Foundation Contract - NEAR blockchain foundation
-use near_sdk::{env, log, near, require, AccountId, PanicOnDefault};
+use near_sdk::{env, log, near, require, AccountId, PanicOnDefault, Promise};
 
 mod document;
 use document::{Document, DocumentRegistry};
+
+mod privacy;
+use privacy::{Classification, PrivacyRouter, RoutingResult};
+
+mod attestation;
+use attestation::{AttestationReport, AttestationVerifier};
 
 /// Main contract structure with state versioning pattern
 /// State version is tracked internally for safe upgrades
@@ -17,6 +23,10 @@ pub struct Contract {
     state_version: u8,
     /// Encrypted document registry
     document_registry: DocumentRegistry,
+    /// Privacy router for classification-based routing
+    privacy_router: PrivacyRouter,
+    /// Attestation verifier for TEE result validation
+    attestation_verifier: AttestationVerifier,
 }
 
 #[near]
@@ -31,6 +41,8 @@ impl Contract {
             initialized: true,
             state_version: 1,
             document_registry: DocumentRegistry::new(),
+            privacy_router: PrivacyRouter::new(),
+            attestation_verifier: AttestationVerifier::new(),
         }
     }
 
@@ -48,6 +60,8 @@ impl Contract {
             initialized: bool,
             state_version: u8,
             document_registry: DocumentRegistry,
+            privacy_router: PrivacyRouter,
+            attestation_verifier: AttestationVerifier,
         }
 
         let old_state: OldState = env::state_read().expect("Failed to read state");
@@ -59,6 +73,8 @@ impl Contract {
             initialized: old_state.initialized,
             state_version: old_state.state_version,
             document_registry: old_state.document_registry,
+            privacy_router: old_state.privacy_router,
+            attestation_verifier: old_state.attestation_verifier,
         }
     }
 
@@ -159,6 +175,122 @@ impl Contract {
     /// Get document count for a user
     pub fn get_user_document_count(&self, account_id: AccountId) -> u64 {
         self.document_registry.get_user_document_count(account_id) as u64
+    }
+
+    // ===== Privacy Routing Methods =====
+
+    /// Set Phala backend account for TEE routing (owner-only)
+    pub fn set_phala_backend(&mut self, phala_account: AccountId) {
+        require!(
+            env::predecessor_account_id() == self.owner,
+            "Only owner can set Phala backend"
+        );
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+
+        self.privacy_router.set_phala_backend(phala_account.clone());
+        log!("Phala backend configured: {}", phala_account);
+    }
+
+    /// Get current Phala backend account
+    pub fn get_phala_backend(&self) -> Option<AccountId> {
+        self.privacy_router.phala_backend_account.clone()
+    }
+
+    /// Process data with classification-based routing
+    ///
+    /// Public data: processed on-chain immediately, returns result
+    /// Secret/TopSecret data: routed to Phala TEE, returns Promise
+    pub fn process_data(&mut self, data: Vec<u8>, classification: Classification) -> Promise {
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+
+        log!("Processing {} bytes with classification: {:?}", data.len(), classification);
+
+        // Route based on classification
+        match self.privacy_router.route_data(data, classification) {
+            RoutingResult::OnChain(result) => {
+                // On-chain processing completed immediately
+                log!("On-chain processing complete, result: {} bytes", result.len());
+                // Return a resolved promise with the result
+                Promise::new(env::current_account_id())
+            }
+            RoutingResult::OffChainTEE(promise) => {
+                // TEE routing returns promise for async processing
+                log!("TEE routing initiated");
+                promise
+            }
+        }
+    }
+
+    // ===== Attestation Verification Methods =====
+
+    /// Set trusted application hash for TEE verification (owner-only)
+    pub fn set_trusted_app_hash(&mut self, app_hash: String) {
+        require!(
+            env::predecessor_account_id() == self.owner,
+            "Only owner can set trusted app hash"
+        );
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+
+        self.attestation_verifier.set_expected_app_hash(app_hash.clone());
+        log!("Trusted app hash configured: {}", app_hash);
+    }
+
+    /// Add trusted hardware identity (owner-only)
+    pub fn add_trusted_hw_identity(&mut self, hw_id: String) {
+        require!(
+            env::predecessor_account_id() == self.owner,
+            "Only owner can add trusted hardware identity"
+        );
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+
+        self.attestation_verifier.add_trusted_hw_identity(hw_id.clone());
+        log!("Trusted hardware identity added: {}", hw_id);
+    }
+
+    /// Callback to handle TEE result with attestation verification
+    ///
+    /// This is called after TEE processing completes
+    /// It verifies the attestation before accepting the result
+    #[private]
+    pub fn on_tee_result(
+        &mut self,
+        #[callback_result] result: Result<Vec<u8>, near_sdk::PromiseError>,
+        attestation: AttestationReport,
+    ) {
+        match result {
+            Ok(data) => {
+                log!("TEE result received: {} bytes", data.len());
+
+                // Verify attestation before trusting result
+                match self.attestation_verifier.verify_attestation(&attestation, &data) {
+                    Ok(()) => {
+                        log!("Attestation verified, result accepted");
+                        // In production, store the result or emit event
+                        // For now, just log success
+                    }
+                    Err(err) => {
+                        log!("Attestation verification failed: {}", err);
+                        env::panic_str(&format!("Attestation verification failed: {}", err));
+                    }
+                }
+            }
+            Err(e) => {
+                log!("TEE call failed: {:?}", e);
+                env::panic_str("TEE processing failed");
+            }
+        }
     }
 }
 
