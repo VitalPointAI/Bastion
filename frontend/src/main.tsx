@@ -22,16 +22,16 @@ createRoot(document.getElementById('root')!).render(
         },
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
-          requireUserPasswordOnCreate: false,
         },
         supportedChains: [
+          // NEAR testnet configuration
           {
-            id: 1,
-            name: 'Ethereum',
-            network: 'mainnet',
-            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+            id: 397, // NEAR testnet chain ID
+            name: 'NEAR Testnet',
+            network: 'testnet',
+            nativeCurrency: { name: 'NEAR', symbol: 'NEAR', decimals: 24 },
             rpcUrls: {
-              default: { http: ['https://cloudflare-eth.com'] },
+              default: { http: [import.meta.env.VITE_NEAR_RPC || 'https://rpc.testnet.near.org'] },
             },
           },
         ],

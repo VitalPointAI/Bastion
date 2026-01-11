@@ -1,4 +1,5 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { useCreateWallet } from '@privy-io/react-auth/extended-chains'
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 
@@ -8,15 +9,41 @@ interface AuthWrapperProps {
 
 export function AuthWrapper({ children }: AuthWrapperProps) {
   const { authenticated, user } = usePrivy()
-  const { wallets } = useWallets()
+  const { wallets, ready } = useWallets()
+  const { createWallet } = useCreateWallet({
+    onSuccess: ({ wallet }) => {
+      console.log('✅ NEAR wallet created:', wallet)
+    },
+    onError: (error) => {
+      console.error('❌ Failed to create NEAR wallet:', error)
+    },
+  })
 
   // Find NEAR wallet (embedded wallet created by Privy)
   const nearWallet = wallets.find(wallet => wallet.walletClientType === 'privy')
+
+  // Automatically create NEAR wallet if user is authenticated but has no wallet
+  useEffect(() => {
+    const createWalletIfNeeded = async () => {
+      if (authenticated && ready && wallets.length === 0 && createWallet) {
+        console.log('🔧 No wallet found, creating embedded NEAR wallet...')
+        try {
+          await createWallet({ chainType: 'near' })
+          console.log('✅ Embedded NEAR wallet created successfully')
+        } catch (error) {
+          console.error('❌ Failed to create NEAR wallet:', error)
+        }
+      }
+    }
+
+    createWalletIfNeeded()
+  }, [authenticated, ready, wallets.length, createWallet])
 
   // Log wallet information to console for verification
   useEffect(() => {
     console.log('=== BASTION Authentication Debug ===')
     console.log('Authenticated:', authenticated)
+    console.log('Wallets ready:', ready)
     console.log('Wallets length:', wallets.length)
     console.log('All wallets:', wallets)
     console.log('User object:', user)
@@ -33,13 +60,13 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
           console.log('⚠️ No NEAR wallet found in wallets array')
         }
       } else {
-        console.log('⚠️ No wallets created yet - Privy may need embedded wallet configuration')
+        console.log('⚠️ No wallets created yet - attempting automatic creation')
       }
     } else {
       console.log('❌ User not authenticated')
     }
     console.log('====================================')
-  }, [authenticated, wallets, user, nearWallet])
+  }, [authenticated, ready, wallets, user, nearWallet])
 
   return (
     <div className="auth-wrapper">
