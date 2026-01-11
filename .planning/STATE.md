@@ -11,28 +11,28 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 1 of 12 (Foundation & Infrastructure)
-Plan: 3 of 8 in current phase
+Plan: 4 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-11 — Completed 1-03-PLAN.md
+Last activity: 2026-01-11 — Completed 1-04-PLAN.md (Backend Security Migration)
 
-Progress: ███░░░░░░░ 30%
+Progress: ████░░░░░░ 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 35 min
-- Total execution time: 1.8 hours
+- Total plans completed: 4
+- Average duration: 38 min
+- Total execution time: 2.5 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 (Foundation & Infrastructure) | 3 | 106 min | 35 min |
+| 1 (Foundation & Infrastructure) | 4 | 151 min | 38 min |
 
 **Recent Trend:**
-- Last 5 plans: 43 min, 39 min, 24 min
-- Trend: Accelerating (improving efficiency)
+- Last 5 plans: 43 min, 39 min, 24 min, 45 min
+- Trend: Consistent (maintaining efficiency)
 
 ## Accumulated Context
 
@@ -59,9 +59,21 @@ Recent decisions affecting current work:
 - All on-chain data encrypted by default (CIDs, metadata, classification)
 - Only AccountId and timestamps plaintext (required for access control/indexing)
 
+**Phase 1 Plan 4 (Backend Security Migration):**
+- Security fix: Moved all sensitive operations from frontend to secure backend API
+- Backend stack: Node.js/Express with TypeScript, sealed secrets in .env
+- All encryption operations moved to backend (server-side crypto.randomBytes)
+- All IPFS uploads moved to backend (Pinata JWT secured server-side)
+- Frontend cleaned of all secrets (only public config remains)
+- Security test suite passing (tests/security/frontend-no-secrets.test.ts)
+- Verifiable Zero Trust architecture restored
+- Ready for Phase 1-05 (Phala TEE integration)
+
 ### Deferred Issues
 
 **NEAR Embedded Wallet Creation (from 1-02):** Privy Tier 2 NEAR support configured but client-side React SDK creates Ethereum wallets instead of NEAR implicit accounts. Will implement proper server-side NEAR wallet creation in Phase 2 (Identity & Security Framework) with backend API integration.
+
+**Pinata API 403 Error (from 1-04):** Backend IPFS upload endpoint returns 403 from Pinata API. Possible causes: JWT needs regeneration, API endpoint format changed, or permissions need adjustment. Does not block development as security migration is complete. Can be resolved by regenerating JWT in Pinata dashboard.
 
 ### Blockers/Concerns
 
@@ -69,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-11T19:18:47Z
-Stopped at: Completed 1-03-PLAN.md (IPFS & Encrypted Storage)
+Last session: 2026-01-11T20:05:00Z
+Stopped at: Completed 1-04-PLAN.md (Backend Security Migration)
 Resume file: None

@@ -44,8 +44,9 @@ Plans:
 - [x] Plan 1-01: NEAR Smart Contract Foundation (completed 2026-01-11)
 - [x] Plan 1-02: Frontend Foundation & Authentication (completed 2026-01-11)
 - [x] Plan 1-03: IPFS & Encrypted Storage (completed 2026-01-11)
+- [x] Plan 1-04: Backend Security Migration (completed 2026-01-11)
 - [ ] Plan 1-03A: PostgreSQL Hybrid Storage (inserted after IPFS plan)
-- [ ] Plan 1-04: Docker & Deployment Infrastructure
+- [ ] Plan 1-05: Phala TEE Integration (hardware attestation)
 
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
