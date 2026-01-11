@@ -1,0 +1,18 @@
+# Backend
+backend/.env
+backend/dist/
+backend/node_modules/
+
+# Frontend
+frontend/.env.local
+frontend/node_modules/
+frontend/dist/
+
+# NEAR Contracts
+near-contracts/target/
+near-contracts/node_modules/
+
+# Common
+node_modules/
+.DS_Store
+*.log
