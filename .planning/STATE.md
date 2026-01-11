@@ -11,28 +11,28 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 1 of 12 (Foundation & Infrastructure)
-Plan: 2 of 8 in current phase
+Plan: 3 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-11 — Completed 1-02-PLAN.md
+Last activity: 2026-01-11 — Completed 1-03-PLAN.md
 
-Progress: ██░░░░░░░░ 20%
+Progress: ███░░░░░░░ 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 41 min
-- Total execution time: 1.4 hours
+- Total plans completed: 3
+- Average duration: 35 min
+- Total execution time: 1.8 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 (Foundation & Infrastructure) | 2 | 82 min | 41 min |
+| 1 (Foundation & Infrastructure) | 3 | 106 min | 35 min |
 
 **Recent Trend:**
-- Last 5 plans: 43 min, 39 min
-- Trend: Consistent velocity
+- Last 5 plans: 43 min, 39 min, 24 min
+- Trend: Accelerating (improving efficiency)
 
 ## Accumulated Context
 
@@ -52,6 +52,13 @@ Recent decisions affecting current work:
 - Frontend stack: Vite + React 19 + TypeScript 5.9 + pnpm
 - NEAR wallet integration: Privy Tier 2 support configured, client-side creates Ethereum wallets by default (will implement proper NEAR wallet creation in Phase 2 with backend)
 
+**Phase 1 Plan 3 (IPFS & Encrypted Storage):**
+- IPFS provider: Pinata for managed pinning and reliable gateways
+- Encryption: ChaCha20-Poly1305 AEAD cipher from @noble/ciphers (audited, fast)
+- Architecture: Large files → IPFS (off-chain), encrypted CIDs → NEAR (on-chain provenance)
+- All on-chain data encrypted by default (CIDs, metadata, classification)
+- Only AccountId and timestamps plaintext (required for access control/indexing)
+
 ### Deferred Issues
 
 **NEAR Embedded Wallet Creation (from 1-02):** Privy Tier 2 NEAR support configured but client-side React SDK creates Ethereum wallets instead of NEAR implicit accounts. Will implement proper server-side NEAR wallet creation in Phase 2 (Identity & Security Framework) with backend API integration.
@@ -62,6 +69,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-11T18:44:58Z
-Stopped at: Completed 1-02-PLAN.md (Frontend Foundation & Authentication)
+Last session: 2026-01-11T19:18:47Z
+Stopped at: Completed 1-03-PLAN.md (IPFS & Encrypted Storage)
 Resume file: None
