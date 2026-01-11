@@ -26,14 +26,26 @@ None
 ## Phase Details
 
 ### Phase 1: Foundation & Infrastructure
-**Goal**: Establish the core blockchain and containerized architecture foundation
+**Goal**: Establish the core blockchain, PostgreSQL hybrid storage, and containerized architecture foundation
 **Depends on**: Nothing (first phase)
 **Research**: Likely (multiple new integrations)
-**Research topics**: NEAR Protocol smart contract development patterns, Phala Network TEE integration, Docker orchestration for blockchain nodes, NEAR-Phala communication patterns
+**Research topics**: NEAR Protocol smart contract development patterns, Phala Network TEE integration, PostgreSQL offline sync for DDIL, Docker orchestration for blockchain nodes, NEAR-Phala communication patterns
 **Plans**: TBD
 
+**Data Synchronization Strategy** (decided 2026-01-11):
+- Hybrid storage: PostgreSQL (fast queries) + NEAR blockchain (verification) + IPFS (large files)
+- Dual-write pattern with transactional outbox for reliability
+- Event synchronization worker (no indexer infrastructure costs)
+- Offline-first edge sync for DDIL environments (autonomous vehicles)
+- Mission-based data retention with IPFS archival
+- Self-hosted PostgreSQL with PostGIS, TimescaleDB, pg_trgm, pgvector, pg_partman
+
 Plans:
-- [ ] TBD during phase planning
+- [x] Plan 1-01: NEAR Smart Contract Foundation (completed 2026-01-11)
+- [ ] Plan 1-02: Frontend Foundation & Authentication
+- [ ] Plan 1-03: IPFS & Encrypted Storage
+- [ ] Plan 1-03A: PostgreSQL Hybrid Storage (inserted after IPFS plan)
+- [ ] Plan 1-04: Docker & Deployment Infrastructure
 
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
@@ -150,7 +162,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Infrastructure | 0/TBD | Not started | - |
+| 1. Foundation & Infrastructure | 1/5 | In progress | - |
 | 2. Identity & Security Framework | 0/TBD | Not started | - |
 | 3. DAO Governance | 0/TBD | Not started | - |
 | 4. Strategic Planning Module | 0/TBD | Not started | - |
