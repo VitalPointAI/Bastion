@@ -1,0 +1,164 @@
+# Roadmap: AI-Enabled Decentralized Augmented Orchestration for Coalition Operations
+
+## Overview
+
+This roadmap transforms a complex vision into reality through 12 comprehensive phases. Starting from blockchain and security foundations, we build through identity management, DAO governance, and military planning modules, then integrate autonomous vehicles and sensor fusion, culminating in a complete end-to-end system demonstrating strategy-to-autonomous-execution with human control over lethal decisions. Each phase delivers a coherent, verifiable capability that builds toward the v1 demonstration scenario.
+
+## Domain Expertise
+
+None
+
+## Phases
+
+- [ ] **Phase 1: Foundation & Infrastructure** - Establish NEAR blockchain integration, Phala TEE, core smart contracts, containerized architecture
+- [ ] **Phase 2: Identity & Security Framework** - Implement DID system, ABAC, post-quantum cryptography, zero trust architecture
+- [ ] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
+- [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
+- [ ] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
+- [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
+- [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
+- [ ] **Phase 8: Sensor Fusion & Intelligence** - Create multi-level intelligence architecture and data fusion
+- [ ] **Phase 9: Assessment & Dashboard** - Build operational picture, MOE calculation, decision support
+- [ ] **Phase 10: End-to-End Integration** - Automate complete planning cycle, implement BDA feedback loops
+- [ ] **Phase 11: User Experience & Personalization** - Create cinematic briefings, personalized command centers, behavioral learning
+- [ ] **Phase 12: Coalition & Multi-Tenancy** - Implement information sharing rules, classification handling, federation
+
+## Phase Details
+
+### Phase 1: Foundation & Infrastructure
+**Goal**: Establish the core blockchain and containerized architecture foundation
+**Depends on**: Nothing (first phase)
+**Research**: Likely (multiple new integrations)
+**Research topics**: NEAR Protocol smart contract development patterns, Phala Network TEE integration, Docker orchestration for blockchain nodes, NEAR-Phala communication patterns
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 2: Identity & Security Framework
+**Goal**: Implement decentralized identity and comprehensive security architecture
+**Depends on**: Phase 1
+**Research**: Likely (complex security implementation)
+**Research topics**: NEAR DIDs and verifiable credentials, ABAC implementation patterns, post-quantum cryptography algorithms (CRYSTALS-Kyber, CRYSTALS-Dilithium), zero trust architecture for blockchain applications, military PKI integration patterns
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 3: DAO Governance
+**Goal**: Build decentralized decision authority with multi-stakeholder voting
+**Depends on**: Phase 2
+**Research**: Likely (DAO smart contract patterns)
+**Research topics**: NEAR DAO smart contract patterns, weighted voting mechanisms, multi-signature authorization, coalition governance models, security caveat enforcement in DAOs
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 4: Strategic Planning Module
+**Goal**: Create strategic objective ingestion and extraction system
+**Depends on**: Phase 3
+**Research**: Likely (NLP and document processing)
+**Research topics**: Document parsing libraries for TypeScript, NLP models for military strategy extraction, NEAR AI integration for sensitive document processing, DIME framework data modeling
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 5: Operational Planning Module
+**Goal**: Implement joint planning doctrine and operational design
+**Depends on**: Phase 4
+**Research**: Likely (military doctrine implementation)
+**Research topics**: JP 5-0 Joint Planning Process structure, operational design methodology, NATO COPD framework, rules of engagement modeling, mission command frameworks, tiered autonomy architectures
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 6: Autonomous Vehicle Integration
+**Goal**: Set up edge AI platform and autonomous vehicle control
+**Depends on**: Phase 1
+**Research**: Likely (edge AI and robotics)
+**Research topics**: Jetson Orin Nano development environment, NVIDIA edge AI models, Sphero RVR+ SDK and control protocols, object detection models for edge deployment, autonomous navigation algorithms, ROS vs custom control architecture
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 7: Tactical Execution System
+**Goal**: Build commander interface and mission execution workflows
+**Depends on**: Phase 5, Phase 6
+**Research**: Likely (multi-modal interface design)
+**Research topics**: React-based tactical map libraries, conversational AI integration patterns, WebSocket for real-time vehicle telemetry, vehicle command and control protocols, mission order data structures
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 8: Sensor Fusion & Intelligence
+**Goal**: Create multi-level intelligence fusion architecture
+**Depends on**: Phase 6
+**Research**: Likely (sensor fusion architecture)
+**Research topics**: Multi-level intelligence fusion patterns, tactical fusion algorithms for edge devices, operational fusion in backend, blockchain-based intelligence sharing, sensor data ontologies
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 9: Assessment & Dashboard
+**Goal**: Build real-time operational assessment and commander's decision support
+**Depends on**: Phase 7, Phase 8
+**Research**: Unlikely (builds on established patterns from earlier phases)
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 10: End-to-End Integration
+**Goal**: Automate complete planning cycle with feedback loops
+**Depends on**: Phase 9
+**Research**: Unlikely (integration of existing components)
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 11: User Experience & Personalization
+**Goal**: Create immersive, personalized command experience
+**Depends on**: Phase 9
+**Research**: Likely (advanced UX patterns)
+**Research topics**: Cinematic web experiences with React, 3D visualization libraries (Three.js, Babylon.js), user behavioral learning algorithms, adaptive interface patterns, military unit branding systems
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+### Phase 12: Coalition & Multi-Tenancy
+**Goal**: Implement coalition information sharing and multi-national support
+**Depends on**: Phase 2, Phase 3
+**Research**: Likely (coalition security patterns)
+**Research topics**: NATO classification schemes, Five Eyes information sharing rules, bilateral marking systems, release authority enforcement patterns, multi-tenant security isolation, coalition identity federation
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during phase planning
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Foundation & Infrastructure | 0/TBD | Not started | - |
+| 2. Identity & Security Framework | 0/TBD | Not started | - |
+| 3. DAO Governance | 0/TBD | Not started | - |
+| 4. Strategic Planning Module | 0/TBD | Not started | - |
+| 5. Operational Planning Module | 0/TBD | Not started | - |
+| 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
+| 7. Tactical Execution System | 0/TBD | Not started | - |
+| 8. Sensor Fusion & Intelligence | 0/TBD | Not started | - |
+| 9. Assessment & Dashboard | 0/TBD | Not started | - |
+| 10. End-to-End Integration | 0/TBD | Not started | - |
+| 11. User Experience & Personalization | 0/TBD | Not started | - |
+| 12. Coalition & Multi-Tenancy | 0/TBD | Not started | - |
