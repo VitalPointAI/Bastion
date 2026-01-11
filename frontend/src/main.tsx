@@ -21,7 +21,9 @@ createRoot(document.getElementById('root')!).render(
           accentColor: '#646cff',
         },
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
+          ethereum: {
+            createOnLogin: 'users-without-wallets',
+          },
         },
         supportedChains: [
           // NEAR testnet configuration

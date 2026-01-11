@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: timescale/timescaledb:latest-pg16
     container_name: coalition-postgres
     environment:
       POSTGRES_USER: postgres
@@ -12,6 +12,13 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d coalition_ops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - backend
 

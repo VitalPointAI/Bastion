@@ -1,5 +1,4 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { useCreateWallet } from '@privy-io/react-auth/extended-chains'
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 
@@ -10,34 +9,9 @@ interface AuthWrapperProps {
 export function AuthWrapper({ children }: AuthWrapperProps) {
   const { authenticated, user } = usePrivy()
   const { wallets, ready } = useWallets()
-  const { createWallet } = useCreateWallet({
-    onSuccess: ({ wallet }) => {
-      console.log('✅ NEAR wallet created:', wallet)
-    },
-    onError: (error) => {
-      console.error('❌ Failed to create NEAR wallet:', error)
-    },
-  })
 
-  // Find NEAR wallet (embedded wallet created by Privy)
-  const nearWallet = wallets.find(wallet => wallet.walletClientType === 'privy')
-
-  // Automatically create NEAR wallet if user is authenticated but has no wallet
-  useEffect(() => {
-    const createWalletIfNeeded = async () => {
-      if (authenticated && ready && wallets.length === 0 && createWallet) {
-        console.log('🔧 No wallet found, creating embedded NEAR wallet...')
-        try {
-          await createWallet({ chainType: 'near' })
-          console.log('✅ Embedded NEAR wallet created successfully')
-        } catch (error) {
-          console.error('❌ Failed to create NEAR wallet:', error)
-        }
-      }
-    }
-
-    createWalletIfNeeded()
-  }, [authenticated, ready, wallets.length, createWallet])
+  // Find embedded wallet (created automatically by Privy)
+  const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy')
 
   // Log wallet information to console for verification
   useEffect(() => {
@@ -53,20 +27,20 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
       if (wallets.length > 0) {
         console.log('✅ Wallets found:', wallets.length)
         console.log('Wallet details:', JSON.stringify(wallets, null, 2))
-        console.log('NEAR wallet:', nearWallet)
-        if (nearWallet) {
-          console.log('✅ NEAR wallet address:', nearWallet.address)
+        console.log('Embedded wallet:', embeddedWallet)
+        if (embeddedWallet) {
+          console.log('✅ Embedded wallet address:', embeddedWallet.address)
         } else {
-          console.log('⚠️ No NEAR wallet found in wallets array')
+          console.log('⚠️ No embedded wallet found in wallets array')
         }
       } else {
-        console.log('⚠️ No wallets created yet - attempting automatic creation')
+        console.log('⚠️ No wallets created yet')
       }
     } else {
       console.log('❌ User not authenticated')
     }
     console.log('====================================')
-  }, [authenticated, ready, wallets, user, nearWallet])
+  }, [authenticated, ready, wallets, user, embeddedWallet])
 
   return (
     <div className="auth-wrapper">
@@ -74,8 +48,8 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         <div className="auth-status">
           <div className="user-info">
             <p>Logged in as: {user?.email?.address || user?.google?.email || user?.twitter?.username || 'User'}</p>
-            {nearWallet && (
-              <p className="wallet-info">Account: {nearWallet.address}</p>
+            {embeddedWallet && (
+              <p className="wallet-info">Account: {embeddedWallet.address}</p>
             )}
           </div>
           <div className="content">

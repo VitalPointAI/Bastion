@@ -181,7 +181,7 @@ Output: Working IPFS integration with client-side encryption, CID storage on NEA
          * Accepts ALL encrypted fields (encrypted_cid, encrypted_classification, etc.)
          * Stores Document in registry with encrypted data
          * Updates user_documents index
-         * Emits event log with document_id only (not decrypted data)
+         * Emits event log with document_id, encrypted_cid, owner, created_at (for PostgreSQL sync - see Plan 1-03A)
          * Returns document_id
 
        - get_document method (view):
@@ -209,8 +209,9 @@ Output: Working IPFS integration with client-side encryption, CID storage on NEA
 
     **Architecture:**
     - Large files → encrypted client-side → IPFS (off-chain, cost-effective)
-    - IPFS CID → encrypted client-side → NEAR blockchain (on-chain for provenance/audit)
-    - Metadata → encrypted client-side → NEAR blockchain (on-chain for searchability with privacy)
+    - IPFS CID → encrypted client-side → NEAR blockchain (on-chain for provenance/audit) AND PostgreSQL (fast queries - see Plan 1-03A)
+    - Metadata → encrypted client-side → NEAR blockchain (on-chain for searchability with privacy) AND PostgreSQL (fast queries)
+    - PostgreSQL dual-write: Application writes to PostgreSQL + outbox (Plan 1-03A), background worker syncs outbox → NEAR blockchain
 
     Use UnorderedMap for documents (efficient key-value storage).
     Use LookupMap for user index (efficient lookups, not iterable).
@@ -236,9 +237,11 @@ Before declaring plan complete:
 - [ ] IPFS uploads succeed and return valid CIDs
 - [ ] Client-side encryption/decryption works correctly
 - [ ] NEAR contract stores document metadata with CIDs
+- [ ] NEAR contract emits events for PostgreSQL sync (Plan 1-03A integration)
 - [ ] End-to-end flow: encrypt → upload IPFS → store CID on-chain → retrieve CID → download IPFS → decrypt
 - [ ] Content addressing verified (same file = same CID)
 - [ ] Authenticated encryption detects tampering
+- [ ] Note: PostgreSQL dual-write integration implemented in Plan 1-03A
 </verification>
 
 <success_criteria>
@@ -251,8 +254,8 @@ Before declaring plan complete:
 - NEAR contract encrypted document registry functional
 - All on-chain data encrypted by default (CIDs, metadata, classification)
 - Complete encrypted upload/retrieval workflow validated
-- Architecture: large files off-chain (IPFS), encrypted CIDs on-chain (NEAR) for provenance
-- Ready for Phala TEE integration in subsequent plans
+- Architecture: large files off-chain (IPFS), encrypted CIDs on-chain (NEAR) for provenance AND in PostgreSQL (Plan 1-03A) for fast queries
+- Ready for PostgreSQL integration (Plan 1-03A) and Phala TEE integration in subsequent plans
 </success_criteria>
 
 <output>
@@ -294,5 +297,5 @@ After completion, create `.planning/phases/01-foundation-infrastructure/1-03-SUM
 
 ## Next Step
 
-Ready for [1-04-PLAN.md](1-04-PLAN.md): Phala TEE Environment
+Ready for [1-03A-PLAN.md](1-03A-PLAN.md): PostgreSQL Hybrid Storage (inserted plan) OR [1-04-PLAN.md](1-04-PLAN.md): Phala TEE Environment
 </output>
