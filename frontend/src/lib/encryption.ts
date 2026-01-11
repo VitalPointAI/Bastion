@@ -1,101 +1,65 @@
 /**
- * Client-Side Encryption Library
+ * Frontend Encryption API Client
  *
- * Uses ChaCha20-Poly1305 AEAD cipher for authenticated encryption.
- * All data encrypted before IPFS upload or on-chain storage.
- * Uses audited @noble/ciphers library (timing-attack resistant, no dependencies).
+ * Proxies encryption operations to secure backend API.
+ * All cryptographic operations happen server-side with Node.js crypto.
  */
 
-import { xchacha20poly1305 } from '@noble/ciphers/chacha.js';
-import { randomBytes } from '@noble/ciphers/utils.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 
-export interface EncryptedData {
-  encryptedData: Uint8Array;
-  nonce: Uint8Array;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3001';
+
+/**
+ * Encrypt data via backend API
+ *
+ * @param data - Data to encrypt (string or Uint8Array)
+ * @returns Object with encrypted data, nonce, and key (all as hex/base64 strings)
+ */
+export async function encryptData(
+  data: string | Uint8Array
+): Promise<{ encrypted: string; nonce: string; key: string }> {
+  // Convert Uint8Array to string if needed
+  const dataStr = typeof data === 'string' ? data : bytesToString(data);
+
+  const response = await fetch(`${BACKEND_URL}/api/encryption/encrypt`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: dataStr })
+  });
+
+  if (!response.ok) {
+    throw new Error('Encryption failed');
+  }
+
+  return response.json();
 }
 
 /**
- * Generate a random 32-byte encryption key
+ * Decrypt data via backend API
  *
- * Uses crypto.getRandomValues() for cryptographically secure randomness.
- *
- * @returns 32-byte encryption key
+ * @param encrypted - Encrypted data (base64 string)
+ * @param key - Encryption key (hex string)
+ * @param nonce - Nonce (hex string)
+ * @returns Decrypted data as string
  */
-export function generateEncryptionKey(): Uint8Array {
-  return randomBytes(32);
-}
+export async function decryptData(
+  encrypted: string,
+  key: string,
+  nonce: string
+): Promise<string> {
+  const response = await fetch(`${BACKEND_URL}/api/encryption/decrypt`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ encrypted, key, nonce })
+  });
 
-/**
- * Encrypt data using ChaCha20-Poly1305 AEAD cipher
- *
- * ChaCha20-Poly1305 provides:
- * - Confidentiality (encryption)
- * - Authenticity (authentication tag)
- * - Tamper detection (fails if data modified)
- *
- * @param data - Data to encrypt
- * @param key - 32-byte encryption key
- * @returns Encrypted data with nonce
- */
-export function encryptData(data: Uint8Array, key: Uint8Array): EncryptedData {
-  if (key.length !== 32) {
-    throw new Error('Encryption key must be 32 bytes');
+  if (!response.ok) {
+    throw new Error('Decryption failed');
   }
 
-  // Generate random 24-byte nonce for XChaCha20-Poly1305
-  const nonce = randomBytes(24);
-
-  // Create cipher instance
-  const cipher = xchacha20poly1305(key, nonce);
-
-  // Encrypt data (includes authentication tag)
-  const encryptedData = cipher.encrypt(data);
-
-  return {
-    encryptedData,
-    nonce,
-  };
-}
-
-/**
- * Decrypt data using ChaCha20-Poly1305 AEAD cipher
- *
- * Verifies authentication tag - throws error if data has been tampered with.
- *
- * @param encryptedData - Encrypted data
- * @param key - 32-byte encryption key (same as used for encryption)
- * @param nonce - 24-byte nonce (same as used for encryption)
- * @returns Decrypted data
- * @throws Error if authentication tag invalid (tampered data)
- */
-export function decryptData(
-  encryptedData: Uint8Array,
-  key: Uint8Array,
-  nonce: Uint8Array
-): Uint8Array {
-  if (key.length !== 32) {
-    throw new Error('Encryption key must be 32 bytes');
-  }
-
-  if (nonce.length !== 24) {
-    throw new Error('Nonce must be 24 bytes');
-  }
-
-  try {
-    // Create cipher instance
-    const cipher = xchacha20poly1305(key, nonce);
-
-    // Decrypt data (verifies authentication tag)
-    const decryptedData = cipher.decrypt(encryptedData);
-
-    return decryptedData;
-  } catch (error) {
-    throw new Error(
-      `Decryption failed: ${error instanceof Error ? error.message : 'Invalid authentication tag or corrupted data'}`
-    );
-  }
+  const result = await response.json();
+  return result.data;
 }
 
 /**

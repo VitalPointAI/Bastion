@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import encryptionRouter from './api/encryption.js';
 
 dotenv.config();
 
@@ -13,6 +14,9 @@ app.use(express.json());
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
+
+// Mount API routes
+app.use('/api/encryption', encryptionRouter);
 
 app.listen(port, () => {
   console.log(`Backend listening on port ${port}`);
