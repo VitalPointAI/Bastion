@@ -134,7 +134,8 @@ Output: Docker containers for Phala backend, docker-compose orchestration for de
 
     3. Create .env.example with:
        - VITE_PRIVY_APP_ID=your_privy_app_id
-       - VITE_WEB3STORAGE_TOKEN=your_web3storage_token
+       - VITE_PINATA_JWT=your_pinata_jwt
+       - VITE_PINATA_GATEWAY=your_pinata_gateway_url
        - VITE_NEAR_NETWORK=testnet
        - VITE_PHALA_ENDPOINT=http://localhost:8000
        - Instructions to copy to .env.local
@@ -189,7 +190,7 @@ Output: Docker containers for Phala backend, docker-compose orchestration for de
          * Initial setup steps:
            - Clone repository
            - Copy .env.example → .env.local
-           - Fill in API keys (Privy, Web3.Storage)
+           - Fill in API keys (Privy, Pinata)
            - Run docker-compose up -d
            - Deploy NEAR contracts (commands)
            - Verify all services running

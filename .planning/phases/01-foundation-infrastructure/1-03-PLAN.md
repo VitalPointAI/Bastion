@@ -55,29 +55,32 @@ Output: Working IPFS integration with client-side encryption, CID storage on NEA
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Set up IPFS infrastructure with Web3.Storage</name>
+  <name>Task 1: Set up IPFS infrastructure with Pinata for large data storage</name>
   <files>frontend/src/lib/ipfs.ts, frontend/package.json</files>
   <action>
-    Configure IPFS storage infrastructure using Web3.Storage for managed IPFS + Filecoin backend:
+    Configure IPFS storage infrastructure using Pinata for managing large data that's cost-prohibitive to store on-chain:
 
-    1. Install IPFS dependencies: pnpm add @web3-storage/w3up-client ipfs-http-client
+    1. Install IPFS dependencies: pnpm add pinata-web3 axios
 
-    2. Register at web3.storage:
-       - Create account at web3.storage
-       - Generate API token from dashboard
+    2. Register at pinata.cloud:
+       - Create account at pinata.cloud
+       - Generate API JWT from API Keys section
        - Note: Free tier provides sufficient storage for development
+       - Dedicated gateways available for production
 
     3. Add to frontend/.env.local:
-       - VITE_WEB3STORAGE_TOKEN=[api_token]
+       - VITE_PINATA_JWT=[api_jwt]
+       - VITE_PINATA_GATEWAY=[gateway_url] (optional, uses public gateway if not set)
 
     4. Create src/lib/ipfs.ts with:
-       - initialize() function creating w3up client
+       - initialize() function creating Pinata client with JWT
        - uploadFile(file: File) function:
-         * Accepts File object
-         * Uploads to IPFS via Web3.Storage
+         * Accepts File object (large documents, intelligence products, sensor data)
+         * Uploads to IPFS via Pinata
          * Returns CID (content identifier)
+         * Pins file automatically for persistence
        - retrieveFile(cid: string) function:
-         * Fetches file from IPFS by CID
+         * Fetches file from IPFS by CID via Pinata gateway
          * Returns file data as Uint8Array
        - Error handling for network failures
 
@@ -85,19 +88,22 @@ Output: Working IPFS integration with client-side encryption, CID storage on NEA
        - IPFSUploadResult interface
        - IPFSClient type
 
-    Use Web3.Storage instead of running local IPFS node (managed infrastructure, free tier, automatic Filecoin persistence).
+    IPFS is for large data where on-chain storage costs are prohibitive (documents, mission plans, intelligence products, sensor feeds, training data).
+    Smaller metadata, CIDs, and audit trails stay on-chain (encrypted) for provenance.
+    Use Pinata instead of running local IPFS node (managed pinning, reliable gateways, production-ready infrastructure).
     Use content-addressed CIDs for tamper-proof integrity (any modification changes CID).
 
-    Don't hand-roll: IPFS pinning services (Web3.Storage handles it), IPFS gateway infrastructure (managed), content addressing algorithms (built into IPFS).
+    Don't hand-roll: IPFS pinning services (Pinata handles automatic pinning), IPFS gateway infrastructure (use Pinata dedicated gateways), content addressing algorithms (built into IPFS).
   </action>
   <verify>
     - pnpm build succeeds without import errors
-    - Upload test file via uploadFile() returns valid CID (format: bafybei...)
+    - Upload test file via uploadFile() returns valid CID (format: bafybei... or Qm...)
     - Retrieve file via retrieveFile(cid) returns original file data
     - Same file uploaded twice produces same CID (content addressing works)
     - Different file produces different CID
+    - File remains pinned (check Pinata dashboard)
   </verify>
-  <done>IPFS client initialized with Web3.Storage backend, file upload returns CIDs, file retrieval works, content addressing verified (same content = same CID)</done>
+  <done>IPFS client initialized with Pinata backend, large file upload returns CIDs with automatic pinning, file retrieval works via gateway, content addressing verified (same content = same CID)</done>
 </task>
 
 <task type="auto">
@@ -151,63 +157,76 @@ Output: Working IPFS integration with client-side encryption, CID storage on NEA
 </task>
 
 <task type="auto">
-  <name>Task 3: Add document registry to NEAR contract with encrypted key storage</name>
+  <name>Task 3: Add encrypted document registry to NEAR contract</name>
   <files>near-contracts/src/lib.rs, near-contracts/src/document.rs, near-contracts/tests/integration.rs</files>
   <action>
-    Extend NEAR smart contract to store IPFS document metadata with access control:
+    Extend NEAR smart contract to store encrypted IPFS CIDs and metadata with access control:
 
     1. Create src/document.rs module:
-       - Document struct with fields:
-         * cid: String (IPFS content identifier)
-         * classification: String (UNCLASS, SECRET, etc.)
-         * encrypted_key: String (base64-encoded encryption key)
-         * owner: AccountId
-         * created_at: u64 (block timestamp)
-         * metadata: HashMap<String, String>
+       - Document struct with fields (ALL encrypted by default):
+         * encrypted_cid: String (encrypted IPFS CID - actual content is off-chain in IPFS)
+         * encrypted_classification: String (encrypted classification level)
+         * encrypted_metadata_key: String (encrypted key for decrypting the content encryption key)
+         * owner: AccountId (plaintext - needed for access control)
+         * created_at: u64 (block timestamp - plaintext for sorting/filtering)
+         * encrypted_metadata: String (encrypted JSON blob with additional metadata)
 
        - DocumentRegistry struct:
-         * documents: UnorderedMap<String, Document> (CID → Document)
-         * user_documents: LookupMap<AccountId, Vec<String>> (User → CID list)
+         * documents: UnorderedMap<String, Document> (document_id → Document)
+         * user_documents: LookupMap<AccountId, Vec<String>> (User → document_id list)
 
     2. Add to Contract in lib.rs:
        - register_document method:
          * Validates caller is authenticated
-         * Requires non-empty CID and classification
-         * Stores Document in registry
+         * Accepts ALL encrypted fields (encrypted_cid, encrypted_classification, etc.)
+         * Stores Document in registry with encrypted data
          * Updates user_documents index
-         * Emits event log
-         * Returns success
+         * Emits event log with document_id only (not decrypted data)
+         * Returns document_id
 
        - get_document method (view):
-         * Accepts CID
-         * Returns Document if exists
+         * Accepts document_id
+         * Returns Document with encrypted fields if exists
+         * Caller must decrypt client-side
          * Returns None if not found
 
        - list_user_documents method (view):
          * Accepts AccountId
-         * Returns Vec<Document> for that user
+         * Returns Vec<Document> for that user (all fields still encrypted)
          * Pagination support (offset, limit)
 
     3. Add to integration tests:
-       - Test register_document with valid CID
-       - Test get_document retrieval
+       - Test register_document with encrypted fields
+       - Test get_document retrieval returns encrypted data
        - Test access control (only owner can register)
        - Test list_user_documents pagination
+
+    **Critical: ALL on-chain data encrypted by default.**
+    - CIDs encrypted before storing on-chain (references to off-chain IPFS content)
+    - Metadata encrypted before storing on-chain
+    - Classification levels encrypted
+    - Only owner AccountId and timestamps remain plaintext (required for access control and indexing)
+
+    **Architecture:**
+    - Large files → encrypted client-side → IPFS (off-chain, cost-effective)
+    - IPFS CID → encrypted client-side → NEAR blockchain (on-chain for provenance/audit)
+    - Metadata → encrypted client-side → NEAR blockchain (on-chain for searchability with privacy)
 
     Use UnorderedMap for documents (efficient key-value storage).
     Use LookupMap for user index (efficient lookups, not iterable).
     Validate inputs with require! at method start (fail fast).
 
-    Don't hand-roll: access control will be enhanced in Phase 2 with ABAC (basic owner-only for now), pagination logic (use offset/limit pattern), event logging (use env::log_str with structured format).
+    Don't hand-roll: access control will be enhanced in Phase 2 with ABAC (basic owner-only for now), pagination logic (use offset/limit pattern), event logging (use env::log_str with structured format), encryption (done client-side in Task 2).
   </action>
   <verify>
     - cargo near build succeeds
     - cargo test passes all document registry tests
-    - Can register document with CID and retrieve it
-    - list_user_documents returns correct documents
-    - Invalid CID registration fails with clear error
+    - Can register document with encrypted CID and retrieve it
+    - Retrieved data still encrypted (client must decrypt)
+    - list_user_documents returns encrypted documents
+    - Invalid inputs fail with clear error
   </verify>
-  <done>Document registry integrated into NEAR contract, CID storage functional, owner-based access control working, pagination implemented, integration tests passing</done>
+  <done>Encrypted document registry integrated into NEAR contract, encrypted CID storage functional (references to off-chain IPFS), owner-based access control working, all on-chain data encrypted by default, pagination implemented, integration tests passing</done>
 </task>
 
 </tasks>
@@ -227,10 +246,12 @@ Before declaring plan complete:
 - All tasks completed
 - All verification checks pass
 - No errors or warnings from build or tests
-- IPFS storage fully operational with Web3.Storage backend
+- IPFS storage fully operational with Pinata backend for large data
 - Client-side encryption using audited libraries
-- NEAR contract document registry functional
-- Complete upload/retrieval workflow validated
+- NEAR contract encrypted document registry functional
+- All on-chain data encrypted by default (CIDs, metadata, classification)
+- Complete encrypted upload/retrieval workflow validated
+- Architecture: large files off-chain (IPFS), encrypted CIDs on-chain (NEAR) for provenance
 - Ready for Phala TEE integration in subsequent plans
 </success_criteria>
 
@@ -239,26 +260,29 @@ After completion, create `.planning/phases/01-foundation-infrastructure/1-03-SUM
 
 # Phase 1 Plan 3: IPFS Decentralized Storage Summary
 
-**Decentralized encrypted storage with IPFS provides tamper-proof, resilient data layer with on-chain provenance**
+**Decentralized encrypted storage with IPFS for large data, encrypted CIDs on-chain for provenance and auditability**
 
 ## Accomplishments
 
-- IPFS integration via Web3.Storage (managed IPFS + Filecoin)
+- IPFS integration via Pinata (managed pinning, dedicated gateways)
 - Client-side encryption using ChaCha20-Poly1305 AEAD cipher
-- Document upload workflow: encrypt → IPFS → store CID on-chain
-- Document retrieval workflow: fetch CID → download from IPFS → decrypt
-- NEAR contract document registry with metadata and access control
+- Document upload workflow: encrypt large file → IPFS → encrypt CID → store on-chain
+- Document retrieval workflow: fetch encrypted CID from chain → decrypt → download from IPFS → decrypt content
+- NEAR contract encrypted document registry with all data encrypted by default
+- Encrypted CIDs, metadata, and classification stored on-chain
+- Only AccountId and timestamps plaintext (required for access control/indexing)
+- Architecture: large files off-chain (IPFS), encrypted references on-chain (NEAR)
 - Content addressing verified (same content = same CID)
 - Authenticated encryption detects tampering
 
 ## Files Created/Modified
 
-- `frontend/src/lib/ipfs.ts` - IPFS client with upload/retrieval
+- `frontend/src/lib/ipfs.ts` - IPFS client with Pinata integration
 - `frontend/src/lib/encryption.ts` - Client-side encryption utilities
-- `near-contracts/src/document.rs` - Document registry module
-- `near-contracts/src/lib.rs` - Contract methods for document management
-- `near-contracts/tests/integration.rs` - Document registry tests
-- `frontend/.env.local` - Web3.Storage API token configuration
+- `near-contracts/src/document.rs` - Encrypted document registry module
+- `near-contracts/src/lib.rs` - Contract methods for encrypted document management
+- `near-contracts/tests/integration.rs` - Encrypted document registry tests
+- `frontend/.env.local` - Pinata JWT and gateway configuration
 
 ## Decisions Made
 

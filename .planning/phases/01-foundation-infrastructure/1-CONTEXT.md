@@ -17,11 +17,13 @@ This creates a complete foundation where the blockchain and privacy layers work 
 <essential>
 ## What Must Be Nailed
 
-All three foundational elements are equally critical and non-negotiable:
+All foundational elements are equally critical and non-negotiable:
 
 - **Blockchain smart contract foundation** - NEAR smart contracts must be working correctly with proper state management, gas handling, and upgrade patterns
 - **Privacy-preserving backend execution** - Phala TEE must actually protect sensitive data in a confidential computing environment, proving classified workloads can run securely
+- **Decentralized encrypted storage** - IPFS must provide resilient, tamper-proof storage with client-side encryption for documents, intelligence products, and mission data
 - **End-to-end communication flow** - Data must flow smoothly from frontend through blockchain to TEE backend and back, with proper encryption and verification at each layer
+- **Secure AI context management** - AI context and training data must be protected through client-side encryption or TEE-based secure enclaves, with ephemeral handling for highly sensitive data
 
 These are foundational pillars - compromising on any of them undermines the entire system's viability for defense applications.
 
@@ -45,6 +47,9 @@ These are foundational pillars - compromising on any of them undermines the enti
 - Idiomatic development following each platform's best practices
 - Use ecosystem tooling and development workflows as intended
 - **Use NEAR Shade agents where appropriate** - leverage NEAR's autonomous AI agents running in Phala TEE for verifiable, decentralized automation with Chain Signatures for multi-chain key management
+- **IPFS for decentralized storage** - use IPFS for resilient, content-addressed storage of documents, intelligence products, mission plans, and sensor data with client-side encryption
+- **Client-side encryption first** - encrypt data before IPFS upload using per-object keys based on classification and access policy; IPFS CIDs stored on-chain for provenance
+- **AI context security** - highly sensitive AI context kept client-side only (ephemeral, never persisted) or encrypted in TEE memory; less sensitive context encrypted before storage
 
 </specifics>
 
@@ -100,7 +105,7 @@ These are foundational pillars - compromising on any of them undermines the enti
 **Chain Abstraction** - NEAR's framework enabling applications that work seamlessly across multiple blockchains while abstracting underlying complexity. Three core technologies:
 - **Multi-Chain Accounts (Chain Signatures)** - Single NEAR account signs transactions for all chains (Bitcoin, Ethereum, Solana, etc.)
 - **NEAR Intents** - Users express desired outcomes ("transfer funds", "execute mission order"), solvers compete to fulfill optimally
-- **FastAuth** - Email + biometric login (FaceID, fingerprint) with automatic account recovery, no seed phrases or wallet apps required
+- **Privy.io** - Modern wallet abstraction with email + social login, embedded NEAR wallets, automatic account recovery, no seed phrases required
 
 **NEAR Intents** - Multichain transaction protocol where users/agents specify WHAT they want (intent), not HOW to do it:
 1. **Intent Creation** - Express desired outcome ("pay coalition partner", "authorize equipment purchase")
@@ -111,7 +116,7 @@ These are foundational pillars - compromising on any of them undermines the enti
 
 **Zero blockchain knowledge required:**
 - Users never see: gas fees, transaction hashes, wallet addresses, seed phrases, bridging, network selection
-- Login with email + biometric (FastAuth passkeys)
+- Login with email, social accounts, or biometric (Privy embedded wallets)
 - Intents expressed in natural language or simple UI actions
 - System handles all blockchain complexity invisibly in background
 
@@ -154,7 +159,7 @@ These are foundational pillars - compromising on any of them undermines the enti
 
 ```
 User Interface Layer
-├── FastAuth (email + biometric login)
+├── Privy.io (email/social login + embedded NEAR wallet)
 ├── Intent Expression (natural language / simple UI)
 └── No blockchain terminology exposed
 
@@ -217,10 +222,11 @@ Execution Layer
 
 **Developer integration:**
 - 1Click API for intent creation
-- FastAuth SDK for authentication
+- Privy SDK for authentication and embedded NEAR wallets
 - Verifier contracts for custom intent types
 - Solver network automatically available
-- Documentation: docs.near.org/chain-abstraction
+- FastNEAR RPC for optimized NEAR network access
+- Documentation: docs.near.org/chain-abstraction, docs.privy.io
 
 **Critical requirements for defense:**
 - Complete abstraction maintained across ALL phases
@@ -233,9 +239,9 @@ Execution Layer
 - Production-ready (2024-2025)
 - Active ecosystem ($5B volume)
 - NEAR 2026 strategy prioritizes Intents expansion
-- FastAuth being revamped with MPC + Auth0
+- Privy.io provides production-grade wallet abstraction with NEAR support
 
-**Decision:** Use NEAR Intents + Chain Abstraction + FastAuth as the universal UX layer for ALL user interactions. Zero blockchain exposure for operators. Complete abstraction from Phase 1 through Phase 12.
+**Decision:** Use NEAR Intents + Chain Abstraction + Privy.io as the universal UX layer for ALL user interactions. Zero blockchain exposure for operators. Complete abstraction from Phase 1 through Phase 12.
 
 </chain_abstraction>
 

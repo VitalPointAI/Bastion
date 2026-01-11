@@ -19,6 +19,14 @@ Key findings: Don't hand-roll cryptography, attestation mechanisms, or privacy p
 
 The established libraries/tools for this domain:
 
+### Frontend & Build Tools
+| Library | Version | Purpose | Why Standard |
+|---------|---------|---------|--------------|
+| Vite | 5.x+ | Build tool and dev server | Fast HMR, optimized builds, modern ESM support |
+| pnpm | 9.x+ | Package manager | Fast, disk-efficient, strict dependency resolution |
+| React | 18.x+ | UI framework | Industry standard, TypeScript support, ecosystem |
+| TypeScript | 5.x+ | Type-safe JavaScript | Type safety, better DX, ecosystem alignment |
+
 ### NEAR Protocol Core
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
@@ -28,6 +36,7 @@ The established libraries/tools for this domain:
 | near-cli-rs | Latest | CLI for deployment and interaction | Official CLI, replaces legacy near-cli |
 | workspaces-rs | Latest | Rust testing framework | Sandbox and testnet testing, official testing solution |
 | Chain Signatures | v1.signer | Decentralized MPC for multi-chain control | Official NEAR cross-chain key management, 8-node MPC network |
+| FastNEAR | Latest | Optimized NEAR RPC | High-performance RPC endpoint for production use |
 
 ### Phala Network Core
 | Library | Version | Purpose | Why Standard |
@@ -36,6 +45,28 @@ The established libraries/tools for this domain:
 | ink! | 5.x-6.x | Smart contract language for Phat Contracts | Rust-based, compiled to WASM, Substrate ecosystem standard |
 | cargo-contract | Latest | Build tool for ink! contracts | Official ink! build and deployment tool |
 | DevPHAse | Latest | Local development environment | Official Phala testnet tool |
+
+### Authentication & Wallet Infrastructure
+| Library | Version | Purpose | Why Standard |
+|---------|---------|---------|--------------|
+| Privy.io SDK | Latest | User authentication + embedded NEAR wallets | Production-grade wallet abstraction, email/social login, no seed phrases |
+| @privy-io/react-auth | Latest | React integration for Privy | Official React SDK for Privy authentication |
+| @privy-io/server-auth | Latest | Server-side Privy integration | Verify user sessions server-side |
+
+### Decentralized Storage
+| Library | Version | Purpose | Why Standard |
+|---------|---------|---------|--------------|
+| IPFS (Kubo/js-ipfs) | Latest | Decentralized content-addressed storage | Industry standard for distributed file storage, tamper-proof, resilient |
+| pinata-web3 | Latest | Pinata SDK for IPFS pinning | Production-ready IPFS pinning service, dedicated gateways, reliable infrastructure |
+| axios | Latest | HTTP client | Used by Pinata SDK for API calls |
+| orbit-db | Latest | Distributed database on IPFS | Optional: for structured data storage on IPFS with conflict resolution |
+
+### Cryptography & Encryption
+| Library | Version | Purpose | Why Standard |
+|---------|---------|---------|--------------|
+| @noble/ciphers | Latest | Modern encryption (AES-GCM, ChaCha20-Poly1305) | Lightweight, audited, no dependencies, post-quantum ready |
+| @noble/hashes | Latest | Cryptographic hashing (SHA256, BLAKE3) | Fast, secure, well-audited implementation |
+| tweetnacl | Latest | NaCl cryptography (signing, encryption) | Simple, audited, used by NEAR ecosystem |
 
 ### Supporting Libraries
 | Library | Version | Purpose | When to Use |
@@ -59,6 +90,22 @@ The established libraries/tools for this domain:
 | cargo-near | Manual wasm build | cargo-near handles optimization and ABI generation automatically |
 
 **Installation:**
+
+For frontend development:
+```bash
+# Install pnpm globally
+npm install -g pnpm
+
+# Create new React + Vite + TypeScript project
+pnpm create vite my-app --template react-ts
+
+# Install Privy for authentication
+pnpm add @privy-io/react-auth @privy-io/server-auth
+
+# Install IPFS and encryption libraries
+pnpm add pinata-web3 axios
+pnpm add @noble/ciphers @noble/hashes tweetnacl
+```
 
 For NEAR development:
 ```bash
@@ -291,6 +338,163 @@ impl Contract {
 }
 ```
 
+### Pattern 6: Client-Side Encrypted IPFS Storage
+
+**What:** Encrypt data client-side before uploading to IPFS, store CID on-chain for access control
+**When to use:** Storing documents, intelligence products, mission plans, sensor data
+**Example:**
+```typescript
+// Client-side encryption before IPFS upload
+import { xchacha20poly1305 } from '@noble/ciphers/chacha';
+import { randomBytes } from '@noble/hashes/utils';
+import { create as createIPFS } from 'ipfs-http-client';
+
+interface EncryptedDocument {
+  cid: string;           // IPFS content identifier
+  encryptedKey: string;  // Encryption key encrypted with recipient's public key
+  classification: string;
+  metadata: {
+    type: string;
+    timestamp: number;
+    author: string;
+  };
+}
+
+async function uploadEncryptedDocument(
+  data: Uint8Array,
+  classification: string,
+  accessPolicy: AccessPolicy
+): Promise<EncryptedDocument> {
+  // 1. Generate random encryption key
+  const encryptionKey = randomBytes(32);
+  const nonce = randomBytes(24);
+
+  // 2. Encrypt data client-side with ChaCha20-Poly1305
+  const cipher = xchacha20poly1305(encryptionKey, nonce);
+  const encryptedData = cipher.encrypt(data);
+
+  // 3. Upload encrypted data to IPFS
+  const ipfs = createIPFS({ url: 'https://ipfs.infura.io:5001' });
+  const result = await ipfs.add(encryptedData);
+  const cid = result.path;
+
+  // 4. Encrypt the encryption key for authorized recipients
+  // (using recipient's public key from NEAR account)
+  const encryptedKey = await encryptKeyForRecipients(
+    encryptionKey,
+    accessPolicy.authorizedAccounts
+  );
+
+  // 5. Store CID + encrypted key on-chain for access control
+  const doc: EncryptedDocument = {
+    cid,
+    encryptedKey,
+    classification,
+    metadata: {
+      type: 'intelligence_product',
+      timestamp: Date.now(),
+      author: currentUserAccount
+    }
+  };
+
+  // 6. Store document metadata on NEAR blockchain
+  await nearContract.registerDocument({
+    cid,
+    classification,
+    accessPolicy,
+    encryptedKeyMap: encryptedKey
+  });
+
+  return doc;
+}
+
+// Retrieval with access control
+async function retrieveEncryptedDocument(
+  cid: string,
+  userAccount: string
+): Promise<Uint8Array> {
+  // 1. Check access on-chain
+  const docMetadata = await nearContract.getDocument({ cid });
+
+  // 2. Verify user has access per ABAC policy
+  if (!docMetadata.accessPolicy.allows(userAccount)) {
+    throw new Error('Access denied');
+  }
+
+  // 3. Retrieve encrypted data from IPFS
+  const ipfs = createIPFS({ url: 'https://ipfs.infura.io:5001' });
+  const chunks = [];
+  for await (const chunk of ipfs.cat(cid)) {
+    chunks.push(chunk);
+  }
+  const encryptedData = new Uint8Array(Buffer.concat(chunks));
+
+  // 4. Decrypt encryption key using user's private key
+  const encryptionKey = await decryptKeyForUser(
+    docMetadata.encryptedKeyMap[userAccount],
+    userPrivateKey
+  );
+
+  // 5. Decrypt data
+  const cipher = xchacha20poly1305(encryptionKey, docMetadata.nonce);
+  const decryptedData = cipher.decrypt(encryptedData);
+
+  return decryptedData;
+}
+```
+
+### Pattern 7: Ephemeral AI Context (Client-Side Only)
+
+**What:** Keep highly sensitive AI context in memory only, never persisted
+**When to use:** Classified AI prompts, sensitive reasoning chains, tactical decision context
+**Example:**
+```typescript
+// AI context management with classification-based persistence
+class AIContextManager {
+  private ephemeralContext: Map<string, any> = new Map();
+  private encryptedContext: Map<string, EncryptedContext> = new Map();
+
+  async addContext(
+    sessionId: string,
+    context: any,
+    classification: Classification
+  ): Promise<void> {
+    if (classification === 'TS' || classification === 'SECRET') {
+      // Highly sensitive: keep in memory only (ephemeral)
+      this.ephemeralContext.set(sessionId, context);
+
+      // Optional: encrypt in TEE memory for processing
+      await this.sendToTEEMemory(sessionId, context);
+    } else if (classification === 'CONFIDENTIAL') {
+      // Encrypt and store temporarily (session-based)
+      const encrypted = await this.encryptContext(context);
+      this.encryptedContext.set(sessionId, encrypted);
+    } else {
+      // UNCLASS: can store normally
+      await this.storeContext(sessionId, context);
+    }
+  }
+
+  clearSession(sessionId: string): void {
+    // Explicitly clear ephemeral data
+    this.ephemeralContext.delete(sessionId);
+    this.encryptedContext.delete(sessionId);
+
+    // Notify TEE to clear memory
+    this.notifyTEEClearSession(sessionId);
+  }
+
+  private async sendToTEEMemory(
+    sessionId: string,
+    context: any
+  ): Promise<void> {
+    // Send to Phala TEE for in-memory processing
+    // TEE keeps context in secure enclave, never persists to disk
+    await phalaWorker.setEphemeralContext(sessionId, context);
+  }
+}
+```
+
 ### Anti-Patterns to Avoid
 
 - **Not returning Promises from cross-contract calls** - Breaks transaction chain visibility, prevents proper error handling
@@ -299,6 +503,11 @@ impl Contract {
 - **Skipping attestation verification** - Defeats purpose of TEE, can't trust results
 - **Custom cryptography/privacy primitives** - Use Phala's TEE infrastructure instead
 - **Not versioning contract state** - Makes upgrades extremely difficult or impossible
+- **Storing sensitive data unencrypted on IPFS** - IPFS is public by default, always encrypt before upload
+- **Rolling custom encryption algorithms** - Use audited libraries (@noble/ciphers, tweetnacl), crypto is hard to get right
+- **Storing encryption keys on-chain in plaintext** - Encrypt keys for recipients using their public keys
+- **Persisting classified AI context** - Keep highly sensitive context ephemeral (client-side or TEE memory only)
+- **Using centralized storage for critical data** - IPFS provides resilience and tamper-proofing centralized systems lack
 </architecture_patterns>
 
 <dont_hand_roll>
@@ -316,8 +525,12 @@ Problems that look simple but have existing solutions:
 | Gas estimation | Hardcoded gas values | SDK gas measurement methods | Actual usage varies by state, measure dynamically |
 | Serialization | Custom binary formats | borsh (built into near-sdk) | Optimized, deterministic, schema evolution support |
 | Key management in TEE | Custom key derivation | Phala deterministic key generation | Hardware-backed, proper entropy sources |
+| Client-side encryption | Custom crypto or basic AES | @noble/ciphers (ChaCha20-Poly1305) | Audited, modern AEAD ciphers, timing-attack resistant |
+| File storage | Centralized S3/cloud storage | IPFS with client-side encryption | Decentralized, tamper-proof, content-addressed, resilient |
+| Access control for files | Server-side permissions | On-chain access policies + encrypted keys | Verifiable, decentralized, cryptographically enforced |
+| AI context storage | Plain database storage | Client-side ephemeral or TEE-encrypted | Prevents context leakage, classification-aware handling |
 
-**Key insight:** Blockchain security and TEE confidential computing have decades of accumulated knowledge. NEAR's SDK provides battle-tested patterns for state management, gas optimization, and upgrades. Phala's infrastructure solves the hard problems of attestation, key management, and verifiable confidential computing. Fighting these leads to security vulnerabilities and bugs that look like "edge cases" but are actually well-known attack vectors.
+**Key insight:** Blockchain security and TEE confidential computing have decades of accumulated knowledge. NEAR's SDK provides battle-tested patterns for state management, gas optimization, and upgrades. Phala's infrastructure solves the hard problems of attestation, key management, and verifiable confidential computing. IPFS provides proven decentralized storage with content addressing. Modern cryptography libraries like @noble/ciphers are extensively audited and timing-attack resistant. Fighting these leads to security vulnerabilities and bugs that look like "edge cases" but are actually well-known attack vectors.
 </dont_hand_roll>
 
 <common_pitfalls>
@@ -617,20 +830,22 @@ NEAR Chain Abstraction enables applications that work seamlessly across multiple
 
 ### Three-Layer Architecture
 
-**1. FastAuth - Web2 Authentication**
+**1. Privy.io - Web2 Authentication & Embedded Wallets**
 
 Eliminates crypto onboarding friction:
-- Login with email + biometric (FaceID, fingerprint, device passkey)
-- No wallet apps, no seed phrases, no private key management
-- Email-based account recovery (familiar Web2 pattern)
+- Login with email, social accounts (Google, Twitter, etc.), or passkeys
+- Embedded NEAR wallets created automatically on first login
+- No seed phrases, no manual wallet management
+- Email-based account recovery and social recovery options
 - Zero balance accounts (users transact before acquiring crypto)
 - Meta transactions (third party pays gas fees invisibly)
 
 **Technical implementation:**
-- Uses WebAuthn/Passkeys standard (FIDO2)
-- Biometric authentication device-local (never transmitted)
-- Email links to NEAR account (internal mapping, invisible to user)
-- Being revamped with MPC + Auth0 for improved security
+- Uses WebAuthn/Passkeys, OAuth2, and MPC technology
+- Wallet keys managed in secure enclaves (MPC threshold signatures)
+- One-click onboarding with familiar Web2 authentication patterns
+- Production-grade with enterprise security and compliance
+- Native NEAR wallet support with cross-chain capabilities
 
 **2. NEAR Intents - Transaction Abstraction**
 
@@ -754,26 +969,45 @@ if (await userApproves()) {
 }
 ```
 
-**FastAuth Integration:**
+**Privy Integration:**
 ```typescript
-// FastAuth SDK for authentication
-import { FastAuth } from '@near/fast-auth-sdk';
+// Privy SDK for authentication and embedded NEAR wallets
+import { PrivyProvider, usePrivy, useWallets } from '@privy-io/react-auth';
 
-const auth = new FastAuth({
-  network: 'testnet',
-  // Optional: custom relayer for gas sponsorship
-  relayer: 'coalition-ops.near'
-});
+// Wrap your app with PrivyProvider
+function App() {
+  return (
+    <PrivyProvider
+      appId={process.env.PRIVY_APP_ID}
+      config={{
+        loginMethods: ['email', 'google', 'twitter'],
+        embeddedWallets: {
+          createOnLogin: 'users-without-wallets',
+          requireUserPasswordOnCreate: false,
+        },
+        supportedChains: [/* NEAR testnet/mainnet config */],
+      }}
+    >
+      <YourApp />
+    </PrivyProvider>
+  );
+}
 
-// Web2-style login (no wallet popup)
-const session = await auth.signIn({
-  email: 'commander@coalition.mil',
-  // Triggers email link + biometric prompt
-});
+// Use in components
+function CommanderInterface() {
+  const { login, authenticated, user } = usePrivy();
+  const { wallets } = useWallets();
 
-// User now has NEAR account (invisible to them)
-// Can immediately create intents, no crypto needed
-const account = session.account; // Used internally for intents
+  // Web2-style login (no crypto knowledge needed)
+  const handleLogin = async () => {
+    await login();
+    // User now has embedded NEAR wallet automatically
+  };
+
+  // Access NEAR wallet for transactions
+  const nearWallet = wallets.find(w => w.walletClientType === 'privy');
+  const address = nearWallet?.address; // NEAR account ID
+}
 ```
 
 **Custom Intent Types:**
@@ -1016,18 +1250,21 @@ Blockchain mechanics completely hidden, yet full verification available.
 - But abstraction never broken for operators
 
 **Testnet compatibility:**
-- FastAuth works on testnet
+- Privy works on testnet with embedded NEAR wallet support
 - Chain Signatures work on testnet
 - Intents currently mainnet only (solver network)
+- FastNEAR RPC provides optimized testnet access
 - Phase 1 solution: Implement testnet solver or mock intent resolution for demo
 
 ### Implementation Strategy
 
 **Phase 1 foundations:**
-- Integrate FastAuth SDK for authentication
+- Integrate Privy SDK for authentication with embedded NEAR wallets
+- Configure FastNEAR RPC endpoint for optimized network access
 - Set up Chain Signatures for multi-chain control
 - Establish verifier contracts on NEAR testnet
 - Mock intent solver for testnet demo (or partner with solver)
+- Configure Vite + pnpm build tooling for frontend
 
 **Subsequent phases:**
 - All financial operations via intents (Phases 4, 7, 9, 12)
