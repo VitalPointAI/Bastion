@@ -1,5 +1,6 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import type { ReactNode } from 'react'
+import { useEffect } from 'react'
 
 interface AuthWrapperProps {
   children: ReactNode
@@ -11,6 +12,19 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
 
   // Find NEAR wallet (embedded wallet created by Privy)
   const nearWallet = wallets.find(wallet => wallet.walletClientType === 'privy')
+
+  // Log wallet information to console for verification
+  useEffect(() => {
+    if (authenticated && wallets.length > 0) {
+      console.log('=== BASTION Authentication Status ===')
+      console.log('User authenticated:', authenticated)
+      console.log('User info:', user)
+      console.log('All wallets:', wallets)
+      console.log('NEAR wallet:', nearWallet)
+      console.log('NEAR wallet address:', nearWallet?.address)
+      console.log('====================================')
+    }
+  }, [authenticated, wallets, user, nearWallet])
 
   return (
     <div className="auth-wrapper">
