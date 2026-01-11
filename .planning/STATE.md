@@ -11,28 +11,28 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 1 of 12 (Foundation & Infrastructure)
-Plan: 1 of 5 in current phase
+Plan: 2 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-11 — Completed 1-01-PLAN.md
+Last activity: 2026-01-11 — Completed 1-02-PLAN.md
 
-Progress: █░░░░░░░░░ 10%
+Progress: ██░░░░░░░░ 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 43 min
-- Total execution time: 0.7 hours
+- Total plans completed: 2
+- Average duration: 41 min
+- Total execution time: 1.4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 (Foundation & Infrastructure) | 1 | 43 min | 43 min |
+| 1 (Foundation & Infrastructure) | 2 | 82 min | 41 min |
 
 **Recent Trend:**
-- Last 5 plans: 43 min
-- Trend: Initial baseline
+- Last 5 plans: 43 min, 39 min
+- Trend: Consistent velocity
 
 ## Accumulated Context
 
@@ -46,9 +46,15 @@ Recent decisions affecting current work:
 - Rust toolchain: Pinned to 1.88.0 for WASM compatibility with NEAR runtime
 - Testing: Unit tests provide coverage while workspaces sandbox has WASM compatibility issues
 
+**Phase 1 Plan 2 (Frontend & Authentication):**
+- Application naming: BASTION (Blockchain Autonomous Strategy & Tactical Intelligence Operational Network)
+- Authentication provider: Privy.io for Web2-style login with blockchain abstraction
+- Frontend stack: Vite + React 19 + TypeScript 5.9 + pnpm
+- NEAR wallet integration: Privy Tier 2 support configured, client-side creates Ethereum wallets by default (will implement proper NEAR wallet creation in Phase 2 with backend)
+
 ### Deferred Issues
 
-None yet.
+**NEAR Embedded Wallet Creation (from 1-02):** Privy Tier 2 NEAR support configured but client-side React SDK creates Ethereum wallets instead of NEAR implicit accounts. Will implement proper server-side NEAR wallet creation in Phase 2 (Identity & Security Framework) with backend API integration.
 
 ### Blockers/Concerns
 
@@ -56,6 +62,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-11T18:09:37Z
-Stopped at: Completed 1-01-PLAN.md (NEAR Smart Contract Foundation)
+Last session: 2026-01-11T18:44:58Z
+Stopped at: Completed 1-02-PLAN.md (Frontend Foundation & Authentication)
 Resume file: None
