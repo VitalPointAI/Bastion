@@ -1,4 +1,4 @@
-# Roadmap: AI-Enabled Decentralized Augmented Orchestration for Coalition Operations
+# Roadmap: BASTION (Blockchain Autonomous Strategy & Tactical Intelligence Operational Network)
 
 ## Overview
 

@@ -1,4 +1,4 @@
-# AI-Enabled Decentralized Augmented Orchestration for Coalition Operations
+# BASTION: Blockchain Autonomous Strategy & Tactical Intelligence Operational Network
 
 ## What This Is
 
