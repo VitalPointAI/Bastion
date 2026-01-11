@@ -23,7 +23,8 @@
     "form-data": "^4.0.5",
     "multer": "^2.0.2",
     "near-api-js": "^6.5.1",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "pg-boss": "^12.5.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
