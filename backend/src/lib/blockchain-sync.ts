@@ -1,7 +1,7 @@
 import { PgBoss } from 'pg-boss';
 import { pool } from './database.js';
 
-const boss = new PgBoss(process.env.DATABASE_URL!);
+let boss: PgBoss;
 
 /**
  * Process outbox records and write to NEAR blockchain
@@ -97,6 +97,16 @@ async function syncBlockchainEventsWorker() {
  * Start all sync workers
  */
 export async function startSyncWorkers() {
+  // Initialize pg-boss with DATABASE_URL
+  if (!boss) {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) {
+      console.error('⚠️  DATABASE_URL not set, skipping sync workers');
+      return;
+    }
+    boss = new PgBoss(dbUrl);
+  }
+
   await boss.start();
 
   // Schedule outbox processing every 5 seconds
