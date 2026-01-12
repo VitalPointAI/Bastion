@@ -2,6 +2,25 @@
 -- Hybrid storage: PostgreSQL (fast queries) + NEAR (verification) + IPFS (large files)
 
 -- ============================================================================
+-- USER ACCOUNTS TABLE
+-- Maps Privy users to NEAR accounts (MPC-secured)
+-- ============================================================================
+CREATE TABLE user_accounts (
+    id SERIAL PRIMARY KEY,
+    privy_user_id TEXT UNIQUE NOT NULL,  -- Privy user ID
+    email TEXT NOT NULL,
+    near_account_id TEXT UNIQUE NOT NULL,  -- On-chain NEAR account
+    derivation_path TEXT NOT NULL,  -- MPC derivation path
+    mpc_public_key TEXT NOT NULL,  -- Public key from MPC
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    last_login TIMESTAMPTZ
+);
+
+CREATE INDEX idx_user_accounts_privy ON user_accounts(privy_user_id);
+CREATE INDEX idx_user_accounts_near ON user_accounts(near_account_id);
+CREATE INDEX idx_user_accounts_email ON user_accounts(email);
+
+-- ============================================================================
 -- DOCUMENTS TABLE
 -- Synced with NEAR blockchain for provenance
 -- ============================================================================

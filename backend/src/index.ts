@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import encryptionRouter from './api/encryption.js';
 import documentsRouter from './api/documents.js';
 import edgeSyncRouter from './api/edge-sync.js';
+import accountsRouter from './api/accounts.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
 
 dotenv.config();
@@ -22,6 +23,7 @@ app.get('/health', (req, res) => {
 app.use('/api/encryption', encryptionRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/edge', edgeSyncRouter);
+app.use('/api/accounts', accountsRouter);
 
 app.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);

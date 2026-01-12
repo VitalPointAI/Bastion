@@ -1,4 +1,4 @@
-import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { usePrivy } from '@privy-io/react-auth'
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 
@@ -7,51 +7,63 @@ interface AuthWrapperProps {
 }
 
 export function AuthWrapper({ children }: AuthWrapperProps) {
-  const { authenticated, user, createWallet } = usePrivy()
-  const { wallets, ready } = useWallets()
+  const { authenticated, user } = usePrivy()
   const [nearAccount, setNearAccount] = useState<string | null>(null)
   const [creatingWallet, setCreatingWallet] = useState(false)
 
-  // Find embedded wallet (created automatically by Privy)
-  const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy')
-
-  // Create embedded wallet and derive NEAR account if needed
+  // Create NEAR account via backend MPC integration
   useEffect(() => {
-    const initializeWallet = async () => {
+    const initializeAccount = async () => {
       console.log('=== BASTION Authentication Debug ===')
       console.log('Authenticated:', authenticated)
-      console.log('Wallets ready:', ready)
-      console.log('Wallets length:', wallets.length)
+      console.log('User:', user)
 
-      if (authenticated && ready && !creatingWallet) {
-        if (wallets.length === 0) {
-          // No wallet exists - create embedded Ethereum wallet
-          console.log('⚠️ No wallets found, creating embedded wallet...')
-          setCreatingWallet(true)
-          try {
-            await createWallet()
-            console.log('✅ Embedded wallet creation initiated')
-          } catch (error) {
-            console.error('❌ Failed to create wallet:', error)
-            setCreatingWallet(false)
+      if (authenticated && user && !nearAccount && !creatingWallet) {
+        setCreatingWallet(true)
+
+        try {
+          // Get Privy access token for backend auth
+          const privyUserId = user.id
+          const email = user.email?.address || user.google?.email || user.twitter?.username || 'unknown'
+
+          console.log('⚡ Creating NEAR account via backend MPC...')
+          console.log('Privy User ID:', privyUserId)
+          console.log('Email:', email)
+
+          // Call backend to create NEAR account with MPC derivation
+          const response = await fetch('http://localhost:3001/api/accounts/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              privyUserId,
+              email,
+              authToken: 'privy-jwt-token', // TODO: Get actual Privy JWT
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error(`Failed to create account: ${response.statusText}`)
           }
-        } else if (embeddedWallet && !nearAccount) {
-          // Wallet exists but NEAR account not derived yet
-          console.log('✅ Embedded wallet found:', embeddedWallet.address)
-          console.log('⚡ Deriving NEAR account from Ethereum wallet...')
 
-          // Derive NEAR account using Chain Signatures
-          // The derivation path creates a deterministic NEAR account from the ETH wallet
-          const derivedNearAccount = `bastion-${embeddedWallet.address.slice(2, 12)}.testnet`
-          setNearAccount(derivedNearAccount)
-          console.log('✅ NEAR account derived:', derivedNearAccount)
+          const data = await response.json()
+          console.log('✅ NEAR account created:', data.accountId)
+          console.log('📍 MPC Derivation Path:', data.derivationPath)
+          console.log('🔐 MPC Contract:', data.mpcContractId)
           console.log('====================================')
+
+          setNearAccount(data.accountId)
+        } catch (error) {
+          console.error('❌ Failed to create NEAR account:', error)
+        } finally {
+          setCreatingWallet(false)
         }
       }
     }
 
-    initializeWallet()
-  }, [authenticated, ready, wallets, embeddedWallet, nearAccount, createWallet, creatingWallet])
+    initializeAccount()
+  }, [authenticated, user, nearAccount, creatingWallet])
 
   return (
     <div className="auth-wrapper">
