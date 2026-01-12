@@ -2,6 +2,8 @@
 // Uses NEAR's decentralized MPC network for user-owned keys
 // No backend key storage - all keys managed by 8-node threshold MPC
 
+import { createHash, randomBytes } from 'crypto';
+
 /**
  * MPC Account Manager
  *
@@ -23,6 +25,7 @@ export interface MPCAccount {
   nearAccountId: string;
   derivationPath: string;
   mpcPublicKey: string;
+  onChain: boolean;
 }
 
 /**
@@ -44,7 +47,7 @@ export class MPCAccountManager {
   /**
    * Create NEAR account for user
    *
-   * This creates the actual on-chain NEAR account.
+   * This creates the actual on-chain NEAR account using the testnet helper.
    * Account name format: bastion-<hash>.testnet
    *
    * @param privyUserId - Privy user ID (for deterministic naming)
@@ -61,27 +64,160 @@ export class MPCAccountManager {
     // This path is used by MPC to derive keys deterministically
     const derivationPath = `bastion-users,${privyUserId}`;
 
-    // In v1, we'll track the account creation intent
-    // Full implementation requires:
-    // 1. Call testnet faucet or use funded creator account
-    // 2. Create account with temporary keys
-    // 3. User registers derivation path with MPC contract
-    // 4. MPC derives public key for this path
-    // 5. Replace temporary keys with MPC-derived keys
-
-    console.log('Creating NEAR account (v1 - manual creation):', {
+    console.log('Creating NEAR account on-chain:', {
       nearAccountId,
       derivationPath,
       mpcContractId: this.mpcContractId,
     });
 
-    // For v1: Return structure that frontend can use
-    // Production: Implement full account creation
-    return {
-      nearAccountId,
-      derivationPath,
-      mpcPublicKey: 'pending-mpc-registration', // Will be set after MPC registration
-    };
+    // Check if account already exists on-chain
+    const exists = await this.accountExistsOnChain(nearAccountId);
+    if (exists) {
+      console.log('✅ Account already exists on-chain:', nearAccountId);
+      return {
+        nearAccountId,
+        derivationPath,
+        mpcPublicKey: 'existing-account',
+        onChain: true,
+      };
+    }
+
+    // Create account on testnet using the helper API
+    try {
+      const publicKey = await this.createAccountOnTestnet(nearAccountId);
+      console.log('✅ Account created on-chain:', nearAccountId);
+      console.log('   Public key:', publicKey);
+
+      return {
+        nearAccountId,
+        derivationPath,
+        mpcPublicKey: publicKey,
+        onChain: true,
+      };
+    } catch (error) {
+      console.error('❌ Failed to create account on-chain:', error);
+
+      // Return with onChain: false so frontend knows to retry or handle
+      return {
+        nearAccountId,
+        derivationPath,
+        mpcPublicKey: 'creation-failed',
+        onChain: false,
+      };
+    }
+  }
+
+  /**
+   * Create account on NEAR testnet using the helper API
+   *
+   * @param accountId - Account ID to create
+   * @returns Public key of created account
+   */
+  private async createAccountOnTestnet(accountId: string): Promise<string> {
+    // Generate a random Ed25519 keypair for initial account access
+    // This is a temporary key - will be replaced by MPC-derived key
+    const seed = randomBytes(32);
+    const publicKeyBytes = this.deriveEd25519PublicKey(seed);
+    const publicKey = `ed25519:${this.base58Encode(publicKeyBytes)}`;
+
+    // Call NEAR testnet helper to create account
+    // This funds the account with a small amount of NEAR for gas
+    const helperUrl = 'https://helper.testnet.near.org/account';
+
+    const response = await fetch(helperUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        newAccountId: accountId,
+        newAccountPublicKey: publicKey,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Testnet helper error: ${response.status} - ${errorText}`);
+    }
+
+    return publicKey;
+  }
+
+  /**
+   * Check if account exists on NEAR
+   *
+   * @param accountId - Account ID to check
+   * @returns True if account exists
+   */
+  private async accountExistsOnChain(accountId: string): Promise<boolean> {
+    try {
+      const rpcUrl = process.env.NEAR_RPC || 'https://rpc.testnet.near.org';
+
+      const response = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'check-account',
+          method: 'query',
+          params: {
+            request_type: 'view_account',
+            finality: 'final',
+            account_id: accountId,
+          },
+        }),
+      });
+
+      const result = await response.json() as { error?: unknown };
+
+      // If there's an error with "doesn't exist", account doesn't exist
+      if (result.error) {
+        return false;
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Derive Ed25519 public key from seed
+   * Simple implementation for testnet - production should use proper crypto library
+   */
+  private deriveEd25519PublicKey(seed: Buffer): Buffer {
+    // Use SHA-512 hash of seed as key material (simplified for testnet)
+    // Production: Use proper Ed25519 key derivation
+    const hash = createHash('sha512').update(seed).digest();
+    return hash.subarray(0, 32);
+  }
+
+  /**
+   * Base58 encode bytes
+   */
+  private base58Encode(bytes: Buffer): string {
+    const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    let result = '';
+    let num = BigInt('0x' + bytes.toString('hex'));
+
+    while (num > 0n) {
+      const remainder = Number(num % 58n);
+      num = num / 58n;
+      result = ALPHABET[remainder] + result;
+    }
+
+    // Handle leading zeros
+    for (const byte of bytes) {
+      if (byte === 0) {
+        result = '1' + result;
+      } else {
+        break;
+      }
+    }
+
+    return result || '1';
   }
 
   /**

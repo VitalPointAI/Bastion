@@ -96,6 +96,7 @@ router.post('/create', async (req, res) => {
       email,
       accountId: account.nearAccountId,
       derivationPath: account.derivationPath,
+      onChain: account.onChain,
     });
 
     res.json({
@@ -104,7 +105,9 @@ router.post('/create', async (req, res) => {
       mpcContractId: process.env.NEAR_NETWORK === 'mainnet'
         ? 'v1.signer-prod.near'
         : 'v1.signer-dev.testnet',
-      status: 'pending', // Pending MPC registration from frontend
+      mpcPublicKey: account.mpcPublicKey,
+      onChain: account.onChain,
+      status: account.onChain ? 'created' : 'pending',
     });
   } catch (error) {
     console.error('Account creation error:', error);
