@@ -46,7 +46,9 @@ Plans:
 - [x] Plan 1-03: IPFS & Encrypted Storage (completed 2026-01-11)
 - [x] Plan 1-04: Backend Security Migration (completed 2026-01-11)
 - [x] Plan 1-03A: PostgreSQL Hybrid Storage (completed 2026-01-11, inserted after IPFS plan)
-- [ ] Plan 1-05: Phala TEE Integration (hardware attestation)
+- [x] Plan 1-05: Phala TEE Integration (completed 2026-01-11)
+- [x] Plan 1-06: Chain Signatures & Intents (completed 2026-01-12)
+- [ ] Plan 1-07: Containerization & Dev Environment
 
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
@@ -163,7 +165,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Infrastructure | 3/8 | In progress | - |
+| 1. Foundation & Infrastructure | 7/8 | In progress | - |
 | 2. Identity & Security Framework | 0/TBD | Not started | - |
 | 3. DAO Governance | 0/TBD | Not started | - |
 | 4. Strategic Planning Module | 0/TBD | Not started | - |
