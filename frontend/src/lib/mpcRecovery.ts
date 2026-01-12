@@ -32,8 +32,10 @@ export interface RecoveryInfo {
   recoveryMethods: string[];
 }
 
-const MPC_CONTRACT_TESTNET = 'v1.signer-dev.testnet';
-const MPC_CONTRACT_MAINNET = 'v1.signer-prod.near';
+// Chain Signatures MPC contracts
+// See: https://docs.near.org/concepts/abstraction/chain-signatures
+const MPC_CONTRACT_TESTNET = 'v2.multichain-mpc.testnet';
+const MPC_CONTRACT_MAINNET = 'v1.signer.near';
 
 /**
  * MPC Recovery Manager
@@ -59,6 +61,10 @@ export class MPCRecoveryManager {
    * that will be derived for this path. The key is deterministic -
    * same path always produces same key.
    *
+   * Note: The MPC contract's public_key method returns the network's root
+   * public key, not a path-specific key. Path-specific derivation happens
+   * during signing. For account setup, we use the root key.
+   *
    * @param derivationPath - User's derivation path (e.g., "bastion-users,did:privy:xxx")
    * @returns MPC-derived public key
    */
@@ -67,6 +73,7 @@ export class MPCRecoveryManager {
 
     try {
       // Call MPC contract's public_key method
+      // This returns the MPC network's root public key
       const response = await fetch(this.rpcUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,39 +86,56 @@ export class MPCRecoveryManager {
             finality: 'final',
             account_id: this.mpcContractId,
             method_name: 'public_key',
-            args_base64: btoa(JSON.stringify({ path: derivationPath })),
+            args_base64: btoa('{}'), // Empty args for root key
           },
         }),
       });
 
       const result = await response.json() as {
-        result?: { result: number[] };
+        result?: { result: number[]; error?: string };
         error?: unknown;
       };
 
+      // Check for RPC-level error
       if (result.error) {
-        console.error('MPC public_key error:', result.error);
-        throw new Error('Failed to derive MPC public key');
+        console.error('MPC RPC error:', result.error);
+        throw new Error('MPC contract call failed');
       }
 
-      // Decode result (base64 encoded JSON)
-      if (result.result?.result) {
+      // Check for contract-level error
+      if (result.result?.error) {
+        console.error('MPC contract error:', result.result.error);
+        throw new Error('MPC contract returned error');
+      }
+
+      // Decode result - MPC returns byte array that decodes to JSON string
+      if (result.result?.result && Array.isArray(result.result.result)) {
         const bytes = new Uint8Array(result.result.result);
         const decoded = new TextDecoder().decode(bytes);
+        // Response is a JSON string with quotes, parse to get clean key
         const publicKey = JSON.parse(decoded);
-        console.log('✅ MPC public key derived:', publicKey);
+        console.log('✅ MPC root public key:', publicKey);
+        console.log('   Derivation path stored:', derivationPath);
         return publicKey;
       }
 
-      throw new Error('Invalid response from MPC contract');
+      throw new Error('Invalid response structure from MPC contract');
     } catch (error) {
       console.error('❌ Failed to derive MPC public key:', error);
 
-      // For development, return a deterministic mock key
-      // In production, this should fail
-      const mockKey = `ed25519:${this.hashPath(derivationPath)}`;
-      console.warn('⚠️ Using mock MPC key for development:', mockKey);
-      return mockKey;
+      // For development/testnet, use deterministic mock key
+      // This allows testing the flow without live MPC
+      const isDevelopment = import.meta.env.DEV ||
+                            import.meta.env.MODE === 'development';
+
+      if (isDevelopment) {
+        const mockKey = `secp256k1:${this.hashPath(derivationPath)}`;
+        console.warn('⚠️ DEV MODE: Using mock MPC key:', mockKey);
+        return mockKey;
+      }
+
+      // In production, propagate the error
+      throw error;
     }
   }
 
