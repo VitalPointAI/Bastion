@@ -11,9 +11,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 1 of 12 (Foundation & Infrastructure)
-Plan: 7 of 8 in current phase
+Plan: 7 of 8 in current phase (+ 1-06-FIX completed)
 Status: In progress
-Last activity: 2026-01-12 — Completed 1-06-PLAN.md (Chain Signatures & Intents)
+Last activity: 2026-01-13 — Completed 1-06-FIX.md (UAT Issue Fixes)
 
 Progress: ███████░░░ 70%
 
@@ -77,6 +77,11 @@ Recent decisions affecting current work:
 - MPC recovery: deterministic key derivation from Privy user ID
 - Complete blockchain abstraction achieved (zero crypto terminology in UI)
 
+**Phase 1 Plan 6-FIX (UAT Issue Fixes):**
+- Chain Signatures uses root key + path-at-signing derivation pattern (not per-user keys upfront)
+- MPC root key stored per user to track key version at registration time
+- On-chain AddKey requires Phase 2 key management implementation
+
 ### Deferred Issues
 
 **Pinata API 403 Error (from 1-04):** Backend IPFS upload endpoint returns 403 from Pinata API. Possible causes: JWT needs regeneration, API endpoint format changed, or permissions need adjustment. Does not block development. Can be resolved by regenerating JWT in Pinata dashboard.
@@ -87,6 +92,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-12T00:54:00Z
-Stopped at: Completed 1-06-PLAN.md (Chain Signatures & Intents)
+Last session: 2026-01-13T11:24:00Z
+Stopped at: Completed 1-06-FIX.md (UAT Issue Fixes)
 Resume file: None
