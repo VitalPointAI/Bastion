@@ -163,6 +163,129 @@ router.get('/:privyUserId', async (req, res) => {
 });
 
 /**
+ * POST /api/accounts/add-mpc-key
+ *
+ * Add MPC public key to user's NEAR account on-chain
+ *
+ * This creates an AddKey transaction to add the MPC root key
+ * as a full access key on the user's account.
+ *
+ * Request body:
+ * {
+ *   nearAccountId: string,
+ *   mpcPublicKey: string (from MPC contract - root key)
+ * }
+ *
+ * Response:
+ * {
+ *   success: boolean,
+ *   txHash: string
+ * }
+ */
+router.post('/add-mpc-key', async (req, res) => {
+  try {
+    const { nearAccountId, mpcPublicKey } = req.body;
+
+    if (!nearAccountId || !mpcPublicKey) {
+      return res.status(400).json({
+        error: 'Missing required fields: nearAccountId, mpcPublicKey',
+      });
+    }
+
+    console.log('Adding MPC key to NEAR account:', {
+      nearAccountId,
+      mpcPublicKey,
+    });
+
+    // Check if MPC key is already on the account
+    const rpcUrl = process.env.NEAR_RPC || 'https://rpc.testnet.near.org';
+
+    const accessKeysResponse = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 'check-keys',
+        method: 'query',
+        params: {
+          request_type: 'view_access_key_list',
+          finality: 'final',
+          account_id: nearAccountId,
+        },
+      }),
+    });
+
+    const keysResult = await accessKeysResponse.json() as {
+      result?: { keys: Array<{ public_key: string }> };
+      error?: unknown;
+    };
+
+    if (keysResult.result?.keys) {
+      const keyExists = keysResult.result.keys.some(
+        (k: { public_key: string }) => k.public_key === mpcPublicKey
+      );
+      if (keyExists) {
+        console.log('MPC key already exists on account');
+        return res.status(409).json({
+          error: 'MPC key already registered',
+          success: true, // This is actually success - key is there
+        });
+      }
+    }
+
+    // NOTE: To actually add the key on-chain, we need:
+    // 1. The private key that was used to create the account
+    // 2. Sign an AddKey transaction
+    // 3. Submit to NEAR network
+    //
+    // For v1, the account creation uses a temporary key that we don't store.
+    // This is a design limitation we need to address:
+    //
+    // Options:
+    // a) Store the initial key securely (not ideal for decentralization)
+    // b) Have the frontend use Privy embedded wallet to sign
+    // c) Create accounts with MPC key already added
+    //
+    // For now, return success in dev mode and document the limitation.
+
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+
+    if (isDevelopment) {
+      console.log('DEV MODE: Simulating AddKey transaction');
+      console.log('NOTE: Full implementation requires storing account keys or using Privy wallet');
+
+      // Update database to mark MPC key as "pending add"
+      await pool.query(
+        `UPDATE user_accounts
+         SET mpc_key_status = 'pending',
+             mpc_public_key = $1
+         WHERE near_account_id = $2`,
+        [mpcPublicKey, nearAccountId]
+      );
+
+      return res.json({
+        success: true,
+        txHash: `dev-sim-${Date.now()}`,
+        note: 'Development mode - AddKey transaction simulated',
+      });
+    }
+
+    // Production would implement real AddKey here
+    return res.status(501).json({
+      error: 'AddKey transaction not implemented for production',
+      details: 'Requires account key management implementation',
+    });
+
+  } catch (error) {
+    console.error('Add MPC key error:', error);
+    res.status(500).json({
+      error: 'Failed to add MPC key',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
  * POST /api/accounts/update-mpc-key
  *
  * Update MPC public key after frontend registers with MPC contract

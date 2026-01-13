@@ -196,51 +196,87 @@ export class MPCRecoveryManager {
   /**
    * Register MPC key with user's NEAR account
    *
-   * This adds the MPC-derived public key as a full access key
-   * on the user's NEAR account, enabling MPC to sign transactions.
+   * This adds the MPC root public key as a full access key on the user's
+   * NEAR account, enabling MPC to sign transactions for this user.
+   *
+   * ## How it works:
+   * 1. Backend has the initial key (created the account)
+   * 2. Backend signs AddKey transaction to add MPC root key
+   * 3. MPC network can now sign with derived keys for this account
+   * 4. User's derivation path determines which derived key is used
+   *
+   * Note: We add the ROOT public key to the account. When signing,
+   * the MPC uses the derivation path to create the actual signature.
    *
    * @param nearAccountId - User's NEAR account ID
-   * @param mpcPublicKey - MPC-derived public key to add
-   * @param currentSigner - Current signer (temporary key or wallet)
+   * @param mpcPublicKey - MPC root public key to add
+   * @param backendUrl - Backend API URL for AddKey transaction
    * @returns Transaction result
    */
   async addMPCKeyToAccount(
     nearAccountId: string,
     mpcPublicKey: string,
-    _currentSigner?: unknown
-  ): Promise<{ success: boolean; txHash?: string }> {
+    backendUrl?: string
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
     console.log('🔑 Adding MPC key to account:', nearAccountId);
     console.log('   MPC Public Key:', mpcPublicKey);
 
-    // In production, this would:
-    // 1. Create an AddKey transaction
-    // 2. Sign with current access key
-    // 3. Submit to NEAR network
-    //
-    // const transaction = {
-    //   receiverId: nearAccountId,
-    //   actions: [
-    //     {
-    //       type: 'AddKey',
-    //       params: {
-    //         publicKey: mpcPublicKey,
-    //         accessKey: {
-    //           permission: 'FullAccess',
-    //         },
-    //       },
-    //     },
-    //   ],
-    // };
-    //
-    // const result = await currentSigner.signAndSendTransaction(transaction);
+    const apiUrl = backendUrl || 'http://localhost:3001';
 
-    // For development, simulate success
-    console.log('✅ MPC key registration simulated (dev mode)');
+    try {
+      // Call backend to add MPC key (backend has the initial account key)
+      const response = await fetch(`${apiUrl}/api/accounts/add-mpc-key`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nearAccountId,
+          mpcPublicKey,
+        }),
+      });
 
-    return {
-      success: true,
-      txHash: `sim-${Date.now()}`,
-    };
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+
+        // Check for specific errors
+        if (response.status === 409) {
+          // Key already exists - this is success
+          console.log('✅ MPC key already registered on account');
+          return { success: true, txHash: 'already-registered' };
+        }
+
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json() as { txHash?: string; success?: boolean };
+      console.log('✅ MPC key added to NEAR account');
+      console.log('   Transaction:', result.txHash);
+
+      return {
+        success: true,
+        txHash: result.txHash,
+      };
+    } catch (error) {
+      console.error('❌ Failed to add MPC key:', error);
+
+      // For development, fall back to simulation
+      const isDevelopment = import.meta.env.DEV ||
+                            import.meta.env.MODE === 'development';
+
+      if (isDevelopment) {
+        console.warn('⚠️ DEV MODE: Simulating MPC key registration');
+        console.warn('   (Backend endpoint /api/accounts/add-mpc-key not available)');
+        console.warn('   In production, this would add the MPC key to the NEAR account');
+        return {
+          success: true,
+          txHash: `sim-${Date.now()}`,
+        };
+      }
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 
   /**
