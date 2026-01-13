@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output (rebuilt in container)
+dist/
+
+# Environment files (sensitive)
+.env.local
+.env.*.local
+
+# Development files
+*.log
+*.tmp
+.DS_Store
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Test files
+coverage/
+tests/
+*.test.ts
+*.spec.ts
+__tests__/
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Documentation (not needed in image)
+*.md

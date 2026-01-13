@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output (rebuilt in container)
+dist/
+
+# Environment files (sensitive - mount at runtime)
+.env
+.env.*
+!.env.example
+
+# Development files
+*.log
+*.tmp
+.DS_Store
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Test files
+coverage/
+*.test.ts
+*.spec.ts
+__tests__/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
