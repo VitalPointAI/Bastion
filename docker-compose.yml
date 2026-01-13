@@ -1,9 +1,15 @@
-version: '3.8'
+# BASTION Development Environment
+# docker-compose up -d to start all services
+# docker-compose logs -f to view logs
+# docker-compose down to stop
 
 services:
+  # ==========================================
+  # PostgreSQL Database with TimescaleDB
+  # ==========================================
   postgres:
     image: timescale/timescaledb:latest-pg16
-    container_name: coalition-postgres
+    container_name: bastion-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -20,27 +26,67 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - backend
+      - bastion-network
 
+  # ==========================================
+  # Backend API Server
+  # ==========================================
   backend:
-    build: ./backend
-    container_name: coalition-backend
+    build:
+      context: ./backend
+      target: runtime
+    container_name: bastion-backend
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=development
+      - PORT=3001
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/coalition_ops
     env_file:
       - ./backend/.env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
     networks:
-      - backend
+      - bastion-network
+    restart: unless-stopped
+
+  # ==========================================
+  # Frontend Development Server (Vite)
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: bastion-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_BACKEND_URL=http://localhost:3001
+    env_file:
+      - ./frontend/.env.local
+    depends_on:
+      backend:
+        condition: service_healthy
     volumes:
-      - ./backend/src:/app/src
+      # Mount source for hot reload
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      # Exclude node_modules from mount
+      - /app/node_modules
+    networks:
+      - bastion-network
+    restart: unless-stopped
 
 networks:
-  backend:
+  bastion-network:
     driver: bridge
 
 volumes:
