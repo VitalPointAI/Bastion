@@ -254,14 +254,18 @@ router.post('/add-mpc-key', async (req, res) => {
       console.log('DEV MODE: Simulating AddKey transaction');
       console.log('NOTE: Full implementation requires storing account keys or using Privy wallet');
 
-      // Update database to mark MPC key as "pending add"
-      await pool.query(
-        `UPDATE user_accounts
-         SET mpc_key_status = 'pending',
-             mpc_public_key = $1
-         WHERE near_account_id = $2`,
-        [mpcPublicKey, nearAccountId]
-      );
+      // Update database with MPC key (don't require mpc_key_status column)
+      try {
+        await pool.query(
+          `UPDATE user_accounts
+           SET mpc_public_key = $1
+           WHERE near_account_id = $2`,
+          [mpcPublicKey, nearAccountId]
+        );
+      } catch (dbError) {
+        // Ignore DB errors in dev mode - key tracking is optional
+        console.warn('DB update skipped:', dbError instanceof Error ? dbError.message : 'unknown');
+      }
 
       return res.json({
         success: true,
