@@ -1,73 +1,163 @@
-# React + TypeScript + Vite
+# BASTION Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 frontend for the BASTION platform with Privy authentication, NEAR blockchain integration, and zero-blockchain UX.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Privy Authentication**: Web2-style login (email, social) with embedded NEAR wallets
+- **Zero Blockchain UX**: No crypto terminology, seed phrases, or gas fees visible to users
+- **IPFS Integration**: Client-side encryption and decentralized document storage
+- **TEE Client**: Secure context management for classified data
+- **Chain Signatures**: Multi-chain control via NEAR MPC
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19 with TypeScript 5.9
+- Vite 7 (build tool and dev server)
+- Privy.io (authentication)
+- @noble/ciphers (encryption)
+- Axios (HTTP client)
 
-## Expanding the ESLint configuration
+## Quick Start
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+# Install dependencies
+pnpm install
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Copy environment template
+cp .env.local.example .env.local
+# Edit .env.local with your credentials
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start development server
+pnpm dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open http://localhost:5173 in your browser.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm dev          # Start Vite dev server with HMR
+pnpm build        # Build for production
+pnpm preview      # Preview production build
+pnpm lint         # Run ESLint
+pnpm test:security  # Run security tests
 ```
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── App.tsx           # Main application component
+│   ├── main.tsx          # Entry point with Privy provider
+│   ├── lib/
+│   │   ├── aiContext.ts  # AI context security manager
+│   │   ├── encryption.ts # Client-side encryption
+│   │   ├── ipfs.ts       # IPFS/Pinata client
+│   │   └── teeClient.ts  # TEE communication client
+│   └── components/       # React components
+├── public/               # Static assets
+├── tests/
+│   └── security/         # Security test suite
+├── Dockerfile            # Multi-stage build
+├── nginx.conf            # Production nginx config
+├── .env.local.example    # Environment template
+├── vite.config.ts        # Vite configuration
+└── tsconfig.json         # TypeScript config
+```
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `VITE_PRIVY_APP_ID` | Privy application ID | Yes |
+| `VITE_NEAR_NETWORK` | NEAR network (testnet/mainnet) | Yes |
+| `VITE_NEAR_RPC` | NEAR RPC endpoint | Yes |
+| `VITE_PINATA_JWT` | Pinata API JWT | Yes |
+| `VITE_PINATA_GATEWAY` | Pinata gateway URL | No |
+| `VITE_BACKEND_URL` | Backend API URL | Yes |
+
+## Key Libraries
+
+### `src/lib/encryption.ts`
+Client-side encryption using ChaCha20-Poly1305 (AEAD cipher).
+
+```typescript
+import { encrypt, decrypt, generateKey } from './lib/encryption';
+
+const key = generateKey();
+const encrypted = await encrypt(data, key);
+const decrypted = await decrypt(encrypted, key);
+```
+
+### `src/lib/aiContext.ts`
+Classification-based context management for AI interactions.
+
+```typescript
+import { AIContextManager, Classification } from './lib/aiContext';
+
+const manager = new AIContextManager();
+await manager.addContext(sessionId, context, Classification.SECRET);
+// SECRET/TS: ephemeral memory only
+// CONFIDENTIAL: encrypted storage
+// UNCLASS: normal storage
+```
+
+### `src/lib/teeClient.ts`
+Communication with Phala TEE via NEAR contract.
+
+```typescript
+import { TEEClient } from './lib/teeClient';
+
+const client = new TEEClient();
+await client.sendToTEEMemory(sessionId, context, classification);
+```
+
+## Docker
+
+```bash
+# Build development image
+docker build --target development -t bastion-frontend:dev .
+
+# Build production image (nginx)
+docker build --target production -t bastion-frontend:prod \
+  --build-arg VITE_PRIVY_APP_ID=xxx \
+  --build-arg VITE_PINATA_JWT=xxx .
+
+# Or use docker-compose
+docker compose up frontend -d
+```
+
+## Development Notes
+
+### Hot Module Replacement
+Vite provides instant HMR. Edit files in `src/` and changes appear immediately.
+
+### TypeScript Configuration
+- `erasableSyntaxOnly: true` - Use const objects instead of enums
+- Strict mode enabled for type safety
+
+### ESLint
+ESLint configured with React and TypeScript rules. Run `pnpm lint` before committing.
+
+## Troubleshooting
+
+### Privy login fails
+- Verify `VITE_PRIVY_APP_ID` is correct
+- Check Privy dashboard for allowed domains
+
+### IPFS upload fails
+- Regenerate `VITE_PINATA_JWT`
+- Ensure JWT has upload permissions
+
+### Backend connection fails
+- Verify `VITE_BACKEND_URL` points to running backend
+- Check CORS configuration in backend
+
+## Links
+
+- [Privy Documentation](https://docs.privy.io/)
+- [Vite Guide](https://vitejs.dev/guide/)
+- [React 19 Documentation](https://react.dev/)
+- [@noble/ciphers](https://github.com/paulmillr/noble-ciphers)
