@@ -1,12 +1,20 @@
 # Phase 2: Identity & Security Framework - Context
 
-**Gathered:** 2026-01-11
+**Gathered:** 2026-01-14 (updated from 2026-01-11)
 **Status:** Ready for research
 
 <vision>
 ## How This Should Work
 
-A comprehensive identity and security foundation where W3C DIDs and ABAC work together seamlessly. Every entity in the system - humans, AI agents, autonomous vehicles, missions, data objects, organizations, and resources - automatically gets a cryptographically verifiable DID on creation. Users never think about security; it just works automatically based on their DID and the classification of what they're accessing.
+Security should feel invisible until the moment you need to prove something. The system handles heavy cryptography behind the scenes — DIDs, signatures, attestations — but users don't think about it during normal operation. When proof is required (accessing classified content, authorizing actions, sharing across organizations), verification is there, rock-solid and immediate.
+
+**Universal Identity** is the core architectural principle. Everything in the system gets an identity — not just humans, but AI agents, vehicles, weapons, disposables, and resources. The identity layer treats all entities the same, enabling:
+- Unified tracking across the platform
+- Dynamic inclusion/exclusion from operations
+- Real-time analytics on any entity type
+- Fine-grained ABAC that works identically whether it's a human approving an order or an AI agent requesting sensor data
+
+**Event-Driven Onboarding** — Entity management must be intuitive. When a new vehicle comes online or an AI agent spins up, the system notices and proposes registration. Automatic discovery is the primary UX — the system watches for presence changes and triggers workflows. API-first for programmatic automation, simple UI for manual cases when needed. Adding and removing identities should be as natural as the entities entering and leaving the operational space.
 
 DIDs form the foundation that feeds into attribute-based access control. When a commander accesses intelligence data, when an AI agent processes classified information, when a coalition partner requests mission status - the system transparently checks their DID attributes (clearance level, nationality, role, mission assignment) against the data's access policy and either grants or denies access invisibly.
 
@@ -19,7 +27,7 @@ Military users authenticate with their CAC/PIV cards, coalition partners use the
 
 All of these are foundational pillars - can't compromise on any:
 
-- **Universal W3C DID Identity** - Every single entity type gets a DID: humans, AI agents, assets, missions, data objects, organizations, resources. Complete auditability with cryptographic proof of identity for everything.
+- **Universal W3C DID Identity** - Every single entity type gets a DID: humans, AI agents, assets, missions, data objects, organizations, resources, vehicles, weapons, disposables. Complete auditability with cryptographic proof of identity for everything. The identity layer must treat all entity types uniformly — no special cases for humans vs machines vs resources.
 
 - **ABAC with Comprehensive Attributes** - Access control based on classification level (UNCLASS through TS/SCI), nationality and coalition caveats (REL TO, NOFORN), role and organization, and dynamic mission context. Rich attribute model from day one.
 
@@ -53,6 +61,8 @@ All of these are foundational pillars - can't compromise on any:
 <specifics>
 ## Specific Ideas
 
+- **Event-Driven Entity Discovery** - System watches for presence changes and proposes registration automatically. When something enters the operational space (vehicle powers on, AI agent spins up, new resource created), the system detects it and handles identity creation. Three onboarding paths: automatic discovery (primary), API-first for programmatic automation, simple UI for manual cases. Removal is equally intuitive — entities leaving the system trigger cleanup workflows.
+
 - **Automatic DID Creation** - System handles DID creation transparently. Create a mission → it gets a DID. Deploy an AI agent → it gets a DID. Register a vehicle → it gets a DID. Users never manually "create identities."
 
 - **DIDs Feed ABAC** - Identity system is the foundation for the security layer. Every access decision queries the DID registry for attributes, then evaluates ABAC policies. Identity and security are tightly integrated, not separate systems.
@@ -80,5 +90,5 @@ The integration of identity and security as a unified system (DIDs feeding ABAC,
 
 ---
 
-*Phase: 02-identity-security*
-*Context gathered: 2026-01-11*
+*Phase: 02-identity-security-framework*
+*Context gathered: 2026-01-14 (updated from 2026-01-11)*
