@@ -92,6 +92,8 @@ Recent decisions affecting current work:
 - Added Vision section to root README explaining project purpose
 - Added "Role in the System" statements to all component READMEs
 - Fixed docker-compose env override issue during UAT
+- Fixed accounts.ts to use shared database pool (was breaking docker networking)
+- Fixed MPC contract ID from v1.signer-dev.testnet to v1.signer-prod.testnet
 
 ### Deferred Issues
 
@@ -103,6 +105,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-13T12:20:00Z
-Stopped at: Completed 1-07-FIX.md (UAT Issue Fixes) - Phase 1 Complete with all issues resolved
+Last session: 2026-01-14
+Stopped at: Phase 1 Complete - All UAT issues resolved including accounts API and MPC fixes
 Resume file: None

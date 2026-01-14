@@ -40,8 +40,28 @@ None
 **Fix:** Reordered docker-compose.yml to put `env_file:` before `environment:` so explicit env vars take precedence
 **Commit:** 28ec1ad
 
+### UAT-004: accounts.ts using duplicate database pool
+
+**Discovered:** 2026-01-14
+**Resolved:** 2026-01-14 - Fixed in 1-07-FIX
+**Severity:** Major (was blocking /api/accounts/create)
+**Feature:** Backend accounts API
+**Description:** accounts.ts created its own Pool with `DB_HOST || 'localhost'` fallback instead of using shared getPool() from database.ts
+**Fix:** Replace local Pool with getPool() import from database.ts
+**Commit:** 6df8c5e
+
+### UAT-005: Wrong MPC contract ID for testnet
+
+**Discovered:** 2026-01-14
+**Resolved:** 2026-01-14 - Fixed in 1-07-FIX
+**Severity:** Minor
+**Feature:** MPC account manager
+**Description:** mpc-accounts.ts and accounts.ts used v1.signer-dev.testnet instead of v1.signer-prod.testnet
+**Fix:** Changed all occurrences to v1.signer-prod.testnet
+**Commit:** 6df8c5e
+
 ---
 
 *Phase: 01-foundation-infrastructure*
 *Plan: 07*
-*Tested: 2026-01-13*
+*Tested: 2026-01-14*
