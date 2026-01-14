@@ -10,6 +10,15 @@ use privacy::{Classification, PrivacyRouter, RoutingResult};
 mod attestation;
 use attestation::{AttestationReport, AttestationVerifier};
 
+mod chain_signatures;
+use chain_signatures::ChainSignatureManager;
+
+mod intents;
+use intents::{Intent, IntentVerifier};
+
+mod did_registry;
+use did_registry::{DIDRegistry, EncryptedDIDEntry};
+
 /// Main contract structure with state versioning pattern
 /// State version is tracked internally for safe upgrades
 #[near(contract_state)]
@@ -27,6 +36,12 @@ pub struct Contract {
     privacy_router: PrivacyRouter,
     /// Attestation verifier for TEE result validation
     attestation_verifier: AttestationVerifier,
+    /// Chain Signatures manager for multi-chain key management
+    chain_signature_manager: ChainSignatureManager,
+    /// Intent verifier for intent-based transactions
+    intent_verifier: IntentVerifier,
+    /// Encrypted DID registry for universal identity management
+    did_registry: DIDRegistry,
 }
 
 #[near]
@@ -36,6 +51,9 @@ impl Contract {
     pub fn new(owner: AccountId) -> Self {
         require!(!env::state_exists(), "Contract already initialized");
 
+        // Use testnet MPC contract for development
+        let mpc_contract: AccountId = "v1.signer.testnet".parse().unwrap();
+
         Self {
             owner,
             initialized: true,
@@ -43,6 +61,9 @@ impl Contract {
             document_registry: DocumentRegistry::new(),
             privacy_router: PrivacyRouter::new(),
             attestation_verifier: AttestationVerifier::new(),
+            chain_signature_manager: ChainSignatureManager::new(mpc_contract),
+            intent_verifier: IntentVerifier::new(),
+            did_registry: DIDRegistry::new(),
         }
     }
 
@@ -62,6 +83,9 @@ impl Contract {
             document_registry: DocumentRegistry,
             privacy_router: PrivacyRouter,
             attestation_verifier: AttestationVerifier,
+            chain_signature_manager: ChainSignatureManager,
+            intent_verifier: IntentVerifier,
+            did_registry: DIDRegistry,
         }
 
         let old_state: OldState = env::state_read().expect("Failed to read state");
@@ -75,6 +99,9 @@ impl Contract {
             document_registry: old_state.document_registry,
             privacy_router: old_state.privacy_router,
             attestation_verifier: old_state.attestation_verifier,
+            chain_signature_manager: old_state.chain_signature_manager,
+            intent_verifier: old_state.intent_verifier,
+            did_registry: old_state.did_registry,
         }
     }
 
@@ -292,6 +319,282 @@ impl Contract {
             }
         }
     }
+
+    // ===== Chain Signatures Methods =====
+
+    /// Register chain path for multi-chain address derivation (owner-only)
+    ///
+    /// Derives and stores address deterministically from path
+    /// Same path will always generate same address
+    pub fn register_chain_path(
+        &mut self,
+        path_name: String,
+        derivation_path: String,
+    ) -> near_sdk::PromiseOrValue<String> {
+        require!(
+            env::predecessor_account_id() == self.owner,
+            "Only owner can register chain paths"
+        );
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+
+        let result = self.chain_signature_manager.register_path(path_name.clone(), derivation_path);
+
+        log!("Chain path registered: {}", path_name);
+
+        result
+    }
+
+    /// Get derived address for a registered path (view method)
+    ///
+    /// Returns deterministic address if path exists, None otherwise
+    pub fn get_derived_address(&self, path_name: String) -> Option<String> {
+        self.chain_signature_manager.derive_address(path_name)
+    }
+
+    /// Sign transaction using Chain Signatures MPC network
+    ///
+    /// Requests threshold signature from 8 MPC nodes
+    /// Returns Promise with aggregated signature
+    pub fn sign_transaction(
+        &mut self,
+        transaction_data: Vec<u8>,
+        chain_path: String,
+        target_chain: String,
+    ) -> Promise {
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+        require!(
+            !transaction_data.is_empty(),
+            "Transaction data cannot be empty"
+        );
+
+        log!(
+            "Signing transaction for {} ({} bytes)",
+            target_chain,
+            transaction_data.len()
+        );
+
+        self.chain_signature_manager.request_signature(
+            transaction_data,
+            chain_path,
+            target_chain,
+        )
+    }
+
+    /// Get all registered chain paths (view method)
+    pub fn get_all_chain_paths(&self) -> Vec<String> {
+        self.chain_signature_manager.get_all_paths()
+    }
+
+    // ===== Intent Methods =====
+
+    /// Submit intent for processing
+    ///
+    /// User expresses desired outcome without implementation details
+    /// Verifier validates intent, solver network executes
+    pub fn submit_intent(
+        &mut self,
+        intent_type: String,
+        params: String,
+    ) -> String {
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+        require!(
+            !intent_type.is_empty() && !params.is_empty(),
+            "Intent type and params cannot be empty"
+        );
+
+        let intent_id = self.intent_verifier.submit_intent(intent_type, params);
+
+        log!("Intent submitted: {}", intent_id);
+
+        intent_id
+    }
+
+    /// Verify transfer intent
+    ///
+    /// Validates transfer parameters before execution
+    /// Called internally before routing to solvers
+    pub fn verify_transfer_intent(&mut self, intent_id: String) -> bool {
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+
+        self.intent_verifier.verify_transfer_intent(intent_id)
+    }
+
+    /// Verify mission order intent
+    ///
+    /// Validates mission parameters and commander authorization
+    /// Owner provides list of authorized commanders
+    pub fn verify_mission_order_intent(
+        &mut self,
+        intent_id: String,
+        authorized_commanders: Vec<AccountId>,
+    ) -> bool {
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+
+        self.intent_verifier.verify_mission_order_intent(intent_id, authorized_commanders)
+    }
+
+    /// Verify document verification intent
+    ///
+    /// Checks document exists and user has permissions
+    pub fn verify_document_verification_intent(&mut self, intent_id: String) -> bool {
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+
+        // Get list of existing documents for validation
+        let creator = match self.intent_verifier.get_intent(intent_id.clone()) {
+            Some(intent) => intent.creator,
+            None => return false,
+        };
+
+        // Get user's documents as proof of existence
+        let user_docs = self.document_registry.list_user_documents(creator, None, None);
+        let doc_ids: Vec<String> = user_docs.iter().map(|d| d.encrypted_cid.clone()).collect();
+
+        self.intent_verifier.verify_document_intent(intent_id, doc_ids)
+    }
+
+    /// Settle intent after solver execution
+    ///
+    /// Updates intent status to Verified after successful execution
+    /// Called after solver completes the intent
+    pub fn settle_intent(&mut self, intent_id: String) {
+        require!(
+            self.initialized,
+            "Contract not initialized"
+        );
+
+        self.intent_verifier.settle_intent(intent_id.clone());
+        log!("Intent settlement recorded: {}", intent_id);
+    }
+
+    /// Get intent by ID (view method)
+    pub fn get_intent(&self, intent_id: String) -> Option<Intent> {
+        self.intent_verifier.get_intent(intent_id)
+    }
+
+    /// List user's intents with pagination (view method)
+    pub fn list_user_intents(
+        &self,
+        account_id: AccountId,
+        offset: Option<u64>,
+        limit: Option<u64>,
+    ) -> Vec<Intent> {
+        self.intent_verifier.list_user_intents(
+            account_id,
+            offset.map(|o| o as usize),
+            limit.map(|l| l as usize),
+        )
+    }
+
+    /// Get user's intent count (view method)
+    pub fn get_user_intent_count(&self, account_id: AccountId) -> u64 {
+        self.intent_verifier.get_user_intent_count(account_id) as u64
+    }
+
+    // ===== Encrypted DID Registry Methods =====
+
+    /// Store encrypted DID document
+    ///
+    /// Privacy-preserving DID storage using blinded keys.
+    /// ALL document content must be encrypted off-chain before submission.
+    ///
+    /// # Arguments
+    /// * `blinded_key` - HKDF-derived lookup key (32 bytes, computed off-chain)
+    /// * `encrypted_document` - PQ-encrypted DID document blob
+    /// * `encrypted_entity_type` - PQ-encrypted entity type
+    /// * `nonce` - Encryption nonce (24 bytes)
+    pub fn store_did(
+        &mut self,
+        blinded_key: Vec<u8>,
+        encrypted_document: Vec<u8>,
+        encrypted_entity_type: Vec<u8>,
+        nonce: Vec<u8>,
+    ) {
+        require!(self.initialized, "Contract not initialized");
+
+        self.did_registry.store_did(
+            blinded_key,
+            encrypted_document,
+            encrypted_entity_type,
+            nonce,
+        )
+    }
+
+    /// Retrieve encrypted DID entry by blinded key
+    ///
+    /// Returns encrypted blob - decryption happens off-chain.
+    /// Caller must have the correct secret to derive the blinded key.
+    pub fn get_did(&self, blinded_key: Vec<u8>) -> Option<EncryptedDIDEntry> {
+        self.did_registry.get_did(blinded_key)
+    }
+
+    /// Get blinded key for caller's DID (if registered)
+    ///
+    /// Allows owner to retrieve their blinded key if they've lost it.
+    /// Only returns the key to the owner account.
+    pub fn get_my_blinded_key(&self) -> Option<Vec<u8>> {
+        self.did_registry.get_my_blinded_key()
+    }
+
+    /// Update encrypted DID document (owner only)
+    ///
+    /// Updates the encrypted document while preserving ownership.
+    /// Entity type cannot be changed after registration.
+    pub fn update_did(
+        &mut self,
+        blinded_key: Vec<u8>,
+        encrypted_document: Vec<u8>,
+        nonce: Vec<u8>,
+    ) {
+        require!(self.initialized, "Contract not initialized");
+
+        self.did_registry.update_did(blinded_key, encrypted_document, nonce)
+    }
+
+    /// Deactivate DID (owner only, irreversible)
+    ///
+    /// Once deactivated, the DID cannot be reactivated or updated.
+    /// This is permanent revocation following W3C DID spec.
+    pub fn deactivate_did(&mut self, blinded_key: Vec<u8>) {
+        require!(self.initialized, "Contract not initialized");
+
+        self.did_registry.deactivate_did(blinded_key)
+    }
+
+    /// Check if DID is active (public revocation check)
+    ///
+    /// Anyone can check if a DID is active given the blinded key.
+    /// Enables revocation verification without revealing identity.
+    pub fn is_did_active(&self, blinded_key: Vec<u8>) -> bool {
+        self.did_registry.is_active(blinded_key)
+    }
+
+    /// Check if caller owns a DID entry
+    pub fn has_did(&self) -> bool {
+        self.did_registry.has_did()
+    }
+
+    /// Get total count of registered DIDs (statistics only)
+    pub fn get_did_count(&self) -> u64 {
+        self.did_registry.get_did_count()
+    }
 }
 
 // Internal implementation - separate from public interface
@@ -407,5 +710,226 @@ mod tests {
         let docs = contract.list_user_documents(owner.clone(), None, None);
         assert_eq!(docs.len(), 1);
         assert_eq!(docs[0].encrypted_cid, "encrypted_cid_abc123");
+    }
+
+    // ===== DID Registry Integration Tests =====
+
+    /// Create mock blinded key (32 bytes)
+    fn mock_blinded_key(seed: u8) -> Vec<u8> {
+        vec![seed; 32]
+    }
+
+    /// Create mock nonce (24 bytes)
+    fn mock_nonce() -> Vec<u8> {
+        vec![0u8; 24]
+    }
+
+    #[test]
+    fn test_did_registry_store_and_get() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+
+        let blinded_key = mock_blinded_key(1);
+        let encrypted_doc = b"encrypted_did_document".to_vec();
+        let encrypted_type = b"encrypted_human".to_vec();
+
+        // Store DID
+        contract.store_did(
+            blinded_key.clone(),
+            encrypted_doc.clone(),
+            encrypted_type.clone(),
+            mock_nonce(),
+        );
+
+        // Verify storage
+        assert!(contract.has_did());
+        assert_eq!(contract.get_did_count(), 1);
+
+        // Retrieve by blinded key
+        let entry = contract.get_did(blinded_key.clone()).unwrap();
+        assert_eq!(entry.encrypted_document, encrypted_doc);
+        assert_eq!(entry.encrypted_entity_type, encrypted_type);
+        assert_eq!(entry.owner, owner);
+        assert!(entry.active);
+    }
+
+    #[test]
+    fn test_did_registry_get_my_blinded_key() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+        let blinded_key = mock_blinded_key(1);
+
+        contract.store_did(
+            blinded_key.clone(),
+            b"encrypted_doc".to_vec(),
+            b"encrypted_type".to_vec(),
+            mock_nonce(),
+        );
+
+        // Owner can retrieve their blinded key
+        let retrieved = contract.get_my_blinded_key().unwrap();
+        assert_eq!(retrieved, blinded_key);
+    }
+
+    #[test]
+    fn test_did_registry_update_and_deactivate() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+        let blinded_key = mock_blinded_key(1);
+
+        // Store initial DID
+        contract.store_did(
+            blinded_key.clone(),
+            b"original_encrypted_doc".to_vec(),
+            b"encrypted_type".to_vec(),
+            mock_nonce(),
+        );
+
+        // Update the document
+        let new_nonce = vec![1u8; 24];
+        contract.update_did(
+            blinded_key.clone(),
+            b"updated_encrypted_doc".to_vec(),
+            new_nonce.clone(),
+        );
+
+        // Verify update
+        let entry = contract.get_did(blinded_key.clone()).unwrap();
+        assert_eq!(entry.encrypted_document, b"updated_encrypted_doc".to_vec());
+        assert_eq!(entry.nonce, new_nonce);
+        assert!(entry.active);
+
+        // Deactivate
+        contract.deactivate_did(blinded_key.clone());
+
+        // Verify deactivation
+        assert!(!contract.is_did_active(blinded_key));
+    }
+
+    #[test]
+    #[should_panic(expected = "DID already registered for this account")]
+    fn test_did_registry_duplicate_registration_fails() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+
+        // First registration succeeds
+        contract.store_did(
+            mock_blinded_key(1),
+            b"doc1".to_vec(),
+            b"type1".to_vec(),
+            mock_nonce(),
+        );
+
+        // Second registration fails (same owner)
+        contract.store_did(
+            mock_blinded_key(2),
+            b"doc2".to_vec(),
+            b"type2".to_vec(),
+            mock_nonce(),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Not authorized: only owner can update DID")]
+    fn test_did_registry_non_owner_update_fails() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let attacker: AccountId = "bob.near".parse().unwrap();
+
+        // Register as owner
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+        let blinded_key = mock_blinded_key(1);
+
+        contract.store_did(
+            blinded_key.clone(),
+            b"doc".to_vec(),
+            b"type".to_vec(),
+            mock_nonce(),
+        );
+
+        // Try to update as attacker
+        let context = get_context(attacker);
+        testing_env!(context.build());
+
+        contract.update_did(
+            blinded_key,
+            b"malicious_doc".to_vec(),
+            mock_nonce(),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Not authorized: only owner can deactivate DID")]
+    fn test_did_registry_non_owner_deactivate_fails() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let attacker: AccountId = "bob.near".parse().unwrap();
+
+        // Register as owner
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+        let blinded_key = mock_blinded_key(1);
+
+        contract.store_did(
+            blinded_key.clone(),
+            b"doc".to_vec(),
+            b"type".to_vec(),
+            mock_nonce(),
+        );
+
+        // Try to deactivate as attacker
+        let context = get_context(attacker);
+        testing_env!(context.build());
+
+        contract.deactivate_did(blinded_key);
+    }
+
+    #[test]
+    fn test_did_registry_is_active_false_for_nonexistent() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let contract = Contract::new(owner.clone());
+
+        // Non-existent DID should return false
+        assert!(!contract.is_did_active(mock_blinded_key(99)));
+    }
+
+    #[test]
+    fn test_did_registry_has_did_false_before_registration() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let contract = Contract::new(owner.clone());
+
+        // No DID registered yet
+        assert!(!contract.has_did());
+        assert!(contract.get_my_blinded_key().is_none());
+    }
+
+    #[test]
+    fn test_did_initialization_count_zero() {
+        let owner: AccountId = "owner.near".parse().unwrap();
+        let contract = Contract::new(owner.clone());
+
+        // DID count should be zero initially
+        assert_eq!(contract.get_did_count(), 0);
     }
 }
