@@ -2,6 +2,8 @@
 
 Secure Node.js/Express backend for the BASTION platform, handling encryption, IPFS storage, blockchain synchronization, and MPC account management.
 
+**Role in the System:** The backend is the secure bridge between the user-facing frontend and all sensitive infrastructure—blockchain, storage, and TEE. All encryption keys, NEAR transactions, and IPFS operations are handled server-side to maintain Zero Trust security. The frontend never touches secrets directly.
+
 ## Features
 
 - **Encryption API**: ChaCha20-Poly1305 encryption for documents

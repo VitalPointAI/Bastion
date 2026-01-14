@@ -2,6 +2,8 @@
 
 React 19 frontend for the BASTION platform with Privy authentication, NEAR blockchain integration, and zero-blockchain UX.
 
+**Role in the System:** The frontend is the command interface for operators and commanders, providing Web2-style authentication through Privy while abstracting all blockchain complexity. It connects to the backend API for sensitive operations and never exposes crypto terminology, wallet management, or gas fees to users.
+
 ## Features
 
 - **Privy Authentication**: Web2-style login (email, social) with embedded NEAR wallets

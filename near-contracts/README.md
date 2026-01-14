@@ -2,6 +2,8 @@
 
 Rust smart contracts for the BASTION platform, handling document registry, privacy routing, and TEE attestation verification.
 
+**Role in the System:** The smart contracts provide the immutable verification layer—every document, decision, and action gets an on-chain audit trail. They also enforce privacy routing (classified data → Phala TEE, public data → on-chain) and enable multi-chain control via Chain Signatures. This is the source of truth for provenance and governance.
+
 ## Contract Features
 
 - **Document Registry**: Store and verify document metadata with CID references
