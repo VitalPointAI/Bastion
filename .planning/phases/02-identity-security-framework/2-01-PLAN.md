@@ -5,11 +5,11 @@ type: execute
 ---
 
 <objective>
-Create the universal DID registry smart contract on NEAR Protocol following the did:near specification.
+Create the universal DID registry smart contract on NEAR Protocol with encrypted on-chain storage.
 
-Purpose: Establish the foundational identity layer where every entity type (human, AI agent, vehicle, mission, data object, organization, resource) gets a decentralized identifier with on-chain verification.
+Purpose: Establish the foundational identity layer where every entity type gets a decentralized identifier, while ensuring NO plaintext metadata is exposed on the public blockchain that could enable traffic analysis, association attacks, or organizational structure inference.
 
-Output: Working DID registry smart contract with CRUD operations, entity type indexing, and unit tests.
+Output: Working DID registry smart contract with encrypted document storage, blinded indexes, and unit tests.
 </objective>
 
 <execution_context>
@@ -31,143 +31,209 @@ Output: Working DID registry smart contract with CRUD operations, entity type in
 **Established patterns:** State versioning, LookupMap/UnorderedMap collections, borsh serialization
 **Key constraint:** WASM bulk memory disabled via .cargo/config.toml
 
-**From 2-RESEARCH.md:**
-- Follow Ontology DID-spec-near specification
-- DID format: `did:near:{account_id}`
-- DID documents contain publicKey array, authentication, controllers
-- Entity types: human, ai_agent, vehicle, mission, data_object, organization, resource
+**CRITICAL SECURITY CONSTRAINT:**
+NEAR blockchain is PUBLIC. Anyone can read all on-chain state. We MUST:
+- Encrypt ALL DID document content before storing on-chain
+- Use blinded/hashed identifiers for indexes (no plaintext DIDs as keys)
+- Prevent association attacks (can't correlate entities to organizations/missions)
+- Use post-quantum encryption for long-term security
+- Store only encrypted blobs + lookup keys derived via KDF
+
+**Architecture:**
+- On-chain: Encrypted blobs indexed by blinded keys
+- Off-chain: Decryption happens client-side or in TEE (Phala)
+- Key management: Derived from user's NEAR keys via HKDF
 </context>
 
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Create DID Registry module with universal entity support</name>
+  <name>Task 1: Create encrypted DID Registry module with blinded storage</name>
   <files>near-contracts/src/did_registry.rs</files>
   <action>
-Create new Rust module implementing universal DID registry following did:near specification.
+Create new Rust module implementing encrypted DID registry with privacy-preserving on-chain storage.
+
+**Security Model:**
+- All DID document content is encrypted BEFORE submission to contract
+- Contract stores: `blinded_key -> encrypted_blob`
+- Blinded key = HKDF(user_secret, "did-lookup", account_id) - computed off-chain
+- Contract CANNOT read document content (zero knowledge of what's stored)
+- Only holder with correct key can retrieve and decrypt their DID document
 
 **Structures to implement:**
 
 ```rust
-pub enum EntityType {
-    Human,
-    AiAgent,
-    Vehicle,
-    Mission,
-    DataObject,
-    Organization,
-    Resource,
-}
-
-pub struct PublicKeyEntry {
-    pub id: String,           // did:near:alice.near#key-1
-    pub key_type: String,     // Ed25519VerificationKey2020
-    pub controller: String,   // did:near:alice.near
-    pub public_key_base58: String,
-}
-
-pub struct DIDDocument {
-    pub context: Vec<String>,
-    pub id: String,           // did:near:alice.near
-    pub entity_type: EntityType,
-    pub public_keys: Vec<PublicKeyEntry>,
-    pub authentication: Vec<String>,
-    pub controllers: Vec<String>,
-    pub service_endpoints: Vec<ServiceEndpoint>,
+/// Encrypted DID entry - contract sees only opaque encrypted data
+#[derive(BorshSerialize, BorshDeserialize, Clone)]
+pub struct EncryptedDIDEntry {
+    /// PQ-encrypted DID document blob (encrypted off-chain)
+    pub encrypted_document: Vec<u8>,
+    /// Encrypted entity type (for owner's own indexing, not public query)
+    pub encrypted_entity_type: Vec<u8>,
+    /// Nonce used for encryption (needed for decryption)
+    pub nonce: Vec<u8>,
+    /// Timestamp (this is intentionally public for ordering/expiry)
     pub created_at: u64,
     pub updated_at: u64,
+    /// Active status (public - needed for revocation checks)
     pub active: bool,
+    /// Owner account (public - needed for access control)
+    pub owner: AccountId,
 }
 
+/// Registry stores encrypted entries by blinded keys
 pub struct DIDRegistry {
-    documents: LookupMap<String, DIDDocument>,
-    owner_to_did: LookupMap<AccountId, String>,
-    entity_type_index: LookupMap<EntityType, Vec<String>>,
+    /// Primary storage: blinded_key -> encrypted entry
+    /// Blinded key is derived off-chain: HKDF(secret, "did", account_id)
+    entries: LookupMap<Vec<u8>, EncryptedDIDEntry>,
+
+    /// Owner index: account_id -> blinded_key
+    /// Allows owner to find their own entry
+    owner_index: LookupMap<AccountId, Vec<u8>>,
+
+    /// NO entity_type_index - this would leak organizational structure
+    /// Entity queries happen off-chain after decryption
 }
 ```
 
 **Methods to implement:**
-- `new()` - Initialize registry with storage prefixes
-- `register_did(entity_type: EntityType) -> String` - Create DID for caller using their account ID
-- `register_did_for(account_id: AccountId, entity_type: EntityType) -> String` - Create DID for another account (owner only for non-human entities)
-- `get_document(did: String) -> Option<DIDDocument>` - Resolve DID to document
-- `get_did_by_account(account_id: AccountId) -> Option<String>` - Reverse lookup
-- `get_dids_by_type(entity_type: EntityType) -> Vec<String>` - Query by entity type
-- `update_document(did: String, updates: DIDDocumentUpdate)` - Update DID document (controller only)
-- `add_public_key(did: String, key: PublicKeyEntry)` - Add verification method
-- `remove_public_key(did: String, key_id: String)` - Remove verification method
-- `deactivate_did(did: String)` - Soft-delete (controller only, irreversible per spec)
-- `is_controller(did: String, account_id: AccountId) -> bool` - Check controller status
+
+```rust
+impl DIDRegistry {
+    pub fn new() -> Self;
+
+    /// Store encrypted DID document
+    /// - blinded_key: HKDF-derived lookup key (computed off-chain)
+    /// - encrypted_document: PQ-encrypted DID document
+    /// - encrypted_entity_type: PQ-encrypted entity type
+    /// - nonce: Encryption nonce
+    pub fn store_did(
+        &mut self,
+        blinded_key: Vec<u8>,
+        encrypted_document: Vec<u8>,
+        encrypted_entity_type: Vec<u8>,
+        nonce: Vec<u8>,
+    );
+
+    /// Retrieve encrypted entry by blinded key
+    /// Returns encrypted blob - decryption happens off-chain
+    pub fn get_did(&self, blinded_key: Vec<u8>) -> Option<EncryptedDIDEntry>;
+
+    /// Get blinded key for caller's DID (if registered)
+    pub fn get_my_blinded_key(&self) -> Option<Vec<u8>>;
+
+    /// Update encrypted document (owner only)
+    pub fn update_did(
+        &mut self,
+        blinded_key: Vec<u8>,
+        encrypted_document: Vec<u8>,
+        nonce: Vec<u8>,
+    );
+
+    /// Deactivate DID (owner only, irreversible)
+    pub fn deactivate_did(&mut self, blinded_key: Vec<u8>);
+
+    /// Check if DID is active (public check for revocation)
+    pub fn is_active(&self, blinded_key: Vec<u8>) -> bool;
+
+    /// Check if caller owns a DID entry
+    pub fn has_did(&self) -> bool;
+}
+```
 
 **Key implementation details:**
-- Use `env::predecessor_account_id()` for caller identification
-- Use `env::signer_account_pk()` to capture initial public key
-- Use `env::block_timestamp()` for created_at/updated_at
-- Store public keys as base58 encoded strings
-- Entity type index enables efficient queries (e.g., "all AI agents")
-- Context always includes "https://www.w3.org/ns/did/v1"
+- Use `env::predecessor_account_id()` for owner verification
+- Blinded key is 32 bytes (output of HKDF-SHA256)
+- Contract NEVER sees plaintext DID, entity type, or document content
+- Only `created_at`, `updated_at`, `active`, and `owner` are public
+- `owner` must be public for access control (can't encrypt it)
+- Entity type queries NOT supported on-chain (would leak structure)
 
 **What to avoid:**
-- Don't store PII in DID documents (only verification methods and service endpoints)
-- Don't allow reactivation of deactivated DIDs (per did:near spec)
-- Don't use UnorderedMap for entity_type_index (Vec in LookupMap is more gas-efficient for reads)
+- DON'T store plaintext DIDs as keys (enables correlation)
+- DON'T create entity type indexes (leaks organizational structure)
+- DON'T store any unencrypted metadata that reveals associations
+- DON'T allow enumeration of all DIDs (privacy breach)
+- DON'T log decrypted content in contract (it never sees it anyway)
   </action>
   <verify>cargo build -p near-contracts --target wasm32-unknown-unknown --release compiles without errors</verify>
-  <done>DID registry module compiles, exports all specified methods, follows did:near specification</done>
+  <done>Encrypted DID registry module compiles with privacy-preserving storage model</done>
 </task>
 
 <task type="auto">
-  <name>Task 2: Integrate DID registry into main contract and add unit tests</name>
+  <name>Task 2: Integrate encrypted DID registry into main contract with unit tests</name>
   <files>near-contracts/src/lib.rs, near-contracts/src/did_registry.rs</files>
   <action>
 **Integrate into main contract:**
 
 1. Add module declaration: `mod did_registry;`
-2. Add use statement: `use did_registry::{DIDDocument, DIDRegistry, EntityType, PublicKeyEntry};`
+2. Add use statement: `use did_registry::{EncryptedDIDEntry, DIDRegistry};`
 3. Add to Contract struct: `did_registry: DIDRegistry,`
 4. Initialize in `new()`: `did_registry: DIDRegistry::new(),`
 5. Add to `migrate()` OldState struct and migration logic
 
 **Add public methods to Contract impl:**
 ```rust
-// DID Registry methods
-pub fn register_did(&mut self, entity_type: EntityType) -> String
-pub fn register_did_for(&mut self, account_id: AccountId, entity_type: EntityType) -> String
-pub fn get_did_document(&self, did: String) -> Option<DIDDocument>
-pub fn get_did_by_account(&self, account_id: AccountId) -> Option<String>
-pub fn get_dids_by_entity_type(&self, entity_type: EntityType) -> Vec<String>
-pub fn update_did_document(&mut self, did: String, updates: DIDDocumentUpdate)
-pub fn add_did_public_key(&mut self, did: String, key: PublicKeyEntry)
-pub fn remove_did_public_key(&mut self, did: String, key_id: String)
-pub fn deactivate_did(&mut self, did: String)
-pub fn is_did_controller(&self, did: String, account_id: AccountId) -> bool
+// Encrypted DID Registry methods
+pub fn store_did(
+    &mut self,
+    blinded_key: Vec<u8>,
+    encrypted_document: Vec<u8>,
+    encrypted_entity_type: Vec<u8>,
+    nonce: Vec<u8>,
+)
+
+pub fn get_did(&self, blinded_key: Vec<u8>) -> Option<EncryptedDIDEntry>
+
+pub fn get_my_blinded_key(&self) -> Option<Vec<u8>>
+
+pub fn update_did(
+    &mut self,
+    blinded_key: Vec<u8>,
+    encrypted_document: Vec<u8>,
+    nonce: Vec<u8>,
+)
+
+pub fn deactivate_did(&mut self, blinded_key: Vec<u8>)
+
+pub fn is_did_active(&self, blinded_key: Vec<u8>) -> bool
+
+pub fn has_did(&self) -> bool
 ```
 
 **Add unit tests in did_registry.rs:**
 ```rust
 #[cfg(test)]
 mod tests {
-    // Test DID registration creates valid document
-    // Test entity type indexing works correctly
-    // Test only controller can update document
+    // Test store_did stores encrypted entry correctly
+    // Test get_did retrieves correct encrypted blob
+    // Test only owner can update their DID
+    // Test only owner can deactivate their DID
     // Test deactivation is irreversible
-    // Test public key add/remove
-    // Test duplicate DID registration fails
-    // Test get_did_by_account reverse lookup
+    // Test duplicate registration fails
+    // Test get_my_blinded_key returns correct key for owner
+    // Test has_did returns true after registration
+    // Test is_active returns false after deactivation
+    // Test non-owner cannot update/deactivate
 }
 ```
 
-**Test scenarios:**
-1. Register human DID → document created with correct format
-2. Register AI agent DID → entity_type_index updated
-3. Non-controller update attempt → panic with "Not authorized"
+**Test scenarios (using mock encrypted data):**
+1. Store encrypted DID → entry stored with blinded key
+2. Get by blinded key → returns encrypted blob unchanged
+3. Non-owner update attempt → panic with "Not authorized"
 4. Deactivate DID → active=false, subsequent updates fail
-5. Add public key → public_keys array grows
-6. Remove public key → public_keys array shrinks
-7. Duplicate registration → panic with "DID already registered"
+5. Owner lookup → returns their blinded key
+6. Duplicate store → panic with "DID already registered"
+7. Active check → returns correct status
+
+**Security verification in tests:**
+- Verify contract never interprets encrypted content
+- Verify owner_index maps to correct blinded key
+- Verify no plaintext identity information in storage
   </action>
   <verify>cd /home/vitalpointai/projects/ssr/near-contracts && cargo test did_registry -- --nocapture shows all tests passing</verify>
-  <done>DID registry integrated into main contract, all unit tests pass, WASM compiles successfully</done>
+  <done>Encrypted DID registry integrated, all unit tests pass, WASM compiles successfully</done>
 </task>
 
 </tasks>
@@ -175,18 +241,20 @@ mod tests {
 <verification>
 Before declaring plan complete:
 - [ ] `cargo build -p near-contracts --target wasm32-unknown-unknown --release` succeeds
-- [ ] `cargo test -p near-contracts` passes all tests including new did_registry tests
-- [ ] DID format follows `did:near:{account_id}` pattern
-- [ ] All 7 entity types supported (Human, AiAgent, Vehicle, Mission, DataObject, Organization, Resource)
-- [ ] Entity type indexing enables efficient queries
+- [ ] `cargo test -p near-contracts` passes all tests including did_registry tests
+- [ ] NO plaintext DIDs stored on-chain (only blinded keys)
+- [ ] NO entity type index exists (prevents organizational inference)
+- [ ] Only owner, timestamps, and active status are public
+- [ ] All document content stored encrypted
 </verification>
 
 <success_criteria>
-- DID registry module created with full CRUD operations
-- Universal entity type support implemented
-- Unit tests validate all core functionality
+- Encrypted DID registry with privacy-preserving storage
+- Blinded key lookup prevents DID correlation
+- No entity type indexes (protects organizational structure)
+- Owner-only access control for updates/deactivation
+- Unit tests validate security properties
 - Contract compiles to WASM without errors
-- Integration with main contract complete
 </success_criteria>
 
 <output>

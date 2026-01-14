@@ -5,11 +5,11 @@ type: execute
 ---
 
 <objective>
-Create the credential registry smart contract for on-chain verification of W3C Verifiable Credentials.
+Create the credential registry smart contract for on-chain verification with encrypted storage and blinded references.
 
-Purpose: Enable cryptographic proof of credential authenticity via blockchain, supporting credential anchoring, revocation, and status checking without storing sensitive credential content on-chain.
+Purpose: Enable cryptographic proof of credential validity via blockchain while preventing anyone from correlating credentials to issuers, subjects, or discovering organizational relationships through on-chain data analysis.
 
-Output: Working credential registry smart contract with anchoring, revocation list, and status verification.
+Output: Working credential registry smart contract with encrypted anchors, blinded lookup keys, and revocation support.
 </objective>
 
 <execution_context>
@@ -26,164 +26,227 @@ Output: Working credential registry smart contract with anchoring, revocation li
 @near-contracts/src/did_registry.rs
 
 **Tech stack available:** near-sdk 5.x, Rust 1.85.0
-**Established patterns:** LookupMap collections, borsh serialization, state versioning
-**Depends on:** Plan 2-01 (DID Registry) for issuer/subject DID validation
+**Established patterns:** Encrypted storage with blinded keys from Plan 2-01
+**Depends on:** Plan 2-01 (Encrypted DID Registry pattern)
 
-**From 2-RESEARCH.md:**
-- Credential hash stored on-chain (not full credential content)
-- W3C BitstringStatusListCredential pattern for revocation
-- SHA256 hashing for credential fingerprints
+**CRITICAL SECURITY CONSTRAINT:**
+NEAR blockchain is PUBLIC. For credentials:
+- DON'T store plaintext issuer/subject DIDs (enables relationship mapping)
+- DON'T store credential type in clear (reveals organizational structure)
+- DON'T create subject→credential or issuer→credential indexes (association attack)
+- DO use blinded credential IDs for lookup
+- DO encrypt all credential metadata
+- DO use separate blinded keys for revocation checks
 </context>
 
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Create Credential Registry module with anchoring and revocation</name>
+  <name>Task 1: Create encrypted Credential Registry module</name>
   <files>near-contracts/src/credential_registry.rs</files>
   <action>
-Create new Rust module implementing credential registry for on-chain VC verification.
+Create new Rust module implementing encrypted credential registry with privacy-preserving storage.
+
+**Security Model:**
+- Credential content is encrypted off-chain before anchoring
+- On-chain stores: `blinded_credential_id -> encrypted_anchor`
+- Blinded credential ID = HKDF(issuer_secret, "credential", credential_hash)
+- Revocation uses separate blinded key to prevent correlation
+- No issuer/subject indexes (would reveal relationships)
 
 **Structures to implement:**
 
 ```rust
-pub enum CredentialType {
-    SecurityClearance,
-    EntityAttribute,
-    RoleAssignment,
-    MissionAuthorization,
-    CoalitionMembership,
-    DerivativeData,        // For data splitting/redaction provenance
-    Custom(String),
-}
+/// Encrypted credential anchor - contract sees only opaque data
+#[derive(BorshSerialize, BorshDeserialize, Clone)]
+pub struct EncryptedCredentialAnchor {
+    /// Hash of the full credential (for off-chain verification)
+    /// This is a cryptographic commitment, not identifying info
+    pub credential_hash: Vec<u8>,
 
-pub enum CredentialStatus {
-    Active,
-    Revoked,
-    Suspended,
-    Expired,
-}
+    /// Encrypted credential metadata (type, issuer, subject - all encrypted)
+    pub encrypted_metadata: Vec<u8>,
 
-pub struct CredentialAnchor {
-    pub credential_hash: String,      // SHA256 of full VC JSON
-    pub credential_type: CredentialType,
-    pub issuer_did: String,           // did:near:issuer.near
-    pub subject_did: String,          // did:near:subject.near
+    /// Nonce for decryption
+    pub nonce: Vec<u8>,
+
+    /// Issuance timestamp (public - needed for expiry logic)
     pub issuance_date: u64,
+
+    /// Optional expiration timestamp (public - needed for validity checks)
     pub expiration_date: Option<u64>,
-    pub status: CredentialStatus,
-    pub revocation_reason: Option<String>,
-    pub metadata_hash: Option<String>, // Optional hash of non-sensitive metadata
+
+    /// Status: 0=Active, 1=Revoked, 2=Suspended
+    /// Public because revocation checks must work without decryption
+    pub status: u8,
+
+    /// Encrypted revocation reason (only meaningful when status != 0)
+    pub encrypted_revocation_reason: Option<Vec<u8>>,
+
+    /// Owner account who can modify this anchor
+    pub owner: AccountId,
 }
 
+/// Registry stores encrypted credential anchors
 pub struct CredentialRegistry {
-    // Primary storage: hash -> anchor
-    anchors: LookupMap<String, CredentialAnchor>,
-    // Index: subject DID -> list of credential hashes
-    subject_credentials: LookupMap<String, Vec<String>>,
-    // Index: issuer DID -> list of credential hashes
-    issuer_credentials: LookupMap<String, Vec<String>>,
-    // Revocation list for efficient batch checking
-    revocation_list: UnorderedSet<String>,
+    /// Primary storage: blinded_credential_id -> encrypted anchor
+    anchors: LookupMap<Vec<u8>, EncryptedCredentialAnchor>,
+
+    /// Owner's credential index: account_id -> list of blinded_credential_ids they own
+    /// Owners can find their own issued credentials
+    owner_credentials: LookupMap<AccountId, Vec<Vec<u8>>>,
+
+    /// Revocation lookup: blinded_revocation_key -> blinded_credential_id
+    /// Separate key so revocation checks don't reveal credential ID
+    revocation_index: LookupMap<Vec<u8>, Vec<u8>>,
+
+    /// NO subject_credentials index - would reveal who holds what
+    /// NO issuer_credentials public index - would reveal issuing patterns
+    /// NO credential_type index - would reveal organizational structure
 }
 ```
 
 **Methods to implement:**
-- `new()` - Initialize registry with storage prefixes
-- `anchor_credential(credential_hash, credential_type, subject_did, expiration_date, metadata_hash)` - Anchor new credential (caller is issuer)
-- `get_credential_anchor(credential_hash) -> Option<CredentialAnchor>` - Retrieve anchor by hash
-- `verify_credential(credential_hash) -> CredentialStatus` - Check if credential is valid
-- `revoke_credential(credential_hash, reason)` - Revoke credential (issuer only)
-- `suspend_credential(credential_hash)` - Temporarily suspend (issuer only)
-- `reinstate_credential(credential_hash)` - Reinstate suspended credential (issuer only)
-- `get_subject_credentials(subject_did) -> Vec<CredentialAnchor>` - All credentials for subject
-- `get_issuer_credentials(issuer_did) -> Vec<CredentialAnchor>` - All credentials by issuer
-- `is_revoked(credential_hash) -> bool` - Quick revocation check
-- `batch_verify(credential_hashes: Vec<String>) -> Vec<(String, CredentialStatus)>` - Batch status check
+
+```rust
+impl CredentialRegistry {
+    pub fn new() -> Self;
+
+    /// Anchor an encrypted credential
+    /// - blinded_credential_id: HKDF(secret, "credential", hash)
+    /// - blinded_revocation_key: HKDF(secret, "revocation", hash) - different key!
+    pub fn anchor_credential(
+        &mut self,
+        blinded_credential_id: Vec<u8>,
+        blinded_revocation_key: Vec<u8>,
+        credential_hash: Vec<u8>,
+        encrypted_metadata: Vec<u8>,
+        nonce: Vec<u8>,
+        expiration_date: Option<u64>,
+    );
+
+    /// Get encrypted anchor by blinded ID
+    pub fn get_anchor(&self, blinded_credential_id: Vec<u8>) -> Option<EncryptedCredentialAnchor>;
+
+    /// Check credential status by revocation key (for validators)
+    /// Returns status without revealing credential ID
+    pub fn check_status(&self, blinded_revocation_key: Vec<u8>) -> Option<u8>;
+
+    /// Verify credential is active (not revoked/suspended/expired)
+    pub fn is_valid(&self, blinded_revocation_key: Vec<u8>) -> bool;
+
+    /// Revoke credential (owner only)
+    pub fn revoke_credential(
+        &mut self,
+        blinded_credential_id: Vec<u8>,
+        encrypted_reason: Vec<u8>,
+    );
+
+    /// Suspend credential (owner only, reversible)
+    pub fn suspend_credential(&mut self, blinded_credential_id: Vec<u8>);
+
+    /// Reinstate suspended credential (owner only)
+    pub fn reinstate_credential(&mut self, blinded_credential_id: Vec<u8>);
+
+    /// Get caller's issued credential IDs (blinded)
+    pub fn get_my_credentials(&self) -> Vec<Vec<u8>>;
+}
+```
 
 **Key implementation details:**
-- Use `env::predecessor_account_id()` to derive issuer DID
-- Credential hash is SHA256 of canonical JSON (computed off-chain, verified on-chain)
-- Revocation is permanent, suspension is reversible
-- Check expiration_date against `env::block_timestamp()` in verify_credential
-- Only issuer can revoke/suspend their own credentials
-- DerivativeData type supports the data splitting use case for later phases
+- Status codes: 0=Active, 1=Revoked, 2=Suspended (simple u8 for gas efficiency)
+- Two different blinded keys per credential (credential_id vs revocation_key)
+- Revocation check uses revocation_key to avoid revealing credential_id
+- Expiration checked against `env::block_timestamp_ms()`
+- Only owner (issuer) can modify credential status
+- Reinstating a Revoked credential panics (irreversible)
 
 **What to avoid:**
-- Don't store actual credential content (only hashes for privacy)
-- Don't allow non-issuers to modify credential status
-- Don't allow reinstating revoked credentials (only suspended)
-- Don't use String for credential_hash storage key (use fixed-size if possible, but String is acceptable for SHA256 hex)
+- DON'T create subject_credentials index (reveals who holds what credentials)
+- DON'T create credential_type index (reveals organizational structure)
+- DON'T store plaintext issuer/subject DIDs anywhere
+- DON'T allow enumeration of all credentials
+- DON'T use same key for lookup and revocation check
   </action>
   <verify>cargo build -p near-contracts --target wasm32-unknown-unknown --release compiles without errors</verify>
-  <done>Credential registry module compiles with anchoring, revocation, and batch verification support</done>
+  <done>Encrypted credential registry module compiles with privacy-preserving storage</done>
 </task>
 
 <task type="auto">
-  <name>Task 2: Integrate credential registry into main contract with unit tests</name>
+  <name>Task 2: Integrate encrypted credential registry into main contract with unit tests</name>
   <files>near-contracts/src/lib.rs, near-contracts/src/credential_registry.rs</files>
   <action>
 **Integrate into main contract:**
 
 1. Add module declaration: `mod credential_registry;`
-2. Add use statement: `use credential_registry::{CredentialAnchor, CredentialRegistry, CredentialType, CredentialStatus};`
+2. Add use statement: `use credential_registry::{EncryptedCredentialAnchor, CredentialRegistry};`
 3. Add to Contract struct: `credential_registry: CredentialRegistry,`
 4. Initialize in `new()`: `credential_registry: CredentialRegistry::new(),`
 5. Add to `migrate()` OldState struct and migration logic
 
 **Add public methods to Contract impl:**
 ```rust
-// Credential Registry methods
+// Encrypted Credential Registry methods
 pub fn anchor_credential(
     &mut self,
-    credential_hash: String,
-    credential_type: CredentialType,
-    subject_did: String,
+    blinded_credential_id: Vec<u8>,
+    blinded_revocation_key: Vec<u8>,
+    credential_hash: Vec<u8>,
+    encrypted_metadata: Vec<u8>,
+    nonce: Vec<u8>,
     expiration_date: Option<u64>,
-    metadata_hash: Option<String>
-) -> bool
+)
 
-pub fn get_credential_anchor(&self, credential_hash: String) -> Option<CredentialAnchor>
-pub fn verify_credential(&self, credential_hash: String) -> CredentialStatus
-pub fn revoke_credential(&mut self, credential_hash: String, reason: String)
-pub fn suspend_credential(&mut self, credential_hash: String)
-pub fn reinstate_credential(&mut self, credential_hash: String)
-pub fn get_subject_credentials(&self, subject_did: String) -> Vec<CredentialAnchor>
-pub fn get_issuer_credentials(&self, issuer_did: String) -> Vec<CredentialAnchor>
-pub fn is_credential_revoked(&self, credential_hash: String) -> bool
-pub fn batch_verify_credentials(&self, credential_hashes: Vec<String>) -> Vec<(String, CredentialStatus)>
+pub fn get_credential_anchor(&self, blinded_credential_id: Vec<u8>) -> Option<EncryptedCredentialAnchor>
+
+pub fn check_credential_status(&self, blinded_revocation_key: Vec<u8>) -> Option<u8>
+
+pub fn is_credential_valid(&self, blinded_revocation_key: Vec<u8>) -> bool
+
+pub fn revoke_credential(&mut self, blinded_credential_id: Vec<u8>, encrypted_reason: Vec<u8>)
+
+pub fn suspend_credential(&mut self, blinded_credential_id: Vec<u8>)
+
+pub fn reinstate_credential(&mut self, blinded_credential_id: Vec<u8>)
+
+pub fn get_my_issued_credentials(&self) -> Vec<Vec<u8>>
 ```
 
 **Add unit tests in credential_registry.rs:**
 ```rust
 #[cfg(test)]
 mod tests {
-    // Test anchor_credential creates valid anchor
-    // Test verify_credential returns Active for valid credential
-    // Test verify_credential returns Expired for expired credential
-    // Test revoke_credential changes status and adds to revocation list
-    // Test only issuer can revoke
+    // Test anchor_credential stores encrypted entry
+    // Test get_anchor retrieves correct encrypted blob
+    // Test check_status works with revocation key
+    // Test is_valid returns false for expired credentials
+    // Test revoke_credential changes status to 1
+    // Test only owner can revoke
     // Test suspend/reinstate cycle works
     // Test reinstate on revoked credential fails
-    // Test subject_credentials index returns correct list
-    // Test issuer_credentials index returns correct list
-    // Test batch_verify returns correct statuses
+    // Test get_my_credentials returns owner's credential IDs
+    // Test different blinded keys work correctly
 }
 ```
 
-**Test scenarios:**
-1. Anchor credential → anchor stored, indexes updated
-2. Verify active credential → returns Active
-3. Verify expired credential → returns Expired (check block_timestamp)
-4. Revoke credential → status=Revoked, in revocation_list
-5. Non-issuer revoke attempt → panic "Not authorized"
-6. Suspend credential → status=Suspended
-7. Reinstate suspended → status=Active
-8. Reinstate revoked → panic "Cannot reinstate revoked credential"
-9. Get subject credentials → returns all credentials for DID
-10. Batch verify → returns status for each hash
+**Test scenarios (using mock encrypted data):**
+1. Anchor credential → entry stored with both blinded keys
+2. Get by blinded_credential_id → returns encrypted anchor
+3. Check status by blinded_revocation_key → returns status code
+4. Non-owner revoke attempt → panic with "Not authorized"
+5. Revoke credential → status=1, reinstate fails
+6. Suspend credential → status=2
+7. Reinstate suspended → status=0
+8. Expired credential → is_valid returns false
+9. Owner credential list → returns blinded IDs
+
+**Security verification in tests:**
+- Verify revocation_key doesn't reveal credential_id
+- Verify no plaintext issuer/subject in storage
+- Verify owner_credentials only contains blinded IDs
   </action>
   <verify>cd /home/vitalpointai/projects/ssr/near-contracts && cargo test credential_registry -- --nocapture shows all tests passing</verify>
-  <done>Credential registry integrated, all unit tests pass, on-chain verification ready</done>
+  <done>Encrypted credential registry integrated, all unit tests pass, privacy preserved</done>
 </task>
 
 </tasks>
@@ -191,17 +254,18 @@ mod tests {
 <verification>
 Before declaring plan complete:
 - [ ] `cargo build -p near-contracts --target wasm32-unknown-unknown --release` succeeds
-- [ ] `cargo test -p near-contracts` passes all tests including credential_registry tests
-- [ ] Credential types include DerivativeData for future data splitting
-- [ ] Revocation list enables efficient batch checking
-- [ ] Only issuers can modify their credential status
+- [ ] `cargo test -p near-contracts` passes all credential_registry tests
+- [ ] NO plaintext issuer/subject DIDs stored on-chain
+- [ ] NO subject_credentials or credential_type indexes exist
+- [ ] Revocation checks use separate blinded key
+- [ ] All credential metadata stored encrypted
 </verification>
 
 <success_criteria>
-- Credential registry module created with anchoring and revocation
-- On-chain verification of credential status working
-- Batch verification for efficient multi-credential checks
-- DerivativeData credential type ready for later phases
+- Encrypted credential anchoring with blinded lookup
+- Dual-key system (credential_id vs revocation_key)
+- Revocation/suspension without revealing credential identity
+- No indexes that reveal relationships
 - All unit tests pass
 </success_criteria>
 
