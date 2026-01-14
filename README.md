@@ -4,6 +4,10 @@
 
 A secure platform combining NEAR blockchain, Phala TEE (Trusted Execution Environment), and decentralized storage for privacy-preserving operations.
 
+## Vision
+
+BASTION automates the complete military planning cycle—from strategic objectives through operational planning to autonomous tactical execution—while maintaining verifiable human control over critical decisions. The system ingests national security strategies, generates operational plans using joint planning doctrine (JP 5-0), and executes missions through autonomous vehicles, all with blockchain-verified audit trails and DAO-based decision authority. What makes this different: every action is cryptographically verifiable, classified data stays protected in Trusted Execution Environments, and coalition partners can collaborate while respecting information sharing rules.
+
 ## Key Features
 
 - **Zero Blockchain UX**: Web2-style authentication, no crypto knowledge required
