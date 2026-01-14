@@ -41,7 +41,7 @@ export class MPCAccountManager {
     // Chain Signatures MPC contract
     this.mpcContractId = networkId === 'mainnet'
       ? 'v1.signer-prod.near'
-      : 'v1.signer-dev.testnet';
+      : 'v1.signer-prod.testnet';
   }
 
   /**
@@ -238,7 +238,7 @@ export class MPCAccountManager {
     //
     // const account = await wallet.account(nearAccountId);
     // const result = await account.functionCall({
-    //   contractId: 'v1.signer-dev.testnet',
+    //   contractId: 'v1.signer-prod.testnet',
     //   methodName: 'register_path', // or similar MPC method
     //   args: {
     //     path: derivationPath,
@@ -276,7 +276,7 @@ export class MPCAccountManager {
     //
     // const account = await wallet.account(nearAccountId);
     // const result = await account.functionCall({
-    //   contractId: 'v1.signer-dev.testnet',
+    //   contractId: 'v1.signer-prod.testnet',
     //   methodName: 'sign',
     //   args: {
     //     path: derivationPath,

@@ -4,18 +4,9 @@
 
 import express from 'express';
 import { getMPCAccountManager } from '../lib/mpc-accounts.js';
-import { Pool } from 'pg';
+import { getPool } from '../lib/database.js';
 
 const router = express.Router();
-
-// PostgreSQL connection
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'coalition_ops',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
-});
 
 /**
  * POST /api/accounts/create
@@ -59,7 +50,7 @@ router.post('/create', async (req, res) => {
     }
 
     // Check if user already has an account
-    const existingAccount = await pool.query(
+    const existingAccount = await getPool().query(
       'SELECT near_account_id, derivation_path FROM user_accounts WHERE privy_user_id = $1',
       [privyUserId]
     );
@@ -71,7 +62,7 @@ router.post('/create', async (req, res) => {
         derivationPath: existingAccount.rows[0].derivation_path,
         mpcContractId: process.env.NEAR_NETWORK === 'mainnet'
           ? 'v1.signer-prod.near'
-          : 'v1.signer-dev.testnet',
+          : 'v1.signer-prod.testnet',
         status: 'created',
       });
     }
@@ -84,7 +75,7 @@ router.post('/create', async (req, res) => {
     const account = await mpcManager.createNEARAccount(privyUserId, email);
 
     // Store account mapping in database
-    await pool.query(
+    await getPool().query(
       `INSERT INTO user_accounts
        (privy_user_id, email, near_account_id, derivation_path, mpc_public_key, created_at)
        VALUES ($1, $2, $3, $4, $5, NOW())`,
@@ -104,7 +95,7 @@ router.post('/create', async (req, res) => {
       derivationPath: account.derivationPath,
       mpcContractId: process.env.NEAR_NETWORK === 'mainnet'
         ? 'v1.signer-prod.near'
-        : 'v1.signer-dev.testnet',
+        : 'v1.signer-prod.testnet',
       mpcPublicKey: account.mpcPublicKey,
       onChain: account.onChain,
       status: account.onChain ? 'created' : 'pending',
@@ -135,7 +126,7 @@ router.get('/:privyUserId', async (req, res) => {
   try {
     const { privyUserId } = req.params;
 
-    const result = await pool.query(
+    const result = await getPool().query(
       'SELECT near_account_id, derivation_path FROM user_accounts WHERE privy_user_id = $1',
       [privyUserId]
     );
@@ -151,7 +142,7 @@ router.get('/:privyUserId', async (req, res) => {
       derivationPath: result.rows[0].derivation_path,
       mpcContractId: process.env.NEAR_NETWORK === 'mainnet'
         ? 'v1.signer-prod.near'
-        : 'v1.signer-dev.testnet',
+        : 'v1.signer-prod.testnet',
       exists: true,
     });
   } catch (error) {
@@ -256,7 +247,7 @@ router.post('/add-mpc-key', async (req, res) => {
 
       // Update database with MPC key (don't require mpc_key_status column)
       try {
-        await pool.query(
+        await getPool().query(
           `UPDATE user_accounts
            SET mpc_public_key = $1
            WHERE near_account_id = $2`,
@@ -310,7 +301,7 @@ router.post('/update-mpc-key', async (req, res) => {
       });
     }
 
-    await pool.query(
+    await getPool().query(
       'UPDATE user_accounts SET mpc_public_key = $1 WHERE privy_user_id = $2',
       [mpcPublicKey, privyUserId]
     );
