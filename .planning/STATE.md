@@ -6,32 +6,33 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 1 — Foundation & Infrastructure
+**Current focus:** Phase 2 — Identity & Security Framework
 
 ## Current Position
 
-Phase: 1 of 12 (Foundation & Infrastructure)
-Plan: 8 of 8 in current phase (COMPLETE)
-Status: Phase 1 Complete
-Last activity: 2026-01-13 — Completed 1-07-FIX.md (UAT Issue Fixes)
+Phase: 2 of 12 (Identity & Security Framework)
+Plan: 1 of 8 in current phase
+Status: In progress
+Last activity: 2026-01-14 — Completed 2-01-PLAN.md (Encrypted DID Registry)
 
-Progress: ██████████ 100% (Phase 1)
+Progress: █░░░░░░░░░ 8% (Phase 2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 28 min
-- Total execution time: 3.7 hours
+- Total plans completed: 9
+- Average duration: 26 min
+- Total execution time: 3.8 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
+| 2 (Identity & Security) | 1 | 6 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 45 min, 8 min, 22 min, 25 min, 20 min
+- Last 5 plans: 8 min, 22 min, 25 min, 20 min, 6 min
 - Trend: Consistent velocity with high efficiency
 
 ## Accumulated Context
@@ -95,6 +96,12 @@ Recent decisions affecting current work:
 - Fixed accounts.ts to use shared database pool (was breaking docker networking)
 - Fixed MPC contract ID from v1.signer-dev.testnet to v1.signer-prod.testnet
 
+**Phase 2 Plan 1 (Encrypted DID Registry):**
+- Blinded keys (32-byte HKDF output) prevent DID correlation attacks
+- No entity type index to prevent organizational structure inference
+- Only owner, timestamps, and active status public (minimal leakage)
+- 24-byte nonce for ChaCha20-Poly1305 / XChaCha20 compatibility
+
 ### Deferred Issues
 
 **Pinata API 403 Error (from 1-04):** Backend IPFS upload endpoint returns 403 from Pinata API. Possible causes: JWT needs regeneration, API endpoint format changed, or permissions need adjustment. Does not block development. Can be resolved by regenerating JWT in Pinata dashboard.
@@ -106,5 +113,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-14
-Stopped at: Phase 1 Complete - All UAT issues resolved including accounts API and MPC fixes
+Stopped at: Completed 2-01-PLAN.md (Encrypted DID Registry)
 Resume file: None
