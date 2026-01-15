@@ -6,6 +6,7 @@ import documentsRouter from './api/documents';
 import edgeSyncRouter from './api/edge-sync';
 import accountsRouter from './api/accounts';
 import identityRouter from './api/identity';
+import credentialsRouter from './api/credentials';
 import { startSyncWorkers } from './lib/blockchain-sync';
 
 dotenv.config();
@@ -26,6 +27,7 @@ app.use('/api/documents', documentsRouter);
 app.use('/api/edge', edgeSyncRouter);
 app.use('/api/accounts', accountsRouter);
 app.use('/api/identity', identityRouter);
+app.use('/api/credentials', credentialsRouter);
 
 app.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
