@@ -1,0 +1,2 @@
+p, r.sub.clearance >= r.obj.classification, true, read
+p, r.sub.clearance >= r.obj.classification, true, write
