@@ -2,16 +2,24 @@
  * ABAC Policy Enforcer
  *
  * Implements Attribute-Based Access Control (ABAC) for military classification
- * security model using Casbin. Supports:
+ * security model. Supports:
  * - Classification hierarchy (UNCLASS < CUI < CONFIDENTIAL < SECRET < TOPSECRET)
  * - NOFORN enforcement
  * - Releasability checking (REL TO countries/groups)
  * - Bilateral agreement enforcement
  * - Originator control (ORCON)
+ *
+ * Implementation notes:
+ * - Uses TypeScript for type-safe policy evaluation
+ * - Casbin model files (abac-model.conf, policies/security.csv) document the policy structure
+ * - Core function signature: (subject, object, action) => boolean
  */
 
-// Classification levels - higher number = higher classification
-const CLASSIFICATION_LEVELS: Record<string, number> = {
+/**
+ * Classification levels - higher number = higher classification
+ * Based on US military classification system
+ */
+export const CLASSIFICATION_LEVELS: Record<string, number> = {
   UNCLASS: 1,
   CUI: 2,
   CONFIDENTIAL: 3,
@@ -19,28 +27,54 @@ const CLASSIFICATION_LEVELS: Record<string, number> = {
   TOPSECRET: 5
 };
 
-// Five Eyes alliance nations
-const FVEY_NATIONS = ['USA', 'GBR', 'CAN', 'AUS', 'NZL'];
+/**
+ * Five Eyes (FVEY) alliance member nations
+ * Used for REL TO FVEY document releasability
+ */
+export const FVEY_NATIONS = ['USA', 'GBR', 'CAN', 'AUS', 'NZL'] as const;
 
+/**
+ * Subject attributes derived from DID credentials
+ * Represents the identity and clearances of the requesting entity
+ */
 export interface SubjectAttributes {
+  /** Decentralized identifier (e.g., did:near:alice.near) */
   did: string;
+  /** Security clearance level */
   clearance: 'UNCLASS' | 'CUI' | 'CONFIDENTIAL' | 'SECRET' | 'TOPSECRET';
+  /** ISO 3166-1 alpha-3 country code (e.g., USA, GBR, DEU) */
   nationality: string;
+  /** Organization identifier */
   organization: string;
+  /** Role within organization */
   role: string;
+  /** Access caveats and special permissions */
   caveats: {
+    /** Countries/groups subject can receive from */
     releasability: string[];
+    /** Bilateral agreements (e.g., UK-USA) */
     bilateral: string[];
+    /** SAP/SCI program access */
     specialAccess: string[];
   };
 }
 
+/**
+ * Object attributes from data classification
+ * Represents the security markings on protected content
+ */
 export interface ObjectAttributes {
+  /** Classification level of the content */
   classification: 'UNCLASS' | 'CUI' | 'CONFIDENTIAL' | 'SECRET' | 'TOPSECRET';
+  /** REL TO countries/groups (e.g., [USA, GBR, FVEY]) */
   releasability: string[];
+  /** Dissemination controls (NOFORN, ORCON, PROPIN, etc.) */
   dissemination: string[];
+  /** Required bilateral agreement (e.g., UK-USA) */
   bilateralMarking?: string;
+  /** DID of the content originator */
   originator: string;
+  /** Originator controlled - only originator can modify */
   orcon: boolean;
 }
 
