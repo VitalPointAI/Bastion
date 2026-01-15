@@ -16,7 +16,9 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "@noble/ciphers": "^2.1.1",
+    "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
+    "@noble/post-quantum": "^0.5.4",
     "axios": "^1.13.2",
     "casbin": "^5.48.0",
     "cors": "^2.8.5",
