@@ -19,6 +19,7 @@
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
     "@noble/post-quantum": "^0.5.4",
+    "@veramo/credential-w3c": "^6.0.0",
     "axios": "^1.13.2",
     "casbin": "^5.48.0",
     "cors": "^2.8.5",
