@@ -1,6 +1,6 @@
 import { chacha20poly1305 } from '@noble/ciphers/chacha.js';
 import { randomBytes } from '@noble/ciphers/utils.js';
-import { DIDDocument, EntityType, EncryptedDIDEntry } from './types.js';
+import { DIDDocument, EntityType, EncryptedDIDEntry } from './types';
 
 const NONCE_LENGTH = 12; // ChaCha20-Poly1305 nonce
 

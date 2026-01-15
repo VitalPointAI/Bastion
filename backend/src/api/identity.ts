@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { getDIDService } from '../identity/did-service.js';
-import { EntityType } from '../identity/types.js';
-import { hexToBlindedKey, blindedKeyToHex, deriveDIDBlindedKey } from '../identity/blinded-keys.js';
+import { getDIDService } from '../identity/did-service';
+import { EntityType } from '../identity/types';
+import { hexToBlindedKey, blindedKeyToHex, deriveDIDBlindedKey } from '../identity/blinded-keys';
 
 const router = Router();
 const didService = getDIDService();

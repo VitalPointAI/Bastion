@@ -1,12 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import encryptionRouter from './api/encryption.js';
-import documentsRouter from './api/documents.js';
-import edgeSyncRouter from './api/edge-sync.js';
-import accountsRouter from './api/accounts.js';
-import identityRouter from './api/identity.js';
-import { startSyncWorkers } from './lib/blockchain-sync.js';
+import encryptionRouter from './api/encryption';
+import documentsRouter from './api/documents';
+import edgeSyncRouter from './api/edge-sync';
+import accountsRouter from './api/accounts';
+import identityRouter from './api/identity';
+import { startSyncWorkers } from './lib/blockchain-sync';
 
 dotenv.config();
 
