@@ -11,28 +11,28 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 2 of 12 (Identity & Security Framework)
-Plan: 1 of 8 in current phase
+Plan: 2 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-14 — Completed 2-01-PLAN.md (Encrypted DID Registry)
+Last activity: 2026-01-15 — Completed 2-02-PLAN.md (Encrypted Credential Registry)
 
-Progress: █░░░░░░░░░ 8% (Phase 2)
+Progress: ██░░░░░░░░ 17% (Phase 2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 26 min
-- Total execution time: 3.8 hours
+- Total plans completed: 10
+- Average duration: 24 min
+- Total execution time: 3.9 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
-| 2 (Identity & Security) | 1 | 6 min | 6 min |
+| 2 (Identity & Security) | 2 | 13 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 8 min, 22 min, 25 min, 20 min, 6 min
+- Last 5 plans: 22 min, 25 min, 20 min, 6 min, 7 min
 - Trend: Consistent velocity with high efficiency
 
 ## Accumulated Context
@@ -102,6 +102,12 @@ Recent decisions affecting current work:
 - Only owner, timestamps, and active status public (minimal leakage)
 - 24-byte nonce for ChaCha20-Poly1305 / XChaCha20 compatibility
 
+**Phase 2 Plan 2 (Encrypted Credential Registry):**
+- Dual-key system: blinded_credential_id for lookup, blinded_revocation_key for status checks
+- Status codes as u8 (0=Active, 1=Revoked, 2=Suspended) for gas efficiency
+- No subject/issuer/type indexes to prevent relationship inference
+- Revocation irreversible; suspension is reversible
+
 ### Deferred Issues
 
 **Pinata API 403 Error (from 1-04):** Backend IPFS upload endpoint returns 403 from Pinata API. Possible causes: JWT needs regeneration, API endpoint format changed, or permissions need adjustment. Does not block development. Can be resolved by regenerating JWT in Pinata dashboard.
@@ -112,6 +118,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-14
-Stopped at: Completed 2-01-PLAN.md (Encrypted DID Registry)
+Last session: 2026-01-15
+Stopped at: Completed 2-02-PLAN.md (Encrypted Credential Registry)
 Resume file: None
