@@ -11,28 +11,28 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 2 of 12 (Identity & Security Framework)
-Plan: 2 of 8 in current phase
+Plan: 3 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-15 — Completed 2-02-PLAN.md (Encrypted Credential Registry)
+Last activity: 2026-01-15 — Completed 2-03-PLAN.md (Backend DID Resolution)
 
-Progress: ██░░░░░░░░ 17% (Phase 2)
+Progress: ███░░░░░░░ 38% (Phase 2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 24 min
-- Total execution time: 3.9 hours
+- Total plans completed: 11
+- Average duration: 22 min
+- Total execution time: 4.0 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
-| 2 (Identity & Security) | 2 | 13 min | 7 min |
+| 2 (Identity & Security) | 3 | 16 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 22 min, 25 min, 20 min, 6 min, 7 min
+- Last 5 plans: 25 min, 20 min, 6 min, 7 min, 3 min
 - Trend: Consistent velocity with high efficiency
 
 ## Accumulated Context
@@ -108,6 +108,12 @@ Recent decisions affecting current work:
 - No subject/issuer/type indexes to prevent relationship inference
 - Revocation irreversible; suspension is reversible
 
+**Phase 2 Plan 3 (Backend DID Resolution):**
+- HKDF with SHA256 for blinded key derivation using @noble/hashes
+- ChaCha20-Poly1305 for DID document encryption (consistent with Phase 1 IPFS encryption)
+- Separate encryption key from blinded lookup key for security separation
+- utf8ToBytes for converting context strings to Uint8Array in HKDF
+
 ### Deferred Issues
 
 **Pinata API 403 Error (from 1-04):** Backend IPFS upload endpoint returns 403 from Pinata API. Possible causes: JWT needs regeneration, API endpoint format changed, or permissions need adjustment. Does not block development. Can be resolved by regenerating JWT in Pinata dashboard.
@@ -119,5 +125,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-15
-Stopped at: Completed 2-02-PLAN.md (Encrypted Credential Registry)
+Stopped at: Completed 2-03-PLAN.md (Backend DID Resolution)
 Resume file: None
