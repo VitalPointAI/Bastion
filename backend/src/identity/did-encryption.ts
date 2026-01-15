@@ -16,24 +16,30 @@ export function encryptDIDDocument(
   document: DIDDocument,
   entityType: EntityType,
   encryptionKey: Uint8Array
-): { encryptedDocument: Uint8Array; encryptedEntityType: Uint8Array; nonce: Uint8Array } {
+): { encryptedDocument: Uint8Array; encryptedEntityType: Uint8Array; nonce: Uint8Array; entityTypeNonce: Uint8Array } {
+  // Generate separate nonces for each encryption (required by @noble/ciphers)
   const nonce = randomBytes(NONCE_LENGTH);
-  const cipher = chacha20poly1305(encryptionKey, nonce);
+  const entityTypeNonce = randomBytes(NONCE_LENGTH);
 
   // Encrypt document as JSON
   const documentBytes = new TextEncoder().encode(JSON.stringify(document));
-  const encryptedDocument = cipher.encrypt(documentBytes);
+  const documentCipher = chacha20poly1305(encryptionKey, nonce);
+  const encryptedDocument = documentCipher.encrypt(documentBytes);
 
   // Encrypt entity type separately (for owner's local indexing)
   const entityTypeBytes = new TextEncoder().encode(entityType);
-  const encryptedEntityType = cipher.encrypt(entityTypeBytes);
+  const entityTypeCipher = chacha20poly1305(encryptionKey, entityTypeNonce);
+  const encryptedEntityType = entityTypeCipher.encrypt(entityTypeBytes);
 
-  return { encryptedDocument, encryptedEntityType, nonce };
+  return { encryptedDocument, encryptedEntityType, nonce, entityTypeNonce };
 }
 
 /**
  * Decrypt a DID document from on-chain storage
- * @param encryptedEntry - Encrypted entry from chain
+ * @param encryptedDocument - Encrypted document bytes
+ * @param encryptedEntityType - Encrypted entity type bytes
+ * @param nonce - Nonce used for document encryption
+ * @param entityTypeNonce - Nonce used for entity type encryption
  * @param encryptionKey - 32-byte symmetric key
  * @returns Decrypted DID document and entity type
  */
@@ -41,16 +47,17 @@ export function decryptDIDDocument(
   encryptedDocument: Uint8Array,
   encryptedEntityType: Uint8Array,
   nonce: Uint8Array,
+  entityTypeNonce: Uint8Array,
   encryptionKey: Uint8Array
 ): { document: DIDDocument; entityType: EntityType } {
-  const cipher = chacha20poly1305(encryptionKey, nonce);
-
-  // Decrypt document
-  const documentBytes = cipher.decrypt(encryptedDocument);
+  // Decrypt document with its cipher
+  const documentCipher = chacha20poly1305(encryptionKey, nonce);
+  const documentBytes = documentCipher.decrypt(encryptedDocument);
   const document = JSON.parse(new TextDecoder().decode(documentBytes)) as DIDDocument;
 
-  // Decrypt entity type
-  const entityTypeBytes = cipher.decrypt(encryptedEntityType);
+  // Decrypt entity type with its cipher (separate nonce)
+  const entityTypeCipher = chacha20poly1305(encryptionKey, entityTypeNonce);
+  const entityTypeBytes = entityTypeCipher.decrypt(encryptedEntityType);
   const entityType = new TextDecoder().decode(entityTypeBytes) as EntityType;
 
   return { document, entityType };

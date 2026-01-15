@@ -36,6 +36,7 @@ export interface EncryptedDIDEntry {
   encryptedDocument: Uint8Array;
   encryptedEntityType: Uint8Array;
   nonce: Uint8Array;
+  entityTypeNonce: Uint8Array;
   createdAt: number;
   updatedAt: number;
   active: boolean;

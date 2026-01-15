@@ -52,7 +52,7 @@ export class DIDService {
     const encryptionKey = deriveEncryptionKey(userSecret);
 
     // Encrypt document
-    const { encryptedDocument, encryptedEntityType, nonce } = encryptDIDDocument(
+    const { encryptedDocument, encryptedEntityType, nonce, entityTypeNonce } = encryptDIDDocument(
       document,
       entityType,
       encryptionKey
@@ -63,7 +63,8 @@ export class DIDService {
       blindedKey,
       encryptedDocument,
       encryptedEntityType,
-      nonce
+      nonce,
+      entityTypeNonce
     );
 
     return { did, blindedKey: blindedKeyToHex(blindedKey) };
@@ -92,6 +93,7 @@ export class DIDService {
       encryptedEntry.encryptedDocument,
       encryptedEntry.encryptedEntityType,
       encryptedEntry.nonce,
+      encryptedEntry.entityTypeNonce,
       encryptionKey
     );
 
@@ -112,11 +114,13 @@ export class DIDService {
     blindedKey: Uint8Array,
     encryptedDocument: Uint8Array,
     encryptedEntityType: Uint8Array,
-    nonce: Uint8Array
+    nonce: Uint8Array,
+    entityTypeNonce: Uint8Array
   ): Promise<void> {
     // This will be a signed transaction to the contract
     // For now, structure the call - actual signing happens via wallet
     console.log('Store DID - blinded key length:', blindedKey.length);
+    console.log('Store DID - nonces:', nonce.length, entityTypeNonce.length);
     // Implementation requires wallet integration for signing
   }
 
@@ -150,6 +154,7 @@ export class DIDService {
           encryptedDocument: new Uint8Array(decoded.encrypted_document),
           encryptedEntityType: new Uint8Array(decoded.encrypted_entity_type),
           nonce: new Uint8Array(decoded.nonce),
+          entityTypeNonce: new Uint8Array(decoded.entity_type_nonce),
           createdAt: decoded.created_at,
           updatedAt: decoded.updated_at,
           active: decoded.active,
