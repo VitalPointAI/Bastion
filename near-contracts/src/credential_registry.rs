@@ -575,8 +575,10 @@ mod tests {
     #[test]
     fn test_is_valid_returns_false_for_expired_credential() {
         let owner: AccountId = "issuer.near".parse().unwrap();
+        // Set block timestamp to 3000 seconds in nanoseconds
+        // block_timestamp_ms() will return 3000000 ms
         let mut context = get_context(owner.clone());
-        context.block_timestamp(3000000000); // Time after expiration
+        context.block_timestamp(3000_000_000_000); // 3000 seconds in nanoseconds = 3000000 ms
         testing_env!(context.build());
 
         let mut registry = CredentialRegistry::new();
@@ -588,7 +590,7 @@ mod tests {
             mock_credential_hash(),
             mock_encrypted_metadata(),
             mock_nonce(),
-            Some(2000000000), // Already expired at current time
+            Some(2000000), // Expires at 2000000 ms (2000 seconds), current is 3000000 ms
         );
 
         assert!(!registry.is_valid(revocation_key));

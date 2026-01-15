@@ -19,6 +19,9 @@ use intents::{Intent, IntentVerifier};
 mod did_registry;
 use did_registry::{DIDRegistry, EncryptedDIDEntry};
 
+mod credential_registry;
+use credential_registry::{CredentialRegistry, EncryptedCredentialAnchor};
+
 /// Main contract structure with state versioning pattern
 /// State version is tracked internally for safe upgrades
 #[near(contract_state)]
@@ -42,6 +45,8 @@ pub struct Contract {
     intent_verifier: IntentVerifier,
     /// Encrypted DID registry for universal identity management
     did_registry: DIDRegistry,
+    /// Encrypted credential registry for on-chain verification
+    credential_registry: CredentialRegistry,
 }
 
 #[near]
@@ -64,6 +69,7 @@ impl Contract {
             chain_signature_manager: ChainSignatureManager::new(mpc_contract),
             intent_verifier: IntentVerifier::new(),
             did_registry: DIDRegistry::new(),
+            credential_registry: CredentialRegistry::new(),
         }
     }
 
@@ -86,6 +92,7 @@ impl Contract {
             chain_signature_manager: ChainSignatureManager,
             intent_verifier: IntentVerifier,
             did_registry: DIDRegistry,
+            credential_registry: CredentialRegistry,
         }
 
         let old_state: OldState = env::state_read().expect("Failed to read state");
@@ -102,6 +109,7 @@ impl Contract {
             chain_signature_manager: old_state.chain_signature_manager,
             intent_verifier: old_state.intent_verifier,
             did_registry: old_state.did_registry,
+            credential_registry: old_state.credential_registry,
         }
     }
 
@@ -595,6 +603,108 @@ impl Contract {
     pub fn get_did_count(&self) -> u64 {
         self.did_registry.get_did_count()
     }
+
+    // ===== Encrypted Credential Registry Methods =====
+
+    /// Anchor an encrypted credential
+    ///
+    /// Privacy-preserving credential anchoring using dual blinded keys.
+    /// Credential content must be encrypted off-chain before submission.
+    ///
+    /// # Arguments
+    /// * `blinded_credential_id` - HKDF(secret, "credential", hash) - 32 bytes
+    /// * `blinded_revocation_key` - HKDF(secret, "revocation", hash) - 32 bytes, DIFFERENT key
+    /// * `credential_hash` - Hash of the full credential (cryptographic commitment)
+    /// * `encrypted_metadata` - Encrypted credential metadata (type, issuer, subject)
+    /// * `nonce` - Encryption nonce (24 bytes)
+    /// * `expiration_date` - Optional expiration timestamp in milliseconds
+    pub fn anchor_credential(
+        &mut self,
+        blinded_credential_id: Vec<u8>,
+        blinded_revocation_key: Vec<u8>,
+        credential_hash: Vec<u8>,
+        encrypted_metadata: Vec<u8>,
+        nonce: Vec<u8>,
+        expiration_date: Option<u64>,
+    ) {
+        require!(self.initialized, "Contract not initialized");
+
+        self.credential_registry.anchor_credential(
+            blinded_credential_id,
+            blinded_revocation_key,
+            credential_hash,
+            encrypted_metadata,
+            nonce,
+            expiration_date,
+        )
+    }
+
+    /// Get encrypted credential anchor by blinded credential ID
+    ///
+    /// Returns encrypted blob - decryption happens off-chain.
+    /// Caller must have the correct secret to derive the blinded key.
+    pub fn get_credential_anchor(&self, blinded_credential_id: Vec<u8>) -> Option<EncryptedCredentialAnchor> {
+        self.credential_registry.get_anchor(blinded_credential_id)
+    }
+
+    /// Check credential status by revocation key (for validators)
+    ///
+    /// Returns status code without revealing credential ID.
+    /// Status: 0=Active, 1=Revoked, 2=Suspended
+    pub fn check_credential_status(&self, blinded_revocation_key: Vec<u8>) -> Option<u8> {
+        self.credential_registry.check_status(blinded_revocation_key)
+    }
+
+    /// Verify credential is active (not revoked/suspended/expired)
+    ///
+    /// Returns true only if credential exists, is Active, and not expired.
+    pub fn is_credential_valid(&self, blinded_revocation_key: Vec<u8>) -> bool {
+        self.credential_registry.is_valid(blinded_revocation_key)
+    }
+
+    /// Revoke credential (owner only, irreversible)
+    ///
+    /// Once revoked, the credential cannot be reinstated.
+    ///
+    /// # Arguments
+    /// * `blinded_credential_id` - The blinded ID for this credential
+    /// * `encrypted_reason` - Encrypted revocation reason
+    pub fn revoke_credential(&mut self, blinded_credential_id: Vec<u8>, encrypted_reason: Vec<u8>) {
+        require!(self.initialized, "Contract not initialized");
+
+        self.credential_registry.revoke_credential(blinded_credential_id, encrypted_reason)
+    }
+
+    /// Suspend credential (owner only, reversible)
+    ///
+    /// Suspended credentials can be reinstated by the owner.
+    pub fn suspend_credential(&mut self, blinded_credential_id: Vec<u8>) {
+        require!(self.initialized, "Contract not initialized");
+
+        self.credential_registry.suspend_credential(blinded_credential_id)
+    }
+
+    /// Reinstate suspended credential (owner only)
+    ///
+    /// Only suspended credentials can be reinstated.
+    /// Revoked credentials cannot be reinstated.
+    pub fn reinstate_credential(&mut self, blinded_credential_id: Vec<u8>) {
+        require!(self.initialized, "Contract not initialized");
+
+        self.credential_registry.reinstate_credential(blinded_credential_id)
+    }
+
+    /// Get caller's issued credential IDs (blinded)
+    ///
+    /// Returns the list of blinded credential IDs issued by the caller.
+    pub fn get_my_issued_credentials(&self) -> Vec<Vec<u8>> {
+        self.credential_registry.get_my_credentials()
+    }
+
+    /// Get total count of anchored credentials (statistics only)
+    pub fn get_credential_count(&self) -> u64 {
+        self.credential_registry.get_credential_count()
+    }
 }
 
 // Internal implementation - separate from public interface
@@ -931,5 +1041,275 @@ mod tests {
 
         // DID count should be zero initially
         assert_eq!(contract.get_did_count(), 0);
+    }
+
+    // ===== Credential Registry Integration Tests =====
+
+    /// Create mock blinded credential ID (32 bytes)
+    fn mock_blinded_credential_id(seed: u8) -> Vec<u8> {
+        vec![seed; 32]
+    }
+
+    /// Create mock blinded revocation key (32 bytes, different from credential ID)
+    fn mock_blinded_revocation_key(seed: u8) -> Vec<u8> {
+        vec![seed.wrapping_add(100); 32]
+    }
+
+    /// Create mock credential hash
+    fn mock_credential_hash() -> Vec<u8> {
+        b"sha256_credential_commitment_hash".to_vec()
+    }
+
+    /// Create mock encrypted metadata
+    fn mock_encrypted_metadata() -> Vec<u8> {
+        b"encrypted_credential_metadata".to_vec()
+    }
+
+    /// Create mock credential nonce (24 bytes)
+    fn mock_credential_nonce() -> Vec<u8> {
+        vec![0u8; 24]
+    }
+
+    #[test]
+    fn test_credential_registry_anchor_and_get() {
+        let issuer: AccountId = "issuer.near".parse().unwrap();
+        let context = get_context(issuer.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(issuer.clone());
+
+        let credential_id = mock_blinded_credential_id(1);
+        let revocation_key = mock_blinded_revocation_key(1);
+        let hash = mock_credential_hash();
+        let metadata = mock_encrypted_metadata();
+
+        // Anchor credential
+        contract.anchor_credential(
+            credential_id.clone(),
+            revocation_key.clone(),
+            hash.clone(),
+            metadata.clone(),
+            mock_credential_nonce(),
+            None,
+        );
+
+        // Verify storage
+        assert_eq!(contract.get_credential_count(), 1);
+
+        // Retrieve by blinded credential ID
+        let anchor = contract.get_credential_anchor(credential_id.clone()).unwrap();
+        assert_eq!(anchor.credential_hash, hash);
+        assert_eq!(anchor.encrypted_metadata, metadata);
+        assert_eq!(anchor.owner, issuer);
+        assert_eq!(anchor.status, 0); // STATUS_ACTIVE
+    }
+
+    #[test]
+    fn test_credential_registry_check_status_by_revocation_key() {
+        let issuer: AccountId = "issuer.near".parse().unwrap();
+        let context = get_context(issuer.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(issuer.clone());
+        let revocation_key = mock_blinded_revocation_key(1);
+
+        contract.anchor_credential(
+            mock_blinded_credential_id(1),
+            revocation_key.clone(),
+            mock_credential_hash(),
+            mock_encrypted_metadata(),
+            mock_credential_nonce(),
+            None,
+        );
+
+        // Check status using revocation key
+        let status = contract.check_credential_status(revocation_key.clone()).unwrap();
+        assert_eq!(status, 0); // STATUS_ACTIVE
+
+        // is_valid should return true
+        assert!(contract.is_credential_valid(revocation_key));
+    }
+
+    #[test]
+    fn test_credential_registry_revoke_credential() {
+        let issuer: AccountId = "issuer.near".parse().unwrap();
+        let context = get_context(issuer.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(issuer.clone());
+        let credential_id = mock_blinded_credential_id(1);
+        let revocation_key = mock_blinded_revocation_key(1);
+
+        contract.anchor_credential(
+            credential_id.clone(),
+            revocation_key.clone(),
+            mock_credential_hash(),
+            mock_encrypted_metadata(),
+            mock_credential_nonce(),
+            None,
+        );
+
+        // Revoke
+        contract.revoke_credential(credential_id.clone(), b"encrypted_reason".to_vec());
+
+        // Status should be 1 (REVOKED)
+        let status = contract.check_credential_status(revocation_key.clone()).unwrap();
+        assert_eq!(status, 1);
+
+        // is_valid should return false
+        assert!(!contract.is_credential_valid(revocation_key));
+    }
+
+    #[test]
+    #[should_panic(expected = "Not authorized: only owner can revoke credential")]
+    fn test_credential_registry_non_owner_revoke_fails() {
+        let issuer: AccountId = "issuer.near".parse().unwrap();
+        let attacker: AccountId = "attacker.near".parse().unwrap();
+
+        // Anchor as issuer
+        let context = get_context(issuer.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(issuer.clone());
+        let credential_id = mock_blinded_credential_id(1);
+
+        contract.anchor_credential(
+            credential_id.clone(),
+            mock_blinded_revocation_key(1),
+            mock_credential_hash(),
+            mock_encrypted_metadata(),
+            mock_credential_nonce(),
+            None,
+        );
+
+        // Try to revoke as attacker
+        let context = get_context(attacker);
+        testing_env!(context.build());
+
+        contract.revoke_credential(credential_id, b"malicious_reason".to_vec());
+    }
+
+    #[test]
+    fn test_credential_registry_suspend_reinstate_cycle() {
+        let issuer: AccountId = "issuer.near".parse().unwrap();
+        let context = get_context(issuer.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(issuer.clone());
+        let credential_id = mock_blinded_credential_id(1);
+        let revocation_key = mock_blinded_revocation_key(1);
+
+        contract.anchor_credential(
+            credential_id.clone(),
+            revocation_key.clone(),
+            mock_credential_hash(),
+            mock_encrypted_metadata(),
+            mock_credential_nonce(),
+            None,
+        );
+
+        // Initially active
+        assert_eq!(contract.check_credential_status(revocation_key.clone()).unwrap(), 0);
+
+        // Suspend
+        contract.suspend_credential(credential_id.clone());
+        assert_eq!(contract.check_credential_status(revocation_key.clone()).unwrap(), 2);
+        assert!(!contract.is_credential_valid(revocation_key.clone()));
+
+        // Reinstate
+        contract.reinstate_credential(credential_id.clone());
+        assert_eq!(contract.check_credential_status(revocation_key.clone()).unwrap(), 0);
+        assert!(contract.is_credential_valid(revocation_key));
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot reinstate revoked credential")]
+    fn test_credential_registry_reinstate_revoked_fails() {
+        let issuer: AccountId = "issuer.near".parse().unwrap();
+        let context = get_context(issuer.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(issuer.clone());
+        let credential_id = mock_blinded_credential_id(1);
+
+        contract.anchor_credential(
+            credential_id.clone(),
+            mock_blinded_revocation_key(1),
+            mock_credential_hash(),
+            mock_encrypted_metadata(),
+            mock_credential_nonce(),
+            None,
+        );
+
+        // Revoke (irreversible)
+        contract.revoke_credential(credential_id.clone(), b"reason".to_vec());
+
+        // Try to reinstate - should fail
+        contract.reinstate_credential(credential_id);
+    }
+
+    #[test]
+    fn test_credential_registry_get_my_issued_credentials() {
+        let issuer: AccountId = "issuer.near".parse().unwrap();
+        let context = get_context(issuer.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(issuer.clone());
+
+        // Anchor multiple credentials
+        for i in 1..=3 {
+            contract.anchor_credential(
+                mock_blinded_credential_id(i),
+                mock_blinded_revocation_key(i),
+                mock_credential_hash(),
+                mock_encrypted_metadata(),
+                mock_credential_nonce(),
+                None,
+            );
+        }
+
+        let creds = contract.get_my_issued_credentials();
+        assert_eq!(creds.len(), 3);
+    }
+
+    #[test]
+    fn test_credential_registry_different_keys() {
+        let issuer: AccountId = "issuer.near".parse().unwrap();
+        let context = get_context(issuer.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(issuer.clone());
+        let credential_id = mock_blinded_credential_id(1);
+        let revocation_key = mock_blinded_revocation_key(1);
+
+        contract.anchor_credential(
+            credential_id.clone(),
+            revocation_key.clone(),
+            mock_credential_hash(),
+            mock_encrypted_metadata(),
+            mock_credential_nonce(),
+            None,
+        );
+
+        // Can retrieve by credential ID
+        assert!(contract.get_credential_anchor(credential_id.clone()).is_some());
+
+        // Can check status by revocation key
+        assert!(contract.check_credential_status(revocation_key.clone()).is_some());
+
+        // Cannot retrieve by revocation key (different key)
+        assert!(contract.get_credential_anchor(revocation_key.clone()).is_none());
+
+        // Cannot check status by credential ID
+        assert!(contract.check_credential_status(credential_id).is_none());
+    }
+
+    #[test]
+    fn test_credential_initialization_count_zero() {
+        let owner: AccountId = "owner.near".parse().unwrap();
+        let contract = Contract::new(owner.clone());
+
+        // Credential count should be zero initially
+        assert_eq!(contract.get_credential_count(), 0);
     }
 }
