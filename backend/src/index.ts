@@ -5,6 +5,7 @@ import encryptionRouter from './api/encryption.js';
 import documentsRouter from './api/documents.js';
 import edgeSyncRouter from './api/edge-sync.js';
 import accountsRouter from './api/accounts.js';
+import identityRouter from './api/identity.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
 
 dotenv.config();
@@ -24,6 +25,7 @@ app.use('/api/encryption', encryptionRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/edge', edgeSyncRouter);
 app.use('/api/accounts', accountsRouter);
+app.use('/api/identity', identityRouter);
 
 app.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
