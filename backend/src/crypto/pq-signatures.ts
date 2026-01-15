@@ -1,5 +1,5 @@
-import { ml_dsa65 } from '@noble/post-quantum/ml-dsa';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { PQSigningKeyPair, SerializedKeyPair } from './types';
 
 /**

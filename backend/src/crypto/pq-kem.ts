@@ -1,8 +1,8 @@
-import { ml_kem768 } from '@noble/post-quantum/ml-kem';
-import { x25519 } from '@noble/curves/ed25519';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
-import { hkdf } from '@noble/hashes/hkdf';
-import { sha256 } from '@noble/hashes/sha2';
+import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
+import { x25519 } from '@noble/curves/ed25519.js';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
+import { hkdf } from '@noble/hashes/hkdf.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 import { HybridKeyPair, EncapsulationResult, SerializedKeyPair } from './types';
 
 // KDF info parameter as bytes
