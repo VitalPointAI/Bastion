@@ -1,5 +1,6 @@
 import { PgBoss } from 'pg-boss';
-import { pool } from './database.js';
+import { getPool } from './database.js';
+import { pollBlockchainEvents, getSyncStatus } from './near-events.js';
 
 let boss: PgBoss;
 
@@ -9,7 +10,7 @@ let boss: PgBoss;
 async function processOutboxWorker() {
   // Poll outbox for unprocessed records
   await boss.work('process-outbox', async (job: any) => {
-    const client = await pool.connect();
+    const client = await getPool().connect();
     let outboxResult;
     try {
       // Get oldest unprocessed outbox record
@@ -24,7 +25,8 @@ async function processOutboxWorker() {
       if (outboxResult.rows.length === 0) return;
 
       const outboxRecord = outboxResult.rows[0];
-      const payload = JSON.parse(outboxRecord.payload);
+      // payload is JSONB - already parsed by pg driver
+      const payload = outboxRecord.payload;
 
       // Write to NEAR blockchain
       // TODO: Integrate with NEAR contract from Plan 1-01
@@ -84,13 +86,9 @@ async function processOutboxWorker() {
  * Listen to NEAR blockchain events and sync to PostgreSQL
  */
 async function syncBlockchainEventsWorker() {
-  // TODO: Implement NEAR event listener
-  // Use NEAR RPC subscriptions or polling
-  // When external document registered on blockchain:
-  // - Check if exists in PostgreSQL
-  // - If not: INSERT from blockchain event
-  // - INSERT into blockchain_events table for audit
-  console.log('Blockchain event sync worker: Deferred to Phase 2');
+  await boss.work('sync-blockchain-events', async (_job: any) => {
+    await pollBlockchainEvents();
+  });
 }
 
 /**
@@ -107,17 +105,30 @@ export async function startSyncWorkers() {
     boss = new PgBoss(dbUrl);
   }
 
+  // Handle pg-boss errors gracefully - don't crash the server
+  boss.on('error', (error) => {
+    console.error('⚠️  pg-boss error (non-fatal):', error.message);
+  });
+
   await boss.start();
+
+  // In pg-boss v12+, queues must be explicitly created before use
+  await boss.createQueue('process-outbox');
+  await boss.createQueue('sync-blockchain-events');
+
+  // Register the workers to process jobs
+  await processOutboxWorker();
+  await syncBlockchainEventsWorker();
 
   // Schedule outbox processing every 5 seconds
   await boss.schedule('process-outbox', '*/5 * * * * *');
 
-  await processOutboxWorker();
-  // await syncBlockchainEventsWorker(); // Phase 2
+  // Schedule blockchain event sync every 30 seconds
+  await boss.schedule('sync-blockchain-events', '*/30 * * * * *');
 
   console.log('✓ Blockchain sync workers started');
   console.log('  - Outbox processor: every 5 seconds');
-  console.log('  - Blockchain event listener: deferred to Phase 2');
+  console.log('  - Blockchain event listener: every 30 seconds');
 }
 
 /**
