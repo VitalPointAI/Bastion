@@ -2,6 +2,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { getMPCRecoveryManager } from '../lib/mpcRecovery'
+import { hasUserDID, buildDID, emitEntityRegistered } from '../lib/identity'
 
 interface AuthWrapperProps {
   children: ReactNode
@@ -12,6 +13,7 @@ interface AccountState {
   derivationPath: string
   mpcRegistered: boolean
   mpcPublicKey?: string
+  userDID?: string
 }
 
 export function AuthWrapper({ children }: AuthWrapperProps) {
@@ -67,6 +69,46 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
           privyUserId
         )
 
+        // Step 3: Create DID for user (automatic, invisible)
+        let userDID: string | undefined
+        const didValue = buildDID(data.accountId)
+
+        try {
+          const hasDID = await hasUserDID(data.accountId)
+
+          if (!hasDID) {
+            console.log('🆔 Step 3: Creating DID for new user...')
+
+            const didResponse = await fetch('http://localhost:3001/api/identity/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                accountId: data.accountId,
+                entityType: 'Human'
+              })
+            })
+
+            if (didResponse.ok) {
+              console.log('✅ DID created:', didValue)
+              userDID = didValue
+
+              // Emit event for UI updates
+              emitEntityRegistered(
+                { entityType: 'Human', name: email },
+                didValue
+              )
+            } else {
+              console.warn('⚠️ DID creation deferred - will retry on next login')
+            }
+          } else {
+            console.log('✅ DID exists:', didValue)
+            userDID = didValue
+          }
+        } catch (didError) {
+          // DID creation failure shouldn't block login
+          console.warn('⚠️ DID creation deferred:', didError)
+        }
+
         if (mpcResult.status === 'registered') {
           console.log('✅ MPC registration complete!')
           console.log('   MPC Public Key:', mpcResult.mpcPublicKey)
@@ -77,6 +119,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
             derivationPath: data.derivationPath,
             mpcRegistered: true,
             mpcPublicKey: mpcResult.mpcPublicKey,
+            userDID,
           })
           setStatus('ready')
         } else {
@@ -85,6 +128,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
             accountId: data.accountId,
             derivationPath: data.derivationPath,
             mpcRegistered: false,
+            userDID,
           })
           setStatus('ready')
         }
