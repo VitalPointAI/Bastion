@@ -22,7 +22,7 @@ When a commander looks at a proposal, they see:
 
 AI agents participate with tiered trust levels — different agents have different authorities determining what they can approve autonomously. Strike authorization (lethal decisions) defaults to human-in-the-loop (not autonomous), but the system supports three configurable autonomy levels per proposal type:
 
-- **Autonomous:** AI/system can approve and execute within delegated authority
+- **Autonomous (human-out-of-the-loop):** AI/system can approve and execute within delegated authority
 - **Semi-autonomous (human-on-the-loop):** AI can approve, human monitors with veto window
 - **Not autonomous (human-in-the-loop):** Human must explicitly approve before execution
 
@@ -66,7 +66,7 @@ Complex voting mechanisms (quadratic, conviction, delegation chains) are NOT out
 - Modular voting engine: different proposal types can use different mechanisms
 - Clearance-integrated: proposals can have classification levels; visibility enforced
 - AI participation with boundaries: tiered trust levels for AI agents
-- Three autonomy levels: autonomous, semi-autonomous (human-on-loop), not autonomous (human-in-loop)
+- Three autonomy levels: autonomous (human-out-of-loop), semi-autonomous (human-on-loop), not autonomous (human-in-loop)
 - Strike auth defaults to human-in-the-loop but configurable per proposal type
 
 </specifics>
