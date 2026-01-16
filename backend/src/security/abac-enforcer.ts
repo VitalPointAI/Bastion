@@ -164,7 +164,7 @@ export class ABACEnforcer {
 
     // Check for FVEY (Five Eyes) - expand to member nations
     if (releasability.includes('FVEY')) {
-      if (FVEY_NATIONS.includes(nationality)) {
+      if ((FVEY_NATIONS as readonly string[]).includes(nationality)) {
         return true;
       }
     }
