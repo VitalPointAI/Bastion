@@ -20,7 +20,13 @@ When a commander looks at a proposal, they see:
 - Full context chain: how this connects to strategic objectives and prior decisions
 - Classification-aware view: only what their clearance allows, with appropriate redaction
 
-AI agents participate with tiered trust levels — different agents have different authorities determining what they can approve autonomously. But strike authorization (lethal decisions) always requires human approval, no exceptions. AI can prepare the targeting package, but a human must approve execution.
+AI agents participate with tiered trust levels — different agents have different authorities determining what they can approve autonomously. Strike authorization (lethal decisions) defaults to human-in-the-loop (not autonomous), but the system supports three configurable autonomy levels per proposal type:
+
+- **Autonomous:** AI/system can approve and execute within delegated authority
+- **Semi-autonomous (human-on-the-loop):** AI can approve, human monitors with veto window
+- **Not autonomous (human-in-the-loop):** Human must explicitly approve before execution
+
+This flexibility enables commanders to adjust autonomy based on trust, consequence, and operational tempo while defaulting to maximum human control for lethal decisions.
 
 </vision>
 
@@ -59,7 +65,9 @@ Complex voting mechanisms (quadratic, conviction, delegation chains) are NOT out
 - Transparent audit focus: every decision fully traceable on-chain — blockchain as source of truth for accountability
 - Modular voting engine: different proposal types can use different mechanisms
 - Clearance-integrated: proposals can have classification levels; visibility enforced
-- AI participation with boundaries: tiered trust levels for AI agents, but always human-only for lethal
+- AI participation with boundaries: tiered trust levels for AI agents
+- Three autonomy levels: autonomous, semi-autonomous (human-on-loop), not autonomous (human-in-loop)
+- Strike auth defaults to human-in-the-loop but configurable per proposal type
 
 </specifics>
 
@@ -68,7 +76,7 @@ Complex voting mechanisms (quadratic, conviction, delegation chains) are NOT out
 
 The user emphasized that DAOs should not feel like "crypto governance" but rather like natural extensions of military decision-making processes. The familiarity should come from military command structures, not DeFi.
 
-Strike authorization is the north star — everything else supports demonstrating verifiable human control over lethal decisions in an automated planning system.
+Strike authorization is the north star — everything else supports demonstrating configurable human control over lethal decisions in an automated planning system. The default is maximum human control, but the architecture must support the full autonomy spectrum.
 
 The expandability to capability development DAOs (military-industry partnerships) suggests thinking beyond pure operational use cases from the start.
 
