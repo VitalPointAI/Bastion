@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4 of 12 (Strategic Planning Module)
-Plan: 1 of TBD in current phase
+Plan: 2 of TBD in current phase
 Status: In progress
-Last activity: 2026-01-17 — Completed 4-01-PLAN.md (Document Ingestion Pipeline)
+Last activity: 2026-01-17 — Completed 4-02-PLAN.md (Strategic Planning Data Model)
 
-Progress: ███░░░░░░░ ~28% (Phase 4 started)
+Progress: ███░░░░░░░ ~30% (Phase 4 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
+- Total plans completed: 25
 - Average duration: 16 min
-- Total execution time: 6.6 hours
+- Total execution time: 6.7 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: ███░░░░░░░ ~28% (Phase 4 started)
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
-| 4 (Strategic Planning) | 1 | 5 min | 5 min |
+| 4 (Strategic Planning) | 2 | 13 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 8 min, 9 min, 12 min, 47 min, 5 min
-- Trend: Phase 4 started with document ingestion pipeline
+- Last 5 plans: 9 min, 12 min, 47 min, 5 min, 8 min
+- Trend: Phase 4 data model schemas complete
 
 ## Accumulated Context
 
@@ -218,6 +218,13 @@ Recent decisions affecting current work:
 - 50MB max upload size limit
 - Strategic document hierarchy levels: NSS, NDS, NMS, GEF, JSCP, CAMPAIGN_PLAN, OTHER
 
+**Phase 4 Plan 2 (Strategic Planning Data Model):**
+- All Zod fields use .describe() for LLM extraction hints with Instructor-JS
+- 5x5 risk matrix implemented as lookup table with calculateRiskLevel helper
+- Commander's intent includes Klein's 7 facets for robust intent communication
+- DIMEFIL extends DIME with Financial, Intelligence, Law Enforcement
+- Doctrine-driven data model: schemas map directly to JP 5-0 and CJCSM 3105.01
+
 ### Deferred Issues
 
 See `.planning/ISSUES.md` for full issue log:
@@ -231,6 +238,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: Completed 4-01-PLAN.md (Document Ingestion Pipeline)
+Stopped at: Completed 4-02-PLAN.md (Strategic Planning Data Model)
 Resume file: None
-Next action: Execute 4-02-PLAN.md or next plan in Phase 4
+Next action: Execute 4-03-PLAN.md or next plan in Phase 4
