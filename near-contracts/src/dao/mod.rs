@@ -23,6 +23,7 @@ pub mod proposals;
 pub mod registry;
 pub mod roles;
 pub mod types;
+pub mod voting;
 
 // Re-export core types for convenient access
 pub use permissions::PermissionChecker;
@@ -31,4 +32,7 @@ pub use registry::DAORegistry;
 pub use roles::{Action, AgentTier, Permission, Role, RoleKind, RoleManager};
 pub use types::{
     AutonomyLevel, DAOConfig, DAOMetadata, Proposal, ProposalKind, ProposalStatus,
+};
+pub use voting::{
+    ThresholdKind, Vote, VotePolicy, VoteType, VotingEngine, VotingResult, WeightKind,
 };
