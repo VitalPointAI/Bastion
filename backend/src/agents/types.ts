@@ -35,6 +35,8 @@ export enum AgentCapability {
   FeasibilityAssessment = 'FeasibilityAssessment',
   /** Monitor for security concerns */
   SecurityMonitoring = 'SecurityMonitoring',
+  /** Provide voting guidance (eligibility, autonomy explanation, next steps) */
+  VotingGuidance = 'VotingGuidance',
 
   // Represent phase capabilities (future)
   /** Model user preferences for voting recommendations */

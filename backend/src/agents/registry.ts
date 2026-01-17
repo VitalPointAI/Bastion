@@ -331,14 +331,14 @@ export class AgentRegistry {
       ProposalKind.Custom,
     ];
 
-    // Governance Copilot - summarizes proposals and analyzes context
+    // Governance Copilot - summarizes proposals, analyzes context, and provides voting guidance
     this.agents.set('governance-copilot', {
       agentId: 'governance-copilot',
       name: 'Governance Copilot',
       description:
-        'AI assistant that summarizes proposals and provides context analysis to reduce cognitive load on governance participants.',
+        'AI assistant that summarizes proposals, provides context analysis, and guides voting decisions to reduce cognitive load on governance participants.',
       phase: AgentPhase.Support,
-      capabilities: [AgentCapability.ProposalSummary, AgentCapability.ContextAnalysis],
+      capabilities: [AgentCapability.ProposalSummary, AgentCapability.ContextAnalysis, AgentCapability.VotingGuidance],
       maxAutonomy: AutonomyLevel.SemiAutonomous,
       allowedProposalKinds: safeProposalKinds,
       requiresHumanApproval: [ProposalKind.StrikeAuthorization],

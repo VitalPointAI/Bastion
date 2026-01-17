@@ -420,4 +420,83 @@ router.get('/:agentId/actions', (req: Request, res: Response): void => {
   }
 });
 
+// ==========================================================================
+// Governance Copilot Endpoints
+// ==========================================================================
+
+/**
+ * GET /api/agents/governance-copilot/analyze
+ * Get full copilot analysis for a proposal.
+ * Returns summary, context, and voting guidance.
+ */
+router.get('/governance-copilot/analyze', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const daoId = req.query.daoId as string;
+    const proposalId = parseInt(req.query.proposalId as string);
+
+    // Validate required parameters
+    if (!daoId || isNaN(proposalId)) {
+      res.status(400).json({
+        success: false,
+        error: 'Missing required parameters: daoId, proposalId',
+      });
+      return;
+    }
+
+    // Import governanceCopilot and DAOService
+    const { governanceCopilot } = await import('../agents/copilot.js');
+    const { getDAOService } = await import('../dao/dao-service.js');
+    const daoService = getDAOService();
+
+    // Get DAO and proposal
+    const dao = await daoService.getDAO(daoId);
+    if (!dao) {
+      res.status(404).json({
+        success: false,
+        error: `DAO ${daoId} not found`,
+      });
+      return;
+    }
+
+    const proposal = await daoService.getProposal(daoId, proposalId);
+    if (!proposal) {
+      res.status(404).json({
+        success: false,
+        error: `Proposal ${proposalId} not found in DAO ${daoId}`,
+      });
+      return;
+    }
+
+    // Get related proposals for context
+    const allProposals = await daoService.listProposals(daoId, 0, 20);
+    const relatedProposals = allProposals.filter((p) => p.id !== proposalId);
+
+    // Get user info from headers (if available)
+    const userDID = req.headers['x-did'] as string | undefined;
+    const userRoles = (req.query.userRoles as string)?.split(',') || [];
+    const userParty = req.query.userParty as string | undefined;
+
+    // Run full copilot analysis
+    const analysis = await governanceCopilot.analyze(
+      proposal,
+      dao,
+      relatedProposals,
+      userRoles,
+      userParty
+    );
+
+    res.json({
+      success: true,
+      data: {
+        summary: analysis.summary,
+        context: analysis.context,
+        guidance: analysis.guidance,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
 export default router;

@@ -2,7 +2,7 @@
  * Agent Executor
  *
  * Executes agent capabilities with proper permission checking and audit logging.
- * Capability handlers are stubs for now - AI integration comes in later phases.
+ * Uses GovernanceCopilot for rule-based analysis. AI integration comes in later phases.
  */
 
 import {
@@ -16,6 +16,8 @@ import {
 } from './types.js';
 import { AgentRegistry, getAgentRegistry } from './registry.js';
 import { DAOMetadata, Proposal } from '../dao/types.js';
+import { governanceCopilot } from './copilot.js';
+import type { ProposalSummaryOutput, ContextAnalysisOutput, VotingGuidanceOutput } from './copilot.js';
 import { DAOService, getDAOService } from '../dao/dao-service.js';
 
 /**
@@ -61,6 +63,7 @@ const capabilityToActionType: Record<AgentCapability, AgentActionType> = {
   [AgentCapability.ContextAnalysis]: AgentActionType.IdentifyContextGaps,
   [AgentCapability.FeasibilityAssessment]: AgentActionType.AssessFeasibility,
   [AgentCapability.SecurityMonitoring]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.VotingGuidance]: AgentActionType.RecommendVote,
   [AgentCapability.PreferenceModeling]: AgentActionType.RecommendVote,
   [AgentCapability.DelegatedVoting]: AgentActionType.CastDelegatedVote,
   [AgentCapability.ConsensusBuilding]: AgentActionType.SummarizeActivity,
@@ -237,6 +240,8 @@ export class AgentExecutor {
         return this.handleFeasibilityAssessment(context);
       case AgentCapability.SecurityMonitoring:
         return this.handleSecurityMonitoring(context);
+      case AgentCapability.VotingGuidance:
+        return this.handleVotingGuidance(context, input);
       default:
         throw new Error(`Capability ${capability} not implemented`);
     }
@@ -244,25 +249,25 @@ export class AgentExecutor {
 
   /**
    * Handle ProposalSummary capability.
-   * Stub: extracts key information from proposal description.
+   * Uses GovernanceCopilot for rule-based summarization.
    */
   private async handleProposalSummary(context: AgentContext): Promise<Record<string, unknown>> {
-    const { proposal } = context;
+    const { proposal, dao } = context;
     if (!proposal) {
       throw new Error('Proposal required for ProposalSummary');
     }
 
-    // Stub implementation - in production this would use AI
-    const description = proposal.description || '';
-    const sentences = description.split(/[.!?]+/).filter((s) => s.trim());
-    const summary = sentences.slice(0, 2).join('. ') + (sentences.length > 2 ? '...' : '');
+    // Use GovernanceCopilot for summarization
+    const summaryOutput = await governanceCopilot.summarizeProposal(proposal, dao);
 
     return {
-      summary: summary || 'No description provided',
-      keyPoints: sentences.slice(0, 5),
+      summary: summaryOutput.summary,
+      keyPoints: summaryOutput.keyPoints,
+      impactAssessment: summaryOutput.impactAssessment,
+      recommendation: summaryOutput.recommendation,
+      warnings: summaryOutput.warnings,
       proposalKind: proposal.kind,
       classification: proposal.classification,
-      recommendation: 'Review this proposal carefully before voting.',
     };
   }
 
@@ -309,7 +314,7 @@ export class AgentExecutor {
 
   /**
    * Handle ContextAnalysis capability.
-   * Stub: queries recent proposals in the same DAO.
+   * Uses GovernanceCopilot for context analysis.
    */
   private async handleContextAnalysis(context: AgentContext): Promise<Record<string, unknown>> {
     const { dao, proposal } = context;
@@ -317,41 +322,36 @@ export class AgentExecutor {
     // Get recent proposals for context
     const recentProposals = await this.daoService.listProposals(dao.dao_id, 0, 10);
 
-    // Find potentially related proposals (same kind)
-    const proposalKind = proposal
-      ? typeof proposal.kind === 'string'
-        ? proposal.kind
-        : 'Custom'
-      : null;
+    // Filter to find related proposals (same kind or overlapping topic)
+    const relatedProposals = proposal
+      ? recentProposals.filter((p) => p.id !== proposal.id)
+      : recentProposals;
 
-    const relatedProposals = proposalKind
-      ? recentProposals.filter((p) => {
-          const kind = typeof p.kind === 'string' ? p.kind : 'Custom';
-          return kind === proposalKind && p.id !== proposal?.id;
-        })
-      : [];
+    // Use GovernanceCopilot for context analysis
+    if (proposal) {
+      const contextOutput = await governanceCopilot.analyzeContext(proposal, dao, relatedProposals);
 
-    const contextGaps: string[] = [];
-
-    // Identify context gaps (stub logic)
-    if (!proposal?.description?.includes('budget') && proposalKind === 'Transfer') {
-      contextGaps.push('No budget justification provided');
-    }
-    if (!proposal?.description?.includes('timeline')) {
-      contextGaps.push('No timeline specified');
-    }
-    if (relatedProposals.length > 0) {
-      contextGaps.push(`${relatedProposals.length} similar proposals exist - review for conflicts`);
+      return {
+        relatedProposals: contextOutput.relatedProposals,
+        strategicAlignment: contextOutput.strategicAlignment,
+        precedents: contextOutput.precedents,
+        contextGaps: contextOutput.contextGaps,
+        daoMemberCount: dao.member_count,
+        activeProposalCount: dao.active_proposal_count,
+      };
     }
 
+    // Fallback if no proposal provided
     return {
       relatedProposals: relatedProposals.map((p) => ({
-        id: p.id,
-        kind: p.kind,
-        status: p.status,
-        description: p.description?.slice(0, 100),
+        daoId: dao.dao_id,
+        proposalId: p.id,
+        summary: p.description?.slice(0, 100) || 'No description',
+        relationship: 'related' as const,
       })),
-      contextGaps,
+      strategicAlignment: 'Unable to assess without specific proposal',
+      precedents: [],
+      contextGaps: ['Provide a specific proposal for detailed context analysis'],
       daoMemberCount: dao.member_count,
       activeProposalCount: dao.active_proposal_count,
     };
@@ -454,6 +454,42 @@ export class AgentExecutor {
       recommendations,
       securityLevel: alerts.length > 2 ? 'High' : alerts.length > 0 ? 'Medium' : 'Low',
       checkedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Handle VotingGuidance capability.
+   * Uses GovernanceCopilot for voting guidance generation.
+   */
+  private async handleVotingGuidance(
+    context: AgentContext,
+    input: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
+    const { proposal, dao, userDID } = context;
+    if (!proposal) {
+      throw new Error('Proposal required for VotingGuidance');
+    }
+
+    // Extract user roles and party from input
+    const userRoles = (input.userRoles as string[]) || [];
+    const userParty = input.userParty as string | undefined;
+
+    // Use GovernanceCopilot for voting guidance
+    const guidanceOutput = await governanceCopilot.generateVotingGuidance(
+      proposal,
+      dao,
+      userRoles,
+      userParty
+    );
+
+    return {
+      eligibility: guidanceOutput.eligibility,
+      autonomyExplanation: guidanceOutput.autonomyExplanation,
+      coalitionRequirements: guidanceOutput.coalitionRequirements,
+      nextSteps: guidanceOutput.nextSteps,
+      deadlineWarning: guidanceOutput.deadlineWarning,
+      proposalId: proposal.id,
+      daoId: dao.dao_id,
     };
   }
 
