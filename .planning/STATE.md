@@ -11,11 +11,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 3 of 12 (DAO Governance)
-Plan: 1 of 8 in current phase
+Plan: 2 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-17 — Completed 3-01-PLAN.md (DAO Core Module)
+Last activity: 2026-01-17 — Completed 3-02-PLAN.md (Role & Permission System)
 
-Progress: █░░░░░░░░░ 12.5% (Phase 3)
+Progress: ██░░░░░░░░ 25% (Phase 3)
 
 ## Performance Metrics
 
@@ -30,11 +30,11 @@ Progress: █░░░░░░░░░ 12.5% (Phase 3)
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
-| 3 (DAO Governance) | 1 | 6 min | 6 min |
+| 3 (DAO Governance) | 2 | 12 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 3 min, 4 min, 1 min, 25 min, 6 min
-- Trend: 3-01 fast due to straightforward Rust implementation
+- Last 5 plans: 4 min, 1 min, 25 min, 6 min, 6 min
+- Trend: 3-01 and 3-02 fast due to straightforward Rust implementations
 
 ## Accumulated Context
 
@@ -151,6 +151,12 @@ Recent decisions affecting current work:
 - Composite string keys (dao_id:proposal_id) for efficient multi-DAO storage
 - State machine: InProgress → Approved/Rejected/Removed/Expired/Failed (terminal states)
 
+**Phase 3 Plan 2 (Role & Permission System):**
+- Stateless PermissionChecker operates on references to RoleManager and CredentialRegistry
+- Agent tier ordering: NotAgent < SupportAgent < RepresentAgent < OrganizeAgent
+- Default roles on DAO creation: council (full perms, humans only), member (basic voting), agent (limited)
+- Permission format: {ProposalKind}:{Action} with wildcard support (*:*, Kind:*, *:Action)
+
 ### Deferred Issues
 
 **Pinata API 403 Error (from 1-04):** Backend IPFS upload endpoint returns 403 from Pinata API. Possible causes: JWT needs regeneration, API endpoint format changed, or permissions need adjustment. Does not block development. Can be resolved by regenerating JWT in Pinata dashboard.
@@ -162,6 +168,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: Completed 3-01-PLAN.md (DAO Core Module)
+Stopped at: Completed 3-02-PLAN.md (Role & Permission System)
 Resume file: None
-Next action: Execute 3-02-PLAN.md (Role & Permission System)
+Next action: Execute 3-03-PLAN.md (Voting Engine)
