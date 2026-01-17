@@ -1,11 +1,22 @@
-/* DAODashboard Styles */
+/* ============================================================================
+   BASTION Command Center - DAO Dashboard
+   Premium Military Command Interface
+   ============================================================================ */
+
+/* ============================================================================
+   Dashboard Container
+   ============================================================================ */
 
 .dao-dashboard {
+  width: 100%;
   min-height: 100vh;
-  background-color: #111;
-  color: #fff;
+  background: linear-gradient(180deg, var(--bg-deepest, #050508) 0%, var(--bg-deep, #0a0a0f) 100%);
+  color: var(--text-primary, #ffffff);
+  display: flex;
+  flex-direction: column;
 }
 
+/* Loading State */
 .dao-dashboard.loading,
 .dao-dashboard.error {
   display: flex;
@@ -13,324 +24,663 @@
   justify-content: center;
 }
 
-.loading-content,
-.error-content {
+.loading-content {
   text-align: center;
-  padding: 2rem;
+  padding: 4rem 2rem;
 }
 
+.loading-content::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1.5rem;
+  border: 3px solid var(--border-subtle, #2a2a38);
+  border-top-color: var(--accent-blue, #4a90d9);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error State */
 .error-content {
-  background-color: #2a1a1a;
-  border-radius: 8px;
+  text-align: center;
+  padding: 3rem;
+  background: linear-gradient(135deg, rgba(255, 68, 68, 0.1) 0%, rgba(255, 68, 68, 0.05) 100%);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 12px;
+  max-width: 400px;
 }
 
 .error-content p {
-  color: #ff4444;
-  margin-bottom: 1rem;
+  color: var(--accent-red, #ff4444);
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
 }
 
 .error-content button {
-  background-color: #333;
-  border: 1px solid #555;
-  color: #fff;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  background: linear-gradient(135deg, var(--bg-elevated, #222230) 0%, var(--bg-secondary, #1a1a24) 100%);
+  border: 1px solid var(--border-medium, #3a3a48);
+  color: var(--text-primary, #fff);
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
   cursor: pointer;
+  font-weight: 500;
+  transition: all var(--transition-medium, 0.25s ease);
 }
 
 .error-content button:hover {
-  background-color: #444;
+  background: var(--bg-hover, #2a2a38);
+  border-color: var(--accent-blue, #4a90d9);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.4));
 }
 
-/* Header */
+/* ============================================================================
+   Dashboard Header - Command Bar
+   ============================================================================ */
+
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
-  background-color: #1a1a1a;
-  border-bottom: 1px solid #333;
+  padding: 1.5rem 2.5rem;
+  background: linear-gradient(180deg, var(--bg-secondary, #1a1a24) 0%, var(--bg-primary, #111118) 100%);
+  border-bottom: 1px solid var(--border-subtle, #2a2a38);
+  position: relative;
+}
+
+/* Command bar bottom accent line */
+.dashboard-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    var(--accent-blue, #4a90d9) 0%,
+    var(--accent-blue, #4a90d9) 30%,
+    transparent 50%,
+    var(--accent-blue, #4a90d9) 70%,
+    var(--accent-blue, #4a90d9) 100%
+  );
+  opacity: 0.6;
 }
 
 .dashboard-header h1 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  position: relative;
 }
 
+/* Corner accent brackets */
+.dashboard-header h1::before,
+.dashboard-header h1::after {
+  position: absolute;
+  font-size: 1.5rem;
+  color: var(--accent-blue, #4a90d9);
+  opacity: 0.6;
+}
+
+.dashboard-header h1::before {
+  content: '[';
+  left: -1.25rem;
+}
+
+.dashboard-header h1::after {
+  content: ']';
+  right: -1.25rem;
+}
+
+/* DAO Selector - Premium Dropdown */
 .dao-selector select {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  background-color: #222;
-  border: 1px solid #333;
-  color: #fff;
-  border-radius: 4px;
+  padding: 0.75rem 2.5rem 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: linear-gradient(135deg, var(--bg-elevated, #222230) 0%, var(--bg-secondary, #1a1a24) 100%);
+  border: 1px solid var(--border-medium, #3a3a48);
+  color: var(--text-primary, #fff);
+  border-radius: 8px;
   cursor: pointer;
-  min-width: 200px;
+  min-width: 280px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a90d9' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  transition: all var(--transition-medium, 0.25s ease);
+}
+
+.dao-selector select:hover {
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 12px rgba(74, 144, 217, 0.2);
 }
 
 .dao-selector select:focus {
-  outline: 2px solid #4a90d9;
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
 }
 
-/* Content */
+/* ============================================================================
+   Dashboard Content Area
+   ============================================================================ */
+
 .dashboard-content {
-  padding: 1.5rem 2rem;
-}
-
-/* Summary Cards */
-.summary-cards {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.summary-card {
   flex: 1;
-  padding: 1.5rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.summary-card.highlight {
-  border-color: #ffa500;
-  background-color: #2a2a1a;
-}
-
-.card-value {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 0.5rem;
-}
-
-.summary-card.highlight .card-value {
-  color: #ffa500;
-}
-
-.card-label {
-  font-size: 0.85rem;
-  color: #888;
-  text-transform: uppercase;
-}
-
-/* Dashboard Main Layout */
-.dashboard-main {
+  padding: 2rem 2.5rem 3rem;
   display: flex;
+  flex-direction: column;
   gap: 2rem;
 }
 
-/* DAOs Sidebar */
+/* ============================================================================
+   Summary Cards - Executive Briefing
+   ============================================================================ */
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.summary-card {
+  position: relative;
+  padding: 2rem 2.5rem;
+  background: linear-gradient(145deg, var(--bg-secondary, #1a1a24) 0%, var(--bg-primary, #111118) 100%);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 12px;
+  text-align: center;
+  overflow: hidden;
+  transition: all var(--transition-medium, 0.25s ease);
+}
+
+/* Subtle grid pattern overlay */
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(rgba(74, 144, 217, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 144, 217, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+/* Top accent line */
+.summary-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-blue, #4a90d9), transparent);
+  opacity: 0.4;
+}
+
+.summary-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-medium, #3a3a48);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(74, 144, 217, 0.1);
+}
+
+/* Highlight card - Action Required */
+.summary-card.highlight {
+  border-color: var(--accent-orange, #ffa500);
+  background: linear-gradient(145deg, rgba(255, 165, 0, 0.08) 0%, var(--bg-primary, #111118) 100%);
+}
+
+.summary-card.highlight::after {
+  background: linear-gradient(90deg, transparent, var(--accent-orange, #ffa500), transparent);
+  opacity: 0.6;
+}
+
+.summary-card.highlight:hover {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 24px rgba(255, 165, 0, 0.2);
+}
+
+.card-value {
+  position: relative;
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: var(--text-primary, #fff);
+  margin-bottom: 0.75rem;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.summary-card.highlight .card-value {
+  color: var(--accent-orange, #ffa500);
+  text-shadow: 0 0 20px rgba(255, 165, 0, 0.4);
+}
+
+.card-label {
+  position: relative;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* ============================================================================
+   Dashboard Main Layout
+   ============================================================================ */
+
+.dashboard-main {
+  display: flex;
+  gap: 2.5rem;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ============================================================================
+   DAOs Sidebar
+   ============================================================================ */
+
 .daos-sidebar {
-  width: 280px;
+  width: 320px;
   flex-shrink: 0;
 }
 
 .daos-sidebar h3 {
-  margin: 0 0 1rem 0;
-  font-size: 0.9rem;
-  color: #888;
+  margin: 0 0 1.25rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
   text-transform: uppercase;
+  letter-spacing: 0.15em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.daos-sidebar h3::before {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  background: var(--accent-blue, #4a90d9);
+  border-radius: 2px;
 }
 
 .dao-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .dao-item {
-  padding: 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, var(--bg-secondary, #1a1a24) 0%, var(--bg-primary, #111118) 100%);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-medium, 0.25s ease);
+  position: relative;
+}
+
+.dao-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--accent-blue, #4a90d9);
+  border-radius: 0 2px 2px 0;
+  transition: height var(--transition-medium, 0.25s ease);
 }
 
 .dao-item:hover {
-  border-color: #555;
-  background-color: #222;
+  border-color: var(--border-medium, #3a3a48);
+  background: var(--bg-hover, #2a2a38);
+  transform: translateX(4px);
+}
+
+.dao-item:hover::before {
+  height: 60%;
 }
 
 .dao-item:focus {
-  outline: 2px solid #4a90d9;
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
 }
 
 .dao-item .dao-name {
   font-weight: 600;
-  color: #fff;
-  margin-bottom: 0.35rem;
+  font-size: 1rem;
+  color: var(--text-primary, #fff);
+  margin-bottom: 0.5rem;
 }
 
 .dao-item .dao-meta {
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
   font-size: 0.8rem;
-  color: #666;
+  color: var(--text-muted, #666678);
 }
 
-/* Main Content Area */
+.dao-item .dao-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ============================================================================
+   Main Content Area
+   ============================================================================ */
+
 .proposals-main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Action Required Section */
+/* ============================================================================
+   Action Required Section - Urgent Command Alert
+   ============================================================================ */
+
 .action-required-section {
   margin-bottom: 2rem;
-  padding: 1.5rem;
-  background-color: #2a2a1a;
-  border: 2px solid #ffa500;
-  border-radius: 8px;
+  padding: 1.75rem 2rem;
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.08) 0%, var(--bg-primary, #111118) 100%);
+  border: 2px solid var(--accent-orange, #ffa500);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated border glow */
+.action-required-section::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--accent-orange, #ffa500), transparent, var(--accent-orange, #ffa500));
+  border-radius: 14px;
+  z-index: -1;
+  opacity: 0.3;
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+@keyframes borderGlow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.5; }
 }
 
 .action-required-section h2 {
-  margin: 0 0 1rem 0;
-  font-size: 1.1rem;
-  color: #ffa500;
+  margin: 0 0 1.25rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-orange, #ffa500);
   text-transform: uppercase;
+  letter-spacing: 0.15em;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.action-required-section h2::before {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 10px;
+  background: var(--accent-orange, #ffa500);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--accent-orange, #ffa500);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.95); }
 }
 
 .action-required-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .action-item {
-  padding: 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, var(--bg-secondary, #1a1a24) 0%, var(--bg-primary, #111118) 100%);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-medium, 0.25s ease);
 }
 
 .action-item:hover {
-  border-color: #ffa500;
-  background-color: #222;
+  border-color: var(--accent-orange, #ffa500);
+  background: var(--bg-hover, #2a2a38);
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(255, 165, 0, 0.1);
 }
 
 .action-item:focus {
-  outline: 2px solid #ffa500;
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--accent-orange, #ffa500);
+  box-shadow: 0 0 0 3px rgba(255, 165, 0, 0.2);
 }
 
 .action-item-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .action-item-header .dao-name {
   font-size: 0.8rem;
-  color: #888;
+  font-weight: 500;
+  color: var(--text-secondary, #a0a0b0);
 }
 
 .action-item-header .urgency {
   font-size: 0.75rem;
-  color: #888;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .action-item-header .urgency.urgent {
-  color: #ff4444;
+  color: var(--accent-red, #ff4444);
   font-weight: 700;
-  animation: pulse 1s ease-in-out infinite;
+  text-shadow: 0 0 8px rgba(255, 68, 68, 0.5);
+  animation: urgentPulse 1.5s ease-in-out infinite;
 }
 
-@keyframes pulse {
+@keyframes urgentPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
 }
 
 .action-item-description {
-  color: #fff;
-  font-size: 0.95rem;
-  line-height: 1.4;
+  color: var(--text-primary, #fff);
+  font-size: 1rem;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* Proposals Section */
-.proposals-section {
-  /* ProposalList handles its own styling */
-}
+/* ============================================================================
+   Section Headers
+   ============================================================================ */
 
 .section-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 
 .section-header h2 {
   margin: 0;
-  font-size: 1.25rem;
-  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  letter-spacing: 0.02em;
 }
 
 .dao-description {
-  margin: 0.5rem 0 0 0;
-  color: #888;
-  font-size: 0.9rem;
+  margin: 0.75rem 0 0 0;
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
-/* Proposal Detail Section */
-.proposal-detail-section {
-  /* ProposalDetail handles its own styling */
-}
+/* ============================================================================
+   Voting Section
+   ============================================================================ */
 
-/* Voting Section */
 .voting-section {
-  max-width: 600px;
+  max-width: 700px;
 }
 
 .voting-section .section-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .back-button {
   background: none;
-  border: none;
-  color: #4a90d9;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  color: var(--accent-blue, #4a90d9);
   font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
-  padding: 0.25rem 0;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all var(--transition-fast, 0.15s ease);
 }
 
 .back-button:hover {
-  color: #5aa0e9;
-  text-decoration: underline;
+  background: var(--bg-hover, #2a2a38);
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue-bright, #5aa0e9);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .dashboard-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
+/* ============================================================================
+   Responsive Design
+   ============================================================================ */
+
+@media (max-width: 1200px) {
+  .dashboard-content {
+    padding: 1.5rem 2rem;
   }
 
   .summary-cards {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .summary-card {
+    padding: 1.5rem 2rem;
+  }
+
+  .card-value {
+    font-size: 2.75rem;
+  }
+
+  .daos-sidebar {
+    width: 280px;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-header {
     flex-direction: column;
+    gap: 1.25rem;
+    align-items: stretch;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .dashboard-header h1 {
+    text-align: center;
+  }
+
+  .dashboard-header h1::before,
+  .dashboard-header h1::after {
+    display: none;
+  }
+
+  .dao-selector select {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .dashboard-content {
+    padding: 1.5rem;
+  }
+
+  .summary-cards {
+    grid-template-columns: 1fr;
   }
 
   .dashboard-main {
     flex-direction: column;
+    gap: 2rem;
   }
 
   .daos-sidebar {
     width: 100%;
   }
+}
 
-  .dao-selector select {
-    width: 100%;
+@media (max-width: 600px) {
+  .dashboard-header {
+    padding: 1rem;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .dashboard-content {
+    padding: 1rem;
+  }
+
+  .summary-card {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .card-value {
+    font-size: 2.25rem;
+  }
+
+  .card-label {
+    font-size: 0.75rem;
+  }
+
+  .action-required-section {
+    padding: 1.25rem;
+  }
+
+  .action-item {
+    padding: 1rem;
   }
 }
