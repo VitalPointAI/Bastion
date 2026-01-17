@@ -33,6 +33,22 @@ async function ensureTableExists(): Promise<void> {
   }
 }
 
+/**
+ * Infer MIME type from file extension
+ * Used as fallback when client sends application/octet-stream
+ */
+function getMimeTypeFromExtension(filename: string): string | null {
+  const ext = filename.toLowerCase().split('.').pop();
+  const extensionMap: Record<string, string> = {
+    pdf: 'application/pdf',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    doc: 'application/msword',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    ppt: 'application/vnd.ms-powerpoint',
+  };
+  return ext ? extensionMap[ext] || null : null;
+}
+
 // Configure multer for file uploads
 // 50MB limit, only accept PDF and Office documents
 const upload = multer({
@@ -47,15 +63,29 @@ const upload = multer({
       'application/vnd.ms-powerpoint',
     ];
 
+    // Direct MIME type check
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
-    } else {
-      cb(
-        new Error(
-          `Unsupported file type: ${file.mimetype}. Allowed: PDF, DOCX, DOC, PPTX, PPT`
-        )
-      );
+      return;
     }
+
+    // Fallback: check extension when MIME is octet-stream or empty
+    // This handles clients (like curl) that don't detect MIME types properly
+    if (file.mimetype === 'application/octet-stream' || !file.mimetype) {
+      const inferredMime = getMimeTypeFromExtension(file.originalname);
+      if (inferredMime && allowedTypes.includes(inferredMime)) {
+        // Override the mimetype for downstream processing
+        file.mimetype = inferredMime;
+        cb(null, true);
+        return;
+      }
+    }
+
+    cb(
+      new Error(
+        `Unsupported file type: ${file.mimetype}. Allowed: PDF, DOCX, DOC, PPTX, PPT`
+      )
+    );
   },
 });
 
