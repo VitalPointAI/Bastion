@@ -19,6 +19,7 @@ import {
   ExecutionState,
 } from '../../types/dao';
 import { governanceService } from '../../lib/governance-service';
+import { CopilotPanel } from './CopilotPanel';
 import './ProposalDetail.css';
 
 interface ProposalDetailProps {
@@ -146,6 +147,14 @@ export function ProposalDetail({ daoId, proposalId, onClose, onVote }: ProposalD
           </div>
         )}
       </div>
+
+      {/* AI Copilot Panel */}
+      <CopilotPanel
+        daoId={daoId}
+        proposalId={proposalId}
+        proposalKind={typeof proposal.kind === 'string' ? proposal.kind : ProposalKind.Custom}
+        expanded={isStrike || proposal.kind === ProposalKind.FunctionCall}
+      />
 
       {/* Description Section */}
       <div className="description-section">

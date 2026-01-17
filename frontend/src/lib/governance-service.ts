@@ -26,6 +26,259 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+// ============================================================================
+// Copilot Analysis Types
+// ============================================================================
+
+/**
+ * Summary output from proposal analysis.
+ */
+export interface ProposalSummaryOutput {
+  summary: string;
+  keyPoints: string[];
+  impactAssessment: string;
+  recommendation?: string;
+  warnings: string[];
+}
+
+/**
+ * Context analysis output.
+ */
+export interface ContextAnalysisOutput {
+  relatedProposals: Array<{
+    daoId: string;
+    proposalId: number;
+    summary: string;
+    relationship: 'parent' | 'related' | 'dependent';
+  }>;
+  strategicAlignment: string;
+  precedents: string[];
+  contextGaps: string[];
+}
+
+/**
+ * Voting guidance output.
+ */
+export interface VotingGuidanceOutput {
+  eligibility: {
+    canVote: boolean;
+    reason?: string;
+  };
+  autonomyExplanation: string;
+  coalitionRequirements?: {
+    requiredParties: string[];
+    myParty?: string;
+    explanation: string;
+  };
+  nextSteps: string[];
+  deadlineWarning?: string;
+}
+
+/**
+ * Combined copilot analysis output.
+ */
+export interface CopilotAnalysis {
+  summary: ProposalSummaryOutput;
+  context: ContextAnalysisOutput;
+  guidance: VotingGuidanceOutput;
+}
+
+// Mock data mode - enable for UI testing without backend data
+const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+
+// Mock data for testing
+const MOCK_DAOS: DAOMetadata[] = [
+  {
+    daoId: 'jtf-alpha.bastion.near',
+    name: 'JTF Alpha Command',
+    description: 'Joint Task Force Alpha - Combined Operations Command',
+    classification: Classification.Secret,
+    defaultAutonomy: AutonomyLevel.NotAutonomous,
+    memberCount: 12,
+    activeProposalCount: 4,
+    createdAt: Date.now() * 1_000_000,
+    createdBy: 'commander.near',
+  },
+  {
+    daoId: 'fvey-intel.bastion.near',
+    name: 'Five Eyes Intel Cell',
+    description: 'Coalition intelligence sharing and coordination',
+    classification: Classification.TopSecret,
+    defaultAutonomy: AutonomyLevel.NotAutonomous,
+    memberCount: 5,
+    activeProposalCount: 2,
+    createdAt: Date.now() * 1_000_000,
+    createdBy: 'intel-coord.near',
+  },
+  {
+    daoId: 'logistics.bastion.near',
+    name: 'Logistics Division',
+    description: 'Supply chain and resource allocation',
+    classification: Classification.Public,
+    defaultAutonomy: AutonomyLevel.SemiAutonomous,
+    memberCount: 8,
+    activeProposalCount: 1,
+    createdAt: Date.now() * 1_000_000,
+    createdBy: 'logistics.near',
+  },
+];
+
+const nowNs = Date.now() * 1_000_000;
+const hourNs = 60 * 60 * 1_000_000_000;
+const dayNs = 24 * hourNs;
+
+const MOCK_PROPOSALS: Record<string, Proposal[]> = {
+  'jtf-alpha.bastion.near': [
+    {
+      id: 0,
+      daoId: 'jtf-alpha.bastion.near',
+      kind: ProposalKind.StrikeAuthorization,
+      proposer: 'intel-officer.near',
+      description: 'URGENT: Strike authorization for confirmed hostile target at grid 38TLN1234567890',
+      classification: Classification.Secret,
+      autonomyOverride: AutonomyLevel.NotAutonomous,
+      status: ProposalStatus.InProgress,
+      votesApprove: 3,
+      votesReject: 0,
+      createdAt: nowNs - hourNs,
+      votingDeadline: nowNs + (30 * 60 * 1_000_000_000), // 30 min remaining
+      executionState: ExecutionState.Pending,
+      effectiveAutonomy: AutonomyLevel.NotAutonomous,
+      timeRemaining: '30m',
+      requiresMyAction: true,
+      isUrgent: true,
+    },
+    {
+      id: 1,
+      daoId: 'jtf-alpha.bastion.near',
+      kind: ProposalKind.MissionOrder,
+      proposer: 'ops-planner.near',
+      description: 'Mission Order: Patrol route modification for Sector 7 - increased drone coverage',
+      classification: Classification.Secret,
+      autonomyOverride: AutonomyLevel.SemiAutonomous,
+      status: ProposalStatus.InProgress,
+      votesApprove: 5,
+      votesReject: 1,
+      createdAt: nowNs - 2 * hourNs,
+      votingDeadline: nowNs + 4 * hourNs,
+      executionState: ExecutionState.Pending,
+      effectiveAutonomy: AutonomyLevel.SemiAutonomous,
+      timeRemaining: '4h',
+      requiresMyAction: true,
+      isUrgent: false,
+    },
+    {
+      id: 2,
+      daoId: 'jtf-alpha.bastion.near',
+      kind: ProposalKind.AddMember,
+      proposer: 'hr-officer.near',
+      description: 'Add SGT Williams to JTF Alpha operations team',
+      classification: Classification.Public,
+      status: ProposalStatus.InProgress,
+      votesApprove: 2,
+      votesReject: 0,
+      createdAt: nowNs - dayNs,
+      votingDeadline: nowNs + 2 * dayNs,
+      executionState: ExecutionState.Pending,
+      effectiveAutonomy: AutonomyLevel.Autonomous,
+      timeRemaining: '2d',
+      requiresMyAction: false,
+      isUrgent: false,
+    },
+    {
+      id: 3,
+      daoId: 'jtf-alpha.bastion.near',
+      kind: ProposalKind.ConfigChange,
+      proposer: 'commander.near',
+      description: 'Update default autonomy level for reconnaissance operations',
+      classification: Classification.Secret,
+      status: ProposalStatus.Approved,
+      votesApprove: 8,
+      votesReject: 2,
+      createdAt: nowNs - 3 * dayNs,
+      votingDeadline: nowNs - dayNs,
+      executionState: ExecutionState.Executed,
+      effectiveAutonomy: AutonomyLevel.NotAutonomous,
+      timeRemaining: 'Expired',
+      requiresMyAction: false,
+      isUrgent: false,
+    },
+  ],
+  'fvey-intel.bastion.near': [
+    {
+      id: 0,
+      daoId: 'fvey-intel.bastion.near',
+      kind: ProposalKind.FunctionCall,
+      proposer: 'gchq.near',
+      description: 'Cross-coalition intelligence share request: SIGINT data for Operation Northern Shield',
+      classification: Classification.TopSecret,
+      autonomyOverride: AutonomyLevel.NotAutonomous,
+      status: ProposalStatus.InProgress,
+      votesApprove: 2,
+      votesReject: 0,
+      createdAt: nowNs - 6 * hourNs,
+      votingDeadline: nowNs + 18 * hourNs,
+      executionState: ExecutionState.Pending,
+      effectiveAutonomy: AutonomyLevel.NotAutonomous,
+      timeRemaining: '18h',
+      requiresMyAction: true,
+      isUrgent: false,
+    },
+    {
+      id: 1,
+      daoId: 'fvey-intel.bastion.near',
+      kind: ProposalKind.Transfer,
+      proposer: 'csis.near',
+      description: 'Budget allocation for joint surveillance operation',
+      classification: Classification.Secret,
+      status: ProposalStatus.InProgress,
+      votesApprove: 3,
+      votesReject: 1,
+      createdAt: nowNs - 2 * dayNs,
+      votingDeadline: nowNs + dayNs,
+      executionState: ExecutionState.Pending,
+      effectiveAutonomy: AutonomyLevel.SemiAutonomous,
+      timeRemaining: '1d',
+      requiresMyAction: false,
+      isUrgent: false,
+    },
+  ],
+  'logistics.bastion.near': [
+    {
+      id: 0,
+      daoId: 'logistics.bastion.near',
+      kind: ProposalKind.Transfer,
+      proposer: 'supply-officer.near',
+      description: 'Fuel allocation increase for forward operating base resupply',
+      classification: Classification.Public,
+      status: ProposalStatus.Approved,
+      votesApprove: 6,
+      votesReject: 0,
+      createdAt: nowNs - dayNs,
+      votingDeadline: nowNs - 2 * hourNs,
+      executionState: ExecutionState.ReadyForExecution,
+      effectiveAutonomy: AutonomyLevel.SemiAutonomous,
+      timeRemaining: 'Expired',
+      requiresMyAction: false,
+      isUrgent: false,
+    },
+  ],
+};
+
+const MOCK_COALITION_STATUS: CoalitionStatus = {
+  requiredParties: ['USA', 'GBR', 'CAN', 'AUS', 'NZL'],
+  approvals: {
+    'USA': { approved: true, approvedBy: 'nsa.near', approvedAt: nowNs - hourNs },
+    'GBR': { approved: true, approvedBy: 'gchq.near', approvedAt: nowNs - 2 * hourNs },
+    'CAN': { approved: false },
+    'AUS': { approved: false },
+    'NZL': { approved: false },
+  },
+  allPartiesRequired: true,
+  isApproved: false,
+  pendingParties: ['CAN', 'AUS', 'NZL'],
+};
+
 /**
  * GovernanceService class for DAO operations.
  */
@@ -90,6 +343,9 @@ export class GovernanceService {
    * List all accessible DAOs.
    */
   async listDAOs(offset = 0, limit = 50): Promise<DAOMetadata[]> {
+    if (USE_MOCK_DATA) {
+      return MOCK_DAOS.slice(offset, offset + limit);
+    }
     const rawDAOs = await this.fetch<any[]>(`/api/dao?offset=${offset}&limit=${limit}`);
     return rawDAOs.map(this.transformDAO);
   }
@@ -98,6 +354,11 @@ export class GovernanceService {
    * Get DAO by ID.
    */
   async getDAO(daoId: string): Promise<DAOMetadata> {
+    if (USE_MOCK_DATA) {
+      const dao = MOCK_DAOS.find((d) => d.daoId === daoId);
+      if (!dao) throw new Error(`DAO ${daoId} not found`);
+      return dao;
+    }
     const rawDAO = await this.fetch<any>(`/api/dao/${encodeURIComponent(daoId)}`);
     return this.transformDAO(rawDAO);
   }
@@ -119,6 +380,13 @@ export class GovernanceService {
    * List proposals for a DAO.
    */
   async listProposals(daoId: string, status?: ProposalStatus, offset = 0, limit = 50): Promise<Proposal[]> {
+    if (USE_MOCK_DATA) {
+      let proposals = MOCK_PROPOSALS[daoId] || [];
+      if (status) {
+        proposals = proposals.filter((p) => p.status === status);
+      }
+      return proposals.slice(offset, offset + limit);
+    }
     let path = `/api/dao/${encodeURIComponent(daoId)}/proposals?offset=${offset}&limit=${limit}`;
     if (status) {
       path += `&status=${status}`;
@@ -131,6 +399,12 @@ export class GovernanceService {
    * Get proposal by ID.
    */
   async getProposal(daoId: string, proposalId: number): Promise<Proposal> {
+    if (USE_MOCK_DATA) {
+      const proposals = MOCK_PROPOSALS[daoId] || [];
+      const proposal = proposals.find((p) => p.id === proposalId);
+      if (!proposal) throw new Error(`Proposal ${proposalId} not found`);
+      return proposal;
+    }
     const rawProposal = await this.fetch<any>(`/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}`);
     return this.transformProposal(rawProposal, daoId);
   }
@@ -152,6 +426,13 @@ export class GovernanceService {
    * Get all proposals requiring user action across all DAOs.
    */
   async getMyActionRequired(): Promise<Proposal[]> {
+    if (USE_MOCK_DATA) {
+      const allProposals = Object.values(MOCK_PROPOSALS).flat();
+      return allProposals
+        .filter((p) => p.requiresMyAction && p.status === ProposalStatus.InProgress)
+        .sort((a, b) => a.votingDeadline - b.votingDeadline);
+    }
+
     const daos = await this.listDAOs();
     const actionRequired: Proposal[] = [];
 
@@ -177,6 +458,32 @@ export class GovernanceService {
    * Get votes for a proposal.
    */
   async getVotes(daoId: string, proposalId: number): Promise<Vote[]> {
+    if (USE_MOCK_DATA) {
+      // Generate mock votes based on proposal vote counts
+      const proposals = MOCK_PROPOSALS[daoId] || [];
+      const proposal = proposals.find((p) => p.id === proposalId);
+      if (!proposal) return [];
+
+      const votes: Vote[] = [];
+      const voters = ['commander.near', 'intel-officer.near', 'ops-planner.near', 'council-member.near', 'advisor.near'];
+      for (let i = 0; i < proposal.votesApprove; i++) {
+        votes.push({
+          voter: voters[i % voters.length],
+          voteType: VoteType.Approve,
+          weight: 1,
+          timestamp: nowNs - (i * hourNs),
+        });
+      }
+      for (let i = 0; i < proposal.votesReject; i++) {
+        votes.push({
+          voter: `reviewer-${i + 1}.near`,
+          voteType: VoteType.Reject,
+          weight: 1,
+          timestamp: nowNs - (i * hourNs),
+        });
+      }
+      return votes;
+    }
     const rawVotes = await this.fetch<any[]>(
       `/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}/votes`
     );
@@ -261,6 +568,13 @@ export class GovernanceService {
    * Get coalition status for a proposal.
    */
   async getCoalitionStatus(daoId: string, proposalId: number): Promise<CoalitionStatus | null> {
+    if (USE_MOCK_DATA) {
+      // Return coalition status for Five Eyes intel proposals
+      if (daoId === 'fvey-intel.bastion.near') {
+        return MOCK_COALITION_STATUS;
+      }
+      return null;
+    }
     try {
       const raw = await this.fetch<any>(
         `/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}/coalition`
@@ -294,6 +608,93 @@ export class GovernanceService {
       throw new Error(result.error || 'Failed to build coalition approval transaction');
     }
     return result.transaction;
+  }
+
+  // ============================================================================
+  // AI Copilot Operations
+  // ============================================================================
+
+  /**
+   * Get copilot analysis for a proposal.
+   * Returns summary, context analysis, and voting guidance.
+   */
+  async getCopilotAnalysis(
+    daoId: string,
+    proposalId: number,
+    userRoles: string[] = [],
+    userParty?: string
+  ): Promise<CopilotAnalysis> {
+    if (USE_MOCK_DATA) {
+      // Return mock copilot analysis
+      return this.getMockCopilotAnalysis(daoId, proposalId);
+    }
+
+    let path = `/api/agents/governance-copilot/analyze?daoId=${encodeURIComponent(daoId)}&proposalId=${proposalId}`;
+    if (userRoles.length > 0) {
+      path += `&userRoles=${encodeURIComponent(userRoles.join(','))}`;
+    }
+    if (userParty) {
+      path += `&userParty=${encodeURIComponent(userParty)}`;
+    }
+
+    return this.fetch<CopilotAnalysis>(path);
+  }
+
+  /**
+   * Generate mock copilot analysis for testing.
+   */
+  private getMockCopilotAnalysis(daoId: string, proposalId: number): CopilotAnalysis {
+    const proposals = MOCK_PROPOSALS[daoId] || [];
+    const proposal = proposals.find((p) => p.id === proposalId);
+    const isStrike = proposal?.kind === ProposalKind.StrikeAuthorization;
+
+    return {
+      summary: {
+        summary: proposal?.description || 'No description available for this proposal.',
+        keyPoints: [
+          'Requires review before voting',
+          isStrike ? 'Cannot be delegated to AI agents' : 'Standard approval workflow',
+          'Voting deadline is approaching',
+        ],
+        impactAssessment: isStrike
+          ? 'If APPROVED: Authorizes lethal action. If REJECTED: No action authorized. This decision has irreversible consequences.'
+          : 'If APPROVED: Action will be executed according to autonomy level. If REJECTED: No action taken.',
+        recommendation: isStrike
+          ? undefined
+          : 'Consider: Review the proposal details carefully and consult with relevant stakeholders before voting.',
+        warnings: isStrike
+          ? [
+              'CRITICAL: Strike authorization cannot be delegated to AI agents',
+              'This decision requires human judgment and cannot be automated',
+              'Verify all intelligence and authorization chains before voting',
+            ]
+          : [],
+      },
+      context: {
+        relatedProposals: [],
+        strategicAlignment: `Review how this proposal supports ${daoId.split('.')[0]}'s mission and strategic objectives.`,
+        precedents: [],
+        contextGaps: proposal?.description && proposal.description.length < 100
+          ? ['Description is brief - consider requesting more detail']
+          : [],
+      },
+      guidance: {
+        eligibility: {
+          canVote: true,
+        },
+        autonomyExplanation: isStrike
+          ? 'HUMAN-IN-THE-LOOP: This proposal requires explicit human approval before execution, even after votes pass. Strike authorization cannot be automated.'
+          : 'SEMI-AUTONOMOUS: If approved, there will be a veto window before execution. Council members can veto during this period.',
+        nextSteps: [
+          '1. Review proposal details and context',
+          '2. Cast your vote (Approve, Reject, or Abstain)',
+          isStrike
+            ? '3. If approved, awaits explicit human authorization'
+            : '3. If approved, enters veto window for council review',
+        ],
+        deadlineWarning: proposal?.isUrgent ? 'URGENT: Less than 1 hour to vote' : undefined,
+      },
+    };
   }
 
   // ============================================================================
