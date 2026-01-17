@@ -22,6 +22,9 @@ use did_registry::{DIDRegistry, EncryptedDIDEntry};
 mod credential_registry;
 use credential_registry::{CredentialRegistry, EncryptedCredentialAnchor};
 
+mod dao;
+use dao::{DAORegistry, ProposalManager};
+
 /// Main contract structure with state versioning pattern
 /// State version is tracked internally for safe upgrades
 #[near(contract_state)]
