@@ -423,6 +423,272 @@ interface CommanderIntent {
 - **Missing audit trail:** Every state transition needs logged for compliance
 </architecture_patterns>
 
+<strategic_planning_doctrine>
+## Strategic Planning Process: Stages and Required Outputs
+
+This section documents the doctrinal foundation for strategic planning. The Strategic Planning Module should produce outputs that align with established military planning doctrine to ensure interoperability with operational planning (Phase 5).
+
+### Document Hierarchy (NSS → NDS → NMS)
+
+Strategic guidance flows downward through a defined hierarchy:
+
+| Document | Issuing Authority | Purpose | Key Outputs |
+|----------|-------------------|---------|-------------|
+| **NSS** (National Security Strategy) | President | Articulates national security objectives and how to achieve them | National interests, threats, opportunities, DIME priorities |
+| **NDS** (National Defense Strategy) | Secretary of Defense | Translates NSS into defense guidance | Defense objectives, force posture, modernization priorities |
+| **NMS** (National Military Strategy) | Chairman JCS | Provides military objectives and ways to achieve them | Military objectives, force employment concepts, risk assessment |
+| **GEF** (Guidance for Employment of Force) | SecDef | Prioritized planning guidance | Contingency planning priorities, force employment guidance |
+| **JSCP** (Joint Strategic Capabilities Plan) | Chairman JCS | Assigns planning tasks to CCDRs | Specific planning tasks, force apportionment |
+
+**Data Model Implication:** Every extracted objective must track its source document level and link to parent objectives in higher-level documents.
+
+### Strategic Planning Process Stages
+
+#### Stage 1: Document Ingestion & Analysis
+**Purpose:** Receive and parse strategic guidance documents
+**Inputs:**
+- National Security Strategy document
+- National Defense Strategy document
+- Other strategic directives (Presidential directives, SecDef memos)
+
+**Required Outputs:**
+| Output | Description | Data Structure |
+|--------|-------------|----------------|
+| Parsed Document | Full text with section markers | `{ text, sections[], metadata }` |
+| Document Classification | Security level and caveats | `{ classification, caveats[], releasability }` |
+| Document Metadata | Source, date, authority | `{ title, issuingAuthority, effectiveDate, level }` |
+| Section Index | Navigable structure | `{ sectionId, title, pageRange, parentSection }` |
+
+#### Stage 2: Objective Extraction
+**Purpose:** Extract strategic objectives using AI/LLM
+**Inputs:**
+- Parsed document text
+- Extraction schema (DIME + Ends-Ways-Means)
+
+**Required Outputs:**
+| Output | Description | Data Structure |
+|--------|-------------|----------------|
+| Strategic Objectives | Extracted objectives with DIME categorization | See schema below |
+| Extraction Confidence | AI confidence score per objective | `{ objectiveId, confidence: 0-1 }` |
+| Source References | Links back to source text | `{ objectiveId, documentId, page, paragraph }` |
+| Extraction Audit | Record of AI extraction for review | `{ timestamp, model, prompt, rawResponse }` |
+
+**Strategic Objective Schema (Ends-Ways-Means):**
+```typescript
+interface StrategicObjective {
+  id: string;
+
+  // Ends (desired outcomes)
+  ends: {
+    description: string;           // What success looks like
+    conditions: string[];          // Measurable conditions for success
+    timeframe?: string;            // When to achieve
+  };
+
+  // Ways (strategies to achieve ends)
+  ways: {
+    strategies: string[];          // High-level approaches
+    concepts: string[];            // Operational concepts
+    keyTasks: string[];            // Essential tasks
+  };
+
+  // Means (resources required)
+  means: {
+    forces: string[];              // Military forces
+    capabilities: string[];        // Required capabilities
+    resources: string[];           // Funding, materiel
+  };
+
+  // DIME categorization
+  dimeCategory: 'DIPLOMATIC' | 'INFORMATIONAL' | 'MILITARY' | 'ECONOMIC';
+  supportingDIME: DIMECategory[];  // Secondary instruments
+
+  // Constraints
+  constraints: string[];           // Limitations (ROE, policy, legal)
+  assumptions: string[];           // Planning assumptions
+}
+```
+
+#### Stage 3: Risk Assessment
+**Purpose:** Assess risks associated with each objective
+**Inputs:**
+- Extracted strategic objectives
+- Environmental factors (threat assessments, capability gaps)
+
+**Required Outputs:**
+| Output | Description | Data Structure |
+|--------|-------------|----------------|
+| Risk-to-Mission | Probability/impact of not achieving objective | See schema below |
+| Risk-to-Force | Probability/impact of harm to forces/resources | See schema below |
+| Risk Mitigation Options | Identified ways to reduce risk | `{ riskId, mitigations[] }` |
+| Residual Risk | Risk remaining after mitigation | `{ riskId, residualLevel }` |
+
+**Risk Assessment Schema:**
+```typescript
+interface RiskAssessment {
+  id: string;
+  objectiveId: string;
+
+  // Risk-to-Mission (probability × impact of failing to achieve objective)
+  riskToMission: {
+    likelihood: 'ALMOST_CERTAIN' | 'LIKELY' | 'POSSIBLE' | 'UNLIKELY' | 'RARE';
+    impact: 'CATASTROPHIC' | 'CRITICAL' | 'MODERATE' | 'MARGINAL' | 'NEGLIGIBLE';
+    riskLevel: 'EXTREME' | 'HIGH' | 'MEDIUM' | 'LOW';  // Derived from matrix
+    factors: string[];                                   // Contributing factors
+  };
+
+  // Risk-to-Force (probability × impact of harm to resources)
+  riskToForce: {
+    likelihood: 'ALMOST_CERTAIN' | 'LIKELY' | 'POSSIBLE' | 'UNLIKELY' | 'RARE';
+    impact: 'CATASTROPHIC' | 'CRITICAL' | 'MODERATE' | 'MARGINAL' | 'NEGLIGIBLE';
+    riskLevel: 'EXTREME' | 'HIGH' | 'MEDIUM' | 'LOW';
+    factors: string[];
+  };
+
+  // Mitigations
+  mitigations: Array<{
+    description: string;
+    effectiveness: 'HIGH' | 'MEDIUM' | 'LOW';
+    resourceCost: 'HIGH' | 'MEDIUM' | 'LOW';
+    accepted: boolean;
+  }>;
+
+  // Risk decision
+  riskDecision: 'ACCEPT' | 'AVOID' | 'TRANSFER' | 'MITIGATE';
+  riskDecisionAuthority: string;    // Who can accept this risk level
+  residualRisk: 'EXTREME' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+  // Audit
+  assessedBy: string;
+  assessedAt: Date;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+}
+```
+
+**Risk Matrix (5x5):**
+```
+                    IMPACT
+                Negligible  Marginal  Moderate  Critical  Catastrophic
+LIKELIHOOD
+Almost Certain    MEDIUM      HIGH      HIGH     EXTREME    EXTREME
+Likely            LOW        MEDIUM     HIGH      HIGH      EXTREME
+Possible          LOW         LOW      MEDIUM     HIGH       HIGH
+Unlikely          LOW         LOW       LOW      MEDIUM      HIGH
+Rare              LOW         LOW       LOW       LOW       MEDIUM
+```
+
+#### Stage 4: Human Review & Editing
+**Purpose:** Human verification and refinement of AI extractions
+**Inputs:**
+- AI-extracted objectives with confidence scores
+- Risk assessments
+- Source documents for reference
+
+**Required Outputs:**
+| Output | Description | Data Structure |
+|--------|-------------|----------------|
+| Verified Objectives | Human-confirmed extractions | `{ objectiveId, verified: boolean, verifiedBy, changes[] }` |
+| Edit History | Track changes made by humans | `{ objectiveId, field, oldValue, newValue, editedBy, reason }` |
+| Rejection Records | Why objectives were rejected | `{ objectiveId, rejectedBy, reason, sourceIssue }` |
+| Review Completion | All objectives reviewed status | `{ documentId, totalObjectives, verified, rejected, pending }` |
+
+#### Stage 5: Approval Workflow
+**Purpose:** Multi-stakeholder approval before operationalization
+**Inputs:**
+- Verified objectives
+- Risk assessments with decisions
+- Reviewer chain based on classification/authority
+
+**Required Outputs:**
+| Output | Description | Data Structure |
+|--------|-------------|----------------|
+| Approval Status | Current workflow state per objective | `{ objectiveId, state, currentReviewer, history[] }` |
+| Approval Decision | Approve/reject with comments | `{ objectiveId, decision, comment, decidedBy, decidedAt }` |
+| Authority Record | Who had authority to approve | `{ objectiveId, requiredAuthority, actualApprover }` |
+| Audit Trail | Complete approval history | `{ objectiveId, events: [{ type, actor, timestamp, data }] }` |
+
+**Approval States (XState):**
+```
+DRAFT → SUBMITTED → UNDER_REVIEW → [APPROVED | REJECTED | ESCALATED]
+                         ↓
+                   PENDING_CHANGES → RESUBMITTED → UNDER_REVIEW
+```
+
+#### Stage 6: Operationalization
+**Purpose:** Approved objectives become inputs to operational planning
+**Inputs:**
+- Approved strategic objectives
+- Risk assessments
+- Constraints and assumptions
+
+**Required Outputs:**
+| Output | Description | Data Structure |
+|--------|-------------|----------------|
+| Operationalized Objective | Ready for JOPP/Phase 5 | `{ objective, status: 'OPERATIONALIZED', operationalizedAt }` |
+| Planning Directive | Guidance for operational planners | `{ objectiveId, taskings[], constraints[], timeline }` |
+| Commander's Intent | Derived intent for subordinate planning | `{ purpose, keyTasks[], endState, expandedPurpose }` |
+| Resource Allocation | Initial resource identification | `{ objectiveId, resources: { forces[], capabilities[], funding } }` |
+
+### Commander's Intent Structure
+
+Per JP 5-0 and FM 6-0, Commander's Intent must include:
+
+```typescript
+interface CommanderIntent {
+  // Required elements
+  purpose: string;           // Why we are conducting this operation
+  keyTasks: string[];        // What must be accomplished (from Ends-Ways-Means)
+  endState: string;          // Conditions that define success
+
+  // Expanded elements (Klein's 7 facets for robust intent)
+  expandedPurpose?: string;  // Broader context and rationale
+  rationale?: string;        // Why this approach was chosen
+  keyDecisions?: string[];   // Decisions subordinates may need to make
+  antiGoals?: string[];      // Outcomes to explicitly avoid
+  constraints?: string[];    // Weather, ROE, political constraints
+
+  // Traceability
+  sourceObjectiveId: string; // Links to strategic objective
+  issuedBy: string;          // Commander who issued
+  issuedAt: Date;
+  classification: string;
+}
+```
+
+### Alignment with JOPP (Phase 5 Handoff)
+
+The Strategic Planning Module outputs must align with Joint Operation Planning Process (JOPP) inputs:
+
+| Strategic Module Output | JOPP Step | How It's Used |
+|------------------------|-----------|---------------|
+| Strategic Objectives | Step 1: Planning Initiation | Initiates planning requirement |
+| Commander's Intent | Step 2: Mission Analysis | Frames the problem |
+| Constraints/Assumptions | Step 2: Mission Analysis | Bounds the solution space |
+| Risk Assessments | Step 2: Mission Analysis | Informs CCIR development |
+| DIME Categorization | Step 3: COA Development | Ensures whole-of-government approach |
+| Ends-Ways-Means | Step 3: COA Development | Structures COA options |
+| Resource Requirements | Step 7: Plan Development | Informs force allocation |
+
+### Risk Assessment Integration Points
+
+Risk assessment is NOT a one-time activity. It must occur at multiple points:
+
+1. **During Extraction:** AI flags objectives with unclear end states or missing means
+2. **During Review:** Humans assess feasibility and identify gaps
+3. **During Approval:** Authority holders accept/reject based on risk level
+4. **Post-Approval:** Risk continuously monitored as situation changes
+5. **At Operationalization:** Operational risk assessment begins (Phase 5)
+
+**Risk Decision Authority by Level:**
+| Risk Level | Approval Authority |
+|------------|-------------------|
+| LOW | Staff officer |
+| MEDIUM | O-6/GS-15 or designated representative |
+| HIGH | General/Flag Officer or SES |
+| EXTREME | Commander or designated general/flag officer |
+</strategic_planning_doctrine>
+
 <dont_hand_roll>
 ## Don't Hand-Roll
 
@@ -761,6 +1027,12 @@ Things that couldn't be fully resolved:
 - AUL DIMEFIL LibGuide - https://fairchild-mil.libguides.com/dimefil
 - Army War College: Problem with DIME - https://warroom.armywarcollege.edu/articles/problem-with-dime/
 - Lykke Ends-Ways-Means Model - https://nsiteam.com/social/wp-content/uploads/2019/06/Webb-Andrew-C.-Rethinking-Strategy-Art-Lykke-and-the-Development-of-the-Ends-Ways-Means-Model-of-Strategy-31-MAY-19.pdf
+- JP 5-0 Joint Planning - https://www.jcs.mil/Doctrine/Joint-Doctrine-Pubs/5-0-Planning-Series/
+- CJCSM 3105.01 Joint Risk Analysis - https://www.jcs.mil/Portals/36/Documents/Library/Manuals/CJCSM%203105.01B.pdf
+- ATP 5-19 Risk Management - https://www.armyresilience.army.mil/ard/images/pdf/Policy/ATP%205-19%20Risk%20Management.pdf
+- Lightning Press JPP Overview - https://www.thelightningpress.com/joint-planning-process-jpp/
+- NWC JOPP Workbook - https://dnnlgwick.blob.core.windows.net/portals/0/NWCDepartments/Joint%20Military%20Operations%20Department/NWC-4111J-July-2013-chg1.pdf
+- Commander's Intent Elements - https://pavilion.dinfos.edu/Article/Article/2163950/the-elements-of-commanders-intent/
 
 ### Tertiary (LOW confidence - needs validation)
 - None - all key claims verified against documentation
@@ -774,12 +1046,14 @@ Things that couldn't be fully resolved:
 - Ecosystem: unpdf, officeParser, Instructor-JS, XState v5, Zod, LlamaIndex.TS
 - Patterns: Document ingestion pipeline, structured extraction, approval workflows, DIME/EWM data model
 - Pitfalls: Memory issues, extraction failures, state corruption, doctrine compliance
+- Doctrine: NSS/NDS/NMS hierarchy, JOPP alignment, Risk-to-Mission/Force, Commander's Intent structure
 
 **Confidence breakdown:**
 - Standard stack: HIGH - verified with npm, GitHub, official docs
 - Architecture: HIGH - patterns from official documentation and production use
 - Pitfalls: HIGH - documented in guides and production experience
 - Code examples: HIGH - adapted from official documentation
+- Strategic doctrine: HIGH - from JP 5-0, CJCSM 3105.01, ATP 5-19, and official DoD sources
 
 **Research date:** 2026-01-17
 **Valid until:** 2026-02-17 (30 days - stable ecosystem)
