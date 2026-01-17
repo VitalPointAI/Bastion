@@ -1,151 +1,354 @@
-/* ProposalCard Styles */
+/* ============================================================================
+   ProposalCard - Command Briefing Item
+   Premium styling for individual proposal cards
+   ============================================================================ */
+
+/* ============================================================================
+   Base Card Structure
+   ============================================================================ */
 
 .proposal-card {
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 1rem;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 1.5rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-medium);
   position: relative;
+  overflow: hidden;
 }
 
+/* Subtle corner accents */
+.proposal-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border-top: 2px solid var(--border-medium);
+  border-left: 2px solid var(--border-medium);
+  border-radius: 10px 0 0 0;
+  opacity: 0.5;
+  transition: all var(--transition-medium);
+}
+
+.proposal-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  border-bottom: 2px solid var(--border-medium);
+  border-right: 2px solid var(--border-medium);
+  border-radius: 0 0 10px 0;
+  opacity: 0.5;
+  transition: all var(--transition-medium);
+}
+
+/* Hover state - premium lift effect */
 .proposal-card:hover {
-  border-color: #555;
-  background-color: #222;
+  border-color: var(--accent-blue);
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), var(--glow-blue);
 }
 
-.proposal-card:focus {
-  outline: 2px solid #4a90d9;
-  outline-offset: 2px;
+.proposal-card:hover::before,
+.proposal-card:hover::after {
+  border-color: var(--accent-blue);
+  opacity: 1;
 }
+
+/* Focus state for accessibility */
+.proposal-card:focus {
+  outline: none;
+  border-color: var(--accent-blue-bright);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.3);
+}
+
+/* ============================================================================
+   Action Required State
+   ============================================================================ */
 
 .proposal-card.action-required {
-  border-left: 4px solid #ffa500;
+  border-left: 4px solid var(--accent-orange);
+  background: linear-gradient(135deg,
+    rgba(255, 165, 0, 0.05) 0%,
+    var(--bg-primary) 100%
+  );
 }
 
+.proposal-card.action-required::before {
+  border-color: var(--accent-orange);
+  opacity: 0.8;
+}
+
+.proposal-card.action-required:hover {
+  border-left-color: var(--accent-orange);
+  box-shadow: var(--shadow-lg), var(--glow-orange);
+}
+
+/* ============================================================================
+   Urgent State - Attention-Grabbing
+   ============================================================================ */
+
 .proposal-card.urgent {
-  border-color: #ff4444;
+  border-color: var(--accent-red);
+  background: linear-gradient(135deg,
+    rgba(255, 68, 68, 0.08) 0%,
+    var(--bg-primary) 100%
+  );
+  animation: urgentPulse 2s ease-in-out infinite;
+}
+
+@keyframes urgentPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 0 rgba(255, 68, 68, 0.2);
+  }
+}
+
+.proposal-card.urgent::before,
+.proposal-card.urgent::after {
+  border-color: var(--accent-red);
+  opacity: 0.8;
 }
 
 .proposal-card.urgent.action-required {
-  border-left-color: #ff4444;
+  border-left-color: var(--accent-red);
 }
 
-/* Header */
+/* ============================================================================
+   Card Header
+   ============================================================================ */
+
 .proposal-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  gap: 0.75rem;
 }
+
+/* ============================================================================
+   Kind Badge - Classification Style
+   ============================================================================ */
 
 .proposal-kind-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  background-color: #333;
-  color: #888;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all var(--transition-fast);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+/* Default kind */
+.proposal-kind-badge {
+  background: linear-gradient(135deg, #3a3a48 0%, #2a2a38 100%);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
+}
+
+/* Strike Authorization - CRITICAL classification */
 .proposal-kind-badge.strike {
-  background-color: #660000;
-  color: #ff4444;
+  background: linear-gradient(135deg, #660000 0%, #440000 100%);
+  color: #ff6666;
+  border: 1px solid #880000;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 100, 100, 0.2),
+    0 0 12px rgba(255, 68, 68, 0.3);
+  animation: strikePulse 2s ease-in-out infinite;
 }
 
-.proposal-kind-badge.mission {
-  background-color: #003366;
-  color: #4a90d9;
+@keyframes strikePulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 100, 100, 0.2),
+      0 0 12px rgba(255, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 100, 100, 0.2),
+      0 0 20px rgba(255, 68, 68, 0.5);
+  }
 }
+
+/* Mission Order - Command blue */
+.proposal-kind-badge.mission {
+  background: linear-gradient(135deg, #1a4a7a 0%, #0a3a6a 100%);
+  color: #6ab0ff;
+  border: 1px solid #2a5a8a;
+  box-shadow: inset 0 1px 0 rgba(106, 176, 255, 0.2);
+}
+
+/* Config Change - Amber */
+.proposal-kind-badge.config {
+  background: linear-gradient(135deg, #5a4a1a 0%, #4a3a0a 100%);
+  color: #ffcc66;
+  border: 1px solid #6a5a2a;
+}
+
+/* Transfer - Green */
+.proposal-kind-badge.transfer {
+  background: linear-gradient(135deg, #1a4a2a 0%, #0a3a1a 100%);
+  color: #66cc88;
+  border: 1px solid #2a5a3a;
+}
+
+/* Add Member - Cyan */
+.proposal-kind-badge.member {
+  background: linear-gradient(135deg, #1a4a5a 0%, #0a3a4a 100%);
+  color: #66ccdd;
+  border: 1px solid #2a5a6a;
+}
+
+/* ============================================================================
+   Status Badge
+   ============================================================================ */
 
 .proposal-status-badge {
-  font-size: 0.7rem;
-  font-weight: 500;
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: all var(--transition-fast);
 }
 
 .proposal-status-badge.status-inprogress {
-  background-color: #1a4a1a;
-  color: #44cc44;
+  background: linear-gradient(135deg, #1a4a1a 0%, #0a3a0a 100%);
+  color: #66dd66;
+  border: 1px solid #2a5a2a;
 }
 
 .proposal-status-badge.status-approved {
-  background-color: #1a4a1a;
-  color: #44ff44;
+  background: linear-gradient(135deg, #1a5a1a 0%, #0a4a0a 100%);
+  color: #66ff66;
+  border: 1px solid #2a6a2a;
+  box-shadow: 0 0 8px rgba(102, 255, 102, 0.2);
 }
 
 .proposal-status-badge.status-rejected {
-  background-color: #4a1a1a;
-  color: #ff4444;
+  background: linear-gradient(135deg, #5a1a1a 0%, #4a0a0a 100%);
+  color: #ff6666;
+  border: 1px solid #6a2a2a;
 }
 
-.proposal-status-badge.status-expired {
-  background-color: #333;
-  color: #666;
-}
-
+.proposal-status-badge.status-expired,
 .proposal-status-badge.status-removed {
-  background-color: #333;
-  color: #666;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
 }
 
 .proposal-status-badge.status-failed {
-  background-color: #4a1a1a;
-  color: #ff4444;
+  background: linear-gradient(135deg, #5a1a1a 0%, #4a0a0a 100%);
+  color: #ff6666;
+  border: 1px solid #6a2a2a;
 }
 
-/* Body */
+/* ============================================================================
+   Card Body
+   ============================================================================ */
+
 .proposal-card-body {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .proposal-description {
-  color: #fff;
-  margin: 0 0 0.75rem 0;
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
   font-size: 0.95rem;
-  line-height: 1.4;
+  font-weight: 500;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+/* ============================================================================
+   Proposal Meta Row
+   ============================================================================ */
+
 .proposal-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 }
+
+/* ============================================================================
+   Autonomy Indicator
+   ============================================================================ */
 
 .proposal-autonomy {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
 }
 
 .autonomy-indicator {
   font-size: 1rem;
+  transition: all var(--transition-fast);
 }
 
+/* Autonomous - Green with glow */
 .autonomy-indicator.autonomous {
-  color: #44cc44;
+  color: var(--accent-green);
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
 }
 
+.proposal-autonomy:has(.autonomy-indicator.autonomous) {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, var(--bg-elevated) 100%);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+/* Semi-autonomous - Amber */
 .autonomy-indicator.semiautonomous {
-  color: #ffaa00;
+  color: var(--accent-orange);
+  text-shadow: 0 0 8px rgba(255, 165, 0, 0.5);
 }
 
+.proposal-autonomy:has(.autonomy-indicator.semiautonomous) {
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, var(--bg-elevated) 100%);
+  border-color: rgba(255, 165, 0, 0.3);
+}
+
+/* Not Autonomous - Red (Human Required) */
 .autonomy-indicator.notautonomous {
-  color: #ff4444;
+  color: var(--accent-red);
+  text-shadow: 0 0 8px rgba(255, 68, 68, 0.5);
+}
+
+.proposal-autonomy:has(.autonomy-indicator.notautonomous) {
+  background: linear-gradient(135deg, rgba(255, 68, 68, 0.1) 0%, var(--bg-elevated) 100%);
+  border-color: rgba(255, 68, 68, 0.3);
 }
 
 .autonomy-label {
-  font-size: 0.75rem;
-  color: #888;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
+
+/* ============================================================================
+   Deadline Display
+   ============================================================================ */
 
 .proposal-deadline {
   display: flex;
@@ -153,73 +356,192 @@
   gap: 0.5rem;
 }
 
+/* Urgent Badge - Attention-grabbing */
 .urgent-badge {
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 0.15rem 0.3rem;
-  border-radius: 3px;
-  background-color: #ff4444;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #ff4444 0%, #cc2222 100%);
   color: #fff;
-  animation: pulse 1s ease-in-out infinite;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  animation: urgentBadgePulse 1s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(255, 68, 68, 0.4);
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+@keyframes urgentBadgePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
 }
 
+/* Time Remaining - Countdown style */
 .time-remaining {
-  font-size: 0.85rem;
-  color: #888;
-  font-family: monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  padding: 0.25rem 0.5rem;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
 }
 
-/* Footer */
+.proposal-card.urgent .time-remaining {
+  color: var(--accent-red);
+  border-color: rgba(255, 68, 68, 0.3);
+  background: linear-gradient(135deg, rgba(255, 68, 68, 0.1) 0%, var(--bg-elevated) 100%);
+}
+
+/* ============================================================================
+   Card Footer - Vote Visualization
+   ============================================================================ */
+
 .proposal-card-footer {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
 }
 
+/* Vote Progress Bar - Premium Design */
 .vote-bar {
   display: flex;
-  height: 4px;
-  background-color: #333;
-  border-radius: 2px;
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 3px;
   overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.vote-bar-fill {
+  transition: width var(--transition-medium);
 }
 
 .vote-bar-fill.approve {
-  background-color: #44cc44;
+  background: linear-gradient(90deg, #22c55e 0%, #4ade80 100%);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
 }
 
 .vote-bar-fill.reject {
-  background-color: #ff4444;
+  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
 }
 
+/* Vote Counts */
 .vote-counts {
   display: flex;
   justify-content: space-between;
   font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Fira Code', monospace;
 }
 
 .approve-count {
-  color: #44cc44;
+  color: var(--accent-green);
 }
 
 .reject-count {
-  color: #ff4444;
+  color: var(--accent-red);
 }
 
-/* Action Required Badge */
+/* ============================================================================
+   Action Required Badge - Corner Position
+   ============================================================================ */
+
 .action-required-badge {
   position: absolute;
   top: 0;
   right: 0;
   font-size: 0.6rem;
-  font-weight: 700;
-  padding: 0.2rem 0.4rem;
-  background-color: #ffa500;
+  font-weight: 800;
+  padding: 0.35rem 0.75rem;
+  background: linear-gradient(135deg, var(--accent-orange) 0%, #cc8400 100%);
   color: #000;
-  border-radius: 0 8px 0 4px;
+  border-radius: 0 10px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  box-shadow:
+    0 2px 8px rgba(255, 165, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: actionBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes actionBadgePulse {
+  0%, 100% {
+    box-shadow:
+      0 2px 8px rgba(255, 165, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 2px 12px rgba(255, 165, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* ============================================================================
+   Classification Banner (if added to card)
+   ============================================================================ */
+
+.classification-banner {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 800;
+  padding: 0.2rem 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  border-radius: 0 0 4px 4px;
+}
+
+.classification-banner.unclassified {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+}
+
+.classification-banner.secret {
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  color: #000;
+}
+
+.classification-banner.topsecret {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+/* ============================================================================
+   Responsive Adjustments
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .proposal-card {
+    padding: 1.25rem;
+  }
+
+  .proposal-card-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .proposal-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .proposal-deadline {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
