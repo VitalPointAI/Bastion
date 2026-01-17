@@ -1,13 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import encryptionRouter from './api/encryption';
-import documentsRouter from './api/documents';
-import edgeSyncRouter from './api/edge-sync';
-import accountsRouter from './api/accounts';
-import identityRouter from './api/identity';
-import credentialsRouter from './api/credentials';
-import { startSyncWorkers } from './lib/blockchain-sync';
+import encryptionRouter from './api/encryption.js';
+import documentsRouter from './api/documents.js';
+import edgeSyncRouter from './api/edge-sync.js';
+import accountsRouter from './api/accounts.js';
+import identityRouter from './api/identity.js';
+import credentialsRouter from './api/credentials.js';
+import daoRouter from './api/dao.js';
+import { startSyncWorkers } from './lib/blockchain-sync.js';
 
 dotenv.config();
 
@@ -27,7 +28,9 @@ app.use('/api/documents', documentsRouter);
 app.use('/api/edge', edgeSyncRouter);
 app.use('/api/accounts', accountsRouter);
 app.use('/api/identity', identityRouter);
+console.log('Mounting credentials router:', typeof credentialsRouter, credentialsRouter?.stack?.length || 0, 'routes');
 app.use('/api/credentials', credentialsRouter);
+app.use('/api/dao', daoRouter);
 
 app.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
