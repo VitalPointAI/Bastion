@@ -6,34 +6,35 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 2 — Identity & Security Framework
+**Current focus:** Phase 3 — DAO Governance (in progress)
 
 ## Current Position
 
-Phase: 2 of 12 (Identity & Security Framework)
-Plan: 7 of 8 in current phase
+Phase: 3 of 12 (DAO Governance)
+Plan: 1 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-16 — Completed 2-07-PLAN.md (Zero Trust Middleware)
+Last activity: 2026-01-17 — Completed 3-01-PLAN.md (DAO Core Module)
 
-Progress: ███████░░░ 87% (Phase 2)
+Progress: █░░░░░░░░░ 12.5% (Phase 3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: 17 min
-- Total execution time: 4.4 hours
+- Total plans completed: 17
+- Average duration: 16 min
+- Total execution time: 4.9 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
-| 2 (Identity & Security) | 7 | 32 min | 5 min |
+| 2 (Identity & Security) | 8 | 57 min | 7 min |
+| 3 (DAO Governance) | 1 | 6 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 3 min, 8 min, 3 min, 4 min, 1 min
-- Trend: Consistent velocity with high efficiency
+- Last 5 plans: 3 min, 4 min, 1 min, 25 min, 6 min
+- Trend: 3-01 fast due to straightforward Rust implementation
 
 ## Accumulated Context
 
@@ -137,6 +138,19 @@ Recent decisions affecting current work:
 - Deny by default: missing attributes returns null, blocking access
 - Audit log access denials without revealing denial reason to client
 
+**Phase 2 Plan 8 (Frontend Identity Integration):**
+- Deterministic user secret derivation from account ID via HKDF for automatic DID creation
+- ESM module resolution requires explicit `.js` extensions in TypeScript imports
+- Graceful degradation: DID creation failure doesn't block login flow
+- Migrated from deprecated near-api-js to modern @near-js/providers package
+- Dynamic imports for @noble/hashes need `.js` suffix (e.g., `@noble/hashes/hkdf.js`)
+
+**Phase 3 Plan 1 (DAO Core Module):**
+- StrikeAuthorization proposals always NotAutonomous regardless of config or override
+- AutonomyLevel defaults to NotAutonomous (human-in-loop) for maximum safety
+- Composite string keys (dao_id:proposal_id) for efficient multi-DAO storage
+- State machine: InProgress → Approved/Rejected/Removed/Expired/Failed (terminal states)
+
 ### Deferred Issues
 
 **Pinata API 403 Error (from 1-04):** Backend IPFS upload endpoint returns 403 from Pinata API. Possible causes: JWT needs regeneration, API endpoint format changed, or permissions need adjustment. Does not block development. Can be resolved by regenerating JWT in Pinata dashboard.
@@ -147,6 +161,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-16
-Stopped at: Completed 2-07-PLAN.md (Zero Trust Middleware)
+Last session: 2026-01-17
+Stopped at: Completed 3-01-PLAN.md (DAO Core Module)
 Resume file: None
+Next action: Execute 3-02-PLAN.md (Role & Permission System)
