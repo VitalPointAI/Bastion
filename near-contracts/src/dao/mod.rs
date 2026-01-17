@@ -8,20 +8,24 @@
  * - Proposal lifecycle with state machine
  * - Role-based access control with clearance integration
  * - AI agent trust tiers for bounded participation
+ * - Permission checking with wildcard patterns
  *
  * Module structure:
  * - types: Core types (AutonomyLevel, DAOConfig, Proposal, etc.)
  * - registry: Multi-DAO registry management
  * - proposals: Proposal management and state machine
  * - roles: Role management with clearance and agent tier integration
+ * - permissions: Permission evaluation with wildcards and clearance verification
  */
 
+pub mod permissions;
 pub mod proposals;
 pub mod registry;
 pub mod roles;
 pub mod types;
 
 // Re-export core types for convenient access
+pub use permissions::PermissionChecker;
 pub use proposals::ProposalManager;
 pub use registry::DAORegistry;
 pub use roles::{Action, AgentTier, Permission, Role, RoleKind, RoleManager};
