@@ -1,0 +1,336 @@
+/* DAODashboard Styles */
+
+.dao-dashboard {
+  min-height: 100vh;
+  background-color: #111;
+  color: #fff;
+}
+
+.dao-dashboard.loading,
+.dao-dashboard.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-content,
+.error-content {
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-content {
+  background-color: #2a1a1a;
+  border-radius: 8px;
+}
+
+.error-content p {
+  color: #ff4444;
+  margin-bottom: 1rem;
+}
+
+.error-content button {
+  background-color: #333;
+  border: 1px solid #555;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.error-content button:hover {
+  background-color: #444;
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #333;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.dao-selector select {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  background-color: #222;
+  border: 1px solid #333;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+.dao-selector select:focus {
+  outline: 2px solid #4a90d9;
+  outline-offset: 2px;
+}
+
+/* Content */
+.dashboard-content {
+  padding: 1.5rem 2rem;
+}
+
+/* Summary Cards */
+.summary-cards {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  flex: 1;
+  padding: 1.5rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.summary-card.highlight {
+  border-color: #ffa500;
+  background-color: #2a2a1a;
+}
+
+.card-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.summary-card.highlight .card-value {
+  color: #ffa500;
+}
+
+.card-label {
+  font-size: 0.85rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+/* Dashboard Main Layout */
+.dashboard-main {
+  display: flex;
+  gap: 2rem;
+}
+
+/* DAOs Sidebar */
+.daos-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.daos-sidebar h3 {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.dao-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dao-item {
+  padding: 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dao-item:hover {
+  border-color: #555;
+  background-color: #222;
+}
+
+.dao-item:focus {
+  outline: 2px solid #4a90d9;
+  outline-offset: 2px;
+}
+
+.dao-item .dao-name {
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+
+.dao-item .dao-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* Main Content Area */
+.proposals-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Action Required Section */
+.action-required-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: #2a2a1a;
+  border: 2px solid #ffa500;
+  border-radius: 8px;
+}
+
+.action-required-section h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #ffa500;
+  text-transform: uppercase;
+}
+
+.action-required-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.action-item {
+  padding: 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-item:hover {
+  border-color: #ffa500;
+  background-color: #222;
+}
+
+.action-item:focus {
+  outline: 2px solid #ffa500;
+  outline-offset: 2px;
+}
+
+.action-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.action-item-header .dao-name {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.action-item-header .urgency {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.action-item-header .urgency.urgent {
+  color: #ff4444;
+  font-weight: 700;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.action-item-description {
+  color: #fff;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Proposals Section */
+.proposals-section {
+  /* ProposalList handles its own styling */
+}
+
+.section-header {
+  margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #fff;
+}
+
+.dao-description {
+  margin: 0.5rem 0 0 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* Proposal Detail Section */
+.proposal-detail-section {
+  /* ProposalDetail handles its own styling */
+}
+
+/* Voting Section */
+.voting-section {
+  max-width: 600px;
+}
+
+.voting-section .section-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: #4a90d9;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
+
+.back-button:hover {
+  color: #5aa0e9;
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .summary-cards {
+    flex-direction: column;
+  }
+
+  .dashboard-main {
+    flex-direction: column;
+  }
+
+  .daos-sidebar {
+    width: 100%;
+  }
+
+  .dao-selector select {
+    width: 100%;
+  }
+}

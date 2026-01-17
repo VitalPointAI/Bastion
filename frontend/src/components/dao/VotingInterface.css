@@ -1,0 +1,494 @@
+/* VotingInterface Styles */
+
+.voting-interface {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Vote Tally */
+.vote-tally h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.vote-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vote-bar-large {
+  display: flex;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #333;
+}
+
+.vote-bar-fill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.3s ease;
+}
+
+.vote-bar-fill.approve {
+  background-color: #44cc44;
+}
+
+.vote-bar-fill.reject {
+  background-color: #ff4444;
+}
+
+.vote-count {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.vote-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.vote-labels .approve {
+  color: #44cc44;
+}
+
+.vote-labels .reject {
+  color: #ff4444;
+}
+
+/* My Vote Status */
+.my-vote-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #222;
+  border-radius: 6px;
+}
+
+.my-vote-status .label {
+  color: #888;
+}
+
+.my-vote-status .vote-type {
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.my-vote-status .vote-type.approve {
+  background-color: #1a4a1a;
+  color: #44cc44;
+}
+
+.my-vote-status .vote-type.reject {
+  background-color: #4a1a1a;
+  color: #ff4444;
+}
+
+.my-vote-status .vote-type.abstain {
+  background-color: #333;
+  color: #888;
+}
+
+/* Vote Buttons */
+.vote-buttons h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.vote-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.vote-btn {
+  flex: 1;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vote-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vote-btn.approve {
+  background-color: #1a4a1a;
+  color: #44cc44;
+  border: 2px solid #44cc44;
+}
+
+.vote-btn.approve:hover:not(:disabled) {
+  background-color: #2a5a2a;
+}
+
+.vote-btn.reject {
+  background-color: #4a1a1a;
+  color: #ff4444;
+  border: 2px solid #ff4444;
+}
+
+.vote-btn.reject:hover:not(:disabled) {
+  background-color: #5a2a2a;
+}
+
+.vote-btn.abstain {
+  background-color: #333;
+  color: #888;
+  border: 2px solid #555;
+}
+
+.vote-btn.abstain:hover:not(:disabled) {
+  background-color: #444;
+}
+
+/* Coalition Approval Section */
+.coalition-approval-section {
+  padding: 1rem;
+  background-color: #1a1a2a;
+  border: 1px solid #333;
+  border-radius: 6px;
+}
+
+.coalition-approval-section h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.coalition-info {
+  color: #aaa;
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+}
+
+.coalition-parties-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.party-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background-color: #222;
+  border-radius: 4px;
+}
+
+.party-row .party-name {
+  font-weight: 600;
+  color: #fff;
+  min-width: 50px;
+}
+
+.party-row .party-status {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+}
+
+.party-row .party-status.approved {
+  background-color: #1a4a1a;
+  color: #44cc44;
+}
+
+.party-row .party-status.pending {
+  background-color: #4a4a1a;
+  color: #cccc44;
+}
+
+.approve-party-btn {
+  margin-left: auto;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background-color: #4a90d9;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.approve-party-btn:hover:not(:disabled) {
+  background-color: #5aa0e9;
+}
+
+.approve-party-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.awaiting-text {
+  margin: 0.75rem 0 0 0;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+/* Human Approval Section */
+.human-approval-section {
+  padding: 1rem;
+  background-color: #1a2a1a;
+  border: 2px solid #44cc44;
+  border-radius: 6px;
+}
+
+.human-approval-section.strike {
+  background-color: #2a1a1a;
+  border-color: #ff4444;
+}
+
+.human-approval-section h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: #44cc44;
+  text-transform: uppercase;
+}
+
+.human-approval-section.strike h4 {
+  color: #ff4444;
+}
+
+.strike-warning {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: #330000;
+  border: 1px solid #660000;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.strike-warning .warning-icon {
+  font-size: 1.5rem;
+}
+
+.strike-warning .warning-text strong {
+  display: block;
+  color: #ff4444;
+  margin-bottom: 0.25rem;
+}
+
+.strike-warning .warning-text p {
+  margin: 0;
+  color: #cc8888;
+  font-size: 0.9rem;
+}
+
+.authorize-btn {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background-color: #44cc44;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.authorize-btn:hover:not(:disabled) {
+  background-color: #55dd55;
+}
+
+.authorize-btn.strike {
+  background-color: #ff4444;
+  color: #fff;
+}
+
+.authorize-btn.strike:hover:not(:disabled) {
+  background-color: #ff5555;
+}
+
+.authorize-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Veto Section */
+.veto-section {
+  padding: 1rem;
+  background-color: #2a2a1a;
+  border: 2px solid #ffaa00;
+  border-radius: 6px;
+}
+
+.veto-section h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #ffaa00;
+  text-transform: uppercase;
+}
+
+.veto-info {
+  color: #aaa;
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+}
+
+.veto-btn {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background-color: #ffaa00;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.veto-btn:hover:not(:disabled) {
+  background-color: #ffbb22;
+}
+
+.veto-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Confirmation Dialog */
+.confirmation-dialog {
+  padding: 1rem;
+  background-color: #222;
+  border-radius: 4px;
+}
+
+.confirmation-dialog p {
+  margin: 0 0 1rem 0;
+  color: #fff;
+}
+
+.confirmation-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.confirm-btn {
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background-color: #44cc44;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background-color: #55dd55;
+}
+
+.confirm-btn.strike {
+  background-color: #ff4444;
+  color: #fff;
+}
+
+.confirm-btn.strike:hover:not(:disabled) {
+  background-color: #ff5555;
+}
+
+.confirm-btn.veto {
+  background-color: #ffaa00;
+  color: #000;
+}
+
+.confirm-btn.veto:hover:not(:disabled) {
+  background-color: #ffbb22;
+}
+
+.confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background-color: #333;
+  color: #888;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background-color: #444;
+}
+
+.cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Status Messages */
+.message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+}
+
+.message.error {
+  background-color: #4a1a1a;
+  color: #ff4444;
+  border: 1px solid #660000;
+}
+
+.message.success {
+  background-color: #1a4a1a;
+  color: #44cc44;
+  border: 1px solid #006600;
+}
+
+.message .icon {
+  font-size: 1rem;
+}
+
+/* Transaction Status */
+.transaction-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #222;
+  border-radius: 4px;
+  color: #888;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #333;
+  border-top-color: #4a90d9;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
