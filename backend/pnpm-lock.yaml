@@ -59,6 +59,9 @@ importers:
       unpdf:
         specifier: ^1.4.0
         version: 1.4.0(@napi-rs/canvas@0.1.88)
+      zod:
+        specifier: ^4.3.5
+        version: 4.3.5
     devDependencies:
       '@types/cors':
         specifier: ^2.8.19
@@ -4512,6 +4515,9 @@ packages:
 
   zlibjs@0.3.1:
     resolution: {integrity: sha512-+J9RrgTKOmlxFSDHo0pI1xM6BLVUv+o0ZT9ANtCxGkjIVCCUdx9alUF8Gm+dGLKbkkkidWIHFDZHDMpfITt4+w==}
+
+  zod@4.3.5:
+    resolution: {integrity: sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==}
 
 snapshots:
 
@@ -10342,3 +10348,5 @@ snapshots:
     optional: true
 
   zlibjs@0.3.1: {}
+
+  zod@4.3.5: {}

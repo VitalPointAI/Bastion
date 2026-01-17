@@ -31,7 +31,8 @@
     "officeparser": "^6.0.4",
     "pg": "^8.16.3",
     "pg-boss": "^12.5.4",
-    "unpdf": "^1.4.0"
+    "unpdf": "^1.4.0",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
