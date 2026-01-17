@@ -3,91 +3,105 @@
  *
  * TypeScript interfaces mirroring backend DAO types for governance UI.
  * Consistent with backend/src/dao/types.ts
+ *
+ * Uses const objects instead of enums for erasableSyntaxOnly compatibility.
  */
 
 /**
  * Autonomy level for proposal execution.
  * Determines the degree of human oversight required for decisions.
  */
-export enum AutonomyLevel {
+export const AutonomyLevel = {
   /** Human-out-of-the-loop: AI/system can approve and execute within delegated authority */
-  Autonomous = 'Autonomous',
+  Autonomous: 'Autonomous',
   /** Human-on-the-loop: AI can approve, human monitors with veto window */
-  SemiAutonomous = 'SemiAutonomous',
+  SemiAutonomous: 'SemiAutonomous',
   /** Human-in-the-loop: Human must explicitly approve before execution */
-  NotAutonomous = 'NotAutonomous',
-}
+  NotAutonomous: 'NotAutonomous',
+} as const;
+
+export type AutonomyLevel = typeof AutonomyLevel[keyof typeof AutonomyLevel];
 
 /**
  * Types of proposals that can be submitted.
  */
-export enum ProposalKind {
-  ConfigChange = 'ConfigChange',
-  AddMember = 'AddMember',
-  RemoveMember = 'RemoveMember',
-  Transfer = 'Transfer',
-  FunctionCall = 'FunctionCall',
+export const ProposalKind = {
+  ConfigChange: 'ConfigChange',
+  AddMember: 'AddMember',
+  RemoveMember: 'RemoveMember',
+  Transfer: 'Transfer',
+  FunctionCall: 'FunctionCall',
   /** Authorize a strike/lethal action - always requires human-in-loop */
-  StrikeAuthorization = 'StrikeAuthorization',
-  MissionOrder = 'MissionOrder',
-  Custom = 'Custom',
-}
+  StrikeAuthorization: 'StrikeAuthorization',
+  MissionOrder: 'MissionOrder',
+  Custom: 'Custom',
+} as const;
+
+export type ProposalKind = typeof ProposalKind[keyof typeof ProposalKind];
 
 /**
  * Proposal status following SputnikDAO v2 state machine.
  */
-export enum ProposalStatus {
+export const ProposalStatus = {
   /** Actively being voted on */
-  InProgress = 'InProgress',
+  InProgress: 'InProgress',
   /** Voting passed, proposal approved for execution */
-  Approved = 'Approved',
+  Approved: 'Approved',
   /** Voting failed, proposal rejected */
-  Rejected = 'Rejected',
+  Rejected: 'Rejected',
   /** Removed (spam/invalid), bond may be forfeited */
-  Removed = 'Removed',
+  Removed: 'Removed',
   /** Voting period elapsed without resolution */
-  Expired = 'Expired',
+  Expired: 'Expired',
   /** Execution failed after approval */
-  Failed = 'Failed',
-}
+  Failed: 'Failed',
+} as const;
+
+export type ProposalStatus = typeof ProposalStatus[keyof typeof ProposalStatus];
 
 /**
  * Execution state for a proposal.
  */
-export enum ExecutionState {
+export const ExecutionState = {
   /** Waiting for voting to complete */
-  Pending = 'Pending',
+  Pending: 'Pending',
   /** Voting passed, ready for immediate execution */
-  ReadyForExecution = 'ReadyForExecution',
+  ReadyForExecution: 'ReadyForExecution',
   /** Semi-autonomous: in veto window, council can veto */
-  InVetoWindow = 'InVetoWindow',
+  InVetoWindow: 'InVetoWindow',
   /** Human-in-loop: waiting for explicit human approval */
-  AwaitingHumanApproval = 'AwaitingHumanApproval',
+  AwaitingHumanApproval: 'AwaitingHumanApproval',
   /** Successfully executed */
-  Executed = 'Executed',
+  Executed: 'Executed',
   /** Vetoed during veto window */
-  Vetoed = 'Vetoed',
+  Vetoed: 'Vetoed',
   /** Voting rejected the proposal */
-  Rejected = 'Rejected',
-}
+  Rejected: 'Rejected',
+} as const;
+
+export type ExecutionState = typeof ExecutionState[keyof typeof ExecutionState];
 
 /**
  * Vote type (approve, reject, or abstain).
  */
-export enum VoteType {
-  Approve = 'Approve',
-  Reject = 'Reject',
-  Abstain = 'Abstain',
-}
+export const VoteType = {
+  Approve: 'Approve',
+  Reject: 'Reject',
+  Abstain: 'Abstain',
+} as const;
+
+export type VoteType = typeof VoteType[keyof typeof VoteType];
 
 /**
  * Data classification levels.
  */
-export enum Classification {
-  Public = 'Public',
-  Secret = 'Secret',
-  TopSecret = 'TopSecret',
-}
+export const Classification = {
+  Public: 'Public',
+  Secret: 'Secret',
+  TopSecret: 'TopSecret',
+} as const;
+
+export type Classification = typeof Classification[keyof typeof Classification];
 
 /**
  * DAO metadata for display.

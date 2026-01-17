@@ -5,16 +5,19 @@
  * Provides typed methods for DAOs, proposals, voting, and coalition operations.
  */
 
-import {
+import type {
   DAOMetadata,
   DAOResponse,
   Proposal,
   ProposalContext,
-  ProposalStatus,
   Vote,
-  VoteType,
   CoalitionStatus,
   TransactionArgs,
+} from '../types/dao';
+
+import {
+  ProposalStatus,
+  VoteType,
   AutonomyLevel,
   ProposalKind,
   ExecutionState,
@@ -135,7 +138,7 @@ export class GovernanceService {
   /**
    * Get proposal context (parent, related, strategic objective).
    */
-  async getProposalContext(daoId: string, proposalId: number): Promise<ProposalContext> {
+  async getProposalContext(_daoId: string, _proposalId: number): Promise<ProposalContext> {
     // Backend doesn't have a dedicated context endpoint yet
     // Return empty context for now
     return {

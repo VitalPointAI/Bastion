@@ -1,0 +1,225 @@
+/* ProposalCard Styles */
+
+.proposal-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.proposal-card:hover {
+  border-color: #555;
+  background-color: #222;
+}
+
+.proposal-card:focus {
+  outline: 2px solid #4a90d9;
+  outline-offset: 2px;
+}
+
+.proposal-card.action-required {
+  border-left: 4px solid #ffa500;
+}
+
+.proposal-card.urgent {
+  border-color: #ff4444;
+}
+
+.proposal-card.urgent.action-required {
+  border-left-color: #ff4444;
+}
+
+/* Header */
+.proposal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.proposal-kind-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background-color: #333;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.proposal-kind-badge.strike {
+  background-color: #660000;
+  color: #ff4444;
+}
+
+.proposal-kind-badge.mission {
+  background-color: #003366;
+  color: #4a90d9;
+}
+
+.proposal-status-badge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.proposal-status-badge.status-inprogress {
+  background-color: #1a4a1a;
+  color: #44cc44;
+}
+
+.proposal-status-badge.status-approved {
+  background-color: #1a4a1a;
+  color: #44ff44;
+}
+
+.proposal-status-badge.status-rejected {
+  background-color: #4a1a1a;
+  color: #ff4444;
+}
+
+.proposal-status-badge.status-expired {
+  background-color: #333;
+  color: #666;
+}
+
+.proposal-status-badge.status-removed {
+  background-color: #333;
+  color: #666;
+}
+
+.proposal-status-badge.status-failed {
+  background-color: #4a1a1a;
+  color: #ff4444;
+}
+
+/* Body */
+.proposal-card-body {
+  margin-bottom: 0.75rem;
+}
+
+.proposal-description {
+  color: #fff;
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.proposal-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.proposal-autonomy {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.autonomy-indicator {
+  font-size: 1rem;
+}
+
+.autonomy-indicator.autonomous {
+  color: #44cc44;
+}
+
+.autonomy-indicator.semiautonomous {
+  color: #ffaa00;
+}
+
+.autonomy-indicator.notautonomous {
+  color: #ff4444;
+}
+
+.autonomy-label {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.proposal-deadline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.urgent-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.3rem;
+  border-radius: 3px;
+  background-color: #ff4444;
+  color: #fff;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.time-remaining {
+  font-size: 0.85rem;
+  color: #888;
+  font-family: monospace;
+}
+
+/* Footer */
+.proposal-card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.vote-bar {
+  display: flex;
+  height: 4px;
+  background-color: #333;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.vote-bar-fill.approve {
+  background-color: #44cc44;
+}
+
+.vote-bar-fill.reject {
+  background-color: #ff4444;
+}
+
+.vote-counts {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.approve-count {
+  color: #44cc44;
+}
+
+.reject-count {
+  color: #ff4444;
+}
+
+/* Action Required Badge */
+.action-required-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.2rem 0.4rem;
+  background-color: #ffa500;
+  color: #000;
+  border-radius: 0 8px 0 4px;
+}
