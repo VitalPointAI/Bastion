@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 3 of 12 (DAO Governance)
-Plan: 5 of 8 in current phase
+Plan: 6 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-17 — Completed 3-05-PLAN.md (Backend DAO API)
+Last activity: 2026-01-17 — Completed 3-06-PLAN.md (Agent Infrastructure)
 
-Progress: █████░░░░░ 62% (Phase 3)
+Progress: ██████░░░░ 75% (Phase 3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
+- Total plans completed: 21
 - Average duration: 16 min
-- Total execution time: 5.4 hours
+- Total execution time: 5.5 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: █████░░░░░ 62% (Phase 3)
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
-| 3 (DAO Governance) | 5 | 40 min | 8 min |
+| 3 (DAO Governance) | 6 | 49 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 6 min, 6 min, 9 min, 11 min, 8 min
+- Last 5 plans: 6 min, 9 min, 11 min, 8 min, 9 min
 - Trend: Backend TypeScript APIs proceeding efficiently
 
 ## Accumulated Context
@@ -180,6 +180,13 @@ Recent decisions affecting current work:
 - Express 5.x route params require explicit `as string` type assertions
 - Unsigned transaction return pattern for frontend wallet signing
 
+**Phase 3 Plan 6 (Agent Infrastructure):**
+- StrikeAuthorization always in requiresHumanApproval for ALL agents (safety invariant)
+- Four default Support-phase agents: governance-copilot, proposal-screener, context-analyzer, feasibility-assessor
+- Capability handlers are stubs - real AI integration deferred to Governance Copilot (3-08)
+- Effective autonomy = min(agent.maxAutonomy, delegation.maxAutonomy, DAO default)
+- NEAR AI Governance Framework phases: Support → Represent → Organize
+
 ### Deferred Issues
 
 **Pinata API 403 Error (from 1-04):** Backend IPFS upload endpoint returns 403 from Pinata API. Possible causes: JWT needs regeneration, API endpoint format changed, or permissions need adjustment. Does not block development. Can be resolved by regenerating JWT in Pinata dashboard.
@@ -191,6 +198,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: Completed 3-05-PLAN.md (Backend DAO API)
+Stopped at: Completed 3-06-PLAN.md (Agent Infrastructure)
 Resume file: None
-Next action: Execute 3-06-PLAN.md (Agent Infrastructure)
+Next action: Execute 3-07-PLAN.md (Frontend DAO Components)
