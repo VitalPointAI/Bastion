@@ -8,6 +8,7 @@ import accountsRouter from './api/accounts.js';
 import identityRouter from './api/identity.js';
 import credentialsRouter from './api/credentials.js';
 import daoRouter from './api/dao.js';
+import agentRouter from './api/agents.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
 
 dotenv.config();
@@ -31,6 +32,7 @@ app.use('/api/identity', identityRouter);
 console.log('Mounting credentials router:', typeof credentialsRouter, credentialsRouter?.stack?.length || 0, 'routes');
 app.use('/api/credentials', credentialsRouter);
 app.use('/api/dao', daoRouter);
+app.use('/api/agents', agentRouter);
 
 app.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
