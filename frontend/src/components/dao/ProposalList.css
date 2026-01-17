@@ -1,52 +1,138 @@
-/* ProposalList Styles */
+/* ============================================================================
+   ProposalList - Command Briefing List
+   Premium styling for the proposal list container and filters
+   ============================================================================ */
+
+/* ============================================================================
+   Base Container
+   ============================================================================ */
 
 .proposal-list {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-/* Filter Tabs */
+/* ============================================================================
+   Filter Tabs - Command-Style Tab Bar
+   ============================================================================ */
+
 .proposal-list-filters {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #333;
-  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  position: relative;
+}
+
+/* Subtle bottom accent */
+.proposal-list-filters::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--accent-blue) 50%,
+    transparent 100%
+  );
+  opacity: 0.3;
 }
 
 .filter-tab {
-  background: none;
-  border: none;
-  color: #888;
-  font-size: 0.9rem;
-  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.75rem 1.25rem;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: all 0.2s ease;
+  transition: all var(--transition-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: relative;
 }
 
 .filter-tab:hover {
-  color: #fff;
-  background-color: #333;
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border-color: var(--border-medium);
 }
 
+/* Active tab - Premium filled state */
 .filter-tab.active {
-  color: #fff;
-  background-color: #4a90d9;
+  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #3a7ac9 100%);
+  border-color: var(--accent-blue-bright);
+  box-shadow:
+    0 2px 8px rgba(74, 144, 217, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+/* Active tab bottom indicator */
+.filter-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  background: var(--accent-blue-bright);
+  border-radius: 1px;
+  box-shadow: 0 0 8px var(--accent-blue);
+}
+
+/* Filter Count Badge */
 .filter-count {
-  background-color: #ffa500;
+  background: linear-gradient(135deg, var(--accent-orange) 0%, #cc8400 100%);
   color: #000;
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.1rem 0.4rem;
-  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  min-width: 1.25rem;
+  text-align: center;
+  box-shadow:
+    0 2px 4px rgba(255, 165, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: countPulse 2s ease-in-out infinite;
 }
 
-/* Loading State */
+@keyframes countPulse {
+  0%, 100% {
+    box-shadow:
+      0 2px 4px rgba(255, 165, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 2px 8px rgba(255, 165, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Count on active tab */
+.filter-tab.active .filter-count {
+  background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+  color: var(--accent-blue);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: none;
+}
+
+/* ============================================================================
+   Loading State - Skeleton Loaders
+   ============================================================================ */
+
 .proposal-list-loading {
   padding: 1rem 0;
 }
@@ -58,80 +144,359 @@
 }
 
 .skeleton-card {
-  background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
+  background: linear-gradient(90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-secondary) 75%
+  );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  height: 120px;
-  border-radius: 8px;
+  animation: shimmer 1.5s ease-in-out infinite;
+  height: 140px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle corner accents on skeleton */
+.skeleton-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border-top: 2px solid var(--border-medium);
+  border-left: 2px solid var(--border-medium);
+  border-radius: 10px 0 0 0;
+  opacity: 0.3;
+}
+
+.skeleton-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  border-bottom: 2px solid var(--border-medium);
+  border-right: 2px solid var(--border-medium);
+  border-radius: 0 0 10px 0;
+  opacity: 0.3;
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
-/* Error State */
+/* ============================================================================
+   Error State - Alert Styling
+   ============================================================================ */
+
 .proposal-list-error {
   text-align: center;
-  padding: 2rem;
-  background-color: #2a1a1a;
-  border-radius: 8px;
+  padding: 2.5rem;
+  background: linear-gradient(135deg,
+    rgba(255, 68, 68, 0.08) 0%,
+    var(--bg-primary) 100%
+  );
+  border-radius: 10px;
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  position: relative;
+}
+
+/* Corner accents */
+.proposal-list-error::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  border-top: 2px solid var(--accent-red);
+  border-left: 2px solid var(--accent-red);
+  border-radius: 10px 0 0 0;
+  opacity: 0.6;
+}
+
+.proposal-list-error::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  border-bottom: 2px solid var(--accent-red);
+  border-right: 2px solid var(--accent-red);
+  border-radius: 0 0 10px 0;
+  opacity: 0.6;
 }
 
 .proposal-list-error p {
-  color: #ff4444;
-  margin-bottom: 1rem;
+  color: #ff6666;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .proposal-list-error button {
-  background-color: #333;
-  border: 1px solid #555;
-  color: #fff;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
   cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all var(--transition-medium);
 }
 
 .proposal-list-error button:hover {
-  background-color: #444;
+  background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-elevated) 100%);
+  border-color: var(--accent-blue);
+  box-shadow: var(--glow-blue);
+  transform: translateY(-1px);
 }
 
-/* Empty State */
+/* ============================================================================
+   Empty State - Professional Empty View
+   ============================================================================ */
+
 .proposal-list-empty {
   text-align: center;
-  padding: 3rem;
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  border: 1px dashed #333;
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border-radius: 10px;
+  border: 1px dashed var(--border-medium);
+  position: relative;
+}
+
+/* Corner accents */
+.proposal-list-empty::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  border-top: 2px solid var(--border-medium);
+  border-left: 2px solid var(--border-medium);
+  border-radius: 10px 0 0 0;
+  opacity: 0.5;
+}
+
+.proposal-list-empty::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  border-bottom: 2px solid var(--border-medium);
+  border-right: 2px solid var(--border-medium);
+  border-radius: 0 0 10px 0;
+  opacity: 0.5;
+}
+
+/* Empty icon */
+.proposal-list-empty .empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.4;
 }
 
 .proposal-list-empty p {
-  color: #666;
+  color: var(--text-muted);
   margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
-/* Content */
+.proposal-list-empty .empty-subtitle {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* ============================================================================
+   Content Sections
+   ============================================================================ */
+
 .proposal-list-content {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
+/* Section Headers */
 .section-header {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #888;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  margin: 0 0 0.75rem 0;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Section header icon/indicator */
+.section-header::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: var(--accent-blue);
+  border-radius: 2px;
+}
+
+/* Action Required Section - Urgent Styling */
+.action-required-section {
+  padding: 1.5rem;
+  background: linear-gradient(135deg,
+    rgba(255, 165, 0, 0.05) 0%,
+    var(--bg-primary) 100%
+  );
+  border-radius: 10px;
+  border: 1px solid rgba(255, 165, 0, 0.2);
+  position: relative;
+}
+
+/* Animated attention border */
+.action-required-section::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 10px;
+  padding: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 165, 0, 0.5) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: borderSweep 3s linear infinite;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@keyframes borderSweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .action-required-section .section-header {
-  color: #ffa500;
+  color: var(--accent-orange);
+  border-bottom-color: rgba(255, 165, 0, 0.3);
 }
+
+.action-required-section .section-header::before {
+  background: var(--accent-orange);
+  box-shadow: 0 0 8px rgba(255, 165, 0, 0.5);
+}
+
+/* Other Proposals Section */
+.other-proposals-section .section-header::before {
+  background: var(--text-muted);
+}
+
+/* ============================================================================
+   Proposal Cards Container
+   ============================================================================ */
 
 .proposal-cards {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+}
+
+/* Add subtle stagger animation on load */
+.proposal-cards > * {
+  animation: cardFadeIn 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+.proposal-cards > *:nth-child(1) { animation-delay: 0.05s; }
+.proposal-cards > *:nth-child(2) { animation-delay: 0.1s; }
+.proposal-cards > *:nth-child(3) { animation-delay: 0.15s; }
+.proposal-cards > *:nth-child(4) { animation-delay: 0.2s; }
+.proposal-cards > *:nth-child(5) { animation-delay: 0.25s; }
+.proposal-cards > *:nth-child(6) { animation-delay: 0.3s; }
+.proposal-cards > *:nth-child(n+7) { animation-delay: 0.35s; }
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+   Responsive Adjustments
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .proposal-list-filters {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .filter-tab {
+    flex: 1;
+    min-width: calc(50% - 0.5rem);
+    justify-content: center;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .filter-tab.active::after {
+    display: none;
+  }
+
+  .action-required-section {
+    padding: 1rem;
+  }
+
+  .proposal-list-empty {
+    padding: 2.5rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-tab {
+    min-width: 100%;
+  }
+
+  .proposal-list-content {
+    gap: 1.5rem;
+  }
+
+  .section-header {
+    font-size: 0.75rem;
+  }
 }
