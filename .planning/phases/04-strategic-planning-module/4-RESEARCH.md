@@ -689,6 +689,644 @@ Risk assessment is NOT a one-time activity. It must occur at multiple points:
 | EXTREME | Commander or designated general/flag officer |
 </strategic_planning_doctrine>
 
+<ai_agent_architecture>
+## AI Agent Architecture for Strategic Planning
+
+This section defines the multi-agent system that automates intelligence preparation, analysis, and decision support while ensuring humans make all critical decisions. Agents accelerate work and provide insights; humans approve options and actions.
+
+### Design Philosophy: Human-Guided AI
+
+**Core Principle:** AI agents prepare, analyze, and recommend. Humans decide and approve.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         STRATEGIC PLANNING AGENT SYSTEM                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  COLLECTION LAYER              ANALYSIS LAYER              DECISION LAYER   │
+│  (Automated)                   (AI + Human Review)         (Human Authority) │
+│                                                                              │
+│  ┌──────────────┐             ┌──────────────┐            ┌──────────────┐ │
+│  │ OSINT        │────────────▶│ Fusion       │───────────▶│ Commander    │ │
+│  │ Collector    │             │ Agent        │            │ Decision     │ │
+│  └──────────────┘             └──────────────┘            │ Support      │ │
+│  ┌──────────────┐             ┌──────────────┐            └──────────────┘ │
+│  │ Document     │────────────▶│ Assessment   │                    │        │
+│  │ Processor    │             │ Agent        │                    ▼        │
+│  └──────────────┘             └──────────────┘            ┌──────────────┐ │
+│  ┌──────────────┐             ┌──────────────┐            │ HUMAN        │ │
+│  │ Threat       │────────────▶│ Red Team     │───────────▶│ APPROVAL     │ │
+│  │ Monitor      │             │ Agent        │            │ REQUIRED     │ │
+│  └──────────────┘             └──────────────┘            └──────────────┘ │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Agent Taxonomy
+
+#### Tier 1: Collection Agents (Fully Automated)
+These agents gather raw data. No approval needed for collection, but all data is logged.
+
+| Agent | Purpose | Data Sources | Outputs |
+|-------|---------|--------------|---------|
+| **OSINT Collector** | Open source intelligence gathering | News, social media, public records, government publications | Raw intelligence reports |
+| **Document Processor** | Parse and extract from uploaded docs | PDF, DOCX uploads (NSS, NDS, directives) | Structured document content |
+| **Threat Monitor** | Continuous threat landscape monitoring | Threat feeds, CVE databases, geopolitical events | Threat indicators, alerts |
+| **Academic Researcher** | Research publications and doctrine | Academic databases, think tanks, doctrine publications | Research summaries |
+
+#### Tier 2: Analysis Agents (AI Analysis + Human Review)
+These agents produce analysis that must be reviewed before use in planning.
+
+| Agent | Purpose | Inputs | Outputs | Human Checkpoint |
+|-------|---------|--------|---------|------------------|
+| **Fusion Agent** | Multi-source intelligence fusion | All Tier 1 outputs | Integrated intelligence picture | Review before dissemination |
+| **Assessment Agent** | Risk and feasibility assessment | Objectives, constraints, intelligence | Risk assessments, feasibility scores | Review before approval workflow |
+| **Extraction Agent** | Strategic objective extraction | Parsed documents | Extracted objectives (DIME/EWM) | Verify before submission |
+| **Summarization Agent** | Executive summaries and briefs | Any analysis products | Commander briefs, summaries | Review before briefing |
+
+#### Tier 3: Adversarial Agents (Challenge & Validate)
+These agents actively challenge assumptions and analysis to improve quality.
+
+| Agent | Purpose | Technique | Outputs | Human Checkpoint |
+|-------|---------|-----------|---------|------------------|
+| **Red Team Agent** | Challenge assumptions, find weaknesses | Adversarial analysis, attack simulation | Vulnerabilities, counterarguments | Review challenges |
+| **Devil's Advocate Agent** | Question consensus, surface alternatives | Anticipatory reflection, bias detection | Alternative viewpoints, risks | Consider before decision |
+| **Assumption Validator** | Test planning assumptions | Validation against evidence | Assumption confidence scores | Review flagged assumptions |
+
+#### Tier 4: Decision Support (Human Authority Required)
+These agents prepare options but NEVER execute without human approval.
+
+| Agent | Purpose | Inputs | Outputs | Approval Authority |
+|-------|---------|--------|---------|-------------------|
+| **COA Generator** | Generate courses of action options | Objectives, constraints, intelligence | Ranked COA options | Commander |
+| **Resource Allocator** | Recommend resource allocation | COAs, available resources | Allocation recommendations | Authority holder |
+| **Intent Drafter** | Draft commander's intent | Approved objectives, COAs | Draft intent statements | Commander signature |
+
+### Multi-Agent Orchestration Framework
+
+**Recommended Stack:** LangGraph.js (TypeScript native, production-ready, HITL support)
+
+```typescript
+// Source: LangGraph.js patterns
+import { StateGraph, END } from '@langchain/langgraph';
+import { BaseMessage } from '@langchain/core/messages';
+
+// Agent state shared across all agents
+interface StrategicPlanningState {
+  // Documents and raw data
+  documents: ParsedDocument[];
+  osintReports: OSINTReport[];
+  threatIndicators: ThreatIndicator[];
+
+  // Analysis products
+  fusedIntelligence: FusedIntelligenceProduct | null;
+  extractedObjectives: StrategicObjective[];
+  riskAssessments: RiskAssessment[];
+
+  // Adversarial analysis
+  redTeamFindings: RedTeamFinding[];
+  challengedAssumptions: ChallengedAssumption[];
+
+  // Decision support
+  courseOfActionOptions: CourseOfAction[];
+  recommendations: Recommendation[];
+
+  // Human checkpoints
+  pendingHumanReview: HumanReviewItem[];
+  humanDecisions: HumanDecision[];
+
+  // Workflow state
+  currentPhase: 'COLLECTION' | 'ANALYSIS' | 'ADVERSARIAL' | 'DECISION_SUPPORT' | 'AWAITING_HUMAN';
+  messages: BaseMessage[];
+}
+
+// Define the workflow graph
+const strategicPlanningGraph = new StateGraph<StrategicPlanningState>({
+  channels: {
+    documents: { value: (a, b) => [...a, ...b], default: () => [] },
+    osintReports: { value: (a, b) => [...a, ...b], default: () => [] },
+    // ... other channels
+  },
+});
+
+// Collection phase nodes (parallel execution)
+strategicPlanningGraph.addNode('osint_collector', osintCollectorAgent);
+strategicPlanningGraph.addNode('document_processor', documentProcessorAgent);
+strategicPlanningGraph.addNode('threat_monitor', threatMonitorAgent);
+
+// Analysis phase nodes
+strategicPlanningGraph.addNode('fusion_agent', fusionAgent);
+strategicPlanningGraph.addNode('extraction_agent', extractionAgent);
+strategicPlanningGraph.addNode('assessment_agent', assessmentAgent);
+
+// Adversarial phase nodes
+strategicPlanningGraph.addNode('red_team_agent', redTeamAgent);
+strategicPlanningGraph.addNode('devils_advocate', devilsAdvocateAgent);
+
+// Human checkpoint node
+strategicPlanningGraph.addNode('human_review', humanReviewNode);
+
+// Decision support nodes
+strategicPlanningGraph.addNode('coa_generator', coaGeneratorAgent);
+strategicPlanningGraph.addNode('intent_drafter', intentDrafterAgent);
+
+// Define edges with conditional routing
+strategicPlanningGraph.addEdge('osint_collector', 'fusion_agent');
+strategicPlanningGraph.addEdge('document_processor', 'extraction_agent');
+strategicPlanningGraph.addConditionalEdges(
+  'extraction_agent',
+  (state) => state.extractedObjectives.length > 0 ? 'assessment_agent' : 'human_review',
+);
+strategicPlanningGraph.addEdge('assessment_agent', 'red_team_agent');
+strategicPlanningGraph.addEdge('red_team_agent', 'human_review');  // ALWAYS human review after red team
+
+// Human review is a breakpoint - workflow pauses here
+strategicPlanningGraph.addConditionalEdges(
+  'human_review',
+  (state) => {
+    const decision = state.humanDecisions[state.humanDecisions.length - 1];
+    if (decision?.approved) return 'coa_generator';
+    if (decision?.requestRevision) return 'assessment_agent';
+    return END;  // Rejected - workflow terminates
+  },
+);
+```
+
+### Agent Specifications
+
+#### 1. OSINT Collector Agent
+**Purpose:** Automated open-source intelligence collection
+**Autonomy Level:** Full (collection only, no analysis)
+
+```typescript
+interface OSINTCollectorConfig {
+  // Data sources
+  sources: {
+    newsFeeds: string[];           // RSS feeds, news APIs
+    governmentSites: string[];     // .gov, .mil publications
+    thinkTanks: string[];          // RAND, CSIS, etc.
+    socialMedia: string[];         // Twitter/X, Telegram (public)
+    academicDatabases: string[];   // Google Scholar, JSTOR
+  };
+
+  // Collection parameters
+  keywords: string[];              // Strategic terms to monitor
+  regions: string[];               // Geographic focus
+  refreshInterval: number;         // Minutes between collection runs
+  maxAge: number;                  // Days to retain raw data
+
+  // Quality filters
+  credibilityThreshold: number;    // 0-1, minimum source credibility
+  relevanceThreshold: number;      // 0-1, minimum relevance score
+}
+
+interface OSINTReport {
+  id: string;
+  source: string;
+  sourceCredibility: number;
+  collectedAt: Date;
+  content: string;
+  summary: string;
+  entities: ExtractedEntity[];     // People, places, organizations
+  sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
+  relevanceScore: number;
+  keywords: string[];
+  geolocation?: { lat: number; lon: number };
+}
+```
+
+#### 2. Fusion Agent
+**Purpose:** Multi-source intelligence fusion to create operational environment picture
+**Autonomy Level:** Analysis only, outputs require human review
+
+```typescript
+interface FusionAgentConfig {
+  // Fusion parameters
+  correlationThreshold: number;    // Minimum similarity for correlation
+  conflictResolution: 'NEWEST' | 'MOST_CREDIBLE' | 'FLAG_FOR_HUMAN';
+  temporalWindow: number;          // Hours to consider for correlation
+
+  // Output configuration
+  confidenceLevels: boolean;       // Include confidence in outputs
+  sourceCitations: boolean;        // Cite all sources
+  gapAnalysis: boolean;            // Identify intelligence gaps
+}
+
+interface FusedIntelligenceProduct {
+  id: string;
+  createdAt: Date;
+  classification: string;
+
+  // Operational Environment Picture
+  operationalEnvironment: {
+    political: EnvironmentFactor[];
+    military: EnvironmentFactor[];
+    economic: EnvironmentFactor[];
+    social: EnvironmentFactor[];
+    information: EnvironmentFactor[];
+    infrastructure: EnvironmentFactor[];
+    physicalEnvironment: EnvironmentFactor[];
+    time: EnvironmentFactor[];
+  };
+
+  // Threat Assessment
+  threats: ThreatAssessment[];
+  threatCOAs: ThreatCourseOfAction[];  // Potential adversary actions
+
+  // Opportunities
+  opportunities: Opportunity[];
+
+  // Intelligence Gaps
+  gaps: IntelligenceGap[];
+  collectionRequirements: CollectionRequirement[];
+
+  // Confidence and Sources
+  overallConfidence: number;
+  sourceCount: number;
+  sources: SourceCitation[];
+
+  // Human review status
+  reviewStatus: 'PENDING' | 'REVIEWED' | 'APPROVED';
+  reviewedBy?: string;
+  reviewNotes?: string;
+}
+
+interface EnvironmentFactor {
+  factor: string;
+  description: string;
+  impact: 'FAVORABLE' | 'UNFAVORABLE' | 'NEUTRAL';
+  confidence: number;
+  sources: string[];
+  lastUpdated: Date;
+}
+```
+
+#### 3. Red Team Agent
+**Purpose:** Adversarial analysis to challenge plans and identify vulnerabilities
+**Autonomy Level:** Analysis only, findings presented to humans
+
+```typescript
+interface RedTeamAgentConfig {
+  // Analysis modes
+  modes: ('ASSUMPTION_CHALLENGE' | 'VULNERABILITY_SCAN' | 'ADVERSARY_EMULATION' | 'ALTERNATIVE_ANALYSIS')[];
+
+  // Adversary profiles to emulate
+  adversaryProfiles: AdversaryProfile[];
+
+  // Thoroughness
+  depth: 'QUICK' | 'STANDARD' | 'COMPREHENSIVE';
+}
+
+interface RedTeamFinding {
+  id: string;
+  createdAt: Date;
+  analysisMode: string;
+
+  // What was analyzed
+  targetType: 'OBJECTIVE' | 'COA' | 'ASSUMPTION' | 'PLAN';
+  targetId: string;
+  targetDescription: string;
+
+  // The finding
+  findingType: 'VULNERABILITY' | 'FLAWED_ASSUMPTION' | 'OVERLOOKED_THREAT' | 'ALTERNATIVE_INTERPRETATION';
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  description: string;
+
+  // Evidence and reasoning
+  evidence: string[];
+  reasoning: string;
+  adversaryPerspective?: string;  // If emulating adversary
+
+  // Recommendations
+  mitigations: string[];
+  alternativeApproaches: string[];
+
+  // For human review
+  requiresHumanReview: true;  // Always true for red team findings
+  humanResponse?: {
+    acknowledged: boolean;
+    accepted: boolean;
+    response: string;
+    respondedBy: string;
+    respondedAt: Date;
+  };
+}
+```
+
+#### 4. Devil's Advocate Agent
+**Purpose:** Challenge consensus, surface minority viewpoints, detect groupthink
+**Autonomy Level:** Advisory only, ensures alternatives are considered
+
+```typescript
+interface DevilsAdvocateAgentConfig {
+  // Trigger conditions
+  triggerOn: {
+    highConsensus: boolean;        // When analysis shows >90% agreement
+    limitedAlternatives: boolean;  // When only 1-2 COAs considered
+    confirmedBias: boolean;        // When evidence only supports preferred view
+  };
+
+  // Analysis techniques
+  techniques: (
+    | 'ANTICIPATORY_REFLECTION'    // What could go wrong?
+    | 'ALTERNATIVE_HYPOTHESIS'     // What else could explain this?
+    | 'PREMORTEM_ANALYSIS'         // Assume failure, explain why
+    | 'MINORITY_AMPLIFICATION'     // Surface dissenting views
+    | 'BIAS_DETECTION'             // Identify cognitive biases
+  )[];
+}
+
+interface DevilsAdvocateChallenge {
+  id: string;
+  createdAt: Date;
+
+  // What's being challenged
+  targetType: 'CONSENSUS' | 'ASSUMPTION' | 'ANALYSIS' | 'COA';
+  targetId: string;
+  originalPosition: string;
+
+  // The challenge
+  technique: string;
+  challenge: string;
+  alternativePerspective: string;
+
+  // Supporting analysis
+  potentialBiases: CognitiveBias[];
+  unconsidered Factors: string[];
+  premortemScenario?: string;     // If using premortem
+
+  // Questions for decision-makers
+  questionsToConsider: string[];
+
+  // Outcome tracking
+  outcome?: {
+    considered: boolean;
+    influencedDecision: boolean;
+    notes: string;
+    decidedBy: string;
+  };
+}
+
+interface CognitiveBias {
+  biasType: 'CONFIRMATION' | 'ANCHORING' | 'AVAILABILITY' | 'GROUPTHINK' | 'OPTIMISM' | 'SUNK_COST';
+  description: string;
+  evidence: string;
+  mitigation: string;
+}
+```
+
+#### 5. Assessment Agent (Risk & Feasibility)
+**Purpose:** Systematic risk and feasibility assessment of objectives
+**Autonomy Level:** Generates assessments, human reviews and approves
+
+```typescript
+interface AssessmentAgentConfig {
+  // Assessment frameworks
+  riskFramework: '5x5_MATRIX' | 'BOWTIE' | 'FMEA';
+  feasibilityFactors: ('RESOURCES' | 'TIME' | 'CAPABILITY' | 'POLITICAL' | 'LEGAL')[];
+
+  // Thresholds
+  autoFlagThreshold: {
+    riskLevel: 'HIGH' | 'EXTREME';
+    feasibilityScore: number;  // Below this, auto-flag for review
+  };
+}
+
+// Extends RiskAssessment from doctrine section with agent metadata
+interface AgentRiskAssessment extends RiskAssessment {
+  // Agent metadata
+  generatedBy: 'ASSESSMENT_AGENT';
+  generatedAt: Date;
+  modelVersion: string;
+  confidenceScore: number;
+
+  // Evidence chain
+  evidenceChain: {
+    factor: string;
+    evidence: string[];
+    inferenceChain: string;
+  }[];
+
+  // Recommended human questions
+  questionsForReviewer: string[];
+
+  // Auto-flags
+  autoFlags: {
+    flag: string;
+    reason: string;
+    severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  }[];
+}
+```
+
+### Human-in-the-Loop Integration Points
+
+**Critical Rule:** Agents NEVER execute actions that commit resources, approve plans, or affect operations without explicit human approval.
+
+#### Checkpoint Types
+
+| Checkpoint | Trigger | Approver | Timeout Action |
+|------------|---------|----------|----------------|
+| **Review Gate** | Analysis complete | Analyst | Hold until reviewed |
+| **Approval Gate** | Risk > threshold | Authority holder | Escalate |
+| **Exception Gate** | Agent uncertainty > threshold | Supervisor | Manual takeover |
+| **Audit Gate** | Sensitive action logged | Auditor (async) | Continue + log |
+
+#### Implementation Pattern
+
+```typescript
+// Human-in-the-loop checkpoint implementation
+interface HumanCheckpoint {
+  id: string;
+  checkpointType: 'REVIEW' | 'APPROVAL' | 'EXCEPTION' | 'AUDIT';
+
+  // What needs review
+  itemType: string;
+  itemId: string;
+  itemSummary: string;
+  fullContent: unknown;
+
+  // Context for reviewer
+  agentAnalysis: string;
+  agentRecommendation: string;
+  confidenceScore: number;
+  flaggedConcerns: string[];
+  questionsForReviewer: string[];
+
+  // Workflow state
+  status: 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | 'REVISION_REQUESTED';
+  assignedTo?: string;
+  dueBy?: Date;
+  escalateTo?: string;
+  escalateAfter?: Date;
+
+  // Decision record
+  decision?: {
+    action: 'APPROVE' | 'REJECT' | 'REVISE' | 'ESCALATE';
+    decidedBy: string;
+    decidedAt: Date;
+    rationale: string;
+    modifications?: unknown;
+  };
+}
+
+// Integration with XState workflow
+const humanCheckpointState = {
+  AWAITING_HUMAN: {
+    on: {
+      HUMAN_APPROVE: {
+        target: 'PROCEED',
+        actions: ['recordApproval', 'logAuditTrail'],
+      },
+      HUMAN_REJECT: {
+        target: 'REJECTED',
+        actions: ['recordRejection', 'logAuditTrail'],
+      },
+      HUMAN_REVISE: {
+        target: 'REVISION',
+        actions: ['recordRevisionRequest', 'notifyAgent'],
+      },
+      TIMEOUT: {
+        target: 'ESCALATED',
+        actions: ['escalateToSupervisor', 'alertTimeout'],
+      },
+    },
+  },
+};
+```
+
+### Agent Orchestration Patterns
+
+#### Pattern 1: Parallel Collection → Fusion → Sequential Analysis
+
+```
+┌─────────────┐
+│ OSINT       │──┐
+│ Collector   │  │
+└─────────────┘  │    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+┌─────────────┐  ├───▶│ Fusion      │───▶│ Assessment  │───▶│ Red Team    │
+│ Document    │──┤    │ Agent       │    │ Agent       │    │ Agent       │
+│ Processor   │  │    └─────────────┘    └─────────────┘    └─────────────┘
+└─────────────┘  │                                                  │
+┌─────────────┐  │                                                  ▼
+│ Threat      │──┘                                          ┌─────────────┐
+│ Monitor     │                                             │ HUMAN       │
+└─────────────┘                                             │ REVIEW      │
+                                                            └─────────────┘
+```
+
+#### Pattern 2: Adversarial Pair (Analysis + Challenge)
+
+Every major analysis gets challenged before human review:
+
+```
+┌─────────────┐         ┌─────────────┐         ┌─────────────┐
+│ Analysis    │────────▶│ Red Team /  │────────▶│ Consolidated│
+│ Agent       │         │ Devil's     │         │ Report      │
+│             │◀────────│ Advocate    │         │             │
+└─────────────┘ revise  └─────────────┘         └─────────────┘
+                if needed                              │
+                                                       ▼
+                                               ┌─────────────┐
+                                               │ HUMAN       │
+                                               │ DECISION    │
+                                               └─────────────┘
+```
+
+#### Pattern 3: Escalation Chain
+
+```typescript
+const escalationChain = {
+  RISK_LOW: {
+    approver: 'analyst',
+    timeout: '24h',
+    escalateTo: 'supervisor',
+  },
+  RISK_MEDIUM: {
+    approver: 'supervisor',
+    timeout: '8h',
+    escalateTo: 'director',
+  },
+  RISK_HIGH: {
+    approver: 'director',
+    timeout: '4h',
+    escalateTo: 'commander',
+  },
+  RISK_EXTREME: {
+    approver: 'commander',
+    timeout: '2h',
+    escalateTo: null,  // No escalation, must wait
+  },
+};
+```
+
+### IPOE Automation with Agents
+
+Intelligence Preparation of the Operational Environment (IPOE) mapped to agents:
+
+| IPOE Step | Agent(s) | Human Role |
+|-----------|----------|------------|
+| **Step 1: Define OE** | Document Processor (extract boundaries, constraints) | Approve OE definition |
+| **Step 2: Describe OE Effects** | Fusion Agent (PMESII-PT analysis) | Review environmental factors |
+| **Step 3: Evaluate Threat** | Threat Monitor + Red Team Agent | Validate threat assessment |
+| **Step 4: Determine Threat COAs** | Red Team Agent (adversary emulation) | Approve threat COA list |
+
+### Quality Assurance: Agent Output Validation
+
+Every agent output includes:
+
+```typescript
+interface AgentOutput<T> {
+  // The actual output
+  data: T;
+
+  // Provenance
+  agentId: string;
+  agentVersion: string;
+  generatedAt: Date;
+
+  // Confidence and quality
+  confidenceScore: number;          // 0-1
+  qualityIndicators: {
+    sourceCount: number;
+    sourceDiversity: number;        // 0-1, how diverse are sources
+    contradictionCount: number;
+    assumptionCount: number;
+    uncertaintyFlags: string[];
+  };
+
+  // For human review
+  executiveSummary: string;         // 2-3 sentence summary
+  keyFindings: string[];            // Bullet points
+  areasOfUncertainty: string[];     // What's not clear
+  questionsForReviewer: string[];   // What should human verify
+  recommendedActions: string[];     // What agent suggests
+
+  // Audit trail
+  inputSources: string[];
+  processingSteps: string[];
+  modelCalls: {
+    model: string;
+    prompt: string;
+    response: string;
+    tokens: number;
+  }[];
+}
+```
+
+### Agent Technology Stack
+
+| Component | Recommended | Alternative | Notes |
+|-----------|-------------|-------------|-------|
+| **Orchestration** | LangGraph.js | Microsoft Agent Framework | TypeScript native, HITL built-in |
+| **Agent Runtime** | LangChain.js | Vercel AI SDK | Model abstraction, tools |
+| **State Management** | XState v5 | LangGraph state | Workflow persistence |
+| **Vector Store** | pgvector (PostgreSQL) | Pinecone | Self-hosted, already have PG |
+| **LLM Provider** | Anthropic Claude | OpenAI GPT-4 | Already using in BASTION |
+| **OSINT Tools** | Custom + APIs | Maltego, SpiderFoot | Build collection agents |
+| **Monitoring** | LangSmith | Helicone | Agent observability |
+</ai_agent_architecture>
+
 <dont_hand_roll>
 ## Don't Hand-Roll
 
@@ -1034,6 +1672,18 @@ Things that couldn't be fully resolved:
 - NWC JOPP Workbook - https://dnnlgwick.blob.core.windows.net/portals/0/NWCDepartments/Joint%20Military%20Operations%20Department/NWC-4111J-July-2013-chg1.pdf
 - Commander's Intent Elements - https://pavilion.dinfos.edu/Article/Article/2163950/the-elements-of-commanders-intent/
 
+### AI Agent Frameworks (HIGH confidence)
+- LangGraph.js documentation - https://docs.langchain.com/oss/javascript/langgraph/overview
+- LangGraph GitHub - https://github.com/langchain-ai/langgraphjs
+- Microsoft Agent Framework - https://azure.microsoft.com/en-us/blog/introducing-microsoft-agent-framework/
+- Microsoft Magentic-One - https://www.microsoft.com/en-us/research/articles/magentic-one-a-generalist-multi-agent-system-for-solving-complex-tasks/
+- CSA Agentic AI Red Teaming Guide - https://cloudsecurityalliance.org/artifacts/agentic-ai-red-teaming-guide
+- Blue Helix Agentic OSINT - https://blogs.infoblox.com/security/blue-helix-agentic-osint-researcher/
+- Devil's Advocate AI Research - https://arxiv.org/abs/2405.16334
+- Human-in-the-Loop Guide - https://beetroot.co/ai-ml/human-in-the-loop-meets-agentic-ai-building-trust-and-control-in-automated-workflows/
+- Booz Allen Multi-INT Fusion - https://www.boozallen.com/insights/intel/accelerating-multi-int-fusion-for-intelligence-missions.html
+- AI Agents for Situational Awareness - https://visionplatform.ai/ai-agents-for-situational-awareness/
+
 ### Tertiary (LOW confidence - needs validation)
 - None - all key claims verified against documentation
 </sources>
@@ -1043,10 +1693,11 @@ Things that couldn't be fully resolved:
 
 **Research scope:**
 - Core technology: Document parsing (PDF, DOCX), LLM extraction, workflow state machines
-- Ecosystem: unpdf, officeParser, Instructor-JS, XState v5, Zod, LlamaIndex.TS
+- Ecosystem: unpdf, officeParser, Instructor-JS, XState v5, Zod, LlamaIndex.TS, LangGraph.js
 - Patterns: Document ingestion pipeline, structured extraction, approval workflows, DIME/EWM data model
 - Pitfalls: Memory issues, extraction failures, state corruption, doctrine compliance
 - Doctrine: NSS/NDS/NMS hierarchy, JOPP alignment, Risk-to-Mission/Force, Commander's Intent structure
+- AI Agents: Multi-agent orchestration, OSINT collection, fusion, red team, devil's advocate, HITL integration
 
 **Confidence breakdown:**
 - Standard stack: HIGH - verified with npm, GitHub, official docs
@@ -1054,6 +1705,7 @@ Things that couldn't be fully resolved:
 - Pitfalls: HIGH - documented in guides and production experience
 - Code examples: HIGH - adapted from official documentation
 - Strategic doctrine: HIGH - from JP 5-0, CJCSM 3105.01, ATP 5-19, and official DoD sources
+- AI agent architecture: HIGH - from LangGraph docs, Microsoft Research, CSA guides, academic papers
 
 **Research date:** 2026-01-17
 **Valid until:** 2026-02-17 (30 days - stable ecosystem)
