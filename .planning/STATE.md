@@ -6,23 +6,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 3 — DAO Governance (COMPLETE)
+**Current focus:** Phase 4 — Strategic Planning Module
 
 ## Current Position
 
-Phase: 3 of 12 (DAO Governance) - COMPLETE
-Plan: 8 of 8 in current phase
-Status: Phase complete
-Last activity: 2026-01-17 — Completed 3-08-PLAN.md (Governance Copilot Integration)
+Phase: 4 of 12 (Strategic Planning Module)
+Plan: 1 of TBD in current phase
+Status: In progress
+Last activity: 2026-01-17 — Completed 4-01-PLAN.md (Document Ingestion Pipeline)
 
-Progress: ██████████ 100% (Phase 3)
+Progress: ███░░░░░░░ ~28% (Phase 4 started)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
+- Total plans completed: 24
 - Average duration: 16 min
-- Total execution time: 6.5 hours
+- Total execution time: 6.6 hours
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: ██████████ 100% (Phase 3)
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
+| 4 (Strategic Planning) | 1 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 11 min, 8 min, 9 min, 12 min, 47 min
-- Trend: Phase 3 complete with governance copilot integration
+- Last 5 plans: 8 min, 9 min, 12 min, 47 min, 5 min
+- Trend: Phase 4 started with document ingestion pipeline
 
 ## Accumulated Context
 
@@ -210,6 +211,13 @@ Recent decisions affecting current work:
 - CopilotPanel with 5-minute cache TTL for analysis results
 - VotingGuidance capability added to agent capabilities enum
 
+**Phase 4 Plan 1 (Document Ingestion Pipeline):**
+- Use unpdf for PDF extraction (not custom parser)
+- Use officeParser for DOCX/Office formats
+- 8000 character default chunk size for LLM context limits
+- 50MB max upload size limit
+- Strategic document hierarchy levels: NSS, NDS, NMS, GEF, JSCP, CAMPAIGN_PLAN, OTHER
+
 ### Deferred Issues
 
 See `.planning/ISSUES.md` for full issue log:
@@ -223,6 +231,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: Completed 3-08-PLAN.md (Governance Copilot Integration) - Phase 3 COMPLETE
+Stopped at: Completed 4-01-PLAN.md (Document Ingestion Pipeline)
 Resume file: None
-Next action: Plan Phase 4 (Strategic Planning Module)
+Next action: Execute 4-02-PLAN.md or next plan in Phase 4

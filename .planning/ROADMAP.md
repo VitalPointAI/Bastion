@@ -87,12 +87,20 @@ Plans:
 ### Phase 4: Strategic Planning Module
 **Goal**: Create strategic objective ingestion and extraction system
 **Depends on**: Phase 3
-**Research**: Likely (NLP and document processing)
+**Research**: Complete (4-RESEARCH.md)
 **Research topics**: Document parsing libraries for TypeScript, NLP models for military strategy extraction, NEAR AI integration for sensitive document processing, DIME framework data modeling
-**Plans**: TBD
+**Plans**: 9
 
 Plans:
-- [ ] TBD during phase planning
+- [x] Plan 4-01: Document Ingestion Pipeline (completed 2026-01-17)
+- [ ] Plan 4-02: DIME Framework Data Model
+- [ ] Plan 4-03: LLM Objective Extraction
+- [ ] Plan 4-04: Strategic Hierarchy System
+- [ ] Plan 4-05: Backend Strategic API
+- [ ] Plan 4-06: Approval Workflow Engine
+- [ ] Plan 4-07: Frontend Strategic Components
+- [ ] Plan 4-08: Strategic-DAO Integration
+- [ ] Plan 4-09: End-to-End Strategic Flow
 
 ### Phase 5: Operational Planning Module
 **Goal**: Implement joint planning doctrine and operational design
@@ -182,7 +190,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Foundation & Infrastructure | 8/8 | Complete | 2026-01-13 |
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
-| 4. Strategic Planning Module | 0/TBD | Not started | - |
+| 4. Strategic Planning Module | 1/9 | In progress | - |
 | 5. Operational Planning Module | 0/TBD | Not started | - |
 | 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
 | 7. Tactical Execution System | 0/TBD | Not started | - |
