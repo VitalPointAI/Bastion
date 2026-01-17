@@ -18,6 +18,7 @@
  * - permissions: Permission evaluation with wildcards and clearance verification
  */
 
+pub mod execution;
 pub mod permissions;
 pub mod proposals;
 pub mod registry;
@@ -36,3 +37,4 @@ pub use types::{
 pub use voting::{
     ThresholdKind, Vote, VotePolicy, VoteType, VotingEngine, VotingResult, WeightKind,
 };
+pub use execution::{ExecutionConfig, ExecutionState, ProposalExecutor};
