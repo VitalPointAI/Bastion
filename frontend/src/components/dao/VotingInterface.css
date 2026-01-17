@@ -1,4 +1,11 @@
-/* VotingInterface Styles */
+/* ============================================================================
+   VotingInterface - Command Authority Actions
+   Premium styling for voting controls and authorization actions
+   ============================================================================ */
+
+/* ============================================================================
+   Base Container
+   ============================================================================ */
 
 .voting-interface {
   display: flex;
@@ -6,489 +13,864 @@
   gap: 1.5rem;
 }
 
-/* Vote Tally */
+/* ============================================================================
+   Vote Tally - Large Visualization
+   ============================================================================ */
+
 .vote-tally h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.9rem;
-  color: #888;
+  margin: 0 0 1rem 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
   text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vote-tally h4::before {
+  content: '';
+  width: 4px;
+  height: 14px;
+  background: var(--accent-blue);
+  border-radius: 2px;
 }
 
 .vote-bar-container {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
+/* Large Vote Progress Bar */
 .vote-bar-large {
   display: flex;
-  height: 40px;
-  border-radius: 6px;
+  height: 48px;
+  border-radius: 10px;
   overflow: hidden;
-  background-color: #333;
+  background: var(--bg-elevated);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+  position: relative;
 }
 
+/* Bar segments */
 .vote-bar-fill {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: width 0.3s ease;
+  transition: width var(--transition-medium);
+  position: relative;
 }
 
 .vote-bar-fill.approve {
-  background-color: #44cc44;
+  background: linear-gradient(90deg, #22c55e 0%, #4ade80 100%);
+  box-shadow:
+    0 0 15px rgba(34, 197, 94, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .vote-bar-fill.reject {
-  background-color: #ff4444;
+  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+  box-shadow:
+    0 0 15px rgba(239, 68, 68, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .vote-count {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 800;
   color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.05em;
 }
 
+/* Vote Labels */
 .vote-labels {
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .vote-labels .approve {
-  color: #44cc44;
+  color: var(--accent-green);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .vote-labels .reject {
-  color: #ff4444;
+  color: var(--accent-red);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
-/* My Vote Status */
+/* ============================================================================
+   My Vote Status - Current Vote Display
+   ============================================================================ */
+
 .my-vote-status {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background-color: #222;
-  border-radius: 6px;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border-radius: 10px;
+  border: 1px solid var(--border-medium);
 }
 
 .my-vote-status .label {
-  color: #888;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
 .my-vote-status .vote-type {
-  font-weight: 600;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
 }
 
 .my-vote-status .vote-type.approve {
-  background-color: #1a4a1a;
-  color: #44cc44;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+  color: #66ff66;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
 }
 
 .my-vote-status .vote-type.reject {
-  background-color: #4a1a1a;
-  color: #ff4444;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+  color: #ff6666;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
 }
 
 .my-vote-status .vote-type.abstain {
-  background-color: #333;
-  color: #888;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
 }
 
-/* Vote Buttons */
+/* ============================================================================
+   Vote Buttons - Action Controls
+   ============================================================================ */
+
 .vote-buttons h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.9rem;
-  color: #888;
+  margin: 0 0 1rem 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
   text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .vote-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .vote-btn {
   flex: 1;
-  padding: 1rem;
+  padding: 1.25rem;
   font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
+  font-weight: 700;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Button shine effect */
+.vote-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  transition: left 0.5s ease;
+}
+
+.vote-btn:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .vote-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
+/* Approve Button */
 .vote-btn.approve {
-  background-color: #1a4a1a;
-  color: #44cc44;
-  border: 2px solid #44cc44;
+  background: linear-gradient(135deg, #1a4a2a 0%, #0a3a1a 100%);
+  color: #66ff66;
+  border: 2px solid var(--accent-green);
+  box-shadow: inset 0 1px 0 rgba(102, 255, 102, 0.1);
 }
 
 .vote-btn.approve:hover:not(:disabled) {
-  background-color: #2a5a2a;
+  background: linear-gradient(135deg, #2a5a3a 0%, #1a4a2a 100%);
+  box-shadow:
+    var(--glow-blue),
+    inset 0 1px 0 rgba(102, 255, 102, 0.2);
+  transform: translateY(-2px);
+  border-color: #66ff66;
 }
 
+/* Reject Button */
 .vote-btn.reject {
-  background-color: #4a1a1a;
-  color: #ff4444;
-  border: 2px solid #ff4444;
+  background: linear-gradient(135deg, #4a1a1a 0%, #3a0a0a 100%);
+  color: #ff6666;
+  border: 2px solid var(--accent-red);
+  box-shadow: inset 0 1px 0 rgba(255, 102, 102, 0.1);
 }
 
 .vote-btn.reject:hover:not(:disabled) {
-  background-color: #5a2a2a;
+  background: linear-gradient(135deg, #5a2a2a 0%, #4a1a1a 100%);
+  box-shadow:
+    var(--glow-red),
+    inset 0 1px 0 rgba(255, 102, 102, 0.2);
+  transform: translateY(-2px);
+  border-color: #ff6666;
 }
 
+/* Abstain Button */
 .vote-btn.abstain {
-  background-color: #333;
-  color: #888;
-  border: 2px solid #555;
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+  color: var(--text-secondary);
+  border: 2px solid var(--border-medium);
 }
 
 .vote-btn.abstain:hover:not(:disabled) {
-  background-color: #444;
+  background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-elevated) 100%);
+  border-color: var(--border-bright);
+  color: var(--text-primary);
+  transform: translateY(-2px);
 }
 
-/* Coalition Approval Section */
+/* ============================================================================
+   Coalition Approval Section
+   ============================================================================ */
+
 .coalition-approval-section {
-  padding: 1rem;
-  background-color: #1a1a2a;
-  border: 1px solid #333;
-  border-radius: 6px;
+  padding: 1.5rem;
+  background: linear-gradient(135deg,
+    rgba(74, 144, 217, 0.08) 0%,
+    var(--bg-primary) 100%
+  );
+  border: 1px solid rgba(74, 144, 217, 0.3);
+  border-radius: 12px;
+  position: relative;
+}
+
+/* Corner accents */
+.coalition-approval-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 25px;
+  height: 25px;
+  border-top: 2px solid var(--accent-blue);
+  border-left: 2px solid var(--accent-blue);
+  border-radius: 12px 0 0 0;
+  opacity: 0.6;
+}
+
+.coalition-approval-section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 25px;
+  height: 25px;
+  border-bottom: 2px solid var(--accent-blue);
+  border-right: 2px solid var(--accent-blue);
+  border-radius: 0 0 12px 0;
+  opacity: 0.6;
 }
 
 .coalition-approval-section h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.9rem;
-  color: #888;
+  margin: 0 0 0.75rem 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-blue);
   text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .coalition-info {
-  color: #aaa;
-  margin: 0 0 1rem 0;
+  color: var(--text-secondary);
+  margin: 0 0 1.25rem 0;
   font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 .coalition-parties-status {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .party-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem;
-  background-color: #222;
-  border-radius: 4px;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-fast);
+}
+
+.party-row:hover {
+  border-color: var(--border-medium);
+}
+
+.party-row .party-flag {
+  font-size: 1.5rem;
 }
 
 .party-row .party-name {
-  font-weight: 600;
-  color: #fff;
-  min-width: 50px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 60px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .party-row .party-status {
-  font-size: 0.8rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .party-row .party-status.approved {
-  background-color: #1a4a1a;
-  color: #44cc44;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+  color: #66ff66;
+  border: 1px solid rgba(34, 197, 94, 0.4);
 }
 
 .party-row .party-status.pending {
-  background-color: #4a4a1a;
-  color: #cccc44;
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.15) 0%, rgba(255, 165, 0, 0.05) 100%);
+  color: var(--accent-orange);
+  border: 1px solid rgba(255, 165, 0, 0.3);
 }
 
 .approve-party-btn {
   margin-left: auto;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  background-color: #4a90d9;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #3a7ac9 100%);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all var(--transition-medium);
 }
 
 .approve-party-btn:hover:not(:disabled) {
-  background-color: #5aa0e9;
+  background: linear-gradient(135deg, var(--accent-blue-bright) 0%, var(--accent-blue) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(74, 144, 217, 0.3);
 }
 
 .approve-party-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .awaiting-text {
-  margin: 0.75rem 0 0 0;
-  color: #888;
+  margin: 1rem 0 0 0;
+  color: var(--text-secondary);
   font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-elevated);
+  border-radius: 4px;
 }
 
-/* Human Approval Section */
+/* ============================================================================
+   Human Approval Section - Critical Authorization
+   ============================================================================ */
+
 .human-approval-section {
-  padding: 1rem;
-  background-color: #1a2a1a;
-  border: 2px solid #44cc44;
-  border-radius: 6px;
+  padding: 1.5rem;
+  background: linear-gradient(135deg,
+    rgba(34, 197, 94, 0.08) 0%,
+    var(--bg-primary) 100%
+  );
+  border: 2px solid var(--accent-green);
+  border-radius: 12px;
+  position: relative;
 }
 
+.human-approval-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  border-top: 3px solid var(--accent-green);
+  border-left: 3px solid var(--accent-green);
+  border-radius: 12px 0 0 0;
+}
+
+.human-approval-section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  border-bottom: 3px solid var(--accent-green);
+  border-right: 3px solid var(--accent-green);
+  border-radius: 0 0 12px 0;
+}
+
+/* Strike Authorization - RED ALERT styling */
 .human-approval-section.strike {
-  background-color: #2a1a1a;
-  border-color: #ff4444;
+  background: linear-gradient(135deg,
+    rgba(255, 68, 68, 0.1) 0%,
+    var(--bg-primary) 100%
+  );
+  border-color: var(--accent-red);
+  animation: strikeAuthPulse 2s ease-in-out infinite;
+}
+
+@keyframes strikeAuthPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 0 rgba(255, 68, 68, 0.2);
+  }
+}
+
+.human-approval-section.strike::before,
+.human-approval-section.strike::after {
+  border-color: var(--accent-red);
 }
 
 .human-approval-section h4 {
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 1rem 0;
   font-size: 0.9rem;
-  color: #44cc44;
+  font-weight: 800;
+  color: var(--accent-green);
   text-transform: uppercase;
+  letter-spacing: 0.12em;
 }
 
 .human-approval-section.strike h4 {
-  color: #ff4444;
+  color: var(--accent-red);
 }
 
+/* Strike Warning Box */
 .strike-warning {
   display: flex;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background-color: #330000;
-  border: 1px solid #660000;
-  border-radius: 4px;
-  margin-bottom: 1rem;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(102, 0, 0, 0.5) 0%, rgba(68, 0, 0, 0.3) 100%);
+  border: 1px solid #880000;
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+  animation: warningGlow 2s ease-in-out infinite;
+}
+
+@keyframes warningGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
+  }
+  50% {
+    box-shadow: 0 0 15px 0 rgba(255, 68, 68, 0.3);
+  }
 }
 
 .strike-warning .warning-icon {
-  font-size: 1.5rem;
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.strike-warning .warning-text {
+  flex: 1;
 }
 
 .strike-warning .warning-text strong {
   display: block;
-  color: #ff4444;
-  margin-bottom: 0.25rem;
+  color: #ff6666;
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .strike-warning .warning-text p {
   margin: 0;
-  color: #cc8888;
+  color: #cc9999;
   font-size: 0.9rem;
+  line-height: 1.5;
 }
 
+/* Authorize Button - Primary Action */
 .authorize-btn {
   width: 100%;
-  padding: 1rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  background-color: #44cc44;
+  padding: 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-green) 0%, #1a9e4a 100%);
   color: #000;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all var(--transition-medium);
+  box-shadow:
+    0 4px 12px rgba(34, 197, 94, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .authorize-btn:hover:not(:disabled) {
-  background-color: #55dd55;
+  background: linear-gradient(135deg, #4ade80 0%, var(--accent-green) 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 16px rgba(34, 197, 94, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .authorize-btn.strike {
-  background-color: #ff4444;
+  background: linear-gradient(135deg, var(--accent-red) 0%, #cc2222 100%);
   color: #fff;
+  box-shadow:
+    0 4px 12px rgba(255, 68, 68, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .authorize-btn.strike:hover:not(:disabled) {
-  background-color: #ff5555;
+  background: linear-gradient(135deg, #f87171 0%, var(--accent-red) 100%);
+  box-shadow:
+    0 6px 16px rgba(255, 68, 68, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .authorize-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  transform: none;
 }
 
-/* Veto Section */
+/* ============================================================================
+   Veto Section - Override Control
+   ============================================================================ */
+
 .veto-section {
-  padding: 1rem;
-  background-color: #2a2a1a;
-  border: 2px solid #ffaa00;
-  border-radius: 6px;
+  padding: 1.5rem;
+  background: linear-gradient(135deg,
+    rgba(255, 165, 0, 0.1) 0%,
+    var(--bg-primary) 100%
+  );
+  border: 2px solid var(--accent-orange);
+  border-radius: 12px;
+  position: relative;
+}
+
+.veto-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 25px;
+  height: 25px;
+  border-top: 2px solid var(--accent-orange);
+  border-left: 2px solid var(--accent-orange);
+  border-radius: 12px 0 0 0;
+}
+
+.veto-section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 25px;
+  height: 25px;
+  border-bottom: 2px solid var(--accent-orange);
+  border-right: 2px solid var(--accent-orange);
+  border-radius: 0 0 12px 0;
 }
 
 .veto-section h4 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.75rem 0;
   font-size: 0.9rem;
-  color: #ffaa00;
+  font-weight: 700;
+  color: var(--accent-orange);
   text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .veto-info {
-  color: #aaa;
-  margin: 0 0 1rem 0;
+  color: var(--text-secondary);
+  margin: 0 0 1.25rem 0;
   font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Countdown Timer */
+.veto-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-orange);
 }
 
 .veto-btn {
   width: 100%;
-  padding: 1rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  background-color: #ffaa00;
+  padding: 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-orange) 0%, #cc8400 100%);
   color: #000;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all var(--transition-medium);
+  box-shadow:
+    0 4px 12px rgba(255, 165, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .veto-btn:hover:not(:disabled) {
-  background-color: #ffbb22;
+  background: linear-gradient(135deg, #ffbb22 0%, var(--accent-orange) 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 16px rgba(255, 165, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .veto-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Confirmation Dialog */
+/* ============================================================================
+   Confirmation Dialog
+   ============================================================================ */
+
 .confirmation-dialog {
-  padding: 1rem;
-  background-color: #222;
-  border-radius: 4px;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+  border-radius: 10px;
+  border: 1px solid var(--border-medium);
 }
 
 .confirmation-dialog p {
-  margin: 0 0 1rem 0;
-  color: #fff;
+  margin: 0 0 1.25rem 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .confirmation-buttons {
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .confirm-btn {
   flex: 1;
-  padding: 0.75rem;
+  padding: 1rem;
   font-size: 0.95rem;
-  font-weight: 600;
-  background-color: #44cc44;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-green) 0%, #1a9e4a 100%);
   color: #000;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all var(--transition-medium);
 }
 
 .confirm-btn:hover:not(:disabled) {
-  background-color: #55dd55;
+  background: linear-gradient(135deg, #4ade80 0%, var(--accent-green) 100%);
+  transform: translateY(-1px);
 }
 
 .confirm-btn.strike {
-  background-color: #ff4444;
+  background: linear-gradient(135deg, var(--accent-red) 0%, #cc2222 100%);
   color: #fff;
 }
 
 .confirm-btn.strike:hover:not(:disabled) {
-  background-color: #ff5555;
+  background: linear-gradient(135deg, #f87171 0%, var(--accent-red) 100%);
 }
 
 .confirm-btn.veto {
-  background-color: #ffaa00;
+  background: linear-gradient(135deg, var(--accent-orange) 0%, #cc8400 100%);
   color: #000;
 }
 
 .confirm-btn.veto:hover:not(:disabled) {
-  background-color: #ffbb22;
+  background: linear-gradient(135deg, #ffbb22 0%, var(--accent-orange) 100%);
 }
 
 .confirm-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .cancel-btn {
   flex: 1;
-  padding: 0.75rem;
+  padding: 1rem;
   font-size: 0.95rem;
-  font-weight: 500;
-  background-color: #333;
-  color: #888;
-  border: none;
-  border-radius: 4px;
+  font-weight: 600;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all var(--transition-medium);
 }
 
 .cancel-btn:hover:not(:disabled) {
-  background-color: #444;
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-bright);
 }
 
 .cancel-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Status Messages */
+/* ============================================================================
+   Status Messages
+   ============================================================================ */
+
 .message {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
 }
 
 .message.error {
-  background-color: #4a1a1a;
-  color: #ff4444;
-  border: 1px solid #660000;
+  background: linear-gradient(135deg, rgba(255, 68, 68, 0.15) 0%, var(--bg-elevated) 100%);
+  color: #ff6666;
+  border: 1px solid rgba(255, 68, 68, 0.3);
 }
 
 .message.success {
-  background-color: #1a4a1a;
-  color: #44cc44;
-  border: 1px solid #006600;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, var(--bg-elevated) 100%);
+  color: #66ff66;
+  border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .message .icon {
-  font-size: 1rem;
+  font-size: 1.25rem;
 }
 
-/* Transaction Status */
+/* ============================================================================
+   Transaction Status - Premium Spinner
+   ============================================================================ */
+
 .transaction-status {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background-color: #222;
-  border-radius: 4px;
-  color: #888;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.95rem;
 }
 
 .spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #333;
-  border-top-color: #4a90d9;
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border-medium);
+  border-top-color: var(--accent-blue);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: premiumSpin 1s linear infinite;
 }
 
-@keyframes spin {
+@keyframes premiumSpin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   Responsive Adjustments
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .vote-actions {
+    flex-direction: column;
+  }
+
+  .vote-btn {
+    padding: 1rem;
+  }
+
+  .confirmation-buttons {
+    flex-direction: column;
+  }
+
+  .coalition-approval-section,
+  .human-approval-section,
+  .veto-section {
+    padding: 1.25rem;
+  }
+
+  .party-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .approve-party-btn {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+
+  .strike-warning {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .strike-warning .warning-icon {
+    font-size: 2.5rem;
   }
 }
