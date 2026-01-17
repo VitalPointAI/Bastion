@@ -23,7 +23,15 @@ mod credential_registry;
 use credential_registry::{CredentialRegistry, EncryptedCredentialAnchor};
 
 mod dao;
-use dao::{DAORegistry, ProposalManager};
+use dao::{
+    DAORegistry, DAOConfig, DAOMetadata, AutonomyLevel,
+    ProposalManager, Proposal, ProposalKind, ProposalStatus,
+    RoleManager, Role, AgentTier,
+    VotingEngine, VoteType, Vote, VotePolicy,
+    ProposalExecutor, ExecutionState,
+    DAOLinkageManager, RequirementType, CoalitionProposal,
+    PermissionChecker, Action,
+};
 
 /// Main contract structure with state versioning pattern
 /// State version is tracked internally for safe upgrades
@@ -50,6 +58,20 @@ pub struct Contract {
     did_registry: DIDRegistry,
     /// Encrypted credential registry for on-chain verification
     credential_registry: CredentialRegistry,
+    /// DAO registry for multi-DAO management
+    dao_registry: DAORegistry,
+    /// Proposal manager for DAO proposals
+    proposal_manager: ProposalManager,
+    /// Role manager for DAO membership and permissions
+    role_manager: RoleManager,
+    /// Voting engine for DAO voting
+    voting_engine: VotingEngine,
+    /// Proposal executor for autonomy-aware execution
+    proposal_executor: ProposalExecutor,
+    /// DAO linkage manager for hierarchical relationships
+    dao_linkages: DAOLinkageManager,
+    /// Permission checker for access control
+    permission_checker: PermissionChecker,
 }
 
 #[near]
@@ -73,6 +95,13 @@ impl Contract {
             intent_verifier: IntentVerifier::new(),
             did_registry: DIDRegistry::new(),
             credential_registry: CredentialRegistry::new(),
+            dao_registry: DAORegistry::new(),
+            proposal_manager: ProposalManager::new(),
+            role_manager: RoleManager::new(),
+            voting_engine: VotingEngine::new(),
+            proposal_executor: ProposalExecutor::new(),
+            dao_linkages: DAOLinkageManager::new(),
+            permission_checker: PermissionChecker::new(),
         }
     }
 
@@ -83,7 +112,7 @@ impl Contract {
     pub fn migrate() -> Self {
         use near_sdk::borsh::{self, BorshDeserialize};
 
-        // Read old state
+        // Read old state (V1 without DAO fields)
         #[derive(BorshDeserialize)]
         struct OldState {
             owner: AccountId,
@@ -100,12 +129,11 @@ impl Contract {
 
         let old_state: OldState = env::state_read().expect("Failed to read state");
 
-        // For now, just copy the state
-        // When V2 is added, migration logic will be implemented here
+        // Migrate to V2 with DAO fields initialized fresh
         Self {
             owner: old_state.owner,
             initialized: old_state.initialized,
-            state_version: old_state.state_version,
+            state_version: 2, // Bump to V2
             document_registry: old_state.document_registry,
             privacy_router: old_state.privacy_router,
             attestation_verifier: old_state.attestation_verifier,
@@ -113,6 +141,14 @@ impl Contract {
             intent_verifier: old_state.intent_verifier,
             did_registry: old_state.did_registry,
             credential_registry: old_state.credential_registry,
+            // Initialize new DAO fields
+            dao_registry: DAORegistry::new(),
+            proposal_manager: ProposalManager::new(),
+            role_manager: RoleManager::new(),
+            voting_engine: VotingEngine::new(),
+            proposal_executor: ProposalExecutor::new(),
+            dao_linkages: DAOLinkageManager::new(),
+            permission_checker: PermissionChecker::new(),
         }
     }
 
@@ -707,6 +743,626 @@ impl Contract {
     /// Get total count of anchored credentials (statistics only)
     pub fn get_credential_count(&self) -> u64 {
         self.credential_registry.get_credential_count()
+    }
+
+    // ===== DAO Management Methods =====
+
+    /// Create a new DAO
+    ///
+    /// Registers a new DAO with the given configuration.
+    /// The caller becomes the DAO council (initial admin).
+    ///
+    /// # Arguments
+    /// * `dao_id` - Unique identifier for the DAO
+    /// * `config` - DAO configuration including name, autonomy level, etc.
+    ///
+    /// # Returns
+    /// DAO ID as String
+    pub fn create_dao(&mut self, dao_id: String, config: DAOConfig) -> String {
+        require!(self.initialized, "Contract not initialized");
+
+        let created_dao_id = self.dao_registry.create_dao(dao_id, config.clone());
+
+        // Initialize default roles for the DAO
+        self.role_manager.create_default_roles(&created_dao_id);
+
+        // Assign caller as council member (admin)
+        let caller = env::predecessor_account_id();
+        self.role_manager.assign_role(&created_dao_id, &caller, "council");
+
+        log!("DAO created: {} by {}", created_dao_id, caller);
+        created_dao_id
+    }
+
+    /// Get DAO metadata by ID
+    pub fn get_dao(&self, dao_id: String) -> Option<DAOMetadata> {
+        self.dao_registry.get_dao(&dao_id)
+    }
+
+    /// List DAOs with pagination
+    pub fn list_daos(&self, offset: u32, limit: u32) -> Vec<DAOMetadata> {
+        self.dao_registry.list_daos(offset as usize, limit as usize)
+    }
+
+    /// Update DAO configuration (council only)
+    pub fn update_dao_config(&mut self, dao_id: String, config: DAOConfig) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+        let roles = self.role_manager.get_member_roles(&dao_id, &caller);
+        require!(
+            roles.contains(&"council".to_string()),
+            "Only council can update DAO config"
+        );
+
+        self.dao_registry.update_dao(&dao_id, config);
+        log!("DAO config updated: {} by {}", dao_id, caller);
+    }
+
+    /// Get total DAO count
+    pub fn get_dao_count(&self) -> u64 {
+        self.dao_registry.get_dao_count()
+    }
+
+    // ===== Proposal Management Methods =====
+
+    /// Create a new proposal
+    ///
+    /// # Arguments
+    /// * `dao_id` - DAO where proposal is created
+    /// * `kind` - Type of proposal
+    /// * `description` - Description of what the proposal does
+    /// * `classification` - Security classification (affects who can view/vote)
+    ///
+    /// # Returns
+    /// Proposal ID as u64
+    pub fn create_proposal(
+        &mut self,
+        dao_id: String,
+        kind: ProposalKind,
+        description: String,
+        classification: Classification,
+    ) -> u64 {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+
+        // Check caller has permission to create this proposal type
+        let can_propose = self.permission_checker.can_execute(
+            &self.role_manager,
+            &self.credential_registry,
+            &dao_id,
+            &caller,
+            &kind,
+            Action::AddProposal,
+            &classification,
+        );
+        require!(can_propose, "No permission to create this proposal type");
+
+        // Get DAO config for voting period
+        let dao = self.dao_registry.get_dao(&dao_id)
+            .expect("DAO not found");
+
+        let proposal_id = self.proposal_manager.create_proposal(
+            dao_id.clone(),
+            kind.clone(),
+            caller.clone(),
+            description,
+            classification,
+            None, // No autonomy override
+            dao.config.voting_period_ns,
+        );
+
+        log!(
+            "Proposal created: dao={}, id={}, kind={:?}, proposer={}",
+            dao_id,
+            proposal_id,
+            kind,
+            caller
+        );
+
+        proposal_id
+    }
+
+    /// Get proposal by ID
+    pub fn get_proposal(&self, dao_id: String, proposal_id: u64) -> Option<Proposal> {
+        self.proposal_manager.get_proposal(&dao_id, proposal_id)
+    }
+
+    /// List proposals for a DAO with pagination
+    pub fn list_proposals(&self, dao_id: String, offset: u32, limit: u32) -> Vec<Proposal> {
+        self.proposal_manager.list_proposals(&dao_id, offset as usize, limit as usize)
+    }
+
+    /// Get proposal count for a DAO
+    pub fn get_proposal_count(&self, dao_id: String) -> u64 {
+        self.proposal_manager.get_proposal_count(&dao_id)
+    }
+
+    // ===== Voting Methods =====
+
+    /// Cast a vote on a proposal
+    ///
+    /// # Arguments
+    /// * `dao_id` - DAO containing the proposal
+    /// * `proposal_id` - Proposal to vote on
+    /// * `vote_type` - Approve, Reject, or Abstain
+    pub fn cast_vote(&mut self, dao_id: String, proposal_id: u64, vote_type: VoteType) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+
+        // Get proposal to check classification
+        let proposal = self.proposal_manager.get_proposal(&dao_id, proposal_id)
+            .expect("Proposal not found");
+
+        // Check proposal is still active
+        require!(
+            proposal.status == ProposalStatus::InProgress,
+            "Proposal is not in voting phase"
+        );
+
+        // Check voting deadline
+        require!(
+            env::block_timestamp() < proposal.voting_deadline,
+            "Voting period has ended"
+        );
+
+        // Determine action based on vote type
+        let action = match vote_type {
+            VoteType::Approve => Action::VoteApprove,
+            VoteType::Reject => Action::VoteReject,
+            VoteType::Abstain => Action::VoteApprove, // Use approve for abstain permission check
+        };
+
+        // Check permission
+        let can_vote = self.permission_checker.can_execute(
+            &self.role_manager,
+            &self.credential_registry,
+            &dao_id,
+            &caller,
+            &proposal.kind,
+            action,
+            &proposal.classification,
+        );
+        require!(can_vote, "No permission to vote on this proposal");
+
+        // Get vote weight
+        let has_role = !self.role_manager.get_member_roles(&dao_id, &caller).is_empty();
+        let policy = self.voting_engine.get_policy(&dao_id, &proposal.kind);
+        let weight = self.voting_engine.get_vote_weight(&dao_id, &caller, policy.weight_kind, has_role);
+
+        // Cast the vote
+        self.voting_engine
+            .cast_vote(&dao_id, proposal_id, caller.clone(), vote_type, weight)
+            .expect("Failed to cast vote");
+
+        log!(
+            "Vote cast: dao={}, proposal={}, voter={}, type={:?}",
+            dao_id,
+            proposal_id,
+            caller,
+            vote_type
+        );
+
+        // Check if voting should complete (after deadline or unanimous)
+        self.try_finalize_voting(&dao_id, proposal_id);
+    }
+
+    /// Get votes for a proposal
+    pub fn get_votes(&self, dao_id: String, proposal_id: u64) -> Vec<Vote> {
+        self.voting_engine.get_votes(&dao_id, proposal_id)
+    }
+
+    /// Check if voting has completed and process result
+    fn try_finalize_voting(&mut self, dao_id: &str, proposal_id: u64) {
+        let proposal = match self.proposal_manager.get_proposal(dao_id, proposal_id) {
+            Some(p) => p,
+            None => return,
+        };
+
+        // Only finalize if deadline passed
+        if env::block_timestamp() < proposal.voting_deadline {
+            return;
+        }
+
+        // Get voting policy and calculate result
+        let policy = self.voting_engine.get_policy(dao_id, &proposal.kind);
+
+        // Count eligible voters - get from DAO metadata
+        let dao_meta = self.dao_registry.get_dao(dao_id).unwrap();
+        let total_eligible = dao_meta.member_count;
+
+        let result = self.voting_engine.calculate_result(
+            dao_id,
+            proposal_id,
+            &policy,
+            total_eligible.max(1),
+        );
+
+        // Get effective autonomy level for this proposal
+        let dao = self.dao_registry.get_dao(dao_id).unwrap();
+        let effective_autonomy = proposal.autonomy_override
+            .unwrap_or(dao.config.default_autonomy_level);
+
+        // Force human-in-loop for StrikeAuthorization
+        let effective_autonomy = if matches!(proposal.kind, ProposalKind::StrikeAuthorization) {
+            AutonomyLevel::NotAutonomous
+        } else {
+            effective_autonomy
+        };
+
+        // Process voting completion
+        let execution_state = self.proposal_executor.process_voting_complete(
+            dao_id,
+            proposal_id,
+            &result,
+            effective_autonomy,
+        );
+
+        // Update proposal status based on execution state
+        let new_status = match execution_state {
+            ExecutionState::Rejected => ProposalStatus::Rejected,
+            ExecutionState::ReadyForExecution => ProposalStatus::Approved,
+            ExecutionState::InVetoWindow { .. } => ProposalStatus::Approved,
+            ExecutionState::AwaitingHumanApproval => ProposalStatus::Approved,
+            _ => proposal.status,
+        };
+
+        self.proposal_manager.update_proposal_status(dao_id, proposal_id, new_status);
+    }
+
+    // ===== Execution Methods =====
+
+    /// Submit veto during veto window (council only)
+    pub fn submit_veto(&mut self, dao_id: String, proposal_id: u64) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+        let roles = self.role_manager.get_member_roles(&dao_id, &caller);
+        require!(
+            roles.contains(&"council".to_string()),
+            "Only council can submit veto"
+        );
+
+        let result = self.proposal_executor.submit_veto(&dao_id, proposal_id, caller.clone());
+        require!(result.is_ok(), result.clone().unwrap_err());
+
+        self.proposal_manager.update_proposal_status(&dao_id, proposal_id, ProposalStatus::Rejected);
+        log!("Proposal vetoed: dao={}, id={}, by={}", dao_id, proposal_id, caller);
+    }
+
+    /// Submit human approval for human-in-loop proposals
+    pub fn submit_human_approval(&mut self, dao_id: String, proposal_id: u64) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+
+        // Get proposal to check kind
+        let proposal = self.proposal_manager.get_proposal(&dao_id, proposal_id)
+            .expect("Proposal not found");
+
+        // Check permission to execute this proposal type
+        let can_execute = self.permission_checker.can_execute(
+            &self.role_manager,
+            &self.credential_registry,
+            &dao_id,
+            &caller,
+            &proposal.kind,
+            Action::Execute,
+            &proposal.classification,
+        );
+        require!(can_execute, "No permission to approve this proposal");
+
+        let result = self.proposal_executor.submit_human_approval(&dao_id, proposal_id, caller.clone());
+        require!(result.is_ok(), result.clone().unwrap_err());
+
+        log!("Human approval received: dao={}, id={}, by={}", dao_id, proposal_id, caller);
+    }
+
+    /// Execute a proposal that is ready for execution
+    pub fn execute_proposal(&mut self, dao_id: String, proposal_id: u64) -> String {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+
+        // Check veto window if applicable
+        self.proposal_executor.check_veto_window(&dao_id, proposal_id);
+
+        // Get proposal
+        let proposal = self.proposal_manager.get_proposal(&dao_id, proposal_id)
+            .expect("Proposal not found");
+
+        // Check permission to execute
+        let can_execute = self.permission_checker.can_execute(
+            &self.role_manager,
+            &self.credential_registry,
+            &dao_id,
+            &caller,
+            &proposal.kind,
+            Action::Execute,
+            &proposal.classification,
+        );
+        require!(can_execute, "No permission to execute this proposal");
+
+        // Execute
+        let result = self.proposal_executor.execute_proposal(
+            &dao_id,
+            proposal_id,
+            &proposal.kind,
+            caller.clone(),
+            None,
+        );
+        require!(result.is_ok(), result.clone().unwrap_err());
+
+        // Update proposal status to Approved (execution complete)
+        self.proposal_manager.update_proposal_status(&dao_id, proposal_id, ProposalStatus::Approved);
+
+        log!("Proposal executed: dao={}, id={}, by={}", dao_id, proposal_id, caller);
+        result.unwrap()
+    }
+
+    /// Get execution state for a proposal
+    pub fn get_execution_state(&self, dao_id: String, proposal_id: u64) -> ExecutionState {
+        self.proposal_executor.get_execution_state(&dao_id, proposal_id)
+    }
+
+    // ===== Role Management Methods =====
+
+    /// Assign role to account (council only)
+    pub fn assign_role(&mut self, dao_id: String, account: AccountId, role_name: String) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+        let roles = self.role_manager.get_member_roles(&dao_id, &caller);
+        require!(
+            roles.contains(&"council".to_string()) || caller == self.owner,
+            "Only council or owner can assign roles"
+        );
+
+        self.role_manager.assign_role(&dao_id, &account, &role_name);
+        log!("Role assigned: dao={}, account={}, role={}", dao_id, account, role_name);
+    }
+
+    /// Remove role from account (council only)
+    pub fn remove_role_from_member(&mut self, dao_id: String, account: AccountId, role_name: String) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+        let roles = self.role_manager.get_member_roles(&dao_id, &caller);
+        require!(
+            roles.contains(&"council".to_string()) || caller == self.owner,
+            "Only council or owner can remove roles"
+        );
+
+        self.role_manager.remove_role(&dao_id, &account, &role_name);
+        log!("Role removed: dao={}, account={}, role={}", dao_id, account, role_name);
+    }
+
+    /// Register an AI agent with trust tier (owner only)
+    pub fn register_agent(&mut self, account: AccountId, tier: AgentTier) {
+        require!(self.initialized, "Contract not initialized");
+        require!(
+            env::predecessor_account_id() == self.owner,
+            "Only contract owner can register agents"
+        );
+
+        self.role_manager.register_agent(&account, tier);
+        log!("Agent registered: account={}, tier={:?}", account, tier);
+    }
+
+    /// Get member's roles in a DAO
+    pub fn get_member_roles(&self, dao_id: String, account: AccountId) -> Vec<String> {
+        self.role_manager.get_member_roles(&dao_id, &account)
+    }
+
+    /// Create a custom role for a DAO (council only)
+    pub fn create_role(&mut self, dao_id: String, role: Role) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+        let roles = self.role_manager.get_member_roles(&dao_id, &caller);
+        require!(
+            roles.contains(&"council".to_string()) || caller == self.owner,
+            "Only council or owner can create roles"
+        );
+
+        self.role_manager.create_role(&dao_id, role.clone());
+        log!("Role created: dao={}, role={}", dao_id, role.name);
+    }
+
+    // ===== DAO Linkage Methods =====
+
+    /// Set parent DAO for hierarchy (council only)
+    pub fn set_dao_parent(&mut self, child_dao_id: String, parent_dao_id: String) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+
+        // Must be council of child DAO to set parent
+        let roles = self.role_manager.get_member_roles(&child_dao_id, &caller);
+        require!(
+            roles.contains(&"council".to_string()) || caller == self.owner,
+            "Only council can set parent DAO"
+        );
+
+        self.dao_linkages.set_parent(&child_dao_id, &parent_dao_id);
+        log!("DAO parent set: child={}, parent={}", child_dao_id, parent_dao_id);
+    }
+
+    /// Get parent DAO for a DAO
+    pub fn get_dao_parent(&self, dao_id: String) -> Option<String> {
+        self.dao_linkages.get_parent(&dao_id)
+    }
+
+    /// Get child DAOs
+    pub fn get_dao_children(&self, dao_id: String) -> Vec<String> {
+        self.dao_linkages.get_children(&dao_id)
+    }
+
+    /// Add cross-DAO approval requirement
+    pub fn add_cross_dao_requirement(
+        &mut self,
+        dao_id: String,
+        proposal_id: u64,
+        required_dao_ids: Vec<String>,
+        requirement_type: RequirementType,
+    ) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+        let roles = self.role_manager.get_member_roles(&dao_id, &caller);
+        require!(
+            roles.contains(&"council".to_string()) || caller == self.owner,
+            "Only council can add cross-DAO requirements"
+        );
+
+        self.dao_linkages.create_cross_dao_requirement(
+            &dao_id,
+            proposal_id,
+            required_dao_ids.clone(),
+            requirement_type,
+        );
+
+        log!(
+            "Cross-DAO requirement added: dao={}, proposal={}, required={:?}",
+            dao_id,
+            proposal_id,
+            required_dao_ids
+        );
+    }
+
+    /// Record cross-DAO approval
+    pub fn record_cross_dao_approval(
+        &mut self,
+        dao_id: String,
+        proposal_id: u64,
+        approving_dao_id: String,
+    ) -> bool {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+
+        // Must be council of approving DAO
+        let roles = self.role_manager.get_member_roles(&approving_dao_id, &caller);
+        require!(
+            roles.contains(&"council".to_string()),
+            "Only council of approving DAO can record approval"
+        );
+
+        let all_approved = self.dao_linkages.record_cross_dao_approval(
+            &dao_id,
+            proposal_id,
+            &approving_dao_id,
+        );
+
+        log!(
+            "Cross-DAO approval recorded: dao={}, proposal={}, approving_dao={}, complete={}",
+            dao_id,
+            proposal_id,
+            approving_dao_id,
+            all_approved
+        );
+
+        all_approved
+    }
+
+    /// Check if cross-DAO requirements are met
+    pub fn check_cross_dao_approved(&self, dao_id: String, proposal_id: u64) -> bool {
+        self.dao_linkages.check_cross_dao_approved(&dao_id, proposal_id)
+    }
+
+    /// Create a coalition proposal requiring multi-party approval
+    pub fn create_coalition_proposal(
+        &mut self,
+        dao_id: String,
+        proposal_id: u64,
+        required_parties: Vec<String>,
+        all_parties_required: bool,
+    ) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+        let roles = self.role_manager.get_member_roles(&dao_id, &caller);
+        require!(
+            roles.contains(&"council".to_string()) || caller == self.owner,
+            "Only council can create coalition proposals"
+        );
+
+        self.dao_linkages.create_coalition_proposal(
+            &dao_id,
+            proposal_id,
+            required_parties.clone(),
+            all_parties_required,
+        );
+
+        log!(
+            "Coalition proposal created: dao={}, proposal={}, parties={:?}",
+            dao_id,
+            proposal_id,
+            required_parties
+        );
+    }
+
+    /// Record party approval for coalition proposal
+    ///
+    /// NOTE: In production, caller's party membership should be verified
+    /// via CoalitionMembership credential in credential_registry
+    pub fn record_coalition_approval(
+        &mut self,
+        dao_id: String,
+        proposal_id: u64,
+        party: String,
+    ) -> bool {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+
+        // In production: verify caller has CoalitionMembership credential for this party
+        // For now, we trust the caller to represent their party honestly
+
+        let all_approved = self.dao_linkages.record_party_approval(
+            &dao_id,
+            proposal_id,
+            &party,
+            caller.clone(),
+        );
+
+        log!(
+            "Coalition approval recorded: dao={}, proposal={}, party={}, by={}, complete={}",
+            dao_id,
+            proposal_id,
+            party,
+            caller,
+            all_approved
+        );
+
+        all_approved
+    }
+
+    /// Get coalition proposal status
+    pub fn get_coalition_status(&self, dao_id: String, proposal_id: u64) -> Option<CoalitionProposal> {
+        self.dao_linkages.get_coalition_status(&dao_id, proposal_id)
+    }
+
+    /// Check if coalition requirements are met
+    pub fn check_coalition_approved(&self, dao_id: String, proposal_id: u64) -> bool {
+        self.dao_linkages.check_coalition_approved(&dao_id, proposal_id)
+    }
+
+    /// Set voting policy for a proposal kind in a DAO
+    pub fn set_vote_policy(&mut self, dao_id: String, proposal_kind: ProposalKind, policy: VotePolicy) {
+        require!(self.initialized, "Contract not initialized");
+
+        let caller = env::predecessor_account_id();
+        let roles = self.role_manager.get_member_roles(&dao_id, &caller);
+        require!(
+            roles.contains(&"council".to_string()) || caller == self.owner,
+            "Only council can set vote policy"
+        );
+
+        self.voting_engine.set_policy(&dao_id, &proposal_kind, policy);
+        log!("Vote policy set: dao={}, kind={:?}", dao_id, proposal_kind);
     }
 }
 
@@ -1314,5 +1970,371 @@ mod tests {
 
         // Credential count should be zero initially
         assert_eq!(contract.get_credential_count(), 0);
+    }
+
+    // ===== DAO Integration Tests =====
+
+    fn get_context_with_time(predecessor: AccountId, timestamp: u64) -> VMContextBuilder {
+        let mut builder = VMContextBuilder::new();
+        builder.predecessor_account_id(predecessor);
+        builder.block_timestamp(timestamp);
+        builder
+    }
+
+    fn create_test_dao_config(name: &str) -> DAOConfig {
+        DAOConfig {
+            name: name.to_string(),
+            description: "Test DAO".to_string(),
+            classification: Classification::Public,
+            default_autonomy_level: AutonomyLevel::Autonomous,
+            proposal_bond: 1_000_000_000_000_000_000_000_000, // 1 NEAR
+            voting_period_ns: 86_400_000_000_000, // 24 hours in ns
+            parent_dao_id: None,
+        }
+    }
+
+    #[test]
+    fn test_dao_creation() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+
+        let dao_id = contract.create_dao("test-dao".to_string(), create_test_dao_config("Test DAO"));
+
+        assert!(!dao_id.is_empty());
+        assert_eq!(contract.get_dao_count(), 1);
+
+        let dao = contract.get_dao(dao_id.clone()).unwrap();
+        assert_eq!(dao.config.name, "Test DAO");
+
+        // Creator should be council
+        let roles = contract.get_member_roles(dao_id.clone(), owner.clone());
+        assert!(roles.contains(&"council".to_string()));
+    }
+
+    #[test]
+    fn test_dao_proposal_lifecycle() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context_with_time(owner.clone(), 1_000_000_000);
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+
+        // Create DAO
+        let dao_id = contract.create_dao("test-dao".to_string(), create_test_dao_config("Test DAO"));
+
+        // Create proposal
+        let proposal_id = contract.create_proposal(
+            dao_id.clone(),
+            ProposalKind::Transfer,
+            "Transfer funds".to_string(),
+            Classification::Public,
+        );
+
+        assert_eq!(proposal_id, 0); // First proposal has ID 0
+        assert_eq!(contract.get_proposal_count(dao_id.clone()), 1);
+
+        let proposal = contract.get_proposal(dao_id.clone(), proposal_id).unwrap();
+        assert_eq!(proposal.description, "Transfer funds");
+        assert!(matches!(proposal.status, ProposalStatus::InProgress));
+    }
+
+    #[test]
+    fn test_dao_voting() {
+        let alice: AccountId = "alice.near".parse().unwrap();
+        let bob: AccountId = "bob.near".parse().unwrap();
+        let timestamp = 1_000_000_000u64;
+
+        let context = get_context_with_time(alice.clone(), timestamp);
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(alice.clone());
+
+        // Create DAO and add bob as member
+        let dao_id = contract.create_dao("test-dao".to_string(), create_test_dao_config("Test DAO"));
+        contract.assign_role(dao_id.clone(), bob.clone(), "member".to_string());
+
+        // Create proposal
+        let proposal_id = contract.create_proposal(
+            dao_id.clone(),
+            ProposalKind::Transfer,
+            "Transfer funds".to_string(),
+            Classification::Public,
+        );
+
+        // Alice votes
+        contract.cast_vote(dao_id.clone(), proposal_id, VoteType::Approve);
+
+        // Bob votes
+        let context = get_context_with_time(bob.clone(), timestamp + 1000);
+        testing_env!(context.build());
+        contract.cast_vote(dao_id.clone(), proposal_id, VoteType::Approve);
+
+        // Check votes
+        let votes = contract.get_votes(dao_id.clone(), proposal_id);
+        assert_eq!(votes.len(), 2);
+    }
+
+    #[test]
+    fn test_dao_role_management() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let member: AccountId = "bob.near".parse().unwrap();
+
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+        let dao_id = contract.create_dao("test-dao".to_string(), create_test_dao_config("Test DAO"));
+
+        // Assign member role
+        contract.assign_role(dao_id.clone(), member.clone(), "member".to_string());
+
+        let roles = contract.get_member_roles(dao_id.clone(), member.clone());
+        assert!(roles.contains(&"member".to_string()));
+
+        // Remove member role
+        contract.remove_role_from_member(dao_id.clone(), member.clone(), "member".to_string());
+
+        let roles = contract.get_member_roles(dao_id.clone(), member.clone());
+        assert!(!roles.contains(&"member".to_string()));
+    }
+
+    #[test]
+    fn test_dao_hierarchy() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+
+        // Create parent and child DAOs
+        let parent_dao_id = contract.create_dao("strategic-hq".to_string(), create_test_dao_config("Strategic HQ"));
+        let child_dao_id = contract.create_dao("mission-alpha".to_string(), create_test_dao_config("Mission Alpha"));
+
+        // Set parent-child relationship
+        contract.set_dao_parent(child_dao_id.clone(), parent_dao_id.clone());
+
+        // Verify relationship
+        assert_eq!(
+            contract.get_dao_parent(child_dao_id.clone()),
+            Some(parent_dao_id.clone())
+        );
+        assert!(contract.get_dao_children(parent_dao_id.clone()).contains(&child_dao_id));
+    }
+
+    #[test]
+    fn test_cross_dao_approval() {
+        let alice: AccountId = "alice.near".parse().unwrap();
+        let bob: AccountId = "bob.near".parse().unwrap();
+
+        let context = get_context(alice.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(alice.clone());
+
+        // Create two DAOs
+        let dao_a = contract.create_dao("dao-a".to_string(), create_test_dao_config("DAO A"));
+        let dao_b = contract.create_dao("dao-b".to_string(), create_test_dao_config("DAO B"));
+
+        // Assign bob as council of DAO B
+        contract.assign_role(dao_b.clone(), bob.clone(), "council".to_string());
+
+        // Create proposal in DAO A
+        let proposal_id = contract.create_proposal(
+            dao_a.clone(),
+            ProposalKind::Transfer,
+            "Joint operation".to_string(),
+            Classification::Public,
+        );
+
+        // Add cross-DAO requirement
+        contract.add_cross_dao_requirement(
+            dao_a.clone(),
+            proposal_id,
+            vec![dao_b.clone()],
+            RequirementType::AllRequired,
+        );
+
+        // Not approved yet
+        assert!(!contract.check_cross_dao_approved(dao_a.clone(), proposal_id));
+
+        // Bob (DAO B council) approves
+        let context = get_context(bob.clone());
+        testing_env!(context.build());
+
+        let all_approved = contract.record_cross_dao_approval(
+            dao_a.clone(),
+            proposal_id,
+            dao_b.clone(),
+        );
+
+        assert!(all_approved);
+        assert!(contract.check_cross_dao_approved(dao_a.clone(), proposal_id));
+    }
+
+    #[test]
+    fn test_coalition_voting() {
+        let usa_rep: AccountId = "usa.near".parse().unwrap();
+        let gbr_rep: AccountId = "gbr.near".parse().unwrap();
+
+        let context = get_context(usa_rep.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(usa_rep.clone());
+
+        // Create coalition DAO
+        let dao_id = contract.create_dao("coalition-dao".to_string(), create_test_dao_config("Coalition DAO"));
+
+        // Create proposal
+        let proposal_id = contract.create_proposal(
+            dao_id.clone(),
+            ProposalKind::MissionOrder,
+            "Joint operation".to_string(),
+            Classification::Public,
+        );
+
+        // Create coalition requirement
+        contract.create_coalition_proposal(
+            dao_id.clone(),
+            proposal_id,
+            vec!["USA".to_string(), "GBR".to_string()],
+            true, // All parties required
+        );
+
+        // USA approves
+        assert!(!contract.record_coalition_approval(dao_id.clone(), proposal_id, "USA".to_string()));
+
+        // GBR approves
+        let context = get_context(gbr_rep.clone());
+        testing_env!(context.build());
+        assert!(contract.record_coalition_approval(dao_id.clone(), proposal_id, "GBR".to_string()));
+
+        // Coalition approved
+        assert!(contract.check_coalition_approved(dao_id.clone(), proposal_id));
+
+        // Check status
+        let status = contract.get_coalition_status(dao_id.clone(), proposal_id).unwrap();
+        assert!(status.party_approvals.get("USA").unwrap().approved);
+        assert!(status.party_approvals.get("GBR").unwrap().approved);
+    }
+
+    #[test]
+    fn test_agent_registration() {
+        let owner: AccountId = "owner.near".parse().unwrap();
+        let agent: AccountId = "agent.near".parse().unwrap();
+
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+
+        // Register agent
+        contract.register_agent(agent.clone(), AgentTier::SupportAgent);
+
+        // Create DAO and try to assign role to agent
+        let dao_id = contract.create_dao("test-dao".to_string(), create_test_dao_config("Test DAO"));
+        contract.assign_role(dao_id.clone(), agent.clone(), "member".to_string());
+
+        let roles = contract.get_member_roles(dao_id.clone(), agent);
+        assert!(roles.contains(&"member".to_string()));
+    }
+
+    #[test]
+    fn test_execution_state_tracking() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+        let dao_id = contract.create_dao("test-dao".to_string(), create_test_dao_config("Test DAO"));
+
+        let proposal_id = contract.create_proposal(
+            dao_id.clone(),
+            ProposalKind::Transfer,
+            "Test".to_string(),
+            Classification::Public,
+        );
+
+        // Initially pending
+        let state = contract.get_execution_state(dao_id.clone(), proposal_id);
+        assert!(matches!(state, ExecutionState::Pending));
+    }
+
+    #[test]
+    fn test_dao_list_pagination() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+
+        // Create multiple DAOs
+        for i in 0..5 {
+            contract.create_dao(format!("dao-{}", i), create_test_dao_config(&format!("DAO {}", i)));
+        }
+
+        assert_eq!(contract.get_dao_count(), 5);
+
+        // List with pagination
+        let daos = contract.list_daos(0, 3);
+        assert_eq!(daos.len(), 3);
+
+        let daos = contract.list_daos(3, 3);
+        assert_eq!(daos.len(), 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "Only council can update DAO config")]
+    fn test_dao_update_requires_council() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let non_council: AccountId = "bob.near".parse().unwrap();
+
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+        let dao_id = contract.create_dao("test-dao".to_string(), create_test_dao_config("Test DAO"));
+
+        // Non-council tries to update
+        let context = get_context(non_council);
+        testing_env!(context.build());
+
+        contract.update_dao_config(dao_id, create_test_dao_config("Updated"));
+    }
+
+    #[test]
+    #[should_panic(expected = "Only council can submit veto")]
+    fn test_veto_requires_council() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let non_council: AccountId = "bob.near".parse().unwrap();
+
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut contract = Contract::new(owner.clone());
+        let dao_id = contract.create_dao("test-dao".to_string(), create_test_dao_config("Test DAO"));
+        let proposal_id = contract.create_proposal(
+            dao_id.clone(),
+            ProposalKind::Transfer,
+            "Test".to_string(),
+            Classification::Public,
+        );
+
+        // Non-council tries to veto
+        let context = get_context(non_council);
+        testing_env!(context.build());
+
+        contract.submit_veto(dao_id, proposal_id);
+    }
+
+    #[test]
+    fn test_dao_initialization() {
+        let owner: AccountId = "owner.near".parse().unwrap();
+        let contract = Contract::new(owner.clone());
+
+        // DAO count should be zero initially
+        assert_eq!(contract.get_dao_count(), 0);
     }
 }
