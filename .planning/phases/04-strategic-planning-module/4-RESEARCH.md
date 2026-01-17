@@ -1325,6 +1325,185 @@ interface AgentOutput<T> {
 | **LLM Provider** | Anthropic Claude | OpenAI GPT-4 | Already using in BASTION |
 | **OSINT Tools** | Custom + APIs | Maltego, SpiderFoot | Build collection agents |
 | **Monitoring** | LangSmith | Helicone | Agent observability |
+
+### Administrative Configuration Requirements
+
+The Strategic Planning Module requires an admin interface for runtime configuration. These settings should NOT be hardcoded.
+
+#### LLM Provider Configuration
+```typescript
+interface LLMProviderConfig {
+  // Provider selection
+  provider: 'anthropic' | 'openai' | 'azure-openai' | 'local';
+
+  // Model selection per agent type
+  models: {
+    extraction: string;        // e.g., 'claude-sonnet-4-20250514'
+    analysis: string;          // e.g., 'claude-sonnet-4-20250514'
+    summarization: string;     // e.g., 'claude-haiku-3-5-20241022' (faster, cheaper)
+    redTeam: string;           // e.g., 'claude-sonnet-4-20250514'
+  };
+
+  // API configuration
+  apiKey: string;              // Encrypted in database
+  baseUrl?: string;            // For Azure/local deployments
+
+  // Rate limiting
+  maxRequestsPerMinute: number;
+  maxTokensPerDay: number;
+
+  // Cost controls
+  maxCostPerDocument: number;  // USD, halt if exceeded
+  alertThreshold: number;      // USD, alert admin if exceeded
+}
+```
+
+#### Agent Configuration
+```typescript
+interface AgentAdminConfig {
+  // Enable/disable agents
+  enabledAgents: {
+    osintCollector: boolean;
+    documentProcessor: boolean;
+    threatMonitor: boolean;
+    fusionAgent: boolean;
+    extractionAgent: boolean;
+    assessmentAgent: boolean;
+    redTeamAgent: boolean;
+    devilsAdvocate: boolean;
+    coaGenerator: boolean;
+  };
+
+  // Agent-specific settings
+  osintCollector: {
+    sources: string[];           // Configurable source list
+    refreshInterval: number;     // Minutes
+    maxConcurrentRequests: number;
+  };
+
+  redTeamAgent: {
+    depth: 'QUICK' | 'STANDARD' | 'COMPREHENSIVE';
+    adversaryProfiles: string[]; // Selectable profiles
+    autoTrigger: boolean;        // Run automatically or on-demand
+  };
+
+  // Global settings
+  defaultConfidenceThreshold: number;  // 0-1, below this auto-flag for review
+  requireHumanReviewFor: string[];     // Agent types that always need review
+}
+```
+
+#### OSINT Source Management
+```typescript
+interface OSINTSourceConfig {
+  id: string;
+  name: string;
+  type: 'RSS' | 'API' | 'SCRAPE' | 'MANUAL';
+  url: string;
+  credibilityRating: number;   // 0-1, admin-assigned
+  enabled: boolean;
+
+  // API sources
+  apiKey?: string;             // Encrypted
+  rateLimit?: number;
+
+  // Categorization
+  categories: string[];        // e.g., ['government', 'think-tank', 'news']
+  regions: string[];           // e.g., ['INDOPACOM', 'EUCOM']
+}
+```
+
+#### Approval Workflow Configuration
+```typescript
+interface WorkflowAdminConfig {
+  // Escalation timeouts (configurable per org)
+  escalationTimeouts: {
+    LOW: number;      // hours
+    MEDIUM: number;
+    HIGH: number;
+    EXTREME: number;
+  };
+
+  // Role mappings (who can approve what)
+  approvalAuthority: {
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME';
+    requiredRole: string;      // Maps to DAO roles
+    canDelegate: boolean;
+  }[];
+
+  // Notification settings
+  notifications: {
+    emailOnPending: boolean;
+    emailOnEscalation: boolean;
+    slackWebhook?: string;
+  };
+}
+```
+
+#### Admin UI Requirements
+
+| Setting Category | What Admins Configure | Why Configurable |
+|-----------------|----------------------|------------------|
+| **LLM Provider** | Provider, model, API key, rate limits | Cost control, provider flexibility, compliance |
+| **Agent Enable/Disable** | Which agents are active | Staged rollout, troubleshooting, resource management |
+| **OSINT Sources** | Source URLs, credibility ratings, enable/disable | Adapt to changing landscape, quality control |
+| **Confidence Thresholds** | When to auto-flag for human review | Tune automation vs oversight balance |
+| **Escalation Timeouts** | How long before auto-escalate | Adapt to org tempo and urgency |
+| **Cost Limits** | Max spend per document, daily limits | Budget control, prevent runaway costs |
+| **Adversary Profiles** | Red team simulation targets | Threat-specific analysis |
+
+#### Implementation Notes
+
+1. **Store in PostgreSQL** - Configuration stored in `system_config` table, not environment variables
+2. **Audit all changes** - Every config change logged with who/when/what
+3. **Role-gated access** - Only users with `SYSTEM_ADMIN` permission can modify
+4. **Validation** - All config changes validated before save
+5. **Hot reload** - Most settings apply without restart (except API keys requiring reconnect)
+6. **Defaults** - Ship with sensible defaults, admin customizes as needed
+
+```typescript
+// Example: Config service pattern
+class ConfigService {
+  async getLLMConfig(): Promise<LLMProviderConfig> {
+    const cached = await this.cache.get('llm-config');
+    if (cached) return cached;
+
+    const config = await this.db.query(
+      'SELECT value FROM system_config WHERE key = $1',
+      ['llm-provider']
+    );
+
+    await this.cache.set('llm-config', config, { ttl: 300 }); // 5 min cache
+    return config;
+  }
+
+  async updateLLMConfig(
+    config: Partial<LLMProviderConfig>,
+    updatedBy: string
+  ): Promise<void> {
+    // Validate
+    this.validateLLMConfig(config);
+
+    // Audit log
+    await this.auditLog.record({
+      action: 'CONFIG_UPDATE',
+      category: 'llm-provider',
+      changes: config,
+      updatedBy,
+      timestamp: new Date(),
+    });
+
+    // Update
+    await this.db.query(
+      'UPDATE system_config SET value = $1, updated_at = NOW(), updated_by = $2 WHERE key = $3',
+      [JSON.stringify(config), updatedBy, 'llm-provider']
+    );
+
+    // Invalidate cache
+    await this.cache.delete('llm-config');
+  }
+}
+```
 </ai_agent_architecture>
 
 <dont_hand_roll>
