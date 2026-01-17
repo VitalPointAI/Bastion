@@ -15,6 +15,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
+    "@near-js/providers": "^2.5.1",
     "@noble/ciphers": "^2.1.1",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
@@ -27,9 +28,10 @@
     "express": "^5.2.1",
     "form-data": "^4.0.5",
     "multer": "^2.0.2",
-    "near-api-js": "^6.5.1",
+    "officeparser": "^6.0.4",
     "pg": "^8.16.3",
-    "pg-boss": "^12.5.4"
+    "pg-boss": "^12.5.4",
+    "unpdf": "^1.4.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
