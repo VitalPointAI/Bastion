@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 3 of 12 (DAO Governance)
-Plan: 2 of 8 in current phase
+Plan: 3 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-17 — Completed 3-02-PLAN.md (Role & Permission System)
+Last activity: 2026-01-17 — Completed 3-03-PLAN.md (Voting Engine)
 
-Progress: ██░░░░░░░░ 25% (Phase 3)
+Progress: ███░░░░░░░ 38% (Phase 3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
+- Total plans completed: 18
 - Average duration: 16 min
-- Total execution time: 4.9 hours
+- Total execution time: 5.0 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: ██░░░░░░░░ 25% (Phase 3)
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
-| 3 (DAO Governance) | 2 | 12 min | 6 min |
+| 3 (DAO Governance) | 3 | 21 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 4 min, 1 min, 25 min, 6 min, 6 min
-- Trend: 3-01 and 3-02 fast due to straightforward Rust implementations
+- Last 5 plans: 1 min, 25 min, 6 min, 6 min, 9 min
+- Trend: Phase 3 Rust implementations proceeding smoothly
 
 ## Accumulated Context
 
@@ -157,6 +157,14 @@ Recent decisions affecting current work:
 - Default roles on DAO creation: council (full perms, humans only), member (basic voting), agent (limited)
 - Permission format: {ProposalKind}:{Action} with wildcard support (*:*, Kind:*, *:Action)
 
+**Phase 3 Plan 3 (Voting Engine):**
+- VotingEngine with pluggable policies per (dao_id, proposal_kind)
+- WeightKind: TokenWeight, RoleWeight (default), Equal
+- ThresholdKind: Absolute count or Ratio-based thresholds
+- Default policies: StrikeAuth=100%/100%, ConfigChange=67%/50%, Transfer=50%/25%
+- Three autonomy flows: Autonomous (immediate), SemiAutonomous (veto window), NotAutonomous (human approval)
+- STRIKE_AUTHORIZED special audit event for lethal decision tracking
+
 ### Deferred Issues
 
 **Pinata API 403 Error (from 1-04):** Backend IPFS upload endpoint returns 403 from Pinata API. Possible causes: JWT needs regeneration, API endpoint format changed, or permissions need adjustment. Does not block development. Can be resolved by regenerating JWT in Pinata dashboard.
@@ -168,6 +176,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: Completed 3-02-PLAN.md (Role & Permission System)
+Stopped at: Completed 3-03-PLAN.md (Voting Engine)
 Resume file: None
-Next action: Execute 3-03-PLAN.md (Voting Engine)
+Next action: Execute 3-04-PLAN.md (DAO Linkages & Integration)
