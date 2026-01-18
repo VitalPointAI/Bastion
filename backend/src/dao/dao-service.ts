@@ -560,7 +560,7 @@ let daoServiceInstance: DAOService | null = null;
  */
 export function getDAOService(): DAOService {
   if (!daoServiceInstance) {
-    const rpcUrl = process.env.NEAR_RPC_URL || 'https://rpc.testnet.near.org';
+    const rpcUrl = process.env.NEAR_RPC_URL || 'https://rpc.testnet.fastnear.com';
     const contractId = process.env.DAO_CONTRACT_ID || process.env.NEAR_CONTRACT_ID || 'bastion.testnet';
     daoServiceInstance = new DAOService(rpcUrl, contractId);
   }

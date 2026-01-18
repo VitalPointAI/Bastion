@@ -151,7 +151,7 @@ export class MPCAccountManager {
    */
   private async accountExistsOnChain(accountId: string): Promise<boolean> {
     try {
-      const rpcUrl = process.env.NEAR_RPC || 'https://rpc.testnet.near.org';
+      const rpcUrl = process.env.NEAR_RPC || 'https://rpc.testnet.fastnear.com';
 
       const response = await fetch(rpcUrl, {
         method: 'POST',

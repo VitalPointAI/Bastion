@@ -189,7 +189,7 @@ router.post('/add-mpc-key', async (req, res) => {
     });
 
     // Check if MPC key is already on the account
-    const rpcUrl = process.env.NEAR_RPC || 'https://rpc.testnet.near.org';
+    const rpcUrl = process.env.NEAR_RPC || 'https://rpc.testnet.fastnear.com';
 
     const accessKeysResponse = await fetch(rpcUrl, {
       method: 'POST',

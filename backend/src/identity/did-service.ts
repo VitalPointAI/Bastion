@@ -1,8 +1,8 @@
-import { DIDDocument, EntityType, EncryptedDIDEntry } from './types';
-import { deriveDIDBlindedKey, deriveUserSecret, blindedKeyToHex } from './blinded-keys';
-import { encryptDIDDocument, decryptDIDDocument, deriveEncryptionKey } from './did-encryption';
+import { DIDDocument, EntityType, EncryptedDIDEntry } from './types.js';
+import { deriveDIDBlindedKey, deriveUserSecret, blindedKeyToHex } from './blinded-keys.js';
+import { encryptDIDDocument, decryptDIDDocument, deriveEncryptionKey } from './did-encryption.js';
 
-const NEAR_RPC_URL = process.env.NEAR_RPC_URL || 'https://rpc.testnet.near.org';
+const NEAR_RPC_URL = process.env.NEAR_RPC_URL || 'https://rpc.testnet.fastnear.com';
 const DID_CONTRACT_ID = process.env.DID_CONTRACT_ID || 'did-registry.testnet';
 
 /**

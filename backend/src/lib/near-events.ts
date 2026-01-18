@@ -1,6 +1,17 @@
-import { providers } from 'near-api-js';
-import type { ExecutionOutcomeWithId } from 'near-api-js/lib/providers/provider';
+import { JsonRpcProvider } from '@near-js/providers';
 import { getPool } from './database.js';
+
+// Type for receipt outcomes (based on NEAR RPC response)
+interface ExecutionOutcomeWithId {
+  id: string;
+  outcome: {
+    logs: string[];
+    executor_id: string;
+    status: unknown;
+    receipt_ids: string[];
+    gas_burnt: number;
+  };
+}
 
 interface BlockchainEvent {
   eventType: string;
@@ -151,10 +162,10 @@ async function syncExternalDID(_client: any, event: BlockchainEvent): Promise<vo
  * Poll NEAR RPC for recent blocks and extract events
  */
 export async function pollBlockchainEvents(): Promise<void> {
-  const rpcUrl = process.env.NEAR_RPC_URL || 'https://rpc.testnet.near.org';
+  const rpcUrl = process.env.NEAR_RPC_URL || 'https://rpc.testnet.fastnear.com';
   const contractId = process.env.NEAR_CONTRACT_ID || 'bastion.testnet';
 
-  const provider = new providers.JsonRpcProvider({ url: rpcUrl });
+  const provider = new JsonRpcProvider({ url: rpcUrl });
 
   try {
     // Get current block height
