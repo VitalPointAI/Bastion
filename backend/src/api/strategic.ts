@@ -1,6 +1,6 @@
 /**
  * Strategic Planning API
- * Document ingestion and strategic planning endpoints
+ * Document ingestion, objective extraction, workflow, and risk assessment endpoints
  */
 
 import express from 'express';
@@ -17,12 +17,27 @@ import type {
   ClassificationLevel,
   DocumentUploadResponse,
 } from '../strategic/ingestion/types.js';
+import { ObjectiveStore, objectiveStore } from '../strategic/objectives/index.js';
+import type { ObjectiveInput, ObjectiveUpdate } from '../strategic/objectives/index.js';
+import { ExtractionService } from '../strategic/extraction/index.js';
+import type { ExtractedObjective } from '../strategic/extraction/index.js';
+import { WorkflowEngine, workflowEngine } from '../strategic/workflows/index.js';
+import type { ApprovalEvent } from '../strategic/workflows/index.js';
+import {
+  getRiskAssessmentService,
+  riskAssessmentStore,
+  calculateRiskLevel,
+} from '../strategic/assessment/index.js';
+import type { RiskAssessment, Likelihood, Impact } from '../strategic/assessment/index.js';
+import type { StrategicObjective } from '../strategic/schemas/strategic-objective.js';
+import type { DIMEInstrument } from '../strategic/schemas/dime.js';
 
 const router = express.Router();
 
 // Initialize document parser and store
 const parser = new DocumentParser();
 const store = new DocumentStore();
+const objectives = objectiveStore;
 
 // Initialize table on first request (lazy init)
 let tableInitialized = false;
@@ -438,6 +453,707 @@ router.delete('/documents/:id', async (req, res) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Delete document failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// OBJECTIVE ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/strategic/documents/:documentId/extract - Extract objectives from document
+ */
+router.post('/documents/:documentId/extract', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const documentId = req.params.documentId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify document exists and user owns it
+    const document = await store.get(documentId);
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    if (document.createdBy !== userDID) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Get document text
+    const text = await store.getText(documentId);
+    if (!text) {
+      return res.status(400).json({ error: 'Document has no text content' });
+    }
+
+    console.log(`Extracting objectives from document ${documentId}...`);
+
+    // Extract objectives using LLM
+    const extractor = new ExtractionService();
+    const result = await extractor.extractFromDocument(text);
+
+    // Convert extracted objectives to ObjectiveInput format and save
+    const inputs: ObjectiveInput[] = result.objectives.map((obj: ExtractedObjective) => ({
+      documentId,
+      sourceReference: obj.sourceReference,
+      description: obj.description,
+      endsWaysMeans: {
+        ends: obj.ends,
+        ways: obj.ways,
+        means: obj.means,
+      },
+      primaryInstrument: obj.dimeCategory as DIMEInstrument,
+      supportingInstruments: (obj.supportingDIME || []) as DIMEInstrument[],
+      constraints: obj.constraints,
+      assumptions: obj.assumptions,
+      priority: obj.priority,
+      extractedBy: 'AI' as const,
+      extractionConfidence: result.extractionConfidence,
+      createdBy: userDID,
+    }));
+
+    const savedIds = await objectives.saveObjectives(inputs);
+
+    console.log(`✓ Extracted ${savedIds.length} objectives from document ${documentId}`);
+
+    res.status(201).json({
+      objectiveCount: savedIds.length,
+      documentSummary: result.documentSummary,
+      extractionConfidence: result.extractionConfidence,
+      chunkCount: result.chunkCount,
+      objectives: savedIds.map((id, i) => ({
+        id,
+        description: result.objectives[i].description.substring(0, 100) + '...',
+        dimeCategory: result.objectives[i].dimeCategory,
+        priority: result.objectives[i].priority,
+      })),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Objective extraction failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/documents/:documentId/objectives - Get objectives for a document
+ */
+router.get('/documents/:documentId/objectives', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const documentId = req.params.documentId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify document ownership
+    const document = await store.get(documentId);
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    if (document.createdBy !== userDID) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const documentObjectives = await objectives.getObjectivesForDocument(documentId);
+
+    res.json({
+      documentId,
+      count: documentObjectives.length,
+      objectives: documentObjectives,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get document objectives failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/objectives - List all objectives with filters
+ */
+router.get('/objectives', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const userDID = getUserDID(req);
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const limit = parseInt(req.query.limit as string) || 20;
+    const offset = parseInt(req.query.offset as string) || 0;
+    const status = req.query.status as string | undefined;
+    const priority = req.query.priority as string | undefined;
+    const instrument = req.query.instrument as string | undefined;
+
+    const result = await objectives.listObjectives({
+      status: status as ObjectiveUpdate['status'],
+      priority: priority as ObjectiveUpdate['priority'],
+      instrument: instrument as DIMEInstrument,
+      limit,
+      offset,
+    });
+
+    res.json({
+      objectives: result.objectives,
+      total: result.total,
+      limit,
+      offset,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List objectives failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/objectives/:id - Get single objective
+ */
+router.get('/objectives/:id', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    res.json(objective);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get objective failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * PUT /api/strategic/objectives/:id - Update objective
+ */
+router.put('/objectives/:id', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    const updates: ObjectiveUpdate = req.body;
+
+    // Mark as human verified if being edited
+    updates.humanVerified = true;
+    updates.verifiedBy = userDID;
+
+    const updated = await objectives.updateObjective(objectiveId, updates);
+
+    if (!updated) {
+      return res.status(500).json({ error: 'Failed to update objective' });
+    }
+
+    const updatedObjective = await objectives.getObjective(objectiveId);
+    res.json(updatedObjective);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update objective failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * DELETE /api/strategic/objectives/:id - Delete objective
+ */
+router.delete('/objectives/:id', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    const deleted = await objectives.deleteObjective(objectiveId);
+
+    res.json({ deleted, objectiveId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete objective failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/objectives/:id/verify - Mark objective as human-verified
+ */
+router.post('/objectives/:id/verify', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { verified } = req.body;
+    if (typeof verified !== 'boolean') {
+      return res.status(400).json({ error: 'verified field required (boolean)' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    await objectives.updateObjective(objectiveId, {
+      humanVerified: verified,
+      verifiedBy: verified ? userDID : undefined,
+    });
+
+    const updatedObjective = await objectives.getObjective(objectiveId);
+    res.json(updatedObjective);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Verify objective failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// WORKFLOW ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/strategic/objectives/:id/submit - Submit objective for approval
+ */
+router.post('/objectives/:id/submit', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    if (objective.status !== 'DRAFT') {
+      return res.status(400).json({ error: `Cannot submit objective with status ${objective.status}` });
+    }
+
+    const { reviewers } = req.body;
+    if (!Array.isArray(reviewers) || reviewers.length === 0) {
+      return res.status(400).json({ error: 'reviewers array required' });
+    }
+
+    // Update objective status
+    await objectives.updateObjective(objectiveId, { status: 'SUBMITTED' });
+
+    // Send SUBMIT event to workflow
+    const event: ApprovalEvent = {
+      type: 'SUBMIT',
+      objectiveId,
+      documentId: objective.documentId,
+      submittedBy: userDID,
+      reviewers,
+      riskLevel: 'MEDIUM', // Default, updated after risk assessment
+    };
+
+    const status = await workflowEngine.sendEvent(objectiveId, event, userDID);
+
+    res.json({
+      objectiveId,
+      workflowStatus: status,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Submit objective failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/objectives/:id/review - Submit review decision
+ */
+router.post('/objectives/:id/review', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    const { decision, comment } = req.body;
+    const validDecisions = ['APPROVE', 'REJECT', 'REQUEST_REVISION'];
+    if (!validDecisions.includes(decision)) {
+      return res.status(400).json({ error: `decision must be one of: ${validDecisions.join(', ')}` });
+    }
+
+    // Send REVIEW event to workflow
+    const event: ApprovalEvent = {
+      type: 'REVIEW',
+      reviewerId: userDID,
+      decision,
+      comment,
+    };
+
+    const status = await workflowEngine.sendEvent(objectiveId, event, userDID);
+
+    // Update objective status based on workflow state
+    if (status.state === 'approved') {
+      await objectives.updateObjective(objectiveId, { status: 'APPROVED' });
+    } else if (status.state === 'rejected') {
+      await objectives.updateObjective(objectiveId, { status: 'REJECTED' });
+    } else if (status.state === 'pendingRevision') {
+      await objectives.updateObjective(objectiveId, { status: 'DRAFT' });
+    }
+
+    res.json({
+      objectiveId,
+      workflowStatus: status,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Review objective failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/objectives/:id/workflow - Get workflow status
+ */
+router.get('/objectives/:id/workflow', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const status = await workflowEngine.getWorkflowStatus(objectiveId);
+
+    if (!status) {
+      return res.status(404).json({ error: 'No workflow found for this objective' });
+    }
+
+    res.json(status);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get workflow status failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/objectives/:id/workflow/comment - Add comment to workflow
+ */
+router.post('/objectives/:id/workflow/comment', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { content } = req.body;
+    if (!content || typeof content !== 'string') {
+      return res.status(400).json({ error: 'content field required (string)' });
+    }
+
+    const event: ApprovalEvent = {
+      type: 'ADD_COMMENT',
+      authorId: userDID,
+      content,
+    };
+
+    const status = await workflowEngine.sendEvent(objectiveId, event, userDID);
+
+    res.json({
+      objectiveId,
+      workflowStatus: status,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Add workflow comment failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/objectives/:id/workflow/escalate - Escalate workflow
+ */
+router.post('/objectives/:id/workflow/escalate', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { reason, escalateTo } = req.body;
+    if (!reason || typeof reason !== 'string') {
+      return res.status(400).json({ error: 'reason field required (string)' });
+    }
+    if (!escalateTo || typeof escalateTo !== 'string') {
+      return res.status(400).json({ error: 'escalateTo field required (string)' });
+    }
+
+    const event: ApprovalEvent = {
+      type: 'ESCALATE',
+      reason,
+      escalateTo,
+    };
+
+    const status = await workflowEngine.sendEvent(objectiveId, event, userDID);
+
+    res.json({
+      objectiveId,
+      workflowStatus: status,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Escalate workflow failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// RISK ASSESSMENT ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/strategic/objectives/:id/assess - Generate AI risk assessment
+ */
+router.post('/objectives/:id/assess', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    const { context: additionalContext } = req.body;
+
+    // Convert to StrategicObjective format for the risk service
+    const strategicObjective: StrategicObjective = objective;
+
+    console.log(`Generating AI risk assessment for objective ${objectiveId}...`);
+
+    const riskService = getRiskAssessmentService();
+    const assessment = await riskService.generateAIAssessment(
+      strategicObjective,
+      additionalContext
+    );
+
+    // Save the AI assessment
+    await riskService.saveAIAssessment(assessment);
+
+    console.log(`✓ AI risk assessment generated: ${assessment.id}`);
+
+    res.status(201).json(assessment);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Generate risk assessment failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/objectives/:id/risk - Get risk assessments for objective
+ */
+router.get('/objectives/:id/risk', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const assessments = await riskAssessmentStore.getAssessmentsForObjective(objectiveId);
+
+    res.json({
+      objectiveId,
+      count: assessments.length,
+      assessments,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get risk assessments failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/objectives/:id/risk - Create manual risk assessment
+ */
+router.post('/objectives/:id/risk', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    const { riskToMission, riskToForce, mitigations, riskDecision } = req.body;
+
+    if (!riskToMission || !riskToForce) {
+      return res.status(400).json({ error: 'riskToMission and riskToForce required' });
+    }
+
+    // Calculate risk levels from likelihood/impact
+    const missionRiskLevel = calculateRiskLevel(
+      riskToMission.likelihood as Likelihood,
+      riskToMission.impact as Impact
+    );
+    const forceRiskLevel = calculateRiskLevel(
+      riskToForce.likelihood as Likelihood,
+      riskToForce.impact as Impact
+    );
+
+    const riskService = getRiskAssessmentService();
+    const assessment = await riskService.createAssessment(objectiveId, userDID, {
+      riskToMission: { ...riskToMission, riskLevel: missionRiskLevel },
+      riskToForce: { ...riskToForce, riskLevel: forceRiskLevel },
+      mitigations: mitigations || [],
+      riskDecision: riskDecision || 'MITIGATE',
+    });
+
+    res.status(201).json(assessment);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create risk assessment failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * PUT /api/strategic/risk/:assessmentId/review - Review risk assessment
+ */
+router.put('/risk/:assessmentId/review', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const assessmentId = req.params.assessmentId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { approved, modifications } = req.body;
+    if (typeof approved !== 'boolean') {
+      return res.status(400).json({ error: 'approved field required (boolean)' });
+    }
+
+    const riskService = getRiskAssessmentService();
+    const updated = await riskService.reviewAssessment(
+      assessmentId,
+      userDID,
+      approved,
+      modifications
+    );
+
+    res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Review risk assessment failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/risk/high-risk - Get high/extreme risk assessments
+ */
+router.get('/risk/high-risk', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const userDID = getUserDID(req);
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const assessments = await riskAssessmentStore.getHighRiskAssessments();
+
+    res.json({
+      count: assessments.length,
+      assessments,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get high-risk assessments failed:', message);
     res.status(500).json({ error: message });
   }
 });
