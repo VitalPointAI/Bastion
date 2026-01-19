@@ -265,9 +265,14 @@ See `.planning/ISSUES.md` for full issue log:
 
 None.
 
+**Phase 4 Plan 6-FIX (Strategic API Table Init Fix):**
+- Unified lazy init: all strategic API tables initialized from single ensureTableExists()
+- Added initRiskAssessmentTable() and workflowEngine.initialize() calls
+- Risk and workflow endpoints now work without manual table creation
+
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 4-06-PLAN.md (Strategic Planning API)
+Stopped at: Completed 4-06-FIX-PLAN.md (Strategic API Table Init Fix)
 Resume file: None
 Next action: Execute 4-07-PLAN.md or next plan in Phase 4
