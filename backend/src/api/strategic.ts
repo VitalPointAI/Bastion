@@ -31,6 +31,8 @@ import {
 import type { RiskAssessment, Likelihood, Impact } from '../strategic/assessment/index.js';
 import type { StrategicObjective } from '../strategic/schemas/strategic-objective.js';
 import type { DIMEInstrument } from '../strategic/schemas/dime.js';
+import { IntentStore, intentStore } from '../strategic/intent/index.js';
+import type { IntentInput, IntentUpdate } from '../strategic/intent/index.js';
 
 const router = express.Router();
 
@@ -1154,6 +1156,327 @@ router.get('/risk/high-risk', async (req, res) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Get high-risk assessments failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// COMMANDER'S INTENT ENDPOINTS
+// ============================================================================
+
+const intents = intentStore;
+
+/**
+ * POST /api/strategic/objectives/:id/intent - Create commander's intent from objective
+ */
+router.post('/objectives/:id/intent', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    // Only allow intent creation for APPROVED objectives
+    if (objective.status !== 'APPROVED') {
+      return res.status(400).json({
+        error: `Cannot create intent for objective with status ${objective.status}. Objective must be APPROVED.`,
+      });
+    }
+
+    const {
+      purpose,
+      keyTasks,
+      endState,
+      expandedPurpose,
+      rationale,
+      keyDecisions,
+      antiGoals,
+      constraints,
+      classification,
+    } = req.body;
+
+    if (!purpose || !keyTasks || !endState) {
+      return res.status(400).json({
+        error: 'purpose, keyTasks (array), and endState are required',
+      });
+    }
+
+    if (!Array.isArray(keyTasks)) {
+      return res.status(400).json({ error: 'keyTasks must be an array' });
+    }
+
+    const input: IntentInput = {
+      objectiveId,
+      purpose,
+      keyTasks,
+      endState,
+      expandedPurpose,
+      rationale,
+      keyDecisions,
+      antiGoals,
+      constraints,
+      sourceObjectiveId: objectiveId,
+      issuedBy: userDID,
+      classification,
+    };
+
+    const intentId = await intents.saveIntent(input);
+    const intent = await intents.getIntent(intentId);
+
+    console.log(`✓ Commander's intent created: ${intentId}`);
+
+    res.status(201).json(intent);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create intent failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/objectives/:id/intent - Get intents for objective
+ */
+router.get('/objectives/:id/intent', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objectiveIntents = await intents.getIntentsForObjective(objectiveId);
+
+    res.json({
+      objectiveId,
+      count: objectiveIntents.length,
+      intents: objectiveIntents,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get intents failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * PUT /api/strategic/intent/:intentId - Update commander's intent
+ */
+router.put('/intent/:intentId', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const intentId = req.params.intentId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const intent = await intents.getIntent(intentId);
+    if (!intent) {
+      return res.status(404).json({ error: 'Intent not found' });
+    }
+
+    const updates: IntentUpdate = req.body;
+    const updated = await intents.updateIntent(intentId, updates);
+
+    if (!updated) {
+      return res.status(500).json({ error: 'Failed to update intent' });
+    }
+
+    const updatedIntent = await intents.getIntent(intentId);
+    res.json(updatedIntent);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update intent failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/objectives/:id/intent/generate - AI-assist intent generation
+ */
+router.post('/objectives/:id/intent/generate', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    // Generate intent draft from objective's EWM
+    const ewm = objective.endsWaysMeans;
+
+    // Draft intent based on objective structure
+    const intentDraft = {
+      purpose: `To achieve: ${ewm.ends.description}`,
+      keyTasks: ewm.ways.keyTasks,
+      endState: ewm.ends.description,
+      expandedPurpose: `This objective supports ${objective.primaryInstrument} instrument of national power.`,
+      rationale: `Derived from objective: ${objective.description.substring(0, 200)}...`,
+      keyDecisions: ['Key decision points to be determined by commander'],
+      antiGoals: ['Avoid scope creep beyond defined ends'],
+      constraints: objective.constraints,
+      suggestedClassification: 'UNCLASSIFIED',
+    };
+
+    res.json({
+      objectiveId,
+      draft: intentDraft,
+      message: 'AI-generated draft. Review and modify before creating.',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Generate intent draft failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/objectives/:id/operationalize - Check operationalization readiness
+ */
+router.get('/objectives/:id/operationalize', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    const blockers: string[] = [];
+
+    // Check objective is APPROVED
+    if (objective.status !== 'APPROVED') {
+      blockers.push(`Objective status is ${objective.status}, must be APPROVED`);
+    }
+
+    // Check risk assessment exists and is reviewed
+    const assessments = await riskAssessmentStore.getAssessmentsForObjective(objectiveId);
+    if (assessments.length === 0) {
+      blockers.push('No risk assessment found');
+    } else {
+      const reviewed = assessments.find(a => a.reviewedBy);
+      if (!reviewed) {
+        blockers.push('Risk assessment not yet reviewed');
+      }
+    }
+
+    // Check intent exists
+    const objectiveIntents = await intents.getIntentsForObjective(objectiveId);
+    if (objectiveIntents.length === 0) {
+      blockers.push('No commander\'s intent drafted');
+    }
+
+    const ready = blockers.length === 0;
+
+    res.json({
+      objectiveId,
+      ready,
+      blockers,
+      status: objective.status,
+      hasRiskAssessment: assessments.length > 0,
+      hasIntent: objectiveIntents.length > 0,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Check operationalization readiness failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/objectives/:id/operationalize - Mark objective as OPERATIONALIZED
+ */
+router.post('/objectives/:id/operationalize', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const objectiveId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const objective = await objectives.getObjective(objectiveId);
+    if (!objective) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+
+    // Verify readiness
+    if (objective.status !== 'APPROVED') {
+      return res.status(400).json({
+        error: `Cannot operationalize objective with status ${objective.status}`,
+      });
+    }
+
+    const assessments = await riskAssessmentStore.getAssessmentsForObjective(objectiveId);
+    const reviewed = assessments.find(a => a.reviewedBy);
+    if (!reviewed) {
+      return res.status(400).json({
+        error: 'Risk assessment must be reviewed before operationalization',
+      });
+    }
+
+    const objectiveIntents = await intents.getIntentsForObjective(objectiveId);
+    if (objectiveIntents.length === 0) {
+      return res.status(400).json({
+        error: 'Commander\'s intent must be drafted before operationalization',
+      });
+    }
+
+    // Update status to OPERATIONALIZED
+    await objectives.updateObjective(objectiveId, { status: 'OPERATIONALIZED' });
+
+    // Create planning directive (simple JSON for Phase 5 handoff)
+    const planningDirective = {
+      id: `PD-${objectiveId}`,
+      objectiveId,
+      intent: objectiveIntents[0],
+      riskAssessment: reviewed,
+      operationalizedBy: userDID,
+      operationalizedAt: new Date().toISOString(),
+      phase5Ready: true,
+    };
+
+    console.log(`✓ Objective ${objectiveId} operationalized`);
+
+    res.json({
+      status: 'OPERATIONALIZED',
+      planningDirectiveId: planningDirective.id,
+      planningDirective,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Operationalize objective failed:', message);
     res.status(500).json({ error: message });
   }
 });
