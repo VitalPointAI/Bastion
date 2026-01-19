@@ -68,6 +68,9 @@ importers:
       unpdf:
         specifier: ^1.4.0
         version: 1.4.0(@napi-rs/canvas@0.1.88)
+      xstate:
+        specifier: ^5.25.1
+        version: 5.25.1
       zod:
         specifier: ^4.3.5
         version: 4.3.5
@@ -4099,6 +4102,7 @@ packages:
   tar@7.5.2:
     resolution: {integrity: sha512-7NyxrTE4Anh8km8iEy7o0QYPs+0JKBTj5ZaqHg6B39erLg0qYXN3BijtShwbsNSvQ+LN75+KV+C4QR/f6Gwnpg==}
     engines: {node: '>=18'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exhorbitant rates) by contacting i@izs.me
 
   temp-dir@2.0.0:
     resolution: {integrity: sha512-aoBAniQmmwtcKp/7BzsH8Cxzv8OL736p7v1ihGb5e9DJ9kTwGWHrQrVB5+lfVDzfGrdRzXch+ig7LHaY1JTOrg==}
@@ -4527,6 +4531,9 @@ packages:
   xmlbuilder@15.1.1:
     resolution: {integrity: sha512-yMqGBqtXyeN1e3TGYvgNgDVZ3j84W4cwkOXQswghol6APgZWaff9lnbvN7MHYJOiXsvGPXtjTYJEiC9J2wv9Eg==}
     engines: {node: '>=8.0'}
+
+  xstate@5.25.1:
+    resolution: {integrity: sha512-oyvsNH5pF2qkHmiHEMdWqc3OjDtoZOH2MTAI35r01f/ZQWOD+VLOiYqo65UgQET0XMA5s9eRm8fnsIo+82biEw==}
 
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
@@ -10409,6 +10416,8 @@ snapshots:
 
   xmlbuilder@15.1.1:
     optional: true
+
+  xstate@5.25.1: {}
 
   xtend@4.0.2: {}
 
