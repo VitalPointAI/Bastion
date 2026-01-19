@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { AuthWrapper } from './components/AuthWrapper'
 import { LoginButton } from './components/LoginButton'
 import { DAODashboard } from './components/dao'
+import { StrategicDashboard } from './components/strategic'
 import './App.css'
 
-type View = 'home' | 'governance'
+type View = 'home' | 'governance' | 'strategic'
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('home')
@@ -26,6 +27,12 @@ function App() {
           >
             Governance
           </button>
+          <button
+            className={`nav-button ${currentView === 'strategic' ? 'active' : ''}`}
+            onClick={() => setCurrentView('strategic')}
+          >
+            Strategic
+          </button>
         </nav>
       </header>
       <main className="app-main">
@@ -41,6 +48,9 @@ function App() {
           )}
           {currentView === 'governance' && (
             <DAODashboard />
+          )}
+          {currentView === 'strategic' && (
+            <StrategicDashboard />
           )}
         </AuthWrapper>
       </main>
