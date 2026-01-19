@@ -97,7 +97,7 @@ Plans:
 - [x] Plan 4-03: LLM Objective Extraction (completed 2026-01-18)
 - [x] Plan 4-04: Approval Workflow Engine (completed 2026-01-19)
 - [x] Plan 4-05: Risk Assessment Framework (completed 2026-01-19)
-- [ ] Plan 4-06: Strategic Planning API
+- [x] Plan 4-06: Strategic Planning API (completed 2026-01-19)
 - [ ] Plan 4-07: Frontend Strategic Components
 - [ ] Plan 4-08: Strategic-DAO Integration
 - [ ] Plan 4-09: End-to-End Strategic Flow
