@@ -27,6 +27,7 @@ import {
   getRiskAssessmentService,
   riskAssessmentStore,
   calculateRiskLevel,
+  initRiskAssessmentTable,
 } from '../strategic/assessment/index.js';
 import type { RiskAssessment, Likelihood, Impact } from '../strategic/assessment/index.js';
 import type { StrategicObjective } from '../strategic/schemas/strategic-objective.js';
@@ -41,11 +42,13 @@ const parser = new DocumentParser();
 const store = new DocumentStore();
 const objectives = objectiveStore;
 
-// Initialize table on first request (lazy init)
+// Initialize tables on first request (lazy init)
 let tableInitialized = false;
 async function ensureTableExists(): Promise<void> {
   if (!tableInitialized) {
     await initStrategicDocumentsTable();
+    await initRiskAssessmentTable();
+    await workflowEngine.initialize();
     tableInitialized = true;
   }
 }
