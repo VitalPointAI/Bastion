@@ -11,9 +11,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4.1 of 12 (Admin UI)
-Plan: 1 of 2 in current phase
+Plan: 1 of 2 in current phase (FIX complete)
 Status: In progress
-Last activity: 2026-01-19 — Completed 4.1-01-PLAN.md
+Last activity: 2026-01-19 — Completed 4.1-01-FIX.md
 
 Progress: █████░░░░░ ~55% (Phase 4.1 in progress)
 
@@ -298,9 +298,15 @@ None.
 - Admin button always visible; access denial handled gracefully inside AdminDashboard
 - react-tabs for tab navigation (simpler than custom implementation)
 
+**Phase 4.1 Plan 1-FIX (Admin UI UAT Fixes):**
+- UserContext pattern for propagating user identity across app
+- AuthWrapper restructured to wrap entire app (header + main) for context access
+- UserStatusBar in header with compact display and dropdown for details
+- AdminDashboard consumes userDID from context before checking admin access
+
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 4.1-01-PLAN.md
+Stopped at: Completed 4.1-01-FIX.md
 Resume file: None
 Next action: Execute 4.1-02-PLAN.md
