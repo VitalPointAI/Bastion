@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import { adminService } from '../../lib/admin-service';
+import { useUser } from '../../context/UserContext';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -15,17 +16,29 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
+  const { userDID, isAuthenticated } = useUser();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check admin access on mount
+  // Check admin access when userDID is available
   useEffect(() => {
     const checkAdminAccess = async () => {
+      // Wait for DID to be ready if authenticated
+      if (isAuthenticated && !userDID) {
+        // DID not ready yet - stay in loading state
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
 
       try {
+        // Set the user DID on the admin service before checking access
+        if (userDID) {
+          adminService.setUserDID(userDID);
+        }
+
         const hasAccess = await adminService.isAdmin();
         setIsAdmin(hasAccess);
       } catch (err) {
@@ -37,7 +50,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     };
 
     checkAdminAccess();
-  }, []);
+  }, [userDID, isAuthenticated]);
 
   // Loading state
   if (isLoading) {

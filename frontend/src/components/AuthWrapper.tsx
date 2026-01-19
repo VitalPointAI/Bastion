@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { getMPCRecoveryManager } from '../lib/mpcRecovery'
 import { hasUserDID, buildDID, emitEntityRegistered } from '../lib/identity'
+import { UserProvider } from '../context/UserContext'
 
 interface AuthWrapperProps {
   children: ReactNode
@@ -14,6 +15,7 @@ interface AccountState {
   mpcRegistered: boolean
   mpcPublicKey?: string
   userDID?: string
+  email?: string
 }
 
 export function AuthWrapper({ children }: AuthWrapperProps) {
@@ -120,6 +122,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
             mpcRegistered: true,
             mpcPublicKey: mpcResult.mpcPublicKey,
             userDID,
+            email,
           })
           setStatus('ready')
         } else {
@@ -129,6 +132,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
             derivationPath: data.derivationPath,
             mpcRegistered: false,
             userDID,
+            email,
           })
           setStatus('ready')
         }
@@ -160,33 +164,40 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
 
   const statusMessage = getStatusMessage()
 
+  // Build user context value
+  const userContextValue = {
+    userDID: accountState?.userDID ?? null,
+    accountId: accountState?.accountId ?? null,
+    email: accountState?.email ?? user?.email?.address ?? user?.google?.email ?? user?.twitter?.username ?? null,
+    mpcRegistered: accountState?.mpcRegistered ?? false,
+    isAuthenticated: authenticated,
+  }
+
   return (
-    <div className="auth-wrapper">
-      {authenticated ? (
-        <div className="auth-status">
-          <div className="user-info">
-            <p>Logged in as: {user?.email?.address || user?.google?.email || user?.twitter?.username || 'User'}</p>
+    <UserProvider value={userContextValue}>
+      <div className="auth-wrapper">
+        {authenticated ? (
+          <div className="auth-status">
+            {/* Status overlay during account creation */}
             {statusMessage && (
-              <p className="wallet-status">{statusMessage}</p>
+              <div className="status-overlay">
+                <div className="status-message">
+                  <div className="status-spinner" />
+                  <p>{statusMessage}</p>
+                </div>
+              </div>
             )}
-            {accountState && (
-              <>
-                <p className="account-info">Account ID: {accountState.accountId}</p>
-                {accountState.mpcRegistered && (
-                  <p className="mpc-status">Recovery: Enabled</p>
-                )}
-              </>
-            )}
+            {/* Content rendered directly - user info moved to UserStatusBar in header */}
+            <div className="content">
+              {children}
+            </div>
           </div>
-          <div className="content">
+        ) : (
+          <div className="auth-required">
             {children}
           </div>
-        </div>
-      ) : (
-        <div className="auth-required">
-          {children}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </UserProvider>
   )
 }
