@@ -19,6 +19,7 @@ export function StrategicDashboard() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedDocument, setSelectedDocument] = useState<StrategicDocument | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   // Set user DID on service when authenticated
   useEffect(() => {
@@ -27,6 +28,9 @@ export function StrategicDashboard() {
       const accountId = `${user.id.replace('did:privy:', '')}.testnet`;
       const did = buildDID(accountId);
       strategicService.setUserDID(did);
+      setIsReady(true);
+    } else {
+      setIsReady(false);
     }
   }, [authenticated, user]);
 
@@ -141,13 +145,25 @@ export function StrategicDashboard() {
         )}
 
         {/* Document List */}
-        {!selectedDocument && (
+        {!selectedDocument && isReady && (
           <section className="documents-section">
             <DocumentList
               onSelectDocument={handleSelectDocument}
               onExtractObjectives={handleExtractComplete}
               refreshTrigger={refreshTrigger}
             />
+          </section>
+        )}
+
+        {/* Loading state while waiting for auth */}
+        {!selectedDocument && !isReady && (
+          <section className="documents-section">
+            <div className="document-list loading">
+              <div className="loading-content">
+                <div className="loading-spinner" />
+                <span>Initializing...</span>
+              </div>
+            </div>
           </section>
         )}
       </div>
