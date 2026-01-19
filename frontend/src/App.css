@@ -133,6 +133,22 @@
   box-shadow: var(--glow-blue);
 }
 
+/* Admin nav button - distinct orange accent */
+.nav-button--admin {
+  border-color: rgba(255, 165, 0, 0.3);
+}
+
+.nav-button--admin:hover {
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+}
+
+.nav-button--admin.active {
+  background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-orange-dim) 100%);
+  border-color: var(--accent-orange);
+  box-shadow: var(--glow-orange);
+}
+
 /* ============================================================================
    App Main Content - Full Width
    ============================================================================ */

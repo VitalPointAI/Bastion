@@ -3,9 +3,10 @@ import { AuthWrapper } from './components/AuthWrapper'
 import { LoginButton } from './components/LoginButton'
 import { DAODashboard } from './components/dao'
 import { StrategicDashboard } from './components/strategic'
+import { AdminDashboard } from './components/admin'
 import './App.css'
 
-type View = 'home' | 'governance' | 'strategic'
+type View = 'home' | 'governance' | 'strategic' | 'admin'
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('home')
@@ -33,6 +34,12 @@ function App() {
           >
             Strategic
           </button>
+          <button
+            className={`nav-button nav-button--admin ${currentView === 'admin' ? 'active' : ''}`}
+            onClick={() => setCurrentView('admin')}
+          >
+            Admin
+          </button>
         </nav>
       </header>
       <main className="app-main">
@@ -51,6 +58,9 @@ function App() {
           )}
           {currentView === 'strategic' && (
             <StrategicDashboard />
+          )}
+          {currentView === 'admin' && (
+            <AdminDashboard onBack={() => setCurrentView('home')} />
           )}
         </AuthWrapper>
       </main>
