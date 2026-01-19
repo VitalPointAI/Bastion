@@ -396,7 +396,7 @@ router.delete('/osint-sources/:id', async (req: Request, res: Response) => {
 
     const id = req.params.id as string;
     const adminDid = (req as Request & { adminDid: string }).adminDid;
-    const { reason } = req.body;
+    const reason = req.body?.reason;
 
     const deleted = await configService.deleteOSINTSource(
       id,
