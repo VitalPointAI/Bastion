@@ -10,6 +10,7 @@ import credentialsRouter from './api/credentials.js';
 import daoRouter from './api/dao.js';
 import agentRouter from './api/agents.js';
 import strategicRouter from './api/strategic.js';
+import strategicAgentsRouter from './api/strategic-agents.js';
 import adminRouter from './api/admin.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
 
@@ -36,6 +37,7 @@ app.use('/api/credentials', credentialsRouter);
 app.use('/api/dao', daoRouter);
 app.use('/api/agents', agentRouter);
 app.use('/api/strategic', strategicRouter);
+app.use('/api/strategic/agents', strategicAgentsRouter);
 app.use('/api/admin', adminRouter);
 
 app.listen(port, async () => {
