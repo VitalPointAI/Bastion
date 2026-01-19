@@ -1,0 +1,67 @@
+/**
+ * Anthropic Provider
+ * Implements LLMProvider interface for Anthropic Claude models
+ */
+
+import Anthropic from '@anthropic-ai/sdk';
+import type { LLMProvider, LLMCompletionRequest, LLMCompletionResponse, ProviderConfig } from './types.js';
+
+export class AnthropicProvider implements LLMProvider {
+  name = 'anthropic';
+  private client: Anthropic;
+  private model: string;
+
+  constructor(config: ProviderConfig) {
+    if (!config.apiKey && !process.env.ANTHROPIC_API_KEY) {
+      throw new Error('Anthropic API key required: set apiKey in config or ANTHROPIC_API_KEY env var');
+    }
+    this.client = new Anthropic({
+      apiKey: config.apiKey || process.env.ANTHROPIC_API_KEY,
+    });
+    this.model = config.model || 'claude-sonnet-4-20250514';
+  }
+
+  async complete(request: LLMCompletionRequest): Promise<LLMCompletionResponse> {
+    // Extract system message
+    const systemMessage = request.messages.find(m => m.role === 'system');
+    const nonSystemMessages = request.messages.filter(m => m.role !== 'system');
+
+    // Build Anthropic-specific request
+    const response = await this.client.messages.create({
+      model: this.model,
+      max_tokens: request.max_tokens || 4096,
+      system: systemMessage?.content || '',
+      messages: nonSystemMessages.map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      })),
+      tools: request.tools?.map(t => ({
+        name: t.name,
+        description: t.description,
+        input_schema: t.input_schema as Anthropic.Tool.InputSchema,
+      })),
+      tool_choice: request.tool_choice,
+    });
+
+    // Extract tool use if present
+    const toolUseBlock = response.content.find(
+      (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
+    );
+
+    const textBlock = response.content.find(
+      (block): block is Anthropic.TextBlock => block.type === 'text'
+    );
+
+    return {
+      content: textBlock?.text || null,
+      tool_use: toolUseBlock ? {
+        name: toolUseBlock.name,
+        input: toolUseBlock.input as Record<string, unknown>,
+      } : null,
+      usage: {
+        input_tokens: response.usage?.input_tokens || 0,
+        output_tokens: response.usage?.output_tokens || 0,
+      },
+    };
+  }
+}
