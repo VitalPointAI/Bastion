@@ -31,10 +31,12 @@
     "form-data": "^4.0.5",
     "multer": "^2.0.2",
     "officeparser": "^6.0.4",
+    "openai": "^6.16.0",
     "pg": "^8.16.3",
     "pg-boss": "^12.5.4",
     "unpdf": "^1.4.0",
-    "zod": "^4.3.5"
+    "zod": "^4.3.5",
+    "zod-to-json-schema": "^3.25.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

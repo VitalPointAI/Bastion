@@ -13,7 +13,7 @@ importers:
         version: 0.71.2(zod@4.3.5)
       '@instructor-ai/instructor':
         specifier: ^1.7.0
-        version: 1.7.0(zod@4.3.5)
+        version: 1.7.0(openai@6.16.0(ws@8.19.0)(zod@4.3.5))(zod@4.3.5)
       '@near-js/providers':
         specifier: ^2.5.1
         version: 2.5.1(@near-js/crypto@2.5.1(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1)))(@near-js/transactions@2.5.1(@near-js/crypto@2.5.1(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1)))(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1)))(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1))
@@ -56,6 +56,9 @@ importers:
       officeparser:
         specifier: ^6.0.4
         version: 6.0.4
+      openai:
+        specifier: ^6.16.0
+        version: 6.16.0(ws@8.19.0)(zod@4.3.5)
       pg:
         specifier: ^8.16.3
         version: 8.16.3
@@ -68,6 +71,9 @@ importers:
       zod:
         specifier: ^4.3.5
         version: 4.3.5
+      zod-to-json-schema:
+        specifier: ^3.25.1
+        version: 3.25.1(zod@4.3.5)
     devDependencies:
       '@types/cors':
         specifier: ^2.8.19
@@ -3434,6 +3440,18 @@ packages:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
 
+  openai@6.16.0:
+    resolution: {integrity: sha512-fZ1uBqjFUjXzbGc35fFtYKEOxd20kd9fDpFeqWtsOZWiubY8CZ1NAlXHW3iathaFvqmNtCWMIsosCuyeI7Joxg==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
+
   opencollective-postinstall@2.0.3:
     resolution: {integrity: sha512-8AV/sCtuzUeTo8gQK5qDZzARrulB3egtLzFgteqB2tcT4Mw7B8Kt7JcDHmltjz6FOAHsvTevk70gZEbhM4ZS9Q==}
     hasBin: true
@@ -5908,10 +5926,11 @@ snapshots:
       js-yaml: 4.1.1
     optional: true
 
-  '@instructor-ai/instructor@1.7.0(zod@4.3.5)':
+  '@instructor-ai/instructor@1.7.0(openai@6.16.0(ws@8.19.0)(zod@4.3.5))(zod@4.3.5)':
     dependencies:
+      openai: 6.16.0(ws@8.19.0)(zod@4.3.5)
       zod: 4.3.5
-      zod-stream: 3.0.0(zod@4.3.5)
+      zod-stream: 3.0.0(openai@6.16.0(ws@8.19.0)(zod@4.3.5))(zod@4.3.5)
       zod-validation-error: 3.5.4(zod@4.3.5)
 
   '@ipld/dag-pb@4.1.5':
@@ -9158,6 +9177,11 @@ snapshots:
       is-wsl: 2.2.0
     optional: true
 
+  openai@6.16.0(ws@8.19.0)(zod@4.3.5):
+    optionalDependencies:
+      ws: 8.19.0
+      zod: 4.3.5
+
   opencollective-postinstall@2.0.3: {}
 
   ora@3.4.0:
@@ -10427,8 +10451,9 @@ snapshots:
 
   zlibjs@0.3.1: {}
 
-  zod-stream@3.0.0(zod@4.3.5):
+  zod-stream@3.0.0(openai@6.16.0(ws@8.19.0)(zod@4.3.5))(zod@4.3.5):
     dependencies:
+      openai: 6.16.0(ws@8.19.0)(zod@4.3.5)
       schema-stream: 3.2.2(zod@4.3.5)
       zod: 4.3.5
       zod-to-json-schema: 3.25.1(zod@4.3.5)
