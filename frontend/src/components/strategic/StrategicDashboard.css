@@ -225,6 +225,10 @@
   color: var(--accent-green, #22c55e);
 }
 
+.meta-value.classification-confidential {
+  color: #3b82f6;
+}
+
 .meta-value.classification-secret {
   color: var(--accent-orange, #ffa500);
 }

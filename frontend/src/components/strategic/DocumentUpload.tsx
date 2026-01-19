@@ -217,8 +217,9 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
               disabled={uploading}
             >
               <option value="UNCLASSIFIED">UNCLASSIFIED</option>
+              <option value="CONFIDENTIAL">CONFIDENTIAL</option>
               <option value="SECRET">SECRET</option>
-              <option value="TOPSECRET">TOPSECRET</option>
+              <option value="TOP_SECRET">TOP SECRET</option>
             </select>
           </div>
         </div>

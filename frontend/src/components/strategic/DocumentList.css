@@ -231,6 +231,13 @@
   color: var(--accent-green, #22c55e);
 }
 
+.classification-badge.classification-confidential {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.2);
+}
+
 .classification-badge.classification-secret {
   background: rgba(255, 165, 0, 0.15);
   border: 1px solid rgba(255, 165, 0, 0.4);

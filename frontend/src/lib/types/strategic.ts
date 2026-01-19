@@ -22,8 +22,9 @@ export type DocumentLevel = typeof DocumentLevel[keyof typeof DocumentLevel];
 
 export const Classification = {
   UNCLASSIFIED: 'UNCLASSIFIED',
+  CONFIDENTIAL: 'CONFIDENTIAL',
   SECRET: 'SECRET',
-  TOPSECRET: 'TOPSECRET',
+  TOP_SECRET: 'TOP_SECRET',
 } as const;
 export type Classification = typeof Classification[keyof typeof Classification];
 
@@ -205,9 +206,19 @@ export interface RiskAssessment {
 // Extraction Types
 // =============================================================================
 
+export interface ExtractedObjectiveSummary {
+  id: string;
+  description: string;
+  dimeCategory: DIMEInstrument;
+  priority: Priority;
+}
+
 export interface ExtractionResult {
   objectiveCount: number;
-  objectives: StrategicObjective[];
+  documentSummary?: string;
+  extractionConfidence?: number;
+  chunkCount?: number;
+  objectives: ExtractedObjectiveSummary[];
 }
 
 // =============================================================================

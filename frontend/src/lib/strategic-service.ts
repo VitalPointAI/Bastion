@@ -19,12 +19,27 @@ import type {
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 /**
- * API response wrapper type.
+ * Paginated list response from backend.
  */
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
+interface PaginatedResponse<T> {
+  documents?: T[];
+  objectives?: T[];
+  intents?: T[];
+  assessments?: T[];
+  count: number;
+  total?: number;
+  limit: number;
+  offset: number;
+}
+
+/**
+ * Document upload response from backend.
+ */
+interface DocumentUploadResponse {
+  documentId: string;
+  title: string;
+  pageCount?: number;
+  textLength: number;
 }
 
 /**
@@ -51,6 +66,7 @@ class StrategicService {
 
   /**
    * Make authenticated API request.
+   * Returns raw JSON response from backend (no success wrapper expected).
    */
   private async fetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     const headers: HeadersInit = {
@@ -76,16 +92,12 @@ class StrategicService {
       throw new Error(error.error || `HTTP ${response.status}`);
     }
 
-    const result: ApiResponse<T> = await response.json();
-    if (!result.success) {
-      throw new Error(result.error || 'API request failed');
-    }
-
-    return result.data as T;
+    return response.json();
   }
 
   /**
    * Make fetch request without JSON Content-Type (for FormData).
+   * Returns raw JSON response from backend.
    */
   private async fetchFormData<T>(path: string, formData: FormData): Promise<T> {
     const headers: HeadersInit = {};
@@ -109,12 +121,7 @@ class StrategicService {
       throw new Error(error.error || `HTTP ${response.status}`);
     }
 
-    const result: ApiResponse<T> = await response.json();
-    if (!result.success) {
-      throw new Error(result.error || 'API request failed');
-    }
-
-    return result.data as T;
+    return response.json();
   }
 
   // ============================================================================
@@ -123,6 +130,7 @@ class StrategicService {
 
   /**
    * Upload a strategic document.
+   * Returns the full document after fetching by ID.
    */
   async uploadDocument(
     file: File,
@@ -136,14 +144,21 @@ class StrategicService {
     formData.append('level', level);
     formData.append('classification', classification);
 
-    return this.fetchFormData<StrategicDocument>('/api/strategic/documents', formData);
+    const response = await this.fetchFormData<DocumentUploadResponse>(
+      '/api/strategic/documents',
+      formData
+    );
+
+    // Fetch the full document to get all fields
+    return this.getDocument(response.documentId);
   }
 
   /**
    * Get all strategic documents.
    */
   async getDocuments(): Promise<StrategicDocument[]> {
-    return this.fetch<StrategicDocument[]>('/api/strategic/documents');
+    const response = await this.fetch<PaginatedResponse<StrategicDocument>>('/api/strategic/documents');
+    return response.documents || [];
   }
 
   /**
@@ -197,7 +212,8 @@ class StrategicService {
       ? `/api/strategic/objectives?${queryString}`
       : '/api/strategic/objectives';
 
-    return this.fetch<StrategicObjective[]>(path);
+    const response = await this.fetch<PaginatedResponse<StrategicObjective>>(path);
+    return response.objectives || [];
   }
 
   /**
@@ -291,9 +307,10 @@ class StrategicService {
    * Get risk assessments for an objective.
    */
   async getRiskAssessments(objectiveId: string): Promise<RiskAssessment[]> {
-    return this.fetch<RiskAssessment[]>(
+    const response = await this.fetch<PaginatedResponse<RiskAssessment>>(
       `/api/strategic/objectives/${encodeURIComponent(objectiveId)}/risk`
     );
+    return response.assessments || [];
   }
 
   /**
@@ -341,10 +358,12 @@ export function getDocumentLevelName(level: DocumentLevel): string {
  */
 export function getClassificationColor(classification: Classification): string {
   switch (classification) {
-    case 'TOPSECRET':
+    case 'TOP_SECRET':
       return 'classification-topsecret';
     case 'SECRET':
       return 'classification-secret';
+    case 'CONFIDENTIAL':
+      return 'classification-confidential';
     case 'UNCLASSIFIED':
     default:
       return 'classification-unclassified';
