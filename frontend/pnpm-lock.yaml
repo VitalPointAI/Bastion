@@ -44,6 +44,9 @@ importers:
       react-tabs:
         specifier: ^6.1.0
         version: 6.1.0(react@19.2.3)
+      zod:
+        specifier: ^4.3.5
+        version: 4.3.5
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.1
