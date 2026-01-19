@@ -175,29 +175,17 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
 
   return (
     <UserProvider value={userContextValue}>
-      <div className="auth-wrapper">
-        {authenticated ? (
-          <div className="auth-status">
-            {/* Status overlay during account creation */}
-            {statusMessage && (
-              <div className="status-overlay">
-                <div className="status-message">
-                  <div className="status-spinner" />
-                  <p>{statusMessage}</p>
-                </div>
-              </div>
-            )}
-            {/* Content rendered directly - user info moved to UserStatusBar in header */}
-            <div className="content">
-              {children}
-            </div>
+      {/* Status overlay during account creation */}
+      {statusMessage && (
+        <div className="status-overlay">
+          <div className="status-message">
+            <div className="status-spinner" />
+            <p>{statusMessage}</p>
           </div>
-        ) : (
-          <div className="auth-required">
-            {children}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
+      {/* Render children directly - user info is now in UserStatusBar in header */}
+      {children}
     </UserProvider>
   )
 }
