@@ -6,23 +6,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 4 — Strategic Planning Module
+**Current focus:** Phase 4.1 — Admin UI
 
 ## Current Position
 
-Phase: 4 of 12 (Strategic Planning Module)
-Plan: 8 of 9 in current phase
+Phase: 4.1 of 12 (Admin UI)
+Plan: 1 of 2 in current phase
 Status: In progress
-Last activity: 2026-01-19 — Completed 4-08-FIX (UAT null safety fixes)
+Last activity: 2026-01-19 — Completed 4.1-01-PLAN.md
 
-Progress: █████░░░░░ ~55% (Phase 4 in progress)
+Progress: █████░░░░░ ~55% (Phase 4.1 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 32
-- Average duration: 15 min
-- Total execution time: 7.7 hours
+- Total plans completed: 33
+- Average duration: 14 min
+- Total execution time: 7.8 hours
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: █████░░░░░ ~55% (Phase 4 in progress)
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 8 | 75 min | 9 min |
+| 4.1 (Admin UI) | 1 | 7 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 12 min, 6 min, 5 min, 9 min, 7 min
-- Trend: Strategic AI agents complete
+- Last 5 plans: 6 min, 5 min, 9 min, 7 min, 7 min
+- Trend: Admin UI foundation started
 
 ## Accumulated Context
 
@@ -255,6 +256,10 @@ Recent decisions affecting current work:
 - Operationalization requires APPROVED status, reviewed risk, and drafted intent
 - Planning directive JSON output for Phase 5 handoff
 
+### Roadmap Evolution
+
+- Phase 4.1 inserted after Phase 4: Admin UI (URGENT) - Create administrative interface for system configuration and management
+
 ### Deferred Issues
 
 See `.planning/ISSUES.md` for full issue log:
@@ -288,9 +293,14 @@ None.
 - Three-tier agent architecture: Collection (OSINT, Threat), Analysis (Fusion), Orchestration
 - questionsForReviewer field for human-in-the-loop guidance
 
+**Phase 4.1 Plan 1 (Admin UI Foundation):**
+- Orange accent color for admin UI to differentiate from blue operational interface
+- Admin button always visible; access denial handled gracefully inside AdminDashboard
+- react-tabs for tab navigation (simpler than custom implementation)
+
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 4-08-FIX (UAT null safety fixes)
+Stopped at: Completed 4.1-01-PLAN.md
 Resume file: None
-Next action: Execute 4-09-PLAN.md
+Next action: Execute 4.1-02-PLAN.md

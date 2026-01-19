@@ -14,6 +14,7 @@ None
 - [x] **Phase 2: Identity & Security Framework** - Implement DID system, ABAC, post-quantum cryptography, zero trust architecture
 - [x] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
 - [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
+- [ ] **Phase 4.1: Admin UI** - Create administrative interface for system configuration (INSERTED)
 - [ ] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
@@ -101,6 +102,15 @@ Plans:
 - [x] Plan 4-07: Admin Configuration System (completed 2026-01-19)
 - [x] Plan 4-08: Strategic Planning AI Agents (completed 2026-01-19)
 - [ ] Plan 4-09: End-to-End Strategic Flow
+
+### Phase 4.1: Admin UI (INSERTED)
+**Goal:** Create administrative interface for system configuration and management
+**Depends on:** Phase 4
+**Plans:** 2 plans
+
+Plans:
+- [x] Plan 4.1-01: Admin UI Foundation (completed 2026-01-19)
+- [ ] Plan 4.1-02: Configuration Panels
 
 ### Phase 5: Operational Planning Module
 **Goal**: Implement joint planning doctrine and operational design
