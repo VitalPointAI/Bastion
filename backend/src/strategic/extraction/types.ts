@@ -9,6 +9,7 @@ import type {
   DocumentExtractionResultSchema,
   ExtractedObjectiveSchema,
 } from './schemas.js';
+import type { ProviderConfig } from './providers/types.js';
 
 /**
  * Extracted objective from LLM - simplified structure before validation
@@ -40,8 +41,8 @@ export interface ExtractionAuditEntry {
  * Configuration options for extraction
  */
 export interface ExtractionConfig {
-  /** Model to use for extraction (default: claude-sonnet-4-20250514) */
-  model?: string;
+  /** LLM provider configuration (default: Anthropic Claude) */
+  provider?: ProviderConfig;
   /** Maximum number of retries for failed extractions (default: 3) */
   maxRetries?: number;
   /** Maximum characters per chunk (default: 8000) */

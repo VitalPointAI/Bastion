@@ -1,12 +1,11 @@
 /**
  * Extraction Service
- * LLM-powered extraction of strategic objectives using Anthropic Claude with tool_use
+ * LLM-powered extraction of strategic objectives with multi-provider support
  *
- * Uses native Anthropic tool_use for structured output instead of Instructor-JS,
- * as the Anthropic SDK provides better control and reliability for structured extraction.
+ * Supports: Anthropic Claude, OpenAI, NEAR AI, Ollama, LocalAI, vLLM, Azure OpenAI, Bedrock
+ * Uses tool_use/function_calling for structured output extraction.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import {
   ChunkExtractionResultSchema,
 } from './schemas.js';
@@ -19,12 +18,13 @@ import type {
   ExtractedObjective,
 } from './types.js';
 import { DocumentParser } from '../ingestion/document-parser.js';
+import { createProvider, getDefaultConfig } from './providers/index.js';
+import type { LLMProvider, LLMCompletionRequest, LLMToolDefinition } from './providers/types.js';
 
 /**
  * Default extraction configuration
  */
-const DEFAULT_CONFIG: Required<ExtractionConfig> = {
-  model: 'claude-sonnet-4-20250514',
+const DEFAULT_CONFIG = {
   maxRetries: 3,
   chunkSize: 8000,
 };
@@ -60,32 +60,33 @@ You MUST use the extract_objectives tool to provide your response in the require
  * ExtractionService handles LLM-powered extraction of strategic objectives
  */
 export class ExtractionService {
-  private anthropic: Anthropic;
-  private config: Required<ExtractionConfig>;
+  private provider: LLMProvider;
+  private maxRetries: number;
+  private chunkSize: number;
   private documentParser: DocumentParser;
-  private extractionTool: Anthropic.Tool;
+  private extractionTool: LLMToolDefinition;
 
   constructor(config: ExtractionConfig = {}) {
-    // Initialize Anthropic client
-    this.anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
+    // Create provider from config or use Anthropic as default
+    const providerConfig = config.provider || getDefaultConfig('anthropic');
+    this.provider = createProvider(providerConfig);
 
-    // Merge config with defaults
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    // Set config with defaults
+    this.maxRetries = config.maxRetries ?? DEFAULT_CONFIG.maxRetries;
+    this.chunkSize = config.chunkSize ?? DEFAULT_CONFIG.chunkSize;
 
     // Document parser for chunking
     this.documentParser = new DocumentParser();
 
-    // Create the extraction tool from Zod schema
+    // Create the extraction tool
     this.extractionTool = this.createExtractionTool();
   }
 
   /**
-   * Create the Anthropic tool definition with JSON Schema
+   * Create the extraction tool definition with JSON Schema
    * Manually defined to avoid Zod 4.x compatibility issues with zod-to-json-schema
    */
-  private createExtractionTool(): Anthropic.Tool {
+  private createExtractionTool(): LLMToolDefinition {
     return {
       name: 'extract_objectives',
       description:
@@ -209,14 +210,13 @@ export class ExtractionService {
     chunkIndex: number
   ): Promise<{ result: ChunkExtractionResult; tokensUsed: number }> {
     try {
-      // Call Anthropic with tool_use
-      const response = await this.anthropic.messages.create({
-        model: this.config.model,
-        max_tokens: 4096,
-        system: EXTRACTION_SYSTEM_PROMPT,
-        tools: [this.extractionTool],
-        tool_choice: { type: 'tool', name: 'extract_objectives' },
+      // Build provider-agnostic request
+      const request: LLMCompletionRequest = {
         messages: [
+          {
+            role: 'system',
+            content: EXTRACTION_SYSTEM_PROMPT,
+          },
           {
             role: 'user',
             content: `Extract all strategic objectives from the following text chunk (chunk ${chunkIndex + 1}).
@@ -227,19 +227,20 @@ TEXT:
 ${chunkText}`,
           },
         ],
-      });
+        tools: [this.extractionTool],
+        tool_choice: { type: 'tool', name: 'extract_objectives' },
+        max_tokens: 4096,
+      };
 
-      // Find the tool_use block in the response
-      const toolUseBlock = response.content.find(
-        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
-      );
+      // Call provider
+      const response = await this.provider.complete(request);
 
-      if (!toolUseBlock) {
-        throw new Error('No tool_use block in response');
+      if (!response.tool_use) {
+        throw new Error('No tool_use in response');
       }
 
       // Parse and validate the response
-      const parsed = ChunkExtractionResultSchema.safeParse(toolUseBlock.input);
+      const parsed = ChunkExtractionResultSchema.safeParse(response.tool_use.input);
 
       if (!parsed.success) {
         console.error(`Validation failed for chunk ${chunkIndex}:`, parsed.error);
@@ -247,7 +248,7 @@ ${chunkText}`,
       }
 
       // Get tokens used from response
-      const tokensUsed = (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
+      const tokensUsed = response.usage.input_tokens + response.usage.output_tokens;
 
       return {
         result: parsed.data,
@@ -352,7 +353,7 @@ ${chunkText}`,
     const chunkResults: ChunkExtractionResult[] = [];
 
     // Chunk the document
-    const chunks = this.documentParser.chunkDocument(documentText, this.config.chunkSize);
+    const chunks = this.documentParser.chunkDocument(documentText, this.chunkSize);
 
     if (chunks.length === 0) {
       return {
@@ -374,7 +375,7 @@ ${chunkText}`,
       auditLog.push({
         chunkIndex: i,
         timestamp: new Date(),
-        model: this.config.model,
+        model: this.provider.name,
         tokensUsed,
         objectivesFound: result.objectives.length,
       });
