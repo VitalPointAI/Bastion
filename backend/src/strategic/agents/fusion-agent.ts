@@ -196,11 +196,11 @@ export class FusionAgent implements StrategicAgent {
     // Calculate overall confidence
     const overallConfidence = this.calculateOverallConfidence(osintReports, threatIndicators);
 
-    // Collect all unique sources
+    // Collect all unique sources (with null safety)
     const allSources = [
       ...new Set([
-        ...osintReports.map(r => r.source),
-        ...threatIndicators.flatMap(t => t.sources),
+        ...osintReports.map(r => r.source ?? 'unknown').filter(Boolean),
+        ...threatIndicators.flatMap(t => t.sources ?? []).filter(Boolean),
       ]),
     ];
 
@@ -308,10 +308,13 @@ export class FusionAgent implements StrategicAgent {
 
     // Match reports to indicators by entities, keywords, and geography
     for (const report of reports) {
+      // Skip reports missing critical data
+      const reportEntities = (report.entities ?? []).map(e => e.name?.toLowerCase() ?? '').filter(Boolean);
+      const reportKeywords = (report.keywords ?? []).map(k => k?.toLowerCase() ?? '').filter(Boolean);
+
       for (const indicator of indicators) {
         // Check for entity matches
-        const reportEntities = report.entities.map(e => e.name.toLowerCase());
-        const indicatorActors = indicator.associatedActors.map(a => a.toLowerCase());
+        const indicatorActors = (indicator.associatedActors ?? []).map(a => a?.toLowerCase() ?? '').filter(Boolean);
 
         const entityMatches = reportEntities.filter(e =>
           indicatorActors.some(a => a.includes(e) || e.includes(a))
@@ -343,9 +346,9 @@ export class FusionAgent implements StrategicAgent {
         }
 
         // Check for keyword overlap (content analysis)
-        const reportKeywords = new Set(report.keywords.map(k => k.toLowerCase()));
-        const indicatorWords = indicator.description.toLowerCase().split(/\s+/);
-        const keywordMatches = indicatorWords.filter(w => reportKeywords.has(w));
+        const reportKeywordsSet = new Set(reportKeywords);
+        const indicatorWords = (indicator.description ?? '').toLowerCase().split(/\s+/);
+        const keywordMatches = indicatorWords.filter(w => reportKeywordsSet.has(w));
 
         if (keywordMatches.length >= 2) {
           matches.push({
@@ -365,12 +368,17 @@ export class FusionAgent implements StrategicAgent {
         const r2 = reports[j];
 
         // Simple contradiction: opposing sentiments on same topic
-        if (r1.sentiment !== r2.sentiment && r1.sentiment !== 'NEUTRAL' && r2.sentiment !== 'NEUTRAL') {
-          const sharedKeywords = r1.keywords.filter(k => r2.keywords.includes(k));
+        // Skip if sentiment is missing
+        const r1Sentiment = r1.sentiment ?? 'NEUTRAL';
+        const r2Sentiment = r2.sentiment ?? 'NEUTRAL';
+        if (r1Sentiment !== r2Sentiment && r1Sentiment !== 'NEUTRAL' && r2Sentiment !== 'NEUTRAL') {
+          const r1Keywords = r1.keywords ?? [];
+          const r2Keywords = r2.keywords ?? [];
+          const sharedKeywords = r1Keywords.filter(k => r2Keywords.includes(k));
           if (sharedKeywords.length >= 2) {
             contradictions.push({
-              source1: r1.source,
-              source2: r2.source,
+              source1: r1.source ?? 'unknown',
+              source2: r2.source ?? 'unknown',
               description: `Conflicting sentiment on topics: ${sharedKeywords.join(', ')}`,
             });
           }
@@ -415,7 +423,9 @@ export class FusionAgent implements StrategicAgent {
     };
 
     for (const report of reports) {
-      const contentLower = report.content.toLowerCase();
+      // Skip reports without content
+      const contentLower = (report.content ?? '').toLowerCase();
+      if (!contentLower) continue;
 
       for (const [dimension, keywords] of Object.entries(pmesiiKeywords)) {
         const matchedKeywords = keywords.filter(k => contentLower.includes(k));
@@ -423,11 +433,11 @@ export class FusionAgent implements StrategicAgent {
         if (matchedKeywords.length > 0) {
           const factor: EnvironmentFactor = {
             factor: matchedKeywords.join(', '),
-            description: report.summary,
-            impact: this.determineImpact(report.sentiment),
-            confidence: report.relevanceScore * report.sourceCredibility,
-            sources: [report.source],
-            lastUpdated: report.collectedAt,
+            description: report.summary ?? '',
+            impact: this.determineImpact(report.sentiment ?? 'NEUTRAL'),
+            confidence: (report.relevanceScore ?? 0.5) * (report.sourceCredibility ?? 0.5),
+            sources: [report.source ?? 'unknown'],
+            lastUpdated: report.collectedAt ?? new Date(),
           };
 
           env[dimension as keyof OperationalEnvironment].push(factor);
@@ -624,11 +634,11 @@ export class FusionAgent implements StrategicAgent {
     }
 
     const reportAvg = reports.length > 0
-      ? reports.reduce((sum, r) => sum + r.sourceCredibility * r.relevanceScore, 0) / reports.length
+      ? reports.reduce((sum, r) => sum + (r.sourceCredibility ?? 0.5) * (r.relevanceScore ?? 0.5), 0) / reports.length
       : 0;
 
     const indicatorAvg = indicators.length > 0
-      ? indicators.reduce((sum, i) => sum + i.confidence, 0) / indicators.length
+      ? indicators.reduce((sum, i) => sum + (i.confidence ?? 0.5), 0) / indicators.length
       : 0;
 
     // Weighted average favoring more sources
