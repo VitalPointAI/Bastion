@@ -54,6 +54,72 @@ export const DIMEInstrument = {
 } as const;
 export type DIMEInstrument = typeof DIMEInstrument[keyof typeof DIMEInstrument];
 
+/**
+ * MIDLIFE Framework
+ * Extended categorization: Military, Information, Diplomatic, Legal, Intelligence, Financial, Economic
+ */
+export const MidlifeCategory = {
+  MILITARY: 'MILITARY',
+  INFORMATION: 'INFORMATION',
+  DIPLOMATIC: 'DIPLOMATIC',
+  LEGAL: 'LEGAL',
+  INTELLIGENCE: 'INTELLIGENCE',
+  FINANCIAL: 'FINANCIAL',
+  ECONOMIC: 'ECONOMIC',
+} as const;
+export type MidlifeCategory = typeof MidlifeCategory[keyof typeof MidlifeCategory];
+
+export const MidlifeCategorizedBy = {
+  AI: 'AI',
+  HUMAN: 'HUMAN',
+} as const;
+export type MidlifeCategorizedBy = typeof MidlifeCategorizedBy[keyof typeof MidlifeCategorizedBy];
+
+/**
+ * MIDLIFE category metadata for UI display
+ */
+export const MIDLIFE_METADATA: Record<MidlifeCategory, {
+  label: string;
+  color: string;
+  description: string;
+}> = {
+  MILITARY: {
+    label: 'Military',
+    color: '#dc2626', // red-600
+    description: 'Armed forces, defense capabilities, military operations',
+  },
+  INFORMATION: {
+    label: 'Information',
+    color: '#2563eb', // blue-600
+    description: 'Communications, media, cyber, public affairs',
+  },
+  DIPLOMATIC: {
+    label: 'Diplomatic',
+    color: '#7c3aed', // violet-600
+    description: 'Foreign relations, treaties, alliances, negotiations',
+  },
+  LEGAL: {
+    label: 'Legal',
+    color: '#059669', // emerald-600
+    description: 'International law, domestic law, rules of engagement',
+  },
+  INTELLIGENCE: {
+    label: 'Intelligence',
+    color: '#4f46e5', // indigo-600
+    description: 'Collection, analysis, counterintelligence',
+  },
+  FINANCIAL: {
+    label: 'Financial',
+    color: '#ca8a04', // yellow-600
+    description: 'Banking, sanctions, monetary policy',
+  },
+  ECONOMIC: {
+    label: 'Economic',
+    color: '#ea580c', // orange-600
+    description: 'Trade, resources, development, industrial base',
+  },
+};
+
 export const Priority = {
   CRITICAL: 'CRITICAL',
   HIGH: 'HIGH',
@@ -93,19 +159,33 @@ export interface ObjectiveMeans {
 export interface StrategicObjective {
   id: string;
   documentId: string;
+  sourceReference?: string;
   description: string;
-  ends: ObjectiveEnds;
-  ways: ObjectiveWays;
-  means: ObjectiveMeans;
+  endsWaysMeans?: {
+    ends: ObjectiveEnds;
+    ways: ObjectiveWays;
+    means: ObjectiveMeans;
+  };
+  // Legacy flat structure for backwards compatibility
+  ends?: ObjectiveEnds;
+  ways?: ObjectiveWays;
+  means?: ObjectiveMeans;
   primaryInstrument: DIMEInstrument;
   supportingInstruments: DIMEInstrument[];
+  // MIDLIFE categorization
+  midlifeCategory?: MidlifeCategory;
+  midlifeCategorizedBy?: MidlifeCategorizedBy;
+  midlifeConfidence?: number;
   priority: Priority;
   constraints: string[];
   assumptions: string[];
+  risks?: string[];
   status: ObjectiveStatus;
   extractedBy: 'HUMAN' | 'AI';
   extractionConfidence?: number;
   humanVerified: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // =============================================================================
@@ -210,6 +290,8 @@ export interface ExtractedObjectiveSummary {
   id: string;
   description: string;
   dimeCategory: DIMEInstrument;
+  midlifeCategory?: MidlifeCategory;
+  midlifeConfidence?: number;
   priority: Priority;
 }
 

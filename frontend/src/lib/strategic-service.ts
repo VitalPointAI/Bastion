@@ -196,6 +196,15 @@ class StrategicService {
   // ============================================================================
 
   /**
+   * Get objectives for a specific document.
+   */
+  async getObjectivesForDocument(documentId: string): Promise<{ documentId: string; count: number; objectives: StrategicObjective[] }> {
+    return this.fetch<{ documentId: string; count: number; objectives: StrategicObjective[] }>(
+      `/api/strategic/documents/${encodeURIComponent(documentId)}/objectives`
+    );
+  }
+
+  /**
    * Get objectives with optional filters.
    */
   async getObjectives(filters?: ObjectiveFilters): Promise<StrategicObjective[]> {
