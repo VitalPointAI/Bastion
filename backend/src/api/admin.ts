@@ -5,6 +5,7 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 import {
   configService,
   initConfigTables,
@@ -18,6 +19,10 @@ import {
   OSINTSourceConfigInputSchema,
   OSINTSourceConfigUpdateSchema,
 } from '../strategic/config/index.js';
+import { getAgentRegistry } from '../agents/registry.js';
+import { AgentDefinitionSchema } from '../agents/definition-schema.js';
+import { createAgentDID } from '../agents/agent-did.js';
+import { AgentPhase, AgentCapability, AutonomyLevel, ProposalKind } from '../agents/types.js';
 
 const router = Router();
 
@@ -450,6 +455,133 @@ router.get('/config/audit', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// LLM Models Proxy Endpoint
+// ============================================================================
+
+/**
+ * GET /api/admin/llm-models - Proxy for fetching available models from LLM providers
+ * Avoids CORS issues by making the request from the backend
+ */
+router.get('/llm-models', async (req: Request, res: Response) => {
+  try {
+    const { provider, apiKey, baseUrl } = req.query;
+
+    if (!provider || typeof provider !== 'string') {
+      res.status(400).json({ error: 'Provider is required' });
+      return;
+    }
+
+    const providerUrls: Record<string, string> = {
+      'anthropic': 'https://api.anthropic.com/v1',
+      'openai': 'https://api.openai.com/v1',
+      'near-ai': 'https://api.near.ai/v1',
+      'azure-openai': (baseUrl as string) || '',
+      'local': (baseUrl as string) || 'http://localhost:11434/v1',
+    };
+
+    const url = (baseUrl as string) || providerUrls[provider];
+    if (!url) {
+      res.json({ models: getDefaultModelsForProvider(provider) });
+      return;
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Provider-specific auth headers
+    const key = apiKey as string | undefined;
+    if (key) {
+      if (provider === 'anthropic') {
+        headers['x-api-key'] = key;
+        headers['anthropic-version'] = '2023-06-01';
+      } else {
+        headers['Authorization'] = `Bearer ${key}`;
+      }
+    }
+
+    const response = await fetch(`${url}/models`, { headers });
+
+    if (!response.ok) {
+      console.warn(`Failed to fetch models from ${provider}: ${response.status}`);
+      res.json({ models: getDefaultModelsForProvider(provider) });
+      return;
+    }
+
+    const data = await response.json() as { data?: { id: string }[] } | { id?: string; name?: string }[];
+
+    // OpenAI-compatible response format
+    if ('data' in data && Array.isArray(data.data)) {
+      const models = data.data.map((model) => ({
+        id: model.id,
+        name: model.id,
+      }));
+      res.json({ models });
+      return;
+    }
+
+    // Anthropic response format
+    if (Array.isArray(data)) {
+      const models = data.map((model) => ({
+        id: model.id || model.name || '',
+        name: model.name || model.id || '',
+      }));
+      res.json({ models });
+      return;
+    }
+
+    res.json({ models: getDefaultModelsForProvider(provider) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.warn('Fetch LLM models failed:', message);
+
+    // Return defaults on error
+    const provider = req.query.provider as string;
+    res.json({ models: getDefaultModelsForProvider(provider || 'anthropic') });
+  }
+});
+
+/**
+ * Get default models for a provider when API fetch fails.
+ */
+function getDefaultModelsForProvider(provider: string): { id: string; name: string }[] {
+  const defaults: Record<string, { id: string; name: string }[]> = {
+    'anthropic': [
+      { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4' },
+      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
+      { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' },
+      { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
+    ],
+    'openai': [
+      { id: 'gpt-4o', name: 'GPT-4o' },
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
+      { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+    ],
+    'near-ai': [
+      { id: 'deepseek-ai/DeepSeek-V3.1', name: 'DeepSeek V3.1' },
+      { id: 'openai/gpt-oss-120b', name: 'GPT OSS 120B' },
+      { id: 'Qwen/Qwen3-30B-A3B-Instruct-2507', name: 'Qwen3 30B Instruct' },
+      { id: 'zai-org/GLM-4.7', name: 'GLM 4.7' },
+      { id: 'zai-org/GLM-4.6', name: 'GLM 4.6' },
+    ],
+    'azure-openai': [
+      { id: 'gpt-4o', name: 'GPT-4o' },
+      { id: 'gpt-4', name: 'GPT-4' },
+      { id: 'gpt-35-turbo', name: 'GPT-3.5 Turbo' },
+    ],
+    'local': [
+      { id: 'llama3.2', name: 'Llama 3.2' },
+      { id: 'llama3.1', name: 'Llama 3.1' },
+      { id: 'mistral', name: 'Mistral' },
+      { id: 'codellama', name: 'Code Llama' },
+    ],
+  };
+
+  return defaults[provider] || [];
+}
+
+// ============================================================================
 // Cache Invalidation Endpoint
 // ============================================================================
 
@@ -471,6 +603,213 @@ router.post('/cache/invalidate', async (req: Request, res: Response) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Invalidate cache failed:', message);
     res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// Agent Management Endpoints
+// ============================================================================
+
+/**
+ * GET /api/admin/agents - List all agents with their configs
+ */
+router.get('/agents', async (req: Request, res: Response) => {
+  try {
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    const agents = registry.listAgents();
+
+    // Get model configs from config service
+    const modelConfigs = await configService.listAgentModelConfigs();
+
+    // Merge model configs with agent data
+    const agentsWithConfigs = agents.map(agent => ({
+      ...agent,
+      customModelConfig: modelConfigs.find(c => c.agentId === agent.agentId) || null,
+    }));
+
+    res.json({ agents: agentsWithConfigs });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List agents failed:', message);
+    res.status(500).json({ error: 'Failed to list agents' });
+  }
+});
+
+/**
+ * POST /api/admin/agents - Create new agent
+ */
+router.post('/agents', async (req: Request, res: Response) => {
+  try {
+    const parseResult = AgentDefinitionSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const definition = parseResult.data;
+    const agentId = definition.id || randomUUID();
+    const adminDid = (req as Request & { adminDid: string }).adminDid;
+
+    // Create DID for agent
+    const didResult = await createAgentDID(agentId);
+
+    // Map capabilities to enum values (filter out invalid ones)
+    const validCapabilities = definition.capabilities
+      .filter(c => Object.values(AgentCapability).includes(c as AgentCapability))
+      .map(c => c as AgentCapability);
+
+    // All proposal kinds except strike authorization
+    const safeProposalKinds = [
+      ProposalKind.ConfigChange,
+      ProposalKind.AddMember,
+      ProposalKind.RemoveMember,
+      ProposalKind.Transfer,
+      ProposalKind.FunctionCall,
+      ProposalKind.MissionOrder,
+      ProposalKind.Custom,
+    ];
+
+    // Build manifest
+    const manifest = {
+      agentId,
+      name: definition.name,
+      description: definition.description,
+      phase: AgentPhase[definition.phase as keyof typeof AgentPhase] || AgentPhase.Support,
+      capabilities: validCapabilities,
+      maxAutonomy: AutonomyLevel[definition.maxAutonomy as keyof typeof AutonomyLevel] || AutonomyLevel.NotAutonomous,
+      allowedProposalKinds: safeProposalKinds,
+      requiresHumanApproval: [ProposalKind.StrikeAuthorization],
+      createdAt: new Date(),
+      createdBy: adminDid,
+      active: definition.isEnabled,
+      agentDID: didResult.did,
+      agentBlindedKey: didResult.blindedKey,
+      agentPublicKey: didResult.publicKey,
+      modelConfig: definition.modelConfig,
+    };
+
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    await registry.registerAgent(manifest);
+
+    res.status(201).json({
+      agentId,
+      agentDID: didResult.did,
+      created: true,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create agent failed:', message);
+    if (message.includes('already registered')) {
+      res.status(409).json({ error: message });
+    } else {
+      res.status(500).json({ error: 'Failed to create agent' });
+    }
+  }
+});
+
+/**
+ * GET /api/admin/agents/:agentId - Get single agent
+ */
+router.get('/agents/:agentId', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    const agent = registry.getAgent(agentId);
+    if (!agent) {
+      res.status(404).json({ error: 'Agent not found' });
+      return;
+    }
+    res.json(agent);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get agent failed:', message);
+    res.status(500).json({ error: 'Failed to get agent' });
+  }
+});
+
+/**
+ * PUT /api/admin/agents/:agentId - Update agent
+ */
+router.put('/agents/:agentId', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    const agent = registry.getAgent(agentId);
+    if (!agent) {
+      res.status(404).json({ error: 'Agent not found' });
+      return;
+    }
+
+    // Update allowed fields
+    if (req.body.isEnabled !== undefined) {
+      agent.active = req.body.isEnabled;
+    }
+    if (req.body.modelConfig) {
+      agent.modelConfig = req.body.modelConfig;
+    }
+    if (req.body.name) {
+      agent.name = req.body.name;
+    }
+    if (req.body.description) {
+      agent.description = req.body.description;
+    }
+
+    res.json({ updated: true, agent });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update agent failed:', message);
+    res.status(500).json({ error: 'Failed to update agent' });
+  }
+});
+
+/**
+ * DELETE /api/admin/agents/:agentId - Deactivate agent
+ */
+router.delete('/agents/:agentId', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    registry.deactivateAgent(agentId);
+    res.json({ deactivated: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Deactivate agent failed:', message);
+    if (message.includes('not found')) {
+      res.status(404).json({ error: 'Agent not found' });
+    } else {
+      res.status(500).json({ error: 'Failed to deactivate agent' });
+    }
+  }
+});
+
+/**
+ * GET /api/admin/agents/:agentId/did - Get agent DID info
+ */
+router.get('/agents/:agentId/did', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    const agent = registry.getAgent(agentId);
+    if (!agent) {
+      res.status(404).json({ error: 'Agent not found' });
+      return;
+    }
+    res.json({
+      agentId: agent.agentId,
+      agentDID: agent.agentDID || null,
+      agentPublicKey: agent.agentPublicKey || null,
+      hasDID: !!agent.agentDID,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get agent DID failed:', message);
+    res.status(500).json({ error: 'Failed to get agent DID info' });
   }
 });
 
