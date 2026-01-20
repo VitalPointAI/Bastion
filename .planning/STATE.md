@@ -6,23 +6,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 4.2 — AI Agent Teams
+**Current focus:** Phase 4.2 — AI Agent Teams (COMPLETE)
 
 ## Current Position
 
 Phase: 4.2 of 12 (AI Agent Teams)
-Plan: 5 of 6 in current phase
-Status: In progress
-Last activity: 2026-01-20 — Completed 4.2-05-PLAN.md
+Plan: 6 of 6 in current phase
+Status: Complete
+Last activity: 2026-01-20 — Completed 4.2-06-PLAN.md
 
-Progress: ███████░░░ ~83% (Phase 4.2 in progress)
+Progress: ██████████ 100% (Phase 4.2 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 38
+- Total plans completed: 39
 - Average duration: 14 min
-- Total execution time: 8.5 hours
+- Total execution time: 8.8 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: ███████░░░ ~83% (Phase 4.2 in progress)
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 8 | 75 min | 9 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
-| 4.2 (AI Agent Teams) | 5 | 58 min | 12 min |
+| 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 2 min, 5 min, 4 min, 25 min, 22 min
-- Trend: Message bus infrastructure for agent communication
+- Last 5 plans: 5 min, 4 min, 25 min, 22 min, 20 min
+- Trend: LangGraph orchestration for multi-agent workflows
 
 ## Accumulated Context
 
@@ -340,9 +340,16 @@ None.
 - Per-agent AgentMessenger instances for typed communication
 - System channels for lifecycle/workflow/security events
 
+**Phase 4.2 Plan 6 (LangGraph Orchestration Layer):**
+- LangGraph checkpoints use isolated `langgraph_checkpoints` PostgreSQL schema
+- Classification filtering at delivery time (lazy evaluation) not publish time
+- Pre-handoff filtering: every agent handoff goes through classification filter
+- Human checkpoints publish to system.human-checkpoints channel via message bus
+- LangChain ecosystem for orchestration (@langchain/langgraph, @langchain/core)
+
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 4.2-05-PLAN.md
+Stopped at: Completed 4.2-06-PLAN.md (Phase 4.2 complete)
 Resume file: None
-Next action: Execute 4.2-06-PLAN.md
+Next action: Execute 4-09-PLAN.md or begin Phase 5

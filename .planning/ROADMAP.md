@@ -15,7 +15,7 @@ None
 - [x] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
 - [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
 - [ ] **Phase 4.1: Admin UI** - Create administrative interface for system configuration (INSERTED)
-- [ ] **Phase 4.2: AI Agent Teams** - Per-agent model assignment, dynamic agent creation, agent DIDs (INSERTED)
+- [x] **Phase 4.2: AI Agent Teams** - Per-agent model assignment, dynamic agent creation, agent DIDs (INSERTED)
 - [ ] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
@@ -139,7 +139,7 @@ Plans:
 - [x] Plan 4.2-03: Frontend Per-Agent Config UI (completed 2026-01-20)
 - [x] Plan 4.2-04: Agent Builder, MCP Tools & Team Composition (completed 2026-01-20)
 - [x] Plan 4.2-05: Secure Message Bus with ABAC Enforcement (completed 2026-01-20)
-- [ ] Plan 4.2-06: LangGraph Orchestration Layer
+- [x] Plan 4.2-06: LangGraph Orchestration Layer (completed 2026-01-20)
 
 ### Phase 5: Operational Planning Module
 **Goal**: Implement joint planning doctrine and operational design
