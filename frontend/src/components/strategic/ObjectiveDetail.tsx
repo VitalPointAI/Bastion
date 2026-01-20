@@ -92,6 +92,11 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
   const [editedAssumptions, setEditedAssumptions] = useState<string[]>([]);
   const [editedRisks, setEditedRisks] = useState<string[]>([]);
 
+  // Ends-Ways-Means editing
+  const [editedEnds, setEditedEnds] = useState<ObjectiveEnds>({ description: '', conditions: [] });
+  const [editedWays, setEditedWays] = useState<ObjectiveWays>({ strategies: [], concepts: [], keyTasks: [] });
+  const [editedMeans, setEditedMeans] = useState<ObjectiveMeans>({ forces: [], capabilities: [], resources: [] });
+
   const loadObjective = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -106,6 +111,13 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
       setEditedConstraints(obj.constraints || []);
       setEditedAssumptions(obj.assumptions || []);
       setEditedRisks(obj.risks || []);
+      // Initialize EWM
+      const ewmData = getEndsWaysMeans(obj);
+      if (ewmData) {
+        setEditedEnds({ ...ewmData.ends });
+        setEditedWays({ ...ewmData.ways });
+        setEditedMeans({ ...ewmData.means });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load objective');
     } finally {
@@ -149,6 +161,21 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
         updates.risks = editedRisks;
       }
 
+      // Check EWM changes
+      const currentEwm = getEndsWaysMeans(objective);
+      if (currentEwm) {
+        const endsChanged = JSON.stringify(editedEnds) !== JSON.stringify(currentEwm.ends);
+        const waysChanged = JSON.stringify(editedWays) !== JSON.stringify(currentEwm.ways);
+        const meansChanged = JSON.stringify(editedMeans) !== JSON.stringify(currentEwm.means);
+        if (endsChanged || waysChanged || meansChanged) {
+          updates.endsWaysMeans = {
+            ends: editedEnds,
+            ways: editedWays,
+            means: editedMeans,
+          };
+        }
+      }
+
       // Call the API with PUT method
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/strategic/objectives/${encodeURIComponent(objectiveId)}`,
@@ -188,6 +215,13 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
       setEditedConstraints(objective.constraints || []);
       setEditedAssumptions(objective.assumptions || []);
       setEditedRisks(objective.risks || []);
+      // Reset EWM
+      const ewmData = getEndsWaysMeans(objective);
+      if (ewmData) {
+        setEditedEnds({ ...ewmData.ends });
+        setEditedWays({ ...ewmData.ways });
+        setEditedMeans({ ...ewmData.means });
+      }
     }
     setEditMode(false);
   };
@@ -409,11 +443,12 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
         )}
       </section>
 
-      {/* Ends-Ways-Means (read-only for now - complex nested structure) */}
-      {ewm && (
+      {/* Ends-Ways-Means */}
+      {(ewm || editMode) && (
         <section className="detail-section ewm-section">
           <h3>Ends-Ways-Means Analysis</h3>
 
+          {/* ENDS */}
           <div className="ewm-block">
             <h4>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -422,22 +457,76 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
               </svg>
               Ends (Desired Outcome)
             </h4>
-            <p className="ewm-description">{ewm.ends.description}</p>
-            {ewm.ends.conditions && ewm.ends.conditions.length > 0 && (
-              <div className="ewm-list">
-                <span className="list-label">Conditions for success:</span>
-                <ul>
-                  {ewm.ends.conditions.map((c, i) => <li key={i}>{c}</li>)}
-                </ul>
-              </div>
-            )}
-            {ewm.ends.timeframe && (
-              <div className="ewm-timeframe">
-                <span className="list-label">Timeframe:</span> {ewm.ends.timeframe}
-              </div>
+            {editMode ? (
+              <>
+                <textarea
+                  className="ewm-description-editor"
+                  value={editedEnds.description}
+                  onChange={(e) => setEditedEnds({ ...editedEnds, description: e.target.value })}
+                  placeholder="Describe the desired end state..."
+                  rows={2}
+                />
+                <div className="ewm-editable-list">
+                  <span className="list-label">Conditions for success:</span>
+                  {editedEnds.conditions.map((c, i) => (
+                    <div key={i} className="editable-list-item">
+                      <input
+                        type="text"
+                        value={c}
+                        onChange={(e) => {
+                          const newConditions = [...editedEnds.conditions];
+                          newConditions[i] = e.target.value;
+                          setEditedEnds({ ...editedEnds, conditions: newConditions });
+                        }}
+                        placeholder="Condition..."
+                      />
+                      <button
+                        className="remove-item-btn"
+                        onClick={() => setEditedEnds({ ...editedEnds, conditions: editedEnds.conditions.filter((_, idx) => idx !== i) })}
+                        title="Remove"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button className="add-item-btn" onClick={() => setEditedEnds({ ...editedEnds, conditions: [...editedEnds.conditions, ''] })}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add Condition
+                  </button>
+                </div>
+                <div className="ewm-timeframe-edit">
+                  <span className="list-label">Timeframe:</span>
+                  <input
+                    type="text"
+                    value={editedEnds.timeframe || ''}
+                    onChange={(e) => setEditedEnds({ ...editedEnds, timeframe: e.target.value || undefined })}
+                    placeholder="When should this be achieved?"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="ewm-description">{ewm?.ends.description}</p>
+                {ewm?.ends.conditions && ewm.ends.conditions.length > 0 && (
+                  <div className="ewm-list">
+                    <span className="list-label">Conditions for success:</span>
+                    <ul>{ewm.ends.conditions.map((c, i) => <li key={i}>{c}</li>)}</ul>
+                  </div>
+                )}
+                {ewm?.ends.timeframe && (
+                  <div className="ewm-timeframe">
+                    <span className="list-label">Timeframe:</span> {ewm.ends.timeframe}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
+          {/* WAYS */}
           <div className="ewm-block">
             <h4>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -446,32 +535,100 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
               </svg>
               Ways (Approach)
             </h4>
-            {ewm.ways.strategies && ewm.ways.strategies.length > 0 && (
-              <div className="ewm-list">
-                <span className="list-label">Strategies:</span>
-                <ul>
-                  {ewm.ways.strategies.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              </div>
-            )}
-            {ewm.ways.concepts && ewm.ways.concepts.length > 0 && (
-              <div className="ewm-list">
-                <span className="list-label">Concepts:</span>
-                <ul>
-                  {ewm.ways.concepts.map((c, i) => <li key={i}>{c}</li>)}
-                </ul>
-              </div>
-            )}
-            {ewm.ways.keyTasks && ewm.ways.keyTasks.length > 0 && (
-              <div className="ewm-list">
-                <span className="list-label">Key Tasks:</span>
-                <ul>
-                  {ewm.ways.keyTasks.map((t, i) => <li key={i}>{t}</li>)}
-                </ul>
-              </div>
+            {editMode ? (
+              <>
+                {/* Strategies */}
+                <div className="ewm-editable-list">
+                  <span className="list-label">Strategies:</span>
+                  {editedWays.strategies.map((s, i) => (
+                    <div key={i} className="editable-list-item">
+                      <input
+                        type="text"
+                        value={s}
+                        onChange={(e) => {
+                          const newStrategies = [...editedWays.strategies];
+                          newStrategies[i] = e.target.value;
+                          setEditedWays({ ...editedWays, strategies: newStrategies });
+                        }}
+                        placeholder="Strategy..."
+                      />
+                      <button className="remove-item-btn" onClick={() => setEditedWays({ ...editedWays, strategies: editedWays.strategies.filter((_, idx) => idx !== i) })} title="Remove">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button className="add-item-btn" onClick={() => setEditedWays({ ...editedWays, strategies: [...editedWays.strategies, ''] })}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    Add Strategy
+                  </button>
+                </div>
+                {/* Concepts */}
+                <div className="ewm-editable-list">
+                  <span className="list-label">Concepts:</span>
+                  {editedWays.concepts.map((c, i) => (
+                    <div key={i} className="editable-list-item">
+                      <input
+                        type="text"
+                        value={c}
+                        onChange={(e) => {
+                          const newConcepts = [...editedWays.concepts];
+                          newConcepts[i] = e.target.value;
+                          setEditedWays({ ...editedWays, concepts: newConcepts });
+                        }}
+                        placeholder="Concept..."
+                      />
+                      <button className="remove-item-btn" onClick={() => setEditedWays({ ...editedWays, concepts: editedWays.concepts.filter((_, idx) => idx !== i) })} title="Remove">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button className="add-item-btn" onClick={() => setEditedWays({ ...editedWays, concepts: [...editedWays.concepts, ''] })}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    Add Concept
+                  </button>
+                </div>
+                {/* Key Tasks */}
+                <div className="ewm-editable-list">
+                  <span className="list-label">Key Tasks:</span>
+                  {editedWays.keyTasks.map((t, i) => (
+                    <div key={i} className="editable-list-item">
+                      <input
+                        type="text"
+                        value={t}
+                        onChange={(e) => {
+                          const newTasks = [...editedWays.keyTasks];
+                          newTasks[i] = e.target.value;
+                          setEditedWays({ ...editedWays, keyTasks: newTasks });
+                        }}
+                        placeholder="Key task..."
+                      />
+                      <button className="remove-item-btn" onClick={() => setEditedWays({ ...editedWays, keyTasks: editedWays.keyTasks.filter((_, idx) => idx !== i) })} title="Remove">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button className="add-item-btn" onClick={() => setEditedWays({ ...editedWays, keyTasks: [...editedWays.keyTasks, ''] })}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    Add Key Task
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {ewm?.ways.strategies && ewm.ways.strategies.length > 0 && (
+                  <div className="ewm-list"><span className="list-label">Strategies:</span><ul>{ewm.ways.strategies.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
+                )}
+                {ewm?.ways.concepts && ewm.ways.concepts.length > 0 && (
+                  <div className="ewm-list"><span className="list-label">Concepts:</span><ul>{ewm.ways.concepts.map((c, i) => <li key={i}>{c}</li>)}</ul></div>
+                )}
+                {ewm?.ways.keyTasks && ewm.ways.keyTasks.length > 0 && (
+                  <div className="ewm-list"><span className="list-label">Key Tasks:</span><ul>{ewm.ways.keyTasks.map((t, i) => <li key={i}>{t}</li>)}</ul></div>
+                )}
+              </>
             )}
           </div>
 
+          {/* MEANS */}
           <div className="ewm-block">
             <h4>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -482,29 +639,96 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
               </svg>
               Means (Resources)
             </h4>
-            {ewm.means.forces && ewm.means.forces.length > 0 && (
-              <div className="ewm-list">
-                <span className="list-label">Forces:</span>
-                <ul>
-                  {ewm.means.forces.map((f, i) => <li key={i}>{f}</li>)}
-                </ul>
-              </div>
-            )}
-            {ewm.means.capabilities && ewm.means.capabilities.length > 0 && (
-              <div className="ewm-list">
-                <span className="list-label">Capabilities:</span>
-                <ul>
-                  {ewm.means.capabilities.map((c, i) => <li key={i}>{c}</li>)}
-                </ul>
-              </div>
-            )}
-            {ewm.means.resources && ewm.means.resources.length > 0 && (
-              <div className="ewm-list">
-                <span className="list-label">Resources:</span>
-                <ul>
-                  {ewm.means.resources.map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
-              </div>
+            {editMode ? (
+              <>
+                {/* Forces */}
+                <div className="ewm-editable-list">
+                  <span className="list-label">Forces:</span>
+                  {editedMeans.forces.map((f, i) => (
+                    <div key={i} className="editable-list-item">
+                      <input
+                        type="text"
+                        value={f}
+                        onChange={(e) => {
+                          const newForces = [...editedMeans.forces];
+                          newForces[i] = e.target.value;
+                          setEditedMeans({ ...editedMeans, forces: newForces });
+                        }}
+                        placeholder="Force..."
+                      />
+                      <button className="remove-item-btn" onClick={() => setEditedMeans({ ...editedMeans, forces: editedMeans.forces.filter((_, idx) => idx !== i) })} title="Remove">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button className="add-item-btn" onClick={() => setEditedMeans({ ...editedMeans, forces: [...editedMeans.forces, ''] })}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    Add Force
+                  </button>
+                </div>
+                {/* Capabilities */}
+                <div className="ewm-editable-list">
+                  <span className="list-label">Capabilities:</span>
+                  {editedMeans.capabilities.map((c, i) => (
+                    <div key={i} className="editable-list-item">
+                      <input
+                        type="text"
+                        value={c}
+                        onChange={(e) => {
+                          const newCapabilities = [...editedMeans.capabilities];
+                          newCapabilities[i] = e.target.value;
+                          setEditedMeans({ ...editedMeans, capabilities: newCapabilities });
+                        }}
+                        placeholder="Capability..."
+                      />
+                      <button className="remove-item-btn" onClick={() => setEditedMeans({ ...editedMeans, capabilities: editedMeans.capabilities.filter((_, idx) => idx !== i) })} title="Remove">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button className="add-item-btn" onClick={() => setEditedMeans({ ...editedMeans, capabilities: [...editedMeans.capabilities, ''] })}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    Add Capability
+                  </button>
+                </div>
+                {/* Resources */}
+                <div className="ewm-editable-list">
+                  <span className="list-label">Resources:</span>
+                  {editedMeans.resources.map((r, i) => (
+                    <div key={i} className="editable-list-item">
+                      <input
+                        type="text"
+                        value={r}
+                        onChange={(e) => {
+                          const newResources = [...editedMeans.resources];
+                          newResources[i] = e.target.value;
+                          setEditedMeans({ ...editedMeans, resources: newResources });
+                        }}
+                        placeholder="Resource..."
+                      />
+                      <button className="remove-item-btn" onClick={() => setEditedMeans({ ...editedMeans, resources: editedMeans.resources.filter((_, idx) => idx !== i) })} title="Remove">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button className="add-item-btn" onClick={() => setEditedMeans({ ...editedMeans, resources: [...editedMeans.resources, ''] })}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    Add Resource
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {ewm?.means.forces && ewm.means.forces.length > 0 && (
+                  <div className="ewm-list"><span className="list-label">Forces:</span><ul>{ewm.means.forces.map((f, i) => <li key={i}>{f}</li>)}</ul></div>
+                )}
+                {ewm?.means.capabilities && ewm.means.capabilities.length > 0 && (
+                  <div className="ewm-list"><span className="list-label">Capabilities:</span><ul>{ewm.means.capabilities.map((c, i) => <li key={i}>{c}</li>)}</ul></div>
+                )}
+                {ewm?.means.resources && ewm.means.resources.length > 0 && (
+                  <div className="ewm-list"><span className="list-label">Resources:</span><ul>{ewm.means.resources.map((r, i) => <li key={i}>{r}</li>)}</ul></div>
+                )}
+              </>
             )}
           </div>
         </section>

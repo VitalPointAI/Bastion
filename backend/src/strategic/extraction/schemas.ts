@@ -90,6 +90,9 @@ export const ExtractedObjectiveSchema = z.object({
   assumptions: z.array(z.string())
     .describe('Stated or implied assumptions underlying this objective'),
 
+  risks: z.array(z.string())
+    .describe('Identified risks to achieving this objective'),
+
   sourceReference: z.string()
     .describe('Exact location in document: page number, section title, or paragraph number for traceability'),
 });

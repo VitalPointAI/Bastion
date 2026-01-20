@@ -132,6 +132,7 @@ export class ExtractionService {
                 'priority',
                 'constraints',
                 'assumptions',
+                'risks',
                 'sourceReference',
               ],
               properties: {
@@ -209,6 +210,11 @@ export class ExtractionService {
                   type: 'array',
                   items: { type: 'string' },
                   description: 'Stated or implied assumptions',
+                },
+                risks: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Identified risks to achieving this objective',
                 },
                 sourceReference: {
                   type: 'string',

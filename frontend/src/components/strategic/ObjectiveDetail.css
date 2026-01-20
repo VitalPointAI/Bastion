@@ -452,6 +452,71 @@
   color: var(--text-secondary, #a0a0b0);
 }
 
+/* EWM Editing Styles */
+.ewm-description-editor {
+  width: 100%;
+  min-height: 60px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: var(--bg-primary, #111118);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.ewm-description-editor:focus {
+  outline: none;
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+}
+
+.ewm-description-editor::placeholder {
+  color: var(--text-dim, #444456);
+}
+
+.ewm-editable-list {
+  margin-bottom: 0.75rem;
+}
+
+.ewm-editable-list .editable-list-item {
+  margin-bottom: 0.35rem;
+}
+
+.ewm-editable-list .editable-list-item input {
+  flex: 1;
+}
+
+.ewm-timeframe-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.ewm-timeframe-edit input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-primary, #111118);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 0.85rem;
+}
+
+.ewm-timeframe-edit input:focus {
+  outline: none;
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+}
+
+.ewm-timeframe-edit input::placeholder {
+  color: var(--text-dim, #444456);
+}
+
 /* ============================================================================
    Lists
    ============================================================================ */
