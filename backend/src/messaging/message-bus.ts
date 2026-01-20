@@ -6,7 +6,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import PgBoss from 'pg-boss';
+import { PgBoss } from 'pg-boss';
 import { getPool } from '../lib/database.js';
 import { getAgentRegistry } from '../agents/registry.js';
 import { getTeamRegistry } from '../agents/team-registry.js';
@@ -17,11 +17,11 @@ import {
   DEFAULT_TTL,
   validatePayloadSize,
   MAX_PAYLOAD_SIZE,
+  type CreateMessageInput,
 } from './schemas.js';
 import {
   DeliveryStatus,
   type MessageEnvelope,
-  type CreateMessageInput,
   type MessageSubscription,
   type SubscriptionOptions,
   type MessageHandler,
@@ -141,7 +141,7 @@ export class MessageBus {
     // Validate input
     const parseResult = CreateMessageSchema.safeParse(input);
     if (!parseResult.success) {
-      const errors = parseResult.error.errors.map(e => e.message);
+      const errors = parseResult.error.issues.map((e: { message: string }) => e.message);
       throw new MessageValidationError('Invalid message input', errors);
     }
 
@@ -163,7 +163,7 @@ export class MessageBus {
       timestamp,
       source: {
         did: input.sourceDid,
-        type: input.sourceType,
+        type: input.sourceType || 'user',
       },
       destination: {
         type: input.destinationType,
@@ -654,9 +654,11 @@ export class MessageBus {
     if (!this.boss) return;
 
     // Message delivery worker
-    await this.boss.work('message-delivery', async (job: PgBoss.Job<DeliveryJobData>) => {
-      const { messageId, recipientDid } = job.data;
-      await this.processDelivery(messageId, recipientDid);
+    await this.boss.work<DeliveryJobData>('message-delivery', async (jobs) => {
+      for (const job of jobs) {
+        const { messageId, recipientDid } = job.data;
+        await this.processDelivery(messageId, recipientDid);
+      }
     });
 
     // Message expiration worker

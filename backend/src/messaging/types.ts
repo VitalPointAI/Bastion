@@ -144,35 +144,8 @@ export interface MessageEnvelope {
   acknowledgedAt?: string;
 }
 
-/**
- * Input for creating a new message (subset of MessageEnvelope)
- */
-export interface CreateMessageInput {
-  /** Source DID (required) */
-  sourceDid: string;
-  /** Source type */
-  sourceType: MessageSourceType;
-  /** Destination type */
-  destinationType: DestinationType;
-  /** Destination target (DID or channel name) */
-  destinationTarget: string;
-
-  /** Message type */
-  messageType: string;
-  /** Message payload */
-  payload: unknown;
-
-  /** Optional message attributes (defaults provided) */
-  attributes?: Partial<MessageAttributes>;
-  /** Optional priority (default: normal) */
-  priority?: MessagePriority;
-  /** Optional TTL in seconds (default: 86400) */
-  ttl?: number;
-  /** Optional correlation ID for request/response */
-  correlationId?: string;
-  /** Whether acknowledgment is required (default: false) */
-  requiresAck?: boolean;
-}
+// Note: CreateMessageInput is defined in schemas.ts as a Zod inferred type
+// Import from schemas.ts to avoid duplication
 
 /**
  * Subscription configuration

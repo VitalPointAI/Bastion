@@ -5,9 +5,33 @@
  * All messages are ABAC-filtered based on classification and clearance.
  */
 
-// Types and schemas
-export * from './types.js';
+// Types (explicit exports to avoid conflicts with schemas)
+export {
+  type MessageClassification,
+  type MessagePriority,
+  DeliveryStatus,
+  type MessageSourceType,
+  type MessageSource,
+  type DestinationType,
+  type MessageDestination,
+  type MessageAttributes,
+  type ChannelType,
+  SystemChannels,
+  type MessageEnvelope,
+  type MessageSubscription,
+  type MessageHandler,
+  type SubscriptionOptions,
+  type RequestOptions,
+  type MessageQueryOptions,
+  type StoredMessage,
+  type MessageDelivery,
+  type ABACDecision,
+} from './types.js';
+
+// Schemas (Zod schemas and inferred types)
 export * from './schemas.js';
+
+// Errors
 export * from './errors.js';
 
 // Core services

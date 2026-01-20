@@ -79,7 +79,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({
         success: false,
         error: 'Invalid message input',
-        details: parseResult.error.errors,
+        details: parseResult.error.issues,
       });
       return;
     }
@@ -146,7 +146,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({
         success: false,
         error: 'Invalid query options',
-        details: parseResult.error.errors,
+        details: parseResult.error.issues,
       });
       return;
     }
@@ -174,7 +174,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 router.get('/:messageId', async (req: Request, res: Response): Promise<void> => {
   try {
     const userDid = getUserDid(req);
-    const messageId = req.params.messageId;
+    const messageId = req.params.messageId as string;
     const bus = getMessageBus();
 
     const message = await bus.getMessage(messageId, userDid);
@@ -204,7 +204,7 @@ router.get('/:messageId', async (req: Request, res: Response): Promise<void> => 
 router.post('/:messageId/acknowledge', async (req: Request, res: Response): Promise<void> => {
   try {
     const userDid = getUserDid(req);
-    const messageId = req.params.messageId;
+    const messageId = req.params.messageId as string;
     const bus = getMessageBus();
 
     await bus.acknowledge(messageId, userDid);
@@ -226,7 +226,7 @@ router.post('/:messageId/acknowledge', async (req: Request, res: Response): Prom
 router.get('/thread/:correlationId', async (req: Request, res: Response): Promise<void> => {
   try {
     const userDid = getUserDid(req);
-    const correlationId = req.params.correlationId;
+    const correlationId = req.params.correlationId as string;
     const bus = getMessageBus();
 
     const messages = await bus.getThread(correlationId, userDid);
@@ -296,7 +296,7 @@ router.get('/channels', async (req: Request, res: Response): Promise<void> => {
 router.post('/channels/:channel/subscribe', async (req: Request, res: Response): Promise<void> => {
   try {
     const userDid = getUserDid(req);
-    const channel = req.params.channel;
+    const channel = req.params.channel as string;
     const bus = getMessageBus();
 
     const subscriptionId = bus.subscribe(userDid, {

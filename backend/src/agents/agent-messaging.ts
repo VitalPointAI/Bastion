@@ -9,11 +9,11 @@ import { getMessageBus, MessageBus } from '../messaging/message-bus.js';
 import { getMessageABACFilter, MessageABACFilter } from '../messaging/abac-filter.js';
 import {
   type MessageEnvelope,
-  type CreateMessageInput,
   type MessageClassification,
   type MessageHandler,
   type SubscriptionOptions,
 } from '../messaging/types.js';
+import { type CreateMessageInput } from '../messaging/schemas.js';
 import { InsufficientClearanceError } from '../messaging/errors.js';
 import { getAgentRegistry } from './registry.js';
 import { getTeamRegistry } from './team-registry.js';
