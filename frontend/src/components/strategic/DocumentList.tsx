@@ -306,12 +306,7 @@ export function DocumentList({
 
             {/* Objectives status */}
             <div className="doc-objectives">
-              {doc.objectiveCount !== undefined && doc.objectiveCount > 0 ? (
-                <div className="objectives-count">
-                  <span className="count-value">{doc.objectiveCount}</span>
-                  <span className="count-label">Objectives</span>
-                </div>
-              ) : extracting === doc.id && progress ? (
+              {extracting === doc.id && progress ? (
                 <div className="extraction-progress">
                   <div className="progress-header">
                     <span className="progress-phase">{getPhaseDescription(progress.phase)}</span>
@@ -339,6 +334,25 @@ export function DocumentList({
                       <span className="preview-text">{progress.latestObjectivePreview}</span>
                     </div>
                   )}
+                </div>
+              ) : doc.objectiveCount !== undefined && doc.objectiveCount > 0 ? (
+                <div className="objectives-status">
+                  <div className="objectives-count">
+                    <span className="count-value">{doc.objectiveCount}</span>
+                    <span className="count-label">Objectives</span>
+                  </div>
+                  <button
+                    className="re-extract-button"
+                    onClick={(e) => handleExtract(doc, e)}
+                    disabled={extracting === doc.id}
+                    title="Re-extract objectives (will replace existing)"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="23,4 23,10 17,10" />
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
+                    Re-extract
+                  </button>
                 </div>
               ) : (
                 <button

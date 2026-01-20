@@ -130,33 +130,45 @@ export async function getDocumentText(
 }
 
 /**
- * List documents for a user
+ * Document summary with objective count
+ */
+export interface DocumentWithObjectiveCount extends Omit<StrategicDocument, 'textContent'> {
+  objectiveCount: number;
+}
+
+/**
+ * List documents for a user with objective counts
  * @param createdBy - User DID
  * @param limit - Max results
  * @param offset - Offset for pagination
- * @returns Array of documents (without text_content for list view)
+ * @returns Array of documents with objective counts
  */
 export async function listDocuments(
   createdBy: string,
   limit: number = 20,
   offset: number = 0
-): Promise<Omit<StrategicDocument, 'textContent'>[]> {
+): Promise<DocumentWithObjectiveCount[]> {
   const pool = getPool();
 
   const result = await pool.query(
     `
-    SELECT id, title, level, original_filename, mime_type,
-           page_count, text_length, classification, ipfs_cid,
-           created_by, created_at
-    FROM strategic_documents
-    WHERE created_by = $1
-    ORDER BY created_at DESC
+    SELECT d.id, d.title, d.level, d.original_filename, d.mime_type,
+           d.page_count, d.text_length, d.classification, d.ipfs_cid,
+           d.created_by, d.created_at,
+           COALESCE(COUNT(o.id), 0)::int as objective_count
+    FROM strategic_documents d
+    LEFT JOIN strategic_objectives o ON o.document_id = d.id
+    WHERE d.created_by = $1
+    GROUP BY d.id, d.title, d.level, d.original_filename, d.mime_type,
+             d.page_count, d.text_length, d.classification, d.ipfs_cid,
+             d.created_by, d.created_at
+    ORDER BY d.created_at DESC
     LIMIT $2 OFFSET $3
     `,
     [createdBy, limit, offset]
   );
 
-  return result.rows.map(mapRowToDocumentSummary);
+  return result.rows.map(mapRowToDocumentWithCount);
 }
 
 /**
@@ -240,6 +252,28 @@ function mapRowToDocumentSummary(
     ipfsCid: row.ipfs_cid as string | undefined,
     createdBy: row.created_by as string,
     createdAt: new Date(row.created_at as string),
+  };
+}
+
+/**
+ * Map database row to document with objective count
+ */
+function mapRowToDocumentWithCount(
+  row: Record<string, unknown>
+): DocumentWithObjectiveCount {
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    level: row.level as StrategicDocumentLevel,
+    originalFilename: row.original_filename as string,
+    mimeType: row.mime_type as string,
+    pageCount: row.page_count as number | undefined,
+    textLength: row.text_length as number,
+    classification: row.classification as ClassificationLevel,
+    ipfsCid: row.ipfs_cid as string | undefined,
+    createdBy: row.created_by as string,
+    createdAt: new Date(row.created_at as string),
+    objectiveCount: row.objective_count as number,
   };
 }
 

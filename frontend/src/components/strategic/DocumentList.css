@@ -352,6 +352,13 @@
   border-top: 1px solid var(--border-subtle, #2a2a38);
 }
 
+.objectives-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .objectives-count {
   display: flex;
   align-items: baseline;
@@ -369,6 +376,38 @@
   color: var(--text-muted, #666678);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* Re-extract button (smaller, secondary style) */
+.re-extract-button {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  color: var(--text-muted, #666678);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.re-extract-button:hover:not(:disabled) {
+  border-color: var(--accent-orange, #ffa500);
+  color: var(--accent-orange, #ffa500);
+  background: rgba(255, 165, 0, 0.05);
+}
+
+.re-extract-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.re-extract-button svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Extract button */
