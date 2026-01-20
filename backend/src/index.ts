@@ -14,8 +14,12 @@ import strategicRouter from './api/strategic.js';
 import strategicAgentsRouter from './api/strategic-agents.js';
 import adminRouter from './api/admin.js';
 import messagingRouter, { setupMessageWebSocket } from './api/messaging.js';
+import orchestrationRouter, { setupOrchestrationWebSocket } from './api/orchestration.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
 import { getMessageBus } from './messaging/message-bus.js';
+import { getCheckpointer } from './orchestration/checkpointer.js';
+import { getTracer } from './orchestration/observability.js';
+import { getCheckpointManager } from './orchestration/human-checkpoints.js';
 
 dotenv.config();
 
@@ -43,12 +47,16 @@ app.use('/api/strategic', strategicRouter);
 app.use('/api/strategic/agents', strategicAgentsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/messages', messagingRouter);
+app.use('/api/orchestration', orchestrationRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
 
 // Setup WebSocket for real-time message delivery
 setupMessageWebSocket(server);
+
+// Setup WebSocket for orchestration execution streaming
+setupOrchestrationWebSocket(server);
 
 server.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
@@ -68,5 +76,21 @@ server.listen(port, async () => {
     console.log('Message bus initialized');
   } catch (error) {
     console.error('Failed to initialize message bus:', error);
+  }
+
+  // Initialize orchestration components
+  try {
+    await getCheckpointer();
+    console.log('LangGraph checkpointer initialized');
+
+    const tracer = getTracer();
+    await tracer.initialize();
+    console.log('Execution tracer initialized');
+
+    const checkpointManager = getCheckpointManager();
+    await checkpointManager.initialize();
+    console.log('Human checkpoint manager initialized');
+  } catch (error) {
+    console.error('Failed to initialize orchestration:', error);
   }
 });
