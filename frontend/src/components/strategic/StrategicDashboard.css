@@ -247,6 +247,18 @@
   border: 1px dashed var(--border-subtle, #2a2a38);
 }
 
+/* Objectives container within document detail */
+.objectives-container {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+}
+
+/* Objective detail section - wider to show more content */
+.objective-detail-section {
+  max-width: 900px;
+}
+
 /* ============================================================================
    Documents Section
    ============================================================================ */

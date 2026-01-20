@@ -2,22 +2,26 @@
  * StrategicDashboard Component
  *
  * Main dashboard for strategic planning document management.
- * Combines document upload, list, and extraction workflows.
+ * Combines document upload, list, extraction workflows, and objective management.
+ * Phase 4-10: Now includes ObjectiveList and ObjectiveDetail with MIDLIFE categorization.
  */
 
 import { useState, useCallback, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
-import type { StrategicDocument } from '../../lib/types/strategic.js';
+import type { StrategicDocument, StrategicObjective } from '../../lib/types/strategic.js';
 import { strategicService } from '../../lib/strategic-service.js';
 import { buildDID } from '../../lib/identity.js';
 import { DocumentUpload } from './DocumentUpload.js';
 import { DocumentList } from './DocumentList.js';
+import { ObjectiveList } from './ObjectiveList.js';
+import { ObjectiveDetail } from './ObjectiveDetail.js';
 import './StrategicDashboard.css';
 
 export function StrategicDashboard() {
   const { authenticated, user } = usePrivy();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedDocument, setSelectedDocument] = useState<StrategicDocument | null>(null);
+  const [selectedObjective, setSelectedObjective] = useState<StrategicObjective | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [userDID, setUserDID] = useState<string | null>(null);
@@ -55,6 +59,21 @@ export function StrategicDashboard() {
 
   const handleCloseDetail = useCallback(() => {
     setSelectedDocument(null);
+    setSelectedObjective(null);
+  }, []);
+
+  const handleSelectObjective = useCallback((objective: StrategicObjective) => {
+    setSelectedObjective(objective);
+    console.log('Objective selected:', objective.id);
+  }, []);
+
+  const handleCloseObjective = useCallback(() => {
+    setSelectedObjective(null);
+  }, []);
+
+  const handleObjectiveSave = useCallback((objective: StrategicObjective) => {
+    console.log('Objective saved:', objective.id);
+    // Could trigger a refresh of the objective list here if needed
   }, []);
 
   return (
@@ -97,7 +116,7 @@ export function StrategicDashboard() {
         )}
 
         {/* Document Detail Panel */}
-        {selectedDocument && (
+        {selectedDocument && !selectedObjective && (
           <section className="detail-section">
             <div className="detail-header">
               <button className="back-button" onClick={handleCloseDetail}>
@@ -140,10 +159,26 @@ export function StrategicDashboard() {
                   <span className="meta-value">{selectedDocument.objectiveCount ?? 0}</span>
                 </div>
               </div>
-              <p className="detail-placeholder">
-                Objective list and workflow views coming in Phase 5.
-              </p>
+
+              {/* Objective List for this document */}
+              <div className="objectives-container">
+                <ObjectiveList
+                  documentId={selectedDocument.id}
+                  onSelectObjective={handleSelectObjective}
+                />
+              </div>
             </div>
+          </section>
+        )}
+
+        {/* Objective Detail Panel */}
+        {selectedDocument && selectedObjective && (
+          <section className="detail-section objective-detail-section">
+            <ObjectiveDetail
+              objectiveId={selectedObjective.id}
+              onClose={handleCloseObjective}
+              onSave={handleObjectiveSave}
+            />
           </section>
         )}
 
