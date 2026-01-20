@@ -137,7 +137,7 @@ Plans:
 - [x] Plan 4.2-01: Backend Schema for Per-Agent Model Config (completed 2026-01-20)
 - [x] Plan 4.2-02: Agent DID and API Endpoints (completed 2026-01-20)
 - [x] Plan 4.2-03: Frontend Per-Agent Config UI (completed 2026-01-20)
-- [ ] Plan 4.2-04: Agent Builder, MCP Tools & Team Composition
+- [x] Plan 4.2-04: Agent Builder, MCP Tools & Team Composition (completed 2026-01-20)
 - [ ] Plan 4.2-05: Secure Message Bus with ABAC Enforcement
 - [ ] Plan 4.2-06: LangGraph Orchestration Layer
 

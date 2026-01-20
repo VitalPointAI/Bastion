@@ -11,16 +11,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4.2 of 12 (AI Agent Teams)
-Plan: 3 of 6 in current phase
+Plan: 4 of 6 in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 4.2-03-PLAN.md
+Last activity: 2026-01-20 — Completed 4.2-04-PLAN.md
 
-Progress: █████░░░░░ ~58% (Phase 4.2 in progress)
+Progress: ██████░░░░ ~67% (Phase 4.2 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 36
+- Total plans completed: 37
 - Average duration: 14 min
 - Total execution time: 8 hours
 
@@ -33,11 +33,11 @@ Progress: █████░░░░░ ~58% (Phase 4.2 in progress)
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 8 | 75 min | 9 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
-| 4.2 (AI Agent Teams) | 3 | 11 min | 4 min |
+| 4.2 (AI Agent Teams) | 4 | 36 min | 9 min |
 
 **Recent Trend:**
-- Last 5 plans: 7 min, 7 min, 2 min, 5 min, 4 min
-- Trend: Frontend per-agent config UI
+- Last 5 plans: 7 min, 2 min, 5 min, 4 min, 25 min
+- Trend: Agent builder with character, tools, teams
 
 ## Accumulated Context
 
@@ -323,9 +323,17 @@ None.
 - Separate tabs in AgentManagementPanel: Create Agent form and JSON file upload
 - JSON upload with drag-drop, validation preview before submission
 
+**Phase 4.2 Plan 4 (Agent Builder, MCP Tools & Team Composition):**
+- Eliza-compatible character definitions (bio, lore, knowledge, style, examples)
+- MCP Tool Registry with JSON Schema input/output and DID generation
+- Agent Team Registry with workflow types (sequential, parallel, consensus, hierarchical)
+- Team roles: coordinator, specialist, validator, executor with escalation policies
+- DID formats: did:near:tool-{toolId}, did:near:team-{teamId}
+- System prompt generation from character traits via character-builder.ts
+
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 4.2-03-PLAN.md
+Stopped at: Completed 4.2-04-PLAN.md
 Resume file: None
-Next action: Execute 4.2-04-PLAN.md
+Next action: Execute 4.2-05-PLAN.md
