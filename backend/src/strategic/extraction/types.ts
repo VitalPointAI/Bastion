@@ -38,6 +38,31 @@ export interface ExtractionAuditEntry {
 }
 
 /**
+ * Progress update during extraction
+ */
+export interface ExtractionProgress {
+  /** Current phase: 'chunking' | 'extracting' | 'consolidating' | 'complete' */
+  phase: 'chunking' | 'extracting' | 'consolidating' | 'complete';
+  /** Current chunk being processed (1-indexed for display) */
+  currentChunk: number;
+  /** Total number of chunks */
+  totalChunks: number;
+  /** Percentage complete (0-100) */
+  percentComplete: number;
+  /** Objectives found so far */
+  objectivesFound: number;
+  /** Preview of latest extracted objective (truncated) */
+  latestObjectivePreview?: string;
+  /** Current chunk summary */
+  chunkSummary?: string;
+}
+
+/**
+ * Progress callback function type
+ */
+export type ExtractionProgressCallback = (progress: ExtractionProgress) => void;
+
+/**
  * Configuration options for extraction
  */
 export interface ExtractionConfig {
@@ -47,6 +72,8 @@ export interface ExtractionConfig {
   maxRetries?: number;
   /** Maximum characters per chunk (default: 8000) */
   chunkSize?: number;
+  /** Optional progress callback for streaming updates */
+  onProgress?: ExtractionProgressCallback;
 }
 
 /**

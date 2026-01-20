@@ -416,6 +416,118 @@
 }
 
 /* ============================================================================
+   Extraction Progress
+   ============================================================================ */
+
+.extraction-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-phase {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-blue, #4a90d9);
+}
+
+.progress-percent {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-bar-container {
+  height: 6px;
+  background: var(--bg-elevated, #222230);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle, #2a2a38);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue, #4a90d9), #60a5fa);
+  border-radius: 3px;
+  transition: width 0.3s ease-out;
+  position: relative;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  animation: progressShine 1.5s ease-in-out infinite;
+}
+
+@keyframes progressShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted, #666678);
+}
+
+.progress-chunks {
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-found {
+  color: var(--accent-green, #22c55e);
+  font-weight: 500;
+}
+
+.progress-preview {
+  background: var(--bg-elevated, #222230);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.preview-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim, #444456);
+  margin-bottom: 0.35rem;
+}
+
+.preview-text {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #a0a0b0);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============================================================================
    Responsive
    ============================================================================ */
 

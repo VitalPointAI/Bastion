@@ -20,7 +20,7 @@ import type {
 import { ObjectiveStore, objectiveStore } from '../strategic/objectives/index.js';
 import type { ObjectiveInput, ObjectiveUpdate } from '../strategic/objectives/index.js';
 import { ExtractionService } from '../strategic/extraction/index.js';
-import type { ExtractedObjective } from '../strategic/extraction/index.js';
+import type { ExtractedObjective, ExtractionProgress } from '../strategic/extraction/index.js';
 import { WorkflowEngine, workflowEngine } from '../strategic/workflows/index.js';
 import type { ApprovalEvent } from '../strategic/workflows/index.js';
 import {
@@ -556,6 +556,132 @@ router.post('/documents/:documentId/extract', async (req, res) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Objective extraction failed:', message);
     res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/documents/:documentId/extract/stream - Extract with SSE progress streaming
+ *
+ * Uses Server-Sent Events to stream extraction progress to the client.
+ * Returns progress updates as each chunk is processed, then final results.
+ */
+router.get('/documents/:documentId/extract/stream', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const documentId = req.params.documentId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    // Verify document exists and user owns it
+    const document = await store.get(documentId);
+    if (!document) {
+      res.status(404).json({ error: 'Document not found' });
+      return;
+    }
+    if (document.createdBy !== userDID) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+
+    // Get document text
+    const text = await store.getText(documentId);
+    if (!text) {
+      res.status(400).json({ error: 'Document has no text content' });
+      return;
+    }
+
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+    res.flushHeaders();
+
+    // Helper to send SSE events
+    const sendEvent = (event: string, data: unknown) => {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    console.log(`Extracting objectives (streaming) from document ${documentId}...`);
+
+    // Get admin-configured LLM provider
+    const llmConfig = await configService.getLLMConfig();
+
+    // Map admin config to provider config format
+    const providerType = llmConfig.provider === 'local' ? 'ollama' : llmConfig.provider;
+    const providerConfig: ProviderConfig = {
+      type: providerType as ProviderConfig['type'],
+      model: llmConfig.models.extraction,
+      apiKey: llmConfig.apiKey || undefined,
+      baseUrl: llmConfig.baseUrl,
+    };
+
+    // Extract objectives with progress callback
+    const extractor = new ExtractionService({ provider: providerConfig });
+
+    const result = await extractor.extractFromDocument(text, (progress: ExtractionProgress) => {
+      sendEvent('progress', progress);
+    });
+
+    // Convert extracted objectives to ObjectiveInput format and save
+    const inputs: ObjectiveInput[] = result.objectives.map((obj: ExtractedObjective) => ({
+      documentId,
+      sourceReference: obj.sourceReference,
+      description: obj.description,
+      endsWaysMeans: {
+        ends: obj.ends,
+        ways: obj.ways,
+        means: obj.means,
+      },
+      primaryInstrument: obj.dimeCategory as DIMEInstrument,
+      supportingInstruments: (obj.supportingDIME || []) as DIMEInstrument[],
+      constraints: obj.constraints,
+      assumptions: obj.assumptions,
+      priority: obj.priority,
+      extractedBy: 'AI' as const,
+      extractionConfidence: result.extractionConfidence,
+      createdBy: userDID,
+    }));
+
+    const savedIds = await objectives.saveObjectives(inputs);
+
+    console.log(`✓ Extracted ${savedIds.length} objectives (streaming) from document ${documentId}`);
+
+    // Send final result
+    sendEvent('complete', {
+      objectiveCount: savedIds.length,
+      documentSummary: result.documentSummary,
+      extractionConfidence: result.extractionConfidence,
+      chunkCount: result.chunkCount,
+      objectives: savedIds.map((id, i) => ({
+        id,
+        description: result.objectives[i].description.substring(0, 100) + '...',
+        dimeCategory: result.objectives[i].dimeCategory,
+        priority: result.objectives[i].priority,
+      })),
+    });
+
+    // Close the stream
+    res.end();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Streaming extraction failed:', message);
+
+    // Try to send error event if headers not sent
+    if (!res.headersSent) {
+      res.status(500).json({ error: message });
+    } else {
+      // Send error as SSE event
+      res.write(`event: error\n`);
+      res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+      res.end();
+    }
   }
 });
 

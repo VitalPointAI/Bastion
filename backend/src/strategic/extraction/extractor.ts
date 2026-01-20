@@ -16,6 +16,8 @@ import type {
   ExtractionConfig,
   ExtractionResult,
   ExtractedObjective,
+  ExtractionProgressCallback,
+  ExtractionProgress,
 } from './types.js';
 import { DocumentParser } from '../ingestion/document-parser.js';
 import { createProvider, getDefaultConfig } from './providers/index.js';
@@ -346,16 +348,41 @@ ${chunkText}`,
   /**
    * Extract strategic objectives from a full document
    * @param documentText - Full text content of the document
+   * @param onProgress - Optional callback for progress updates
    * @returns Complete extraction result with audit log
    */
-  async extractFromDocument(documentText: string): Promise<ExtractionResult> {
+  async extractFromDocument(
+    documentText: string,
+    onProgress?: ExtractionProgressCallback
+  ): Promise<ExtractionResult> {
     const auditLog: ExtractionAuditEntry[] = [];
     const chunkResults: ChunkExtractionResult[] = [];
+    let totalObjectivesFound = 0;
 
     // Chunk the document
     const chunks = this.documentParser.chunkDocument(documentText, this.chunkSize);
 
+    // Report chunking phase
+    if (onProgress) {
+      onProgress({
+        phase: 'chunking',
+        currentChunk: 0,
+        totalChunks: chunks.length,
+        percentComplete: 0,
+        objectivesFound: 0,
+      });
+    }
+
     if (chunks.length === 0) {
+      if (onProgress) {
+        onProgress({
+          phase: 'complete',
+          currentChunk: 0,
+          totalChunks: 0,
+          percentComplete: 100,
+          objectivesFound: 0,
+        });
+      }
       return {
         objectives: [],
         documentSummary: 'Empty or unprocessable document.',
@@ -369,9 +396,23 @@ ${chunkText}`,
     // Process chunks sequentially (to respect rate limits)
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
+
+      // Report starting extraction for this chunk
+      if (onProgress) {
+        onProgress({
+          phase: 'extracting',
+          currentChunk: i + 1,
+          totalChunks: chunks.length,
+          percentComplete: Math.round((i / chunks.length) * 90), // 0-90% for extraction
+          objectivesFound: totalObjectivesFound,
+        });
+      }
+
       const { result, tokensUsed } = await this.extractFromChunk(chunk, i);
 
       chunkResults.push(result);
+      totalObjectivesFound += result.objectives.length;
+
       auditLog.push({
         chunkIndex: i,
         timestamp: new Date(),
@@ -380,14 +421,52 @@ ${chunkText}`,
         objectivesFound: result.objectives.length,
       });
 
+      // Report chunk completion with preview
+      if (onProgress) {
+        const latestObjective = result.objectives[result.objectives.length - 1];
+        onProgress({
+          phase: 'extracting',
+          currentChunk: i + 1,
+          totalChunks: chunks.length,
+          percentComplete: Math.round(((i + 1) / chunks.length) * 90),
+          objectivesFound: totalObjectivesFound,
+          latestObjectivePreview: latestObjective
+            ? latestObjective.description.substring(0, 150) + (latestObjective.description.length > 150 ? '...' : '')
+            : undefined,
+          chunkSummary: result.chunkSummary,
+        });
+      }
+
       // Small delay between chunks to be respectful of rate limits
       if (i < chunks.length - 1) {
         await this.delay(500);
       }
     }
 
+    // Report consolidation phase
+    if (onProgress) {
+      onProgress({
+        phase: 'consolidating',
+        currentChunk: chunks.length,
+        totalChunks: chunks.length,
+        percentComplete: 95,
+        objectivesFound: totalObjectivesFound,
+      });
+    }
+
     // Consolidate results
     const consolidated = this.consolidateChunks(chunkResults);
+
+    // Report completion
+    if (onProgress) {
+      onProgress({
+        phase: 'complete',
+        currentChunk: chunks.length,
+        totalChunks: chunks.length,
+        percentComplete: 100,
+        objectivesFound: consolidated.objectives.length, // Use deduplicated count
+      });
+    }
 
     return {
       objectives: consolidated.objectives,

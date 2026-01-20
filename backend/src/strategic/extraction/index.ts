@@ -73,4 +73,6 @@ export type {
   ExtractionAuditEntry,
   ExtractionConfig,
   ExtractionResult,
+  ExtractionProgress,
+  ExtractionProgressCallback,
 } from './types.js';

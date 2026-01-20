@@ -3,9 +3,10 @@
  *
  * Displays a grid of uploaded strategic documents.
  * Shows document metadata, classification, and extraction status.
+ * Uses SSE streaming for real-time extraction progress.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { StrategicDocument } from '../../lib/types/strategic.js';
 import {
   strategicService,
@@ -13,6 +14,19 @@ import {
   getClassificationColor,
 } from '../../lib/strategic-service.js';
 import './DocumentList.css';
+
+/**
+ * Extraction progress state from SSE stream
+ */
+interface ExtractionProgress {
+  phase: 'chunking' | 'extracting' | 'consolidating' | 'complete';
+  currentChunk: number;
+  totalChunks: number;
+  percentComplete: number;
+  objectivesFound: number;
+  latestObjectivePreview?: string;
+  chunkSummary?: string;
+}
 
 interface DocumentListProps {
   onSelectDocument?: (doc: StrategicDocument) => void;
@@ -29,8 +43,9 @@ export function DocumentList({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [extracting, setExtracting] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ExtractionProgress | null>(null);
 
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -41,26 +56,116 @@ export function DocumentList({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadDocuments();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, loadDocuments]);
 
+  /**
+   * Handle extraction with SSE streaming for progress updates
+   */
   const handleExtract = async (doc: StrategicDocument, e: React.MouseEvent) => {
     e.stopPropagation();
     if (extracting) return;
 
     setExtracting(doc.id);
+    setProgress(null);
+    setError(null);
+
     try {
-      await strategicService.extractObjectives(doc.id);
-      // Refresh to get updated objective count
-      await loadDocuments();
-      onExtractObjectives?.(doc);
+      // Use EventSource for SSE streaming
+      const userDID = localStorage.getItem('userDID') || '';
+      const url = `/api/strategic/documents/${doc.id}/extract/stream`;
+
+      const eventSource = new EventSource(url, {
+        // Note: EventSource doesn't support custom headers
+        // The backend will get auth from cookies/session
+      });
+
+      // For auth, we need to make a fetch request with credentials instead
+      // EventSource doesn't support custom headers, so we'll use fetch with ReadableStream
+      eventSource.close(); // Close the basic EventSource
+
+      // Use fetch with streaming response
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/event-stream',
+          'X-DID': userDID,
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Extraction failed');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE events from buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        let currentEvent = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7);
+          } else if (line.startsWith('data: ') && currentEvent) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (currentEvent === 'progress') {
+                setProgress(data as ExtractionProgress);
+              } else if (currentEvent === 'complete') {
+                setProgress(null);
+                // Refresh to get updated objective count
+                await loadDocuments();
+                onExtractObjectives?.(doc);
+              } else if (currentEvent === 'error') {
+                throw new Error(data.error || 'Extraction failed');
+              }
+            } catch (parseErr) {
+              console.error('Failed to parse SSE data:', parseErr);
+            }
+            currentEvent = '';
+          }
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Extraction failed');
+      setProgress(null);
     } finally {
       setExtracting(null);
+    }
+  };
+
+  /**
+   * Get human-readable phase description
+   */
+  const getPhaseDescription = (phase: ExtractionProgress['phase']): string => {
+    switch (phase) {
+      case 'chunking':
+        return 'Analyzing document structure...';
+      case 'extracting':
+        return 'Extracting objectives with AI...';
+      case 'consolidating':
+        return 'Consolidating results...';
+      case 'complete':
+        return 'Complete!';
+      default:
+        return 'Processing...';
     }
   };
 
@@ -197,6 +302,35 @@ export function DocumentList({
                   <span className="count-value">{doc.objectiveCount}</span>
                   <span className="count-label">Objectives</span>
                 </div>
+              ) : extracting === doc.id && progress ? (
+                <div className="extraction-progress">
+                  <div className="progress-header">
+                    <span className="progress-phase">{getPhaseDescription(progress.phase)}</span>
+                    <span className="progress-percent">{progress.percentComplete}%</span>
+                  </div>
+                  <div className="progress-bar-container">
+                    <div
+                      className="progress-bar-fill"
+                      style={{ width: `${progress.percentComplete}%` }}
+                    />
+                  </div>
+                  <div className="progress-details">
+                    {progress.totalChunks > 0 && (
+                      <span className="progress-chunks">
+                        Chunk {progress.currentChunk} of {progress.totalChunks}
+                      </span>
+                    )}
+                    <span className="progress-found">
+                      {progress.objectivesFound} objective{progress.objectivesFound !== 1 ? 's' : ''} found
+                    </span>
+                  </div>
+                  {progress.latestObjectivePreview && (
+                    <div className="progress-preview">
+                      <span className="preview-label">Latest:</span>
+                      <span className="preview-text">{progress.latestObjectivePreview}</span>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <button
                   className="extract-button"
@@ -206,7 +340,7 @@ export function DocumentList({
                   {extracting === doc.id ? (
                     <>
                       <span className="extract-spinner" />
-                      Extracting...
+                      Starting...
                     </>
                   ) : (
                     <>
