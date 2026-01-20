@@ -127,7 +127,7 @@ Plans:
 
 Plans:
 - [x] Plan 4.2-01: Backend Schema for Per-Agent Model Config (completed 2026-01-20)
-- [ ] Plan 4.2-02: Agent DID and API Endpoints
+- [x] Plan 4.2-02: Agent DID and API Endpoints (completed 2026-01-20)
 - [ ] Plan 4.2-03: Frontend Per-Agent Config UI
 
 ### Phase 5: Operational Planning Module

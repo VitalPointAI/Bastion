@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4.2 of 12 (AI Agent Teams)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 4.2-01-PLAN.md
+Last activity: 2026-01-20 — Completed 4.2-02-PLAN.md
 
-Progress: █████░░░░░ ~56% (Phase 4.2 in progress)
+Progress: █████░░░░░ ~58% (Phase 4.2 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 34
+- Total plans completed: 35
 - Average duration: 14 min
-- Total execution time: 7.8 hours
+- Total execution time: 7.9 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: █████░░░░░ ~56% (Phase 4.2 in progress)
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 8 | 75 min | 9 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
-| 4.2 (AI Agent Teams) | 1 | 2 min | 2 min |
+| 4.2 (AI Agent Teams) | 2 | 7 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 5 min, 9 min, 7 min, 7 min, 2 min
-- Trend: AI Agent Teams schema started
+- Last 5 plans: 9 min, 7 min, 7 min, 2 min, 5 min
+- Trend: Agent DID and API endpoints
 
 ## Accumulated Context
 
@@ -311,9 +311,15 @@ None.
 - AgentModelConfig includes useGlobalDefault flag for fallback behavior
 - DID fields (agentDID, agentBlindedKey, agentPublicKey) added to AgentManifest
 
+**Phase 4.2 Plan 2 (Agent DID and API Endpoints):**
+- Agent DID format: did:near:agent-{agentId}
+- Deterministic keys via HKDF with 64-byte derivation (32 blinded + 32 public)
+- AgentRegistry uses ensureInitialized() for async DID generation
+- Admin CRUD endpoints at /api/admin/agents for agent management
+
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 4.2-01-PLAN.md
+Stopped at: Completed 4.2-02-PLAN.md
 Resume file: None
-Next action: Execute 4.2-02-PLAN.md
+Next action: Execute 4.2-03-PLAN.md
