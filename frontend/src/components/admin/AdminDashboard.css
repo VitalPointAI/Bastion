@@ -282,7 +282,7 @@
   display: none;
 }
 
-.admin-tab-panel[aria-hidden="false"] {
+.admin-tab-panel--selected {
   display: block;
 }
 

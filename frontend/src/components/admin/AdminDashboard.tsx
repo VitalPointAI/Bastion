@@ -142,23 +142,23 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           </Tab>
         </TabList>
 
-        <TabPanel className="admin-tab-panel">
+        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
           <LLMConfigPanel />
         </TabPanel>
 
-        <TabPanel className="admin-tab-panel">
+        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
           <AgentConfigPanel />
         </TabPanel>
 
-        <TabPanel className="admin-tab-panel">
+        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
           <WorkflowConfigPanel />
         </TabPanel>
 
-        <TabPanel className="admin-tab-panel">
+        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
           <OSINTSourcePanel />
         </TabPanel>
 
-        <TabPanel className="admin-tab-panel">
+        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
           <AuditLogPanel />
         </TabPanel>
       </Tabs>

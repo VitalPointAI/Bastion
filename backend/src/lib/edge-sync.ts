@@ -1,4 +1,4 @@
-import { pool } from './database.js';
+import { getPool } from './database.js';
 
 interface Operation {
   operation_type: string;
@@ -12,7 +12,7 @@ export async function processSyncRequest(
   deviceId: string,
   operations: Operation[]
 ): Promise<{ success: boolean; synced_count: number }> {
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     await client.query('BEGIN');
 
@@ -73,7 +73,7 @@ export async function processSyncRequest(
  */
 export async function getSyncDelta(deviceId: string, since: string) {
   // Query for mission updates since last sync
-  const result = await pool.query(`
+  const result = await getPool().query(`
     SELECT * FROM mission_updates
     WHERE created_at > $1
     ORDER BY created_at ASC

@@ -10,14 +10,12 @@
  * - Metadata → encrypted client-side → NEAR blockchain (on-chain with privacy)
  */
 
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{env, log, AccountId, BorshStorageKey};
+use near_sdk::{env, log, near, AccountId, BorshStorageKey};
 
 /// Document with ALL encrypted fields (except owner and timestamp)
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
-#[serde(crate = "near_sdk::serde")]
+#[near(serializers = [borsh, json])]
+#[derive(Clone)]
 pub struct Document {
     /// Encrypted IPFS CID (references to off-chain IPFS content)
     pub encrypted_cid: String,
@@ -34,14 +32,15 @@ pub struct Document {
 }
 
 /// Storage keys for collections
-#[derive(BorshStorageKey, BorshSerialize)]
+#[derive(BorshStorageKey)]
+#[near_sdk::near]
 pub enum StorageKey {
     Documents,
     UserDocuments,
 }
 
 /// Document registry managing encrypted documents
-#[derive(BorshDeserialize, BorshSerialize)]
+#[near_sdk::near(serializers = [borsh])]
 pub struct DocumentRegistry {
     /// All documents: document_id → Document
     pub documents: UnorderedMap<String, Document>,

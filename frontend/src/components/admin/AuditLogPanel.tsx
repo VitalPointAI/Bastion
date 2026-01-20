@@ -8,7 +8,7 @@
  * - Relative timestamps
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, Fragment } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -249,8 +249,8 @@ export function AuditLogPanel() {
               </tr>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <>
-                  <tr key={row.id} className={row.getIsExpanded() ? 'row--expanded' : ''}>
+                <Fragment key={row.id}>
+                  <tr className={row.getIsExpanded() ? 'row--expanded' : ''}>
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -258,7 +258,7 @@ export function AuditLogPanel() {
                     ))}
                   </tr>
                   {row.getIsExpanded() && renderSubRow({ row })}
-                </>
+                </Fragment>
               ))
             )}
           </tbody>

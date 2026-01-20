@@ -27,6 +27,21 @@ Enhancements discovered during execution. Not critical - address in future phase
 - **Effort:** Quick (regenerate JWT in Pinata dashboard)
 - **Suggested phase:** Phase 4 or when IPFS uploads needed
 
+### ISS-003: Admin UI for LLM Provider Configuration
+
+- **Discovered:** Phase 4 Task 4-03-FIX (2026-01-19)
+- **Type:** Feature / Admin
+- **Description:** Create admin area in the application with UI to:
+  - Configure AI model providers (Anthropic, OpenAI, NEAR AI, Ollama, etc.)
+  - Securely manage API keys per provider
+  - Select default models for various agents/tasks (extraction, copilot, analysis)
+  - Test provider connections
+  - View usage/cost metrics per provider
+- **Impact:** Medium (currently requires code changes to switch providers)
+- **Effort:** Moderate (admin UI, secure key storage, provider selection per task type)
+- **Suggested phase:** Phase 11 (User Experience & Personalization) or dedicated Admin phase
+- **Related:** ISS-001 (AI Chat Assistant would also benefit from this)
+
 ## Closed Enhancements
 
 [Moved here when addressed]

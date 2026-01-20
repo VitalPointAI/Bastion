@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { getDIDService } from '../identity/did-service';
-import { EntityType } from '../identity/types';
-import { hexToBlindedKey, blindedKeyToHex, deriveDIDBlindedKey } from '../identity/blinded-keys';
+import { getDIDService } from '../identity/did-service.js';
+import { EntityType } from '../identity/types.js';
+import { hexToBlindedKey, blindedKeyToHex, deriveDIDBlindedKey } from '../identity/blinded-keys.js';
 
 const router = Router();
 const didService = getDIDService();
@@ -211,9 +211,9 @@ router.post('/register', async (req: Request, res: Response) => {
 
     // For automatic DID creation, derive a deterministic secret from account ID
     // In production, this would come from secure key management (TEE/MPC)
-    const { hkdf } = await import('@noble/hashes/hkdf');
-    const { sha256 } = await import('@noble/hashes/sha2');
-    const { utf8ToBytes } = await import('@noble/hashes/utils');
+    const { hkdf } = await import('@noble/hashes/hkdf.js');
+    const { sha256 } = await import('@noble/hashes/sha2.js');
+    const { utf8ToBytes } = await import('@noble/hashes/utils.js');
 
     // Derive user secret deterministically from account ID
     // This ensures the same account always gets the same DID encryption key

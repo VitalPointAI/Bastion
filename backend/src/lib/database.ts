@@ -1,12 +1,19 @@
 import { Pool } from 'pg';
 
-// Connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+// Lazy-initialized connection pool (created after dotenv.config runs)
+let pool: Pool;
+
+function getPool(): Pool {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+  }
+  return pool;
+}
 
 export interface DocumentInput {
   encrypted_cid: string;
@@ -23,7 +30,7 @@ export interface DocumentInput {
  * Uses transactional outbox pattern for reliability
  */
 export async function dualWriteDocument(doc: DocumentInput): Promise<string> {
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     await client.query('BEGIN');
 
@@ -78,7 +85,7 @@ export async function dualWriteDocument(doc: DocumentInput): Promise<string> {
  * Get document by ID (fast PostgreSQL query)
  */
 export async function getDocument(documentId: string) {
-  const result = await pool.query(`
+  const result = await getPool().query(`
     SELECT * FROM documents WHERE document_id = $1
   `, [documentId]);
   return result.rows[0];
@@ -92,7 +99,7 @@ export async function listUserDocuments(
   limit: number = 20,
   offset: number = 0
 ) {
-  const result = await pool.query(`
+  const result = await getPool().query(`
     SELECT * FROM documents
     WHERE owner_account_id = $1
     ORDER BY created_at DESC
@@ -101,4 +108,4 @@ export async function listUserDocuments(
   return result.rows;
 }
 
-export { pool };
+export { getPool };

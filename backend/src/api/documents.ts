@@ -52,7 +52,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const documentId = await dualWriteDocument({
       encrypted_cid: encryptedCid,
       encrypted_classification: encryptedClassification,
-      encrypted_metadata: JSON.parse(encryptedMetadata), // Store as JSONB
+      encrypted_metadata: { encrypted: encryptedMetadata }, // Store encrypted string in JSONB wrapper
       owner_account_id,
       file_size_bytes: size,
       mime_type: file.mimetype,

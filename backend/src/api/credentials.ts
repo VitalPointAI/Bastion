@@ -18,6 +18,8 @@ import {
   CREDENTIAL_TYPES,
 } from '../credentials/schemas.js';
 
+console.log('CREDENTIALS ROUTER LOADED');
+
 const router = Router();
 
 /**
