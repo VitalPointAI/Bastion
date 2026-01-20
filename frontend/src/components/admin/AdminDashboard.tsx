@@ -13,6 +13,7 @@ import { LLMConfigPanel } from './LLMConfigPanel';
 import { AgentConfigPanel } from './AgentConfigPanel';
 import { AgentManagementPanel } from './AgentManagementPanel';
 import { ToolRegistryPanel } from './ToolRegistryPanel';
+import { CharacterBuilderPanel } from './CharacterBuilderPanel';
 import { WorkflowConfigPanel } from './WorkflowConfigPanel';
 import { OSINTSourcePanel } from './OSINTSourcePanel';
 import { AuditLogPanel } from './AuditLogPanel';
@@ -140,6 +141,9 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
             Tools
           </Tab>
           <Tab className="admin-tab" selectedClassName="admin-tab--selected">
+            Characters
+          </Tab>
+          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
             Workflow
           </Tab>
           <Tab className="admin-tab" selectedClassName="admin-tab--selected">
@@ -164,6 +168,10 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
         <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
           <ToolRegistryPanel />
+        </TabPanel>
+
+        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
+          <CharacterBuilderPanel />
         </TabPanel>
 
         <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">

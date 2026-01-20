@@ -2084,3 +2084,98 @@ body:has(.admin-dashboard),
   flex-direction: column;
   gap: 1.5rem;
 }
+
+/* ============================================================================
+   Character Builder Panel
+   ============================================================================ */
+
+.character-tabs {
+  margin-top: 1rem;
+}
+
+.badge--character {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Dynamic list for character entries */
+.dynamic-list {
+  margin-bottom: 1.5rem;
+}
+
+.dynamic-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.dynamic-list-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #a0a0b0);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.dynamic-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dynamic-list-empty {
+  color: var(--text-muted, #666678);
+  font-size: 0.85rem;
+  font-style: italic;
+  padding: 1rem;
+  background: var(--bg-primary, #111118);
+  border: 1px dashed var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.dynamic-list-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.dynamic-list-item .form-textarea--sm {
+  flex: 1;
+  min-height: 60px;
+  resize: vertical;
+}
+
+.dynamic-list-remove {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+/* Character form actions */
+.character-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.character-actions .btn--primary {
+  margin-left: auto;
+}
+
+/* Small textarea variant */
+.form-textarea--sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
