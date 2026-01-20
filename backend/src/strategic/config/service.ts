@@ -16,6 +16,7 @@ import {
   type OSINTSourceConfigInput,
   type OSINTSourceConfigUpdate,
   type ConfigAuditEntry,
+  type AgentModelConfig,
   CONFIG_CATEGORIES,
   CONFIG_KEYS,
   DEFAULT_LLM_CONFIG,
@@ -25,6 +26,7 @@ import {
   AgentConfigSchema,
   WorkflowConfigSchema,
   OSINTSourceConfigSchema,
+  AgentModelConfigSchema,
 } from './types.js';
 
 // Cache entry with TTL
@@ -423,6 +425,124 @@ export class ConfigService {
     since?: Date;
   }): Promise<ConfigAuditEntry[]> {
     return configStore.getAuditHistory(options);
+  }
+
+  // ==========================================================================
+  // Per-Agent Model Configuration
+  // ==========================================================================
+
+  /**
+   * Get per-agent model configuration
+   * @param agentId - The agent's unique identifier
+   * @returns The agent's model config or null if not set
+   */
+  async getAgentModelConfig(agentId: string): Promise<AgentModelConfig | null> {
+    const key = `agents.${agentId}.model`;
+
+    // Check cache first
+    const cached = this.getCached<AgentModelConfig>(key);
+    if (cached) {
+      return cached;
+    }
+
+    // Get from store
+    const config = await configStore.getConfig<AgentModelConfig>(key);
+    if (config) {
+      try {
+        const validated = AgentModelConfigSchema.parse(config);
+        this.setCache(key, validated);
+        return validated;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Set per-agent model configuration
+   * @param agentId - The agent's unique identifier
+   * @param config - The model configuration
+   * @param updatedBy - DID of the user making the change
+   * @param reason - Reason for the change (for audit)
+   */
+  async setAgentModelConfig(
+    agentId: string,
+    config: AgentModelConfig,
+    updatedBy: string,
+    reason?: string
+  ): Promise<void> {
+    const key = `agents.${agentId}.model`;
+
+    // Validate config
+    const validated = AgentModelConfigSchema.parse(config);
+
+    // Store using configStore (includes audit trail)
+    await configStore.setConfig(
+      key,
+      CONFIG_CATEGORIES.AGENTS,
+      validated,
+      updatedBy,
+      reason || `Updated model config for agent: ${agentId}`
+    );
+
+    // Invalidate cache
+    this.invalidateCache(key);
+  }
+
+  /**
+   * List all per-agent model configurations
+   * @returns Array of all agent model configs
+   */
+  async listAgentModelConfigs(): Promise<AgentModelConfig[]> {
+    // Get all configs in the agents category
+    const allConfigs = await configStore.getAllConfigs(CONFIG_CATEGORIES.AGENTS);
+
+    // Filter for agent model configs (key pattern: agents.{agentId}.model)
+    const agentModelConfigs: AgentModelConfig[] = [];
+
+    for (const [key, value] of Object.entries(allConfigs)) {
+      if (key.match(/^agents\.[^.]+\.model$/)) {
+        try {
+          const validated = AgentModelConfigSchema.parse(value);
+          agentModelConfigs.push(validated);
+        } catch {
+          // Skip invalid entries
+          continue;
+        }
+      }
+    }
+
+    return agentModelConfigs;
+  }
+
+  /**
+   * Delete per-agent model configuration
+   * @param agentId - The agent's unique identifier
+   * @param deletedBy - DID of the user making the change
+   * @param reason - Reason for the deletion (for audit)
+   * @returns true if deleted, false if not found
+   */
+  async deleteAgentModelConfig(
+    agentId: string,
+    deletedBy: string,
+    reason?: string
+  ): Promise<boolean> {
+    const key = `agents.${agentId}.model`;
+
+    // Delete from store (includes audit trail)
+    const deleted = await configStore.deleteConfig(
+      key,
+      deletedBy,
+      reason || `Deleted model config for agent: ${agentId}`
+    );
+
+    if (deleted) {
+      // Invalidate cache
+      this.invalidateCache(key);
+    }
+
+    return deleted;
   }
 }
 
