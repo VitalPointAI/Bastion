@@ -23,6 +23,8 @@ import { getAgentRegistry } from '../agents/registry.js';
 import { AgentDefinitionSchema } from '../agents/definition-schema.js';
 import { createAgentDID } from '../agents/agent-did.js';
 import { AgentPhase, AgentCapability, AutonomyLevel, ProposalKind } from '../agents/types.js';
+import { getToolRegistry } from '../agents/tool-registry.js';
+import { MCPToolInputSchema, MCPToolUpdateSchema } from '../agents/character-schema.js';
 
 const router = Router();
 
@@ -810,6 +812,234 @@ router.get('/agents/:agentId/did', async (req: Request, res: Response) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Get agent DID failed:', message);
     res.status(500).json({ error: 'Failed to get agent DID info' });
+  }
+});
+
+// ============================================================================
+// Tool Management Endpoints
+// ============================================================================
+
+/**
+ * GET /api/admin/tools - List all tools
+ */
+router.get('/tools', async (req: Request, res: Response) => {
+  try {
+    const registry = getToolRegistry();
+    await registry.ensureInitialized();
+
+    const category = req.query.category as string | undefined;
+    const tools = registry.listTools(category as 'data' | 'action' | 'integration' | 'analysis' | undefined);
+
+    // Add assignment count to each tool
+    const toolsWithCounts = tools.map(tool => ({
+      ...tool,
+      assignedAgentsCount: registry.getAssignmentCount(tool.toolId),
+    }));
+
+    res.json({ tools: toolsWithCounts });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List tools failed:', message);
+    res.status(500).json({ error: 'Failed to list tools' });
+  }
+});
+
+/**
+ * POST /api/admin/tools - Create a new tool
+ */
+router.post('/tools', async (req: Request, res: Response) => {
+  try {
+    const parseResult = MCPToolInputSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const adminDid = (req as Request & { adminDid: string }).adminDid;
+    const registry = getToolRegistry();
+    await registry.ensureInitialized();
+
+    const tool = await registry.registerTool(parseResult.data, adminDid);
+
+    res.status(201).json({
+      toolId: tool.toolId,
+      toolDID: tool.toolDID,
+      created: true,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create tool failed:', message);
+    if (message.includes('already registered')) {
+      res.status(409).json({ error: message });
+    } else {
+      res.status(500).json({ error: 'Failed to create tool' });
+    }
+  }
+});
+
+/**
+ * GET /api/admin/tools/:toolId - Get a tool by ID
+ */
+router.get('/tools/:toolId', async (req: Request, res: Response) => {
+  try {
+    const toolId = req.params.toolId as string;
+    const registry = getToolRegistry();
+    await registry.ensureInitialized();
+
+    const tool = registry.getTool(toolId);
+    if (!tool) {
+      res.status(404).json({ error: 'Tool not found' });
+      return;
+    }
+
+    res.json({
+      ...tool,
+      assignedAgents: registry.getAgentsForTool(toolId),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get tool failed:', message);
+    res.status(500).json({ error: 'Failed to get tool' });
+  }
+});
+
+/**
+ * PUT /api/admin/tools/:toolId - Update a tool
+ */
+router.put('/tools/:toolId', async (req: Request, res: Response) => {
+  try {
+    const toolId = req.params.toolId as string;
+
+    const parseResult = MCPToolUpdateSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const registry = getToolRegistry();
+    await registry.ensureInitialized();
+
+    const tool = registry.updateTool(toolId, parseResult.data);
+    if (!tool) {
+      res.status(404).json({ error: 'Tool not found' });
+      return;
+    }
+
+    res.json({ updated: true, tool });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update tool failed:', message);
+    res.status(500).json({ error: 'Failed to update tool' });
+  }
+});
+
+/**
+ * DELETE /api/admin/tools/:toolId - Delete a tool
+ */
+router.delete('/tools/:toolId', async (req: Request, res: Response) => {
+  try {
+    const toolId = req.params.toolId as string;
+    const registry = getToolRegistry();
+    await registry.ensureInitialized();
+
+    const deleted = registry.deleteTool(toolId);
+    if (!deleted) {
+      res.status(404).json({ error: 'Tool not found' });
+      return;
+    }
+
+    res.json({ deleted: true, toolId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete tool failed:', message);
+    res.status(500).json({ error: 'Failed to delete tool' });
+  }
+});
+
+/**
+ * POST /api/admin/tools/:toolId/assign/:agentId - Assign a tool to an agent
+ */
+router.post('/tools/:toolId/assign/:agentId', async (req: Request, res: Response) => {
+  try {
+    const { toolId, agentId } = req.params;
+    const adminDid = (req as Request & { adminDid: string }).adminDid;
+
+    const toolRegistry = getToolRegistry();
+    await toolRegistry.ensureInitialized();
+
+    // Verify agent exists
+    const agentRegistry = getAgentRegistry();
+    await agentRegistry.ensureInitialized();
+    const agent = agentRegistry.getAgent(agentId);
+    if (!agent) {
+      res.status(404).json({ error: 'Agent not found' });
+      return;
+    }
+
+    const assignment = toolRegistry.assignToolToAgent(toolId, agentId, adminDid);
+    res.status(201).json({ assigned: true, assignment });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Assign tool failed:', message);
+    if (message.includes('not found')) {
+      res.status(404).json({ error: message });
+    } else if (message.includes('already assigned')) {
+      res.status(409).json({ error: message });
+    } else {
+      res.status(500).json({ error: 'Failed to assign tool' });
+    }
+  }
+});
+
+/**
+ * DELETE /api/admin/tools/:toolId/assign/:agentId - Unassign a tool from an agent
+ */
+router.delete('/tools/:toolId/assign/:agentId', async (req: Request, res: Response) => {
+  try {
+    const { toolId, agentId } = req.params;
+
+    const registry = getToolRegistry();
+    await registry.ensureInitialized();
+
+    const unassigned = registry.unassignToolFromAgent(toolId, agentId);
+    if (!unassigned) {
+      res.status(404).json({ error: 'Assignment not found' });
+      return;
+    }
+
+    res.json({ unassigned: true, toolId, agentId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Unassign tool failed:', message);
+    res.status(500).json({ error: 'Failed to unassign tool' });
+  }
+});
+
+/**
+ * GET /api/admin/agents/:agentId/tools - Get tools assigned to an agent
+ */
+router.get('/agents/:agentId/tools', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+
+    // Verify agent exists
+    const agentRegistry = getAgentRegistry();
+    await agentRegistry.ensureInitialized();
+    const agent = agentRegistry.getAgent(agentId);
+    if (!agent) {
+      res.status(404).json({ error: 'Agent not found' });
+      return;
+    }
+
+    const toolRegistry = getToolRegistry();
+    await toolRegistry.ensureInitialized();
+
+    const tools = toolRegistry.getToolsForAgent(agentId);
+    res.json({ agentId, tools });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get agent tools failed:', message);
+    res.status(500).json({ error: 'Failed to get agent tools' });
   }
 });
 
