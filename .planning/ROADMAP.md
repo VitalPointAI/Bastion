@@ -111,7 +111,7 @@ Plans:
 **Depends on**: Phase 3
 **Research**: Complete (4-RESEARCH.md)
 **Research topics**: Document parsing libraries for TypeScript, NLP models for military strategy extraction, NEAR AI integration for sensitive document processing, DIME framework data modeling
-**Plans**: 10
+**Plans**: 11
 
 Plans:
 - [x] Plan 4-01: Document Ingestion Pipeline (completed 2026-01-17)
@@ -124,6 +124,7 @@ Plans:
 - [x] Plan 4-08: Strategic Planning AI Agents (completed 2026-01-19)
 - [x] Plan 4-09: End-to-End Strategic Flow (completed 2026-01-20)
 - [ ] Plan 4-10: Objective Detail View & MIDLIFE Categorization
+- [ ] Plan 4-11: Strategic Analysis MCP Tools & Review Agent
 
 ### Phase 4.1: Admin UI (INSERTED)
 **Goal:** Create administrative interface for system configuration and management
