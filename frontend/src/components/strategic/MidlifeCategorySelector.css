@@ -1,0 +1,253 @@
+/* ============================================================================
+   BASTION Command Center - MIDLIFE Category Selector
+   Premium Military Command Interface
+   ============================================================================ */
+
+.midlife-selector {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+}
+
+.midlife-selector.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ============================================================================
+   Selector Button
+   ============================================================================ */
+
+.selector-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--bg-elevated, #222230);
+  border: 1px solid var(--border-medium, #3a3a48);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+  text-align: left;
+}
+
+.selector-button:hover:not(:disabled) {
+  border-color: var(--accent-blue, #4a90d9);
+  background: var(--bg-hover, #2a2a38);
+}
+
+.selector-button:focus {
+  outline: none;
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
+}
+
+.midlife-selector.open .selector-button {
+  border-color: var(--accent-blue, #4a90d9);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.selected-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.selected-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.selected-label {
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.placeholder {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--text-muted, #666678);
+}
+
+.dropdown-arrow {
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted, #666678);
+  transition: transform var(--transition-fast, 0.15s ease);
+}
+
+.midlife-selector.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* ============================================================================
+   Human Override Notice
+   ============================================================================ */
+
+.human-override-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(202, 138, 4, 0.1);
+  border: 1px solid rgba(202, 138, 4, 0.3);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #ca8a04;
+}
+
+.human-override-notice svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+   Dropdown
+   ============================================================================ */
+
+.selector-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--bg-elevated, #222230);
+  border: 1px solid var(--accent-blue, #4a90d9);
+  border-top: none;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.dropdown-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+  text-align: left;
+}
+
+.dropdown-option:hover {
+  background: var(--bg-hover, #2a2a38);
+}
+
+.dropdown-option.selected {
+  border-left-width: 3px;
+}
+
+.option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.option-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.option-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.option-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.option-description {
+  font-size: 0.8rem;
+  color: var(--text-muted, #666678);
+  line-height: 1.4;
+}
+
+.check-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ============================================================================
+   Tooltip
+   ============================================================================ */
+
+.category-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-elevated, #222230);
+  border: 1px solid var(--border-medium, #3a3a48);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #a0a0b0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 101;
+}
+
+/* ============================================================================
+   Scrollbar
+   ============================================================================ */
+
+.selector-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.selector-dropdown::-webkit-scrollbar-track {
+  background: var(--bg-elevated, #222230);
+}
+
+.selector-dropdown::-webkit-scrollbar-thumb {
+  background: var(--border-medium, #3a3a48);
+  border-radius: 3px;
+}
+
+.selector-dropdown::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim, #444456);
+}
+
+/* ============================================================================
+   Responsive
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .midlife-selector {
+    max-width: 100%;
+  }
+
+  .selector-dropdown {
+    max-height: 250px;
+  }
+}
