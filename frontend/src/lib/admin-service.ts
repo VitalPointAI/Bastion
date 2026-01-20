@@ -18,6 +18,9 @@ import type {
   OSINTSourcesResponse,
   AuditLogResponse,
   CacheInvalidationResponse,
+  AgentWithConfig,
+  AgentDefinition,
+  AgentModelConfig,
 } from '../types/admin';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -124,112 +127,29 @@ class AdminService {
   }
 
   /**
-   * Fetch available models from a provider.
-   * Uses OpenAI-compatible /v1/models endpoint.
+   * Fetch available models from a provider via backend proxy.
+   * Uses backend proxy to avoid CORS issues with external APIs.
    */
   async fetchProviderModels(
     provider: string,
     apiKey?: string,
     baseUrl?: string
   ): Promise<{ id: string; name: string }[]> {
-    const providerUrls: Record<string, string> = {
-      'anthropic': 'https://api.anthropic.com/v1',
-      'openai': 'https://api.openai.com/v1',
-      'near-ai': 'https://api.near.ai/v1',
-      'azure-openai': baseUrl || '',
-      'local': baseUrl || 'http://localhost:11434/v1',
-    };
-
-    const url = baseUrl || providerUrls[provider];
-    if (!url) {
-      return this.getDefaultModelsForProvider(provider);
-    }
-
     try {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
+      // Build query params for backend proxy
+      const params = new URLSearchParams({ provider });
+      if (apiKey) params.append('apiKey', apiKey);
+      if (baseUrl) params.append('baseUrl', baseUrl);
 
-      // Provider-specific auth headers
-      if (apiKey) {
-        if (provider === 'anthropic') {
-          headers['x-api-key'] = apiKey;
-          headers['anthropic-version'] = '2023-06-01';
-        } else {
-          headers['Authorization'] = `Bearer ${apiKey}`;
-        }
-      }
+      const response = await this.fetch<{ models: { id: string; name: string }[] }>(
+        `/api/admin/llm-models?${params.toString()}`
+      );
 
-      const response = await fetch(`${url}/models`, { headers });
-
-      if (!response.ok) {
-        console.warn(`Failed to fetch models from ${provider}: ${response.status}`);
-        return this.getDefaultModelsForProvider(provider);
-      }
-
-      const data = await response.json();
-
-      // OpenAI-compatible response format
-      if (data.data && Array.isArray(data.data)) {
-        return data.data.map((model: { id: string }) => ({
-          id: model.id,
-          name: model.id,
-        }));
-      }
-
-      // Anthropic response format
-      if (Array.isArray(data)) {
-        return data.map((model: { id?: string; name?: string }) => ({
-          id: model.id || model.name || '',
-          name: model.name || model.id || '',
-        }));
-      }
-
-      return this.getDefaultModelsForProvider(provider);
+      return response.models || [];
     } catch (error) {
       console.warn(`Error fetching models from ${provider}:`, error);
-      return this.getDefaultModelsForProvider(provider);
+      return [];
     }
-  }
-
-  /**
-   * Get default models for a provider when API fetch fails.
-   */
-  private getDefaultModelsForProvider(provider: string): { id: string; name: string }[] {
-    const defaults: Record<string, { id: string; name: string }[]> = {
-      'anthropic': [
-        { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4' },
-        { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
-        { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' },
-        { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
-      ],
-      'openai': [
-        { id: 'gpt-4o', name: 'GPT-4o' },
-        { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
-        { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
-        { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
-      ],
-      'near-ai': [
-        { id: 'deepseek-ai/DeepSeek-V3.1', name: 'DeepSeek V3.1' },
-        { id: 'openai/gpt-oss-120b', name: 'GPT OSS 120B' },
-        { id: 'Qwen/Qwen3-30B-A3B-Instruct-2507', name: 'Qwen3 30B Instruct' },
-        { id: 'zai-org/GLM-4.7', name: 'GLM 4.7' },
-        { id: 'zai-org/GLM-4.6', name: 'GLM 4.6' },
-      ],
-      'azure-openai': [
-        { id: 'gpt-4o', name: 'GPT-4o' },
-        { id: 'gpt-4', name: 'GPT-4' },
-        { id: 'gpt-35-turbo', name: 'GPT-3.5 Turbo' },
-      ],
-      'local': [
-        { id: 'llama3.2', name: 'Llama 3.2' },
-        { id: 'llama3.1', name: 'Llama 3.1' },
-        { id: 'mistral', name: 'Mistral' },
-        { id: 'codellama', name: 'Code Llama' },
-      ],
-    };
-
-    return defaults[provider] || [];
   }
 
   // ============================================================================
@@ -256,6 +176,91 @@ class AdminService {
     return this.fetch<AgentConfig>('/api/admin/config/agents', {
       method: 'PUT',
       body: JSON.stringify(body),
+    });
+  }
+
+  // ============================================================================
+  // Agent Management (Per-Agent Model Configuration)
+  // ============================================================================
+
+  /**
+   * List all agents with their configurations.
+   */
+  async listAgents(): Promise<AgentWithConfig[]> {
+    const response = await this.fetch<{ agents: AgentWithConfig[] }>('/api/admin/agents');
+    return response.agents;
+  }
+
+  /**
+   * Create a new agent.
+   * @param definition - Agent definition
+   * @returns Created agent ID and DID
+   */
+  async createAgent(definition: AgentDefinition): Promise<{ agentId: string; agentDID: string }> {
+    return this.fetch<{ agentId: string; agentDID: string }>('/api/admin/agents', {
+      method: 'POST',
+      body: JSON.stringify(definition),
+    });
+  }
+
+  /**
+   * Update an existing agent.
+   * @param agentId - Agent ID to update
+   * @param updates - Partial updates to apply
+   */
+  async updateAgent(agentId: string, updates: Partial<AgentDefinition>): Promise<void> {
+    await this.fetch<void>(`/api/admin/agents/${encodeURIComponent(agentId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Delete an agent.
+   * @param agentId - Agent ID to delete
+   */
+  async deleteAgent(agentId: string): Promise<void> {
+    await this.fetch<void>(`/api/admin/agents/${encodeURIComponent(agentId)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Get per-agent model configuration.
+   * @param agentId - Agent ID
+   * @returns Agent model config or null if using global default
+   */
+  async getAgentModelConfig(agentId: string): Promise<AgentModelConfig | null> {
+    try {
+      return await this.fetch<AgentModelConfig>(`/api/admin/config/agents/${encodeURIComponent(agentId)}/model`);
+    } catch (error) {
+      // 404 means no custom config - using global default
+      if (error instanceof Error && error.message.includes('404')) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Set per-agent model configuration.
+   * @param agentId - Agent ID
+   * @param config - Model configuration to set
+   */
+  async setAgentModelConfig(agentId: string, config: AgentModelConfig): Promise<void> {
+    await this.fetch<void>(`/api/admin/config/agents/${encodeURIComponent(agentId)}/model`, {
+      method: 'PUT',
+      body: JSON.stringify({ config, reason: 'Updated via Admin UI' }),
+    });
+  }
+
+  /**
+   * Clear per-agent model configuration (revert to global default).
+   * @param agentId - Agent ID
+   */
+  async clearAgentModelConfig(agentId: string): Promise<void> {
+    await this.fetch<void>(`/api/admin/config/agents/${encodeURIComponent(agentId)}/model`, {
+      method: 'DELETE',
     });
   }
 

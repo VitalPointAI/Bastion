@@ -256,3 +256,68 @@ export interface CacheInvalidationResponse {
   success: boolean;
   clearedKeys: string[];
 }
+
+// ============================================================================
+// Agent Management Types (Per-Agent Model Configuration)
+// ============================================================================
+
+/**
+ * LLM provider type for type safety.
+ */
+export type LLMProviderType = 'anthropic' | 'openai' | 'azure-openai' | 'near-ai' | 'local';
+
+/**
+ * Per-agent model configuration.
+ */
+export interface AgentModelConfig {
+  agentId: string;
+  provider: LLMProviderType;
+  model: string;
+  temperature?: number;
+  maxTokens?: number;
+  useGlobalDefault?: boolean;
+}
+
+/**
+ * Agent with full configuration and DID.
+ */
+export interface AgentWithConfig {
+  agentId: string;
+  name: string;
+  description: string;
+  phase: 'Support' | 'Represent' | 'Organize';
+  capabilities: string[];
+  maxAutonomy: string;
+  active: boolean;
+  agentDID?: string;
+  agentPublicKey?: string;
+  modelConfig?: {
+    provider: string;
+    model: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
+  customModelConfig?: AgentModelConfig | null;
+  createdAt: string;
+  createdBy: string;
+}
+
+/**
+ * Agent definition for creating new agents.
+ */
+export interface AgentDefinition {
+  id?: string;
+  name: string;
+  description: string;
+  type: 'governance' | 'strategic' | 'custom';
+  phase?: 'Support' | 'Represent' | 'Organize';
+  capabilities: string[];
+  modelConfig?: {
+    provider: LLMProviderType;
+    model: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
+  maxAutonomy?: 'NotAutonomous' | 'SemiAutonomous' | 'Autonomous';
+  isEnabled?: boolean;
+}
