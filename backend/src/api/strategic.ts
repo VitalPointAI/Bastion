@@ -584,6 +584,8 @@ router.get('/documents/:documentId/extract/stream', async (req, res) => {
       res.status(404).json({ error: 'Document not found' });
       return;
     }
+
+    // Check ownership
     if (document.createdBy !== userDID) {
       res.status(403).json({ error: 'Access denied' });
       return;

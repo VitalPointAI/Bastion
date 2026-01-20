@@ -20,6 +20,7 @@ export function StrategicDashboard() {
   const [selectedDocument, setSelectedDocument] = useState<StrategicDocument | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [userDID, setUserDID] = useState<string | null>(null);
 
   // Set user DID on service when authenticated
   useEffect(() => {
@@ -28,8 +29,10 @@ export function StrategicDashboard() {
       const accountId = `${user.id.replace('did:privy:', '')}.testnet`;
       const did = buildDID(accountId);
       strategicService.setUserDID(did);
+      setUserDID(did);
       setIsReady(true);
     } else {
+      setUserDID(null);
       setIsReady(false);
     }
   }, [authenticated, user]);
@@ -151,6 +154,7 @@ export function StrategicDashboard() {
               onSelectDocument={handleSelectDocument}
               onExtractObjectives={handleExtractComplete}
               refreshTrigger={refreshTrigger}
+              userDID={userDID || undefined}
             />
           </section>
         )}

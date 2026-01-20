@@ -34,14 +34,18 @@ interface DocumentListProps {
   onSelectDocument?: (doc: StrategicDocument) => void;
   onExtractObjectives?: (doc: StrategicDocument) => void;
   refreshTrigger?: number;
+  userDID?: string;
 }
 
 export function DocumentList({
   onSelectDocument,
   onExtractObjectives,
   refreshTrigger,
+  userDID: propUserDID,
 }: DocumentListProps) {
-  const { userDID } = useUser();
+  // Prefer prop DID (from parent component), fall back to context
+  const contextUser = useUser();
+  const userDID = propUserDID || contextUser.userDID;
   const [documents, setDocuments] = useState<StrategicDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
