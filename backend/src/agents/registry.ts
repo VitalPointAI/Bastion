@@ -28,6 +28,7 @@ export class AgentRegistry {
   private agents: Map<string, AgentManifest> = new Map();
   private delegations: Map<string, AgentDelegation[]> = new Map();
   private actionLog: AgentAction[] = [];
+  private messengers: Map<string, unknown> = new Map(); // AgentMessenger instances
   private initialized: boolean = false;
   private initPromise: Promise<void> | null = null;
 
@@ -121,6 +122,48 @@ export class AgentRegistry {
     }
     agent.active = false;
     this.agents.set(agentId, agent);
+
+    // Cleanup messenger if exists
+    this.cleanupMessenger(agentId);
+  }
+
+  // ==========================================================================
+  // Messenger Management
+  // ==========================================================================
+
+  /**
+   * Register a messenger for an agent.
+   * Used by AgentMessenger to track instances.
+   */
+  registerMessenger(agentId: string, messenger: unknown): void {
+    this.messengers.set(agentId, messenger);
+  }
+
+  /**
+   * Get a registered messenger for an agent.
+   */
+  getMessenger(agentId: string): unknown | undefined {
+    return this.messengers.get(agentId);
+  }
+
+  /**
+   * Check if an agent has a messenger registered.
+   */
+  hasMessenger(agentId: string): boolean {
+    return this.messengers.has(agentId);
+  }
+
+  /**
+   * Cleanup messenger for an agent.
+   */
+  private cleanupMessenger(agentId: string): void {
+    const messenger = this.messengers.get(agentId);
+    if (messenger && typeof (messenger as any).cleanup === 'function') {
+      (messenger as any).cleanup().catch((err: Error) => {
+        console.error(`[AgentRegistry] Error cleaning up messenger for ${agentId}:`, err);
+      });
+    }
+    this.messengers.delete(agentId);
   }
 
   // ==========================================================================
