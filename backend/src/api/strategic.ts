@@ -119,19 +119,20 @@ function getUserDID(req: express.Request): string | null {
   // Check Authorization header (Bearer token)
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.substring(7);
+    const token = authHeader.substring(7).trim();
+    if (token) return token;
   }
 
   // Check X-DID header
   const xDid = req.headers['x-did'];
-  if (typeof xDid === 'string') {
-    return xDid;
+  if (typeof xDid === 'string' && xDid.trim()) {
+    return xDid.trim();
   }
 
   // Check query param
   const queryDid = req.query.did;
-  if (typeof queryDid === 'string') {
-    return queryDid;
+  if (typeof queryDid === 'string' && queryDid.trim()) {
+    return queryDid.trim();
   }
 
   return null;

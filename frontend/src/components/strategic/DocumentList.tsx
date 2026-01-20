@@ -75,20 +75,16 @@ export function DocumentList({
     setError(null);
 
     try {
-      // Use EventSource for SSE streaming
+      // Get user DID for authentication
       const userDID = localStorage.getItem('userDID') || '';
-      const url = `${API_BASE}/api/strategic/documents/${doc.id}/extract/stream`;
+      if (!userDID) {
+        throw new Error('Please log in to extract objectives');
+      }
 
-      const eventSource = new EventSource(url, {
-        // Note: EventSource doesn't support custom headers
-        // The backend will get auth from cookies/session
-      });
+      // Build URL with DID as query param (fallback for header issues)
+      const url = `${API_BASE}/api/strategic/documents/${doc.id}/extract/stream?did=${encodeURIComponent(userDID)}`;
 
-      // For auth, we need to make a fetch request with credentials instead
-      // EventSource doesn't support custom headers, so we'll use fetch with ReadableStream
-      eventSource.close(); // Close the basic EventSource
-
-      // Use fetch with streaming response
+      // Use fetch with streaming response for SSE
       const response = await fetch(url, {
         method: 'GET',
         headers: {
