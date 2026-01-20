@@ -32,6 +32,7 @@ import {
 import type { RiskAssessment, Likelihood, Impact } from '../strategic/assessment/index.js';
 import type { StrategicObjective } from '../strategic/schemas/strategic-objective.js';
 import type { DIMEInstrument } from '../strategic/schemas/dime.js';
+import { dimeToMidlife } from '../strategic/schemas/dime.js';
 import { IntentStore, intentStore } from '../strategic/intent/index.js';
 import { configService } from '../strategic/config/service.js';
 import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
@@ -518,24 +519,33 @@ router.post('/documents/:documentId/extract', async (req, res) => {
     const result = await extractor.extractFromDocument(text);
 
     // Convert extracted objectives to ObjectiveInput format and save
-    const inputs: ObjectiveInput[] = result.objectives.map((obj: ExtractedObjective) => ({
-      documentId,
-      sourceReference: obj.sourceReference,
-      description: obj.description,
-      endsWaysMeans: {
-        ends: obj.ends,
-        ways: obj.ways,
-        means: obj.means,
-      },
-      primaryInstrument: obj.dimeCategory as DIMEInstrument,
-      supportingInstruments: (obj.supportingDIME || []) as DIMEInstrument[],
-      constraints: obj.constraints,
-      assumptions: obj.assumptions,
-      priority: obj.priority,
-      extractedBy: 'AI' as const,
-      extractionConfidence: result.extractionConfidence,
-      createdBy: userDID,
-    }));
+    const inputs: ObjectiveInput[] = result.objectives.map((obj: ExtractedObjective) => {
+      // Get MIDLIFE category from extraction or derive from DIME
+      const midlifeCategory = obj.midlifeCategory || dimeToMidlife(obj.dimeCategory as DIMEInstrument);
+      const midlifeConfidence = obj.midlifeConfidence ?? result.extractionConfidence;
+
+      return {
+        documentId,
+        sourceReference: obj.sourceReference,
+        description: obj.description,
+        endsWaysMeans: {
+          ends: obj.ends,
+          ways: obj.ways,
+          means: obj.means,
+        },
+        primaryInstrument: obj.dimeCategory as DIMEInstrument,
+        supportingInstruments: (obj.supportingDIME || []) as DIMEInstrument[],
+        midlifeCategory,
+        midlifeCategorizedBy: 'AI' as const,
+        midlifeConfidence,
+        constraints: obj.constraints,
+        assumptions: obj.assumptions,
+        priority: obj.priority,
+        extractedBy: 'AI' as const,
+        extractionConfidence: result.extractionConfidence,
+        createdBy: userDID,
+      };
+    });
 
     const savedIds = await objectives.saveObjectives(inputs);
 
@@ -550,6 +560,8 @@ router.post('/documents/:documentId/extract', async (req, res) => {
         id,
         description: result.objectives[i].description.substring(0, 100) + '...',
         dimeCategory: result.objectives[i].dimeCategory,
+        midlifeCategory: inputs[i].midlifeCategory,
+        midlifeConfidence: inputs[i].midlifeConfidence,
         priority: result.objectives[i].priority,
       })),
     });
@@ -633,24 +645,33 @@ router.get('/documents/:documentId/extract/stream', async (req, res) => {
     });
 
     // Convert extracted objectives to ObjectiveInput format and save
-    const inputs: ObjectiveInput[] = result.objectives.map((obj: ExtractedObjective) => ({
-      documentId,
-      sourceReference: obj.sourceReference,
-      description: obj.description,
-      endsWaysMeans: {
-        ends: obj.ends,
-        ways: obj.ways,
-        means: obj.means,
-      },
-      primaryInstrument: obj.dimeCategory as DIMEInstrument,
-      supportingInstruments: (obj.supportingDIME || []) as DIMEInstrument[],
-      constraints: obj.constraints,
-      assumptions: obj.assumptions,
-      priority: obj.priority,
-      extractedBy: 'AI' as const,
-      extractionConfidence: result.extractionConfidence,
-      createdBy: userDID,
-    }));
+    const inputs: ObjectiveInput[] = result.objectives.map((obj: ExtractedObjective) => {
+      // Get MIDLIFE category from extraction or derive from DIME
+      const midlifeCategory = obj.midlifeCategory || dimeToMidlife(obj.dimeCategory as DIMEInstrument);
+      const midlifeConfidence = obj.midlifeConfidence ?? result.extractionConfidence;
+
+      return {
+        documentId,
+        sourceReference: obj.sourceReference,
+        description: obj.description,
+        endsWaysMeans: {
+          ends: obj.ends,
+          ways: obj.ways,
+          means: obj.means,
+        },
+        primaryInstrument: obj.dimeCategory as DIMEInstrument,
+        supportingInstruments: (obj.supportingDIME || []) as DIMEInstrument[],
+        midlifeCategory,
+        midlifeCategorizedBy: 'AI' as const,
+        midlifeConfidence,
+        constraints: obj.constraints,
+        assumptions: obj.assumptions,
+        priority: obj.priority,
+        extractedBy: 'AI' as const,
+        extractionConfidence: result.extractionConfidence,
+        createdBy: userDID,
+      };
+    });
 
     const savedIds = await objectives.saveObjectives(inputs);
 
@@ -666,6 +687,8 @@ router.get('/documents/:documentId/extract/stream', async (req, res) => {
         id,
         description: result.objectives[i].description.substring(0, 100) + '...',
         dimeCategory: result.objectives[i].dimeCategory,
+        midlifeCategory: inputs[i].midlifeCategory,
+        midlifeConfidence: inputs[i].midlifeConfidence,
         priority: result.objectives[i].priority,
       })),
     });
@@ -794,6 +817,9 @@ router.get('/objectives/:id', async (req, res) => {
 
 /**
  * PUT /api/strategic/objectives/:id - Update objective
+ *
+ * Supports MIDLIFE category updates with human override tracking.
+ * When midlifeCategory is updated, automatically sets midlifeCategorizedBy to 'HUMAN'.
  */
 router.put('/objectives/:id', async (req, res) => {
   try {
@@ -812,6 +838,23 @@ router.put('/objectives/:id', async (req, res) => {
     }
 
     const updates: ObjectiveUpdate = req.body;
+
+    // Validate MIDLIFE category if provided
+    if (updates.midlifeCategory !== undefined) {
+      const validCategories = ['MILITARY', 'INFORMATION', 'DIPLOMATIC', 'LEGAL', 'INTELLIGENCE', 'FINANCIAL', 'ECONOMIC'];
+      if (!validCategories.includes(updates.midlifeCategory)) {
+        return res.status(400).json({
+          error: `Invalid midlifeCategory. Must be one of: ${validCategories.join(', ')}`,
+        });
+      }
+
+      // Track human override of MIDLIFE categorization
+      if (objective.midlifeCategorizedBy === 'AI' || !objective.midlifeCategorizedBy) {
+        updates.midlifeCategorizedBy = 'HUMAN';
+        // Clear confidence when human overrides (human decisions are definitive)
+        updates.midlifeConfidence = 1.0;
+      }
+    }
 
     // Mark as human verified if being edited
     updates.humanVerified = true;
