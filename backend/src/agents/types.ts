@@ -176,3 +176,273 @@ export interface AgentAction {
 
 // Re-export AutonomyLevel and ProposalKind for convenience
 export { AutonomyLevel, ProposalKind } from '../dao/types.js';
+
+// ============================================================================
+// Character Types (Eliza-compatible)
+// ============================================================================
+
+/**
+ * Message in a conversation example.
+ */
+export interface CharacterMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Voice settings for character.
+ */
+export interface CharacterVoiceSettings {
+  model?: string;
+  voice?: string;
+  speed?: number;
+}
+
+/**
+ * Character communication style.
+ */
+export interface CharacterStyle {
+  /** Universal style traits */
+  all: string[];
+  /** Chat-specific style */
+  chat: string[];
+  /** Post-specific style */
+  post: string[];
+}
+
+/**
+ * Character settings.
+ */
+export interface CharacterSettings {
+  voice?: CharacterVoiceSettings;
+  secrets?: Record<string, string>;
+}
+
+/**
+ * Eliza-compatible character definition for AI agents.
+ */
+export interface AgentCharacter {
+  /** Character's name */
+  name: string;
+  /** Biography entries */
+  bio: string[];
+  /** Backstory and history */
+  lore: string[];
+  /** RAG-ready knowledge base */
+  knowledge: string[];
+  /** Conversation examples */
+  messageExamples: CharacterMessage[][];
+  /** Social media style examples */
+  postExamples: string[];
+  /** Topics of interest */
+  topics: string[];
+  /** Communication style */
+  style: CharacterStyle;
+  /** Personality descriptors */
+  adjectives: string[];
+  /** LLM provider override */
+  modelProvider?: string;
+  /** Character settings */
+  settings?: CharacterSettings;
+  /** Enabled plugins/tools */
+  plugins: string[];
+}
+
+// ============================================================================
+// MCP Tool Types
+// ============================================================================
+
+/**
+ * Tool category for classification.
+ */
+export type ToolCategory = 'data' | 'action' | 'integration' | 'analysis';
+
+/**
+ * Tool handler types.
+ */
+export type ToolHandler = 'builtin' | 'webhook' | 'function';
+
+/**
+ * JSON Schema for tool parameters (simplified).
+ */
+export interface JSONSchema {
+  type: 'object';
+  properties: Record<string, JSONSchemaProperty>;
+  required: string[];
+  additionalProperties?: boolean;
+  description?: string;
+}
+
+export interface JSONSchemaProperty {
+  type?: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'null';
+  description?: string;
+  enum?: unknown[];
+  default?: unknown;
+  minimum?: number;
+  maximum?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  items?: JSONSchemaProperty;
+  properties?: Record<string, JSONSchemaProperty>;
+  required?: string[];
+  additionalProperties?: boolean | JSONSchemaProperty;
+}
+
+/**
+ * Tool configuration.
+ */
+export interface ToolConfig {
+  /** Webhook endpoint */
+  endpoint?: string;
+  /** Request timeout in ms */
+  timeout?: number;
+  /** Rate limit (requests/min) */
+  rateLimit?: number;
+}
+
+/**
+ * MCP Tool definition.
+ */
+export interface MCPTool {
+  /** Unique tool identifier */
+  toolId: string;
+  /** Tool DID */
+  toolDID: string;
+  /** Human-readable name */
+  name: string;
+  /** Tool description */
+  description: string;
+  /** Tool category */
+  category: ToolCategory;
+  /** JSON Schema for input parameters */
+  inputSchema: JSONSchema;
+  /** JSON Schema for expected output */
+  outputSchema?: JSONSchema;
+  /** Handler type */
+  handler: ToolHandler;
+  /** Tool configuration */
+  config?: ToolConfig;
+  /** Required permissions */
+  permissions: string[];
+  /** Whether enabled */
+  isEnabled: boolean;
+  /** Creation timestamp */
+  createdAt: string;
+  /** Creator DID */
+  createdBy: string;
+  /** Blinded key for DID lookup */
+  toolBlindedKey?: string;
+  /** Public key for verification */
+  toolPublicKey?: string;
+}
+
+// ============================================================================
+// Agent Team Types
+// ============================================================================
+
+/**
+ * Team member role.
+ */
+export type TeamMemberRole = 'coordinator' | 'specialist' | 'validator' | 'executor';
+
+/**
+ * Team member configuration.
+ */
+export interface TeamMember {
+  /** Agent ID */
+  agentId: string;
+  /** Role in the team */
+  role: TeamMemberRole;
+  /** Responsibilities */
+  responsibilities: string[];
+  /** Can initiate workflows */
+  canInitiate: boolean;
+  /** Can escalate to human */
+  canEscalate: boolean;
+}
+
+/**
+ * Workflow stage definition.
+ */
+export interface WorkflowStage {
+  /** Stage ID */
+  stageId: string;
+  /** Stage name */
+  name: string;
+  /** Assigned agent IDs */
+  assignedAgents: string[];
+  /** Required approvals for consensus */
+  requiredApprovals?: number;
+  /** Timeout in seconds */
+  timeout?: number;
+  /** Next stages */
+  nextStages: string[];
+}
+
+/**
+ * Workflow type for team coordination.
+ */
+export type WorkflowType = 'sequential' | 'parallel' | 'consensus' | 'hierarchical';
+
+/**
+ * Team workflow definition.
+ */
+export interface TeamWorkflow {
+  /** Workflow type */
+  type: WorkflowType;
+  /** Workflow stages */
+  stages: WorkflowStage[];
+  /** Stages requiring human approval */
+  humanCheckpoints: string[];
+}
+
+/**
+ * Escalation policy configuration.
+ */
+export interface EscalationPolicy {
+  /** Enable escalation */
+  enabled: boolean;
+  /** Timeout before escalation (seconds) */
+  timeoutSeconds: number;
+  /** Escalation targets (DID or role) */
+  targets: string[];
+  /** Notification channels */
+  notificationChannels: ('email' | 'slack' | 'webhook')[];
+}
+
+/**
+ * Agent team configuration.
+ */
+export interface AgentTeam {
+  /** Unique team identifier */
+  teamId: string;
+  /** Team DID */
+  teamDID: string;
+  /** Team name */
+  name: string;
+  /** Team description */
+  description: string;
+  /** Team's mission statement */
+  purpose: string;
+  /** Team members */
+  members: TeamMember[];
+  /** Workflow definition */
+  workflow: TeamWorkflow;
+  /** Shared context keys */
+  sharedContext: string[];
+  /** Escalation policy */
+  escalationPolicy: EscalationPolicy;
+  /** Max concurrent executions */
+  maxConcurrency: number;
+  /** Whether enabled */
+  isEnabled: boolean;
+  /** Creation timestamp */
+  createdAt: string;
+  /** Creator DID */
+  createdBy: string;
+  /** Blinded key for DID lookup */
+  teamBlindedKey?: string;
+  /** Public key for verification */
+  teamPublicKey?: string;
+}
