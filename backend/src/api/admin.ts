@@ -25,7 +25,7 @@ import { createAgentDID } from '../agents/agent-did.js';
 import { AgentPhase, AgentCapability, AutonomyLevel, ProposalKind } from '../agents/types.js';
 import { getToolRegistry } from '../agents/tool-registry.js';
 import { getTeamRegistry } from '../agents/team-registry.js';
-import { MCPToolInputSchema, MCPToolUpdateSchema, AgentTeamInputSchema, AgentTeamUpdateSchema, TeamMemberSchema } from '../agents/character-schema.js';
+import { MCPToolInputSchema, MCPToolUpdateSchema, AgentTeamInputSchema, AgentTeamUpdateSchema, TeamMemberSchema, CharacterSchema } from '../agents/character-schema.js';
 
 const router = Router();
 
@@ -813,6 +813,87 @@ router.get('/agents/:agentId/did', async (req: Request, res: Response) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Get agent DID failed:', message);
     res.status(500).json({ error: 'Failed to get agent DID info' });
+  }
+});
+
+/**
+ * GET /api/admin/agents/:agentId/character - Get agent character
+ */
+router.get('/agents/:agentId/character', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+
+    const character = registry.getAgentCharacter(agentId);
+    if (!character) {
+      res.status(404).json({ error: 'Character not found' });
+      return;
+    }
+
+    res.json({ agentId, character });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get agent character failed:', message);
+    if (message.includes('not found')) {
+      res.status(404).json({ error: message });
+    } else {
+      res.status(500).json({ error: 'Failed to get agent character' });
+    }
+  }
+});
+
+/**
+ * PUT /api/admin/agents/:agentId/character - Update agent character
+ */
+router.put('/agents/:agentId/character', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+
+    const parseResult = CharacterSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+
+    const agent = registry.updateAgentCharacter(agentId, parseResult.data);
+    res.json({ updated: true, agentId, character: agent.character });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update agent character failed:', message);
+    if (message.includes('not found')) {
+      res.status(404).json({ error: message });
+    } else if (message.includes('Invalid character')) {
+      res.status(400).json({ error: message });
+    } else {
+      res.status(500).json({ error: 'Failed to update agent character' });
+    }
+  }
+});
+
+/**
+ * DELETE /api/admin/agents/:agentId/character - Remove agent character
+ */
+router.delete('/agents/:agentId/character', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+
+    registry.removeAgentCharacter(agentId);
+    res.json({ removed: true, agentId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Remove agent character failed:', message);
+    if (message.includes('not found')) {
+      res.status(404).json({ error: message });
+    } else {
+      res.status(500).json({ error: 'Failed to remove agent character' });
+    }
   }
 });
 

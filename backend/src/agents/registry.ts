@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 import {
   AgentAction,
   AgentCapability,
+  AgentCharacter,
   AgentDelegation,
   AgentManifest,
   AgentPhase,
@@ -16,6 +17,7 @@ import {
   DelegationScope,
   ProposalKind,
 } from './types.js';
+import { CharacterSchema } from './character-schema.js';
 import { Proposal } from '../dao/types.js';
 import { createAgentDID } from './agent-did.js';
 
@@ -119,6 +121,65 @@ export class AgentRegistry {
     }
     agent.active = false;
     this.agents.set(agentId, agent);
+  }
+
+  // ==========================================================================
+  // Character Management
+  // ==========================================================================
+
+  /**
+   * Update an agent's character definition.
+   * Validates the character against the CharacterSchema.
+   */
+  updateAgentCharacter(agentId: string, character: AgentCharacter): AgentManifest {
+    const agent = this.agents.get(agentId);
+    if (!agent) {
+      throw new Error(`Agent ${agentId} not found`);
+    }
+
+    // Validate character
+    const parseResult = CharacterSchema.safeParse(character);
+    if (!parseResult.success) {
+      throw new Error(`Invalid character: ${parseResult.error.message}`);
+    }
+
+    agent.character = parseResult.data as AgentCharacter;
+    this.agents.set(agentId, agent);
+    return agent;
+  }
+
+  /**
+   * Get an agent's character definition.
+   * Returns undefined if no character is set.
+   */
+  getAgentCharacter(agentId: string): AgentCharacter | undefined {
+    const agent = this.agents.get(agentId);
+    if (!agent) {
+      throw new Error(`Agent ${agentId} not found`);
+    }
+    return agent.character;
+  }
+
+  /**
+   * Remove an agent's character definition.
+   */
+  removeAgentCharacter(agentId: string): AgentManifest {
+    const agent = this.agents.get(agentId);
+    if (!agent) {
+      throw new Error(`Agent ${agentId} not found`);
+    }
+
+    delete agent.character;
+    this.agents.set(agentId, agent);
+    return agent;
+  }
+
+  /**
+   * Check if an agent has a character definition.
+   */
+  hasCharacter(agentId: string): boolean {
+    const agent = this.agents.get(agentId);
+    return agent ? !!agent.character : false;
   }
 
   // ==========================================================================

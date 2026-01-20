@@ -90,6 +90,8 @@ export interface AgentManifest {
     temperature?: number;
     maxTokens?: number;
   };
+  /** Eliza-compatible character definition for personality */
+  character?: AgentCharacter;
 }
 
 /**
