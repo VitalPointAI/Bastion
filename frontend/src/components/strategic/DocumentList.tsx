@@ -14,6 +14,7 @@ import {
   getClassificationColor,
   API_BASE,
 } from '../../lib/strategic-service.js';
+import { useUser } from '../../context/UserContext.js';
 import './DocumentList.css';
 
 /**
@@ -40,6 +41,7 @@ export function DocumentList({
   onExtractObjectives,
   refreshTrigger,
 }: DocumentListProps) {
+  const { userDID } = useUser();
   const [documents, setDocuments] = useState<StrategicDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,8 +77,7 @@ export function DocumentList({
     setError(null);
 
     try {
-      // Get user DID for authentication
-      const userDID = localStorage.getItem('userDID') || '';
+      // Verify user is authenticated
       if (!userDID) {
         throw new Error('Please log in to extract objectives');
       }
