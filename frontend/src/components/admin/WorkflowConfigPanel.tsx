@@ -84,7 +84,9 @@ export function WorkflowConfigPanel() {
 
         // Convert array-based approval authority to object form
         const authorityMap: Record<string, { requiredRole: string; canDelegate: boolean }> = {};
-        config.approvalAuthority.forEach((auth) => {
+        // Handle case where approvalAuthority might be undefined, null, or not an array
+        const authorityArray = Array.isArray(config.approvalAuthority) ? config.approvalAuthority : [];
+        authorityArray.forEach((auth) => {
           authorityMap[auth.riskLevel] = {
             requiredRole: auth.requiredRole,
             canDelegate: auth.canDelegate,
@@ -92,7 +94,7 @@ export function WorkflowConfigPanel() {
         });
 
         reset({
-          escalationTimeouts: config.escalationTimeouts,
+          escalationTimeouts: config.escalationTimeouts || { LOW: 24, MEDIUM: 12, HIGH: 4, EXTREME: 1 },
           approvalAuthority: {
             LOW: authorityMap['LOW'] || { requiredRole: 'STAFF_OFFICER', canDelegate: true },
             MEDIUM: authorityMap['MEDIUM'] || { requiredRole: 'STAFF_OFFICER', canDelegate: true },
@@ -100,9 +102,9 @@ export function WorkflowConfigPanel() {
             EXTREME: authorityMap['EXTREME'] || { requiredRole: 'SENIOR_COMMANDER', canDelegate: false },
           },
           notifications: {
-            emailOnPending: config.notifications.emailOnPending,
-            emailOnEscalation: config.notifications.emailOnEscalation,
-            slackWebhook: config.notifications.slackWebhook || '',
+            emailOnPending: config.notifications?.emailOnPending ?? true,
+            emailOnEscalation: config.notifications?.emailOnEscalation ?? true,
+            slackWebhook: config.notifications?.slackWebhook || '',
           },
           reason: '',
         });
