@@ -1043,7 +1043,8 @@ router.delete('/tools/:toolId', async (req: Request, res: Response) => {
  */
 router.post('/tools/:toolId/assign/:agentId', async (req: Request, res: Response) => {
   try {
-    const { toolId, agentId } = req.params;
+    const toolId = req.params.toolId as string;
+    const agentId = req.params.agentId as string;
     const adminDid = (req as Request & { adminDid: string }).adminDid;
 
     const toolRegistry = getToolRegistry();
@@ -1078,7 +1079,8 @@ router.post('/tools/:toolId/assign/:agentId', async (req: Request, res: Response
  */
 router.delete('/tools/:toolId/assign/:agentId', async (req: Request, res: Response) => {
   try {
-    const { toolId, agentId } = req.params;
+    const toolId = req.params.toolId as string;
+    const agentId = req.params.agentId as string;
 
     const registry = getToolRegistry();
     await registry.ensureInitialized();
@@ -1309,7 +1311,8 @@ router.post('/teams/:teamId/members', async (req: Request, res: Response) => {
  */
 router.delete('/teams/:teamId/members/:agentId', async (req: Request, res: Response) => {
   try {
-    const { teamId, agentId } = req.params;
+    const teamId = req.params.teamId as string;
+    const agentId = req.params.agentId as string;
 
     const registry = getTeamRegistry();
     await registry.ensureInitialized();
