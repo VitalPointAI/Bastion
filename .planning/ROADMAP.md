@@ -114,21 +114,32 @@ Plans:
 - [x] Plan 4.1-02: Configuration Panels (completed 2026-01-19)
 
 ### Phase 4.2: AI Agent Teams (INSERTED)
-**Goal:** Enable per-agent AI provider/model assignment, dynamic agent creation, and agent identity (DID)
+**Goal:** Enable per-agent AI provider/model assignment, dynamic agent creation, agent identity (DID), Eliza-style personalities, MCP tools, team composition, secure inter-agent communication, and LangGraph-based multi-agent orchestration
 **Depends on:** Phase 4.1
 **Research:** Complete (4.2-RESEARCH.md)
-**Plans:** 3 plans
+**Plans:** 6 plans
 
 **Key Features:**
 - Assign different LLM providers/models to individual agents
 - Create new AI agents via form or JSON file upload
-- Automatic DID generation for agent identity (`did:near:agent-{agentId}`)
+- Automatic DID generation for agents, tools, and teams
 - Agent-specific configuration (temperature, max tokens, etc.)
+- Eliza-compatible character definitions (bio, lore, knowledge, style)
+- MCP Tool Registry for creating and assigning tools to agents
+- Agent Team Composer for multi-agent collaborative workflows
+- ABAC-aware message bus for secure inter-agent communication
+- LangGraph orchestration with supervisor pattern and checkpointing
+- CrewAI-style execution patterns (sequential, parallel, hierarchical)
+- Classification-aware state filtering between agents
+- Comprehensive observability with execution traces
 
 Plans:
 - [x] Plan 4.2-01: Backend Schema for Per-Agent Model Config (completed 2026-01-20)
 - [x] Plan 4.2-02: Agent DID and API Endpoints (completed 2026-01-20)
-- [ ] Plan 4.2-03: Frontend Per-Agent Config UI
+- [x] Plan 4.2-03: Frontend Per-Agent Config UI (completed 2026-01-20)
+- [ ] Plan 4.2-04: Agent Builder, MCP Tools & Team Composition
+- [ ] Plan 4.2-05: Secure Message Bus with ABAC Enforcement
+- [ ] Plan 4.2-06: LangGraph Orchestration Layer
 
 ### Phase 5: Operational Planning Module
 **Goal**: Implement joint planning doctrine and operational design
