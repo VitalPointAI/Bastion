@@ -98,8 +98,15 @@ export function DocumentList({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Extraction failed');
+        // Try to parse error as JSON, but handle case where it's not JSON
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Extraction failed');
+        } else {
+          const errorText = await response.text();
+          throw new Error(errorText || `Extraction failed (${response.status})`);
+        }
       }
 
       const reader = response.body?.getReader();
