@@ -24,7 +24,8 @@ import { AgentDefinitionSchema } from '../agents/definition-schema.js';
 import { createAgentDID } from '../agents/agent-did.js';
 import { AgentPhase, AgentCapability, AutonomyLevel, ProposalKind } from '../agents/types.js';
 import { getToolRegistry } from '../agents/tool-registry.js';
-import { MCPToolInputSchema, MCPToolUpdateSchema } from '../agents/character-schema.js';
+import { getTeamRegistry } from '../agents/team-registry.js';
+import { MCPToolInputSchema, MCPToolUpdateSchema, AgentTeamInputSchema, AgentTeamUpdateSchema, TeamMemberSchema } from '../agents/character-schema.js';
 
 const router = Router();
 
@@ -1040,6 +1041,241 @@ router.get('/agents/:agentId/tools', async (req: Request, res: Response) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Get agent tools failed:', message);
     res.status(500).json({ error: 'Failed to get agent tools' });
+  }
+});
+
+// ============================================================================
+// Team Management Endpoints
+// ============================================================================
+
+/**
+ * GET /api/admin/teams - List all teams
+ */
+router.get('/teams', async (req: Request, res: Response) => {
+  try {
+    const registry = getTeamRegistry();
+    await registry.ensureInitialized();
+
+    const teams = registry.listTeams();
+
+    // Add member count to each team
+    const teamsWithCounts = teams.map(team => ({
+      ...team,
+      memberCount: team.members.length,
+    }));
+
+    res.json({ teams: teamsWithCounts });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List teams failed:', message);
+    res.status(500).json({ error: 'Failed to list teams' });
+  }
+});
+
+/**
+ * POST /api/admin/teams - Create a new team
+ */
+router.post('/teams', async (req: Request, res: Response) => {
+  try {
+    const parseResult = AgentTeamInputSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const adminDid = (req as Request & { adminDid: string }).adminDid;
+    const registry = getTeamRegistry();
+    await registry.ensureInitialized();
+
+    const team = await registry.createTeam(parseResult.data, adminDid);
+
+    res.status(201).json({
+      teamId: team.teamId,
+      teamDID: team.teamDID,
+      created: true,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create team failed:', message);
+    if (message.includes('already exists')) {
+      res.status(409).json({ error: message });
+    } else if (message.includes('not found')) {
+      res.status(400).json({ error: message });
+    } else {
+      res.status(500).json({ error: 'Failed to create team' });
+    }
+  }
+});
+
+/**
+ * GET /api/admin/teams/:teamId - Get a team by ID
+ */
+router.get('/teams/:teamId', async (req: Request, res: Response) => {
+  try {
+    const teamId = req.params.teamId as string;
+    const registry = getTeamRegistry();
+    await registry.ensureInitialized();
+
+    const team = registry.getTeam(teamId);
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+
+    res.json(team);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get team failed:', message);
+    res.status(500).json({ error: 'Failed to get team' });
+  }
+});
+
+/**
+ * PUT /api/admin/teams/:teamId - Update a team
+ */
+router.put('/teams/:teamId', async (req: Request, res: Response) => {
+  try {
+    const teamId = req.params.teamId as string;
+
+    const parseResult = AgentTeamUpdateSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const registry = getTeamRegistry();
+    await registry.ensureInitialized();
+
+    const team = await registry.updateTeam(teamId, parseResult.data);
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+
+    res.json({ updated: true, team });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update team failed:', message);
+    if (message.includes('not found')) {
+      res.status(400).json({ error: message });
+    } else {
+      res.status(500).json({ error: 'Failed to update team' });
+    }
+  }
+});
+
+/**
+ * DELETE /api/admin/teams/:teamId - Delete a team
+ */
+router.delete('/teams/:teamId', async (req: Request, res: Response) => {
+  try {
+    const teamId = req.params.teamId as string;
+    const registry = getTeamRegistry();
+    await registry.ensureInitialized();
+
+    const deleted = registry.deleteTeam(teamId);
+    if (!deleted) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+
+    res.json({ deleted: true, teamId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete team failed:', message);
+    res.status(500).json({ error: 'Failed to delete team' });
+  }
+});
+
+/**
+ * POST /api/admin/teams/:teamId/members - Add a member to a team
+ */
+router.post('/teams/:teamId/members', async (req: Request, res: Response) => {
+  try {
+    const teamId = req.params.teamId as string;
+
+    const parseResult = TeamMemberSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const registry = getTeamRegistry();
+    await registry.ensureInitialized();
+
+    const team = await registry.addMember(teamId, parseResult.data);
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+
+    res.status(201).json({ added: true, team });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Add team member failed:', message);
+    if (message.includes('not found')) {
+      res.status(400).json({ error: message });
+    } else if (message.includes('already a member')) {
+      res.status(409).json({ error: message });
+    } else {
+      res.status(500).json({ error: 'Failed to add team member' });
+    }
+  }
+});
+
+/**
+ * DELETE /api/admin/teams/:teamId/members/:agentId - Remove a member from a team
+ */
+router.delete('/teams/:teamId/members/:agentId', async (req: Request, res: Response) => {
+  try {
+    const { teamId, agentId } = req.params;
+
+    const registry = getTeamRegistry();
+    await registry.ensureInitialized();
+
+    const team = registry.removeMember(teamId, agentId);
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+
+    res.json({ removed: true, team });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Remove team member failed:', message);
+    if (message.includes('not a member')) {
+      res.status(404).json({ error: message });
+    } else {
+      res.status(500).json({ error: 'Failed to remove team member' });
+    }
+  }
+});
+
+/**
+ * GET /api/admin/agents/:agentId/teams - Get teams an agent belongs to
+ */
+router.get('/agents/:agentId/teams', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+
+    // Verify agent exists
+    const agentRegistry = getAgentRegistry();
+    await agentRegistry.ensureInitialized();
+    const agent = agentRegistry.getAgent(agentId);
+    if (!agent) {
+      res.status(404).json({ error: 'Agent not found' });
+      return;
+    }
+
+    const teamRegistry = getTeamRegistry();
+    await teamRegistry.ensureInitialized();
+
+    const teams = teamRegistry.getTeamsForAgent(agentId);
+    res.json({ agentId, teams });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get agent teams failed:', message);
+    res.status(500).json({ error: 'Failed to get agent teams' });
   }
 });
 
