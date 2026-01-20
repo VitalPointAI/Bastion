@@ -17,6 +17,7 @@ import {
   ProposalKind,
 } from './types.js';
 import { Proposal } from '../dao/types.js';
+import { createAgentDID } from './agent-did.js';
 
 /**
  * Agent Registry - manages agent lifecycle, delegations, and audit trail.
@@ -25,10 +26,31 @@ export class AgentRegistry {
   private agents: Map<string, AgentManifest> = new Map();
   private delegations: Map<string, AgentDelegation[]> = new Map();
   private actionLog: AgentAction[] = [];
+  private initialized: boolean = false;
+  private initPromise: Promise<void> | null = null;
 
   constructor() {
-    // Register default Support-phase agents
-    this.registerDefaultAgents();
+    // Start async initialization
+    this.initPromise = this.initialize();
+  }
+
+  /**
+   * Initialize the registry asynchronously.
+   * Registers default agents with DIDs.
+   */
+  private async initialize(): Promise<void> {
+    if (this.initialized) return;
+    await this.registerDefaultAgents();
+    this.initialized = true;
+  }
+
+  /**
+   * Ensure initialization is complete before operations.
+   */
+  async ensureInitialized(): Promise<void> {
+    if (this.initPromise) {
+      await this.initPromise;
+    }
   }
 
   // ==========================================================================
@@ -37,12 +59,24 @@ export class AgentRegistry {
 
   /**
    * Register a new agent.
+   * Automatically generates DID if not provided.
+   * Returns the registered manifest with DID fields populated.
    */
-  registerAgent(manifest: AgentManifest): void {
+  async registerAgent(manifest: AgentManifest): Promise<AgentManifest> {
     if (this.agents.has(manifest.agentId)) {
       throw new Error(`Agent ${manifest.agentId} already registered`);
     }
+
+    // Generate DID if not provided
+    if (!manifest.agentDID) {
+      const didResult = await createAgentDID(manifest.agentId);
+      manifest.agentDID = didResult.did;
+      manifest.agentBlindedKey = didResult.blindedKey;
+      manifest.agentPublicKey = didResult.publicKey;
+    }
+
     this.agents.set(manifest.agentId, manifest);
+    return manifest;
   }
 
   /**
@@ -50,6 +84,18 @@ export class AgentRegistry {
    */
   getAgent(agentId: string): AgentManifest | undefined {
     return this.agents.get(agentId);
+  }
+
+  /**
+   * Get an agent by DID.
+   */
+  getAgentByDID(did: string): AgentManifest | undefined {
+    for (const agent of this.agents.values()) {
+      if (agent.agentDID === did) {
+        return agent;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -314,9 +360,9 @@ export class AgentRegistry {
   // ==========================================================================
 
   /**
-   * Register default Support-phase agents.
+   * Register default Support-phase agents with DIDs.
    */
-  private registerDefaultAgents(): void {
+  private async registerDefaultAgents(): Promise<void> {
     const now = new Date();
     const systemUser = 'system';
 
@@ -332,7 +378,7 @@ export class AgentRegistry {
     ];
 
     // Governance Copilot - summarizes proposals, analyzes context, and provides voting guidance
-    this.agents.set('governance-copilot', {
+    await this.registerAgent({
       agentId: 'governance-copilot',
       name: 'Governance Copilot',
       description:
@@ -348,7 +394,7 @@ export class AgentRegistry {
     });
 
     // Proposal Screener - screens proposals for issues
-    this.agents.set('proposal-screener', {
+    await this.registerAgent({
       agentId: 'proposal-screener',
       name: 'Proposal Screener',
       description:
@@ -364,7 +410,7 @@ export class AgentRegistry {
     });
 
     // Context Analyzer - identifies context gaps
-    this.agents.set('context-analyzer', {
+    await this.registerAgent({
       agentId: 'context-analyzer',
       name: 'Context Analyzer',
       description:
@@ -380,7 +426,7 @@ export class AgentRegistry {
     });
 
     // Feasibility Assessor - assesses proposal feasibility
-    this.agents.set('feasibility-assessor', {
+    await this.registerAgent({
       agentId: 'feasibility-assessor',
       name: 'Feasibility Assessor',
       description:
