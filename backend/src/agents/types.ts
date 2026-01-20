@@ -77,6 +77,19 @@ export interface AgentManifest {
   createdBy: string;
   /** Whether the agent is currently active */
   active: boolean;
+  /** DID for verifiable agent identity */
+  agentDID?: string;
+  /** Blinded key for DID lookup */
+  agentBlindedKey?: string;
+  /** Public key for verification */
+  agentPublicKey?: string;
+  /** Per-agent model configuration (overrides global) */
+  modelConfig?: {
+    provider: string;
+    model: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
 }
 
 /**

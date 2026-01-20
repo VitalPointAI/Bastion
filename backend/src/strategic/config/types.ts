@@ -9,7 +9,7 @@ import { z } from 'zod';
 // LLM Provider Configuration
 // ============================================================================
 
-export const LLMProviderSchema = z.enum(['anthropic', 'openai', 'azure-openai', 'local']);
+export const LLMProviderSchema = z.enum(['anthropic', 'openai', 'azure-openai', 'near-ai', 'local']);
 export type LLMProvider = z.infer<typeof LLMProviderSchema>;
 
 export const LLMModelsSchema = z.object({
@@ -52,10 +52,22 @@ export const EnabledAgentsSchema = z.object({
 });
 export type EnabledAgents = z.infer<typeof EnabledAgentsSchema>;
 
+// Per-agent model configuration schema
+export const AgentModelConfigSchema = z.object({
+  agentId: z.string(),
+  provider: LLMProviderSchema,
+  model: z.string(),
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().positive().optional(),
+  useGlobalDefault: z.boolean().default(false),
+});
+export type AgentModelConfig = z.infer<typeof AgentModelConfigSchema>;
+
 export const AgentConfigSchema = z.object({
   enabledAgents: EnabledAgentsSchema,
   defaultConfidenceThreshold: z.number().min(0).max(1),
   requireHumanReviewFor: z.array(z.string()),
+  agentModelConfigs: z.record(z.string(), AgentModelConfigSchema).optional(),
 });
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 
