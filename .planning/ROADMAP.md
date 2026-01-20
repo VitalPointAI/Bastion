@@ -15,6 +15,7 @@ None
 - [x] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
 - [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
 - [ ] **Phase 4.1: Admin UI** - Create administrative interface for system configuration (INSERTED)
+- [ ] **Phase 4.2: AI Agent Teams** - Per-agent model assignment, dynamic agent creation, agent DIDs (INSERTED)
 - [ ] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
@@ -110,7 +111,24 @@ Plans:
 
 Plans:
 - [x] Plan 4.1-01: Admin UI Foundation (completed 2026-01-19)
-- [ ] Plan 4.1-02: Configuration Panels
+- [x] Plan 4.1-02: Configuration Panels (completed 2026-01-19)
+
+### Phase 4.2: AI Agent Teams (INSERTED)
+**Goal:** Enable per-agent AI provider/model assignment, dynamic agent creation, and agent identity (DID)
+**Depends on:** Phase 4.1
+**Research:** Complete (4.2-RESEARCH.md)
+**Plans:** 3 plans
+
+**Key Features:**
+- Assign different LLM providers/models to individual agents
+- Create new AI agents via form or JSON file upload
+- Automatic DID generation for agent identity (`did:near:agent-{agentId}`)
+- Agent-specific configuration (temperature, max tokens, etc.)
+
+Plans:
+- [ ] Plan 4.2-01: Backend Schema for Per-Agent Model Config
+- [ ] Plan 4.2-02: Agent DID and API Endpoints
+- [ ] Plan 4.2-03: Frontend Per-Agent Config UI
 
 ### Phase 5: Operational Planning Module
 **Goal**: Implement joint planning doctrine and operational design
