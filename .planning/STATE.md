@@ -6,16 +6,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 4.2 — AI Agent Teams (COMPLETE)
+**Current focus:** Phase 4 — Strategic Planning Module (In Progress)
 
 ## Current Position
 
-Phase: 4.2 of 12 (AI Agent Teams)
-Plan: 6 of 6 in current phase
-Status: Complete
-Last activity: 2026-01-20 — Completed 4.2-06-PLAN.md
+Phase: 4 of 12 (Strategic Planning Module)
+Plan: 9 of 10 in current phase
+Status: 4-09 Complete, 4-10 Ready
+Last activity: 2026-01-20 — Completed 4-09-PLAN.md (End-to-End Strategic Flow)
 
-Progress: ██████████ 100% (Phase 4.2 complete)
+Progress: █████████░ 90% (9/10 plans complete)
 
 ## Performance Metrics
 
@@ -261,6 +261,7 @@ Recent decisions affecting current work:
 
 - Phase 4.1 inserted after Phase 4: Admin UI (URGENT) - Create administrative interface for system configuration and management
 - Phase 4.2 inserted after Phase 4.1: AI Agent Teams - Per-agent model assignment, dynamic agent creation, agent DIDs
+- Phase 1.1 inserted after Phase 1: Calimero Self-Sovereign App Integration (URGENT) - Research Calimero for DAO compartmentalization, replace Privy with NEAR accounts + MPC
 
 ### Deferred Issues
 
@@ -350,6 +351,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 4.2-06-PLAN.md (Phase 4.2 complete)
+Stopped at: Completed 4-09-PLAN.md (End-to-End Strategic Flow)
 Resume file: None
-Next action: Execute 4-09-PLAN.md or begin Phase 5
+Next action: Execute 4-10-PLAN.md (Objective Detail View & MIDLIFE Categorization)
