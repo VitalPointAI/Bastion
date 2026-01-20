@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 import encryptionRouter from './api/encryption.js';
 import documentsRouter from './api/documents.js';
 import edgeSyncRouter from './api/edge-sync.js';
@@ -12,7 +13,9 @@ import agentRouter from './api/agents.js';
 import strategicRouter from './api/strategic.js';
 import strategicAgentsRouter from './api/strategic-agents.js';
 import adminRouter from './api/admin.js';
+import messagingRouter, { setupMessageWebSocket } from './api/messaging.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
+import { getMessageBus } from './messaging/message-bus.js';
 
 dotenv.config();
 
@@ -39,8 +42,15 @@ app.use('/api/agents', agentRouter);
 app.use('/api/strategic', strategicRouter);
 app.use('/api/strategic/agents', strategicAgentsRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/messages', messagingRouter);
 
-app.listen(port, async () => {
+// Create HTTP server for WebSocket support
+const server = createServer(app);
+
+// Setup WebSocket for real-time message delivery
+setupMessageWebSocket(server);
+
+server.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
 
@@ -49,5 +59,14 @@ app.listen(port, async () => {
     await startSyncWorkers();
   } catch (error) {
     console.error('Failed to start sync workers:', error);
+  }
+
+  // Initialize message bus
+  try {
+    const messageBus = getMessageBus();
+    await messageBus.ensureInitialized();
+    console.log('Message bus initialized');
+  } catch (error) {
+    console.error('Failed to initialize message bus:', error);
   }
 });
