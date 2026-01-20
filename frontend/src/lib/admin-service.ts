@@ -21,6 +21,15 @@ import type {
   AgentWithConfig,
   AgentDefinition,
   AgentModelConfig,
+  MCPTool,
+  MCPToolInput,
+  MCPToolUpdate,
+  ToolCategory,
+  AgentTeam,
+  AgentTeamInput,
+  AgentTeamUpdate,
+  TeamMember,
+  AgentCharacter,
 } from '../types/admin';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -383,6 +392,199 @@ class AdminService {
   async invalidateCache(): Promise<CacheInvalidationResponse> {
     return this.fetch<CacheInvalidationResponse>('/api/admin/cache/invalidate', {
       method: 'POST',
+    });
+  }
+
+  // ============================================================================
+  // Tool Management
+  // ============================================================================
+
+  /**
+   * List all tools, optionally filtered by category.
+   */
+  async listTools(category?: ToolCategory): Promise<MCPTool[]> {
+    const params = category ? `?category=${encodeURIComponent(category)}` : '';
+    const response = await this.fetch<{ tools: MCPTool[] }>(`/api/admin/tools${params}`);
+    return response.tools;
+  }
+
+  /**
+   * Get a tool by ID.
+   */
+  async getTool(toolId: string): Promise<MCPTool & { assignedAgents: string[] }> {
+    return this.fetch<MCPTool & { assignedAgents: string[] }>(`/api/admin/tools/${encodeURIComponent(toolId)}`);
+  }
+
+  /**
+   * Create a new tool.
+   */
+  async createTool(input: MCPToolInput): Promise<{ toolId: string; toolDID: string }> {
+    return this.fetch<{ toolId: string; toolDID: string }>('/api/admin/tools', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  /**
+   * Update a tool.
+   */
+  async updateTool(toolId: string, updates: MCPToolUpdate): Promise<MCPTool> {
+    const response = await this.fetch<{ updated: boolean; tool: MCPTool }>(`/api/admin/tools/${encodeURIComponent(toolId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return response.tool;
+  }
+
+  /**
+   * Delete a tool.
+   */
+  async deleteTool(toolId: string): Promise<void> {
+    await this.fetch<void>(`/api/admin/tools/${encodeURIComponent(toolId)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Assign a tool to an agent.
+   */
+  async assignToolToAgent(toolId: string, agentId: string): Promise<void> {
+    await this.fetch<void>(`/api/admin/tools/${encodeURIComponent(toolId)}/assign/${encodeURIComponent(agentId)}`, {
+      method: 'POST',
+    });
+  }
+
+  /**
+   * Unassign a tool from an agent.
+   */
+  async unassignToolFromAgent(toolId: string, agentId: string): Promise<void> {
+    await this.fetch<void>(`/api/admin/tools/${encodeURIComponent(toolId)}/assign/${encodeURIComponent(agentId)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Get tools for an agent.
+   */
+  async getToolsForAgent(agentId: string): Promise<MCPTool[]> {
+    const response = await this.fetch<{ agentId: string; tools: MCPTool[] }>(`/api/admin/agents/${encodeURIComponent(agentId)}/tools`);
+    return response.tools;
+  }
+
+  // ============================================================================
+  // Team Management
+  // ============================================================================
+
+  /**
+   * List all teams.
+   */
+  async listTeams(): Promise<AgentTeam[]> {
+    const response = await this.fetch<{ teams: AgentTeam[] }>('/api/admin/teams');
+    return response.teams;
+  }
+
+  /**
+   * Get a team by ID.
+   */
+  async getTeam(teamId: string): Promise<AgentTeam> {
+    return this.fetch<AgentTeam>(`/api/admin/teams/${encodeURIComponent(teamId)}`);
+  }
+
+  /**
+   * Create a new team.
+   */
+  async createTeam(input: AgentTeamInput): Promise<{ teamId: string; teamDID: string }> {
+    return this.fetch<{ teamId: string; teamDID: string }>('/api/admin/teams', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  /**
+   * Update a team.
+   */
+  async updateTeam(teamId: string, updates: AgentTeamUpdate): Promise<AgentTeam> {
+    const response = await this.fetch<{ updated: boolean; team: AgentTeam }>(`/api/admin/teams/${encodeURIComponent(teamId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return response.team;
+  }
+
+  /**
+   * Delete a team.
+   */
+  async deleteTeam(teamId: string): Promise<void> {
+    await this.fetch<void>(`/api/admin/teams/${encodeURIComponent(teamId)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Add a member to a team.
+   */
+  async addTeamMember(teamId: string, member: TeamMember): Promise<AgentTeam> {
+    const response = await this.fetch<{ added: boolean; team: AgentTeam }>(`/api/admin/teams/${encodeURIComponent(teamId)}/members`, {
+      method: 'POST',
+      body: JSON.stringify(member),
+    });
+    return response.team;
+  }
+
+  /**
+   * Remove a member from a team.
+   */
+  async removeTeamMember(teamId: string, agentId: string): Promise<AgentTeam> {
+    const response = await this.fetch<{ removed: boolean; team: AgentTeam }>(`/api/admin/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(agentId)}`, {
+      method: 'DELETE',
+    });
+    return response.team;
+  }
+
+  /**
+   * Get teams for an agent.
+   */
+  async getTeamsForAgent(agentId: string): Promise<AgentTeam[]> {
+    const response = await this.fetch<{ agentId: string; teams: AgentTeam[] }>(`/api/admin/agents/${encodeURIComponent(agentId)}/teams`);
+    return response.teams;
+  }
+
+  // ============================================================================
+  // Character Management
+  // ============================================================================
+
+  /**
+   * Get an agent's character definition.
+   */
+  async getAgentCharacter(agentId: string): Promise<AgentCharacter | null> {
+    try {
+      const response = await this.fetch<{ agentId: string; character: AgentCharacter }>(`/api/admin/agents/${encodeURIComponent(agentId)}/character`);
+      return response.character;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('404')) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Update an agent's character definition.
+   */
+  async updateAgentCharacter(agentId: string, character: AgentCharacter): Promise<AgentCharacter> {
+    const response = await this.fetch<{ updated: boolean; agentId: string; character: AgentCharacter }>(`/api/admin/agents/${encodeURIComponent(agentId)}/character`, {
+      method: 'PUT',
+      body: JSON.stringify(character),
+    });
+    return response.character;
+  }
+
+  /**
+   * Remove an agent's character definition.
+   */
+  async removeAgentCharacter(agentId: string): Promise<void> {
+    await this.fetch<void>(`/api/admin/agents/${encodeURIComponent(agentId)}/character`, {
+      method: 'DELETE',
     });
   }
 }

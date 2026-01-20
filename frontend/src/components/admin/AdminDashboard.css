@@ -7,13 +7,20 @@
    Dashboard Container
    ============================================================================ */
 
+/* Force dark background on html/body/root when admin dashboard is active */
+html:has(.admin-dashboard),
+body:has(.admin-dashboard),
+#root:has(.admin-dashboard),
+.app:has(.admin-dashboard),
+.app-main:has(.admin-dashboard) {
+  background: var(--bg-deepest, #050508) !important;
+}
+
 .admin-dashboard {
   width: 100%;
   min-height: 100vh;
   background: linear-gradient(180deg, var(--bg-deepest, #050508) 0%, var(--bg-deep, #0a0a0f) 100%);
   color: var(--text-primary, #ffffff);
-  display: flex;
-  flex-direction: column;
 }
 
 /* ============================================================================
@@ -280,6 +287,8 @@
   flex: 1;
   padding: 2rem 2.5rem;
   display: none;
+  background: var(--bg-deep, #0a0a0f);
+  overflow: visible;
 }
 
 .admin-tab-panel--selected {
@@ -1824,4 +1833,254 @@
     margin: 1rem;
     max-height: calc(100vh - 2rem);
   }
+}
+
+/* ============================================================================
+   Tool Registry Panel
+   ============================================================================ */
+
+.tool-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tool-card {
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.tool-card:hover {
+  border-color: var(--border-medium, #3a3a48);
+}
+
+.tool-card--expanded {
+  border-color: var(--accent-blue, #4a90d9);
+}
+
+.tool-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-secondary, #1a1a24);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.tool-card-header:hover {
+  background: var(--bg-hover, #2a2a38);
+}
+
+.tool-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tool-card-name {
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.tool-card-badges {
+  display: flex;
+  gap: 6px;
+}
+
+.tool-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tool-card-agents {
+  font-size: 0.8rem;
+  color: var(--text-muted, #666678);
+}
+
+.tool-card-expand {
+  color: var(--text-muted, #666678);
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.tool-card-expand.expanded {
+  transform: rotate(180deg);
+}
+
+.tool-card-body {
+  padding: 16px;
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  background: var(--bg-primary, #111118);
+}
+
+.tool-card-body.collapsed {
+  display: none;
+}
+
+.tool-description {
+  margin: 0 0 1rem 0;
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tool-did-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-deepest, #050508);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.tool-did-label {
+  color: var(--text-muted, #666678);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tool-did-value {
+  color: var(--accent-blue, #4a90d9);
+  font-family: monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.tool-schema-section {
+  margin-bottom: 1rem;
+}
+
+.tool-schema-section h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tool-schema {
+  background: var(--bg-deepest, #050508);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #a0a0b0);
+  overflow-x: auto;
+  white-space: pre;
+  max-height: 200px;
+}
+
+.tool-permissions h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.permission-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tool-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  margin-top: 1rem;
+}
+
+.toggle-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #a0a0b0);
+  margin-left: 8px;
+}
+
+/* Badge variants for tools */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badge--category {
+  background: rgba(74, 144, 217, 0.2);
+  color: var(--accent-blue, #4a90d9);
+}
+
+.badge--data {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.badge--action {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.badge--integration {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+
+.badge--analysis {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.badge--handler {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}
+
+.badge--builtin {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.badge--webhook {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.badge--function {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+
+.badge--permission {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}
+
+/* Code textarea for JSON input */
+.form-textarea--code {
+  font-family: monospace;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: pre;
+}
+
+/* Tool create form */
+.tool-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
