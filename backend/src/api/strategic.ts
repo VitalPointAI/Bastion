@@ -33,6 +33,8 @@ import type { RiskAssessment, Likelihood, Impact } from '../strategic/assessment
 import type { StrategicObjective } from '../strategic/schemas/strategic-objective.js';
 import type { DIMEInstrument } from '../strategic/schemas/dime.js';
 import { IntentStore, intentStore } from '../strategic/intent/index.js';
+import { configService } from '../strategic/config/service.js';
+import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
 import type { IntentInput, IntentUpdate } from '../strategic/intent/index.js';
 
 const router = express.Router();
@@ -497,8 +499,21 @@ router.post('/documents/:documentId/extract', async (req, res) => {
 
     console.log(`Extracting objectives from document ${documentId}...`);
 
-    // Extract objectives using LLM
-    const extractor = new ExtractionService();
+    // Get admin-configured LLM provider
+    const llmConfig = await configService.getLLMConfig();
+
+    // Map admin config to provider config format
+    // Note: 'local' in admin config maps to 'ollama' in provider types
+    const providerType = llmConfig.provider === 'local' ? 'ollama' : llmConfig.provider;
+    const providerConfig: ProviderConfig = {
+      type: providerType as ProviderConfig['type'],
+      model: llmConfig.models.extraction,
+      apiKey: llmConfig.apiKey || undefined,
+      baseUrl: llmConfig.baseUrl,
+    };
+
+    // Extract objectives using configured LLM provider
+    const extractor = new ExtractionService({ provider: providerConfig });
     const result = await extractor.extractFromDocument(text);
 
     // Convert extracted objectives to ObjectiveInput format and save
