@@ -6,21 +6,21 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 4.1 — Admin UI
+**Current focus:** Phase 4.2 — AI Agent Teams
 
 ## Current Position
 
-Phase: 4.1 of 12 (Admin UI)
-Plan: 1 of 2 in current phase (FIX complete)
+Phase: 4.2 of 12 (AI Agent Teams)
+Plan: 1 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-19 — Completed 4.1-01-FIX.md
+Last activity: 2026-01-20 — Completed 4.2-01-PLAN.md
 
-Progress: █████░░░░░ ~55% (Phase 4.1 in progress)
+Progress: █████░░░░░ ~56% (Phase 4.2 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33
+- Total plans completed: 34
 - Average duration: 14 min
 - Total execution time: 7.8 hours
 
@@ -32,11 +32,12 @@ Progress: █████░░░░░ ~55% (Phase 4.1 in progress)
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 8 | 75 min | 9 min |
-| 4.1 (Admin UI) | 1 | 7 min | 7 min |
+| 4.1 (Admin UI) | 2 | 14 min | 7 min |
+| 4.2 (AI Agent Teams) | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 6 min, 5 min, 9 min, 7 min, 7 min
-- Trend: Admin UI foundation started
+- Last 5 plans: 5 min, 9 min, 7 min, 7 min, 2 min
+- Trend: AI Agent Teams schema started
 
 ## Accumulated Context
 
@@ -259,6 +260,7 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - Phase 4.1 inserted after Phase 4: Admin UI (URGENT) - Create administrative interface for system configuration and management
+- Phase 4.2 inserted after Phase 4.1: AI Agent Teams - Per-agent model assignment, dynamic agent creation, agent DIDs
 
 ### Deferred Issues
 
@@ -304,9 +306,14 @@ None.
 - UserStatusBar in header with compact display and dropdown for details
 - AdminDashboard consumes userDID from context before checking admin access
 
+**Phase 4.2 Plan 1 (Backend Schema for Per-Agent Model Config):**
+- Per-agent configs use key pattern `agents.{agentId}.model`
+- AgentModelConfig includes useGlobalDefault flag for fallback behavior
+- DID fields (agentDID, agentBlindedKey, agentPublicKey) added to AgentManifest
+
 ## Session Continuity
 
-Last session: 2026-01-19
-Stopped at: Completed 4.1-01-FIX.md
+Last session: 2026-01-20
+Stopped at: Completed 4.2-01-PLAN.md
 Resume file: None
-Next action: Execute 4.1-02-PLAN.md
+Next action: Execute 4.2-02-PLAN.md

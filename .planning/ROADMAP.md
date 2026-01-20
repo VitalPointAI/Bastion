@@ -126,7 +126,7 @@ Plans:
 - Agent-specific configuration (temperature, max tokens, etc.)
 
 Plans:
-- [ ] Plan 4.2-01: Backend Schema for Per-Agent Model Config
+- [x] Plan 4.2-01: Backend Schema for Per-Agent Model Config (completed 2026-01-20)
 - [ ] Plan 4.2-02: Agent DID and API Endpoints
 - [ ] Plan 4.2-03: Frontend Per-Agent Config UI
 
