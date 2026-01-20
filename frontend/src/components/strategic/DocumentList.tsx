@@ -12,6 +12,7 @@ import {
   strategicService,
   getDocumentLevelName,
   getClassificationColor,
+  API_BASE,
 } from '../../lib/strategic-service.js';
 import './DocumentList.css';
 
@@ -76,7 +77,7 @@ export function DocumentList({
     try {
       // Use EventSource for SSE streaming
       const userDID = localStorage.getItem('userDID') || '';
-      const url = `/api/strategic/documents/${doc.id}/extract/stream`;
+      const url = `${API_BASE}/api/strategic/documents/${doc.id}/extract/stream`;
 
       const eventSource = new EventSource(url, {
         // Note: EventSource doesn't support custom headers
