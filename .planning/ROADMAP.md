@@ -138,7 +138,7 @@ Plans:
 - [x] Plan 4.2-02: Agent DID and API Endpoints (completed 2026-01-20)
 - [x] Plan 4.2-03: Frontend Per-Agent Config UI (completed 2026-01-20)
 - [x] Plan 4.2-04: Agent Builder, MCP Tools & Team Composition (completed 2026-01-20)
-- [ ] Plan 4.2-05: Secure Message Bus with ABAC Enforcement
+- [x] Plan 4.2-05: Secure Message Bus with ABAC Enforcement (completed 2026-01-20)
 - [ ] Plan 4.2-06: LangGraph Orchestration Layer
 
 ### Phase 5: Operational Planning Module

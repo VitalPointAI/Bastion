@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4.2 of 12 (AI Agent Teams)
-Plan: 4 of 6 in current phase
+Plan: 5 of 6 in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 4.2-04-PLAN.md
+Last activity: 2026-01-20 — Completed 4.2-05-PLAN.md
 
-Progress: ██████░░░░ ~67% (Phase 4.2 in progress)
+Progress: ███████░░░ ~83% (Phase 4.2 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 37
+- Total plans completed: 38
 - Average duration: 14 min
-- Total execution time: 8 hours
+- Total execution time: 8.5 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: ██████░░░░ ~67% (Phase 4.2 in progress)
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 8 | 75 min | 9 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
-| 4.2 (AI Agent Teams) | 4 | 36 min | 9 min |
+| 4.2 (AI Agent Teams) | 5 | 58 min | 12 min |
 
 **Recent Trend:**
-- Last 5 plans: 7 min, 2 min, 5 min, 4 min, 25 min
-- Trend: Agent builder with character, tools, teams
+- Last 5 plans: 2 min, 5 min, 4 min, 25 min, 22 min
+- Trend: Message bus infrastructure for agent communication
 
 ## Accumulated Context
 
@@ -331,9 +331,18 @@ None.
 - DID formats: did:near:tool-{toolId}, did:near:team-{teamId}
 - System prompt generation from character traits via character-builder.ts
 
+**Phase 4.2 Plan 5 (Secure Message Bus with ABAC Enforcement):**
+- Messages are immutable - only delivery status appended, never content modified
+- ABAC enforcement at delivery time (lazy evaluation) not publish time
+- pg-boss for reliable delivery with dead letter queue support
+- Default 24-hour TTL for messages, 1MB max payload size
+- MessageEnvelope: Standard structure for all inter-component messages
+- Per-agent AgentMessenger instances for typed communication
+- System channels for lifecycle/workflow/security events
+
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 4.2-04-PLAN.md
+Stopped at: Completed 4.2-05-PLAN.md
 Resume file: None
-Next action: Execute 4.2-05-PLAN.md
+Next action: Execute 4.2-06-PLAN.md
