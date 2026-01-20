@@ -11,6 +11,7 @@ import { adminService } from '../../lib/admin-service';
 import { useUser } from '../../context/UserContext';
 import { LLMConfigPanel } from './LLMConfigPanel';
 import { AgentConfigPanel } from './AgentConfigPanel';
+import { AgentManagementPanel } from './AgentManagementPanel';
 import { WorkflowConfigPanel } from './WorkflowConfigPanel';
 import { OSINTSourcePanel } from './OSINTSourcePanel';
 import { AuditLogPanel } from './AuditLogPanel';
@@ -132,6 +133,9 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
             Agents
           </Tab>
           <Tab className="admin-tab" selectedClassName="admin-tab--selected">
+            Agent Management
+          </Tab>
+          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
             Workflow
           </Tab>
           <Tab className="admin-tab" selectedClassName="admin-tab--selected">
@@ -148,6 +152,10 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
         <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
           <AgentConfigPanel />
+        </TabPanel>
+
+        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
+          <AgentManagementPanel />
         </TabPanel>
 
         <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
