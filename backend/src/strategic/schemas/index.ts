@@ -14,8 +14,13 @@
 export {
   DIMEInstrumentSchema,
   DIMEFILInstrumentSchema,
+  MidlifeCategorySchema,
+  MidlifeCategorizedBySchema,
+  dimeToMidlife,
   type DIMEInstrument,
   type DIMEFILInstrument,
+  type MidlifeCategory,
+  type MidlifeCategorizedBy,
 } from './dime.js';
 
 // Ends-Ways-Means Doctrine

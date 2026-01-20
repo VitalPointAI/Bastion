@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 import { getPool } from '../../lib/database.js';
 import type { StrategicObjective, Priority, ObjectiveStatus, ExtractedBy } from '../schemas/strategic-objective.js';
 import type { EndsWaysMeans } from '../schemas/ends-ways-means.js';
-import type { DIMEInstrument } from '../schemas/dime.js';
+import type { DIMEInstrument, MidlifeCategory, MidlifeCategorizedBy } from '../schemas/dime.js';
 
 /**
  * Initialize strategic_objectives table
@@ -35,6 +35,9 @@ export async function initStrategicObjectivesTable(): Promise<void> {
       human_verified BOOLEAN NOT NULL DEFAULT FALSE,
       verified_by TEXT,
       verified_at TIMESTAMPTZ,
+      midlife_category TEXT,
+      midlife_categorized_by TEXT,
+      midlife_confidence REAL,
       created_by TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -56,6 +59,9 @@ export interface ObjectiveInput {
   endsWaysMeans: EndsWaysMeans;
   primaryInstrument: DIMEInstrument;
   supportingInstruments?: DIMEInstrument[];
+  midlifeCategory?: MidlifeCategory;
+  midlifeCategorizedBy?: MidlifeCategorizedBy;
+  midlifeConfidence?: number;
   parentObjectiveId?: string;
   constraints?: string[];
   assumptions?: string[];
@@ -74,6 +80,9 @@ export interface ObjectiveUpdate {
   endsWaysMeans?: EndsWaysMeans;
   primaryInstrument?: DIMEInstrument;
   supportingInstruments?: DIMEInstrument[];
+  midlifeCategory?: MidlifeCategory;
+  midlifeCategorizedBy?: MidlifeCategorizedBy;
+  midlifeConfidence?: number;
   parentObjectiveId?: string | null;
   constraints?: string[];
   assumptions?: string[];
@@ -116,8 +125,9 @@ export class ObjectiveStore {
         primary_instrument, supporting_instruments, parent_objective_id,
         child_objective_ids, constraints, assumptions, risks,
         status, priority, extracted_by, extraction_confidence,
-        human_verified, created_by, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        human_verified, midlife_category, midlife_categorized_by,
+        midlife_confidence, created_by, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
     `, [
       id,
       input.documentId,
@@ -136,6 +146,9 @@ export class ObjectiveStore {
       input.extractedBy,
       input.extractionConfidence ?? null,
       false,
+      input.midlifeCategory ?? null,
+      input.midlifeCategorizedBy ?? null,
+      input.midlifeConfidence ?? null,
       input.createdBy,
       now,
       now,
@@ -168,8 +181,9 @@ export class ObjectiveStore {
             primary_instrument, supporting_instruments, parent_objective_id,
             child_objective_ids, constraints, assumptions, risks,
             status, priority, extracted_by, extraction_confidence,
-            human_verified, created_by, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+            human_verified, midlife_category, midlife_categorized_by,
+            midlife_confidence, created_by, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
         `, [
           id,
           input.documentId,
@@ -188,6 +202,9 @@ export class ObjectiveStore {
           input.extractedBy,
           input.extractionConfidence ?? null,
           false,
+          input.midlifeCategory ?? null,
+          input.midlifeCategorizedBy ?? null,
+          input.midlifeConfidence ?? null,
           input.createdBy,
           now,
           now,
@@ -383,6 +400,21 @@ export class ObjectiveStore {
       }
     }
 
+    if (updates.midlifeCategory !== undefined) {
+      setClauses.push(`midlife_category = $${paramIndex++}`);
+      params.push(updates.midlifeCategory);
+    }
+
+    if (updates.midlifeCategorizedBy !== undefined) {
+      setClauses.push(`midlife_categorized_by = $${paramIndex++}`);
+      params.push(updates.midlifeCategorizedBy);
+    }
+
+    if (updates.midlifeConfidence !== undefined) {
+      setClauses.push(`midlife_confidence = $${paramIndex++}`);
+      params.push(updates.midlifeConfidence);
+    }
+
     params.push(id);
 
     const result = await pool.query(
@@ -420,6 +452,9 @@ export class ObjectiveStore {
       endsWaysMeans: row.ends_ways_means as EndsWaysMeans,
       primaryInstrument: row.primary_instrument as DIMEInstrument,
       supportingInstruments: row.supporting_instruments as DIMEInstrument[],
+      midlifeCategory: row.midlife_category as MidlifeCategory | undefined,
+      midlifeCategorizedBy: row.midlife_categorized_by as MidlifeCategorizedBy | undefined,
+      midlifeConfidence: row.midlife_confidence as number | undefined,
       parentObjectiveId: row.parent_objective_id as string | undefined,
       childObjectiveIds: row.child_objective_ids as string[],
       constraints: row.constraints as string[],

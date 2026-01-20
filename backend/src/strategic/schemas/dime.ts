@@ -37,3 +37,49 @@ export const DIMEFILInstrumentSchema = z.enum([
 ]).describe('Extended instrument of national power (DIMEFIL framework)');
 
 export type DIMEFILInstrument = z.infer<typeof DIMEFILInstrumentSchema>;
+
+/**
+ * MIDLIFE Framework Schema
+ * Military, Information, Diplomatic, Legal, Intelligence, Financial, Economic
+ * Extended framework that adds Legal as a distinct category
+ *
+ * @see Plan 4-10 for implementation details
+ */
+export const MidlifeCategorySchema = z.enum([
+  'MILITARY',
+  'INFORMATION',
+  'DIPLOMATIC',
+  'LEGAL',
+  'INTELLIGENCE',
+  'FINANCIAL',
+  'ECONOMIC',
+]).describe('MIDLIFE category for strategic instruments of power');
+
+export type MidlifeCategory = z.infer<typeof MidlifeCategorySchema>;
+
+/**
+ * Categorization source - who assigned the MIDLIFE category
+ */
+export const MidlifeCategorizedBySchema = z.enum([
+  'AI',
+  'HUMAN',
+]).describe('Whether MIDLIFE category was assigned by AI or human');
+
+export type MidlifeCategorizedBy = z.infer<typeof MidlifeCategorizedBySchema>;
+
+/**
+ * Map DIME instrument to MIDLIFE category
+ * Used during migration and for backwards compatibility
+ */
+export function dimeToMidlife(dime: DIMEInstrument): MidlifeCategory {
+  switch (dime) {
+    case 'DIPLOMATIC':
+      return 'DIPLOMATIC';
+    case 'INFORMATIONAL':
+      return 'INFORMATION';
+    case 'MILITARY':
+      return 'MILITARY';
+    case 'ECONOMIC':
+      return 'ECONOMIC';
+  }
+}

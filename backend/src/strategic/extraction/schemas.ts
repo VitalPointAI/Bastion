@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { DIMEInstrumentSchema, PrioritySchema } from '../schemas/index.js';
+import { DIMEInstrumentSchema, MidlifeCategorySchema, PrioritySchema } from '../schemas/index.js';
 
 /**
  * Ends schema for extracted objectives
@@ -74,6 +74,12 @@ export const ExtractedObjectiveSchema = z.object({
 
   supportingDIME: z.array(DIMEInstrumentSchema).default([])
     .describe('Secondary DIME instruments that support this objective'),
+
+  midlifeCategory: MidlifeCategorySchema
+    .describe('MIDLIFE category: MILITARY (armed forces, defense), INFORMATION (communications, media, cyber), DIPLOMATIC (foreign relations, treaties), LEGAL (international/domestic law), INTELLIGENCE (collection, analysis), FINANCIAL (banking, sanctions), or ECONOMIC (trade, resources, development)'),
+
+  midlifeConfidence: z.number().min(0).max(1)
+    .describe('Confidence score (0-1) for MIDLIFE categorization. Higher when language clearly indicates category.'),
 
   priority: PrioritySchema
     .describe('Assessed priority based on language (e.g., "critical", "vital", "important") and positioning in document'),

@@ -12,7 +12,7 @@
  */
 
 import { z } from 'zod';
-import { DIMEInstrumentSchema } from './dime.js';
+import { DIMEInstrumentSchema, MidlifeCategorySchema, MidlifeCategorizedBySchema } from './dime.js';
 import { EndsWaysMeansSchema } from './ends-ways-means.js';
 
 /**
@@ -64,6 +64,12 @@ export const StrategicObjectiveSchema = z.object({
   primaryInstrument: DIMEInstrumentSchema.describe('Primary DIME category for this objective'),
   supportingInstruments: z.array(DIMEInstrumentSchema).default([])
     .describe('Secondary DIME instruments that support this objective'),
+  midlifeCategory: MidlifeCategorySchema.optional()
+    .describe('MIDLIFE category: Military, Information, Diplomatic, Legal, Intelligence, Financial, Economic'),
+  midlifeCategorizedBy: MidlifeCategorizedBySchema.optional()
+    .describe('Whether MIDLIFE category was assigned by AI or human override'),
+  midlifeConfidence: z.number().min(0).max(1).optional()
+    .describe('Confidence score (0-1) for AI MIDLIFE categorization'),
   parentObjectiveId: z.string().optional()
     .describe('ID of higher-level parent objective in hierarchy'),
   childObjectiveIds: z.array(z.string()).default([])
