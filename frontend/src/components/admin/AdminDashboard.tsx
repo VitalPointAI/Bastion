@@ -14,6 +14,7 @@ import { AgentConfigPanel } from './AgentConfigPanel';
 import { AgentManagementPanel } from './AgentManagementPanel';
 import { ToolRegistryPanel } from './ToolRegistryPanel';
 import { CharacterBuilderPanel } from './CharacterBuilderPanel';
+import { TeamComposerPanel } from './TeamComposerPanel';
 import { WorkflowConfigPanel } from './WorkflowConfigPanel';
 import { OSINTSourcePanel } from './OSINTSourcePanel';
 import { AuditLogPanel } from './AuditLogPanel';
@@ -144,6 +145,9 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
             Characters
           </Tab>
           <Tab className="admin-tab" selectedClassName="admin-tab--selected">
+            Teams
+          </Tab>
+          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
             Workflow
           </Tab>
           <Tab className="admin-tab" selectedClassName="admin-tab--selected">
@@ -172,6 +176,10 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
         <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
           <CharacterBuilderPanel />
+        </TabPanel>
+
+        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
+          <TeamComposerPanel />
         </TabPanel>
 
         <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">

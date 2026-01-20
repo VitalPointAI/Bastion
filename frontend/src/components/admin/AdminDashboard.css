@@ -2179,3 +2179,334 @@ body:has(.admin-dashboard),
   padding: 0.5rem 0.75rem;
   font-size: 0.85rem;
 }
+
+/* ============================================================================
+   Team Composer Panel
+   ============================================================================ */
+
+.team-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.team-card {
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.team-card:hover {
+  border-color: var(--border-medium, #3a3a48);
+}
+
+.team-card--expanded {
+  border-color: var(--accent-green, #22c55e);
+}
+
+.team-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-secondary, #1a1a24);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.team-card-header:hover {
+  background: var(--bg-hover, #2a2a38);
+}
+
+.team-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.team-card-name {
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.team-card-badges {
+  display: flex;
+  gap: 6px;
+}
+
+.team-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.team-card-members {
+  font-size: 0.8rem;
+  color: var(--text-muted, #666678);
+}
+
+.team-card-expand {
+  color: var(--text-muted, #666678);
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.team-card-expand.expanded {
+  transform: rotate(180deg);
+}
+
+.team-card-body {
+  padding: 16px;
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  background: var(--bg-primary, #111118);
+}
+
+.team-card-body.collapsed {
+  display: none;
+}
+
+.team-description {
+  margin: 0 0 1rem 0;
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.team-purpose {
+  margin-bottom: 1rem;
+}
+
+.team-purpose h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.team-purpose p {
+  margin: 0;
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.team-did-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-deepest, #050508);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.team-did-label {
+  color: var(--text-muted, #666678);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.team-did-value {
+  color: var(--accent-green, #22c55e);
+  font-family: monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.team-members-section {
+  margin-bottom: 1rem;
+}
+
+.team-members-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.team-members-header h4 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.team-members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.team-member-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-deepest, #050508);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+}
+
+.team-member-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.team-member-name {
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  font-size: 0.9rem;
+}
+
+.team-member-permissions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.permission-tag {
+  font-size: 0.7rem;
+  color: var(--text-muted, #666678);
+  background: rgba(107, 114, 128, 0.2);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.team-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  margin-top: 1rem;
+}
+
+/* Badge variants for teams */
+.badge--workflow {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.badge--sequential {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.badge--parallel {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+
+.badge--consensus {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.badge--hierarchical {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.badge--role {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}
+
+.badge--coordinator {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.badge--specialist {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.badge--validator {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.badge--executor {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+
+/* Member selector */
+.member-selector {
+  margin-bottom: 1rem;
+}
+
+.member-selector-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.member-add-btn {
+  margin-bottom: 1rem;
+}
+
+/* Pending members list */
+.pending-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-primary, #111118);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+}
+
+.pending-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-deepest, #050508);
+  border-radius: 4px;
+}
+
+.pending-member-name {
+  font-size: 0.85rem;
+  color: var(--text-primary, #fff);
+}
+
+.pending-member .btn--danger {
+  padding: 2px 8px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Team create form */
+.team-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Checkbox group inline */
+.checkbox-group {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .member-selector-row {
+    grid-template-columns: 1fr;
+  }
+
+  .team-members-grid {
+    grid-template-columns: 1fr;
+  }
+}
