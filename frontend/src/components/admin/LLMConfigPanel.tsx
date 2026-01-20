@@ -2,14 +2,14 @@
  * LLMConfigPanel Component
  *
  * Configuration panel for LLM provider settings including:
- * - Provider selection (Anthropic, OpenAI, Azure, Local)
- * - Model assignments for different tasks
+ * - Provider selection (Anthropic, OpenAI, Azure, NEAR AI, Local)
+ * - Model assignments for different tasks (with dynamic model fetching)
  * - API key management (masked display, optional update)
  * - Rate limiting controls
  */
 
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useEffect, useCallback } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { adminService, getProviderDisplayName } from '../../lib/admin-service';
@@ -35,21 +35,59 @@ const LLMConfigSchema = z.object({
 
 type LLMConfigFormData = z.infer<typeof LLMConfigSchema>;
 
+interface ModelOption {
+  id: string;
+  name: string;
+}
+
 export function LLMConfigPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [currentMaskedKey, setCurrentMaskedKey] = useState<string>('');
+  const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    control,
     formState: { errors, isDirty },
   } = useForm<LLMConfigFormData>({
     resolver: zodResolver(LLMConfigSchema),
   });
+
+  const selectedProvider = watch('provider');
+  const currentApiKey = watch('apiKey');
+  const currentBaseUrl = watch('baseUrl');
+
+  // Fetch available models when provider changes
+  const fetchModels = useCallback(async (provider: string, apiKey?: string, baseUrl?: string) => {
+    if (!provider) return;
+
+    setIsLoadingModels(true);
+    try {
+      const models = await adminService.fetchProviderModels(provider, apiKey, baseUrl);
+      setAvailableModels(models);
+    } catch (err) {
+      console.warn('Failed to fetch models:', err);
+      // Use defaults on error
+      const models = await adminService.fetchProviderModels(provider);
+      setAvailableModels(models);
+    } finally {
+      setIsLoadingModels(false);
+    }
+  }, []);
+
+  // Fetch models when provider changes
+  useEffect(() => {
+    if (selectedProvider) {
+      fetchModels(selectedProvider, currentApiKey, currentBaseUrl);
+    }
+  }, [selectedProvider, fetchModels]);
 
   // Load current configuration on mount
   useEffect(() => {
@@ -59,16 +97,28 @@ export function LLMConfigPanel() {
         setError(null);
         const config = await adminService.getLLMConfig();
         setCurrentMaskedKey(config.apiKey || '');
+
+        // Reset form with config values
         reset({
           provider: config.provider,
-          models: config.models,
+          models: config.models || {
+            extraction: '',
+            analysis: '',
+            summarization: '',
+            redTeam: '',
+          },
           apiKey: '', // Don't prefill API key
           baseUrl: config.baseUrl || '',
-          maxRequestsPerMinute: config.maxRequestsPerMinute,
-          maxTokensPerDay: config.maxTokensPerDay,
-          maxCostPerDocument: config.maxCostPerDocument,
-          alertThreshold: config.alertThreshold,
+          maxRequestsPerMinute: config.maxRequestsPerMinute || 60,
+          maxTokensPerDay: config.maxTokensPerDay || 1000000,
+          maxCostPerDocument: config.maxCostPerDocument || 10,
+          alertThreshold: config.alertThreshold || 0.8,
         });
+
+        // Fetch models for the loaded provider
+        if (config.provider) {
+          fetchModels(config.provider);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load configuration');
       } finally {
@@ -77,7 +127,14 @@ export function LLMConfigPanel() {
     };
 
     loadConfig();
-  }, [reset]);
+  }, [reset, fetchModels]);
+
+  // Refresh models button handler
+  const handleRefreshModels = async () => {
+    if (selectedProvider) {
+      await fetchModels(selectedProvider, currentApiKey, currentBaseUrl);
+    }
+  };
 
   const onSubmit = async (data: LLMConfigFormData) => {
     try {
@@ -85,28 +142,28 @@ export function LLMConfigPanel() {
       setError(null);
       setSuccessMessage(null);
 
-      // Only include apiKey if it was provided (non-empty)
-      const updateData: Partial<LLMProviderConfig> = {
+      // Build update data - only include fields that have values
+      const updateData: Partial<LLMProviderConfig> & { reason?: string } = {
         provider: data.provider,
         models: data.models,
         maxRequestsPerMinute: data.maxRequestsPerMinute,
         maxTokensPerDay: data.maxTokensPerDay,
         maxCostPerDocument: data.maxCostPerDocument,
         alertThreshold: data.alertThreshold,
+        reason: 'Updated via Admin UI',
       };
 
-      if (data.baseUrl) {
+      // Only include baseUrl if provided
+      if (data.baseUrl && data.baseUrl.trim() !== '') {
         updateData.baseUrl = data.baseUrl;
       }
 
+      // Only include apiKey if provided (non-empty)
       if (data.apiKey && data.apiKey.trim() !== '') {
         updateData.apiKey = data.apiKey;
       }
 
-      const updatedConfig = await adminService.updateLLMConfig(
-        updateData,
-        'Updated via Admin UI'
-      );
+      const updatedConfig = await adminService.updateLLMConfig(updateData);
 
       setCurrentMaskedKey(updatedConfig.apiKey || '');
       setSuccessMessage('Configuration saved successfully');
@@ -203,42 +260,99 @@ export function LLMConfigPanel() {
         </div>
 
         <div className="config-section">
-          <h3>Model Assignments</h3>
+          <div className="config-section-header-row">
+            <h3>Model Assignments</h3>
+            <button
+              type="button"
+              className="btn btn--sm btn--secondary"
+              onClick={handleRefreshModels}
+              disabled={isLoadingModels}
+            >
+              {isLoadingModels ? 'Loading...' : 'Refresh Models'}
+            </button>
+          </div>
+          <p className="config-section-desc">
+            Select models for each task. {availableModels.length > 0 && `${availableModels.length} models available.`}
+          </p>
 
           <div className="form-row form-row--2x2">
             <FormField label="Extraction Model" required error={errors.models?.extraction?.message}>
-              <input
-                type="text"
-                {...register('models.extraction')}
-                className="form-input"
-                placeholder="claude-3-5-sonnet-20241022"
+              <Controller
+                name="models.extraction"
+                control={control}
+                render={({ field }) => (
+                  <select {...field} className="form-select">
+                    <option value="">Select a model...</option>
+                    {availableModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.name}
+                      </option>
+                    ))}
+                    {field.value && !availableModels.find((m) => m.id === field.value) && (
+                      <option value={field.value}>{field.value} (current)</option>
+                    )}
+                  </select>
+                )}
               />
             </FormField>
 
             <FormField label="Analysis Model" required error={errors.models?.analysis?.message}>
-              <input
-                type="text"
-                {...register('models.analysis')}
-                className="form-input"
-                placeholder="claude-3-5-sonnet-20241022"
+              <Controller
+                name="models.analysis"
+                control={control}
+                render={({ field }) => (
+                  <select {...field} className="form-select">
+                    <option value="">Select a model...</option>
+                    {availableModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.name}
+                      </option>
+                    ))}
+                    {field.value && !availableModels.find((m) => m.id === field.value) && (
+                      <option value={field.value}>{field.value} (current)</option>
+                    )}
+                  </select>
+                )}
               />
             </FormField>
 
             <FormField label="Summarization Model" required error={errors.models?.summarization?.message}>
-              <input
-                type="text"
-                {...register('models.summarization')}
-                className="form-input"
-                placeholder="claude-3-5-haiku-20241022"
+              <Controller
+                name="models.summarization"
+                control={control}
+                render={({ field }) => (
+                  <select {...field} className="form-select">
+                    <option value="">Select a model...</option>
+                    {availableModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.name}
+                      </option>
+                    ))}
+                    {field.value && !availableModels.find((m) => m.id === field.value) && (
+                      <option value={field.value}>{field.value} (current)</option>
+                    )}
+                  </select>
+                )}
               />
             </FormField>
 
             <FormField label="Red Team Model" required error={errors.models?.redTeam?.message}>
-              <input
-                type="text"
-                {...register('models.redTeam')}
-                className="form-input"
-                placeholder="claude-3-5-sonnet-20241022"
+              <Controller
+                name="models.redTeam"
+                control={control}
+                render={({ field }) => (
+                  <select {...field} className="form-select">
+                    <option value="">Select a model...</option>
+                    {availableModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.name}
+                      </option>
+                    ))}
+                    {field.value && !availableModels.find((m) => m.id === field.value) && (
+                      <option value={field.value}>{field.value} (current)</option>
+                    )}
+                  </select>
+                )}
               />
             </FormField>
           </div>
