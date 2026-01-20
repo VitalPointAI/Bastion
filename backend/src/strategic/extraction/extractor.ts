@@ -42,6 +42,23 @@ Apply the DIME framework to categorize each objective:
 - MILITARY: Armed forces, defense operations, military capabilities, force posture
 - ECONOMIC: Trade, sanctions, financial instruments, economic statecraft
 
+Apply the MIDLIFE framework (expanded categorization) for each objective:
+- MILITARY: Armed forces, defense capabilities, military operations, force posture
+- INFORMATION: Communications, media, cyber operations, public affairs, influence
+- DIPLOMATIC: Foreign relations, treaties, alliances, negotiations, international cooperation
+- LEGAL: International law, domestic law, rules of engagement, legal frameworks
+- INTELLIGENCE: Collection, analysis, counterintelligence, reconnaissance
+- FINANCIAL: Banking, sanctions, monetary policy, financial instruments
+- ECONOMIC: Trade, resources, development, industrial base, economic statecraft
+
+MIDLIFE Categorization Guidance:
+- Legal: Look for mentions of law, legal authority, treaties as binding documents, rules of engagement
+- Intelligence: Look for collection, surveillance, reconnaissance, analysis, counterintelligence
+- Financial: Look for banking, sanctions specifically for financial instruments, monetary policy
+- When DIME category is ECONOMIC, distinguish between Financial (banking/monetary) and Economic (trade/resources)
+- When DIME category is INFORMATIONAL, map to INFORMATION in MIDLIFE
+- Provide confidence score (0-1) for MIDLIFE categorization based on clarity of language
+
 Apply Ends-Ways-Means doctrine:
 - Ends: The desired outcome or end state - what success looks like
 - Ways: Strategies, concepts, methods to achieve the ends - how we get there
@@ -55,6 +72,7 @@ Rules:
 5. If uncertain about DIME category, choose most applicable based on primary focus
 6. Assign sequential IDs in format OBJ-001, OBJ-002, etc.
 7. Be thorough but precise - capture all stated objectives, avoid fabrication
+8. For MIDLIFE, choose the most specific category - Legal, Intelligence, Financial if clearly applicable
 
 You MUST use the extract_objectives tool to provide your response in the required structured format.`;
 
@@ -109,6 +127,8 @@ export class ExtractionService {
                 'ways',
                 'means',
                 'dimeCategory',
+                'midlifeCategory',
+                'midlifeConfidence',
                 'priority',
                 'constraints',
                 'assumptions',
@@ -163,6 +183,17 @@ export class ExtractionService {
                   items: { type: 'string', enum: ['DIPLOMATIC', 'INFORMATIONAL', 'MILITARY', 'ECONOMIC'] },
                   description: 'Secondary DIME instruments',
                   default: [],
+                },
+                midlifeCategory: {
+                  type: 'string',
+                  enum: ['MILITARY', 'INFORMATION', 'DIPLOMATIC', 'LEGAL', 'INTELLIGENCE', 'FINANCIAL', 'ECONOMIC'],
+                  description: 'MIDLIFE category: MILITARY (armed forces), INFORMATION (comms, cyber), DIPLOMATIC (foreign relations), LEGAL (law, rules), INTELLIGENCE (collection, analysis), FINANCIAL (banking, sanctions), ECONOMIC (trade, resources)',
+                },
+                midlifeConfidence: {
+                  type: 'number',
+                  minimum: 0,
+                  maximum: 1,
+                  description: 'Confidence score (0-1) for MIDLIFE categorization. Higher when language clearly indicates category.',
                 },
                 priority: {
                   type: 'string',
