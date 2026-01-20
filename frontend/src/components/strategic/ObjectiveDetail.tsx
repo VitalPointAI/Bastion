@@ -5,11 +5,22 @@
  * Shows full description, Ends/Ways/Means breakdown, source reference,
  * editable MIDLIFE category dropdown, constraints and assumptions,
  * and a save button for updates.
+ *
+ * Phase 4-10: Full edit mode for all fields (description, status, priority,
+ * constraints, assumptions, risks, MIDLIFE category).
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { StrategicObjective, MidlifeCategory, ObjectiveEnds, ObjectiveWays, ObjectiveMeans } from '../../lib/types/strategic.js';
-import { MIDLIFE_METADATA } from '../../lib/types/strategic.js';
+import type {
+  StrategicObjective,
+  MidlifeCategory,
+  ObjectiveEnds,
+  ObjectiveWays,
+  ObjectiveMeans,
+  ObjectiveStatus,
+  Priority,
+} from '../../lib/types/strategic.js';
+import { MIDLIFE_METADATA, ObjectiveStatus as StatusValues, Priority as PriorityValues } from '../../lib/types/strategic.js';
 import { strategicService } from '../../lib/strategic-service.js';
 import { MidlifeCategorySelector } from './MidlifeCategorySelector.js';
 import './ObjectiveDetail.css';
@@ -72,8 +83,14 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Edited values
+  // Edited values - all editable fields
+  const [editedDescription, setEditedDescription] = useState('');
   const [editedCategory, setEditedCategory] = useState<MidlifeCategory | undefined>(undefined);
+  const [editedStatus, setEditedStatus] = useState<ObjectiveStatus>('DRAFT');
+  const [editedPriority, setEditedPriority] = useState<Priority>('MEDIUM');
+  const [editedConstraints, setEditedConstraints] = useState<string[]>([]);
+  const [editedAssumptions, setEditedAssumptions] = useState<string[]>([]);
+  const [editedRisks, setEditedRisks] = useState<string[]>([]);
 
   const loadObjective = useCallback(async () => {
     setLoading(true);
@@ -81,7 +98,14 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
     try {
       const obj = await strategicService.getObjective(objectiveId);
       setObjective(obj);
+      // Initialize all editable fields
+      setEditedDescription(obj.description);
       setEditedCategory(obj.midlifeCategory);
+      setEditedStatus(obj.status);
+      setEditedPriority(obj.priority);
+      setEditedConstraints(obj.constraints || []);
+      setEditedAssumptions(obj.assumptions || []);
+      setEditedRisks(obj.risks || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load objective');
     } finally {
@@ -100,11 +124,29 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
     setError(null);
 
     try {
-      const updates: Partial<StrategicObjective> = {};
+      const updates: Record<string, unknown> = {};
 
       // Only include changed fields
+      if (editedDescription !== objective.description) {
+        updates.description = editedDescription;
+      }
       if (editedCategory !== objective.midlifeCategory) {
         updates.midlifeCategory = editedCategory;
+      }
+      if (editedStatus !== objective.status) {
+        updates.status = editedStatus;
+      }
+      if (editedPriority !== objective.priority) {
+        updates.priority = editedPriority;
+      }
+      if (JSON.stringify(editedConstraints) !== JSON.stringify(objective.constraints || [])) {
+        updates.constraints = editedConstraints;
+      }
+      if (JSON.stringify(editedAssumptions) !== JSON.stringify(objective.assumptions || [])) {
+        updates.assumptions = editedAssumptions;
+      }
+      if (JSON.stringify(editedRisks) !== JSON.stringify(objective.risks || [])) {
+        updates.risks = editedRisks;
       }
 
       // Call the API with PUT method
@@ -138,9 +180,43 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
 
   const handleCancel = () => {
     if (objective) {
+      // Reset all fields to original values
+      setEditedDescription(objective.description);
       setEditedCategory(objective.midlifeCategory);
+      setEditedStatus(objective.status);
+      setEditedPriority(objective.priority);
+      setEditedConstraints(objective.constraints || []);
+      setEditedAssumptions(objective.assumptions || []);
+      setEditedRisks(objective.risks || []);
     }
     setEditMode(false);
+  };
+
+  // List editing helpers
+  const handleAddItem = (
+    list: string[],
+    setList: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    setList([...list, '']);
+  };
+
+  const handleUpdateItem = (
+    list: string[],
+    setList: React.Dispatch<React.SetStateAction<string[]>>,
+    index: number,
+    value: string
+  ) => {
+    const newList = [...list];
+    newList[index] = value;
+    setList(newList);
+  };
+
+  const handleRemoveItem = (
+    list: string[],
+    setList: React.Dispatch<React.SetStateAction<string[]>>,
+    index: number
+  ) => {
+    setList(list.filter((_, i) => i !== index));
   };
 
   if (loading) {
@@ -190,12 +266,37 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
           Back
         </button>
         <div className="header-badges">
-          <span className={`status-badge ${getStatusClass(objective.status)}`}>
-            {objective.status}
-          </span>
-          <span className={`priority-badge ${getPriorityClass(objective.priority)}`}>
-            {objective.priority}
-          </span>
+          {editMode ? (
+            <>
+              <select
+                className="status-select"
+                value={editedStatus}
+                onChange={(e) => setEditedStatus(e.target.value as ObjectiveStatus)}
+              >
+                {Object.values(StatusValues).map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <select
+                className="priority-select"
+                value={editedPriority}
+                onChange={(e) => setEditedPriority(e.target.value as Priority)}
+              >
+                {Object.values(PriorityValues).map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <>
+              <span className={`status-badge ${getStatusClass(objective.status)}`}>
+                {objective.status}
+              </span>
+              <span className={`priority-badge ${getPriorityClass(objective.priority)}`}>
+                {objective.priority}
+              </span>
+            </>
+          )}
         </div>
         <div className="header-actions">
           {!editMode ? (
@@ -248,7 +349,17 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
       {/* Description */}
       <section className="detail-section">
         <h3>Description</h3>
-        <p className="full-description">{objective.description}</p>
+        {editMode ? (
+          <textarea
+            className="description-editor"
+            value={editedDescription}
+            onChange={(e) => setEditedDescription(e.target.value)}
+            rows={4}
+            placeholder="Enter objective description..."
+          />
+        ) : (
+          <p className="full-description">{objective.description}</p>
+        )}
       </section>
 
       {/* Source Reference */}
@@ -298,7 +409,7 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
         )}
       </section>
 
-      {/* Ends-Ways-Means */}
+      {/* Ends-Ways-Means (read-only for now - complex nested structure) */}
       {ewm && (
         <section className="detail-section ewm-section">
           <h3>Ends-Ways-Means Analysis</h3>
@@ -400,34 +511,139 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
       )}
 
       {/* Constraints */}
-      {objective.constraints && objective.constraints.length > 0 && (
-        <section className="detail-section">
-          <h3>Constraints</h3>
+      <section className="detail-section">
+        <h3>Constraints</h3>
+        {editMode ? (
+          <div className="editable-list">
+            {editedConstraints.map((c, i) => (
+              <div key={i} className="editable-list-item">
+                <input
+                  type="text"
+                  value={c}
+                  onChange={(e) => handleUpdateItem(editedConstraints, setEditedConstraints, i, e.target.value)}
+                  placeholder="Enter constraint..."
+                />
+                <button
+                  className="remove-item-btn"
+                  onClick={() => handleRemoveItem(editedConstraints, setEditedConstraints, i)}
+                  title="Remove"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+            <button
+              className="add-item-btn"
+              onClick={() => handleAddItem(editedConstraints, setEditedConstraints)}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Add Constraint
+            </button>
+          </div>
+        ) : objective.constraints && objective.constraints.length > 0 ? (
           <ul className="constraint-list">
             {objective.constraints.map((c, i) => <li key={i}>{c}</li>)}
           </ul>
-        </section>
-      )}
+        ) : (
+          <p className="empty-list">No constraints defined</p>
+        )}
+      </section>
 
       {/* Assumptions */}
-      {objective.assumptions && objective.assumptions.length > 0 && (
-        <section className="detail-section">
-          <h3>Assumptions</h3>
+      <section className="detail-section">
+        <h3>Assumptions</h3>
+        {editMode ? (
+          <div className="editable-list">
+            {editedAssumptions.map((a, i) => (
+              <div key={i} className="editable-list-item">
+                <input
+                  type="text"
+                  value={a}
+                  onChange={(e) => handleUpdateItem(editedAssumptions, setEditedAssumptions, i, e.target.value)}
+                  placeholder="Enter assumption..."
+                />
+                <button
+                  className="remove-item-btn"
+                  onClick={() => handleRemoveItem(editedAssumptions, setEditedAssumptions, i)}
+                  title="Remove"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+            <button
+              className="add-item-btn"
+              onClick={() => handleAddItem(editedAssumptions, setEditedAssumptions)}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Add Assumption
+            </button>
+          </div>
+        ) : objective.assumptions && objective.assumptions.length > 0 ? (
           <ul className="assumption-list">
             {objective.assumptions.map((a, i) => <li key={i}>{a}</li>)}
           </ul>
-        </section>
-      )}
+        ) : (
+          <p className="empty-list">No assumptions defined</p>
+        )}
+      </section>
 
       {/* Risks */}
-      {objective.risks && objective.risks.length > 0 && (
-        <section className="detail-section">
-          <h3>Risks</h3>
+      <section className="detail-section">
+        <h3>Risks</h3>
+        {editMode ? (
+          <div className="editable-list">
+            {editedRisks.map((r, i) => (
+              <div key={i} className="editable-list-item">
+                <input
+                  type="text"
+                  value={r}
+                  onChange={(e) => handleUpdateItem(editedRisks, setEditedRisks, i, e.target.value)}
+                  placeholder="Enter risk..."
+                />
+                <button
+                  className="remove-item-btn"
+                  onClick={() => handleRemoveItem(editedRisks, setEditedRisks, i)}
+                  title="Remove"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+            <button
+              className="add-item-btn"
+              onClick={() => handleAddItem(editedRisks, setEditedRisks)}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Add Risk
+            </button>
+          </div>
+        ) : objective.risks && objective.risks.length > 0 ? (
           <ul className="risk-list">
             {objective.risks.map((r, i) => <li key={i}>{r}</li>)}
           </ul>
-        </section>
-      )}
+        ) : (
+          <p className="empty-list">No risks identified</p>
+        )}
+      </section>
 
       {/* Metadata Footer */}
       <section className="detail-footer">

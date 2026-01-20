@@ -15,6 +15,7 @@ import { DocumentUpload } from './DocumentUpload.js';
 import { DocumentList } from './DocumentList.js';
 import { ObjectiveList } from './ObjectiveList.js';
 import { ObjectiveDetail } from './ObjectiveDetail.js';
+import { MidlifeLegend } from './MidlifeLegend.js';
 import './StrategicDashboard.css';
 
 export function StrategicDashboard() {
@@ -158,6 +159,11 @@ export function StrategicDashboard() {
                   <span className="meta-label">Objectives Extracted</span>
                   <span className="meta-value">{selectedDocument.objectiveCount ?? 0}</span>
                 </div>
+              </div>
+
+              {/* MIDLIFE Legend */}
+              <div className="legend-container">
+                <MidlifeLegend compact />
               </div>
 
               {/* Objective List for this document */}

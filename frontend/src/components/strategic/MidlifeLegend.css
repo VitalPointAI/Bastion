@@ -1,0 +1,177 @@
+/* ============================================================================
+   BASTION Command Center - MIDLIFE Legend
+   Strategic Power Categorization Reference
+   ============================================================================ */
+
+.midlife-legend {
+  background: linear-gradient(145deg, var(--bg-secondary, #1a1a24) 0%, var(--bg-primary, #111118) 100%);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+/* Header */
+.legend-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle, #2a2a38);
+}
+
+.legend-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-header h3::before {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 4px;
+  background: var(--accent-blue, #4a90d9);
+  border-radius: 1px;
+}
+
+.legend-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-dim, #444456);
+  padding-left: 0.75rem;
+}
+
+/* Grid layout */
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+/* Individual legend items */
+.legend-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem;
+  background: var(--bg-elevated, #222230);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-left: 3px solid var(--category-color);
+  border-radius: 6px;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.legend-item:hover {
+  border-color: var(--category-color);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.legend-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--category-color);
+}
+
+.legend-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.legend-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--category-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.legend-description {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted, #666678);
+  line-height: 1.4;
+  padding-left: 0.25rem;
+}
+
+/* Compact mode */
+.midlife-legend.compact .legend-header {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.midlife-legend.compact .legend-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.midlife-legend.compact .legend-item {
+  padding: 0.35rem 0.6rem;
+  flex-direction: row;
+  align-items: center;
+  border-left-width: 2px;
+}
+
+.midlife-legend.compact .legend-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.midlife-legend.compact .legend-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.midlife-legend.compact .legend-label {
+  font-size: 0.7rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .legend-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .legend-item {
+    padding: 0.5rem;
+  }
+
+  .legend-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .legend-label {
+    font-size: 0.75rem;
+  }
+
+  .legend-description {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .midlife-legend.compact .legend-grid {
+    flex-direction: column;
+  }
+
+  .midlife-legend.compact .legend-item {
+    width: 100%;
+  }
+}
