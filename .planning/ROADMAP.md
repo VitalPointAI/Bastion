@@ -11,6 +11,7 @@ None
 ## Phases
 
 - [x] **Phase 1: Foundation & Infrastructure** - Establish NEAR blockchain integration, Phala TEE, core smart contracts, containerized architecture
+- [ ] **Phase 1.1: Calimero Self-Sovereign App Integration** - Research Calimero for DAO compartmentalization, replace Privy with NEAR accounts + MPC (INSERTED)
 - [x] **Phase 2: Identity & Security Framework** - Implement DID system, ABAC, post-quantum cryptography, zero trust architecture
 - [x] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
 - [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
@@ -52,6 +53,25 @@ Plans:
 - [x] Plan 1-06: Chain Signatures & Intents (completed 2026-01-12)
 - [x] Plan 1-07: Containerization & Dev Environment (completed 2026-01-13)
 
+### Phase 1.1: Calimero Self-Sovereign App Integration (INSERTED)
+**Goal:** Research and integrate Calimero self-sovereign applications for DAO compartmentalization, replace Privy with NEAR accounts + MPC for improved security ownership
+**Depends on:** Phase 1
+**Research:** Required (1.1-RESEARCH.md)
+**Research topics:** Calimero Network architecture, self-sovereign application patterns, DAO compartmentalization into contained member networks, NEAR implicit accounts with Web2 linking, NEAR MPC for usability, Privy replacement strategy, foundation component impact analysis
+**Plans:** 0 plans
+
+**Context:**
+This urgent insertion addresses a fundamental architecture concern: moving from the centralized/managed Privy authentication service to a self-sovereign solution using NEAR accounts (implicit accounts linked to Web2 methods) and NEAR MPC for improved usability. Calimero's self-sovereign app model can compartmentalize DAOs into contained networks of approved members, significantly improving security posture.
+
+**Key Questions to Research:**
+- How do Calimero self-sovereign applications work?
+- How can DAO compartmentalization improve platform security?
+- What is the migration path from Privy to NEAR accounts + MPC?
+- Which Phase 1 and Phase 2 components would be affected/replaced?
+
+Plans:
+- [ ] TBD (run /gsd:research-phase 1.1 to investigate)
+
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
 **Depends on**: Phase 1
@@ -91,7 +111,7 @@ Plans:
 **Depends on**: Phase 3
 **Research**: Complete (4-RESEARCH.md)
 **Research topics**: Document parsing libraries for TypeScript, NLP models for military strategy extraction, NEAR AI integration for sensitive document processing, DIME framework data modeling
-**Plans**: 9
+**Plans**: 10
 
 Plans:
 - [x] Plan 4-01: Document Ingestion Pipeline (completed 2026-01-17)
@@ -103,6 +123,7 @@ Plans:
 - [x] Plan 4-07: Admin Configuration System (completed 2026-01-19)
 - [x] Plan 4-08: Strategic Planning AI Agents (completed 2026-01-19)
 - [ ] Plan 4-09: End-to-End Strategic Flow
+- [ ] Plan 4-10: Objective Detail View & MIDLIFE Categorization
 
 ### Phase 4.1: Admin UI (INSERTED)
 **Goal:** Create administrative interface for system configuration and management
