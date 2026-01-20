@@ -442,6 +442,7 @@ export class ObjectiveStore {
 
   /**
    * Convert database row to StrategicObjective
+   * Handles PostgreSQL NULL values by converting them to undefined
    */
   private rowToObjective(row: Record<string, unknown>): StrategicObjective {
     return {
@@ -452,17 +453,19 @@ export class ObjectiveStore {
       endsWaysMeans: row.ends_ways_means as EndsWaysMeans,
       primaryInstrument: row.primary_instrument as DIMEInstrument,
       supportingInstruments: row.supporting_instruments as DIMEInstrument[],
-      midlifeCategory: row.midlife_category as MidlifeCategory | undefined,
-      midlifeCategorizedBy: row.midlife_categorized_by as MidlifeCategorizedBy | undefined,
-      midlifeConfidence: row.midlife_confidence as number | undefined,
-      parentObjectiveId: row.parent_objective_id as string | undefined,
+      // Handle PostgreSQL NULL values - convert to undefined for TypeScript
+      midlifeCategory: row.midlife_category != null ? row.midlife_category as MidlifeCategory : undefined,
+      midlifeCategorizedBy: row.midlife_categorized_by != null ? row.midlife_categorized_by as MidlifeCategorizedBy : undefined,
+      midlifeConfidence: row.midlife_confidence != null ? row.midlife_confidence as number : undefined,
+      parentObjectiveId: row.parent_objective_id != null ? row.parent_objective_id as string : undefined,
       childObjectiveIds: row.child_objective_ids as string[],
       constraints: row.constraints as string[],
       assumptions: row.assumptions as string[],
       risks: row.risks as string[],
       status: row.status as ObjectiveStatus,
+      priority: row.priority as Priority,
       extractedBy: row.extracted_by as ExtractedBy,
-      extractionConfidence: row.extraction_confidence as number | undefined,
+      extractionConfidence: row.extraction_confidence != null ? row.extraction_confidence as number : undefined,
       humanVerified: row.human_verified as boolean,
       createdAt: new Date(row.created_at as string),
       updatedAt: new Date(row.updated_at as string),

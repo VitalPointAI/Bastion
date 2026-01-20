@@ -82,6 +82,8 @@ export const StrategicObjectiveSchema = z.object({
     .describe('Identified risks to achieving this objective'),
   status: ObjectiveStatusSchema.default('DRAFT')
     .describe('Current workflow status'),
+  priority: PrioritySchema.default('MEDIUM')
+    .describe('Priority level of this objective'),
   extractedBy: ExtractedBySchema
     .describe('Whether extracted by human or AI'),
   extractionConfidence: z.number().min(0).max(1).optional()
