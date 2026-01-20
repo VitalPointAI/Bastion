@@ -290,6 +290,7 @@ export function getProviderDisplayName(provider: string): string {
     anthropic: 'Anthropic',
     openai: 'OpenAI',
     'azure-openai': 'Azure OpenAI',
+    'near-ai': 'NEAR AI',
     local: 'Local Model',
   };
   return names[provider] || provider;

@@ -18,7 +18,7 @@ import { FormField } from './common/FormField';
 
 // Zod schema for LLM configuration form
 const LLMConfigSchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'azure-openai', 'local']),
+  provider: z.enum(['anthropic', 'openai', 'azure-openai', 'near-ai', 'local']),
   models: z.object({
     extraction: z.string().min(1, 'Extraction model is required'),
     analysis: z.string().min(1, 'Analysis model is required'),
@@ -164,6 +164,7 @@ export function LLMConfigPanel() {
                 <option value="anthropic">{getProviderDisplayName('anthropic')}</option>
                 <option value="openai">{getProviderDisplayName('openai')}</option>
                 <option value="azure-openai">{getProviderDisplayName('azure-openai')}</option>
+                <option value="near-ai">{getProviderDisplayName('near-ai')}</option>
                 <option value="local">{getProviderDisplayName('local')}</option>
               </select>
             </FormField>

@@ -18,6 +18,7 @@ export const LLMProvider = {
   Anthropic: 'anthropic',
   OpenAI: 'openai',
   AzureOpenAI: 'azure-openai',
+  NearAI: 'near-ai',
   Local: 'local',
 } as const;
 
