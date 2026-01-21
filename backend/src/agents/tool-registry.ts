@@ -19,6 +19,7 @@ import {
   type MCPToolInput,
   type MCPToolUpdate,
 } from './character-schema.js';
+import { getMidlifeCategorizer } from '../strategic/tools/midlife-categorizer.js';
 
 /**
  * Tool assignment record linking tools to agents.
@@ -445,6 +446,23 @@ export class ToolRegistry {
         },
         handler: 'builtin',
         permissions: ['tool:notification'],
+        isEnabled: true,
+      },
+      systemUser
+    );
+
+    // MIDLIFE Categorization Tool
+    const midlifeCategorizer = getMidlifeCategorizer();
+    const midlifeMetadata = midlifeCategorizer.getToolMetadata();
+    await this.registerTool(
+      {
+        toolId: 'categorize-midlife',
+        name: 'MIDLIFE Categorizer',
+        description: midlifeMetadata.description,
+        category: 'analysis',
+        inputSchema: midlifeMetadata.inputSchema as JSONSchema,
+        handler: 'builtin',
+        permissions: ['tool:categorize-midlife'],
         isEnabled: true,
       },
       systemUser
