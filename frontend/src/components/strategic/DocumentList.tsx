@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { StrategicDocument } from '../../lib/types/strategic.js';
+import type { StrategicDocument, DocumentAgentAssignment } from '../../lib/types/strategic.js';
 import {
   strategicService,
   getDocumentLevelName,
@@ -15,6 +15,8 @@ import {
   API_BASE,
 } from '../../lib/strategic-service.js';
 import { useUser } from '../../context/UserContext.js';
+import { AgentBadges } from './AgentBadges.js';
+import { AgentAssignmentModal } from './AgentAssignmentModal.js';
 import './DocumentList.css';
 
 /**
@@ -51,6 +53,8 @@ export function DocumentList({
   const [error, setError] = useState<string | null>(null);
   const [extracting, setExtracting] = useState<string | null>(null);
   const [progress, setProgress] = useState<ExtractionProgress | null>(null);
+  const [assignments, setAssignments] = useState<Record<string, DocumentAgentAssignment[]>>({});
+  const [assigningDocId, setAssigningDocId] = useState<string | null>(null);
 
   const loadDocuments = useCallback(async () => {
     setLoading(true);
@@ -65,9 +69,44 @@ export function DocumentList({
     }
   }, []);
 
+  const loadAssignments = useCallback(async (docIds: string[]) => {
+    if (!userDID || docIds.length === 0) return;
+
+    try {
+      const results: Record<string, DocumentAgentAssignment[]> = {};
+      await Promise.all(
+        docIds.map(async (docId) => {
+          try {
+            const response = await fetch(
+              `${API_BASE}/api/strategic/documents/${encodeURIComponent(docId)}/agents`,
+              {
+                headers: { 'X-DID': userDID },
+              }
+            );
+            if (response.ok) {
+              const data = await response.json();
+              results[docId] = data.assignments || [];
+            }
+          } catch {
+            // Ignore individual failures
+          }
+        })
+      );
+      setAssignments(results);
+    } catch {
+      // Silently fail - assignments are optional
+    }
+  }, [userDID]);
+
   useEffect(() => {
     loadDocuments();
   }, [refreshTrigger, loadDocuments]);
+
+  useEffect(() => {
+    if (documents.length > 0) {
+      loadAssignments(documents.map(d => d.id));
+    }
+  }, [documents, loadAssignments]);
 
   /**
    * Handle extraction with SSE streaming for progress updates
@@ -302,6 +341,24 @@ export function DocumentList({
                   {formatDate(doc.createdAt)}
                 </span>
               </div>
+
+              {/* Agent assignments */}
+              <div className="doc-agents">
+                <AgentBadges assignments={assignments[doc.id] || []} compact />
+                <button
+                  className="assign-agent-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAssigningDocId(doc.id);
+                  }}
+                  title="Assign agent or team"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 1v6m0 6v10M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M1 12h6m6 0h10M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Objectives status */}
@@ -382,6 +439,19 @@ export function DocumentList({
           </div>
         ))}
       </div>
+
+      {/* Agent Assignment Modal */}
+      {assigningDocId && userDID && (
+        <AgentAssignmentModal
+          documentId={assigningDocId}
+          userDID={userDID}
+          onClose={() => setAssigningDocId(null)}
+          onAssigned={() => {
+            setAssigningDocId(null);
+            loadAssignments([assigningDocId]);
+          }}
+        />
+      )}
     </div>
   );
 }

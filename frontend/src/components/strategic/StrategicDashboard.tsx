@@ -16,6 +16,7 @@ import { DocumentList } from './DocumentList.js';
 import { ObjectiveList } from './ObjectiveList.js';
 import { ObjectiveDetail } from './ObjectiveDetail.js';
 import { MidlifeLegend } from './MidlifeLegend.js';
+import { ReviewPanel } from './ReviewPanel.js';
 import './StrategicDashboard.css';
 
 export function StrategicDashboard() {
@@ -173,6 +174,15 @@ export function StrategicDashboard() {
                   onSelectObjective={handleSelectObjective}
                 />
               </div>
+
+              {/* Agent Review Panel */}
+              {userDID && (
+                <ReviewPanel
+                  documentId={selectedDocument.id}
+                  userDID={userDID}
+                  onReviewComplete={() => setRefreshTrigger((prev) => prev + 1)}
+                />
+              )}
             </div>
           </section>
         )}

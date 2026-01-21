@@ -579,3 +579,42 @@
     padding: 1.25rem;
   }
 }
+
+/* ============================================================================
+   Agent Assignments
+   ============================================================================ */
+
+.doc-agents {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.05));
+}
+
+.assign-agent-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  background: transparent;
+  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted, #666678);
+  transition: all 0.2s;
+}
+
+.assign-agent-btn:hover {
+  background: rgba(74, 144, 217, 0.1);
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue, #4a90d9);
+}
+
+.assign-agent-btn svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}

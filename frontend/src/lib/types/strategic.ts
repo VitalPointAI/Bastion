@@ -313,3 +313,91 @@ export interface ObjectiveFilters {
   priority?: Priority;
   humanVerified?: boolean;
 }
+
+// =============================================================================
+// Agent Review Types
+// =============================================================================
+
+export const ReviewStatus = {
+  PENDING_REVIEW: 'pending_review',
+  ACCEPTED: 'accepted',
+  REJECTED: 'rejected',
+  PARTIAL: 'partial',
+} as const;
+export type ReviewStatus = typeof ReviewStatus[keyof typeof ReviewStatus];
+
+export interface CategoryAssessment {
+  objectiveId: string;
+  suggestedCategory: MidlifeCategory;
+  currentCategory?: MidlifeCategory;
+  confidence: number;
+  rationale: string;
+  requiresHumanReview: boolean;
+}
+
+export interface PriorityAssessment {
+  objectiveId: string;
+  suggestedPriority: Priority;
+  currentPriority: Priority;
+  score: number;
+  rationale: string;
+}
+
+export interface DocumentSummary {
+  totalObjectives: number;
+  categoryDistribution: Record<MidlifeCategory, number>;
+  coherenceScore: number;
+  flags: string[];
+}
+
+export interface StrategyReviewReport {
+  id: string;
+  documentId: string;
+  reviewedAt: string;
+  reviewedBy: string;
+  categoryAssessments: CategoryAssessment[];
+  priorityAssessments: PriorityAssessment[];
+  documentSummary: DocumentSummary;
+  status: ReviewStatus;
+  acceptedAt?: string;
+  acceptedBy?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
+  rejectionReason?: string;
+}
+
+// =============================================================================
+// Document Agent Assignment Types
+// =============================================================================
+
+export const AssignmentType = {
+  REVIEW: 'review',
+  MONITOR: 'monitor',
+  ANALYZE: 'analyze',
+} as const;
+export type AssignmentType = typeof AssignmentType[keyof typeof AssignmentType];
+
+export const AssignmentStatus = {
+  ASSIGNED: 'assigned',
+  ACTIVE: 'active',
+  COMPLETED: 'completed',
+  PAUSED: 'paused',
+} as const;
+export type AssignmentStatus = typeof AssignmentStatus[keyof typeof AssignmentStatus];
+
+export interface DocumentAgentAssignment {
+  id: string;
+  documentId: string;
+  agentId: string;
+  teamId?: string;
+  assignmentType: AssignmentType;
+  status: AssignmentStatus;
+  assignedBy: string;
+  assignedAt: string;
+  lastActivityAt?: string;
+  config?: Record<string, unknown>;
+  // Populated from agent/team registry
+  agentName?: string;
+  agentDisplayName?: string;
+  teamName?: string;
+}
