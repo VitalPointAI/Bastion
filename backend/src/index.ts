@@ -21,6 +21,7 @@ import { getMessageBus } from './messaging/message-bus.js';
 import { getCheckpointer } from './orchestration/checkpointer.js';
 import { getTracer } from './orchestration/observability.js';
 import { getCheckpointManager } from './orchestration/human-checkpoints.js';
+import { seedLangGraphAgents } from './agents/langgraph/agent-seeder.js';
 
 dotenv.config();
 
@@ -123,5 +124,13 @@ server.listen(port, async () => {
     console.log('Human checkpoint manager initialized');
   } catch (error) {
     console.error('Failed to initialize orchestration:', error);
+  }
+
+  // Seed LangGraph-based agents
+  try {
+    await seedLangGraphAgents();
+    console.log('LangGraph agents seeded');
+  } catch (error) {
+    console.error('Failed to seed LangGraph agents:', error);
   }
 });
