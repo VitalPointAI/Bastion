@@ -12,3 +12,14 @@ export {
   type MidlifeCategorizeInput,
   type MidlifeCategorizeOutput,
 } from './midlife-categorizer.js';
+
+export {
+  DomainPrioritizer,
+  getDomainPrioritizer,
+  type PrioritizeInput,
+  type PrioritizeOutput,
+  type PrioritizationCriteria,
+  type PrioritizeObjective,
+  type RankedObjective,
+  type ScoreBreakdown,
+} from './domain-prioritizer.js';
