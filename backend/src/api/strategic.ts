@@ -40,6 +40,8 @@ import type { IntentInput, IntentUpdate } from '../strategic/intent/index.js';
 import { getStrategyReviewerExecutor } from '../strategic/agents/strategy-reviewer-executor.js';
 import { reviewStore } from '../strategic/reviews/store.js';
 import type { ReviewStatus } from '../strategic/reviews/types.js';
+import { assignmentStore } from '../strategic/assignments/index.js';
+import type { AssignmentInput } from '../strategic/assignments/index.js';
 
 const router = express.Router();
 
@@ -1966,6 +1968,210 @@ router.post('/reviews/:reviewId/reject', async (req, res) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Reject review failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// DOCUMENT-AGENT ASSIGNMENT ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/strategic/assignments - Create document-agent assignment
+ *
+ * Request body:
+ * - documentId: string
+ * - agentId: string
+ * - autoReview?: boolean (default: false)
+ * - reviewOptions?: { confidenceThreshold?, prioritizationDomain?, onlyUncategorized? }
+ */
+router.post('/assignments', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const userDID = getUserDID(req);
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { documentId, agentId, autoReview, reviewOptions } = req.body;
+
+    if (!documentId || !agentId) {
+      return res.status(400).json({
+        error: 'documentId and agentId are required',
+      });
+    }
+
+    // Verify document exists and user owns it
+    const document = await store.get(documentId);
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    if (document.createdBy !== userDID) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const input: AssignmentInput = {
+      documentId,
+      agentId,
+      autoReview: autoReview ?? false,
+      reviewOptions,
+    };
+
+    const assignment = await assignmentStore.createAssignment(input, userDID);
+
+    console.log(`✓ Document ${documentId} assigned to agent ${agentId}`);
+
+    res.status(201).json(assignment);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create assignment failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/assignments - List all assignments
+ *
+ * Query params:
+ * - documentId?: string
+ * - agentId?: string
+ * - status?: 'active' | 'completed' | 'revoked'
+ * - autoReview?: boolean
+ */
+router.get('/assignments', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const userDID = getUserDID(req);
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { documentId, agentId, status, autoReview } = req.query;
+
+    const filters: Record<string, unknown> = {};
+    if (documentId) filters.documentId = documentId as string;
+    if (agentId) filters.agentId = agentId as string;
+    if (status) filters.status = status as string;
+    if (autoReview !== undefined) filters.autoReview = autoReview === 'true';
+
+    const result = await assignmentStore.listAssignments(filters);
+
+    res.json({
+      count: result.total,
+      assignments: result.assignments,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List assignments failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/documents/:documentId/assignments - Get assignments for document
+ */
+router.get('/documents/:documentId/assignments', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const documentId = req.params.documentId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify document exists
+    const document = await store.get(documentId);
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    if (document.createdBy !== userDID) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const assignments = await assignmentStore.getAssignmentsForDocument(documentId);
+
+    res.json({
+      documentId,
+      count: assignments.length,
+      assignments,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get document assignments failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * PATCH /api/strategic/assignments/:id - Update assignment
+ *
+ * Request body:
+ * - autoReview?: boolean
+ * - reviewOptions?: object
+ */
+router.patch('/assignments/:id', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const assignmentId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const assignment = await assignmentStore.getAssignment(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+
+    const { autoReview } = req.body;
+
+    if (autoReview !== undefined) {
+      await assignmentStore.setAutoReview(assignmentId, autoReview);
+    }
+
+    const updated = await assignmentStore.getAssignment(assignmentId);
+
+    res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update assignment failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * DELETE /api/strategic/assignments/:id - Revoke assignment
+ */
+router.delete('/assignments/:id', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const assignmentId = req.params.id as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const assignment = await assignmentStore.getAssignment(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+
+    const revoked = await assignmentStore.revokeAssignment(assignmentId, userDID);
+
+    console.log(`✓ Assignment ${assignmentId} revoked`);
+
+    res.json(revoked);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Revoke assignment failed:', message);
     res.status(500).json({ error: message });
   }
 });
