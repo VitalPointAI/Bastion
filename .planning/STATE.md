@@ -11,11 +11,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4 of 12 (Strategic Planning Module)
-Plan: 9 of 10 in current phase
-Status: 4-09 Complete, 4-10 Ready
-Last activity: 2026-01-20 — Completed 4-09-PLAN.md (End-to-End Strategic Flow)
+Plan: 11 of 12 in current phase
+Status: 4-11 Complete, 4-12 Ready
+Last activity: 2026-01-21 — Completed 4-11-PLAN.md (Strategic Analysis MCP Tools & Review Agent)
 
-Progress: █████████░ 90% (9/10 plans complete)
+Progress: ██████████ 92% (11/12 plans complete)
 
 ## Performance Metrics
 
@@ -348,9 +348,29 @@ None.
 - Human checkpoints publish to system.human-checkpoints channel via message bus
 - LangChain ecosystem for orchestration (@langchain/langgraph, @langchain/core)
 
+**Phase 4 Plan 9 (End-to-End Strategic Flow):**
+- Document detail navigation to/from dashboard
+- Extraction trigger with streaming progress via SSE
+- Objective list displays in dashboard when document selected
+- Extraction completion refreshes document with objective count
+
+**Phase 4 Plan 10 (Objective Detail View & MIDLIFE Categorization):**
+- ObjectiveDetail component with tabbed navigation (Overview, DIME/MIDLIFE, EWM, Risks)
+- MIDLIFE category selector with visual legend
+- Commander's EWM editing via ObjectiveDetail
+- Risk extraction via LLM with auto-flagging
+
+**Phase 4 Plan 11 (Strategic Analysis MCP Tools & Review Agent):**
+- Rule-based MIDLIFE categorizer and domain prioritizer tools
+- Strategy Document Review Agent (definition, executor, API)
+- Document-agent assignment system with database schema
+- Auto-review hook triggered on extraction completion
+- Review UI components (ReviewReport, ReviewPanel, AgentBadges)
+- Note: Tools are rule-based, not AI-powered (addressed in 4-12)
+
 ## Session Continuity
 
-Last session: 2026-01-20
-Stopped at: Completed 4-09-PLAN.md (End-to-End Strategic Flow)
+Last session: 2026-01-21
+Stopped at: Completed 4-11-PLAN.md (Strategic Analysis MCP Tools & Review Agent)
 Resume file: None
-Next action: Execute 4-10-PLAN.md (Objective Detail View & MIDLIFE Categorization)
+Next action: Execute 4-12-PLAN.md (LangGraph Agent Framework Integration)
