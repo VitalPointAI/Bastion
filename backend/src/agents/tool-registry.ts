@@ -10,7 +10,6 @@ import type {
   MCPTool,
   ToolCategory,
   ToolHandler,
-  JSONSchema,
   ToolConfig,
 } from './types.js';
 import {
@@ -18,9 +17,15 @@ import {
   MCPToolUpdateSchema,
   type MCPToolInput,
   type MCPToolUpdate,
+  type JSONSchema,
 } from './character-schema.js';
 import { getMidlifeCategorizer } from '../strategic/tools/midlife-categorizer.js';
 import { getDomainPrioritizer } from '../strategic/tools/domain-prioritizer.js';
+import type { StructuredToolInterface } from '@langchain/core/tools';
+import {
+  categorizeMidlifeTool,
+  prioritizeDomainTool,
+} from './langgraph/tools/index.js';
 
 /**
  * Tool assignment record linking tools to agents.
@@ -301,6 +306,57 @@ export class ToolRegistry {
   }
 
   // ==========================================================================
+  // LangChain Tool Integration
+  // ==========================================================================
+
+  /**
+   * Get LangChain tools for an agent.
+   * Returns StructuredToolInterface instances for tools assigned to the agent.
+   * Only built-in tools with LangChain wrappers are supported.
+   */
+  getLangChainToolsForAgent(agentId: string): StructuredToolInterface[] {
+    const assignedTools = this.getToolsForAgent(agentId);
+    const langchainTools: StructuredToolInterface[] = [];
+
+    for (const tool of assignedTools) {
+      const langchainTool = this.getLangChainTool(tool.toolId);
+      if (langchainTool) {
+        langchainTools.push(langchainTool);
+      }
+    }
+
+    return langchainTools;
+  }
+
+  /**
+   * Get a LangChain tool wrapper by tool ID.
+   * Returns null if no wrapper exists for the tool.
+   */
+  getLangChainTool(toolId: string): StructuredToolInterface | null {
+    // Map of built-in tools to their LangChain wrappers
+    const langchainToolMap: Record<string, StructuredToolInterface> = {
+      'categorize-midlife': categorizeMidlifeTool,
+      'prioritize-domain': prioritizeDomainTool,
+    };
+
+    return langchainToolMap[toolId] || null;
+  }
+
+  /**
+   * Check if a tool has a LangChain wrapper available.
+   */
+  hasLangChainWrapper(toolId: string): boolean {
+    return this.getLangChainTool(toolId) !== null;
+  }
+
+  /**
+   * Get list of tools with LangChain support.
+   */
+  getToolsWithLangChainSupport(): MCPTool[] {
+    return this.listTools().filter(tool => this.hasLangChainWrapper(tool.toolId));
+  }
+
+  // ==========================================================================
   // Built-in Tools
   // ==========================================================================
 
@@ -461,7 +517,7 @@ export class ToolRegistry {
         name: 'MIDLIFE Categorizer',
         description: midlifeMetadata.description,
         category: 'analysis',
-        inputSchema: midlifeMetadata.inputSchema as JSONSchema,
+        inputSchema: midlifeMetadata.inputSchema as unknown as JSONSchema,
         handler: 'builtin',
         permissions: ['tool:categorize-midlife'],
         isEnabled: true,
@@ -478,7 +534,7 @@ export class ToolRegistry {
         name: 'Domain Prioritizer',
         description: prioritizerMetadata.description,
         category: 'analysis',
-        inputSchema: prioritizerMetadata.inputSchema as JSONSchema,
+        inputSchema: prioritizerMetadata.inputSchema as unknown as JSONSchema,
         handler: 'builtin',
         permissions: ['tool:prioritize-domain'],
         isEnabled: true,
