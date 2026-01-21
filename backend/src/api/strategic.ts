@@ -43,6 +43,9 @@ import type { ReviewStatus } from '../strategic/reviews/types.js';
 import { assignmentStore } from '../strategic/assignments/index.js';
 import type { AssignmentInput } from '../strategic/assignments/index.js';
 import { triggerAutoReview } from '../strategic/extraction/auto-review-hook.js';
+import { executeStrategyReview } from '../agents/langgraph/graphs/strategy-reviewer-graph.js';
+import { getReviewCheckpointManager } from '../agents/langgraph/graphs/strategy-reviewer-checkpoint.js';
+import { randomUUID } from 'crypto';
 
 const router = express.Router();
 
@@ -1751,6 +1754,159 @@ router.post('/documents/:documentId/review', async (req, res) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Agent review failed:', message);
     res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/documents/:documentId/review/stream - Stream agent review with SSE
+ *
+ * Uses Server-Sent Events to stream agent reasoning steps as they happen.
+ * Returns progress events during analysis, then final report.
+ *
+ * Query params:
+ * - confidenceThreshold: number (default: 0.7)
+ * - prioritizationDomain: 'strategic' | 'operational' | 'tactical' | 'resource'
+ */
+router.get('/documents/:documentId/review/stream', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const documentId = req.params.documentId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    // Verify document exists and user owns it
+    const document = await store.get(documentId);
+    if (!document) {
+      res.status(404).json({ error: 'Document not found' });
+      return;
+    }
+    if (document.createdBy !== userDID) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    // Helper to send SSE events
+    const sendEvent = (event: string, data: unknown) => {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    console.log(`Streaming agent review for document ${documentId}...`);
+
+    // Send start event
+    sendEvent('start', {
+      documentId,
+      message: 'Starting LangGraph agent review...',
+      timestamp: new Date().toISOString(),
+    });
+
+    try {
+      // Execute the LangGraph review
+      const result = await executeStrategyReview(documentId);
+
+      // Send status updates based on graph state
+      if (result.status === 'error') {
+        sendEvent('error', {
+          message: result.error || 'Review failed',
+          timestamp: new Date().toISOString(),
+        });
+        res.end();
+        return;
+      }
+
+      // Stream progress for each analyzed objective
+      if (result.categoryAssessments) {
+        for (let i = 0; i < result.categoryAssessments.length; i++) {
+          const assessment = result.categoryAssessments[i];
+          sendEvent('progress', {
+            type: 'category_assessment',
+            index: i + 1,
+            total: result.totalObjectives,
+            objectiveId: assessment.objectiveId,
+            suggestedCategory: assessment.suggestedCategory,
+            confidence: assessment.confidence,
+            requiresReview: assessment.requiresHumanReview,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
+
+      // Stream priority assessments
+      if (result.priorityAssessments) {
+        sendEvent('progress', {
+          type: 'prioritization_complete',
+          assessmentCount: result.priorityAssessments.length,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // If we have a complete report, save it and send
+      if (result.report) {
+        // Save to review store
+        await reviewStore.saveReview(result.report);
+
+        // Create checkpoint for human approval
+        const checkpointManager = getReviewCheckpointManager();
+        await checkpointManager.initialize();
+        const checkpoint = await checkpointManager.createCheckpoint(
+          result.report,
+          `thread-${result.report.id}`
+        );
+
+        console.log(`Agent review complete: ${result.report.id}, checkpoint: ${checkpoint.checkpointId}`);
+
+        // Send complete event with report
+        sendEvent('complete', {
+          reviewId: result.report.id,
+          checkpointId: checkpoint.checkpointId,
+          documentId: result.report.documentId,
+          status: result.report.status,
+          summary: result.report.documentSummary,
+          categoryAssessmentCount: result.report.categoryAssessments.length,
+          priorityAssessmentCount: result.report.priorityAssessments.length,
+          coherenceScore: result.report.documentSummary.coherenceScore,
+          flags: result.report.documentSummary.flags,
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        sendEvent('error', {
+          message: 'Review completed but no report generated',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (graphError) {
+      const errorMsg = graphError instanceof Error ? graphError.message : 'Unknown error';
+      console.error('LangGraph review error:', errorMsg);
+      sendEvent('error', {
+        message: `Agent review failed: ${errorMsg}`,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    res.end();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Streaming review failed:', message);
+
+    if (!res.headersSent) {
+      res.status(500).json({ error: message });
+    } else {
+      res.write(`event: error\n`);
+      res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+      res.end();
+    }
   }
 });
 
