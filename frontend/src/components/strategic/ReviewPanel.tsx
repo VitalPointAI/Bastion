@@ -3,30 +3,73 @@
  *
  * Panel for triggering and viewing agent reviews for a document.
  * Shows review history and allows accepting/rejecting suggestions.
+ * Supports SSE streaming for real-time progress updates.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { StrategyReviewReport } from '../../lib/types/strategic.js';
 import { strategicService, API_BASE } from '../../lib/strategic-service.js';
 import { ReviewReport } from './ReviewReport.js';
 import './ReviewPanel.css';
 
+/**
+ * Progress event from streaming review.
+ */
+interface ReviewProgress {
+  type: 'category_assessment' | 'prioritization_complete';
+  index?: number;
+  total?: number;
+  objectiveId?: string;
+  suggestedCategory?: string;
+  confidence?: number;
+  requiresReview?: boolean;
+  assessmentCount?: number;
+  timestamp: string;
+}
+
+/**
+ * Complete event from streaming review.
+ */
+interface ReviewComplete {
+  reviewId: string;
+  checkpointId: string;
+  documentId: string;
+  status: string;
+  summary: {
+    totalObjectives: number;
+    coherenceScore: number;
+    flags: string[];
+  };
+  categoryAssessmentCount: number;
+  priorityAssessmentCount: number;
+  coherenceScore: number;
+  flags: string[];
+  timestamp: string;
+}
+
 interface ReviewPanelProps {
   documentId: string;
   userDID: string;
   onReviewComplete?: () => void;
+  useStreaming?: boolean;
 }
 
 export function ReviewPanel({
   documentId,
   userDID,
   onReviewComplete,
+  useStreaming = true,
 }: ReviewPanelProps) {
   const [reviews, setReviews] = useState<StrategyReviewReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [triggeringReview, setTriggeringReview] = useState(false);
+
+  // Streaming state
+  const [streamingProgress, setStreamingProgress] = useState<ReviewProgress[]>([]);
+  const [streamingStatus, setStreamingStatus] = useState<string | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const loadReviews = useCallback(async () => {
     setLoading(true);
@@ -56,7 +99,103 @@ export function ReviewPanel({
     loadReviews();
   }, [loadReviews]);
 
-  const triggerReview = async () => {
+  // Cleanup event source on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
+
+  /**
+   * Trigger streaming review using SSE.
+   */
+  const triggerStreamingReview = async () => {
+    setTriggeringReview(true);
+    setError(null);
+    setStreamingProgress([]);
+    setStreamingStatus('Connecting...');
+
+    try {
+      // Close any existing connection
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+
+      // Create SSE connection with custom headers via query params
+      // EventSource doesn't support custom headers, so we use query params
+      const url = new URL(
+        `${API_BASE}/api/strategic/documents/${encodeURIComponent(documentId)}/review/stream`
+      );
+      url.searchParams.set('did', userDID);
+
+      const eventSource = new EventSource(url.toString());
+      eventSourceRef.current = eventSource;
+
+      eventSource.addEventListener('start', (event) => {
+        const data = JSON.parse(event.data);
+        setStreamingStatus(data.message || 'Starting analysis...');
+      });
+
+      eventSource.addEventListener('progress', (event) => {
+        const data: ReviewProgress = JSON.parse(event.data);
+        setStreamingProgress((prev) => [...prev, data]);
+
+        if (data.type === 'category_assessment' && data.index && data.total) {
+          setStreamingStatus(
+            `Analyzing objective ${data.index}/${data.total}...`
+          );
+        } else if (data.type === 'prioritization_complete') {
+          setStreamingStatus('Prioritization complete, building report...');
+        }
+      });
+
+      eventSource.addEventListener('complete', (event) => {
+        const data: ReviewComplete = JSON.parse(event.data);
+        setStreamingStatus(null);
+        setStreamingProgress([]);
+        setTriggeringReview(false);
+        eventSource.close();
+
+        // Reload reviews to get the new one
+        loadReviews();
+        onReviewComplete?.();
+      });
+
+      eventSource.addEventListener('error', (event) => {
+        if (event instanceof MessageEvent) {
+          const data = JSON.parse(event.data);
+          setError(data.message || 'Review failed');
+        } else {
+          setError('Connection error during review');
+        }
+        setStreamingStatus(null);
+        setTriggeringReview(false);
+        eventSource.close();
+      });
+
+      eventSource.onerror = () => {
+        // Connection error - EventSource will auto-reconnect
+        // Only set error if we were actively streaming
+        if (triggeringReview) {
+          setError('Connection lost during review');
+          setStreamingStatus(null);
+          setTriggeringReview(false);
+        }
+        eventSource.close();
+      };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start streaming review');
+      setStreamingStatus(null);
+      setTriggeringReview(false);
+    }
+  };
+
+  /**
+   * Trigger non-streaming review (original implementation).
+   */
+  const triggerReviewSync = async () => {
     setTriggeringReview(true);
     setError(null);
     try {
@@ -82,6 +221,8 @@ export function ReviewPanel({
       setTriggeringReview(false);
     }
   };
+
+  const triggerReview = useStreaming ? triggerStreamingReview : triggerReviewSync;
 
   const handleAcceptAll = async (reviewId: string) => {
     setActionLoading(true);
@@ -181,7 +322,7 @@ export function ReviewPanel({
           {triggeringReview ? (
             <>
               <span className="spinner" />
-              Analyzing...
+              {streamingStatus || 'Analyzing...'}
             </>
           ) : (
             <>
@@ -204,6 +345,41 @@ export function ReviewPanel({
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
           {error}
+        </div>
+      )}
+
+      {/* Streaming Progress */}
+      {triggeringReview && streamingProgress.length > 0 && (
+        <div className="streaming-progress">
+          <div className="progress-header">
+            <span className="progress-title">Analysis Progress</span>
+            <span className="progress-count">
+              {streamingProgress.filter(p => p.type === 'category_assessment').length} objectives analyzed
+            </span>
+          </div>
+          <div className="progress-items">
+            {streamingProgress.slice(-5).map((progress, index) => (
+              <div key={index} className="progress-item">
+                {progress.type === 'category_assessment' && (
+                  <>
+                    <span className="progress-objective">{progress.objectiveId?.slice(0, 8)}...</span>
+                    <span className={`progress-category ${progress.suggestedCategory?.toLowerCase()}`}>
+                      {progress.suggestedCategory}
+                    </span>
+                    <span className={`progress-confidence ${progress.confidence && progress.confidence >= 0.7 ? 'high' : 'low'}`}>
+                      {progress.confidence ? `${Math.round(progress.confidence * 100)}%` : '-'}
+                    </span>
+                    {progress.requiresReview && <span className="requires-review">Needs Review</span>}
+                  </>
+                )}
+                {progress.type === 'prioritization_complete' && (
+                  <span className="progress-complete">
+                    Prioritization complete ({progress.assessmentCount} assessments)
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -249,7 +425,7 @@ export function ReviewPanel({
           )}
 
           {/* Empty State */}
-          {reviews.length === 0 && (
+          {reviews.length === 0 && !triggeringReview && (
             <div className="empty-state">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
