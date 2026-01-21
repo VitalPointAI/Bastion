@@ -323,21 +323,105 @@ Update ReviewPanel to consume SSE stream and show agent thinking.
 - Progress indicator for multi-step analysis
 - Handle stream errors gracefully
 
-### Task 12: Testing & Documentation [checkpoint:human-verify]
-Verify complete LangGraph integration works end-to-end.
+### Task 12: Agent Builder Wizard Backend [auto]
+Create comprehensive agent creation API with character support.
+
+**File:** `backend/src/api/agent-builder.ts`
+
+**Endpoints:**
+- `POST /api/admin/agents/build` - Create agent with full definition
+- `GET /api/admin/agents/:id/preview-prompt` - Preview generated system prompt
+- `POST /api/admin/agents/:id/test-chat` - Test agent with sample message
+- `GET /api/admin/tools` - List available tools for assignment
+
+**Schema additions:**
+- Extend AgentManifest to include `character` and `tools` fields
+- Add `AgentBuilderSchema` for full agent definition validation
+
+### Task 13: Agent Builder Wizard Frontend [auto]
+Build multi-step wizard UI for creating agents.
+
+**File:** `frontend/src/components/admin/AgentBuilderWizard.tsx`
+
+**Steps:**
+1. **Identity** - Name, description, type, phase, autonomy
+2. **Personality** - Bio, lore, knowledge (textarea arrays)
+3. **Tools** - Multi-select from tool registry with permission config
+4. **LLM Config** - Provider, model, temperature, max tokens
+5. **Examples** - Message example pairs for few-shot learning
+6. **Review** - System prompt preview, config summary, test chat, deploy
+
+**Features:**
+- Step-by-step wizard with progress indicator
+- Back/Next navigation with validation per step
+- Live system prompt preview as fields change
+- Test chat modal to verify agent behavior
+- Save as draft / Deploy buttons
+
+### Task 14: Tool Assignment Integration [auto]
+Connect agents to tools in registry with ABAC permissions.
+
+**File:** `backend/src/agents/tool-assignment.ts`
+
+**Features:**
+- `assignToolsToAgent(agentId, toolIds[])`
+- `getAgentTools(agentId)` - Returns full tool definitions
+- `validateToolPermissions(agentId, toolId, action)` - ABAC check
+- Store assignments in `agent_tool_assignments` table
+
+**Schema:**
+```sql
+CREATE TABLE agent_tool_assignments (
+  id UUID PRIMARY KEY,
+  agent_id VARCHAR(64) NOT NULL,
+  tool_id VARCHAR(64) NOT NULL,
+  permissions JSONB DEFAULT '[]',
+  assigned_at TIMESTAMP DEFAULT NOW(),
+  assigned_by VARCHAR(256),
+  UNIQUE(agent_id, tool_id)
+);
+```
+
+### Task 15: System Prompt Generation [auto]
+Generate system prompts from character definitions.
+
+**File:** `backend/src/agents/langgraph/prompt-builder.ts`
+
+**Features:**
+- `buildSystemPrompt(agent)` - Combines character fields into prompt
+- `buildToolsSection(tools[])` - Formats tool descriptions
+- `buildExamplesSection(examples[])` - Formats few-shot examples
+- Template customization per agent type
+
+### Task 16: Testing & Documentation [checkpoint:human-verify]
+Verify complete LangGraph integration and Agent Builder work end-to-end.
 
 **Test Scenarios:**
-1. Create agent via admin UI
-2. Configure different model (e.g., switch to OpenAI)
-3. Assign agent to document
-4. Trigger review
-5. Verify streaming shows agent reasoning
-6. Verify tool calls appear in stream
-7. Verify final report is accurate
-8. Test human-in-the-loop approval flow
+1. **Agent Builder Flow:**
+   - Create new agent via wizard
+   - Configure personality with bio, lore, knowledge
+   - Assign tools (categorize-midlife, prioritize-domain)
+   - Configure LLM (try different providers)
+   - Add message examples
+   - Preview system prompt
+   - Test chat with sample message
+   - Deploy agent
+
+2. **Agent Execution:**
+   - Assign new agent to document
+   - Trigger review
+   - Verify streaming shows agent reasoning
+   - Verify tool calls appear in stream
+   - Verify final report is accurate
+
+3. **Configuration:**
+   - Change agent model in admin
+   - Verify next review uses new model
+   - Test human-in-the-loop approval flow
 
 ## Files to Create
 
+### LangGraph Core
 - `backend/src/agents/langgraph/llm-factory.ts` - Dynamic LLM instantiation
 - `backend/src/agents/langgraph/tools/index.ts` - LangChain tool exports
 - `backend/src/agents/langgraph/tools/midlife-tool.ts` - MIDLIFE tool wrapper
@@ -348,17 +432,34 @@ Verify complete LangGraph integration works end-to-end.
 - `backend/src/agents/langgraph/seeder.ts` - Agent seeding logic
 - `backend/src/agents/langgraph/index.ts` - Module exports
 
+### Agent Builder
+- `backend/src/api/agent-builder.ts` - Builder API endpoints
+- `backend/src/agents/tool-assignment.ts` - Tool-agent assignment logic
+- `backend/src/agents/langgraph/prompt-builder.ts` - System prompt generation
+- `frontend/src/components/admin/AgentBuilderWizard.tsx` - Multi-step wizard
+- `frontend/src/components/admin/AgentBuilderWizard.css` - Wizard styles
+- `frontend/src/components/admin/steps/IdentityStep.tsx` - Step 1
+- `frontend/src/components/admin/steps/PersonalityStep.tsx` - Step 2
+- `frontend/src/components/admin/steps/ToolsStep.tsx` - Step 3
+- `frontend/src/components/admin/steps/LLMConfigStep.tsx` - Step 4
+- `frontend/src/components/admin/steps/ExamplesStep.tsx` - Step 5
+- `frontend/src/components/admin/steps/ReviewStep.tsx` - Step 6
+
 ## Files to Modify
 
-- `backend/package.json` - Add dependencies
+- `backend/package.json` - Add LangGraph dependencies
 - `backend/src/server.ts` - Call seeder on startup
 - `backend/src/api/strategic.ts` - Add streaming endpoint
+- `backend/src/api/admin.ts` - Mount agent-builder routes
+- `backend/src/agents/types.ts` - Extend AgentManifest with character/tools
 - `backend/src/strategic/agents/strategy-reviewer-executor.ts` - Use graph
 - `backend/src/strategic/config/service.ts` - Add `getAgentModelConfig()` helper
 - `frontend/src/components/strategic/ReviewPanel.tsx` - Streaming UI
+- `frontend/src/components/admin/AgentManagementPanel.tsx` - Add Builder button
 
 ## Success Criteria
 
+### LangGraph Integration
 1. Agent uses admin-configured LLM (not hardcoded)
 2. Changing agent model in admin takes effect on next review
 3. LangGraph reasoning loop works with tool calls
@@ -366,6 +467,14 @@ Verify complete LangGraph integration works end-to-end.
 5. Human-in-the-loop pause works for approval
 6. Built-in agent auto-seeds on startup
 7. Multiple providers supported (Anthropic, OpenAI, NEAR AI, local)
+
+### Agent Builder
+8. Can create new agent via wizard with all fields
+9. Personality fields (bio, lore, knowledge, style) persist correctly
+10. Tools can be assigned from registry
+11. System prompt preview updates in real-time
+12. Test chat sends message and shows response
+13. Deployed agent appears in agent list and can be assigned to documents
 
 ## Notes
 
@@ -380,9 +489,133 @@ This plan assumes completion of:
 - 4-11: Review agent definition, tools, API endpoints
 - 4.2: Agent registry infrastructure
 
+## Agent Builder Architecture
+
+The Agent Builder provides a complete workflow for creating, configuring, and deploying new agents.
+
+### Builder Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Agent Builder Wizard                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Step 1: Identity          │  Step 2: Personality      │  Step 3: Tools     │
+│  ─────────────────         │  ─────────────────────    │  ─────────────     │
+│  • Agent ID (auto)         │  • Bio (array)            │  • Select tools    │
+│  • Display Name            │  • Lore/backstory         │  • Configure perms │
+│  • Description             │  • Knowledge entries      │  • Test tool calls │
+│  • Type/Phase              │  • Style (all/chat/post)  │                    │
+│  • Autonomy Level          │  • Adjectives             │                    │
+├────────────────────────────┼───────────────────────────┼────────────────────┤
+│  Step 4: LLM Config        │  Step 5: Examples         │  Step 6: Review    │
+│  ─────────────────         │  ─────────────────        │  ─────────────     │
+│  • Provider selection      │  • Message examples       │  • System prompt   │
+│  • Model selection         │  • Few-shot pairs         │  • Config summary  │
+│  • Temperature             │  • Response style demos   │  • Test chat       │
+│  • Max tokens              │                           │  • Deploy          │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Agent Definition Structure
+
+```typescript
+interface AgentDefinition {
+  // Identity
+  agentId: string;              // Auto-generated or custom
+  displayName: string;
+  description: string;
+  type: 'governance' | 'strategic' | 'operational' | 'custom';
+  phase: 'Support' | 'Represent' | 'Organize';
+  maxAutonomy: AutonomyLevel;
+
+  // Character (Eliza-compatible)
+  character: {
+    name: string;
+    bio: string[];              // Biography entries
+    lore: string[];             // Backstory/history
+    knowledge: string[];        // RAG-ready facts
+    style: {
+      all: string[];            // Universal style traits
+      chat: string[];           // Chat-specific
+      post: string[];           // Social/report style
+    };
+    adjectives: string[];       // Personality descriptors
+    messageExamples: Array<{    // Few-shot examples
+      role: 'user' | 'assistant';
+      content: string;
+    }[]>;
+  };
+
+  // Tools - which MCP tools this agent can invoke
+  tools: string[];              // Tool IDs from registry
+  toolPermissions: Record<string, string[]>;  // Per-tool ABAC permissions
+
+  // LLM Configuration
+  modelConfig: {
+    provider: LLMProvider;
+    model: string;
+    temperature: number;
+    maxTokens: number;
+    useGlobalDefault: boolean;
+  };
+
+  // Workflow (optional - for agents that use LangGraph)
+  graphId?: string;             // LangGraph workflow ID
+  capabilities: string[];       // Legacy capability list
+}
+```
+
+### System Prompt Generation
+
+The builder generates a system prompt from the character definition:
+
+```typescript
+function generateSystemPrompt(agent: AgentDefinition): string {
+  const { character } = agent;
+
+  let prompt = `You are ${character.name}.\n\n`;
+
+  // Bio
+  if (character.bio.length > 0) {
+    prompt += `## Background\n${character.bio.join('\n')}\n\n`;
+  }
+
+  // Lore
+  if (character.lore.length > 0) {
+    prompt += `## History\n${character.lore.join('\n')}\n\n`;
+  }
+
+  // Knowledge
+  if (character.knowledge.length > 0) {
+    prompt += `## Knowledge\n${character.knowledge.join('\n')}\n\n`;
+  }
+
+  // Style
+  if (character.style.all.length > 0) {
+    prompt += `## Communication Style\n${character.style.all.join('\n')}\n\n`;
+  }
+
+  // Adjectives
+  if (character.adjectives.length > 0) {
+    prompt += `Personality: ${character.adjectives.join(', ')}\n\n`;
+  }
+
+  // Tools section
+  if (agent.tools.length > 0) {
+    prompt += `## Available Tools\nYou have access to the following tools:\n`;
+    // Tool descriptions populated at runtime from registry
+  }
+
+  return prompt;
+}
+```
+
 ## Future Extensions
 
 - Multi-agent supervisor pattern for complex analysis
 - Custom tool creation via admin UI
 - Agent conversation memory (RAG integration)
 - Cost tracking and budgeting per agent
+- Agent templates/presets for common use cases
+- Agent cloning and versioning
+- A/B testing between agent configurations
