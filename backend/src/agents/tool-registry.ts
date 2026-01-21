@@ -20,6 +20,7 @@ import {
   type MCPToolUpdate,
 } from './character-schema.js';
 import { getMidlifeCategorizer } from '../strategic/tools/midlife-categorizer.js';
+import { getDomainPrioritizer } from '../strategic/tools/domain-prioritizer.js';
 
 /**
  * Tool assignment record linking tools to agents.
@@ -463,6 +464,23 @@ export class ToolRegistry {
         inputSchema: midlifeMetadata.inputSchema as JSONSchema,
         handler: 'builtin',
         permissions: ['tool:categorize-midlife'],
+        isEnabled: true,
+      },
+      systemUser
+    );
+
+    // Domain Prioritization Tool
+    const domainPrioritizer = getDomainPrioritizer();
+    const prioritizerMetadata = domainPrioritizer.getToolMetadata();
+    await this.registerTool(
+      {
+        toolId: 'prioritize-domain',
+        name: 'Domain Prioritizer',
+        description: prioritizerMetadata.description,
+        category: 'analysis',
+        inputSchema: prioritizerMetadata.inputSchema as JSONSchema,
+        handler: 'builtin',
+        permissions: ['tool:prioritize-domain'],
         isEnabled: true,
       },
       systemUser
