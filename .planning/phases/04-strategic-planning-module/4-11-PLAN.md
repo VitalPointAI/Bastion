@@ -336,12 +336,64 @@ Create endpoints to trigger and manage reviews.
 - `POST /api/strategic/reviews/:reviewId/accept` - Accept all suggestions
 - `POST /api/strategic/reviews/:reviewId/accept-partial` - Accept selected suggestions
 
-### Task 9: Auto-Review Hook [auto]
+### Task 9: Document-Agent Assignment [auto]
+Enable assigning agents/teams to documents and display assignments on document cards.
+
+**Database Schema:**
+```sql
+CREATE TABLE document_agent_assignments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id UUID NOT NULL REFERENCES strategic_documents(id) ON DELETE CASCADE,
+  agent_id VARCHAR(255) NOT NULL,  -- References agent registry
+  team_id VARCHAR(255),            -- Optional team assignment
+  assignment_type VARCHAR(50) NOT NULL,  -- 'review', 'monitor', 'analyze'
+  status VARCHAR(50) DEFAULT 'assigned',  -- 'assigned', 'active', 'completed', 'paused'
+  assigned_by VARCHAR(255) NOT NULL,  -- User DID who made assignment
+  assigned_at TIMESTAMPTZ DEFAULT NOW(),
+  last_activity_at TIMESTAMPTZ,
+  config JSONB DEFAULT '{}'  -- Agent-specific config for this document
+);
+```
+
+**API Endpoints:**
+- `POST /api/strategic/documents/:documentId/agents` - Assign agent/team to document
+- `GET /api/strategic/documents/:documentId/agents` - List assigned agents/teams
+- `DELETE /api/strategic/documents/:documentId/agents/:assignmentId` - Remove assignment
+- `PUT /api/strategic/documents/:documentId/agents/:assignmentId` - Update assignment status
+
+**Frontend Updates:**
+- Add agent assignment badges to DocumentList cards
+- Show assigned agent names/icons on document cards
+- Add "Assign Agent" action button to document card/detail
+- AgentAssignmentModal for selecting agents/teams
+
+**Data Structure:**
+```typescript
+interface DocumentAgentAssignment {
+  id: string;
+  documentId: string;
+  agentId: string;
+  teamId?: string;
+  assignmentType: 'review' | 'monitor' | 'analyze';
+  status: 'assigned' | 'active' | 'completed' | 'paused';
+  assignedBy: string;
+  assignedAt: Date;
+  lastActivityAt?: Date;
+  config?: Record<string, unknown>;
+  // Populated from agent registry
+  agentName?: string;
+  agentDisplayName?: string;
+  teamName?: string;
+}
+```
+
+### Task 10: Auto-Review Hook [auto]
 Add event hook to trigger review after extraction.
 
 **Implementation:**
 - Subscribe to extraction completion event
 - Check admin config for auto-review enabled
+- Check document agent assignments for auto-triggered agents
 - Queue review job (async, non-blocking)
 - Notify user when review complete
 
@@ -354,7 +406,7 @@ interface AgentConfig {
 }
 ```
 
-### Task 10: Review Report UI Components [auto]
+### Task 11: Review Report UI Components [auto]
 Create frontend components to display and act on reviews.
 
 **Components:**
@@ -368,7 +420,7 @@ Create frontend components to display and act on reviews.
 - Show pending review indicator
 - Allow accepting individual or all suggestions
 
-### Task 11: Testing & Validation [checkpoint:human-verify]
+### Task 12: Testing & Validation [checkpoint:human-verify]
 Verify complete flow works end-to-end.
 
 **Test Scenarios:**
@@ -378,6 +430,9 @@ Verify complete flow works end-to-end.
 4. Accept all suggestions
 5. Verify MCP tool direct calls work
 6. Verify REST endpoints work
+7. Assign agent to document → Verify badge appears on card
+8. Assign team to document → Verify team badge appears
+9. Remove agent assignment → Verify badge removed
 
 ## Files to Create/Modify
 
@@ -390,18 +445,25 @@ Verify complete flow works end-to-end.
 - `backend/src/api/strategic-tools.ts`
 - `backend/src/strategic/reviews/store.ts`
 - `backend/src/strategic/reviews/types.ts`
+- `backend/src/strategic/assignments/store.ts` - Document-agent assignments
+- `backend/src/strategic/assignments/types.ts`
 - `frontend/src/components/strategic/ReviewSummary.tsx`
 - `frontend/src/components/strategic/ReviewSummary.css`
 - `frontend/src/components/strategic/CategorySuggestions.tsx`
 - `frontend/src/components/strategic/PrioritySuggestions.tsx`
 - `frontend/src/components/strategic/ReviewActions.tsx`
+- `frontend/src/components/strategic/AgentAssignmentModal.tsx`
+- `frontend/src/components/strategic/AgentAssignmentModal.css`
+- `frontend/src/components/strategic/AgentBadges.tsx` - Agent badges for document cards
 
 ### Modified Files
-- `backend/src/api/strategic.ts` - Add review endpoints
+- `backend/src/api/strategic.ts` - Add review and assignment endpoints
 - `backend/src/agents/tool-registry.ts` - Register built-in tools
 - `backend/src/strategic/config/schema.ts` - Add auto-review config
 - `frontend/src/components/strategic/StrategicDashboard.tsx` - Add review section
-- `frontend/src/lib/strategic-service.ts` - Add review API methods
+- `frontend/src/components/strategic/DocumentList.tsx` - Add agent badges to cards
+- `frontend/src/lib/strategic-service.ts` - Add review and assignment API methods
+- `frontend/src/lib/types/strategic.ts` - Add DocumentAgentAssignment type
 
 ## Testing
 
@@ -418,6 +480,9 @@ Verify complete flow works end-to-end.
 4. UI allows reviewing and acting on agent suggestions
 5. Auto-review triggers on extraction when enabled
 6. All tools accessible via both REST and MCP
+7. Document cards display assigned agents/teams
+8. Agents/teams can be assigned to documents via UI
+9. Assignment status properly tracked (assigned/active/completed)
 
 ## Notes
 
