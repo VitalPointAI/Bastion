@@ -18,6 +18,8 @@ import { getMidlifeCategorizer } from '../tools/midlife-categorizer.js';
 import { getDomainPrioritizer } from '../tools/domain-prioritizer.js';
 import { objectiveStore } from '../objectives/index.js';
 import type { MidlifeCategory } from '../schemas/dime.js';
+import { executeStrategyReview } from '../../agents/langgraph/graphs/strategy-reviewer-graph.js';
+import { configService } from '../config/service.js';
 
 /**
  * Review options for execution.
@@ -29,6 +31,8 @@ export interface ReviewOptions {
   prioritizationDomain?: 'strategic' | 'operational' | 'tactical' | 'resource';
   /** Whether to only review objectives without existing MIDLIFE category */
   onlyUncategorized?: boolean;
+  /** Use LangGraph-based review (with LLM reasoning) instead of rule-based */
+  useLangGraph?: boolean;
 }
 
 /**
@@ -38,6 +42,7 @@ const DEFAULT_OPTIONS: ReviewOptions = {
   confidenceThreshold: 0.7,
   prioritizationDomain: 'strategic',
   onlyUncategorized: false,
+  useLangGraph: false, // Default to rule-based for backward compatibility
 };
 
 /**
@@ -59,15 +64,89 @@ export class StrategyReviewerExecutor {
 
   /**
    * Review a document and generate a review report.
+   *
+   * Supports two modes:
+   * - Rule-based (default): Uses deterministic tools directly
+   * - LangGraph (useLangGraph: true): Uses LLM-powered graph with reasoning
    */
   async reviewDocument(
     documentId: string,
     options: ReviewOptions = {}
   ): Promise<StrategyReviewReport> {
     const opts = { ...DEFAULT_OPTIONS, ...options };
+
+    // Check if LangGraph mode should be used
+    // Either explicitly requested or enabled in config
+    const llmConfig = await configService.getLLMConfig();
+    const useLangGraph = opts.useLangGraph || llmConfig.useLangGraphReview;
+
+    if (useLangGraph) {
+      return this.reviewDocumentWithLangGraph(documentId, opts);
+    }
+
+    return this.reviewDocumentRuleBased(documentId, opts);
+  }
+
+  /**
+   * Review using LangGraph-powered agent with LLM reasoning.
+   */
+  private async reviewDocumentWithLangGraph(
+    documentId: string,
+    opts: ReviewOptions
+  ): Promise<StrategyReviewReport> {
+    console.log(`[${this.agentId}] Starting LangGraph review of document ${documentId}`);
+
+    try {
+      const result = await executeStrategyReview(documentId);
+
+      if (result.status === 'error') {
+        console.error(`[${this.agentId}] LangGraph review failed: ${result.error}`);
+        // Fallback to rule-based if LangGraph fails
+        console.log(`[${this.agentId}] Falling back to rule-based review`);
+        return this.reviewDocumentRuleBased(documentId, opts);
+      }
+
+      if (result.report) {
+        console.log(`[${this.agentId}] LangGraph review complete. Report ID: ${result.report.id}`);
+        return result.report;
+      }
+
+      // If no report but no error, generate one from state
+      const reportId = randomUUID();
+      const report: StrategyReviewReport = {
+        id: reportId,
+        documentId,
+        reviewedAt: new Date(),
+        reviewedBy: this.agentDID,
+        categoryAssessments: result.categoryAssessments || [],
+        priorityAssessments: result.priorityAssessments || [],
+        documentSummary: {
+          totalObjectives: result.totalObjectives || 0,
+          categoryDistribution: createEmptyCategoryDistribution(),
+          coherenceScore: 0,
+          flags: ['Review completed without full report - check logs'],
+        },
+        status: 'pending_review',
+      };
+
+      return report;
+    } catch (error) {
+      console.error(`[${this.agentId}] LangGraph error:`, error);
+      console.log(`[${this.agentId}] Falling back to rule-based review`);
+      return this.reviewDocumentRuleBased(documentId, opts);
+    }
+  }
+
+  /**
+   * Review using deterministic rule-based tools (original implementation).
+   */
+  private async reviewDocumentRuleBased(
+    documentId: string,
+    opts: ReviewOptions
+  ): Promise<StrategyReviewReport> {
     const reportId = randomUUID();
 
-    console.log(`[${this.agentId}] Starting review of document ${documentId}`);
+    console.log(`[${this.agentId}] Starting rule-based review of document ${documentId}`);
 
     // Load objectives for the document
     const objectives = await objectiveStore.getObjectivesForDocument(documentId);

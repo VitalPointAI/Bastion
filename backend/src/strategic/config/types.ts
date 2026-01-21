@@ -29,6 +29,7 @@ export const LLMProviderConfigSchema = z.object({
   maxTokensPerDay: z.number().int().positive(),
   maxCostPerDocument: z.number().positive(),
   alertThreshold: z.number().min(0).max(1),
+  useLangGraphReview: z.boolean().optional(), // Use LLM-powered LangGraph for document review
 });
 export type LLMProviderConfig = z.infer<typeof LLMProviderConfigSchema>;
 
@@ -198,6 +199,7 @@ export const DEFAULT_LLM_CONFIG: LLMProviderConfig = {
   maxTokensPerDay: 100000,
   maxCostPerDocument: 10.0,
   alertThreshold: 0.8,
+  useLangGraphReview: false, // Default to rule-based for backward compatibility
 };
 
 export const DEFAULT_AGENT_CONFIG: AgentConfig = {
