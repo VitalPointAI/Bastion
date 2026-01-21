@@ -37,6 +37,9 @@ import { IntentStore, intentStore } from '../strategic/intent/index.js';
 import { configService } from '../strategic/config/service.js';
 import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
 import type { IntentInput, IntentUpdate } from '../strategic/intent/index.js';
+import { getStrategyReviewerExecutor } from '../strategic/agents/strategy-reviewer-executor.js';
+import { reviewStore } from '../strategic/reviews/store.js';
+import type { ReviewStatus } from '../strategic/reviews/types.js';
 
 const router = express.Router();
 
@@ -1669,6 +1672,300 @@ router.post('/objectives/:id/operationalize', async (req, res) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Operationalize objective failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// AGENT REVIEW ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/strategic/documents/:documentId/review - Trigger agent review
+ *
+ * Request body (optional):
+ * - confidenceThreshold: number (default: 0.7)
+ * - prioritizationDomain: 'strategic' | 'operational' | 'tactical' | 'resource'
+ * - onlyUncategorized: boolean
+ */
+router.post('/documents/:documentId/review', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const documentId = req.params.documentId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify document exists and user owns it
+    const document = await store.get(documentId);
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    if (document.createdBy !== userDID) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { confidenceThreshold, prioritizationDomain, onlyUncategorized } = req.body;
+
+    console.log(`Triggering agent review for document ${documentId}...`);
+
+    // Execute review
+    const executor = getStrategyReviewerExecutor();
+    const report = await executor.reviewDocument(documentId, {
+      confidenceThreshold,
+      prioritizationDomain,
+      onlyUncategorized,
+    });
+
+    // Save the review
+    await reviewStore.saveReview(report);
+
+    console.log(`✓ Agent review complete: ${report.id}`);
+
+    res.status(201).json(report);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Agent review failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/documents/:documentId/reviews - List reviews for document
+ */
+router.get('/documents/:documentId/reviews', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const documentId = req.params.documentId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify document exists
+    const document = await store.get(documentId);
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    if (document.createdBy !== userDID) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const reviews = await reviewStore.getReviewsForDocument(documentId);
+
+    res.json({
+      documentId,
+      count: reviews.length,
+      reviews,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get reviews failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/reviews/:reviewId - Get specific review
+ */
+router.get('/reviews/:reviewId', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const reviewId = req.params.reviewId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const review = await reviewStore.getReview(reviewId);
+
+    if (!review) {
+      return res.status(404).json({ error: 'Review not found' });
+    }
+
+    res.json(review);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get review failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/reviews/:reviewId/accept - Accept all suggestions
+ */
+router.post('/reviews/:reviewId/accept', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const reviewId = req.params.reviewId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const review = await reviewStore.getReview(reviewId);
+    if (!review) {
+      return res.status(404).json({ error: 'Review not found' });
+    }
+
+    if (review.status !== 'pending_review') {
+      return res.status(400).json({
+        error: `Cannot accept review with status ${review.status}`,
+      });
+    }
+
+    // Apply all category suggestions
+    for (const assessment of review.categoryAssessments) {
+      await objectives.updateObjective(assessment.objectiveId, {
+        midlifeCategory: assessment.suggestedCategory,
+        midlifeCategorizedBy: 'AI',
+        midlifeConfidence: assessment.confidence,
+      });
+    }
+
+    // Apply all priority suggestions
+    for (const assessment of review.priorityAssessments) {
+      await objectives.updateObjective(assessment.objectiveId, {
+        priority: assessment.suggestedPriority,
+      });
+    }
+
+    // Update review status
+    const updated = await reviewStore.updateStatus(reviewId, 'accepted' as ReviewStatus, userDID);
+
+    console.log(`✓ Review ${reviewId} accepted, ${review.categoryAssessments.length} objectives updated`);
+
+    res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Accept review failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/reviews/:reviewId/accept-partial - Accept selected suggestions
+ *
+ * Request body:
+ * - objectiveIds: string[] - IDs of objectives to accept suggestions for
+ * - acceptCategories: boolean (default: true) - Whether to apply category suggestions
+ * - acceptPriorities: boolean (default: true) - Whether to apply priority suggestions
+ */
+router.post('/reviews/:reviewId/accept-partial', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const reviewId = req.params.reviewId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const review = await reviewStore.getReview(reviewId);
+    if (!review) {
+      return res.status(404).json({ error: 'Review not found' });
+    }
+
+    const {
+      objectiveIds,
+      acceptCategories = true,
+      acceptPriorities = true,
+    } = req.body;
+
+    if (!Array.isArray(objectiveIds) || objectiveIds.length === 0) {
+      return res.status(400).json({
+        error: 'objectiveIds array is required',
+      });
+    }
+
+    // Apply category suggestions for selected objectives
+    if (acceptCategories) {
+      for (const assessment of review.categoryAssessments) {
+        if (objectiveIds.includes(assessment.objectiveId)) {
+          await objectives.updateObjective(assessment.objectiveId, {
+            midlifeCategory: assessment.suggestedCategory,
+            midlifeCategorizedBy: 'AI',
+            midlifeConfidence: assessment.confidence,
+          });
+        }
+      }
+    }
+
+    // Apply priority suggestions for selected objectives
+    if (acceptPriorities) {
+      for (const assessment of review.priorityAssessments) {
+        if (objectiveIds.includes(assessment.objectiveId)) {
+          await objectives.updateObjective(assessment.objectiveId, {
+            priority: assessment.suggestedPriority,
+          });
+        }
+      }
+    }
+
+    // Mark as partially accepted
+    const acceptedIds = await reviewStore.acceptPartialSuggestions(reviewId, objectiveIds, userDID);
+
+    console.log(`✓ Review ${reviewId} partially accepted, ${acceptedIds.length} objectives updated`);
+
+    const updated = await reviewStore.getReview(reviewId);
+    res.json({
+      ...updated,
+      acceptedObjectiveIds: acceptedIds,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Accept partial review failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/reviews/:reviewId/reject - Reject review
+ *
+ * Request body:
+ * - reason: string (optional)
+ */
+router.post('/reviews/:reviewId/reject', async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const reviewId = req.params.reviewId as string;
+    const userDID = getUserDID(req);
+
+    if (!userDID) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const review = await reviewStore.getReview(reviewId);
+    if (!review) {
+      return res.status(404).json({ error: 'Review not found' });
+    }
+
+    const { reason } = req.body;
+
+    const updated = await reviewStore.updateStatus(
+      reviewId,
+      'rejected' as ReviewStatus,
+      userDID,
+      reason
+    );
+
+    console.log(`✓ Review ${reviewId} rejected`);
+
+    res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Reject review failed:', message);
     res.status(500).json({ error: message });
   }
 });
