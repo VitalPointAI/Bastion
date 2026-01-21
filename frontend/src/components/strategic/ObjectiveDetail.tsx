@@ -418,16 +418,27 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
             <div
               className="midlife-badge large"
               style={{
-                backgroundColor: `${MIDLIFE_METADATA[objective.midlifeCategory || 'MILITARY']?.color || '#666'}20`,
-                borderColor: MIDLIFE_METADATA[objective.midlifeCategory || 'MILITARY']?.color || '#666',
+                backgroundColor: objective.midlifeCategory
+                  ? `${MIDLIFE_METADATA[objective.midlifeCategory]?.color || '#666'}20`
+                  : '#66667820',
+                borderColor: objective.midlifeCategory
+                  ? MIDLIFE_METADATA[objective.midlifeCategory]?.color || '#666'
+                  : '#666678',
               }}
             >
-              <span style={{ color: MIDLIFE_METADATA[objective.midlifeCategory || 'MILITARY']?.color || '#666' }}>
-                {MIDLIFE_METADATA[objective.midlifeCategory || 'MILITARY']?.label || 'Unknown'}
+              <span style={{ color: objective.midlifeCategory
+                ? MIDLIFE_METADATA[objective.midlifeCategory]?.color || '#666'
+                : '#666678'
+              }}>
+                {objective.midlifeCategory
+                  ? MIDLIFE_METADATA[objective.midlifeCategory]?.label || objective.midlifeCategory
+                  : 'Uncategorized'}
               </span>
             </div>
             <p className="category-description">
-              {MIDLIFE_METADATA[objective.midlifeCategory || 'MILITARY']?.description || ''}
+              {objective.midlifeCategory
+                ? MIDLIFE_METADATA[objective.midlifeCategory]?.description || ''
+                : 'No MIDLIFE category assigned. Use Edit mode to assign a category.'}
             </p>
             <div className="category-meta">
               <span className={`categorized-by ${objective.midlifeCategorizedBy === 'HUMAN' ? 'human' : 'ai'}`}>
