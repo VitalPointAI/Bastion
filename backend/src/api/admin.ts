@@ -26,6 +26,8 @@ import { AgentPhase, AgentCapability, AutonomyLevel, ProposalKind } from '../age
 import { getToolRegistry } from '../agents/tool-registry.js';
 import { getTeamRegistry } from '../agents/team-registry.js';
 import { MCPToolInputSchema, MCPToolUpdateSchema, AgentTeamInputSchema, AgentTeamUpdateSchema, TeamMemberSchema, CharacterSchema } from '../agents/character-schema.js';
+import { AgentModelConfigSchema } from '../strategic/config/types.js';
+import { clearLLMCache } from '../agents/langgraph/llm-factory.js';
 
 const router = Router();
 
@@ -1336,6 +1338,116 @@ router.delete('/teams/:teamId/members/:agentId', async (req: Request, res: Respo
 });
 
 /**
+ * GET /api/admin/agents/:agentId/model-config - Get agent's model configuration
+ */
+router.get('/agents/:agentId/model-config', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+
+    // Verify agent exists
+    const agentRegistry = getAgentRegistry();
+    await agentRegistry.ensureInitialized();
+    const agent = agentRegistry.getAgent(agentId);
+    if (!agent) {
+      res.status(404).json({ error: 'Agent not found' });
+      return;
+    }
+
+    const modelConfig = await configService.getAgentModelConfig(agentId);
+
+    res.json({
+      agentId,
+      modelConfig: modelConfig || null,
+      usingGlobalDefaults: !modelConfig || modelConfig.useGlobalDefault,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get agent model config failed:', message);
+    res.status(500).json({ error: 'Failed to get agent model config' });
+  }
+});
+
+/**
+ * PUT /api/admin/agents/:agentId/model-config - Set agent's model configuration
+ */
+router.put('/agents/:agentId/model-config', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+    const adminDid = (req as Request & { adminDid: string }).adminDid;
+
+    // Verify agent exists
+    const agentRegistry = getAgentRegistry();
+    await agentRegistry.ensureInitialized();
+    const agent = agentRegistry.getAgent(agentId);
+    if (!agent) {
+      res.status(404).json({ error: 'Agent not found' });
+      return;
+    }
+
+    // Validate input
+    const input = { ...req.body, agentId };
+    const parseResult = AgentModelConfigSchema.safeParse(input);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const { reason } = req.body;
+
+    await configService.setAgentModelConfig(agentId, parseResult.data, adminDid, reason);
+
+    // Clear LLM cache since config changed
+    clearLLMCache();
+
+    res.json({
+      updated: true,
+      agentId,
+      modelConfig: parseResult.data,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Set agent model config failed:', message);
+    res.status(500).json({ error: 'Failed to set agent model config' });
+  }
+});
+
+/**
+ * DELETE /api/admin/agents/:agentId/model-config - Remove agent's model configuration (use global defaults)
+ */
+router.delete('/agents/:agentId/model-config', async (req: Request, res: Response) => {
+  try {
+    const agentId = req.params.agentId as string;
+    const adminDid = (req as Request & { adminDid: string }).adminDid;
+    const reason = req.body?.reason;
+
+    // Verify agent exists
+    const agentRegistry = getAgentRegistry();
+    await agentRegistry.ensureInitialized();
+    const agent = agentRegistry.getAgent(agentId);
+    if (!agent) {
+      res.status(404).json({ error: 'Agent not found' });
+      return;
+    }
+
+    const deleted = await configService.deleteAgentModelConfig(agentId, adminDid, reason);
+
+    if (!deleted) {
+      res.status(404).json({ error: 'No model config found for agent' });
+      return;
+    }
+
+    // Clear LLM cache since config changed
+    clearLLMCache();
+
+    res.json({ deleted: true, agentId, message: 'Agent will now use global default model config' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete agent model config failed:', message);
+    res.status(500).json({ error: 'Failed to delete agent model config' });
+  }
+});
+
+/**
  * GET /api/admin/agents/:agentId/teams - Get teams an agent belongs to
  */
 router.get('/agents/:agentId/teams', async (req: Request, res: Response) => {
@@ -1362,5 +1474,337 @@ router.get('/agents/:agentId/teams', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to get agent teams' });
   }
 });
+
+// ============================================================================
+// Agent Builder Wizard Endpoints
+// ============================================================================
+
+/**
+ * GET /api/admin/agent-builder/templates - Get available agent templates
+ */
+router.get('/agent-builder/templates', async (req: Request, res: Response) => {
+  try {
+    const templates = [
+      {
+        id: 'document-reviewer',
+        name: 'Document Reviewer',
+        description: 'Reviews documents for quality, consistency, and strategic alignment',
+        phase: 'Analysis',
+        suggestedCapabilities: ['DOCUMENT_PROCESSING', 'STRATEGIC_ANALYSIS'],
+        defaultTools: ['categorize-midlife', 'prioritize-domain'],
+        characterPreset: {
+          name: 'Document Reviewer',
+          personality: ['analytical', 'methodical', 'thorough'],
+          expertise: ['document analysis', 'strategic review'],
+          communication_style: 'professional and precise',
+        },
+      },
+      {
+        id: 'threat-analyst',
+        name: 'Threat Analyst',
+        description: 'Analyzes and monitors potential security threats',
+        phase: 'Collection',
+        suggestedCapabilities: ['THREAT_MONITORING', 'OSINT_COLLECTION'],
+        defaultTools: [],
+        characterPreset: {
+          name: 'Threat Analyst',
+          personality: ['vigilant', 'detail-oriented', 'cautious'],
+          expertise: ['threat intelligence', 'risk assessment'],
+          communication_style: 'clear and actionable',
+        },
+      },
+      {
+        id: 'fusion-agent',
+        name: 'Fusion Agent',
+        description: 'Synthesizes information from multiple sources into unified assessments',
+        phase: 'Processing',
+        suggestedCapabilities: ['DATA_FUSION', 'ASSESSMENT_GENERATION'],
+        defaultTools: [],
+        characterPreset: {
+          name: 'Fusion Analyst',
+          personality: ['integrative', 'comprehensive', 'balanced'],
+          expertise: ['data synthesis', 'multi-source analysis'],
+          communication_style: 'holistic and nuanced',
+        },
+      },
+      {
+        id: 'coa-generator',
+        name: 'Course of Action Generator',
+        description: 'Generates and evaluates courses of action for strategic scenarios',
+        phase: 'Execution',
+        suggestedCapabilities: ['COA_GENERATION', 'SCENARIO_ANALYSIS'],
+        defaultTools: [],
+        characterPreset: {
+          name: 'COA Planner',
+          personality: ['strategic', 'creative', 'pragmatic'],
+          expertise: ['strategic planning', 'option generation'],
+          communication_style: 'structured and option-focused',
+        },
+      },
+      {
+        id: 'custom',
+        name: 'Custom Agent',
+        description: 'Build a completely custom agent from scratch',
+        phase: 'Support',
+        suggestedCapabilities: [],
+        defaultTools: [],
+        characterPreset: null,
+      },
+    ];
+
+    res.json({ templates });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get agent templates failed:', message);
+    res.status(500).json({ error: 'Failed to get agent templates' });
+  }
+});
+
+/**
+ * GET /api/admin/agent-builder/capabilities - Get available capabilities
+ */
+router.get('/agent-builder/capabilities', async (req: Request, res: Response) => {
+  try {
+    const capabilities = Object.values(AgentCapability).map(cap => ({
+      id: cap,
+      name: cap.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
+      description: getCapabilityDescription(cap),
+    }));
+
+    res.json({ capabilities });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get capabilities failed:', message);
+    res.status(500).json({ error: 'Failed to get capabilities' });
+  }
+});
+
+/**
+ * GET /api/admin/agent-builder/phases - Get available agent phases
+ */
+router.get('/agent-builder/phases', async (req: Request, res: Response) => {
+  try {
+    const phases = Object.values(AgentPhase).map(phase => ({
+      id: phase,
+      name: phase,
+      description: getPhaseDescription(phase),
+    }));
+
+    res.json({ phases });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get phases failed:', message);
+    res.status(500).json({ error: 'Failed to get phases' });
+  }
+});
+
+/**
+ * GET /api/admin/agent-builder/autonomy-levels - Get available autonomy levels
+ */
+router.get('/agent-builder/autonomy-levels', async (req: Request, res: Response) => {
+  try {
+    const levels = Object.values(AutonomyLevel).map(level => ({
+      id: level,
+      name: getAutonomyLevelName(level),
+      description: getAutonomyLevelDescription(level),
+      numericValue: level,
+    }));
+
+    res.json({ levels });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get autonomy levels failed:', message);
+    res.status(500).json({ error: 'Failed to get autonomy levels' });
+  }
+});
+
+/**
+ * POST /api/admin/agent-builder/validate - Validate agent definition before creation
+ */
+router.post('/agent-builder/validate', async (req: Request, res: Response) => {
+  try {
+    const parseResult = AgentDefinitionSchema.safeParse(req.body);
+
+    if (!parseResult.success) {
+      res.json({
+        valid: false,
+        errors: parseResult.error.issues.map(issue => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        })),
+      });
+      return;
+    }
+
+    // Check for ID conflicts
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    const existing = registry.getAgent(parseResult.data.id || '');
+
+    if (existing) {
+      res.json({
+        valid: false,
+        errors: [{ path: 'id', message: 'Agent ID already exists' }],
+      });
+      return;
+    }
+
+    res.json({ valid: true, errors: [] });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Validate agent failed:', message);
+    res.status(500).json({ error: 'Failed to validate agent definition' });
+  }
+});
+
+/**
+ * POST /api/admin/agent-builder/preview-prompt - Preview generated system prompt
+ */
+router.post('/agent-builder/preview-prompt', async (req: Request, res: Response) => {
+  try {
+    const { character, capabilities, phase } = req.body;
+
+    if (!character) {
+      res.status(400).json({ error: 'Character definition required' });
+      return;
+    }
+
+    // Generate system prompt from character definition
+    const prompt = generateSystemPromptFromCharacter(
+      character,
+      capabilities || [],
+      phase || 'Support'
+    );
+
+    res.json({ prompt });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Preview prompt failed:', message);
+    res.status(500).json({ error: 'Failed to generate prompt preview' });
+  }
+});
+
+// Helper functions for descriptions
+
+function getCapabilityDescription(cap: AgentCapability): string {
+  const descriptions: Record<AgentCapability, string> = {
+    [AgentCapability.ProposalSummary]: 'Summarize proposals for human review',
+    [AgentCapability.ProposalScreening]: 'Screen proposals for issues/spam',
+    [AgentCapability.ContextAnalysis]: 'Analyze context and related information',
+    [AgentCapability.FeasibilityAssessment]: 'Assess feasibility of proposals',
+    [AgentCapability.SecurityMonitoring]: 'Monitor for security concerns',
+    [AgentCapability.VotingGuidance]: 'Provide voting guidance',
+    [AgentCapability.PreferenceModeling]: 'Model user preferences for recommendations',
+    [AgentCapability.DelegatedVoting]: 'Cast votes on behalf of delegator',
+    [AgentCapability.ConsensusBuilding]: 'Build consensus among stakeholders',
+    [AgentCapability.CommitteeCoordination]: 'Coordinate committee activities',
+  };
+  return descriptions[cap] || 'No description available';
+}
+
+function getPhaseDescription(phase: AgentPhase): string {
+  const descriptions: Record<AgentPhase, string> = {
+    [AgentPhase.Support]: 'AI Assistants - support human decisions',
+    [AgentPhase.Represent]: 'AI Proxies - proxy human decisions',
+    [AgentPhase.Organize]: 'AI Leaders - make decisions and coordinate',
+  };
+  return descriptions[phase] || 'No description available';
+}
+
+function getAutonomyLevelName(level: AutonomyLevel): string {
+  const names: Record<AutonomyLevel, string> = {
+    [AutonomyLevel.NotAutonomous]: 'Not Autonomous',
+    [AutonomyLevel.SemiAutonomous]: 'Semi Autonomous',
+    [AutonomyLevel.Autonomous]: 'Autonomous',
+  };
+  return names[level] || 'Unknown';
+}
+
+function getAutonomyLevelDescription(level: AutonomyLevel): string {
+  const descriptions: Record<AutonomyLevel, string> = {
+    [AutonomyLevel.NotAutonomous]: 'Human-in-the-loop: requires explicit human approval',
+    [AutonomyLevel.SemiAutonomous]: 'Human-on-the-loop: AI can approve, human monitors with veto',
+    [AutonomyLevel.Autonomous]: 'Human-out-of-the-loop: AI can approve and execute',
+  };
+  return descriptions[level] || 'No description available';
+}
+
+/**
+ * Generate a system prompt from character definition.
+ */
+function generateSystemPromptFromCharacter(
+  character: {
+    name: string;
+    personality?: string[];
+    expertise?: string[];
+    communication_style?: string;
+    background?: string;
+    goals?: string[];
+    constraints?: string[];
+  },
+  capabilities: string[],
+  phase: string
+): string {
+  const sections: string[] = [];
+
+  // Identity section
+  sections.push(`You are ${character.name}, an AI agent in the ${phase} phase of operations.`);
+
+  // Background
+  if (character.background) {
+    sections.push(`\nBackground:\n${character.background}`);
+  }
+
+  // Personality
+  if (character.personality && character.personality.length > 0) {
+    sections.push(
+      `\nPersonality Traits:\n${character.personality.map(p => `- ${p}`).join('\n')}`
+    );
+  }
+
+  // Expertise
+  if (character.expertise && character.expertise.length > 0) {
+    sections.push(
+      `\nAreas of Expertise:\n${character.expertise.map(e => `- ${e}`).join('\n')}`
+    );
+  }
+
+  // Communication style
+  if (character.communication_style) {
+    sections.push(`\nCommunication Style:\n${character.communication_style}`);
+  }
+
+  // Capabilities
+  if (capabilities.length > 0) {
+    const capabilityList = capabilities.map(c =>
+      c.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase())
+    );
+    sections.push(
+      `\nCapabilities:\n${capabilityList.map(c => `- ${c}`).join('\n')}`
+    );
+  }
+
+  // Goals
+  if (character.goals && character.goals.length > 0) {
+    sections.push(
+      `\nPrimary Goals:\n${character.goals.map(g => `- ${g}`).join('\n')}`
+    );
+  }
+
+  // Constraints
+  if (character.constraints && character.constraints.length > 0) {
+    sections.push(
+      `\nOperational Constraints:\n${character.constraints.map(c => `- ${c}`).join('\n')}`
+    );
+  }
+
+  // Standard closing
+  sections.push(
+    `\nAlways maintain professional standards and ensure your outputs are accurate, ` +
+    `well-reasoned, and aligned with organizational objectives.`
+  );
+
+  return sections.join('\n');
+}
 
 export default router;
