@@ -42,6 +42,7 @@ import { reviewStore } from '../strategic/reviews/store.js';
 import type { ReviewStatus } from '../strategic/reviews/types.js';
 import { assignmentStore } from '../strategic/assignments/index.js';
 import type { AssignmentInput } from '../strategic/assignments/index.js';
+import { triggerAutoReview } from '../strategic/extraction/auto-review-hook.js';
 
 const router = express.Router();
 
@@ -557,6 +558,15 @@ router.post('/documents/:documentId/extract', async (req, res) => {
 
     console.log(`✓ Extracted ${savedIds.length} objectives from document ${documentId}`);
 
+    // Trigger auto-review if configured (non-blocking)
+    triggerAutoReview(documentId).then((autoReviewResult) => {
+      if (autoReviewResult.triggered) {
+        console.log(`✓ Auto-review triggered: ${autoReviewResult.reviewId}`);
+      }
+    }).catch((err) => {
+      console.error('Auto-review trigger failed:', err);
+    });
+
     res.status(201).json({
       objectiveCount: savedIds.length,
       documentSummary: result.documentSummary,
@@ -683,6 +693,15 @@ router.get('/documents/:documentId/extract/stream', async (req, res) => {
     const savedIds = await objectives.saveObjectives(inputs);
 
     console.log(`✓ Extracted ${savedIds.length} objectives (streaming) from document ${documentId}`);
+
+    // Trigger auto-review if configured (non-blocking)
+    triggerAutoReview(documentId).then((autoReviewResult) => {
+      if (autoReviewResult.triggered) {
+        console.log(`✓ Auto-review triggered: ${autoReviewResult.reviewId}`);
+      }
+    }).catch((err) => {
+      console.error('Auto-review trigger failed:', err);
+    });
 
     // Send final result
     sendEvent('complete', {
