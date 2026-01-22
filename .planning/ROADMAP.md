@@ -312,8 +312,8 @@ Plans:
 - [x] Plan 4.3-06: OSINT Integration & Validity Dashboard (completed 2026-01-22)
 - [x] Plan 4.3-07: Intelligence Analysis Agents (completed 2026-01-22)
 - [x] Plan 4.3-08: RAFT Graph Agents & Tools (completed 2026-01-22)
-- [ ] Plan 4.3-09: Conflict Detection Agent
-- [ ] Plan 4.3-10: Graph Visualization UI
+- [x] Plan 4.3-09: Workspace Isolation & Graph REST API (completed 2026-01-22)
+- [ ] Plan 4.3-10: Validity Dashboard UI
 - [ ] Plan 4.3-11: End-to-End Fusion Flow
 
 ### Phase 5: Operational Planning Module
@@ -405,7 +405,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
-| 4.3 Strategic Intelligence Fusion & RAFT | 8/11 | In progress | - |
+| 4.3 Strategic Intelligence Fusion & RAFT | 9/11 | In progress | - |
 | 5. Operational Planning Module | 0/TBD | Not started | - |
 | 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
 | 7. Tactical Execution System | 0/TBD | Not started | - |

@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4.3 of 12 (Strategic Intelligence Fusion & RAFT)
-Plan: 8 of 11 in current phase
+Plan: 9 of 11 in current phase
 Status: In progress
-Last activity: 2026-01-22 — Completed 4.3-08-PLAN.md (RAFT Graph Agents & Tools)
+Last activity: 2026-01-22 — Completed 4.3-09-PLAN.md (Workspace Isolation & Graph REST API)
 
-Progress: ███████░░░░ 73% (8/11 plans complete in phase 4.3)
+Progress: ████████░░░ 82% (9/11 plans complete in phase 4.3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 46
+- Total plans completed: 47
 - Average duration: 13 min
-- Total execution time: 9.5 hours
+- Total execution time: 9.6 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: ███████░░░░ 73% (8/11 plans complete in phase 4.
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
-| 4.3 (Strategic Intelligence Fusion) | 8 | 44 min | 6 min |
+| 4.3 (Strategic Intelligence Fusion) | 9 | 51 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 5 min, 3 min, 5 min, 4 min, 5 min
-- Trend: Phase 4.3 progressing - RAFT graph agents and tools created
+- Last 5 plans: 3 min, 5 min, 4 min, 5 min, 7 min
+- Trend: Phase 4.3 progressing - workspace isolation and graph REST API created
 
 ## Accumulated Context
 
@@ -423,9 +423,15 @@ None.
 - RAFT Extraction Agent with PMESII domain knowledge for entity identification
 - RAFT Reasoning Agent with network science expertise for strategic insights
 
+**Phase 4.3 Plan 9 (Workspace Isolation & Graph REST API):**
+- Workspace types: country, adversary, region, topic, coalition, custom
+- Hierarchical workspaces via parentWorkspaceId with cross-references via linkedWorkspaceIds
+- Master view aggregates across all accessible workspaces by classification
+- 25+ REST API endpoints for workspaces, actors, tensions, OSINT, validity, resolution, graph construction
+
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 4.3-08-PLAN.md (RAFT Graph Agents & Tools)
+Stopped at: Completed 4.3-09-PLAN.md (Workspace Isolation & Graph REST API)
 Resume file: None
-Next action: Continue Phase 4.3 - Conflict Detection Agent (4.3-09)
+Next action: Continue Phase 4.3 - Validity Dashboard UI (4.3-10)
