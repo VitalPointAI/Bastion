@@ -22,6 +22,7 @@ import { getCheckpointer } from './orchestration/checkpointer.js';
 import { getTracer } from './orchestration/observability.js';
 import { getCheckpointManager } from './orchestration/human-checkpoints.js';
 import { seedLangGraphAgents } from './agents/langgraph/agent-seeder.js';
+import { closeNeo4jDriver } from './graph/index.js';
 
 dotenv.config();
 
@@ -134,3 +135,30 @@ server.listen(port, async () => {
     console.error('Failed to seed LangGraph agents:', error);
   }
 });
+
+// Graceful shutdown handlers
+async function gracefulShutdown(signal: string) {
+  console.log(`\nReceived ${signal}, starting graceful shutdown...`);
+
+  // Close Neo4j driver
+  try {
+    await closeNeo4jDriver();
+  } catch (error) {
+    console.error('Error closing Neo4j driver:', error);
+  }
+
+  // Close HTTP server
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+
+  // Force exit after timeout
+  setTimeout(() => {
+    console.error('Graceful shutdown timed out, forcing exit');
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
