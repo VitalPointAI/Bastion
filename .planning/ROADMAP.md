@@ -309,7 +309,7 @@ Plans:
 - [x] Plan 4.3-03: Entity Resolution Pipeline (completed 2026-01-22)
 - [x] Plan 4.3-04: Graph Construction Pipeline (completed 2026-01-22)
 - [x] Plan 4.3-05: Strategic Fusion Agents & MCP Tools (completed 2026-01-22)
-- [ ] Plan 4.3-06: OSINT Integration & Validity Dashboard
+- [x] Plan 4.3-06: OSINT Integration & Validity Dashboard (completed 2026-01-22)
 - [ ] Plan 4.3-07: RAFT Extraction Agent
 - [ ] Plan 4.3-08: RAFT Reasoning Agent
 - [ ] Plan 4.3-09: Conflict Detection Agent

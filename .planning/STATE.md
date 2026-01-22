@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4.3 of 12 (Strategic Intelligence Fusion & RAFT)
-Plan: 5 of 11 in current phase
+Plan: 6 of 11 in current phase
 Status: In progress
-Last activity: 2026-01-22 — Completed 4.3-05-PLAN.md (Strategic Fusion Agents)
+Last activity: 2026-01-22 — Completed 4.3-06-PLAN.md (OSINT Integration)
 
-Progress: █████░░░░░░ 45% (5/11 plans complete in phase 4.3)
+Progress: ██████░░░░░ 55% (6/11 plans complete in phase 4.3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 44
+- Total plans completed: 45
 - Average duration: 14 min
-- Total execution time: 9.3 hours
+- Total execution time: 9.4 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: █████░░░░░░ 45% (5/11 plans complete in phase 4.
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
-| 4.3 (Strategic Intelligence Fusion) | 5 | 30 min | 6 min |
+| 4.3 (Strategic Intelligence Fusion) | 6 | 35 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 20 min, 20 min, 8 min, 5 min, 3 min
-- Trend: Phase 4.3 progressing - graph construction pipeline complete
+- Last 5 plans: 20 min, 8 min, 5 min, 3 min, 5 min
+- Trend: Phase 4.3 progressing - OSINT integration complete
 
 ## Accumulated Context
 
@@ -404,9 +404,15 @@ None.
 - MCP tools registered before agents in seeder to ensure availability during assignment
 - Entity resolution agent conservative by design: 0.85 confidence threshold for auto-match
 
+**Phase 4.3 Plan 6 (OSINT Integration):**
+- Validity base score 70 when no evidence exists (moderate confidence baseline)
+- Recency decay over 90 days (min 20% weight) for evidence weighting
+- Alert thresholds: ±20 points = medium, ±30 points = high, <30 score = critical
+- Evidence linking uses upsert with unique constraint on (objective_id, event_id)
+
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 4.3-05-PLAN.md (Strategic Fusion Agents)
+Stopped at: Completed 4.3-06-PLAN.md (OSINT Integration)
 Resume file: None
-Next action: Continue Phase 4.3 - OSINT Integration (4.3-06)
+Next action: Continue Phase 4.3 - Threat Assessment Integration (4.3-07)
