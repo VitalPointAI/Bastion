@@ -307,7 +307,7 @@ Plans:
 - [x] Plan 4.3-01: Neo4j Infrastructure (completed 2026-01-22)
 - [x] Plan 4.3-02: RAFT Graph Schema (completed 2026-01-22)
 - [x] Plan 4.3-03: Entity Resolution Pipeline (completed 2026-01-22)
-- [ ] Plan 4.3-04: Strategic Fusion Agent
+- [x] Plan 4.3-04: Graph Construction Pipeline (completed 2026-01-22)
 - [ ] Plan 4.3-05: OSINT Integration Tools
 - [ ] Plan 4.3-06: Validity Dashboard
 - [ ] Plan 4.3-07: RAFT Extraction Agent

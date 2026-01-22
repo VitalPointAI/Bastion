@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4.3 of 12 (Strategic Intelligence Fusion & RAFT)
-Plan: 3 of 11 in current phase
+Plan: 4 of 11 in current phase
 Status: In progress
-Last activity: 2026-01-22 — Completed 4.3-03-PLAN.md (Entity Resolution Pipeline)
+Last activity: 2026-01-22 — Completed 4.3-04-PLAN.md (Graph Construction Pipeline)
 
-Progress: ███░░░░░░░░ 27% (3/11 plans complete in phase 4.3)
+Progress: ████░░░░░░░ 36% (4/11 plans complete in phase 4.3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 42
+- Total plans completed: 43
 - Average duration: 14 min
-- Total execution time: 9.2 hours
+- Total execution time: 9.3 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: ███░░░░░░░░ 27% (3/11 plans complete in phase 4.
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
-| 4.3 (Strategic Intelligence Fusion) | 3 | 21 min | 7 min |
+| 4.3 (Strategic Intelligence Fusion) | 4 | 24 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 22 min, 20 min, 20 min, 8 min, 5 min
-- Trend: Phase 4.3 progressing - RAFT graph schema defined
+- Last 5 plans: 20 min, 20 min, 8 min, 5 min, 3 min
+- Trend: Phase 4.3 progressing - graph construction pipeline complete
 
 ## Accumulated Context
 
@@ -392,9 +392,15 @@ None.
 - Graph store pattern: classes with static methods for CRUD operations
 - Entity merge pattern for actor resolution workflows
 
+**Phase 4.3 Plan 4 (Graph Construction Pipeline):**
+- Sequential LLM extraction: actors first, then relationships and tensions with actor context
+- Error accumulation: collect errors without stopping pipeline to maximize data extraction
+- Actor resolution: case-insensitive matching with partial match fallback
+- Entity deduplication: optional resolution run at end of document processing
+
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 4.3-03-PLAN.md (Entity Resolution Pipeline)
+Stopped at: Completed 4.3-04-PLAN.md (Graph Construction Pipeline)
 Resume file: None
-Next action: Continue Phase 4.3 - Strategic Fusion Agent (4.3-04)
+Next action: Continue Phase 4.3 - Strategic Fusion Agent (4.3-05)
