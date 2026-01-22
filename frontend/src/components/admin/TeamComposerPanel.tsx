@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
@@ -83,12 +83,12 @@ export function TeamComposerPanel() {
   const {
     register,
     handleSubmit,
-    watch,
     reset,
     control,
     formState: { errors },
   } = useForm<TeamFormData>({
-    resolver: zodResolver(TeamFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(TeamFormSchema) as any,
     defaultValues: {
       teamId: '',
       name: '',

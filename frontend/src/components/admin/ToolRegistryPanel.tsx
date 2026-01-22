@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
@@ -74,7 +74,8 @@ export function ToolRegistryPanel() {
     reset,
     formState: { errors },
   } = useForm<ToolCreateFormData>({
-    resolver: zodResolver(ToolCreateSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(ToolCreateSchema) as any,
     defaultValues: {
       toolId: '',
       name: '',

@@ -6,7 +6,7 @@
  * tooltips with descriptions, and indication when changing from AI to HUMAN categorization.
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactElement } from 'react';
 import type { MidlifeCategory, MidlifeCategorizedBy } from '../../lib/types/strategic.js';
 import { MIDLIFE_METADATA } from '../../lib/types/strategic.js';
 import './MidlifeCategorySelector.css';
@@ -21,7 +21,7 @@ interface MidlifeCategorySelectorProps {
 /**
  * Icons for each MIDLIFE category (simplified SVG paths)
  */
-const CATEGORY_ICONS: Record<MidlifeCategory, JSX.Element> = {
+const CATEGORY_ICONS: Record<MidlifeCategory, ReactElement> = {
   MILITARY: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M12 3l9 18H3l9-18z" />

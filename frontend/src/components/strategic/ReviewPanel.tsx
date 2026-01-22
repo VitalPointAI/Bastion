@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { StrategyReviewReport } from '../../lib/types/strategic.js';
-import { strategicService, API_BASE } from '../../lib/strategic-service.js';
+import { API_BASE } from '../../lib/strategic-service.js';
 import { ReviewReport } from './ReviewReport.js';
 import './ReviewPanel.css';
 
@@ -152,7 +152,7 @@ export function ReviewPanel({
       });
 
       eventSource.addEventListener('complete', (event) => {
-        const data: ReviewComplete = JSON.parse(event.data);
+        JSON.parse(event.data) as ReviewComplete; // Validate JSON structure
         setStreamingStatus(null);
         setStreamingProgress([]);
         setTriggeringReview(false);

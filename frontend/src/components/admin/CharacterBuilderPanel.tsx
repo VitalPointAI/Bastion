@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
@@ -93,10 +93,10 @@ export function CharacterBuilderPanel() {
     handleSubmit,
     control,
     reset,
-    watch,
     formState: { errors, isDirty },
   } = useForm<CharacterFormData>({
-    resolver: zodResolver(CharacterFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(CharacterFormSchema) as any,
     defaultValues: {
       name: '',
       bio: [],
@@ -200,7 +200,7 @@ export function CharacterBuilderPanel() {
   };
 
   // Save character
-  const onSubmit = async (data: CharacterFormData) => {
+  const onSubmit = async (formData: CharacterFormData) => {
     if (!selectedAgentId) {
       setError('Please select an agent first');
       return;
@@ -210,7 +210,7 @@ export function CharacterBuilderPanel() {
     setError(null);
 
     try {
-      const character = formToCharacter(data);
+      const character = formToCharacter(formData as CharacterFormData);
       await adminService.updateAgentCharacter(selectedAgentId, character);
 
       setCurrentCharacter(character);

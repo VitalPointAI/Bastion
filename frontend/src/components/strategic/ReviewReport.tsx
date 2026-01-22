@@ -9,8 +9,6 @@
 import { useState } from 'react';
 import type {
   StrategyReviewReport,
-  CategoryAssessment,
-  PriorityAssessment,
   MidlifeCategory,
   Priority,
 } from '../../lib/types/strategic.js';

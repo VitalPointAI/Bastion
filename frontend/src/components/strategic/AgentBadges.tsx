@@ -5,6 +5,7 @@
  * Shows assigned agents with status indicators.
  */
 
+import type { ReactElement } from 'react';
 import type { DocumentAgentAssignment } from '../../lib/types/strategic.js';
 import './AgentBadges.css';
 
@@ -32,7 +33,7 @@ function getStatusClass(status: string): string {
 /**
  * Get icon for assignment type.
  */
-function getTypeIcon(type: string): JSX.Element {
+function getTypeIcon(type: string): ReactElement {
   switch (type) {
     case 'review':
       return (
