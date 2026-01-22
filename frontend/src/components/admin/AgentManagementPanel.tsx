@@ -15,6 +15,8 @@ import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import { adminService, getProviderDisplayName } from '../../lib/admin-service';
 import type { AgentWithConfig, AgentDefinition, LLMProviderType } from '../../types/admin';
 import { FormField } from './common/FormField';
+import { AgentBuilderWizard } from './AgentBuilderWizard';
+import { useUser } from '../../context/UserContext';
 
 const PROVIDERS: LLMProviderType[] = ['anthropic', 'openai', 'azure-openai', 'near-ai', 'local'];
 const AGENT_TYPES = ['governance', 'strategic', 'custom'] as const;
@@ -71,6 +73,10 @@ export function AgentManagementPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Agent Builder Wizard state
+  const [showWizard, setShowWizard] = useState(false);
+  const { userDID } = useUser();
 
   // Agent list
   const [customAgents, setCustomAgents] = useState<AgentWithConfig[]>([]);
@@ -330,6 +336,14 @@ export function AgentManagementPanel() {
     }
   };
 
+  // Refresh agent list helper
+  const refreshAgentList = useCallback(async () => {
+    const agentList = await adminService.listAgents();
+    setCustomAgents(agentList.filter(a =>
+      !a.agentId.match(/^(osintCollector|documentProcessor|threatMonitor|fusionAgent|extractionAgent|assessmentAgent|redTeamAgent|devilsAdvocate|coaGenerator|governance-copilot|proposal-screener|context-analyzer|feasibility-assessor|strategy-document-reviewer)$/)
+    ));
+  }, []);
+
   // Delete agent
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -339,10 +353,7 @@ export function AgentManagementPanel() {
       await adminService.deleteAgent(deleteTarget.agentId);
 
       // Refresh agent list
-      const agentList = await adminService.listAgents();
-      setCustomAgents(agentList.filter(a =>
-        !a.agentId.match(/^(osintCollector|documentProcessor|threatMonitor|fusionAgent|extractionAgent|assessmentAgent|redTeamAgent|devilsAdvocate|coaGenerator|governance-copilot|proposal-screener|context-analyzer|feasibility-assessor)$/)
-      ));
+      await refreshAgentList();
 
       setSuccessMessage(`Agent "${deleteTarget.name}" deleted`);
       setDeleteTarget(null);
@@ -353,6 +364,14 @@ export function AgentManagementPanel() {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  // Handle wizard agent creation success
+  const handleWizardAgentCreated = async (agentId: string) => {
+    setShowWizard(false);
+    setSuccessMessage(`Agent created successfully! ID: ${agentId}`);
+    await refreshAgentList();
+    setTimeout(() => setSuccessMessage(null), 5000);
   };
 
   if (isLoading) {
@@ -367,9 +386,31 @@ export function AgentManagementPanel() {
   return (
     <div className="config-panel">
       <div className="config-panel-header">
-        <h2>Agent Management</h2>
-        <p>Create new AI agents or upload agent definitions via JSON.</p>
+        <div className="config-panel-header-row">
+          <div>
+            <h2>Agent Management</h2>
+            <p>Create new AI agents or upload agent definitions via JSON.</p>
+          </div>
+          <button
+            className="btn btn--wizard"
+            onClick={() => setShowWizard(true)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            Agent Builder
+          </button>
+        </div>
       </div>
+
+      {/* Agent Builder Wizard Modal */}
+      {showWizard && userDID && (
+        <AgentBuilderWizard
+          userDID={userDID}
+          onClose={() => setShowWizard(false)}
+          onAgentCreated={handleWizardAgentCreated}
+        />
+      )}
 
       {error && (
         <div className="alert alert--error">
