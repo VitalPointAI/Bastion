@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4.3 of 12 (Strategic Intelligence Fusion & RAFT)
-Plan: 7 of 11 in current phase
+Plan: 8 of 11 in current phase
 Status: In progress
-Last activity: 2026-01-22 — Completed 4.3-07-PLAN.md (Intelligence Analysis Agents)
+Last activity: 2026-01-22 — Completed 4.3-08-PLAN.md (RAFT Graph Agents & Tools)
 
-Progress: ██████░░░░░ 64% (7/11 plans complete in phase 4.3)
+Progress: ███████░░░░ 73% (8/11 plans complete in phase 4.3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 45
-- Average duration: 14 min
-- Total execution time: 9.4 hours
+- Total plans completed: 46
+- Average duration: 13 min
+- Total execution time: 9.5 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: ██████░░░░░ 64% (7/11 plans complete in phase 4.
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
-| 4.3 (Strategic Intelligence Fusion) | 7 | 39 min | 6 min |
+| 4.3 (Strategic Intelligence Fusion) | 8 | 44 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 8 min, 5 min, 3 min, 5 min, 4 min
-- Trend: Phase 4.3 progressing - Intelligence analysis agents created
+- Last 5 plans: 5 min, 3 min, 5 min, 4 min, 5 min
+- Trend: Phase 4.3 progressing - RAFT graph agents and tools created
 
 ## Accumulated Context
 
@@ -416,9 +416,16 @@ None.
 - Source reliability A-F scale for OSINT evaluation
 - Three single-responsibility agents: OSINT Monitor, Validity Assessment, Conflict Detection
 
+**Phase 4.3 Plan 8 (RAFT Graph Agents & Tools):**
+- Graph algorithms as Cypher approximations (no Neo4j GDS dependency required)
+- Conservative extraction approach: default weight 0 unless evidence supports stronger value
+- 8 RAFT tools: create_actor, create_relationship, create_tension, update_edge_weight, query_graph, run_graph_algorithm, get_actor_profile, export_graph_visualization
+- RAFT Extraction Agent with PMESII domain knowledge for entity identification
+- RAFT Reasoning Agent with network science expertise for strategic insights
+
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 4.3-07-PLAN.md (Intelligence Analysis Agents)
+Stopped at: Completed 4.3-08-PLAN.md (RAFT Graph Agents & Tools)
 Resume file: None
-Next action: Continue Phase 4.3 - Threat Assessment Integration (4.3-08)
+Next action: Continue Phase 4.3 - Conflict Detection Agent (4.3-09)
