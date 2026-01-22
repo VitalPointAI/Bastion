@@ -6,23 +6,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 4 — Strategic Planning Module (In Progress)
+**Current focus:** Phase 4 — Strategic Planning Module (Complete)
 
 ## Current Position
 
-Phase: 4 of 12 (Strategic Planning Module)
-Plan: 11 of 12 in current phase
-Status: 4-11 Complete, 4-12 Ready
-Last activity: 2026-01-21 — Completed 4-11-PLAN.md (Strategic Analysis MCP Tools & Review Agent)
+Phase: 4 of 12 (Strategic Planning Module) - COMPLETE
+Plan: 12 of 12 in current phase
+Status: Phase 4 Complete, Phase 5 Ready
+Last activity: 2026-01-21 — Completed 4-12-PLAN.md (LangGraph Agent Framework Integration)
 
-Progress: ██████████ 92% (11/12 plans complete)
+Progress: ██████████████ 100% (12/12 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39
+- Total plans completed: 40
 - Average duration: 14 min
-- Total execution time: 8.8 hours
+- Total execution time: 9.0 hours
 
 **By Phase:**
 
@@ -31,13 +31,13 @@ Progress: ██████████ 92% (11/12 plans complete)
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
-| 4 (Strategic Planning) | 8 | 75 min | 9 min |
+| 4 (Strategic Planning) | 10 | 95 min | 10 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 5 min, 4 min, 25 min, 22 min, 20 min
-- Trend: LangGraph orchestration for multi-agent workflows
+- Last 5 plans: 4 min, 25 min, 22 min, 20 min, 20 min
+- Trend: LangGraph orchestration for multi-agent workflows complete
 
 ## Accumulated Context
 
@@ -368,9 +368,20 @@ None.
 - Review UI components (ReviewReport, ReviewPanel, AgentBadges)
 - Note: Tools are rule-based, not AI-powered (addressed in 4-12)
 
+**Phase 4 Plan 12 (LangGraph Agent Framework Integration):**
+- LLM Factory with dynamic instantiation per agent configuration
+- Supports Anthropic, OpenAI, Azure OpenAI, NEAR AI, local (Ollama)
+- LangChain tool wrappers for existing rule-based MIDLIFE/prioritize tools
+- Strategy Reviewer LangGraph with load → analyze → prioritize → report flow
+- Human-in-the-loop checkpointing with PostgreSQL storage
+- Agent seeder auto-registers strategy-document-reviewer on startup
+- SSE streaming endpoint for real-time agent reasoning progress
+- System prompt generation from character definitions
+- Agent Builder wizard for creating agents with personality/tools/LLM config
+
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 4-11-PLAN.md (Strategic Analysis MCP Tools & Review Agent)
+Stopped at: Completed 4-12-PLAN.md (LangGraph Agent Framework Integration)
 Resume file: None
-Next action: Execute 4-12-PLAN.md (LangGraph Agent Framework Integration)
+Next action: Begin Phase 5 (Operational Planning Module) or Phase 1.1 (Calimero Research)
