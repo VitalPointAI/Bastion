@@ -16,6 +16,7 @@ import strategicToolsRouter from './api/strategic-tools.js';
 import adminRouter from './api/admin.js';
 import messagingRouter, { setupMessageWebSocket } from './api/messaging.js';
 import orchestrationRouter, { setupOrchestrationWebSocket } from './api/orchestration.js';
+import graphRouter from './api/graph.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
 import { getMessageBus } from './messaging/message-bus.js';
 import { getCheckpointer } from './orchestration/checkpointer.js';
@@ -82,6 +83,7 @@ app.use('/api/strategic/tools', strategicToolsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/messages', messagingRouter);
 app.use('/api/orchestration', orchestrationRouter);
+app.use('/api/graph', graphRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
