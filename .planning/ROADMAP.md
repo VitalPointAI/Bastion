@@ -17,6 +17,7 @@ None
 - [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
 - [ ] **Phase 4.1: Admin UI** - Create administrative interface for system configuration (INSERTED)
 - [x] **Phase 4.2: AI Agent Teams** - Per-agent model assignment, dynamic agent creation, agent DIDs (INSERTED)
+- [ ] **Phase 4.3: Strategic Intelligence Fusion & RAFT Analysis** - Multi-document fusion, validity dashboard, graph-based RAFT analysis (INSERTED)
 - [ ] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
@@ -164,6 +165,157 @@ Plans:
 - [x] Plan 4.2-05: Secure Message Bus with ABAC Enforcement (completed 2026-01-20)
 - [x] Plan 4.2-06: LangGraph Orchestration Layer (completed 2026-01-20)
 
+### Phase 4.3: Strategic Intelligence Fusion & RAFT Analysis (INSERTED)
+**Goal:** Fuse multiple strategic documents into unified situational understanding with validity tracking and graph-based RAFT analysis
+**Depends on:** Phase 4.2
+**Research:** Required (4.3-RESEARCH.md)
+**Research topics:** Graph database selection (Neo4j vs Memgraph vs ArangoDB), entity resolution and deduplication algorithms, RAFT framework modeling (Actors, Relationships, Functions, Tensions), edge weighting strategies for geopolitical networks, OSINT data integration patterns, real-time validity assessment architectures
+**Plans:** 0 plans
+
+**Context:**
+This phase addresses the critical need to synthesize multiple strategic-level documents (NSS, NDS, NMS, GCPs, etc.) into a comprehensive, deduplicated understanding of the strategic environment. Each document undergoes objective extraction, but their results must be intelligently fused to eliminate redundancy while preserving all key details.
+
+**Architecture Note (per agentic-ai-guide.pdf):**
+Following best practices for production-grade agentic workflows:
+- **Agents**: Single-responsibility, single-tool design for tasks requiring LLM reasoning
+- **MCP Tools**: Deterministic pure functions for data operations (CRUD, queries, transformations)
+- Agents are registered via the Agent Management Framework (Phase 4.2) with DIDs
+- Tools are added to the MCP server for agents to invoke
+
+---
+
+**AI Agents (require LLM reasoning - registered in Agent Framework):**
+
+1. **Strategic Fusion Agent** (single responsibility: consolidation reasoning)
+   - Analyzes extracted objectives from multiple documents
+   - Identifies semantic duplicates and reconciles conflicts
+   - Produces unified strategic picture with provenance tracking
+   - *Tool access*: `query_objectives`, `save_fused_objective`, `get_document_metadata`
+
+2. **Entity Resolution Agent** (single responsibility: actor/entity matching)
+   - Identifies same actors/entities referenced differently across documents
+   - Resolves aliases, abbreviations, and variant names
+   - Maintains canonical entity registry
+   - *Tool access*: `search_entities`, `create_entity_alias`, `merge_entities`
+
+3. **Conflict Detection Agent** (single responsibility: contradiction analysis)
+   - Identifies contradictory guidance between documents
+   - Assesses severity and recommends resolution approaches
+   - Flags items requiring human review
+   - *Tool access*: `query_objectives_by_theme`, `create_conflict_record`, `notify_reviewers`
+
+4. **OSINT Monitor Agent** (single responsibility: event relevance assessment)
+   - Evaluates incoming OSINT data for strategic relevance
+   - Determines which objectives are affected by new information
+   - Generates relevance scores and summaries
+   - *Tool access*: `fetch_osint_feeds`, `query_active_objectives`, `create_osint_event`
+
+5. **Validity Assessment Agent** (single responsibility: objective validity scoring)
+   - Assesses whether objectives remain valid based on evidence
+   - Tracks progress indicators and trend analysis
+   - Generates validity reports with confidence levels
+   - *Tool access*: `get_objective_evidence`, `update_validity_score`, `create_validity_alert`
+
+6. **RAFT Extraction Agent** (single responsibility: graph element extraction)
+   - Extracts actors, relationships, functions, and tensions from documents/events
+   - Classifies relationship types and suggests edge weights
+   - Identifies implicit relationships from context
+   - *Tool access*: `create_actor`, `create_relationship`, `create_tension`, `suggest_edge_weight`
+
+7. **RAFT Reasoning Agent** (single responsibility: graph-based analysis)
+   - Analyzes RAFT graph for strategic insights
+   - Identifies key actors, critical relationships, emerging tensions
+   - Generates network analysis reports (centrality, clusters, paths)
+   - *Tool access*: `query_graph`, `run_graph_algorithm`, `get_actor_profile`
+
+---
+
+**MCP Tools (deterministic operations - added to MCP server):**
+
+**Document & Objective Tools:**
+- `query_objectives(filters, pagination)` - Query fused objectives with filters
+- `save_fused_objective(objective_data)` - Persist fused objective to database
+- `get_document_metadata(document_id)` - Retrieve source document information
+- `query_objectives_by_theme(theme, classification)` - Filter by DIME/MIDLIFE themes
+- `link_objectives(parent_id, child_id, relationship_type)` - Create objective hierarchy
+
+**Entity Resolution Tools:**
+- `search_entities(query, entity_type)` - Search canonical entity registry
+- `create_entity_alias(canonical_id, alias, source)` - Register entity alias
+- `merge_entities(source_ids, target_id)` - Merge duplicate entities
+- `get_entity_references(entity_id)` - Find all document references to entity
+
+**OSINT Integration Tools:**
+- `fetch_osint_feeds(sources, date_range)` - Pull from configured OSINT sources
+- `create_osint_event(event_data)` - Store processed OSINT event
+- `link_event_to_objective(event_id, objective_id, relevance_score)` - Connect evidence
+- `get_objective_evidence(objective_id)` - Retrieve all linked evidence
+
+**Validity Tracking Tools:**
+- `update_validity_score(objective_id, score, reasoning)` - Update objective validity
+- `create_validity_alert(objective_id, alert_type, details)` - Generate alerts
+- `get_validity_history(objective_id)` - Retrieve validity score timeline
+- `calculate_trend(objective_id, window)` - Compute validity trend
+
+**RAFT Graph Tools:**
+- `create_actor(name, type, attributes)` - Add actor node to graph
+- `create_relationship(actor1_id, actor2_id, type, weight)` - Add relationship edge
+- `create_tension(actors, description, intensity)` - Record tension
+- `create_function(actor_id, function_type, domain)` - Assign function to actor
+- `update_edge_weight(edge_id, weight, evidence)` - Modify relationship strength
+- `query_graph(cypher_query)` - Execute graph query
+- `run_graph_algorithm(algorithm, params)` - Run centrality, clustering, etc.
+- `get_actor_profile(actor_id)` - Full actor view with relationships
+- `export_graph_visualization(filters, format)` - Generate visualization data
+
+**Conflict Management Tools:**
+- `create_conflict_record(objectives, description, severity)` - Log conflict
+- `resolve_conflict(conflict_id, resolution, approver)` - Mark conflict resolved
+- `notify_reviewers(conflict_id, reviewer_ids)` - Send review notifications
+
+---
+
+**Key Capabilities:**
+
+1. **Multi-Document Strategic Fusion**
+   - Process multiple strategic documents through existing extraction pipeline
+   - Entity resolution to identify same objectives/actors across documents
+   - Semantic deduplication preserving unique perspectives and details
+   - Hierarchical consolidation (e.g., NDS objectives under NSS goals)
+   - Conflict detection when documents have contradictory guidance
+   - Comprehensive strategic picture without information loss
+
+2. **Strategic Validity Dashboard**
+   - Real-time assessment of objective progress against world events
+   - OSINT data integration (news, social media, satellite, signals)
+   - Automated validity scoring based on observable indicators
+   - Alert system for objectives becoming outdated or invalidated
+   - Trend analysis showing objective trajectory over time
+   - Evidence linking between objectives and supporting/contradicting events
+
+3. **RAFT Graph Database & Visualization**
+   - **R**elationships: Connections between actors (alliances, conflicts, dependencies)
+   - **A**ctors: Nations, organizations, individuals, non-state actors
+   - **F**unctions: Roles actors play (economic, military, diplomatic, informational)
+   - **T**ensions: Points of friction, competition, or conflict
+   - Weighted edges reflecting relationship strength/importance
+   - Temporal tracking of relationship evolution
+   - Interactive graph visualization with filtering and exploration
+   - Integration with strategic objectives for impact analysis
+
+Plans:
+- [x] Plan 4.3-01: Neo4j Infrastructure (completed 2026-01-22)
+- [ ] Plan 4.3-02: RAFT Graph Schema
+- [ ] Plan 4.3-03: Entity Resolution MCP Tools
+- [ ] Plan 4.3-04: Strategic Fusion Agent
+- [ ] Plan 4.3-05: OSINT Integration Tools
+- [ ] Plan 4.3-06: Validity Dashboard
+- [ ] Plan 4.3-07: RAFT Extraction Agent
+- [ ] Plan 4.3-08: RAFT Reasoning Agent
+- [ ] Plan 4.3-09: Conflict Detection Agent
+- [ ] Plan 4.3-10: Graph Visualization UI
+- [ ] Plan 4.3-11: End-to-End Fusion Flow
+
 ### Phase 5: Operational Planning Module
 **Goal**: Implement joint planning doctrine and operational design
 **Depends on**: Phase 4
@@ -253,6 +405,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
+| 4.3 Strategic Intelligence Fusion & RAFT | 1/11 | In progress | - |
 | 5. Operational Planning Module | 0/TBD | Not started | - |
 | 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
 | 7. Tactical Execution System | 0/TBD | Not started | - |
