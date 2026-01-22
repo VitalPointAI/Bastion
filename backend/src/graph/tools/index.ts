@@ -6,6 +6,7 @@
  * - Entity resolution and deduplication
  * - OSINT event management and evidence linking
  * - Validity scoring and alerting
+ * - RAFT graph operations (actors, relationships, tensions, algorithms)
  */
 
 export {
@@ -28,10 +29,16 @@ export {
   validityToolHandlers,
 } from './validity-tools.js';
 
+export {
+  raftToolDefinitions,
+  raftToolHandlers,
+} from './raft-tools.js';
+
 import { objectiveToolDefinitions } from './objective-tools.js';
 import { entityToolDefinitions } from './entity-tools.js';
 import { osintToolDefinitions } from './osint-tools.js';
 import { validityToolDefinitions } from './validity-tools.js';
+import { raftToolDefinitions } from './raft-tools.js';
 
 /**
  * All fusion tool definitions for registration
@@ -41,4 +48,5 @@ export const allFusionToolDefinitions = [
   ...entityToolDefinitions,
   ...osintToolDefinitions,
   ...validityToolDefinitions,
+  ...raftToolDefinitions,
 ];

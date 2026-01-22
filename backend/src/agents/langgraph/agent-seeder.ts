@@ -2,8 +2,9 @@
  * Agent Seeder - Auto-registers LangGraph agents on startup
  *
  * Registers strategy-document-reviewer, strategic-fusion-agent,
- * entity-resolution-agent, and other LangGraph-based agents
- * in the agent registry, assigns tools, and sets up characters.
+ * entity-resolution-agent, RAFT extraction/reasoning agents,
+ * and other LangGraph-based agents in the agent registry,
+ * assigns tools, and sets up characters.
  */
 
 import { getAgentRegistry } from '../registry.js';
@@ -43,10 +44,23 @@ import {
   CONFLICT_DETECTION_TOOLS,
   CONFLICT_DETECTION_CHARACTER,
 } from '../../graph/agents/conflict-detection-agent.js';
+import {
+  RAFT_EXTRACTION_AGENT_ID,
+  RAFT_EXTRACTION_MANIFEST,
+  RAFT_EXTRACTION_TOOLS,
+  RAFT_EXTRACTION_CHARACTER,
+} from '../../graph/agents/raft-extraction-agent.js';
+import {
+  RAFT_REASONING_AGENT_ID,
+  RAFT_REASONING_MANIFEST,
+  RAFT_REASONING_TOOLS,
+  RAFT_REASONING_CHARACTER,
+} from '../../graph/agents/raft-reasoning-agent.js';
 import { objectiveToolDefinitions } from '../../graph/tools/objective-tools.js';
 import { entityToolDefinitions } from '../../graph/tools/entity-tools.js';
 import { osintToolDefinitions } from '../../graph/tools/osint-tools.js';
 import { validityToolDefinitions } from '../../graph/tools/validity-tools.js';
+import { raftToolDefinitions } from '../../graph/tools/raft-tools.js';
 import type { AgentPhase, AutonomyLevel, ProposalKind } from '../types.js';
 import { getReviewCheckpointManager } from './graphs/strategy-reviewer-checkpoint.js';
 
@@ -527,6 +541,160 @@ async function seedConflictDetectionAgent(): Promise<SeedResult> {
 }
 
 /**
+ * Seed the RAFT Extraction agent.
+ */
+async function seedRaftExtractionAgent(): Promise<SeedResult> {
+  const result: SeedResult = {
+    agentId: RAFT_EXTRACTION_AGENT_ID,
+    registered: false,
+    toolsAssigned: [],
+    characterSet: false,
+  };
+
+  try {
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+
+    // Check if already registered
+    const existing = registry.getAgent(RAFT_EXTRACTION_AGENT_ID);
+    if (existing) {
+      console.log(`[AgentSeeder] ${RAFT_EXTRACTION_AGENT_ID} already registered`);
+      result.registered = true;
+      if (!existing.character) {
+        registry.updateAgentCharacter(RAFT_EXTRACTION_AGENT_ID, RAFT_EXTRACTION_CHARACTER);
+        result.characterSet = true;
+        console.log(`[AgentSeeder] Updated character for ${RAFT_EXTRACTION_AGENT_ID}`);
+      }
+      return result;
+    }
+
+    // Register the agent
+    const manifest = {
+      ...RAFT_EXTRACTION_MANIFEST,
+      createdAt: new Date(),
+      createdBy: 'system',
+      agentDID: '',
+      agentBlindedKey: '',
+      agentPublicKey: '',
+    };
+
+    await registry.registerAgent(manifest);
+    result.registered = true;
+    console.log(`[AgentSeeder] Registered ${RAFT_EXTRACTION_AGENT_ID}`);
+
+    // Set character
+    registry.updateAgentCharacter(RAFT_EXTRACTION_AGENT_ID, RAFT_EXTRACTION_CHARACTER);
+    result.characterSet = true;
+    console.log(`[AgentSeeder] Set character for ${RAFT_EXTRACTION_AGENT_ID}`);
+
+    // Assign tools
+    const toolRegistry = getToolRegistry();
+    await toolRegistry.ensureInitialized();
+
+    for (const toolId of RAFT_EXTRACTION_TOOLS) {
+      try {
+        const tool = toolRegistry.getTool(toolId);
+        if (tool) {
+          const agentTools = toolRegistry.getToolsForAgent(RAFT_EXTRACTION_AGENT_ID);
+          if (!agentTools.some(t => t.toolId === toolId)) {
+            toolRegistry.assignToolToAgent(toolId, RAFT_EXTRACTION_AGENT_ID, 'system');
+            result.toolsAssigned.push(toolId);
+            console.log(`[AgentSeeder] Assigned tool ${toolId} to ${RAFT_EXTRACTION_AGENT_ID}`);
+          }
+        } else {
+          console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
+        }
+      } catch (err) {
+        console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
+      }
+    }
+
+    return result;
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[AgentSeeder] Failed to seed ${RAFT_EXTRACTION_AGENT_ID}:`, error);
+    return result;
+  }
+}
+
+/**
+ * Seed the RAFT Reasoning agent.
+ */
+async function seedRaftReasoningAgent(): Promise<SeedResult> {
+  const result: SeedResult = {
+    agentId: RAFT_REASONING_AGENT_ID,
+    registered: false,
+    toolsAssigned: [],
+    characterSet: false,
+  };
+
+  try {
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+
+    // Check if already registered
+    const existing = registry.getAgent(RAFT_REASONING_AGENT_ID);
+    if (existing) {
+      console.log(`[AgentSeeder] ${RAFT_REASONING_AGENT_ID} already registered`);
+      result.registered = true;
+      if (!existing.character) {
+        registry.updateAgentCharacter(RAFT_REASONING_AGENT_ID, RAFT_REASONING_CHARACTER);
+        result.characterSet = true;
+        console.log(`[AgentSeeder] Updated character for ${RAFT_REASONING_AGENT_ID}`);
+      }
+      return result;
+    }
+
+    // Register the agent
+    const manifest = {
+      ...RAFT_REASONING_MANIFEST,
+      createdAt: new Date(),
+      createdBy: 'system',
+      agentDID: '',
+      agentBlindedKey: '',
+      agentPublicKey: '',
+    };
+
+    await registry.registerAgent(manifest);
+    result.registered = true;
+    console.log(`[AgentSeeder] Registered ${RAFT_REASONING_AGENT_ID}`);
+
+    // Set character
+    registry.updateAgentCharacter(RAFT_REASONING_AGENT_ID, RAFT_REASONING_CHARACTER);
+    result.characterSet = true;
+    console.log(`[AgentSeeder] Set character for ${RAFT_REASONING_AGENT_ID}`);
+
+    // Assign tools
+    const toolRegistry = getToolRegistry();
+    await toolRegistry.ensureInitialized();
+
+    for (const toolId of RAFT_REASONING_TOOLS) {
+      try {
+        const tool = toolRegistry.getTool(toolId);
+        if (tool) {
+          const agentTools = toolRegistry.getToolsForAgent(RAFT_REASONING_AGENT_ID);
+          if (!agentTools.some(t => t.toolId === toolId)) {
+            toolRegistry.assignToolToAgent(toolId, RAFT_REASONING_AGENT_ID, 'system');
+            result.toolsAssigned.push(toolId);
+            console.log(`[AgentSeeder] Assigned tool ${toolId} to ${RAFT_REASONING_AGENT_ID}`);
+          }
+        } else {
+          console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
+        }
+      } catch (err) {
+        console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
+      }
+    }
+
+    return result;
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[AgentSeeder] Failed to seed ${RAFT_REASONING_AGENT_ID}:`, error);
+    return result;
+  }
+}
+
+/**
  * Register fusion MCP tools in the tool registry.
  */
 async function registerFusionTools(): Promise<void> {
@@ -538,6 +706,7 @@ async function registerFusionTools(): Promise<void> {
     ...entityToolDefinitions,
     ...osintToolDefinitions,
     ...validityToolDefinitions,
+    ...raftToolDefinitions,
   ];
 
   for (const toolDef of allTools) {
@@ -604,6 +773,14 @@ export async function seedLangGraphAgents(): Promise<SeedResult[]> {
   // Seed conflict detection agent
   const conflictResult = await seedConflictDetectionAgent();
   results.push(conflictResult);
+
+  // Seed RAFT extraction agent
+  const raftExtractionResult = await seedRaftExtractionAgent();
+  results.push(raftExtractionResult);
+
+  // Seed RAFT reasoning agent
+  const raftReasoningResult = await seedRaftReasoningAgent();
+  results.push(raftReasoningResult);
 
   // Log summary
   const successful = results.filter(r => r.registered);

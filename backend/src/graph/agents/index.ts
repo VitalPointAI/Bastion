@@ -7,6 +7,8 @@
  * - OSINT Monitor Agent for intelligence evaluation
  * - Validity Assessment Agent for objective validation
  * - Conflict Detection Agent for guidance reconciliation
+ * - RAFT Extraction Agent for graph element extraction
+ * - RAFT Reasoning Agent for graph-based strategic analysis
  */
 
 export {
@@ -43,3 +45,17 @@ export {
   CONFLICT_DETECTION_MANIFEST,
   CONFLICT_DETECTION_CHARACTER,
 } from './conflict-detection-agent.js';
+
+export {
+  RAFT_EXTRACTION_AGENT_ID,
+  RAFT_EXTRACTION_TOOLS,
+  RAFT_EXTRACTION_MANIFEST,
+  RAFT_EXTRACTION_CHARACTER,
+} from './raft-extraction-agent.js';
+
+export {
+  RAFT_REASONING_AGENT_ID,
+  RAFT_REASONING_TOOLS,
+  RAFT_REASONING_MANIFEST,
+  RAFT_REASONING_CHARACTER,
+} from './raft-reasoning-agent.js';
