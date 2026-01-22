@@ -11,16 +11,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4.3 of 12 (Strategic Intelligence Fusion & RAFT)
-Plan: 4 of 11 in current phase
+Plan: 5 of 11 in current phase
 Status: In progress
-Last activity: 2026-01-22 — Completed 4.3-04-PLAN.md (Graph Construction Pipeline)
+Last activity: 2026-01-22 — Completed 4.3-05-PLAN.md (Strategic Fusion Agents)
 
-Progress: ████░░░░░░░ 36% (4/11 plans complete in phase 4.3)
+Progress: █████░░░░░░ 45% (5/11 plans complete in phase 4.3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 43
+- Total plans completed: 44
 - Average duration: 14 min
 - Total execution time: 9.3 hours
 
@@ -34,7 +34,7 @@ Progress: ████░░░░░░░ 36% (4/11 plans complete in phase 4.
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
-| 4.3 (Strategic Intelligence Fusion) | 4 | 24 min | 6 min |
+| 4.3 (Strategic Intelligence Fusion) | 5 | 30 min | 6 min |
 
 **Recent Trend:**
 - Last 5 plans: 20 min, 20 min, 8 min, 5 min, 3 min
@@ -398,9 +398,15 @@ None.
 - Actor resolution: case-insensitive matching with partial match fallback
 - Entity deduplication: optional resolution run at end of document processing
 
+**Phase 4.3 Plan 5 (Strategic Fusion Agents):**
+- EndsWaysMeans follows full JP 5-0 doctrine structure (nested objects, not simple strings)
+- Agent character knowledge arrays contain domain-specific abbreviations and resolution rules
+- MCP tools registered before agents in seeder to ensure availability during assignment
+- Entity resolution agent conservative by design: 0.85 confidence threshold for auto-match
+
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 4.3-04-PLAN.md (Graph Construction Pipeline)
+Stopped at: Completed 4.3-05-PLAN.md (Strategic Fusion Agents)
 Resume file: None
-Next action: Continue Phase 4.3 - Strategic Fusion Agent (4.3-05)
+Next action: Continue Phase 4.3 - OSINT Integration (4.3-06)
