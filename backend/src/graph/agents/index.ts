@@ -4,6 +4,9 @@
  * AI agents for RAFT graph operations including:
  * - Strategic Fusion Agent for document consolidation
  * - Entity Resolution Agent for deduplication
+ * - OSINT Monitor Agent for intelligence evaluation
+ * - Validity Assessment Agent for objective validation
+ * - Conflict Detection Agent for guidance reconciliation
  */
 
 export {
@@ -19,3 +22,24 @@ export {
   ENTITY_RESOLUTION_MANIFEST,
   ENTITY_RESOLUTION_CHARACTER,
 } from './entity-resolution-agent.js';
+
+export {
+  OSINT_MONITOR_AGENT_ID,
+  OSINT_MONITOR_TOOLS,
+  OSINT_MONITOR_MANIFEST,
+  OSINT_MONITOR_CHARACTER,
+} from './osint-monitor-agent.js';
+
+export {
+  VALIDITY_ASSESSMENT_AGENT_ID,
+  VALIDITY_ASSESSMENT_TOOLS,
+  VALIDITY_ASSESSMENT_MANIFEST,
+  VALIDITY_ASSESSMENT_CHARACTER,
+} from './validity-assessment-agent.js';
+
+export {
+  CONFLICT_DETECTION_AGENT_ID,
+  CONFLICT_DETECTION_TOOLS,
+  CONFLICT_DETECTION_MANIFEST,
+  CONFLICT_DETECTION_CHARACTER,
+} from './conflict-detection-agent.js';
