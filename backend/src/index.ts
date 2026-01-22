@@ -23,6 +23,7 @@ import { getTracer } from './orchestration/observability.js';
 import { getCheckpointManager } from './orchestration/human-checkpoints.js';
 import { seedLangGraphAgents } from './agents/langgraph/agent-seeder.js';
 import { closeNeo4jDriver } from './graph/index.js';
+import { initRAFTSchema } from './graph/raft/schema-init.js';
 
 dotenv.config();
 
@@ -133,6 +134,13 @@ server.listen(port, async () => {
     console.log('LangGraph agents seeded');
   } catch (error) {
     console.error('Failed to seed LangGraph agents:', error);
+  }
+
+  // Initialize RAFT Neo4j schema (constraints and indexes)
+  try {
+    await initRAFTSchema();
+  } catch (error) {
+    console.error('Failed to initialize RAFT schema:', error);
   }
 });
 
