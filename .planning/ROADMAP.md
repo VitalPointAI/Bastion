@@ -310,8 +310,8 @@ Plans:
 - [x] Plan 4.3-04: Graph Construction Pipeline (completed 2026-01-22)
 - [x] Plan 4.3-05: Strategic Fusion Agents & MCP Tools (completed 2026-01-22)
 - [x] Plan 4.3-06: OSINT Integration & Validity Dashboard (completed 2026-01-22)
-- [ ] Plan 4.3-07: RAFT Extraction Agent
-- [ ] Plan 4.3-08: RAFT Reasoning Agent
+- [x] Plan 4.3-07: Intelligence Analysis Agents (completed 2026-01-22)
+- [ ] Plan 4.3-08: Threat Assessment Integration
 - [ ] Plan 4.3-09: Conflict Detection Agent
 - [ ] Plan 4.3-10: Graph Visualization UI
 - [ ] Plan 4.3-11: End-to-End Fusion Flow
