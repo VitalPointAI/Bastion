@@ -78,7 +78,7 @@ export function DocumentList({
         docIds.map(async (docId) => {
           try {
             const response = await fetch(
-              `${API_BASE}/api/strategic/documents/${encodeURIComponent(docId)}/agents`,
+              `${API_BASE}/api/strategic/documents/${encodeURIComponent(docId)}/assignments`,
               {
                 headers: { 'X-DID': userDID },
               }

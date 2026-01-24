@@ -340,6 +340,85 @@ router.post('/resolution/merge', async (req: Request, res: Response) => {
 });
 
 // =====================
+// OBJECTIVES WITH VALIDITY ENDPOINTS
+// =====================
+
+// Get objectives with validity scores for a workspace
+router.get('/validity/objectives', async (req: Request, res: Response) => {
+  try {
+    const workspaceId = getQueryString(req.query.workspaceId);
+    const { objectiveStore } = await import('../strategic/objectives/store.js');
+
+    // Get all objectives (optionally filter by workspace in future)
+    const objectives = await objectiveStore.getObjectives({ limit: 100 });
+
+    // Enrich with validity data
+    const objectivesWithValidity = await Promise.all(
+      objectives.map(async (obj) => {
+        try {
+          const validity = await validityService.calculateValidity(obj.id);
+          const trend = await validityService.getValidityTrend(obj.id);
+          return {
+            id: obj.id,
+            objectiveTitle: obj.description.slice(0, 100),
+            validityScore: validity.validityScore,
+            trend: trend.trend,
+            lastUpdated: validity.calculatedAt,
+            classification: 'UNCLASSIFIED', // Default for now
+          };
+        } catch {
+          return {
+            id: obj.id,
+            objectiveTitle: obj.description.slice(0, 100),
+            validityScore: 70, // Default baseline
+            trend: 'stable' as const,
+            lastUpdated: new Date().toISOString(),
+            classification: 'UNCLASSIFIED',
+          };
+        }
+      })
+    );
+
+    res.json({ objectives: objectivesWithValidity });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
+// WORKSPACE GRAPH DATA ENDPOINTS
+// =====================
+
+// Get graph data for a workspace (nodes and edges for visualization)
+router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
+  try {
+    const workspaceId = req.params.id as string;
+
+    // Get actors as nodes
+    const actors = await actorStore.listActors({ workspaceId, limit: 500 });
+    const nodes = actors.map(actor => ({
+      id: actor.id,
+      label: actor.name,
+      type: actor.type,
+      workspaceId: actor.workspaceId,
+    }));
+
+    // Get relationships as edges
+    const relationships = await relationshipStore.listRelationships({ workspaceId, limit: 1000 });
+    const edges = relationships.map(rel => ({
+      source: rel.sourceActorId,
+      target: rel.targetActorId,
+      type: rel.relationshipType,
+      strength: rel.weight,
+    }));
+
+    res.json({ nodes, edges });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
 // GRAPH CONSTRUCTION ENDPOINTS
 // =====================
 
