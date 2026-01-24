@@ -141,19 +141,30 @@ export function ValidityMap({
   const defaultCenter: L.LatLngExpression = [20, 0];
   const defaultZoom = 2;
 
+  // World bounds to prevent showing multiple world copies
+  const worldBounds: L.LatLngBoundsExpression = [
+    [-85, -180], // Southwest corner
+    [85, 180],   // Northeast corner
+  ];
+
   return (
     <div className="validity-map">
       <MapContainer
         center={defaultCenter}
         zoom={defaultZoom}
+        minZoom={2}
+        maxZoom={18}
         scrollWheelZoom={true}
+        maxBounds={worldBounds}
+        maxBoundsViscosity={1.0}
         className="map-container"
       >
         {/* Dark theme tiles from Stadia Maps */}
         <TileLayer
           attribution='&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
-          maxZoom={20}
+          maxZoom={18}
+          noWrap={true}
         />
 
         <LayersControl position="topright">
