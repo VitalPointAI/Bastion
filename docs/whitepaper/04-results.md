@@ -69,3 +69,85 @@ Operational plans generate tactical tasks through mission order decomposition. C
 Policy constraints flow down and bind execution at every level. National caveats specified at the strategic level propagate through operational plans to tactical execution rules. A contributing nation's restriction on certain target types or geographic areas becomes an immutable constraint that tactical systems cannot override. Smart contract enforcement ensures that these policy constraints cannot be bypassed through configuration changes or operational workarounds. This downward flow of binding constraints directly addresses the research question's requirement for policy-compliant coordination across national boundaries (see Figure 3).
 
 Coalition caveats receive special handling to ensure proper enforcement. When multiple nations contribute resources to a mission, the most restrictive applicable caveat governs employment. BASTION's caveat enforcement system tracks resource provenance, identifies applicable restrictions, and blocks actions that would violate any contributing nation's policies. This automatic enforcement eliminates the risk of inadvertent caveat violations while maintaining operational tempo.
+
+## 4.3 Physical Demonstration
+
+The research proposal specified a hybrid physical/virtual MVP demonstration to ground theoretical contributions in observable system behavior. This section describes the demonstration components, hardware platform, and scenario that validate BASTION's architecture through tangible execution.
+
+### MVP Components
+
+The demonstration implements the three key components specified in the research proposal, each addressing a distinct coordination challenge.
+
+**Strategic-Level DAO (Resource Donations).** The first component simulates a coalition dealing with nation-level resource donations, modeled from contemporary international support scenarios. The strategic DAO manages proposals for materiel contributions, enabling coalition members to vote on resource allocations with weighted influence reflecting agreed-upon participation levels. This component demonstrates how DAOs can efficiently source, decide on, and track resource donations that satisfy operational requirements. The digital governance interface shows proposal submission, voting progress, and allocation outcomes with full transparency to all authorized participants.
+
+**Tactical-Level DAO (Effects on Target).** The second component demonstrates tactical-level coordination and decision-making through a physical model of an Area of Operations. The tactical DAO coordinates autonomous target identification, resource selection, and effects delivery within the demonstration environment. This component validates that DAO governance can operate at tactical tempo, making decisions rapidly enough to support time-sensitive operations while maintaining policy compliance and audit trails.
+
+**Operational Coordination (AI Agent Linking).** The third component demonstrates the critical interlink between tactical and strategic DAOs. As the tactical DAO's assets are expended during mission execution, an AI agent monitoring resource state automatically generates a proposal to the strategic-level DAO requesting replenishment. This cross-DAO communication validates that interconnected DAOs can coordinate across levels of warfare, with tactical events triggering strategic governance actions without requiring manual intervention. The operational coordination component bridges the other two, demonstrating seamless vertical integration.
+
+### Hardware Platform
+
+The physical demonstration employs embedded computing and robotic hardware to create a tangible representation of autonomous operations within DAO governance.
+
+**NVIDIA Jetson Orin Nano Super.** The edge computing platform provides AI inference capability at the tactical level. Running optimized object detection models, the Jetson processes camera input to identify targets within the demonstration area. The platform's 67 TOPS of AI performance enables real-time inference without cloud connectivity, demonstrating the edge computing approach necessary for DDIL (Disconnected, Intermittent, Limited bandwidth) environments. The Jetson connects to BASTION's backend through secure API communication, receiving mission orders and reporting detection results.
+
+**Sphero RVR+ Robotic Chassis.** The mobile platform provides physical movement capability for the demonstration. The RVR+ serves as a ground-based autonomous asset that can navigate the demonstration area, position for reconnaissance, and execute movement commands. Its programmable interface enables integration with the Jetson's AI-driven navigation decisions. The robot's physical presence transforms abstract governance decisions into observable actions, grounding the demonstration in tangible outcomes.
+
+**Physical Area of Operations Model.** A tabletop terrain model provides the demonstration environment. The model includes simulated terrain features, designated target markers, and defined boundaries that represent an operational area. This physical AO enables observers to witness the complete cycle from strategic objective through tactical execution in a comprehensible scale. Target markers represent objects that the AI must identify, classify, and engage according to policy constraints.
+
+### Demonstration Scenario
+
+The demonstration scenario runs approximately 20 minutes and proceeds through four acts that showcase each human authority position and the cross-level coordination capability.
+
+**Act 1: Strategic Resource Allocation (Human-in-the-Loop).** The demonstration begins with a coalition resource donation proposal. A coalition member submits a proposal to the strategic DAO offering reconnaissance assets for operational use. Other coalition members review the proposal details, including asset specifications, usage restrictions (caveats), and contribution duration. Members vote according to their configured weights. Upon reaching the approval threshold, the resources are allocated to the operational pool and become available for mission assignment. Throughout this act, human participants make every decision; AI agents provide information display and vote tallying but do not influence outcomes.
+
+**Act 2: Operational Mission Planning (Human-on-the-Loop).** With resources available, the operational phase begins. An AI agent receives a strategic objective requiring reconnaissance of a designated area to identify specific target types. The agent analyzes the objective, queries available resources, and generates an operational plan that assigns the newly allocated reconnaissance asset to the mission. Risk assessment identifies potential hazards and constraints. The agent drafts commander's intent specifying purpose, acceptable risk, and engagement boundaries. A human commander reviews the generated plan on the monitoring dashboard, observes the agent's reasoning, and approves execution with or without modifications. The commander could override any element but in nominal operation allows the AI-generated plan to proceed. This demonstrates on-the-loop operation where humans monitor rather than direct each action.
+
+**Act 3: Tactical Execution (Human-out-of-the-Loop with Policy Bounds).** The approved operational plan triggers tactical execution. Mission orders flow to the Jetson Orin Nano, which commands the Sphero RVR+ to begin reconnaissance of the physical AO. The robot navigates autonomously through the demonstration area while the Jetson's camera captures imagery. Edge AI models process the imagery in real-time, identifying objects that match target criteria. When a target is detected above the confidence threshold, the system logs the identification and positions the asset for potential engagement.
+
+At this point, the demonstration highlights the critical exception for strike authorization. Although the tactical system operates autonomously for reconnaissance and target identification, any action designated as an engagement or strike requires human approval. The tactical DAO generates a strike authorization proposal that requires explicit human voting. Coalition members must approve the strike before effects can be delivered. This return to human-in-the-loop for lethal decisions demonstrates that graduated autonomy does not mean abandonment of human control for consequential actions.
+
+Upon human approval, the tactical asset executes the authorized engagement within policy constraints. Effects delivery occurs within the bounds specified by coalition caveats and mission parameters. The demonstration shows observable physical action (robot movement to engagement position) tied to governance decisions recorded on the blockchain.
+
+**Act 4: Cross-Level Coordination.** Following engagement, the AI monitoring agent detects that tactical asset expenditure has reduced available resources below the replenishment threshold. The agent automatically generates a proposal to the strategic-level DAO requesting additional resource allocation. This proposal appears to coalition members without manual intervention, demonstrating the interlink capability. Coalition members can vote on the replenishment request through the same governance interface used for initial allocation. Approval triggers resource transfer from strategic reserve to tactical availability.
+
+This cross-level coordination demonstrates several research question components: effective C2 through automatic escalation, accelerated decision-making through AI-generated proposals, resource optimization through consumption-based triggering, and policy-compliant coordination through DAO voting on replenishment.
+
+## 4.4 Thesis Validation
+
+The demonstration results directly address the research question by providing evidence that each claimed capability functions as designed. This section maps demonstration outcomes to research question components.
+
+### Research Question Answered
+
+The research question asked: *How can interconnected, AI-augmented Decentralized Autonomous Organizations (DAOs) provide a secure, transparent, and resilient governance framework that enables effective C2, accelerates decision-making, optimizes resource management, and supports autonomous, policy-compliant coordination across diverse national and organizational boundaries?*
+
+The demonstration validates each element of this question through observable outcomes.
+
+**Secure.** Policy constraints encoded in smart contracts govern all execution decisions. National caveats restrict asset employment based on contributor policies. The tactical system verifies constraint compliance before executing effects. Strike authorization requires explicit human approval with 100% voting threshold. Security is enforced through code, not procedure, eliminating the possibility of inadvertent policy violations.
+
+**Transparent.** Every decision in the demonstration is recorded on the blockchain with full audit trail. Coalition members can verify proposal content, voting records, and execution outcomes independently. No central authority controls the record; all participants have equal access to governance history. The monitoring dashboards display agent reasoning, enabling observers to understand why AI systems made specific recommendations.
+
+**Resilient.** The decentralized architecture eliminates single points of failure. DAO governance does not depend on any single member's participation; the system continues to function as long as quorum requirements are met. Edge computing on the Jetson enables tactical operations without continuous connectivity to central systems. The blockchain maintains state even if individual nodes fail.
+
+**Effective C2.** The complete flow from strategic objective through tactical execution demonstrates command and control across echelons. Strategic intent cascades to operational plans to tactical tasks. Upward reporting from tactical to strategic completes the C2 cycle. The cross-DAO replenishment request shows that the C2 structure adapts to operational developments without requiring manual reconfiguration.
+
+**Accelerated Decision-Making.** AI augmentation at each level accelerates coordination. Objective extraction converts documents to structured data in minutes rather than hours. Operational planning agents generate plans continuously. Tactical AI identifies targets in real-time. The replenishment proposal is generated automatically upon threshold detection. Human decision-makers focus on judgment calls rather than administrative coordination.
+
+**Optimized Resource Management.** Resource tracking through the DAO registry provides visibility into asset availability, allocation, and consumption. Replenishment triggers when inventory reaches defined thresholds rather than on arbitrary schedules. Coalition members can verify resource status at any time through the transparent governance interface. The demonstration shows resources flowing from strategic allocation through tactical employment to replenishment request without manual tracking overhead.
+
+**Policy-Compliant Coordination.** Coalition caveats specified at contribution time bind all subsequent employment decisions. Smart contracts enforce restrictions automatically. The tactical system cannot execute effects that violate contributor policies. Strike authorization requires coalition voting regardless of autonomy configuration. Policy compliance is verified computationally before execution, not audited after the fact.
+
+**Coordination Across Boundaries.** The coalition DAO includes members from multiple notional nations with different weights, caveats, and interests. Governance decisions require multi-party agreement according to configured thresholds. The cross-DAO communication demonstrates coordination across the strategic-tactical boundary. The demonstration could scale to additional DAOs representing additional organizational boundaries without architectural changes.
+
+### Human Authority Preservation
+
+The demonstration validates that graduated autonomy preserves appropriate human control throughout the operational spectrum.
+
+**Three Authority Positions Demonstrated.** Strategic operations proceed with humans in-the-loop for every decision. Operational coordination allows AI agents to work continuously while humans monitor on-the-loop with override capability. Tactical execution operates autonomously within policy bounds with humans out-of-the-loop for routine functions. All three positions appear within a single integrated scenario, demonstrating that one architecture can support the full range of human-machine relationships.
+
+**Strike Authorization Always Human-Approved.** The critical invariant for lethal decisions is demonstrated explicitly. Despite tactical operations proceeding autonomously, the strike authorization proposal requires human voting with 100% approval. No autonomous execution path bypasses this requirement. The demonstration shows the system pausing tactical operations to obtain human authorization before engagement effects.
+
+**Trust Calibration Through Graduated Autonomy.** The demonstration shows how autonomy levels can be adjusted based on task characteristics. High-consequence strategic decisions require human approval for each action. Moderate-risk operational coordination allows AI speed with human oversight. Low-risk routine tactical functions proceed autonomously within bounds. This calibration demonstrates that trust in AI systems can be earned and expressed through configurable autonomy levels without all-or-nothing choices.
+
+**Accountability Maintained Through Audit Trail.** Every governance decision records the proposal content, voting member identities, vote timestamps, and outcome. Every AI agent action logs reasoning and decision basis. Every tactical execution records policy verification and constraint compliance. The blockchain provides an immutable audit trail that supports after-action review, accountability determination, and continuous improvement.
+
+Figure 6 shows the physical demonstration setup with the Jetson Orin Nano, Sphero RVR+, and physical AO model integrated with the BASTION governance interface.
