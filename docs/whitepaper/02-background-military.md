@@ -74,7 +74,7 @@ Existing approaches to coalition coordination face several fundamental limitatio
 
 **Slow Consensus-Building Processes.** Coalition decisions often require consensus or at least coordination among multiple nations. Traditional processes for building this consensus involve multiple rounds of communication, staffing through national chains of command, and negotiation of divergent positions. While thorough, these processes may be too slow for the tempo of modern operations [CITATION NEEDED].
 
-**No Decentralized Governance Framework.** Perhaps most significantly, current coalition C2 approaches lack a framework for decentralized governance that could enable effective coordination even when centralized systems are degraded. There is no mechanism for encoding policies in a way that allows autonomous execution while maintaining human authority over critical decisions [CITATION NEEDED].
+**No Decentralized Governance Framework.** Perhaps most significantly, current coalition C2 approaches lack a framework for decentralized governance that could enable effective coordination even when centralized systems are degraded. There is no mechanism for encoding policies in a way that allows autonomous execution while maintaining human authority over critical decisions [CITATION NEEDED]. Section 2.10 examines this governance gap in the context of AI applications and identifies how BASTION addresses this limitation.
 
 # 2.7 Frameworks and Doctrine
 
@@ -105,7 +105,7 @@ Joint Publication 5-0, Joint Planning, establishes the doctrine for how joint fo
 
 **Planning as Coordination Mechanism.** The Joint Planning Process (JPP) serves as a primary coordination mechanism for military operations. Through iterative planning cycles, commanders and their staffs develop shared understanding of the operational environment, establish objectives, and develop courses of action. The process explicitly incorporates input from subordinate units, adjacent units, and coalition partners [CITATION NEEDED].
 
-**Where Automation Can Accelerate.** While the JPP is comprehensive, it is also time-intensive. Many steps in the process involve gathering information, analyzing options, and coordinating among stakeholders. These activities present opportunities for AI-assisted acceleration without eliminating the human judgment that remains essential for military decision-making. The methodology section will describe how BASTION's AI agents can support various phases of the planning process while maintaining appropriate human authority.
+**Where Automation Can Accelerate.** While the JPP is comprehensive, it is also time-intensive. Many steps in the process involve gathering information, analyzing options, and coordinating among stakeholders. These activities present opportunities for AI-assisted acceleration without eliminating the human judgment that remains essential for military decision-making. Section 2.9 discusses the human-machine teaming concepts that inform how AI can augment human decision-making while maintaining appropriate authority positions. The methodology section will describe how BASTION's AI agents can support various phases of the planning process while maintaining appropriate human authority.
 
 ## Key Terms Summary
 

@@ -1,6 +1,6 @@
 # 2.8 AI Applications in Military Operations
 
-Artificial intelligence has become increasingly central to military operations, offering capabilities that can enhance decision-making, improve situational awareness, and enable new operational concepts. Understanding current AI applications in defense provides essential context for BASTION's approach to AI-augmented governance.
+Artificial intelligence has become increasingly central to military operations, offering capabilities that can enhance decision-making, improve situational awareness, and enable new operational concepts. Understanding current AI applications in defense provides essential context for BASTION's approach to AI-augmented governance. This section builds upon the military coordination challenges described in Sections 2.5-2.7, examining how AI can address those challenges while introducing its own governance requirements.
 
 ## Current AI Uses
 
@@ -54,7 +54,7 @@ Effective human-machine teaming requires calibrating the appropriate level of au
 
 **Trust Earned Through Performance.** Trust in AI systems should be based on demonstrated performance in relevant conditions. Systems that have proven reliable in testing and operational experience warrant greater trust than novel or untested systems. Trust should be calibrated to actual performance rather than assumed capabilities [CITATION NEEDED].
 
-**Graduated Autonomy.** The appropriate level of autonomy may vary based on mission phase, operational conditions, and specific tasks. A single system might operate with different authority positions at different times, with more autonomy for routine tasks and greater human involvement for critical decisions. This graduated approach allows flexibility while maintaining appropriate control [CITATION NEEDED].
+**Graduated Autonomy.** The appropriate level of autonomy may vary based on mission phase, operational conditions, and specific tasks. A single system might operate with different authority positions at different times, with more autonomy for routine tasks and greater human involvement for critical decisions. This graduated approach allows flexibility while maintaining appropriate control [CITATION NEEDED]. This concept directly addresses the operational gap described in Section 2.6, where the speed of tactical decisions may require different authority positions than strategic resource allocation.
 
 **Consequence Assessment.** Higher-consequence decisions warrant more human involvement. The potential impact of errors or unexpected outcomes should inform the degree of human control required. Lethal decisions, in particular, typically require human-in-the-loop or at minimum human-on-the-loop operation [CITATION NEEDED].
 
