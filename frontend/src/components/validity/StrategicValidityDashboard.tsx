@@ -42,6 +42,19 @@ interface Alert {
 
 type ViewMode = 'map' | 'graph' | 'split';
 
+// Helper to safely fetch JSON
+async function fetchJSON<T>(url: string): Promise<T | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (!text || text.startsWith('<!')) return null;
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export function StrategicValidityDashboard() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>('');
@@ -52,92 +65,61 @@ export function StrategicValidityDashboard() {
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+  const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Load workspaces on mount
   useEffect(() => {
-    fetch('/api/graph/workspaces')
-      .then(res => res.json())
+    fetchJSON<{ workspaces: Workspace[] }>('/api/graph/workspaces')
       .then(data => {
+        if (!data) return;
         setWorkspaces(data.workspaces || []);
-        // Auto-select master view or first workspace
-        const masterView = data.workspaces.find((w: Workspace) => w.type === 'master');
-        if (masterView) {
-          setSelectedWorkspaceId(masterView.id);
-        } else if (data.workspaces.length > 0) {
+        if (data.workspaces.length > 0) {
           setSelectedWorkspaceId(data.workspaces[0].id);
         }
-      })
-      .catch(console.error);
+      });
   }, []);
 
   // Load workspace data when workspace changes
   useEffect(() => {
     if (!selectedWorkspaceId) return;
-
     setLoading(true);
 
-    // Load events
-    fetch(`/api/graph/osint/events?workspaceId=${selectedWorkspaceId}&limit=50`)
-      .then(res => res.json())
-      .then(data => setEvents(data.events || []))
-      .catch(console.error);
-
-    // Load objectives with validity scores
-    fetch(`/api/graph/validity/objectives?workspaceId=${selectedWorkspaceId}`)
-      .then(res => res.json())
-      .then(data => setObjectives(data.objectives || []))
-      .catch(console.error);
-
-    // Load active alerts
-    fetch(`/api/graph/validity/alerts?workspaceId=${selectedWorkspaceId}&acknowledged=false`)
-      .then(res => res.json())
-      .then(data => setAlerts(data.alerts || []))
-      .catch(console.error);
-
-    // Load graph data
-    fetch(`/api/graph/workspaces/${selectedWorkspaceId}/graph`)
-      .then(res => res.json())
-      .then(data => {
+    Promise.all([
+      fetchJSON<{ events: OsintEvent[] }>(`/api/graph/osint/events?workspaceId=${selectedWorkspaceId}&limit=50`),
+      fetchJSON<{ objectives: ObjectiveValidity[] }>(`/api/graph/validity/objectives?workspaceId=${selectedWorkspaceId}`),
+      fetchJSON<{ alerts: Alert[] }>(`/api/graph/validity/alerts?workspaceId=${selectedWorkspaceId}&acknowledged=false`),
+      fetchJSON<{ nodes: any[]; edges: any[] }>(`/api/graph/workspaces/${selectedWorkspaceId}/graph`),
+    ]).then(([eventsData, objectivesData, alertsData, graphResponse]) => {
+      setEvents(eventsData?.events || []);
+      setObjectives(objectivesData?.objectives || []);
+      setAlerts(alertsData?.alerts || []);
+      if (graphResponse) {
         setGraphData({
-          nodes: data.actors || [],
-          edges: data.relationships || [],
+          nodes: graphResponse.nodes || [],
+          edges: graphResponse.edges || [],
         });
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      }
+    }).finally(() => setLoading(false));
   }, [selectedWorkspaceId]);
 
-  // Acknowledge alert
   const handleAcknowledgeAlert = useCallback((alertId: string) => {
-    fetch(`/api/graph/validity/alerts/${alertId}/acknowledge`, {
-      method: 'POST',
-    })
-      .then(() => {
-        setAlerts(prev => prev.filter(a => a.id !== alertId));
-      })
+    fetch(`/api/graph/validity/alerts/${alertId}/acknowledge`, { method: 'POST' })
+      .then(() => setAlerts(prev => prev.filter(a => a.id !== alertId)))
       .catch(console.error);
   }, []);
 
-  // Event click handler
   const handleEventClick = useCallback((eventId: string) => {
     setSelectedEventId(eventId);
   }, []);
 
-  // Close event modal
-  const handleCloseEventModal = useCallback(() => {
-    setSelectedEventId(null);
-  }, []);
-
-  // Actor click handler
   const handleActorClick = useCallback((actorId: string) => {
     setSelectedActorId(actorId);
   }, []);
 
   const selectedEvent = events.find(e => e.id === selectedEventId);
-  const criticalAlerts = alerts.filter(a => a.severity === 'critical');
+  const criticalAlerts = alerts.filter(a => a.severity === 'critical' || a.severity === 'high');
 
-  // Transform events for map
   const mapEvents = events
     .filter(e => e.location)
     .map(e => ({
@@ -152,84 +134,82 @@ export function StrategicValidityDashboard() {
     }));
 
   return (
-    <div className="strategic-validity-dashboard">
-      {/* Critical Alert Banner */}
-      {criticalAlerts.length > 0 && (
-        <div className="alert-banner critical">
-          <div className="alert-banner-icon">⚠</div>
-          <div className="alert-banner-content">
-            <strong>{criticalAlerts.length} Critical Alert{criticalAlerts.length > 1 ? 's' : ''}</strong>
-            <span>{criticalAlerts[0].title}</span>
-          </div>
-          <button
-            className="alert-banner-dismiss"
-            onClick={() => handleAcknowledgeAlert(criticalAlerts[0].id)}
-          >
-            Acknowledge
-          </button>
+    <div className="validity-dashboard-fullscreen">
+      {/* Floating Header */}
+      <div className="floating-header">
+        <div className="header-brand">
+          <h1>Strategic Intelligence</h1>
         </div>
-      )}
 
-      {/* Header */}
-      <div className="dashboard-header">
-        <div className="header-left">
-          <h1>Strategic Validity Dashboard</h1>
+        <div className="header-controls">
           <select
             value={selectedWorkspaceId}
             onChange={e => setSelectedWorkspaceId(e.target.value)}
-            className="workspace-selector"
+            className="workspace-select"
             disabled={loading}
           >
-            {workspaces.length === 0 && (
-              <option value="">Loading workspaces...</option>
-            )}
+            {workspaces.length === 0 && <option value="">No workspaces</option>}
             {workspaces.map(ws => (
-              <option key={ws.id} value={ws.id}>
-                {ws.name} ({ws.type})
-              </option>
+              <option key={ws.id} value={ws.id}>{ws.name}</option>
             ))}
           </select>
-        </div>
 
-        <div className="header-right">
-          <div className="view-mode-toggle">
-            <button
-              className={viewMode === 'map' ? 'active' : ''}
-              onClick={() => setViewMode('map')}
-              title="Map View"
-            >
-              Map
-            </button>
-            <button
-              className={viewMode === 'graph' ? 'active' : ''}
-              onClick={() => setViewMode('graph')}
-              title="Graph View"
-            >
-              Graph
-            </button>
-            <button
-              className={viewMode === 'split' ? 'active' : ''}
-              onClick={() => setViewMode('split')}
-              title="Split View"
-            >
-              Split
-            </button>
+          <div className="view-toggle">
+            <button className={viewMode === 'map' ? 'active' : ''} onClick={() => setViewMode('map')}>Map</button>
+            <button className={viewMode === 'graph' ? 'active' : ''} onClick={() => setViewMode('graph')}>Graph</button>
+            <button className={viewMode === 'split' ? 'active' : ''} onClick={() => setViewMode('split')}>Split</button>
           </div>
+
+          <button
+            className={`info-toggle ${showInfoPanel ? 'active' : ''}`}
+            onClick={() => setShowInfoPanel(!showInfoPanel)}
+          >
+            ☰ Info
+          </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="dashboard-content">
-        {/* Main View Area */}
-        <div className="main-view-area">
-          {loading && (
-            <div className="loading-overlay">
-              <div className="loading-spinner">Loading...</div>
-            </div>
-          )}
+      {/* Alert Banner */}
+      {criticalAlerts.length > 0 && (
+        <div className="floating-alert">
+          <span className="alert-icon">⚠</span>
+          <span className="alert-text">{criticalAlerts.length} Critical: {criticalAlerts[0].title}</span>
+          <button onClick={() => handleAcknowledgeAlert(criticalAlerts[0].id)}>Dismiss</button>
+        </div>
+      )}
 
-          {viewMode === 'map' && (
-            <div className="view-container">
+      {/* Main Fullscreen View */}
+      <div className="fullscreen-view">
+        {loading && (
+          <div className="loading-overlay">
+            <div className="loading-spinner" />
+          </div>
+        )}
+
+        {viewMode === 'map' && (
+          <ValidityMap
+            workspaceId={selectedWorkspaceId}
+            events={mapEvents}
+            actors={[]}
+            tensions={[]}
+            onEventClick={(event) => handleEventClick(event.id)}
+            onActorClick={(actor) => handleActorClick(actor.id)}
+          />
+        )}
+
+        {viewMode === 'graph' && (
+          <GraphExplorer
+            data={graphData}
+            workspaceId={selectedWorkspaceId}
+            onNodeClick={(node) => handleActorClick(node.id)}
+            selectedNodeId={selectedActorId || undefined}
+            height={window.innerHeight - 60}
+          />
+        )}
+
+        {viewMode === 'split' && (
+          <div className="split-container">
+            <div className="split-pane">
               <ValidityMap
                 workspaceId={selectedWorkspaceId}
                 events={mapEvents}
@@ -239,193 +219,108 @@ export function StrategicValidityDashboard() {
                 onActorClick={(actor) => handleActorClick(actor.id)}
               />
             </div>
-          )}
-
-          {viewMode === 'graph' && (
-            <div className="view-container">
+            <div className="split-pane">
               <GraphExplorer
                 data={graphData}
                 workspaceId={selectedWorkspaceId}
                 onNodeClick={(node) => handleActorClick(node.id)}
                 selectedNodeId={selectedActorId || undefined}
-                height={700}
+                height={(window.innerHeight - 60) / 2}
               />
             </div>
-          )}
+          </div>
+        )}
+      </div>
 
-          {viewMode === 'split' && (
-            <div className="split-view">
-              <div className="split-view-panel">
-                <ValidityMap
-                  workspaceId={selectedWorkspaceId}
-                  events={mapEvents}
-                  actors={[]}
-                  tensions={[]}
-                  onEventClick={(event) => handleEventClick(event.id)}
-                  onActorClick={(actor) => handleActorClick(actor.id)}
-                />
-              </div>
-              <div className="split-view-panel">
-                <GraphExplorer
-                  data={graphData}
-                  workspaceId={selectedWorkspaceId}
-                  onNodeClick={(node) => handleActorClick(node.id)}
-                  selectedNodeId={selectedActorId || undefined}
-                  height={600}
-                />
-              </div>
-            </div>
-          )}
+      {/* Floating Info Panel (Overlay) */}
+      {showInfoPanel && (
+        <div className="floating-info-panel">
+          <div className="panel-header">
+            <h3>Intelligence Feed</h3>
+            <button className="close-btn" onClick={() => setShowInfoPanel(false)}>×</button>
+          </div>
 
-          {/* Actor Detail Panel */}
-          {selectedActorId && (
-            <NodeDetailPanel
-              actorId={selectedActorId}
-              onClose={() => setSelectedActorId(null)}
-              onNavigateToActor={handleActorClick}
-            />
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="dashboard-sidebar">
-          {/* Recent Events */}
-          <div className="sidebar-section">
-            <h3 className="sidebar-title">Recent Events</h3>
-            <div className="event-timeline">
-              {events.length === 0 && (
-                <p className="empty-message">No recent events</p>
-              )}
-              {events.slice(0, 10).map(event => (
+          <div className="panel-section">
+            <h4>Recent Events ({events.length})</h4>
+            <div className="event-list">
+              {events.slice(0, 8).map(event => (
                 <div
                   key={event.id}
-                  className={`event-item ${event.relevance || 'neutral'}`}
+                  className={`event-item ${event.relevance || ''}`}
                   onClick={() => handleEventClick(event.id)}
                 >
-                  <div className="event-timestamp">
-                    {new Date(event.timestamp).toLocaleDateString()}
-                  </div>
-                  <div className="event-title">{event.title}</div>
-                  {event.relevance && (
-                    <div className={`event-relevance-badge ${event.relevance}`}>
-                      {event.relevance}
-                    </div>
-                  )}
+                  <span className="event-title">{event.title}</span>
+                  <span className="event-time">{new Date(event.timestamp).toLocaleDateString()}</span>
                 </div>
               ))}
+              {events.length === 0 && <p className="empty">No events</p>}
             </div>
           </div>
 
-          {/* Objective Validity */}
-          <div className="sidebar-section">
-            <h3 className="sidebar-title">Objective Validity</h3>
+          <div className="panel-section">
+            <h4>Objective Validity ({objectives.length})</h4>
             <div className="objective-list">
-              {objectives.length === 0 && (
-                <p className="empty-message">No objectives tracked</p>
-              )}
               {objectives.slice(0, 5).map(obj => (
-                <div key={obj.id} className="objective-card">
-                  <div className="objective-header">
-                    <span className="objective-title">{obj.objectiveTitle}</span>
-                    <span className={`trend-indicator ${obj.trend}`}>
+                <div key={obj.id} className="objective-item">
+                  <div className="obj-title">{obj.objectiveTitle}</div>
+                  <div className="obj-score">
+                    <div className={`score-bar ${obj.validityScore >= 70 ? 'high' : obj.validityScore >= 50 ? 'med' : 'low'}`}>
+                      <div className="score-fill" style={{ width: `${obj.validityScore}%` }} />
+                    </div>
+                    <span>{obj.validityScore}%</span>
+                    <span className={`trend ${obj.trend}`}>
                       {obj.trend === 'up' ? '↑' : obj.trend === 'down' ? '↓' : '→'}
                     </span>
                   </div>
-                  <div className="validity-score-container">
-                    <div className="validity-score-bar">
-                      <div
-                        className={`validity-score-fill ${
-                          obj.validityScore >= 70 ? 'high' :
-                          obj.validityScore >= 50 ? 'medium' :
-                          'low'
-                        }`}
-                        style={{ width: `${obj.validityScore}%` }}
-                      />
-                    </div>
-                    <span className="validity-score-value">{obj.validityScore}</span>
-                  </div>
-                  <div className="objective-meta">
-                    <span className="classification-badge">{obj.classification}</span>
-                    <span className="last-updated">
-                      {new Date(obj.lastUpdated).toLocaleDateString()}
-                    </span>
-                  </div>
                 </div>
               ))}
+              {objectives.length === 0 && <p className="empty">No objectives</p>}
             </div>
           </div>
 
-          {/* Active Alerts */}
-          <div className="sidebar-section">
-            <h3 className="sidebar-title">Active Alerts ({alerts.length})</h3>
-            <div className="alerts-list">
-              {alerts.length === 0 && (
-                <p className="empty-message">No active alerts</p>
-              )}
+          <div className="panel-section">
+            <h4>Alerts ({alerts.length})</h4>
+            <div className="alert-list">
               {alerts.map(alert => (
                 <div key={alert.id} className={`alert-item ${alert.severity}`}>
-                  <div className="alert-header">
-                    <span className={`severity-badge ${alert.severity}`}>
-                      {alert.severity}
-                    </span>
-                    <span className="alert-timestamp">
-                      {new Date(alert.timestamp).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="alert-title">{alert.title}</div>
-                  <div className="alert-message">{alert.message}</div>
-                  <button
-                    className="acknowledge-btn"
-                    onClick={() => handleAcknowledgeAlert(alert.id)}
-                  >
-                    Acknowledge
-                  </button>
+                  <span className={`severity ${alert.severity}`}>{alert.severity}</span>
+                  <span className="alert-title">{alert.title}</span>
+                  <button onClick={() => handleAcknowledgeAlert(alert.id)}>✓</button>
                 </div>
               ))}
+              {alerts.length === 0 && <p className="empty">No alerts</p>}
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Actor Detail Panel (Overlay) */}
+      {selectedActorId && (
+        <NodeDetailPanel
+          actorId={selectedActorId}
+          onClose={() => setSelectedActorId(null)}
+          onNavigateToActor={handleActorClick}
+        />
+      )}
 
       {/* Event Detail Modal */}
       {selectedEvent && (
-        <div className="modal-overlay" onClick={handleCloseEventModal}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{selectedEvent.title}</h2>
-              <button className="modal-close" onClick={handleCloseEventModal}>
-                &times;
-              </button>
-            </div>
-            <div className="modal-body">
-              {selectedEvent.relevance && (
-                <div className={`event-relevance-badge large ${selectedEvent.relevance}`}>
-                  {selectedEvent.relevance}
-                </div>
+        <div className="modal-overlay" onClick={() => setSelectedEventId(null)}>
+          <div className="event-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setSelectedEventId(null)}>×</button>
+            <h2>{selectedEvent.title}</h2>
+            {selectedEvent.relevance && (
+              <span className={`relevance-badge ${selectedEvent.relevance}`}>{selectedEvent.relevance}</span>
+            )}
+            <p>{selectedEvent.description}</p>
+            <div className="event-meta">
+              <span>📅 {new Date(selectedEvent.timestamp).toLocaleString()}</span>
+              {selectedEvent.location && (
+                <span>📍 {selectedEvent.location.lat.toFixed(2)}, {selectedEvent.location.lng.toFixed(2)}</span>
               )}
-              <p className="event-description">{selectedEvent.description}</p>
-              <div className="event-meta">
-                <div className="meta-item">
-                  <strong>Timestamp:</strong>
-                  <span>{new Date(selectedEvent.timestamp).toLocaleString()}</span>
-                </div>
-                {selectedEvent.sourceUrl && (
-                  <div className="meta-item">
-                    <strong>Source:</strong>
-                    <a href={selectedEvent.sourceUrl} target="_blank" rel="noopener noreferrer">
-                      View Original
-                    </a>
-                  </div>
-                )}
-                {selectedEvent.location && (
-                  <div className="meta-item">
-                    <strong>Location:</strong>
-                    <span>
-                      {selectedEvent.location.lat.toFixed(4)}, {selectedEvent.location.lng.toFixed(4)}
-                    </span>
-                  </div>
-                )}
-              </div>
+              {selectedEvent.sourceUrl && (
+                <a href={selectedEvent.sourceUrl} target="_blank" rel="noopener noreferrer">🔗 Source</a>
+              )}
             </div>
           </div>
         </div>
