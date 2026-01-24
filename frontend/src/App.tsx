@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react'
+import { useState } from 'react'
 import { AuthWrapper } from './components/AuthWrapper'
 import { LoginButton } from './components/LoginButton'
 import { UserStatusBar } from './components/UserStatusBar'
@@ -7,7 +7,7 @@ import { StrategicDashboard } from './components/strategic'
 import { StrategicValidityDashboard } from './components/validity'
 import { AdminDashboard } from './components/admin'
 import { MissionList, MissionDetail, MissionWizard } from './components/mission'
-import { UserContext } from './context/UserContext'
+import { useUser } from './context/UserContext'
 import './App.css'
 
 type View = 'home' | 'governance' | 'strategic' | 'validity' | 'admin' | 'missions' | 'mission-detail' | 'mission-wizard'
@@ -15,7 +15,7 @@ type View = 'home' | 'governance' | 'strategic' | 'validity' | 'admin' | 'missio
 function AppContent() {
   const [currentView, setCurrentView] = useState<View>('home')
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null)
-  const { userDID } = useContext(UserContext)
+  const { userDID } = useUser()
 
   return (
       <div className="app">
