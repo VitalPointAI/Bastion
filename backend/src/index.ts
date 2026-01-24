@@ -20,6 +20,7 @@ import graphRouter from './api/graph.js';
 import commandRouter from './api/command.js';
 import missionRouter from './api/missions.js';
 import resourceRouter from './api/resources.js';
+import sensorRouter from './api/sensors.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
 import { getMessageBus } from './messaging/message-bus.js';
 import { getCheckpointer } from './orchestration/checkpointer.js';
@@ -90,6 +91,7 @@ app.use('/api/graph', graphRouter);
 app.use('/api/command', commandRouter);
 app.use('/api/missions', missionRouter);
 app.use('/api/resources', resourceRouter);
+app.use('/api/sensors', sensorRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);

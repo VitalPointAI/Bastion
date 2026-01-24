@@ -1,0 +1,220 @@
+/**
+ * Command Tree View Styles
+ *
+ * Styling for command hierarchy tree visualization.
+ */
+
+/* Container */
+.command-tree-container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: #f5f5f5;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.command-tree-wrapper {
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  align-items: flex-start;
+}
+
+/* Loading/Error/Empty States */
+.command-tree-loading,
+.command-tree-error,
+.command-tree-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.command-tree-loading .spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #4A90E2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.command-tree-error {
+  color: #d32f2f;
+}
+
+.btn-retry {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  background-color: #4A90E2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btn-retry:hover {
+  background-color: #357ABD;
+}
+
+.command-tree-hint {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #999;
+}
+
+/* Command Node */
+.command-node {
+  background: white;
+  border: 2px solid #333;
+  border-radius: 6px;
+  padding: 0.75rem;
+  min-width: 180px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.command-node:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.command-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+
+.command-node-symbol {
+  display: block;
+}
+
+.command-node-multi-hat {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #ffc107;
+  color: #333;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.command-node-body {
+  text-align: center;
+}
+
+.command-node-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.command-node-echelon {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.command-node-relationship {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 0.5rem;
+}
+
+/* Relationship Type Colors */
+.relationship-cocom {
+  background-color: #1e3a8a;
+  color: white;
+}
+
+.relationship-opcon {
+  background-color: #2563eb;
+  color: white;
+}
+
+.relationship-tacon {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.relationship-adcon {
+  background-color: #60a5fa;
+  color: white;
+}
+
+.relationship-support {
+  background-color: #22c55e;
+  color: white;
+}
+
+.relationship-default {
+  background-color: #6b7280;
+  color: white;
+}
+
+/* Classification Color Coding */
+.command-node.classification-topsecret {
+  border-color: #ff6b00;
+  border-width: 3px;
+}
+
+.command-node.classification-secret {
+  border-color: #dc2626;
+  border-width: 3px;
+}
+
+.command-node.classification-confidential {
+  border-color: #2563eb;
+  border-width: 3px;
+}
+
+.command-node.classification-unclassified {
+  border-color: #16a34a;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .command-tree-container {
+    padding: 1rem;
+  }
+
+  .command-node {
+    min-width: 150px;
+    padding: 0.5rem;
+  }
+
+  .command-node-name {
+    font-size: 0.85rem;
+  }
+
+  .command-node-echelon {
+    font-size: 0.75rem;
+  }
+}
