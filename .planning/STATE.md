@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 4.4 of 13+ (Mission Context & Force Onboarding) — IN PROGRESS
-Plan: 6 of 8 in current phase (IN PROGRESS)
+Plan: 7 of 8 in current phase (IN PROGRESS)
 Status: In Progress
-Last activity: 2026-01-24 — Completed 4.4-06-PLAN.md (Resource Management API)
+Last activity: 2026-01-24 — Completed 4.4-03-PLAN.md (Mission Creation Wizard)
 
-Progress: ███████░░░ 75% (6/8 plans complete in phase 4.4)
+Progress: ████████░░ 87.5% (7/8 plans complete in phase 4.4)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 64
+- Total plans completed: 65
 - Average duration: 12 min
-- Total execution time: 12.5+ hours
+- Total execution time: 12.6+ hours
 
 **By Phase:**
 
@@ -35,12 +35,12 @@ Progress: ███████░░░ 75% (6/8 plans complete in phase 4.4)
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
 | 4.3 (Strategic Intelligence Fusion) | 11 | 71 min | 6 min |
-| 4.4 (Mission Context & Force Onboarding) | 6 | 35 min | 6 min |
+| 4.4 (Mission Context & Force Onboarding) | 7 | 41 min | 6 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 3 min, 11 min, 12 min, 4 min, 4 min
-- Trend: Phase 4.4 API layer complete - Resource management with bulk import ready
+- Last 5 plans: 11 min, 12 min, 4 min, 4 min, 6 min
+- Trend: Phase 4.4 nearing completion - Mission wizard with map-based AO drawing ready
 
 ## Accumulated Context
 
@@ -456,6 +456,15 @@ None.
 - UUID-prefixed IDs for entity types: MSN-, INV-, UNIT-, REL-, RES-, PER-, CON-, SEN-
 - GeoJSON Polygon custom interface for area of operations (avoiding @types/geojson dependency)
 
+**Phase 4.4 Plan 3 (Mission Creation Wizard):**
+- Step navigation pattern from AgentBuilderWizard reused for consistency across admin interfaces
+- Map integration follows ValidityMap patterns (Stadia dark tiles, Leaflet icon defaults)
+- Pending invites stored locally in wizard state, sent after mission creation
+- GeoJSON Polygon custom interface maintained for dependency consistency
+- Multi-step wizard: progress indicator, step validation, back/next navigation
+- Map-based input: react-leaflet-draw with single polygon constraint for AO
+- Role badge styling: commander (gold), staff (blue), observer (gray)
+
 **Phase 13 Plan 1 (Whitepaper Foundation):**
 - Stanford five-point introduction framework for academic problem framing
 - Three human authority levels: in-the-loop, on-the-loop, out-of-the-loop
@@ -522,7 +531,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-24 18:05:53Z
-Stopped at: Completed 4.4-06-PLAN.md (Resource Management API)
+Last session: 2026-01-24 18:07:22Z
+Stopped at: Completed 4.4-03-PLAN.md (Mission Creation Wizard)
 Resume file: None
-Next action: Continue Phase 4.4 with Plan 4.4-07 (Sensor Registration API) - Create REST API endpoints for sensor catalog and registration management.
+Next action: Continue Phase 4.4 with remaining plans - Mission wizard ready for app integration, command relationships and sensor registration next.
