@@ -80,6 +80,34 @@ Resource state monitoring provides real-time visibility into coalition capabilit
 
 Figure 1 illustrates the three-tier architecture, showing the relationships between DAOs, the AI agent layer, and the blockchain infrastructure that secures all transactions. The diagram indicates human authority positions at each level and the decision flow patterns that connect strategic intent to tactical execution.
 
+### Mission Context Establishment
+
+Before operational planning can begin, BASTION requires establishment of a mission context that defines the participants, command relationships, available resources, and operational boundaries. This setup phase translates the abstract governance architecture into a concrete operational configuration.
+
+**Workspace Creation.** Each mission operates within an isolated workspace containing its own participant roster, command hierarchy, resource inventory, and geographic boundaries. Workspace isolation ensures that coalition members participating in multiple missions maintain appropriate separation of concerns, while cross-references enable coordination when missions overlap. Any authenticated organization member can initiate workspace creation, democratizing mission establishment while maintaining accountability through the blockchain audit trail.
+
+**Participant Onboarding.** Mission participants join through two mechanisms: direct invitation from the organization roster for known members, and invitation links or codes for external participants. Both methods ultimately result in cryptographic identity verification through the NEAR Protocol identity layer. Upon joining, participants receive role assignments that govern their authorities within the mission context.
+
+**Command Relationship Configuration.** BASTION implements the full spectrum of military command relationships described in Section 2.7.1: OPCON, TACON, ADCON, COCOM, and support relationships (DS, GS, GSR, R). Commanders configure these relationships through a visual editor that presents both organizational chart and matrix views. The system validates configurations, warning of circular command relationships or orphaned units while permitting overrides for non-standard situations. Critically, command relationships drive permission cascades: a commander automatically gains visibility into subordinate resources and activities based on the configured relationship type.
+
+**Mission Lifecycle States.** Missions progress through defined lifecycle states: Planning, Active, Complete, and Archived. These states govern what actions are permitted and what visibility coalition members have. Planning state enables configuration changes; Active state locks critical settings while enabling operational execution; Complete state preserves the mission record while preventing further actions; Archived state removes the mission from active views while maintaining the immutable blockchain record for historical reference and accountability.
+
+### Resource Management Architecture
+
+Effective coalition coordination requires precise tracking of resources from initial contribution through operational employment to consumption and replenishment. BASTION's resource management architecture addresses the full resource lifecycle within DAO governance.
+
+**Resource Catalog.** The resource catalog maintains a multi-tier taxonomy aligned with military logistics standards. Pre-built equipment databases provide common starting points for standard military equipment (vehicles, weapons systems, communications equipment), while organizations can extend the catalog with custom resource types. Each resource entry captures technical specifications, capabilities, certifications, and maintenance history, enabling AI agents to match resources to mission requirements automatically.
+
+**Availability Tracking.** Resource readiness uses the standard FMC/PMC/NMC (Fully Mission Capable, Partially Mission Capable, Not Mission Capable) framework with reason codes that explain degraded states. This granular tracking enables planners to distinguish between temporarily degraded resources that may become available and resources requiring significant repair or replacement.
+
+**Assignment Model.** BASTION implements the doctrinal resource assignment progression: Apportioned (identified for planning), Allocated (made available for use), and Assigned (placed under command). This progression enables planning to proceed before final resource commitments while maintaining visibility into expected versus actual resource availability. Smart contracts enforce transitions between assignment states, ensuring that resources cannot be double-committed and that only authorized commanders can effect assignment changes.
+
+**Location Tracking.** Resources track their physical or logical locations through multiple data sources: device GPS feeds for mobile assets, last known positions from situation reports, and sensor fusion for best estimates when primary data is unavailable. Pipeline tracking enables visibility into resources in procurement or transit, with expected availability dates informing future planning.
+
+**Consumables and Supply Points.** Expendable resources (ammunition, fuel, supplies) are tracked by supply point rather than individual item. Each supply point maintains quantity on hand, consumption rates, and replenishment status. When consumption crosses defined thresholds, the system automatically generates replenishment proposals through the inter-DAO communication mechanisms described above.
+
+**Personnel Management.** Personnel form a distinct resource type with their own tracking requirements: qualifications, training currency, medical fitness, and duty status. Personnel are assignable to units and linkable to equipment resources (e.g., crew assignments). Readiness definitions are configurable per mission context, enabling commanders to specify what qualifications and currency levels constitute "ready" for their specific operational requirements.
+
 ## 3.3 Key Design Decisions
 
 BASTION's architecture required numerous design decisions, each with alternatives that were considered and evaluated. This section documents the major decisions, the alternatives considered, and the rationale for the choices made. These decisions establish patterns that future development must maintain and provide context for understanding why the system operates as it does.

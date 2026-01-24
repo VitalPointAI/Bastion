@@ -87,7 +87,7 @@ The DOTMLPF-P model provides a framework for analyzing and developing military c
 **Framework Components.** Each element of the DOTMLPF-P framework addresses a distinct aspect of capability development:
 
 - **Doctrine:** The fundamental principles that guide military forces in support of objectives. Doctrine provides the common language and shared understanding that enable coordination.
-- **Organization:** How forces are structured, including command relationships, staff organizations, and unit compositions.
+- **Organization:** How forces are structured, including command relationships, staff organizations, and unit compositions. See Section 2.7.1 for detailed treatment of command relationships.
 - **Training:** The preparation of individuals and units to perform their assigned tasks and missions.
 - **Materiel:** The equipment, systems, and supplies needed to equip forces. This includes weapons, vehicles, communications systems, and logistics items.
 - **Leadership and Education:** The development of leaders and the broader education of the force.
@@ -98,6 +98,54 @@ The DOTMLPF-P model provides a framework for analyzing and developing military c
 **Framework Purpose.** When the military identifies a capability gap, the DOTMLPF-P framework ensures that all aspects of developing that capability are considered. A new capability may require not just new equipment (Materiel) but also new operating procedures (Doctrine), organizational structures (Organization), training programs (Training), leader development (Leadership and Education), personnel with specific skills (Personnel), infrastructure (Facilities), and supporting policies (Policy).
 
 **Coordination Improvements.** Improvements to military coordination must be considered across all DOTMLPF-P dimensions. New technology alone is insufficient; it must be accompanied by doctrine that describes how to employ it, training that prepares personnel to use it effectively, and policies that govern its use. BASTION's approach addresses multiple DOTMLPF-P dimensions by providing not just technology but also a governance framework that can inform doctrine and policy.
+
+## Command Relationships and Force Structure
+
+Effective coalition coordination requires precise understanding of how authority flows between organizations. Military doctrine defines specific command relationships that govern the degree of authority a commander exercises over assigned or attached forces [CITATION NEEDED].
+
+### Command Relationship Types
+
+**Combatant Command (COCOM).** The highest level of command authority, COCOM provides full authority to organize and employ commands and forces, assign tasks, designate objectives, and give authoritative direction over all aspects of military operations. COCOM cannot be delegated or transferred and applies only to combatant commanders [CITATION NEEDED].
+
+**Operational Control (OPCON).** OPCON grants authority to perform those functions of command involving organizing and employing commands and forces, assigning tasks, designating objectives, and giving authoritative direction necessary to accomplish the mission. OPCON may be transferred between commanders as operational requirements dictate [CITATION NEEDED].
+
+**Tactical Control (TACON).** TACON provides authority over assigned or attached forces limited to the detailed direction and control of movements or maneuvers within the operational area necessary to accomplish assigned missions or tasks. TACON represents a more limited form of authority than OPCON, typically used for specific tactical operations [CITATION NEEDED].
+
+**Administrative Control (ADCON).** ADCON involves the direction or exercise of authority over subordinate organizations with respect to administration and support, including organization of units, control of resources and equipment, personnel management, and individual training. ADCON represents the administrative rather than operational chain of command [CITATION NEEDED].
+
+### Support Relationships
+
+When forces are not placed under a commander's direct authority but must provide assistance, support relationships define the priority and degree of that support [CITATION NEEDED].
+
+**Direct Support (DS).** A mission requiring a force to support another specific force and authorizing it to answer directly to the supported force's request for assistance. DS provides the highest priority of support.
+
+**General Support (GS).** A mission requiring a force to support the force as a whole rather than any particular subdivision. GS assets are centrally controlled and allocated based on overall priorities.
+
+**General Support-Reinforcing (GSR).** A mission requiring a force to provide support to the force as a whole and to reinforce another similar-type unit. GSR represents a combination of GS and reinforcing missions.
+
+**Reinforcing (R).** A mission requiring a force to augment another force. The reinforcing unit remains under its parent command while prioritizing support to the reinforced unit.
+
+### Task Organization
+
+The Task Organization, documented in Annex A of an Operations Order (OPORD), specifies exactly how forces are organized for a particular operation. It identifies which units are assigned, attached, or in support relationships, and to whom they report [CITATION NEEDED].
+
+**Mission-Tailored Structure.** Task organization creates mission-tailored force packages by combining elements from different parent organizations. A task force might include infantry from one brigade, armor from another, and aviation from a third, all organized under a single task force commander for a specific mission.
+
+**Dynamic Reconfiguration.** Unlike peacetime organizational structures, task organizations change frequently based on mission requirements. Forces may be attached for specific phases of an operation and then return to parent control. This dynamic reconfiguration enables commanders to mass combat power where needed while maintaining overall force structure.
+
+**Coalition Complexity.** In coalition operations, task organization becomes more complex due to national caveats and restrictions. Forces contributed by partner nations may have limitations on how they can be employed, where they can operate, or what missions they can perform. The task organization must account for these restrictions while still creating an effective force structure.
+
+### Force Structure Data
+
+Managing force structure requires tracking detailed information about participating units, personnel, and resources [CITATION NEEDED].
+
+**Unit Identification.** Each military unit has a unique identification hierarchy: nation, service, major command, and subordinate unit designations. Standard unit identification codes (UICs) enable tracking across systems and time.
+
+**Equipment and Capabilities.** Units bring specific equipment and capabilities to an operation. Force structure data tracks equipment types, quantities, and readiness states. Capability data indicates what missions a unit can perform based on its equipment, training, and current status.
+
+**Readiness Status.** Military readiness uses standard indicators to communicate unit status. Equipment readiness typically uses FMC (Fully Mission Capable), PMC (Partially Mission Capable), and NMC (Not Mission Capable) categories with reason codes explaining degraded states. Personnel readiness tracks training currency, medical fitness, and specialty qualifications [CITATION NEEDED].
+
+**Resource Assignment Model.** U.S. doctrine distinguishes between resources that are apportioned (identified for planning), allocated (made available for use), and assigned (placed under command). This progression enables planning to proceed before final resource commitments while maintaining visibility into expected versus actual resource availability [CITATION NEEDED].
 
 ## Joint Planning Process
 
@@ -113,12 +161,19 @@ For reference, the following terms defined in this section are used throughout t
 
 | Term | Definition |
 |------|------------|
+| ADCON | Administrative Control - authority over administration and support functions |
 | C2 | Command and Control - the exercise of authority and direction over forces |
+| COCOM | Combatant Command - highest level of command authority |
 | DDIL | Disconnected, Degraded, Intermittent, Limited-bandwidth environments |
 | DOTMLPF-P | Framework for capability development covering Doctrine, Organization, Training, Materiel, Leadership, Personnel, Facilities, Policy |
+| DS/GS/GSR/R | Support relationships: Direct Support, General Support, General Support-Reinforcing, Reinforcing |
+| FMC/PMC/NMC | Equipment readiness states: Fully Mission Capable, Partially Mission Capable, Not Mission Capable |
+| FMN | Federated Mission Networking - NATO framework for coalition information sharing |
 | JADC2 | Joint All-Domain Command and Control - DOD concept for connecting sensors and shooters |
 | JPP | Joint Planning Process - doctrinal approach to military planning |
-| FMN | Federated Mission Networking - NATO framework for coalition information sharing |
+| OPCON | Operational Control - authority to organize and employ forces for assigned missions |
+| TACON | Tactical Control - limited authority for detailed direction of movements or maneuvers |
+| Task Organization | Mission-tailored force structure documented in OPORD Annex A |
 
 ---
 
