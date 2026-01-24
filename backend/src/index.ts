@@ -89,6 +89,7 @@ app.use('/api/orchestration', orchestrationRouter);
 app.use('/api/graph', graphRouter);
 app.use('/api/command', commandRouter);
 app.use('/api/missions', missionRouter);
+app.use('/api/resources', resourceRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
