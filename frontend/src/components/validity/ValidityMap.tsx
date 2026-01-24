@@ -123,14 +123,15 @@ function MapBounds({ events, actors, tensions }: { events?: EventMarker[], actor
 }
 
 export function ValidityMap({
-  workspaceId,
+  workspaceId: _workspaceId,
   events = [],
   actors = [],
   tensions = [],
   onEventClick,
   onActorClick,
 }: ValidityMapProps) {
-  const [visibleLayers, setVisibleLayers] = useState({
+  void _workspaceId; // Reserved for future workspace-specific filtering
+  const [visibleLayers] = useState({
     events: true,
     actors: true,
     tensions: true,

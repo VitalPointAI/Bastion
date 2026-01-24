@@ -49,13 +49,15 @@ const EDGE_COLORS: Record<string, string> = {
 
 export function GraphExplorer({
   data,
-  workspaceId,
+  workspaceId: _workspaceId,
   onNodeClick,
-  onEdgeClick,
+  onEdgeClick: _onEdgeClick,
   selectedNodeId,
   height = 600,
 }: GraphExplorerProps) {
-  const fgRef = useRef<ForceGraphMethods | undefined>();
+  void _workspaceId; // Reserved for future use
+  void _onEdgeClick; // Reserved for future use
+  const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterRelType, setFilterRelType] = useState<string>('all');
@@ -94,7 +96,7 @@ export function GraphExplorer({
     const gNode = node as NodeObject & GraphNode;
     const label = gNode.label || gNode.id;
     const fontSize = 12 / globalScale;
-    ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
+    ctx.font = `${fontSize}px Inter, sans-serif`;
 
     // Node circle
     const isSelected = gNode.id === selectedNodeId;
