@@ -490,10 +490,13 @@ Plans:
 - [ ] TBD during phase planning
 
 ### Phase 13: Research Whitepaper
-**Goal**: Comprehensive whitepaper documenting the full BASTION project for master's research requirement
+**Goal**: Comprehensive academic whitepaper answering the research question on AI-augmented DAOs for military C2
 **Depends on**: All phases (documents completed and in-progress work)
-**Research**: None (documentation of existing work)
-**Plans**: TBD
+**Research**: Complete (13-RESEARCH.md)
+**Plans**: 7 plans
+
+**Research Question:**
+> How can interconnected, AI-augmented Decentralized Autonomous Organizations (DAOs) provide a secure, transparent, and resilient governance framework that enables effective C2, accelerates decision-making, optimizes resource management, and supports autonomous, policy-compliant coordination across diverse national and organizational boundaries?
 
 **Whitepaper Requirements:**
 1. **Full Project Description** - Vision, objectives, and scope of BASTION
@@ -508,7 +511,13 @@ Plans:
 **Target Audience:** Academic advisor overseeing master's research project
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 13 to break down)
+- [ ] Plan 13-01: Document Foundation & Introduction
+- [ ] Plan 13-02: Background - DAOs & Web3
+- [ ] Plan 13-03: Background - Military Coordination & AI
+- [ ] Plan 13-04: Methodology & Architecture Diagrams
+- [ ] Plan 13-05: Results & Demo Description
+- [ ] Plan 13-06: Discussion, Conclusion & Appendices
+- [ ] Plan 13-07: Abstract & Final Assembly
 
 ## Progress
 
@@ -521,7 +530,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
-| 4.3 Strategic Intelligence Fusion & RAFT | 9/11 | In progress | - |
+| 4.3 Strategic Intelligence Fusion & RAFT | 11/11 | Complete | 2026-01-24 |
 | 5. Operational Planning Module | 0/TBD | Not started | - |
 | 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
 | 7. Tactical Execution System | 0/TBD | Not started | - |
@@ -530,4 +539,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 10. End-to-End Integration | 0/TBD | Not started | - |
 | 11. User Experience & Personalization | 0/TBD | Not started | - |
 | 12. Coalition & Multi-Tenancy | 0/TBD | Not started | - |
-| 13. Research Whitepaper | 0/TBD | Not started | - |
+| 13. Research Whitepaper | 0/7 | Not started | - |
