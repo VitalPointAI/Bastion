@@ -17,6 +17,9 @@ import adminRouter from './api/admin.js';
 import messagingRouter, { setupMessageWebSocket } from './api/messaging.js';
 import orchestrationRouter, { setupOrchestrationWebSocket } from './api/orchestration.js';
 import graphRouter from './api/graph.js';
+import commandRouter from './api/command.js';
+import missionRouter from './api/missions.js';
+import resourceRouter from './api/resources.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
 import { getMessageBus } from './messaging/message-bus.js';
 import { getCheckpointer } from './orchestration/checkpointer.js';
@@ -84,6 +87,8 @@ app.use('/api/admin', adminRouter);
 app.use('/api/messages', messagingRouter);
 app.use('/api/orchestration', orchestrationRouter);
 app.use('/api/graph', graphRouter);
+app.use('/api/command', commandRouter);
+app.use('/api/missions', missionRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
