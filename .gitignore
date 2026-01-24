@@ -16,3 +16,6 @@ near-contracts/node_modules/
 node_modules/
 .DS_Store
 *.log
+
+# Whitepaper exports (generated files)
+docs/whitepaper/exports/
