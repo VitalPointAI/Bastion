@@ -1,0 +1,353 @@
+/* MissionDetail Styles */
+
+.mission-detail-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary, #0a0a0a);
+}
+
+.mission-detail-loading,
+.mission-detail-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: var(--color-text-secondary, #9e9e9e);
+}
+
+.mission-detail-error {
+  flex-direction: column;
+  gap: 1rem;
+  color: var(--color-danger, #f44336);
+}
+
+/* Header */
+
+.mission-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.3));
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  color: var(--color-text-primary, #e0e0e0);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1.25rem;
+}
+
+.btn-icon:hover {
+  background: var(--color-bg-tertiary, rgba(255, 255, 255, 0.05));
+  border-color: var(--color-primary, #00bcd4);
+}
+
+.header-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-info h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--color-text-primary, #e0e0e0);
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Tabs */
+
+.mission-tabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mission-tabs .react-tabs__tab-list {
+  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.3));
+  border-bottom: 2px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  margin: 0;
+  padding: 0 2rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mission-tabs .react-tabs__tab {
+  padding: 1rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary, #9e9e9e);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.mission-tabs .react-tabs__tab:hover {
+  color: var(--color-text-primary, #e0e0e0);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mission-tabs .react-tabs__tab--selected {
+  color: var(--color-primary, #00bcd4);
+  border-bottom-color: var(--color-primary, #00bcd4);
+  background: rgba(0, 188, 212, 0.1);
+}
+
+.mission-tabs .react-tabs__tab-panel {
+  flex: 1;
+  overflow: auto;
+  display: none;
+}
+
+.mission-tabs .react-tabs__tab-panel--selected {
+  display: block;
+}
+
+/* Tab Content */
+
+.tab-content {
+  padding: 2rem;
+  height: 100%;
+}
+
+/* Overview Tab */
+
+.overview-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.overview-section {
+  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.3));
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.overview-section h3 {
+  margin: 0 0 1.5rem 0;
+  color: var(--color-text-primary, #e0e0e0);
+  font-size: 1.25rem;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  padding-bottom: 0.5rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #9e9e9e);
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 0.95rem;
+  color: var(--color-text-primary, #e0e0e0);
+}
+
+.mission-description-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+}
+
+.mission-description-section h4 {
+  margin: 0 0 0.75rem 0;
+  color: var(--color-text-primary, #e0e0e0);
+  font-size: 1rem;
+}
+
+.mission-description-section p {
+  margin: 0;
+  color: var(--color-text-secondary, #9e9e9e);
+  line-height: 1.6;
+}
+
+.mini-map-container {
+  height: 300px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Map Tab */
+
+.map-tab {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.map-controls {
+  padding: 1rem 2rem;
+  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.3));
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+}
+
+.map-container {
+  flex: 1;
+  position: relative;
+}
+
+.fullscreen-map .map-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+/* Command Tab */
+
+.command-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.command-view-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Resources Tab */
+
+.resources-tab {
+  padding: 0;
+}
+
+/* Participants Tab */
+
+.participants-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.participants-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.participants-header h3 {
+  margin: 0;
+  color: var(--color-text-primary, #e0e0e0);
+}
+
+/* Sensors Tab */
+
+.sensors-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.placeholder-text {
+  color: var(--color-text-secondary, #9e9e9e);
+  font-style: italic;
+}
+
+/* Button Variants */
+
+.btn-success {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+  border: none;
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #66bb6a, #4caf50);
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #ff9800, #ffa726);
+  color: white;
+  border: none;
+}
+
+.btn-warning:hover {
+  background: linear-gradient(135deg, #ffa726, #ff9800);
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .mission-detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .header-info {
+    flex-wrap: wrap;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions button {
+    flex: 1;
+  }
+
+  .mission-tabs .react-tabs__tab-list {
+    padding: 0 1rem;
+    overflow-x: auto;
+  }
+
+  .mission-tabs .react-tabs__tab {
+    padding: 0.75rem 1rem;
+    white-space: nowrap;
+  }
+
+  .tab-content {
+    padding: 1rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .command-view-toggle {
+    flex-direction: column;
+  }
+
+  .participants-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
