@@ -6,21 +6,21 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 13 (Research Whitepaper) — Writing academic documentation
+**Current focus:** Phase 4.4 (Mission Context & Force Onboarding) — Workspace setup, participant invitation, command relationships, resource inventories, sensor registration
 
 ## Current Position
 
-Phase: 13 of 13+ (Research Whitepaper) — COMPLETE
-Plan: 9 of 9 in current phase (COMPLETE)
-Status: Phase Complete
-Last activity: 2026-01-24 — Completed 13-09-PLAN.md (Export Scripts)
+Phase: 4.4 of 13+ (Mission Context & Force Onboarding) — IN PROGRESS
+Plan: 1 of 8 in current phase (IN PROGRESS)
+Status: In Progress
+Last activity: 2026-01-24 — Completed 4.4-01-PLAN.md (Mission Data Foundation)
 
-Progress: ██████████ 100% (9/9 plans complete in phase 13)
+Progress: █░░░░░░░░░ 12.5% (1/8 plans complete in phase 4.4)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 58
+- Total plans completed: 59
 - Average duration: 13 min
 - Total execution time: 12+ hours
 
@@ -35,11 +35,12 @@ Progress: ██████████ 100% (9/9 plans complete in phase 13)
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
 | 4.3 (Strategic Intelligence Fusion) | 11 | 71 min | 6 min |
+| 4.4 (Mission Context & Force Onboarding) | 1 | 12 min | 12 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 4 min, 7 min, 3 min, 3 min, 11 min
-- Trend: Phase 13 COMPLETE - All research whitepaper objectives achieved
+- Last 5 plans: 7 min, 3 min, 3 min, 11 min, 12 min
+- Trend: Phase 4.4 started - Mission domain data foundation established
 
 ## Accumulated Context
 
@@ -446,6 +447,15 @@ None.
 - Safe JSON fetching helper to handle 404 HTML responses gracefully
 - View mode toggle: Map, Graph, Split views for flexibility
 
+**Phase 4.4 Plan 1 (Mission Data Foundation):**
+- Mission state machine enforces valid transitions: planning → active → complete → archived
+- Invite tokens use SHA256 hashing for secure storage and lookup (72-hour default expiration)
+- Command relationships prevent cycles using depth-first search validation
+- Resource status follows military readiness reporting (FMC/PMC/NMC)
+- All stores follow singleton pattern with lazy initialization via ensureInitialized()
+- UUID-prefixed IDs for entity types: MSN-, INV-, UNIT-, REL-, RES-, PER-, CON-, SEN-
+- GeoJSON Polygon custom interface for area of operations (avoiding @types/geojson dependency)
+
 **Phase 13 Plan 1 (Whitepaper Foundation):**
 - Stanford five-point introduction framework for academic problem framing
 - Three human authority levels: in-the-loop, on-the-loop, out-of-the-loop
@@ -512,7 +522,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-24
-Stopped at: Completed 13-09-PLAN.md (Export Scripts)
+Last session: 2026-01-24 17:56:43Z
+Stopped at: Completed 4.4-01-PLAN.md (Mission Data Foundation)
 Resume file: None
-Next action: Phase 13 (Research Whitepaper) PROJECT COMPLETE. All 9 plans executed successfully. Whitepaper ready for advisor review with GitBooks publishing infrastructure and export tooling deployed.
+Next action: Continue Phase 4.4 with Plan 4.4-02 (Mission UI Components) - Create frontend components for mission workspace creation, participant management, and invitation flow.
