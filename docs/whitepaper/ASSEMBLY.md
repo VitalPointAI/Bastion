@@ -127,6 +127,42 @@ Assemble sections in this order:
 
 ---
 
+## Automated Export
+
+### Prerequisites
+
+- **pandoc** (required): `sudo apt install pandoc` or `brew install pandoc`
+- **texlive** (for PDF): `sudo apt install texlive-xetex` or `brew install --cask mactex`
+
+### Export Commands
+
+```bash
+# Navigate to whitepaper directory
+cd docs/whitepaper
+
+# Export to both PDF and DOCX
+./scripts/export.sh all
+
+# Export to DOCX only (no LaTeX required)
+./scripts/export.sh docx
+
+# Export to PDF only
+./scripts/export.sh pdf
+```
+
+### Output Location
+
+Exports are saved to `docs/whitepaper/exports/`:
+- `BASTION-Whitepaper-v0.1-YYYY-MM-DD.pdf`
+- `BASTION-Whitepaper-v0.1-YYYY-MM-DD.docx`
+
+### Customization
+
+- Edit `scripts/export-config.yaml` to change formatting
+- Update VERSION in `scripts/export.sh` for new releases
+
+---
+
 ## Quality Checks
 
 ### Pre-Submission Review
@@ -184,7 +220,11 @@ docs/whitepaper/
 ├── 07-references.md           # Bibliography placeholder
 ├── appendix-a-sitrep.md       # Implementation status
 ├── appendix-b-demo-script.md  # 20-minute demo script
-└── ASSEMBLY.md                # This file
+├── ASSEMBLY.md                # This file
+├── scripts/
+│   ├── export.sh              # Export script for PDF/DOCX
+│   └── export-config.yaml     # Pandoc configuration
+└── exports/                   # Generated exports (gitignored)
 ```
 
 ---
