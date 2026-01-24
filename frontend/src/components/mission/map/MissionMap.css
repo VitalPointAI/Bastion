@@ -1,0 +1,218 @@
+/**
+ * MissionMap Styles
+ *
+ * Phase 4.4 Plan 08: Mission map with military symbology
+ */
+
+.mission-map {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: #000;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Loading overlay */
+.map-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 158, 255, 0.3);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 1rem;
+  border: 3px solid rgba(74, 158, 255, 0.3);
+  border-top-color: #4a9eff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.map-loading p {
+  color: #e0e0e0;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Error overlay */
+.map-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: rgba(139, 0, 0, 0.9);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 107, 107, 0.5);
+}
+
+.map-error p {
+  color: #fff;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Map info overlay */
+.map-info {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.info-item {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.info-value {
+  color: #4a9eff;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* Military symbol markers */
+.milsymbol-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Popup styles */
+.leaflet-popup-content-wrapper {
+  background: rgba(0, 0, 0, 0.9);
+  color: #e0e0e0;
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  border-radius: 8px;
+}
+
+.leaflet-popup-tip {
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+}
+
+.unit-popup h4,
+.sensor-popup h4 {
+  margin: 0 0 0.5rem 0;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.unit-popup .designation,
+.unit-popup .higher-formation,
+.unit-popup .sidc-code {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.sensor-popup .sensor-category,
+.sensor-popup .sensor-status {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  margin: 0.25rem 0.25rem 0.25rem 0;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.sensor-category.airborne {
+  background: rgba(74, 158, 255, 0.3);
+  color: #4a9eff;
+}
+
+.sensor-category.ground {
+  background: rgba(80, 200, 120, 0.3);
+  color: #50c878;
+}
+
+.sensor-category.maritime {
+  background: rgba(0, 206, 209, 0.3);
+  color: #00CED1;
+}
+
+.sensor-category.space {
+  background: rgba(147, 112, 219, 0.3);
+  color: #9370DB;
+}
+
+.sensor-category.autonomous {
+  background: rgba(255, 165, 0, 0.3);
+  color: #ffa500;
+}
+
+.sensor-status.status-operational {
+  background: rgba(80, 200, 120, 0.3);
+  color: #50c878;
+}
+
+.sensor-status.status-degraded {
+  background: rgba(255, 165, 0, 0.3);
+  color: #ffa500;
+}
+
+.sensor-status.status-offline {
+  background: rgba(139, 0, 0, 0.3);
+  color: #ff6b6b;
+}
+
+.sensor-status.status-maintenance {
+  background: rgba(128, 128, 128, 0.3);
+  color: #aaa;
+}
+
+.coverage-info {
+  margin: 0.5rem 0 0.25rem 0;
+  font-size: 0.85rem;
+  color: #ccc;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .map-info {
+    top: 0.5rem;
+    left: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .info-label,
+  .info-value {
+    font-size: 0.75rem;
+  }
+}
