@@ -17,7 +17,7 @@ None
 - [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
 - [ ] **Phase 4.1: Admin UI** - Create administrative interface for system configuration (INSERTED)
 - [x] **Phase 4.2: AI Agent Teams** - Per-agent model assignment, dynamic agent creation, agent DIDs (INSERTED)
-- [ ] **Phase 4.3: Strategic Intelligence Fusion & RAFT Analysis** - Multi-document fusion, validity dashboard, graph-based RAFT analysis (INSERTED)
+- [x] **Phase 4.3: Strategic Intelligence Fusion & RAFT Analysis** - Multi-document fusion, validity dashboard, graph-based RAFT analysis (INSERTED)
 - [ ] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
@@ -26,6 +26,7 @@ None
 - [ ] **Phase 10: End-to-End Integration** - Automate complete planning cycle, implement BDA feedback loops
 - [ ] **Phase 11: User Experience & Personalization** - Create cinematic briefings, personalized command centers, behavioral learning
 - [ ] **Phase 12: Coalition & Multi-Tenancy** - Implement information sharing rules, classification handling, federation
+- [ ] **Phase 13: Research Whitepaper** - Comprehensive documentation for master's research requirement
 
 ## Phase Details
 
@@ -170,7 +171,7 @@ Plans:
 **Depends on:** Phase 4.2
 **Research:** Required (4.3-RESEARCH.md)
 **Research topics:** Graph database selection (Neo4j vs Memgraph vs ArangoDB), entity resolution and deduplication algorithms, RAFT framework modeling (Actors, Relationships, Functions, Tensions), edge weighting strategies for geopolitical networks, OSINT data integration patterns, real-time validity assessment architectures
-**Plans:** 0 plans
+**Plans:** 11 plans (complete)
 
 **Context:**
 This phase addresses the critical need to synthesize multiple strategic-level documents (NSS, NDS, NMS, GCPs, etc.) into a comprehensive, deduplicated understanding of the strategic environment. Each document undergoes objective extraction, but their results must be intelligently fused to eliminate redundancy while preserving all key details.
@@ -313,8 +314,8 @@ Plans:
 - [x] Plan 4.3-07: Intelligence Analysis Agents (completed 2026-01-22)
 - [x] Plan 4.3-08: RAFT Graph Agents & Tools (completed 2026-01-22)
 - [x] Plan 4.3-09: Workspace Isolation & Graph REST API (completed 2026-01-22)
-- [ ] Plan 4.3-10: Validity Dashboard UI
-- [ ] Plan 4.3-11: End-to-End Fusion Flow
+- [x] Plan 4.3-10: Validity Dashboard UI (completed 2026-01-24)
+- [x] Plan 4.3-11: End-to-End Fusion Flow (completed 2026-01-24)
 
 ### Phase 5: Operational Planning Module
 **Goal**: Implement joint planning doctrine and operational design
@@ -394,10 +395,31 @@ Plans:
 Plans:
 - [ ] TBD during phase planning
 
+### Phase 13: Research Whitepaper
+**Goal**: Comprehensive whitepaper documenting the full BASTION project for master's research requirement
+**Depends on**: All phases (documents completed and in-progress work)
+**Research**: None (documentation of existing work)
+**Plans**: TBD
+
+**Whitepaper Requirements:**
+1. **Full Project Description** - Vision, objectives, and scope of BASTION
+2. **Technology Integration Analysis** - Each integrated technology (NEAR, Phala, Neo4j, LangGraph, etc.) with explanation of purpose and rationale
+3. **End-to-End Flow** - Complete strategic-to-execution flow demonstrating system capabilities
+4. **SITREP** - Completed phases, current status, remaining work
+5. **Physical Demo Components** - Jetson Orin Nano, Sphero RVR+, intended demonstration actions
+6. **Design & Architecture Choices** - Key decisions with justification
+7. **Risk Analysis** - Security risks, capability gaps, process concerns
+8. **Academic Context** - Research contribution and novelty
+
+**Target Audience:** Academic advisor overseeing master's research project
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 13 to break down)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -414,3 +436,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 10. End-to-End Integration | 0/TBD | Not started | - |
 | 11. User Experience & Personalization | 0/TBD | Not started | - |
 | 12. Coalition & Multi-Tenancy | 0/TBD | Not started | - |
+| 13. Research Whitepaper | 0/TBD | Not started | - |
