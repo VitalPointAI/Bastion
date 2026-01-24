@@ -12,11 +12,11 @@
  * - Sensors (Sensor registration and list)
  */
 
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 import { missionService, type Mission } from '../../lib/mission-service.js';
-import { UserContext } from '../AuthWrapper.js';
+import { useUser } from '../../context/UserContext.js';
 import { MissionMap } from './map/MissionMap.js';
 import { CommandTreeView } from './command/CommandTreeView.js';
 import { CommandMatrixView } from './command/CommandMatrixView.js';
@@ -31,7 +31,7 @@ interface MissionDetailProps {
 }
 
 export function MissionDetail({ missionId, onBack }: MissionDetailProps) {
-  const { userDID } = useContext(UserContext);
+  const { userDID } = useUser();
   const [mission, setMission] = useState<Mission | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

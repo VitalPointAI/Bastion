@@ -6,9 +6,9 @@
  * Displays all accessible missions with filtering by state
  */
 
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState } from 'react';
 import { missionService, type Mission, type MissionStatus } from '../../lib/mission-service.js';
-import { UserContext } from '../AuthWrapper.js';
+import { useUser } from '../../context/UserContext.js';
 import './MissionList.css';
 
 interface MissionListProps {
@@ -17,7 +17,7 @@ interface MissionListProps {
 }
 
 export function MissionList({ onSelectMission, onCreateMission }: MissionListProps) {
-  const { userDID } = useContext(UserContext);
+  const { userDID } = useUser();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
