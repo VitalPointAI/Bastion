@@ -4,10 +4,11 @@ import { LoginButton } from './components/LoginButton'
 import { UserStatusBar } from './components/UserStatusBar'
 import { DAODashboard } from './components/dao'
 import { StrategicDashboard } from './components/strategic'
+import { StrategicValidityDashboard } from './components/validity'
 import { AdminDashboard } from './components/admin'
 import './App.css'
 
-type View = 'home' | 'governance' | 'strategic' | 'admin'
+type View = 'home' | 'governance' | 'strategic' | 'validity' | 'admin'
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('home')
@@ -37,6 +38,12 @@ function App() {
               Strategic
             </button>
             <button
+              className={`nav-button ${currentView === 'validity' ? 'active' : ''}`}
+              onClick={() => setCurrentView('validity')}
+            >
+              Validity
+            </button>
+            <button
               className={`nav-button nav-button--admin ${currentView === 'admin' ? 'active' : ''}`}
               onClick={() => setCurrentView('admin')}
             >
@@ -60,6 +67,9 @@ function App() {
           )}
           {currentView === 'strategic' && (
             <StrategicDashboard />
+          )}
+          {currentView === 'validity' && (
+            <StrategicValidityDashboard />
           )}
           {currentView === 'admin' && (
             <AdminDashboard onBack={() => setCurrentView('home')} />
