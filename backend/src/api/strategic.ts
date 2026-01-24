@@ -17,7 +17,7 @@ import type {
   ClassificationLevel,
   DocumentUploadResponse,
 } from '../strategic/ingestion/types.js';
-import { ObjectiveStore, objectiveStore } from '../strategic/objectives/index.js';
+import { ObjectiveStore, objectiveStore, initStrategicObjectivesTable } from '../strategic/objectives/index.js';
 import type { ObjectiveInput, ObjectiveUpdate } from '../strategic/objectives/index.js';
 import { ExtractionService } from '../strategic/extraction/index.js';
 import type { ExtractedObjective, ExtractionProgress } from '../strategic/extraction/index.js';
@@ -59,6 +59,7 @@ let tableInitialized = false;
 async function ensureTableExists(): Promise<void> {
   if (!tableInitialized) {
     await initStrategicDocumentsTable();
+    await initStrategicObjectivesTable();
     await initRiskAssessmentTable();
     await workflowEngine.initialize();
     tableInitialized = true;
