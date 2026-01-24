@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useContext } from 'react'
 import { AuthWrapper } from './components/AuthWrapper'
 import { LoginButton } from './components/LoginButton'
 import { UserStatusBar } from './components/UserStatusBar'
@@ -6,15 +6,18 @@ import { DAODashboard } from './components/dao'
 import { StrategicDashboard } from './components/strategic'
 import { StrategicValidityDashboard } from './components/validity'
 import { AdminDashboard } from './components/admin'
+import { MissionList, MissionDetail, MissionWizard } from './components/mission'
+import { UserContext } from './context/UserContext'
 import './App.css'
 
-type View = 'home' | 'governance' | 'strategic' | 'validity' | 'admin'
+type View = 'home' | 'governance' | 'strategic' | 'validity' | 'admin' | 'missions' | 'mission-detail' | 'mission-wizard'
 
-function App() {
+function AppContent() {
   const [currentView, setCurrentView] = useState<View>('home')
+  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null)
+  const { userDID } = useContext(UserContext)
 
   return (
-    <AuthWrapper>
       <div className="app">
         <header className="app-header">
           <h1 onClick={() => setCurrentView('home')} style={{ cursor: 'pointer' }}>BASTION</h1>
@@ -42,6 +45,12 @@ function App() {
               onClick={() => setCurrentView('validity')}
             >
               Validity
+            </button>
+            <button
+              className={`nav-button ${currentView === 'missions' || currentView === 'mission-detail' || currentView === 'mission-wizard' ? 'active' : ''}`}
+              onClick={() => setCurrentView('missions')}
+            >
+              Missions
             </button>
             <button
               className={`nav-button nav-button--admin ${currentView === 'admin' ? 'active' : ''}`}
@@ -74,8 +83,40 @@ function App() {
           {currentView === 'admin' && (
             <AdminDashboard onBack={() => setCurrentView('home')} />
           )}
+          {currentView === 'missions' && (
+            <MissionList
+              onSelectMission={(id) => {
+                setSelectedMissionId(id);
+                setCurrentView('mission-detail');
+              }}
+              onCreateMission={() => setCurrentView('mission-wizard')}
+            />
+          )}
+          {currentView === 'mission-detail' && selectedMissionId && (
+            <MissionDetail
+              missionId={selectedMissionId}
+              onBack={() => setCurrentView('missions')}
+            />
+          )}
+          {currentView === 'mission-wizard' && userDID && (
+            <MissionWizard
+              userDID={userDID}
+              onClose={() => setCurrentView('missions')}
+              onMissionCreated={(id) => {
+                setSelectedMissionId(id);
+                setCurrentView('mission-detail');
+              }}
+            />
+          )}
         </main>
       </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthWrapper>
+      <AppContent />
     </AuthWrapper>
   )
 }
