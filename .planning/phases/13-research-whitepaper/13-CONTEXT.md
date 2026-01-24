@@ -42,6 +42,12 @@ Comprehensive academic whitepaper documenting the BASTION project for master's r
 - Security: Requirements-driven (what security properties military C2 needs) plus brief technology survey (ABAC, zero trust, PQC choices)
 - Coverage weighting: More depth on technologies that answer the thesis (DAO governance, AI agents, coalition coordination) and novel integrations (DAO+AI, RAFT graphs); less on standard tech (PostgreSQL, Docker)
 
+### Version Control
+- Multiple whitepaper versions as project progresses (v0.1, v0.2, etc.)
+- Each version reflects current implementation status
+- Git-tracked in repository for history
+- Clear version numbering in document metadata
+
 ### Claude's Discretion
 - Whether to include RAFT graph visualization or strategic validity dashboard as figures in main paper vs appendix
 - Exact section lengths and subsection breakdown
