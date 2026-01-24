@@ -265,6 +265,7 @@ Recent decisions affecting current work:
 - Phase 1.1 inserted after Phase 1: Calimero Self-Sovereign App Integration (URGENT) - Research Calimero for DAO compartmentalization, replace Privy with NEAR accounts + MPC
 - Phase 13 added: Research Whitepaper - Comprehensive documentation for master's research requirement (advisor deliverable)
 - Phase 4.4 inserted after Phase 4.3: Mission Context & Force Onboarding - Workspace setup, participant invitation, command relationships, resource inventories, sensor registration with map overlays
+- Phase 4.5 inserted after Phase 4.4: ATAK/CoT Tactical Interoperability - CoT message protocol, TAK Server integration, real-time position sharing, data package export
 
 ### Deferred Issues
 
