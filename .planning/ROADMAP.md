@@ -18,6 +18,7 @@ None
 - [ ] **Phase 4.1: Admin UI** - Create administrative interface for system configuration (INSERTED)
 - [x] **Phase 4.2: AI Agent Teams** - Per-agent model assignment, dynamic agent creation, agent DIDs (INSERTED)
 - [x] **Phase 4.3: Strategic Intelligence Fusion & RAFT Analysis** - Multi-document fusion, validity dashboard, graph-based RAFT analysis (INSERTED)
+- [ ] **Phase 4.4: Mission Context & Force Onboarding** - Workspace setup, participant invitation, command relationships, resource inventories, sensor registration (INSERTED)
 - [ ] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
@@ -316,6 +317,50 @@ Plans:
 - [x] Plan 4.3-09: Workspace Isolation & Graph REST API (completed 2026-01-22)
 - [x] Plan 4.3-10: Validity Dashboard UI (completed 2026-01-24)
 - [x] Plan 4.3-11: End-to-End Fusion Flow (completed 2026-01-24)
+
+### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
+**Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
+**Depends on:** Phase 4.3
+**Research:** Required (4.4-RESEARCH.md)
+**Research topics:** Military command structure modeling (OPORD Annex A - Task Organization), force structure data models, logistics resource tracking standards (LOGFAS/LOGCAP), sensor categorization taxonomies (MIL-STD-2525D symbology), OTH Gold/JREAP message formats for data exchange, C2 interoperability standards
+**Plans:** 0 plans
+
+**Context:**
+This phase addresses the critical capability to onboard participants and resources when establishing a mission context or workspace. Before operational planning (Phase 5) can begin, the force structure must be defined with:
+- Participant invitation and identity verification
+- Command relationship hierarchy (OPCON, TACON, ADCON, support relationships)
+- Resource inventories (weapons systems, personnel types/numbers, ammunition, vehicles)
+- Sensor registration with categorization (airborne, ground-based, maritime, space, autonomous)
+- Map overlay capabilities for resource/sensor visualization
+
+**Key Capabilities:**
+1. **Participant Onboarding**
+   - Invite members via DID
+   - Verify clearances and credentials
+   - Assign command relationships (superior/subordinate/lateral)
+   - Configure role-based permissions
+
+2. **Resource Inventory Management**
+   - Weapons systems catalog with specifications
+   - Personnel rosters by unit/type/specialty
+   - Ammunition and consumables tracking
+   - Vehicle fleet management
+   - Equipment availability status
+
+3. **Sensor Registration & Integration**
+   - Categorization: airborne, ground, maritime, space, autonomous
+   - Capability profiles (range, resolution, coverage area)
+   - Data feed integration (STANAG, proprietary)
+   - Availability scheduling
+
+4. **Map Overlays & Visualization**
+   - Toggle layers for resources by category
+   - Sensor coverage visualization
+   - Unit symbology (MIL-STD-2525D)
+   - Real-time position updates where available
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 4.4 to create plans)
 
 ### Phase 5: Operational Planning Module
 **Goal**: Implement joint planning doctrine and operational design
