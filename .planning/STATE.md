@@ -465,6 +465,15 @@ None.
 - Gap analysis table positioning BASTION against JADC2, NATO FMN, Military AI, Commercial DAOs
 - Cross-references between background sections for document coherence
 
+**Phase 13 Plan 4 (Methodology):**
+- Four design principles: decentralization, transparency, AI augmentation, policy compliance
+- Three-tier DAO architecture: Strategic, Operational, Tactical levels
+- Design decisions table with alternatives and rationale for each major choice
+- AI agent architecture: single-responsibility, graduated trust, Support/Represent/Organize phases
+- Security architecture: zero trust, ABAC for coalitions, post-quantum considerations
+- Human authority integration with strike authorization as hardcoded HITL special case
+- System architecture Mermaid diagram with human authority positions indicated
+
 **Phase 13 Plan 5 (Results):**
 - E2E flow: strategic-operational-tactical with human authority positions at each stage
 - Physical demonstration: Jetson Orin Nano + Sphero RVR+ in tabletop AO
