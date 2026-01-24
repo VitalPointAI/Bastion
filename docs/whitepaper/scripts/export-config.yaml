@@ -1,0 +1,30 @@
+# Pandoc configuration for whitepaper export
+# Usage: pandoc --defaults=export-config.yaml
+
+# Input settings
+from: markdown
+standalone: true
+
+# Metadata
+metadata:
+  title: "Decision Overmatch: Accelerating Military Advantage with AI-Augmented Decentralized Autonomous Organizations"
+  author: "Aaron Luhning"
+  date: "2026-01-24"
+
+# Table of contents
+toc: true
+toc-depth: 3
+
+# Numbering
+number-sections: true
+
+# PDF settings (via LaTeX)
+pdf-engine: xelatex
+variables:
+  geometry: margin=1in
+  fontsize: 11pt
+  linestretch: 1.5
+  documentclass: article
+
+# DOCX settings
+# reference-doc: reference.docx  # Uncomment if custom template exists
