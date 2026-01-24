@@ -346,23 +346,24 @@ router.post('/resolution/merge', async (req: Request, res: Response) => {
 // Get objectives with validity scores for a workspace
 router.get('/validity/objectives', async (req: Request, res: Response) => {
   try {
-    const workspaceId = getQueryString(req.query.workspaceId);
+    // workspaceId reserved for future filtering
+    void getQueryString(req.query.workspaceId);
     const { objectiveStore } = await import('../strategic/objectives/store.js');
 
     // Get all objectives (optionally filter by workspace in future)
-    const objectives = await objectiveStore.getObjectives({ limit: 100 });
+    const result = await objectiveStore.listObjectives({ limit: 100 });
+    const objectives = result.objectives;
 
     // Enrich with validity data
     const objectivesWithValidity = await Promise.all(
       objectives.map(async (obj) => {
         try {
-          const validity = await validityService.calculateValidity(obj.id);
-          const trend = await validityService.getValidityTrend(obj.id);
+          const validity = await validityService.calculateValidity(obj.id, 'system');
           return {
             id: obj.id,
             objectiveTitle: obj.description.slice(0, 100),
-            validityScore: validity.validityScore,
-            trend: trend.trend,
+            validityScore: validity.score,
+            trend: 'stable' as const, // Trend analysis not yet implemented
             lastUpdated: validity.calculatedAt,
             classification: 'UNCLASSIFIED', // Default for now
           };
@@ -395,7 +396,7 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
     const workspaceId = req.params.id as string;
 
     // Get actors as nodes
-    const actors = await actorStore.listActors({ workspaceId, limit: 500 });
+    const actors = await actorStore.listActors(workspaceId);
     const nodes = actors.map(actor => ({
       id: actor.id,
       label: actor.name,
@@ -403,14 +404,22 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
       workspaceId: actor.workspaceId,
     }));
 
-    // Get relationships as edges
-    const relationships = await relationshipStore.listRelationships({ workspaceId, limit: 1000 });
-    const edges = relationships.map(rel => ({
-      source: rel.sourceActorId,
-      target: rel.targetActorId,
-      type: rel.relationshipType,
-      strength: rel.weight,
-    }));
+    // Get relationships as edges by querying each actor's relationships
+    const edgeSet = new Map<string, { source: string; target: string; type: string; strength: number }>();
+    for (const actor of actors) {
+      const rels = await relationshipStore.getActorRelationships(actor.id, 'out');
+      for (const rel of rels) {
+        if (!edgeSet.has(rel.id)) {
+          edgeSet.set(rel.id, {
+            source: rel.sourceActorId,
+            target: rel.targetActorId,
+            type: rel.type,
+            strength: rel.strength,
+          });
+        }
+      }
+    }
+    const edges = Array.from(edgeSet.values());
 
     res.json({ nodes, edges });
   } catch (error) {
