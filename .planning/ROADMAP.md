@@ -19,6 +19,7 @@ None
 - [x] **Phase 4.2: AI Agent Teams** - Per-agent model assignment, dynamic agent creation, agent DIDs (INSERTED)
 - [x] **Phase 4.3: Strategic Intelligence Fusion & RAFT Analysis** - Multi-document fusion, validity dashboard, graph-based RAFT analysis (INSERTED)
 - [ ] **Phase 4.4: Mission Context & Force Onboarding** - Workspace setup, participant invitation, command relationships, resource inventories, sensor registration (INSERTED)
+- [ ] **Phase 4.5: ATAK/CoT Tactical Interoperability** - CoT message protocol, TAK Server integration, real-time position sharing, data package export (INSERTED)
 - [ ] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
@@ -361,6 +362,54 @@ This phase addresses the critical capability to onboard participants and resourc
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 4.4 to create plans)
+
+### Phase 4.5: ATAK/CoT Tactical Interoperability (INSERTED)
+**Goal:** Enable real-time data exchange with ATAK devices and TAK Server infrastructure for tactical situational awareness
+**Depends on:** Phase 4.4
+**Research:** Required (4.5-RESEARCH.md)
+**Research topics:** Cursor on Target (CoT) XML schema and message types, TAK Server architecture and API, ATAK plugin development, multicast vs unicast CoT distribution, TLS/certificate management for TAK, data package format (.zip with manifest.xml), MIL-STD-2525D symbol integration, WebTAK browser-based client
+**Plans:** 0 plans
+
+**Context:**
+ATAK (Android Team Awareness Kit) is the de facto standard for tactical situational awareness in military and first responder operations. Integration enables BASTION to:
+- Receive real-time position updates from field personnel
+- Push mission data, objectives, and overlays to ATAK devices
+- Share sensor feeds and intelligence products
+- Maintain common operational picture across web and mobile platforms
+
+**Key Capabilities:**
+
+1. **CoT Message Protocol**
+   - XML encoder/decoder for Cursor on Target messages
+   - Support for position reports (a-f-G-U-C types)
+   - Support for events, alerts, and custom message types
+   - Multicast (SA) and unicast (chat/mission) distribution
+
+2. **TAK Server Integration**
+   - Connect to TAK Server instances (FreeTAKServer or commercial)
+   - Certificate-based TLS authentication
+   - Channel/group management
+   - Federation support for multi-organization operations
+
+3. **Real-Time Position Sharing**
+   - Ingest PLI (Position Location Information) from ATAK users
+   - Publish BASTION entities (sensors, vehicles, objectives) to ATAK
+   - Track history and movement patterns
+   - Geo-fencing and boundary alerts
+
+4. **Data Package Export**
+   - Generate ATAK-compatible data packages (.zip)
+   - Include KML overlays, markers, routes
+   - Mission briefing documents
+   - Offline map tiles for DDIL environments
+
+5. **WebTAK Compatibility**
+   - Browser-based TAK client integration
+   - Alternative for users without ATAK devices
+   - Shared authentication with BASTION identity
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 4.5 to create plans)
 
 ### Phase 5: Operational Planning Module
 **Goal**: Implement joint planning doctrine and operational design
