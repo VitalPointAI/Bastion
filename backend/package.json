@@ -34,6 +34,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "form-data": "^4.0.5",
+    "lib0": "^0.2.117",
     "multer": "^2.0.2",
     "neo4j-driver": "^6.0.1",
     "officeparser": "^6.0.4",
@@ -44,6 +45,9 @@
     "unpdf": "^1.4.0",
     "ws": "^8.19.0",
     "xstate": "^5.25.1",
+    "y-protocols": "^1.0.7",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.29",
     "zod": "^4.3.5",
     "zod-to-json-schema": "^3.25.1"
   },
