@@ -585,6 +585,14 @@ None.
 - Weighted scoring: suitability 30%, feasibility 25%, acceptability 25%, distinguishability 10%, completeness 10%
 - Red team results integrated into feasibility and acceptability assessments
 
+**Phase 05 Plan 08 (OPLAN/OPORD Document Generators):**
+- docx library for Word document generation with proper OOXML output
+- pdfkit library for native PDF generation without external dependencies
+- OPORDStructure interface separates data transformation from document rendering
+- buildOPORDStructure() converts OperationalPlan + COA into doctrinally-correct 5-paragraph order
+- Classification banners on document header and footer
+- All five paragraphs: Situation, Mission, Execution, Sustainment, Command/Signal
+
 **Phase 05 Plan 09 (Supporting Product Generators):**
 - PptxGenJS library for native PPTX generation without external dependencies
 - Three brief types: commander (COA overview), staff (risk assessment), rehearsal (timeline)
@@ -595,7 +603,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-25 17:21:00Z
-Stopped at: Completed 05-09-PLAN.md (Supporting Product Generators)
+Last session: 2026-01-25 17:26:00Z
+Stopped at: Completed 05-08-PLAN.md (OPLAN/OPORD Document Generators)
 Resume file: None
-Next action: Phase 05 Plan 09 COMPLETE - PptxGenJS briefing generator, sync matrix with CSV export, DST/CCIR generators with doctrinal defaults. Wave 4 document generation complete. Continue with OPORD generation (05-10).
+Next action: Phase 05 Plan 08 COMPLETE - docx and pdfkit generators for 5-paragraph operation orders with classification markings. Wave 4 document generation continues with 05-10 (Operational Graphics).
