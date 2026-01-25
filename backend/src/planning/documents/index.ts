@@ -1,13 +1,16 @@
 /**
  * Document Generation Module
  *
- * Phase 05 Plan 09/10: Exports all document generators and types
+ * Phase 05 Plan 08+: Exports all document generators and types
  */
 
 // Types
 export * from './types.js';
 
-// OPORD Document Generators (Phase 05 Plan 10)
+// OPORD Template (Phase 05 Plan 08)
+export { buildOPORDStructure, type OPORDStructure } from './templates/opord-template.js';
+
+// OPORD Document Generators (Phase 05 Plan 08)
 export { generateOPORDDocx, generateOPORDPdf } from './generators/opord.js';
 
 // PowerPoint Briefing Generator
