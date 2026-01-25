@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 05 of 13+ (Operational Planning Module) — IN PROGRESS
-Plan: 2 of 13 in current phase
+Plan: 4 of 13 in current phase
 Status: In Progress
-Last activity: 2026-01-25 — Completed 05-02-PLAN.md (Real-Time Collaboration Infrastructure)
+Last activity: 2026-01-25 — Completed 05-04-PLAN.md (ROE Enforcement Engine)
 
-Progress: ███░░░░░░░ 15% (2/13 plans complete in phase 05)
+Progress: ███░░░░░░░ 31% (4/13 plans complete in phase 05)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 68
+- Total plans completed: 69
 - Average duration: 11 min
-- Total execution time: 12.9+ hours
+- Total execution time: 13.0+ hours
 
 **By Phase:**
 
@@ -36,12 +36,12 @@ Progress: ███░░░░░░░ 15% (2/13 plans complete in phase 05)
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
 | 4.3 (Strategic Intelligence Fusion) | 11 | 71 min | 6 min |
 | 4.4 (Mission Context & Force Onboarding) | 8 | 47 min | 6 min |
-| 05 (Operational Planning Module) | 2 | 10 min | 5 min |
+| 05 (Operational Planning Module) | 4 | 14 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 6 min, 5 min, 5 min, 6 min, 5 min
-- Trend: Phase 05 started - Real-time collaboration infrastructure with Yjs CRDTs ready
+- Last 5 plans: 5 min, 5 min, 6 min, 5 min, 4 min
+- Trend: Phase 05 ROE enforcement - Declarative compliance checking with commander override workflow
 
 ## Accumulated Context
 
@@ -570,9 +570,17 @@ None.
 - 10-color palette for cursor rotation across connected users
 - User awareness includes did, name, role, color for identity display
 
+**Phase 05 Plan 4 (ROE Enforcement Engine):**
+- Mission-scoped json-rules-engine instances cached with invalidation on rule changes
+- Three-tier override authority: commander-only, legal-officer, battalion-commander
+- Minimum 10-character justification for ROE overrides enforces meaningful documentation
+- Blockchain audit trail with PostgreSQL storage and NEAR contract placeholders
+- Default ROE rules: civilian prohibition, urban CDE warning, cultural site protection
+- Facts extracted from TacticalAction for declarative rule evaluation
+
 ## Session Continuity
 
-Last session: 2026-01-25 16:54:21Z
-Stopped at: Completed 05-01-PLAN.md (Operational Planning Data Foundation)
+Last session: 2026-01-25 17:01:04Z
+Stopped at: Completed 05-04-PLAN.md (ROE Enforcement Engine)
 Resume file: None
-Next action: Phase 05 Plans 1-2 COMPLETE - Operational planning data layer (types, stores, schemas) and Yjs collaboration infrastructure ready. Continue with Phase 05 Plan 3 (frontend collaboration UI components) or remaining operational planning features.
+Next action: Phase 05 Plan 4 COMPLETE - ROE enforcement with json-rules-engine, commander override workflow, and blockchain audit trail ready. Wave 2 complete (plans 03-04). Continue with remaining operational planning features.
