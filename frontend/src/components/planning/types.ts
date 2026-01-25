@@ -1,9 +1,3 @@
-/**
- * Planning Module Types
- *
- * Type definitions for operational planning with JP 5-0 steps.
- */
-
 export type JP50Step =
   | 'planning_initiation'
   | 'mission_analysis'
@@ -54,6 +48,11 @@ export interface COA {
   description: string;
   scheme: string;
   selected: boolean;
+  commandersIntent?: {
+    purpose: string;
+    keyTasks: string[];
+    endState: string;
+  };
   comparisonScore?: {
     overallScore: number;
     ranking: number;
