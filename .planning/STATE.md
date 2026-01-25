@@ -552,6 +552,14 @@ None.
 - Real-time tracking infrastructure prepared with WebSocket client, server deferred to Phase 4.5 ATAK/CoT integration
 - Layer controls provide category-based filtering for tactical map density management
 
+**Phase 05 Plan 1 (Operational Planning Data Foundation):**
+- JP 5-0 workflow modeled as 8 sequential steps with status tracking per step
+- COA minimum of 3 enforced via validateMinimumCOAs() method, not database constraint
+- ROE override justification validated at store layer (non-empty, non-whitespace)
+- UUID prefixes for entity identification: OPLAN-, COA-, VER-, ROE-, OVR-
+- Zod record() requires two type parameters in v4.x: record(string, T) not record(T)
+- Commander approval tracked separately for COA and plan with DID and timestamp
+
 **Phase 05 Plan 2 (Real-Time Collaboration Infrastructure):**
 - Yjs CRDT library for conflict-free collaborative editing of operational plans
 - Full state snapshot persistence (Y.encodeStateAsUpdate) instead of incremental updates for simplicity
@@ -564,7 +572,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-25 16:52:16Z
-Stopped at: Completed 05-02-PLAN.md (Real-Time Collaboration Infrastructure)
+Last session: 2026-01-25 16:54:21Z
+Stopped at: Completed 05-01-PLAN.md (Operational Planning Data Foundation)
 Resume file: None
-Next action: Phase 05 Plan 2 COMPLETE - Yjs CRDT collaboration infrastructure with WebSocket sync server ready. Continue with Phase 05 Plan 3 (frontend collaboration UI components) or remaining operational planning features.
+Next action: Phase 05 Plans 1-2 COMPLETE - Operational planning data layer (types, stores, schemas) and Yjs collaboration infrastructure ready. Continue with Phase 05 Plan 3 (frontend collaboration UI components) or remaining operational planning features.
