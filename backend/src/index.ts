@@ -17,6 +17,7 @@ import adminRouter from './api/admin.js';
 import messagingRouter, { setupMessageWebSocket } from './api/messaging.js';
 import orchestrationRouter, { setupOrchestrationWebSocket } from './api/orchestration.js';
 import graphRouter from './api/graph.js';
+import { createSyncServer } from './collaboration/index.js';
 import commandRouter from './api/command.js';
 import missionRouter from './api/missions.js';
 import resourceRouter from './api/resources.js';
@@ -101,6 +102,10 @@ setupMessageWebSocket(server);
 
 // Setup WebSocket for orchestration execution streaming
 setupOrchestrationWebSocket(server);
+
+// Setup WebSocket for real-time collaboration (Yjs document sync)
+createSyncServer(server, '/ws/collab');
+console.log('Collaboration WebSocket server mounted at /ws/collab');
 
 server.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
