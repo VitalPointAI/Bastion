@@ -420,14 +420,62 @@ Plans:
 - [ ] TBD (run /gsd:plan-phase 4.5 to create plans)
 
 ### Phase 5: Operational Planning Module
-**Goal**: Implement joint planning doctrine and operational design
-**Depends on**: Phase 4
-**Research**: Likely (military doctrine implementation)
-**Research topics**: JP 5-0 Joint Planning Process structure, operational design methodology, NATO COPD framework, rules of engagement modeling, mission command frameworks, tiered autonomy architectures
-**Plans**: TBD
+**Goal**: Implement JP 5-0 Joint Planning Process with COA development, red team analysis, ROE enforcement, and OPLAN/OPORD generation
+**Depends on**: Phase 4.4
+**Research**: Complete (05-RESEARCH.md)
+**Research topics**: JP 5-0 Joint Planning Process structure, XState workflow management, Yjs real-time collaboration, LangGraph multi-agent orchestration, json-rules-engine for ROE, milsymbol for MIL-STD-2525D graphics, OPLAN/OPORD document generation
+**Plans:** 13 plans
+
+**Context:**
+This phase implements the complete JP 5-0 Joint Planning Process with:
+- 7-step workflow with flexible navigation (Planning Initiation -> Mission Analysis -> COA Development -> COA Analysis -> COA Comparison -> COA Approval -> Plan Development)
+- Minimum 3 COAs required per doctrine
+- Two mandatory human checkpoints (COA Approval, Plan Approval)
+- Real-time collaborative editing via Yjs CRDTs
+- ROE enforcement with commander-only override and blockchain audit
+- AI agents: COA Generator, Red Team Simulator, COA Comparator
+- Document generation: OPLAN/OPORD (DOCX, PDF), briefing slides (PPTX), sync matrices
+
+**Key Capabilities:**
+
+1. **JP 5-0 Workflow Engine**
+   - XState v5 state machine with guards for prerequisites
+   - Human checkpoints pause until commander approval
+   - Flexible step navigation (can revisit completed steps)
+   - PostgreSQL persistence for workflow state
+
+2. **COA Development & Analysis**
+   - AI-generated COAs with doctrinal compliance
+   - Red team simulation identifying vulnerabilities
+   - Objective comparison scoring (feasibility, acceptability, suitability)
+   - Real-time collaborative editing
+
+3. **ROE Enforcement**
+   - json-rules-engine for declarative rule evaluation
+   - Commander override workflow with justification
+   - Blockchain audit trail for accountability
+
+4. **Document Generation**
+   - 5-paragraph OPORD format
+   - Classification banners and handling instructions
+   - Briefing slides for commander/staff/rehearsal
+   - Sync matrix, DST, CCIR products
+   - MIL-STD-2525D operational graphics
 
 Plans:
-- [ ] TBD during phase planning
+- [ ] Plan 05-01: Operational Planning Data Models — Plan/COA/ROE types, stores, database schema
+- [ ] Plan 05-02: Yjs Collaboration Infrastructure — WebSocket sync, PostgreSQL persistence, awareness
+- [ ] Plan 05-03: XState JP 5-0 Workflow — State machine with guards, human checkpoints, persistence
+- [ ] Plan 05-04: ROE Enforcement Engine — json-rules-engine, override workflow, blockchain audit
+- [ ] Plan 05-05: COA Generator Agent — LangGraph agent with mission context tools
+- [ ] Plan 05-06: Red Team Simulator Agent — Adversary analysis agent with vulnerability tools
+- [ ] Plan 05-07: COA Comparator Agent — Objective scoring agent with comparison tools
+- [ ] Plan 05-08: OPLAN/OPORD Generator — DOCX/PDF generation with 5-paragraph format
+- [ ] Plan 05-09: Briefing & Planning Products — PPTX slides, sync matrix, DST, CCIR
+- [ ] Plan 05-10: Operational Graphics & API — MIL-STD-2525D symbols, planning REST API
+- [ ] Plan 05-11: Planning Dashboard UI — Step navigator, plan list, dashboard components
+- [ ] Plan 05-12: COA Editor with Collaboration — Yjs hooks, COA components, AI action buttons
+- [ ] Plan 05-13: Approval Workflows & ROE Panel — Commander approvals, ROE violations, document export
 
 ### Phase 6: Autonomous Vehicle Integration
 **Goal**: Set up edge AI platform and autonomous vehicle control
@@ -542,7 +590,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
 | 4.3 Strategic Intelligence Fusion & RAFT | 11/11 | Complete | 2026-01-24 |
 | 4.4 Mission Context & Force Onboarding | 0/9 | Planning Complete | - |
-| 5. Operational Planning Module | 0/TBD | Not started | - |
+| 5. Operational Planning Module | 0/13 | Planning Complete | - |
 | 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
 | 7. Tactical Execution System | 0/TBD | Not started | - |
 | 8. Sensor Fusion & Intelligence | 0/TBD | Not started | - |
