@@ -1,0 +1,197 @@
+/**
+ * ApprovalPanel Styles
+ *
+ * Phase 05 Plan 13: Commander approval interface styling
+ * Uses BASTION design system variables from App.css
+ */
+
+.approval-panel {
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(255, 165, 0, 0.05) 100%);
+  border: 2px solid var(--accent-orange);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.approval-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.approval-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-orange);
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 1.25rem;
+}
+
+.approval-header h3 {
+  margin: 0;
+  color: var(--accent-orange);
+}
+
+.approval-coa-summary,
+.approval-plan-summary {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.approval-coa-summary h4,
+.approval-plan-summary h4 {
+  margin: 0 0 1rem;
+  color: var(--text-primary);
+}
+
+.coa-summary-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.coa-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.coa-score {
+  color: var(--accent-blue);
+  font-weight: 500;
+}
+
+.coa-description,
+.coa-scheme {
+  margin: 0.5rem 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.approval-checklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.approval-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  color: var(--text-secondary);
+}
+
+.approval-checklist li.complete::before {
+  content: '\2713';
+  color: var(--accent-green);
+  font-weight: bold;
+}
+
+.approval-error {
+  padding: 0.75rem;
+  background: rgba(255, 68, 68, 0.1);
+  color: var(--accent-red);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.approval-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rejection-input input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.rejection-input input::placeholder {
+  color: var(--text-muted);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.reject-btn,
+.approve-btn {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.reject-btn {
+  background: var(--bg-primary);
+  color: var(--accent-red);
+  border: 2px solid var(--accent-red);
+}
+
+.reject-btn:hover:not(:disabled) {
+  background: rgba(255, 68, 68, 0.1);
+}
+
+.approve-btn {
+  background: var(--accent-green);
+  color: white;
+}
+
+.approve-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.reject-btn:disabled,
+.approve-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.approval-waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  color: var(--text-secondary);
+}
+
+.waiting-icon {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent-orange);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
