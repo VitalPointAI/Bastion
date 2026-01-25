@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 05 of 13+ (Operational Planning Module) — IN PROGRESS
-Plan: 6 of 13 in current phase
+Plan: 7 of 13 in current phase
 Status: In Progress
-Last activity: 2026-01-25 — Completed 05-06-PLAN.md (Red Team Simulator AI Agent)
+Last activity: 2026-01-25 — Completed 05-07-PLAN.md (COA Comparator AI Agent)
 
-Progress: ███░░░░░░░ 46% (6/13 plans complete in phase 05)
+Progress: ████░░░░░░ 54% (7/13 plans complete in phase 05)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 71
+- Total plans completed: 72
 - Average duration: 11 min
-- Total execution time: 13.2+ hours
+- Total execution time: 13.3+ hours
 
 **By Phase:**
 
@@ -36,12 +36,12 @@ Progress: ███░░░░░░░ 46% (6/13 plans complete in phase 05)
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
 | 4.3 (Strategic Intelligence Fusion) | 11 | 71 min | 6 min |
 | 4.4 (Mission Context & Force Onboarding) | 8 | 47 min | 6 min |
-| 05 (Operational Planning Module) | 6 | 23 min | 4 min |
+| 05 (Operational Planning Module) | 7 | 28 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 6 min, 5 min, 4 min, 4 min, 5 min
-- Trend: Phase 05 AI agents - LangGraph red team adversary simulation with vulnerability analysis
+- Last 5 plans: 5 min, 4 min, 4 min, 5 min, 5 min
+- Trend: Phase 05 AI agents - LangGraph COA comparison with weighted doctrinal scoring
 
 ## Accumulated Context
 
@@ -578,9 +578,16 @@ None.
 - Default ROE rules: civilian prohibition, urban CDE warning, cultural site protection
 - Facts extracted from TacticalAction for declarative rule evaluation
 
+**Phase 05 Plan 7 (COA Comparator AI Agent):**
+- Suitability weighted highest (30%) in scoring formula to prioritize mission accomplishment per JP 5-0 doctrine
+- Rankings assigned after all COAs scored (not incrementally) for consistent relative comparison
+- Objective character trained to avoid bias and favoritism, supporting commander decision without making it
+- Weighted scoring: suitability 30%, feasibility 25%, acceptability 25%, distinguishability 10%, completeness 10%
+- Red team results integrated into feasibility and acceptability assessments
+
 ## Session Continuity
 
-Last session: 2026-01-25 17:07:58Z
-Stopped at: Completed 05-05-PLAN.md (COA Generator AI Agent)
+Last session: 2026-01-25 17:10:08Z
+Stopped at: Completed 05-07-PLAN.md (COA Comparator AI Agent)
 Resume file: None
-Next action: Phase 05 Plan 5 COMPLETE - COA Generator agent with LangGraph, military planning expertise, and automated COA generation from mission analysis. Wave 3 in progress. Continue with Red Team Simulator agent (05-06).
+Next action: Phase 05 Plan 7 COMPLETE - COA Comparator agent with weighted doctrinal scoring (suitability 30%), objective analysis, and ranking support for commander decision. Wave 3 complete. Continue with workflow orchestration (05-08).
