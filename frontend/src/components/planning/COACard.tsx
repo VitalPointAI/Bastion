@@ -1,4 +1,3 @@
-import React from 'react';
 import type { COA } from './types';
 import './COAEditor.css';
 

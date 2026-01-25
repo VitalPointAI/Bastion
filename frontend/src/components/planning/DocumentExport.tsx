@@ -5,7 +5,7 @@
  * Supports DOCX, PDF, PPTX exports and planning product previews
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   getOPORDDocxUrl,
   getOPORDPdfUrl,
@@ -22,9 +22,9 @@ interface DocumentExportProps {
 }
 
 export function DocumentExport({ planId, planName }: DocumentExportProps) {
-  const [syncMatrix, setSyncMatrix] = useState<unknown>(null);
-  const [dst, setDst] = useState<unknown>(null);
-  const [ccir, setCcir] = useState<unknown>(null);
+  const [syncMatrix, setSyncMatrix] = useState<Record<string, unknown> | null>(null);
+  const [dst, setDst] = useState<Record<string, unknown> | null>(null);
+  const [ccir, setCcir] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleDownload = (url: string, filename: string) => {
@@ -40,7 +40,7 @@ export function DocumentExport({ planId, planName }: DocumentExportProps) {
     setLoading('sync-matrix');
     try {
       const data = await getSyncMatrix(planId);
-      setSyncMatrix(data);
+      setSyncMatrix(data as Record<string, unknown>);
     } finally {
       setLoading(null);
     }
@@ -50,7 +50,7 @@ export function DocumentExport({ planId, planName }: DocumentExportProps) {
     setLoading('dst');
     try {
       const data = await getDST(planId);
-      setDst(data);
+      setDst(data as Record<string, unknown>);
     } finally {
       setLoading(null);
     }
@@ -60,7 +60,7 @@ export function DocumentExport({ planId, planName }: DocumentExportProps) {
     setLoading('ccir');
     try {
       const data = await getCCIR(planId);
-      setCcir(data);
+      setCcir(data as Record<string, unknown>);
     } finally {
       setLoading(null);
     }

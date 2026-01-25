@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type { COA } from './types';
 import { useYjsDocument, useYjsText } from '../../lib/yjs-hooks';
 import { createCOA } from '../../lib/planning-service';

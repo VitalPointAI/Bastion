@@ -79,3 +79,24 @@ export interface WorkflowState {
   atCheckpoint: boolean;
   checkpoint?: string;
 }
+
+export interface ROEViolation {
+  ruleName: string;
+  message: string;
+  severity: 'critical' | 'major' | 'minor';
+  citation: string;
+}
+
+export interface ROEWarning {
+  ruleName: string;
+  message: string;
+  severity: 'high' | 'medium' | 'low';
+  recommendation?: string;
+}
+
+export interface ROECheckResult {
+  approved: boolean;
+  violations: ROEViolation[];
+  warnings: ROEWarning[];
+  requiresOverride: boolean;
+}

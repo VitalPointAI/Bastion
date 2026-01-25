@@ -5,7 +5,7 @@
  * Displays checkpoint status and enables commander approve/reject actions
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { WorkflowState, COA } from './types';
 import { sendWorkflowEvent, getCOAs } from '../../lib/planning-service';
 import './ApprovalPanel.css';

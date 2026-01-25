@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { COACard } from './COACard';
 import type { COA } from './types';
 import {

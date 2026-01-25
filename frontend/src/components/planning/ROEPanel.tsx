@@ -5,7 +5,7 @@
  * Shows violations and warnings from ROE check, enables commander override
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { ROECheckResult, ROEViolation, ROEWarning } from './types';
 import './ROEPanel.css';
 

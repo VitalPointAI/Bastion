@@ -5,7 +5,8 @@
  * Allows navigation to any step and actions for current step.
  */
 
-import { JP50_STEPS, JP50Step, StepStatus, WorkflowState } from './types';
+import { JP50_STEPS } from './types';
+import type { JP50Step, StepStatus, WorkflowState } from './types';
 import './PlanningDashboard.css';
 
 interface StepNavigatorProps {
@@ -37,7 +38,7 @@ export function StepNavigator({
   onStartStep,
   onMarkReady,
 }: StepNavigatorProps) {
-  const steps = workflowState?.context.steps || {};
+  const steps: Partial<Record<JP50Step, StepStatus>> = workflowState?.context.steps || {};
   const currentStep = workflowState?.context.currentStep;
   const coaApproved = workflowState?.context.commanderApproval.coaApproved;
   const planApproved = workflowState?.context.commanderApproval.planApproved;
