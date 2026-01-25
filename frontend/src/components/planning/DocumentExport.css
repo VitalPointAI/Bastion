@@ -1,0 +1,149 @@
+/**
+ * DocumentExport Styles
+ *
+ * Phase 05 Plan 13: Document export interface styling
+ * Uses BASTION design system variables from App.css
+ */
+
+.document-export {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.document-export h4 {
+  margin: 0 0 1.25rem;
+  color: var(--text-primary);
+}
+
+.export-section {
+  margin-bottom: 1.5rem;
+}
+
+.export-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.export-section h5 {
+  margin: 0 0 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.export-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.export-buttons.vertical {
+  flex-direction: column;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+}
+
+.export-btn:hover:not(:disabled) {
+  border-color: var(--accent-blue);
+  background: rgba(74, 144, 217, 0.1);
+}
+
+.export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.export-btn .icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.export-btn.docx .icon {
+  background: #2b579a;
+  color: white;
+}
+
+.export-btn.pdf .icon {
+  background: #d93025;
+  color: white;
+}
+
+.export-btn.pptx .icon {
+  background: #d24726;
+  color: white;
+}
+
+.export-btn.docx:hover {
+  border-color: #2b579a;
+}
+
+.export-btn.pdf:hover {
+  border-color: #d93025;
+}
+
+.export-btn.pptx:hover {
+  border-color: #d24726;
+}
+
+.data-preview {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.data-preview h5 {
+  margin: 0 0 0.75rem;
+  color: var(--text-primary);
+}
+
+.data-preview pre {
+  background: var(--bg-elevated);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  max-height: 300px;
+  overflow-y: auto;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.data-preview button {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.data-preview button:hover {
+  border-color: var(--border-medium);
+  background: var(--bg-hover);
+}
