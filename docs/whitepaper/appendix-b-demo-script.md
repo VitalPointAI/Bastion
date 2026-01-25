@@ -2,6 +2,8 @@
 
 This appendix provides a detailed demonstration script for the BASTION platform, designed for a ~20 minute presentation that showcases all three human authority positions (in-the-loop, on-the-loop, out-of-the-loop) and the cross-level coordination that connects strategic objectives to tactical execution.
 
+**Narrative Approach:** This script weaves technical demonstration with problem-focused narrative. At key moments, "injects" highlight specific problems BASTION solves versus conventional C2 architecture. The goal is not just to show *what* the system does, but *why* it matters.
+
 ## B.1 Setup Requirements
 
 ### Physical Components
@@ -48,11 +50,17 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 ---
 
-**[0:00-1:00] Introduction**
+**[0:00-1:30] Introduction and Problem Framing**
 
 *Narrator speaks while showing Strategic Planning Dashboard*
 
-> "Welcome to the BASTION demonstration. BASTION stands for Blockchain Autonomous Strategy & Tactical Intelligence Operational Network. Over the next twenty minutes, we will demonstrate an end-to-end flow from strategic objective to tactical execution, showing how AI-augmented DAOs coordinate military operations while preserving human control over critical decisions."
+> "Welcome to the BASTION demonstration. Before we begin, I want to frame the problem we're solving."
+
+*Pause for emphasis*
+
+> "In conventional coalition operations, a strategic directive might take days to translate into tactical action. Why? The document must be manually analyzed by staff officers. Extracted objectives must be coordinated through national channels. Each partner must staff recommendations through their own approval chains. By the time everyone agrees, the operational window may have closed."
+
+> "BASTION solves this through AI-augmented decentralized autonomous organizations. Over the next twenty minutes, you'll see strategic intent flow to tactical execution in minutes rather than days, with full accountability at every step."
 
 *Action:* Display Strategic Planning Dashboard with coalition member badges visible
 
@@ -61,17 +69,19 @@ All decisions at the strategic level require explicit human approval. AI assists
 - Empty objective list (will populate during demo)
 - Agent status panel showing healthy agents
 
+> "Notice the coalition partners displayed here. In a conventional system, each nation would maintain separate planning tools with limited visibility into partner activities. BASTION provides a shared operational picture while respecting national authorities."
+
 ---
 
-**[1:00-2:30] Document Ingestion**
+**[1:30-2:30] Document Ingestion**
 
 *Narrator explains document processing*
 
-> "Strategic planning begins with document ingestion. Coalition partners submit strategic guidance documents that define objectives, priorities, and constraints. BASTION's AI agents process these documents to extract structured objectives."
+> "Strategic planning begins with document ingestion. In conventional operations, this step is a bottleneck. Staff officers manually review documents, extract relevant objectives, and summarize them for commanders. This process can take hours or days."
 
 *Action:* Upload pre-prepared strategic guidance document (PDF)
 
-> "We're uploading a fictional coalition directive that establishes reconnaissance objectives for our demonstration area."
+> "We're uploading a fictional coalition directive. Watch what happens."
 
 *Show:*
 - Upload progress indicator
@@ -83,15 +93,19 @@ All decisions at the strategic level require explicit human approval. AI assists
 - Extraction complete notification appears
 - Objective list populates with 3-4 extracted items
 
-> "The AI has extracted four objectives from the strategic document. Notice that extraction happens in seconds, not hours. But extraction is not approval."
+> "In seconds, the AI has extracted four strategic objectives. A task that might consume a staff officer's entire morning completed before I finished this sentence."
+
+**[INJECT - SPEED vs. CONVENTIONAL C2]**
+
+> "But here's the critical point: in a conventional system, you'd now wait for staffing. Each extracted objective would need to be validated through national channels, reconciled with partner interpretations, and formally coordinated. BASTION doesn't eliminate that coordination, it accelerates it through structured governance."
 
 ---
 
-**[2:30-4:00] Human Review**
+**[2:30-4:00] Human Review and DAO Governance**
 
 *Narrator emphasizes human-in-the-loop*
 
-> "Every extracted objective requires human review before it enters the governance workflow. The AI accelerates analysis, but humans make the decisions."
+> "Every extracted objective requires human review before entering governance. The AI accelerates analysis, but humans make decisions. This is non-negotiable."
 
 *Action:*
 - Click on first extracted objective
@@ -105,20 +119,25 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 *Action:* Edit one objective slightly to demonstrate human modification
 
-> "The reviewer can accept the AI's extraction, modify it, or reject it entirely. Let's accept this reconnaissance objective with a minor clarification."
+> "The reviewer can accept the AI's extraction, modify it, or reject it entirely. Let's approve this reconnaissance objective with a clarification."
 
 *Action:* Click "Approve" button
 
-*Emphasize:*
-> "Human IN-THE-LOOP. The AI proposed, but the human approved. Without this human action, the objective would never proceed to governance."
+**[INJECT - TRANSPARENCY vs. CONVENTIONAL C2]**
+
+> "In a conventional system, this approval happens in an email chain or a meeting that no one records. Who approved what? When? Based on what information? Those questions often can't be answered months later when something goes wrong."
+
+*Gesture to screen*
+
+> "Every action in BASTION is recorded on an immutable blockchain. This approval, right now, is permanently logged with the reviewer's identity, timestamp, and the exact state of the objective they approved. Full accountability, forever."
 
 ---
 
-**[4:00-5:00] DAO Proposal and Voting**
+**[4:00-5:00] Coalition Voting**
 
 *Narrator explains coalition governance*
 
-> "Approved objectives become proposals to the Strategic DAO. Coalition members vote according to configured weights. Let's submit a resource allocation proposal for our reconnaissance mission."
+> "Approved objectives become proposals to the Strategic DAO. Coalition members vote according to configured weights."
 
 *Action:* Submit resource allocation proposal to Strategic DAO
 
@@ -137,7 +156,11 @@ All decisions at the strategic level require explicit human approval. AI assists
 - Quorum reached notification
 - Proposal status changes to "Approved"
 
-> "The proposal has been approved by all coalition members. Resources are now allocated, and the objective is ready for operational planning. Every vote is permanently recorded on the blockchain for accountability."
+**[INJECT - TRUST and VERIFICATION vs. CONVENTIONAL C2]**
+
+> "This vote just recorded on NEAR blockchain. Every coalition partner can independently verify that the vote happened, that it met quorum requirements, and that resources were allocated as agreed."
+
+> "In conventional coalition operations, partners must trust that coordinating nations honor commitments. Did the resources we were promised actually get allocated? Is our equipment being used as we intended? These questions erode coalition trust. Blockchain eliminates them through cryptographic verification."
 
 ---
 
@@ -153,7 +176,7 @@ AI agents operate continuously while humans monitor with override capability. Hu
 
 *Narrator transitions to operational coordination*
 
-> "With strategic resources allocated, we move to the operational level. Here, AI agents work continuously to transform strategic objectives into executable plans."
+> "With strategic resources allocated, we move to the operational level. This is where conventional C2 struggles most. The gap between strategic intent and tactical execution, the operational level, is where coalitions historically lose coherence."
 
 *Action:* Navigate to Agent Orchestration Panel
 
@@ -162,17 +185,16 @@ AI agents operate continuously while humans monitor with override capability. Hu
 - LangGraph execution visualization
 - Agent communication in message bus
 
-> "Multiple agents are now active. The Operational Planning Agent analyzes the approved objective. The Risk Assessment Agent identifies potential hazards. The Resource Mapping Agent identifies available assets for the mission."
+> "Multiple AI agents are now active. The Operational Planning Agent translates strategic objectives into executable plans. The Risk Assessment Agent identifies hazards. The Resource Mapping Agent matches available assets to requirements."
+
+**[INJECT - SILOED DECISION-MAKING vs. CONVENTIONAL C2]**
+
+> "In a conventional staff, these functions happen in separate cells that may not communicate effectively. The operations cell develops plans without full visibility into intelligence assessments. The logistics cell allocates resources without understanding tactical priorities. BASTION's agents share information in real-time through a secure message bus, eliminating the silos that fragment conventional planning."
 
 *System:*
 - Agents begin processing
 - Reasoning traces appear in execution panel
 - Recommendations generate in real-time
-
-*Show:*
-- Agent generating operational plan
-- Risk assessment summary appearing
-- Asset assignment recommendation
 
 ---
 
@@ -180,7 +202,7 @@ AI agents operate continuously while humans monitor with override capability. Hu
 
 *Narrator emphasizes on-the-loop authority*
 
-> "At the operational level, the human commander is ON-THE-LOOP. Agents work continuously, but the commander monitors everything and can override at any time."
+> "At the operational level, the human commander is ON-THE-LOOP. Agents work at machine speed, but the commander monitors everything and can override instantly."
 
 *Action:* Point to monitoring dashboard
 
@@ -189,14 +211,17 @@ AI agents operate continuously while humans monitor with override capability. Hu
 - Agent activity log scrolling
 - Plan generation progress
 
-> "Watch the commander's monitoring view. Every agent action is visible. The commander can see what the agents are recommending and why."
+> "Watch the commander's view. Every agent action is visible. The commander sees what agents recommend and why."
 
 *Action:* Hover over "Override" button (but don't click)
 
-> "This override button would immediately halt agent operations and return control to the human. The commander chooses not to use it because the agents are operating within expected parameters."
+> "This override button immediately halts agent operations and returns full control to the human. The commander chooses not to use it because agents are operating within expected parameters."
 
-*Emphasize:*
-> "Human ON-THE-LOOP. The AI works at machine speed, but the human maintains oversight and can intervene instantly. This preserves human authority while enabling faster coordination."
+**[INJECT - DECISION TEMPO vs. CONVENTIONAL C2]**
+
+> "Conventional C2 operates at human speed. Every coordination step waits for humans to process information, make decisions, and communicate. BASTION preserves human authority while enabling machine-speed coordination for routine tasks."
+
+> "The commander isn't approving every agent recommendation. That would eliminate the speed advantage. Instead, the commander maintains oversight with the ability to intervene when needed. Human judgment where it matters, AI speed everywhere else."
 
 *System:*
 - Agents complete plan generation
@@ -205,11 +230,11 @@ AI agents operate continuously while humans monitor with override capability. Hu
 
 ---
 
-**[8:00-9:00] Mission Handoff**
+**[8:00-10:00] Mission Authorization and Risk Acknowledgment**
 
 *Narrator explains transition to tactical level*
 
-> "The AI agents have generated an operational plan. The plan assigns our reconnaissance asset to survey the demonstration area and identify targets matching specified criteria."
+> "The AI agents have generated an operational plan assigning our reconnaissance asset to survey the demonstration area and identify targets matching specified criteria."
 
 *Show:*
 - Completed operational plan summary
@@ -218,24 +243,20 @@ AI agents operate continuously while humans monitor with override capability. Hu
 
 *Action:* Commander reviews plan summary
 
-> "The commander reviews the generated plan, acknowledges the identified risks, and authorizes mission execution."
-
-*Action:* Click "Authorize Mission"
-
-> "Mission authorized. The operational plan now flows to the tactical level for execution."
-
----
-
-**[9:00-10:00] Risk Acknowledgment**
+> "The commander reviews the generated plan, acknowledges identified risks, and authorizes mission execution."
 
 *Show:*
 - Risk assessment summary panel
 - Identified risks with likelihood/impact
 - Required acknowledgments
 
-*Action:* Commander explicitly acknowledges risks
+*Action:* Commander explicitly acknowledges risks, then clicks "Authorize Mission"
 
-> "Before tactical execution begins, the commander acknowledges identified risks. This creates accountability: the commander accepted known risks when authorizing the mission."
+**[INJECT - ACCOUNTABILITY vs. CONVENTIONAL C2]**
+
+> "This risk acknowledgment creates accountability. In conventional operations, commanders often inherit risk assessments buried in annexes that may never be read. Here, the commander explicitly acknowledges: 'I understand these risks and accept them.' That acknowledgment is permanently recorded."
+
+> "If this operation goes wrong, we know exactly who authorized it, what risks they were told about, and that they accepted those risks. Not to assign blame, but to learn and improve."
 
 *System:*
 - Risk acknowledgment recorded on blockchain
@@ -252,11 +273,11 @@ Autonomous systems execute within policy constraints without real-time human app
 
 ---
 
-**[10:00-11:00] Autonomous Reconnaissance**
+**[10:00-12:00] Autonomous Reconnaissance**
 
 *Narrator explains tactical autonomy*
 
-> "At the tactical level, humans move OUT-OF-THE-LOOP for routine operations. The Sphero robot will navigate the demonstration area autonomously. The Jetson's AI will process camera imagery without waiting for human approval of each image."
+> "At the tactical level, humans move OUT-OF-THE-LOOP for routine operations. The Sphero robot will navigate autonomously. The Jetson's AI will process imagery without waiting for human approval of each frame."
 
 *Action:* Direct attention to physical demonstration area
 
@@ -267,23 +288,32 @@ Autonomous systems execute within policy constraints without real-time human app
 
 *Action:* Sphero begins autonomous patrol of AO model
 
-> "The Sphero is now executing autonomous reconnaissance. Watch it navigate the terrain, avoiding obstacles and following its assigned search pattern."
+> "The Sphero is executing autonomous reconnaissance. Watch it navigate terrain, avoid obstacles, and follow its assigned search pattern."
+
+**[INJECT - DDIL RESILIENCE]**
+
+*As Sphero moves, narrator introduces simulated scenario:*
+
+> "Let's imagine something realistic. The robot encounters unexpected electronic warfare interference. In a conventional system with centralized C2, losing communication with headquarters would paralyze the platform. It can't receive orders, can't report status, can't continue its mission."
+
+*Gesture to Sphero continuing its patrol*
+
+> "But our robot keeps moving. Why? Because BASTION's edge AI enables mission continuation without continuous connectivity. The Jetson carries the mission parameters, the navigation model, and the target identification capability. It doesn't need headquarters to tell it what to do next. This is DDIL resilience, the ability to operate when Disconnected, Degraded, Intermittent, or Limited-bandwidth conditions prevent communication with higher echelons."
 
 *System:*
 - Edge AI processing camera feed
 - Sphero navigating tabletop AO
 - Position updates appearing on map
 
-*Emphasize:*
-> "Human OUT-OF-THE-LOOP. The robot is making navigation decisions in real-time without human approval. This is autonomous within policy bounds."
+> "Human OUT-OF-THE-LOOP for navigation decisions. The policy defined boundaries and objectives. Within those boundaries, the robot operates autonomously."
 
 ---
 
-**[11:00-12:30] Target Identification**
+**[12:00-13:00] Target Identification**
 
 *Narrator explains AI target detection*
 
-> "The Jetson Orin Nano runs object detection models directly on the robot. When it identifies an object matching target criteria, it classifies and reports."
+> "The Jetson Orin Nano runs object detection directly on the robot. When it identifies an object matching target criteria, it classifies and reports."
 
 *System:*
 - Jetson AI detects target marker on AO model
@@ -295,16 +325,21 @@ Autonomous systems execute within policy constraints without real-time human app
 - Confidence score: 94%
 - Location coordinates on map
 
-> "The AI has identified a target. Notice the confidence score: 94%. The system automatically classifies and logs this detection."
+> "The AI has identified a target with 94% confidence. This identification happened autonomously. No human approved examining that specific location or classifying that specific object."
 
-*Note:*
-> "This identification happened autonomously. No human approved examining that specific location or classifying that specific object. The policy permitted reconnaissance and target identification. But watch what happens next."
+**[INJECT - EDGE AI vs. CLOUD DEPENDENCY]**
+
+> "In conventional architectures, this imagery would need to be transmitted to a cloud processing center for analysis. That transmission takes bandwidth, introduces latency, and creates vulnerability. If the link is jammed or degraded, analysis stops."
+
+> "BASTION pushes AI to the edge. The Jetson processes locally, reports results when connectivity allows, and continues operating regardless. The robot doesn't stop being useful just because it can't phone home."
 
 ---
 
-**[12:30-14:00] Strike Authorization - Return to Human Control**
+**[13:00-15:00] Strike Authorization - Return to Human Control**
 
 *Narrator emphasizes critical distinction*
+
+> "Now watch carefully. This is the most important part of the demonstration."
 
 > "The target meets engagement criteria. The tactical system could theoretically engage autonomously. But BASTION enforces an inviolable constraint."
 
@@ -315,11 +350,19 @@ Autonomous systems execute within policy constraints without real-time human app
 - Red warning indicators and pulsing borders
 - "REQUIRES HUMAN APPROVAL" banner
 
+*Speak slowly and deliberately:*
+
 > "STRIKE AUTHORIZATION ALWAYS REQUIRES HUMAN APPROVAL."
 
-*Emphasize:*
+*Pause for emphasis*
 
-> "This is non-negotiable. No configuration setting, no operational urgency, no chain of command can bypass this requirement. Lethal decisions require human authorization."
+> "No configuration setting, no operational urgency, no chain of command can bypass this requirement. This is hardcoded at every level of the architecture. Lethal decisions require human authorization. Period."
+
+**[INJECT - AUTONOMOUS WEAPONS ETHICS]**
+
+> "This is BASTION's answer to concerns about autonomous weapons. The robot navigated autonomously. It identified the target autonomously. But it cannot kill autonomously. The decision to apply lethal force always returns to human judgment."
+
+> "International discussions about autonomous weapons often frame this as a tradeoff: you can have speed or you can have human control. BASTION demonstrates that's a false choice. We can accelerate everything except the lethal decision. AI handles coordination. Humans handle consequences."
 
 *Action:*
 - Coalition members receive strike proposal notification
@@ -330,23 +373,22 @@ Autonomous systems execute within policy constraints without real-time human app
 - All coalition members must vote
 - 100% approval threshold displayed
 
-> "Every coalition member must vote. The threshold is unanimous approval. One 'No' vote blocks the strike."
+> "Every coalition member must vote. The threshold is unanimous. One 'No' vote blocks the strike."
 
 *Action:*
 - Commander reviews target data
-- Commander authorizes (votes Approve)
-- Other coalition members vote
+- All coalition members vote Approve
 
 *Show:*
 - Votes recording
 - 100% approval achieved
 - Strike authorized
 
-> "Human-authorized strike. The AI identified the target. The AI recommended engagement. But humans made the lethal decision."
+> "Human-authorized strike. AI identified. AI recommended. Humans decided."
 
 ---
 
-**[14:00-15:00] Effects Delivery**
+**[15:00-15:30] Effects Delivery**
 
 *System:*
 - Strike authorization confirmed
@@ -355,14 +397,14 @@ Autonomous systems execute within policy constraints without real-time human app
 
 *Action:* Sphero executes authorized engagement
 
-> "The tactical asset executes the human-authorized strike. For demonstration purposes, 'effects' are a visual and audio indicator, not actual weapons."
+> "The tactical asset executes the human-authorized strike. For demonstration, 'effects' are visual and audio indicators."
 
 *Show:*
 - Engagement recorded on blockchain
 - Audit trail entry with all approvals
 - Mission status updated
 
-> "That engagement is now permanently recorded: who identified the target, who authorized the strike, when it occurred, and what the outcome was. Full accountability through immutable audit trail."
+> "That engagement is permanently recorded: who identified, who authorized, when, and outcome. Full accountability through immutable audit."
 
 ---
 
@@ -372,65 +414,53 @@ Autonomous systems execute within policy constraints without real-time human app
 
 ---
 
-**[15:00-16:30] Resource Expenditure Detection**
+**[15:30-17:00] Automatic Strategic Coordination**
 
 *Narrator explains cross-DAO automation*
 
-> "Here's where BASTION's interconnected DAOs demonstrate their value. An AI agent monitors tactical resource state."
+> "Now I'll show you something that simply doesn't happen in conventional C2."
 
 *System:*
 - AI agent detects resource expenditure
 - Inventory drops below threshold
-- Alert generated
+- Agent generates replenishment proposal automatically
 
 *Show:*
 - Resource state monitoring panel
 - Inventory showing depletion
 - Agent reasoning trace
 
-> "The engagement expended resources. The AI agent automatically detects that inventory has dropped below the replenishment threshold."
+> "The engagement expended resources. Watch what happens next."
 
 *System:*
-- Agent generates replenishment proposal automatically
-- Proposal targets Strategic DAO
-- Cross-DAO communication visible
-
----
-
-**[16:30-17:30] Strategic DAO Notification**
-
-*Narrator explains seamless vertical integration*
-
-> "Without any human intervention, the tactical expenditure triggers a strategic governance action. Watch the Strategic DAO."
-
-*Show:*
-- New proposal appears in Strategic DAO queue
+- Proposal appears in Strategic DAO queue
 - Proposal type: "Resource Replenishment Request"
-- Justification: "Tactical expenditure during authorized mission"
+- Justification auto-populated from tactical context
 
-*Action:* Point to coalition notification
+**[INJECT - CROSS-LEVEL COORDINATION vs. CONVENTIONAL C2]**
 
-> "Coalition members are automatically notified. They can vote to approve replenishment through the same governance process used for initial allocation."
+> "In conventional operations, this replenishment request would require a tactical unit to file a logistics request, which routes through operational channels, which eventually reaches strategic resource managers, who must staff the request through national approval processes. That cycle takes days or weeks."
 
-*Show:*
-- Coalition members see notification
-- Voting interface ready
-- Audit trail connecting tactical action to strategic request
+> "BASTION just completed it in seconds. The tactical expenditure automatically triggered a strategic governance action. Coalition members can now vote on replenishment through the same governance process used for initial allocation."
+
+*Gesture to the full loop*
+
+> "Strategic resources funded the operation. Operational AI planned the mission. Tactical autonomy executed within policy. Tactical expenditure triggered strategic replenishment. The complete cycle, without manual coordination overhead."
 
 ---
 
-**[17:30-18:00] Cycle Complete**
-
-*Narrator summarizes integration*
-
-> "Strategic resources funded the operation. Operational AI planned the mission. Tactical autonomy executed within policy. Tactical expenditure triggered strategic replenishment. The complete cycle, from strategic intent to tactical effect and back to strategic governance, without manual coordination overhead."
+**[17:00-18:00] Summary Visualization**
 
 *Show:*
 - Full loop visualization diagram
 - Strategic → Operational → Tactical → Strategic
 - Arrows showing information flow
 
-> "This seamless coordination across all levels is what BASTION enables through interconnected, AI-augmented DAOs."
+> "This seamless coordination across all levels is what BASTION enables. Interconnected, AI-augmented DAOs that preserve human authority while eliminating coordination friction."
+
+**[INJECT - COALITION TRUST]**
+
+> "And critically, every step of this loop is visible to all coalition partners. No black boxes. No 'trust us' assurances. Every resource allocation, every decision, every action is cryptographically verified and permanently recorded. Coalition partners don't need to trust each other. They verify."
 
 ---
 
@@ -438,27 +468,33 @@ Autonomous systems execute within policy constraints without real-time human app
 
 ---
 
-**[18:00-19:00] Thesis Validation**
+**[18:00-19:30] Problems Solved**
 
-*Narrator recaps demonstration against research question*
+*Narrator directly addresses the research contribution*
 
-> "This demonstration validates BASTION's answer to the research question."
+> "Let me be explicit about what you just witnessed."
 
-*Recap three human authority positions:*
+*Enumerate problems solved:*
 
-> "We demonstrated three human authority positions. At the strategic level, humans were IN-THE-LOOP for every decision. At the operational level, humans were ON-THE-LOOP monitoring AI agents with override capability. At the tactical level, humans were OUT-OF-THE-LOOP for routine operations within policy bounds."
+> "First: **Siloed decision-making**. You saw AI agents share information across functional boundaries in real-time. No more operations cell unaware of intelligence assessments."
 
-> "Critically, lethal decisions returned to human-in-the-loop. Strike authorization required unanimous human approval regardless of autonomy configuration."
+> "Second: **Coalition coordination friction**. Strategic voting happened in seconds with cryptographic verification. No more weeks of staffing through national channels."
 
-*Recap research question answer:*
+> "Third: **DDIL vulnerability**. The robot continued its mission during simulated communications disruption. Edge AI enables operation without constant connectivity."
 
-> "AI-augmented DAOs provide the secure, transparent, and resilient governance framework the research question asked about. Blockchain records every decision. Smart contracts enforce policy. AI accelerates coordination. Humans retain authority where it matters most."
+> "Fourth: **Accountability gaps**. Every decision from strategic objective to tactical effect is permanently recorded. Who authorized what? Always answerable."
+
+> "Fifth: **Speed versus control tradeoff**. We demonstrated machine-speed coordination with human authority over lethal decisions. The false choice is resolved."
 
 ---
 
-**[19:00-20:00] Q&A Preparation**
+**[19:30-20:00] Research Question Answer**
 
-*Narrator prepares for questions*
+*Narrator recaps research question*
+
+> "The research question asked how AI-augmented DAOs can provide secure, transparent, and resilient governance for military coordination."
+
+> "You just saw the answer: blockchain provides transparency and verification. Smart contracts enforce policy. AI accelerates coordination. Graduated human authority preserves control where it matters most."
 
 > "The complete audit trail is available for review."
 
@@ -468,13 +504,7 @@ Autonomous systems execute within policy constraints without real-time human app
 - Agent execution traces
 - Strike authorization with full chain of approvals
 
-> "Every claim we made is verifiable in the system's records. Thank you for your attention. I'm prepared to answer questions about any aspect of the demonstration."
-
-*Ready for:*
-- Technical questions about blockchain/AI integration
-- Questions about human authority enforcement
-- Questions about coalition governance
-- Questions about operational deployment path
+> "Every claim is verifiable in the system's records. Thank you. I'm prepared for questions."
 
 ---
 
@@ -501,9 +531,10 @@ Autonomous systems execute within policy constraints without real-time human app
 
 **Must-Show Priority:**
 1. Act 3 strike authorization human control (highest priority)
-2. Act 1 human-in-the-loop approval (high priority)
-3. Act 2 human-on-the-loop monitoring (medium priority)
-4. Act 4 cross-level coordination (lower priority if time constrained)
+2. DDIL resilience inject during autonomous patrol (high priority)
+3. Act 1 human-in-the-loop approval with accountability inject (high priority)
+4. Act 2 human-on-the-loop monitoring (medium priority)
+5. Act 4 cross-level coordination (lower priority if time constrained)
 
 ### If Questions Arise Mid-Demo
 
@@ -523,5 +554,25 @@ Autonomous systems execute within policy constraints without real-time human app
 
 ---
 
-*Script designed for ~20 minute presentation. Adjust pacing based on audience engagement and time constraints. Core message: AI-augmented DAOs enable faster military coordination while preserving human control over lethal decisions.*
+## B.8 Inject Summary Reference
+
+Quick reference for narrative injects and their connection to paper themes:
+
+| Demo Moment | Inject Theme | Paper Reference |
+|-------------|--------------|-----------------|
+| Document ingestion | Speed vs. conventional C2 staffing delays | Section 1.1, 1.3 |
+| Human approval | Transparency/accountability gap | Section 1.1 |
+| Coalition voting | Trust and verification | Section 1.3, 2.6 |
+| Agent orchestration | Siloed decision-making | Section 1.1, 2.6 |
+| On-the-loop monitoring | Decision tempo | Section 1.3 |
+| Risk acknowledgment | Accountability | Section 5.3 |
+| Autonomous patrol | DDIL resilience | Section 1.3, 2.5-2.6 |
+| Edge AI processing | Cloud dependency vulnerability | Section 2.5 |
+| Strike authorization | Autonomous weapons ethics | Section 5.3 |
+| Cross-level replenishment | Coalition coordination friction | Section 1.1, 2.6 |
+| Audit trail | Coalition trust verification | Section 1.1, 1.5 |
+
+---
+
+*Script designed for ~20 minute presentation with narrative injects that connect demonstration to paper thesis. The story arc moves from problem framing through solution demonstration, with each inject deliberately highlighting a specific problem BASTION solves versus conventional C2 architecture.*
 
