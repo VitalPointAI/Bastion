@@ -477,7 +477,7 @@ Plans:
 - [x] Plan 05-12: COA Editor with Collaboration — Yjs hooks, COA components, AI action buttons
 - [x] Plan 05-13: Approval Workflows & ROE Panel — Commander approvals, ROE violations, document export
 - [x] Plan 05-14: CreatePlanModal Gap Closure — Modal form for plan name and type selection (gap closure)
-- [ ] Plan 05-15: Vite Docker Proxy Fix — Environment-aware proxy configuration for Docker networking (gap closure)
+- [x] Plan 05-15: Vite Docker Proxy Fix — Environment-aware proxy configuration for Docker networking (gap closure, completed 2026-01-31)
 
 ### Phase 6: Autonomous Vehicle Integration
 **Goal**: Set up edge AI platform and autonomous vehicle control
@@ -592,7 +592,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
 | 4.3 Strategic Intelligence Fusion & RAFT | 11/11 | Complete | 2026-01-24 |
 | 4.4 Mission Context & Force Onboarding | 0/9 | Planning Complete | - |
-| 5. Operational Planning Module | 14/15 | In Progress | - |
+| 5. Operational Planning Module | 15/15 | Complete | 2026-01-31 |
 | 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
 | 7. Tactical Execution System | 0/TBD | Not started | - |
 | 8. Sensor Fusion & Intelligence | 0/TBD | Not started | - |
