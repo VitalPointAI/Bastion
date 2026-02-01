@@ -474,6 +474,60 @@
 }
 
 /* ============================================================================
+   Step Content Area
+   ============================================================================ */
+
+.step-content {
+  margin-top: var(--spacing-lg, 1.5rem);
+  padding: var(--spacing-md, 1rem);
+  background: var(--surface-secondary, #1a1a2e);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-md, 8px);
+}
+
+.step-content-placeholder {
+  color: var(--text-muted, #666678);
+  text-align: center;
+  padding: var(--spacing-xl, 2rem);
+}
+
+.step-content-info {
+  padding: var(--spacing-md, 1rem);
+}
+
+.step-content-info h4 {
+  color: var(--text-primary, #fff);
+  margin-bottom: var(--spacing-md, 1rem);
+  font-size: 1.25rem;
+}
+
+.step-content-info p {
+  color: var(--text-secondary, #a0a0b0);
+  margin-bottom: var(--spacing-md, 1rem);
+  line-height: 1.6;
+}
+
+.step-content-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.step-content-info li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: var(--spacing-sm, 0.5rem);
+  color: var(--text-secondary, #a0a0b0);
+}
+
+.step-content-info li::before {
+  content: '>';
+  position: absolute;
+  left: 0;
+  color: var(--accent-orange, #ffa500);
+}
+
+/* ============================================================================
    Loading and Error States
    ============================================================================ */
 
