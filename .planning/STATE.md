@@ -11,26 +11,26 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 1.2 of 13+ (Passkey Authentication & NEAR Implicit Accounts) — COMPLETE
-Plan: 9 of 9 in current phase
+Plan: 10 of 10 in current phase
 Status: Phase Complete
-Last activity: 2026-02-01 — Completed 1.2-09-PLAN.md (AWS SES Email Integration)
+Last activity: 2026-02-01 — Completed 1.2-10-PLAN.md (UAT Gap Closure)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
-Progress: █████████████████ 100% (9/9 plans complete in phase 1.2)
+Progress: ██████████████████ 100% (10/10 plans complete in phase 1.2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 88
+- Total plans completed: 89
 - Average duration: 10 min
-- Total execution time: 14.85 hours
+- Total execution time: 14.97 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
-| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 9 | 46 min | 5 min |
+| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 10 | 53 min | 5 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
@@ -42,8 +42,8 @@ Progress: █████████████████ 100% (9/9 plans co
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 3 min, 6 min, 8 min, 3 min, 8 min
-- Trend: Phase 1.2 COMPLETE - AWS SES email integration with domain restriction
+- Last 5 plans: 6 min, 8 min, 3 min, 8 min, 7 min
+- Trend: Phase 1.2 UAT gaps closed - passkey v13 upgrade, RegisterPage, protected route redirect
 
 ## Accumulated Context
 
@@ -712,9 +712,17 @@ None.
 - Email templates use inline CSS for email client compatibility
 - Base template with BASTION branding (dark blue header, white body, gray footer)
 
+**Phase 1.2 Plan 10 (UAT Gap Closure):**
+- @simplewebauthn/browser upgraded to v13.2.2 for API compatibility
+- PRF extension type assertions for TypeScript compatibility (WebAuthn PRF not in TS defs)
+- RegisterPage component at /register outside AuthWrapper for unauthenticated access
+- AuthWrapper redirects to /login when !isLoading && !isAuthenticated
+- Session store joins auth_users to retrieve email for UI display
+- Frontend handles both accountId and nearAccountId field names for compatibility
+
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Completed Phase 1.2 execution and verification (9/9 plans)
+Stopped at: Completed Phase 1.2 UAT gap closure (10/10 plans)
 Resume file: None
 Next action: Continue with Phase 4.4 (Mission Context & Force Onboarding) or priority phase.
