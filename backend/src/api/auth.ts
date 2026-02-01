@@ -486,7 +486,9 @@ router.get('/session', async (req, res) => {
 
     res.json({
       userId: session.userId,
-      nearAccountId: session.accountId,
+      accountId: session.accountId,      // Consistent field name
+      nearAccountId: session.accountId,  // Keep for backward compatibility
+      email: session.email,              // Add email for UI display
       prfAvailable: session.prfAvailable,
       expiresAt: session.expiresAt.toISOString()
     });

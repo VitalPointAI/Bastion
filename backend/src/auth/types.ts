@@ -86,6 +86,7 @@ export interface MagicLinkToken {
 export interface UserSession {
   id: string; // Session ID (stored in HttpOnly cookie)
   userId: string;
+  email?: string; // User's email for UI display
   accountId?: string; // NEAR account ID if available
   prfAvailable: boolean; // Can perform DID operations?
   createdAt: Date;
@@ -147,6 +148,7 @@ export interface CreatePasskeyInput {
  */
 export interface CreateSessionInput {
   userId: string;
+  email?: string;
   nearAccountId?: string;
   prfAvailable: boolean;
   ipAddress?: string;

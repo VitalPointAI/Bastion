@@ -7,6 +7,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
 export interface AuthSession {
   sessionToken: string;
   accountId: string;
+  email?: string;        // Email address for UI display
   prfAvailable: boolean;
   expiresAt: string;
 }
@@ -124,7 +125,8 @@ class AuthService {
       const data = await res.json();
       return {
         sessionToken: this.sessionToken,
-        accountId: data.accountId,
+        accountId: data.accountId || data.nearAccountId,  // Handle both field names
+        email: data.email,
         prfAvailable: data.prfAvailable,
         expiresAt: data.expiresAt
       };

@@ -11,6 +11,7 @@ interface AuthState {
   isAuthenticated: boolean;
   session: AuthSession | null;
   accountId: string | null;
+  email: string | null;
   prfAvailable: boolean;
 }
 
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
     session: null,
     accountId: null,
+    email: null,
     prfAvailable: false
   });
 
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: true,
         session,
         accountId: session.accountId,
+        email: session.email || null,
         prfAvailable: session.prfAvailable
       });
     } else {
@@ -55,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: false,
         session: null,
         accountId: null,
+        email: null,
         prfAvailable: false
       });
     }
@@ -72,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: false,
       session: null,
       accountId: null,
+      email: null,
       prfAvailable: false
     });
     // Redirect to home or login

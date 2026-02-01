@@ -20,11 +20,10 @@ interface AuthWrapperProps {
 }
 
 function AuthContent({ children }: AuthWrapperProps) {
-  const { isLoading, isAuthenticated, accountId, prfAvailable } = useAuth();
+  const { isLoading, isAuthenticated, accountId, email, prfAvailable } = useAuth();
   const location = useLocation();
   const [status, setStatus] = useState<'idle' | 'creating-did' | 'ready' | 'error'>('idle');
   const [userDID, setUserDID] = useState<string | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [migrationEmail, setMigrationEmail] = useState<string>('');
 
@@ -112,7 +111,7 @@ function AuthContent({ children }: AuthWrapperProps) {
     };
 
     initializeDID();
-  }, [isAuthenticated, accountId, prfAvailable, status, email]);
+  }, [isAuthenticated, accountId, prfAvailable, status]);
 
   // Get display status
   const getStatusMessage = () => {

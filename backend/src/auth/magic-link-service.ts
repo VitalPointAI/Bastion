@@ -170,6 +170,7 @@ export class MagicLinkService {
     // Non-recovery or no TOTP: create full session
     const sessionResult = await this.sessionStore.createSession({
       userId: user.id,
+      email: user.email,
       nearAccountId: user.nearAccountId,
       prfAvailable: false // magic link doesn't provide PRF
     });
@@ -204,6 +205,7 @@ export class MagicLinkService {
     // For now, we'll create a normal session but document that it should be verified
     const sessionResult = await this.sessionStore.createSession({
       userId: user.id,
+      email: user.email,
       nearAccountId: user.nearAccountId,
       prfAvailable: false // No PRF during recovery
     });

@@ -89,6 +89,7 @@ export class SessionStore {
     return {
       id: sessionId,
       userId: input.userId,
+      email: input.email,
       accountId: input.nearAccountId,
       prfAvailable: input.prfAvailable,
       createdAt: now,
@@ -107,13 +108,16 @@ export class SessionStore {
     await this.ensureInitialized();
     const pool = getPool();
 
+    // Join with auth_users to get email for display
     const result = await pool.query(
       `
       SELECT
-        id, user_id, account_id, prf_available,
-        created_at, expires_at, last_activity_at, ip_address, user_agent
-      FROM user_sessions
-      WHERE id = $1 AND expires_at > NOW()
+        s.id, s.user_id, s.account_id, s.prf_available,
+        s.created_at, s.expires_at, s.last_activity_at, s.ip_address, s.user_agent,
+        u.email
+      FROM user_sessions s
+      LEFT JOIN auth_users u ON s.user_id = u.id
+      WHERE s.id = $1 AND s.expires_at > NOW()
     `,
       [sessionId]
     );
@@ -124,6 +128,7 @@ export class SessionStore {
     return {
       id: row.id,
       userId: row.user_id,
+      email: row.email,
       accountId: row.account_id,
       prfAvailable: row.prf_available,
       createdAt: row.created_at,

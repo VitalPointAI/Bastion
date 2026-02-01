@@ -71,7 +71,7 @@ export class PasskeyService {
     if (!isRecovery) {
       const existingCreds = await this.passkeyStore.findByUserId(user.id);
       excludeCredentials = existingCreds.map(cred => ({
-        id: isoBase64URL.fromBuffer(cred.credentialId),
+        id: isoBase64URL.fromBuffer(new Uint8Array(cred.credentialId)),
         transports: cred.transports as AuthenticatorTransportFuture[]
       }));
     } else {
@@ -94,9 +94,10 @@ export class PasskeyService {
       },
       excludeCredentials,
       // Request PRF extension for DID secret derivation (separate from NEAR)
+      // PRF extension not yet in standard types, use type assertion
       extensions: {
         prf: {}
-      }
+      } as Record<string, unknown>
     });
 
     // Store challenge with user ID
@@ -151,8 +152,10 @@ export class PasskeyService {
 
     const { credential } = verification.registrationInfo;
 
-    // Check PRF support
-    const prfSupported = response.clientExtensionResults?.prf?.enabled === true;
+    // Check PRF support (PRF extension not in standard types yet)
+    const clientExtResults = response.clientExtensionResults as Record<string, unknown> | undefined;
+    const prfResult = clientExtResults?.prf as { enabled?: boolean } | undefined;
+    const prfSupported = prfResult?.enabled === true;
 
     // Store credential - NOTE: no nearImplicitAccountId, passkey is auth only
     const input: CreatePasskeyInput = {
@@ -160,7 +163,8 @@ export class PasskeyService {
       credentialId: Buffer.from(credential.id),
       publicKey: Buffer.from(credential.publicKey),
       counter: BigInt(credential.counter),
-      transports: response.response.transports || [],
+      // Cast transports to compatible type (AuthenticatorTransportFuture includes newer values)
+      transports: (response.response.transports || []) as import('@simplewebauthn/server').AuthenticatorTransport[],
       prfSupported
       // NO nearImplicitAccountId - passkey doesn't derive NEAR account
     };
@@ -199,7 +203,7 @@ export class PasskeyService {
         userId = user.id;
         const creds = await this.passkeyStore.findByUserId(user.id);
         allowCredentials = creds.map(cred => ({
-          id: isoBase64URL.fromBuffer(cred.credentialId),
+          id: isoBase64URL.fromBuffer(new Uint8Array(cred.credentialId)),
           transports: cred.transports as AuthenticatorTransportFuture[]
         }));
       }
@@ -211,6 +215,7 @@ export class PasskeyService {
       allowCredentials,
       timeout: 60000,
       // Request PRF evaluation for DID secret derivation
+      // PRF extension not yet in standard types, use type assertion
       extensions: {
         prf: {
           eval: {
@@ -218,7 +223,7 @@ export class PasskeyService {
             first: new TextEncoder().encode(`bastion-did-v1:${RP_ID}`)
           }
         }
-      }
+      } as Record<string, unknown>
     });
 
     const challengeId = randomUUID();
@@ -269,7 +274,7 @@ export class PasskeyService {
       expectedOrigin: ORIGIN,
       expectedRPID: RP_ID,
       credential: {
-        id: isoBase64URL.fromBuffer(credential.credentialId),
+        id: isoBase64URL.fromBuffer(new Uint8Array(credential.credentialId)),
         publicKey: new Uint8Array(credential.publicKey),
         counter: Number(credential.counter),
         transports: credential.transports as AuthenticatorTransportFuture[]
@@ -288,11 +293,14 @@ export class PasskeyService {
     await this.passkeyStore.updateLastUsed(credential.id);
 
     // Extract PRF output if available (for DID operations)
+    // PRF extension not yet in standard types, use type assertion
     let prfOutput: Uint8Array | null = null;
-    const prfResult = response.clientExtensionResults?.prf?.results?.first;
+    const clientExtResults = response.clientExtensionResults as Record<string, unknown> | undefined;
+    const prfExtResult = clientExtResults?.prf as { results?: { first?: string } } | undefined;
+    const prfResultValue = prfExtResult?.results?.first;
 
-    if (prfResult) {
-      prfOutput = new Uint8Array(isoBase64URL.toBuffer(prfResult));
+    if (prfResultValue) {
+      prfOutput = new Uint8Array(isoBase64URL.toBuffer(prfResultValue));
     }
 
     // Get user to retrieve their NEAR account ID
@@ -313,6 +321,7 @@ export class PasskeyService {
     // Create session
     const session = await this.sessionStore.createSession({
       userId: credential.userId,
+      email: user.email,
       nearAccountId: nearAccountId,
       prfAvailable: prfOutput !== null
     });
