@@ -12,6 +12,7 @@ None
 
 - [x] **Phase 1: Foundation & Infrastructure** - Establish NEAR blockchain integration, Phala TEE, core smart contracts, containerized architecture
 - [ ] **Phase 1.1: Calimero Self-Sovereign App Integration** - Research Calimero for DAO compartmentalization, replace Privy with NEAR accounts + MPC (INSERTED)
+- [ ] **Phase 1.2: Passkey Authentication & NEAR Implicit Accounts** - Replace Privy with passkey/magic link/recovery + NEAR implicit accounts (INSERTED)
 - [x] **Phase 2: Identity & Security Framework** - Implement DID system, ABAC, post-quantum cryptography, zero trust architecture
 - [x] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
 - [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
@@ -75,6 +76,33 @@ This urgent insertion addresses a fundamental architecture concern: moving from 
 
 Plans:
 - [ ] TBD (run /gsd:research-phase 1.1 to investigate)
+
+### Phase 1.2: Passkey Authentication & NEAR Implicit Accounts (INSERTED)
+**Goal:** Replace Privy.io authentication with passkey/magic link/recovery patterns and NEAR implicit account identity while preserving DID framework compatibility via PRF extension
+**Depends on:** Phase 1.1
+**Research:** Complete (1.2-RESEARCH.md)
+**Research topics:** WebAuthn passkey integration with NEAR implicit accounts, magic link token generation with NEAR account creation, account recovery with NEAR key rotation, session management migration from Privy, NEAR implicit account derivation from passkey public key, PRF extension for DID secret derivation
+**Plans:** 6 plans
+
+**Context:**
+This phase eliminates Privy.io dependency by implementing:
+1. **Passkey Authentication (WebAuthn)** - @simplewebauthn/server, discoverable credentials, PRF extension for DID integration
+2. **Magic Link Authentication** - 32-byte tokens, 15-minute expiry, one-time use, SendGrid integration
+3. **Account Recovery** - email verification + passkey re-registration flow
+4. **NEAR Implicit Accounts** - derive account ID from passkey public key via SHA3-256
+5. **PRF-DID Integration** - PRF output replaces NEAR-private-key-derived userSecret for existing DID system
+6. **Migration Flow** - Existing Privy users migrate DIDs via decrypt-reencrypt pattern
+
+**Critical Architecture Decision:**
+PRF extension output serves as the `userSecret` input to existing HKDF-based DID derivation. No changes needed to DID encryption/blinding logic - only userSecret source changes.
+
+Plans:
+- [ ] 1.2-01-PLAN.md — Database foundation and auth stores (passkey, session, magic link)
+- [ ] 1.2-02-PLAN.md — Passkey registration and NEAR implicit account derivation
+- [ ] 1.2-03-PLAN.md — Magic link fallback for PRF-unsupported browsers
+- [ ] 1.2-04-PLAN.md — PRF-to-DID integration (critical for DID compatibility)
+- [ ] 1.2-05-PLAN.md — Frontend components replacing Privy
+- [ ] 1.2-06-PLAN.md — Migration flow for existing Privy users
 
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
@@ -588,6 +616,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Infrastructure | 8/8 | Complete | 2026-01-13 |
+| 1.1 Calimero Self-Sovereign App | 0/TBD | Not started | - |
+| 1.2 Passkey + NEAR Implicit Auth | 0/6 | Planning Complete | - |
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
