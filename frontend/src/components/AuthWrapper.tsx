@@ -7,6 +7,7 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, AuthProvider } from '../hooks/useAuth';
 import { UserProvider } from '../context/UserContext';
 import { MigrationFlow } from './MigrationFlow';
@@ -20,11 +21,17 @@ interface AuthWrapperProps {
 
 function AuthContent({ children }: AuthWrapperProps) {
   const { isLoading, isAuthenticated, accountId, prfAvailable } = useAuth();
+  const location = useLocation();
   const [status, setStatus] = useState<'idle' | 'creating-did' | 'ready' | 'error'>('idle');
   const [userDID, setUserDID] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [migrationEmail, setMigrationEmail] = useState<string>('');
+
+  // Redirect to login if not authenticated and not loading
+  if (!isLoading && !isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   // Check for migration needs
   useEffect(() => {
