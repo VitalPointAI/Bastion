@@ -38,8 +38,9 @@ export async function registerPasskey(
     // Start WebAuthn registration ceremony
     const credential = await startRegistration({ optionsJSON: options });
 
-    // Check PRF support
-    const prfEnabled = credential.clientExtensionResults?.prf?.enabled;
+    // Check PRF support (PRF extension not in all TypeScript defs)
+    const extResults = credential.clientExtensionResults as Record<string, unknown>;
+    const prfEnabled = (extResults?.prf as { enabled?: boolean })?.enabled;
     console.log('Passkey registered, PRF support:', prfEnabled);
 
     // Verify with backend
@@ -73,8 +74,9 @@ export async function authenticateWithPasskey(
     // Start WebAuthn authentication ceremony
     const credential = await startAuthentication({ optionsJSON: options });
 
-    // Extract PRF output if available
-    const prfOutput = credential.clientExtensionResults?.prf?.results?.first;
+    // Extract PRF output if available (PRF extension not in all TypeScript defs)
+    const extResults = credential.clientExtensionResults as Record<string, unknown>;
+    const prfOutput = (extResults?.prf as { results?: { first?: ArrayBuffer } })?.results?.first;
 
     // Verify with backend
     const result = await authService.verifyAuthentication(challengeId, credential);
@@ -82,11 +84,21 @@ export async function authenticateWithPasskey(
     // Store session
     authService.setSession(result.sessionToken);
 
+    // Convert PRF ArrayBuffer to base64url string if present
+    let prfOutputString: string | undefined;
+    if (prfOutput) {
+      const bytes = new Uint8Array(prfOutput);
+      prfOutputString = btoa(String.fromCharCode(...bytes))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    }
+
     return {
       success: true,
       accountId: result.accountId,
       prfAvailable: result.prfAvailable,
-      prfOutput: prfOutput || undefined
+      prfOutput: prfOutputString
     };
   } catch (error) {
     console.error('Passkey authentication failed:', error);
@@ -123,7 +135,8 @@ export async function isConditionalMediationSupported(): Promise<boolean> {
   }
 
   try {
-    // @ts-expect-error - isConditionalMediationAvailable not in all TS types yet
+    // isConditionalMediationAvailable is a newer API not in all TypeScript defs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const available = await PublicKeyCredential.isConditionalMediationAvailable?.();
     return available ?? false;
   } catch {
