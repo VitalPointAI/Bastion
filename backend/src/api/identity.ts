@@ -2,6 +2,11 @@ import { Router, Request, Response } from 'express';
 import { getDIDService } from '../identity/did-service.js';
 import { EntityType } from '../identity/types.js';
 import { hexToBlindedKey, blindedKeyToHex, deriveDIDBlindedKey } from '../identity/blinded-keys.js';
+import {
+  createDIDFromPRF,
+  resolveDIDFromPRF,
+  normalizePRFOutput
+} from '../auth/prf-did-integration.js';
 
 const router = Router();
 const didService = getDIDService();
@@ -150,6 +155,133 @@ router.get('/entity-types', (_req: Request, res: Response) => {
       Resource: 'Other trackable resources'
     }
   });
+});
+
+// ============================================================================
+// PRF-BASED DID ENDPOINTS (passkey authentication)
+// These endpoints use WebAuthn PRF extension output for DID operations
+// ============================================================================
+
+/**
+ * POST /api/identity/register-prf
+ * Register DID using PRF-derived secret
+ *
+ * This endpoint is used after passkey authentication with PRF support.
+ * The PRF secret is passed from the frontend after successful passkey auth.
+ *
+ * Body: {
+ *   accountId: string,           // NEAR implicit account ID
+ *   prfSecret: string,           // Base64url-encoded PRF output
+ *   publicKeyBase58: string,     // Public key for DID document
+ *   entityType?: string          // Optional entity type
+ * }
+ *
+ * Response: {
+ *   did: string,
+ *   blindedKey: string
+ * }
+ */
+router.post('/register-prf', async (req, res) => {
+  try {
+    const { accountId, prfSecret, publicKeyBase58, entityType } = req.body;
+
+    // Validate required fields
+    if (!accountId || !prfSecret || !publicKeyBase58) {
+      return res.status(400).json({
+        error: 'Missing required fields: accountId, prfSecret, publicKeyBase58'
+      });
+    }
+
+    // Normalize PRF secret
+    let normalizedSecret: Uint8Array;
+    try {
+      normalizedSecret = normalizePRFOutput(prfSecret);
+    } catch (e) {
+      return res.status(400).json({
+        error: 'Invalid PRF secret format'
+      });
+    }
+
+    // Validate PRF secret length
+    if (normalizedSecret.length !== 32) {
+      return res.status(400).json({
+        error: `Invalid PRF secret length: expected 32, got ${normalizedSecret.length}`
+      });
+    }
+
+    // Validate entity type
+    const validEntityTypes = ['Human', 'Organization', 'Device', 'AI_Agent'];
+    const validatedEntityType = entityType && validEntityTypes.includes(entityType)
+      ? entityType as 'Human' | 'Organization' | 'Device' | 'AI_Agent'
+      : 'Human';
+
+    // Create DID using PRF-derived secret
+    const result = await createDIDFromPRF(
+      accountId,
+      normalizedSecret,
+      publicKeyBase58,
+      validatedEntityType
+    );
+
+    res.json({
+      did: result.did,
+      blindedKey: result.blindedKey,
+      entityType: validatedEntityType
+    });
+  } catch (error) {
+    console.error('PRF DID registration error:', error);
+    res.status(500).json({
+      error: 'Failed to register DID',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/identity/resolve-prf
+ * Resolve DID using PRF-derived secret
+ *
+ * Body: {
+ *   accountId: string,
+ *   prfSecret: string     // Base64url-encoded PRF output
+ * }
+ *
+ * Response: {
+ *   didDocument: DIDDocument | null,
+ *   found: boolean
+ * }
+ */
+router.post('/resolve-prf', async (req, res) => {
+  try {
+    const { accountId, prfSecret } = req.body;
+
+    if (!accountId || !prfSecret) {
+      return res.status(400).json({
+        error: 'Missing required fields: accountId, prfSecret'
+      });
+    }
+
+    const normalizedSecret = normalizePRFOutput(prfSecret);
+
+    if (normalizedSecret.length !== 32) {
+      return res.status(400).json({
+        error: 'Invalid PRF secret length'
+      });
+    }
+
+    const document = await resolveDIDFromPRF(accountId, normalizedSecret);
+
+    res.json({
+      didDocument: document,
+      found: document !== null
+    });
+  } catch (error) {
+    console.error('PRF DID resolution error:', error);
+    res.status(500).json({
+      error: 'Failed to resolve DID',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 // ============================================================================
