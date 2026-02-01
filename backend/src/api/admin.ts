@@ -19,6 +19,7 @@ import {
   OSINTSourceConfigInputSchema,
   OSINTSourceConfigUpdateSchema,
 } from '../strategic/config/index.js';
+import { getPlatformSettingsStore } from '../auth/platform-settings-store.js';
 import { getAgentRegistry } from '../agents/registry.js';
 import { AgentDefinitionSchema } from '../agents/definition-schema.js';
 import { createAgentDID } from '../agents/agent-did.js';
@@ -607,6 +608,95 @@ router.post('/cache/invalidate', async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Invalidate cache failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// Email Domain Restriction Endpoints
+// ============================================================================
+
+/**
+ * GET /api/admin/config/email-domains - Get allowed email domains for registration
+ */
+router.get('/config/email-domains', async (req: Request, res: Response) => {
+  try {
+    const platformSettings = getPlatformSettingsStore();
+    const domains = await platformSettings.getAllowedEmailDomains();
+
+    res.json({
+      domains,
+      restricted: domains.length > 0,
+      message: domains.length > 0
+        ? `Registration restricted to ${domains.length} domain(s)`
+        : 'No domain restriction (all domains allowed)',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get email domains failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * PUT /api/admin/config/email-domains - Set allowed email domains for registration
+ * Body: { domains: ["example.com", "company.org"] }
+ */
+router.put('/config/email-domains', async (req: Request, res: Response) => {
+  try {
+    const { domains } = req.body;
+
+    if (!Array.isArray(domains)) {
+      res.status(400).json({ error: 'domains must be an array of strings' });
+      return;
+    }
+
+    // Validate domain format
+    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*(\.[a-zA-Z0-9][a-zA-Z0-9-]*)+$/;
+    const invalidDomains = domains.filter(d => typeof d !== 'string' || !domainRegex.test(d.trim()));
+
+    if (invalidDomains.length > 0) {
+      res.status(400).json({
+        error: 'Invalid domain format',
+        invalidDomains,
+      });
+      return;
+    }
+
+    const platformSettings = getPlatformSettingsStore();
+    await platformSettings.setAllowedEmailDomains(domains);
+
+    const updated = await platformSettings.getAllowedEmailDomains();
+    res.json({
+      domains: updated,
+      restricted: updated.length > 0,
+      message: updated.length > 0
+        ? `Registration now restricted to ${updated.length} domain(s)`
+        : 'Domain restriction cleared',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Set email domains failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * DELETE /api/admin/config/email-domains - Clear domain restriction (allow all)
+ */
+router.delete('/config/email-domains', async (req: Request, res: Response) => {
+  try {
+    const platformSettings = getPlatformSettingsStore();
+    await platformSettings.setAllowedEmailDomains([]);
+
+    res.json({
+      domains: [],
+      restricted: false,
+      message: 'Domain restriction cleared - all domains now allowed',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Clear email domains failed:', message);
     res.status(500).json({ error: message });
   }
 });
