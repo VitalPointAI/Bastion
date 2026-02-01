@@ -115,8 +115,9 @@ function AuthContent({ children }: AuthWrapperProps) {
 
   // Get display status
   const getStatusMessage = () => {
-    if (isLoading) {
-      return 'Loading...';
+    // Don't show overlay during initial auth check - let redirect happen cleanly
+    if (isLoading || !isAuthenticated) {
+      return null;
     }
     switch (status) {
       case 'creating-did':
