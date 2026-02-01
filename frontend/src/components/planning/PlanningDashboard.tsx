@@ -366,6 +366,11 @@ export function PlanningDashboard({ missionId, userDID }: PlanningDashboardProps
                   </span>
                 </div>
               )}
+
+              {/* Step content area */}
+              <div className="step-content">
+                {renderStepContent()}
+              </div>
             </>
           ) : (
             <div className="no-plan-selected">
