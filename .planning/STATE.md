@@ -11,26 +11,26 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 1.2 of 13+ (Passkey Authentication & NEAR Implicit Accounts) — IN PROGRESS
-Plan: 2 of 6+ in current phase
+Plan: 3 of 6+ in current phase
 Status: In Progress
-Last activity: 2026-02-01 — Completed 1.2-02-PLAN.md (Passkey registration & authentication)
+Last activity: 2026-02-01 — Completed 1.2-03-PLAN.md (Multi-factor recovery with Email + TOTP)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
-Progress: ██████░░░░░░░░░░ 33% (2/6 plans complete in phase 1.2)
+Progress: ████████░░░░░░░░ 50% (3/6 plans complete in phase 1.2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 82
+- Total plans completed: 83
 - Average duration: 11 min
-- Total execution time: 14.41 hours
+- Total execution time: 14.51 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
-| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 2 | 15 min | 8 min |
+| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 3 | 21 min | 7 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
@@ -42,8 +42,8 @@ Progress: ██████░░░░░░░░░░ 33% (2/6 plans comple
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 4 min, 3 min, 10 min, 5 min
-- Trend: Phase 1.2 progressing - Passkey auth with MPC NEAR accounts
+- Last 5 plans: 3 min, 10 min, 5 min, 6 min
+- Trend: Phase 1.2 progressing - Multi-factor recovery with TOTP
 
 ## Accumulated Context
 
@@ -540,6 +540,14 @@ None.
 - Magic link as PRF fallback: Email-based authentication when PRF extension unavailable
 - Session sliding window: 7-day expiration extends at 50% lifetime for active users
 - Deployment environment config: public/enterprise/classified with different auth requirements
+
+**Phase 1.2 Plan 3 (Multi-Factor Recovery):**
+- RFC 6238 TOTP implementation: From-scratch implementation using Node.js crypto for full control and no external dependencies
+- Magic link multi-purpose: Same mechanism serves PRF fallback and recovery email verification (isRecovery flag differentiates)
+- Multi-factor recovery required: Email + TOTP mandatory (if user has TOTP enabled) to prevent email compromise attacks
+- Deployment-configurable 2FA: PlatformSettingsStore controls allowed second factors (public: TOTP, enterprise: TOTP+hardware, classified: hardware+CAC/PIV)
+- Recovery token pattern: Separate token after TOTP verification authorizes passkey replacement (15-minute TTL, one-time use)
+- UUID-based MPC preservation: Passkey deletion doesn't affect NEAR account (MPC derives same key from same UUID)
 
 **Phase 4.4 Plan 5 (Command Visualization):**
 - Milsymbol for rendering military unit symbols via SIDC codes
