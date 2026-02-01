@@ -11,26 +11,26 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 1.2 of 13+ (Passkey Authentication & NEAR Implicit Accounts) — IN PROGRESS
-Plan: 3 of 6+ in current phase
+Plan: 4 of 6+ in current phase
 Status: In Progress
-Last activity: 2026-02-01 — Completed 1.2-03-PLAN.md (Multi-factor recovery with Email + TOTP)
+Last activity: 2026-02-01 — Completed 1.2-04-PLAN.md (PRF-DID Integration)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
-Progress: ████████░░░░░░░░ 50% (3/6 plans complete in phase 1.2)
+Progress: ███████████░░░░░ 67% (4/6 plans complete in phase 1.2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 83
+- Total plans completed: 84
 - Average duration: 11 min
-- Total execution time: 14.51 hours
+- Total execution time: 14.54 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
-| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 3 | 21 min | 7 min |
+| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 4 | 23 min | 6 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
@@ -42,8 +42,8 @@ Progress: ████████░░░░░░░░ 50% (3/6 plans comple
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 3 min, 10 min, 5 min, 6 min
-- Trend: Phase 1.2 progressing - Multi-factor recovery with TOTP
+- Last 5 plans: 10 min, 5 min, 6 min, 7 min, 2 min
+- Trend: Phase 1.2 progressing - PRF-DID integration complete
 
 ## Accumulated Context
 
@@ -549,6 +549,13 @@ None.
 - Recovery token pattern: Separate token after TOTP verification authorizes passkey replacement (15-minute TTL, one-time use)
 - UUID-based MPC preservation: Passkey deletion doesn't affect NEAR account (MPC derives same key from same UUID)
 
+**Phase 1.2 Plan 4 (PRF-DID Integration):**
+- PRF output used directly as userSecret: No additional derivation needed - PRF provides 32 bytes of deterministic cryptographic material
+- Backward compatibility maintained: Existing DID encryption/blinding logic unchanged - works with any 32-byte userSecret source
+- PRF normalization layer: Handles Uint8Array, ArrayBuffer, base64url formats from different browsers
+- Separate PRF endpoints: /register-prf and /resolve-prf for clear passkey-native API contract
+- derivePRFUserSecret optional: Additional domain separation available but not required for most use cases
+
 **Phase 4.4 Plan 5 (Command Visualization):**
 - Milsymbol for rendering military unit symbols via SIDC codes
 - Dual view strategy: tree view for hierarchy, matrix view for comprehensive relationship overview
@@ -666,7 +673,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-01 15:22:05Z
-Stopped at: Completed 1.2-01-PLAN.md (Auth data foundation)
+Last session: 2026-02-01 15:38:38Z
+Stopped at: Completed 1.2-04-PLAN.md (PRF-DID Integration)
 Resume file: None
-Next action: Phase 1.2 Plan 02 - Passkey registration and authentication flows with WebAuthn ceremony implementation.
+Next action: Phase 1.2 Plan 05 - Frontend passkey integration with WebAuthn UI components.
