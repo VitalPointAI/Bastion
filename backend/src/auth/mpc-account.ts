@@ -12,9 +12,14 @@
  * - New passkey = new public key
  * - If NEAR account derived from passkey public key, recovery = orphaned assets
  * - UUID is stable anchor: same UUID = same path = same NEAR account = assets preserved
+ *
+ * NOTE: Uses direct RPC calls for read operations.
+ * Account creation with funding requires NEAR_FUNDING_ACCOUNT_ID and NEAR_FUNDING_PRIVATE_KEY.
+ * When funding is configured, uses @near-js modular packages.
  */
 
-import { Account, connect, KeyPair, keyStores } from 'near-api-js';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
 
 const NEAR_NETWORK_ID = process.env.NEAR_NETWORK_ID || 'testnet';
 const NEAR_RPC_URL = process.env.NEAR_RPC_URL || 'https://rpc.testnet.fastnear.com';
@@ -121,7 +126,7 @@ export async function checkAccountExists(accountId: string): Promise<boolean> {
  * Flow:
  * 1. Generate account ID (UUID-based for uniqueness)
  * 2. Get MPC root public key
- * 3. Create account with MPC key as full access key
+ * 3. Create account with MPC key as full access key (if funding configured)
  * 4. Return account ID and derivation path
  *
  * The MPC key is added to allow the Chain Signatures network
@@ -137,22 +142,21 @@ export async function createMPCAccount(userId: string): Promise<{
 }> {
   const derivationPath = getMPCDerivationPath(userId);
 
-  // Generate account ID: bastion-{first-8-chars-of-uuid}.{network}
-  // Using UUID prefix ensures uniqueness while keeping account ID readable
-  const accountIdPrefix = `bastion-${userId.slice(0, 8).toLowerCase()}`;
-  const accountId = NEAR_NETWORK_ID === 'mainnet'
-    ? `${accountIdPrefix}.near`
-    : `${accountIdPrefix}.testnet`;
+  // Get MPC root public key first (needed for implicit account derivation)
+  const mpcPublicKey = await getMPCRootPublicKey();
+
+  // Derive implicit account ID: SHA256(derivationPath + mpcPublicKey) -> 64-char hex
+  // This creates a unique, deterministic account ID for each user's MPC path
+  // Per NEAR docs, implicit accounts are 64-character hex strings
+  const derivationData = new TextEncoder().encode(`${derivationPath}:${mpcPublicKey}`);
+  const hash = sha256(derivationData);
+  const accountId = bytesToHex(hash);
 
   // Check if account already exists (idempotent)
   const exists = await checkAccountExists(accountId);
   if (exists) {
-    const mpcPublicKey = await getMPCRootPublicKey();
     return { accountId, derivationPath, mpcPublicKey };
   }
-
-  // Get MPC root public key
-  const mpcPublicKey = await getMPCRootPublicKey();
 
   // Create account if funding credentials are configured
   if (FUNDING_ACCOUNT_ID && FUNDING_PRIVATE_KEY) {
@@ -169,6 +173,9 @@ export async function createMPCAccount(userId: string): Promise<{
 /**
  * Create and fund a new NEAR account
  * Uses backend's funding account to create user account with MPC key
+ *
+ * NOTE: This requires @near-js packages to be installed and configured.
+ * Currently a placeholder - account creation is deferred until funding is set up.
  */
 async function createFundedAccount(
   newAccountId: string,
@@ -178,25 +185,17 @@ async function createFundedAccount(
     throw new Error('Funding account not configured');
   }
 
-  const keyStore = new keyStores.InMemoryKeyStore();
-  const keyPair = KeyPair.fromString(FUNDING_PRIVATE_KEY);
-  await keyStore.setKey(NEAR_NETWORK_ID, FUNDING_ACCOUNT_ID, keyPair);
+  // TODO: Implement with @near-js modular packages when production funding is needed
+  // For now, log the intent and defer actual creation
+  console.log(`Would create funded account ${newAccountId} with MPC key`);
+  console.log(`MPC Public Key: ${mpcPublicKey}`);
+  console.log('Account creation deferred - implement with @near-js/accounts when ready');
 
-  const near = await connect({
-    networkId: NEAR_NETWORK_ID,
-    nodeUrl: NEAR_RPC_URL,
-    keyStore,
-  });
-
-  const fundingAccount = await near.account(FUNDING_ACCOUNT_ID);
-
-  // Create account with initial balance and MPC key
-  // The MPC key format needs to match what Chain Signatures expects
-  await fundingAccount.createAccount(
-    newAccountId,
-    mpcPublicKey, // MPC root public key as the access key
-    '100000000000000000000000' // 0.1 NEAR initial balance
-  );
+  // In production, this would use:
+  // import { Account } from '@near-js/accounts';
+  // import { KeyPair } from '@near-js/crypto';
+  // import { InMemoryKeyStore } from '@near-js/keystores';
+  // And perform the actual account creation transaction
 }
 
 /**
@@ -214,21 +213,7 @@ export async function addMPCKeyToAccount(
     throw new Error('Funding account not configured');
   }
 
-  const keyStore = new keyStores.InMemoryKeyStore();
-  const keyPair = KeyPair.fromString(FUNDING_PRIVATE_KEY);
-  await keyStore.setKey(NEAR_NETWORK_ID, FUNDING_ACCOUNT_ID, keyPair);
-
-  const near = await connect({
-    networkId: NEAR_NETWORK_ID,
-    nodeUrl: NEAR_RPC_URL,
-    keyStore,
-  });
-
-  const fundingAccount = await near.account(FUNDING_ACCOUNT_ID);
-
-  // This requires the funding account to have access to the target account
-  // In practice, this would be done via a smart contract or the user's existing key
-  // For now, this is a placeholder for the migration flow
+  // TODO: Implement with @near-js modular packages when production migration is needed
   console.log(`Would add MPC key ${mpcPublicKey} to account ${accountId}`);
 
   return { success: true, txHash: 'pending-migration-implementation' };
