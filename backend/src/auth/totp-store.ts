@@ -11,9 +11,9 @@
  */
 
 import { randomBytes } from 'crypto';
-import { gcm } from '@noble/ciphers/aes';
-import { utf8ToBytes, bytesToUtf8 } from '@noble/ciphers/utils';
-import { authenticator } from 'otplib';
+import { gcm } from '@noble/ciphers/aes.js';
+import { utf8ToBytes, bytesToUtf8 } from '@noble/ciphers/utils.js';
+import { generateSecret, verify } from 'otplib';
 import { getPool } from '../lib/database.js';
 import type { TotpCredential } from './types.js';
 
@@ -124,7 +124,7 @@ export class TotpStore {
     const pool = getPool();
 
     // Generate TOTP secret (base32 encoded)
-    const secret = authenticator.generateSecret();
+    const secret = generateSecret();
 
     // Encrypt secret
     const { encrypted, nonce } = encryptSecret(secret);
@@ -157,7 +157,7 @@ export class TotpStore {
    * Verify TOTP code for user
    *
    * @param userId - User UUID
-   * @param token - 6-digit TOTP code from authenticator app
+   * @param token - 6-digit TOTP code from TOTP app
    * @returns true if valid, false otherwise
    */
   async verifyToken(userId: string, token: string): Promise<boolean> {
@@ -184,9 +184,9 @@ export class TotpStore {
     );
 
     // Verify token with 30-second window
-    const isValid = authenticator.verify({ token, secret });
+    const verifyResult = await verify({ token, secret });
 
-    if (isValid) {
+    if (verifyResult.valid) {
       // Update last_used_at
       await pool.query(
         `
@@ -198,7 +198,7 @@ export class TotpStore {
       );
     }
 
-    return isValid;
+    return verifyResult.valid;
   }
 
   /**

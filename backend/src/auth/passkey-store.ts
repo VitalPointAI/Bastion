@@ -12,7 +12,7 @@
 
 import { getPool } from '../lib/database.js';
 import type { PasskeyCredential } from './types.js';
-import type { AuthenticatorTransportFuture } from '@simplewebauthn/server/script/deps.js';
+import type { AuthenticatorTransport } from '@simplewebauthn/server';
 
 /**
  * Initialize passkey credentials table
@@ -67,7 +67,7 @@ export class PasskeyStore {
     credentialId: Buffer,
     publicKey: Buffer,
     counter: bigint,
-    transports: AuthenticatorTransportFuture[],
+    transports: AuthenticatorTransport[],
     prfSupported: boolean
   ): Promise<PasskeyCredential> {
     await this.ensureInitialized();

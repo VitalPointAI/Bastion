@@ -9,7 +9,7 @@
  * - NEAR accounts created via Chain Signatures MPC with stable UUID-based path
  */
 
-import type { AuthenticatorTransportFuture } from '@simplewebauthn/server/script/deps.js';
+import type { AuthenticatorTransport } from '@simplewebauthn/server';
 
 /**
  * Passkey credential stored per user
@@ -24,7 +24,7 @@ export interface PasskeyCredential {
   credentialId: Buffer; // WebAuthn credential ID (unique identifier)
   publicKey: Buffer; // COSE public key bytes
   counter: bigint; // Signature counter for replay protection
-  transports: AuthenticatorTransportFuture[]; // usb, nfc, ble, hybrid, internal
+  transports: AuthenticatorTransport[]; // usb, nfc, ble, hybrid, internal
   prfSupported: boolean; // Can this credential derive PRF secrets for DID?
   createdAt: Date;
   lastUsedAt?: Date;
