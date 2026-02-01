@@ -219,8 +219,8 @@ export class PasskeyService {
       extensions: {
         prf: {
           eval: {
-            // Use RP ID as salt for deterministic derivation
-            first: new TextEncoder().encode(`bastion-did-v1:${RP_ID}`)
+            // Must be base64url string - Uint8Array won't survive JSON serialization
+            first: isoBase64URL.fromBuffer(new TextEncoder().encode(`bastion-did-v1:${RP_ID}`))
           }
         }
       } as Record<string, unknown>
