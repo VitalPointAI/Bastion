@@ -2,12 +2,14 @@
  * AuthWrapper - Authentication wrapper using passkey/magic link auth
  *
  * Replaces the previous Privy-based AuthWrapper.
+ * Includes migration check for security upgrades.
  */
 
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { useAuth, AuthProvider } from '../hooks/useAuth';
 import { UserProvider } from '../context/UserContext';
+import { MigrationFlow } from './MigrationFlow';
 import { hasUserDID, buildDID, emitEntityRegistered } from '../lib/identity';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
@@ -21,6 +23,32 @@ function AuthContent({ children }: AuthWrapperProps) {
   const [status, setStatus] = useState<'idle' | 'creating-did' | 'ready' | 'error'>('idle');
   const [userDID, setUserDID] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const [needsMigration, setNeedsMigration] = useState(false);
+  const [migrationEmail, setMigrationEmail] = useState<string>('');
+
+  // Check for migration needs
+  useEffect(() => {
+    const checkMigration = async () => {
+      if (!isAuthenticated || !accountId) return;
+
+      try {
+        // Check if user needs migration (backend will determine this)
+        const response = await fetch(`${BACKEND_URL}/api/auth/migration-status?accountId=${encodeURIComponent(accountId)}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.needsMigration) {
+            setNeedsMigration(true);
+            setMigrationEmail(data.email || accountId);
+          }
+        }
+      } catch (error) {
+        console.log('Migration check skipped:', error);
+        // Don't block on migration check failure
+      }
+    };
+
+    checkMigration();
+  }, [isAuthenticated, accountId]);
 
   // Initialize DID after authentication
   useEffect(() => {
@@ -42,7 +70,7 @@ function AuthContent({ children }: AuthWrapperProps) {
         if (!hasDID && prfAvailable) {
           // Create DID using PRF-derived secret
           // Note: PRF secret is extracted during authentication and passed to backend
-          console.log('🆔 Creating DID for new user...');
+          console.log('Creating DID for new user...');
 
           const didResponse = await fetch(`${BACKEND_URL}/api/identity/register`, {
             method: 'POST',
@@ -54,24 +82,24 @@ function AuthContent({ children }: AuthWrapperProps) {
           });
 
           if (didResponse.ok) {
-            console.log('✅ DID created:', didValue);
+            console.log('DID created:', didValue);
             setUserDID(didValue);
             emitEntityRegistered({ entityType: 'Human', name: email || 'User' }, didValue);
           } else {
-            console.warn('⚠️ DID creation deferred - PRF required');
+            console.warn('DID creation deferred - PRF required');
           }
         } else if (hasDID) {
-          console.log('✅ DID exists:', didValue);
+          console.log('DID exists:', didValue);
           setUserDID(didValue);
         } else {
-          console.warn('⚠️ DID creation requires PRF - magic link auth has limited functionality');
+          console.warn('DID creation requires PRF - magic link auth has limited functionality');
         }
 
         setStatus('ready');
         console.log('====================================');
 
       } catch (error) {
-        console.error('❌ DID initialization failed:', error);
+        console.error('DID initialization failed:', error);
         setStatus('error');
       }
     };
@@ -104,6 +132,23 @@ function AuthContent({ children }: AuthWrapperProps) {
     mpcRegistered: true, // MPC IS used for NEAR accounts (UUID-based derivation)
     isAuthenticated,
   };
+
+  // Show migration flow if needed
+  if (needsMigration) {
+    return (
+      <UserProvider value={userContextValue}>
+        <MigrationFlow
+          email={migrationEmail}
+          onComplete={() => {
+            setNeedsMigration(false);
+            setStatus('idle'); // Re-trigger DID init after migration
+          }}
+          onSkip={() => setNeedsMigration(false)}
+          migrationType="security-upgrade"
+        />
+      </UserProvider>
+    );
+  }
 
   return (
     <UserProvider value={userContextValue}>
