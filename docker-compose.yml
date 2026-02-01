@@ -100,7 +100,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_BACKEND_URL=http://localhost:3001
+      - VITE_BACKEND_URL=http://backend:3001
     env_file:
       - ./frontend/.env.local
     depends_on:
@@ -111,6 +111,7 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
       - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
       # Exclude node_modules from mount
       - /app/node_modules
     networks:
