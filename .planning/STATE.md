@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 05 of 13+ (Operational Planning Module) — COMPLETE
-Plan: 14 of 14 in current phase (gap closure)
+Plan: 15 of 15 in current phase (gap closure)
 Status: Phase Complete (with gap closure)
-Last activity: 2026-01-31 — Completed 05-14-PLAN.md (CreatePlanModal gap closure)
+Last activity: 2026-01-31 — Completed 05-15-PLAN.md (Vite Docker proxy gap closure)
 
-Progress: ██████████ 100% (14/14 plans complete in phase 05)
+Progress: ██████████ 100% (15/15 plans complete in phase 05)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 78
+- Total plans completed: 79
 - Average duration: 11 min
-- Total execution time: 14.0 hours
+- Total execution time: 14.1 hours
 
 **By Phase:**
 
@@ -36,12 +36,12 @@ Progress: ██████████ 100% (14/14 plans complete in phase 05)
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
 | 4.3 (Strategic Intelligence Fusion) | 11 | 71 min | 6 min |
 | 4.4 (Mission Context & Force Onboarding) | 8 | 47 min | 6 min |
-| 05 (Operational Planning Module) | 14 | 64 min | 5 min |
+| 05 (Operational Planning Module) | 15 | 68 min | 5 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 4 min, 5 min, 3 min, 4 min, 4 min
-- Trend: Phase 05 gap closure complete — CreatePlanModal form for user input
+- Last 5 plans: 5 min, 3 min, 4 min, 4 min, 4 min
+- Trend: Phase 05 gap closure complete — Vite Docker proxy for container networking
 
 ## Accumulated Context
 
@@ -631,9 +631,15 @@ None.
 - Modal follows InviteModal.css patterns for consistent military-themed styling
 - Escape key and backdrop click close modal
 
+**Phase 05 Plan 15 (Vite Docker Proxy Gap Closure):**
+- Environment-aware Vite proxy using process.env.VITE_BACKEND_URL with localhost:3001 fallback
+- docker-compose sets VITE_BACKEND_URL=http://backend:3001 for container networking
+- Enables Planning Dashboard to load in Docker with correct API proxy
+- Local development without Docker still works via fallback
+
 ## Session Continuity
 
-Last session: 2026-01-31 00:04:00Z
-Stopped at: Completed 05-14-PLAN.md (CreatePlanModal gap closure)
+Last session: 2026-02-01 03:30:00Z
+Stopped at: Completed 05-15-PLAN.md (Vite Docker proxy gap closure)
 Resume file: None
-Next action: Phase 05 COMPLETE - All 14 plans finished (including gap closure). Ready for Phase 06 or integration work.
+Next action: Phase 05 COMPLETE - All 15 plans finished (including gap closure). Ready for Phase 06 or integration work.
