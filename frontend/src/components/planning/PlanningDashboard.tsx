@@ -9,10 +9,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { StepNavigator } from './StepNavigator';
 import { PlanList } from './PlanList';
 import { CreatePlanModal } from './CreatePlanModal';
+import { COAList } from './COAList';
+import { COAEditor } from './COAEditor';
+import { ApprovalPanel } from './ApprovalPanel';
+import { ROEPanel } from './ROEPanel';
+import { DocumentExport } from './DocumentExport';
 import type {
   OperationalPlan,
   WorkflowState,
   JP50Step,
+  COA,
+  ROECheckResult,
 } from './types';
 import {
   getPlansByMission,
@@ -21,6 +28,9 @@ import {
   startStep,
   markStepReady,
   createPlan,
+  getCOAs,
+  checkROE,
+  requestROEOverride,
 } from '../../lib/planning-service';
 import './PlanningDashboard.css';
 
@@ -36,6 +46,9 @@ export function PlanningDashboard({ missionId, userDID }: PlanningDashboardProps
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [coas, setCoas] = useState<COA[]>([]);
+  const [editingCOA, setEditingCOA] = useState<COA | null | undefined>(undefined);
+  const [roeCheckResult, setRoeCheckResult] = useState<ROECheckResult | null>(null);
 
   // Load plans
   useEffect(() => {
@@ -78,6 +91,39 @@ export function PlanningDashboard({ missionId, userDID }: PlanningDashboardProps
     loadWorkflow();
   }, [selectedPlanId]);
 
+  // Load COAs when plan selected
+  useEffect(() => {
+    async function loadCOAs() {
+      if (!selectedPlanId) {
+        setCoas([]);
+        return;
+      }
+      try {
+        const loadedCOAs = await getCOAs(selectedPlanId);
+        setCoas(loadedCOAs);
+      } catch (err) {
+        console.error('Failed to load COAs:', err);
+      }
+    }
+    loadCOAs();
+  }, [selectedPlanId]);
+
+  // Load ROE check result when entering plan_development step
+  useEffect(() => {
+    async function loadROECheck() {
+      if (!selectedPlanId || workflowState?.context.currentStep !== 'plan_development') {
+        return;
+      }
+      try {
+        const result = await checkROE(selectedPlanId);
+        setRoeCheckResult(result);
+      } catch (err) {
+        console.error('Failed to load ROE check:', err);
+      }
+    }
+    loadROECheck();
+  }, [selectedPlanId, workflowState?.context.currentStep]);
+
   const handleStepClick = useCallback(async (step: JP50Step) => {
     if (!selectedPlanId) return;
 
@@ -109,6 +155,29 @@ export function PlanningDashboard({ missionId, userDID }: PlanningDashboardProps
     } catch (err) {
       console.error('Failed to mark ready:', err);
     }
+  }, [selectedPlanId, userDID]);
+
+  const handleCOAsChange = useCallback((newCOAs: COA[]) => {
+    setCoas(newCOAs);
+  }, []);
+
+  const handleEditCOA = useCallback((coa: COA | null) => {
+    setEditingCOA(coa);
+  }, []);
+
+  const handleApprovalComplete = useCallback(async () => {
+    if (selectedPlanId) {
+      const state = await getWorkflowState(selectedPlanId);
+      setWorkflowState(state);
+    }
+  }, [selectedPlanId]);
+
+  const handleROEOverride = useCallback(async (justification: string) => {
+    if (!selectedPlanId) return;
+    await requestROEOverride(selectedPlanId, justification, userDID);
+    // Refresh ROE check
+    const result = await checkROE(selectedPlanId);
+    setRoeCheckResult(result);
   }, [selectedPlanId, userDID]);
 
   const handleCreatePlan = useCallback(

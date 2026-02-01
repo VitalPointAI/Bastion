@@ -143,3 +143,26 @@ export async function getOperationalGraphics(planId: string): Promise<unknown> {
 export async function getGraphicsGeoJSON(planId: string): Promise<unknown> {
   return fetchJson(`${API_BASE}/plans/${planId}/graphics/geojson`);
 }
+
+// ROE
+import type { ROECheckResult } from '../components/planning/types';
+
+export async function checkROE(planId: string): Promise<ROECheckResult> {
+  try {
+    return await fetchJson<ROECheckResult>(`${API_BASE}/plans/${planId}/roe/check`);
+  } catch {
+    // Return empty result if no ROE configured yet
+    return { approved: true, violations: [], warnings: [], requiresOverride: false };
+  }
+}
+
+export async function requestROEOverride(
+  planId: string,
+  justification: string,
+  commanderDID: string
+): Promise<void> {
+  await fetchJson(`${API_BASE}/plans/${planId}/roe/override`, {
+    method: 'POST',
+    body: JSON.stringify({ justification, commanderDID }),
+  });
+}
