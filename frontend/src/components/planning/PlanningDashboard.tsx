@@ -203,6 +203,116 @@ export function PlanningDashboard({ missionId, userDID }: PlanningDashboardProps
 
   const selectedPlan = plans.find((p) => p.id === selectedPlanId);
 
+  // User object for COAEditor (simplified for now)
+  const user = { did: userDID, name: 'User', role: 'planner' };
+
+  // Render step-specific content based on current workflow step
+  const renderStepContent = () => {
+    const currentStep = workflowState?.context.currentStep;
+    if (!currentStep || !selectedPlanId || !selectedPlan) {
+      return (
+        <div className="step-content-placeholder">
+          Select a step to view details
+        </div>
+      );
+    }
+
+    switch (currentStep) {
+      case 'planning_initiation':
+        return (
+          <div className="step-content-info">
+            <h4>Planning Initiation</h4>
+            <p>Receive mission, analyze higher headquarters guidance, and issue warning order.</p>
+            <ul>
+              <li>Review strategic objectives linked to this plan</li>
+              <li>Identify initial timeline constraints</li>
+              <li>Prepare warning order for subordinate units</li>
+            </ul>
+          </div>
+        );
+
+      case 'mission_analysis':
+        return (
+          <div className="step-content-info">
+            <h4>Mission Analysis</h4>
+            <p>Analyze the mission to identify tasks, constraints, and planning considerations.</p>
+            <ul>
+              <li>Identify specified, implied, and essential tasks</li>
+              <li>Determine constraints and limitations</li>
+              <li>Develop initial commander's intent</li>
+            </ul>
+          </div>
+        );
+
+      case 'coa_development':
+      case 'coa_analysis':
+      case 'coa_comparison':
+        return (
+          <>
+            <COAList
+              planId={selectedPlanId}
+              coas={coas}
+              onCOAsChange={handleCOAsChange}
+              onEditCOA={handleEditCOA}
+            />
+            {editingCOA !== undefined && (
+              <COAEditor
+                planId={selectedPlanId}
+                coa={editingCOA}
+                user={user}
+                onClose={() => setEditingCOA(undefined)}
+                onSave={async () => {
+                  setEditingCOA(undefined);
+                  const updated = await getCOAs(selectedPlanId);
+                  setCoas(updated);
+                }}
+              />
+            )}
+          </>
+        );
+
+      case 'coa_approval':
+        return workflowState ? (
+          <ApprovalPanel
+            planId={selectedPlanId}
+            workflowState={workflowState}
+            userDID={userDID}
+            isCommander={true} // TODO: Check actual role from mission context
+            onApprovalComplete={handleApprovalComplete}
+          />
+        ) : null;
+
+      case 'plan_development':
+        return (
+          <>
+            <ROEPanel
+              checkResult={roeCheckResult}
+              isCommander={true} // TODO: Check actual role from mission context
+              onRequestOverride={handleROEOverride}
+            />
+            <DocumentExport
+              planId={selectedPlanId}
+              planName={selectedPlan.name}
+            />
+          </>
+        );
+
+      case 'plan_approval':
+        return workflowState ? (
+          <ApprovalPanel
+            planId={selectedPlanId}
+            workflowState={workflowState}
+            userDID={userDID}
+            isCommander={true} // TODO: Check actual role from mission context
+            onApprovalComplete={handleApprovalComplete}
+          />
+        ) : null;
+
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return <div className="planning-loading">Loading operational plans...</div>;
   }
