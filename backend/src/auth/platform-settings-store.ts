@@ -26,14 +26,26 @@ async function initPlatformSettingsTable(): Promise<void> {
       require_second_factor BOOLEAN NOT NULL DEFAULT true,
       session_duration_minutes INTEGER NOT NULL DEFAULT 10080,
       require_reauth_for_high_value BOOLEAN NOT NULL DEFAULT false,
+      allowed_email_domains JSONB DEFAULT '[]'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
     -- Insert default public environment config if not exists
-    INSERT INTO platform_settings (id, environment, allowed_second_factors)
-    VALUES ('default', 'public', '["totp"]'::jsonb)
+    INSERT INTO platform_settings (id, environment, allowed_second_factors, allowed_email_domains)
+    VALUES ('default', 'public', '["totp"]'::jsonb, '[]'::jsonb)
     ON CONFLICT (id) DO NOTHING;
+
+    -- Add allowed_email_domains column if it doesn't exist (for existing deployments)
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'platform_settings' AND column_name = 'allowed_email_domains'
+      ) THEN
+        ALTER TABLE platform_settings ADD COLUMN allowed_email_domains JSONB DEFAULT '[]'::jsonb;
+      END IF;
+    END $$;
   `);
 }
 
@@ -47,6 +59,7 @@ const DEFAULT_CONFIGS: Record<string, Omit<DeploymentConfig, 'id' | 'createdAt' 
     requireSecondFactor: true,
     sessionDurationMinutes: 10080, // 7 days
     requireReauthForHighValue: false,
+    allowedEmailDomains: [], // No restriction
   },
   enterprise: {
     environment: 'enterprise',
@@ -54,6 +67,7 @@ const DEFAULT_CONFIGS: Record<string, Omit<DeploymentConfig, 'id' | 'createdAt' 
     requireSecondFactor: true,
     sessionDurationMinutes: 1440, // 24 hours
     requireReauthForHighValue: true,
+    allowedEmailDomains: [], // No restriction by default
   },
   classified: {
     environment: 'classified',
@@ -61,6 +75,7 @@ const DEFAULT_CONFIGS: Record<string, Omit<DeploymentConfig, 'id' | 'createdAt' 
     requireSecondFactor: true,
     sessionDurationMinutes: 480, // 8 hours (shift-based)
     requireReauthForHighValue: true,
+    allowedEmailDomains: [], // Admin should configure
   },
 };
 
@@ -101,7 +116,8 @@ export class PlatformSettingsStore {
       SELECT
         id, environment, allowed_second_factors,
         require_second_factor, session_duration_minutes,
-        require_reauth_for_high_value, created_at, updated_at
+        require_reauth_for_high_value, allowed_email_domains,
+        created_at, updated_at
       FROM platform_settings
       WHERE id = 'default'
     `
@@ -116,6 +132,7 @@ export class PlatformSettingsStore {
         requireSecondFactor: true,
         sessionDurationMinutes: 10080,
         requireReauthForHighValue: false,
+        allowedEmailDomains: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -129,6 +146,7 @@ export class PlatformSettingsStore {
       requireSecondFactor: row.require_second_factor,
       sessionDurationMinutes: row.session_duration_minutes,
       requireReauthForHighValue: row.require_reauth_for_high_value,
+      allowedEmailDomains: row.allowed_email_domains || [],
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
@@ -165,7 +183,8 @@ export class PlatformSettingsStore {
         require_second_factor = $3,
         session_duration_minutes = $4,
         require_reauth_for_high_value = $5,
-        updated_at = $6
+        allowed_email_domains = $6,
+        updated_at = $7
       WHERE id = 'default'
     `,
       [
@@ -174,6 +193,7 @@ export class PlatformSettingsStore {
         config.requireSecondFactor,
         config.sessionDurationMinutes,
         config.requireReauthForHighValue,
+        JSON.stringify(config.allowedEmailDomains || []),
         now,
       ]
     );
@@ -209,6 +229,7 @@ export class PlatformSettingsStore {
       sessionDurationMinutes: updates.sessionDurationMinutes ?? current.sessionDurationMinutes,
       requireReauthForHighValue:
         updates.requireReauthForHighValue ?? current.requireReauthForHighValue,
+      allowedEmailDomains: updates.allowedEmailDomains ?? current.allowedEmailDomains,
     };
 
     await pool.query(
@@ -220,7 +241,8 @@ export class PlatformSettingsStore {
         require_second_factor = $3,
         session_duration_minutes = $4,
         require_reauth_for_high_value = $5,
-        updated_at = $6
+        allowed_email_domains = $6,
+        updated_at = $7
       WHERE id = 'default'
     `,
       [
@@ -229,6 +251,7 @@ export class PlatformSettingsStore {
         newConfig.requireSecondFactor,
         newConfig.sessionDurationMinutes,
         newConfig.requireReauthForHighValue,
+        JSON.stringify(newConfig.allowedEmailDomains || []),
         now,
       ]
     );
@@ -275,6 +298,66 @@ export class PlatformSettingsStore {
   clearCache(): void {
     this.cachedConfig = null;
     this.cacheTime = 0;
+  }
+
+  /**
+   * Get allowed email domains for registration restriction
+   * Empty array means no restriction (all domains allowed)
+   */
+  async getAllowedEmailDomains(): Promise<string[]> {
+    const config = await this.getConfig();
+    return config.allowedEmailDomains || [];
+  }
+
+  /**
+   * Set allowed email domains for registration restriction
+   * Empty array or null means no restriction (all domains allowed)
+   */
+  async setAllowedEmailDomains(domains: string[]): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    // Normalize domains (lowercase, trim whitespace)
+    const normalizedDomains = domains
+      .map(d => d.toLowerCase().trim())
+      .filter(d => d.length > 0);
+
+    await pool.query(
+      `
+      UPDATE platform_settings
+      SET allowed_email_domains = $1, updated_at = NOW()
+      WHERE id = 'default'
+    `,
+      [JSON.stringify(normalizedDomains)]
+    );
+
+    // Invalidate cache
+    this.cachedConfig = null;
+  }
+
+  /**
+   * Check if an email domain is allowed for registration
+   * Returns true if:
+   * - No domain restriction is set (empty array)
+   * - The email domain is in the allowed list
+   */
+  async isEmailDomainAllowed(email: string): Promise<boolean> {
+    const allowedDomains = await this.getAllowedEmailDomains();
+
+    // No restriction if empty
+    if (allowedDomains.length === 0) {
+      return true;
+    }
+
+    // Extract domain from email
+    const emailLower = email.toLowerCase().trim();
+    const atIndex = emailLower.lastIndexOf('@');
+    if (atIndex === -1) {
+      return false; // Invalid email format
+    }
+
+    const domain = emailLower.substring(atIndex + 1);
+    return allowedDomains.includes(domain);
   }
 }
 

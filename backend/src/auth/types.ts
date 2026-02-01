@@ -106,6 +106,7 @@ export interface DeploymentConfig {
   requireSecondFactor: boolean; // Always true for recovery
   sessionDurationMinutes: number;
   requireReauthForHighValue: boolean; // Require passkey reauth for sensitive ops
+  allowedEmailDomains?: string[]; // Empty array or undefined = no restriction
   createdAt: Date;
   updatedAt: Date;
 }
