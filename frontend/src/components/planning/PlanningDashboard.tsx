@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { StepNavigator } from './StepNavigator';
 import { PlanList } from './PlanList';
+import { CreatePlanModal } from './CreatePlanModal';
 import type {
   OperationalPlan,
   WorkflowState,
@@ -34,6 +35,7 @@ export function PlanningDashboard({ missionId, userDID }: PlanningDashboardProps
   const [workflowState, setWorkflowState] = useState<WorkflowState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Load plans
   useEffect(() => {
@@ -109,22 +111,26 @@ export function PlanningDashboard({ missionId, userDID }: PlanningDashboardProps
     }
   }, [selectedPlanId, userDID]);
 
-  const handleCreatePlan = useCallback(async () => {
-    try {
-      const newPlan = await createPlan({
-        missionId,
-        name: `OPLAN ${new Date().toISOString().slice(0, 10)}`,
-        planType: 'OPLAN',
-        classification: 'UNCLASSIFIED',
-        objectiveIds: [],
-      });
+  const handleCreatePlan = useCallback(
+    async (name: string, planType: 'OPLAN' | 'OPORD' | 'CONPLAN' | 'FRAGORD') => {
+      try {
+        const newPlan = await createPlan({
+          missionId,
+          name,
+          planType,
+          classification: 'UNCLASSIFIED',
+          objectiveIds: [],
+        });
 
-      setPlans((prev) => [...prev, newPlan]);
-      setSelectedPlanId(newPlan.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create plan');
-    }
-  }, [missionId]);
+        setPlans((prev) => [...prev, newPlan]);
+        setSelectedPlanId(newPlan.id);
+        setShowCreateModal(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to create plan');
+      }
+    },
+    [missionId]
+  );
 
   const selectedPlan = plans.find((p) => p.id === selectedPlanId);
 
@@ -156,7 +162,7 @@ export function PlanningDashboard({ missionId, userDID }: PlanningDashboardProps
             plans={plans}
             selectedPlanId={selectedPlanId}
             onSelectPlan={setSelectedPlanId}
-            onCreatePlan={handleCreatePlan}
+            onCreatePlan={() => setShowCreateModal(true)}
           />
         </div>
 
@@ -189,6 +195,13 @@ export function PlanningDashboard({ missionId, userDID }: PlanningDashboardProps
           )}
         </div>
       </div>
+
+      {showCreateModal && (
+        <CreatePlanModal
+          onSubmit={handleCreatePlan}
+          onCancel={() => setShowCreateModal(false)}
+        />
+      )}
     </div>
   );
 }
