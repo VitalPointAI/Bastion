@@ -53,6 +53,27 @@ export function deriveUserSecret(nearPrivateKey: Uint8Array, purpose: string): U
   return hkdf(sha256, nearPrivateKey, salt, info, 32);
 }
 
+/**
+ * Derive user secret from PRF output
+ *
+ * PRF extension provides a 32-byte deterministic output.
+ * This function applies domain separation for consistency with
+ * the existing deriveUserSecret pattern.
+ *
+ * Note: In most cases, PRF output can be used directly as userSecret.
+ * This function is provided for cases where additional domain separation
+ * is desired.
+ *
+ * @param prfOutput - 32-byte PRF output from WebAuthn
+ * @param purpose - Purpose string for domain separation
+ * @returns 32-byte derived secret
+ */
+export function derivePRFUserSecret(prfOutput: Uint8Array, purpose: string): Uint8Array {
+  const salt = utf8ToBytes('bastion-prf-secret');
+  const info = utf8ToBytes(purpose);
+  return hkdf(sha256, prfOutput, salt, info, 32);
+}
+
 // Hex conversion utilities
 export function blindedKeyToHex(key: Uint8Array): string {
   return bytesToHex(key);
