@@ -11,26 +11,26 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 1.2 of 13+ (Passkey Authentication & NEAR Implicit Accounts) — COMPLETE
-Plan: 10 of 10 in current phase
+Plan: 11 of 11 in current phase
 Status: Phase Complete
-Last activity: 2026-02-01 — Completed 1.2-10-PLAN.md (UAT Gap Closure)
+Last activity: 2026-02-01 — Completed 1.2-11-PLAN.md (UAT Gap Closure - Fix Implementation)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
-Progress: ██████████████████ 100% (10/10 plans complete in phase 1.2)
+Progress: ███████████████████ 100% (11/11 plans complete in phase 1.2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 89
+- Total plans completed: 90
 - Average duration: 10 min
-- Total execution time: 14.97 hours
+- Total execution time: 15.03 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
-| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 10 | 53 min | 5 min |
+| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 11 | 57 min | 5 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
@@ -720,9 +720,15 @@ None.
 - Session store joins auth_users to retrieve email for UI display
 - Frontend handles both accountId and nearAccountId field names for compatibility
 
+**Phase 1.2 Plan 11 (UAT Gap Fixes - Implementation):**
+- PRF extension first parameter must be base64url-encoded string (use isoBase64URL.fromBuffer) to survive JSON serialization
+- Protected route redirect race condition fixed by returning null from getStatusMessage() when not authenticated (prevents overlay blocking redirect)
+- NEAR implicit accounts generated using SHA256 hash of derivation path + MPC public key, converted to 64-character hex string via bytesToHex()
+- Import from @noble/hashes/sha2.js (not @noble/hashes/sha256) for correct module path
+
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Completed Phase 1.2 UAT gap closure (10/10 plans)
+Stopped at: Completed Phase 1.2 UAT gap fixes implementation (11/11 plans)
 Resume file: None
-Next action: Continue with Phase 4.4 (Mission Context & Force Onboarding) or priority phase.
+Next action: Run UAT verification to confirm all three fixes work correctly. Phase 1.2 ready for final completion after UAT passes.
