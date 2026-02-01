@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import authRouter from './api/auth.js';
 import encryptionRouter from './api/encryption.js';
 import documentsRouter from './api/documents.js';
 import edgeSyncRouter from './api/edge-sync.js';
@@ -74,6 +75,7 @@ app.get('/health', (req, res) => {
 });
 
 // Mount API routes
+app.use('/api/auth', authRouter);
 app.use('/api/encryption', encryptionRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/edge', edgeSyncRouter);
