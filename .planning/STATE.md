@@ -11,26 +11,26 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 1.2 of 13+ (Passkey Authentication & NEAR Implicit Accounts) — COMPLETE
-Plan: 7 of 7 in current phase
+Plan: 8 of 8 in current phase
 Status: Phase Complete
-Last activity: 2026-02-01 — Completed 1.2-07-PLAN.md (Privy Removal & Passkey Activation)
+Last activity: 2026-02-01 — Completed 1.2-08-PLAN.md (Auth Routing with React Router)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
-Progress: ████████████████ 100% (7/7 plans complete in phase 1.2)
+Progress: ████████████████ 100% (8/8 plans complete in phase 1.2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 86
+- Total plans completed: 87
 - Average duration: 10 min
-- Total execution time: 14.67 hours
+- Total execution time: 14.72 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
-| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 7 | 35 min | 5 min |
+| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 8 | 38 min | 5 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
@@ -42,8 +42,8 @@ Progress: ████████████████ 100% (7/7 plans compl
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 7 min, 2 min, 3 min, 6 min, 8 min
-- Trend: Phase 1.2 COMPLETE - Privy removed, passkey authentication active
+- Last 5 plans: 2 min, 3 min, 6 min, 8 min, 3 min
+- Trend: Phase 1.2 COMPLETE - Passkey auth with routing fully operational
 
 ## Accumulated Context
 
@@ -696,9 +696,17 @@ None.
 - App builds and starts without VITE_PRIVY_APP_ID environment variable
 - useAuth.ts renamed to useAuth.tsx (JSX extension fix)
 
+**Phase 1.2 Plan 8 (Auth Routing with React Router):**
+- React Router DOM v7 for SPA routing (React 19 compatible)
+- Auth routes (/login, /auth/verify, /auth/recover) outside AuthWrapper for unauthenticated access
+- Protected app routes wrapped in AuthWrapper with explicit path definitions
+- 404 NotFound component as catch-all route (must be last in Routes)
+- useNavigate() for in-app SPA navigation, window.location.href acceptable for full-page transitions
+- State-based navigation preserved inside AppContent for existing tab switching
+
 ## Session Continuity
 
-Last session: 2026-02-01 16:30:00Z
-Stopped at: Completed 1.2-07-PLAN.md (Privy Removal & Passkey Activation)
+Last session: 2026-02-01 17:35:52Z
+Stopped at: Completed 1.2-08-PLAN.md (Auth Routing with React Router)
 Resume file: None
-Next action: UAT for Phase 1.2 passkey authentication flow, then Phase 5 completion or next priority phase.
+Next action: UAT for Phase 1.2 complete authentication flow (login, magic link, recovery, routing), then Phase 5 completion or next priority phase.
