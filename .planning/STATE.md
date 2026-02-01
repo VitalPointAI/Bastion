@@ -10,25 +10,27 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 05 of 13+ (Operational Planning Module) — COMPLETE
-Plan: 16 of 16 in current phase (gap closure)
-Status: Phase Complete (with gap closure)
-Last activity: 2026-02-01 — Completed 05-16-PLAN.md (Step content area gap closure)
+Phase: 1.2 of 13+ (Passkey Authentication & NEAR Implicit Accounts) — IN PROGRESS
+Plan: 1 of 6+ in current phase
+Status: In Progress
+Last activity: 2026-02-01 — Completed 1.2-01-PLAN.md (Auth data foundation)
 
-Progress: ██████████ 100% (16/16 plans complete in phase 05)
+Progress: ████████████████ 100% (16/16 plans complete in phase 05)
+Progress: ███░░░░░░░░░░░░░ 17% (1/6 plans complete in phase 1.2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 80
+- Total plans completed: 81
 - Average duration: 11 min
-- Total execution time: 14.15 hours
+- Total execution time: 14.32 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
+| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 1 | 10 min | 10 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
@@ -40,8 +42,8 @@ Progress: ██████████ 100% (16/16 plans complete in phase 05)
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 3 min, 4 min, 4 min, 4 min, 3 min
-- Trend: Phase 05 gap closure complete — Step content area renders step-specific components
+- Last 5 plans: 4 min, 4 min, 4 min, 3 min, 10 min
+- Trend: Phase 1.2 started - Auth data foundation with UUID-based MPC derivation
 
 ## Accumulated Context
 
@@ -269,6 +271,7 @@ Recent decisions affecting current work:
 - Phase 13 added: Research Whitepaper - Comprehensive documentation for master's research requirement (advisor deliverable)
 - Phase 4.4 inserted after Phase 4.3: Mission Context & Force Onboarding - Workspace setup, participant invitation, command relationships, resource inventories, sensor registration with map overlays
 - Phase 4.5 inserted after Phase 4.4: ATAK/CoT Tactical Interoperability - CoT message protocol, TAK Server integration, real-time position sharing, data package export
+- Phase 1.2 inserted after Phase 1.1: Passkey Authentication & NEAR Implicit Accounts (URGENT) - Replace Privy.io with passkey/magic link/recovery patterns from StratBrain + NEAR implicit account identity
 
 ### Deferred Issues
 
@@ -530,6 +533,14 @@ None.
 - exports/ directory gitignored to keep generated files out of version control
 - Pandoc defaults file for consistent export settings across team
 
+**Phase 1.2 Plan 1 (Auth Data Foundation):**
+- UUID as stable identifier: Backend-generated UUID serves as permanent anchor for MPC derivation path (bastion,{uuid})
+- Passkeys for authentication ONLY: Do NOT derive NEAR account IDs from passkey public keys (breaks recovery)
+- TOTP encryption: AES-256-GCM from @noble/ciphers for secrets at rest
+- Magic link as PRF fallback: Email-based authentication when PRF extension unavailable
+- Session sliding window: 7-day expiration extends at 50% lifetime for active users
+- Deployment environment config: public/enterprise/classified with different auth requirements
+
 **Phase 4.4 Plan 5 (Command Visualization):**
 - Milsymbol for rendering military unit symbols via SIDC codes
 - Dual view strategy: tree view for hierarchy, matrix view for comprehensive relationship overview
@@ -647,7 +658,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-01 12:03:00Z
-Stopped at: Completed 05-16-PLAN.md (Step content area gap closure)
+Last session: 2026-02-01 15:22:05Z
+Stopped at: Completed 1.2-01-PLAN.md (Auth data foundation)
 Resume file: None
-Next action: Phase 05 COMPLETE - All 16 plans finished (including gap closure). Ready for Phase 06 or integration work.
+Next action: Phase 1.2 Plan 02 - Passkey registration and authentication flows with WebAuthn ceremony implementation.
