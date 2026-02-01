@@ -22,6 +22,7 @@ import { getTotpService } from '../auth/totp-service.js';
 import { getRecoveryService } from '../auth/recovery-service.js';
 import { getSessionStore } from '../auth/session-store.js';
 import { getPasskeyService } from '../auth/passkey-service.js';
+import { getMigrationService } from '../auth/migration-service.js';
 
 const router = express.Router();
 
@@ -516,6 +517,113 @@ router.post('/logout', async (req, res) => {
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Failed to logout' });
+  }
+});
+
+// ============================================
+// Migration Endpoints (DID Re-encryption)
+// Plan 1.2-06
+// ============================================
+
+/**
+ * GET /api/auth/migration/status
+ * Get migration status for current user
+ *
+ * Query: ?email=user@example.com
+ * Response: { needsMigration: boolean, status: MigrationStatus }
+ *
+ * USE CASE: Check if user needs to migrate DID to new secret derivation method
+ */
+router.get('/migration/status', async (req, res) => {
+  try {
+    const email = req.query.email as string;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const service = getMigrationService();
+    const status = await service.getMigrationStatus(email);
+    const needsMigration = status ? await service.needsMigration(email) : false;
+
+    res.json({
+      needsMigration,
+      status
+    });
+  } catch (error) {
+    console.error('Migration status error:', error);
+    res.status(500).json({ error: 'Failed to get migration status' });
+  }
+});
+
+/**
+ * POST /api/auth/migration/migrate
+ * Migrate DID from old secret to new secret
+ *
+ * Body: {
+ *   email: string,
+ *   oldSecret: string,      // Base64-encoded old secret
+ *   newSecret: string,      // Base64-encoded new secret (e.g., PRF output)
+ *   newAccountId: string    // New NEAR account ID (from MPC with UUID)
+ * }
+ *
+ * Response: { success: boolean, didPreserved: boolean, newAccountId?: string }
+ *
+ * CRITICAL: This is for migrating DIDs when userSecret derivation changes.
+ * Common scenarios:
+ * - Upgrading from legacy auth to passkey PRF
+ * - Security-mandated secret rotation
+ * - Moving from one secret derivation method to another
+ */
+router.post('/migration/migrate', async (req, res) => {
+  try {
+    const { email, oldSecret, newSecret, newAccountId } = req.body;
+
+    if (!email || !oldSecret || !newSecret || !newAccountId) {
+      return res.status(400).json({
+        error: 'Missing required fields: email, oldSecret, newSecret, newAccountId'
+      });
+    }
+
+    // Decode base64 secrets
+    let oldSecretBytes: Uint8Array;
+    let newSecretBytes: Uint8Array;
+
+    try {
+      oldSecretBytes = Buffer.from(oldSecret, 'base64');
+      newSecretBytes = Buffer.from(newSecret, 'base64');
+    } catch {
+      return res.status(400).json({ error: 'Invalid secret format - must be base64' });
+    }
+
+    if (oldSecretBytes.length !== 32 || newSecretBytes.length !== 32) {
+      return res.status(400).json({
+        error: `Invalid secret length: expected 32 bytes, got old=${oldSecretBytes.length}, new=${newSecretBytes.length}`
+      });
+    }
+
+    const service = getMigrationService();
+    const result = await service.migrateDID(
+      email,
+      oldSecretBytes,
+      newSecretBytes,
+      newAccountId
+    );
+
+    if (!result.success) {
+      return res.status(500).json({
+        error: result.error || 'Migration failed',
+        didPreserved: false
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      error: 'Migration failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
