@@ -704,9 +704,17 @@ None.
 - useNavigate() for in-app SPA navigation, window.location.href acceptable for full-page transitions
 - State-based navigation preserved inside AppContent for existing tab switching
 
+**Phase 1.2 Plan 9 (AWS SES Email Integration):**
+- AWS SES client conditionally initialized (credentials present = production, absent = dev fallback)
+- Development mode console-logs email content with visible URL for testing
+- Domain restriction stored in platform_settings table with comma-separated list
+- Three admin endpoints: GET/PUT/DELETE for email domain configuration
+- Email templates use inline CSS for email client compatibility
+- Base template with BASTION branding (dark blue header, white body, gray footer)
+
 ## Session Continuity
 
-Last session: 2026-02-01 17:35:52Z
-Stopped at: Completed 1.2-08-PLAN.md (Auth Routing with React Router)
+Last session: 2026-02-01
+Stopped at: Completed Phase 1.2 execution and verification (9/9 plans)
 Resume file: None
-Next action: UAT for Phase 1.2 complete authentication flow (login, magic link, recovery, routing), then Phase 5 completion or next priority phase.
+Next action: Continue with Phase 4.4 (Mission Context & Force Onboarding) or priority phase.
