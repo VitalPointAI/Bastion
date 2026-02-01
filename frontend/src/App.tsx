@@ -9,6 +9,7 @@ import { StrategicValidityDashboard } from './components/validity'
 import { AdminDashboard } from './components/admin'
 import { MissionList, MissionDetail, MissionWizard } from './components/mission'
 import { LoginPage } from './components/LoginPage'
+import { RegisterPage } from './components/RegisterPage'
 import { MagicLinkVerify } from './components/MagicLinkVerify'
 import { useUser } from './context/UserContext'
 import './App.css'
@@ -135,6 +136,7 @@ function App() {
     <Routes>
       {/* Auth routes - outside AuthWrapper */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/auth/verify" element={<MagicLinkVerify />} />
       <Route path="/auth/recover" element={<LoginPage />} /> {/* Recovery starts at login */}
 
