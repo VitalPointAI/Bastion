@@ -1,10 +1,10 @@
-import { usePrivy } from '@privy-io/react-auth'
+import { useAuth } from '../hooks/useAuth'
 import './LoginButton.css'
 
 export function LoginButton() {
-  const { authenticated, login, logout } = usePrivy()
+  const { isAuthenticated, login, logout } = useAuth()
 
-  if (authenticated) {
+  if (isAuthenticated) {
     return (
       <button className="logout-button" onClick={logout}>
         Logout

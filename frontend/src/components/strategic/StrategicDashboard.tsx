@@ -7,10 +7,10 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { useAuth } from '../../hooks/useAuth';
+import { useUser } from '../../context/UserContext';
 import type { StrategicDocument, StrategicObjective } from '../../lib/types/strategic.js';
 import { strategicService } from '../../lib/strategic-service.js';
-import { buildDID } from '../../lib/identity.js';
 import { DocumentUpload } from './DocumentUpload.js';
 import { DocumentList } from './DocumentList.js';
 import { ObjectiveList } from './ObjectiveList.js';
@@ -20,28 +20,23 @@ import { ReviewPanel } from './ReviewPanel.js';
 import './StrategicDashboard.css';
 
 export function StrategicDashboard() {
-  const { authenticated, user } = usePrivy();
+  const { isAuthenticated } = useAuth();
+  const { userDID, accountId } = useUser();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedDocument, setSelectedDocument] = useState<StrategicDocument | null>(null);
   const [selectedObjective, setSelectedObjective] = useState<StrategicObjective | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [userDID, setUserDID] = useState<string | null>(null);
 
   // Set user DID on service when authenticated
   useEffect(() => {
-    if (authenticated && user) {
-      // Build DID from user's Privy ID (same pattern as AuthWrapper)
-      const accountId = `${user.id.replace('did:privy:', '')}.testnet`;
-      const did = buildDID(accountId);
-      strategicService.setUserDID(did);
-      setUserDID(did);
+    if (isAuthenticated && userDID) {
+      strategicService.setUserDID(userDID);
       setIsReady(true);
     } else {
-      setUserDID(null);
       setIsReady(false);
     }
-  }, [authenticated, user]);
+  }, [isAuthenticated, userDID]);
 
   const handleUploadComplete = useCallback((doc: StrategicDocument) => {
     setRefreshTrigger((prev) => prev + 1);
