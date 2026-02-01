@@ -82,7 +82,7 @@ Plans:
 **Depends on:** Phase 1.1
 **Research:** Complete (1.2-RESEARCH.md)
 **Research topics:** WebAuthn passkey integration with NEAR implicit accounts, magic link token generation with NEAR account creation, account recovery with NEAR key rotation, session management migration from Privy, NEAR implicit account derivation from passkey public key, PRF extension for DID secret derivation
-**Plans:** 6 plans
+**Plans:** 7 plans
 
 **Context:**
 This phase eliminates Privy.io dependency by implementing:
@@ -97,12 +97,13 @@ This phase eliminates Privy.io dependency by implementing:
 PRF extension output serves as the `userSecret` input to existing HKDF-based DID derivation. No changes needed to DID encryption/blinding logic - only userSecret source changes.
 
 Plans:
-- [ ] 1.2-01-PLAN.md — Database foundation and auth stores (passkey, session, magic link)
-- [ ] 1.2-02-PLAN.md — Passkey registration and NEAR implicit account derivation
-- [ ] 1.2-03-PLAN.md — Magic link fallback for PRF-unsupported browsers
-- [ ] 1.2-04-PLAN.md — PRF-to-DID integration (critical for DID compatibility)
-- [ ] 1.2-05-PLAN.md — Frontend components replacing Privy
-- [ ] 1.2-06-PLAN.md — Migration flow for existing Privy users
+- [x] 1.2-01-PLAN.md — Database foundation and auth stores (passkey, session, magic link)
+- [x] 1.2-02-PLAN.md — Passkey registration and NEAR implicit account derivation
+- [x] 1.2-03-PLAN.md — Magic link fallback for PRF-unsupported browsers
+- [x] 1.2-04-PLAN.md — PRF-to-DID integration (critical for DID compatibility)
+- [x] 1.2-05-PLAN.md — Frontend components replacing Privy
+- [x] 1.2-06-PLAN.md — Migration flow for existing Privy users
+- [ ] 1.2-07-PLAN.md — Complete Privy removal and activate passkey auth (gap closure)
 
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
@@ -617,7 +618,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundation & Infrastructure | 8/8 | Complete | 2026-01-13 |
 | 1.1 Calimero Self-Sovereign App | 0/TBD | Not started | - |
-| 1.2 Passkey + NEAR Implicit Auth | 0/6 | Planning Complete | - |
+| 1.2 Passkey + NEAR Implicit Auth | 6/7 | Gap Closure In Progress | - |
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
