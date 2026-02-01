@@ -3,6 +3,7 @@
  */
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authenticateWithPasskey, isPasskeySupported } from '../lib/passkey';
 import { authService } from '../lib/auth-service';
 import './LoginPage.css';
@@ -10,6 +11,7 @@ import './LoginPage.css';
 type LoginMode = 'choose' | 'passkey' | 'magic-link';
 
 export function LoginPage() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<LoginMode>('choose');
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export function LoginPage() {
 
     if (result.success) {
       // Redirect to app
-      window.location.href = '/';
+      navigate('/');
     } else {
       setError(result.error || 'Authentication failed');
     }
