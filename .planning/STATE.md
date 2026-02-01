@@ -10,18 +10,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 1.2 of 13+ (Passkey Authentication & NEAR Implicit Accounts) — IN PROGRESS
-Plan: 5 of 6+ in current phase
-Status: In Progress
-Last activity: 2026-02-01 — Completed 1.2-05-PLAN.md (Frontend passkey authentication UI)
+Phase: 1.2 of 13+ (Passkey Authentication & NEAR Implicit Accounts) — COMPLETE
+Plan: 7 of 7 in current phase
+Status: Phase Complete
+Last activity: 2026-02-01 — Completed 1.2-07-PLAN.md (Privy Removal & Passkey Activation)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
-Progress: █████████████░░░ 83% (5/6 plans complete in phase 1.2)
+Progress: ████████████████ 100% (7/7 plans complete in phase 1.2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 84
+- Total plans completed: 86
 - Average duration: 10 min
 - Total execution time: 14.67 hours
 
@@ -30,7 +30,7 @@ Progress: █████████████░░░ 83% (5/6 plans comple
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
-| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 5 | 27 min | 5 min |
+| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 7 | 35 min | 5 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
@@ -42,8 +42,8 @@ Progress: █████████████░░░ 83% (5/6 plans comple
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 6 min, 7 min, 2 min, 3 min, 6 min
-- Trend: Phase 1.2 progressing - Frontend passkey UI complete
+- Last 5 plans: 7 min, 2 min, 3 min, 6 min, 8 min
+- Trend: Phase 1.2 COMPLETE - Privy removed, passkey authentication active
 
 ## Accumulated Context
 
@@ -688,9 +688,17 @@ None.
 - DID re-encryption pattern: decrypt with old secret, re-encrypt with new
 - Multi-step MigrationFlow component for security upgrade UX
 
+**Phase 1.2 Plan 7 (Privy Removal & Passkey Activation):**
+- Complete Privy removal from main.tsx (45 lines to 10 lines)
+- LoginButton and StrategicDashboard migrated to useAuth hook
+- StrategicDashboard uses UserContext for userDID (no local DID building)
+- MigrationFlow integrated into AuthWrapper with graceful migration-status check
+- App builds and starts without VITE_PRIVY_APP_ID environment variable
+- useAuth.ts renamed to useAuth.tsx (JSX extension fix)
+
 ## Session Continuity
 
-Last session: 2026-02-01 15:42:00Z
-Stopped at: Completed 1.2-05-PLAN.md (Frontend passkey authentication UI)
+Last session: 2026-02-01 16:30:00Z
+Stopped at: Completed 1.2-07-PLAN.md (Privy Removal & Passkey Activation)
 Resume file: None
-Next action: Execute 1.2-06-PLAN.md or UAT for Phase 1.2.
+Next action: UAT for Phase 1.2 passkey authentication flow, then Phase 5 completion or next priority phase.
