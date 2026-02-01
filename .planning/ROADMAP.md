@@ -82,7 +82,7 @@ Plans:
 **Depends on:** Phase 1.1
 **Research:** Complete (1.2-RESEARCH.md)
 **Research topics:** WebAuthn passkey integration with NEAR implicit accounts, magic link token generation with NEAR account creation, account recovery with NEAR key rotation, session management migration from Privy, NEAR implicit account derivation from passkey public key, PRF extension for DID secret derivation
-**Plans:** 9 plans
+**Plans:** 10 plans
 
 **Context:**
 This phase eliminates Privy.io dependency by implementing:
@@ -106,6 +106,7 @@ Plans:
 - [x] 1.2-07-PLAN.md — Complete Privy removal and activate passkey auth (gap closure)
 - [x] 1.2-08-PLAN.md — Auth routing for login and verification pages (gap closure)
 - [x] 1.2-09-PLAN.md — AWS SES email integration with templates and domain restriction
+- [x] 1.2-10-PLAN.md — UAT gap closure: passkey v13, RegisterPage, auth redirect, user context (gap closure)
 
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
@@ -620,7 +621,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundation & Infrastructure | 8/8 | Complete | 2026-01-13 |
 | 1.1 Calimero Self-Sovereign App | 0/TBD | Not started | - |
-| 1.2 Passkey + NEAR Implicit Auth | 9/9 | Complete | 2026-02-01 |
+| 1.2 Passkey + NEAR Implicit Auth | 10/10 | Complete | 2026-02-01 |
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
