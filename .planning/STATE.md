@@ -11,26 +11,26 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 1.2 of 13+ (Passkey Authentication & NEAR Implicit Accounts) — IN PROGRESS
-Plan: 6 of 6+ in current phase
+Plan: 5 of 6+ in current phase
 Status: In Progress
-Last activity: 2026-02-01 — Completed 1.2-06-PLAN.md (Migration flow for DID re-encryption)
+Last activity: 2026-02-01 — Completed 1.2-05-PLAN.md (Frontend passkey authentication UI)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
-Progress: ████████████████ 100% (6/6 plans complete in phase 1.2)
+Progress: █████████████░░░ 83% (5/6 plans complete in phase 1.2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 86
+- Total plans completed: 84
 - Average duration: 10 min
-- Total execution time: 14.59 hours
+- Total execution time: 14.67 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (Foundation & Infrastructure) | 8 | 226 min | 28 min |
-| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 6 | 26 min | 4 min |
+| 1.2 (Passkey Authentication & NEAR Implicit Accounts) | 5 | 27 min | 5 min |
 | 2 (Identity & Security) | 8 | 57 min | 7 min |
 | 3 (DAO Governance) | 8 | 108 min | 14 min |
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
@@ -42,8 +42,8 @@ Progress: ████████████████ 100% (6/6 plans compl
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 5 min, 6 min, 7 min, 2 min, 3 min
-- Trend: Phase 1.2 complete - Migration flow for security upgrades
+- Last 5 plans: 6 min, 7 min, 2 min, 3 min, 6 min
+- Trend: Phase 1.2 progressing - Frontend passkey UI complete
 
 ## Accumulated Context
 
@@ -671,6 +671,16 @@ None.
 - ROEPanel + DocumentExport for plan_development step
 - Added checkROE and requestROEOverride to planning-service.ts
 
+**Phase 1.2 Plan 5 (Frontend Passkey Authentication UI):**
+- @simplewebauthn/browser for WebAuthn client operations
+- useAuth hook with AuthProvider replaces usePrivy
+- Dual authentication paths: passkey (primary) + magic link (fallback)
+- PRF output extraction for DID operations (passkey only)
+- Complete Privy removal from AuthWrapper
+- React Context API for auth state management
+- MagicLinkVerify component handles /auth/verify?token= route
+- Military-themed CSS for LoginPage, PasskeySetup, MagicLinkVerify
+
 **Phase 1.2 Plan 6 (Migration Flow):**
 - Generic DID migration service instead of Privy-specific (system doesn't use Privy)
 - Base64 encoding for secret transmission in JSON APIs
@@ -680,7 +690,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-01 15:40:00Z
-Stopped at: Completed 1.2-06-PLAN.md (Migration flow for DID re-encryption)
+Last session: 2026-02-01 15:42:00Z
+Stopped at: Completed 1.2-05-PLAN.md (Frontend passkey authentication UI)
 Resume file: None
-Next action: Phase 1.2 complete - Consider UAT or move to next phase.
+Next action: Execute 1.2-06-PLAN.md or UAT for Phase 1.2.
