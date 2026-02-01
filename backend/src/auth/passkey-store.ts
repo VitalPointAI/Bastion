@@ -55,21 +55,17 @@ export class PasskeyStore {
    * Store new passkey credential
    * Called after successful WebAuthn registration
    *
-   * @param userId - User UUID (foreign key to auth_users)
-   * @param credentialId - WebAuthn credential ID (unique)
-   * @param publicKey - COSE public key bytes
-   * @param counter - Initial signature counter (usually 0)
-   * @param transports - Authenticator transports (usb, nfc, ble, hybrid, internal)
-   * @param prfSupported - Can this credential derive PRF secrets?
+   * @param input - CreatePasskeyInput with all credential fields
    */
-  async createCredential(
-    userId: string,
-    credentialId: Buffer,
-    publicKey: Buffer,
-    counter: bigint,
-    transports: AuthenticatorTransport[],
-    prfSupported: boolean
-  ): Promise<PasskeyCredential> {
+  async createCredential(input: {
+    userId: string;
+    credentialId: Buffer;
+    publicKey: Buffer;
+    counter: bigint;
+    transports: AuthenticatorTransport[];
+    prfSupported: boolean;
+  }): Promise<PasskeyCredential> {
+    const { userId, credentialId, publicKey, counter, transports, prfSupported } = input;
     await this.ensureInitialized();
     const pool = getPool();
 
@@ -104,6 +100,10 @@ export class PasskeyStore {
    *
    * CRITICAL: Compare credential_id as hex for compatibility with all databases
    */
+  async findByCredentialId(credentialId: Buffer): Promise<PasskeyCredential | null> {
+    return this.getCredentialById(credentialId);
+  }
+
   async getCredentialById(credentialId: Buffer): Promise<PasskeyCredential | null> {
     await this.ensureInitialized();
     const pool = getPool();
@@ -142,6 +142,10 @@ export class PasskeyStore {
    * Get all credentials for a user
    * Used for credential exclusion during registration
    */
+  async findByUserId(userId: string): Promise<PasskeyCredential[]> {
+    return this.getUserCredentials(userId);
+  }
+
   async getUserCredentials(userId: string): Promise<PasskeyCredential[]> {
     await this.ensureInitialized();
     const pool = getPool();
@@ -175,19 +179,34 @@ export class PasskeyStore {
    * Update signature counter after authentication
    * Critical for replay attack prevention
    */
-  async updateCounter(credentialId: Buffer, newCounter: bigint): Promise<void> {
+  async updateCounter(id: string, newCounter: bigint): Promise<void> {
     await this.ensureInitialized();
     const pool = getPool();
-
-    const credIdHex = credentialId.toString('hex');
 
     await pool.query(
       `
       UPDATE passkey_credentials
-      SET counter = $1, last_used_at = NOW()
-      WHERE encode(credential_id, 'hex') = $2
+      SET counter = $1
+      WHERE id = $2
     `,
-      [newCounter.toString(), credIdHex]
+      [newCounter.toString(), id]
+    );
+  }
+
+  /**
+   * Update last used timestamp
+   */
+  async updateLastUsed(id: string): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    await pool.query(
+      `
+      UPDATE passkey_credentials
+      SET last_used_at = NOW()
+      WHERE id = $2
+    `,
+      [id]
     );
   }
 
@@ -213,6 +232,10 @@ export class PasskeyStore {
    * Delete all credentials for a user
    * Used during account recovery when user lost all passkeys
    */
+  async deleteAllForUser(userId: string): Promise<void> {
+    return this.deleteUserCredentials(userId);
+  }
+
   async deleteUserCredentials(userId: string): Promise<void> {
     await this.ensureInitialized();
     const pool = getPool();

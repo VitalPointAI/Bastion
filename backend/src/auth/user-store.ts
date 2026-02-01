@@ -56,10 +56,11 @@ export class UserStore {
    * Create new user with stable UUID
    * UUID serves as anchor for MPC derivation path
    *
-   * @param input - Registration input (email, alternateEmail)
+   * @param email - User email address
+   * @param alternateEmail - Optional alternate email for recovery
    * @returns Created user with UUID and MPC path
    */
-  async createUser(input: RegistrationInput): Promise<AuthUser> {
+  async createUser(email: string, alternateEmail?: string): Promise<AuthUser> {
     await this.ensureInitialized();
     const pool = getPool();
 
@@ -80,8 +81,8 @@ export class UserStore {
     `,
       [
         userId,
-        input.email,
-        input.alternateEmail ?? null,
+        email,
+        alternateEmail ?? null,
         mpcDerivationPath,
         false, // TOTP not enabled yet
         false, // Passkey not registered yet
@@ -92,8 +93,8 @@ export class UserStore {
 
     return {
       id: userId,
-      email: input.email,
-      alternateEmail: input.alternateEmail,
+      email,
+      alternateEmail,
       mpcDerivationPath,
       totpEnabled: false,
       passkeyRegistered: false,
@@ -105,6 +106,10 @@ export class UserStore {
   /**
    * Get user by ID (UUID)
    */
+  async findById(userId: string): Promise<AuthUser | null> {
+    return this.getUserById(userId);
+  }
+
   async getUserById(userId: string): Promise<AuthUser | null> {
     await this.ensureInitialized();
     const pool = getPool();
@@ -140,6 +145,10 @@ export class UserStore {
    * Get user by email (primary or alternate)
    * Used during login and recovery
    */
+  async findByEmail(email: string): Promise<AuthUser | null> {
+    return this.getUserByEmail(email);
+  }
+
   async getUserByEmail(email: string): Promise<AuthUser | null> {
     await this.ensureInitialized();
     const pool = getPool();
@@ -209,6 +218,10 @@ export class UserStore {
    * Update NEAR account ID after MPC account creation
    * Called after backend creates NEAR account via Chain Signatures
    */
+  async updateNearAccountId(userId: string, nearAccountId: string): Promise<void> {
+    return this.setNearAccountId(userId, nearAccountId);
+  }
+
   async setNearAccountId(userId: string, nearAccountId: string): Promise<void> {
     await this.ensureInitialized();
     const pool = getPool();
@@ -220,6 +233,23 @@ export class UserStore {
       WHERE id = $2
     `,
       [nearAccountId, userId]
+    );
+  }
+
+  /**
+   * Update MPC derivation path (should rarely be needed as UUID is stable)
+   */
+  async updateMPCDerivationPath(userId: string, derivationPath: string): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    await pool.query(
+      `
+      UPDATE auth_users
+      SET mpc_derivation_path = $1, updated_at = NOW()
+      WHERE id = $2
+    `,
+      [derivationPath, userId]
     );
   }
 

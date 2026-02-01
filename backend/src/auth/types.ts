@@ -126,3 +126,28 @@ export interface SessionResult {
   expiresAt: Date;
   user: AuthUser;
 }
+
+/**
+ * Passkey creation input (Phase 1.2-02)
+ * Used by PasskeyService to create credential after registration
+ */
+export interface CreatePasskeyInput {
+  userId: string;
+  credentialId: Buffer;
+  publicKey: Buffer;
+  counter: bigint;
+  transports: AuthenticatorTransport[];
+  prfSupported: boolean;
+}
+
+/**
+ * Session creation input (Phase 1.2-02)
+ * Used by PasskeyService to create session after authentication
+ */
+export interface CreateSessionInput {
+  userId: string;
+  nearAccountId?: string;
+  prfAvailable: boolean;
+  ipAddress?: string;
+  userAgent?: string;
+}

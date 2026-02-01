@@ -12,7 +12,7 @@
 
 import { randomUUID } from 'crypto';
 import { getPool } from '../lib/database.js';
-import type { UserSession, SessionResult, AuthUser } from './types.js';
+import type { UserSession, SessionResult, AuthUser, CreateSessionInput } from './types.js';
 
 /**
  * Initialize sessions table
@@ -55,18 +55,10 @@ export class SessionStore {
   /**
    * Create new session
    *
-   * @param user - Authenticated user
-   * @param prfAvailable - Can perform DID operations?
-   * @param ipAddress - Client IP address (optional)
-   * @param userAgent - Client user agent (optional)
-   * @returns Session result with session ID and expiration
+   * @param input - CreateSessionInput with userId, nearAccountId, prfAvailable, etc.
+   * @returns UserSession object
    */
-  async createSession(
-    user: AuthUser,
-    prfAvailable: boolean,
-    ipAddress?: string,
-    userAgent?: string
-  ): Promise<SessionResult> {
+  async createSession(input: CreateSessionInput): Promise<UserSession> {
     await this.ensureInitialized();
     const pool = getPool();
 
@@ -84,20 +76,26 @@ export class SessionStore {
     `,
       [
         sessionId,
-        user.id,
-        user.nearAccountId ?? null,
-        prfAvailable,
+        input.userId,
+        input.nearAccountId ?? null,
+        input.prfAvailable,
         expiresAt,
         now,
-        ipAddress ?? null,
-        userAgent ?? null,
+        input.ipAddress ?? null,
+        input.userAgent ?? null,
       ]
     );
 
     return {
-      sessionId,
+      id: sessionId,
+      userId: input.userId,
+      accountId: input.nearAccountId,
+      prfAvailable: input.prfAvailable,
+      createdAt: now,
       expiresAt,
-      user,
+      lastActivityAt: now,
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
     };
   }
 
