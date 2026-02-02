@@ -27,12 +27,9 @@ function AuthContent({ children }: AuthWrapperProps) {
   const [needsMigration, setNeedsMigration] = useState(false);
   const [migrationEmail, setMigrationEmail] = useState<string>('');
 
-  // Redirect to login if not authenticated and not loading
-  if (!isLoading && !isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
   // Check for migration needs
+  // NOTE: All useEffect hooks must be called unconditionally before any early returns
+  // to comply with React Rules of Hooks
   useEffect(() => {
     const checkMigration = async () => {
       if (!isAuthenticated || !accountId) return;
@@ -139,6 +136,12 @@ function AuthContent({ children }: AuthWrapperProps) {
     mpcRegistered: true, // MPC IS used for NEAR accounts (UUID-based derivation)
     isAuthenticated,
   };
+
+  // Redirect to login if not authenticated and not loading
+  // NOTE: This check is placed AFTER all hooks to comply with React Rules of Hooks
+  if (!isLoading && !isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   // Show migration flow if needed
   if (needsMigration) {
