@@ -71,6 +71,29 @@ export async function authenticateWithPasskey(
     // Get authentication options from backend
     const { options, challengeId } = await authService.getAuthenticationOptions(email);
 
+    // PRF extension data flows: backend JSON -> frontend -> WebAuthn API
+    // JSON requires strings, but WebAuthn API requires ArrayBuffer for prf.eval.first
+    // We must decode the base64url string to ArrayBuffer BEFORE passing to startAuthentication()
+    const prfExt = (options.extensions as Record<string, unknown>)?.prf as {
+      eval?: { first?: string | ArrayBuffer };
+    } | undefined;
+
+    if (prfExt?.eval?.first && typeof prfExt.eval.first === 'string') {
+      // Backend sends base64url string (required for JSON transport)
+      // Browser's WebAuthn API requires ArrayBuffer (per W3C spec)
+      // Decode here, between receiving options and calling startAuthentication()
+      const base64url = prfExt.eval.first;
+      const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+      const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+      const binary = atob(base64 + padding);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      // Replace base64url string with ArrayBuffer for WebAuthn API
+      prfExt.eval.first = bytes.buffer;
+    }
+
     // Start WebAuthn authentication ceremony
     const credential = await startAuthentication({ optionsJSON: options });
 
