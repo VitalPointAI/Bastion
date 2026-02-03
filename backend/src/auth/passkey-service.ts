@@ -157,10 +157,24 @@ export class PasskeyService {
     const prfResult = clientExtResults?.prf as { enabled?: boolean } | undefined;
     const prfSupported = prfResult?.enabled === true;
 
+    // Ensure credential.id is stored as raw bytes
+    // In SimpleWebAuthn v8+, credential.id is Uint8Array
+    // But some versions/configs may return base64url string
+    let credentialIdBuffer: Buffer;
+    if (typeof credential.id === 'string') {
+      // It's a base64url string - decode to bytes
+      credentialIdBuffer = Buffer.from(isoBase64URL.toBuffer(credential.id));
+      console.log('[DEBUG] credential.id was string, decoded to:', credentialIdBuffer.toString('hex'));
+    } else {
+      // It's already Uint8Array - wrap in Buffer
+      credentialIdBuffer = Buffer.from(credential.id);
+      console.log('[DEBUG] credential.id was Uint8Array, hex:', credentialIdBuffer.toString('hex'));
+    }
+
     // Store credential - NOTE: no nearImplicitAccountId, passkey is auth only
     const input: CreatePasskeyInput = {
       userId,
-      credentialId: Buffer.from(credential.id),
+      credentialId: credentialIdBuffer,
       publicKey: Buffer.from(credential.publicKey),
       counter: BigInt(credential.counter),
       // Cast transports to compatible type (AuthenticatorTransportFuture includes newer values)
@@ -261,9 +275,17 @@ export class PasskeyService {
 
     // Find credential by ID
     const credentialIdBuffer = Buffer.from(isoBase64URL.toBuffer(response.id));
+    console.log('[DEBUG] Looking up credential ID:', response.id);
+    console.log('[DEBUG] Credential ID as hex:', credentialIdBuffer.toString('hex'));
     const credential = await this.passkeyStore.findByCredentialId(credentialIdBuffer);
 
     if (!credential) {
+      // Debug: list all credentials to see what's stored
+      const allCreds = await this.passkeyStore.getUserCredentials(stored.userId);
+      console.log('[DEBUG] All credentials for user:', stored.userId);
+      allCreds.forEach((c, i) => {
+        console.log(`[DEBUG]   Cred ${i}: ${c.credentialId.toString('hex')}`);
+      });
       throw new Error('Credential not found');
     }
 

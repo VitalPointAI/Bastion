@@ -111,7 +111,8 @@ export class PasskeyStore {
     // Convert to hex for comparison (PostgreSQL-compatible)
     const credIdHex = credentialId.toString('hex');
 
-    const result = await pool.query(
+    // First try: match raw bytes directly
+    let result = await pool.query(
       `
       SELECT
         id, user_id, credential_id, public_key, counter,
@@ -122,6 +123,26 @@ export class PasskeyStore {
       [credIdHex]
     );
 
+    // Fallback: old credentials may have base64url string stored as ASCII bytes
+    // Convert raw bytes to base64url and check if that string (as bytes) matches
+    if (result.rows.length === 0) {
+      // Import isoBase64URL for encoding
+      const { isoBase64URL } = await import('@simplewebauthn/server/helpers');
+      const base64urlStr = isoBase64URL.fromBuffer(new Uint8Array(credentialId));
+      const base64urlAsHex = Buffer.from(base64urlStr, 'utf-8').toString('hex');
+
+      result = await pool.query(
+        `
+        SELECT
+          id, user_id, credential_id, public_key, counter,
+          transports, prf_supported, created_at, last_used_at
+        FROM passkey_credentials
+        WHERE encode(credential_id, 'hex') = $1
+      `,
+        [base64urlAsHex]
+      );
+    }
+
     if (result.rows.length === 0) return null;
 
     const row = result.rows[0];
@@ -131,7 +152,7 @@ export class PasskeyStore {
       credentialId: Buffer.from(row.credential_id),
       publicKey: Buffer.from(row.public_key),
       counter: BigInt(row.counter),
-      transports: JSON.parse(row.transports),
+      transports: row.transports,  // JSONB already parsed by pg driver
       prfSupported: row.prf_supported,
       createdAt: row.created_at,
       lastUsedAt: row.last_used_at,
@@ -168,7 +189,7 @@ export class PasskeyStore {
       credentialId: Buffer.from(row.credential_id),
       publicKey: Buffer.from(row.public_key),
       counter: BigInt(row.counter),
-      transports: JSON.parse(row.transports),
+      transports: row.transports,  // JSONB already parsed by pg driver
       prfSupported: row.prf_supported,
       createdAt: row.created_at,
       lastUsedAt: row.last_used_at,
@@ -204,7 +225,7 @@ export class PasskeyStore {
       `
       UPDATE passkey_credentials
       SET last_used_at = NOW()
-      WHERE id = $2
+      WHERE id = $1
     `,
       [id]
     );
