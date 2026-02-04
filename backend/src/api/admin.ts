@@ -29,6 +29,7 @@ import { getTeamRegistry } from '../agents/team-registry.js';
 import { MCPToolInputSchema, MCPToolUpdateSchema, AgentTeamInputSchema, AgentTeamUpdateSchema, TeamMemberSchema, CharacterSchema } from '../agents/character-schema.js';
 import { AgentModelConfigSchema } from '../strategic/config/types.js';
 import { clearLLMCache } from '../agents/langgraph/llm-factory.js';
+import { getFundingService } from '../auth/funding-service.js';
 
 const router = Router();
 
@@ -1896,5 +1897,131 @@ function generateSystemPromptFromCharacter(
 
   return sections.join('\n');
 }
+
+// ============================================================================
+// Funding Contract Management (Phase 1.3)
+// ============================================================================
+
+/**
+ * GET /api/admin/funding/status
+ * Get funding contract status (balance, total funded, etc.)
+ */
+router.get('/funding/status', async (req: Request, res: Response) => {
+  try {
+    const fundingService = getFundingService();
+
+    if (!fundingService.isEnabled()) {
+      res.json({
+        enabled: false,
+        message: 'Funding contract not configured'
+      });
+      return;
+    }
+
+    const status = await fundingService.getContractStatus();
+
+    if (!status) {
+      res.status(500).json({ error: 'Failed to fetch contract status' });
+      return;
+    }
+
+    // Convert yoctoNEAR to NEAR for display
+    const yoctoToNear = (yocto: string) => {
+      const value = BigInt(yocto);
+      return (Number(value) / 1e24).toFixed(4);
+    };
+
+    res.json({
+      enabled: true,
+      contractId: process.env.NEAR_FUNDING_CONTRACT_ID,
+      balance: yoctoToNear(status.balance),
+      availableBalance: yoctoToNear(status.availableBalance),
+      fundingAmountPerAccount: yoctoToNear(status.fundingAmount),
+      totalAccountsFunded: status.totalFunded,
+      // Estimate accounts remaining
+      accountsRemaining: status.fundingAmount !== '0'
+        ? Math.floor(Number(BigInt(status.availableBalance)) / Number(BigInt(status.fundingAmount)))
+        : 0
+    });
+  } catch (error) {
+    console.error('[admin] Funding status error:', error);
+    res.status(500).json({ error: 'Failed to get funding status' });
+  }
+});
+
+/**
+ * GET /api/admin/funding/history
+ * Get recent funding activity
+ */
+router.get('/funding/history', async (req: Request, res: Response) => {
+  try {
+    const fundingService = getFundingService();
+
+    if (!fundingService.isEnabled()) {
+      res.json({
+        enabled: false,
+        history: []
+      });
+      return;
+    }
+
+    const fromIndex = parseInt(req.query.from as string) || 0;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+
+    const history = await fundingService.getFundingHistory(fromIndex, limit);
+
+    // Format history items
+    const formattedHistory = history.map(item => ({
+      accountId: item.account_id,
+      amount: (Number(BigInt(item.amount)) / 1e24).toFixed(4) + ' NEAR',
+      timestamp: new Date(item.timestamp / 1_000_000).toISOString(), // Convert nanoseconds
+      blockHeight: item.block_height
+    }));
+
+    res.json({
+      enabled: true,
+      history: formattedHistory
+    });
+  } catch (error) {
+    console.error('[admin] Funding history error:', error);
+    res.status(500).json({ error: 'Failed to get funding history' });
+  }
+});
+
+/**
+ * GET /api/admin/funding/check/:accountId
+ * Check if a specific account has been funded
+ */
+router.get('/funding/check/:accountId', async (req: Request, res: Response) => {
+  try {
+    const accountId = req.params.accountId as string;
+
+    if (!accountId || accountId.length !== 64) {
+      res.status(400).json({ error: 'Invalid account ID format (must be 64-character hex)' });
+      return;
+    }
+
+    const fundingService = getFundingService();
+
+    if (!fundingService.isEnabled()) {
+      res.json({
+        enabled: false,
+        funded: false
+      });
+      return;
+    }
+
+    const isFunded = await fundingService.isAccountFunded(accountId);
+
+    res.json({
+      enabled: true,
+      accountId,
+      funded: isFunded
+    });
+  } catch (error) {
+    console.error('[admin] Funding check error:', error);
+    res.status(500).json({ error: 'Failed to check funding status' });
+  }
+});
 
 export default router;
