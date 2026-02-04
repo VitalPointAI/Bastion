@@ -6,24 +6,25 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 05 (Operational Planning Module) — Real-time collaborative planning with Yjs CRDTs
+**Current focus:** Phase 1.3 (NEAR Implicit Account Funding) — Activate implicit accounts on-chain
 
 ## Current Position
 
-Phase: 1.2 of 13+ (Passkey Authentication & NEAR Implicit Accounts) — COMPLETE
-Plan: 12 of 12 in current phase
-Status: Phase Complete
-Last activity: 2026-02-02 — Completed 1.2-12-PLAN.md (UAT Gap Closure - PRF and Hooks Fixes)
+Phase: 1.3 of 13+ (NEAR Implicit Account Funding)
+Plan: 1 of 2 in current phase
+Status: In Progress
+Last activity: 2026-02-04 — Completed 1.3-01-PLAN.md (Funding Contract)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
 Progress: ████████████████████ 100% (12/12 plans complete in phase 1.2)
+Progress: ██████████░░░░░░░░░░ 50% (1/2 plans complete in phase 1.3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 91
+- Total plans completed: 92
 - Average duration: 10 min
-- Total execution time: 15.06 hours
+- Total execution time: 15.19 hours
 
 **By Phase:**
 
@@ -40,10 +41,11 @@ Progress: ████████████████████ 100% (12/
 | 4.4 (Mission Context & Force Onboarding) | 8 | 47 min | 6 min |
 | 05 (Operational Planning Module) | 16 | 71 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
+| 1.3 (NEAR Implicit Account Funding) | 1 | 8 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 8 min, 3 min, 8 min, 7 min, 2 min
-- Trend: Phase 1.2 UAT gaps closed - PRF ArrayBuffer decoding, React hooks order compliance
+- Last 5 plans: 3 min, 8 min, 7 min, 2 min, 8 min
+- Trend: Phase 1.3 started - Funding contract created as standalone crate
 
 ## Accumulated Context
 
@@ -272,6 +274,7 @@ Recent decisions affecting current work:
 - Phase 4.4 inserted after Phase 4.3: Mission Context & Force Onboarding - Workspace setup, participant invitation, command relationships, resource inventories, sensor registration with map overlays
 - Phase 4.5 inserted after Phase 4.4: ATAK/CoT Tactical Interoperability - CoT message protocol, TAK Server integration, real-time position sharing, data package export
 - Phase 1.2 inserted after Phase 1.1: Passkey Authentication & NEAR Implicit Accounts (URGENT) - Replace Privy.io with passkey/magic link/recovery patterns from StratBrain + NEAR implicit account identity
+- Phase 1.3 inserted after Phase 1.2: NEAR Implicit Account Funding - Activate implicit accounts with minimum NEAR transfer on registration
 
 ### Deferred Issues
 
@@ -726,9 +729,16 @@ None.
 - NEAR implicit accounts generated using SHA256 hash of derivation path + MPC public key, converted to 64-character hex string via bytesToHex()
 - Import from @noble/hashes/sha2.js (not @noble/hashes/sha256) for correct module path
 
+**Phase 1.3 Plan 1 (Funding Contract):**
+- Separate crate for funding contract: NEAR SDK 5.x requires one #[near(contract_state)] per crate
+- Authorization via authorized_caller pattern for backend-only fund() access
+- Double-funding prevention via LookupMap<AccountId, bool>
+- Audit trail via Vector<FundingEvent> with timestamps and block heights
+- Configurable funding amount (default 0.1 NEAR = 100 milliNEAR)
+
 ## Session Continuity
 
-Last session: 2026-02-01
-Stopped at: Completed Phase 1.2 UAT gap fixes implementation (11/11 plans)
+Last session: 2026-02-04
+Stopped at: Completed 1.3-01-PLAN.md (Funding Contract)
 Resume file: None
-Next action: Run UAT verification to confirm all three fixes work correctly. Phase 1.2 ready for final completion after UAT passes.
+Next action: Execute 1.3-02-PLAN.md for backend integration with funding contract.
