@@ -31,6 +31,7 @@ import { getPasskeyStore } from './passkey-store.js';
 import { getUserStore } from './user-store.js';
 import { getSessionStore } from './session-store.js';
 import { createMPCAccount, getMPCDerivationPath } from './mpc-account.js';
+import { getFundingService } from './funding-service.js';
 import type { AuthUser, UserSession, CreatePasskeyInput } from './types.js';
 
 // Configure for your domain
@@ -138,6 +139,13 @@ export class PasskeyService {
     }
     challenges.delete(challengeId);
 
+    // Check if user already has a NEAR account (prevents duplicate registrations)
+    // This happens if user started registration but browser closed before completing
+    const existingUser = await this.userStore.findById(userId);
+    if (existingUser?.nearAccountId) {
+      throw new Error('An account with this email already exists. Try logging in.');
+    }
+
     // Verify registration
     const verification = await verifyRegistrationResponse({
       response,
@@ -188,6 +196,22 @@ export class PasskeyService {
     // Create NEAR account via MPC using user's UUID
     // This is separate from passkey - uses stable UUID as derivation anchor
     const { accountId, derivationPath, mpcPublicKey } = await createMPCAccount(userId);
+
+    // Fund the implicit account to activate it on-chain
+    // This must succeed before we consider registration complete
+    const fundingService = getFundingService();
+    if (fundingService.isEnabled()) {
+      const fundingResult = await fundingService.fundAccount(accountId);
+
+      if (!fundingResult.success) {
+        // Funding failed after all retries - registration cannot complete
+        // User must re-register (no partial account states)
+        console.error('[passkey-service] Account funding failed:', fundingResult.error);
+        throw new Error('Network busy, try again in a few minutes');
+      }
+
+      console.log(`[passkey-service] Account ${accountId} funded successfully (${fundingResult.attempts} attempt(s))`);
+    }
 
     // Update user record with NEAR account info
     await this.userStore.updateNearAccountId(userId, accountId);
