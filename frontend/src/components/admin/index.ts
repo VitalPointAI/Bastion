@@ -9,3 +9,4 @@ export { WorkflowConfigPanel } from './WorkflowConfigPanel';
 export { OSINTSourcePanel } from './OSINTSourcePanel';
 export { AuditLogPanel } from './AuditLogPanel';
 export { FormField } from './common/FormField';
+export { FundingPanel } from './FundingPanel';

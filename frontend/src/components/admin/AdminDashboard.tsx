@@ -18,6 +18,7 @@ import { TeamComposerPanel } from './TeamComposerPanel';
 import { WorkflowConfigPanel } from './WorkflowConfigPanel';
 import { OSINTSourcePanel } from './OSINTSourcePanel';
 import { AuditLogPanel } from './AuditLogPanel';
+import { FundingPanel } from './FundingPanel';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -156,6 +157,9 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           <Tab className="admin-tab" selectedClassName="admin-tab--selected">
             Audit Log
           </Tab>
+          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
+            Funding
+          </Tab>
         </TabList>
 
         <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
@@ -192,6 +196,10 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
         <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
           <AuditLogPanel />
+        </TabPanel>
+
+        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
+          <FundingPanel />
         </TabPanel>
       </Tabs>
     </div>
