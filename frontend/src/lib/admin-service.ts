@@ -32,7 +32,53 @@ import type {
   AgentCharacter,
 } from '../types/admin';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// ============================================================================
+// Funding Contract Types
+// ============================================================================
+
+/**
+ * Funding contract status response from backend.
+ */
+export interface FundingStatus {
+  enabled: boolean;
+  contractId?: string;
+  balance?: string;
+  availableBalance?: string;
+  fundingAmountPerAccount?: string;
+  totalAccountsFunded?: number;
+  accountsRemaining?: number;
+  message?: string;
+}
+
+/**
+ * Single funding history item.
+ */
+export interface FundingHistoryItem {
+  accountId: string;
+  amount: string;
+  timestamp: string;
+  blockHeight: number;
+}
+
+/**
+ * Funding history response from backend.
+ */
+export interface FundingHistory {
+  enabled: boolean;
+  history: FundingHistoryItem[];
+}
+
+/**
+ * Account funding check response.
+ */
+export interface AccountFundingCheck {
+  enabled: boolean;
+  accountId?: string;
+  funded: boolean;
+}
+
+// Use environment variable or empty string for relative URLs (Vite proxy)
+const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '';
 
 /**
  * Admin Service class.
@@ -586,6 +632,43 @@ class AdminService {
     await this.fetch<void>(`/api/admin/agents/${encodeURIComponent(agentId)}/character`, {
       method: 'DELETE',
     });
+  }
+}
+
+/**
+ * Singleton instance of the admin service.
+ */
+// ============================================================================
+  // Funding Contract Management
+  // ============================================================================
+
+  /**
+   * Get funding contract status.
+   * Returns balance, total funded accounts, and remaining capacity.
+   */
+  async getFundingStatus(): Promise<FundingStatus> {
+    return this.fetch<FundingStatus>('/api/admin/funding/status');
+  }
+
+  /**
+   * Get funding activity history.
+   * @param fromIndex - Starting index for pagination
+   * @param limit - Maximum number of items to return
+   */
+  async getFundingHistory(fromIndex: number = 0, limit: number = 20): Promise<FundingHistory> {
+    const params = new URLSearchParams({
+      from: String(fromIndex),
+      limit: String(limit),
+    });
+    return this.fetch<FundingHistory>(`/api/admin/funding/history?${params.toString()}`);
+  }
+
+  /**
+   * Check if a specific account has been funded.
+   * @param accountId - 64-character hex implicit account ID
+   */
+  async checkAccountFunding(accountId: string): Promise<AccountFundingCheck> {
+    return this.fetch<AccountFundingCheck>(`/api/admin/funding/check/${encodeURIComponent(accountId)}`);
   }
 }
 
