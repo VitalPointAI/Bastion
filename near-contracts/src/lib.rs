@@ -22,6 +22,9 @@ use did_registry::{DIDRegistry, EncryptedDIDEntry};
 mod credential_registry;
 use credential_registry::{CredentialRegistry, EncryptedCredentialAnchor};
 
+/// Funding contract for NEAR implicit account activation (Phase 1.3)
+pub mod funding;
+
 mod dao;
 use dao::{
     DAORegistry, DAOConfig, DAOMetadata, AutonomyLevel,
