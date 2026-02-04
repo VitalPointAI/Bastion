@@ -12,7 +12,8 @@ None
 
 - [x] **Phase 1: Foundation & Infrastructure** - Establish NEAR blockchain integration, Phala TEE, core smart contracts, containerized architecture
 - [ ] **Phase 1.1: Calimero Self-Sovereign App Integration** - Research Calimero for DAO compartmentalization, replace Privy with NEAR accounts + MPC (INSERTED)
-- [ ] **Phase 1.2: Passkey Authentication & NEAR Implicit Accounts** - Replace Privy with passkey/magic link/recovery + NEAR implicit accounts (INSERTED)
+- [x] **Phase 1.2: Passkey Authentication & NEAR Implicit Accounts** - Replace Privy with passkey/magic link/recovery + NEAR implicit accounts (INSERTED)
+- [ ] **Phase 1.3: NEAR Implicit Account Funding** - Activate implicit accounts with minimum NEAR transfer on registration (INSERTED)
 - [x] **Phase 2: Identity & Security Framework** - Implement DID system, ABAC, post-quantum cryptography, zero trust architecture
 - [x] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
 - [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
@@ -109,6 +110,24 @@ Plans:
 - [x] 1.2-10-PLAN.md — UAT gap closure: passkey v13, RegisterPage, auth redirect, user context (gap closure)
 - [x] 1.2-11-PLAN.md — UAT gap closure: PRF base64url, redirect race condition, implicit accounts (gap closure)
 - [x] 1.2-12-PLAN.md — UAT gap closure: PRF ArrayBuffer decoding, React hooks order compliance (gap closure)
+
+### Phase 1.3: NEAR Implicit Account Funding (INSERTED)
+**Goal:** Activate newly created NEAR implicit accounts by transferring minimum NEAR during registration
+**Depends on:** Phase 1.2
+**Research:** Not required (straightforward NEAR transfer)
+**Plans:** 3 plans
+
+**Context:**
+NEAR implicit accounts (64-character hex derived from MPC public key) are valid account IDs but don't exist on-chain until they receive their first transaction. This phase implements a funding mechanism to activate accounts during registration:
+
+1. **Funding Contract** - Dedicated NEAR smart contract with access-controlled fund() method
+2. **Registration Hook** - After MPC account creation, transfer 0.1 NEAR (blocking, 3 retries)
+3. **Admin UI** - Balance monitoring, activity history, low-balance warnings
+
+Plans:
+- [ ] 1.3-01-PLAN.md — Funding contract (Rust) with fund(), withdraw(), balance, history
+- [ ] 1.3-02-PLAN.md — Backend funding service, retry logic, registration hook, admin API
+- [ ] 1.3-03-PLAN.md — Admin UI FundingPanel with balance monitoring and activity
 
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
@@ -624,6 +643,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Foundation & Infrastructure | 8/8 | Complete | 2026-01-13 |
 | 1.1 Calimero Self-Sovereign App | 0/TBD | Not started | - |
 | 1.2 Passkey + NEAR Implicit Auth | 12/12 | Complete | 2026-02-01 |
+| 1.3 NEAR Implicit Account Funding | 0/TBD | Not started | - |
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
