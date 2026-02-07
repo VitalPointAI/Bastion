@@ -6,6 +6,9 @@
 # =====================================
 FROM node:20-slim AS builder
 
+# Install git (required for some pnpm dependencies)
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -15,7 +18,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies (including devDependencies for build)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copy source files
 COPY tsconfig.json ./
@@ -28,6 +31,9 @@ RUN pnpm build
 # Stage 2: Production Runtime
 # =====================================
 FROM node:20-slim AS runtime
+
+# Install git (required for some pnpm dependencies)
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -42,7 +48,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install only production dependencies
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --prod
 
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist
