@@ -736,6 +736,14 @@ None.
 - Audit trail via Vector<FundingEvent> with timestamps and block heights
 - Configurable funding amount (default 0.1 NEAR = 100 milliNEAR)
 
+**Phase 1.3 Plan 2 (Backend Funding Integration):**
+- Exponential backoff retry pattern: 3 attempts with 1s, 2s, 4s delays for transient failures
+- Funding sequence: email check → MPC account → fund account → update user → create session
+- Duplicate email prevention before MPC account creation to avoid wasting NEAR
+- User-friendly error messages: "An account with this email already exists" vs "Network busy, try again"
+- Admin API endpoints for monitoring: /funding/status, /funding/history, /funding/check/:accountId
+- @near-js packages for Account and NEAR RPC integration
+
 **Phase 1.3 Plan 3 (Admin Funding Panel):**
 - Warning thresholds: critical at <3 accounts, warning at <10 accounts for proactive monitoring
 - Account ID validation: 64-character hex format with case-insensitive matching

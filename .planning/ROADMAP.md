@@ -13,7 +13,7 @@ None
 - [x] **Phase 1: Foundation & Infrastructure** - Establish NEAR blockchain integration, Phala TEE, core smart contracts, containerized architecture
 - [ ] **Phase 1.1: Calimero Self-Sovereign App Integration** - Research Calimero for DAO compartmentalization, replace Privy with NEAR accounts + MPC (INSERTED)
 - [x] **Phase 1.2: Passkey Authentication & NEAR Implicit Accounts** - Replace Privy with passkey/magic link/recovery + NEAR implicit accounts (INSERTED)
-- [ ] **Phase 1.3: NEAR Implicit Account Funding** - Activate implicit accounts with minimum NEAR transfer on registration (INSERTED)
+- [x] **Phase 1.3: NEAR Implicit Account Funding** - Activate implicit accounts with minimum NEAR transfer on registration (INSERTED, completed 2026-02-06)
 - [x] **Phase 2: Identity & Security Framework** - Implement DID system, ABAC, post-quantum cryptography, zero trust architecture
 - [x] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
 - [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
@@ -125,9 +125,9 @@ NEAR implicit accounts (64-character hex derived from MPC public key) are valid 
 3. **Admin UI** - Balance monitoring, activity history, low-balance warnings
 
 Plans:
-- [ ] 1.3-01-PLAN.md — Funding contract (Rust) with fund(), withdraw(), balance, history
-- [ ] 1.3-02-PLAN.md — Backend funding service, retry logic, registration hook, admin API
-- [ ] 1.3-03-PLAN.md — Admin UI FundingPanel with balance monitoring and activity
+- [x] 1.3-01-PLAN.md — Funding contract (Rust) with fund(), withdraw(), balance, history (completed 2026-02-06)
+- [x] 1.3-02-PLAN.md — Backend funding service, retry logic, registration hook, admin API (completed 2026-02-06)
+- [x] 1.3-03-PLAN.md — Admin UI FundingPanel with balance monitoring and activity (completed 2026-02-06)
 
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
