@@ -6,7 +6,8 @@
  * CIDs stored on-chain in NEAR blockchain for provenance and auditability.
  */
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3001';
+// Use environment variable or empty string for relative URLs (Vite proxy)
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
 const PINATA_GATEWAY = import.meta.env.VITE_PINATA_GATEWAY!;
 
 export interface IPFSUploadResult {

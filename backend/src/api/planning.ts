@@ -11,6 +11,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 import { planStore, coaStore, versionStore, roeStore } from '../planning/index.js';
 import { jp50WorkflowEngine } from '../planning/workflow/index.js';
 import { roeEngine, roeOverrideWorkflow, roeAuditLog } from '../planning/roe/index.js';
@@ -45,8 +46,14 @@ planningRouter.post('/plans', async (req: Request, res: Response) => {
       return;
     }
 
+    // Auto-generate yjsDocumentId if not provided
+    const planData = {
+      ...parsed.data,
+      yjsDocumentId: parsed.data.yjsDocumentId || `yjs-${randomUUID()}`,
+    };
+
     const plan = await planStore.create(
-      parsed.data,
+      planData,
       (req.headers['x-did'] as string) || 'anonymous'
     );
 

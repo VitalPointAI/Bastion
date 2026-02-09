@@ -1,4 +1,4 @@
-import { JP50Step, StepStatus, OperationalPlan } from '../types';
+import { JP50Step, StepStatus, OperationalPlan } from '../types.js';
 
 export interface JP50Context {
   planId: string;

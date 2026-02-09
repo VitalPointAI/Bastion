@@ -44,6 +44,41 @@ function getQueryString(value: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * Transform backend Mission to frontend format
+ * Backend uses: id, state, createdBy
+ * Frontend expects: missionId, status, creatorDID
+ */
+function toFrontendMission(mission: {
+  id: string;
+  name: string;
+  description?: string;
+  classification: string;
+  areaOfOperations?: unknown;
+  workspaceId?: string;
+  state: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  activatedAt?: Date;
+  completedAt?: Date;
+}) {
+  return {
+    missionId: mission.id,
+    name: mission.name,
+    description: mission.description,
+    classification: mission.classification,
+    areaOfOperations: mission.areaOfOperations,
+    workspaceId: mission.workspaceId,
+    status: mission.state,
+    creatorDID: mission.createdBy,
+    createdAt: mission.createdAt.toISOString(),
+    updatedAt: mission.updatedAt.toISOString(),
+    activatedAt: mission.activatedAt?.toISOString(),
+    completedAt: mission.completedAt?.toISOString(),
+  };
+}
+
 // =====================
 // MISSION CRUD ENDPOINTS
 // =====================
@@ -51,7 +86,7 @@ function getQueryString(value: unknown): string | undefined {
 /**
  * POST /api/missions - Create a new mission
  *
- * Body: MissionInput (name, description, classification, areaOfOps, workspaceId)
+ * Body: MissionInput (name, description?, classification, areaOfOperations?, workspaceId?, pendingInvites?)
  * Requires: X-DID header for createdBy tracking
  */
 router.post('/', async (req: Request, res: Response) => {
@@ -64,10 +99,31 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const input = MissionInputSchema.parse(req.body);
-    const mission = await missionStore.createMission(input, userDID);
+    const { pendingInvites, ...missionData } = input;
+    const mission = await missionStore.createMission(missionData, userDID);
 
-    console.log(`✓ Mission created: ${mission.id}`);
-    res.status(201).json(mission);
+    // Create pending invites if any
+    const createdInvites: { inviteId: string; role: string }[] = [];
+    if (pendingInvites && pendingInvites.length > 0) {
+      for (const invite of pendingInvites) {
+        try {
+          const { invite: createdInvite } = await inviteStore.createInvite(
+            mission.id,
+            invite.role,
+            userDID,
+            invite.email,
+            invite.inviteeDID,
+            invite.expiresInHours || 72
+          );
+          createdInvites.push({ inviteId: createdInvite.id, role: invite.role });
+        } catch (inviteError) {
+          console.warn(`Failed to create invite: ${inviteError}`);
+        }
+      }
+    }
+
+    console.log(`✓ Mission created: ${mission.id} with ${createdInvites.length} invites`);
+    res.status(201).json({ ...toFrontendMission(mission), invitesCreated: createdInvites.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Create mission failed:', message);
@@ -100,7 +156,7 @@ router.get('/', async (req: Request, res: Response) => {
       workspaceId,
     });
 
-    res.json({ missions, count: missions.length });
+    res.json({ missions: missions.map(toFrontendMission), count: missions.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('List missions failed:', message);
@@ -127,7 +183,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Mission not found' });
     }
 
-    res.json(mission);
+    res.json(toFrontendMission(mission));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Get mission failed:', message);
@@ -138,7 +194,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 /**
  * PATCH /api/missions/:id - Update mission
  *
- * Body: Partial mission fields (name, description, areaOfOps)
+ * Body: Partial mission fields (name, description, areaOfOperations)
  * Cannot change workspaceId or state (use state transition endpoints)
  */
 router.patch('/:id', async (req: Request, res: Response) => {
@@ -163,7 +219,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Failed to update mission' });
     }
 
-    res.json(updated);
+    res.json(toFrontendMission(updated));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Update mission failed:', message);
@@ -197,7 +253,7 @@ router.post('/:id/activate', async (req: Request, res: Response) => {
     const activated = await missionStore.transitionState(missionId, 'active');
 
     console.log(`✓ Mission ${missionId} activated`);
-    res.json(activated);
+    res.json(toFrontendMission(activated!));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Activate mission failed:', message);
@@ -227,7 +283,7 @@ router.post('/:id/complete', async (req: Request, res: Response) => {
     const completed = await missionStore.transitionState(missionId, 'complete');
 
     console.log(`✓ Mission ${missionId} completed`);
-    res.json(completed);
+    res.json(toFrontendMission(completed!));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Complete mission failed:', message);
@@ -257,7 +313,7 @@ router.post('/:id/archive', async (req: Request, res: Response) => {
     const archived = await missionStore.transitionState(missionId, 'archived');
 
     console.log(`✓ Mission ${missionId} archived`);
-    res.json(archived);
+    res.json(toFrontendMission(archived!));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Archive mission failed:', message);

@@ -4,7 +4,9 @@
  * Phase 4.4 Plan 08: Sensor API client for frontend
  */
 
-const API_BASE = '/api/sensors';
+// Use environment variable or empty string for relative URLs (Vite proxy)
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
+const API_BASE = `${BACKEND_URL}/api/sensors`;
 
 export interface SensorCapabilities {
   range?: number;

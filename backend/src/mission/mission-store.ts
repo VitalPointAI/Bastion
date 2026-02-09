@@ -18,10 +18,10 @@ export async function initMissionTable(): Promise<void> {
     CREATE TABLE IF NOT EXISTS missions (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      description TEXT NOT NULL,
+      description TEXT,
       classification TEXT NOT NULL,
-      area_of_ops JSONB NOT NULL,
-      workspace_id TEXT NOT NULL,
+      area_of_ops JSONB,
+      workspace_id TEXT,
       state TEXT NOT NULL DEFAULT 'planning',
       created_by TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -33,6 +33,15 @@ export async function initMissionTable(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_mission_state ON missions(state);
     CREATE INDEX IF NOT EXISTS idx_mission_created_by ON missions(created_by);
   `);
+
+  // Migration: Make columns nullable if they exist with NOT NULL constraints
+  await pool.query(`
+    ALTER TABLE missions ALTER COLUMN description DROP NOT NULL;
+    ALTER TABLE missions ALTER COLUMN area_of_ops DROP NOT NULL;
+    ALTER TABLE missions ALTER COLUMN workspace_id DROP NOT NULL;
+  `).catch(() => {
+    // Ignore errors if columns are already nullable or don't exist
+  });
 }
 
 export class MissionStore {
@@ -64,10 +73,10 @@ export class MissionStore {
       [
         id,
         input.name,
-        input.description,
+        input.description ?? null,
         input.classification,
-        JSON.stringify(input.areaOfOps),
-        input.workspaceId,
+        input.areaOfOperations ? JSON.stringify(input.areaOfOperations) : null,
+        input.workspaceId ?? null,
         'planning',
         createdBy,
         now,
@@ -80,7 +89,7 @@ export class MissionStore {
       name: input.name,
       description: input.description,
       classification: input.classification,
-      areaOfOps: input.areaOfOps,
+      areaOfOperations: input.areaOfOperations,
       workspaceId: input.workspaceId,
       state: 'planning',
       createdBy,
@@ -163,9 +172,9 @@ export class MissionStore {
       fields.push(`classification = $${idx++}`);
       params.push(updates.classification);
     }
-    if (updates.areaOfOps !== undefined) {
+    if (updates.areaOfOperations !== undefined) {
       fields.push(`area_of_ops = $${idx++}`);
-      params.push(JSON.stringify(updates.areaOfOps));
+      params.push(JSON.stringify(updates.areaOfOperations));
     }
 
     if (fields.length === 0) {
@@ -241,10 +250,10 @@ export class MissionStore {
   private rowToMission(row: {
     id: string;
     name: string;
-    description: string;
+    description: string | null;
     classification: string;
-    area_of_ops: unknown;
-    workspace_id: string;
+    area_of_ops: unknown | null;
+    workspace_id: string | null;
     state: string;
     created_by: string;
     created_at: Date;
@@ -255,13 +264,14 @@ export class MissionStore {
     return {
       id: row.id,
       name: row.name,
-      description: row.description,
-      classification: row.classification as 'UNCLASS' | 'SECRET' | 'TOPSECRET',
-      areaOfOps:
-        typeof row.area_of_ops === 'string'
+      description: row.description ?? undefined,
+      classification: row.classification as 'UNCLASSIFIED' | 'SECRET' | 'TOPSECRET',
+      areaOfOperations: row.area_of_ops
+        ? typeof row.area_of_ops === 'string'
           ? JSON.parse(row.area_of_ops)
-          : row.area_of_ops,
-      workspaceId: row.workspace_id,
+          : row.area_of_ops
+        : undefined,
+      workspaceId: row.workspace_id ?? undefined,
       state: row.state as MissionState,
       createdBy: row.created_by,
       createdAt: new Date(row.created_at),

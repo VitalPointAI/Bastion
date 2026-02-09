@@ -14,8 +14,8 @@ export { buildOPORDStructure, type OPORDStructure } from './templates/opord-temp
 export { generateOPORDDocx, generateOPORDPdf } from './generators/opord.js';
 
 // PowerPoint Briefing Generator
-export { generateBriefingSlides, BriefingType } from './generators/pptx-generator.js';
-export type { BriefingOptions } from './generators/pptx-generator.js';
+export { generateBriefingSlides } from './generators/pptx-generator.js';
+export type { BriefingType, BriefingOptions } from './generators/pptx-generator.js';
 
 // Synchronization Matrix Generator
 export { generateSyncMatrix, syncMatrixToCSV } from './generators/sync-matrix.js';

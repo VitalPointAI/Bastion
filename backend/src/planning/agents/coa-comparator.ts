@@ -1,7 +1,7 @@
 import { StateGraph, Annotation, MemorySaver } from '@langchain/langgraph';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage, SystemMessage, BaseMessage } from '@langchain/core/messages';
-import { ToolNode } from '@langchain/langgraph/dist/prebuilt/index.js';
+import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { COA_COMPARATOR_CHARACTER } from './coa-comparator-character.js';
 import { getCOAComparatorTools } from './coa-comparator-tools.js';
 import { buildSystemPrompt } from '../../agents/character-builder.js';

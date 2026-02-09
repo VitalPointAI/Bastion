@@ -24,7 +24,8 @@ import {
   Classification,
 } from '../types/dao';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Use environment variable or empty string for relative URLs (Vite proxy)
+const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '';
 
 // ============================================================================
 // Copilot Analysis Types

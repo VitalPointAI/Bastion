@@ -347,6 +347,79 @@ export class TotpStore {
   }
 
   /**
+   * Store a pre-generated TOTP secret for user
+   * Used by TotpService which generates its own RFC 6238 secrets
+   *
+   * @param userId - User UUID
+   * @param secret - Base32-encoded TOTP secret
+   */
+  async storeSecret(userId: string, secret: string): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    // Encrypt secret
+    const { encrypted, nonce } = encryptSecret(secret);
+
+    // Generate backup codes
+    const backupCodes = generateBackupCodes(8);
+    const backupCodesJson = JSON.stringify(backupCodes);
+    const { encrypted: backupCodesEncrypted } = encryptSecret(backupCodesJson);
+
+    await pool.query(
+      `
+      INSERT INTO totp_credentials (
+        user_id, secret_encrypted, encryption_nonce, backup_codes
+      )
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (user_id) DO UPDATE
+      SET secret_encrypted = EXCLUDED.secret_encrypted,
+          encryption_nonce = EXCLUDED.encryption_nonce,
+          backup_codes = EXCLUDED.backup_codes
+    `,
+      [userId, encrypted, nonce, JSON.stringify([backupCodesEncrypted.toString('hex')])]
+    );
+  }
+
+  /**
+   * Get decrypted TOTP secret for user
+   * Used by TotpService for verification
+   *
+   * @param userId - User UUID
+   * @returns Decrypted base32-encoded secret, or null if not found
+   */
+  async getSecret(userId: string): Promise<string | null> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `
+      SELECT secret_encrypted, encryption_nonce
+      FROM totp_credentials
+      WHERE user_id = $1
+    `,
+      [userId]
+    );
+
+    if (result.rows.length === 0) return null;
+
+    const row = result.rows[0];
+    return decryptSecret(
+      Buffer.from(row.secret_encrypted),
+      Buffer.from(row.encryption_nonce)
+    );
+  }
+
+  /**
+   * Delete TOTP secret for user
+   * Alias for deleteCredential - used by TotpService
+   *
+   * @param userId - User UUID
+   */
+  async deleteSecret(userId: string): Promise<void> {
+    await this.deleteCredential(userId);
+  }
+
+  /**
    * Get remaining backup code count
    */
   async getBackupCodeCount(userId: string): Promise<number> {

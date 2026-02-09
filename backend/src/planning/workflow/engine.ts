@@ -1,6 +1,6 @@
 import { createActor, SnapshotFrom, Actor } from 'xstate';
-import { jp50Machine } from './jp50-machine';
-import { JP50Context, JP50Event } from './types';
+import { jp50Machine } from './jp50-machine.js';
+import { JP50Context, JP50Event } from './types.js';
 import { getPool } from '../../lib/database.js';
 import { planStore } from '../stores/plan-store.js';
 
@@ -60,15 +60,22 @@ class JP50WorkflowEngine {
     let actor: JP50Actor;
 
     if (result.rows.length > 0) {
-      // Restore from snapshot
+      // Restore from persisted state using resolveState for proper XState v5 snapshot format
       const row = result.rows[0];
-      const snapshot = {
-        value: row.state_value,
-        context: row.context as JP50Context,
-      };
+      const persistedContext = row.context as JP50Context;
+
+      // Use resolveState to create a proper XState snapshot
+      const snapshot = jp50Machine.resolveState({
+        value: row.state_value || 'navigation',
+        context: {
+          ...persistedContext,
+          // Ensure planId is set correctly (may have been empty in broken saves)
+          planId: persistedContext.planId || planId,
+        },
+      });
 
       actor = createActor(jp50Machine, {
-        snapshot: snapshot as SnapshotFrom<JP50Machine>,
+        snapshot,
       });
     } else {
       // Get plan to initialize context
@@ -143,7 +150,19 @@ class JP50WorkflowEngine {
    */
   async isAtCheckpoint(planId: string): Promise<{ atCheckpoint: boolean; checkpoint?: string }> {
     const state = await this.getState(planId);
-    const stateValue = typeof state.value === 'string' ? state.value : Object.keys(state.value)[0];
+
+    // Safely extract state value, handling null/undefined
+    let stateValue: string;
+    if (!state || !state.value) {
+      stateValue = 'navigation';
+    } else if (typeof state.value === 'string') {
+      stateValue = state.value;
+    } else if (typeof state.value === 'object') {
+      const keys = Object.keys(state.value);
+      stateValue = keys.length > 0 ? keys[0] : 'navigation';
+    } else {
+      stateValue = 'navigation';
+    }
 
     if (stateValue === 'awaitingCOAApproval') {
       return { atCheckpoint: true, checkpoint: 'coa_approval' };

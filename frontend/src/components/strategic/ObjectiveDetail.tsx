@@ -178,7 +178,7 @@ export function ObjectiveDetail({ objectiveId, onClose, onSave }: ObjectiveDetai
 
       // Call the API with PUT method
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/strategic/objectives/${encodeURIComponent(objectiveId)}`,
+        `${import.meta.env.VITE_BACKEND_API_URL || ''}/api/strategic/objectives/${encodeURIComponent(objectiveId)}`,
         {
           method: 'PUT',
           headers: {

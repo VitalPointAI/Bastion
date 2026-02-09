@@ -128,7 +128,7 @@ Required Changes:
        PINATA_GATEWAY=https://coffee-kind-eagle-207.mypinata.cloud
 
        # Backend config
-       PORT=3001
+       PORT=3002
        NODE_ENV=development
        ```
 
@@ -138,7 +138,7 @@ Required Changes:
        FASTNEAR_API_KEY=your_fastnear_api_key_here
        DATABASE_URL=postgresql://user:pass@localhost:5432/dbname
        ENCRYPTION_MASTER_KEY=generate_with_openssl_rand
-       PORT=3001
+       PORT=3002
        NODE_ENV=development
        ```
 

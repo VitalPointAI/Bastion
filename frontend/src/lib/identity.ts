@@ -1,6 +1,7 @@
 import type { EntityType, DIDResolutionResult, EntityRegistration } from './types/identity';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+// Use environment variable or empty string for relative URLs (Vite proxy)
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
 
 /**
  * Resolve a DID to its document

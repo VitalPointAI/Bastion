@@ -128,7 +128,7 @@ export function AreaStep({ formData, updateFormData }: AreaStepProps) {
                 polyline: false,
                 polygon: {
                   allowIntersection: false,
-                  showArea: true,
+                  showArea: false, // Disabled due to bug in react-leaflet-draw
                   shapeOptions: {
                     color: '#4a9eff',
                     weight: 2,

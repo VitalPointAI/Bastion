@@ -1,6 +1,6 @@
 import { setup, assign } from 'xstate';
-import { JP50Context, JP50Event } from './types';
-import { JP50Step } from '../types';
+import { JP50Context, JP50Event } from './types.js';
+import { JP50Step } from '../types.js';
 
 export const jp50Machine = setup({
   types: {

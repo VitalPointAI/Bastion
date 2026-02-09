@@ -8,7 +8,8 @@
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3001';
+// Use environment variable or empty string for relative URLs (Vite proxy)
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
 
 /**
  * Encrypt data via backend API

@@ -13,7 +13,8 @@ import type {
   CommandMatrix,
 } from './types/command.js';
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+// Use environment variable or empty string for relative URLs (Vite proxy)
+export const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '';
 
 /**
  * Paginated list response from backend.
@@ -207,7 +208,7 @@ class CommandService {
    */
   async getHierarchy(missionId: string): Promise<HierarchyNode[]> {
     const response = await this.fetch<HierarchyResponse>(
-      `/api/command/hierarchy?missionId=${encodeURIComponent(missionId)}`
+      `/api/command/hierarchy/${encodeURIComponent(missionId)}`
     );
     return response.rootUnits || [];
   }
@@ -217,7 +218,7 @@ class CommandService {
    */
   async validateHierarchy(missionId: string): Promise<ValidationResponse> {
     return this.fetch<ValidationResponse>(
-      `/api/command/hierarchy/validate?missionId=${encodeURIComponent(missionId)}`
+      `/api/command/validate-hierarchy/${encodeURIComponent(missionId)}`
     );
   }
 
@@ -230,7 +231,7 @@ class CommandService {
    */
   async getMatrix(missionId: string): Promise<CommandMatrix> {
     return this.fetch<CommandMatrix>(
-      `/api/command/matrix?missionId=${encodeURIComponent(missionId)}`
+      `/api/command/matrix/${encodeURIComponent(missionId)}`
     );
   }
 }

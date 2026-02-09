@@ -5,7 +5,8 @@
  * Handles equipment, personnel, and consumables for mission force structures.
  */
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+// Use environment variable or empty string for relative URLs (Vite proxy)
+export const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '';
 
 /**
  * Resource types

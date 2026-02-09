@@ -209,10 +209,10 @@ router.post('/register-prf', async (req, res) => {
       });
     }
 
-    // Validate entity type
-    const validEntityTypes = ['Human', 'Organization', 'Device', 'AI_Agent'];
+    // Validate entity type (must match EntityType from identity/types.ts)
+    const validEntityTypes = ['Human', 'Organization', 'AiAgent', 'Vehicle', 'Mission', 'DataObject', 'Resource'];
     const validatedEntityType = entityType && validEntityTypes.includes(entityType)
-      ? entityType as 'Human' | 'Organization' | 'Device' | 'AI_Agent'
+      ? entityType as import('../identity/types.js').EntityType
       : 'Human';
 
     // Create DID using PRF-derived secret

@@ -16,7 +16,8 @@ import type {
   Classification,
 } from './types/strategic.js';
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Use environment variable or empty string for relative URLs (Vite proxy)
+export const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '';
 
 /**
  * Paginated list response from backend.

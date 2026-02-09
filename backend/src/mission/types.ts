@@ -26,10 +26,10 @@ export interface GeoJSONPolygon {
 export interface Mission {
   id: string; // Format: MSN-{uuid}
   name: string;
-  description: string;
-  classification: 'UNCLASS' | 'SECRET' | 'TOPSECRET';
-  areaOfOps: GeoJSONPolygon; // GeoJSON Polygon for area of operations
-  workspaceId: string; // Links to workspace from Phase 4.3
+  description?: string;
+  classification: 'UNCLASSIFIED' | 'SECRET' | 'TOPSECRET';
+  areaOfOperations?: GeoJSONPolygon; // GeoJSON Polygon for area of operations
+  workspaceId?: string; // Links to workspace from Phase 4.3
   state: MissionState;
   createdBy: string; // DID of creator
   createdAt: Date;

@@ -4,7 +4,8 @@
  * Phase 05 Plan 10: Renders MIL-STD-2525D symbols using milsymbol library
  */
 
-import { Symbol as MilSymbol } from 'milsymbol';
+import ms from 'milsymbol';
+const MilSymbol = ms.Symbol;
 
 export interface SymbolOptions {
   size?: number;

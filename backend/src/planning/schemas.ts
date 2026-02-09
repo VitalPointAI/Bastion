@@ -280,12 +280,12 @@ export const ROEEventSchema = z.object({
  */
 export const createOperationalPlanSchema = z.object({
   missionId: z.string().describe('Mission ID this plan belongs to'),
-  objectiveIds: z.array(z.string()).min(1, 'At least one strategic objective is required')
-    .describe('Strategic objectives this plan addresses (minimum 1)'),
+  objectiveIds: z.array(z.string()).default([])
+    .describe('Strategic objectives this plan addresses (can be added during mission analysis)'),
   name: z.string().min(1).describe('Plan name'),
   classification: ClassificationSchema,
   planType: PlanTypeSchema,
-  yjsDocumentId: z.string().describe('Yjs document ID for collaboration')
+  yjsDocumentId: z.string().optional().describe('Yjs document ID for collaboration (auto-generated if not provided)')
 }).describe('Input for creating operational plan');
 
 /**

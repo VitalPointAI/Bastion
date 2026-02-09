@@ -15,14 +15,25 @@ const GeoJSONPolygonSchema = z.object({
 });
 
 /**
+ * Pending invite schema for mission creation
+ */
+const PendingInviteSchema = z.object({
+  inviteeDID: z.string().optional(),
+  email: z.string().email().optional(),
+  role: z.enum(['commander', 'staff', 'observer']),
+  expiresInHours: z.number().min(1).max(168).optional(),
+});
+
+/**
  * Mission input validation schema
  */
 export const MissionInputSchema = z.object({
   name: z.string().min(1).max(100).describe('Mission name (1-100 characters)'),
-  description: z.string().describe('Mission description'),
-  classification: z.enum(['UNCLASS', 'SECRET', 'TOPSECRET']).describe('Classification level'),
-  areaOfOps: GeoJSONPolygonSchema.describe('GeoJSON Polygon for area of operations'),
-  workspaceId: z.string().describe('ID of linked workspace'),
+  description: z.string().optional().describe('Mission description'),
+  classification: z.enum(['UNCLASSIFIED', 'SECRET', 'TOPSECRET']).describe('Classification level'),
+  areaOfOperations: GeoJSONPolygonSchema.optional().describe('GeoJSON Polygon for area of operations'),
+  workspaceId: z.string().optional().describe('ID of linked workspace'),
+  pendingInvites: z.array(PendingInviteSchema).optional().describe('Invites to create after mission'),
 });
 
 /**

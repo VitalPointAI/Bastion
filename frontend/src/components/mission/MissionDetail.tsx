@@ -23,6 +23,7 @@ import { CommandMatrixView } from './command/CommandMatrixView.js';
 import { ResourceCatalog } from './resources/ResourceCatalog.js';
 import { ParticipantList } from './ParticipantList.js';
 import { InviteModal } from './InviteModal.js';
+import { PlanningDashboard } from '../planning/index.js';
 import './MissionDetail.css';
 
 interface MissionDetailProps {
@@ -214,6 +215,7 @@ export function MissionDetail({ missionId, onBack }: MissionDetailProps) {
       <Tabs className="mission-tabs">
         <TabList>
           <Tab>Overview</Tab>
+          <Tab>Planning</Tab>
           <Tab>Map</Tab>
           <Tab>Command</Tab>
           <Tab>Resources</Tab>
@@ -286,6 +288,13 @@ export function MissionDetail({ missionId, onBack }: MissionDetailProps) {
                 </div>
               </div>
             )}
+          </div>
+        </TabPanel>
+
+        {/* Planning Tab */}
+        <TabPanel>
+          <div className="tab-content planning-tab">
+            <PlanningDashboard missionId={missionId} userDID={userDID || ''} />
           </div>
         </TabPanel>
 

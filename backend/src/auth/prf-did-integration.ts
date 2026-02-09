@@ -18,7 +18,7 @@ import { utf8ToBytes } from '@noble/hashes/utils.js';
 import { DIDService, getDIDService } from '../identity/did-service.js';
 import { deriveDIDBlindedKey, blindedKeyToHex } from '../identity/blinded-keys.js';
 import { deriveEncryptionKey } from '../identity/did-encryption.js';
-import type { DIDDocument } from '../identity/types.js';
+import type { DIDDocument, EntityType } from '../identity/types.js';
 
 /**
  * Create DID using PRF-derived secret
@@ -36,7 +36,7 @@ export async function createDIDFromPRF(
   accountId: string,
   prfSecret: Uint8Array,
   publicKeyBase58: string,
-  entityType: 'Human' | 'Organization' | 'Device' | 'AI_Agent' = 'Human'
+  entityType: EntityType = 'Human'
 ): Promise<{ did: string; blindedKey: string }> {
   // Validate PRF secret length
   if (prfSecret.length !== 32) {

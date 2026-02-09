@@ -221,7 +221,8 @@ export class MPCRecoveryManager {
     console.log('🔑 Adding MPC key to account:', nearAccountId);
     console.log('   MPC Public Key:', mpcPublicKey);
 
-    const apiUrl = backendUrl || 'http://localhost:3001';
+    // Use passed URL or environment variable, or empty for relative URLs (Vite proxy)
+    const apiUrl = backendUrl || import.meta.env.VITE_BACKEND_API_URL || '';
 
     try {
       // Call backend to add MPC key (backend has the initial account key)
