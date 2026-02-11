@@ -11,21 +11,21 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 5.1 of 13+ (MDMP Governance Integration)
-Plan: 1 of 15 in current phase
+Plan: 8 of 15 in current phase
 Status: In Progress
-Last activity: 2026-02-11 — Completed 5.1-01-PLAN.md (MDMP Type Foundation)
+Last activity: 2026-02-11 — Completed 5.1-08-PLAN.md (Data Bias Detector Agent)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
 Progress: ████████████████████ 100% (12/12 plans complete in phase 1.2)
 Progress: ████████████████████ 100% (3/3 plans complete in phase 1.3)
-Progress: █░░░░░░░░░░░░░░░░░░░ 7% (1/15 plans complete in phase 5.1)
+Progress: ████████░░░░░░░░░░░░ 53% (8/15 plans complete in phase 5.1)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 95
+- Total plans completed: 96
 - Average duration: 10 min
-- Total execution time: 15.69 hours
+- Total execution time: 15.72 hours
 
 **By Phase:**
 
@@ -43,11 +43,11 @@ Progress: █░░░░░░░░░░░░░░░░░░░ 7% (1/15 
 | 05 (Operational Planning Module) | 16 | 71 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 | 1.3 (NEAR Implicit Account Funding) | 3 | 32 min | 11 min |
-| 5.1 (MDMP Governance Integration) | 1 | 6 min | 6 min |
+| 5.1 (MDMP Governance Integration) | 8 | 14 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 2 min, 8 min, 12 min, 12 min, 6 min
-- Trend: Phase 5.1 started - MDMP type foundation established
+- Last 5 plans: 8 min, 12 min, 12 min, 6 min, 2 min
+- Trend: Phase 5.1 wave 2 agents executing rapidly (2 min average)
 
 ## Accumulated Context
 
@@ -761,9 +761,16 @@ None.
 - Military-themed styling matching existing admin dashboard aesthetic
 - Graceful degradation: not-configured state with setup instructions when funding disabled
 
+**Phase 5.1 Plan 8 (Data Bias Detector Agent):**
+- Rule-based bias detection in v1 (LLM integration deferred for cost/performance optimization)
+- Freshness thresholds by source type: 6h tactical, 24h operational, 168h strategic
+- 9 bias types covering cognitive and statistical biases from intelligence failure studies
+- maxAutonomy SemiAutonomous: agent outputs require human review before action
+- INVARIANT 5 strictly enforced: analysisConfidence and confidenceBounds in all outputs
+
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 5.1-01-PLAN.md (MDMP Type Foundation)
+Stopped at: Completed 5.1-08-PLAN.md (Data Bias Detector Agent)
 Resume file: None
-Next action: Proceed to 5.1-02-PLAN.md (Safety Oracle) to enforce SAFETY_MATRIX rules on-chain.
+Next action: Continue Phase 5.1 Wave 2 agent implementation (Plans 02-10 in parallel)

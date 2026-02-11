@@ -238,6 +238,15 @@ impl ProposalExecutor {
         } else {
             // Determine state based on autonomy level
             match effective_autonomy {
+                AutonomyLevel::FullyDelegated => {
+                    // Fully delegated: immediate execution with enhanced audit log
+                    log!(
+                        "FULLY_DELEGATED_EXECUTION: {{\"dao_id\": \"{}\", \"proposal_id\": {}, \"note\": \"No human monitoring required\"}}",
+                        dao_id,
+                        proposal_id
+                    );
+                    ExecutionState::ReadyForExecution
+                }
                 AutonomyLevel::Autonomous => {
                     ExecutionState::ReadyForExecution
                 }
@@ -248,10 +257,6 @@ impl ProposalExecutor {
                 }
                 AutonomyLevel::NotAutonomous => {
                     ExecutionState::AwaitingHumanApproval
-                }
-                AutonomyLevel::FullyDelegated => {
-                    // Fully delegated: immediate execution with no oversight
-                    ExecutionState::ReadyForExecution
                 }
             }
         };
@@ -1370,5 +1375,101 @@ mod tests {
             executor.get_execution_state("dao-b", 1),
             ExecutionState::AwaitingHumanApproval
         ));
+    }
+
+    // === FullyDelegated and MDMP Execution Tests ===
+
+    #[test]
+    fn test_fully_delegated_executes_immediately() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut executor = ProposalExecutor::new();
+        let dao_id = "test-dao";
+        let proposal_id = 1;
+
+        let result = create_approved_result();
+        let state = executor.process_voting_complete(
+            dao_id,
+            proposal_id,
+            &result,
+            AutonomyLevel::FullyDelegated,
+        );
+
+        // Should go directly to ReadyForExecution, NOT InVetoWindow
+        assert!(matches!(state, ExecutionState::ReadyForExecution));
+        assert!(executor.is_ready_for_execution(dao_id, proposal_id));
+        assert!(!executor.is_in_veto_window(dao_id, proposal_id));
+    }
+
+    #[test]
+    fn test_phase_transition_execution_logs_metadata() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut executor = ProposalExecutor::new();
+        let dao_id = "test-dao";
+        let proposal_id = 1;
+
+        // Set to ready for execution
+        let result = create_approved_result();
+        executor.process_voting_complete(dao_id, proposal_id, &result, AutonomyLevel::Autonomous);
+
+        // Execute PhaseTransition
+        let exec_result = executor.execute_proposal(
+            dao_id,
+            proposal_id,
+            &ProposalKind::PhaseTransition {
+                from_phase: "phase_1".to_string(),
+                to_phase: "phase_2".to_string(),
+                red_team_responses: vec!["RT-001".to_string(), "RT-002".to_string()],
+                accepted_assumptions: vec!["A-001".to_string()],
+            },
+            owner,
+            None,
+        );
+
+        assert!(exec_result.is_ok());
+        let result_str = exec_result.unwrap();
+        assert!(result_str.contains("MDMP phase transition"));
+        assert!(result_str.contains("phase_1"));
+        assert!(result_str.contains("phase_2"));
+    }
+
+    #[test]
+    fn test_commander_guidance_execution() {
+        let owner: AccountId = "alice.near".parse().unwrap();
+        let commander: AccountId = "commander.near".parse().unwrap();
+        let context = get_context(owner.clone());
+        testing_env!(context.build());
+
+        let mut executor = ProposalExecutor::new();
+        let dao_id = "test-dao";
+        let proposal_id = 1;
+
+        // Set to ready for execution
+        let result = create_approved_result();
+        executor.process_voting_complete(dao_id, proposal_id, &result, AutonomyLevel::NotAutonomous);
+        executor.submit_human_approval(dao_id, proposal_id, owner.clone()).unwrap();
+
+        // Execute CommanderGuidance
+        let exec_result = executor.execute_proposal(
+            dao_id,
+            proposal_id,
+            &ProposalKind::CommanderGuidance {
+                guidance_text: "Prioritize force protection over rapid advance.".to_string(),
+                modifies_assumptions: vec!["A-003".to_string()],
+            },
+            commander,
+            None,
+        );
+
+        assert!(exec_result.is_ok());
+        let result_str = exec_result.unwrap();
+        assert!(result_str.contains("MDMP commander guidance recorded"));
+        assert!(result_str.contains("47 chars")); // Length of guidance text
+        assert!(result_str.contains("modifies 1 assumptions"));
     }
 }
