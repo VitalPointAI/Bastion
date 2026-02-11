@@ -11,21 +11,21 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 5.1 of 13+ (MDMP Governance Integration)
-Plan: 8 of 15 in current phase
+Plan: 2 of 15 in current phase
 Status: In Progress
-Last activity: 2026-02-11 — Completed 5.1-08-PLAN.md (Data Bias Detector Agent)
+Last activity: 2026-02-11 — Completed 5.1-02-PLAN.md (NEAR MDMP Contract Structure - Assumption Registry)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
 Progress: ████████████████████ 100% (12/12 plans complete in phase 1.2)
 Progress: ████████████████████ 100% (3/3 plans complete in phase 1.3)
-Progress: ████████░░░░░░░░░░░░ 53% (8/15 plans complete in phase 5.1)
+Progress: ██░░░░░░░░░░░░░░░░░░ 13% (2/15 plans complete in phase 5.1)
 
 ## Performance Metrics
 
 **Velocity:**
 - Total plans completed: 96
 - Average duration: 10 min
-- Total execution time: 15.72 hours
+- Total execution time: 15.73 hours
 
 **By Phase:**
 
@@ -43,11 +43,11 @@ Progress: ████████░░░░░░░░░░░░ 53% (8/15
 | 05 (Operational Planning Module) | 16 | 71 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 | 1.3 (NEAR Implicit Account Funding) | 3 | 32 min | 11 min |
-| 5.1 (MDMP Governance Integration) | 8 | 14 min | 2 min |
+| 5.1 (MDMP Governance Integration) | 2 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 8 min, 12 min, 12 min, 6 min, 2 min
-- Trend: Phase 5.1 wave 2 agents executing rapidly (2 min average)
+- Last 5 plans: 12 min, 6 min, 2 min, 6 min, 4 min
+- Trend: Phase 5.1 wave 2 - MDMP smart contract foundation in progress
 
 ## Accumulated Context
 
@@ -761,6 +761,14 @@ None.
 - Military-themed styling matching existing admin dashboard aesthetic
 - Graceful degradation: not-configured state with setup instructions when funding disabled
 
+**Phase 5.1 Plan 3 (MDMP Workflow Engine):**
+- BorshStorageKey enum pattern required for LookupMap storage prefixes in NEAR SDK 5.x
+- Gate status stored with composite keys (mission_id:phase:gate_id) for efficient lookup
+- validate_phase_complete returns Vec<String> of unsatisfied gates for detailed error reporting
+- Safety validation as pure function (validate_autonomy_assignment) for reusability across contexts
+- PhaseTransitionRecord captures full audit trail: satisfied gates, assumptions, challenges
+- INVARIANT 2 enforced: phase transitions blocked when gates unsatisfied
+
 **Phase 5.1 Plan 8 (Data Bias Detector Agent):**
 - Rule-based bias detection in v1 (LLM integration deferred for cost/performance optimization)
 - Freshness thresholds by source type: 6h tactical, 24h operational, 168h strategic
@@ -771,6 +779,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 5.1-08-PLAN.md (Data Bias Detector Agent)
+Stopped at: Completed 5.1-03-PLAN.md (MDMP Workflow Engine)
 Resume file: None
-Next action: Continue Phase 5.1 Wave 2 agent implementation (Plans 02-10 in parallel)
+Next action: Proceed to 5.1-04-PLAN.md (Vote Policy Extension) to define vote policies for new MDMP proposal types
