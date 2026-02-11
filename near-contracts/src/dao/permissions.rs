@@ -240,6 +240,7 @@ impl PermissionChecker {
             AutonomyLevel::NotAutonomous => 0,
             AutonomyLevel::SemiAutonomous => 1,
             AutonomyLevel::Autonomous => 2,
+            AutonomyLevel::FullyDelegated => 3,
         }
     }
 

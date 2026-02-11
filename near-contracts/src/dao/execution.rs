@@ -249,6 +249,10 @@ impl ProposalExecutor {
                 AutonomyLevel::NotAutonomous => {
                     ExecutionState::AwaitingHumanApproval
                 }
+                AutonomyLevel::FullyDelegated => {
+                    // Fully delegated: immediate execution with no oversight
+                    ExecutionState::ReadyForExecution
+                }
             }
         };
 
@@ -536,6 +540,110 @@ impl ProposalExecutor {
                 );
 
                 format!("Custom proposal '{}' executed for DAO {}", name, dao_id)
+            }
+            ProposalKind::PhaseTransition {
+                from_phase,
+                to_phase,
+                red_team_responses,
+                accepted_assumptions,
+            } => {
+                log!(
+                    "MDMP_PHASE_TRANSITION: {{\"dao_id\": \"{}\", \"proposal_id\": {}, \"from_phase\": \"{}\", \"to_phase\": \"{}\", \"red_team_responses\": {}, \"accepted_assumptions\": {}, \"executor\": \"{}\"}}",
+                    dao_id,
+                    proposal_id,
+                    from_phase,
+                    to_phase,
+                    red_team_responses.len(),
+                    accepted_assumptions.len(),
+                    executor
+                );
+
+                format!(
+                    "MDMP phase transition: {} -> {} (DAO {})",
+                    from_phase, to_phase, dao_id
+                )
+            }
+            ProposalKind::AssumptionAcceptance {
+                assumptions,
+                risk_owner,
+            } => {
+                log!(
+                    "MDMP_ASSUMPTION_ACCEPTANCE: {{\"dao_id\": \"{}\", \"proposal_id\": {}, \"assumptions\": {}, \"risk_owner\": \"{}\", \"executor\": \"{}\"}}",
+                    dao_id,
+                    proposal_id,
+                    assumptions.len(),
+                    risk_owner,
+                    executor
+                );
+
+                format!(
+                    "MDMP assumptions accepted: {} assumptions, risk owner: {}",
+                    assumptions.len(),
+                    risk_owner
+                )
+            }
+            ProposalKind::ProductApproval {
+                product_type,
+                mdmp_phase,
+                ai_confidence,
+                product_hash,
+            } => {
+                log!(
+                    "MDMP_PRODUCT_APPROVAL: {{\"dao_id\": \"{}\", \"proposal_id\": {}, \"product_type\": \"{}\", \"mdmp_phase\": \"{}\", \"ai_confidence\": {}, \"product_hash\": \"{}\", \"executor\": \"{}\"}}",
+                    dao_id,
+                    proposal_id,
+                    product_type,
+                    mdmp_phase,
+                    ai_confidence,
+                    product_hash,
+                    executor
+                );
+
+                format!(
+                    "MDMP product approved: {} (phase: {}, confidence: {})",
+                    product_type, mdmp_phase, ai_confidence
+                )
+            }
+            ProposalKind::RedTeamGate {
+                phase,
+                challenges_addressed,
+                unresolved_risks,
+            } => {
+                log!(
+                    "MDMP_RED_TEAM_GATE: {{\"dao_id\": \"{}\", \"proposal_id\": {}, \"phase\": \"{}\", \"challenges_addressed\": {}, \"unresolved_risks\": {}, \"executor\": \"{}\"}}",
+                    dao_id,
+                    proposal_id,
+                    phase,
+                    challenges_addressed.len(),
+                    unresolved_risks.len(),
+                    executor
+                );
+
+                format!(
+                    "MDMP red team gate passed: phase {} ({} challenges addressed, {} unresolved risks)",
+                    phase,
+                    challenges_addressed.len(),
+                    unresolved_risks.len()
+                )
+            }
+            ProposalKind::CommanderGuidance {
+                guidance_text,
+                modifies_assumptions,
+            } => {
+                log!(
+                    "MDMP_COMMANDER_GUIDANCE: {{\"dao_id\": \"{}\", \"proposal_id\": {}, \"guidance_length\": {}, \"modifies_assumptions\": {}, \"executor\": \"{}\"}}",
+                    dao_id,
+                    proposal_id,
+                    guidance_text.len(),
+                    modifies_assumptions.len(),
+                    executor
+                );
+
+                format!(
+                    "MDMP commander guidance recorded: {} chars, modifies {} assumptions",
+                    guidance_text.len(),
+                    modifies_assumptions.len()
+                )
             }
         }
     }

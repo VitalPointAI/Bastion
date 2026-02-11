@@ -20,21 +20,27 @@ use crate::privacy::Classification;
 ///
 /// Determines the degree of human oversight required for decisions.
 /// Matches military command authority patterns.
+/// Ordered: NotAutonomous < SemiAutonomous < Autonomous < FullyDelegated
 #[near(serializers = [json, borsh])]
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub enum AutonomyLevel {
-    /// Human-out-of-the-loop: AI/system can approve and execute within delegated authority
-    /// Use for routine, low-consequence decisions where speed is critical
-    Autonomous,
+    /// Human-in-the-loop: Human must explicitly approve before execution
+    /// DEFAULT for all lethal decisions (StrikeAuthorization)
+    #[default]
+    NotAutonomous,
 
     /// Human-on-the-loop: AI can approve, human monitors with veto window
     /// Use for moderate-consequence decisions requiring oversight but not blocking approval
     SemiAutonomous,
 
-    /// Human-in-the-loop: Human must explicitly approve before execution
-    /// DEFAULT for all lethal decisions (StrikeAuthorization)
-    #[default]
-    NotAutonomous,
+    /// Human-out-of-the-loop: AI/system can approve and execute within delegated authority
+    /// Use for routine, low-consequence decisions where speed is critical
+    Autonomous,
+
+    /// Fully delegated to AI with no human oversight required
+    /// RESTRICTED to: DataAggregation, ValidationConsistency, Monitoring, MetaCognitive activities
+    /// Prohibited for: RiskJudgment, AuthorityDecision, EthicalLegal activities
+    FullyDelegated,
 }
 
 /// DAO configuration - immutable settings defined at creation
@@ -92,8 +98,9 @@ pub struct DAOMetadata {
 /// Extends SputnikDAO v2 patterns with military-specific types:
 /// - StrikeAuthorization: Lethal decisions (always human-in-loop)
 /// - MissionOrder: Operational directives
+/// - MDMP-specific: Phase transitions, assumptions, products, gates, guidance
 #[near(serializers = [json, borsh])]
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ProposalKind {
     /// Change DAO configuration
     ConfigChange,
@@ -119,12 +126,74 @@ pub enum ProposalKind {
 
     /// Custom proposal type with identifier
     Custom(String),
+
+    /// MDMP: Transition between planning phases
+    /// Requires human-in-loop and red team challenge responses
+    PhaseTransition {
+        from_phase: String,
+        to_phase: String,
+        red_team_responses: Vec<String>,
+        accepted_assumptions: Vec<String>,
+    },
+
+    /// MDMP: Accept planning assumptions with designated risk owner
+    /// Requires human-in-loop for authority decision
+    AssumptionAcceptance {
+        assumptions: Vec<String>,
+        risk_owner: AccountId,
+    },
+
+    /// MDMP: Approve AI-generated planning product
+    /// Uses standard voting (not forced human-in-loop)
+    ProductApproval {
+        product_type: String,
+        mdmp_phase: String,
+        ai_confidence: f64,
+        product_hash: String,
+    },
+
+    /// MDMP: Red team gate passage for phase progression
+    /// Uses standard voting (not forced human-in-loop)
+    RedTeamGate {
+        phase: String,
+        challenges_addressed: Vec<String>,
+        unresolved_risks: Vec<String>,
+    },
+
+    /// MDMP: Commander's planning guidance
+    /// Requires human-in-loop for authority decision
+    CommanderGuidance {
+        guidance_text: String,
+        modifies_assumptions: Vec<String>,
+    },
 }
 
 impl ProposalKind {
     /// Check if this proposal kind requires forced human-in-loop
     pub fn requires_human_in_loop(&self) -> bool {
-        matches!(self, ProposalKind::StrikeAuthorization)
+        matches!(
+            self,
+            ProposalKind::StrikeAuthorization
+                | ProposalKind::PhaseTransition { .. }
+                | ProposalKind::AssumptionAcceptance { .. }
+                | ProposalKind::CommanderGuidance { .. }
+        )
+    }
+
+    /// Check if this proposal kind prohibits FullyDelegated autonomy
+    /// Returns true for all kinds involving authority exercise
+    pub fn prohibits_fully_delegated(&self) -> bool {
+        matches!(
+            self,
+            ProposalKind::StrikeAuthorization
+                | ProposalKind::ConfigChange
+                | ProposalKind::MissionOrder
+                | ProposalKind::PhaseTransition { .. }
+                | ProposalKind::AssumptionAcceptance { .. }
+                | ProposalKind::ProductApproval { .. }
+                | ProposalKind::RedTeamGate { .. }
+                | ProposalKind::CommanderGuidance { .. }
+        )
     }
 
     /// Get policy label for permission matching (SputnikDAO pattern)
@@ -138,6 +207,11 @@ impl ProposalKind {
             ProposalKind::StrikeAuthorization => "strike_authorization".to_string(),
             ProposalKind::MissionOrder => "mission_order".to_string(),
             ProposalKind::Custom(name) => format!("custom:{}", name),
+            ProposalKind::PhaseTransition { .. } => "phase_transition".to_string(),
+            ProposalKind::AssumptionAcceptance { .. } => "assumption_acceptance".to_string(),
+            ProposalKind::ProductApproval { .. } => "product_approval".to_string(),
+            ProposalKind::RedTeamGate { .. } => "red_team_gate".to_string(),
+            ProposalKind::CommanderGuidance { .. } => "commander_guidance".to_string(),
         }
     }
 }
@@ -255,11 +329,82 @@ mod tests {
     }
 
     #[test]
+    fn test_autonomy_level_ordering() {
+        assert!(AutonomyLevel::NotAutonomous < AutonomyLevel::SemiAutonomous);
+        assert!(AutonomyLevel::SemiAutonomous < AutonomyLevel::Autonomous);
+        assert!(AutonomyLevel::Autonomous < AutonomyLevel::FullyDelegated);
+    }
+
+    #[test]
     fn test_proposal_kind_human_in_loop() {
         assert!(ProposalKind::StrikeAuthorization.requires_human_in_loop());
         assert!(!ProposalKind::Transfer.requires_human_in_loop());
         assert!(!ProposalKind::MissionOrder.requires_human_in_loop());
         assert!(!ProposalKind::ConfigChange.requires_human_in_loop());
+
+        // MDMP kinds
+        assert!(ProposalKind::PhaseTransition {
+            from_phase: "phase_1".to_string(),
+            to_phase: "phase_2".to_string(),
+            red_team_responses: vec![],
+            accepted_assumptions: vec![],
+        }
+        .requires_human_in_loop());
+
+        assert!(ProposalKind::AssumptionAcceptance {
+            assumptions: vec![],
+            risk_owner: "commander.near".parse().unwrap(),
+        }
+        .requires_human_in_loop());
+
+        assert!(ProposalKind::CommanderGuidance {
+            guidance_text: "test".to_string(),
+            modifies_assumptions: vec![],
+        }
+        .requires_human_in_loop());
+
+        assert!(!ProposalKind::ProductApproval {
+            product_type: "coa".to_string(),
+            mdmp_phase: "phase_3".to_string(),
+            ai_confidence: 0.95,
+            product_hash: "hash".to_string(),
+        }
+        .requires_human_in_loop());
+
+        assert!(!ProposalKind::RedTeamGate {
+            phase: "phase_2".to_string(),
+            challenges_addressed: vec![],
+            unresolved_risks: vec![],
+        }
+        .requires_human_in_loop());
+    }
+
+    #[test]
+    fn test_proposal_kind_prohibits_fully_delegated() {
+        assert!(ProposalKind::StrikeAuthorization.prohibits_fully_delegated());
+        assert!(ProposalKind::ConfigChange.prohibits_fully_delegated());
+        assert!(ProposalKind::MissionOrder.prohibits_fully_delegated());
+
+        // MDMP kinds all prohibit FullyDelegated
+        assert!(ProposalKind::PhaseTransition {
+            from_phase: "phase_1".to_string(),
+            to_phase: "phase_2".to_string(),
+            red_team_responses: vec![],
+            accepted_assumptions: vec![],
+        }
+        .prohibits_fully_delegated());
+
+        assert!(ProposalKind::ProductApproval {
+            product_type: "coa".to_string(),
+            mdmp_phase: "phase_3".to_string(),
+            ai_confidence: 0.95,
+            product_hash: "hash".to_string(),
+        }
+        .prohibits_fully_delegated());
+
+        // Non-authority kinds don't prohibit
+        assert!(!ProposalKind::Transfer.prohibits_fully_delegated());
+        assert!(!ProposalKind::AddMember.prohibits_fully_delegated());
     }
 
     #[test]
@@ -269,6 +414,57 @@ mod tests {
         assert_eq!(
             ProposalKind::Custom("test".to_string()).to_policy_label(),
             "custom:test"
+        );
+
+        // MDMP policy labels
+        assert_eq!(
+            ProposalKind::PhaseTransition {
+                from_phase: "phase_1".to_string(),
+                to_phase: "phase_2".to_string(),
+                red_team_responses: vec![],
+                accepted_assumptions: vec![],
+            }
+            .to_policy_label(),
+            "phase_transition"
+        );
+
+        assert_eq!(
+            ProposalKind::AssumptionAcceptance {
+                assumptions: vec![],
+                risk_owner: "commander.near".parse().unwrap(),
+            }
+            .to_policy_label(),
+            "assumption_acceptance"
+        );
+
+        assert_eq!(
+            ProposalKind::ProductApproval {
+                product_type: "coa".to_string(),
+                mdmp_phase: "phase_3".to_string(),
+                ai_confidence: 0.95,
+                product_hash: "hash".to_string(),
+            }
+            .to_policy_label(),
+            "product_approval"
+        );
+
+        assert_eq!(
+            ProposalKind::RedTeamGate {
+                phase: "phase_2".to_string(),
+                challenges_addressed: vec![],
+                unresolved_risks: vec![],
+            }
+            .to_policy_label(),
+            "red_team_gate"
+        );
+
+        assert_eq!(
+            ProposalKind::CommanderGuidance {
+                guidance_text: "test".to_string(),
+                modifies_assumptions: vec![],
+            }
+            .to_policy_label(),
+            "commander_guidance"
         );
     }
 
