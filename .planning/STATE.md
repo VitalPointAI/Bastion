@@ -11,21 +11,21 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 5.1 of 13+ (MDMP Governance Integration)
-Plan: 10 of 15 in current phase
+Plan: 11 of 15 in current phase
 Status: In Progress
-Last activity: 2026-02-11 — Completed 5.1-09-PLAN.md (Problem Framing Agent)
+Last activity: 2026-02-11 — Completed 5.1-13-PLAN.md (MDMP RAFT Templates)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
 Progress: ████████████████████ 100% (12/12 plans complete in phase 1.2)
 Progress: ████████████████████ 100% (3/3 plans complete in phase 1.3)
-Progress: ████████████████░░░░ 67% (10/15 plans complete in phase 5.1)
+Progress: █████████████████░░░ 73% (11/15 plans complete in phase 5.1)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 98
+- Total plans completed: 99
 - Average duration: 10 min
-- Total execution time: 15.84 hours
+- Total execution time: 15.97 hours
 
 **By Phase:**
 
@@ -43,11 +43,11 @@ Progress: ████████████████░░░░ 67% (10/1
 | 05 (Operational Planning Module) | 16 | 71 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 | 1.3 (NEAR Implicit Account Funding) | 3 | 32 min | 11 min |
-| 5.1 (MDMP Governance Integration) | 10 | 60 min | 6 min |
+| 5.1 (MDMP Governance Integration) | 11 | 68 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 6 min, 2 min, 6 min, 4 min, 6 min
-- Trend: Phase 5.1 Wave 2 execution - MDMP agent implementation in parallel
+- Last 5 plans: 2 min, 6 min, 4 min, 6 min, 8 min
+- Trend: Phase 5.1 Wave 2 execution - MDMP agents and RAFT templates in parallel
 
 ## Accumulated Context
 
@@ -777,14 +777,21 @@ None.
 
 **Phase 5.1 Plan 8 (Data Bias Detector Agent):**
 - Rule-based bias detection in v1 (LLM integration deferred for cost/performance optimization)
-- Freshness thresholds by source type: 6h tactical, 24h operational, 168h strategic
-- 9 bias types covering cognitive and statistical biases from intelligence failure studies
-- maxAutonomy SemiAutonomous: agent outputs require human review before action
+
+**Phase 5.1 Plan 13 (MDMP RAFT Templates):**
+- Task Extraction template covers specified, implied, and essential tasks per JP 5-0
+- CCIR Generation produces PIR (enemy), FFIR (friendly), EEFI (protect) per ATP 2-01.3
+- OPORD Generation follows strict 5-paragraph format (Situation, Mission, Execution, Sustainment, Command/Signal)
+- IPB Analysis uses OAKOC (terrain), ASCOPE (civil), and NAIs per ATP 2-01.3
+- Wargame Extraction captures decision points, HPTs, IRs, branches, and sequels
+- All templates include confidence scores for extraction quality and completeness
+- System prompts embed doctrinal knowledge to guide LLM extraction
+- Few-shot examples use realistic military scenarios for pattern learning
 - INVARIANT 5 strictly enforced: analysisConfidence and confidenceBounds in all outputs
 
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 5.1-09-PLAN.md (Problem Framing Agent)
+Stopped at: Completed 5.1-13-PLAN.md (MDMP RAFT Templates)
 Resume file: None
-Next action: Continue Phase 5.1 Wave 2 execution - remaining plans: 5.1-11 through 5.1-15
+Next action: Continue Phase 5.1 Wave 2 execution - remaining plans: 5.1-02, 5.1-03, 5.1-04, 5.1-05 (Wave 3 frontend integration and decision products)
