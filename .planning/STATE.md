@@ -10,21 +10,22 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 1.3 of 13+ (NEAR Implicit Account Funding)
-Plan: 3 of 3 in current phase
-Status: Phase Complete
-Last activity: 2026-02-07 — Completed 1.3-03-PLAN.md (Admin Funding Panel)
+Phase: 5.1 of 13+ (MDMP Governance Integration)
+Plan: 1 of 15 in current phase
+Status: In Progress
+Last activity: 2026-02-11 — Completed 5.1-01-PLAN.md (MDMP Type Foundation)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
 Progress: ████████████████████ 100% (12/12 plans complete in phase 1.2)
 Progress: ████████████████████ 100% (3/3 plans complete in phase 1.3)
+Progress: █░░░░░░░░░░░░░░░░░░░ 7% (1/15 plans complete in phase 5.1)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 94
+- Total plans completed: 95
 - Average duration: 10 min
-- Total execution time: 15.59 hours
+- Total execution time: 15.69 hours
 
 **By Phase:**
 
@@ -42,10 +43,11 @@ Progress: ████████████████████ 100% (3/3
 | 05 (Operational Planning Module) | 16 | 71 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 | 1.3 (NEAR Implicit Account Funding) | 3 | 32 min | 11 min |
+| 5.1 (MDMP Governance Integration) | 1 | 6 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 7 min, 2 min, 8 min, 12 min, 12 min
-- Trend: Phase 1.3 complete - Full funding flow with admin monitoring UI
+- Last 5 plans: 2 min, 8 min, 12 min, 12 min, 6 min
+- Trend: Phase 5.1 started - MDMP type foundation established
 
 ## Accumulated Context
 
@@ -674,6 +676,15 @@ None.
 - ROEPanel + DocumentExport for plan_development step
 - Added checkROE and requestROEOverride to planning-service.ts
 
+**Phase 5.1 Plan 1 (MDMP Type Foundation):**
+- FullyDelegated as 4th autonomy level with PartialOrd/Ord (NotAutonomous < SemiAutonomous < Autonomous < FullyDelegated)
+- Removed Eq derive from ProposalKind due to f64 in ProductApproval (use to_policy_label() for HashMap keys)
+- Phase0 (continuous) and Phase8 (terminal) return None from next(); all phases allow revisiting (JP 5-0)
+- 22 activity categories split into 3 safety tiers: 4 fully-delegated, 15 hybrid, 3 human-in-loop
+- SAFETY_MATRIX in TypeScript (backend reference data) for now, will migrate to on-chain oracle in 5.1-02
+- MDMPPhase enum with next(), can_revisit(), to_string_label() methods for phase progression logic
+- ActivityCategory safety methods: permits_fully_delegated() and requires_human_in_loop()
+
 **Phase 1.2 Plan 5 (Frontend Passkey Authentication UI):**
 - @simplewebauthn/browser for WebAuthn client operations
 - useAuth hook with AuthProvider replaces usePrivy
@@ -752,7 +763,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-07
-Stopped at: Completed 1.3-03-PLAN.md (Admin Funding Panel)
+Last session: 2026-02-11
+Stopped at: Completed 5.1-01-PLAN.md (MDMP Type Foundation)
 Resume file: None
-Next action: Phase 1.3 complete. Ready for production deployment or next feature phase.
+Next action: Proceed to 5.1-02-PLAN.md (Safety Oracle) to enforce SAFETY_MATRIX rules on-chain.
