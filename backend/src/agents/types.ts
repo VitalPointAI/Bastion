@@ -49,6 +49,16 @@ export enum AgentCapability {
   ConsensusBuilding = 'ConsensusBuilding',
   /** Coordinate committee activities */
   CommitteeCoordination = 'CommitteeCoordination',
+
+  // ── MDMP Agent Capabilities (Phase 5.1) ──
+  /** Surface, classify, and track planning assumptions */
+  AssumptionAuditing = 'AssumptionAuditing',
+  /** Detect statistical bias, data staleness, and coverage gaps */
+  DataBiasDetection = 'DataBiasDetection',
+  /** Parse ROE, map authorities to tasks, validate compliance */
+  ROECompliance = 'ROECompliance',
+  /** Produce calibrated confidence intervals and detect false precision */
+  UncertaintyQuantification = 'UncertaintyQuantification',
 }
 
 /**
