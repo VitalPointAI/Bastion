@@ -14,3 +14,6 @@ export { AssumptionTracker } from './AssumptionTracker';
 export type { AssumptionDisplayData } from './AssumptionTracker';
 
 export { CommanderGuidanceForm } from './CommanderGuidanceForm';
+
+export { DecisionBriefView } from './DecisionBriefView';
+export type { DecisionBrief } from './DecisionBriefView';
