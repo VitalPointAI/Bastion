@@ -11,21 +11,21 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 5.1 of 13+ (MDMP Governance Integration)
-Plan: 13 of 15 in current phase
-Status: In Progress
-Last activity: 2026-02-11 — Completed 5.1-12-PLAN.md (MDMP Activity Registry & Workflow Service)
+Plan: 15 of 15 in current phase
+Status: Phase Complete
+Last activity: 2026-02-11 — Completed 5.1-15-PLAN.md (Decision Brief Generator & Viewer)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
 Progress: ████████████████████ 100% (12/12 plans complete in phase 1.2)
 Progress: ████████████████████ 100% (3/3 plans complete in phase 1.3)
-Progress: ████████████████████ 87% (13/15 plans complete in phase 5.1)
+Progress: ████████████████████ 100% (15/15 plans complete in phase 5.1)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 101
+- Total plans completed: 102
 - Average duration: 10 min
-- Total execution time: 16.13 hours
+- Total execution time: 16.22 hours
 
 **By Phase:**
 
@@ -43,11 +43,11 @@ Progress: ████████████████████ 87% (13/1
 | 05 (Operational Planning Module) | 16 | 71 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 | 1.3 (NEAR Implicit Account Funding) | 3 | 32 min | 11 min |
-| 5.1 (MDMP Governance Integration) | 13 | 78 min | 6 min |
+| 5.1 (MDMP Governance Integration) | 15 | 83 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 4 min, 6 min, 8 min, 5 min, 5 min
-- Trend: Phase 5.1 Wave 3 execution - MDMP backend infrastructure (activity registry, workflow service, REST API)
+- Last 5 plans: 6 min, 8 min, 5 min, 5 min, 5 min
+- Trend: Phase 5.1 Complete - Decision brief synthesis with COA comparison, risk assessment, and commander decision UI
 
 ## Accumulated Context
 
@@ -797,9 +797,18 @@ None.
 - Assumption modifier UX uses checkbox multi-select for better visibility
 - All components follow DAODashboard layout patterns for consistent integration
 
+**Phase 5.1 Plan 15 (Decision Brief Generator & Viewer):**
+- Default evaluation criteria follow JP 5-0 doctrine with weighted scoring (suitability 30%, feasibility 25%, acceptability 25%, distinguishability 10%, completeness 10%)
+- Interactive COA comparison matrix with sortable criteria for flexible commander analysis perspective
+- 5x5 risk matrix with detailed risk cards showing mitigations and residual risk
+- Three commander decision actions: approve (creates ProductApproval proposal), revise (staff feedback), reject (return to Phase 3)
+- INVARIANT 5 strictly enforced: all COA scores, staff recommendation, and overall brief include confidence intervals
+- Confidence visualization: bar + bounds + percentage for three levels of detail
+- Governance linkage to Phase 6 COA Approval gate (MDMP-6-01)
+
 ## Session Continuity
 
-Last session: 2026-02-11 14:37:40 UTC
-Stopped at: Completed 5.1-11-PLAN.md (MDMP Governance UI Components)
+Last session: 2026-02-11 14:47:12 UTC
+Stopped at: Completed 5.1-15-PLAN.md (Decision Brief Generator & Viewer)
 Resume file: None
-Next action: Continue Phase 5.1 Wave 3 execution - remaining plans: 5.1-02, 5.1-12, 5.1-14 (integration and testing)
+Next action: Phase 5.1 Complete - ready for phase transition
