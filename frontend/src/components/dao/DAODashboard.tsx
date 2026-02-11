@@ -12,6 +12,7 @@ import { governanceService } from '../../lib/governance-service';
 import { ProposalList } from './ProposalList';
 import { ProposalDetail } from './ProposalDetail';
 import { VotingInterface } from './VotingInterface';
+import { MDMPGovernancePanel } from '../governance/MDMPGovernancePanel';
 import './DAODashboard.css';
 
 interface DAODashboardProps {
@@ -27,6 +28,7 @@ export function DAODashboard({ daoId: initialDaoId }: DAODashboardProps) {
   const [coalitionStatus, setCoalitionStatus] = useState<CoalitionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showMDMPWorkflow, setShowMDMPWorkflow] = useState(false);
 
   // Load DAOs and action required proposals
   const loadDashboardData = useCallback(async () => {
@@ -155,18 +157,30 @@ export function DAODashboard({ daoId: initialDaoId }: DAODashboardProps) {
     <div className="dao-dashboard">
       <header className="dashboard-header">
         <h1>Governance</h1>
-        <div className="dao-selector">
-          <select
-            value={selectedDaoId ?? ''}
-            onChange={(e) => setSelectedDaoId(e.target.value || null)}
+        <div className="header-actions">
+          <button
+            className={`mdmp-workflow-toggle ${showMDMPWorkflow ? 'active' : ''}`}
+            onClick={() => {
+              setShowMDMPWorkflow(!showMDMPWorkflow);
+              setSelectedProposal(null);
+              setShowVoting(false);
+            }}
           >
-            <option value="">All DAOs</option>
-            {daos.map((dao) => (
-              <option key={dao.daoId} value={dao.daoId}>
-                {dao.name} ({dao.activeProposalCount} active)
-              </option>
-            ))}
-          </select>
+            {showMDMPWorkflow ? '← Back to Proposals' : 'MDMP Workflow →'}
+          </button>
+          <div className="dao-selector">
+            <select
+              value={selectedDaoId ?? ''}
+              onChange={(e) => setSelectedDaoId(e.target.value || null)}
+            >
+              <option value="">All DAOs</option>
+              {daos.map((dao) => (
+                <option key={dao.daoId} value={dao.daoId}>
+                  {dao.name} ({dao.activeProposalCount} active)
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </header>
 
@@ -188,8 +202,19 @@ export function DAODashboard({ daoId: initialDaoId }: DAODashboardProps) {
         </div>
 
         <div className="dashboard-main">
+          {/* MDMP Workflow Panel */}
+          {showMDMPWorkflow && selectedDaoId && (
+            <div className="mdmp-workflow-section">
+              <MDMPGovernancePanel
+                missionId="placeholder-mission-001"
+                daoId={selectedDaoId}
+                userDID="user-did-placeholder"
+              />
+            </div>
+          )}
+
           {/* Sidebar: DAOs list (when no DAO selected) */}
-          {!selectedDaoId && (
+          {!showMDMPWorkflow && !selectedDaoId && (
             <aside className="daos-sidebar">
               <h3>My DAOs</h3>
               <div className="dao-list">
@@ -214,7 +239,8 @@ export function DAODashboard({ daoId: initialDaoId }: DAODashboardProps) {
           )}
 
           {/* Main Content */}
-          <main className="proposals-main">
+          {!showMDMPWorkflow && (
+            <main className="proposals-main">
             {/* Action Required Section */}
             {actionRequired.length > 0 && !selectedProposal && (
               <section className="action-required-section">
@@ -291,6 +317,7 @@ export function DAODashboard({ daoId: initialDaoId }: DAODashboardProps) {
               </section>
             )}
           </main>
+          )}
         </div>
       </div>
     </div>

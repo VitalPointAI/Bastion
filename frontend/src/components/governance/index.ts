@@ -17,3 +17,5 @@ export { CommanderGuidanceForm } from './CommanderGuidanceForm';
 
 export { DecisionBriefView } from './DecisionBriefView';
 export type { DecisionBrief } from './DecisionBriefView';
+
+export { MDMPGovernancePanel } from './MDMPGovernancePanel';

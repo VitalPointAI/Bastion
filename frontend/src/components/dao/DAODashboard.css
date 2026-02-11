@@ -684,3 +684,59 @@
     padding: 1rem;
   }
 }
+
+
+/* ============================================================================
+   MDMP Workflow Integration
+   ============================================================================ */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mdmp-workflow-toggle {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 0.5rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-blue, #3b82f6);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.mdmp-workflow-toggle:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.15));
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+.mdmp-workflow-toggle.active {
+  background: linear-gradient(135deg, var(--accent-blue, #3b82f6), #2563eb);
+  border-color: var(--accent-blue, #3b82f6);
+  color: white;
+}
+
+.mdmp-workflow-section {
+  width: 100%;
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .mdmp-workflow-toggle {
+    width: 100%;
+  }
+}
+
