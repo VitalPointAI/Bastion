@@ -11,14 +11,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 5.1 of 13+ (MDMP Governance Integration)
-Plan: 6 of 15 in current phase
+Plan: 7 of 15 in current phase
 Status: In Progress
-Last activity: 2026-02-11 — Completed 5.1-06-PLAN.md (Orders Validator Agent)
+Last activity: 2026-02-11 — Completed 5.1-07-PLAN.md (Uncertainty Quantifier Agent)
 
 Progress: ████████████████ 100% (16/16 plans complete in phase 05)
 Progress: ████████████████████ 100% (12/12 plans complete in phase 1.2)
 Progress: ████████████████████ 100% (3/3 plans complete in phase 1.3)
-Progress: █████████░░░░░░░░░░░ 47% (7/15 plans complete in phase 5.1)
+Progress: ████████████░░░░░░░░ 60% (9/15 plans complete in phase 5.1)
 
 ## Performance Metrics
 
@@ -685,6 +685,12 @@ None.
 - MDMPPhase enum with next(), can_revisit(), to_string_label() methods for phase progression logic
 - ActivityCategory safety methods: permits_fully_delegated() and requires_human_in_loop()
 
+
+**Phase 5.1 Plan 2 (Assumption Registry):**
+- Composite key pattern (mission_id:assumption_id) for efficient mission-scoped queries in NEAR LookupMap
+- invalidate_assumption returns SensitivityLevel for caller to handle INVARIANT 6 replanning trigger
+- all_accepted_at_sensitivity uses inclusive threshold filtering (>= not ==) for phase transition readiness
+- BorshStorageKey enum pattern for type-safe storage initialization
 **Phase 1.2 Plan 5 (Frontend Passkey Authentication UI):**
 - @simplewebauthn/browser for WebAuthn client operations
 - useAuth hook with AuthProvider replaces usePrivy
