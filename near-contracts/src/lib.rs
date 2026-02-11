@@ -33,6 +33,8 @@ use dao::{
     PermissionChecker, Action,
 };
 
+mod mdmp;
+
 /// Main contract structure with state versioning pattern
 /// State version is tracked internally for safe upgrades
 #[near(contract_state)]

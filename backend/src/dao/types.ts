@@ -8,14 +8,17 @@
 /**
  * Autonomy level for proposal execution.
  * Determines the degree of human oversight required for decisions.
+ * Ordered: NotAutonomous < SemiAutonomous < Autonomous < FullyDelegated
  */
 export enum AutonomyLevel {
-  /** Human-out-of-the-loop: AI/system can approve and execute within delegated authority */
-  Autonomous = 'Autonomous',
-  /** Human-on-the-loop: AI can approve, human monitors with veto window */
-  SemiAutonomous = 'SemiAutonomous',
   /** Human-in-the-loop: Human must explicitly approve before execution */
   NotAutonomous = 'NotAutonomous',
+  /** Human-on-the-loop: AI can approve, human monitors with veto window */
+  SemiAutonomous = 'SemiAutonomous',
+  /** Human-out-of-the-loop: AI/system can approve and execute within delegated authority */
+  Autonomous = 'Autonomous',
+  /** Fully delegated to AI with no human oversight required - RESTRICTED to 4 safe categories */
+  FullyDelegated = 'FullyDelegated',
 }
 
 /**
@@ -32,6 +35,49 @@ export enum ProposalKind {
   StrikeAuthorization = 'StrikeAuthorization',
   MissionOrder = 'MissionOrder',
   Custom = 'Custom',
+  /** MDMP: Phase transition with red team gate */
+  PhaseTransition = 'PhaseTransition',
+  /** MDMP: Assumption acceptance with risk owner */
+  AssumptionAcceptance = 'AssumptionAcceptance',
+  /** MDMP: AI-generated product approval */
+  ProductApproval = 'ProductApproval',
+  /** MDMP: Red team gate passage */
+  RedTeamGate = 'RedTeamGate',
+  /** MDMP: Commander planning guidance */
+  CommanderGuidance = 'CommanderGuidance',
+}
+
+/**
+ * MDMP-specific proposal data structures
+ */
+export interface PhaseTransitionData {
+  from_phase: string;
+  to_phase: string;
+  red_team_responses: string[];
+  accepted_assumptions: string[];
+}
+
+export interface AssumptionAcceptanceData {
+  assumptions: string[];
+  risk_owner: string;
+}
+
+export interface ProductApprovalData {
+  product_type: string;
+  mdmp_phase: string;
+  ai_confidence: number;
+  product_hash: string;
+}
+
+export interface RedTeamGateData {
+  phase: string;
+  challenges_addressed: string[];
+  unresolved_risks: string[];
+}
+
+export interface CommanderGuidanceData {
+  guidance_text: string;
+  modifies_assumptions: string[];
 }
 
 /**
