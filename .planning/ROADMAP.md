@@ -23,6 +23,8 @@ None
 - [ ] **Phase 4.4: Mission Context & Force Onboarding** - Workspace setup, participant invitation, command relationships, resource inventories, sensor registration (INSERTED)
 - [ ] **Phase 4.5: ATAK/CoT Tactical Interoperability** - CoT message protocol, TAK Server integration, real-time position sharing, data package export (INSERTED)
 - [x] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
+- [ ] **Phase 5.1: MDMP Governance Integration** - MDMP workflow engine, assumption registry, safety matrix, 6 new AI agents, governance gates (INSERTED)
+- [ ] **Phase 5.2: Escalation & Competition Modeling** - Adversary modeler, effect cascader, escalation modeler, deception detector, wargaming enhancement (INSERTED)
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
 - [ ] **Phase 8: Sensor Fusion & Intelligence** - Create multi-level intelligence architecture and data fusion
@@ -30,6 +32,7 @@ None
 - [ ] **Phase 10: End-to-End Integration** - Automate complete planning cycle, implement BDA feedback loops
 - [ ] **Phase 11: User Experience & Personalization** - Create cinematic briefings, personalized command centers, behavioral learning
 - [ ] **Phase 12: Coalition & Multi-Tenancy** - Implement information sharing rules, classification handling, federation
+- [ ] **Phase 12.1: Coalition Health Monitoring** - Coalition health agent, narrative impact agent, national caveat tracking, coalition gates (INSERTED)
 - [ ] **Phase 13: Research Whitepaper** - Comprehensive documentation for master's research requirement
 
 ## Phase Details
@@ -533,6 +536,102 @@ Plans:
 - [x] Plan 05-15: Vite Docker Proxy Fix — Environment-aware proxy configuration for Docker networking (gap closure, completed 2026-01-31)
 - [x] Plan 05-16: Step Content Area Fix — Step-specific component rendering in PlanningDashboard (gap closure, completed 2026-02-01)
 
+### Phase 5.1: MDMP Governance Integration (INSERTED)
+**Goal:** Integrate the Military Decision Making Process governance framework into Bastion's DAO layer with phase progression enforcement, assumption lifecycle tracking, safety matrix validation, and 6 new AI agents
+**Depends on:** Phase 3, Phase 4.2, Phase 4.3, Phase 5
+**Research:** Complete (5.1-RESEARCH.md, .planning/mdmp-governance/)
+**Research topics:** MDMP phases and activities for Theater Army ASCC-level planning, five-tier authority model (AI Autonomous through Human Only), safety matrix enforcement at smart contract level, assumption lifecycle management, governance gate mechanisms, human-in/on/out-of-loop control postures
+**Plans:** 17 plans (15 executed + 2 gap closure)
+
+**Context:**
+This phase emerged from a comprehensive analysis of an MDMP checklist for Theater Army planning, evaluated against Bastion's existing architecture. The analysis produced a complete data model (65 MDMP activities, 22 activity categories, 5 authority levels, 9 governance invariants) with smart contract specifications and a 12-agent expansion plan.
+
+**Key Capabilities:**
+
+1. **MDMP Smart Contract Module** (`near-contracts/src/mdmp/`)
+   - `AutonomyLevel::FullyDelegated` variant (additive, backward-compatible)
+   - 5 new `ProposalKind` variants: PhaseTransition, AssumptionAcceptance, ProductApproval, RedTeamGate, CommanderGuidance
+   - `MDMPPhase` and `ActivityCategory` enums with safety enforcement methods
+   - `AssumptionRegistry` contract with full lifecycle (Pending -> Accepted -> Invalidated)
+   - `MDMPWorkflow` contract with phase gate enforcement
+   - Safety matrix validation preventing authority level violations
+
+2. **6 New AI Agents (Priority 1 + 3)**
+   - Assumption Auditor: Surface/track planning assumptions with sensitivity analysis
+   - Orders Validator: Format/consistency validation, degraded execution simulation
+   - Uncertainty Quantifier: Calibrated confidence intervals, false precision detection
+   - Data Bias Detector: Statistical bias, coverage gaps, staleness tracking
+   - Problem Framing: Alternative problem perspectives from multiple viewpoints
+   - ROE Compliance: Parse ROE, map authorities to tasks, validate compliance
+
+3. **Governance Gate System**
+   - 6 gate types: PhaseTransition, ProductApproval, AuthorityCheckpoint, RedTeamGate, CoalitionGate, AssumptionGate
+   - 18 gates across 9 MDMP phases
+   - Red team challenge completeness enforcement
+
+4. **RAFT Pipeline MDMP Templates**
+   - Task/constraint extraction, CCIR generation, mission statement, OPORD templates
+   - IPB analysis, wargame output extraction
+
+**Safety Matrix Enforcement:**
+- AI Autonomous: DATA_AGGREGATION, VALIDATION_CONSISTENCY, MONITORING, META_COGNITIVE only
+- Human Only (immutable): AUTHORITY_DECISION, ETHICAL_LEGAL, RISK_JUDGMENT
+- Enforced at smart contract level (transaction rejected if violated)
+
+Plans:
+- [x] Plan 5.1-01: MDMP Smart Contract Types (wave 1) — FullyDelegated, new ProposalKind variants, MDMPPhase, ActivityCategory, TypeScript mirrors
+- [x] Plan 5.1-02: Assumption Registry Contract (wave 2) — AssumptionRecord lifecycle, sensitivity, INVARIANT 3 & 6
+- [x] Plan 5.1-03: MDMP Workflow Engine (wave 2) — Phase progression, gate enforcement, safety matrix, INVARIANTS 2, 4, 8, 9
+- [x] Plan 5.1-04: DAO Contract Extensions (wave 2) — Extended voting policies, execution flow for FullyDelegated
+- [x] Plan 5.1-05: Assumption Auditor Agent (wave 3) — Surface assumptions, track validity, sensitivity analysis
+- [x] Plan 5.1-06: Orders Validator Agent (wave 2) — Format/consistency validation, degraded execution simulation
+- [x] Plan 5.1-07: Uncertainty Quantifier Agent (wave 2) — Calibrated confidence intervals, false precision detection
+- [x] Plan 5.1-08: Data Bias Detector Agent (wave 2) — Statistical bias, coverage gaps, staleness tracking
+- [x] Plan 5.1-09: Problem Framing Agent (wave 2) — Alternative problem perspectives from multiple viewpoints
+- [x] Plan 5.1-10: ROE Compliance Agent (wave 2) — Parse ROE, map authorities, validate compliance
+- [x] Plan 5.1-11: Governance Gate UI (wave 3) — Phase progression dashboard, gate status, assumption tracking, commander guidance form
+- [x] Plan 5.1-12: MDMP Activity Registry Backend (wave 3) — 65-activity registry, workflow service, REST API
+- [x] Plan 5.1-13: RAFT Pipeline MDMP Templates (wave 2) — Task extraction, CCIR, OPORD, IPB, wargame extraction
+- [x] Plan 5.1-14: End-to-End MDMP Workflow Integration (wave 4) — Integration orchestrator, safety enforcement, E2E tests for all 9 invariants
+- [x] Plan 5.1-15: Decision Brief Generator (wave 4) — MDMP Phase 6 decision brief product with COA comparison matrix
+- [ ] Plan 5.1-16: Activity Registry Completion (gap closure) — Add 55 missing Phase 1-8 activity definitions to registry
+- [ ] Plan 5.1-17: Frontend-Backend API Wiring (gap closure) — MDMP service module, container panel, DAODashboard integration
+
+### Phase 5.2: Escalation & Competition Modeling (INSERTED)
+**Goal:** Build adversary modeling, escalation dynamics simulation, and effect cascading capabilities with 4 new AI agents and wargaming framework enhancement
+**Depends on:** Phase 4.3, Phase 5, Phase 5.1
+**Research:** Complete (5.2-RESEARCH.md, .planning/mdmp-governance/)
+**Research topics:** Adversary COA development methodology (ATP 2-01.3), escalation ladder theory and simulation, second/third-order effects across DIME domains, deception detection patterns, wargaming action-reaction-counteraction frameworks
+**Plans:** 10 plans
+
+**Context:**
+This phase addresses the adversary modeling and effects analysis capabilities identified during MDMP governance analysis. The existing Red Team Simulator agent is expanded to a full wargaming framework, supported by 4 new specialized agents for adversary modeling, escalation dynamics, effects cascading, and deception detection. Additional capabilities cover force ratio analysis, COA sketch generation, branch/sequel planning, and sustainment modeling.
+
+**Key Capabilities:**
+
+1. **Adversary Modeler Agent** — Synthesize adversary capability models, generate MLCOA/MDCOA
+2. **Effect Cascader Agent** — Map second/third-order effects of each COA across all domains
+3. **Escalation Modeler Agent** — Model escalation dynamics using multiple theoretical frameworks
+4. **Deception Detector Agent** — Identify inconsistencies between adversary stated intent and behavior
+5. **Escalation & Effect Visualization** — Escalation ladder UI, effect chain diagrams
+6. **Wargaming Framework Enhancement** — Expand red team simulator to full action-reaction-counteraction
+7. **Force Ratio Analysis** — Quantitative force comparison with correlation of forces methodology
+8. **COA Sketch Generation** — Visual COA representation with operational graphics overlay
+9. **Branch & Sequel Planning** — Contingency planning with decision point triggers
+10. **Sustainment Modeling** — Logistics feasibility analysis and sustainment comparison per COA
+
+Plans:
+- [ ] Plan 5.2-01: Adversary Modeler Agent — Adversary capability synthesis, adversary COA generation
+- [ ] Plan 5.2-02: Effect Cascader Agent — Second/third-order effects mapping across domains
+- [ ] Plan 5.2-03: Escalation Modeler Agent — Escalation ladder simulations, dynamics modeling
+- [ ] Plan 5.2-04: Deception Detector Agent — Intent vs. behavior inconsistency detection
+- [ ] Plan 5.2-05: Escalation & Effect Visualization — Escalation ladder UI, effect chain diagrams
+- [ ] Plan 5.2-06: Wargaming Framework Enhancement — Expand red team simulator to full wargaming
+- [ ] Plan 5.2-07: Force Ratio Analysis — Correlation of forces methodology, quantitative force comparison (MDMP-2-06)
+- [ ] Plan 5.2-08: COA Sketch Generation — Visual COA representation with operational graphics overlay (MDMP-3-03)
+- [ ] Plan 5.2-09: Branch & Sequel Planning — Contingency COAs with decision point triggers (MDMP-3-06)
+- [ ] Plan 5.2-10: Sustainment Modeling — Logistics feasibility analysis and comparison per COA (MDMP-3-07, 5-03)
+
 ### Phase 6: Autonomous Vehicle Integration
 **Goal**: Set up edge AI platform and autonomous vehicle control
 **Depends on**: Phase 1
@@ -545,9 +644,11 @@ Plans:
 
 ### Phase 7: Tactical Execution System
 **Goal**: Build commander interface and mission execution workflows
-**Depends on**: Phase 5, Phase 6
+**Depends on**: Phase 5, Phase 5.1, Phase 6
 **Research**: Likely (multi-modal interface design)
 **Research topics**: React-based tactical map libraries, conversational AI integration patterns, WebSocket for real-time vehicle telemetry, vehicle command and control protocols, mission order data structures
+
+**MDMP Integration Note:** MDMP Phase 7 (Orders Production) produces governance-validated orders via the Orders Validator agent (5.1-06). This phase consumes those validated orders for tactical execution, ensuring the full governance audit trail flows through to the field.
 **Plans**: TBD
 
 Plans:
@@ -557,7 +658,9 @@ Plans:
 **Goal**: Create multi-level intelligence fusion architecture
 **Depends on**: Phase 6
 **Research**: Likely (sensor fusion architecture)
-**Research topics**: Multi-level intelligence fusion patterns, tactical fusion algorithms for edge devices, operational fusion in backend, blockchain-based intelligence sharing, sensor data ontologies
+**Research topics**: Multi-level intelligence fusion patterns, tactical fusion algorithms for edge devices, operational fusion in backend, blockchain-based intelligence sharing, sensor data ontologies, MASINT/GEOINT connector pipelines, MDMP-structured IPB sensor integration
+
+**MDMP Integration Note:** MDMP activity MDMP-0-01 (intelligence data aggregation) requires MASINT/GEOINT connector pipelines that feed into the existing Strategic Fusion agent. Sensor categorization should align with MDMP activity categories for governance-aware intelligence collection management.
 **Plans**: TBD
 
 Plans:
@@ -565,8 +668,11 @@ Plans:
 
 ### Phase 9: Assessment & Dashboard
 **Goal**: Build real-time operational assessment and commander's decision support
-**Depends on**: Phase 7, Phase 8
-**Research**: Unlikely (builds on established patterns from earlier phases)
+**Depends on**: Phase 5.1, Phase 7, Phase 8
+**Research**: Likely (MDMP assessment framework integration)
+**Research topics**: COP schema normalization (MDMP-0-03), deviation detection algorithms (MDMP-8-02), assessment-to-monitoring feedback loops (MDMP-8-03), MOE/MOP tracking against MDMP governance gates
+
+**MDMP Integration Note:** MDMP Phase 8 (Assessment) has significant overlap with this phase. The assessment tracking module, deviation detection (plan vs. actual), and assessment-to-monitoring feedback loops are all MDMP governance-aware. COP schema normalization (MDMP-0-03) is a core requirement for the common operational picture.
 **Plans**: TBD
 
 Plans:
@@ -574,8 +680,10 @@ Plans:
 
 ### Phase 10: End-to-End Integration
 **Goal**: Automate complete planning cycle with feedback loops
-**Depends on**: Phase 9
+**Depends on**: Phase 5.1, Phase 5.2, Phase 9
 **Research**: Unlikely (integration of existing components)
+
+**MDMP Integration Note:** The "complete planning cycle" must include the full MDMP workflow (Phases 0-VIII) with all governance gates, assumption lifecycle management, escalation modeling, and coalition health monitoring. This phase validates that the JP 5-0 workflow (Phase 5) and MDMP governance layer (Phase 5.1) operate as an integrated system from strategic guidance through assessment.
 **Plans**: TBD
 
 Plans:
@@ -600,6 +708,35 @@ Plans:
 
 Plans:
 - [ ] TBD during phase planning
+
+### Phase 12.1: Coalition Health Monitoring (INSERTED)
+**Goal:** Real-time coalition partner health monitoring, national caveat tracking, and coalition gate enforcement with 2 new AI agents and smart contract extensions
+**Depends on:** Phase 3, Phase 5.1, Phase 12
+**Research:** Complete (12.1-RESEARCH.md, .planning/mdmp-governance/)
+**Research topics:** JP 3-16 Multinational Operations, coalition partner force posture monitoring, national caveat management, multi-party approval gates, coalition cohesion metrics, narrative/info op impact modeling
+**Plans:** 5 plans
+
+**Context:**
+This phase addresses coalition-specific capabilities identified during MDMP governance analysis. Two new AI agents provide continuous assessment of coalition partner health and narrative impact, while smart contract extensions to the existing linkages contract enable national caveat tracking and coalition gate enforcement.
+
+**Key Capabilities:**
+
+1. **Coalition Health Agent** — Monitor coalition cohesion, track partner posture changes, alert on defection risk
+2. **Narrative Impact Agent** — Model information operation impact across audience segments
+3. **National Caveat Tracking** — Extend linkages contract for per-member caveat management and conflict detection
+4. **Coalition Gate Mechanism** — Multi-party approval gates requiring coalition partner consensus
+5. **Coalition Health Dashboard** — Partner status visualization, caveat conflicts, health metrics
+
+**Red Team Challenges Supported:**
+- RT-2-08: Coalition partner defection under stress
+- RT-5-03: Underweighted partner constraints
+
+Plans:
+- [ ] Plan 12.1-01: Coalition Health Agent — Monitor cohesion, track partner posture changes
+- [ ] Plan 12.1-02: Narrative Impact Agent — Info op impact modeling across audiences
+- [ ] Plan 12.1-03: National Caveat Tracking — Extend linkages contract for caveat management
+- [ ] Plan 12.1-04: Coalition Gate Mechanism — Multi-party approval gates in DAO linkages
+- [ ] Plan 12.1-05: Coalition Health Dashboard — Partner status, caveat conflicts, health metrics
 
 ### Phase 13: Research Whitepaper
 **Goal**: Comprehensive academic whitepaper answering the research question on AI-augmented DAOs for military C2
@@ -643,13 +780,18 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Foundation & Infrastructure | 8/8 | Complete | 2026-01-13 |
 | 1.1 Calimero Self-Sovereign App | 0/TBD | Not started | - |
 | 1.2 Passkey + NEAR Implicit Auth | 12/12 | Complete | 2026-02-01 |
-| 1.3 NEAR Implicit Account Funding | 0/TBD | Not started | - |
+| 1.3 NEAR Implicit Account Funding | 3/3 | Complete | 2026-02-06 |
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
+| 4.1 Admin UI | 2/2 | Complete | 2026-01-19 |
+| 4.2 AI Agent Teams | 6/6 | Complete | 2026-01-20 |
 | 4.3 Strategic Intelligence Fusion & RAFT | 11/11 | Complete | 2026-01-24 |
 | 4.4 Mission Context & Force Onboarding | 0/9 | Planning Complete | - |
+| 4.5 ATAK/CoT Tactical Interoperability | 0/TBD | Not started | - |
 | 5. Operational Planning Module | 16/16 | Complete | 2026-02-01 |
+| 5.1 MDMP Governance Integration | 15/17 | Gap Closure (2 gaps) | - |
+| 5.2 Escalation & Competition Modeling | 0/10 | Not started | - |
 | 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
 | 7. Tactical Execution System | 0/TBD | Not started | - |
 | 8. Sensor Fusion & Intelligence | 0/TBD | Not started | - |
@@ -657,4 +799,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 10. End-to-End Integration | 0/TBD | Not started | - |
 | 11. User Experience & Personalization | 0/TBD | Not started | - |
 | 12. Coalition & Multi-Tenancy | 0/TBD | Not started | - |
+| 12.1 Coalition Health Monitoring | 0/5 | Not started | - |
 | 13. Research Whitepaper | 9/9 | Complete | 2026-01-24 |
