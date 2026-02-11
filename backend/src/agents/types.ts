@@ -55,6 +55,10 @@ export enum AgentCapability {
   AssumptionAuditing = 'AssumptionAuditing',
   /** Detect statistical bias, data staleness, and coverage gaps */
   DataBiasDetection = 'DataBiasDetection',
+  /** Validate orders format, consistency, and intent traceability */
+  OrdersValidation = 'OrdersValidation',
+  /** Generate alternative problem framings from multiple perspectives */
+  ProblemFraming = 'ProblemFraming',
   /** Parse ROE, map authorities to tasks, validate compliance */
   ROECompliance = 'ROECompliance',
   /** Produce calibrated confidence intervals and detect false precision */
