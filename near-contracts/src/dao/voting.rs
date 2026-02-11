@@ -212,6 +212,60 @@ impl VotePolicy {
                     denominator: 3,
                 }),
             },
+
+            // ── New MDMP policies ──
+
+            // Phase transitions require 2/3 approval, 67% quorum
+            // High bar because it gates all subsequent planning
+            ProposalKind::PhaseTransition { .. } => Self {
+                weight_kind: WeightKind::RoleWeight,
+                threshold: ThresholdKind::two_thirds(),
+                quorum: ThresholdKind::two_thirds(),
+                veto_threshold: Some(ThresholdKind::Ratio {
+                    numerator: 1,
+                    denominator: 3,
+                }),
+            },
+
+            // Assumption acceptance: simple majority, 50% quorum
+            // Lower bar to avoid bottlenecking the planning process
+            ProposalKind::AssumptionAcceptance { .. } => Self {
+                weight_kind: WeightKind::RoleWeight,
+                threshold: ThresholdKind::half(),
+                quorum: ThresholdKind::half(),
+                veto_threshold: None,
+            },
+
+            // Product approval: 2/3 approval, 50% quorum
+            // Significant planning products require strong consensus
+            ProposalKind::ProductApproval { .. } => Self {
+                weight_kind: WeightKind::RoleWeight,
+                threshold: ThresholdKind::two_thirds(),
+                quorum: ThresholdKind::half(),
+                veto_threshold: Some(ThresholdKind::Ratio {
+                    numerator: 1,
+                    denominator: 3,
+                }),
+            },
+
+            // Red team gate: simple majority, 50% quorum
+            // Red team gates acknowledge challenges were considered, not block
+            ProposalKind::RedTeamGate { .. } => Self {
+                weight_kind: WeightKind::RoleWeight,
+                threshold: ThresholdKind::half(),
+                quorum: ThresholdKind::half(),
+                veto_threshold: None,
+            },
+
+            // Commander guidance: recorded, not voted on
+            // Requires only the commander's approval (threshold 1 absolute)
+            ProposalKind::CommanderGuidance { .. } => Self {
+                weight_kind: WeightKind::RoleWeight,
+                threshold: ThresholdKind::Absolute { count: 1 },
+                quorum: ThresholdKind::Absolute { count: 1 },
+                veto_threshold: None,
+            },
+
             _ => Self::default(),
         }
     }
@@ -1046,5 +1100,123 @@ mod tests {
         // Both should work identically
         assert_eq!(engine1.get_vote_count("dao", 1), 0);
         assert_eq!(engine2.get_vote_count("dao", 1), 0);
+    }
+
+    // === MDMP Proposal Kind Vote Policy Tests ===
+
+    #[test]
+    fn test_phase_transition_vote_policy() {
+        let policy = VotePolicy::for_proposal_kind(&ProposalKind::PhaseTransition {
+            from_phase: "phase_1".to_string(),
+            to_phase: "phase_2".to_string(),
+            red_team_responses: vec![],
+            accepted_assumptions: vec![],
+        });
+
+        // Verify 2/3 threshold and 2/3 quorum
+        assert!(matches!(
+            policy.threshold,
+            ThresholdKind::Ratio {
+                numerator: 2,
+                denominator: 3
+            }
+        ));
+        assert!(matches!(
+            policy.quorum,
+            ThresholdKind::Ratio {
+                numerator: 2,
+                denominator: 3
+            }
+        ));
+        // Verify veto threshold exists
+        assert!(policy.veto_threshold.is_some());
+    }
+
+    #[test]
+    fn test_assumption_acceptance_vote_policy() {
+        let policy = VotePolicy::for_proposal_kind(&ProposalKind::AssumptionAcceptance {
+            assumptions: vec![],
+            risk_owner: "commander.near".parse().unwrap(),
+        });
+
+        // Verify 1/2 threshold and 1/2 quorum
+        assert!(matches!(
+            policy.threshold,
+            ThresholdKind::Ratio {
+                numerator: 1,
+                denominator: 2
+            }
+        ));
+        assert!(matches!(
+            policy.quorum,
+            ThresholdKind::Ratio {
+                numerator: 1,
+                denominator: 2
+            }
+        ));
+        // No veto
+        assert!(policy.veto_threshold.is_none());
+    }
+
+    #[test]
+    fn test_commander_guidance_vote_policy() {
+        let policy = VotePolicy::for_proposal_kind(&ProposalKind::CommanderGuidance {
+            guidance_text: "test".to_string(),
+            modifies_assumptions: vec![],
+        });
+
+        // Verify Absolute count: 1
+        assert!(matches!(policy.threshold, ThresholdKind::Absolute { count: 1 }));
+        assert!(matches!(policy.quorum, ThresholdKind::Absolute { count: 1 }));
+        // No veto
+        assert!(policy.veto_threshold.is_none());
+    }
+
+    #[test]
+    fn test_product_approval_has_veto() {
+        let policy = VotePolicy::for_proposal_kind(&ProposalKind::ProductApproval {
+            product_type: "oplan".to_string(),
+            mdmp_phase: "phase_5".to_string(),
+            ai_confidence: 0.85,
+            product_hash: "QmHash".to_string(),
+        });
+
+        // Verify veto threshold exists
+        assert!(policy.veto_threshold.is_some());
+        // Should be 2/3 threshold
+        assert!(matches!(
+            policy.threshold,
+            ThresholdKind::Ratio {
+                numerator: 2,
+                denominator: 3
+            }
+        ));
+    }
+
+    #[test]
+    fn test_red_team_gate_no_veto() {
+        let policy = VotePolicy::for_proposal_kind(&ProposalKind::RedTeamGate {
+            phase: "phase_2".to_string(),
+            challenges_addressed: vec![],
+            unresolved_risks: vec![],
+        });
+
+        // Verify NO veto threshold
+        assert!(policy.veto_threshold.is_none());
+        // Should be 1/2 threshold and quorum
+        assert!(matches!(
+            policy.threshold,
+            ThresholdKind::Ratio {
+                numerator: 1,
+                denominator: 2
+            }
+        ));
+        assert!(matches!(
+            policy.quorum,
+            ThresholdKind::Ratio {
+                numerator: 1,
+                denominator: 2
+            }
+        ));
     }
 }
