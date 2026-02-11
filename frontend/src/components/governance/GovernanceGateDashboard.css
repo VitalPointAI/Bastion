@@ -1,0 +1,365 @@
+/**
+ * GovernanceGateDashboard Styles
+ */
+
+.governance-gate-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: var(--bg-primary, #ffffff);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border, #e5e7eb);
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary, #1f2937);
+}
+
+.mission-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.mission-label {
+  color: var(--text-muted, #6b7280);
+  font-weight: 500;
+}
+
+.mission-id {
+  color: var(--text-primary, #1f2937);
+  font-weight: 600;
+  font-family: monospace;
+  background: var(--bg-secondary, #f3f4f6);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.selected-phase-info {
+  background: var(--bg-secondary, #f8f9fa);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.selected-phase-info h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.phase-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary, #1f2937);
+}
+
+.stat.success .stat-value {
+  color: var(--success, #10b981);
+}
+
+.stat.warning .stat-value {
+  color: var(--warning, #f59e0b);
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--text-muted, #6b7280);
+  font-weight: 500;
+}
+
+.gate-filters {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary, #f8f9fa);
+  border-radius: 8px;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.filter-group select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 6px;
+  background: white;
+  font-size: 0.875rem;
+  color: var(--text-primary, #1f2937);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.filter-group select:hover {
+  border-color: var(--accent, #3b82f6);
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: var(--accent, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.gate-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.gate-card {
+  background: white;
+  border: 2px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gate-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.gate-card.satisfied {
+  border-color: var(--success, #10b981);
+  background: #f0fdf4;
+}
+
+.gate-card.pending {
+  border-color: var(--warning, #f59e0b);
+  background: #fffbeb;
+}
+
+.gate-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gate-type-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gate-type-badge.red-team {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.gate-type-badge.commander {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.gate-type-badge.legal {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.gate-type-badge.coalition {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.gate-type-badge.resource {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.gate-type-badge.temporal {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.gate-type-badge.default {
+  background: var(--bg-secondary, #f3f4f6);
+  color: var(--text-primary, #1f2937);
+}
+
+.gate-status-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.gate-status-badge.satisfied {
+  background: var(--success, #10b981);
+  color: white;
+}
+
+.gate-status-badge.pending {
+  background: var(--warning, #f59e0b);
+  color: white;
+}
+
+.gate-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+}
+
+.gate-description {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-primary, #1f2937);
+}
+
+.gate-satisfaction-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid var(--border, #e5e7eb);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.info-label {
+  color: var(--text-muted, #6b7280);
+  font-weight: 500;
+}
+
+.info-value {
+  color: var(--text-primary, #1f2937);
+  font-weight: 600;
+  text-align: right;
+}
+
+.info-value.proposal-link {
+  color: var(--accent, #3b82f6);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.info-value.proposal-link:hover {
+  color: #2563eb;
+}
+
+.gate-card-footer {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+.satisfy-gate-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--accent, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.satisfy-gate-btn:hover {
+  background: #2563eb;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.satisfy-gate-btn:active {
+  transform: scale(0.98);
+}
+
+.no-gates {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.no-gates p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .governance-gate-dashboard {
+    padding: 1rem;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .phase-stats {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .gate-filters {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-group select {
+    flex: 1;
+  }
+
+  .gate-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
