@@ -24,6 +24,7 @@ import missionRouter from './api/missions.js';
 import resourceRouter from './api/resources.js';
 import sensorRouter from './api/sensors.js';
 import planningRouter from './api/planning.js';
+import mdmpRouter from './routes/mdmp.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
 import { getMessageBus } from './messaging/message-bus.js';
 import { getCheckpointer } from './orchestration/checkpointer.js';
@@ -97,6 +98,7 @@ app.use('/api/missions', missionRouter);
 app.use('/api/resources', resourceRouter);
 app.use('/api/sensors', sensorRouter);
 app.use('/api/planning', planningRouter);
+app.use('/api/mdmp', mdmpRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
