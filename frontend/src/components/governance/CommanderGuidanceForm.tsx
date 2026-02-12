@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import { CommanderGuidanceData } from '../../types/dao';
+import type { CommanderGuidanceData } from '../../types/dao';
 import './CommanderGuidanceForm.css';
 
 interface CommanderGuidanceFormProps {

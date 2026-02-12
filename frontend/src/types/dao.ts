@@ -195,3 +195,11 @@ export interface DAOResponse<T> {
   transaction?: TransactionArgs;
   error?: string;
 }
+
+/**
+ * Commander guidance data for MDMP workflow submissions.
+ */
+export interface CommanderGuidanceData {
+  guidance_text: string;
+  modifies_assumptions: boolean;
+}

@@ -6,11 +6,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { AssumptionTracker, AssumptionDisplayData } from './AssumptionTracker';
-import { GovernanceGateDashboard, GateDisplayData } from './GovernanceGateDashboard';
-import { PhaseProgressionBar, PhaseProgressionData } from './PhaseProgressionBar';
+import { AssumptionTracker } from './AssumptionTracker';
+import type { AssumptionDisplayData } from './AssumptionTracker';
+import { GovernanceGateDashboard } from './GovernanceGateDashboard';
+import type { GateDisplayData } from './GovernanceGateDashboard';
+import { PhaseProgressionBar } from './PhaseProgressionBar';
+import type { PhaseProgressionData } from './PhaseProgressionBar';
 import { CommanderGuidanceForm } from './CommanderGuidanceForm';
-import { DecisionBriefView } from './DecisionBriefView';
 import * as mdmpService from '../../lib/mdmp-service';
 import type { CommanderGuidanceData } from '../../types/dao';
 import './MDMPGovernancePanel.css';
@@ -149,20 +151,11 @@ export function MDMPGovernancePanel({
     }
   };
 
-  // Decision brief placeholder handlers
-  const handleApprove = (coaId: string) => {
-    console.log('Approve COA:', coaId);
-    alert('COA approval creates a ProductApproval proposal. Feature requires DAO integration.');
-  };
-
-  const handleRequestRevision = (feedback: string) => {
-    console.log('Request revision:', feedback);
-    alert('COA revision request feature requires backend integration.');
-  };
-
-  const handleReject = () => {
-    console.log('Reject all COAs');
-    alert('COA rejection returns to Phase 3. Feature requires backend integration.');
+  // Phase click handler for PhaseProgressionBar navigation
+  const handlePhaseClick = (phase: string) => {
+    console.log('Navigate to phase:', phase);
+    // Phase navigation would reload workflow for the selected phase
+    // For now, just log the action
   };
 
   // Render loading state
@@ -249,6 +242,11 @@ export function MDMPGovernancePanel({
       <div className="tab-content">
         {activeTab === 'phase-overview' && (
           <div className="phase-overview-tab">
+            <PhaseProgressionBar
+              phases={phaseProgression}
+              currentPhase={currentPhase}
+              onPhaseClick={handlePhaseClick}
+            />
             <GovernanceGateDashboard
               missionId={missionId}
               currentPhase={currentPhase}
