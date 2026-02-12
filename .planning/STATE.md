@@ -10,19 +10,19 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 5.1 of 13+ (MDMP Governance Integration)
-Plan: 17 of 17 in current phase
-Status: Phase complete
-Last activity: 2026-02-11 — Phase 5.1 verified (9/9 must-haves, all gaps closed)
+Phase: 5.2 of 13+ (Escalation & Competition Modeling)
+Plan: 1 of 10 in current phase
+Status: In progress
+Last activity: 2026-02-12 — Completed 5.2-01-PLAN.md
 
-Progress: ████████████████████ 100% (17/17 plans complete in phase 5.1)
+Progress: █████████████████████ 108 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 107
+- Total plans completed: 108
 - Average duration: 9 min
-- Total execution time: 16.77 hours
+- Total execution time: 16.82 hours
 
 **By Phase:**
 
@@ -41,10 +41,11 @@ Progress: ████████████████████ 100% (17/
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 | 1.3 (NEAR Implicit Account Funding) | 3 | 32 min | 11 min |
 | 5.1 (MDMP Governance Integration) | 17 | 116 min | 7 min |
+| 5.2 (Escalation & Competition Modeling) | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 17 min, 5 min, 5 min, 3 min, 5 min
-- Trend: Phase 5.1 complete — all 17 plans executed, 9/9 must-haves verified
+- Last 5 plans: 5 min, 5 min, 3 min, 5 min, 3 min
+- Trend: Phase 5.2 started — Adversary Modeler agent foundation established
 
 ## Accumulated Context
 
@@ -813,9 +814,16 @@ None.
 - Confidence visualization: bar + bounds + percentage for three levels of detail
 - Governance linkage to Phase 6 COA Approval gate (MDMP-6-01)
 
+**Phase 5.2 Plan 1 (Adversary Modeler Agent):**
+- ATP 2-01.3 doctrine foundation for adversary COA generation (MLCOA/MDCOA)
+- SemiAutonomous max autonomy: agent generates COAs, human approves for wargaming
+- Separate force modeling from COA generation for incremental intelligence refinement
+- Intelligence gap identification as first-class output drives ISR collection planning
+- Observable indicators and decision points enable event template construction
+
 ## Session Continuity
 
-Last session: 2026-02-11
-Stopped at: Phase 5.1 complete — all 17 plans executed, 9/9 must-haves verified
+Last session: 2026-02-12
+Stopped at: Completed 5.2-01-PLAN.md
 Resume file: None
-Next action: Plan and execute next phase (5.2 Escalation & Competition Modeling or other priority)
+Next action: Execute 5.2-02-PLAN.md (continue Phase 5.2)
