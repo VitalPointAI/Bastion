@@ -1,0 +1,347 @@
+/* Effect Chain Diagram Container */
+.effect-chain-diagram-container {
+  padding: 1.5rem;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 8px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.effect-chain-diagram-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.effect-chain-diagram-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-primary, #1f2937);
+}
+
+/* Chain Toggles */
+.chain-toggles {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.chain-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.chain-toggle:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.chain-toggle input[type='checkbox'] {
+  cursor: pointer;
+}
+
+/* Scrollable Diagram Area */
+.effect-chain-diagram-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+.effect-chain-diagram {
+  position: relative;
+  min-height: 600px;
+}
+
+/* Swim Lanes */
+.swim-lanes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.swim-lane {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.swim-lane-even {
+  background: rgba(249, 250, 251, 0.5);
+}
+
+.swim-lane-odd {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.swim-lane-label {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: 700;
+  font-size: 1.125rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Effect Nodes */
+.effect-node {
+  position: absolute;
+  border-radius: 8px;
+  border: 2px solid;
+  background: white;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.effect-node:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 20;
+}
+
+.effect-node.selected {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  z-index: 30;
+}
+
+/* Root Action Node */
+.effect-node.root-action {
+  border-width: 3px;
+  background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+}
+
+/* Sentiment Colors */
+.effect-node.node-sentiment-positive {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.effect-node.node-sentiment-negative {
+  border-color: #ef4444;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+.effect-node.node-sentiment-neutral {
+  border-color: #6b7280;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+/* Node Header */
+.effect-node-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.effect-node-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.25rem 0.5rem;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  color: var(--text-primary, #1f2937);
+}
+
+.unintended-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 4px;
+  border: 1px solid #fbbf24;
+}
+
+/* Node Content */
+.effect-node-content {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #4b5563);
+  line-height: 1.4;
+}
+
+.effect-node-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Effect Node Popover */
+.effect-node-popover {
+  position: absolute;
+  width: 320px;
+  background: white;
+  border: 2px solid #2563eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  padding: 1rem;
+}
+
+.popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.popover-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary, #1f2937);
+}
+
+.popover-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  padding: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.popover-close:hover {
+  background: #f3f4f6;
+  color: var(--text-primary, #1f2937);
+}
+
+.popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.popover-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.popover-label {
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.popover-field span:not(.popover-label) {
+  color: var(--text-secondary, #4b5563);
+  line-height: 1.5;
+}
+
+/* SVG Arrows */
+.effect-arrows-svg {
+  pointer-events: none;
+}
+
+/* Legend */
+.effect-chain-legend {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-node {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 4px;
+  border: 2px solid #6b7280;
+}
+
+.legend-node.node-sentiment-positive {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.legend-node.node-sentiment-negative {
+  border-color: #ef4444;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+.legend-node.node-sentiment-neutral {
+  border-color: #6b7280;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .effect-chain-diagram-container {
+    padding: 1rem;
+  }
+
+  .effect-chain-diagram-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chain-toggles {
+    width: 100%;
+  }
+
+  .chain-toggle {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .effect-node {
+    font-size: 0.75rem;
+  }
+
+  .effect-node-popover {
+    width: 280px;
+    font-size: 0.875rem;
+  }
+
+  .effect-chain-legend {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
