@@ -1,0 +1,487 @@
+/*
+ * SustainmentDisplay Styles
+ *
+ * Dual-view visualization for COA sustainment analysis
+ */
+
+.sustainment-display {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ============================================================================
+ * Assessment Banner
+ * ============================================================================ */
+
+.assessment-banner {
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  background-color: #f9fafb;
+}
+
+.assessment-banner.assessment-feasible {
+  border-left-color: #16a34a;
+  background-color: #f0fdf4;
+}
+
+.assessment-banner.assessment-marginal {
+  border-left-color: #ea580c;
+  background-color: #fff7ed;
+}
+
+.assessment-banner.assessment-infeasible {
+  border-left-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.assessment-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.assessment-label {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+.assessment-feasible .assessment-label {
+  color: #16a34a;
+}
+
+.assessment-marginal .assessment-label {
+  color: #ea580c;
+}
+
+.assessment-infeasible .assessment-label {
+  color: #dc2626;
+}
+
+.assessment-summary {
+  color: #374151;
+  font-size: 14px;
+}
+
+/* ============================================================================
+ * View Tabs
+ * ============================================================================ */
+
+.view-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tab {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #374151;
+  background-color: #f9fafb;
+}
+
+.tab.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+/* ============================================================================
+ * Burndown Chart
+ * ============================================================================ */
+
+.burndown-chart-container {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.burndown-chart {
+  flex: 1;
+  min-width: 0;
+}
+
+.grid-line {
+  stroke: #e5e7eb;
+  stroke-width: 1;
+}
+
+.axis-line {
+  stroke: #9ca3af;
+  stroke-width: 2;
+}
+
+.tick {
+  stroke: #9ca3af;
+  stroke-width: 1;
+}
+
+.axis-label {
+  fill: #6b7280;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.axis-title {
+  fill: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.threshold-critical {
+  stroke: #dc2626;
+  stroke-width: 1.5;
+  opacity: 0.5;
+}
+
+.threshold-warning {
+  stroke: #ea580c;
+  stroke-width: 1.5;
+  opacity: 0.5;
+}
+
+.resource-line {
+  transition: stroke-width 0.2s;
+}
+
+.resource-line:hover {
+  stroke-width: 3;
+}
+
+.data-point {
+  cursor: pointer;
+  transition: r 0.2s;
+}
+
+.data-point:hover {
+  r: 6;
+}
+
+.tooltip-bg {
+  fill: white;
+  stroke: #d1d5db;
+  stroke-width: 1;
+  rx: 4;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.tooltip-text {
+  fill: #374151;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Chart Legend */
+
+.chart-legend {
+  flex-shrink: 0;
+  width: 200px;
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.legend-coa {
+  margin-bottom: 16px;
+}
+
+.legend-coa:last-child {
+  margin-bottom: 0;
+}
+
+.legend-coa-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ============================================================================
+ * Risk Flags View
+ * ============================================================================ */
+
+.risk-flags-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.risk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.risk-table thead {
+  background-color: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.risk-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.risk-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.15s;
+}
+
+.risk-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.risk-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.risk-table td {
+  padding: 12px 16px;
+}
+
+.phase-cell {
+  font-weight: 500;
+  color: #374151;
+}
+
+.risk-cell,
+.resource-cell {
+  text-align: center;
+}
+
+.risk-indicator {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.risk-indicator.risk-green {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.risk-indicator.risk-amber {
+  background-color: #fed7aa;
+  color: #9a3412;
+}
+
+.risk-indicator.risk-red {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.resource-value {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.sustainable-cell {
+  text-align: center;
+  font-size: 18px;
+  color: #16a34a;
+}
+
+.sustainable-cell:has(span:contains('✗')) {
+  color: #dc2626;
+}
+
+/* Comparison Section */
+
+.comparison-section {
+  margin-top: 32px;
+}
+
+.comparison-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.comparison-table thead {
+  background-color: #f3f4f6;
+  border-bottom: 2px solid #d1d5db;
+}
+
+.comparison-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+}
+
+.comparison-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.comparison-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.comparison-table td {
+  padding: 12px 16px;
+}
+
+.feasibility-feasible {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.feasibility-marginal {
+  color: #ea580c;
+  font-weight: 600;
+}
+
+.feasibility-infeasible {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* ============================================================================
+ * Recommendations
+ * ============================================================================ */
+
+.recommendations-section {
+  margin-top: 32px;
+  padding: 20px;
+  background-color: #eff6ff;
+  border-radius: 8px;
+  border-left: 4px solid #2563eb;
+}
+
+.recommendations-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 12px;
+}
+
+.recommendations-list {
+  margin: 0;
+  padding-left: 24px;
+  color: #374151;
+}
+
+.recommendations-list li {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.recommendations-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================================================
+ * Empty State
+ * ============================================================================ */
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* ============================================================================
+ * Responsive Design
+ * ============================================================================ */
+
+@media (max-width: 1024px) {
+  .burndown-chart-container {
+    flex-direction: column;
+  }
+
+  .chart-legend {
+    width: 100%;
+  }
+
+  .legend-coa {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .legend-coa-name {
+    flex: 1 0 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .sustainment-display {
+    padding: 12px;
+  }
+
+  .assessment-banner {
+    padding: 12px 16px;
+  }
+
+  .assessment-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .risk-table,
+  .comparison-table {
+    font-size: 11px;
+  }
+
+  .risk-table th,
+  .risk-table td,
+  .comparison-table th,
+  .comparison-table td {
+    padding: 8px 12px;
+  }
+}
