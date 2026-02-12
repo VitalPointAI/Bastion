@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 5.2 of 13+ (Escalation & Competition Modeling)
-Plan: 4 of 10 in current phase
+Plan: 7 of 10 in current phase
 Status: In progress
-Last activity: 2026-02-12 — Completed 5.2-04-PLAN.md
+Last activity: 2026-02-12 — Completed 5.2-07-PLAN.md
 
-Progress: █████████████████████ 112 plans complete
+Progress: █████████████████████ 113 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 112
+- Total plans completed: 113
 - Average duration: 9 min
-- Total execution time: 17.00 hours
+- Total execution time: 17.07 hours
 
 **By Phase:**
 
@@ -41,10 +41,10 @@ Progress: █████████████████████ 112 pl
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 | 1.3 (NEAR Implicit Account Funding) | 3 | 32 min | 11 min |
 | 5.1 (MDMP Governance Integration) | 17 | 116 min | 7 min |
-| 5.2 (Escalation & Competition Modeling) | 4 | 12 min | 3 min |
+| 5.2 (Escalation & Competition Modeling) | 7 | 16 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 5 min, 3 min, 4 min, 3 min, 2 min
+- Last 5 plans: 3 min, 4 min, 3 min, 2 min, 4 min
 - Trend: Consistent sub-5-minute execution on agent implementation tasks
 
 ## Accumulated Context
@@ -827,9 +827,17 @@ None.
 - Dual-view approach: burndown chart for trends + risk flags grid for phase-level detail
 - Five core resource categories: ammunition, fuel, food/water, medical, maintenance parts (ADP 4-0 classes)
 
+**Phase 5.2 Plan 07 (Force Ratio Analysis):**
+- COFM methodology over simple head count for correlation of forces analysis
+- Seven combat power modifiers: training, technology, morale, terrain, logistics, intelligence, leadership
+- Modifier scaling: -7 to +7 range maps to 0.5x to 1.5x multiplier effect
+- Three-tier assessment: favorable (≥3:1), marginal (≥1.5:1), unfavorable (<1.5:1)
+- Dual display: side-by-side bars for quick read, detailed table on demand
+- FM 3-90-1 doctrinal thresholds: 3:1 attack, 1:1 defense, 0.5:1 delay
+
 ## Session Continuity
 
-Last session: 2026-02-12T15:01:29Z
-Stopped at: Completed 5.2-04-PLAN.md
+Last session: 2026-02-12T15:07:35Z
+Stopped at: Completed 5.2-07-PLAN.md
 Resume file: None
-Next action: Continue Phase 5.2 — 6 plans remaining
+Next action: Continue Phase 5.2 — 3 plans remaining
