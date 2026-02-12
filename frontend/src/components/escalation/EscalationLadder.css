@@ -1,0 +1,361 @@
+/* Escalation Ladder Container */
+.escalation-ladder-container {
+  padding: 1.5rem;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 8px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.escalation-ladder-header {
+  margin-bottom: 1.5rem;
+}
+
+.escalation-ladder-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: var(--text-primary, #1f2937);
+}
+
+.escalation-ladder-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  flex-wrap: wrap;
+}
+
+.framework-name {
+  font-weight: 600;
+}
+
+.current-position-indicator {
+  color: var(--text-accent, #2563eb);
+  font-weight: 500;
+}
+
+/* Ladder Vertical Layout */
+.escalation-ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Rung Container */
+.rung-container {
+  width: 100%;
+}
+
+/* Individual Rung */
+.rung {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.rung:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Color coding by severity */
+.rung-green {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-left: 4px solid #10b981;
+}
+
+.rung-amber {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left: 4px solid #f59e0b;
+}
+
+.rung-red {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-left: 4px solid #ef4444;
+}
+
+/* Current position highlight */
+.rung-current {
+  border: 2px solid #2563eb;
+  animation: pulse-border 2s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.1);
+  }
+}
+
+/* Projected rung indicator */
+.rung-projected {
+  border-right: 4px solid #8b5cf6;
+}
+
+/* Expanded state */
+.rung-expanded {
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Rung Level Number */
+.rung-level {
+  font-size: 1.25rem;
+  font-weight: 700;
+  min-width: 2.5rem;
+  text-align: center;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+/* Rung Content */
+.rung-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rung-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary, #1f2937);
+}
+
+.rung-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.4;
+}
+
+/* Rung Indicators */
+.rung-indicators {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.rung-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.rung-indicator.kinetic {
+  background: #dc2626;
+  color: white;
+}
+
+.rung-indicator.nuclear {
+  background: #b91c1c;
+  color: white;
+  animation: pulse-nuclear 3s ease-in-out infinite;
+}
+
+@keyframes pulse-nuclear {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.1);
+  }
+}
+
+.current-label {
+  background: #2563eb;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.projected-label {
+  background: #8b5cf6;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Threshold Marker */
+.rung-threshold-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: repeating-linear-gradient(
+    to right,
+    #dc2626 0px,
+    #dc2626 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  opacity: 0.7;
+}
+
+/* Detail Panel */
+.rung-detail-panel {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  animation: expand-panel 0.3s ease-out;
+}
+
+@keyframes expand-panel {
+  from {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+}
+
+.rung-detail-section {
+  margin-bottom: 1rem;
+}
+
+.rung-detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.rung-detail-section h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.rung-detail-section ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  list-style: disc;
+}
+
+.rung-detail-section li {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #4b5563);
+  line-height: 1.5;
+}
+
+.rung-detail-section li:last-child {
+  margin-bottom: 0;
+}
+
+/* Risk level styling in detail panel */
+.risk-low {
+  border-left: 3px solid #10b981;
+  padding-left: 0.5rem;
+}
+
+.risk-moderate {
+  border-left: 3px solid #f59e0b;
+  padding-left: 0.5rem;
+}
+
+.risk-high {
+  border-left: 3px solid #ef4444;
+  padding-left: 0.5rem;
+}
+
+.risk-extreme {
+  border-left: 3px solid #b91c1c;
+  padding-left: 0.5rem;
+  background: rgba(185, 28, 28, 0.05);
+}
+
+.risk-details {
+  font-size: 0.75rem;
+  color: var(--text-tertiary, #9ca3af);
+}
+
+/* Legend */
+.escalation-ladder-legend {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-color {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .escalation-ladder-container {
+    padding: 1rem;
+  }
+
+  .rung {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rung-level {
+    align-self: flex-start;
+  }
+
+  .escalation-ladder-legend {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
