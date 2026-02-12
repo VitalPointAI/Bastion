@@ -23,7 +23,7 @@ None
 - [ ] **Phase 4.4: Mission Context & Force Onboarding** - Workspace setup, participant invitation, command relationships, resource inventories, sensor registration (INSERTED)
 - [ ] **Phase 4.5: ATAK/CoT Tactical Interoperability** - CoT message protocol, TAK Server integration, real-time position sharing, data package export (INSERTED)
 - [x] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
-- [ ] **Phase 5.1: MDMP Governance Integration** - MDMP workflow engine, assumption registry, safety matrix, 6 new AI agents, governance gates (INSERTED)
+- [x] **Phase 5.1: MDMP Governance Integration** - MDMP workflow engine, assumption registry, safety matrix, 6 new AI agents, governance gates (INSERTED, completed 2026-02-11)
 - [ ] **Phase 5.2: Escalation & Competition Modeling** - Adversary modeler, effect cascader, escalation modeler, deception detector, wargaming enhancement (INSERTED)
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
@@ -541,7 +541,7 @@ Plans:
 **Depends on:** Phase 3, Phase 4.2, Phase 4.3, Phase 5
 **Research:** Complete (5.1-RESEARCH.md, .planning/mdmp-governance/)
 **Research topics:** MDMP phases and activities for Theater Army ASCC-level planning, five-tier authority model (AI Autonomous through Human Only), safety matrix enforcement at smart contract level, assumption lifecycle management, governance gate mechanisms, human-in/on/out-of-loop control postures
-**Plans:** 17 plans (15 executed + 2 gap closure)
+**Plans:** 17 plans (all complete, including 2 gap closure)
 
 **Context:**
 This phase emerged from a comprehensive analysis of an MDMP checklist for Theater Army planning, evaluated against Bastion's existing architecture. The analysis produced a complete data model (65 MDMP activities, 22 activity categories, 5 authority levels, 9 governance invariants) with smart contract specifications and a 12-agent expansion plan.
@@ -594,8 +594,8 @@ Plans:
 - [x] Plan 5.1-13: RAFT Pipeline MDMP Templates (wave 2) — Task extraction, CCIR, OPORD, IPB, wargame extraction
 - [x] Plan 5.1-14: End-to-End MDMP Workflow Integration (wave 4) — Integration orchestrator, safety enforcement, E2E tests for all 9 invariants
 - [x] Plan 5.1-15: Decision Brief Generator (wave 4) — MDMP Phase 6 decision brief product with COA comparison matrix
-- [ ] Plan 5.1-16: Activity Registry Completion (gap closure) — Add 55 missing Phase 1-8 activity definitions to registry
-- [ ] Plan 5.1-17: Frontend-Backend API Wiring (gap closure) — MDMP service module, container panel, DAODashboard integration
+- [x] Plan 5.1-16: Activity Registry Completion (gap closure) — Add 55 missing Phase 1-8 activity definitions to registry
+- [x] Plan 5.1-17: Frontend-Backend API Wiring (gap closure) — MDMP service module, container panel, DAODashboard integration
 
 ### Phase 5.2: Escalation & Competition Modeling (INSERTED)
 **Goal:** Build adversary modeling, escalation dynamics simulation, and effect cascading capabilities with 4 new AI agents and wargaming framework enhancement
@@ -790,7 +790,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4.4 Mission Context & Force Onboarding | 0/9 | Planning Complete | - |
 | 4.5 ATAK/CoT Tactical Interoperability | 0/TBD | Not started | - |
 | 5. Operational Planning Module | 16/16 | Complete | 2026-02-01 |
-| 5.1 MDMP Governance Integration | 15/17 | Gap Closure (2 gaps) | - |
+| 5.1 MDMP Governance Integration | 17/17 | Complete | 2026-02-11 |
 | 5.2 Escalation & Competition Modeling | 0/10 | Not started | - |
 | 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
 | 7. Tactical Execution System | 0/TBD | Not started | - |
