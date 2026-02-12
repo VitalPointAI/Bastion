@@ -63,6 +63,16 @@ export enum AgentCapability {
   ROECompliance = 'ROECompliance',
   /** Produce calibrated confidence intervals and detect false precision */
   UncertaintyQuantification = 'UncertaintyQuantification',
+
+  // ── Phase 5.2 Agent Capabilities (Escalation & Competition Modeling) ──
+  /** Synthesize adversary capability models and generate MLCOA/MDCOA */
+  AdversaryModeling = 'AdversaryModeling',
+  /** Model cascading effects across operational domains */
+  EffectCascading = 'EffectCascading',
+  /** Model escalation dynamics and thresholds */
+  EscalationModeling = 'EscalationModeling',
+  /** Detect potential deception in adversary actions and intelligence */
+  DeceptionDetection = 'DeceptionDetection',
 }
 
 /**
