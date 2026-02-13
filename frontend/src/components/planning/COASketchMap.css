@@ -1,0 +1,226 @@
+/* COA Sketch Map Container */
+.coa-sketch-map-container {
+  position: relative;
+  width: 100%;
+  height: 600px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Leaflet Map */
+.coa-map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Affiliation Filter Controls */
+.affiliation-filters {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  background: white;
+  padding: 12px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  max-width: 200px;
+}
+
+.affiliation-filters h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.affiliation-checkbox {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.affiliation-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.affiliation-label {
+  font-size: 13px;
+}
+
+.affiliation-label.affiliation-friendly {
+  color: #0066cc;
+  font-weight: 500;
+}
+
+.affiliation-label.affiliation-enemy {
+  color: #cc0000;
+  font-weight: 500;
+}
+
+.affiliation-label.affiliation-neutral {
+  color: #666666;
+}
+
+.affiliation-label.affiliation-combined {
+  color: #9933cc;
+  font-weight: 500;
+}
+
+.affiliation-label.affiliation-partner {
+  color: #00aa00;
+  font-weight: 500;
+}
+
+.affiliation-label.affiliation-unknown {
+  color: #999999;
+}
+
+/* Legend Panel */
+.legend-panel {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 1000;
+  background: white;
+  padding: 12px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  max-width: 250px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.legend-panel h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.legend-item img {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Symbol Popup */
+.symbol-popup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  max-width: 400px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.symbol-popup h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.symbol-affiliation {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.close-popup {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.close-popup:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.symbol-resources,
+.symbol-tasks {
+  margin-bottom: 16px;
+}
+
+.symbol-resources h4,
+.symbol-tasks h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.symbol-resources ul,
+.symbol-tasks ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+}
+
+.symbol-resources li,
+.symbol-tasks li {
+  margin-bottom: 4px;
+}
+
+/* Symbol click cursor */
+.coa-symbol {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.coa-symbol:hover {
+  opacity: 0.8;
+}
+
+/* Phase line styling */
+polyline[stroke-dasharray] {
+  stroke-dasharray: 5, 5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .affiliation-filters,
+  .legend-panel {
+    max-width: 150px;
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  .symbol-popup {
+    max-width: 90%;
+    max-height: 70%;
+  }
+}

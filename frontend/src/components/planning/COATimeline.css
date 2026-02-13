@@ -1,0 +1,254 @@
+/* COA Timeline Container */
+.coa-timeline-container {
+  width: 100%;
+  padding: 20px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+
+/* Timeline Header */
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.timeline-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Play/Pause Button */
+.play-pause-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.play-pause-btn:hover {
+  background: #0052a3;
+}
+
+.play-icon,
+.pause-icon {
+  font-size: 12px;
+}
+
+/* Phase Blocks */
+.phase-blocks {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.phase-block-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phase-block {
+  min-width: 150px;
+  padding: 12px;
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.phase-block:hover {
+  border-color: #0066cc;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.1);
+}
+
+.phase-block.active {
+  background: #0066cc;
+  color: white;
+  border-color: #0066cc;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+}
+
+.phase-block.completed {
+  background: #e7f3ff;
+  border-color: #99ccff;
+}
+
+.phase-number {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.phase-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.phase-duration {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Phase Transition Arrows */
+.phase-arrow {
+  font-size: 20px;
+  color: #6c757d;
+  font-weight: bold;
+}
+
+/* Timeline Scrubber */
+.timeline-scrubber {
+  margin-bottom: 20px;
+}
+
+.timeline-scrubber label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.phase-slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  outline: none;
+  background: linear-gradient(to right, #99ccff 0%, #0066cc 100%);
+  cursor: pointer;
+}
+
+.phase-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #0066cc;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.phase-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.phase-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #0066cc;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.phase-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}
+
+.scrubber-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 4px;
+}
+
+/* Current Phase Details */
+.current-phase-details {
+  background: white;
+  padding: 16px;
+  border-radius: 4px;
+  border-left: 4px solid #0066cc;
+}
+
+.current-phase-details h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0066cc;
+}
+
+.phase-description {
+  font-size: 14px;
+  color: #495057;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.key-tasks {
+  margin-top: 12px;
+}
+
+.key-tasks h5 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.key-tasks ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+}
+
+.key-tasks li {
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .phase-blocks {
+    flex-wrap: nowrap;
+    overflow-x: scroll;
+  }
+
+  .phase-block {
+    min-width: 120px;
+    padding: 10px;
+  }
+
+  .phase-name {
+    font-size: 12px;
+  }
+
+  .timeline-header h3 {
+    font-size: 16px;
+  }
+}
+
+/* Animation for active phase highlight */
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 12px rgba(0, 102, 204, 0.5);
+  }
+}
+
+.phase-block.active {
+  animation: pulse 2s ease-in-out infinite;
+}
