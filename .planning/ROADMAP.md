@@ -24,7 +24,7 @@ None
 - [ ] **Phase 4.5: ATAK/CoT Tactical Interoperability** - CoT message protocol, TAK Server integration, real-time position sharing, data package export (INSERTED)
 - [x] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
 - [x] **Phase 5.1: MDMP Governance Integration** - MDMP workflow engine, assumption registry, safety matrix, 6 new AI agents, governance gates (INSERTED, completed 2026-02-11)
-- [ ] **Phase 5.2: Escalation & Competition Modeling** - Adversary modeler, effect cascader, escalation modeler, deception detector, wargaming enhancement (INSERTED)
+- [x] **Phase 5.2: Escalation & Competition Modeling** - Adversary modeler, effect cascader, escalation modeler, deception detector, wargaming enhancement (INSERTED, completed 2026-02-13)
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
 - [ ] **Phase 8: Sensor Fusion & Intelligence** - Create multi-level intelligence architecture and data fusion
@@ -621,16 +621,16 @@ This phase addresses the adversary modeling and effects analysis capabilities id
 10. **Sustainment Modeling** — Logistics feasibility analysis and sustainment comparison per COA
 
 Plans:
-- [ ] Plan 5.2-01: Adversary Modeler Agent — Adversary capability synthesis, adversary COA generation
-- [ ] Plan 5.2-02: Effect Cascader Agent — Second/third-order effects mapping across domains
-- [ ] Plan 5.2-03: Escalation Modeler Agent — Escalation ladder simulations, dynamics modeling
-- [ ] Plan 5.2-04: Deception Detector Agent — Intent vs. behavior inconsistency detection
-- [ ] Plan 5.2-05: Escalation & Effect Visualization — Escalation ladder UI, effect chain diagrams
-- [ ] Plan 5.2-06: Wargaming Framework Enhancement — Expand red team simulator to full wargaming
-- [ ] Plan 5.2-07: Force Ratio Analysis — Correlation of forces methodology, quantitative force comparison (MDMP-2-06)
-- [ ] Plan 5.2-08: COA Sketch Generation — Visual COA representation with operational graphics overlay (MDMP-3-03)
-- [ ] Plan 5.2-09: Branch & Sequel Planning — Contingency COAs with decision point triggers (MDMP-3-06)
-- [ ] Plan 5.2-10: Sustainment Modeling — Logistics feasibility analysis and comparison per COA (MDMP-3-07, 5-03)
+- [x] Plan 5.2-01: Adversary Modeler Agent — Adversary capability synthesis, adversary COA generation (completed 2026-02-12)
+- [x] Plan 5.2-02: Effect Cascader Agent — Second/third-order effects mapping across domains (completed 2026-02-12)
+- [x] Plan 5.2-03: Escalation Modeler Agent — Escalation ladder simulations, dynamics modeling (completed 2026-02-12)
+- [x] Plan 5.2-04: Deception Detector Agent — Intent vs. behavior inconsistency detection (completed 2026-02-12)
+- [x] Plan 5.2-05: Escalation & Effect Visualization — Escalation ladder UI, effect chain diagrams (completed 2026-02-13)
+- [x] Plan 5.2-06: Wargaming Framework Enhancement — Expand red team simulator to full wargaming (completed 2026-02-13)
+- [x] Plan 5.2-07: Force Ratio Analysis — Correlation of forces methodology, quantitative force comparison (MDMP-2-06) (completed 2026-02-13)
+- [x] Plan 5.2-08: COA Sketch Generation — Visual COA representation with operational graphics overlay (MDMP-3-03) (completed 2026-02-13)
+- [x] Plan 5.2-09: Branch & Sequel Planning — Contingency COAs with decision point triggers (MDMP-3-06) (completed 2026-02-13)
+- [x] Plan 5.2-10: Sustainment Modeling — Logistics feasibility analysis and comparison per COA (MDMP-3-07, 5-03) (completed 2026-02-12)
 
 ### Phase 6: Autonomous Vehicle Integration
 **Goal**: Set up edge AI platform and autonomous vehicle control
