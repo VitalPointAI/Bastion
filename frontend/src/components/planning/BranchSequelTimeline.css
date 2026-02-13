@@ -1,0 +1,487 @@
+/* Branch and Sequel Timeline - Execution Timeline with Decision Points */
+
+.branch-sequel-timeline {
+  width: 100%;
+  padding: 20px;
+  background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  position: relative;
+}
+
+.timeline-header {
+  margin-bottom: 30px;
+}
+
+.timeline-header h3 {
+  color: var(--primary-blue);
+  margin: 0 0 10px 0;
+  font-size: 1.4rem;
+}
+
+.coverage-summary {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.coverage-gaps {
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 3px solid var(--danger-red);
+  padding: 10px 15px;
+  margin-top: 10px;
+}
+
+.coverage-gaps strong {
+  color: var(--danger-red);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.coverage-gaps ul {
+  margin: 0;
+  padding-left: 20px;
+  color: rgba(239, 68, 68, 0.9);
+  font-size: 0.9rem;
+}
+
+/* Timeline container */
+.timeline-container {
+  position: relative;
+  min-height: 300px;
+  padding-top: 20px;
+}
+
+/* Phase blocks */
+.phase-blocks {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+}
+
+.phase-block {
+  flex: 1;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+  padding: 15px 10px;
+  text-align: center;
+}
+
+.phase-number {
+  color: var(--primary-blue);
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+
+.phase-name {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.8rem;
+}
+
+/* Decision points layer */
+.decision-points-layer {
+  position: absolute;
+  top: 100px;
+  left: 0;
+  right: 0;
+  height: 500px;
+}
+
+.decision-point-container {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+/* Diamond marker (CSS rotated square) */
+.decision-point-diamond {
+  width: 50px;
+  height: 50px;
+  background: var(--primary-blue);
+  transform: rotate(45deg);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.decision-point-diamond:hover {
+  transform: rotate(45deg) scale(1.1);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+}
+
+/* Diamond priority colors */
+.decision-point-diamond.priority-critical {
+  background: var(--danger-red);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+.decision-point-diamond.priority-critical:hover {
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
+}
+
+.decision-point-diamond.priority-important {
+  background: var(--warning-amber);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+}
+
+.decision-point-diamond.priority-important:hover {
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.8);
+}
+
+.decision-point-diamond.priority-routine {
+  background: rgba(156, 163, 175, 0.7);
+  box-shadow: 0 0 20px rgba(156, 163, 175, 0.3);
+}
+
+.decision-point-diamond.priority-routine:hover {
+  box-shadow: 0 0 30px rgba(156, 163, 175, 0.5);
+}
+
+/* Diamond inner content (counter-rotate to keep text straight) */
+.diamond-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* Inline expansion panel */
+.inline-expansion-panel {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 14, 26, 0.98);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 400px;
+  max-width: 600px;
+  z-index: 100;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: expandIn 0.3s ease-out;
+}
+
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.expansion-header h4 {
+  color: var(--primary-blue);
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+}
+
+.expansion-section {
+  margin-bottom: 15px;
+}
+
+.expansion-section strong {
+  color: rgba(255, 255, 255, 0.9);
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+
+.expansion-section ul {
+  margin: 5px 0;
+  padding-left: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+}
+
+.expansion-section ul li {
+  margin-bottom: 5px;
+}
+
+/* Branch option cards */
+.branch-option-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.branch-option-card {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+.branch-option-card:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--primary-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.branch-option-card.branch-type-sequel {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.branch-option-card.branch-type-sequel:hover {
+  border-color: rgba(34, 197, 94, 0.8);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.branch-card-name {
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 5px;
+}
+
+.branch-card-condition {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+
+/* Planning status badges */
+.planning-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.planning-status-badge.status-identified {
+  background: rgba(156, 163, 175, 0.2);
+  color: rgba(156, 163, 175, 0.9);
+  border: 1px solid rgba(156, 163, 175, 0.4);
+}
+
+.planning-status-badge.status-outlined {
+  background: rgba(251, 191, 36, 0.2);
+  color: rgba(251, 191, 36, 0.9);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.planning-status-badge.status-fully_planned {
+  background: rgba(34, 197, 94, 0.2);
+  color: rgba(34, 197, 94, 0.9);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+/* Connection lines */
+.connection-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+/* Sequel indicator */
+.sequel-indicator {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sequel-line {
+  width: 60px;
+  height: 2px;
+  background: rgba(34, 197, 94, 0.6);
+  position: relative;
+}
+
+.sequel-line::after {
+  content: '→';
+  position: absolute;
+  right: -15px;
+  top: -10px;
+  color: rgba(34, 197, 94, 0.8);
+  font-size: 1.2rem;
+}
+
+.sequel-label {
+  color: rgba(34, 197, 94, 0.8);
+  font-size: 0.85rem;
+}
+
+/* Side panel */
+.side-panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.side-panel {
+  width: 500px;
+  max-width: 90vw;
+  background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
+  border-left: 2px solid var(--primary-blue);
+  overflow-y: auto;
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.side-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.side-panel-header h3 {
+  color: var(--primary-blue);
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.close-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--danger-red);
+  color: var(--danger-red);
+}
+
+.side-panel-content {
+  padding: 20px;
+}
+
+.side-panel-section {
+  margin-bottom: 20px;
+}
+
+.section-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.section-content {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.section-content-empty {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.side-panel-section ul {
+  margin: 5px 0;
+  padding-left: 20px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+
+.side-panel-section ul li {
+  margin-bottom: 8px;
+}
+
+/* Branch type badge */
+.branch-type-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.branch-type-badge.type-branch {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--primary-blue);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+}
+
+.branch-type-badge.type-sequel {
+  background: rgba(34, 197, 94, 0.2);
+  color: rgba(34, 197, 94, 0.9);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+}
+
+/* Priority badge */
+.priority-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.priority-badge.priority-high {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--danger-red);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.priority-badge.priority-medium {
+  background: rgba(251, 191, 36, 0.2);
+  color: var(--warning-amber);
+  border: 1px solid rgba(251, 191, 36, 0.5);
+}
+
+.priority-badge.priority-low {
+  background: rgba(34, 197, 94, 0.2);
+  color: rgba(34, 197, 94, 0.9);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+}
