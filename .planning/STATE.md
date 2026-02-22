@@ -283,6 +283,7 @@ Recent decisions affecting current work:
 - Phase 4.5 inserted after Phase 4.4: ATAK/CoT Tactical Interoperability - CoT message protocol, TAK Server integration, real-time position sharing, data package export
 - Phase 1.2 inserted after Phase 1.1: Passkey Authentication & NEAR Implicit Accounts (URGENT) - Replace Privy.io with passkey/magic link/recovery patterns from StratBrain + NEAR implicit account identity
 - Phase 1.3 inserted after Phase 1.2: NEAR Implicit Account Funding - Activate implicit accounts with minimum NEAR transfer on registration
+- Phase 1.4 inserted after Phase 1.3: Navigation Architecture Restructure - Restructure navigation to doctrine-aligned Decide/Design/Campaign/Monitor + Admin
 
 ### Deferred Issues
 
