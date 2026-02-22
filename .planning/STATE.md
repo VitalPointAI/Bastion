@@ -6,16 +6,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 5.2 complete — ready for next phase
+**Current focus:** Phase 4.3 plan 12 complete — eigenvector centrality and PageRank upgrade delivered
 
 ## Current Position
 
-Phase: 5.2 of 13+ (Escalation & Competition Modeling)
-Plan: 10 of 10 in current phase
+Phase: 4.3 of 13+ (Strategic Intelligence Fusion)
+Plan: 12 of 12 in current phase
 Status: Phase complete
-Last activity: 2026-02-13 — Phase 5.2 verified (10/10 must-haves passed)
+Last activity: 2026-02-22 — Plan 4.3-12 complete (eigenvector centrality + PageRank upgrade)
 
-Progress: █████████████████████ 117 plans complete
+Progress: █████████████████████ 118 plans complete
 
 ## Performance Metrics
 
@@ -35,7 +35,7 @@ Progress: █████████████████████ 117 pl
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
-| 4.3 (Strategic Intelligence Fusion) | 11 (+1 planned) | 71 min | 6 min |
+| 4.3 (Strategic Intelligence Fusion) | 12 | 76 min | 6 min |
 | 4.4 (Mission Context & Force Onboarding) | 9 | 47 min | 5 min |
 | 05 (Operational Planning Module) | 16 | 71 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
@@ -440,12 +440,12 @@ None.
 - RAFT Extraction Agent with PMESII domain knowledge for entity identification
 - RAFT Reasoning Agent with network science expertise for strategic insights
 
-**Phase 4.3 Plan 12 (Eigenvector Centrality & PageRank Upgrade) — PLANNED:**
-- Add eigenvector centrality algorithm via power iteration in Node.js (no GDS dependency)
-- Upgrade PageRank from degree count to iterative damped random walk
-- Eigenvector captures recursive influence: score based on importance of connected neighbors
-- Cross-centrality comparison endpoint surfaces actors where PageRank and eigenvector diverge
-- Updated RAFT Reasoning Agent knowledge for eigenvector interpretation
+**Phase 4.3 Plan 12 (Eigenvector Centrality & PageRank Upgrade):**
+- Power iteration in Node.js for both algorithms — avoids Neo4j GDS dependency, accurate for <10k nodes
+- L-infinity normalization (divide by max) for eigenvector centrality — stable, interpretable 0-1 range
+- Export computation functions from raft-tools.ts — enables API reuse without code duplication
+- Shared adjacency fetch for centrality comparison endpoint — single Neo4j round-trip for both algorithms
+- Divergence = abs(eigenvectorRank - pageRankRank) — simple integer divergence for analyst clarity
 
 **Phase 4.3 Plan 9 (Workspace Isolation & Graph REST API):**
 - Workspace types: country, adversary, region, topic, coalition, custom
@@ -856,7 +856,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-13
-Stopped at: Phase 5.2 complete (10/10 plans, verified)
+Last session: 2026-02-22
+Stopped at: Completed 4.3-12-PLAN.md (eigenvector centrality + PageRank upgrade)
 Resume file: None
-Next action: Plan Phase 6 (Autonomous Vehicle Integration)
+Next action: Continue with next planned phase

@@ -16,11 +16,11 @@ None
 - [x] **Phase 1.3: NEAR Implicit Account Funding** - Activate implicit accounts with minimum NEAR transfer on registration (INSERTED, completed 2026-02-06)
 - [x] **Phase 2: Identity & Security Framework** - Implement DID system, ABAC, post-quantum cryptography, zero trust architecture
 - [x] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
-- [ ] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
-- [ ] **Phase 4.1: Admin UI** - Create administrative interface for system configuration (INSERTED)
+- [x] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
+- [x] **Phase 4.1: Admin UI** - Create administrative interface for system configuration (INSERTED)
 - [x] **Phase 4.2: AI Agent Teams** - Per-agent model assignment, dynamic agent creation, agent DIDs (INSERTED)
 - [x] **Phase 4.3: Strategic Intelligence Fusion & RAFT Analysis** - Multi-document fusion, validity dashboard, graph-based RAFT analysis (INSERTED)
-- [ ] **Phase 4.4: Mission Context & Force Onboarding** - Workspace setup, participant invitation, command relationships, resource inventories, sensor registration (INSERTED)
+- [x] **Phase 4.4: Mission Context & Force Onboarding** - Workspace setup, participant invitation, command relationships, resource inventories, sensor registration (INSERTED, completed 2026-01-25)
 - [ ] **Phase 4.5: ATAK/CoT Tactical Interoperability** - CoT message protocol, TAK Server integration, real-time position sharing, data package export (INSERTED)
 - [x] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
 - [x] **Phase 5.1: MDMP Governance Integration** - MDMP workflow engine, assumption registry, safety matrix, 6 new AI agents, governance gates (INSERTED, completed 2026-02-11)
@@ -33,7 +33,7 @@ None
 - [ ] **Phase 11: User Experience & Personalization** - Create cinematic briefings, personalized command centers, behavioral learning
 - [ ] **Phase 12: Coalition & Multi-Tenancy** - Implement information sharing rules, classification handling, federation
 - [ ] **Phase 12.1: Coalition Health Monitoring** - Coalition health agent, narrative impact agent, national caveat tracking, coalition gates (INSERTED)
-- [ ] **Phase 13: Research Whitepaper** - Comprehensive documentation for master's research requirement
+- [x] **Phase 13: Research Whitepaper** - Comprehensive documentation for master's research requirement (completed 2026-01-24)
 
 ## Phase Details
 
@@ -229,7 +229,7 @@ Plans:
 **Depends on:** Phase 4.2
 **Research:** Complete (4.3-RESEARCH.md)
 **Research topics:** Graph database selection (Neo4j vs Memgraph vs ArangoDB), entity resolution and deduplication algorithms, RAFT framework modeling (Actors, Relationships, Functions, Tensions), edge weighting strategies for geopolitical networks, OSINT data integration patterns, real-time validity assessment architectures
-**Plans:** 11 plans (complete)
+**Plans:** 12 plans (11 complete, 1 pending)
 
 **Context:**
 This phase addresses the critical need to synthesize multiple strategic-level documents (NSS, NDS, NMS, GCPs, etc.) into a comprehensive, deduplicated understanding of the strategic environment. Each document undergoes objective extraction, but their results must be intelligently fused to eliminate redundancy while preserving all key details.
@@ -284,7 +284,8 @@ Following best practices for production-grade agentic workflows:
 7. **RAFT Reasoning Agent** (single responsibility: graph-based analysis)
    - Analyzes RAFT graph for strategic insights
    - Identifies key actors, critical relationships, emerging tensions
-   - Generates network analysis reports (centrality, clusters, paths)
+   - Generates network analysis reports (eigenvector centrality, PageRank, betweenness, clusters, paths)
+   - Cross-centrality comparison to surface structurally interesting actors (divergence detection)
    - *Tool access*: `query_graph`, `run_graph_algorithm`, `get_actor_profile`
 
 ---
@@ -323,7 +324,7 @@ Following best practices for production-grade agentic workflows:
 - `create_function(actor_id, function_type, domain)` - Assign function to actor
 - `update_edge_weight(edge_id, weight, evidence)` - Modify relationship strength
 - `query_graph(cypher_query)` - Execute graph query
-- `run_graph_algorithm(algorithm, params)` - Run centrality, clustering, etc.
+- `run_graph_algorithm(algorithm, params)` - Run centrality (eigenvector, PageRank, betweenness), clustering, path finding
 - `get_actor_profile(actor_id)` - Full actor view with relationships
 - `export_graph_visualization(filters, format)` - Generate visualization data
 
@@ -374,6 +375,7 @@ Plans:
 - [x] Plan 4.3-09: Workspace Isolation & Graph REST API (completed 2026-01-22)
 - [x] Plan 4.3-10: Validity Dashboard UI (completed 2026-01-24)
 - [x] Plan 4.3-11: End-to-End Fusion Flow (completed 2026-01-24)
+- [x] Plan 4.3-12: Eigenvector Centrality & PageRank Upgrade (completed 2026-02-22)
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
@@ -417,15 +419,15 @@ This phase addresses the critical capability to onboard participants and resourc
    - Real-time position updates where available
 
 Plans:
-- [ ] Plan 4.4-01: Database Foundation & Dependencies - Database schemas, stores, new npm packages
-- [ ] Plan 4.4-02: Mission Workspace Backend API - Mission CRUD, participants, invites
-- [ ] Plan 4.4-03: Mission Workspace Frontend & Wizard - Multi-step wizard, AO drawing, participant management
-- [ ] Plan 4.4-04: Command Relationship Backend API - Units, relationships, hierarchy queries
-- [ ] Plan 4.4-05: Command Relationship Frontend - Tree view, matrix view, drag-drop editing
-- [ ] Plan 4.4-06: Resource Catalog Backend API - Resources, personnel, consumables, bulk import
-- [ ] Plan 4.4-07: Resource Catalog Frontend - Category tree, forms, CSV import, status badges
-- [ ] Plan 4.4-08: Map Overlays & MIL-STD-2525D - Milsymbol markers, sensor coverage, real-time tracking
-- [ ] Plan 4.4-09: End-to-End Integration & Verification - MissionDetail, dashboard, app navigation
+- [x] Plan 4.4-01: Database Foundation & Dependencies (completed 2026-01-24)
+- [x] Plan 4.4-02: Mission Workspace Backend API (completed 2026-01-24)
+- [x] Plan 4.4-03: Mission Workspace Frontend & Wizard (completed 2026-01-24)
+- [x] Plan 4.4-04: Command Relationship Backend API (completed 2026-01-24)
+- [x] Plan 4.4-05: Command Relationship Frontend (completed 2026-01-24)
+- [x] Plan 4.4-06: Resource Catalog Backend API (completed 2026-01-24)
+- [x] Plan 4.4-07: Resource Catalog Frontend (completed 2026-01-24)
+- [x] Plan 4.4-08: Map Overlays & MIL-STD-2525D (completed 2026-01-24)
+- [x] Plan 4.4-09: End-to-End Integration & Verification (completed 2026-01-25)
 
 ### Phase 4.5: ATAK/CoT Tactical Interoperability (INSERTED)
 **Goal:** Enable real-time data exchange with ATAK devices and TAK Server infrastructure for tactical situational awareness
@@ -786,8 +788,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
 | 4.1 Admin UI | 2/2 | Complete | 2026-01-19 |
 | 4.2 AI Agent Teams | 6/6 | Complete | 2026-01-20 |
-| 4.3 Strategic Intelligence Fusion & RAFT | 11/11 | Complete | 2026-01-24 |
-| 4.4 Mission Context & Force Onboarding | 0/9 | Planning Complete | - |
+| 4.3 Strategic Intelligence Fusion & RAFT | 11/12 | In progress | 2026-01-24 |
+| 4.4 Mission Context & Force Onboarding | 9/9 | Complete | 2026-01-25 |
 | 4.5 ATAK/CoT Tactical Interoperability | 0/TBD | Not started | - |
 | 5. Operational Planning Module | 16/16 | Complete | 2026-02-01 |
 | 5.1 MDMP Governance Integration | 17/17 | Complete | 2026-02-11 |
