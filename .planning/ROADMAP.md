@@ -14,6 +14,7 @@ None
 - [ ] **Phase 1.1: Calimero Self-Sovereign App Integration** - Research Calimero for DAO compartmentalization, replace Privy with NEAR accounts + MPC (INSERTED)
 - [x] **Phase 1.2: Passkey Authentication & NEAR Implicit Accounts** - Replace Privy with passkey/magic link/recovery + NEAR implicit accounts (INSERTED)
 - [x] **Phase 1.3: NEAR Implicit Account Funding** - Activate implicit accounts with minimum NEAR transfer on registration (INSERTED, completed 2026-02-06)
+- [ ] **Phase 1.4: Navigation Architecture Restructure** - Restructure navigation to doctrine-aligned Decide/Design/Campaign/Monitor + Admin (INSERTED)
 - [x] **Phase 2: Identity & Security Framework** - Implement DID system, ABAC, post-quantum cryptography, zero trust architecture
 - [x] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
 - [x] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
@@ -131,6 +132,31 @@ Plans:
 - [x] 1.3-01-PLAN.md — Funding contract (Rust) with fund(), withdraw(), balance, history (completed 2026-02-06)
 - [x] 1.3-02-PLAN.md — Backend funding service, retry logic, registration hook, admin API (completed 2026-02-06)
 - [x] 1.3-03-PLAN.md — Admin UI FundingPanel with balance monitoring and activity (completed 2026-02-06)
+
+### Phase 1.4: Navigation Architecture Restructure (INSERTED)
+**Goal:** Restructure frontend navigation from 6-tab layout (Home, Governance, Strategic, Validity, Missions, Admin) to doctrine-aligned 4+1 activity-based structure: Decide, Design, Campaign, Monitor + Admin
+**Depends on:** Phase 1.3
+**Research:** Not required (architectural restructure of existing components)
+**Plans:** 2 plans
+
+**Context:**
+Current navigation reflects implementation history rather than user workflow. The restructure aligns navigation with what users DO rather than doctrinal levels-of-war, which is appropriate for a tool (vs. an org chart). Deviation from strict doctrine justified: a brigade S2 and COCOM J5 both use the same tool — their level-of-war context comes from role/login, not the tab they click.
+
+**Component Redistribution:**
+1. **Decide** — DAO governance, voting, approval workflows, authority delegation, commander guidance, MDMP governance panel
+   - Sources: DAODashboard, MDMPGovernancePanel, VotingInterface, ProposalDetail
+2. **Design** — Document ingestion, objectives, DIME resourcing, operational approach, COA development, problem framing (JP 5-0 steps 1-5), escalation modeling
+   - Sources: StrategicDashboard, PlanningDashboard, EscalationViewer, ForceRatioPanel, BranchSequelTimeline, SustainmentPanel
+3. **Campaign** — Mission planning, orders production, force allocation, command structure, MDMP workflow execution
+   - Sources: MissionList, MissionDetail, MissionWizard, MissionMap, CommandTreeView, ResourceCatalog
+4. **Monitor** — OSINT map, actor graph, validity scoring, alerts, event feed, real-time tracking, BDA (continuous assessment per MDMP Phase 0 + Phase 8)
+   - Sources: StrategicValidityDashboard, ValidityMap, GraphExplorer, NodeDetailPanel
+5. **Admin** — Unchanged system configuration
+   - Sources: AdminDashboard (all panels)
+
+Plans:
+- [ ] 1.4-01-PLAN.md — TabLayout sidebar shell and 4 activity tab containers (Decide, Design, Campaign, Monitor)
+- [ ] 1.4-02-PLAN.md — App.tsx routing restructure, nav bar update, legacy redirects, CSS changes
 
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
@@ -786,6 +812,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1.1 Calimero Self-Sovereign App | 0/TBD | Not started | - |
 | 1.2 Passkey + NEAR Implicit Auth | 12/12 | Complete | 2026-02-01 |
 | 1.3 NEAR Implicit Account Funding | 3/3 | Complete | 2026-02-06 |
+| 1.4 Navigation Architecture Restructure | 0/2 | Not started | - |
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 19/12 | Complete   | 2026-02-22 |
