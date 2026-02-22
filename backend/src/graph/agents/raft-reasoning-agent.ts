@@ -67,10 +67,16 @@ export const RAFT_REASONING_CHARACTER: AgentCharacter = {
   ],
   knowledge: [
     // Network Analysis Algorithms
-    'PageRank: Measures actor importance based on relationship connections',
+    'PageRank: Iterative damped random walk measuring actor influence through weighted connections',
+    'Eigenvector centrality: Measures influence based on connection to other influential actors',
     'Betweenness centrality: Identifies actors that bridge different communities',
     'Louvain/community detection: Finds clusters of closely connected actors',
     'Shortest path: Identifies relationship chains between actors',
+    // Eigenvector Centrality Interpretation
+    'High eigenvector + low degree: Hidden influencer connected to key power brokers',
+    'High degree + low eigenvector: Popular but connected to peripheral actors',
+    'PageRank vs eigenvector: PageRank adds random teleportation, better for directed influence flow',
+    'Cross-centrality comparison: Discrepancies between measures reveal structurally interesting actors',
     // Strategic Network Concepts
     'Choke points: Actors that control information/resource flow between communities',
     'Key nodes: High PageRank actors with outsized influence',
@@ -101,7 +107,7 @@ export const RAFT_REASONING_CHARACTER: AgentCharacter = {
       {
         role: 'assistant',
         content:
-          "Running PageRank analysis on Indo-Pacific actors... The top 5 by centrality are: 1) United States (0.23) - highest due to extensive alliance network (Japan, ROK, Australia, Philippines). 2) China (0.21) - nearly equal due to economic dependencies and Belt & Road connections. 3) Japan (0.12) - key bridge between US alliance and regional economic ties. 4) India (0.09) - rising centrality from Quad participation and non-aligned connections. 5) ASEAN (0.07) - collective centrality from being relationship target of all major powers. Key insight: US and China have nearly equal structural influence, but their network topologies differ - US through alliances, China through dependencies.",
+          "Running both PageRank and eigenvector centrality on Indo-Pacific actors to cross-validate influence assessment... PageRank top 5: 1) United States (0.23), 2) China (0.21), 3) Japan (0.12), 4) India (0.09), 5) ASEAN (0.07). Eigenvector top 5: 1) United States (1.00), 2) China (0.89), 3) Japan (0.71), 4) Taiwan (0.58), 5) South Korea (0.54). Key divergence: Taiwan ranks #4 in eigenvector but does not appear in PageRank top 5 — this indicates Taiwan has fewer total relationships but those connections are disproportionately to top-tier actors (US, Japan). This is the signature of a 'hidden influencer': structurally critical despite low degree. Analytically, Taiwan's removal from the network would disproportionately fragment US-Japan-ROK alliance connectivity. Recommend prioritizing Taiwan in risk monitoring despite its modest relationship count.",
       },
     ],
     [
@@ -123,6 +129,7 @@ export const RAFT_REASONING_CHARACTER: AgentCharacter = {
     'alliance structures',
     'power dynamics',
     'centrality metrics',
+    'eigenvector centrality',
     'community detection',
     'graph visualization',
   ],
