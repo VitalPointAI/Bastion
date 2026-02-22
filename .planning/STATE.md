@@ -51,8 +51,9 @@ Progress: █████████████████████ 120 pl
 
 ### Pending Todos
 
-1 pending todo(s) in `.planning/todos/pending/`:
+2 pending todo(s) in `.planning/todos/pending/`:
 - **Fix login landing page dashboard** (ui) — Authenticated users see "login to access command center" instead of dashboard
+- **Fix browser back button triggers verification failed error** (auth) — Browser back shows "Verification Failed" and redirects to login
 
 ### Decisions
 
