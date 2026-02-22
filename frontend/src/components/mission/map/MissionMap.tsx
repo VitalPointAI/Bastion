@@ -69,6 +69,12 @@ function MapBounds({
   return null;
 }
 
+// Support optional API key for non-localhost deployments (Stadia Maps returns 401 without it)
+const STADIA_API_KEY = import.meta.env.VITE_STADIA_MAPS_API_KEY as string | undefined;
+const STADIA_TILE_URL = STADIA_API_KEY
+  ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`
+  : 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png';
+
 export function MissionMap({ missionId, areaOfOps, onMarkerClick }: MissionMapProps) {
   const [units, setUnits] = useState<CommandUnit[]>([]);
   const [coverageAreas, setCoverageAreas] = useState<CoverageArea[]>([]);
@@ -163,9 +169,10 @@ export function MissionMap({ missionId, areaOfOps, onMarkerClick }: MissionMapPr
         {/* Dark theme tiles from Stadia Maps */}
         <TileLayer
           attribution='&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+          url={STADIA_TILE_URL}
           maxZoom={18}
           noWrap={true}
+          bounds={[[-85, -180], [85, 180]]}
         />
 
         {/* Area of Operations boundary */}
