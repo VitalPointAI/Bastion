@@ -378,6 +378,7 @@ Plans:
 - [x] Plan 4.3-12: Eigenvector Centrality & PageRank Upgrade (completed 2026-02-22)
 - [x] Plan 4.3-13: (gap closure plan)
 - [x] Plan 4.3-14: Validity Trend Gap Closure — bulk endpoint wired to real calculateTrend() (completed 2026-02-22)
+- [x] Plan 4.3-15: Stadia Maps Tile 404 Fix — TileLayer bounds prop prevents Leaflet out-of-bounds tile requests (completed 2026-02-22)
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays

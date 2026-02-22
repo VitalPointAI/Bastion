@@ -6,16 +6,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 4.3 plan 14 complete — bulk validity objectives endpoint wired to real trend calculation (all gap closure plans complete)
+**Current focus:** Phase 4.3 plan 15 complete — Stadia Maps tile 404 fix with TileLayer bounds prop (gap closure for UAT-TEST-2 and UAT-TEST-3)
 
 ## Current Position
 
 Phase: 4.3 of 13+ (Strategic Intelligence Fusion)
-Plan: 14 of 14 in current phase
+Plan: 15 of 15 in current phase
 Status: Phase complete
-Last activity: 2026-02-22 — Plan 4.3-14 complete (validity trend gap closure)
+Last activity: 2026-02-22 — Plan 4.3-15 complete (Stadia Maps tile 404 fix — bounds prop clamps Leaflet tile requests to valid world bounds)
 
-Progress: █████████████████████ 120 plans complete
+Progress: █████████████████████ 121 plans complete
 
 ## Performance Metrics
 
@@ -46,6 +46,7 @@ Progress: █████████████████████ 120 pl
 **Recent Trend:**
 - Phase 5.2: 10 plans, 4 waves, all verified
 - Trend: Wave-based parallel execution efficient for agent+visualization phases
+| Phase 4.3 P15 | 2 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -270,6 +271,7 @@ Recent decisions affecting current work:
 - IntentStore implements Klein's 7 facets of intent communication
 - Operationalization requires APPROVED status, reviewed risk, and drafted intent
 - Planning directive JSON output for Phase 5 handoff
+- [Phase 4.3]: TileLayer bounds prop (not noWrap) is the actual fix for Leaflet issue #4646/#7181: noWrap alone does not prevent out-of-bounds x=5 tile requests at zoom 2; bounds prop clamps tile coordinate calculation to valid world bounds
 
 ### Roadmap Evolution
 
@@ -445,6 +447,11 @@ None.
 - Bulk /validity/objectives endpoint calls calculateTrend() per objective — no more hard-coded 'stable'
 - mapTrend() helper converts improving/declining/stable to up/down/stable for UI format
 - Error fallback returns 'stable' for objectives with insufficient score history (safe default)
+
+**Phase 4.3 Plan 15 (Stadia Maps Tile 404 Fix):**
+- TileLayer bounds prop (not noWrap) is the actual fix for Leaflet issue #4646/#7181: noWrap alone does not prevent out-of-bounds x=5 tile requests at zoom 2; bounds clamps tile coordinate calculation to prevent bad requests
+- Optional VITE_STADIA_MAPS_API_KEY env var appended to tile URL when set — Stadia Maps returns 401 without API key for non-localhost deployments
+- STADIA_TILE_URL defined at module scope (outside component) to avoid recalculation on every render
 
 **Phase 4.3 Plan 12 (Eigenvector Centrality & PageRank Upgrade):**
 - Power iteration in Node.js for both algorithms — avoids Neo4j GDS dependency, accurate for <10k nodes
@@ -869,6 +876,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 4.3-14-PLAN.md (validity trend gap closure — bulk endpoint wired to real calculateTrend)
+Stopped at: Completed 4.3-15-PLAN.md (Stadia Maps tile 404 fix — TileLayer bounds prop prevents Leaflet out-of-bounds tile requests at zoom 2)
 Resume file: None
 Next action: Continue with next planned phase
