@@ -239,7 +239,7 @@ export const raftToolDefinitions: MCPToolInput[] = [
   {
     toolId: 'run_graph_algorithm',
     name: 'Run Graph Algorithm',
-    description: 'Run a graph algorithm (PageRank, community detection, shortest path, betweenness centrality).',
+    description: 'Run a graph algorithm (PageRank, eigenvector centrality, community detection, shortest path, betweenness centrality).',
     category: 'analysis',
     inputSchema: {
       type: 'object',
@@ -247,7 +247,7 @@ export const raftToolDefinitions: MCPToolInput[] = [
         algorithm: {
           type: 'string',
           description: 'Algorithm to run',
-          enum: ['pagerank', 'louvain', 'shortest_path', 'betweenness_centrality'],
+          enum: ['pagerank', 'eigenvector_centrality', 'louvain', 'shortest_path', 'betweenness_centrality'],
         },
         sourceActorId: {
           type: 'string',
@@ -332,6 +332,253 @@ export const raftToolDefinitions: MCPToolInput[] = [
     isEnabled: true,
   },
 ];
+
+// =============================================================================
+// Graph Algorithm Helpers (exported for use in API endpoints)
+// =============================================================================
+
+/**
+ * Adjacency entry for a single actor node
+ */
+export interface AdjacencyEntry {
+  name: string;
+  type: string;
+  neighbors: Array<{ id: string; weight: number }>;
+}
+
+/**
+ * Fetch the full adjacency list from Neo4j.
+ * Returns a Map<actorId, AdjacencyEntry> for use in power-iteration algorithms.
+ * Weights are absolute values of relationship strength (0 when missing).
+ */
+export async function fetchAdjacencyList(
+  workspaceId?: string
+): Promise<Map<string, AdjacencyEntry>> {
+  let cypher: string;
+  const params: Record<string, unknown> = {};
+
+  if (workspaceId) {
+    cypher = `
+      MATCH (a:Actor {workspaceId: $workspaceId})
+      OPTIONAL MATCH (a)-[r:RELATES_TO]-(b:Actor {workspaceId: $workspaceId})
+      RETURN a.id as actorId, a.name as name, a.type as type,
+             collect({neighborId: b.id, strength: abs(r.strength)}) as neighbors
+    `;
+    params.workspaceId = workspaceId;
+  } else {
+    cypher = `
+      MATCH (a:Actor)
+      OPTIONAL MATCH (a)-[r:RELATES_TO]-(b:Actor)
+      RETURN a.id as actorId, a.name as name, a.type as type,
+             collect({neighborId: b.id, strength: abs(r.strength)}) as neighbors
+    `;
+  }
+
+  const result = await executeReadQuery(cypher, params);
+  const adjacency = new Map<string, AdjacencyEntry>();
+
+  for (const record of result.records) {
+    const actorId = record.get('actorId') as string;
+    if (!actorId) continue;
+
+    const name = record.get('name') as string;
+    const type = record.get('type') as string;
+    const rawNeighbors = record.get('neighbors') as Array<{ neighborId: string | null; strength: number | null }>;
+
+    const neighbors: Array<{ id: string; weight: number }> = rawNeighbors
+      .filter(n => n.neighborId !== null && n.neighborId !== undefined)
+      .map(n => ({
+        id: n.neighborId as string,
+        weight: n.strength != null ? n.strength : 0,
+      }));
+
+    adjacency.set(actorId, { name, type, neighbors });
+  }
+
+  return adjacency;
+}
+
+/**
+ * Eigenvector centrality result entry
+ */
+export interface EigenvectorResult {
+  actorId: string;
+  name: string;
+  type: string;
+  eigenvectorScore: number;
+  rank: number;
+}
+
+/**
+ * Compute eigenvector centrality via power iteration (L-infinity normalization).
+ * Score for actor i: proportional to sum of (weight * score) of all neighbors.
+ * Converges when max delta < epsilon or maxIter is reached.
+ */
+export function computeEigenvectorCentrality(
+  adjacency: Map<string, AdjacencyEntry>,
+  maxIter = 100,
+  epsilon = 1e-6
+): EigenvectorResult[] {
+  const ids = Array.from(adjacency.keys());
+  const n = ids.length;
+
+  if (n === 0) return [];
+
+  // Initialize uniform scores
+  const scores = new Map<string, number>();
+  for (const id of ids) {
+    scores.set(id, 1 / n);
+  }
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    const newScores = new Map<string, number>();
+
+    for (const id of ids) {
+      const entry = adjacency.get(id)!;
+      let sum = 0;
+      for (const neighbor of entry.neighbors) {
+        const nScore = scores.get(neighbor.id) ?? 0;
+        sum += neighbor.weight * nScore;
+      }
+      newScores.set(id, sum);
+    }
+
+    // L-infinity normalization (divide by max)
+    let maxScore = 0;
+    for (const s of newScores.values()) {
+      if (s > maxScore) maxScore = s;
+    }
+    if (maxScore > 0) {
+      for (const [id, s] of newScores) {
+        newScores.set(id, s / maxScore);
+      }
+    } else {
+      // No edges: uniform convergence
+      for (const id of ids) {
+        newScores.set(id, 1 / n);
+      }
+    }
+
+    // Convergence check
+    let maxDelta = 0;
+    for (const id of ids) {
+      const delta = Math.abs((newScores.get(id) ?? 0) - (scores.get(id) ?? 0));
+      if (delta > maxDelta) maxDelta = delta;
+    }
+
+    // Update scores
+    for (const [id, s] of newScores) {
+      scores.set(id, s);
+    }
+
+    if (maxDelta < epsilon) break;
+  }
+
+  // Build sorted result
+  const results: EigenvectorResult[] = ids.map(id => ({
+    actorId: id,
+    name: adjacency.get(id)!.name,
+    type: adjacency.get(id)!.type,
+    eigenvectorScore: scores.get(id) ?? 0,
+    rank: 0,
+  }));
+
+  results.sort((a, b) => b.eigenvectorScore - a.eigenvectorScore);
+  results.forEach((r, i) => { r.rank = i + 1; });
+
+  return results;
+}
+
+/**
+ * PageRank result entry
+ */
+export interface PageRankResult {
+  actorId: string;
+  name: string;
+  type: string;
+  pageRankScore: number;
+  rank: number;
+}
+
+/**
+ * Compute iterative PageRank via power iteration with damping factor.
+ * Score for actor i: (1 - d)/N + d * sum(old_score[j] / outDegree[j]) for in-neighbors j.
+ * Because RAFT relationships are undirected, each neighbor is treated as an in-neighbor.
+ */
+export function computePageRank(
+  adjacency: Map<string, AdjacencyEntry>,
+  damping = 0.85,
+  maxIter = 100,
+  epsilon = 1e-6
+): PageRankResult[] {
+  const ids = Array.from(adjacency.keys());
+  const n = ids.length;
+
+  if (n === 0) return [];
+
+  const teleport = (1 - damping) / n;
+
+  // Initialize uniform scores
+  const scores = new Map<string, number>();
+  for (const id of ids) {
+    scores.set(id, 1 / n);
+  }
+
+  // Compute out-degree (sum of neighbor weights) for each node
+  const outDegree = new Map<string, number>();
+  for (const id of ids) {
+    const entry = adjacency.get(id)!;
+    let deg = 0;
+    for (const neighbor of entry.neighbors) {
+      deg += neighbor.weight > 0 ? neighbor.weight : 1;
+    }
+    outDegree.set(id, deg || 1); // prevent division by zero for isolated nodes
+  }
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    const newScores = new Map<string, number>();
+
+    for (const id of ids) {
+      const entry = adjacency.get(id)!;
+      let inFlow = 0;
+      for (const neighbor of entry.neighbors) {
+        const nScore = scores.get(neighbor.id) ?? 0;
+        const nDeg = outDegree.get(neighbor.id) ?? 1;
+        const weight = neighbor.weight > 0 ? neighbor.weight : 1;
+        inFlow += (nScore / nDeg) * weight;
+      }
+      newScores.set(id, teleport + damping * inFlow);
+    }
+
+    // Convergence check
+    let maxDelta = 0;
+    for (const id of ids) {
+      const delta = Math.abs((newScores.get(id) ?? 0) - (scores.get(id) ?? 0));
+      if (delta > maxDelta) maxDelta = delta;
+    }
+
+    // Update scores
+    for (const [id, s] of newScores) {
+      scores.set(id, s);
+    }
+
+    if (maxDelta < epsilon) break;
+  }
+
+  // Build sorted result
+  const results: PageRankResult[] = ids.map(id => ({
+    actorId: id,
+    name: adjacency.get(id)!.name,
+    type: adjacency.get(id)!.type,
+    pageRankScore: scores.get(id) ?? 0,
+    rank: 0,
+  }));
+
+  results.sort((a, b) => b.pageRankScore - a.pageRankScore);
+  results.forEach((r, i) => { r.rank = i + 1; });
+
+  return results;
+}
 
 // =============================================================================
 // Tool Handlers
@@ -426,7 +673,7 @@ export const raftToolHandlers = {
    * Run Graph Algorithm tool handler
    */
   run_graph_algorithm: async (input: {
-    algorithm: 'pagerank' | 'louvain' | 'shortest_path' | 'betweenness_centrality';
+    algorithm: 'pagerank' | 'eigenvector_centrality' | 'louvain' | 'shortest_path' | 'betweenness_centrality';
     sourceActorId?: string;
     targetActorId?: string;
     workspaceId?: string;
@@ -437,19 +684,19 @@ export const raftToolHandlers = {
     const params: Record<string, unknown> = {};
 
     switch (input.algorithm) {
-      case 'pagerank':
-        // Simple degree-based ranking (approximation without GDS)
-        cypher = `
-          MATCH (a:Actor)
-          OPTIONAL MATCH (a)-[r]-()
-          WITH a, count(r) as degree
-          RETURN a.id as actorId, a.name as name, a.type as type, degree,
-                 toFloat(degree) as score
-          ORDER BY degree DESC
-          LIMIT $limit
-        `;
-        params.limit = limit;
-        break;
+      case 'pagerank': {
+        // Iterative PageRank via power iteration (no GDS dependency)
+        const adjacency = await fetchAdjacencyList(input.workspaceId);
+        const results = computePageRank(adjacency);
+        return { results: results.slice(0, limit) };
+      }
+
+      case 'eigenvector_centrality': {
+        // Eigenvector centrality via power iteration
+        const adjacency = await fetchAdjacencyList(input.workspaceId);
+        const results = computeEigenvectorCentrality(adjacency);
+        return { results: results.slice(0, limit) };
+      }
 
       case 'louvain':
         // Community detection via connected components (approximation)
