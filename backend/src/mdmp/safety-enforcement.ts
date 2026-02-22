@@ -78,14 +78,15 @@ export interface ActivityViolation {
 // ==========================================================================
 
 /**
- * Authority designation ordering from least to most human control.
+ * Authority designation ordering from least to most authority/human control.
+ * Uses the military rank values that match SAFETY_MATRIX entries.
  */
 const AUTHORITY_ORDER: AuthorityDesignation[] = [
-  AuthorityDesignation.AI_AUTONOMOUS, // Least human control
-  AuthorityDesignation.AI_PRIMARY,
-  AuthorityDesignation.HYBRID_AI_LED,
-  AuthorityDesignation.HYBRID_HUMAN_LED,
-  AuthorityDesignation.HUMAN_ONLY, // Most human control
+  AuthorityDesignation.Individual,     // Least authority
+  AuthorityDesignation.NCO,
+  AuthorityDesignation.CompanyGrade,
+  AuthorityDesignation.FieldGrade,
+  AuthorityDesignation.GeneralOfficer, // Most authority / most human control
 ];
 
 /**
@@ -164,21 +165,6 @@ export class SafetyMatrixEnforcer {
       };
     }
 
-    // Check INVARIANT 8: FullyDelegated restriction
-    const requestsFullyDelegated = requestedAuthority === AuthorityDesignation.AI_AUTONOMOUS;
-    const violatesInvariant8 = requestsFullyDelegated && !matrixEntry.permitsFullyDelegated;
-
-    if (violatesInvariant8) {
-      return {
-        valid: false,
-        reason: `INVARIANT 8 VIOLATION: FullyDelegated (AI_AUTONOMOUS) not permitted for ${category}. Only permitted for: DataAggregation, ValidationConsistency, Monitoring, MetaCognitive.`,
-        matrixEntry,
-        requestedAuthority,
-        violatesInvariant8: true,
-        violatesInvariant9: false,
-      };
-    }
-
     // Check INVARIANT 9: Authority within permitted range
     const withinRange = isWithinRange(
       requestedAuthority,
@@ -187,26 +173,39 @@ export class SafetyMatrixEnforcer {
     );
 
     if (!withinRange) {
+      // Distinguish INVARIANT 8 (FullyDelegated restriction) from INVARIANT 9 (general range)
+      // If the requested authority is below minimum for a non-fully-delegated category,
+      // that's an attempt at excessive autonomy → INVARIANT 8
+      const requestedRank = getAuthorityRank(requestedAuthority);
+      const minRank = getAuthorityRank(matrixEntry.minAuthority);
+      const isInvariant8 = !matrixEntry.permitsFullyDelegated && requestedRank < minRank;
+
       return {
         valid: false,
-        reason: `INVARIANT 9 VIOLATION: Authority ${requestedAuthority} outside permitted range [${matrixEntry.minAuthority}, ${matrixEntry.maxAuthority}] for ${category}`,
+        reason: isInvariant8
+          ? `INVARIANT 8 VIOLATION: Authority ${requestedAuthority} is below minimum ${matrixEntry.minAuthority} for ${category}. FullyDelegated only permitted for: DataAggregation, ValidationConsistency, Monitoring, MetaCognitive.`
+          : `INVARIANT 9 VIOLATION: Authority ${requestedAuthority} outside permitted range [${matrixEntry.minAuthority}, ${matrixEntry.maxAuthority}] for ${category}`,
         matrixEntry,
         requestedAuthority,
-        violatesInvariant8: false,
-        violatesInvariant9: true,
+        violatesInvariant8: isInvariant8,
+        violatesInvariant9: !isInvariant8,
       };
     }
 
     // Check human-in-loop requirement
-    if (matrixEntry.requiresHumanInLoop && requestedAuthority !== AuthorityDesignation.HUMAN_ONLY) {
-      return {
-        valid: false,
-        reason: `INVARIANT 9 VIOLATION: ${category} requires human-in-loop. Only HUMAN_ONLY authority is permitted.`,
-        matrixEntry,
-        requestedAuthority,
-        violatesInvariant8: false,
-        violatesInvariant9: true,
-      };
+    if (matrixEntry.requiresHumanInLoop) {
+      const requestedRank = getAuthorityRank(requestedAuthority);
+      const maxRank = getAuthorityRank(matrixEntry.maxAuthority);
+      if (requestedRank < maxRank) {
+        return {
+          valid: false,
+          reason: `INVARIANT 9 VIOLATION: ${category} requires human-in-loop. Minimum authority: ${matrixEntry.maxAuthority}.`,
+          matrixEntry,
+          requestedAuthority,
+          violatesInvariant8: false,
+          violatesInvariant9: true,
+        };
+      }
     }
 
     // Valid assignment

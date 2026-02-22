@@ -1,17 +1,20 @@
-/* Fullscreen Dashboard Layout */
+/* Fullscreen Dashboard Layout - fills parent container, not viewport */
 .validity-dashboard-fullscreen {
-  position: fixed;
-  inset: 0;
+  position: relative;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-primary, #0a0f1a);
   overflow: hidden;
+  /* Use viewport height minus app header (~56px) as minimum */
+  min-height: calc(100vh - 60px);
 }
 
 /* Floating Header */
 .floating-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative;
+  flex-shrink: 0;
   height: 56px;
   display: flex;
   align-items: center;
@@ -145,11 +148,9 @@
 
 /* Fullscreen View */
 .fullscreen-view {
-  position: absolute;
-  top: 56px;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  flex: 1;
+  min-height: 0;
 }
 
 .fullscreen-view > * {

@@ -96,6 +96,9 @@ function AuthContent({ children }: AuthWrapperProps) {
           setUserDID(didValue);
         } else {
           console.warn('DID creation requires PRF - magic link auth has limited functionality');
+          // Still set the DID so API calls work (admin, strategic, etc.)
+          // The DID format is deterministic from accountId - registry entry is optional
+          setUserDID(didValue);
         }
 
         setStatus('ready');

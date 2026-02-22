@@ -23,7 +23,9 @@
   border-radius: 8px;
   padding: 12px;
   min-width: 180px;
-  z-index: 1000;
+  max-height: calc(100% - 80px);
+  overflow-y: auto;
+  z-index: 800;
   backdrop-filter: blur(10px);
 }
 

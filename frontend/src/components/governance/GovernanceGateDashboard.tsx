@@ -6,7 +6,8 @@
  */
 
 import { useState, useMemo } from 'react';
-import { PhaseProgressionBar, PhaseProgressionData } from './PhaseProgressionBar';
+import { PhaseProgressionBar } from './PhaseProgressionBar';
+import type { PhaseProgressionData } from './PhaseProgressionBar';
 import './GovernanceGateDashboard.css';
 
 export interface GateDisplayData {
