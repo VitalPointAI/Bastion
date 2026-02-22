@@ -35,8 +35,8 @@ Progress: █████████████████████ 117 pl
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
-| 4.3 (Strategic Intelligence Fusion) | 11 | 71 min | 6 min |
-| 4.4 (Mission Context & Force Onboarding) | 8 | 47 min | 6 min |
+| 4.3 (Strategic Intelligence Fusion) | 11 (+1 planned) | 71 min | 6 min |
+| 4.4 (Mission Context & Force Onboarding) | 9 | 47 min | 5 min |
 | 05 (Operational Planning Module) | 16 | 71 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
 | 1.3 (NEAR Implicit Account Funding) | 3 | 32 min | 11 min |
@@ -48,6 +48,11 @@ Progress: █████████████████████ 117 pl
 - Trend: Wave-based parallel execution efficient for agent+visualization phases
 
 ## Accumulated Context
+
+### Pending Todos
+
+1 pending todo(s) in `.planning/todos/pending/`:
+- **Fix login landing page dashboard** (ui) — Authenticated users see "login to access command center" instead of dashboard
 
 ### Decisions
 
@@ -434,6 +439,13 @@ None.
 - 8 RAFT tools: create_actor, create_relationship, create_tension, update_edge_weight, query_graph, run_graph_algorithm, get_actor_profile, export_graph_visualization
 - RAFT Extraction Agent with PMESII domain knowledge for entity identification
 - RAFT Reasoning Agent with network science expertise for strategic insights
+
+**Phase 4.3 Plan 12 (Eigenvector Centrality & PageRank Upgrade) — PLANNED:**
+- Add eigenvector centrality algorithm via power iteration in Node.js (no GDS dependency)
+- Upgrade PageRank from degree count to iterative damped random walk
+- Eigenvector captures recursive influence: score based on importance of connected neighbors
+- Cross-centrality comparison endpoint surfaces actors where PageRank and eigenvector diverge
+- Updated RAFT Reasoning Agent knowledge for eigenvector interpretation
 
 **Phase 4.3 Plan 9 (Workspace Isolation & Graph REST API):**
 - Workspace types: country, adversary, region, topic, coalition, custom
