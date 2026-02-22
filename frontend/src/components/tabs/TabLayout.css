@@ -1,0 +1,148 @@
+/* ============================================================================
+   TabLayout - Shared Sidebar Shell
+   Used by Decide, Design, Campaign, Monitor tabs
+   ============================================================================ */
+
+.tab-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* ============================================================================
+   Sidebar
+   ============================================================================ */
+
+.tab-sidebar {
+  flex-shrink: 0;
+  width: 220px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--transition-medium);
+  overflow: hidden;
+}
+
+.tab-sidebar.collapsed {
+  width: 40px; /* Enough for toggle button only */
+}
+
+/* ============================================================================
+   Toggle Button
+   ============================================================================ */
+
+.sidebar-toggle {
+  flex-shrink: 0;
+  padding: 0.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 100%;
+  text-align: right;
+  font-size: 1.1rem;
+  transition: color var(--transition-fast);
+}
+
+.sidebar-toggle:hover {
+  color: var(--text-primary);
+}
+
+/* ============================================================================
+   Navigation Items
+   ============================================================================ */
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  overflow-y: auto;
+}
+
+.sidebar-item {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-item.active {
+  background: var(--bg-elevated);
+  color: var(--accent-blue);
+  border-left: 2px solid var(--accent-blue);
+  padding-left: calc(0.75rem - 2px); /* Compensate for border-left so text doesn't shift */
+}
+
+/* ============================================================================
+   Content Area
+   ============================================================================ */
+
+.tab-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+/* ============================================================================
+   Placeholder style for views requiring mission context
+   ============================================================================ */
+
+.tab-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.tab-placeholder p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: 500px;
+}
+
+/* ============================================================================
+   Responsive — collapse sidebar by default on mobile
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .tab-sidebar {
+    width: 40px; /* collapsed by default on mobile */
+  }
+
+  .tab-sidebar .sidebar-nav {
+    display: none;
+  }
+
+  .tab-sidebar.open {
+    width: 220px;
+  }
+
+  .tab-sidebar.open .sidebar-nav {
+    display: flex;
+  }
+}
