@@ -348,6 +348,14 @@ router.post('/resolution/merge', async (req: Request, res: Response) => {
 // OBJECTIVES WITH VALIDITY ENDPOINTS
 // =====================
 
+function mapTrend(serviceTrend: 'improving' | 'declining' | 'stable'): 'up' | 'down' | 'stable' {
+  switch (serviceTrend) {
+    case 'improving': return 'up';
+    case 'declining': return 'down';
+    case 'stable': return 'stable';
+  }
+}
+
 // Get objectives with validity scores for a workspace
 router.get('/validity/objectives', async (req: Request, res: Response) => {
   try {
@@ -364,11 +372,12 @@ router.get('/validity/objectives', async (req: Request, res: Response) => {
       objectives.map(async (obj) => {
         try {
           const validity = await validityService.calculateValidity(obj.id, 'system');
+          const trendResult = await validityService.calculateTrend(obj.id);
           return {
             id: obj.id,
             objectiveTitle: obj.description.slice(0, 100),
             validityScore: validity.score,
-            trend: 'stable' as const, // Trend analysis not yet implemented
+            trend: mapTrend(trendResult.trend),
             lastUpdated: validity.calculatedAt,
             classification: 'UNCLASSIFIED', // Default for now
           };
