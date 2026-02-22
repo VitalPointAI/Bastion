@@ -190,7 +190,7 @@ Plans:
 ### Phase 4.1: Admin UI (INSERTED)
 **Goal:** Create administrative interface for system configuration and management
 **Depends on:** Phase 4
-**Plans:** 2 plans
+**Plans:** 19/12 plans complete
 
 Plans:
 - [x] Plan 4.1-01: Admin UI Foundation (completed 2026-01-19)
@@ -376,6 +376,8 @@ Plans:
 - [x] Plan 4.3-10: Validity Dashboard UI (completed 2026-01-24)
 - [x] Plan 4.3-11: End-to-End Fusion Flow (completed 2026-01-24)
 - [x] Plan 4.3-12: Eigenvector Centrality & PageRank Upgrade (completed 2026-02-22)
+- [x] Plan 4.3-13: (gap closure plan)
+- [x] Plan 4.3-14: Validity Trend Gap Closure — bulk endpoint wired to real calculateTrend() (completed 2026-02-22)
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
@@ -785,10 +787,10 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1.3 NEAR Implicit Account Funding | 3/3 | Complete | 2026-02-06 |
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
-| 4. Strategic Planning Module | 12/12 | Complete | 2026-01-21 |
+| 4. Strategic Planning Module | 19/12 | Complete   | 2026-02-22 |
 | 4.1 Admin UI | 2/2 | Complete | 2026-01-19 |
 | 4.2 AI Agent Teams | 6/6 | Complete | 2026-01-20 |
-| 4.3 Strategic Intelligence Fusion & RAFT | 11/12 | In progress | 2026-01-24 |
+| 4.3 Strategic Intelligence Fusion & RAFT | 14/14 | Complete | 2026-02-22 |
 | 4.4 Mission Context & Force Onboarding | 9/9 | Complete | 2026-01-25 |
 | 4.5 ATAK/CoT Tactical Interoperability | 0/TBD | Not started | - |
 | 5. Operational Planning Module | 16/16 | Complete | 2026-02-01 |

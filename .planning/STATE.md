@@ -6,16 +6,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 4.3 plan 12 complete — eigenvector centrality and PageRank upgrade delivered
+**Current focus:** Phase 4.3 plan 14 complete — bulk validity objectives endpoint wired to real trend calculation (all gap closure plans complete)
 
 ## Current Position
 
 Phase: 4.3 of 13+ (Strategic Intelligence Fusion)
-Plan: 12 of 12 in current phase
+Plan: 14 of 14 in current phase
 Status: Phase complete
-Last activity: 2026-02-22 — Plan 4.3-12 complete (eigenvector centrality + PageRank upgrade)
+Last activity: 2026-02-22 — Plan 4.3-14 complete (validity trend gap closure)
 
-Progress: █████████████████████ 118 plans complete
+Progress: █████████████████████ 120 plans complete
 
 ## Performance Metrics
 
@@ -35,7 +35,7 @@ Progress: █████████████████████ 118 pl
 | 4 (Strategic Planning) | 10 | 95 min | 10 min |
 | 4.1 (Admin UI) | 2 | 14 min | 7 min |
 | 4.2 (AI Agent Teams) | 6 | 78 min | 13 min |
-| 4.3 (Strategic Intelligence Fusion) | 12 | 76 min | 6 min |
+| 4.3 (Strategic Intelligence Fusion) | 14 | 77 min | 6 min |
 | 4.4 (Mission Context & Force Onboarding) | 9 | 47 min | 5 min |
 | 05 (Operational Planning Module) | 16 | 71 min | 4 min |
 | 13 (Research Whitepaper) | 9 | 59 min | 7 min |
@@ -439,6 +439,11 @@ None.
 - 8 RAFT tools: create_actor, create_relationship, create_tension, update_edge_weight, query_graph, run_graph_algorithm, get_actor_profile, export_graph_visualization
 - RAFT Extraction Agent with PMESII domain knowledge for entity identification
 - RAFT Reasoning Agent with network science expertise for strategic insights
+
+**Phase 4.3 Plan 14 (Validity Trend Gap Closure):**
+- Bulk /validity/objectives endpoint calls calculateTrend() per objective — no more hard-coded 'stable'
+- mapTrend() helper converts improving/declining/stable to up/down/stable for UI format
+- Error fallback returns 'stable' for objectives with insufficient score history (safe default)
 
 **Phase 4.3 Plan 12 (Eigenvector Centrality & PageRank Upgrade):**
 - Power iteration in Node.js for both algorithms — avoids Neo4j GDS dependency, accurate for <10k nodes
@@ -854,9 +859,15 @@ None.
 - Trigger conditions categorized by type: observable, intelligence, time_based, force_ratio
 - Automatic priority/authority determination based on trigger condition analysis
 
+**Phase 4.3 Plan 13 (LangGraph Tool Dispatch Wired):**
+- allToolHandlers dispatch map created at module level by merging all 5 tool handler maps (raft, objective, entity, osint, validity)
+- executeToolHandler dispatches by tool.toolId (snake_case) not tool.name (human-readable)
+- Unknown tool IDs return descriptive error JSON with available tool list
+- All LangGraph agent tool calls now persist to Neo4j/PostgreSQL via real handler functions
+
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 4.3-12-PLAN.md (eigenvector centrality + PageRank upgrade)
+Stopped at: Completed 4.3-13-PLAN.md (LangGraph executeToolHandler wired to real tool handler dispatch)
 Resume file: None
 Next action: Continue with next planned phase
