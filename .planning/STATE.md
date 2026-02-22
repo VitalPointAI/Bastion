@@ -6,21 +6,21 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 4.3 plan 15 complete — Stadia Maps tile 404 fix with TileLayer bounds prop (gap closure for UAT-TEST-2 and UAT-TEST-3)
+**Current focus:** Phase 1.4 plan 01 complete — TabLayout shared sidebar shell + 4 doctrine-aligned activity tab containers (Decide, Design, Campaign, Monitor)
 
 ## Current Position
 
-Phase: 4.3 of 13+ (Strategic Intelligence Fusion)
-Plan: 15 of 15 in current phase
-Status: Phase complete
-Last activity: 2026-02-22 — Plan 4.3-15 complete (Stadia Maps tile 404 fix — bounds prop clamps Leaflet tile requests to valid world bounds)
+Phase: 1.4 of 13+ (Navigation Architecture Restructure)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-22 — Plan 1.4-01 complete (TabLayout sidebar shell + DecideTab, DesignTab, CampaignTab, MonitorTab containers)
 
-Progress: █████████████████████ 121 plans complete
+Progress: █████████████████████ 122 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 117
+- Total plans completed: 122
 - Average duration: 10 min
 - Total execution time: 19.06 hours
 
@@ -42,11 +42,12 @@ Progress: █████████████████████ 121 pl
 | 1.3 (NEAR Implicit Account Funding) | 3 | 32 min | 11 min |
 | 5.1 (MDMP Governance Integration) | 17 | 116 min | 7 min |
 | 5.2 (Escalation & Competition Modeling) | 10 | 135 min | 14 min |
+| 1.4 (Navigation Architecture Restructure) | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Phase 5.2: 10 plans, 4 waves, all verified
+- Phase 1.4: tab container layer — fast execution (pure frontend, no new deps)
 - Trend: Wave-based parallel execution efficient for agent+visualization phases
-| Phase 4.3 P15 | 2 | 1 tasks | 2 files |
+| Phase 1.4 P01 | 2 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -874,9 +875,16 @@ None.
 - Unknown tool IDs return descriptive error JSON with available tool list
 - All LangGraph agent tool calls now persist to Neo4j/PostgreSQL via real handler functions
 
+**Phase 1.4 Plan 01 (Tab Container Components):**
+- TabLayout shared sidebar shell: sidebar open by default, 220px open/40px collapsed, smooth CSS transition, active item left blue border + blue text
+- DecideTab v1: all sidebar items render DAODashboard (contains proposals/voting/MDMP/guidance internally); sidebar previews future decomposition
+- DesignTab: only StrategicDashboard rendered; coa-development/escalation/force-ratio/branch-sequel/sustainment show placeholders (complex required props need mission context)
+- MonitorTab: defaults to StrategicValidityDashboard (IPB Map label); fetches graph data from /api/graph; actor graph click navigates to actor-detail
+- CampaignTab: mission flow (list->detail->wizard) via local selectedMissionId + showWizard state; orders/command/resources are placeholders for future decomposition
+
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 4.3-15-PLAN.md (Stadia Maps tile 404 fix — TileLayer bounds prop prevents Leaflet out-of-bounds tile requests at zoom 2)
+Stopped at: Completed 1.4-01-PLAN.md (TabLayout sidebar shell + 4 doctrine-aligned tab container components)
 Resume file: None
-Next action: Continue with next planned phase
+Next action: Continue with 1.4-02-PLAN.md (App.tsx route restructure)

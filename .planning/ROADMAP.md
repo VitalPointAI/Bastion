@@ -155,7 +155,7 @@ Current navigation reflects implementation history rather than user workflow. Th
    - Sources: AdminDashboard (all panels)
 
 Plans:
-- [ ] 1.4-01-PLAN.md — TabLayout sidebar shell and 4 activity tab containers (Decide, Design, Campaign, Monitor)
+- [x] 1.4-01-PLAN.md — TabLayout sidebar shell and 4 activity tab containers (Decide, Design, Campaign, Monitor) (completed 2026-02-22)
 - [ ] 1.4-02-PLAN.md — App.tsx routing restructure, nav bar update, legacy redirects, CSS changes
 
 ### Phase 2: Identity & Security Framework
@@ -812,7 +812,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1.1 Calimero Self-Sovereign App | 0/TBD | Not started | - |
 | 1.2 Passkey + NEAR Implicit Auth | 12/12 | Complete | 2026-02-01 |
 | 1.3 NEAR Implicit Account Funding | 3/3 | Complete | 2026-02-06 |
-| 1.4 Navigation Architecture Restructure | 0/2 | Not started | - |
+| 1.4 Navigation Architecture Restructure | 1/2 | In progress | - |
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 19/12 | Complete   | 2026-02-22 |
