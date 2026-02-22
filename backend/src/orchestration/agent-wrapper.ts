@@ -33,6 +33,25 @@ import {
   type ExecutionTraceEntry,
 } from './state.js';
 import { createClassificationFilterNode, getClassificationFilter } from './classification-filter.js';
+import {
+  raftToolHandlers,
+  objectiveToolHandlers,
+  entityToolHandlers,
+  osintToolHandlers,
+  validityToolHandlers,
+} from '../graph/tools/index.js';
+
+/**
+ * Unified tool handler dispatch map.
+ * Maps toolId (snake_case) to their actual handler functions across all tool domains.
+ */
+const allToolHandlers: Record<string, (input: Record<string, unknown>) => Promise<unknown>> = {
+  ...raftToolHandlers,
+  ...objectiveToolHandlers,
+  ...entityToolHandlers,
+  ...osintToolHandlers,
+  ...validityToolHandlers,
+} as Record<string, (input: Record<string, unknown>) => Promise<unknown>>;
 
 /**
  * Configuration for creating a LangGraph agent wrapper
@@ -303,26 +322,34 @@ ${state.objectives.map((o, i) => `${i + 1}. ${o}`).join('\n')}
   }
 
   /**
-   * Execute a tool handler
+   * Execute a tool handler by dispatching to the appropriate handler function.
    */
   private async executeToolHandler(
     tool: MCPTool,
     input: Record<string, unknown>,
     context: ToolExecutionContext
   ): Promise<string> {
-    // TODO: Integrate with actual tool execution system
-    // For now, return a placeholder response
-    console.log(`[AgentWrapper] Tool ${tool.name} called with:`, input);
+    const handler = allToolHandlers[tool.toolId];
 
-    return JSON.stringify({
-      tool: tool.name,
-      input,
-      status: 'executed',
-      context: {
-        threadId: context.threadId,
-        agentId: context.agentId,
-      },
-    });
+    if (!handler) {
+      console.warn(`[AgentWrapper] No handler found for tool: ${tool.toolId} (${tool.name})`);
+      return JSON.stringify({
+        error: `Unknown tool: ${tool.toolId}`,
+        availableTools: Object.keys(allToolHandlers),
+      });
+    }
+
+    try {
+      console.log(`[AgentWrapper] Executing tool ${tool.toolId} for agent ${context.agentId}`);
+      const result = await handler(input);
+      return JSON.stringify(result);
+    } catch (error) {
+      console.error(`[AgentWrapper] Tool ${tool.toolId} failed:`, error);
+      return JSON.stringify({
+        error: `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`,
+        tool: tool.toolId,
+      });
+    }
   }
 
   /**
