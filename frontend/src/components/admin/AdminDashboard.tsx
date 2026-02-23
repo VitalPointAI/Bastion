@@ -1,12 +1,13 @@
 /**
  * AdminDashboard Component
  *
- * Main admin interface with tabbed navigation for system configuration.
+ * Main admin interface with sidebar navigation for system configuration.
  * Provides access to LLM, agents, workflow, OSINT sources, and audit log.
+ * Uses shared TabLayout sidebar pattern consistent with other main tabs.
  */
 
 import { useState, useEffect } from 'react';
-import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
+import { TabLayout, type SidebarItem } from '../tabs/TabLayout.js';
 import { adminService } from '../../lib/admin-service';
 import { useUser } from '../../context/UserContext';
 import { LLMConfigPanel } from './LLMConfigPanel';
@@ -25,11 +26,37 @@ interface AdminDashboardProps {
   onBack?: () => void;
 }
 
+type AdminView =
+  | 'llm'
+  | 'agents'
+  | 'agent-management'
+  | 'tools'
+  | 'characters'
+  | 'teams'
+  | 'workflow'
+  | 'osint'
+  | 'audit'
+  | 'funding';
+
+const ADMIN_ITEMS: SidebarItem[] = [
+  { id: 'llm', label: 'LLM Provider', tooltip: 'Configure LLM provider settings' },
+  { id: 'agents', label: 'Agents', tooltip: 'Per-agent model configuration' },
+  { id: 'agent-management', label: 'Agent Management', tooltip: 'Create and manage agents' },
+  { id: 'tools', label: 'Tools', tooltip: 'MCP tool registry' },
+  { id: 'characters', label: 'Characters', tooltip: 'Agent character definitions' },
+  { id: 'teams', label: 'Teams', tooltip: 'Agent team composition' },
+  { id: 'workflow', label: 'Workflow', tooltip: 'Workflow configuration' },
+  { id: 'osint', label: 'OSINT Sources', tooltip: 'Open source intelligence feeds' },
+  { id: 'audit', label: 'Audit Log', tooltip: 'System audit trail' },
+  { id: 'funding', label: 'Funding', tooltip: 'NEAR account funding management' },
+];
+
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
   const { userDID, isAuthenticated } = useUser();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedView, setSelectedView] = useState<AdminView>('llm');
 
   // Check admin access when userDID is available
   useEffect(() => {
@@ -101,7 +128,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     );
   }
 
-  // Admin dashboard with tabs
+  // Admin dashboard with sidebar navigation
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
@@ -128,80 +155,24 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
         </div>
       </div>
 
-      <Tabs className="admin-tabs">
-        <TabList className="admin-tab-list">
-          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
-            LLM Provider
-          </Tab>
-          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
-            Agents
-          </Tab>
-          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
-            Agent Management
-          </Tab>
-          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
-            Tools
-          </Tab>
-          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
-            Characters
-          </Tab>
-          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
-            Teams
-          </Tab>
-          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
-            Workflow
-          </Tab>
-          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
-            OSINT Sources
-          </Tab>
-          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
-            Audit Log
-          </Tab>
-          <Tab className="admin-tab" selectedClassName="admin-tab--selected">
-            Funding
-          </Tab>
-        </TabList>
-
-        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
-          <LLMConfigPanel />
-        </TabPanel>
-
-        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
-          <AgentConfigPanel />
-        </TabPanel>
-
-        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
-          <AgentManagementPanel />
-        </TabPanel>
-
-        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
-          <ToolRegistryPanel />
-        </TabPanel>
-
-        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
-          <CharacterBuilderPanel />
-        </TabPanel>
-
-        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
-          <TeamComposerPanel />
-        </TabPanel>
-
-        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
-          <WorkflowConfigPanel />
-        </TabPanel>
-
-        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
-          <OSINTSourcePanel />
-        </TabPanel>
-
-        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
-          <AuditLogPanel />
-        </TabPanel>
-
-        <TabPanel className="admin-tab-panel" selectedClassName="admin-tab-panel--selected">
-          <FundingPanel />
-        </TabPanel>
-      </Tabs>
+      <div className="admin-sidebar-wrapper">
+        <TabLayout
+          items={ADMIN_ITEMS}
+          selectedItem={selectedView}
+          onSelectItem={(id) => setSelectedView(id as AdminView)}
+        >
+          {selectedView === 'llm' && <LLMConfigPanel />}
+          {selectedView === 'agents' && <AgentConfigPanel />}
+          {selectedView === 'agent-management' && <AgentManagementPanel />}
+          {selectedView === 'tools' && <ToolRegistryPanel />}
+          {selectedView === 'characters' && <CharacterBuilderPanel />}
+          {selectedView === 'teams' && <TeamComposerPanel />}
+          {selectedView === 'workflow' && <WorkflowConfigPanel />}
+          {selectedView === 'osint' && <OSINTSourcePanel />}
+          {selectedView === 'audit' && <AuditLogPanel />}
+          {selectedView === 'funding' && <FundingPanel />}
+        </TabLayout>
+      </div>
     </div>
   );
 }
