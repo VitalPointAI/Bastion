@@ -373,13 +373,13 @@ export function MissionDetail({ missionId, onBack }: MissionDetailProps) {
           </div>
         </TabPanel>
 
-        {/* Sensors Tab */}
+        {/* Sensors Tab — Phase 4.5 (ATAK/CoT) */}
         <TabPanel>
           <div className="tab-content sensors-tab">
             <h3>Sensor Management</h3>
             <p className="placeholder-text">
-              Sensor registration interface will be integrated here.
-              For now, sensors can be viewed on the Map tab.
+              Sensor integration requires ATAK/CoT tactical interoperability (Phase 4.5).
+              Sensor coverage overlays are available on the Map tab.
             </p>
           </div>
         </TabPanel>

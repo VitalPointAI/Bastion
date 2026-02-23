@@ -87,23 +87,23 @@ export interface CopilotAnalysis {
 // Mock data mode - enable for UI testing without backend data
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
-// Mock data for testing
+// Mock data for testing — aligned with Operation Pacific Shield scenario
 const MOCK_DAOS: DAOMetadata[] = [
   {
-    daoId: 'jtf-alpha.bastion.near',
-    name: 'JTF Alpha Command',
-    description: 'Joint Task Force Alpha - Combined Operations Command',
+    daoId: 'indopac-coalition.bastion.near',
+    name: 'Indo-Pacific Coalition Command',
+    description: 'Coalition command authority for Operation Pacific Shield — USA (wt 3), GBR (wt 2), CAN (wt 1)',
     classification: Classification.Secret,
     defaultAutonomy: AutonomyLevel.NotAutonomous,
-    memberCount: 12,
-    activeProposalCount: 4,
+    memberCount: 6,
+    activeProposalCount: 3,
     createdAt: Date.now() * 1_000_000,
-    createdBy: 'commander.near',
+    createdBy: 'radm-chen.near',
   },
   {
     daoId: 'fvey-intel.bastion.near',
     name: 'Five Eyes Intel Cell',
-    description: 'Coalition intelligence sharing and coordination',
+    description: 'Coalition intelligence sharing and coordination for Indo-Pacific theater',
     classification: Classification.TopSecret,
     defaultAutonomy: AutonomyLevel.NotAutonomous,
     memberCount: 5,
@@ -112,10 +112,10 @@ const MOCK_DAOS: DAOMetadata[] = [
     createdBy: 'intel-coord.near',
   },
   {
-    daoId: 'logistics.bastion.near',
-    name: 'Logistics Division',
-    description: 'Supply chain and resource allocation',
-    classification: Classification.Public,
+    daoId: 'jtf-logistics.bastion.near',
+    name: 'JTF Pacific Shield Logistics',
+    description: 'Supply chain and resource allocation for Operation Pacific Shield',
+    classification: Classification.Secret,
     defaultAutonomy: AutonomyLevel.SemiAutonomous,
     memberCount: 8,
     activeProposalCount: 1,
@@ -129,37 +129,36 @@ const hourNs = 60 * 60 * 1_000_000_000;
 const dayNs = 24 * hourNs;
 
 const MOCK_PROPOSALS: Record<string, Proposal[]> = {
-  'jtf-alpha.bastion.near': [
+  'indopac-coalition.bastion.near': [
     {
       id: 0,
-      daoId: 'jtf-alpha.bastion.near',
-      kind: ProposalKind.StrikeAuthorization,
-      proposer: 'intel-officer.near',
-      description: 'URGENT: Strike authorization for confirmed hostile target at grid 38TLN1234567890',
+      daoId: 'indopac-coalition.bastion.near',
+      kind: ProposalKind.Transfer,
+      proposer: 'radm-chen.near',
+      description: 'Resource allocation: Deploy CSG-7 and F-35 squadron to Operation Pacific Shield AO for 90-day rotation',
       classification: Classification.Secret,
-      autonomyOverride: AutonomyLevel.NotAutonomous,
-      status: ProposalStatus.InProgress,
-      votesApprove: 3,
+      status: ProposalStatus.Approved,
+      votesApprove: 6,
       votesReject: 0,
-      createdAt: nowNs - hourNs,
-      votingDeadline: nowNs + (30 * 60 * 1_000_000_000), // 30 min remaining
-      executionState: ExecutionState.Pending,
+      createdAt: nowNs - 3 * dayNs,
+      votingDeadline: nowNs - dayNs,
+      executionState: ExecutionState.Executed,
       effectiveAutonomy: AutonomyLevel.NotAutonomous,
-      timeRemaining: '30m',
-      requiresMyAction: true,
-      isUrgent: true,
+      timeRemaining: 'Executed',
+      requiresMyAction: false,
+      isUrgent: false,
     },
     {
       id: 1,
-      daoId: 'jtf-alpha.bastion.near',
+      daoId: 'indopac-coalition.bastion.near',
       kind: ProposalKind.MissionOrder,
       proposer: 'ops-planner.near',
-      description: 'Mission Order: Patrol route modification for Sector 7 - increased drone coverage',
+      description: 'Mission Order: Modify patrol route for MQ-9 ISR orbit — extend coverage to Miyako Strait chokepoint',
       classification: Classification.Secret,
       autonomyOverride: AutonomyLevel.SemiAutonomous,
       status: ProposalStatus.InProgress,
-      votesApprove: 5,
-      votesReject: 1,
+      votesApprove: 3,
+      votesReject: 0,
       createdAt: nowNs - 2 * hourNs,
       votingDeadline: nowNs + 4 * hourNs,
       executionState: ExecutionState.Pending,
@@ -170,39 +169,22 @@ const MOCK_PROPOSALS: Record<string, Proposal[]> = {
     },
     {
       id: 2,
-      daoId: 'jtf-alpha.bastion.near',
-      kind: ProposalKind.AddMember,
-      proposer: 'hr-officer.near',
-      description: 'Add SGT Williams to JTF Alpha operations team',
-      classification: Classification.Public,
+      daoId: 'indopac-coalition.bastion.near',
+      kind: ProposalKind.StrikeAuthorization,
+      proposer: 'intel-officer.near',
+      description: 'URGENT: Strike authorization for confirmed hostile maritime militia vessel harassing Philippine resupply at Second Thomas Shoal',
+      classification: Classification.Secret,
+      autonomyOverride: AutonomyLevel.NotAutonomous,
       status: ProposalStatus.InProgress,
       votesApprove: 2,
       votesReject: 0,
-      createdAt: nowNs - dayNs,
-      votingDeadline: nowNs + 2 * dayNs,
-      executionState: ExecutionState.Pending,
-      effectiveAutonomy: AutonomyLevel.Autonomous,
-      timeRemaining: '2d',
-      requiresMyAction: false,
-      isUrgent: false,
-    },
-    {
-      id: 3,
-      daoId: 'jtf-alpha.bastion.near',
-      kind: ProposalKind.ConfigChange,
-      proposer: 'commander.near',
-      description: 'Update default autonomy level for reconnaissance operations',
-      classification: Classification.Secret,
-      status: ProposalStatus.Approved,
-      votesApprove: 8,
-      votesReject: 2,
-      createdAt: nowNs - 3 * dayNs,
-      votingDeadline: nowNs - dayNs,
-      executionState: ExecutionState.Executed,
+      createdAt: nowNs - hourNs,
+      votingDeadline: nowNs + (30 * 60 * 1_000_000_000),
+      executionState: ExecutionState.AwaitingHumanApproval,
       effectiveAutonomy: AutonomyLevel.NotAutonomous,
-      timeRemaining: 'Expired',
-      requiresMyAction: false,
-      isUrgent: false,
+      timeRemaining: '30m',
+      requiresMyAction: true,
+      isUrgent: true,
     },
   ],
   'fvey-intel.bastion.near': [
@@ -244,14 +226,14 @@ const MOCK_PROPOSALS: Record<string, Proposal[]> = {
       isUrgent: false,
     },
   ],
-  'logistics.bastion.near': [
+  'jtf-logistics.bastion.near': [
     {
       id: 0,
-      daoId: 'logistics.bastion.near',
+      daoId: 'jtf-logistics.bastion.near',
       kind: ProposalKind.Transfer,
       proposer: 'supply-officer.near',
-      description: 'Fuel allocation increase for forward operating base resupply',
-      classification: Classification.Public,
+      description: 'JP-5 fuel allocation increase for CSG-7 extended Taiwan Strait patrol rotation',
+      classification: Classification.Secret,
       status: ProposalStatus.Approved,
       votesApprove: 6,
       votesReject: 0,
@@ -267,17 +249,15 @@ const MOCK_PROPOSALS: Record<string, Proposal[]> = {
 };
 
 const MOCK_COALITION_STATUS: CoalitionStatus = {
-  requiredParties: ['USA', 'GBR', 'CAN', 'AUS', 'NZL'],
+  requiredParties: ['USA', 'GBR', 'CAN'],
   approvals: {
-    'USA': { approved: true, approvedBy: 'nsa.near', approvedAt: nowNs - hourNs },
-    'GBR': { approved: true, approvedBy: 'gchq.near', approvedAt: nowNs - 2 * hourNs },
+    'USA': { approved: true, approvedBy: 'radm-chen.near', approvedAt: nowNs - hourNs },
+    'GBR': { approved: true, approvedBy: 'cdre-thompson.near', approvedAt: nowNs - 2 * hourNs },
     'CAN': { approved: false },
-    'AUS': { approved: false },
-    'NZL': { approved: false },
   },
   allPartiesRequired: true,
   isApproved: false,
-  pendingParties: ['CAN', 'AUS', 'NZL'],
+  pendingParties: ['CAN'],
 };
 
 /**
@@ -570,8 +550,8 @@ export class GovernanceService {
    */
   async getCoalitionStatus(daoId: string, proposalId: number): Promise<CoalitionStatus | null> {
     if (USE_MOCK_DATA) {
-      // Return coalition status for Five Eyes intel proposals
-      if (daoId === 'fvey-intel.bastion.near') {
+      // Return coalition status for coalition DAOs
+      if (daoId === 'fvey-intel.bastion.near' || daoId === 'indopac-coalition.bastion.near') {
         return MOCK_COALITION_STATUS;
       }
       return null;

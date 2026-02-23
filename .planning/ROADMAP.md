@@ -26,6 +26,7 @@ None
 - [x] **Phase 5: Operational Planning Module** - Implement JP 5-0, operational design, campaign planning, ROE enforcement
 - [x] **Phase 5.1: MDMP Governance Integration** - MDMP workflow engine, assumption registry, safety matrix, 6 new AI agents, governance gates (INSERTED, completed 2026-02-11)
 - [x] **Phase 5.2: Escalation & Competition Modeling** - Adversary modeler, effect cascader, escalation modeler, deception detector, wargaming enhancement (INSERTED, completed 2026-02-13)
+- [x] **Phase 5.3: End-to-End Scenario Validation & UX Cleanup** - Sidebar cleanup, comprehensive scenario seed, persona walkthrough, gap documentation (INSERTED, completed 2026-02-23)
 - [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
 - [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
 - [ ] **Phase 8: Sensor Fusion & Intelligence** - Create multi-level intelligence architecture and data fusion
@@ -663,6 +664,27 @@ Plans:
 - [x] Plan 5.2-09: Branch & Sequel Planning — Contingency COAs with decision point triggers (MDMP-3-06) (completed 2026-02-13)
 - [x] Plan 5.2-10: Sustainment Modeling — Logistics feasibility analysis and comparison per COA (MDMP-3-07, 5-03) (completed 2026-02-12)
 
+### Phase 5.3: End-to-End Scenario Validation & UX Cleanup (INSERTED)
+**Goal:** Validate the complete strategic-to-tactical workflow by cleaning up dead-end navigation, seeding comprehensive scenario data, and walking through persona-based workflows
+**Depends on:** Phase 5.2, Phase 1.4
+**Research:** Not required
+**Plans:** 4 plans
+
+**Context:**
+After 123 plans across Phases 1-5.2, the sidebar navigation contained redundant placeholder items (8 items showing "requires mission context" redirect messages) and there was no comprehensive seed data to walk through the complete workflow. This phase removes navigation dead ends, creates a full Operation Pacific Shield scenario seed script, validates workflows from 3 persona perspectives, and documents the functionality matrix.
+
+**Key Changes:**
+1. **Sidebar Cleanup** — Removed 5 Design and 3 Campaign placeholder items; consolidated 6 Decide items to 3 meaningful views
+2. **Scenario Seed** — `scripts/seed-scenario.sh` seeds mission, plan, 3 COAs, 8 units, 7 command relationships, 20 resources, MDMP workflow
+3. **Mock Data Alignment** — Governance mock data updated to Indo-Pacific Coalition Command scenario (USA/GBR/CAN)
+4. **Issue Fixes** — DAODashboard userDID wiring, MDMP panel prop fixes, sensor tab clarification
+
+Plans:
+- [x] Plan 5.3-01: Sidebar UX Cleanup — Remove placeholder items, consolidate Decide tab (completed 2026-02-23)
+- [x] Plan 5.3-02: Comprehensive Scenario Seed Script — seed-scenario.sh, governance mock data alignment (completed 2026-02-23)
+- [x] Plan 5.3-03: Persona Walkthrough & Issue Fixes — Known issue fixes, MDMP/governance wiring (completed 2026-02-23)
+- [x] Plan 5.3-04: Gap Documentation & Demo Script Update — Functionality matrix, demo script update, roadmap (completed 2026-02-23)
+
 ### Phase 6: Autonomous Vehicle Integration
 **Goal**: Set up edge AI platform and autonomous vehicle control
 **Depends on**: Phase 1
@@ -824,6 +846,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. Operational Planning Module | 16/16 | Complete | 2026-02-01 |
 | 5.1 MDMP Governance Integration | 17/17 | Complete | 2026-02-11 |
 | 5.2 Escalation & Competition Modeling | 10/10 | Complete | 2026-02-13 |
+| 5.3 Scenario Validation & UX Cleanup | 4/4 | Complete | 2026-02-23 |
 | 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
 | 7. Tactical Execution System | 0/TBD | Not started | - |
 | 8. Sensor Fusion & Intelligence | 0/TBD | Not started | - |

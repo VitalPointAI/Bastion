@@ -21,7 +21,8 @@ This appendix provides a detailed demonstration script for the BASTION platform,
 Before demonstration begins, verify:
 
 - [ ] BASTION platform running (docker-compose up)
-- [ ] Coalition DAO configured with sample members (USA, GBR, CAN weighted voting)
+- [ ] Scenario data seeded: `bash scripts/seed-scenario.sh` (seeds graph, mission, plan, COAs, command structure, resources, MDMP workflow)
+- [ ] Mock governance data enabled: `VITE_USE_MOCK_DATA=true` in frontend/.env.local (provides coalition DAO with USA/GBR/CAN and scenario-aligned proposals)
 - [ ] Sample strategic document uploaded and extracted (e.g., fictional coalition directive)
 - [ ] AI agents initialized and healthy
 - [ ] Sphero RVR+ powered and connected
@@ -33,6 +34,7 @@ Before demonstration begins, verify:
 ```
 [ ] Backend services healthy (check /api/health endpoints)
 [ ] Neo4j graph database connected
+[ ] Scenario seed script run successfully (bash scripts/seed-scenario.sh)
 [ ] NEAR testnet accessible
 [ ] LLM provider API keys valid
 [ ] Phala TEE attestation current

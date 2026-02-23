@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { DAOMetadata, Proposal, CoalitionStatus } from '../../types/dao';
 import { VoteType } from '../../types/dao';
 import { governanceService } from '../../lib/governance-service';
+import { useUser } from '../../context/UserContext';
 import { ProposalList } from './ProposalList';
 import { ProposalDetail } from './ProposalDetail';
 import { VotingInterface } from './VotingInterface';
@@ -17,9 +18,11 @@ import './DAODashboard.css';
 
 interface DAODashboardProps {
   daoId?: string; // If not provided, show all user's DAOs
+  initialView?: 'governance' | 'proposals' | 'mdmp';
 }
 
-export function DAODashboard({ daoId: initialDaoId }: DAODashboardProps) {
+export function DAODashboard({ daoId: initialDaoId, initialView }: DAODashboardProps) {
+  const { userDID } = useUser();
   const [daos, setDaos] = useState<DAOMetadata[]>([]);
   const [selectedDaoId, setSelectedDaoId] = useState<string | null>(initialDaoId ?? null);
   const [actionRequired, setActionRequired] = useState<Proposal[]>([]);
@@ -28,7 +31,7 @@ export function DAODashboard({ daoId: initialDaoId }: DAODashboardProps) {
   const [coalitionStatus, setCoalitionStatus] = useState<CoalitionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showMDMPWorkflow, setShowMDMPWorkflow] = useState(false);
+  const [showMDMPWorkflow, setShowMDMPWorkflow] = useState(initialView === 'mdmp');
 
   // Load DAOs and action required proposals
   const loadDashboardData = useCallback(async () => {
@@ -208,7 +211,7 @@ export function DAODashboard({ daoId: initialDaoId }: DAODashboardProps) {
               <MDMPGovernancePanel
                 missionId="placeholder-mission-001"
                 daoId={selectedDaoId}
-                userDID="user-did-placeholder"
+                userDID={userDID || 'anonymous'}
               />
             </div>
           )}
