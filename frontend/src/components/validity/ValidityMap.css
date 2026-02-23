@@ -15,14 +15,14 @@
 /* Map Legend */
 .validity-map .map-legend {
   position: absolute;
-  bottom: 20px;
+  bottom: 40px;
   left: 20px;
   background: rgba(10, 14, 39, 0.95);
   border: 1px solid rgba(74, 158, 255, 0.3);
   border-radius: 8px;
   padding: 12px;
   min-width: 180px;
-  max-height: calc(100% - 50px);
+  max-height: calc(100vh - 200px);
   overflow-y: auto;
   z-index: 800;
   backdrop-filter: blur(10px);
