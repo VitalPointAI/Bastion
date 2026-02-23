@@ -104,7 +104,7 @@ export function AgentAssignmentModal({
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/strategic/documents/${encodeURIComponent(documentId)}/agents`,
+        `${API_BASE}/api/strategic/assignments`,
         {
           method: 'POST',
           headers: {
@@ -112,9 +112,9 @@ export function AgentAssignmentModal({
             'X-DID': userDID,
           },
           body: JSON.stringify({
-            agentId: assignmentMode === 'agent' ? selectedAgentId : undefined,
-            teamId: assignmentMode === 'team' ? selectedTeamId : undefined,
-            assignmentType,
+            documentId,
+            agentId: selectedAgentId || selectedTeamId,
+            autoReview: assignmentType === 'monitor',
           }),
         }
       );
