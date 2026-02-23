@@ -45,13 +45,13 @@ import {
  * Unified tool handler dispatch map.
  * Maps toolId (snake_case) to their actual handler functions across all tool domains.
  */
-const allToolHandlers: Record<string, (input: Record<string, unknown>) => Promise<unknown>> = {
+const allToolHandlers = {
   ...raftToolHandlers,
   ...objectiveToolHandlers,
   ...entityToolHandlers,
   ...osintToolHandlers,
   ...validityToolHandlers,
-} as Record<string, (input: Record<string, unknown>) => Promise<unknown>>;
+} as unknown as Record<string, (input: Record<string, unknown>) => Promise<unknown>>;
 
 /**
  * Configuration for creating a LangGraph agent wrapper

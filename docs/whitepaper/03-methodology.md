@@ -192,9 +192,100 @@ This graduated trust approach mirrors how military organizations develop confide
 
 The system maintains performance metrics for each agent, tracking accuracy of predictions, quality of recommendations, and reliability of execution. Human reviewers periodically assess agent performance and can adjust autonomy settings accordingly. Agents flagged for performance issues are automatically reduced to HITL authority until human operators explicitly restore higher autonomy levels.
 
-## 3.5 Component Integration
+## 3.5 MDMP Governance Integration
 
-BASTION's contribution lies not in inventing new technologies but in integrating existing technologies in novel ways to address gaps in military coordination. This section highlights the integration points that represent BASTION's systems integration novelty.
+While Sections 3.2 through 3.4 describe BASTION's foundational architecture for DAO governance and human authority, operational military planning requires a more granular governance framework that maps to established doctrinal processes. The Military Decision Making Process (MDMP), as defined in Army doctrine for Theater Army (ASCC-level) planning, provides this structure. BASTION integrates MDMP governance directly into the DAO layer, extending the foundational architecture with formal phase progression enforcement, assumption lifecycle tracking, and a safety matrix that prevents authority violations at the smart contract level.
+
+### Five-Tier Authority Model
+
+Section 3.4 described three human authority positions: Human-in-the-Loop, Human-on-the-Loop, and Human-out-of-the-Loop. Analysis of the 65 distinct activities within the MDMP process revealed that this three-level framework, while conceptually sound, lacks the granularity needed for operational planning governance. Some activities require AI to lead analysis with human oversight, while others require humans to lead with AI assistance. The distinction between these cases is operationally significant.
+
+BASTION extends the authority framework to five tiers that map more precisely to MDMP activity requirements:
+
+| Authority Level | Description | Example Activities |
+|----------------|-------------|-------------------|
+| AI_AUTONOMOUS | AI executes without human involvement | Data aggregation, format validation, monitoring |
+| AI_PRIMARY | AI leads with human oversight | Intelligence preparation, trend analysis |
+| HYBRID_AI_LED | AI generates, human reviews before action | COA development, risk assessment |
+| HYBRID_HUMAN_LED | Human leads with AI assistance | Mission analysis, commander's guidance |
+| HUMAN_ONLY | Human decides, AI may present information | Strike authorization, ethical judgments, risk acceptance |
+
+Three activity categories are permanently locked to HUMAN_ONLY regardless of any governance action: AUTHORITY_DECISION (decisions about who has authority to act), ETHICAL_LEGAL (judgments involving ethical or legal reasoning), and RISK_JUDGMENT (acceptance of risk to mission or force). These locks are immutable in the smart contract implementation, reinforcing the strike authorization invariant described in Section 3.4 with a broader class of decisions that require human judgment.
+
+The five-tier model is enforced at the smart contract level. When an AI agent attempts to execute an activity, the contract verifies that the agent's authority level is permitted for that activity's category. Transactions that violate the safety matrix are rejected before execution, providing defense in depth against both misconfiguration and adversarial manipulation of agent permissions.
+
+### Governance Gate System
+
+MDMP divides planning into nine phases, from Receipt of Mission through Transition. BASTION enforces phase progression through a governance gate system that prevents advancement until prerequisite conditions are satisfied. This enforcement addresses a common failure mode in military planning: pressure to skip steps or abbreviate analysis under time constraints.
+
+Eighteen governance gates span the nine MDMP phases, organized into six gate types:
+
+- **PhaseTransition gates** require completion of all mandatory products and analyses before advancing to the next MDMP phase.
+- **ProductApproval gates** require human approval of key planning products (mission statement, commander's guidance, COA sketches, OPORD).
+- **AuthorityCheckpoint gates** enforce human decision authority at points where AI analysis must yield to human judgment.
+- **RedTeamGate gates** require that red team challenges achieve minimum completeness thresholds before COA approval.
+- **CoalitionGate gates** require multi-party consensus from coalition partners at key decision points.
+- **AssumptionGate gates** require explicit human acceptance of planning assumptions before they can inform subsequent analysis.
+
+Each gate is implemented as a DAO proposal that must achieve the required approval threshold before the workflow engine permits phase advancement. This mechanism extends BASTION's existing proposal and voting infrastructure rather than introducing parallel governance mechanisms, maintaining architectural consistency while adding MDMP-specific enforcement.
+
+### Assumption Lifecycle Management
+
+Military planning relies on assumptions that may prove invalid as operations unfold. Traditional planning processes track assumptions informally, creating risk that invalidated assumptions continue to inform decisions. BASTION implements formal assumption lifecycle management through a dedicated smart contract.
+
+Assumptions progress through three states: Pending (identified but not yet accepted), Accepted (explicitly approved by a human decision-maker through a DAO proposal), and Invalidated (contradicted by new information or events). Two governance invariants enforce assumption discipline: Invariant 3 requires explicit human acceptance for all planning assumptions, ensuring that no assumption enters the planning basis without accountability; Invariant 6 triggers automatic replanning workflows when an accepted assumption is invalidated, ensuring that plans built on false premises are flagged for review.
+
+Each assumption carries sensitivity analysis metadata indicating which planning products and decisions depend on it. When an assumption is invalidated, the system identifies all downstream products that may require revision, providing decision-makers with immediate visibility into the blast radius of changed circumstances. This capability directly addresses the challenge identified in Section 2.7: the gap between strategic intent and tactical execution widens when planning assumptions fail silently.
+
+### MDMP-Specific AI Agents
+
+Six AI agents support the MDMP governance framework, each following the single-responsibility pattern described in Section 3.3:
+
+The **Assumption Auditor** continuously monitors the planning environment for indicators that accepted assumptions may be invalid. It surfaces new assumptions implicit in planning products and tracks assumption sensitivity across the planning timeline. The **Orders Validator** performs format and consistency validation on OPORD products, simulating degraded execution scenarios to identify orders that may fail under realistic conditions. The **Uncertainty Quantifier** attaches calibrated confidence intervals to all AI-generated analyses, detecting false precision where AI outputs imply greater certainty than evidence supports. The **Data Bias Detector** identifies statistical bias, coverage gaps, and staleness in intelligence inputs that could skew planning analysis. The **Problem Framing** agent generates alternative problem perspectives from multiple viewpoints, countering the cognitive trap of premature closure on a single problem definition. The **ROE Compliance** agent parses rules of engagement, maps authorities to specific tasks, and validates that planned actions comply with applicable constraints.
+
+These agents operate within the authority levels defined by the safety matrix. None can override governance gates or approve proposals autonomously. Their outputs feed into the governance workflow, where human decision-makers evaluate AI analysis within the structured MDMP process.
+
+## 3.6 Escalation & Competition Modeling
+
+Military planning must account for adversary behavior, escalation dynamics, and cascading effects across multiple domains. While Section 3.5 describes the governance framework that structures the planning process, this section describes the analytical capabilities that inform planning decisions within that framework. BASTION integrates adversary modeling, escalation simulation, and effects analysis as first-class capabilities rather than ad hoc staff processes.
+
+### Adversary Modeling
+
+Effective COA development requires understanding adversary capabilities and likely responses. BASTION implements adversary modeling following ATP 2-01.3 doctrine, with an AI agent that synthesizes adversary capability models from available intelligence inputs and generates two standard adversary products: the Most Likely Course of Action (MLCOA), representing the adversary response with highest probability given observed indicators, and the Most Dangerous Course of Action (MDCOA), representing the adversary response that poses greatest risk to friendly operations regardless of probability.
+
+The adversary modeler operates at SemiAutonomous authority, generating adversary COAs that human analysts review before incorporation into wargaming. This authority level reflects the analytical nature of adversary modeling: the AI performs pattern synthesis and doctrinal reasoning that benefits from machine speed, while human analysts provide the contextual judgment and cultural understanding that current AI systems cannot reliably provide.
+
+### Escalation Dynamics and Effects Analysis
+
+Military operations produce effects that extend beyond immediate tactical outcomes. A tactical action in one domain may trigger diplomatic consequences, information effects, economic disruptions, or further military responses. BASTION models these dynamics through two complementary capabilities.
+
+The **Escalation Modeler** simulates escalation dynamics using configurable theoretical frameworks. Each scenario is represented as an escalation ladder with discrete rungs representing levels of conflict intensity, trigger conditions that cause transitions between rungs, thresholds that define escalation boundaries, and de-escalation options available at each level. The modeler identifies escalation pathways that planned actions might trigger and highlights off-ramps that preserve strategic flexibility. This capability directly addresses the risk that tactical decisions made under time pressure may inadvertently cross escalation thresholds with strategic consequences.
+
+The **Effect Cascader** maps second and third-order effects of each COA across the four DIME domains: Diplomatic, Information, Military, and Economic. For each planned action, the cascader traces likely consequences through interconnected domains, identifying effects that planners might not anticipate from a single-domain perspective. The visualization presents these cascading effects as directed flows across DIME swim lanes, enabling planners to trace cause-and-effect chains and identify unintended consequences before committing to a course of action.
+
+A **Deception Detector** complements these analytical agents by identifying inconsistencies between adversary stated intent and observed behavior. This capability supports the Intelligence Preparation of the Battlefield (IPB) process by flagging indicators that adversary actions may not align with their declared posture, alerting analysts to potential deception operations.
+
+### Enhanced Wargaming
+
+BASTION extends its red team simulation capability into a full wargaming framework that supports the action-reaction-counteraction methodology prescribed by military doctrine. The wargaming engine operates in a hybrid mode: AI agents first execute automated scenario runs that explore the decision space rapidly, identifying critical decision points and high-impact variables. Commanders then use interactive "what-if" exploration to test specific scenarios, modify assumptions, and probe edge cases that automated analysis may not cover.
+
+Each wargaming session produces a complete move log with reasoning audit trail, preserving the analytical basis for COA selection. This audit trail integrates with the governance gate system described in Section 3.5, providing the evidence base that RedTeamGate checks require before COA approval can proceed.
+
+### Quantitative Planning Support
+
+Three additional capabilities provide quantitative rigor to COA comparison and selection:
+
+**Force Ratio Analysis** implements the Correlation of Forces Methodology (COFM) with seven combat power modifiers and doctrinal thresholds (3:1 for deliberate attack, 1:1 for defense). This quantitative assessment complements the qualitative COA comparison performed by the COA Comparator agent, providing numerical basis for feasibility judgments.
+
+**COA Sketch Generation** produces visual representations of each COA using MIL-STD-2525D military symbology overlaid on geographic map displays. Phased timelines with animation enable commanders to visualize the temporal progression of operations, while affiliation filtering isolates friendly, hostile, and neutral force dispositions.
+
+**Sustainment Modeling** assesses logistics feasibility for each COA through resource burndown analysis aligned with ADP 4-0 resource categories. Phase-level risk flags (green, amber, red) provide rapid feasibility assessment, while detailed burndown charts enable planners to identify specific resource constraints that may limit operational duration or tempo.
+
+**Branch and Sequel Planning** supports contingency development by identifying decision points where planned operations may need to diverge based on battlefield conditions. Decision points are modeled with trigger conditions categorized across multiple domains, enabling planners to define what observable conditions would require transitioning to alternative plans. This capability ensures that operational planning accounts for uncertainty rather than assuming a single predicted outcome.
+
+## 3.7 Component Integration
+
+BASTION's contribution lies not in inventing new technologies but in integrating existing technologies in novel ways to address gaps in military coordination. This section highlights the integration points that represent BASTION's systems integration novelty, including the MDMP governance and escalation modeling capabilities described in Sections 3.5 and 3.6.
 
 ### Novel Integration Points
 
@@ -206,13 +297,17 @@ BASTION's contribution lies not in inventing new technologies but in integrating
 
 **Policy Encoding with Autonomous Execution.** Smart contract policy encoding enables bounded autonomy: AI agents can act quickly within policy constraints without case-by-case human approval, while policy violations are automatically prevented. This integration addresses the tradeoff between speed and compliance that characterizes traditional coalition coordination.
 
+**Doctrinal Process Governance with Blockchain Enforcement.** The integration of MDMP doctrinal processes with DAO governance gates represents a novel application of blockchain to military planning process enforcement. While MDMP checklists and phase gates exist in doctrine, they are traditionally enforced through procedural discipline rather than technical controls. BASTION encodes these gates as smart contract conditions that must be satisfied through DAO proposals before workflow advancement, transforming doctrinal guidance into enforceable governance. The assumption lifecycle management system further demonstrates this integration: planning assumptions that would traditionally be tracked in spreadsheets or staff notes become blockchain-recorded artifacts with formal acceptance requirements, invalidation triggers, and automatic replanning workflows.
+
+**Adversary Modeling with Governance-Aware Wargaming.** The integration of AI-driven adversary modeling, escalation simulation, and effects analysis with the MDMP governance framework ensures that analytical rigor is both enabled by AI speed and bounded by governance controls. Wargaming results feed directly into RedTeamGate checks that must be satisfied before COA approval, creating a closed loop between AI analysis and governance enforcement that prevents premature commitment to courses of action that have not been adequately challenged.
+
 ### Cross-Reference to Results
 
-The following section (Section 4, Results) demonstrates these architectural components in an end-to-end scenario. The minimum viable product (MVP) system implements the three-tier DAO structure, deploys AI agents at each level, and demonstrates the human authority integration described here. Physical demonstration with robotic platforms validates that BASTION can coordinate actual assets through DAO governance and AI agent orchestration.
+The following section (Section 4, Results) demonstrates these architectural components in an end-to-end scenario. The minimum viable product (MVP) system implements the three-tier DAO structure, deploys AI agents at each level, and demonstrates the human authority integration described here. The MDMP governance framework (Section 3.5) and escalation modeling capabilities (Section 3.6) extend the operational planning layer with doctrinal process enforcement and analytical depth that strengthens the governance claims validated through physical demonstration.
 
 The Results section shows how the theoretical architecture described here translates into functioning software and hardware, providing evidence that BASTION's integration approach is not merely conceptual but practically achievable. Quantitative metrics from the demonstration validate the system's ability to accelerate coordination while maintaining appropriate human control.
 
 ---
 
-*This section has described BASTION's architecture and the rationale for its major design decisions. The following Results section demonstrates these principles in practice through the physical proof-of-concept implementation.*
+*This section has described BASTION's architecture, the MDMP governance integration, the escalation and competition modeling capabilities, and the rationale for major design decisions. The following Results section demonstrates these principles in practice through the physical proof-of-concept implementation.*
 

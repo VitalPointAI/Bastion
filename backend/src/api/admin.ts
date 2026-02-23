@@ -1789,6 +1789,18 @@ function getCapabilityDescription(cap: AgentCapability): string {
     [AgentCapability.DelegatedVoting]: 'Cast votes on behalf of delegator',
     [AgentCapability.ConsensusBuilding]: 'Build consensus among stakeholders',
     [AgentCapability.CommitteeCoordination]: 'Coordinate committee activities',
+    // MDMP Agent Capabilities (Phase 5.1)
+    [AgentCapability.AssumptionAuditing]: 'Surface, classify, and track planning assumptions',
+    [AgentCapability.DataBiasDetection]: 'Detect statistical bias, data staleness, and coverage gaps',
+    [AgentCapability.OrdersValidation]: 'Validate orders format, consistency, and intent traceability',
+    [AgentCapability.ProblemFraming]: 'Generate alternative problem framings from multiple perspectives',
+    [AgentCapability.ROECompliance]: 'Parse ROE, map authorities to tasks, and validate compliance',
+    [AgentCapability.UncertaintyQuantification]: 'Produce calibrated confidence intervals and detect false precision',
+    // Phase 5.2 Agent Capabilities (Escalation & Competition Modeling)
+    [AgentCapability.AdversaryModeling]: 'Synthesize adversary capability models and generate MLCOA/MDCOA',
+    [AgentCapability.EffectCascading]: 'Model cascading effects across operational domains',
+    [AgentCapability.EscalationModeling]: 'Model escalation dynamics and thresholds',
+    [AgentCapability.DeceptionDetection]: 'Detect potential deception in adversary actions and intelligence',
   };
   return descriptions[cap] || 'No description available';
 }
@@ -1807,6 +1819,7 @@ function getAutonomyLevelName(level: AutonomyLevel): string {
     [AutonomyLevel.NotAutonomous]: 'Not Autonomous',
     [AutonomyLevel.SemiAutonomous]: 'Semi Autonomous',
     [AutonomyLevel.Autonomous]: 'Autonomous',
+    [AutonomyLevel.FullyDelegated]: 'Fully Delegated',
   };
   return names[level] || 'Unknown';
 }
@@ -1816,6 +1829,7 @@ function getAutonomyLevelDescription(level: AutonomyLevel): string {
     [AutonomyLevel.NotAutonomous]: 'Human-in-the-loop: requires explicit human approval',
     [AutonomyLevel.SemiAutonomous]: 'Human-on-the-loop: AI can approve, human monitors with veto',
     [AutonomyLevel.Autonomous]: 'Human-out-of-the-loop: AI can approve and execute',
+    [AutonomyLevel.FullyDelegated]: 'Fully delegated to AI with no human oversight - restricted to safe categories',
   };
   return descriptions[level] || 'No description available';
 }

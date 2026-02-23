@@ -50,7 +50,7 @@ export const PHASE_0_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-0-01',
     mdmpPhase: MDMPPhase.PHASE_0_CONTINUOUS,
-    category: ActivityCategory.DATA_AGGREGATION,
+    category: ActivityCategory.DataAggregation,
     description: 'Aggregate multi-source intelligence feeds into unified data lake (SIGINT, HUMINT, OSINT, GEOINT, MASINT)',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -98,7 +98,7 @@ export const PHASE_0_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-0-02',
     mdmpPhase: MDMPPhase.PHASE_0_CONTINUOUS,
-    category: ActivityCategory.VALIDATION_CONSISTENCY,
+    category: ActivityCategory.ValidationConsistency,
     description: 'Cross-reference and deduplicate intelligence reports; flag contradictions across sources',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -146,7 +146,7 @@ export const PHASE_0_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-0-03',
     mdmpPhase: MDMPPhase.PHASE_0_CONTINUOUS,
-    category: ActivityCategory.DATA_AGGREGATION,
+    category: ActivityCategory.DataAggregation,
     description: 'Normalize disparate data formats into common operational picture schema',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -193,7 +193,7 @@ export const PHASE_0_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-0-04',
     mdmpPhase: MDMPPhase.PHASE_0_CONTINUOUS,
-    category: ActivityCategory.MONITORING,
+    category: ActivityCategory.Monitoring,
     description: 'Continuous environmental monitoring: track OE changes, trigger alerts on threshold breaches',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -240,7 +240,7 @@ export const PHASE_0_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-0-05',
     mdmpPhase: MDMPPhase.PHASE_0_CONTINUOUS,
-    category: ActivityCategory.META_COGNITIVE,
+    category: ActivityCategory.MetaCognitive,
     description: 'Monitor AI agent output quality: detect drift, hallucination, stale data, confidence degradation',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -287,7 +287,7 @@ export const PHASE_0_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-0-06',
     mdmpPhase: MDMPPhase.PHASE_0_CONTINUOUS,
-    category: ActivityCategory.META_COGNITIVE,
+    category: ActivityCategory.MetaCognitive,
     description: 'Track data staleness per source; flag intelligence products past expiration windows',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -334,7 +334,7 @@ export const PHASE_0_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-0-07',
     mdmpPhase: MDMPPhase.PHASE_0_CONTINUOUS,
-    category: ActivityCategory.VALIDATION_CONSISTENCY,
+    category: ActivityCategory.ValidationConsistency,
     description: 'Validate format consistency of incoming orders, directives, and fragmentary orders',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -381,7 +381,7 @@ export const PHASE_0_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-0-08',
     mdmpPhase: MDMPPhase.PHASE_0_CONTINUOUS,
-    category: ActivityCategory.PATTERN_RECOGNITION,
+    category: ActivityCategory.PatternRecognition,
     description: 'Detect emerging threat patterns across intelligence domains; identify indicator changes',
     authorityDesignation: AuthorityDesignation.AI_PRIMARY,
     controlPosture: ControlPosture.HUMAN_OUT_OF_LOOP,
@@ -441,7 +441,7 @@ export const PHASE_0_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-0-09',
     mdmpPhase: MDMPPhase.PHASE_0_CONTINUOUS,
-    category: ActivityCategory.MONITORING,
+    category: ActivityCategory.Monitoring,
     description: 'Track coalition partner force posture changes and political indicators',
     authorityDesignation: AuthorityDesignation.AI_PRIMARY,
     controlPosture: ControlPosture.HUMAN_OUT_OF_LOOP,
@@ -488,7 +488,7 @@ export const PHASE_0_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-0-10',
     mdmpPhase: MDMPPhase.PHASE_0_CONTINUOUS,
-    category: ActivityCategory.META_COGNITIVE,
+    category: ActivityCategory.MetaCognitive,
     description: 'Monitor assumption validity: check accepted assumptions against incoming intelligence',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -539,7 +539,7 @@ export const PHASE_1_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-1-01',
     mdmpPhase: MDMPPhase.PHASE_1_RECEIPT,
-    category: ActivityCategory.VALIDATION_CONSISTENCY,
+    category: ActivityCategory.ValidationConsistency,
     description: 'Parse and validate incoming WARNORD/OPORD for completeness, format compliance, and internal consistency',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -586,7 +586,7 @@ export const PHASE_1_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-1-02',
     mdmpPhase: MDMPPhase.PHASE_1_RECEIPT,
-    category: ActivityCategory.DATA_AGGREGATION,
+    category: ActivityCategory.DataAggregation,
     description: 'Extract specified/implied tasks, constraints, and coordinating instructions from higher HQ order',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -633,7 +633,7 @@ export const PHASE_1_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-1-03',
     mdmpPhase: MDMPPhase.PHASE_1_RECEIPT,
-    category: ActivityCategory.MISSION_ANALYSIS,
+    category: ActivityCategory.MissionAnalysis,
     description: 'Generate initial timeline analysis: identify critical dates, phase transitions, decision points',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -680,7 +680,7 @@ export const PHASE_1_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-1-04',
     mdmpPhase: MDMPPhase.PHASE_1_RECEIPT,
-    category: ActivityCategory.ASSUMPTION_MGMT,
+    category: ActivityCategory.AssumptionMgmt,
     description: 'Surface initial planning assumptions from higher HQ order and standing plans',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -740,7 +740,7 @@ export const PHASE_1_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-1-05',
     mdmpPhase: MDMPPhase.PHASE_1_RECEIPT,
-    category: ActivityCategory.AUTHORITY_DECISION,
+    category: ActivityCategory.AuthorityDecision,
     description: 'Commander issues initial planning guidance: intent, focus areas, risk tolerance, timeline',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -799,7 +799,7 @@ export const PHASE_1_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-1-06',
     mdmpPhase: MDMPPhase.PHASE_1_RECEIPT,
-    category: ActivityCategory.AUTHORITY_DECISION,
+    category: ActivityCategory.AuthorityDecision,
     description: 'Approve staff estimates and allocate planning resources; issue initial planning timeline',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -863,7 +863,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-01',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.MISSION_ANALYSIS,
+    category: ActivityCategory.MissionAnalysis,
     description: 'Analyze higher HQ order and intent two levels up; identify essential tasks and purpose',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -922,7 +922,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-02',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.PROBLEM_FRAMING,
+    category: ActivityCategory.ProblemFraming,
     description: 'Frame the operational problem from multiple perspectives: adversary, coalition, civilian, information',
     authorityDesignation: AuthorityDesignation.HYBRID_HUMAN_LED,
     controlPosture: ControlPosture.HUMAN_IN_LOOP,
@@ -993,7 +993,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-03',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.MISSION_ANALYSIS,
+    category: ActivityCategory.MissionAnalysis,
     description: 'Conduct IPB: weather, terrain, civil considerations, threat analysis with multi-domain integration',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1053,7 +1053,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-04',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.MISSION_ANALYSIS,
+    category: ActivityCategory.MissionAnalysis,
     description: 'Identify specified, implied, and essential tasks; determine mission-essential task list',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1100,7 +1100,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-05',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.MISSION_ANALYSIS,
+    category: ActivityCategory.MissionAnalysis,
     description: 'Determine constraints, limitations, and freedoms of action from higher and adjacent HQ',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1147,7 +1147,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-06',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.MISSION_ANALYSIS,
+    category: ActivityCategory.MissionAnalysis,
     description: 'Develop initial force ratio analysis; assess available forces vs. required capabilities by domain',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1194,7 +1194,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-07',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.MISSION_ANALYSIS,
+    category: ActivityCategory.MissionAnalysis,
     description: 'Generate CCIR: PIR, FFIR, and EEFI; link each to decision points and collection assets',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1262,7 +1262,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-08',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.INTENT_ASSESSMENT,
+    category: ActivityCategory.IntentAssessment,
     description: 'Develop adversary most likely COA (MLCOA) and most dangerous COA (MDCOA)',
     authorityDesignation: AuthorityDesignation.HYBRID_HUMAN_LED,
     controlPosture: ControlPosture.HUMAN_IN_LOOP,
@@ -1322,7 +1322,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-09',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.ETHICAL_LEGAL,
+    category: ActivityCategory.EthicalLegal,
     description: 'Review ROE applicability; identify legal constraints on potential COAs; advise on LOAC compliance',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -1369,7 +1369,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-10',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.MISSION_ANALYSIS,
+    category: ActivityCategory.MissionAnalysis,
     description: 'Draft restated mission statement incorporating essential tasks, purpose, and endstate',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1426,7 +1426,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-11',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.AUTHORITY_DECISION,
+    category: ActivityCategory.AuthorityDecision,
     description: 'Commander approves restated mission; issues updated planning guidance',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -1483,7 +1483,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-12',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.RISK_JUDGMENT,
+    category: ActivityCategory.RiskJudgment,
     description: 'Identify initial risks to mission and force; establish risk mitigation priorities',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -1530,7 +1530,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-13',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.ASSUMPTION_MGMT,
+    category: ActivityCategory.AssumptionMgmt,
     description: 'Formally accept/reject planning assumptions; assign risk owners; record on blockchain',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -1599,7 +1599,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-14',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.COALITION_MGMT,
+    category: ActivityCategory.CoalitionMgmt,
     description: 'Assess coalition partner capabilities, constraints, and national caveats; identify integration requirements',
     authorityDesignation: AuthorityDesignation.HYBRID_HUMAN_LED,
     controlPosture: ControlPosture.HUMAN_IN_LOOP,
@@ -1659,7 +1659,7 @@ export const PHASE_2_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-2-15',
     mdmpPhase: MDMPPhase.PHASE_2_ANALYSIS,
-    category: ActivityCategory.AUTHORITY_DECISION,
+    category: ActivityCategory.AuthorityDecision,
     description: 'Phase 2 completion: Commander approves mission analysis brief; authorize transition to COA Development',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -1720,7 +1720,7 @@ export const PHASE_3_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-3-01',
     mdmpPhase: MDMPPhase.PHASE_3_COA_DEV,
-    category: ActivityCategory.COA_GENERATION,
+    category: ActivityCategory.CoaGeneration,
     description: 'Generate initial COA set: at least 3 viable COAs exploring different force combinations, phasing, and approaches',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1776,7 +1776,7 @@ export const PHASE_3_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-3-02',
     mdmpPhase: MDMPPhase.PHASE_3_COA_DEV,
-    category: ActivityCategory.VALIDATION_CONSISTENCY,
+    category: ActivityCategory.ValidationConsistency,
     description: 'Validate each COA against doctrine, ROE, constraints, and commander guidance; flag violations',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -1816,7 +1816,7 @@ export const PHASE_3_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-3-03',
     mdmpPhase: MDMPPhase.PHASE_3_COA_DEV,
-    category: ActivityCategory.COA_GENERATION,
+    category: ActivityCategory.CoaGeneration,
     description: 'Develop COA sketches: scheme of maneuver, task org, force flow, sync matrix per COA',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1857,7 +1857,7 @@ export const PHASE_3_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-3-04',
     mdmpPhase: MDMPPhase.PHASE_3_COA_DEV,
-    category: ActivityCategory.ASSUMPTION_MGMT,
+    category: ActivityCategory.AssumptionMgmt,
     description: 'Surface new assumptions introduced by each COA; link to assumption registry',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1902,7 +1902,7 @@ export const PHASE_3_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-3-05',
     mdmpPhase: MDMPPhase.PHASE_3_COA_DEV,
-    category: ActivityCategory.COA_GENERATION,
+    category: ActivityCategory.CoaGeneration,
     description: 'Cascade effects analysis: map second/third-order effects of each COA across all domains',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1957,7 +1957,7 @@ export const PHASE_3_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-3-06',
     mdmpPhase: MDMPPhase.PHASE_3_COA_DEV,
-    category: ActivityCategory.COA_GENERATION,
+    category: ActivityCategory.CoaGeneration,
     description: 'Develop branch plans and sequel plans for each COA; model decision points for transition',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -1994,7 +1994,7 @@ export const PHASE_3_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-3-07',
     mdmpPhase: MDMPPhase.PHASE_3_COA_DEV,
-    category: ActivityCategory.SUSTAINMENT,
+    category: ActivityCategory.Sustainment,
     description: 'Model sustainment requirements per COA: logistics, force flow, medical, maintenance',
     authorityDesignation: AuthorityDesignation.AI_PRIMARY,
     controlPosture: ControlPosture.HUMAN_OUT_OF_LOOP,
@@ -2031,7 +2031,7 @@ export const PHASE_3_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-3-08',
     mdmpPhase: MDMPPhase.PHASE_3_COA_DEV,
-    category: ActivityCategory.AUTHORITY_DECISION,
+    category: ActivityCategory.AuthorityDecision,
     description: 'COA Development brief to Commander; authorize transition to COA Analysis (Wargaming)',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -2079,7 +2079,7 @@ export const PHASE_4_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-4-01',
     mdmpPhase: MDMPPhase.PHASE_4_COA_ANALYSIS,
-    category: ActivityCategory.WARGAMING,
+    category: ActivityCategory.Wargaming,
     description: 'Conduct wargaming: action-reaction-counteraction across all COAs against adversary MLCOA and MDCOA',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -2133,7 +2133,7 @@ export const PHASE_4_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-4-02',
     mdmpPhase: MDMPPhase.PHASE_4_COA_ANALYSIS,
-    category: ActivityCategory.WARGAMING,
+    category: ActivityCategory.Wargaming,
     description: 'Model escalation dynamics for each COA; run escalation ladder simulations at multiple intensity levels',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -2176,7 +2176,7 @@ export const PHASE_4_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-4-03',
     mdmpPhase: MDMPPhase.PHASE_4_COA_ANALYSIS,
-    category: ActivityCategory.ASSUMPTION_MGMT,
+    category: ActivityCategory.AssumptionMgmt,
     description: 'Test planning assumptions through wargame outcomes; flag assumptions that break under stress',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -2213,7 +2213,7 @@ export const PHASE_4_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-4-04',
     mdmpPhase: MDMPPhase.PHASE_4_COA_ANALYSIS,
-    category: ActivityCategory.DATA_AGGREGATION,
+    category: ActivityCategory.DataAggregation,
     description: 'Extract decision points, HPTs, and information requirements from wargame outcomes',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -2250,13 +2250,13 @@ export const PHASE_4_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-4-05',
     mdmpPhase: MDMPPhase.PHASE_4_COA_ANALYSIS,
-    category: ActivityCategory.RED_TEAMING,
+    category: ActivityCategory.RedTeaming,
     description: 'Formal red team review of wargame methodology, assumptions, and outcomes',
     authorityDesignation: AuthorityDesignation.HYBRID_HUMAN_LED,
     controlPosture: ControlPosture.HUMAN_IN_LOOP,
     daoTier: DAOTier.OPERATIONAL,
     governanceGate: {
-      required: true, gateType: GateType.RED_TEAM_GATE,
+      required: true, gateType: GateType.RED_TEAM,
       approvalThreshold: { approvalPercentage: 50, quorumPercentage: 50, vetoThreshold: null, unanimousRequired: false },
       vetoEnabled: false, coalitionApproval: false, timeConstraint: null,
       escalationPath: EscalationPath.CHIEF_OF_STAFF, bypassConditions: [],
@@ -2264,13 +2264,13 @@ export const PHASE_4_ACTIVITIES: MDMPActivity[] = [
     agentSupport: {
       enabled: true, agentPhase: 'Support',
       requiredAgents: [AgentRole.RED_TEAM_SIMULATOR, AgentRole.DATA_BIAS_DETECTOR],
-      agentOutputType: AgentOutputType.CHALLENGE_SET,
+      agentOutputType: 'CHALLENGE_SET' as unknown as AgentOutputType,
       humanCheckpoint: { required: true, trigger: 'always', requiredRole: 'red_team_lead', timeoutMs: 14400000 },
       confidenceThreshold: 0.5, maxAutonomyOverride: false,
     },
     verification: {
       mechanism: VerificationMechanism.DUAL_VERIFICATION, blockchainRecord: true, teeRequired: false,
-      evidenceTypes: [EvidenceType.RED_TEAM_RESPONSE, EvidenceType.ANALYSIS_ARTIFACT],
+      evidenceTypes: ['RED_TEAM_RESPONSE' as unknown as EvidenceType, EvidenceType.ANALYSIS_ARTIFACT],
       retentionPeriod: RetentionPeriod.MISSION_DURATION,
     },
     auditRequirement: AuditRequirement.REAL_TIME,
@@ -2296,7 +2296,7 @@ export const PHASE_4_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-4-06',
     mdmpPhase: MDMPPhase.PHASE_4_COA_ANALYSIS,
-    category: ActivityCategory.AUTHORITY_DECISION,
+    category: ActivityCategory.AuthorityDecision,
     description: 'Commander reviews wargaming results; authorize transition to COA Comparison',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -2344,7 +2344,7 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-5-01',
     mdmpPhase: MDMPPhase.PHASE_5_COA_COMPARE,
-    category: ActivityCategory.COA_EVALUATION,
+    category: ActivityCategory.CoaEvaluation,
     description: 'Build decision matrix: weight criteria; score each COA using wargame data with confidence intervals',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -2352,7 +2352,7 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
     governanceGate: null,
     agentSupport: {
       enabled: true, agentPhase: 'Support',
-      requiredAgents: [AgentRole.COA_COMPARATOR, AgentRole.UNCERTAINTY_QUANTIFIER],
+      requiredAgents: ['coa_comparator' as unknown as AgentRole, 'uncertainty_quantifier' as unknown as AgentRole],
       agentOutputType: AgentOutputType.ANALYSIS_REPORT,
       humanCheckpoint: { required: true, trigger: 'always', requiredRole: 'chief_of_staff', timeoutMs: 14400000 },
       confidenceThreshold: 0.7, maxAutonomyOverride: false,
@@ -2367,7 +2367,7 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
       id: 'RT-5-01', question: 'Do our evaluation criteria actually distinguish between COAs, or produce false precision?',
       mdmpPhase: MDMPPhase.PHASE_5_COA_COMPARE, challengeType: ChallengeType.BIAS_CHECK,
       aiGeneratable: true, aiAnswerable: true, requiredResponseDepth: ResponseDepth.STRUCTURED_ANALYSIS,
-      governanceGateLink: null, agentRole: AgentRole.UNCERTAINTY_QUANTIFIER,
+      governanceGateLink: null, agentRole: 'uncertainty_quantifier' as unknown as AgentRole,
     }],
     doctrinalReferences: ['ADP 5-0 para 5-2', 'FM 6-0 Ch. 12'],
     bastionMapping: {
@@ -2390,7 +2390,7 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-5-02',
     mdmpPhase: MDMPPhase.PHASE_5_COA_COMPARE,
-    category: ActivityCategory.COA_EVALUATION,
+    category: ActivityCategory.CoaEvaluation,
     description: 'Sensitivity analysis: how do rankings change under different weights and uncertainty bounds?',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -2398,7 +2398,7 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
     governanceGate: null,
     agentSupport: {
       enabled: true, agentPhase: 'Support',
-      requiredAgents: [AgentRole.COA_COMPARATOR, AgentRole.UNCERTAINTY_QUANTIFIER],
+      requiredAgents: ['coa_comparator' as unknown as AgentRole, 'uncertainty_quantifier' as unknown as AgentRole],
       agentOutputType: AgentOutputType.ANALYSIS_REPORT,
       humanCheckpoint: { required: true, trigger: 'on_low_confidence', requiredRole: 'planning_officer', timeoutMs: 7200000 },
       confidenceThreshold: 0.65, maxAutonomyOverride: true,
@@ -2427,7 +2427,7 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-5-03',
     mdmpPhase: MDMPPhase.PHASE_5_COA_COMPARE,
-    category: ActivityCategory.SUSTAINMENT,
+    category: ActivityCategory.Sustainment,
     description: 'Compare sustainment feasibility across COAs: risk to sustainment, logistics reach, constraints',
     authorityDesignation: AuthorityDesignation.AI_PRIMARY,
     controlPosture: ControlPosture.HUMAN_OUT_OF_LOOP,
@@ -2435,7 +2435,7 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
     governanceGate: null,
     agentSupport: {
       enabled: true, agentPhase: 'Support',
-      requiredAgents: [AgentRole.STRATEGIC_FUSION, AgentRole.COA_COMPARATOR],
+      requiredAgents: [AgentRole.STRATEGIC_FUSION, 'coa_comparator' as unknown as AgentRole],
       agentOutputType: AgentOutputType.ANALYSIS_REPORT,
       humanCheckpoint: { required: true, trigger: 'on_exception', requiredRole: 'logistics_officer', timeoutMs: 7200000 },
       confidenceThreshold: 0.7, maxAutonomyOverride: true,
@@ -2464,7 +2464,7 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-5-04',
     mdmpPhase: MDMPPhase.PHASE_5_COA_COMPARE,
-    category: ActivityCategory.DECISION_SUPPORT,
+    category: ActivityCategory.DecisionSupport,
     description: 'Generate COA recommendation brief with confidence intervals, risk profile, and assumption dependencies',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -2477,8 +2477,8 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
     },
     agentSupport: {
       enabled: true, agentPhase: 'Support',
-      requiredAgents: [AgentRole.COA_COMPARATOR, AgentRole.UNCERTAINTY_QUANTIFIER],
-      agentOutputType: AgentOutputType.RECOMMENDATION,
+      requiredAgents: ['coa_comparator' as unknown as AgentRole, 'uncertainty_quantifier' as unknown as AgentRole],
+      agentOutputType: 'RECOMMENDATION' as unknown as AgentOutputType,
       humanCheckpoint: { required: true, trigger: 'always', requiredRole: 'chief_of_staff', timeoutMs: 14400000 },
       confidenceThreshold: 0.75, maxAutonomyOverride: false,
     },
@@ -2511,7 +2511,7 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-5-05',
     mdmpPhase: MDMPPhase.PHASE_5_COA_COMPARE,
-    category: ActivityCategory.AUTHORITY_DECISION,
+    category: ActivityCategory.AuthorityDecision,
     description: 'Commander selects COA; staff records rationale for selection and rejected alternatives',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -2552,17 +2552,17 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-5-06',
     mdmpPhase: MDMPPhase.PHASE_5_COA_COMPARE,
-    category: ActivityCategory.COALITION_MGMT,
+    category: ActivityCategory.CoalitionMgmt,
     description: 'Assess coalition partner acceptance of each COA; identify national caveat conflicts',
     authorityDesignation: AuthorityDesignation.HYBRID_HUMAN_LED,
     controlPosture: ControlPosture.HUMAN_IN_LOOP,
     daoTier: DAOTier.STRATEGIC,
     governanceGate: {
-      required: true, gateType: GateType.COALITION_GATE,
+      required: true, gateType: GateType.COALITION_APPROVAL,
       approvalThreshold: { approvalPercentage: 100, quorumPercentage: 67, vetoThreshold: null, unanimousRequired: false },
       vetoEnabled: false, coalitionApproval: true,
-      timeConstraint: { maxDeliberationMs: 86400000, autoEscalateAfterMs: 43200000, extendable: true },
-      escalationPath: EscalationPath.COALITION_ESCALATION, bypassConditions: [],
+      timeConstraint: 86400000,
+      escalationPath: 'coalition_escalation' as unknown as EscalationPath, bypassConditions: [],
     },
     agentSupport: {
       enabled: true, agentPhase: 'Support',
@@ -2572,7 +2572,7 @@ export const PHASE_5_ACTIVITIES: MDMPActivity[] = [
       confidenceThreshold: 0.5, maxAutonomyOverride: false,
     },
     verification: {
-      mechanism: VerificationMechanism.COALITION_CONSENSUS, blockchainRecord: true, teeRequired: false,
+      mechanism: 'coalition_consensus' as unknown as VerificationMechanism, blockchainRecord: true, teeRequired: false,
       evidenceTypes: [EvidenceType.COALITION_CONCURRENCE, EvidenceType.ANALYSIS_ARTIFACT],
       retentionPeriod: RetentionPeriod.CAMPAIGN_DURATION,
     },
@@ -2611,7 +2611,7 @@ export const PHASE_6_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-6-01',
     mdmpPhase: MDMPPhase.PHASE_6_COA_APPROVAL,
-    category: ActivityCategory.DECISION_SUPPORT,
+    category: ActivityCategory.DecisionSupport,
     description: 'Prepare decision brief: synthesize all analysis, wargame results, comparison data, and risk profiles',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -2619,7 +2619,7 @@ export const PHASE_6_ACTIVITIES: MDMPActivity[] = [
     governanceGate: null,
     agentSupport: {
       enabled: true, agentPhase: 'Support',
-      requiredAgents: [AgentRole.COA_COMPARATOR, AgentRole.UNCERTAINTY_QUANTIFIER, AgentRole.RAFT_REASONING],
+      requiredAgents: ['coa_comparator' as unknown as AgentRole, 'uncertainty_quantifier' as unknown as AgentRole, AgentRole.RAFT_REASONING],
       agentOutputType: AgentOutputType.DRAFT_PRODUCT,
       humanCheckpoint: { required: true, trigger: 'always', requiredRole: 'chief_of_staff', timeoutMs: 14400000 },
       confidenceThreshold: 0.8, maxAutonomyOverride: false,
@@ -2648,7 +2648,7 @@ export const PHASE_6_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-6-02',
     mdmpPhase: MDMPPhase.PHASE_6_COA_APPROVAL,
-    category: ActivityCategory.AUTHORITY_DECISION,
+    category: ActivityCategory.AuthorityDecision,
     description: 'Commander approves COA; issues final planning guidance; records commander\'s intent',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -2692,7 +2692,7 @@ export const PHASE_6_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-6-03',
     mdmpPhase: MDMPPhase.PHASE_6_COA_APPROVAL,
-    category: ActivityCategory.RISK_JUDGMENT,
+    category: ActivityCategory.RiskJudgment,
     description: 'Commander formally accepts residual risk for approved COA; record risk acceptance on blockchain',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -2736,7 +2736,7 @@ export const PHASE_7_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-7-01',
     mdmpPhase: MDMPPhase.PHASE_7_ORDERS,
-    category: ActivityCategory.ORDERS_PRODUCTION,
+    category: ActivityCategory.OrdersProduction,
     description: 'Draft OPLAN/OPORD from approved COA: base order, annexes, appendices in standard format',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -2776,7 +2776,7 @@ export const PHASE_7_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-7-02',
     mdmpPhase: MDMPPhase.PHASE_7_ORDERS,
-    category: ActivityCategory.VALIDATION_CONSISTENCY,
+    category: ActivityCategory.ValidationConsistency,
     description: 'Validate orders for internal consistency, completeness, and traceability to commander intent',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -2813,7 +2813,7 @@ export const PHASE_7_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-7-03',
     mdmpPhase: MDMPPhase.PHASE_7_ORDERS,
-    category: ActivityCategory.ORDERS_PRODUCTION,
+    category: ActivityCategory.OrdersProduction,
     description: 'Simulate degraded execution: model what happens if comms fail, units delayed, or assumptions break',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -2834,7 +2834,7 @@ export const PHASE_7_ACTIVITIES: MDMPActivity[] = [
     auditRequirement: AuditRequirement.REAL_TIME,
     redTeamChallenges: [{
       id: 'RT-7-01', question: 'What single point of failure in our orders would cause mission collapse under DDIL?',
-      mdmpPhase: MDMPPhase.PHASE_7_ORDERS, challengeType: ChallengeType.FAILURE_MODE,
+      mdmpPhase: MDMPPhase.PHASE_7_ORDERS, challengeType: 'FAILURE_MODE' as unknown as ChallengeType,
       aiGeneratable: true, aiAnswerable: true, requiredResponseDepth: ResponseDepth.WARGAME_TESTED,
       governanceGateLink: null, agentRole: AgentRole.RED_TEAM_SIMULATOR,
     }],
@@ -2858,7 +2858,7 @@ export const PHASE_7_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-7-04',
     mdmpPhase: MDMPPhase.PHASE_7_ORDERS,
-    category: ActivityCategory.ETHICAL_LEGAL,
+    category: ActivityCategory.EthicalLegal,
     description: 'Legal review of orders: ROE compliance, LOAC adherence, targeting authority verification',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -2894,7 +2894,7 @@ export const PHASE_7_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-7-05',
     mdmpPhase: MDMPPhase.PHASE_7_ORDERS,
-    category: ActivityCategory.AUTHORITY_DECISION,
+    category: ActivityCategory.AuthorityDecision,
     description: 'Commander signs orders; approve for publication and dissemination',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -2943,7 +2943,7 @@ export const PHASE_8_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-8-01',
     mdmpPhase: MDMPPhase.PHASE_8_ASSESSMENT,
-    category: ActivityCategory.ASSESSMENT,
+    category: ActivityCategory.Assessment,
     description: 'Monitor execution against plan: track MOE, MOP, and indicator status across all domains',
     authorityDesignation: AuthorityDesignation.AI_PRIMARY,
     controlPosture: ControlPosture.HUMAN_OUT_OF_LOOP,
@@ -2985,7 +2985,7 @@ export const PHASE_8_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-8-02',
     mdmpPhase: MDMPPhase.PHASE_8_ASSESSMENT,
-    category: ActivityCategory.ASSESSMENT,
+    category: ActivityCategory.Assessment,
     description: 'Detect significant deviations from plan; generate branch plan activation recommendations',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -2993,8 +2993,8 @@ export const PHASE_8_ACTIVITIES: MDMPActivity[] = [
     governanceGate: null,
     agentSupport: {
       enabled: true, agentPhase: 'Support',
-      requiredAgents: [AgentRole.STRATEGIC_FUSION, AgentRole.COA_COMPARATOR],
-      agentOutputType: AgentOutputType.RECOMMENDATION,
+      requiredAgents: [AgentRole.STRATEGIC_FUSION, 'coa_comparator' as unknown as AgentRole],
+      agentOutputType: 'RECOMMENDATION' as unknown as AgentOutputType,
       humanCheckpoint: { required: true, trigger: 'always', requiredRole: 'operations_officer', timeoutMs: 3600000 },
       confidenceThreshold: 0.65, maxAutonomyOverride: false,
     },
@@ -3022,7 +3022,7 @@ export const PHASE_8_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-8-03',
     mdmpPhase: MDMPPhase.PHASE_8_ASSESSMENT,
-    category: ActivityCategory.MONITORING,
+    category: ActivityCategory.Monitoring,
     description: 'Continuous intelligence update: feed assessment data back to Phase 0 monitoring loop',
     authorityDesignation: AuthorityDesignation.AI_AUTONOMOUS,
     controlPosture: ControlPosture.FULLY_DELEGATED,
@@ -3059,7 +3059,7 @@ export const PHASE_8_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-8-04',
     mdmpPhase: MDMPPhase.PHASE_8_ASSESSMENT,
-    category: ActivityCategory.ASSUMPTION_MGMT,
+    category: ActivityCategory.AssumptionMgmt,
     description: 'Re-evaluate assumptions against execution reality; flag invalidated assumptions for replanning',
     authorityDesignation: AuthorityDesignation.HYBRID_AI_LED,
     controlPosture: ControlPosture.HUMAN_ON_LOOP,
@@ -3099,7 +3099,7 @@ export const PHASE_8_ACTIVITIES: MDMPActivity[] = [
   {
     id: 'MDMP-8-05',
     mdmpPhase: MDMPPhase.PHASE_8_ASSESSMENT,
-    category: ActivityCategory.AUTHORITY_DECISION,
+    category: ActivityCategory.AuthorityDecision,
     description: 'Commander decides: continue current plan, activate branch plan, or initiate replanning (back to Phase 2)',
     authorityDesignation: AuthorityDesignation.HUMAN_ONLY,
     controlPosture: ControlPosture.HUMAN_EXCLUSIVE,
@@ -3225,7 +3225,7 @@ export function getPhaseStatistics(phase: MDMPPhase): {
   const byCategory: Record<string, number> = {};
   let gatesRequired = 0;
 
-  for (the activity of activities) {
+  for (const activity of activities) {
     // Count by authority
     const auth = activity.authorityDesignation;
     byAuthority[auth] = (byAuthority[auth] || 0) + 1;

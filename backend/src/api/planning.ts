@@ -63,6 +63,28 @@ planningRouter.post('/plans', async (req: Request, res: Response) => {
   }
 });
 
+// List all plans (with optional ?limit= and ?offset= query params)
+planningRouter.get('/plans', async (req: Request, res: Response) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+    const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined;
+
+    if (limit !== undefined && (isNaN(limit) || limit < 0)) {
+      res.status(400).json({ error: 'Invalid limit parameter: must be a non-negative integer' });
+      return;
+    }
+    if (offset !== undefined && (isNaN(offset) || offset < 0)) {
+      res.status(400).json({ error: 'Invalid offset parameter: must be a non-negative integer' });
+      return;
+    }
+
+    const plans = await planStore.findAll(limit, offset);
+    res.json({ plans, total: plans.length });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to list plans' });
+  }
+});
+
 // Get plan by ID
 planningRouter.get('/plans/:id', async (req: Request, res: Response) => {
   try {

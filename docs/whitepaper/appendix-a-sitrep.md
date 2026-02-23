@@ -1,6 +1,6 @@
 # Appendix A: Implementation Status (SITREP)
 
-This appendix provides the current implementation status of the BASTION platform as of January 2026. The Situation Report (SITREP) documents completed phases, current development status, and remaining work required for full operational capability.
+This appendix provides the current implementation status of the BASTION platform as of February 2026. The Situation Report (SITREP) documents completed phases, current development status, and remaining work required for full operational capability.
 
 ## A.1 Completed Phases
 
@@ -11,12 +11,35 @@ Phase 1 established the core blockchain, storage, and authentication infrastruct
 **Completed capabilities:**
 
 - **NEAR Smart Contracts:** DAO governance contracts deployed to NEAR testnet with state versioning, role management, and proposal workflows. Rust toolchain pinned to 1.88.0 for WASM compatibility.
-- **Frontend Authentication:** Privy.io integration providing Web2-style login with blockchain account abstraction. Users authenticate without cryptocurrency experience. React 19 + TypeScript 5.9 + Vite frontend stack.
+- **Frontend Authentication:** Privy.io integration providing Web2-style login with blockchain account abstraction. Users authenticate without cryptocurrency experience. React 19 + TypeScript 5.9 + Vite frontend stack. (Subsequently replaced by passkey authentication in Phase 1.2.)
 - **IPFS Encrypted Storage:** Pinata-managed IPFS for large file storage with ChaCha20-Poly1305 AEAD encryption. Content-addressed storage with on-chain CID provenance.
 - **PostgreSQL Hybrid Storage:** Three-tier storage architecture combining PostgreSQL (fast queries), NEAR blockchain (verification), and IPFS (large files). Dual-write pattern with transactional outbox for reliability.
 - **Phala TEE Integration:** Transparent privacy routing with public data on-chain and classified data processed in Trusted Execution Environments. Four-step attestation verification.
 - **Chain Signatures & Intents:** NEAR MPC multi-chain signatures enabling blockchain abstraction. Intent-based transactions for transfer, mission order, and document verification operations.
 - **Containerization:** Docker Compose environment with healthcheck-based dependencies. Multi-stage Dockerfiles for development and production builds.
+
+### Phase 1.2: Passkey Authentication & NEAR Implicit Accounts (COMPLETE)
+
+Phase 1.2 replaced the Privy.io authentication dependency with self-sovereign passkey authentication and NEAR implicit account identity.
+
+**Completed capabilities:**
+
+- **Passkey Authentication (WebAuthn):** @simplewebauthn/server with discoverable credentials. PRF extension for deterministic secret derivation enabling DID framework compatibility without any changes to the existing DID encryption/blinding logic.
+- **Magic Link Fallback:** 32-byte token generation with 15-minute expiry for browsers lacking PRF support. AWS SES email integration with branded templates.
+- **Account Recovery:** Email verification with passkey re-registration flow and NEAR key rotation.
+- **NEAR Implicit Accounts:** Account ID derived from passkey public key via SHA3-256 hash, creating deterministic blockchain identity from WebAuthn credentials.
+- **PRF-DID Integration:** PRF extension output serves as the userSecret input to existing HKDF-based DID derivation, preserving full backward compatibility with the identity framework.
+- **Migration Flow:** Existing Privy users migrate DIDs via decrypt-reencrypt pattern with zero data loss.
+
+### Phase 1.3: NEAR Implicit Account Funding (COMPLETE)
+
+Phase 1.3 activated newly created NEAR implicit accounts by transferring minimum NEAR during registration.
+
+**Completed capabilities:**
+
+- **Funding Contract:** Dedicated Rust smart contract with access-controlled fund() method, withdraw(), balance queries, and activity history.
+- **Registration Hook:** After MPC account creation, automated transfer of 0.1 NEAR with blocking execution and 3-retry logic.
+- **Admin UI:** FundingPanel with balance monitoring, activity history, and low-balance warnings.
 
 ### Phase 2: Identity & Security Framework (COMPLETE)
 
@@ -107,13 +130,63 @@ Phase 4.3 implemented multi-document fusion, graph-based analysis, and validity 
 - **Validity Dashboard UI:** Force-directed graph visualization with react-force-graph-2d. Node filtering and detail panels.
 - **End-to-End Fusion Flow:** Fullscreen map/graph layout. Split view mode with floating info panels.
 
+### Phase 5: Operational Planning Module (COMPLETE)
+
+Phase 5 implemented the JP 5-0 Joint Planning Process with COA development, analysis, and document generation.
+
+**Completed capabilities:**
+
+- **JP 5-0 Workflow Engine:** XState v5 state machine implementing the 7-step planning process (Planning Initiation through Plan Development) with prerequisite guards. Two mandatory human checkpoints at COA Approval and Plan Approval. Flexible step navigation allowing revisitation of completed steps. PostgreSQL persistence for workflow state.
+- **COA Development & Analysis:** AI-generated courses of action with doctrinal compliance. Minimum 3 COAs required per doctrine. Real-time collaborative editing via Yjs CRDTs with WebSocket synchronization.
+- **Red Team Simulator Agent:** Adversary analysis identifying vulnerabilities in each COA. Vulnerability tools for systematic weakness assessment.
+- **COA Comparator Agent:** Objective comparison scoring across feasibility, acceptability, and suitability criteria. Weighted scoring matrices for commander decision support.
+- **COA Generator Agent:** LangGraph agent with mission context tools for doctrinal COA generation.
+- **ROE Enforcement Engine:** json-rules-engine for declarative rule evaluation. Commander override workflow with justification requirement. Blockchain audit trail for accountability. ROE violation flagging with severity classification.
+- **Document Generation:** 5-paragraph OPORD format with classification banners and handling instructions. OPLAN generation in DOCX and PDF formats. Briefing slides (PPTX) for commander, staff, and rehearsal audiences. Sync matrix, Decision Support Template, and CCIR products. MIL-STD-2525D operational graphics.
+- **Planning Dashboard UI:** Step navigator with prerequisite validation. Plan list with status filtering. COA editor with real-time collaboration indicators. Commander approval workflows with ROE violation panels and document export.
+
+### Phase 5.1: MDMP Governance Integration (COMPLETE)
+
+Phase 5.1 integrated the Military Decision Making Process (MDMP) governance framework into BASTION's DAO layer, establishing formal phase progression enforcement, assumption lifecycle tracking, safety matrix validation, and six new AI agents.
+
+**Completed capabilities:**
+
+- **MDMP Smart Contract Module:** New `near-contracts/src/mdmp/` module extending the DAO governance layer. Added `AutonomyLevel::FullyDelegated` variant restricted to four deterministic activity categories (DATA_AGGREGATION, VALIDATION_CONSISTENCY, MONITORING, META_COGNITIVE). Five new `ProposalKind` variants: PhaseTransition, AssumptionAcceptance, ProductApproval, RedTeamGate, and CommanderGuidance.
+- **Five-Tier Authority Model:** Expanded the three-level autonomy framework to five tiers: AI_AUTONOMOUS, AI_PRIMARY, HYBRID_AI_LED, HYBRID_HUMAN_LED, and HUMAN_ONLY. Three categories permanently locked to HUMAN_ONLY: AUTHORITY_DECISION, ETHICAL_LEGAL, and RISK_JUDGMENT. Safety matrix enforced at the smart contract level with transactions rejected if authority level is violated.
+- **Assumption Registry Contract:** Full assumption lifecycle management (Pending, Accepted, Invalidated) with sensitivity analysis. Assumption invalidation automatically triggers replanning workflows. Explicit human acceptance required for all planning assumptions (Governance Invariant 3).
+- **MDMP Workflow Engine:** Phase progression with gate enforcement across 9 MDMP phases. 18 governance gates of 6 types (PhaseTransition, ProductApproval, AuthorityCheckpoint, RedTeamGate, CoalitionGate, AssumptionGate). Red team challenge completeness required before phase transitions (Governance Invariant 4).
+- **Nine Governance Invariants:** (1) Strike authorization always human, (2) MDMP phase progression gated, (3) Assumption accountability, (4) Red team completeness, (5) Uncertainty transparency with confidence intervals, (6) Assumption invalidation triggers replanning, (7) Commander guidance traceability, (8) FullyDelegated scope restriction, (9) Safety matrix enforcement.
+- **Six New AI Agents:** Assumption Auditor (surface and track planning assumptions with sensitivity analysis), Orders Validator (format/consistency validation with degraded execution simulation), Uncertainty Quantifier (calibrated confidence intervals and false precision detection), Data Bias Detector (statistical bias, coverage gaps, staleness tracking), Problem Framing (alternative problem perspectives from multiple viewpoints), ROE Compliance (parse ROE, map authorities to tasks, validate compliance).
+- **MDMP Activity Registry:** 65 MDMP activities across 22 activity categories mapped to authority levels and governance gates. Full REST API with workflow service integration.
+- **RAFT Pipeline MDMP Templates:** Five new extraction templates for task/constraint extraction, CCIR generation, mission statement formulation, OPORD section generation, IPB analysis, and wargame output extraction.
+- **Decision Brief Generator:** Automated decision brief for MDMP Phase 6 (COA Approval) with COA comparison matrix, risk assessment summary, and confidence intervals.
+- **Governance Gate Dashboard UI:** MDMPGovernancePanel container component with phase progression bar, gate status indicators, assumption tracker, commander guidance form, and decision brief viewer. Wired to 11 backend API endpoints.
+
+### Phase 5.2: Escalation & Competition Modeling (COMPLETE)
+
+Phase 5.2 built adversary modeling, escalation dynamics simulation, effect cascading, and enhanced wargaming capabilities with four new AI agents.
+
+**Completed capabilities:**
+
+- **Adversary Modeler Agent:** Synthesizes adversary capability models from intelligence inputs. Generates Most Likely Course of Action (MLCOA) and Most Dangerous Course of Action (MDCOA) per ATP 2-01.3 doctrine. SemiAutonomous authority level.
+- **Effect Cascader Agent:** Maps second and third-order effects of each COA across DIME domains (Diplomatic, Information, Military, Economic). Directed flow visualization with DIME swim lanes.
+- **Escalation Modeler Agent:** Models escalation dynamics using multiple theoretical frameworks. Escalation ladder with configurable rungs, triggers, thresholds, and de-escalation options. Identifies escalation pathways and off-ramps.
+- **Deception Detector Agent:** Identifies inconsistencies between adversary stated intent and observed behavior patterns. Inline flags with dedicated analysis sections.
+- **Escalation & Effect Visualization:** EscalationLadder component with vertical ladder display and current position highlighting. EffectChainDiagram component with directed flow across DIME swim lanes.
+- **Wargaming Framework Enhancement:** Full action-reaction-counteraction simulation engine expanding the Phase 5 Red Team Simulator. Hybrid model combining AI-automated scenarios with commander-directed "what-if" interactive exploration. Configurable cycle depth per session. Complete move log with reasoning audit trail.
+- **Force Ratio Analysis:** Correlation of Forces Methodology (COFM) with 7 combat power modifiers and doctrinal thresholds (3:1 attack, 1:1 defense). Dual display with bars and tabular views (ForceRatioDisplay component).
+- **COA Sketch Generation:** Leaflet map integration with MIL-STD-2525D milsymbol overlays rendered as SVG graphics. Phased timeline with play/scrub animation. Affiliation filtering for friendly, hostile, and neutral forces (COASketchMap and COATimeline components).
+- **Branch & Sequel Planning:** Decision points as diamond markers on timeline with progressive disclosure (inline expand to side panel). Trigger condition categorization across multiple domains. BranchSequelTimeline component with decision point management.
+- **Sustainment Modeling:** Resource burndown charts per COA with phase-level risk flags (green/amber/red). Feasibility classification aligned with ADP 4-0 resource categories (SustainmentDisplay component).
+
 ## A.2 Current Status
 
 | Metric | Value |
 |--------|-------|
-| Total completed plans | 55 |
-| Current phase | Phase 13 (Research Whitepaper) |
-| Phase 13 progress | 6 of 7 plans |
+| Total completed plans | 117 |
+| Phases complete | 15 of 24 |
+| AI agents implemented | 23 |
+| Smart contract modules | 5 (DAO core, MDMP types, assumptions, workflow, funding) |
 
 **Development Stack:**
 
@@ -124,15 +197,16 @@ Phase 4.3 implemented multi-document fusion, graph-based analysis, and validity 
 - Orchestration: LangGraph + LangChain
 - Container: Docker Compose
 - TEE: Phala Network
+- Authentication: WebAuthn passkeys with PRF extension
 
 ## A.3 Remaining Work
 
-### Phase 5: Operational Planning Module
+### Phase 4.4: Mission Context & Force Onboarding
 
-- JP 5-0 Joint Planning Process implementation
-- Campaign planning workflows
-- Rules of engagement modeling
-- Operational design methodology
+- Workspace setup with participant invitation and identity verification
+- Command relationship configuration (OPCON, TACON, ADCON, support relationships)
+- Resource inventory management (weapons systems, personnel, consumables)
+- Sensor registration with map overlays and MIL-STD-2525D symbology
 
 ### Phase 6: Autonomous Vehicle Integration
 
@@ -144,7 +218,7 @@ Phase 4.3 implemented multi-document fusion, graph-based analysis, and validity 
 
 ### Phase 7: Tactical Execution System
 
-- Commander interface for mission orders
+- Commander interface for mission orders consuming governance-validated orders from Phase 5.1
 - Target selection workflows
 - Vehicle command and control
 - Real-time telemetry via WebSocket
@@ -153,18 +227,21 @@ Phase 4.3 implemented multi-document fusion, graph-based analysis, and validity 
 
 - Multi-level intelligence fusion architecture
 - Edge device tactical fusion
-- Backend operational fusion
+- Backend operational fusion with MDMP-structured IPB sensor integration
 - Sensor data ontologies
 
 ### Phase 9: Assessment & Dashboard
 
-- Real-time operational picture
-- Measure of effectiveness calculation
+- Real-time operational picture with COP schema normalization
+- Measure of effectiveness calculation against MDMP governance gates
+- Deviation detection (plan vs. actual) with assessment-to-monitoring feedback loops
 - Decision support visualization
 
 ### Phase 10: End-to-End Integration
 
-- Complete planning cycle automation
+- Complete planning cycle automation including full MDMP workflow with governance gates
+- Assumption lifecycle management integrated with replanning triggers
+- Escalation modeling and coalition health monitoring in the operational loop
 - Battle damage assessment feedback loops
 - Strategic-tactical reconciliation
 
@@ -181,15 +258,28 @@ Phase 4.3 implemented multi-document fusion, graph-based analysis, and validity 
 - Bilateral marking systems
 - Coalition identity federation
 
+### Phase 12.1: Coalition Health Monitoring
+
+- Coalition Health Agent for partner cohesion monitoring and defection risk alerting
+- Narrative Impact Agent for information operation impact modeling
+- National caveat tracking with conflict detection in DAO linkages contract
+- Coalition gate mechanism requiring multi-party consensus
+- Coalition health dashboard with partner status visualization
+
 ## A.4 MVP Demo Readiness
 
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Strategic DAO | Ready | Full voting/proposal flow with coalition weights |
-| AI Agent Coordination | Ready | LangGraph orchestration with human checkpoints |
+| AI Agent Coordination | Ready | LangGraph orchestration with human checkpoints, 23 agents |
 | Document Ingestion | Ready | PDF/DOCX extraction with LLM analysis |
 | RAFT Graph Analysis | Ready | Neo4j graph with fusion agents |
 | Validity Dashboard | Ready | Map/graph visualization with OSINT integration |
+| Operational Planning | Ready | JP 5-0 workflow with COA development, ROE enforcement |
+| MDMP Governance | Ready | Phase progression, assumption tracking, safety matrix |
+| Escalation Modeling | Ready | Adversary COAs, escalation ladder, effects cascading |
+| Wargaming | Ready | Action-reaction-counteraction with interactive exploration |
+| Passkey Authentication | Ready | WebAuthn with NEAR implicit accounts, no third-party dependency |
 | Tactical DAO | Partial | Governance ready, needs vehicle integration |
 | Physical Demo | Not Started | Requires Phase 6 (Jetson/Sphero setup) |
 | Edge AI Models | Not Started | Requires Phase 6 deployment |
@@ -197,13 +287,11 @@ Phase 4.3 implemented multi-document fusion, graph-based analysis, and validity 
 
 **Critical Path to Physical Demo:**
 
-1. Phase 6: Autonomous Vehicle Integration
-2. Phase 7: Tactical Execution System (partial)
-3. Integration testing with physical AO model
-
-**Estimated Time to Demo Readiness:** 2-3 weeks of focused development
+1. Phase 4.4: Mission Context & Force Onboarding (planning complete)
+2. Phase 6: Autonomous Vehicle Integration
+3. Phase 7: Tactical Execution System (partial)
+4. Integration testing with physical AO model
 
 ---
 
-*SITREP current as of January 2026. Implementation status tracked in `.planning/STATE.md` and `.planning/ROADMAP.md`.*
-
+*SITREP current as of February 2026. Implementation status tracked in `.planning/STATE.md` and `.planning/ROADMAP.md`.*

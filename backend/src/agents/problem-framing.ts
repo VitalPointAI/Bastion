@@ -104,6 +104,8 @@ export interface ProblemFramingOutput {
   recommendationReasoning: string;
   /** Confidence in framing completeness (0-1) per INVARIANT 5 */
   completenessConfidence: number;
+  /** Confidence interval bounds per INVARIANT 5 */
+  confidenceBounds: { lower: number; upper: number };
   /** Known blind spots the agent cannot address */
   knownBlindSpots: string[];
 }

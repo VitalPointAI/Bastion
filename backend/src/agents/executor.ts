@@ -68,6 +68,18 @@ const capabilityToActionType: Record<AgentCapability, AgentActionType> = {
   [AgentCapability.DelegatedVoting]: AgentActionType.CastDelegatedVote,
   [AgentCapability.ConsensusBuilding]: AgentActionType.SummarizeActivity,
   [AgentCapability.CommitteeCoordination]: AgentActionType.SummarizeActivity,
+  // MDMP Agent Capabilities (Phase 5.1)
+  [AgentCapability.AssumptionAuditing]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.DataBiasDetection]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.OrdersValidation]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.ProblemFraming]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.ROECompliance]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.UncertaintyQuantification]: AgentActionType.AssessFeasibility,
+  // Phase 5.2 Agent Capabilities (Escalation & Competition Modeling)
+  [AgentCapability.AdversaryModeling]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.EffectCascading]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.EscalationModeling]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.DeceptionDetection]: AgentActionType.AnalyzeProposal,
 };
 
 /**

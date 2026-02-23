@@ -255,6 +255,18 @@ function formatCapability(cap: AgentCapability): string {
     [AgentCapability.DelegatedVoting]: 'Casting delegated votes',
     [AgentCapability.ConsensusBuilding]: 'Building consensus',
     [AgentCapability.CommitteeCoordination]: 'Coordinating committees',
+    // MDMP Agent Capabilities (Phase 5.1)
+    [AgentCapability.AssumptionAuditing]: 'Surfacing, classifying, and tracking planning assumptions',
+    [AgentCapability.DataBiasDetection]: 'Detecting statistical bias, data staleness, and coverage gaps',
+    [AgentCapability.OrdersValidation]: 'Validating orders format, consistency, and intent traceability',
+    [AgentCapability.ProblemFraming]: 'Generating alternative problem framings from multiple perspectives',
+    [AgentCapability.ROECompliance]: 'Parsing ROE, mapping authorities to tasks, and validating compliance',
+    [AgentCapability.UncertaintyQuantification]: 'Producing calibrated confidence intervals and detecting false precision',
+    // Phase 5.2 Agent Capabilities (Escalation & Competition Modeling)
+    [AgentCapability.AdversaryModeling]: 'Synthesizing adversary capability models and generating MLCOA/MDCOA',
+    [AgentCapability.EffectCascading]: 'Modeling cascading effects across operational domains',
+    [AgentCapability.EscalationModeling]: 'Modeling escalation dynamics and thresholds',
+    [AgentCapability.DeceptionDetection]: 'Detecting potential deception in adversary actions and intelligence',
   };
   return descriptions[cap] || cap;
 }

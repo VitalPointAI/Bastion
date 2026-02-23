@@ -15,8 +15,10 @@ interface RelationshipDetail {
   type: string;
   strength: number;
   description?: string;
-  targetActor: { id: string; name: string };
-  direction: 'outgoing' | 'incoming';
+  targetActor?: { id: string; name: string };
+  sourceActorId?: string;
+  targetActorId?: string;
+  direction?: 'outgoing' | 'incoming';
 }
 
 interface TensionDetail {
@@ -51,8 +53,37 @@ export function NodeDetailPanel({ actorId, onClose, onNavigateToActor }: NodeDet
       .then(res => res.json())
       .then(data => {
         setActor(data.actor);
-        setRelationships(data.relationships || []);
+        // Normalize relationships: API returns sourceActorId/targetActorId strings,
+        // component expects targetActor object and direction
+        const rels = (data.relationships || []).map((rel: Record<string, unknown>) => {
+          const isOutgoing = rel.sourceActorId === actorId;
+          const otherId = isOutgoing ? rel.targetActorId : rel.sourceActorId;
+          return {
+            ...rel,
+            direction: isOutgoing ? 'outgoing' : 'incoming',
+            targetActor: rel.targetActor || { id: otherId, name: String(otherId) },
+          };
+        });
+        setRelationships(rels);
         setTensions(data.tensions || []);
+
+        // Resolve actor names for relationships
+        const unknownIds = rels
+          .filter((r: RelationshipDetail) => r.targetActor && r.targetActor.name === r.targetActor.id)
+          .map((r: RelationshipDetail) => r.targetActor!.id);
+        if (unknownIds.length > 0) {
+          Promise.all(
+            [...new Set(unknownIds)].map((id: string) =>
+              fetch(`/api/graph/actors/${id}`).then(r => r.json()).then(d => ({ id, name: d.actor?.name || id })).catch(() => ({ id, name: id }))
+            )
+          ).then(resolved => {
+            const nameMap = Object.fromEntries(resolved.map((r: { id: string; name: string }) => [r.id, r.name]));
+            setRelationships(prev => prev.map(r => ({
+              ...r,
+              targetActor: r.targetActor ? { ...r.targetActor, name: nameMap[r.targetActor.id] || r.targetActor.name } : r.targetActor,
+            })));
+          });
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -149,9 +180,9 @@ export function NodeDetailPanel({ actorId, onClose, onNavigateToActor }: NodeDet
                           </span>
                           <button
                             className="rel-actor-link"
-                            onClick={() => onNavigateToActor(rel.targetActor.id)}
+                            onClick={() => onNavigateToActor(rel.targetActor?.id || rel.targetActorId || '')}
                           >
-                            {rel.targetActor.name}
+                            {rel.targetActor?.name || rel.targetActorId || 'Unknown'}
                           </button>
                         </div>
                         <div className="rel-strength">

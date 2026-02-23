@@ -15,10 +15,11 @@ interface OsintEvent {
   id: string;
   title: string;
   description: string;
-  timestamp: string;
+  timestamp?: string;
+  publishedAt?: string;
   sourceUrl?: string;
   relevance?: 'supporting' | 'contradicting' | 'neutral';
-  location?: { lat: number; lng: number };
+  location?: { lat?: number; lng?: number; latitude?: number; longitude?: number };
 }
 
 interface ObjectiveValidity {
@@ -121,15 +122,20 @@ export function StrategicValidityDashboard() {
   const criticalAlerts = alerts.filter(a => a.severity === 'critical' || a.severity === 'high');
 
   const mapEvents = events
-    .filter(e => e.location)
+    .filter(e => {
+      if (!e.location) return false;
+      const lat = e.location.lat ?? e.location.latitude;
+      const lng = e.location.lng ?? e.location.longitude;
+      return lat !== undefined && lng !== undefined;
+    })
     .map(e => ({
       id: e.id,
-      lat: e.location!.lat,
-      lng: e.location!.lng,
+      lat: (e.location!.lat ?? e.location!.latitude)!,
+      lng: (e.location!.lng ?? e.location!.longitude)!,
       title: e.title,
       description: e.description,
       relevance: e.relevance || 'neutral',
-      timestamp: e.timestamp,
+      timestamp: e.timestamp || e.publishedAt || '',
       sourceUrl: e.sourceUrl,
     }));
 
@@ -192,7 +198,6 @@ export function StrategicValidityDashboard() {
             events={mapEvents}
             actors={[]}
             tensions={[]}
-            onEventClick={(event) => handleEventClick(event.id)}
             onActorClick={(actor) => handleActorClick(actor.id)}
           />
         )}
@@ -215,7 +220,6 @@ export function StrategicValidityDashboard() {
                 events={mapEvents}
                 actors={[]}
                 tensions={[]}
-                onEventClick={(event) => handleEventClick(event.id)}
                 onActorClick={(actor) => handleActorClick(actor.id)}
               />
             </div>
@@ -315,8 +319,8 @@ export function StrategicValidityDashboard() {
             <p>{selectedEvent.description}</p>
             <div className="event-meta">
               <span>📅 {new Date(selectedEvent.timestamp).toLocaleString()}</span>
-              {selectedEvent.location && (
-                <span>📍 {selectedEvent.location.lat.toFixed(2)}, {selectedEvent.location.lng.toFixed(2)}</span>
+              {selectedEvent.location && (selectedEvent.location.lat ?? selectedEvent.location.latitude) != null && (
+                <span>📍 {((selectedEvent.location.lat ?? selectedEvent.location.latitude) as number).toFixed(2)}, {((selectedEvent.location.lng ?? selectedEvent.location.longitude) as number).toFixed(2)}</span>
               )}
               {selectedEvent.sourceUrl && (
                 <a href={selectedEvent.sourceUrl} target="_blank" rel="noopener noreferrer">🔗 Source</a>

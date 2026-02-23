@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, LayersControl, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, LayersControl, LayerGroup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './ValidityMap.css';
@@ -122,6 +122,24 @@ function MapBounds({ events, actors, tensions }: { events?: EventMarker[], actor
   return null;
 }
 
+// Force Leaflet to recalculate container size after mount and on resize
+function MapResizer() {
+  const map = useMap();
+
+  useEffect(() => {
+    map.invalidateSize();
+    const timer = setTimeout(() => map.invalidateSize(), 300);
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [map]);
+
+  return null;
+}
+
 // Support optional API key for non-localhost deployments (Stadia Maps returns 401 without it)
 const STADIA_API_KEY = import.meta.env.VITE_STADIA_MAPS_API_KEY as string | undefined;
 const STADIA_TILE_URL = STADIA_API_KEY
@@ -175,9 +193,8 @@ export function ValidityMap({
         />
 
         <LayersControl position="topright">
-          {/* Events Layer */}
-          <LayersControl.Overlay checked={visibleLayers.events} name="Events">
-            <>
+          <LayersControl.Overlay checked={visibleLayers.events} name={`OSINT Events (${events.length})`}>
+            <LayerGroup>
               {events.map(event => (
                 <Marker
                   key={event.id}
@@ -206,12 +223,11 @@ export function ValidityMap({
                   </Popup>
                 </Marker>
               ))}
-            </>
+            </LayerGroup>
           </LayersControl.Overlay>
 
-          {/* Actors Layer */}
-          <LayersControl.Overlay checked={visibleLayers.actors} name="Actors">
-            <>
+          <LayersControl.Overlay checked={visibleLayers.actors} name={`Actor Locations (${actors.length})`}>
+            <LayerGroup>
               {actors.map(actor => (
                 <Marker
                   key={actor.id}
@@ -234,12 +250,11 @@ export function ValidityMap({
                   </Popup>
                 </Marker>
               ))}
-            </>
+            </LayerGroup>
           </LayersControl.Overlay>
 
-          {/* Tensions Layer */}
-          <LayersControl.Overlay checked={visibleLayers.tensions} name="Tensions">
-            <>
+          <LayersControl.Overlay checked={visibleLayers.tensions} name={`Tension Zones (${tensions.length})`}>
+            <LayerGroup>
               {tensions.map(tension => (
                 <Circle
                   key={tension.id}
@@ -262,11 +277,12 @@ export function ValidityMap({
                   </Popup>
                 </Circle>
               ))}
-            </>
+            </LayerGroup>
           </LayersControl.Overlay>
         </LayersControl>
 
         <MapBounds events={events} actors={actors} tensions={tensions} />
+        <MapResizer />
       </MapContainer>
 
       <div className="map-legend">

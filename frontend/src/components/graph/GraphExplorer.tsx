@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ForceGraph2D, { type ForceGraphMethods, type NodeObject, type LinkObject } from 'react-force-graph-2d';
 import './GraphExplorer.css';
 
@@ -63,24 +63,21 @@ export function GraphExplorer({
   const [filterRelType, setFilterRelType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter data based on selections
-  const filteredData = useCallback(() => {
+  // Filter data based on selections — memoized to prevent re-render jitter
+  const graphData = useMemo(() => {
     let nodes = data.nodes;
     let edges = data.edges;
 
-    // Filter by node type
     if (filterType !== 'all') {
       nodes = nodes.filter(n => n.type === filterType);
       const nodeIds = new Set(nodes.map(n => n.id));
       edges = edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
     }
 
-    // Filter by relationship type
     if (filterRelType !== 'all') {
       edges = edges.filter(e => e.type === filterRelType);
     }
 
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       nodes = nodes.filter(n => n.label.toLowerCase().includes(query));
@@ -155,14 +152,20 @@ export function GraphExplorer({
     onNodeClick?.(gNode);
   }, [onNodeClick]);
 
-  // Zoom to fit on mount
+  // Zoom to fit after simulation settles
   useEffect(() => {
-    setTimeout(() => {
-      fgRef.current?.zoomToFit(400, 50);
-    }, 500);
+    const t = setTimeout(() => fgRef.current?.zoomToFit(400, 50), 500);
+    return () => clearTimeout(t);
   }, [data]);
 
-  const graphData = filteredData();
+  // Pin all nodes in place once the simulation finishes
+  const handleEngineStop = useCallback(() => {
+    fgRef.current?.zoomToFit(400, 50);
+  }, []);
+
+  const handleRecenter = useCallback(() => {
+    fgRef.current?.zoomToFit(400, 50);
+  }, []);
 
   return (
     <div className="graph-explorer">
@@ -205,6 +208,10 @@ export function GraphExplorer({
           <span>{graphData.nodes.length} nodes</span>
           <span>{graphData.links.length} edges</span>
         </div>
+
+        <button className="recenter-btn" onClick={handleRecenter} title="Re-center graph">
+          Re-center
+        </button>
       </div>
 
       <div className="graph-container">
@@ -215,6 +222,7 @@ export function GraphExplorer({
           linkCanvasObject={linkCanvasObject}
           onNodeClick={handleNodeClick}
           onNodeHover={node => setHoveredNode(node as GraphNode | null)}
+          onEngineStop={handleEngineStop}
           nodeId="id"
           linkSource="source"
           linkTarget="target"
@@ -223,10 +231,46 @@ export function GraphExplorer({
           backgroundColor="transparent"
           enableZoomInteraction={true}
           enablePanInteraction={true}
-          cooldownTicks={100}
-          d3AlphaDecay={0.02}
-          d3VelocityDecay={0.3}
+          enableNodeDrag={false}
+          warmupTicks={200}
+          cooldownTicks={50}
+          d3AlphaDecay={0.05}
+          d3VelocityDecay={0.4}
         />
+
+        {/* Legend overlays the graph canvas */}
+        <div className="graph-legend">
+          <div className="legend-title">Legend</div>
+          <div className="legend-section">
+            <div className="legend-subtitle">Actors</div>
+            {Object.entries(NODE_COLORS).map(([type, color]) => (
+              <div key={type} className="legend-item">
+                <span className="legend-dot" style={{ backgroundColor: color }} />
+                <span className="legend-label">{type.replace('_', ' ')}</span>
+              </div>
+            ))}
+          </div>
+          <div className="legend-section">
+            <div className="legend-subtitle">Relationships</div>
+            {Object.entries(EDGE_COLORS).map(([type, color]) => (
+              <div key={type} className="legend-item">
+                <span className="legend-line" style={{ backgroundColor: color }} />
+                <span className="legend-label">{type}</span>
+              </div>
+            ))}
+          </div>
+          <div className="legend-section">
+            <div className="legend-subtitle">Line Style</div>
+            <div className="legend-item">
+              <span className="legend-line legend-line-solid" />
+              <span className="legend-label">Positive</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-line legend-line-dashed" />
+              <span className="legend-label">Negative</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {hoveredNode && (
@@ -237,28 +281,6 @@ export function GraphExplorer({
           </div>
         </div>
       )}
-
-      <div className="graph-legend">
-        <div className="legend-title">Legend</div>
-        <div className="legend-section">
-          <div className="legend-subtitle">Actors</div>
-          {Object.entries(NODE_COLORS).map(([type, color]) => (
-            <div key={type} className="legend-item">
-              <span className="legend-dot" style={{ backgroundColor: color }} />
-              <span className="legend-label">{type.replace('_', ' ')}</span>
-            </div>
-          ))}
-        </div>
-        <div className="legend-section">
-          <div className="legend-subtitle">Relationships</div>
-          {Object.entries(EDGE_COLORS).map(([type, color]) => (
-            <div key={type} className="legend-item">
-              <span className="legend-line" style={{ backgroundColor: color }} />
-              <span className="legend-label">{type}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

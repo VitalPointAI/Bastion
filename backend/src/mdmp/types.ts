@@ -85,23 +85,7 @@ export enum ActivityCategory {
   EthicalLegal = 'EthicalLegal',
 }
 
-/**
- * Gate types for phase transitions
- */
-export enum GateType {
-  /** Red team challenge gate */
-  RedTeam = 'RedTeam',
-  /** Commander approval gate */
-  Commander = 'Commander',
-  /** Legal review gate */
-  Legal = 'Legal',
-  /** Coalition approval gate */
-  Coalition = 'Coalition',
-  /** Resource availability gate */
-  Resource = 'Resource',
-  /** Time-based gate */
-  Temporal = 'Temporal',
-}
+// GateType defined below (line ~507) with SCREAMING_SNAKE_CASE values used by activity registry
 
 /**
  * Planning product types

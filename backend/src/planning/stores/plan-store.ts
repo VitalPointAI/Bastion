@@ -155,6 +155,30 @@ class PlanStore {
   }
 
   /**
+   * Find all plans with optional pagination
+   */
+  async findAll(limit?: number, offset?: number): Promise<OperationalPlan[]> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    let query = 'SELECT * FROM operational_plans ORDER BY created_at DESC';
+    const values: any[] = [];
+
+    if (limit !== undefined) {
+      values.push(limit);
+      query += ` LIMIT $${values.length}`;
+    }
+
+    if (offset !== undefined) {
+      values.push(offset);
+      query += ` OFFSET $${values.length}`;
+    }
+
+    const result = await pool.query(query, values);
+    return result.rows.map(rowToPlan);
+  }
+
+  /**
    * Find plan by ID
    */
   async findById(id: string): Promise<OperationalPlan | null> {
