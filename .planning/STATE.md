@@ -13,7 +13,7 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 Phase: 1.4 of 13+ (Navigation Architecture Restructure)
 Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-02-23 - Completed quick task 2: map legend clipping fix
+Last activity: 2026-02-23 - Completed quick task 3: fix agent assignment 404 on strategic do
 
 Progress: █████████████████████ 123 plans complete
 
@@ -303,6 +303,7 @@ None.
 |---|-------------|------|--------|-----------|
 | 1 | admin sidebar | 2026-02-23 | 279eaf0 | [1-admin-sidebar](./quick/1-admin-sidebar/) |
 | 2 | map legend clipping fix | 2026-02-23 | 8e90da0 | [2-map-legend-on-monitor-and-elsewhere-is-c](./quick/2-map-legend-on-monitor-and-elsewhere-is-c/) |
+| 3 | fix agent assignment 404 on strategic do | 2026-02-23 | 4a1ad87 | [3-fix-agent-assignment-404-on-strategic-do](./quick/3-fix-agent-assignment-404-on-strategic-do/) |
 
 **Phase 4 Plan 6-FIX (Strategic API Table Init Fix):**
 - Unified lazy init: all strategic API tables initialized from single ensureTableExists()
