@@ -60,7 +60,25 @@ export class OpenAICompatibleProvider implements LLMProvider {
   }
 
   async complete(request: LLMCompletionRequest): Promise<LLMCompletionResponse> {
-    // OpenAI format includes system message inline
+    // Try with tools first, fall back to plain completion if tools not supported
+    try {
+      return await this.completeWithTools(request);
+    } catch (error) {
+      // If the error suggests tools aren't supported, retry without tools
+      const message = error instanceof Error ? error.message : String(error);
+      const toolUnsupported = message.includes('tool') || message.includes('function')
+        || message.includes('400') || message.includes('422')
+        || message.includes('not supported') || message.includes('invalid');
+
+      if (toolUnsupported && request.tools?.length) {
+        console.warn(`[${this.name}] Tool calling failed (${message}), retrying without tools`);
+        return await this.completeWithoutTools(request);
+      }
+      throw error;
+    }
+  }
+
+  private async completeWithTools(request: LLMCompletionRequest): Promise<LLMCompletionResponse> {
     const response = await this.client.chat.completions.create({
       model: this.model,
       max_tokens: request.max_tokens || 4096,
@@ -77,29 +95,58 @@ export class OpenAICompatibleProvider implements LLMProvider {
           parameters: t.input_schema,
         },
       })),
-      tool_choice: request.tool_choice ? {
-        type: 'function' as const,
-        function: { name: request.tool_choice.type === 'tool' ? request.tool_choice.name : '' },
-      } : undefined,
+      tool_choice: request.tool_choice
+        ? request.tool_choice.type === 'tool'
+          ? { type: 'function' as const, function: { name: request.tool_choice.name } }
+          : 'auto' as const
+        : undefined,
     });
 
     const choice = response.choices[0];
     const message = choice?.message;
 
-    // Extract tool call if present (only function type has function property)
+    // Extract tool call if present
     const toolCall = message?.tool_calls?.[0];
     let toolUse: { name: string; input: Record<string, unknown> } | null = null;
 
     if (toolCall && toolCall.type === 'function') {
-      toolUse = {
-        name: toolCall.function.name,
-        input: JSON.parse(toolCall.function.arguments),
-      };
+      try {
+        toolUse = {
+          name: toolCall.function.name,
+          input: JSON.parse(toolCall.function.arguments),
+        };
+      } catch {
+        console.warn(`[${this.name}] Failed to parse tool call arguments as JSON`);
+      }
     }
 
     return {
       content: message?.content || null,
       tool_use: toolUse,
+      usage: {
+        input_tokens: response.usage?.prompt_tokens || 0,
+        output_tokens: response.usage?.completion_tokens || 0,
+      },
+    };
+  }
+
+  private async completeWithoutTools(request: LLMCompletionRequest): Promise<LLMCompletionResponse> {
+    const response = await this.client.chat.completions.create({
+      model: this.model,
+      max_tokens: request.max_tokens || 4096,
+      temperature: request.temperature,
+      messages: request.messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      })),
+    });
+
+    const choice = response.choices[0];
+    const message = choice?.message;
+
+    return {
+      content: message?.content || null,
+      tool_use: null,
       usage: {
         input_tokens: response.usage?.prompt_tokens || 0,
         output_tokens: response.usage?.completion_tokens || 0,

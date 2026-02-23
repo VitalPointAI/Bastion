@@ -85,7 +85,8 @@ Rules:
 
 If the document does not contain traditional strategic objectives, extract the document's stated goals, aims, outcomes, or deliverables as objectives. Use the DIME category that best fits each item, defaulting to INFORMATIONAL for academic/research goals that don't clearly map to another category.
 
-You MUST use the extract_objectives tool to provide your response in the required structured format.`;
+You MUST use the extract_objectives tool to provide your response in the required structured format. If tool use is not available, respond with ONLY a valid JSON object matching this exact structure (no markdown, no explanation):
+{"objectives": [...], "chunkSummary": "...", "extractionConfidence": 0.0}`;
 
 /**
  * ExtractionService handles LLM-powered extraction of strategic objectives
@@ -287,12 +288,24 @@ ${chunkText}`,
       // Call provider
       const response = await this.provider.complete(request);
 
-      if (!response.tool_use) {
-        throw new Error('No tool_use in response');
+      // Try tool_use first, then fall back to parsing JSON from text content
+      let extractionInput: unknown;
+
+      if (response.tool_use) {
+        extractionInput = response.tool_use.input;
+      } else if (response.content) {
+        // Many models (Qwen, Llama, etc.) don't support tool_use — parse JSON from text
+        console.log(`[extraction] Chunk ${chunkIndex}: No tool_use in response, attempting JSON fallback parse from text content`);
+        extractionInput = this.parseJsonFromText(response.content);
+        if (!extractionInput) {
+          throw new Error('No tool_use in response and could not parse JSON from text content');
+        }
+      } else {
+        throw new Error('No tool_use and no text content in response');
       }
 
       // Parse and validate the response
-      const parsed = ChunkExtractionResultSchema.safeParse(response.tool_use.input);
+      const parsed = ChunkExtractionResultSchema.safeParse(extractionInput);
 
       if (!parsed.success) {
         console.error(`Validation failed for chunk ${chunkIndex}:`, parsed.error);
@@ -532,6 +545,54 @@ ${chunkText}`,
       auditLog,
       documentLevel: consolidated.documentLevel,
     };
+  }
+
+  /**
+   * Parse JSON from text content (fallback for models without tool_use support)
+   * Handles raw JSON, markdown code blocks, and JSON embedded in text
+   */
+  private parseJsonFromText(text: string): unknown | null {
+    // Strip thinking tags (Qwen3 thinking mode, DeepSeek, etc.)
+    text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+
+    // Try direct parse first (model returned pure JSON)
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === 'object' && 'objectives' in parsed) {
+        return parsed;
+      }
+    } catch {
+      // Not pure JSON, try extraction
+    }
+
+    // Try extracting from markdown code blocks: ```json ... ``` or ``` ... ```
+    const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+    if (codeBlockMatch) {
+      try {
+        const parsed = JSON.parse(codeBlockMatch[1].trim());
+        if (parsed && typeof parsed === 'object' && 'objectives' in parsed) {
+          return parsed;
+        }
+      } catch {
+        // Code block content wasn't valid JSON
+      }
+    }
+
+    // Try finding JSON object in text (greedy match from first { to last })
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed && typeof parsed === 'object' && 'objectives' in parsed) {
+          return parsed;
+        }
+      } catch {
+        // Couldn't parse extracted JSON
+      }
+    }
+
+    console.warn(`[extraction] Could not parse JSON from text response (${text.length} chars). First 200 chars: ${text.substring(0, 200)}`);
+    return null;
   }
 
   /**
