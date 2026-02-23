@@ -13,7 +13,7 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 Phase: 1.4 of 13+ (Navigation Architecture Restructure)
 Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-02-23 — Phase 1.4 verified and complete
+Last activity: 2026-02-23 - Completed quick task 1: admin sidebar
 
 Progress: █████████████████████ 123 plans complete
 
@@ -296,6 +296,12 @@ See `.planning/ISSUES.md` for full issue log:
 ### Blockers/Concerns
 
 None.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | admin sidebar | 2026-02-23 | 279eaf0 | [1-admin-sidebar](./quick/1-admin-sidebar/) |
 
 **Phase 4 Plan 6-FIX (Strategic API Table Init Fix):**
 - Unified lazy init: all strategic API tables initialized from single ensureTableExists()
