@@ -6,21 +6,21 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 1.4 plan 01 complete — TabLayout shared sidebar shell + 4 doctrine-aligned activity tab containers (Decide, Design, Campaign, Monitor)
+**Current focus:** Phase 1.4 plan 02 complete — URL-driven 4+1 tab navigation replacing old useState pattern, browser-verified
 
 ## Current Position
 
 Phase: 1.4 of 13+ (Navigation Architecture Restructure)
-Plan: 1 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-22 — Plan 1.4-01 complete (TabLayout sidebar shell + DecideTab, DesignTab, CampaignTab, MonitorTab containers)
+Plan: 2 of 2 in current phase
+Status: Phase complete — awaiting verification
+Last activity: 2026-02-22 — Plan 1.4-02 complete (App.tsx routing restructure, human-verified in browser)
 
-Progress: █████████████████████ 122 plans complete
+Progress: █████████████████████ 123 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 122
+- Total plans completed: 123
 - Average duration: 10 min
 - Total execution time: 19.06 hours
 
@@ -42,12 +42,13 @@ Progress: █████████████████████ 122 pl
 | 1.3 (NEAR Implicit Account Funding) | 3 | 32 min | 11 min |
 | 5.1 (MDMP Governance Integration) | 17 | 116 min | 7 min |
 | 5.2 (Escalation & Competition Modeling) | 10 | 135 min | 14 min |
-| 1.4 (Navigation Architecture Restructure) | 1 | 2 min | 2 min |
+| 1.4 (Navigation Architecture Restructure) | 2 | 7 min | 4 min |
 
 **Recent Trend:**
 - Phase 1.4: tab container layer — fast execution (pure frontend, no new deps)
 - Trend: Wave-based parallel execution efficient for agent+visualization phases
 | Phase 1.4 P01 | 2 | 2 tasks | 6 files |
+| Phase 1.4 P02 | 5 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -882,9 +883,17 @@ None.
 - MonitorTab: defaults to StrategicValidityDashboard (IPB Map label); fetches graph data from /api/graph; actor graph click navigates to actor-detail
 - CampaignTab: mission flow (list->detail->wizard) via local selectedMissionId + showWizard state; orders/command/resources are placeholders for future decomposition
 
+**Phase 1.4 Plan 02 (App.tsx Routing Restructure):**
+- Active tab derived from URL pathname (useLocation) not useState — enables browser back/forward navigation
+- Root / redirects to /monitor — ValidityMap is default landing per user decision
+- Home view removed — authenticated users go straight to Monitor tab
+- Admin right-aligned via .nav-spacer { flex: 1 } — visually separated from 4 main tabs
+- Legacy redirects preserve old bookmarks: /governance->/decide, /strategic->/design, /validity->/monitor, /missions->/campaign
+- Exclusive isAdmin ternary prevents double-rendering of admin + tab content
+
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 1.4-01-PLAN.md (TabLayout sidebar shell + 4 doctrine-aligned tab container components)
+Stopped at: Completed 1.4-02-PLAN.md (App.tsx routing restructure — human-verified in browser)
 Resume file: None
-Next action: Continue with 1.4-02-PLAN.md (App.tsx route restructure)
+Next action: Phase verification
