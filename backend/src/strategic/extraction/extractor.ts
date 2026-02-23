@@ -34,7 +34,16 @@ const DEFAULT_CONFIG = {
 /**
  * System prompt for strategic objective extraction
  */
-const EXTRACTION_SYSTEM_PROMPT = `You are a strategic planning analyst extracting objectives from national security documents.
+const EXTRACTION_SYSTEM_PROMPT = `You are a strategic planning analyst extracting strategic objectives, goals, and aims from strategic and planning documents of all types (national security strategies, research proposals, project proposals, policy papers, operational plans, etc.).
+
+First, identify the document type (national security strategy, research proposal, project proposal, policy paper, operational plan, or other). Adapt your extraction approach accordingly. For non-military documents, map content to DIME/MIDLIFE categories on a best-effort basis using the closest applicable category.
+
+Objectives can take many forms depending on document type:
+- National security documents: Strategic objectives, national interests, defense priorities
+- Research proposals: Research goals, research objectives, expected outcomes, deliverables
+- Project proposals: Project goals, milestones, deliverables, success criteria
+- Policy papers: Policy goals, recommended actions, desired outcomes
+- General: Any stated goal, aim, objective, outcome, or deliverable
 
 Apply the DIME framework to categorize each objective:
 - DIPLOMATIC: Foreign policy, alliances, negotiations, treaties, international cooperation
@@ -65,7 +74,7 @@ Apply Ends-Ways-Means doctrine:
 - Means: Resources (forces, materiel, funding) required - what we need
 
 Rules:
-1. Only extract explicitly stated objectives, not inferred or implied ones
+1. Extract objectives that are clearly stated or strongly implied by the document's structure and language. Include goals, aims, research questions (reframed as objectives), deliverables, and desired outcomes. Do NOT fabricate objectives that have no textual basis.
 2. Provide exact source reference (page, section, paragraph) for traceability
 3. Assess priority based on document language ("critical", "vital", "essential", "important") and positioning
 4. Note constraints and assumptions as stated in the document
@@ -73,6 +82,8 @@ Rules:
 6. Assign sequential IDs in format OBJ-001, OBJ-002, etc.
 7. Be thorough but precise - capture all stated objectives, avoid fabrication
 8. For MIDLIFE, choose the most specific category - Legal, Intelligence, Financial if clearly applicable
+
+If the document does not contain traditional strategic objectives, extract the document's stated goals, aims, outcomes, or deliverables as objectives. Use the DIME category that best fits each item, defaulting to INFORMATIONAL for academic/research goals that don't clearly map to another category.
 
 You MUST use the extract_objectives tool to provide your response in the required structured format.`;
 
@@ -261,6 +272,8 @@ export class ExtractionService {
             content: `Extract all strategic objectives from the following text chunk (chunk ${chunkIndex + 1}).
 
 Note the source reference as "Chunk ${chunkIndex + 1}: [paragraph or section info]" for traceability.
+
+If this text is from a research proposal, project proposal, or non-military document, extract its goals, aims, deliverables, and desired outcomes as objectives.
 
 TEXT:
 ${chunkText}`,
