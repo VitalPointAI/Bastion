@@ -14,7 +14,7 @@ None
 - [ ] **Phase 1.1: Calimero Self-Sovereign App Integration** - Research Calimero for DAO compartmentalization, replace Privy with NEAR accounts + MPC (INSERTED)
 - [x] **Phase 1.2: Passkey Authentication & NEAR Implicit Accounts** - Replace Privy with passkey/magic link/recovery + NEAR implicit accounts (INSERTED)
 - [x] **Phase 1.3: NEAR Implicit Account Funding** - Activate implicit accounts with minimum NEAR transfer on registration (INSERTED, completed 2026-02-06)
-- [ ] **Phase 1.4: Navigation Architecture Restructure** - Restructure navigation to doctrine-aligned Decide/Design/Campaign/Monitor + Admin (INSERTED)
+- [x] **Phase 1.4: Navigation Architecture Restructure** - Restructure navigation to doctrine-aligned Decide/Design/Campaign/Monitor + Admin (INSERTED, completed 2026-02-23)
 - [x] **Phase 2: Identity & Security Framework** - Implement DID system, ABAC, post-quantum cryptography, zero trust architecture
 - [x] **Phase 3: DAO Governance** - Build smart contracts for decision authority, voting mechanisms, coalition membership
 - [x] **Phase 4: Strategic Planning Module** - Create document ingestion, NLP parsing, objective extraction, approval workflows
@@ -156,7 +156,7 @@ Current navigation reflects implementation history rather than user workflow. Th
 
 Plans:
 - [x] 1.4-01-PLAN.md — TabLayout sidebar shell and 4 activity tab containers (Decide, Design, Campaign, Monitor) (completed 2026-02-22)
-- [ ] 1.4-02-PLAN.md — App.tsx routing restructure, nav bar update, legacy redirects, CSS changes
+- [x] 1.4-02-PLAN.md — App.tsx routing restructure, nav bar update, legacy redirects, CSS changes (completed 2026-02-23)
 
 ### Phase 2: Identity & Security Framework
 **Goal**: Implement decentralized identity and comprehensive security architecture
@@ -812,7 +812,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1.1 Calimero Self-Sovereign App | 0/TBD | Not started | - |
 | 1.2 Passkey + NEAR Implicit Auth | 12/12 | Complete | 2026-02-01 |
 | 1.3 NEAR Implicit Account Funding | 3/3 | Complete | 2026-02-06 |
-| 1.4 Navigation Architecture Restructure | 1/2 | In progress | - |
+| 1.4 Navigation Architecture Restructure | 2/2 | Complete | 2026-02-23 |
 | 2. Identity & Security Framework | 8/8 | Complete | 2026-01-16 |
 | 3. DAO Governance | 8/8 | Complete | 2026-01-17 |
 | 4. Strategic Planning Module | 19/12 | Complete   | 2026-02-22 |
