@@ -302,13 +302,15 @@ ${chunkText}`,
       // Get tokens used from response
       const tokensUsed = response.usage.input_tokens + response.usage.output_tokens;
 
+      console.log(`[extraction] Chunk ${chunkIndex}: ${parsed.data.objectives.length} objectives found, confidence: ${parsed.data.extractionConfidence}, summary: "${parsed.data.chunkSummary.substring(0, 100)}"`);
+
       return {
         result: parsed.data,
         tokensUsed,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Failed to extract from chunk ${chunkIndex}:`, message);
+      console.warn(`[extraction] Chunk ${chunkIndex} extraction failed or returned no tool_use. Error: ${message}. This may indicate the LLM provider does not support tool_use/function_calling, or the document content doesn't match the extraction prompt.`);
 
       // Return empty result with low confidence on error
       return {
@@ -506,6 +508,10 @@ ${chunkText}`,
 
     // Consolidate results
     const consolidated = this.consolidateChunks(chunkResults);
+
+    if (consolidated.objectives.length === 0) {
+      console.warn(`[extraction] WARNING: 0 objectives extracted from ${chunks.length} chunks. Document may not contain extractable objectives, or the LLM may not be responding with tool_use. Chunk summaries: ${chunkResults.map(r => r.chunkSummary).join(' | ')}`);
+    }
 
     // Report completion
     if (onProgress) {
