@@ -404,6 +404,41 @@ router.get('/validity/objectives', async (req: Request, res: Response) => {
 // WORKSPACE GRAPH DATA ENDPOINTS
 // =====================
 
+// Get graph data by workspaceId query param (used by MonitorTab frontend)
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const workspaceId = getQueryString(req.query.workspaceId) || 'default';
+
+    const actors = await actorStore.listActors(workspaceId);
+    const nodes = actors.map(actor => ({
+      id: actor.id,
+      label: actor.name,
+      type: actor.type,
+      workspaceId: actor.workspaceId,
+    }));
+
+    const edgeSet = new Map<string, { source: string; target: string; type: string; strength: number }>();
+    for (const actor of actors) {
+      const rels = await relationshipStore.getActorRelationships(actor.id, 'out');
+      for (const rel of rels) {
+        if (!edgeSet.has(rel.id)) {
+          edgeSet.set(rel.id, {
+            source: rel.sourceActorId,
+            target: rel.targetActorId,
+            type: rel.type,
+            strength: rel.strength,
+          });
+        }
+      }
+    }
+    const edges = Array.from(edgeSet.values());
+
+    res.json({ nodes, edges });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
 // Get graph data for a workspace (nodes and edges for visualization)
 router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
   try {

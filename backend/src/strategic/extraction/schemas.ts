@@ -13,9 +13,9 @@ import { DIMEInstrumentSchema, MidlifeCategorySchema, PrioritySchema } from '../
  * Describes what we want to achieve
  */
 const ExtractedEndsSchema = z.object({
-  description: z.string()
+  description: z.string().default('')
     .describe('The desired end state or outcome as stated in the document'),
-  conditions: z.array(z.string())
+  conditions: z.array(z.string()).default([])
     .describe('Specific conditions that must be met for success'),
   timeframe: z.string().optional()
     .describe('When this objective should be achieved, if specified'),
@@ -26,11 +26,11 @@ const ExtractedEndsSchema = z.object({
  * Describes how we will achieve the ends
  */
 const ExtractedWaysSchema = z.object({
-  strategies: z.array(z.string())
+  strategies: z.array(z.string()).default([])
     .describe('Broad strategies or approaches mentioned'),
-  concepts: z.array(z.string())
+  concepts: z.array(z.string()).default([])
     .describe('Operational concepts or methods'),
-  keyTasks: z.array(z.string())
+  keyTasks: z.array(z.string()).default([])
     .describe('Specific tasks or actions to execute'),
 });
 
@@ -39,11 +39,11 @@ const ExtractedWaysSchema = z.object({
  * Describes the resources needed
  */
 const ExtractedMeansSchema = z.object({
-  forces: z.array(z.string())
+  forces: z.array(z.string()).default([])
     .describe('Military or personnel forces required'),
-  capabilities: z.array(z.string())
+  capabilities: z.array(z.string()).default([])
     .describe('Capabilities or competencies needed'),
-  resources: z.array(z.string())
+  resources: z.array(z.string()).default([])
     .describe('Material, financial, or other resources needed'),
 });
 
@@ -54,46 +54,46 @@ const ExtractedMeansSchema = z.object({
  * All descriptions are critical - they become LLM prompt guidance.
  */
 export const ExtractedObjectiveSchema = z.object({
-  id: z.string()
+  id: z.string().default('OBJ-000')
     .describe('Unique identifier for this objective, format: OBJ-{sequential number starting from 001}'),
 
   description: z.string()
     .describe('Full text of the strategic objective as stated in the document'),
 
-  ends: ExtractedEndsSchema
+  ends: ExtractedEndsSchema.default({ description: '', conditions: [] })
     .describe('The desired outcome (Ends) - what we want to achieve'),
 
-  ways: ExtractedWaysSchema
+  ways: ExtractedWaysSchema.default({ strategies: [], concepts: [], keyTasks: [] })
     .describe('The approach (Ways) - how we will achieve the ends'),
 
-  means: ExtractedMeansSchema
+  means: ExtractedMeansSchema.default({ forces: [], capabilities: [], resources: [] })
     .describe('The resources (Means) - what we need to execute the ways'),
 
-  dimeCategory: DIMEInstrumentSchema
+  dimeCategory: DIMEInstrumentSchema.default('INFORMATIONAL')
     .describe('Primary DIME category based on objective focus: DIPLOMATIC (foreign policy, alliances), INFORMATIONAL (communications, influence), MILITARY (armed forces, defense), or ECONOMIC (trade, sanctions, finance)'),
 
   supportingDIME: z.array(DIMEInstrumentSchema).default([])
     .describe('Secondary DIME instruments that support this objective'),
 
-  midlifeCategory: MidlifeCategorySchema
+  midlifeCategory: MidlifeCategorySchema.default('INFORMATION')
     .describe('MIDLIFE category: MILITARY (armed forces, defense), INFORMATION (communications, media, cyber), DIPLOMATIC (foreign relations, treaties), LEGAL (international/domestic law), INTELLIGENCE (collection, analysis), FINANCIAL (banking, sanctions), or ECONOMIC (trade, resources, development)'),
 
-  midlifeConfidence: z.number().min(0).max(1)
+  midlifeConfidence: z.number().min(0).max(1).default(0.5)
     .describe('Confidence score (0-1) for MIDLIFE categorization. Higher when language clearly indicates category.'),
 
-  priority: PrioritySchema
+  priority: PrioritySchema.default('MEDIUM')
     .describe('Assessed priority based on language (e.g., "critical", "vital", "important") and positioning in document'),
 
-  constraints: z.array(z.string())
+  constraints: z.array(z.string()).default([])
     .describe('Stated limitations, restrictions, or rules that constrain how this objective can be achieved'),
 
-  assumptions: z.array(z.string())
+  assumptions: z.array(z.string()).default([])
     .describe('Stated or implied assumptions underlying this objective'),
 
-  risks: z.array(z.string())
+  risks: z.array(z.string()).default([])
     .describe('Identified risks to achieving this objective'),
 
-  sourceReference: z.string()
+  sourceReference: z.string().default('Not specified')
     .describe('Exact location in document: page number, section title, or paragraph number for traceability'),
 });
 

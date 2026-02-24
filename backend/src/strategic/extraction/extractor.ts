@@ -304,11 +304,15 @@ ${chunkText}`,
         throw new Error('No tool_use and no text content in response');
       }
 
+      // Normalize LLM output before validation (different models use different field names/casing)
+      extractionInput = this.normalizeExtractionOutput(extractionInput);
+
       // Parse and validate the response
       const parsed = ChunkExtractionResultSchema.safeParse(extractionInput);
 
       if (!parsed.success) {
-        console.error(`Validation failed for chunk ${chunkIndex}:`, parsed.error);
+        console.error(`Validation failed for chunk ${chunkIndex}:`, JSON.stringify(parsed.error.issues?.slice(0, 3)));
+        console.error(`[extraction] Raw input sample:`, JSON.stringify(extractionInput).substring(0, 500));
         throw new Error(`Validation failed: ${parsed.error.message}`);
       }
 
@@ -548,6 +552,77 @@ ${chunkText}`,
   }
 
   /**
+   * Normalize LLM extraction output before Zod validation
+   * Handles field name variations and casing differences across models
+   */
+  private normalizeExtractionOutput(input: unknown): unknown {
+    if (!input || typeof input !== 'object') return input;
+    const data = input as Record<string, unknown>;
+
+    // Normalize objectives array
+    if (Array.isArray(data.objectives)) {
+      data.objectives = data.objectives.map((obj: unknown) => {
+        if (!obj || typeof obj !== 'object') return obj;
+        const o = obj as Record<string, unknown>;
+
+        // Map alternative field names to expected ones
+        if (!o.description && o.text) o.description = o.text;
+        if (!o.description && o.objective) o.description = o.objective;
+        if (!o.description && o.title) o.description = o.title;
+        if (!o.description && o.name) o.description = o.name;
+        if (!o.description && o.goal) o.description = o.goal;
+
+        // Normalize enum values to uppercase
+        if (typeof o.priority === 'string') o.priority = o.priority.toUpperCase();
+        if (typeof o.dimeCategory === 'string') o.dimeCategory = o.dimeCategory.toUpperCase();
+        if (typeof o.midlifeCategory === 'string') o.midlifeCategory = o.midlifeCategory.toUpperCase();
+
+        // Handle alternative category field names
+        if (!o.dimeCategory && o.dime_category) { o.dimeCategory = (o.dime_category as string).toUpperCase(); delete o.dime_category; }
+        if (!o.midlifeCategory && o.midlife_category) { o.midlifeCategory = (o.midlife_category as string).toUpperCase(); delete o.midlife_category; }
+        if (!o.midlifeConfidence && o.midlife_confidence) { o.midlifeConfidence = o.midlife_confidence; delete o.midlife_confidence; }
+        if (!o.sourceReference && o.source_reference) { o.sourceReference = o.source_reference; delete o.source_reference; }
+        if (!o.sourceReference && o.source) o.sourceReference = o.source;
+        if (!o.supportingDIME && o.supporting_dime) { o.supportingDIME = o.supporting_dime; delete o.supporting_dime; }
+
+        // Map INFORMATIONAL to INFORMATION for midlife (common confusion)
+        if (o.midlifeCategory === 'INFORMATIONAL') o.midlifeCategory = 'INFORMATION';
+
+        // Normalize ends/ways/means from strings to expected object structures
+        if (typeof o.ends === 'string') {
+          o.ends = { description: o.ends, conditions: [] };
+        }
+        if (typeof o.ways === 'string') {
+          o.ways = { strategies: [o.ways], concepts: [], keyTasks: [] };
+        }
+        if (typeof o.means === 'string') {
+          o.means = { forces: [], capabilities: [o.means], resources: [] };
+        }
+
+        // Handle snake_case for ends/ways/means sub-fields if they are objects
+        if (o.ends && typeof o.ends === 'object') {
+          const e = o.ends as Record<string, unknown>;
+          if (!e.keyTasks && e.key_tasks) { e.keyTasks = e.key_tasks; delete e.key_tasks; }
+        }
+        if (o.ways && typeof o.ways === 'object') {
+          const w = o.ways as Record<string, unknown>;
+          if (!w.keyTasks && w.key_tasks) { w.keyTasks = w.key_tasks; delete w.key_tasks; }
+        }
+
+        return o;
+      });
+    }
+
+    // Normalize top-level fields
+    if (!data.chunkSummary && data.chunk_summary) { data.chunkSummary = data.chunk_summary; delete data.chunk_summary; }
+    if (!data.chunkSummary && data.summary) data.chunkSummary = data.summary;
+    if (!data.extractionConfidence && data.extraction_confidence) { data.extractionConfidence = data.extraction_confidence; delete data.extraction_confidence; }
+    if (!data.extractionConfidence && data.confidence) data.extractionConfidence = data.confidence;
+
+    return data;
+  }
+
+  /**
    * Parse JSON from text content (fallback for models without tool_use support)
    * Handles raw JSON, markdown code blocks, and JSON embedded in text
    */
@@ -591,8 +666,64 @@ ${chunkText}`,
       }
     }
 
+    // Try to repair truncated JSON (response cut off by max_tokens)
+    if (jsonMatch) {
+      const repaired = this.repairTruncatedJson(jsonMatch[0]);
+      if (repaired) {
+        try {
+          const parsed = JSON.parse(repaired);
+          if (parsed && typeof parsed === 'object' && 'objectives' in parsed) {
+            console.log(`[extraction] Repaired truncated JSON (${jsonMatch[0].length} -> ${repaired.length} chars)`);
+            return parsed;
+          }
+        } catch {
+          // Repair attempt failed
+        }
+      }
+    }
+
     console.warn(`[extraction] Could not parse JSON from text response (${text.length} chars). First 200 chars: ${text.substring(0, 200)}`);
     return null;
+  }
+
+  /**
+   * Attempt to repair truncated JSON by closing open brackets/braces.
+   * When max_tokens cuts off a response mid-JSON, this recovers whatever
+   * complete objectives were already emitted.
+   */
+  private repairTruncatedJson(json: string): string | null {
+    // Trim to the last complete array element by finding the last "},"
+    // or last "}" that closes an objective before truncation
+    const lastCompleteComma = json.lastIndexOf('},');
+    const lastCompleteBrace = json.lastIndexOf('}');
+
+    if (lastCompleteComma < 0 && lastCompleteBrace < 0) return null;
+
+    // Use the position after the last complete object in the array
+    let trimmed = json.substring(0, lastCompleteComma > 0 ? lastCompleteComma + 1 : lastCompleteBrace + 1);
+
+    // Count open brackets/braces and close them
+    let openBraces = 0;
+    let openBrackets = 0;
+    let inString = false;
+    let escape = false;
+
+    for (const ch of trimmed) {
+      if (escape) { escape = false; continue; }
+      if (ch === '\\') { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') openBraces++;
+      if (ch === '}') openBraces--;
+      if (ch === '[') openBrackets++;
+      if (ch === ']') openBrackets--;
+    }
+
+    // Close any open structures
+    while (openBrackets > 0) { trimmed += ']'; openBrackets--; }
+    while (openBraces > 0) { trimmed += '}'; openBraces--; }
+
+    return trimmed;
   }
 
   /**

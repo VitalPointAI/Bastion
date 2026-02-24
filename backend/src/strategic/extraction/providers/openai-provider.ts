@@ -61,20 +61,18 @@ export class OpenAICompatibleProvider implements LLMProvider {
 
   async complete(request: LLMCompletionRequest): Promise<LLMCompletionResponse> {
     // Try with tools first, fall back to plain completion if tools not supported
+    if (!request.tools?.length) {
+      return await this.completeWithoutTools(request);
+    }
+
     try {
       return await this.completeWithTools(request);
     } catch (error) {
-      // If the error suggests tools aren't supported, retry without tools
+      // On any failure with tools, retry without tools — many OpenAI-compatible
+      // endpoints (NEAR AI, Ollama, etc.) fail or 502 when tools are included
       const message = error instanceof Error ? error.message : String(error);
-      const toolUnsupported = message.includes('tool') || message.includes('function')
-        || message.includes('400') || message.includes('422')
-        || message.includes('not supported') || message.includes('invalid');
-
-      if (toolUnsupported && request.tools?.length) {
-        console.warn(`[${this.name}] Tool calling failed (${message}), retrying without tools`);
-        return await this.completeWithoutTools(request);
-      }
-      throw error;
+      console.warn(`[${this.name}] Tool calling failed (${message}), retrying without tools`);
+      return await this.completeWithoutTools(request);
     }
   }
 
@@ -133,7 +131,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
   private async completeWithoutTools(request: LLMCompletionRequest): Promise<LLMCompletionResponse> {
     const response = await this.client.chat.completions.create({
       model: this.model,
-      max_tokens: request.max_tokens || 4096,
+      max_tokens: request.max_tokens || 16384,
       temperature: request.temperature,
       messages: request.messages.map(m => ({
         role: m.role,
