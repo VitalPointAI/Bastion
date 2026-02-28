@@ -6,23 +6,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 14 Plan 04 complete — order generation (WARNORD/OPORD/FRAGO) and planning board service
+**Current focus:** Phase 14 Plan 05 complete — exercise REST API (30+ endpoints, information barrier enforced)
 
 ## Current Position
 
 Phase: 14 of 14 (Friendly & Adversary IPB Complete Cycle)
-Plan: 4 of 10 in current phase
+Plan: 5 of 10 in current phase
 Status: Executing
-Last activity: 2026-02-28 - Phase 14 Plan 04 complete — order generator and planning board service
+Last activity: 2026-02-28 - Phase 14 Plan 05 complete — exercise REST API at /api/exercise/*
 
-Progress: █████████████████████ 127 plans complete
+Progress: █████████████████████ 128 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 127
+- Total plans completed: 128
 - Average duration: 10 min
-- Total execution time: 19.26 hours
+- Total execution time: 19.39 hours
 
 **By Phase:**
 
@@ -50,6 +50,7 @@ Progress: █████████████████████ 127 pl
 | Phase 1.4 P01 | 2 | 2 tasks | 6 files |
 | Phase 1.4 P02 | 5 | 2 tasks | 2 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P03 | 8 | 2 tasks | 2 files |
+| Phase 14-friendly-adversary-ipb-complete-cycle P05 | 8 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -925,9 +926,15 @@ None.
 - TaskStore.updateAssignedRole() added as minimal SQL UPDATE for reassign path
 - FRAGO model: only changed paragraphs in changedParagraphs field; references array includes base order ID
 
+**Phase 14 Plan 05 (Exercise REST API):**
+- withExerciseBarrier applied at router level (once) covers all 30+ exercise routes without per-route decoration
+- Async document extraction: upload returns 202 immediately; LLM extraction runs via setImmediate() to avoid blocking the HTTP response
+- qstr() helper safely extracts string from Express req.query (typed as string | string[] | ParsedQs)
+- IPBService and COAScoringService added to exercise/index.ts barrel for downstream phase (14-06 through 14-10) consumption
+
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed Phase 14 Plan 04 — order generator and planning board service
+Stopped at: Completed Phase 14 Plan 05 — exercise REST API at /api/exercise/*
 Resume file: None
-Next action: Continue with Phase 14 Plan 05
+Next action: Continue with Phase 14 Plan 06
