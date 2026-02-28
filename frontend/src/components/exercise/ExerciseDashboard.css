@@ -282,6 +282,47 @@
   opacity: 1;
 }
 
+/* ─── Information Barrier — Perspective-Dependent Accents ───────────────────── */
+
+/* Blue force: subtle left border + very faint watermark */
+.exercise-barrier--blue {
+  border-left: 3px solid var(--exercise-blue, #0066cc);
+}
+
+/* Red force: subtle left border */
+.exercise-barrier--red {
+  border-left: 3px solid var(--exercise-red, #cc0000);
+}
+
+/* Controller view: both colors via gradient top border */
+.exercise-barrier--controller {
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, var(--exercise-blue, #0066cc) 0%, var(--exercise-red, #cc0000) 100%) 1;
+}
+
+/* ─── Information Barrier Watermark ─────────────────────────────────────────── */
+
+.exercise-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 180px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0.025;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  color: var(--text-primary, #fff);
+  z-index: 0;
+}
+
+.exercise-dashboard {
+  position: relative; /* Needed for watermark absolute positioning */
+}
+
 /* ─── Content Area ───────────────────────────────────────────────────────────── */
 
 .exercise-content {
@@ -289,6 +330,21 @@
   min-height: 0;
   overflow: auto;
   padding: 1.5rem;
+  position: relative; /* Stack above watermark */
+  z-index: 1;
+}
+
+/* COAs tab layout: COAScoringPanel above CommanderDecisionPanel */
+.exercise-coas-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Disabled tabs */
+.exercise-tab-btn--disabled {
+  opacity: 0.35;
+  cursor: not-allowed !important;
 }
 
 /* Placeholder for future plan tabs */
@@ -467,6 +523,129 @@
   color: #ff4444;
   font-size: 0.875rem;
   margin: 0.75rem 1.25rem;
+}
+
+/* ─── Modal — Wide variant for scenario creation ─────────────────────────────── */
+
+.exercise-modal--wide {
+  max-width: 560px;
+}
+
+/* ─── Phase Editor (in Create Scenario Modal) ────────────────────────────────── */
+
+.phase-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.phase-editor-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  padding: 0.5rem;
+  background: var(--bg-primary, #111118);
+}
+
+.phase-editor-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 4px;
+  background: var(--bg-secondary, #1a1a24);
+  font-size: 0.85rem;
+}
+
+.phase-editor-num {
+  width: 20px;
+  font-size: 0.7rem;
+  color: var(--text-dim, #444456);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.phase-editor-name {
+  flex: 1;
+  color: var(--text-secondary, #aaa);
+}
+
+.phase-editor-input {
+  flex: 1;
+  padding: 0.2rem 0.4rem;
+  background: var(--bg-primary, #111118);
+  border: 1px solid var(--accent-blue, #4a90d9);
+  border-radius: 4px;
+  color: var(--text-primary, #fff);
+  font-size: 0.85rem;
+}
+
+.phase-editor-btn {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  background: transparent;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 4px;
+  color: var(--text-muted, #666678);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  white-space: nowrap;
+}
+
+.phase-editor-btn:hover:not(:disabled) {
+  border-color: var(--border-medium, #3a3a48);
+  color: var(--text-secondary, #aaa);
+}
+
+.phase-editor-btn--remove:hover:not(:disabled) {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.phase-editor-btn--add {
+  padding: 0.35rem 0.75rem;
+  border-color: rgba(74, 144, 217, 0.4);
+  color: var(--accent-blue, #4a90d9);
+  font-size: 0.8rem;
+}
+
+.phase-editor-btn--add:hover:not(:disabled) {
+  background: rgba(74, 144, 217, 0.1);
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue, #4a90d9);
+}
+
+.phase-editor-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.phase-editor-new-input {
+  flex: 1;
+  padding: 0.45rem 0.75rem;
+  background: var(--bg-primary, #111118);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 0.85rem;
+  transition: border-color 0.15s ease;
+}
+
+.phase-editor-new-input:focus {
+  outline: none;
+  border-color: var(--accent-blue, #4a90d9);
+}
+
+.phase-editor-new-input::placeholder {
+  color: var(--text-dim, #444456);
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
