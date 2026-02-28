@@ -6,16 +6,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 14 Plan 06 complete — exercise frontend service layer, dashboard shell, and scenario package upload
+**Current focus:** Phase 14 Plan 09 complete — order editor (WARNORD/OPORD/FRAGO authoring) and Kanban planning board
 
 ## Current Position
 
 Phase: 14 of 14 (Friendly & Adversary IPB Complete Cycle)
-Plan: 6 of 10 in current phase
+Plan: 9 of 10 in current phase
 Status: Executing
-Last activity: 2026-02-28 - Phase 14 Plan 06 complete — exercise frontend (types, service client, dashboard, upload)
+Last activity: 2026-02-28 - Phase 14 Plan 09 complete — OrderEditor and PlanningBoard components
 
-Progress: █████████████████████ 129 plans complete
+Progress: █████████████████████ 132 plans complete
 
 ## Performance Metrics
 
@@ -52,6 +52,8 @@ Progress: █████████████████████ 129 pl
 | Phase 14-friendly-adversary-ipb-complete-cycle P03 | 8 | 2 tasks | 2 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P05 | 8 | 2 tasks | 3 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P06 | 8 | 2 tasks | 8 files |
+| Phase 14-friendly-adversary-ipb-complete-cycle P07 | 8 | 2 tasks | 7 files |
+| Phase 14-friendly-adversary-ipb-complete-cycle P09 | 8 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -279,6 +281,8 @@ Recent decisions affecting current work:
 - [Phase 4.3]: TileLayer bounds prop (not noWrap) is the actual fix for Leaflet issue #4646/#7181: noWrap alone does not prevent out-of-bounds x=5 tile requests at zoom 2; bounds prop clamps tile coordinate calculation to valid world bounds
 - [Phase 14-friendly-adversary-ipb-complete-cycle]: IPBService: both own and enemy_assessment perspectives read the requesting team's own documents — LLM prompt differentiates self-portrait vs intel estimate of adversary
 - [Phase 14-friendly-adversary-ipb-complete-cycle]: COA FASDC equal-weight scoring (20% each of 5 criteria) with commander decisions blockchain-anchored via SHA-256 hash and outbox INSERT following existing aggregate_type pattern
+- [Phase 14-friendly-adversary-ipb-complete-cycle P07]: SITREP update never auto-commits — staff always reviews delta preview (changedFields + affectedCOAs) and confirms before IPB version is created (locked decision from CONTEXT.md)
+- [Phase 14-friendly-adversary-ipb-complete-cycle P07]: ValidityMap auto-fit-bounds disabled when ipbLayers present to preserve theater view (Western Pacific: lat=20, lng=125, zoom=4)
 
 ### Roadmap Evolution
 
@@ -933,9 +937,16 @@ None.
 - qstr() helper safely extracts string from Express req.query (typed as string | string[] | ParsedQs)
 - IPBService and COAScoringService added to exercise/index.ts barrel for downstream phase (14-06 through 14-10) consumption
 
+**Phase 14 Plan 09 (Order Editor and Planning Board):**
+- Type guard helpers (isWARNORD/isOPORD/isFRAGO) narrow ExerciseOrder.content discriminated union at render time instead of casting
+- OPORDContent stored as Record<string,unknown> in frontend types — editor reads/writes specific named keys with safe string coercion
+- PlanningTask has no exercisePhase field — phase summary groups all tasks under currently-browsed phase name from dashboard
+- FRAGO changedParagraphs in edit mode uses JSON textarea since type is Partial<OPORDContent> with arbitrary nested structure
+- BoardSummary.completionPercentage not in type — computed inline as Math.round(summary.complete / summary.total * 100)
+
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed Phase 14 Plan 06 — exercise frontend (types, service client, dashboard shell, package upload)
+Stopped at: Completed Phase 14 Plan 09 — OrderEditor and PlanningBoard components (orders lifecycle and Kanban task tracking)
 Resume file: None
-Next action: Continue with Phase 14 Plan 07
+Next action: Continue with Phase 14 Plan 10
