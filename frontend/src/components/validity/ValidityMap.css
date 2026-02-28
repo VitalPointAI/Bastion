@@ -343,3 +343,109 @@
 .leaflet-control-attribution a {
   color: var(--accent-primary, #4a9eff);
 }
+
+/* ─── Milsymbol Marker ───────────────────────────────────────────────────────── */
+
+.milsymbol-marker {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.milsymbol-marker svg {
+  display: block;
+}
+
+/* ─── IPB Perspective Theming ────────────────────────────────────────────────── */
+
+/* Blue perspective — blue layers are slightly brighter */
+.validity-map--blue .leaflet-interactive[stroke="#0066cc"] {
+  stroke: #3388ff;
+  stroke-width: 3;
+}
+
+/* Red perspective — red layers are slightly brighter */
+.validity-map--red .leaflet-interactive[stroke="#cc0000"] {
+  stroke: #ff3333;
+  stroke-width: 3;
+}
+
+/* ─── IPB Layer Hover Effects ────────────────────────────────────────────────── */
+
+/* Polygon/polyline hover effect */
+.leaflet-interactive.ipb-area-overlay:hover,
+.leaflet-interactive.ipb-line-overlay:hover {
+  stroke-opacity: 1;
+  stroke-width: 3;
+  filter: brightness(1.2);
+}
+
+/* NAI circle pulse animation on hover */
+.ipb-nai-circle.leaflet-interactive:hover {
+  animation: nai-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes nai-pulse {
+  0% { fill-opacity: 0.08; }
+  50% { fill-opacity: 0.25; }
+  100% { fill-opacity: 0.08; }
+}
+
+/* ─── IPB Popup Styles ───────────────────────────────────────────────────────── */
+
+.ipb-unit-popup,
+.ipb-area-popup,
+.ipb-line-popup,
+.ipb-nai-popup {
+  min-width: 180px;
+  max-width: 260px;
+}
+
+.ipb-unit-popup h4,
+.ipb-area-popup h4,
+.ipb-line-popup h4,
+.ipb-nai-popup h4 {
+  margin: 6px 0 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #e0e7ff);
+}
+
+.ipb-unit-team-badge,
+.ipb-area-type,
+.ipb-line-type,
+.ipb-nai-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border: 1px solid currentColor;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ipb-unit-detail,
+.ipb-area-detail,
+.ipb-line-detail,
+.ipb-nai-detail {
+  margin: 3px 0;
+  font-size: 11px;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.4;
+}
+
+.ipb-unit-detail span,
+.ipb-area-detail span,
+.ipb-line-detail span,
+.ipb-nai-detail span {
+  font-weight: 600;
+  color: var(--text-primary, #e0e7ff);
+}
+
+.ipb-unit-sidc {
+  margin: 4px 0 0 0;
+  font-size: 10px;
+  color: var(--text-tertiary, #64748b);
+  font-family: monospace;
+}
