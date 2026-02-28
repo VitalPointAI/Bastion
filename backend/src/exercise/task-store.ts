@@ -145,4 +145,17 @@ export class TaskStore {
     );
     return result.rows[0] ? rowToTask(result.rows[0]) : null;
   }
+
+  /**
+   * Reassign a task to a different planning role.
+   * Used by PlanningBoardService.reassignTask().
+   */
+  async updateAssignedRole(id: string, newRole: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE planning_tasks
+       SET assigned_role = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [newRole, id]
+    );
+  }
 }
