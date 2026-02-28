@@ -6,23 +6,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 14 Plan 01 complete — exercise data model with dual-team IPB architecture
+**Current focus:** Phase 14 Plan 02 complete — scenario package parser and exercise extraction service
 
 ## Current Position
 
 Phase: 14 of 14 (Friendly & Adversary IPB Complete Cycle)
-Plan: 1 of 10 in current phase
+Plan: 2 of 10 in current phase
 Status: Executing
-Last activity: 2026-02-28 - Phase 14 Plan 01 complete — exercise data model
+Last activity: 2026-02-28 - Phase 14 Plan 02 complete — package parser and extraction service
 
-Progress: █████████████████████ 124 plans complete
+Progress: █████████████████████ 125 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 124
+- Total plans completed: 125
 - Average duration: 10 min
-- Total execution time: 19.06 hours
+- Total execution time: 19.14 hours
 
 **By Phase:**
 
@@ -294,6 +294,13 @@ Recent decisions affecting current work:
 - IPB version history uses parentVersionId self-referential chain rather than separate versions table
 - SQL migration placed in backend/database/ matching existing schema.sql location (no db/migrations/ subdirectory exists)
 - Zod v4 requires z.record(keySchema, valueSchema) — updated all JSONB-mapped fields accordingly
+
+**Phase 14 Plan 02 (Scenario Package Parser & Exercise Extraction Service):**
+- Confidence tiers: 3 discrete tiers (1.0=all matched, 0.7=team matched+partial, 0.5=all defaults) rather than continuous formula
+- ExerciseExtractionService takes ScenarioDocumentStore as constructor argument for testability
+- Batch extraction is sequential (not concurrent) to respect LLM rate limits — mirrors ExtractionService pattern
+- ExtractedExerciseData added to exercise/types.ts co-located with other domain types
+- JSON.parse(JSON.stringify()) used to bridge ExtractedExerciseData to Record<string,unknown> for updateExtraction()
 
 ### Deferred Issues
 

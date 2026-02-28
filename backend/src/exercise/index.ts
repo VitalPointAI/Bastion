@@ -100,3 +100,10 @@ export {
   parseScenarioPackage,
 } from './package-parser.js';
 export { ExerciseExtractionService } from './extraction-service.js';
+
+// ─── Order Generator & Planning Board ─────────────────────────────────────────
+
+export type { OrderGeneratorLLMConfig } from './order-generator.js';
+export { ExerciseOrderGenerator } from './order-generator.js';
+export type { BoardSummary } from './planning-board-service.js';
+export { PlanningBoardService } from './planning-board-service.js';
