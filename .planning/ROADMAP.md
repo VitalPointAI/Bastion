@@ -846,7 +846,7 @@ Plans:
 - [ ] Plan 14-03: IPB Assembly & COA Scoring Services -- Dual-perspective IPB from documents, doctrinal + wargame combined scoring (wave 2)
 - [ ] Plan 14-04: Order Generator & Planning Board Service -- WARNORD/OPORD/FRAGO generation, task lifecycle, notifications (wave 2)
 - [ ] Plan 14-05: Exercise REST API -- 25+ endpoints with information barrier enforcement (wave 3)
-- [ ] Plan 14-06: Frontend Service & Dashboard Shell -- API client, exercise dashboard, scenario package upload UI (wave 4)
+- [x] Plan 14-06: Frontend Service & Dashboard Shell -- API client, exercise dashboard, scenario package upload UI (wave 4)
 - [ ] Plan 14-07: IPB Panel & ValidityMap Extension -- Dual-perspective IPB view, military overlay layers, milsymbol markers, SITREP delta preview (wave 5)
 - [ ] Plan 14-08: COA Scoring & Commander Decision UI -- Decision matrix, editable narrative, accept/reject/modify/combine workflow (wave 5)
 - [ ] Plan 14-09: Order Editor & Planning Board UI -- WARNORD/OPORD/FRAGO authoring, Kanban task board (wave 5)
