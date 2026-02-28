@@ -15,7 +15,10 @@ import { useState, useEffect } from 'react';
 import { exerciseService } from '../../services/exercise-service';
 import type { ExerciseScenario } from '../../types/exercise';
 import { ScenarioPackageUpload } from './ScenarioPackageUpload';
+import { IPBPanel } from './IPBPanel';
 import { COAScoringPanel } from './COAScoringPanel';
+import { OrderEditor } from './OrderEditor';
+import { PlanningBoard } from './PlanningBoard';
 import './ExerciseDashboard.css';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -368,7 +371,13 @@ export function ExerciseDashboard() {
         )}
         {activeTab === 'ipb' && (
           selectedScenario
-            ? <PlaceholderTab tab="ipb" planRef="14-07" />
+            ? (
+              <IPBPanel
+                scenarioId={selectedScenario.id}
+                perspective={perspective}
+                exercisePhase={currentPhaseName}
+              />
+            )
             : <div className="exercise-empty-state"><p>Select or create a scenario to view IPB.</p></div>
         )}
         {activeTab === 'coas' && (
@@ -384,12 +393,24 @@ export function ExerciseDashboard() {
         )}
         {activeTab === 'orders' && (
           selectedScenario
-            ? <PlaceholderTab tab="orders" planRef="14-09" />
+            ? (
+              <OrderEditor
+                scenarioId={selectedScenario.id}
+                perspective={perspective}
+                exercisePhase={currentPhaseName}
+              />
+            )
             : <div className="exercise-empty-state"><p>Select or create a scenario to view Orders.</p></div>
         )}
         {activeTab === 'tasks' && (
           selectedScenario
-            ? <PlaceholderTab tab="tasks" planRef="14-10" />
+            ? (
+              <PlanningBoard
+                scenarioId={selectedScenario.id}
+                perspective={perspective}
+                exercisePhase={currentPhaseName}
+              />
+            )
             : <div className="exercise-empty-state"><p>Select or create a scenario to view the Planning Board.</p></div>
         )}
         {activeTab === 'timeline' && (
