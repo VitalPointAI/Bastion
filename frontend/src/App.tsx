@@ -9,9 +9,10 @@ import { DecideTab } from './components/tabs/DecideTab'
 import { DesignTab } from './components/tabs/DesignTab'
 import { CampaignTab } from './components/tabs/CampaignTab'
 import { MonitorTab } from './components/tabs/MonitorTab'
+import { ExerciseDashboard } from './components/exercise'
 import './App.css'
 
-const MAIN_TABS = ['decide', 'design', 'campaign', 'monitor'] as const;
+const MAIN_TABS = ['decide', 'design', 'campaign', 'monitor', 'exercise'] as const;
 type MainTab = typeof MAIN_TABS[number];
 
 function NotFound() {
@@ -37,6 +38,7 @@ function AppContent() {
   })();
 
   const isAdmin = location.pathname.startsWith('/admin');
+  const isExercise = location.pathname.startsWith('/exercise');
 
   return (
     <div className="app">
@@ -44,28 +46,34 @@ function AppContent() {
         <h1 onClick={() => navigate('/monitor')} style={{ cursor: 'pointer' }}>BASTION</h1>
         <nav className="app-nav">
           <button
-            className={`nav-button ${activeTab === 'decide' && !isAdmin ? 'active' : ''}`}
+            className={`nav-button ${activeTab === 'decide' && !isAdmin && !isExercise ? 'active' : ''}`}
             onClick={() => navigate('/decide')}
           >
             Decide
           </button>
           <button
-            className={`nav-button ${activeTab === 'design' && !isAdmin ? 'active' : ''}`}
+            className={`nav-button ${activeTab === 'design' && !isAdmin && !isExercise ? 'active' : ''}`}
             onClick={() => navigate('/design')}
           >
             Design
           </button>
           <button
-            className={`nav-button ${activeTab === 'campaign' && !isAdmin ? 'active' : ''}`}
+            className={`nav-button ${activeTab === 'campaign' && !isAdmin && !isExercise ? 'active' : ''}`}
             onClick={() => navigate('/campaign')}
           >
             Campaign
           </button>
           <button
-            className={`nav-button ${activeTab === 'monitor' && !isAdmin ? 'active' : ''}`}
+            className={`nav-button ${activeTab === 'monitor' && !isAdmin && !isExercise ? 'active' : ''}`}
             onClick={() => navigate('/monitor')}
           >
             Monitor
+          </button>
+          <button
+            className={`nav-button ${isExercise ? 'active' : ''}`}
+            onClick={() => navigate('/exercise')}
+          >
+            Exercise
           </button>
           <div className="nav-spacer" />
           <button
@@ -80,6 +88,8 @@ function AppContent() {
       <main className="app-main">
         {isAdmin ? (
           <AdminDashboard onBack={() => navigate('/monitor')} />
+        ) : isExercise ? (
+          <ExerciseDashboard />
         ) : (
           <>
             {activeTab === 'decide' && <DecideTab />}
@@ -126,6 +136,11 @@ function App() {
         </AuthWrapper>
       } />
       <Route path="/monitor" element={
+        <AuthWrapper>
+          <AppContent />
+        </AuthWrapper>
+      } />
+      <Route path="/exercise" element={
         <AuthWrapper>
           <AppContent />
         </AuthWrapper>
