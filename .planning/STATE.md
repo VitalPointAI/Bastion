@@ -6,23 +6,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 14 Plan 02 complete — scenario package parser and exercise extraction service
+**Current focus:** Phase 14 Plan 04 complete — order generation (WARNORD/OPORD/FRAGO) and planning board service
 
 ## Current Position
 
 Phase: 14 of 14 (Friendly & Adversary IPB Complete Cycle)
-Plan: 2 of 10 in current phase
+Plan: 4 of 10 in current phase
 Status: Executing
-Last activity: 2026-02-28 - Phase 14 Plan 02 complete — package parser and extraction service
+Last activity: 2026-02-28 - Phase 14 Plan 04 complete — order generator and planning board service
 
-Progress: █████████████████████ 125 plans complete
+Progress: █████████████████████ 127 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 125
+- Total plans completed: 127
 - Average duration: 10 min
-- Total execution time: 19.14 hours
+- Total execution time: 19.26 hours
 
 **By Phase:**
 
@@ -915,9 +915,16 @@ None.
 - Legacy redirects preserve old bookmarks: /governance->/decide, /strategic->/design, /validity->/monitor, /missions->/campaign
 - Exclusive isAdmin ternary prevents double-rendering of admin + tab content
 
+**Phase 14 Plan 04 (Order Generator & Planning Board):**
+- MessageBus channel routing: exercise.{scenarioId} channel for per-exercise fan-out without cross-scenario leakage
+- MessageBus publish errors caught/logged (not re-thrown): order publication is transactional; notifications are advisory
+- LLMProvider constructor injection: accepts provider instance or ProviderConfig to enable test mocking
+- TaskStore.updateAssignedRole() added as minimal SQL UPDATE for reassign path
+- FRAGO model: only changed paragraphs in changedParagraphs field; references array includes base order ID
+
 ## Session Continuity
 
-Last session: 2026-02-23
-Stopped at: Completed quick task 4 (fix PDF objective extraction for diverse documents)
+Last session: 2026-02-28
+Stopped at: Completed Phase 14 Plan 04 — order generator and planning board service
 Resume file: None
-Next action: Continue with next planned phase or quick task
+Next action: Continue with Phase 14 Plan 05
