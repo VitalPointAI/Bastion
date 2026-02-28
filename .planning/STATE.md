@@ -49,6 +49,7 @@ Progress: █████████████████████ 127 pl
 - Trend: Wave-based parallel execution efficient for agent+visualization phases
 | Phase 1.4 P01 | 2 | 2 tasks | 6 files |
 | Phase 1.4 P02 | 5 | 2 tasks | 2 files |
+| Phase 14-friendly-adversary-ipb-complete-cycle P03 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -274,6 +275,8 @@ Recent decisions affecting current work:
 - Operationalization requires APPROVED status, reviewed risk, and drafted intent
 - Planning directive JSON output for Phase 5 handoff
 - [Phase 4.3]: TileLayer bounds prop (not noWrap) is the actual fix for Leaflet issue #4646/#7181: noWrap alone does not prevent out-of-bounds x=5 tile requests at zoom 2; bounds prop clamps tile coordinate calculation to valid world bounds
+- [Phase 14-friendly-adversary-ipb-complete-cycle]: IPBService: both own and enemy_assessment perspectives read the requesting team's own documents — LLM prompt differentiates self-portrait vs intel estimate of adversary
+- [Phase 14-friendly-adversary-ipb-complete-cycle]: COA FASDC equal-weight scoring (20% each of 5 criteria) with commander decisions blockchain-anchored via SHA-256 hash and outbox INSERT following existing aggregate_type pattern
 
 ### Roadmap Evolution
 
