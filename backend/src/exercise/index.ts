@@ -37,6 +37,7 @@ export type {
   CreatePlanningTask,
   ExerciseGate,
   CreateExerciseGate,
+  ExtractedExerciseData,
 } from './types.js';
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -87,3 +88,15 @@ export { COAStore } from './coa-store.js';
 export { OrderStore } from './order-store.js';
 export { TaskStore } from './task-store.js';
 export { GateStore } from './gate-store.js';
+
+// ─── Package Parser & Extraction Service ──────────────────────────────────────
+
+export type { PackageTags, ScenarioPackageFile, TaggedScenarioFile } from './package-parser.js';
+export {
+  TEAM_HEURISTICS,
+  PHASE_HEURISTICS,
+  TYPE_HEURISTICS,
+  inferTagsFromPath,
+  parseScenarioPackage,
+} from './package-parser.js';
+export { ExerciseExtractionService } from './extraction-service.js';

@@ -346,3 +346,69 @@ export interface ExerciseGate {
 }
 
 export type CreateExerciseGate = Omit<ExerciseGate, 'id' | 'createdAt'>;
+
+// ─── Extracted Exercise Data ───────────────────────────────────────────────────
+
+/**
+ * Structured data extracted by the exercise extraction pipeline from a scenario document.
+ * Fields are populated based on the document type (OOB, SITREP, CAMPAIGN_PLAN, etc.).
+ */
+export interface ExtractedExerciseData {
+  /** One-paragraph summary of the document */
+  summary: string;
+
+  /** Force units and dispositions — primarily from OOB documents */
+  forceDispositions?: Array<{
+    unitName: string;
+    echelon: string;
+    sidc?: string;
+    location?: { lat: number; lng: number } | string;
+    strength?: string;
+    equipment?: string[];
+  }>;
+
+  /** Objectives with priority tiers — primarily from CAMPAIGN_PLAN and SITREP */
+  objectives?: Array<{
+    id: string;
+    description: string;
+    priority: 'primary' | 'secondary' | 'tertiary';
+  }>;
+
+  /** Timeline of events — from SITREP, ALERTORD, and FRAGO */
+  timeline?: Array<{
+    event: string;
+    time: string;
+    phase: string;
+  }>;
+
+  /** Key events and their operational significance — from SITREP */
+  keyEvents?: Array<{
+    event: string;
+    significance: string;
+  }>;
+
+  /** Access/basing/overflight data — from COUNTRY_POLICY documents */
+  accessBasingOverflight?: {
+    access: string;
+    basing: string;
+    overflight: string;
+    conditions: string;
+  };
+
+  /** Task assignments — from ALERTORD and FRAGO */
+  tasks?: Array<{
+    assignedTo: string;
+    task: string;
+    purpose: string;
+  }>;
+
+  /** Changed items (FRAGO deltas) — from FRAGO documents */
+  changedItems?: Array<{
+    field: string;
+    oldValue?: string;
+    newValue: string;
+  }>;
+
+  /** Full raw LLM extraction output for audit/debugging */
+  rawExtraction: Record<string, unknown>;
+}
