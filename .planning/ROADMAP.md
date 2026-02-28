@@ -846,11 +846,11 @@ Plans:
 - [ ] Plan 14-03: IPB Assembly & COA Scoring Services -- Dual-perspective IPB from documents, doctrinal + wargame combined scoring (wave 2)
 - [ ] Plan 14-04: Order Generator & Planning Board Service -- WARNORD/OPORD/FRAGO generation, task lifecycle, notifications (wave 2)
 - [ ] Plan 14-05: Exercise REST API -- 25+ endpoints with information barrier enforcement (wave 3)
-- [ ] Plan 14-06: Frontend Service & Dashboard Shell -- API client, exercise dashboard, scenario package upload UI (wave 3)
-- [ ] Plan 14-07: IPB Panel & ValidityMap Extension -- Dual-perspective IPB view, military overlay layers, milsymbol markers (wave 4)
-- [ ] Plan 14-08: COA Scoring & Commander Decision UI -- Decision matrix, editable narrative, accept/reject/modify/combine workflow (wave 4)
-- [ ] Plan 14-09: Order Editor & Planning Board UI -- WARNORD/OPORD/FRAGO authoring, Kanban task board (wave 4)
-- [ ] Plan 14-10: Timeline, Gates & Dashboard Integration -- Phase timeline, gate control, full dashboard wiring (wave 5)
+- [ ] Plan 14-06: Frontend Service & Dashboard Shell -- API client, exercise dashboard, scenario package upload UI (wave 4)
+- [ ] Plan 14-07: IPB Panel & ValidityMap Extension -- Dual-perspective IPB view, military overlay layers, milsymbol markers, SITREP delta preview (wave 5)
+- [ ] Plan 14-08: COA Scoring & Commander Decision UI -- Decision matrix, editable narrative, accept/reject/modify/combine workflow (wave 5)
+- [ ] Plan 14-09: Order Editor & Planning Board UI -- WARNORD/OPORD/FRAGO authoring, Kanban task board (wave 5)
+- [ ] Plan 14-10: Timeline, Gates & Dashboard Integration -- Phase timeline, gate control, full dashboard wiring (wave 6)
 
 ## Progress
 
@@ -885,4 +885,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 12. Coalition & Multi-Tenancy | 0/TBD | Not started | - |
 | 12.1 Coalition Health Monitoring | 0/5 | Not started | - |
 | 13. Research Whitepaper | 9/9 | Complete | 2026-01-24 |
-| 14. Friendly & Adversary IPB Complete Cycle | 0/10 | Planning complete | - |
+| 14. Friendly & Adversary IPB Complete Cycle | 1/10 | In Progress|  |

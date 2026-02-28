@@ -6,21 +6,21 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 14 context gathered — Friendly & Adversary IPB Complete Cycle ready for planning
+**Current focus:** Phase 14 Plan 01 complete — exercise data model with dual-team IPB architecture
 
 ## Current Position
 
 Phase: 14 of 14 (Friendly & Adversary IPB Complete Cycle)
-Plan: 0 of TBD in current phase
-Status: Context gathered, ready for planning
-Last activity: 2026-02-28 - Phase 14 context gathered via discuss-phase
+Plan: 1 of 10 in current phase
+Status: Executing
+Last activity: 2026-02-28 - Phase 14 Plan 01 complete — exercise data model
 
-Progress: █████████████████████ 123 plans complete
+Progress: █████████████████████ 124 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 123
+- Total plans completed: 124
 - Average duration: 10 min
 - Total execution time: 19.06 hours
 
@@ -287,6 +287,13 @@ Recent decisions affecting current work:
 - Phase 1.3 inserted after Phase 1.2: NEAR Implicit Account Funding - Activate implicit accounts with minimum NEAR transfer on registration
 - Phase 1.4 inserted after Phase 1.3: Navigation Architecture Restructure - Restructure navigation to doctrine-aligned Decide/Design/Campaign/Monitor + Admin
 - Phase 14 added: Friendly & Adversary IPB Complete Cycle - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations
+
+**Phase 14 Plan 01 (Exercise Data Model):**
+- Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
+- GateStore has no team filter — gates visible to all participants; authorization enforced at API layer
+- IPB version history uses parentVersionId self-referential chain rather than separate versions table
+- SQL migration placed in backend/database/ matching existing schema.sql location (no db/migrations/ subdirectory exists)
+- Zod v4 requires z.record(keySchema, valueSchema) — updated all JSONB-mapped fields accordingly
 
 ### Deferred Issues
 
