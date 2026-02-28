@@ -36,6 +36,7 @@ None
 - [ ] **Phase 12: Coalition & Multi-Tenancy** - Implement information sharing rules, classification handling, federation
 - [ ] **Phase 12.1: Coalition Health Monitoring** - Coalition health agent, narrative impact agent, national caveat tracking, coalition gates (INSERTED)
 - [x] **Phase 13: Research Whitepaper** - Comprehensive documentation for master's research requirement (completed 2026-01-24)
+- [ ] **Phase 14: Friendly & Adversary IPB Complete Cycle** - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations
 
 ## Phase Details
 
@@ -823,6 +824,34 @@ Plans:
 - [x] Plan 13-08: GitBooks Publishing (completed 2026-01-24)
 - [x] Plan 13-09: PDF & DOCX Export (completed 2026-01-24)
 
+### Phase 14: Friendly & Adversary IPB Complete Cycle
+**Goal**: Build exercise scenario from provided documents with dual-perspective IPB, COA development with probability scoring, concurrent operation support, and commander decision-forcing workflows
+**Depends on**: Phase 5.3 (Scenario Validation), Phase 5.2 (Escalation & Competition Modeling), Phase 5.1 (MDMP Governance)
+**Research:** Complete (14-RESEARCH.md)
+**Plans**: 10 plans
+
+**Context:**
+This phase builds the exercise scenario management capability on top of BASTION's existing strategic planning, document ingestion, operational planning, and wargaming infrastructure. The phase extends and generalizes existing systems with dual-perspective (Blue/Red) information isolation, scenario package ingestion, IPB assembly, COA scoring with wargame evidence, WARNORD/OPORD/FRAGO generation, and planning board task tracking. The exercise documents in scenario/ (Pacific Strategy AY26 -- Indo-Pacific / Taiwan contingency) serve as the reference implementation.
+
+**Key Capabilities:**
+1. **Scenario Package Upload & Extraction** -- Multi-file upload with auto-inferred team/phase/type tags; AI extraction with team-isolated prompts
+2. **Dual-Perspective IPB** -- Blue/Red toggle with layered military overlays (forces, key terrain, avenues, NAIs) on extended ValidityMap
+3. **COA Scoring & Commander Decisions** -- 5 doctrinal criteria + wargame evidence; decision matrix with editable AI narrative; blockchain-anchored commander decisions
+4. **WARNORD/OPORD/FRAGO Orders** -- AI-generated and manual authoring; per-team information isolation; order publication creates planning tasks
+5. **Planning Board & Phase Gates** -- Kanban task tracking; exercise controller gate management; explicit phase transitions
+
+Plans:
+- [ ] Plan 14-01: Exercise Data Model & Stores -- Types, Zod schemas, 7 PostgreSQL stores, information barrier, DB migration (wave 1)
+- [ ] Plan 14-02: Scenario Package Parser & Extraction Service -- Directory heuristics, exercise-specific LLM extraction (wave 2)
+- [ ] Plan 14-03: IPB Assembly & COA Scoring Services -- Dual-perspective IPB from documents, doctrinal + wargame combined scoring (wave 2)
+- [ ] Plan 14-04: Order Generator & Planning Board Service -- WARNORD/OPORD/FRAGO generation, task lifecycle, notifications (wave 2)
+- [ ] Plan 14-05: Exercise REST API -- 25+ endpoints with information barrier enforcement (wave 3)
+- [ ] Plan 14-06: Frontend Service & Dashboard Shell -- API client, exercise dashboard, scenario package upload UI (wave 3)
+- [ ] Plan 14-07: IPB Panel & ValidityMap Extension -- Dual-perspective IPB view, military overlay layers, milsymbol markers (wave 4)
+- [ ] Plan 14-08: COA Scoring & Commander Decision UI -- Decision matrix, editable narrative, accept/reject/modify/combine workflow (wave 4)
+- [ ] Plan 14-09: Order Editor & Planning Board UI -- WARNORD/OPORD/FRAGO authoring, Kanban task board (wave 4)
+- [ ] Plan 14-10: Timeline, Gates & Dashboard Integration -- Phase timeline, gate control, full dashboard wiring (wave 5)
+
 ## Progress
 
 **Execution Order:**
@@ -856,3 +885,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 12. Coalition & Multi-Tenancy | 0/TBD | Not started | - |
 | 12.1 Coalition Health Monitoring | 0/5 | Not started | - |
 | 13. Research Whitepaper | 9/9 | Complete | 2026-01-24 |
+| 14. Friendly & Adversary IPB Complete Cycle | 0/10 | Planning complete | - |
