@@ -1,0 +1,715 @@
+/* ============================================================================
+   BASTION Command Center - Commander Decision Panel
+   Accept/Reject/Modify/Combine/Return workflow with blockchain-anchored recording
+   Phase 14 Plan 08
+   ============================================================================ */
+
+/* ─── Panel Container ────────────────────────────────────────────────────────── */
+
+.cdp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* ─── Empty / Loading ────────────────────────────────────────────────────────── */
+
+.cdp-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted, #666678);
+  font-size: 0.9rem;
+}
+
+.cdp-no-authority {
+  padding: 1rem;
+  color: var(--text-muted, #666678);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* ─── Error Banner ───────────────────────────────────────────────────────────── */
+
+.cdp-error {
+  padding: 0.65rem 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+}
+
+/* ─── Section ────────────────────────────────────────────────────────────────── */
+
+.cdp-section {
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cdp-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cdp-section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ─── Tags ───────────────────────────────────────────────────────────────────── */
+
+.cdp-perspective-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid;
+}
+
+.cdp-perspective-tag--blue {
+  color: var(--exercise-blue-light, #3388ff);
+  border-color: var(--exercise-blue, #0066cc);
+  background: var(--exercise-blue-dim, rgba(0, 102, 204, 0.15));
+}
+
+.cdp-perspective-tag--red {
+  color: var(--exercise-red-light, #ff3333);
+  border-color: var(--exercise-red, #cc0000);
+  background: var(--exercise-red-dim, rgba(204, 0, 0, 0.15));
+}
+
+.cdp-phase-tag {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  color: var(--text-muted, #666678);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  background: transparent;
+  font-weight: 500;
+}
+
+.cdp-read-only-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  color: #9ca3af;
+  border: 1px solid #4b5563;
+  background: rgba(156, 163, 175, 0.08);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cdp-history-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  color: var(--text-muted, #666678);
+  background: var(--bg-primary, #111118);
+  border: 1px solid var(--border-subtle, #2a2a38);
+}
+
+/* ─── COA Summary Row ────────────────────────────────────────────────────────── */
+
+.cdp-coa-summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+/* ─── COA Summary Card ───────────────────────────────────────────────────────── */
+
+.cdp-coa-card {
+  background: var(--bg-primary, #111118);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 8px;
+  padding: 0.75rem 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: border-color 0.15s ease;
+}
+
+.cdp-coa-card.selectable {
+  cursor: pointer;
+}
+
+.cdp-coa-card.selectable:hover {
+  border-color: var(--border-medium, #3a3a48);
+}
+
+.cdp-coa-card.selected {
+  border-color: var(--accent-blue, #4a90d9);
+  background: rgba(74, 144, 217, 0.07);
+}
+
+.cdp-coa-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cdp-coa-card-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.cdp-coa-number {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cdp-coa-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.cdp-coa-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.cdp-coa-score {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cdp-coa-rank {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.cdp-coa-prev-decision {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid;
+  text-transform: capitalize;
+}
+
+.cdp-coa-brief {
+  font-size: 0.78rem;
+  color: var(--text-muted, #666678);
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ─── Decision Action Buttons ────────────────────────────────────────────────── */
+
+.cdp-decision-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cdp-decision-btn {
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--border-medium, #3a3a48);
+  border-radius: 7px;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cdp-decision-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-medium, #3a3a48);
+  color: var(--text-primary, #fff);
+}
+
+/* Active states per decision type */
+.cdp-decision-btn--accepted.active {
+  border-color: #22c55e !important;
+}
+
+.cdp-decision-btn--rejected.active {
+  border-color: #ef4444 !important;
+}
+
+.cdp-decision-btn--modified.active {
+  border-color: #eab308 !important;
+}
+
+.cdp-decision-btn--combined.active {
+  border-color: #3b82f6 !important;
+}
+
+.cdp-decision-btn--returned.active {
+  border-color: #9ca3af !important;
+}
+
+/* ─── Decision Form ──────────────────────────────────────────────────────────── */
+
+.cdp-decision-form {
+  background: var(--bg-primary, #111118);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: cdp-form-in 0.15s ease-out;
+}
+
+@keyframes cdp-form-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cdp-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cdp-form-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cdp-required {
+  color: #ef4444;
+}
+
+.cdp-form-select {
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.cdp-form-select:focus {
+  outline: none;
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.12);
+}
+
+.cdp-form-textarea {
+  padding: 0.65rem 0.875rem;
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 0.875rem;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.15s ease;
+}
+
+.cdp-form-textarea:focus {
+  outline: none;
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.12);
+}
+
+.cdp-form-textarea::placeholder {
+  color: var(--text-dim, #444456);
+}
+
+/* ─── Combine Grid ───────────────────────────────────────────────────────────── */
+
+.cdp-combine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.cdp-combine-coa {
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cdp-combine-coa-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #aaa);
+  margin-bottom: 0.2rem;
+}
+
+.cdp-combine-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  user-select: none;
+  padding: 0.15rem 0;
+}
+
+.cdp-combine-check input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--accent-blue, #4a90d9);
+  flex-shrink: 0;
+}
+
+/* ─── Submit Row ─────────────────────────────────────────────────────────────── */
+
+.cdp-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.cdp-btn-cancel {
+  padding: 0.55rem 1.2rem;
+  background: transparent;
+  border: 1px solid var(--border-medium, #3a3a48);
+  border-radius: 6px;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cdp-btn-cancel:hover:not(:disabled) {
+  border-color: var(--text-muted, #666678);
+  color: var(--text-primary, #fff);
+}
+
+.cdp-btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cdp-btn-submit {
+  padding: 0.55rem 1.4rem;
+  border: 1px solid var(--border-medium, #3a3a48);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cdp-btn-submit:not(:disabled):hover {
+  filter: brightness(1.1);
+}
+
+.cdp-btn-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Decision Confirmation ──────────────────────────────────────────────────── */
+
+.cdp-confirmation {
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid;
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: cdp-confirm-in 0.2s ease-out;
+}
+
+@keyframes cdp-confirm-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.cdp-confirmation-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.cdp-confirmation-icon {
+  font-size: 1.4rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.cdp-confirmation-title {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.cdp-confirmation-coa {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #aaa);
+  margin-top: 0.2rem;
+}
+
+/* ─── Hash Display ───────────────────────────────────────────────────────────── */
+
+.cdp-confirmation-hash,
+.cdp-history-hash {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.cdp-hash-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cdp-hash-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.cdp-hash-code,
+.cdp-hash-value {
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--text-primary, #fff);
+  background: var(--bg-primary, #111118);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  letter-spacing: 0.04em;
+  word-break: break-all;
+}
+
+.cdp-copy-hash-btn {
+  padding: 0.2rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 4px;
+  color: var(--text-muted, #666678);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cdp-copy-hash-btn:hover {
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue, #4a90d9);
+}
+
+/* ─── Blockchain Status ──────────────────────────────────────────────────────── */
+
+.cdp-blockchain-pending {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-muted, #666678);
+  padding-top: 0.1rem;
+}
+
+.cdp-pending-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #eab308;
+  flex-shrink: 0;
+  animation: cdp-blink 1.5s ease-in-out infinite;
+}
+
+@keyframes cdp-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.cdp-blockchain-status {
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.cdp-blockchain-status.pending {
+  color: #eab308;
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.cdp-blockchain-status.anchored {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.cdp-confirmation-time {
+  font-size: 0.75rem;
+  color: var(--text-muted, #666678);
+  padding-top: 0.1rem;
+}
+
+/* ─── Decision History Timeline ──────────────────────────────────────────────── */
+
+.cdp-history-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.cdp-history-timeline::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: var(--border-subtle, #2a2a38);
+  border-radius: 1px;
+}
+
+.cdp-history-entry {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem 0;
+  position: relative;
+}
+
+.cdp-history-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid;
+  background: var(--bg-primary, #111118);
+  flex-shrink: 0;
+  margin-top: 3px;
+  position: absolute;
+  left: -1.5rem;
+}
+
+.cdp-history-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cdp-history-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.cdp-history-decision {
+  font-size: 0.875rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cdp-history-coa {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #aaa);
+  flex-shrink: 0;
+}
+
+.cdp-history-time {
+  font-size: 0.75rem;
+  color: var(--text-muted, #666678);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.cdp-history-notes {
+  font-size: 0.82rem;
+  color: var(--text-muted, #666678);
+  line-height: 1.4;
+  font-style: italic;
+  padding: 0.35rem 0.6rem;
+  border-left: 2px solid var(--border-subtle, #2a2a38);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .cdp-coa-summary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cdp-decision-buttons {
+    flex-direction: column;
+  }
+
+  .cdp-combine-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cdp-hash-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
