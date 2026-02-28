@@ -53,6 +53,7 @@ Progress: █████████████████████ 132 pl
 | Phase 14-friendly-adversary-ipb-complete-cycle P05 | 8 | 2 tasks | 3 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P06 | 8 | 2 tasks | 8 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P07 | 8 | 2 tasks | 7 files |
+| Phase 14-friendly-adversary-ipb-complete-cycle P08 | 8 | 2 tasks | 5 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P09 | 8 | 2 tasks | 6 files |
 
 ## Accumulated Context
