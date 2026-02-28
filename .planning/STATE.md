@@ -6,14 +6,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 1.4 complete — Doctrine-aligned navigation with sidebar sub-navigation, URL-driven routing, verified
+**Current focus:** Phase 14 context gathered — Friendly & Adversary IPB Complete Cycle ready for planning
 
 ## Current Position
 
-Phase: 1.4 of 13+ (Navigation Architecture Restructure)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-23 - Completed quick task 4: fix PDF objective extraction for diverse documents
+Phase: 14 of 14 (Friendly & Adversary IPB Complete Cycle)
+Plan: 0 of TBD in current phase
+Status: Context gathered, ready for planning
+Last activity: 2026-02-28 - Phase 14 context gathered via discuss-phase
 
 Progress: █████████████████████ 123 plans complete
 
@@ -286,6 +286,7 @@ Recent decisions affecting current work:
 - Phase 1.2 inserted after Phase 1.1: Passkey Authentication & NEAR Implicit Accounts (URGENT) - Replace Privy.io with passkey/magic link/recovery patterns from StratBrain + NEAR implicit account identity
 - Phase 1.3 inserted after Phase 1.2: NEAR Implicit Account Funding - Activate implicit accounts with minimum NEAR transfer on registration
 - Phase 1.4 inserted after Phase 1.3: Navigation Architecture Restructure - Restructure navigation to doctrine-aligned Decide/Design/Campaign/Monitor + Admin
+- Phase 14 added: Friendly & Adversary IPB Complete Cycle - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations
 
 ### Deferred Issues
 
