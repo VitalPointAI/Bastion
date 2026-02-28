@@ -1,0 +1,808 @@
+/* ============================================================================
+   BASTION Command Center - COA Scoring Panel
+   Decision matrix, editable narrative, and FASDC criteria breakdown
+   Phase 14 Plan 08
+   ============================================================================ */
+
+/* ─── Panel Container ────────────────────────────────────────────────────────── */
+
+.coa-scoring-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* ─── Loading / Empty ────────────────────────────────────────────────────────── */
+
+.coa-loading,
+.coa-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted, #666678);
+  font-size: 0.9rem;
+}
+
+/* ─── Error Banner ───────────────────────────────────────────────────────────── */
+
+.coa-error {
+  padding: 0.65rem 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+}
+
+/* ─── Section ────────────────────────────────────────────────────────────────── */
+
+.coa-section {
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.coa-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.coa-section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ─── Tags ───────────────────────────────────────────────────────────────────── */
+
+.coa-perspective-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid;
+}
+
+.coa-perspective-tag--blue {
+  color: var(--exercise-blue-light, #3388ff);
+  border-color: var(--exercise-blue, #0066cc);
+  background: var(--exercise-blue-dim, rgba(0, 102, 204, 0.15));
+}
+
+.coa-perspective-tag--red {
+  color: var(--exercise-red-light, #ff3333);
+  border-color: var(--exercise-red, #cc0000);
+  background: var(--exercise-red-dim, rgba(204, 0, 0, 0.15));
+}
+
+.coa-phase-tag {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  color: var(--text-muted, #666678);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  background: transparent;
+  font-weight: 500;
+}
+
+/* ─── Create Button ──────────────────────────────────────────────────────────── */
+
+.coa-create-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--border-medium, #3a3a48);
+  border-radius: 6px;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.coa-create-btn:hover {
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue, #4a90d9);
+  background: rgba(74, 144, 217, 0.05);
+}
+
+/* ─── Create Form ────────────────────────────────────────────────────────────── */
+
+.coa-create-form {
+  background: var(--bg-primary, #111118);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.coa-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.coa-form-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.coa-form-field input,
+.coa-form-field textarea {
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.15s ease;
+}
+
+.coa-form-field input:focus,
+.coa-form-field textarea:focus {
+  outline: none;
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.12);
+}
+
+.coa-form-field input::placeholder,
+.coa-form-field textarea::placeholder {
+  color: var(--text-dim, #444456);
+}
+
+.coa-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────────── */
+
+.coa-btn-primary {
+  padding: 0.5rem 1.25rem;
+  background: var(--accent-blue, #4a90d9);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.coa-btn-primary:hover:not(:disabled) {
+  background: #3a7ac9;
+}
+
+.coa-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.coa-btn-secondary {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border-medium, #3a3a48);
+  border-radius: 6px;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.coa-btn-secondary:hover:not(:disabled) {
+  border-color: var(--text-muted, #666678);
+  color: var(--text-primary, #fff);
+}
+
+.coa-btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── COA List ───────────────────────────────────────────────────────────────── */
+
+.coa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.coa-row {
+  background: var(--bg-primary, #111118);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.coa-row:hover,
+.coa-row.expanded {
+  border-color: var(--border-medium, #3a3a48);
+}
+
+.coa-row-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+
+.coa-row-header:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.coa-compare-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: var(--accent-blue, #4a90d9);
+}
+
+.coa-row-name {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.coa-number {
+  font-size: 0.75rem;
+  color: var(--text-muted, #666678);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.coa-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.coa-row-score {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.coa-combined-score {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.coa-combined-label {
+  font-size: 0.75rem;
+  color: var(--text-muted, #666678);
+}
+
+/* ─── Rank Badge ─────────────────────────────────────────────────────────────── */
+
+.coa-rank-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid;
+  border-radius: 4px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Decision Badge ─────────────────────────────────────────────────────────── */
+
+.coa-decision-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid;
+  border-radius: 4px;
+  flex-shrink: 0;
+  text-transform: capitalize;
+}
+
+/* ─── Score Button ───────────────────────────────────────────────────────────── */
+
+.coa-score-btn {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(74, 144, 217, 0.1);
+  border: 1px solid rgba(74, 144, 217, 0.3);
+  border-radius: 5px;
+  color: var(--accent-blue, #4a90d9);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.coa-score-btn:hover:not(:disabled) {
+  background: rgba(74, 144, 217, 0.2);
+  border-color: var(--accent-blue, #4a90d9);
+}
+
+.coa-score-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Pulse animation while scoring */
+@keyframes coa-score-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.coa-score-btn.pulsing {
+  animation: coa-score-pulse 1s ease-in-out infinite;
+  border-color: #eab308;
+  color: #eab308;
+  background: rgba(234, 179, 8, 0.1);
+}
+
+/* ─── Expand Arrow ───────────────────────────────────────────────────────────── */
+
+.coa-expand-arrow {
+  font-size: 1.1rem;
+  color: var(--text-muted, #666678);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  display: inline-block;
+  margin-left: auto;
+}
+
+.coa-expand-arrow.down {
+  transform: rotate(90deg);
+}
+
+.coa-expand-arrow.up {
+  transform: rotate(-90deg);
+}
+
+/* ─── COA Detail Pane ────────────────────────────────────────────────────────── */
+
+.coa-detail-pane {
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ─── Criteria List ──────────────────────────────────────────────────────────── */
+
+.coa-criteria-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.coa-criteria-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.25rem;
+}
+
+.coa-criterion-row {
+  display: grid;
+  grid-template-columns: 150px 140px 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.25rem 0.75rem;
+  align-items: start;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-secondary, #1a1a24);
+  border-radius: 6px;
+}
+
+.coa-criterion-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #aaa);
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+}
+
+.coa-criterion-score-wrap {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.coa-criterion-score {
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 2rem;
+  text-align: right;
+}
+
+.coa-criterion-rationale {
+  grid-column: 3;
+  grid-row: 1;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #aaa);
+  line-height: 1.4;
+}
+
+.coa-criterion-wargame {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font-size: 0.78rem;
+  color: var(--text-muted, #666678);
+  line-height: 1.4;
+  padding-top: 0.2rem;
+}
+
+.coa-wargame-label {
+  font-weight: 600;
+  color: #a78bfa;
+}
+
+/* ─── Score Bar ──────────────────────────────────────────────────────────────── */
+
+.coa-score-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--bg-primary, #111118);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.coa-score-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* ─── Narrative Section ──────────────────────────────────────────────────────── */
+
+.coa-narrative-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.coa-narrative-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.coa-ai-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.12rem 0.5rem;
+  border-radius: 3px;
+  background: rgba(74, 144, 217, 0.12);
+  border: 1px solid rgba(74, 144, 217, 0.3);
+  color: var(--accent-blue, #4a90d9);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.coa-ai-badge.edited {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(234, 179, 8, 0.3);
+  color: #eab308;
+}
+
+.coa-narrative-textarea {
+  width: 100%;
+  padding: 0.7rem 0.875rem;
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 0.875rem;
+  font-family: inherit;
+  line-height: 1.55;
+  resize: vertical;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.coa-narrative-textarea:focus {
+  outline: none;
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.1);
+}
+
+.coa-narrative-textarea::placeholder {
+  color: var(--text-dim, #444456);
+}
+
+.coa-comparison-textarea {
+  min-height: 160px;
+}
+
+.coa-save-narrative-btn {
+  align-self: flex-end;
+  padding: 0.4rem 1rem;
+  background: transparent;
+  border: 1px solid var(--accent-blue, #4a90d9);
+  border-radius: 5px;
+  color: var(--accent-blue, #4a90d9);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.coa-save-narrative-btn:hover:not(:disabled) {
+  background: rgba(74, 144, 217, 0.1);
+}
+
+.coa-save-narrative-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Compare Toolbar ────────────────────────────────────────────────────────── */
+
+.coa-compare-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.coa-compare-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted, #666678);
+}
+
+.coa-btn-compare {
+  padding: 0.5rem 1.2rem;
+  background: rgba(74, 144, 217, 0.12);
+  border: 1px solid rgba(74, 144, 217, 0.4);
+  border-radius: 6px;
+  color: var(--accent-blue, #4a90d9);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.coa-btn-compare:hover:not(:disabled) {
+  background: rgba(74, 144, 217, 0.2);
+  border-color: var(--accent-blue, #4a90d9);
+}
+
+.coa-btn-compare:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Decision Matrix ────────────────────────────────────────────────────────── */
+
+.coa-matrix-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.coa-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  table-layout: auto;
+}
+
+.coa-matrix-table th,
+.coa-matrix-table td {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.coa-matrix-table thead th {
+  background: var(--bg-primary, #111118);
+  color: var(--text-secondary, #aaa);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.coa-matrix-criteria-col {
+  text-align: left !important;
+  width: 180px;
+  min-width: 150px;
+}
+
+.coa-matrix-coa-col {
+  min-width: 130px;
+}
+
+.coa-matrix-coa-name {
+  font-size: 0.75rem;
+  color: var(--text-muted, #666678);
+  font-weight: 600;
+}
+
+.coa-matrix-coa-subname {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #aaa);
+  font-weight: 500;
+}
+
+.coa-matrix-criteria-cell {
+  text-align: left !important;
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--text-secondary, #aaa);
+  background: var(--bg-primary, #111118);
+}
+
+.coa-matrix-cell {
+  position: relative;
+  padding: 0.4rem 0.75rem !important;
+}
+
+.coa-matrix-score {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+/* Combined score row highlight */
+.coa-matrix-combined-row td {
+  background: rgba(74, 144, 217, 0.05) !important;
+  border-top: 2px solid var(--border-medium, #3a3a48) !important;
+}
+
+.coa-matrix-combined-label {
+  font-weight: 700 !important;
+  color: var(--text-primary, #fff) !important;
+}
+
+/* ─── Rankings ───────────────────────────────────────────────────────────────── */
+
+.coa-rankings {
+  margin-top: 0.25rem;
+}
+
+.coa-rankings-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+.coa-rankings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.coa-ranking-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-primary, #111118);
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+
+.coa-ranking-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  flex-shrink: 0;
+}
+
+.coa-ranking-score {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.coa-ranking-rationale {
+  font-size: 0.8rem;
+  color: var(--text-muted, #666678);
+  line-height: 1.35;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ─── Comparison Narrative ───────────────────────────────────────────────────── */
+
+.coa-recommendation {
+  padding: 0.7rem 0.875rem;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text-primary, #fff);
+  margin-top: 0.25rem;
+}
+
+.coa-recommendation-label {
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  font-size: 0.8rem;
+}
+
+.coa-recommendation-coa {
+  font-weight: 700;
+  color: #22c55e;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .coa-criterion-row {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .coa-criterion-label,
+  .coa-criterion-score-wrap,
+  .coa-criterion-rationale {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .coa-row-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .coa-matrix-table {
+    font-size: 0.78rem;
+  }
+}

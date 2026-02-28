@@ -15,6 +15,7 @@ import { useState, useEffect } from 'react';
 import { exerciseService } from '../../services/exercise-service';
 import type { ExerciseScenario } from '../../types/exercise';
 import { ScenarioPackageUpload } from './ScenarioPackageUpload';
+import { COAScoringPanel } from './COAScoringPanel';
 import './ExerciseDashboard.css';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -372,7 +373,13 @@ export function ExerciseDashboard() {
         )}
         {activeTab === 'coas' && (
           selectedScenario
-            ? <PlaceholderTab tab="coas" planRef="14-08" />
+            ? (
+              <COAScoringPanel
+                scenarioId={selectedScenario.id}
+                perspective={perspective}
+                exercisePhase={currentPhaseName}
+              />
+            )
             : <div className="exercise-empty-state"><p>Select or create a scenario to view COAs.</p></div>
         )}
         {activeTab === 'orders' && (
