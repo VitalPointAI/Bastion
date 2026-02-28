@@ -36,7 +36,7 @@ None
 - [ ] **Phase 12: Coalition & Multi-Tenancy** - Implement information sharing rules, classification handling, federation
 - [ ] **Phase 12.1: Coalition Health Monitoring** - Coalition health agent, narrative impact agent, national caveat tracking, coalition gates (INSERTED)
 - [x] **Phase 13: Research Whitepaper** - Comprehensive documentation for master's research requirement (completed 2026-01-24)
-- [ ] **Phase 14: Friendly & Adversary IPB Complete Cycle** - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations
+- [x] **Phase 14: Friendly & Adversary IPB Complete Cycle** - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations (completed 2026-02-28)
 
 ## Phase Details
 
@@ -841,16 +841,16 @@ This phase builds the exercise scenario management capability on top of BASTION'
 5. **Planning Board & Phase Gates** -- Kanban task tracking; exercise controller gate management; explicit phase transitions
 
 Plans:
-- [ ] Plan 14-01: Exercise Data Model & Stores -- Types, Zod schemas, 7 PostgreSQL stores, information barrier, DB migration (wave 1)
-- [ ] Plan 14-02: Scenario Package Parser & Extraction Service -- Directory heuristics, exercise-specific LLM extraction (wave 2)
-- [ ] Plan 14-03: IPB Assembly & COA Scoring Services -- Dual-perspective IPB from documents, doctrinal + wargame combined scoring (wave 2)
-- [ ] Plan 14-04: Order Generator & Planning Board Service -- WARNORD/OPORD/FRAGO generation, task lifecycle, notifications (wave 2)
-- [ ] Plan 14-05: Exercise REST API -- 25+ endpoints with information barrier enforcement (wave 3)
+- [x] Plan 14-01: Exercise Data Model & Stores -- Types, Zod schemas, 7 PostgreSQL stores, information barrier, DB migration (wave 1)
+- [x] Plan 14-02: Scenario Package Parser & Extraction Service -- Directory heuristics, exercise-specific LLM extraction (wave 2)
+- [x] Plan 14-03: IPB Assembly & COA Scoring Services -- Dual-perspective IPB from documents, doctrinal + wargame combined scoring (wave 2)
+- [x] Plan 14-04: Order Generator & Planning Board Service -- WARNORD/OPORD/FRAGO generation, task lifecycle, notifications (wave 2)
+- [x] Plan 14-05: Exercise REST API -- 25+ endpoints with information barrier enforcement (wave 3)
 - [x] Plan 14-06: Frontend Service & Dashboard Shell -- API client, exercise dashboard, scenario package upload UI (wave 4)
-- [ ] Plan 14-07: IPB Panel & ValidityMap Extension -- Dual-perspective IPB view, military overlay layers, milsymbol markers, SITREP delta preview (wave 5)
+- [x] Plan 14-07: IPB Panel & ValidityMap Extension -- Dual-perspective IPB view, military overlay layers, milsymbol markers, SITREP delta preview (wave 5)
 - [x] Plan 14-08: COA Scoring & Commander Decision UI -- Decision matrix, editable narrative, accept/reject/modify/combine workflow (wave 5)
 - [x] Plan 14-09: Order Editor & Planning Board UI -- WARNORD/OPORD/FRAGO authoring, Kanban task board (wave 5)
-- [ ] Plan 14-10: Timeline, Gates & Dashboard Integration -- Phase timeline, gate control, full dashboard wiring (wave 6)
+- [x] Plan 14-10: Timeline, Gates & Dashboard Integration -- Phase timeline, gate control, full dashboard wiring (wave 6)
 
 ## Progress
 
@@ -885,4 +885,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 12. Coalition & Multi-Tenancy | 0/TBD | Not started | - |
 | 12.1 Coalition Health Monitoring | 0/5 | Not started | - |
 | 13. Research Whitepaper | 9/9 | Complete | 2026-01-24 |
-| 14. Friendly & Adversary IPB Complete Cycle | 9/10 | In Progress|  |
+| 14. Friendly & Adversary IPB Complete Cycle | 10/10 | Complete | 2026-02-28 |

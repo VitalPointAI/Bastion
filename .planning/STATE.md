@@ -6,16 +6,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 14 Plan 09 complete — order editor (WARNORD/OPORD/FRAGO authoring) and Kanban planning board
+**Current focus:** Phase 14 Plan 10 complete — exercise timeline, gate control, and fully wired exercise dashboard
 
 ## Current Position
 
 Phase: 14 of 14 (Friendly & Adversary IPB Complete Cycle)
-Plan: 9 of 10 in current phase
-Status: Executing
-Last activity: 2026-02-28 - Phase 14 Plan 09 complete — OrderEditor and PlanningBoard components
+Plan: 10 of 10 in current phase — PHASE COMPLETE
+Status: Complete
+Last activity: 2026-02-28 - Phase 14 Plan 10 complete — ExerciseTimeline, GateControl, fully wired ExerciseDashboard
 
-Progress: █████████████████████ 132 plans complete
+Progress: ██████████████████████ 133 plans complete
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: █████████████████████ 132 pl
 | Phase 14-friendly-adversary-ipb-complete-cycle P07 | 8 | 2 tasks | 7 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P08 | 8 | 2 tasks | 5 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P09 | 8 | 2 tasks | 6 files |
+| Phase 14-friendly-adversary-ipb-complete-cycle P10 | 9 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -945,9 +946,16 @@ None.
 - FRAGO changedParagraphs in edit mode uses JSON textarea since type is Partial<OPORDContent> with arbitrary nested structure
 - BoardSummary.completionPercentage not in type — computed inline as Math.round(summary.complete / summary.total * 100)
 
+**Phase 14 Plan 10 (Exercise Timeline, Gate Control, Wired Dashboard):**
+- Custom flexbox timeline over gantt-task-react — library CSS module conflicts with project build; custom solution gives equivalent visuals using existing CSS variable system
+- COAs tab stacks COAScoringPanel then CommanderDecisionPanel — each fetches its own COAs to avoid prop drilling
+- Watermark opacity at 0.025 — readable information barrier indicator without obscuring content
+- Advance Phase button only enabled when all current-phase gates open — enforces CONTEXT.md explicit-decision gate model
+- Phase 14 complete — all 10 plans executed
+
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed Phase 14 Plan 09 — OrderEditor and PlanningBoard components (orders lifecycle and Kanban task tracking)
+Stopped at: Completed Phase 14 Plan 10 — ExerciseTimeline, GateControl, and fully wired ExerciseDashboard. Phase 14 complete.
 Resume file: None
-Next action: Continue with Phase 14 Plan 10
+Next action: Phase 14 complete — all exercise frontend components built and integrated
