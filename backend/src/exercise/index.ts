@@ -101,6 +101,16 @@ export {
 } from './package-parser.js';
 export { ExerciseExtractionService } from './extraction-service.js';
 
+// ─── IPB Service ──────────────────────────────────────────────────────────────
+
+export type { DeltaSummary } from './ipb-service.js';
+export { IPBService } from './ipb-service.js';
+
+// ─── COA Scoring Service ──────────────────────────────────────────────────────
+
+export type { COAComparisonResult } from './coa-scoring-service.js';
+export { COAScoringService } from './coa-scoring-service.js';
+
 // ─── Order Generator & Planning Board ─────────────────────────────────────────
 
 export type { OrderGeneratorLLMConfig } from './order-generator.js';
