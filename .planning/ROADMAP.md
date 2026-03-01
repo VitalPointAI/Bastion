@@ -877,11 +877,11 @@ This phase restructures the exercise area to model a doctrinal Joint staff organ
 - Later extend to remodel the rest of the application
 
 Plans:
-- [ ] 15-01-PLAN.md — Database migration, backend stores, notification service, strategic import service, and REST routes (wave 1)
-- [ ] 15-02-PLAN.md — Exercise shell restructure: StaffWorkspace sidebar with TabLayout, RoleDashboard, ExerciseDashboard modification (wave 2)
-- [ ] 15-03-PLAN.md — Doctrinal product templates, hybrid editor, and pre-population from Phase 14 data (wave 3)
-- [ ] 15-04-PLAN.md — Cross-staff notification panel with WebSocket real-time delivery (wave 3, parallel with 03)
-- [ ] 15-05-PLAN.md — Diff view integration, strategic direction import UI, AI agent suggestion panel, and end-to-end verification (wave 4)
+- [ ] 15-01-PLAN.md — Database migration (staff_products, staff_notifications, enabled_roles), backend stores, notification service, strategic import service, and REST routes (wave 1)
+- [ ] 15-02-PLAN.md — Exercise shell restructure: StaffWorkspace sidebar with category-grouped roles, RoleDashboard, ExerciseDashboard modification with role selection in Create Scenario (wave 2)
+- [ ] 15-03-PLAN.md — Doctrinal product templates with hybrid editor (structured fields + narrative), pre-population from Phase 14 IPB/COA/order data (wave 3)
+- [ ] 15-04-PLAN.md — Cross-staff notification panel with bell icon, WebSocket real-time delivery, role filtering, and per-role sidebar badges (wave 3, parallel with 03)
+- [ ] 15-05-PLAN.md — Product diff integration view, strategic direction import UI, AI agent suggestion panel with per-block accept/reject (wave 4)
 
 ## Progress
 
