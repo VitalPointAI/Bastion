@@ -37,6 +37,7 @@ None
 - [ ] **Phase 12.1: Coalition Health Monitoring** - Coalition health agent, narrative impact agent, national caveat tracking, coalition gates (INSERTED)
 - [x] **Phase 13: Research Whitepaper** - Comprehensive documentation for master's research requirement (completed 2026-01-24)
 - [x] **Phase 14: Friendly & Adversary IPB Complete Cycle** - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations (completed 2026-02-28)
+- [ ] **Phase 15: JPP Staff Organization Workspaces** - Role-based exercise workspaces (Commander, J1–J35) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and strategic direction import from Design tab
 
 ## Phase Details
 
@@ -853,6 +854,35 @@ Plans:
 - [x] Plan 14-10: Timeline, Gates & Dashboard Integration -- Phase timeline, gate control, full dashboard wiring (wave 6)
 - [ ] Plan 14-11: SITREP Delta Preview Backend (gap closure) -- Add previewIPBFromSITREP method and Express route for EX-15 (wave 7)
 
+### Phase 15: JPP Staff Organization Workspaces
+**Goal**: Reorganize the exercise workspace to mirror the Joint Planning Process staff organization, providing role-based workspaces (Commander, J1, J2, J3, J35, etc.) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and optional strategic direction import
+**Depends on**: Phase 14 (Friendly & Adversary IPB Complete Cycle)
+**Research:** Required
+**Plans**: 5 plans
+**Requirements:** JPP-01 (Per-Role Workspaces), JPP-02 (Templated Doctrinal Products), JPP-03 (Cross-Staff Notifications), JPP-04 (AI Agent Integration), JPP-05 (Strategic Direction Import), JPP-06 (Coherent Merged Products)
+
+**Context:**
+This phase restructures the exercise area to model a doctrinal Joint staff organization. Each staff role (Commander, J1 through J35+) gets a dedicated workspace with templated products aligned to their doctrinal responsibilities. Cross-workspace real-time notification ensures that when one staff member creates knowledge or insight, all other staff members are alerted and can integrate it into their planning. AI agent teams can be attached to each role's work products to automate routine tasks.
+
+**Key Capabilities:**
+1. **Per-Role Workspaces** — Dedicated work areas for Commander, J1 (Personnel), J2 (Intelligence/IPB), J3 (Operations), J35 (Plans), J4 (Logistics), J5 (Strategic Plans), J6 (Communications) with doctrinally-tailored templates
+2. **Templated Doctrinal Products** — Each role has pre-configured work products they are expected to produce (e.g., J2: IPB products, threat assessments; J3: synchronization matrices, COA sketches; Commander: decisions, guidance, COA selection)
+3. **Cross-Staff Real-Time Notifications** — When one workspace produces knowledge/insight, all other staff members receive alerts with an integrate button to incorporate into their planning
+4. **AI Agent Team Integration** — Option to build/attach agent teams to each aspect of each role's work, automating routine doctrinal tasks
+5. **Strategic Direction Import** — Exercise scenarios can optionally include real strategic direction from the Design tab and/or real strategic campaign plans from Bastion's other modules
+6. **Coherent Merged Products** — Real-time merging of staff products into unified planning outputs
+
+**Implementation Scope:**
+- First implement in the Exercise area of Bastion for testing with existing Pacific Strategy scenario
+- Later extend to remodel the rest of the application
+
+Plans:
+- [ ] 15-01-PLAN.md — Database migration, backend stores, notification service, strategic import service, and REST routes (wave 1)
+- [ ] 15-02-PLAN.md — Exercise shell restructure: StaffWorkspace sidebar with TabLayout, RoleDashboard, ExerciseDashboard modification (wave 2)
+- [ ] 15-03-PLAN.md — Doctrinal product templates, hybrid editor, and pre-population from Phase 14 data (wave 3)
+- [ ] 15-04-PLAN.md — Cross-staff notification panel with WebSocket real-time delivery (wave 3, parallel with 03)
+- [ ] 15-05-PLAN.md — Diff view integration, strategic direction import UI, AI agent suggestion panel, and end-to-end verification (wave 4)
+
 ## Progress
 
 **Execution Order:**
@@ -887,3 +917,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 12.1 Coalition Health Monitoring | 0/5 | Not started | - |
 | 13. Research Whitepaper | 9/9 | Complete | 2026-01-24 |
 | 14. Friendly & Adversary IPB Complete Cycle | 11/11 | Complete    | 2026-03-01 |
+| 15. JPP Staff Organization Workspaces | 0/TBD | Not started | - |
