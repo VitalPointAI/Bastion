@@ -27,7 +27,11 @@ import { IPBService } from '../exercise/ipb-service.js';
 import { COAScoringService } from '../exercise/coa-scoring-service.js';
 import { ExerciseOrderGenerator } from '../exercise/order-generator.js';
 import { PlanningBoardService } from '../exercise/planning-board-service.js';
+import { StaffProductStore } from '../exercise/staff-product-store.js';
+import { StaffNotificationService } from '../exercise/staff-notification-service.js';
+import { StrategicImportService } from '../exercise/strategic-import-service.js';
 import { inferTagsFromPath } from '../exercise/package-parser.js';
+import type { AgentTeamConfig } from '../exercise/types.js';
 import { configService } from '../strategic/config/service.js';
 import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
 // ─── Multer Setup ─────────────────────────────────────────────────────────────
@@ -46,6 +50,9 @@ const coaStore = new COAStore();
 const orderStore = new OrderStore();
 const taskStore = new TaskStore();
 const gateStore = new GateStore();
+const staffProductStore = new StaffProductStore();
+const staffNotificationService = new StaffNotificationService();
+const strategicImportService = new StrategicImportService();
 
 /**
  * Build an LLM ProviderConfig from the admin-configured settings.
@@ -126,10 +133,11 @@ exerciseRouter.use(withExerciseBarrier);
  */
 exerciseRouter.post('/scenarios', async (req: Request, res: Response) => {
   try {
-    const { name, designation, exercisePhases } = req.body as {
+    const { name, designation, exercisePhases, enabledRoles } = req.body as {
       name?: string;
       designation?: string;
       exercisePhases?: string[];
+      enabledRoles?: string[];
     };
 
     if (!name) {
@@ -137,12 +145,17 @@ exerciseRouter.post('/scenarios', async (req: Request, res: Response) => {
       return;
     }
 
+    // Default to core_staff preset if enabledRoles not specified
+    const { STAFF_PRESET_TEMPLATES } = await import('../exercise/types.js');
+    const resolvedEnabledRoles = enabledRoles ?? STAFF_PRESET_TEMPLATES['core_staff'];
+
     const scenario = await scenarioStore.create({
       name,
       designation: (designation as 'training/exercise' | 'operational') ?? 'training/exercise',
       exercisePhases: exercisePhases ?? [],
       currentPhaseIndex: 0,
       status: 'draft',
+      enabledRoles: resolvedEnabledRoles,
       createdBy: (req.headers['x-did'] as string) || 'anonymous',
     });
 
@@ -396,9 +409,12 @@ exerciseRouter.put('/documents/:docId', async (req: Request, res: Response) => {
  * Reset extraction state and re-trigger LLM extraction for a single document.
  * Useful for retrying failed extractions or re-extracting after tag changes.
  *
- * Special case: PLANNING_MAP documents with empty textContent are automatically
- * routed to vision extraction (Claude native PDF document block) rather than
- * standard text re-parse, which would produce empty results again.
+ * Flow:
+ * 1. If textContent is empty, attempt re-parse from stored file_data
+ * 2. If re-parse succeeds → standard text extraction
+ * 3. If re-parse still produces no text AND it's a PDF → vision extraction
+ *    (Claude native PDF document block, with truncation for oversized files)
+ * 4. If no file_data stored → error
  */
 exerciseRouter.post('/documents/:docId/retry-extraction', async (req: Request, res: Response) => {
   try {
@@ -416,39 +432,6 @@ exerciseRouter.post('/documents/:docId/retry-extraction', async (req: Request, r
       confidence: 1.0,
     };
 
-    // ── Vision extraction path for PLANNING_MAP with empty text ──────────────
-    // Planning map PDFs contain visual/spatial content (terrain, hex grids, unit
-    // positions) that unpdf cannot extract as text. Route these to Claude vision
-    // instead of re-parsing, which would just produce empty text again.
-    if (doc.documentType === 'PLANNING_MAP' && (!doc.textContent || doc.textContent.trim().length === 0)) {
-      const fileData = await documentStore.getFileData(doc.id);
-      if (!fileData) {
-        res.status(422).json({
-          error: 'No stored file data — delete and re-upload this document to retry extraction',
-        });
-        return;
-      }
-
-      // Reset extraction state before triggering vision extraction
-      await documentStore.updateExtraction(doc.id, {}, 0);
-
-      // Trigger vision extraction in background (non-blocking response)
-      setImmediate(async () => {
-        try {
-          const extractionService = await getExtractionService();
-          await extractionService.extractMapWithVision(doc.id, fileData, tags);
-          console.log(`[exercise] Vision extraction complete for ${doc.id}`);
-        } catch (err) {
-          console.error(`[exercise] Vision extraction failed for ${doc.id}:`, err);
-        }
-      });
-
-      res.json({ message: 'Vision extraction triggered for map document', docId: doc.id });
-      return;
-    }
-
-    // ── Standard text extraction path ────────────────────────────────────────
-
     // Reset extraction state
     await documentStore.updateExtraction(doc.id, {}, 0);
 
@@ -457,28 +440,45 @@ exerciseRouter.post('/documents/:docId/retry-extraction', async (req: Request, r
     // If textContent is empty, try to re-parse from stored file_data
     if (!textContent || textContent.trim().length === 0) {
       const fileData = await documentStore.getFileData(doc.id);
-      if (fileData) {
-        try {
-          const documentParser = new DocumentParser();
-          const parsed = await documentParser.parse(fileData, doc.mimeType);
-          textContent = parsed.text;
-          // Persist the re-parsed text so future retries don't need to re-parse
-          if (textContent && textContent.trim().length > 0) {
-            await documentStore.updateTextContent(doc.id, textContent);
-          }
-          console.log(`[exercise] Re-parsed ${doc.filename}: ${textContent.length} chars`);
-        } catch (parseErr) {
-          console.warn(`[exercise] Re-parse failed for ${doc.filename}:`, parseErr);
-        }
-      } else {
+      if (!fileData) {
         res.status(422).json({
           error: 'No stored file data — delete and re-upload this document to retry extraction',
         });
         return;
       }
+
+      try {
+        const documentParser = new DocumentParser();
+        const parsed = await documentParser.parse(fileData, doc.mimeType);
+        textContent = parsed.text;
+        if (textContent && textContent.trim().length > 0) {
+          await documentStore.updateTextContent(doc.id, textContent);
+          console.log(`[exercise] Re-parsed ${doc.filename}: ${textContent.length} chars`);
+        }
+      } catch (parseErr) {
+        console.warn(`[exercise] Re-parse failed for ${doc.filename}:`, parseErr);
+      }
+
+      // ── Vision fallback for PDFs that produce no text ──────────────────────
+      // Scanned/image-based PDFs return empty text from unpdf. Route these to
+      // Claude vision extraction regardless of document type.
+      if ((!textContent || textContent.trim().length === 0) && doc.mimeType === 'application/pdf') {
+        setImmediate(async () => {
+          try {
+            const extractionService = await getExtractionService();
+            await extractionService.extractWithVision(doc.id, fileData, tags);
+            console.log(`[exercise] Vision extraction complete for ${doc.id}`);
+          } catch (err) {
+            console.error(`[exercise] Vision extraction failed for ${doc.id}:`, err);
+          }
+        });
+
+        res.json({ message: 'Vision extraction triggered (scanned PDF detected)', docId: doc.id });
+        return;
+      }
     }
 
-    // Re-trigger extraction asynchronously
+    // ── Standard text extraction path ────────────────────────────────────────
     setImmediate(() => {
       getExtractionService()
         .then((extractionService) =>
@@ -1237,5 +1237,362 @@ exerciseRouter.get('/scenarios/:id/gates/phase-ready/:phase', async (req: Reques
     res.json({ phase: req.params.phase as string, ready: isReady });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to check phase readiness' });
+  }
+});
+
+// ============ STAFF PRODUCT ROUTES ============
+
+/**
+ * GET /api/exercise/scenarios/:id/staff-products
+ * List staff products. Query param `roleKey` filters to a specific role;
+ * omit to return all products for the scenario.
+ */
+exerciseRouter.get('/scenarios/:id/staff-products', async (req: Request, res: Response) => {
+  try {
+    const roleKey = qstr(req.query.roleKey);
+    const scenarioId = req.params.id as string;
+
+    const products = roleKey
+      ? await staffProductStore.findByRole(scenarioId, roleKey)
+      : await staffProductStore.findByScenario(scenarioId);
+
+    res.json({ products });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to list staff products' });
+  }
+});
+
+/**
+ * GET /api/exercise/scenarios/:id/staff-products/:productId
+ * Get a single staff product by ID.
+ */
+exerciseRouter.get('/scenarios/:id/staff-products/:productId', async (req: Request, res: Response) => {
+  try {
+    const product = await staffProductStore.findById(req.params.productId as string);
+    if (!product || product.scenarioId !== req.params.id) {
+      res.status(404).json({ error: 'Staff product not found' });
+      return;
+    }
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to get staff product' });
+  }
+});
+
+/**
+ * POST /api/exercise/scenarios/:id/staff-products
+ * Create a new staff product (starts as draft).
+ * Body: { roleKey, productType, title, structured?, content? }
+ */
+exerciseRouter.post('/scenarios/:id/staff-products', async (req: Request, res: Response) => {
+  try {
+    const { roleKey, productType, title, structured, content } = req.body as {
+      roleKey?: string;
+      productType?: string;
+      title?: string;
+      structured?: Record<string, unknown>;
+      content?: string;
+    };
+
+    if (!roleKey || !productType || !title) {
+      res.status(400).json({ error: 'roleKey, productType, and title are required' });
+      return;
+    }
+
+    const product = await staffProductStore.create({
+      scenarioId: req.params.id as string,
+      roleKey,
+      productType,
+      title,
+      structured,
+      content,
+      createdBy: (req.headers['x-did'] as string) || 'anonymous',
+    });
+
+    res.status(201).json(product);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to create staff product' });
+  }
+});
+
+/**
+ * PUT /api/exercise/scenarios/:id/staff-products/:productId
+ * Update a draft staff product's content.
+ * Body: { title?, structured?, content? }
+ */
+exerciseRouter.put('/scenarios/:id/staff-products/:productId', async (req: Request, res: Response) => {
+  try {
+    const { title, structured, content } = req.body as {
+      title?: string;
+      structured?: Record<string, unknown>;
+      content?: string;
+    };
+
+    const updated = await staffProductStore.update(req.params.productId as string, { title, structured, content });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to update staff product' });
+  }
+});
+
+/**
+ * POST /api/exercise/scenarios/:id/staff-products/:productId/publish
+ * Publish a product and trigger the notification pipeline.
+ * Requires enabled_roles from the scenario to fan out notifications.
+ */
+exerciseRouter.post('/scenarios/:id/staff-products/:productId/publish', async (req: Request, res: Response) => {
+  try {
+    const scenarioId = req.params.id as string;
+    const productId = req.params.productId as string;
+    const publishedBy = (req.headers['x-did'] as string) || 'anonymous';
+
+    // Fetch scenario to get enabledRoles for notification fan-out
+    const scenario = await scenarioStore.findById(scenarioId);
+    if (!scenario) {
+      res.status(404).json({ error: 'Scenario not found' });
+      return;
+    }
+
+    await staffNotificationService.publishProduct(productId, publishedBy, scenario.enabledRoles);
+
+    // Return the updated product
+    const product = await staffProductStore.findById(productId);
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to publish staff product' });
+  }
+});
+
+/**
+ * DELETE /api/exercise/scenarios/:id/staff-products/:productId
+ * Delete a staff product (cascades notifications).
+ */
+exerciseRouter.delete('/scenarios/:id/staff-products/:productId', async (req: Request, res: Response) => {
+  try {
+    await staffProductStore.delete(req.params.productId as string);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to delete staff product' });
+  }
+});
+
+// ============ STAFF NOTIFICATION ROUTES ============
+
+/**
+ * GET /api/exercise/scenarios/:id/staff-notifications
+ * Get notifications. Query params:
+ * - roleKey: filter to a specific target role
+ * - unreadOnly: 'true' to return only unread notifications
+ */
+exerciseRouter.get('/scenarios/:id/staff-notifications', async (req: Request, res: Response) => {
+  try {
+    const scenarioId = req.params.id as string;
+    const roleKey = qstr(req.query.roleKey);
+    const unreadOnly = req.query.unreadOnly === 'true';
+
+    let notifications;
+    if (roleKey) {
+      notifications = await staffNotificationService.getNotifications(scenarioId, roleKey);
+    } else {
+      notifications = await staffNotificationService.getAllNotifications(scenarioId);
+    }
+
+    if (unreadOnly) {
+      notifications = notifications.filter((n) => !n.isRead);
+    }
+
+    res.json({ notifications });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to list notifications' });
+  }
+});
+
+/**
+ * GET /api/exercise/scenarios/:id/staff-notifications/count
+ * Get unread notification count. Query param `roleKey` is required.
+ */
+exerciseRouter.get('/scenarios/:id/staff-notifications/count', async (req: Request, res: Response) => {
+  try {
+    const roleKey = qstr(req.query.roleKey);
+    if (!roleKey) {
+      res.status(400).json({ error: 'roleKey is required' });
+      return;
+    }
+
+    const count = await staffNotificationService.getUnreadCount(req.params.id as string, roleKey);
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to get notification count' });
+  }
+});
+
+/**
+ * PUT /api/exercise/scenarios/:id/staff-notifications/:notificationId/read
+ * Mark a notification as read.
+ */
+exerciseRouter.put('/scenarios/:id/staff-notifications/:notificationId/read', async (req: Request, res: Response) => {
+  try {
+    await staffNotificationService.markRead(req.params.notificationId as string);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to mark notification as read' });
+  }
+});
+
+/**
+ * PUT /api/exercise/scenarios/:id/staff-notifications/:notificationId/integrate
+ * Mark a notification as integrated (acknowledged by the receiving role).
+ */
+exerciseRouter.put('/scenarios/:id/staff-notifications/:notificationId/integrate', async (req: Request, res: Response) => {
+  try {
+    await staffNotificationService.markIntegrated(req.params.notificationId as string);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to mark notification as integrated' });
+  }
+});
+
+// ============ STRATEGIC IMPORT ROUTE ============
+
+/**
+ * POST /api/exercise/scenarios/:id/import-strategic-direction
+ * Import strategic objectives and commander's intent from the Design tab
+ * into the Commander workspace as a strategic_guidance product.
+ */
+exerciseRouter.post('/scenarios/:id/import-strategic-direction', async (req: Request, res: Response) => {
+  try {
+    const importedBy = (req.headers['x-did'] as string) || 'anonymous';
+    const product = await strategicImportService.importToCommanderWorkspace(
+      req.params.id as string,
+      importedBy
+    );
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to import strategic direction' });
+  }
+});
+
+// ============ ENABLED ROLES ROUTES ============
+
+/**
+ * PUT /api/exercise/scenarios/:id/enabled-roles
+ * Update the enabled staff roles for a scenario.
+ * Body: { enabledRoles: string[] }
+ */
+exerciseRouter.put('/scenarios/:id/enabled-roles', async (req: Request, res: Response) => {
+  try {
+    const { enabledRoles } = req.body as { enabledRoles?: string[] };
+
+    if (!enabledRoles || !Array.isArray(enabledRoles)) {
+      res.status(400).json({ error: 'enabledRoles array is required' });
+      return;
+    }
+
+    const updated = await scenarioStore.update(req.params.id as string, { enabledRoles });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to update enabled roles' });
+  }
+});
+
+// ============ AGENT TEAM CONFIG ROUTES ============
+
+/**
+ * GET /api/exercise/scenarios/:id/agent-team-config
+ * Get agent team configs for a scenario. Query param `roleKey` filters to one role.
+ */
+exerciseRouter.get('/scenarios/:id/agent-team-config', async (req: Request, res: Response) => {
+  try {
+    const pool = getPool();
+    const scenarioId = req.params.id as string;
+    const roleKey = qstr(req.query.roleKey);
+
+    const query = roleKey
+      ? 'SELECT * FROM agent_team_config WHERE scenario_id = $1 AND role_key = $2 ORDER BY role_key, product_type'
+      : 'SELECT * FROM agent_team_config WHERE scenario_id = $1 ORDER BY role_key, product_type';
+
+    const params = roleKey ? [scenarioId, roleKey] : [scenarioId];
+    const result = await pool.query(query, params);
+
+    const configs: AgentTeamConfig[] = result.rows.map((row: Record<string, unknown>) => ({
+      id: row.id as string,
+      scenarioId: row.scenario_id as string,
+      roleKey: row.role_key as string,
+      productType: (row.product_type as string | null) ?? null,
+      agentTeamId: row.agent_team_id as string,
+      createdAt: new Date(row.created_at as string),
+      updatedAt: new Date(row.updated_at as string),
+    }));
+
+    res.json({ configs });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to get agent team config' });
+  }
+});
+
+/**
+ * PUT /api/exercise/scenarios/:id/agent-team-config
+ * Upsert an agent team config for a role (optionally scoped to a product type).
+ * Body: { roleKey, productType?: string, agentTeamId }
+ */
+exerciseRouter.put('/scenarios/:id/agent-team-config', async (req: Request, res: Response) => {
+  try {
+    const pool = getPool();
+    const scenarioId = req.params.id as string;
+    const { roleKey, productType, agentTeamId } = req.body as {
+      roleKey?: string;
+      productType?: string;
+      agentTeamId?: string;
+    };
+
+    if (!roleKey || !agentTeamId) {
+      res.status(400).json({ error: 'roleKey and agentTeamId are required' });
+      return;
+    }
+
+    const { randomUUID } = await import('crypto');
+    const id = randomUUID();
+
+    const result = await pool.query(
+      `INSERT INTO agent_team_config
+         (id, scenario_id, role_key, product_type, agent_team_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+       ON CONFLICT (scenario_id, role_key, product_type)
+       DO UPDATE SET agent_team_id = EXCLUDED.agent_team_id, updated_at = NOW()
+       RETURNING *`,
+      [id, scenarioId, roleKey, productType ?? null, agentTeamId]
+    );
+
+    const row = result.rows[0] as Record<string, unknown>;
+    const config: AgentTeamConfig = {
+      id: row.id as string,
+      scenarioId: row.scenario_id as string,
+      roleKey: row.role_key as string,
+      productType: (row.product_type as string | null) ?? null,
+      agentTeamId: row.agent_team_id as string,
+      createdAt: new Date(row.created_at as string),
+      updatedAt: new Date(row.updated_at as string),
+    };
+
+    res.json(config);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to upsert agent team config' });
+  }
+});
+
+/**
+ * DELETE /api/exercise/scenarios/:id/agent-team-config/:configId
+ * Remove an agent team config entry (reverts to role default).
+ */
+exerciseRouter.delete('/scenarios/:id/agent-team-config/:configId', async (req: Request, res: Response) => {
+  try {
+    const pool = getPool();
+    await pool.query(
+      'DELETE FROM agent_team_config WHERE id = $1 AND scenario_id = $2',
+      [req.params.configId as string, req.params.id as string]
+    );
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to delete agent team config' });
   }
 });
