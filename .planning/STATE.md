@@ -6,23 +6,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 14 Plan 10 complete — exercise timeline, gate control, and fully wired exercise dashboard
+**Current focus:** Phase 14 Plan 11 complete — SITREP delta preview endpoint closes EX-15 gap
 
 ## Current Position
 
 Phase: 14 of 14 (Friendly & Adversary IPB Complete Cycle)
-Plan: 10 of 10 in current phase — PHASE COMPLETE
+Plan: 11 of 11 in current phase — PHASE COMPLETE
 Status: Complete
-Last activity: 2026-02-28 - Phase 14 Plan 10 complete — ExerciseTimeline, GateControl, fully wired ExerciseDashboard
+Last activity: 2026-03-01 - Phase 14 Plan 11 complete — SITREP delta preview backend (POST /ipb/:assessmentId/sitrep-preview)
 
-Progress: ██████████████████████ 133 plans complete
+Progress: ██████████████████████ 134 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 129
+- Total plans completed: 134
 - Average duration: 10 min
-- Total execution time: 19.52 hours
+- Total execution time: 19.55 hours
 
 **By Phase:**
 
@@ -56,6 +56,7 @@ Progress: ██████████████████████ 133
 | Phase 14-friendly-adversary-ipb-complete-cycle P08 | 8 | 2 tasks | 5 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P09 | 8 | 2 tasks | 6 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P10 | 9 | 2 tasks | 7 files |
+| Phase 14-friendly-adversary-ipb-complete-cycle P11 | 2 | 1 task | 2 files |
 
 ## Accumulated Context
 
@@ -285,6 +286,7 @@ Recent decisions affecting current work:
 - [Phase 14-friendly-adversary-ipb-complete-cycle]: COA FASDC equal-weight scoring (20% each of 5 criteria) with commander decisions blockchain-anchored via SHA-256 hash and outbox INSERT following existing aggregate_type pattern
 - [Phase 14-friendly-adversary-ipb-complete-cycle P07]: SITREP update never auto-commits — staff always reviews delta preview (changedFields + affectedCOAs) and confirms before IPB version is created (locked decision from CONTEXT.md)
 - [Phase 14-friendly-adversary-ipb-complete-cycle P07]: ValidityMap auto-fit-bounds disabled when ipbLayers present to preserve theater view (Western Pacific: lat=20, lng=125, zoom=4)
+- [Phase 14-friendly-adversary-ipb-complete-cycle P11]: previewIPBFromSITREP reuses same LLM delta extraction logic as updateIPBFromSITREP with synthetic IPBAssessment for comparison — stops before createNewVersion(), closing EX-15 gap
 
 ### Roadmap Evolution
 
@@ -951,11 +953,11 @@ None.
 - COAs tab stacks COAScoringPanel then CommanderDecisionPanel — each fetches its own COAs to avoid prop drilling
 - Watermark opacity at 0.025 — readable information barrier indicator without obscuring content
 - Advance Phase button only enabled when all current-phase gates open — enforces CONTEXT.md explicit-decision gate model
-- Phase 14 complete — all 10 plans executed
+- Phase 14 complete — all 11 plans executed (Plan 11 added as gap closure for EX-15)
 
 ## Session Continuity
 
-Last session: 2026-02-28
-Stopped at: Completed Phase 14 Plan 10 — ExerciseTimeline, GateControl, and fully wired ExerciseDashboard. Phase 14 complete.
+Last session: 2026-03-01
+Stopped at: Completed Phase 14 Plan 11 — SITREP delta preview endpoint (POST /ipb/:assessmentId/sitrep-preview) closing EX-15 gap
 Resume file: None
-Next action: Phase 14 complete — all exercise frontend components built and integrated
+Next action: Phase 14 complete — all exercise components built, SITREP two-step review flow fully implemented end-to-end
