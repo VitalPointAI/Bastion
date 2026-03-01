@@ -13,7 +13,7 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 Phase: 14 of 14 (Friendly & Adversary IPB Complete Cycle)
 Plan: 11 of 11 in current phase — PHASE COMPLETE
 Status: Complete
-Last activity: 2026-03-01 - Phase 14 Plan 11 complete — SITREP delta preview backend (POST /ipb/:assessmentId/sitrep-preview)
+Last activity: 2026-03-01 - Completed quick task 5: map PDFs to IPB graph via vision extraction
 
 Progress: ██████████████████████ 134 plans complete
 
@@ -335,6 +335,7 @@ None.
 | 2 | map legend clipping fix | 2026-02-23 | 8e90da0 | [2-map-legend-on-monitor-and-elsewhere-is-c](./quick/2-map-legend-on-monitor-and-elsewhere-is-c/) |
 | 3 | fix agent assignment 404 on strategic do | 2026-02-23 | 4a1ad87 | [3-fix-agent-assignment-404-on-strategic-do](./quick/3-fix-agent-assignment-404-on-strategic-do/) |
 | 4 | fix PDF objective extraction for diverse documents | 2026-02-23 | f9f98da | [4-fix-pdf-objective-extraction-agent-not-f](./quick/4-fix-pdf-objective-extraction-agent-not-f/) |
+| 5 | map PDFs to IPB graph via vision extraction | 2026-03-01 | 7981a5e | [5-map-pdfs-to-ipb-graph-plan-as-documented](./quick/5-map-pdfs-to-ipb-graph-plan-as-documented/) |
 
 **Phase 4 Plan 6-FIX (Strategic API Table Init Fix):**
 - Unified lazy init: all strategic API tables initialized from single ensureTableExists()
