@@ -57,6 +57,7 @@ Progress: ██████████████████████ 134
 | Phase 14-friendly-adversary-ipb-complete-cycle P09 | 8 | 2 tasks | 6 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P10 | 9 | 2 tasks | 7 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P11 | 2 | 1 task | 2 files |
+| Phase quick-5 P1 | 6 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -287,6 +288,7 @@ Recent decisions affecting current work:
 - [Phase 14-friendly-adversary-ipb-complete-cycle P07]: SITREP update never auto-commits — staff always reviews delta preview (changedFields + affectedCOAs) and confirms before IPB version is created (locked decision from CONTEXT.md)
 - [Phase 14-friendly-adversary-ipb-complete-cycle P07]: ValidityMap auto-fit-bounds disabled when ipbLayers present to preserve theater view (Western Pacific: lat=20, lng=125, zoom=4)
 - [Phase 14-friendly-adversary-ipb-complete-cycle P11]: previewIPBFromSITREP reuses same LLM delta extraction logic as updateIPBFromSITREP with synthetic IPBAssessment for comparison — stops before createNewVersion(), closing EX-15 gap
+- [Phase quick-5]: Use Anthropic native PDF document blocks instead of image rendering for map vision extraction — avoids canvas dependencies
 
 ### Roadmap Evolution
 
