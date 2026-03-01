@@ -648,6 +648,213 @@
   color: var(--text-dim, #444456);
 }
 
+/* ─── Manage Roles Button ─────────────────────────────────────────────────────── */
+
+.manage-roles-button {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 6px;
+  color: #a78bfa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.manage-roles-button:hover {
+  border-color: rgba(167, 139, 250, 0.6);
+  background: rgba(124, 58, 237, 0.08);
+}
+
+/* ─── View Mode Toggle ────────────────────────────────────────────────────────── */
+
+.view-mode-toggle {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.view-mode-btn {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--text-muted, #666678);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.view-mode-btn:first-child {
+  border-right: 1px solid var(--border-subtle, #2a2a38);
+}
+
+.view-mode-btn:hover:not(.active) {
+  color: var(--text-secondary, #aaa);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.view-mode-btn.active {
+  background: var(--bg-primary, #111118);
+  color: var(--text-primary, #fff);
+}
+
+/* ─── Modal — Wide + Tall variant for role selection ─────────────────────────── */
+
+.exercise-modal--tall {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.exercise-modal-subtitle {
+  margin: -0.25rem 0 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted, #666678);
+  line-height: 1.4;
+}
+
+/* ─── Role Selector ───────────────────────────────────────────────────────────── */
+
+.role-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Preset buttons */
+.role-selector-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.role-preset-btn {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 5px;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.role-preset-btn:hover {
+  border-color: var(--border-medium, #3a3a48);
+  color: var(--text-primary, #fff);
+}
+
+.role-preset-btn.active {
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue, #4a90d9);
+  background: rgba(74, 144, 217, 0.08);
+}
+
+/* Selected count label */
+.role-selector-count {
+  font-size: 0.78rem;
+  color: var(--text-muted, #666678);
+}
+
+/* Category container */
+.role-selector-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  padding: 0.5rem;
+  background: var(--bg-primary, #111118);
+}
+
+.role-selector-category {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* Category header (checkbox + label) */
+.role-selector-category-header {
+  display: flex;
+  align-items: center;
+}
+
+.role-selector-category-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted, #666678);
+  cursor: pointer;
+  user-select: none;
+}
+
+.role-selector-category-label input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+
+/* Grid of role checkboxes */
+.role-selector-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.15rem 0.5rem;
+  padding-left: 1rem;
+}
+
+.role-selector-role {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  border-radius: 4px;
+  transition: background 0.1s ease;
+  user-select: none;
+}
+
+.role-selector-role:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.role-selector-role input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.role-selector-role--required {
+  color: var(--accent-blue, #4a90d9);
+}
+
+.role-selector-role--required input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.role-selector-role-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
@@ -662,5 +869,9 @@
 
   .exercise-content {
     padding: 1rem;
+  }
+
+  .view-mode-toggle {
+    display: none; /* On mobile, only staff view */
   }
 }
