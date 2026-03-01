@@ -19,12 +19,15 @@ import type {
   LLMProvider,
   LLMCompletionRequest,
   LLMToolDefinition,
+  LLMContentBlock,
   ProviderConfig,
 } from '../strategic/extraction/providers/types.js';
+import { preparePdfForVision } from '../strategic/ingestion/pdf-renderer.js';
 import type { ScenarioDocument } from './types.js';
 import type { ExtractedExerciseData } from './types.js';
 import type { PackageTags } from './package-parser.js';
 import { ScenarioDocumentStore } from './document-store.js';
+import { mapFeaturesToIPBLayers } from './map-to-ipb-layers.js';
 
 // ─── System Prompt Template ───────────────────────────────────────────────────
 
@@ -342,6 +345,145 @@ export class ExerciseExtractionService {
     }
 
     console.log(`[exercise-extraction] Batch complete for scenario ${scenarioId}`);
+  }
+
+  // ─── Vision Extraction (Planning Maps) ──────────────────────────────────────
+
+  /**
+   * Extract structured military map data from a planning map PDF using Claude vision.
+   *
+   * Quick Task 5: Planning map PDFs contain visual/spatial content (terrain features,
+   * hex grids, unit positions) that `unpdf` cannot extract as text. This method sends
+   * the raw PDF buffer directly to Claude as a native base64 document block and uses
+   * the exercise extraction tool to produce structured IPBLayer-compatible output.
+   *
+   * After extraction:
+   * - The LLM-generated summary is persisted as textContent for future standard extraction
+   * - Generated IPBLayer[] are stored in rawExtraction.ipbLayers for downstream use
+   *
+   * @param docId     - Scenario document ID for persistence
+   * @param pdfBuffer - Raw PDF file buffer (from documentStore.getFileData)
+   * @param tags      - PackageTags (team, exercisePhase, documentType, confidence)
+   * @returns ExtractedExerciseData with forceDispositions, rawExtraction, etc.
+   */
+  async extractMapWithVision(
+    docId: string,
+    pdfBuffer: Buffer,
+    tags: PackageTags
+  ): Promise<ExtractedExerciseData> {
+    const { base64, mediaType, sizeBytes, oversized } = preparePdfForVision(pdfBuffer);
+
+    if (oversized) {
+      console.warn(
+        `[exercise-extraction] PDF for doc ${docId} (${(sizeBytes / 1024 / 1024).toFixed(1)} MB) ` +
+          'may be rejected by Anthropic API due to size limits.'
+      );
+    }
+
+    const systemPrompt =
+      'You are a military map analyst. Extract structured geographic and military data from this planning map.\n\n' +
+      'Identify:\n' +
+      '- Named regions and hex grid identifiers\n' +
+      '- Key terrain features (mountains, rivers, urban areas, chokepoints)\n' +
+      '- Unit positions and symbols (identify SIDC codes if possible)\n' +
+      '- Boundaries (operational areas, phase lines, boundaries between units)\n' +
+      '- Avenues of approach and engagement areas\n' +
+      '- Named Areas of Interest (NAIs)\n\n' +
+      'For each feature, estimate geographic coordinates or provide hex grid references.\n\n' +
+      `Team context: ${tags.team} | Exercise phase: ${tags.exercisePhase}\n\n` +
+      'You MUST use the extract_exercise_data tool to provide your structured response.';
+
+    const content: LLMContentBlock[] = [
+      {
+        type: 'document',
+        source: { type: 'base64', media_type: mediaType, data: base64 },
+      },
+      {
+        type: 'text',
+        text: 'Extract structured military map data from this planning map PDF. Focus on terrain features, unit positions, avenues of approach, NAIs, and engagement areas.',
+      },
+    ];
+
+    const request: LLMCompletionRequest = {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content },
+      ],
+      tools: [EXERCISE_EXTRACTION_TOOL],
+      tool_choice: { type: 'tool', name: 'extract_exercise_data' },
+      max_tokens: 8192,
+    };
+
+    console.log(`[exercise-extraction] Starting vision extraction for doc ${docId}`);
+
+    let extractionInput: Record<string, unknown> | null = null;
+
+    try {
+      const response = await this.provider.complete(request);
+
+      if (response.tool_use) {
+        extractionInput = response.tool_use.input;
+      } else if (response.content) {
+        console.log(`[exercise-extraction] Vision: no tool_use, attempting JSON fallback for ${docId}`);
+        extractionInput = this.parseJsonFromText(response.content);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      console.error(`[exercise-extraction] Vision extraction LLM call failed for ${docId}: ${message}`);
+      throw err;
+    }
+
+    if (!extractionInput) {
+      console.warn(`[exercise-extraction] Vision extraction produced no structured data for ${docId}`);
+      const emptyResult: ExtractedExerciseData = {
+        summary: 'Vision extraction produced no structured data from this map.',
+        rawExtraction: { visionExtracted: true },
+      };
+      await this.documentStore.updateExtraction(
+        docId,
+        JSON.parse(JSON.stringify(emptyResult)) as Record<string, unknown>,
+        0.1
+      );
+      return emptyResult;
+    }
+
+    // Build the result object from extraction input
+    const result: ExtractedExerciseData = {
+      summary: (extractionInput.summary as string) || 'Vision-extracted planning map data.',
+      forceDispositions: extractionInput.forceDispositions as ExtractedExerciseData['forceDispositions'],
+      objectives: extractionInput.objectives as ExtractedExerciseData['objectives'],
+      timeline: extractionInput.timeline as ExtractedExerciseData['timeline'],
+      keyEvents: extractionInput.keyEvents as ExtractedExerciseData['keyEvents'],
+      accessBasingOverflight: extractionInput.accessBasingOverflight as ExtractedExerciseData['accessBasingOverflight'],
+      tasks: extractionInput.tasks as ExtractedExerciseData['tasks'],
+      changedItems: extractionInput.changedItems as ExtractedExerciseData['changedItems'],
+      rawExtraction: { ...extractionInput, visionExtracted: true },
+    };
+
+    // Generate IPBLayer[] from extracted data
+    const team = (tags.team === 'blue' || tags.team === 'red') ? tags.team : 'blue';
+    const ipbLayers = mapFeaturesToIPBLayers(result, team);
+    result.rawExtraction.ipbLayers = ipbLayers;
+
+    console.log(
+      `[exercise-extraction] Vision extraction complete for ${docId}: ` +
+        `${ipbLayers.length} IPB layers generated`
+    );
+
+    // Persist extraction data
+    const confidence = Math.min(tags.confidence, 0.8); // Cap vision confidence at 0.8
+    await this.documentStore.updateExtraction(
+      docId,
+      JSON.parse(JSON.stringify(result)) as Record<string, unknown>,
+      confidence
+    );
+
+    // Persist vision-generated summary as textContent so future retries use standard extraction
+    if (result.summary && result.summary.length > 0) {
+      await this.documentStore.updateTextContent(docId, result.summary);
+    }
+
+    return result;
   }
 
   // ─── Private Helpers ────────────────────────────────────────────────────────
