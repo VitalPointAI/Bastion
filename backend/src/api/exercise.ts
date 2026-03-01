@@ -28,11 +28,13 @@ import { COAScoringService } from '../exercise/coa-scoring-service.js';
 import { ExerciseOrderGenerator } from '../exercise/order-generator.js';
 import { PlanningBoardService } from '../exercise/planning-board-service.js';
 import { inferTagsFromPath } from '../exercise/package-parser.js';
+import { configService } from '../strategic/config/service.js';
+import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
 // ─── Multer Setup ─────────────────────────────────────────────────────────────
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB per file
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200 MB per file
 });
 
 // ─── Store / Service Singletons ───────────────────────────────────────────────
@@ -46,45 +48,40 @@ const taskStore = new TaskStore();
 const gateStore = new GateStore();
 
 /**
- * Build an LLM ProviderConfig for exercise services.
- * Uses OPENAI_API_KEY / OPENAI_MODEL env vars when set, otherwise falls back
- * to the Anthropic provider (which picks up ANTHROPIC_API_KEY).
+ * Build an LLM ProviderConfig from the admin-configured settings.
+ * Reads from the same config store that the Admin Dashboard LLM panel writes to.
  */
-function getLLMConfig(): import('../strategic/extraction/providers/types.js').ProviderConfig {
-  if (process.env.OPENAI_API_KEY) {
-    return {
-      type: 'openai',
-      apiKey: process.env.OPENAI_API_KEY,
-      model: process.env.OPENAI_MODEL ?? 'gpt-4o',
-      baseUrl: process.env.OPENAI_BASE_URL,
-    };
-  }
+async function getLLMConfig(): Promise<ProviderConfig> {
+  const llmConfig = await configService.getLLMConfig();
+  const providerType = llmConfig.provider === 'local' ? 'ollama' : llmConfig.provider;
   return {
-    type: 'anthropic',
-    apiKey: process.env.ANTHROPIC_API_KEY ?? '',
-    model: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-20250514',
+    type: providerType as ProviderConfig['type'],
+    model: llmConfig.models.extraction,
+    apiKey: llmConfig.apiKey || undefined,
+    baseUrl: llmConfig.baseUrl,
   };
 }
 
-function getExtractionService(): ExerciseExtractionService {
-  return new ExerciseExtractionService(documentStore);
+async function getExtractionService(): Promise<ExerciseExtractionService> {
+  const providerConfig = await getLLMConfig();
+  return new ExerciseExtractionService(documentStore, providerConfig);
 }
 
-function getIPBService(): IPBService {
+async function getIPBService(): Promise<IPBService> {
   const pool = getPool();
-  const llmConfig = getLLMConfig();
+  const llmConfig = await getLLMConfig();
   return new IPBService(pool, ipbStore, documentStore, llmConfig);
 }
 
-function getCOAScoringService(): COAScoringService {
+async function getCOAScoringService(): Promise<COAScoringService> {
   const pool = getPool();
-  const llmConfig = getLLMConfig();
+  const llmConfig = await getLLMConfig();
   return new COAScoringService(pool, coaStore, llmConfig);
 }
 
-function getOrderGenerator(): ExerciseOrderGenerator {
+async function getOrderGenerator(): Promise<ExerciseOrderGenerator> {
   const pool = getPool();
-  const llmConfig = getLLMConfig();
+  const llmConfig = await getLLMConfig();
   return new ExerciseOrderGenerator(
     pool,
     orderStore,
@@ -245,12 +242,22 @@ exerciseRouter.post(
       }
 
       const documentParser = new DocumentParser();
-      const extractionService = getExtractionService();
       const createdDocs: import('../exercise/types.js').ScenarioDocument[] = [];
 
-      for (const file of files) {
-        // Infer tags from the original filename / relative path
-        const tags = inferTagsFromPath(file.originalname);
+      // Parse client-provided tags (from the pre-upload preview table)
+      let clientTags: Array<{ team: string; exercisePhase: string; documentType: string }> | null = null;
+      if (req.body?.tags) {
+        try {
+          clientTags = JSON.parse(req.body.tags as string);
+        } catch { /* fall back to server-side inference */ }
+      }
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        // Use client-provided tags if available, otherwise infer from filename
+        const tags = clientTags?.[i]
+          ? { team: clientTags[i].team as 'blue' | 'red' | 'controller', exercisePhase: clientTags[i].exercisePhase, documentType: clientTags[i].documentType as import('../exercise/types.js').ScenarioDocument['documentType'], confidence: 1.0 }
+          : inferTagsFromPath(file.originalname);
 
         // Parse file content to text
         let textContent = '';
@@ -262,7 +269,7 @@ exerciseRouter.post(
           textContent = '';
         }
 
-        // Create the document record
+        // Create the document record (store original file buffer for re-parse on retry)
         const doc = await documentStore.create({
           scenarioId,
           team: tags.team,
@@ -273,15 +280,19 @@ exerciseRouter.post(
           textContent,
           extractedData: {},
           extractionConfidence: 0,
-        });
+        }, file.buffer);
 
         createdDocs.push(doc);
 
         // Queue extraction asynchronously — do not block the response
         setImmediate(() => {
-          extractionService.extractDocument(doc.id, textContent, tags, file.mimetype).catch((err) => {
-            console.error(`[exercise-upload] Extraction failed for ${doc.id}:`, err);
-          });
+          getExtractionService()
+            .then((extractionService) =>
+              extractionService.extractDocument(doc.id, textContent, tags, file.mimetype)
+            )
+            .catch((err) => {
+              console.error(`[exercise-upload] Extraction failed for ${doc.id}:`, err);
+            });
         });
       }
 
@@ -351,6 +362,152 @@ exerciseRouter.get('/documents/:docId', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * PUT /api/exercise/documents/:docId
+ * Update document tags (team, exercisePhase, documentType).
+ */
+exerciseRouter.put('/documents/:docId', async (req: Request, res: Response) => {
+  try {
+    const { team, exercisePhase, documentType } = req.body as {
+      team?: string;
+      exercisePhase?: string;
+      documentType?: string;
+    };
+
+    const updated = await documentStore.updateTags(req.params.docId as string, {
+      team,
+      exercisePhase,
+      documentType,
+    });
+
+    if (!updated) {
+      res.status(404).json({ error: 'Document not found' });
+      return;
+    }
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to update document' });
+  }
+});
+
+/**
+ * POST /api/exercise/documents/:docId/retry-extraction
+ * Reset extraction state and re-trigger LLM extraction for a single document.
+ * Useful for retrying failed extractions or re-extracting after tag changes.
+ *
+ * Special case: PLANNING_MAP documents with empty textContent are automatically
+ * routed to vision extraction (Claude native PDF document block) rather than
+ * standard text re-parse, which would produce empty results again.
+ */
+exerciseRouter.post('/documents/:docId/retry-extraction', async (req: Request, res: Response) => {
+  try {
+    const doc = await documentStore.findById(req.params.docId as string, req.visibleTeams);
+    if (!doc) {
+      res.status(404).json({ error: 'Document not found' });
+      return;
+    }
+
+    // Build tags early — needed for both vision and standard extraction paths
+    const tags = {
+      team: doc.team as 'blue' | 'red' | 'controller',
+      exercisePhase: doc.exercisePhase,
+      documentType: doc.documentType as import('../exercise/types.js').ScenarioDocument['documentType'],
+      confidence: 1.0,
+    };
+
+    // ── Vision extraction path for PLANNING_MAP with empty text ──────────────
+    // Planning map PDFs contain visual/spatial content (terrain, hex grids, unit
+    // positions) that unpdf cannot extract as text. Route these to Claude vision
+    // instead of re-parsing, which would just produce empty text again.
+    if (doc.documentType === 'PLANNING_MAP' && (!doc.textContent || doc.textContent.trim().length === 0)) {
+      const fileData = await documentStore.getFileData(doc.id);
+      if (!fileData) {
+        res.status(422).json({
+          error: 'No stored file data — delete and re-upload this document to retry extraction',
+        });
+        return;
+      }
+
+      // Reset extraction state before triggering vision extraction
+      await documentStore.updateExtraction(doc.id, {}, 0);
+
+      // Trigger vision extraction in background (non-blocking response)
+      setImmediate(async () => {
+        try {
+          const extractionService = await getExtractionService();
+          await extractionService.extractMapWithVision(doc.id, fileData, tags);
+          console.log(`[exercise] Vision extraction complete for ${doc.id}`);
+        } catch (err) {
+          console.error(`[exercise] Vision extraction failed for ${doc.id}:`, err);
+        }
+      });
+
+      res.json({ message: 'Vision extraction triggered for map document', docId: doc.id });
+      return;
+    }
+
+    // ── Standard text extraction path ────────────────────────────────────────
+
+    // Reset extraction state
+    await documentStore.updateExtraction(doc.id, {}, 0);
+
+    let textContent = doc.textContent;
+
+    // If textContent is empty, try to re-parse from stored file_data
+    if (!textContent || textContent.trim().length === 0) {
+      const fileData = await documentStore.getFileData(doc.id);
+      if (fileData) {
+        try {
+          const documentParser = new DocumentParser();
+          const parsed = await documentParser.parse(fileData, doc.mimeType);
+          textContent = parsed.text;
+          // Persist the re-parsed text so future retries don't need to re-parse
+          if (textContent && textContent.trim().length > 0) {
+            await documentStore.updateTextContent(doc.id, textContent);
+          }
+          console.log(`[exercise] Re-parsed ${doc.filename}: ${textContent.length} chars`);
+        } catch (parseErr) {
+          console.warn(`[exercise] Re-parse failed for ${doc.filename}:`, parseErr);
+        }
+      } else {
+        res.status(422).json({
+          error: 'No stored file data — delete and re-upload this document to retry extraction',
+        });
+        return;
+      }
+    }
+
+    // Re-trigger extraction asynchronously
+    setImmediate(() => {
+      getExtractionService()
+        .then((extractionService) =>
+          extractionService.extractDocument(doc.id, textContent, tags, doc.mimeType)
+        )
+        .catch((err) => {
+          console.error(`[exercise] Retry extraction failed for ${doc.id}:`, err);
+        });
+    });
+
+    res.json({ message: 'Extraction re-triggered', docId: doc.id });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to retry extraction' });
+  }
+});
+
+/**
+ * DELETE /api/exercise/documents/:docId
+ * Delete a document.
+ */
+exerciseRouter.delete('/documents/:docId', async (req: Request, res: Response) => {
+  try {
+    await documentStore.delete(req.params.docId as string);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to delete document' });
+  }
+});
+
 // ============ IPB ROUTES ============
 
 /**
@@ -380,7 +537,7 @@ exerciseRouter.post('/scenarios/:id/ipb/assemble', async (req: Request, res: Res
       return;
     }
 
-    const ipbService = getIPBService();
+    const ipbService = await getIPBService();
     const assessment = await ipbService.assembleIPB(
       req.params.id as string,
       team as 'blue' | 'red',
@@ -475,7 +632,7 @@ exerciseRouter.post('/ipb/:assessmentId/sitrep-preview', async (req: Request, re
       return;
     }
 
-    const ipbService = getIPBService();
+    const ipbService = await getIPBService();
     const preview = await ipbService.previewIPBFromSITREP(
       req.params.assessmentId as string,
       sitrepDocId,
@@ -501,7 +658,7 @@ exerciseRouter.post('/ipb/:assessmentId/update-from-sitrep', async (req: Request
       return;
     }
 
-    const ipbService = getIPBService();
+    const ipbService = await getIPBService();
     const updated = await ipbService.updateIPBFromSITREP(
       req.params.assessmentId as string,
       sitrepDocId,
@@ -609,7 +766,7 @@ exerciseRouter.get('/coas/:coaId', async (req: Request, res: Response) => {
  */
 exerciseRouter.post('/coas/:coaId/score', async (req: Request, res: Response) => {
   try {
-    const scoringService = getCOAScoringService();
+    const scoringService = await getCOAScoringService();
     const scores = await scoringService.scoreCOA(req.params.coaId as string, req.visibleTeams);
     res.json(scores);
   } catch (error) {
@@ -633,7 +790,7 @@ exerciseRouter.post('/coas/:coaId/wargame', async (req: Request, res: Response) 
       return;
     }
 
-    const scoringService = getCOAScoringService();
+    const scoringService = await getCOAScoringService();
     await scoringService.integrateWargameResults(
       req.params.coaId as string,
       wargameSessionId,
@@ -682,7 +839,7 @@ exerciseRouter.post('/coas/compare', async (req: Request, res: Response) => {
       return;
     }
 
-    const scoringService = getCOAScoringService();
+    const scoringService = await getCOAScoringService();
     const comparison = await scoringService.compareCOAs(coaIds, req.visibleTeams);
     res.json(comparison);
   } catch (error) {
@@ -703,7 +860,7 @@ exerciseRouter.post('/coas/:coaId/decision', async (req: Request, res: Response)
       return;
     }
 
-    const scoringService = getCOAScoringService();
+    const scoringService = await getCOAScoringService();
     const result = await scoringService.recordCommanderDecision(
       req.params.coaId as string,
       decision,
@@ -741,7 +898,7 @@ exerciseRouter.post('/scenarios/:id/orders/generate', async (req: Request, res: 
       return;
     }
 
-    const generator = getOrderGenerator();
+    const generator = await getOrderGenerator();
     let order: import('../exercise/types.js').ExerciseOrder;
 
     if (orderType === 'WARNORD') {
