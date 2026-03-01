@@ -6,14 +6,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 14 Plan 11 complete — SITREP delta preview endpoint closes EX-15 gap
+**Current focus:** Phase 15 context gathered — JPP Staff Organization Workspaces
 
 ## Current Position
 
-Phase: 14 of 14 (Friendly & Adversary IPB Complete Cycle)
-Plan: 11 of 11 in current phase — PHASE COMPLETE
-Status: Complete
-Last activity: 2026-03-01 - Completed quick task 5: map PDFs to IPB graph via vision extraction
+Phase: 15 of 15 (JPP Staff Organization Workspaces)
+Plan: 0 of TBD in current phase — CONTEXT GATHERED
+Status: Ready for planning
+Last activity: 2026-03-01 - Phase 15 context gathered via discuss-phase
 
 Progress: ██████████████████████ 134 plans complete
 
@@ -302,6 +302,7 @@ Recent decisions affecting current work:
 - Phase 1.3 inserted after Phase 1.2: NEAR Implicit Account Funding - Activate implicit accounts with minimum NEAR transfer on registration
 - Phase 1.4 inserted after Phase 1.3: Navigation Architecture Restructure - Restructure navigation to doctrine-aligned Decide/Design/Campaign/Monitor + Admin
 - Phase 14 added: Friendly & Adversary IPB Complete Cycle - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations
+- Phase 15 added: JPP Staff Organization Workspaces - Role-based exercise workspaces (Commander, J1–J35) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and strategic direction import
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
