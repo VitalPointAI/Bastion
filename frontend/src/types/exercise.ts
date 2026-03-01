@@ -2,18 +2,353 @@
  * Exercise Frontend Types
  *
  * Phase 14 Plan 06: Frontend-facing TypeScript interfaces for all exercise domain types.
+ * Phase 15 Plan 02: Added StaffProduct, StaffNotification, staff role config constants.
+ *
  * These mirror the backend types (backend/src/exercise/types.ts) as plain interfaces —
  * no Zod schema validation needed on the frontend.
  *
  * Covers: ExerciseScenario, ScenarioDocument, IPBAssessment, IPBLayer, ScenarioCOA,
  * ExerciseCOAScore, ExerciseOrder, WARNORDContent, OPORDContent, FRAGOContent,
  * PlanningTask, ExerciseGate, BoardSummary, COAComparisonResult, all input types,
- * and SITREPDeltaPreview for the SITREP delta preview flow.
+ * SITREPDeltaPreview for the SITREP delta preview flow, and Phase 15 staff workspace types.
  */
 
 // ─── Exercise Role ─────────────────────────────────────────────────────────────
 
 export type ExerciseRole = 'blue_staff' | 'red_cell' | 'exercise_control';
+
+// ─── Staff Role Config (Phase 15) ──────────────────────────────────────────────
+
+/**
+ * Categories for grouping staff roles in the sidebar.
+ * Mirrors backend StaffRoleCategory — duplicated here as pure data (no backend import).
+ */
+export type StaffRoleCategory =
+  | 'Command'
+  | 'J-Staff'
+  | 'Special Staff'
+  | 'Supporting Elements'
+  | 'Component Commands'
+  | 'Additional Elements';
+
+export interface StaffRoleEntry {
+  key: string;
+  label: string;
+  category: StaffRoleCategory;
+  doctrinalFocus: string;
+  defaultProducts: string[];
+}
+
+/**
+ * Data-driven configuration for all 31 JPP staff roles.
+ * Duplicated from backend/src/exercise/types.ts — pure data, no import possible.
+ */
+export const STAFF_ROLE_CONFIG: Record<string, StaffRoleEntry> = {
+  // ── Command (2) ────────────────────────────────────────────────────────────
+  commander: {
+    key: 'commander',
+    label: 'Commander',
+    category: 'Command',
+    doctrinalFocus: "Strategic direction, COA decision, and commander's intent",
+    defaultProducts: ['commander_intent', 'coa_decision', 'strategic_guidance', 'warnord_approval'],
+  },
+  dcom: {
+    key: 'dcom',
+    label: 'Deputy Commander (DCOM)',
+    category: 'Command',
+    doctrinalFocus: 'Commander support, staff coordination, and battle rhythm',
+    defaultProducts: ['strategic_guidance'],
+  },
+  // ── J-Staff (11) ──────────────────────────────────────────────────────────
+  cos: {
+    key: 'cos',
+    label: 'Chief of Staff (CoS)',
+    category: 'J-Staff',
+    doctrinalFocus: 'Staff management, battle rhythm, and synchronization',
+    defaultProducts: ['staff_estimate'],
+  },
+  j1: {
+    key: 'j1',
+    label: 'J1 (Personnel)',
+    category: 'J-Staff',
+    doctrinalFocus: 'Personnel readiness, manning, and casualty management',
+    defaultProducts: ['personnel_estimate', 'manning_status', 'casualty_tracking'],
+  },
+  j2: {
+    key: 'j2',
+    label: 'J2 (Intelligence)',
+    category: 'J-Staff',
+    doctrinalFocus: 'IPB, threat assessment, and intelligence collection',
+    defaultProducts: ['ipb_assessment', 'threat_assessment', 'oob', 'intel_summary', 'pir'],
+  },
+  j3: {
+    key: 'j3',
+    label: 'J3 (Operations)',
+    category: 'J-Staff',
+    doctrinalFocus: 'Current operations, synchronization, and execution',
+    defaultProducts: ['sync_matrix', 'coa_sketch', 'task_org', 'roe', 'execute_order'],
+  },
+  j35: {
+    key: 'j35',
+    label: 'J35 (Future Plans)',
+    category: 'J-Staff',
+    doctrinalFocus: 'COA development, analysis, and campaign planning',
+    defaultProducts: ['coa_development', 'coa_analysis', 'staff_estimate', 'campaign_plan'],
+  },
+  j4: {
+    key: 'j4',
+    label: 'J4 (Logistics)',
+    category: 'J-Staff',
+    doctrinalFocus: 'Logistics estimate, CSS planning, and supply',
+    defaultProducts: ['logistics_estimate', 'css_annex', 'supply_plan'],
+  },
+  j5: {
+    key: 'j5',
+    label: 'J5 (Strategic Plans)',
+    category: 'J-Staff',
+    doctrinalFocus: 'Strategic analysis, policy integration, and campaign objectives',
+    defaultProducts: ['strategic_estimate', 'strategic_direction', 'campaign_objectives'],
+  },
+  j6: {
+    key: 'j6',
+    label: 'J6 (Communications)',
+    category: 'J-Staff',
+    doctrinalFocus: 'C2 architecture, communications planning, and network design',
+    defaultProducts: ['comms_plan', 'c2_architecture', 'network_diagram'],
+  },
+  j7: {
+    key: 'j7',
+    label: 'J7 (Training)',
+    category: 'J-Staff',
+    doctrinalFocus: 'Training management and exercise coordination',
+    defaultProducts: ['staff_estimate'],
+  },
+  j8: {
+    key: 'j8',
+    label: 'J8 (Resource Management)',
+    category: 'J-Staff',
+    doctrinalFocus: 'Budget, resource allocation, and fiscal management',
+    defaultProducts: ['staff_estimate'],
+  },
+  j9: {
+    key: 'j9',
+    label: 'J9 (Civil-Military)',
+    category: 'J-Staff',
+    doctrinalFocus: 'Civil-military operations and interagency coordination',
+    defaultProducts: ['staff_estimate'],
+  },
+  // ── Special Staff (4) ─────────────────────────────────────────────────────
+  sja: {
+    key: 'sja',
+    label: 'Staff Judge Advocate (SJA)',
+    category: 'Special Staff',
+    doctrinalFocus: 'Legal advice, ROE, and law of armed conflict',
+    defaultProducts: ['roe', 'staff_estimate'],
+  },
+  polad: {
+    key: 'polad',
+    label: 'Political Advisor (POLAD)',
+    category: 'Special Staff',
+    doctrinalFocus: 'Political-military analysis and interagency liaison',
+    defaultProducts: ['strategic_estimate', 'staff_estimate'],
+  },
+  pao: {
+    key: 'pao',
+    label: 'Public Affairs Officer (PAO)',
+    category: 'Special Staff',
+    doctrinalFocus: 'Strategic communication and media operations',
+    defaultProducts: ['staff_estimate'],
+  },
+  surgeon: {
+    key: 'surgeon',
+    label: 'Command Surgeon',
+    category: 'Special Staff',
+    doctrinalFocus: 'Medical readiness, CASEVAC, and force health protection',
+    defaultProducts: ['staff_estimate'],
+  },
+  // ── Supporting Elements (7) ───────────────────────────────────────────────
+  cyber: {
+    key: 'cyber',
+    label: 'Cyber',
+    category: 'Supporting Elements',
+    doctrinalFocus: 'Cyberspace operations and defensive cyber',
+    defaultProducts: ['staff_estimate'],
+  },
+  space: {
+    key: 'space',
+    label: 'Space',
+    category: 'Supporting Elements',
+    doctrinalFocus: 'Space operations and satellite support',
+    defaultProducts: ['staff_estimate'],
+  },
+  transcom: {
+    key: 'transcom',
+    label: 'TRANSCOM',
+    category: 'Supporting Elements',
+    doctrinalFocus: 'Strategic airlift, sealift, and transportation coordination',
+    defaultProducts: ['logistics_estimate', 'staff_estimate'],
+  },
+  socom: {
+    key: 'socom',
+    label: 'SOCOM / SOF',
+    category: 'Supporting Elements',
+    doctrinalFocus: 'Special operations forces integration and employment',
+    defaultProducts: ['staff_estimate', 'task_org'],
+  },
+  io: {
+    key: 'io',
+    label: 'Information Operations (IO)',
+    category: 'Supporting Elements',
+    doctrinalFocus: 'Information environment operations and influence',
+    defaultProducts: ['staff_estimate'],
+  },
+  fires: {
+    key: 'fires',
+    label: 'Fires',
+    category: 'Supporting Elements',
+    doctrinalFocus: 'Joint fires, targeting, and fire support coordination',
+    defaultProducts: ['sync_matrix', 'staff_estimate'],
+  },
+  ew: {
+    key: 'ew',
+    label: 'Electronic Warfare (EW)',
+    category: 'Supporting Elements',
+    doctrinalFocus: 'Electronic attack, protection, and warfare integration',
+    defaultProducts: ['staff_estimate'],
+  },
+  // ── Component Commands (4) ────────────────────────────────────────────────
+  jfacc: {
+    key: 'jfacc',
+    label: 'JFACC (Air)',
+    category: 'Component Commands',
+    doctrinalFocus: 'Air operations, ATO, and airspace management',
+    defaultProducts: ['staff_estimate', 'task_org'],
+  },
+  jflcc: {
+    key: 'jflcc',
+    label: 'JFLCC (Land)',
+    category: 'Component Commands',
+    doctrinalFocus: 'Land component operations and ground force employment',
+    defaultProducts: ['staff_estimate', 'task_org'],
+  },
+  jfmcc: {
+    key: 'jfmcc',
+    label: 'JFMCC (Maritime)',
+    category: 'Component Commands',
+    doctrinalFocus: 'Maritime component operations and sea control',
+    defaultProducts: ['staff_estimate', 'task_org'],
+  },
+  jfsocc: {
+    key: 'jfsocc',
+    label: 'JFSOCC (Special Ops)',
+    category: 'Component Commands',
+    doctrinalFocus: 'Special operations component and SOF integration',
+    defaultProducts: ['staff_estimate', 'task_org'],
+  },
+  // ── Additional Elements (3) ───────────────────────────────────────────────
+  engineer: {
+    key: 'engineer',
+    label: 'Engineer',
+    category: 'Additional Elements',
+    doctrinalFocus: 'Engineer support, obstacle planning, and infrastructure',
+    defaultProducts: ['staff_estimate'],
+  },
+  cbrn: {
+    key: 'cbrn',
+    label: 'CBRN',
+    category: 'Additional Elements',
+    doctrinalFocus: 'Chemical, biological, radiological, and nuclear defense',
+    defaultProducts: ['staff_estimate'],
+  },
+  knowledge_mgmt: {
+    key: 'knowledge_mgmt',
+    label: 'Knowledge Management',
+    category: 'Additional Elements',
+    doctrinalFocus: 'Information sharing, common operating picture, and data management',
+    defaultProducts: ['staff_estimate'],
+  },
+};
+
+/**
+ * Named preset templates for role selection in the Create Scenario modal.
+ * Mirrors STAFF_PRESET_TEMPLATES from backend types.
+ */
+export const STAFF_PRESET_TEMPLATES: Record<string, string[]> = {
+  full_joint_staff: [
+    'commander', 'dcom',
+    'cos', 'j1', 'j2', 'j3', 'j35', 'j4', 'j5', 'j6', 'j7', 'j8', 'j9',
+    'sja', 'polad', 'pao', 'surgeon',
+    'cyber', 'space', 'transcom', 'socom', 'io', 'fires', 'ew',
+    'jfacc', 'jflcc', 'jfmcc', 'jfsocc',
+    'engineer', 'cbrn', 'knowledge_mgmt',
+  ],
+  core_staff: [
+    'commander', 'cos', 'j1', 'j2', 'j3', 'j35', 'j4', 'j5', 'j6',
+  ],
+  intel_focus: [
+    'commander', 'j2', 'j35', 'j3', 'jfacc', 'fires',
+  ],
+};
+
+/**
+ * Ordered list of role categories for sidebar rendering.
+ */
+export const STAFF_ROLE_CATEGORIES: StaffRoleCategory[] = [
+  'Command',
+  'J-Staff',
+  'Special Staff',
+  'Supporting Elements',
+  'Component Commands',
+  'Additional Elements',
+];
+
+// ─── Staff Products (Phase 15) ─────────────────────────────────────────────────
+
+export interface StaffProduct {
+  id: string;
+  scenarioId: string;
+  roleKey: string;
+  productType: string;
+  title: string;
+  status: 'draft' | 'published';
+  structured: Record<string, unknown>;
+  content: string;
+  version: number;
+  publishedAt: string | null;
+  publishedBy: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateStaffProductInput {
+  roleKey: string;
+  productType: string;
+  title: string;
+  structured?: Record<string, unknown>;
+  content?: string;
+}
+
+export interface UpdateStaffProductInput {
+  title?: string;
+  structured?: Record<string, unknown>;
+  content?: string;
+}
+
+// ─── Staff Notifications (Phase 15) ───────────────────────────────────────────
+
+export interface StaffNotification {
+  id: string;
+  scenarioId: string;
+  sourceProductId: string;
+  sourceRole: string;
+  targetRole: string;
+  notificationType: string;
+  diffSnapshot: Record<string, unknown> | null;
+  isRead: boolean;
+  isIntegrated: boolean;
+  createdAt: string;
+}
 
 // ─── Document Types ────────────────────────────────────────────────────────────
 
@@ -41,6 +376,8 @@ export interface ExerciseScenario {
   exercisePhases: string[];
   currentPhaseIndex: number;
   status: 'draft' | 'active' | 'complete';
+  /** Array of enabled staff role keys for this scenario. Phase 15 addition. */
+  enabledRoles: string[];
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -50,6 +387,7 @@ export interface CreateScenarioInput {
   name: string;
   designation?: 'training/exercise' | 'operational';
   exercisePhases?: string[];
+  enabledRoles?: string[];
   createdBy?: string;
 }
 

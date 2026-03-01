@@ -1,0 +1,347 @@
+/* ============================================================================
+   RoleDashboard - Phase 15 Plan 02
+   Per-role dashboard overview in the exercise staff workspace.
+   Card grid layout with status badges and action counters.
+   ============================================================================ */
+
+/* ─── Dashboard Container ────────────────────────────────────────────────────── */
+
+.role-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.role-dashboard--loading {
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #666678);
+  font-size: 0.9rem;
+}
+
+/* ─── Dashboard Header ───────────────────────────────────────────────────────── */
+
+.role-dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-subtle, #2a2a38);
+}
+
+.role-dashboard-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.role-dashboard-name {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+}
+
+.role-dashboard-focus {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #aaa);
+  max-width: 500px;
+  line-height: 1.4;
+}
+
+.role-dashboard-phase {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.role-phase-label {
+  font-size: 0.8rem;
+  color: var(--text-muted, #666678);
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.role-controller-badge {
+  font-size: 0.75rem;
+  color: #a78bfa;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 4px;
+  background: rgba(124, 58, 237, 0.1);
+}
+
+/* ─── Error ──────────────────────────────────────────────────────────────────── */
+
+.role-dashboard-error {
+  padding: 0.75rem 1rem;
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #ff4444;
+  font-size: 0.875rem;
+}
+
+/* ─── Sections ───────────────────────────────────────────────────────────────── */
+
+.role-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.role-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.role-section-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted, #666678);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.role-product-counts {
+  font-weight: 400;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-dim, #444456);
+}
+
+/* ─── Outstanding Actions ────────────────────────────────────────────────────── */
+
+.role-actions-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.role-action-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.role-action-badge--alert {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.role-action-badge--clear {
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: var(--text-muted, #666678);
+}
+
+.role-action-badge--draft {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #818cf8;
+}
+
+.role-action-count {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.role-action-label {
+  font-size: 0.82rem;
+}
+
+/* ─── Product Grid ───────────────────────────────────────────────────────────── */
+
+.role-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+/* ─── Product Card ───────────────────────────────────────────────────────────── */
+
+.role-product-card {
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 8px;
+  padding: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.role-product-card:hover {
+  border-color: var(--border-medium, #3a3a48);
+  background: var(--bg-elevated, #1e1e2e);
+}
+
+.role-product-card--published {
+  border-left: 2px solid #10b981;
+}
+
+.role-product-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.role-product-type {
+  font-size: 0.7rem;
+  color: var(--text-dim, #444456);
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status badges */
+.role-product-status {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.role-product-status--draft {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.role-product-status--published {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.role-product-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  line-height: 1.3;
+}
+
+.role-product-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-dim, #444456);
+}
+
+.role-product-time {
+  color: var(--text-muted, #666678);
+}
+
+/* ─── Empty State ────────────────────────────────────────────────────────────── */
+
+.role-products-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--text-muted, #666678);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  background: var(--bg-primary, #111118);
+  border: 1px dashed var(--border-subtle, #2a2a38);
+  border-radius: 8px;
+}
+
+.role-products-empty p {
+  margin: 0 0 0.25rem 0;
+}
+
+/* ─── Quick Actions ──────────────────────────────────────────────────────────── */
+
+.role-section--actions {
+  gap: 0.6rem;
+}
+
+.role-quick-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.role-action-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border-medium, #3a3a48);
+  border-radius: 6px;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.role-action-btn:hover:not(:disabled) {
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue, #4a90d9);
+  background: rgba(74, 144, 217, 0.05);
+}
+
+.role-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.role-action-btn--primary {
+  border-color: rgba(74, 144, 217, 0.4);
+  color: var(--accent-blue, #4a90d9);
+  background: rgba(74, 144, 217, 0.05);
+}
+
+.role-action-btn--primary:hover:not(:disabled) {
+  background: rgba(74, 144, 217, 0.12);
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 2px 8px rgba(74, 144, 217, 0.2);
+}
+
+/* Notification count badge on the button */
+.role-action-btn-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: #f59e0b;
+  color: #000;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 9px;
+}
+
+/* ─── Staff Overview section (Commander) ─────────────────────────────────────── */
+
+.role-section--staff-overview {
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  padding-top: 1.5rem;
+}

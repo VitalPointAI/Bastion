@@ -2,8 +2,11 @@
  * Exercise Service
  *
  * Phase 14 Plan 06: Typed API client for all exercise backend endpoints.
+ * Phase 15 Plan 02: Added staff product, notification, and role management methods.
+ *
  * Covers scenario CRUD, document upload, IPB assembly/versioning,
- * COA lifecycle, order generation, planning board, and gate management.
+ * COA lifecycle, order generation, planning board, gate management,
+ * and Phase 15 staff workspace operations.
  *
  * All requests go to /api/exercise/* — protected by the information
  * barrier middleware (withExerciseBarrier) on the backend.
@@ -26,6 +29,10 @@ import type {
   GenerateOrderInput,
   CreateDraftInput,
   CreateGateInput,
+  StaffProduct,
+  StaffNotification,
+  CreateStaffProductInput,
+  UpdateStaffProductInput,
 } from '../types/exercise';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -59,18 +66,43 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 /**
- * Perform a multipart/form-data upload.
+ * Perform a multipart/form-data upload with per-file XHR progress tracking.
  * Does NOT set Content-Type header — browser sets it with the correct boundary.
  */
-async function fetchFormData<T>(url: string, body: FormData, method = 'POST'): Promise<T> {
-  const response = await fetch(url, { method, body });
+function fetchFormDataWithProgress<T>(
+  url: string,
+  body: FormData,
+  onProgress?: (loaded: number, total: number) => void,
+  method = 'POST',
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url);
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: response.statusText }));
-    throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
-  }
+    if (onProgress) {
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) onProgress(e.loaded, e.total);
+      });
+    }
 
-  return response.json();
+    xhr.addEventListener('load', () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(data as T);
+        } else {
+          reject(new Error(data.error || `HTTP ${xhr.status}`));
+        }
+      } catch {
+        reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+      }
+    });
+
+    xhr.addEventListener('error', () => reject(new Error('Network error')));
+    xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
+
+    xhr.send(body);
+  });
 }
 
 // ─── Exercise Service ──────────────────────────────────────────────────────────
@@ -91,8 +123,9 @@ export const exerciseService = {
   /**
    * List all exercise scenarios visible to the current user.
    */
-  getScenarios(): Promise<ExerciseScenario[]> {
-    return fetchJson<ExerciseScenario[]>(`${API_BASE}/scenarios`);
+  async getScenarios(): Promise<ExerciseScenario[]> {
+    const data = await fetchJson<{ scenarios: ExerciseScenario[] }>(`${API_BASE}/scenarios`);
+    return data.scenarios;
   },
 
   /**
@@ -141,7 +174,12 @@ export const exerciseService = {
    * The backend returns 202 and queues async LLM extraction — documents will
    * initially have empty extractedData and low extractionConfidence.
    */
-  uploadPackage(scenarioId: string, files: File[]): Promise<ScenarioDocument[]> {
+  async uploadPackage(
+    scenarioId: string,
+    files: File[],
+    fileTags?: Array<{ team: string; exercisePhase: string; documentType: string }>,
+    onProgress?: (loaded: number, total: number) => void,
+  ): Promise<ScenarioDocument[]> {
     const form = new FormData();
     for (const file of files) {
       // Use relative path if available (folder upload via webkitdirectory),
@@ -149,16 +187,22 @@ export const exerciseService = {
       const path = file.webkitRelativePath || file.name;
       form.append('files', file, path);
     }
-    return fetchFormData<ScenarioDocument[]>(
-      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/documents/upload`,
-      form
+    // Send client-side tags so the server uses them instead of re-inferring
+    if (fileTags) {
+      form.append('tags', JSON.stringify(fileTags));
+    }
+    const data = await fetchFormDataWithProgress<{ uploaded: number; documents: ScenarioDocument[] }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/upload`,
+      form,
+      onProgress,
     );
+    return data.documents;
   },
 
   /**
    * List documents for a scenario, optionally filtered by phase or type.
    */
-  getDocuments(
+  async getDocuments(
     scenarioId: string,
     filters?: { phase?: string; type?: string }
   ): Promise<ScenarioDocument[]> {
@@ -166,9 +210,10 @@ export const exerciseService = {
     if (filters?.phase) params.set('phase', filters.phase);
     if (filters?.type) params.set('type', filters.type);
     const qs = params.toString();
-    return fetchJson<ScenarioDocument[]>(
+    const data = await fetchJson<{ documents: ScenarioDocument[] }>(
       `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/documents${qs ? `?${qs}` : ''}`
     );
+    return data.documents;
   },
 
   /**
@@ -176,6 +221,39 @@ export const exerciseService = {
    */
   getDocument(docId: string): Promise<ScenarioDocument> {
     return fetchJson<ScenarioDocument>(`${API_BASE}/documents/${encodeURIComponent(docId)}`);
+  },
+
+  /**
+   * Update document tags (team, phase, type).
+   */
+  updateDocument(
+    docId: string,
+    updates: { team?: string; exercisePhase?: string; documentType?: string }
+  ): Promise<ScenarioDocument> {
+    return fetchJson<ScenarioDocument>(`${API_BASE}/documents/${encodeURIComponent(docId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  /**
+   * Delete a document.
+   */
+  deleteDocument(docId: string): Promise<void> {
+    return fetchJson<void>(`${API_BASE}/documents/${encodeURIComponent(docId)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Retry extraction for a document. Resets extraction state and re-triggers
+   * async LLM extraction. Poll getDocuments() to see updated results.
+   */
+  retryExtraction(docId: string): Promise<{ message: string; docId: string }> {
+    return fetchJson<{ message: string; docId: string }>(
+      `${API_BASE}/documents/${encodeURIComponent(docId)}/retry-extraction`,
+      { method: 'POST' }
+    );
   },
 
   // ─── IPB ────────────────────────────────────────────────────────────────────
@@ -200,7 +278,7 @@ export const exerciseService = {
   /**
    * List IPB assessments for a scenario, optionally filtered.
    */
-  getIPBAssessments(
+  async getIPBAssessments(
     scenarioId: string,
     filters?: { team?: string; perspective?: string; phase?: string }
   ): Promise<IPBAssessment[]> {
@@ -209,9 +287,10 @@ export const exerciseService = {
     if (filters?.perspective) params.set('perspective', filters.perspective);
     if (filters?.phase) params.set('phase', filters.phase);
     const qs = params.toString();
-    return fetchJson<IPBAssessment[]>(
+    const data = await fetchJson<{ assessments: IPBAssessment[] }>(
       `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/ipb${qs ? `?${qs}` : ''}`
     );
+    return data.assessments;
   },
 
   /**
@@ -279,7 +358,7 @@ export const exerciseService = {
   /**
    * List COAs for a scenario, optionally filtered by team or phase.
    */
-  getCOAs(
+  async getCOAs(
     scenarioId: string,
     filters?: { team?: string; phase?: string }
   ): Promise<ScenarioCOA[]> {
@@ -287,9 +366,10 @@ export const exerciseService = {
     if (filters?.team) params.set('team', filters.team);
     if (filters?.phase) params.set('phase', filters.phase);
     const qs = params.toString();
-    return fetchJson<ScenarioCOA[]>(
+    const data = await fetchJson<{ coas: ScenarioCOA[] }>(
       `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/coas${qs ? `?${qs}` : ''}`
     );
+    return data.coas;
   },
 
   /**
@@ -397,7 +477,7 @@ export const exerciseService = {
   /**
    * List orders for a scenario, optionally filtered by team, phase, or type.
    */
-  getOrders(
+  async getOrders(
     scenarioId: string,
     filters?: { team?: string; phase?: string; type?: string }
   ): Promise<ExerciseOrder[]> {
@@ -406,9 +486,10 @@ export const exerciseService = {
     if (filters?.phase) params.set('phase', filters.phase);
     if (filters?.type) params.set('type', filters.type);
     const qs = params.toString();
-    return fetchJson<ExerciseOrder[]>(
+    const data = await fetchJson<{ orders: ExerciseOrder[] }>(
       `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/orders${qs ? `?${qs}` : ''}`
     );
+    return data.orders;
   },
 
   /**
@@ -446,7 +527,7 @@ export const exerciseService = {
   /**
    * List planning tasks for a scenario, optionally filtered by role or status.
    */
-  getTasks(
+  async getTasks(
     scenarioId: string,
     filters?: { role?: string; status?: string }
   ): Promise<PlanningTask[]> {
@@ -454,9 +535,10 @@ export const exerciseService = {
     if (filters?.role) params.set('role', filters.role);
     if (filters?.status) params.set('status', filters.status);
     const qs = params.toString();
-    return fetchJson<PlanningTask[]>(
+    const data = await fetchJson<{ tasks: PlanningTask[] }>(
       `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/tasks${qs ? `?${qs}` : ''}`
     );
+    return data.tasks;
   },
 
   /**
@@ -512,11 +594,12 @@ export const exerciseService = {
   /**
    * List gates for a scenario, optionally filtered by phase.
    */
-  getGates(scenarioId: string, phase?: string): Promise<ExerciseGate[]> {
+  async getGates(scenarioId: string, phase?: string): Promise<ExerciseGate[]> {
     const params = phase ? `?phase=${encodeURIComponent(phase)}` : '';
-    return fetchJson<ExerciseGate[]>(
+    const data = await fetchJson<{ gates: ExerciseGate[] }>(
       `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/gates${params}`
     );
+    return data.gates;
   },
 
   /**
@@ -535,6 +618,148 @@ export const exerciseService = {
   isPhaseReady(scenarioId: string, phase: string): Promise<boolean> {
     return fetchJson<boolean>(
       `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/phase-ready?phase=${encodeURIComponent(phase)}`
+    );
+  },
+
+  // ─── Staff Products (Phase 15) ────────────────────────────────────────────
+
+  /**
+   * List staff products for a scenario, optionally filtered by roleKey.
+   */
+  async getStaffProducts(scenarioId: string, roleKey?: string): Promise<StaffProduct[]> {
+    const params = roleKey ? `?roleKey=${encodeURIComponent(roleKey)}` : '';
+    const data = await fetchJson<{ products: StaffProduct[] }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-products${params}`
+    );
+    return data.products;
+  },
+
+  /**
+   * Get a single staff product by ID.
+   */
+  getStaffProduct(scenarioId: string, productId: string): Promise<StaffProduct> {
+    return fetchJson<StaffProduct>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-products/${encodeURIComponent(productId)}`
+    );
+  },
+
+  /**
+   * Create a new staff product for a role.
+   */
+  createStaffProduct(scenarioId: string, input: CreateStaffProductInput): Promise<StaffProduct> {
+    return fetchJson<StaffProduct>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-products`,
+      {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }
+    );
+  },
+
+  /**
+   * Update an existing staff product (title, structured fields, or content).
+   */
+  updateStaffProduct(
+    scenarioId: string,
+    productId: string,
+    input: UpdateStaffProductInput
+  ): Promise<StaffProduct> {
+    return fetchJson<StaffProduct>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-products/${encodeURIComponent(productId)}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(input),
+      }
+    );
+  },
+
+  /**
+   * Publish a staff product — increments version and fans out notifications to other roles.
+   */
+  publishStaffProduct(scenarioId: string, productId: string): Promise<StaffProduct> {
+    return fetchJson<StaffProduct>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-products/${encodeURIComponent(productId)}/publish`,
+      { method: 'POST' }
+    );
+  },
+
+  /**
+   * Delete a staff product.
+   */
+  deleteStaffProduct(scenarioId: string, productId: string): Promise<void> {
+    return fetchJson<void>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-products/${encodeURIComponent(productId)}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  // ─── Staff Notifications (Phase 15) ──────────────────────────────────────
+
+  /**
+   * List staff notifications for a scenario, optionally filtered by roleKey.
+   */
+  async getStaffNotifications(scenarioId: string, roleKey?: string): Promise<StaffNotification[]> {
+    const params = roleKey ? `?roleKey=${encodeURIComponent(roleKey)}` : '';
+    const data = await fetchJson<{ notifications: StaffNotification[] }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-notifications${params}`
+    );
+    return data.notifications;
+  },
+
+  /**
+   * Get the unread notification count for a specific role.
+   */
+  async getUnreadNotificationCount(scenarioId: string, roleKey: string): Promise<number> {
+    const data = await fetchJson<{ count: number }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-notifications/count?roleKey=${encodeURIComponent(roleKey)}`
+    );
+    return data.count;
+  },
+
+  /**
+   * Mark a notification as read.
+   */
+  markNotificationRead(scenarioId: string, notificationId: string): Promise<void> {
+    return fetchJson<void>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-notifications/${encodeURIComponent(notificationId)}/read`,
+      { method: 'PUT' }
+    );
+  },
+
+  /**
+   * Mark a notification as integrated (staff has incorporated the update).
+   */
+  markNotificationIntegrated(scenarioId: string, notificationId: string): Promise<void> {
+    return fetchJson<void>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-notifications/${encodeURIComponent(notificationId)}/integrate`,
+      { method: 'PUT' }
+    );
+  },
+
+  // ─── Role Management (Phase 15) ───────────────────────────────────────────
+
+  /**
+   * Update the enabled roles for a scenario.
+   * Replaces the entire enabledRoles array.
+   */
+  updateEnabledRoles(scenarioId: string, enabledRoles: string[]): Promise<void> {
+    return fetchJson<void>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/enabled-roles`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ enabledRoles }),
+      }
+    );
+  },
+
+  /**
+   * Import strategic direction from the Design tab into the Commander's workspace.
+   * Reads approved objectives + latest intent and creates/updates a strategic_guidance product.
+   */
+  importStrategicDirection(scenarioId: string): Promise<StaffProduct> {
+    return fetchJson<StaffProduct>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/import-strategic-direction`,
+      { method: 'POST' }
     );
   },
 };
