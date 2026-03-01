@@ -18,6 +18,7 @@ function rowToScenario(row: Record<string, unknown>): ExerciseScenario {
     exercisePhases: row.exercise_phases as string[],
     currentPhaseIndex: row.current_phase_index as number,
     status: row.status as ExerciseScenario['status'],
+    enabledRoles: (row.enabled_roles as string[] | null) ?? [],
     createdBy: row.created_by as string,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
@@ -38,8 +39,8 @@ export class ScenarioStore {
 
     await this.pool.query(
       `INSERT INTO exercise_scenarios
-         (id, name, designation, exercise_phases, current_phase_index, status, created_by, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+         (id, name, designation, exercise_phases, current_phase_index, status, enabled_roles, created_by, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         id,
         data.name,
@@ -47,6 +48,7 @@ export class ScenarioStore {
         data.exercisePhases,
         data.currentPhaseIndex ?? 0,
         data.status ?? 'draft',
+        data.enabledRoles ?? null,
         data.createdBy,
         now,
         now,
@@ -95,6 +97,7 @@ export class ScenarioStore {
     if (data.exercisePhases !== undefined)   { setClauses.push(`exercise_phases = $${i++}`);      values.push(data.exercisePhases); }
     if (data.currentPhaseIndex !== undefined){ setClauses.push(`current_phase_index = $${i++}`);  values.push(data.currentPhaseIndex); }
     if (data.status !== undefined)           { setClauses.push(`status = $${i++}`);               values.push(data.status); }
+    if (data.enabledRoles !== undefined)     { setClauses.push(`enabled_roles = $${i++}`);        values.push(data.enabledRoles); }
 
     values.push(id);
     await this.pool.query(
