@@ -4,7 +4,13 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { LLMProvider, LLMCompletionRequest, LLMCompletionResponse, ProviderConfig } from './types.js';
+import type {
+  LLMProvider,
+  LLMCompletionRequest,
+  LLMCompletionResponse,
+  LLMContentBlock,
+  ProviderConfig,
+} from './types.js';
 
 export class AnthropicProvider implements LLMProvider {
   name = 'anthropic';
@@ -30,10 +36,35 @@ export class AnthropicProvider implements LLMProvider {
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: request.max_tokens || 4096,
-      system: systemMessage?.content || '',
+      system: typeof systemMessage?.content === 'string' ? systemMessage.content : '',
       messages: nonSystemMessages.map(m => ({
         role: m.role as 'user' | 'assistant',
-        content: m.content,
+        content: typeof m.content === 'string'
+          ? m.content
+          : (m.content as LLMContentBlock[]).map((block) => {
+              if (block.type === 'text') {
+                return { type: 'text' as const, text: block.text };
+              }
+              if (block.type === 'document') {
+                return {
+                  type: 'document' as const,
+                  source: {
+                    type: 'base64' as const,
+                    media_type: block.source.media_type as 'application/pdf',
+                    data: block.source.data,
+                  },
+                };
+              }
+              // image block
+              return {
+                type: 'image' as const,
+                source: {
+                  type: 'base64' as const,
+                  media_type: block.source.media_type as Anthropic.Base64ImageSource['media_type'],
+                  data: block.source.data,
+                },
+              };
+            }),
       })),
       tools: request.tools?.map(t => ({
         name: t.name,

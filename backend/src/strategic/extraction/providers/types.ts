@@ -3,9 +3,37 @@
  * Enables multi-provider support: Anthropic, OpenAI, Ollama, LocalAI, vLLM, etc.
  */
 
+/**
+ * A single content block for multimodal LLM messages.
+ *
+ * Quick Task 5: Adds vision support so planning map PDFs can be sent directly
+ * to Claude as native PDF document blocks (no image rendering required).
+ *
+ * Backward-compatible: existing string-content messages are unaffected.
+ */
+export type LLMContentBlock =
+  | { type: 'text'; text: string }
+  | {
+      type: 'image';
+      source: {
+        type: 'base64';
+        media_type: string;
+        data: string;
+      };
+    }
+  | {
+      type: 'document';
+      source: {
+        type: 'base64';
+        media_type: string;
+        data: string;
+      };
+    };
+
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  /** String for simple text messages; LLMContentBlock[] for multimodal (vision) messages */
+  content: string | LLMContentBlock[];
 }
 
 export interface LLMToolDefinition {

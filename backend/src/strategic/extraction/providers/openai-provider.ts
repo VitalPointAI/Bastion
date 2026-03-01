@@ -7,7 +7,28 @@
  */
 
 import OpenAI from 'openai';
-import type { LLMProvider, LLMCompletionRequest, LLMCompletionResponse, ProviderConfig } from './types.js';
+import type { LLMProvider, LLMCompletionRequest, LLMCompletionResponse, LLMContentBlock, ProviderConfig } from './types.js';
+
+const MAX_RETRIES = 4;
+const INITIAL_BACKOFF_MS = 3000;
+
+/**
+ * Normalise an LLMMessage content value to a plain string for OpenAI-compatible APIs.
+ *
+ * OpenAI's chat completions API does support image_url content blocks but does NOT
+ * support Anthropic-style base64 "document" blocks for PDFs. Vision map extraction
+ * (Quick Task 5) always routes through the Anthropic provider, so OpenAI-compatible
+ * providers simply extract any text blocks and join them. If no text blocks are found
+ * (e.g. document-only content) a placeholder is returned.
+ */
+function normaliseContent(content: string | LLMContentBlock[]): string {
+  if (typeof content === 'string') return content;
+  // Extract text blocks; ignore image and document blocks (not supported here)
+  const textParts = content
+    .filter((b): b is Extract<LLMContentBlock, { type: 'text' }> => b.type === 'text')
+    .map((b) => b.text);
+  return textParts.join('\n') || '[Non-text content — not supported by this provider]';
+}
 
 export class OpenAICompatibleProvider implements LLMProvider {
   name: string;
@@ -62,7 +83,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
   async complete(request: LLMCompletionRequest): Promise<LLMCompletionResponse> {
     // Try with tools first, fall back to plain completion if tools not supported
     if (!request.tools?.length) {
-      return await this.completeWithoutTools(request);
+      return await this.completeWithRetry(request, false);
     }
 
     try {
@@ -72,8 +93,45 @@ export class OpenAICompatibleProvider implements LLMProvider {
       // endpoints (NEAR AI, Ollama, etc.) fail or 502 when tools are included
       const message = error instanceof Error ? error.message : String(error);
       console.warn(`[${this.name}] Tool calling failed (${message}), retrying without tools`);
-      return await this.completeWithoutTools(request);
+      return await this.completeWithRetry(request, false);
     }
+  }
+
+  /**
+   * Retry a completion with exponential backoff.
+   * Handles transient 502/503/429 errors from providers like NEAR AI.
+   */
+  private async completeWithRetry(request: LLMCompletionRequest, withTools: boolean): Promise<LLMCompletionResponse> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        if (withTools) {
+          return await this.completeWithTools(request);
+        } else {
+          return await this.completeWithoutTools(request);
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        const msg = lastError.message;
+
+        // Only retry on transient server errors
+        const isTransient = msg.includes('502') || msg.includes('503')
+          || msg.includes('429') || msg.includes('unavailable')
+          || msg.includes('timeout') || msg.includes('ECONNRESET')
+          || msg.includes('rate limit');
+
+        if (!isTransient || attempt === MAX_RETRIES - 1) {
+          throw lastError;
+        }
+
+        const backoff = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+        console.warn(`[${this.name}] Attempt ${attempt + 1}/${MAX_RETRIES} failed (${msg}), retrying in ${backoff}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoff));
+      }
+    }
+
+    throw lastError!;
   }
 
   private async completeWithTools(request: LLMCompletionRequest): Promise<LLMCompletionResponse> {
@@ -83,7 +141,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
       temperature: request.temperature,
       messages: request.messages.map(m => ({
         role: m.role,
-        content: m.content,
+        content: normaliseContent(m.content),
       })),
       tools: request.tools?.map(t => ({
         type: 'function' as const,
@@ -135,7 +193,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
       temperature: request.temperature,
       messages: request.messages.map(m => ({
         role: m.role,
-        content: m.content,
+        content: normaliseContent(m.content),
       })),
     });
 
