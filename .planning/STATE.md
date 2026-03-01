@@ -6,23 +6,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 15 context gathered — JPP Staff Organization Workspaces
+**Current focus:** Phase 15 executing — JPP Staff Organization Workspaces
 
 ## Current Position
 
 Phase: 15 of 15 (JPP Staff Organization Workspaces)
-Plan: 0 of TBD in current phase — CONTEXT GATHERED
-Status: Ready for planning
-Last activity: 2026-03-01 - Phase 15 context gathered via discuss-phase
+Plan: 1 of TBD in current phase — Plan 01 complete
+Status: Executing
+Last activity: 2026-03-01 - Completed 15-01 staff workspace backend (database, stores, routes)
 
-Progress: ██████████████████████ 134 plans complete
+Progress: ██████████████████████ 135 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 134
+- Total plans completed: 135
 - Average duration: 10 min
-- Total execution time: 19.55 hours
+- Total execution time: 19.77 hours
 
 **By Phase:**
 
@@ -58,6 +58,7 @@ Progress: ██████████████████████ 134
 | Phase 14-friendly-adversary-ipb-complete-cycle P10 | 9 | 2 tasks | 7 files |
 | Phase 14-friendly-adversary-ipb-complete-cycle P11 | 2 | 1 task | 2 files |
 | Phase quick-5 P1 | 6 | 3 tasks | 7 files |
+| Phase 15-jpp-staff-organization-workspaces P01 | 13 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -317,6 +318,13 @@ Recent decisions affecting current work:
 - Batch extraction is sequential (not concurrent) to respect LLM rate limits — mirrors ExtractionService pattern
 - ExtractedExerciseData added to exercise/types.ts co-located with other domain types
 - JSON.parse(JSON.stringify()) used to bridge ExtractedExerciseData to Record<string,unknown> for updateExtraction()
+
+**Phase 15 Plan 01 (Staff Workspace Backend):**
+- STAFF_ROLE_CONFIG is the single source of truth for all 31 JPP roles — no string enums duplicated elsewhere
+- enabledRoles defaults to core_staff preset (9 roles) on scenario creation, not full_joint_staff (31)
+- StrategicImportService uses direct store imports (not HTTP) to avoid circular dependency and latency
+- MessageBus events are advisory (try/catch, non-blocking) — notifications persist in DB regardless of bus failures
+- DiffSnapshot computed at publish time via shallow JSON comparison on structured fields
 
 ### Deferred Issues
 
