@@ -828,7 +828,7 @@ Plans:
 **Goal**: Build exercise scenario from provided documents with dual-perspective IPB, COA development with probability scoring, concurrent operation support, and commander decision-forcing workflows
 **Depends on**: Phase 5.3 (Scenario Validation), Phase 5.2 (Escalation & Competition Modeling), Phase 5.1 (MDMP Governance)
 **Research:** Complete (14-RESEARCH.md)
-**Plans**: 10 plans
+**Plans**: 11 plans
 
 **Context:**
 This phase builds the exercise scenario management capability on top of BASTION's existing strategic planning, document ingestion, operational planning, and wargaming infrastructure. The phase extends and generalizes existing systems with dual-perspective (Blue/Red) information isolation, scenario package ingestion, IPB assembly, COA scoring with wargame evidence, WARNORD/OPORD/FRAGO generation, and planning board task tracking. The exercise documents in scenario/ (Pacific Strategy AY26 -- Indo-Pacific / Taiwan contingency) serve as the reference implementation.
@@ -851,6 +851,7 @@ Plans:
 - [x] Plan 14-08: COA Scoring & Commander Decision UI -- Decision matrix, editable narrative, accept/reject/modify/combine workflow (wave 5)
 - [x] Plan 14-09: Order Editor & Planning Board UI -- WARNORD/OPORD/FRAGO authoring, Kanban task board (wave 5)
 - [x] Plan 14-10: Timeline, Gates & Dashboard Integration -- Phase timeline, gate control, full dashboard wiring (wave 6)
+- [ ] Plan 14-11: SITREP Delta Preview Backend (gap closure) -- Add previewIPBFromSITREP method and Express route for EX-15 (wave 7)
 
 ## Progress
 
