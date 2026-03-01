@@ -461,6 +461,34 @@ exerciseRouter.get('/ipb/:assessmentId/history', async (req: Request, res: Respo
 });
 
 /**
+ * POST /api/exercise/ipb/:assessmentId/sitrep-preview
+ * Preview SITREP delta without committing. Body: { sitrepDocId }
+ * Returns SITREPDeltaPreview — changedFields, affectedCOAs, sitrepSummary.
+ * Does NOT create a new IPB version.
+ */
+exerciseRouter.post('/ipb/:assessmentId/sitrep-preview', async (req: Request, res: Response) => {
+  try {
+    const { sitrepDocId } = req.body as { sitrepDocId?: string };
+
+    if (!sitrepDocId) {
+      res.status(400).json({ error: 'sitrepDocId is required' });
+      return;
+    }
+
+    const ipbService = getIPBService();
+    const preview = await ipbService.previewIPBFromSITREP(
+      req.params.assessmentId as string,
+      sitrepDocId,
+      req.visibleTeams
+    );
+
+    res.json(preview);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to preview SITREP delta' });
+  }
+});
+
+/**
  * POST /api/exercise/ipb/:assessmentId/update-from-sitrep
  * Update IPB assessment from a new SITREP. Body: { sitrepDocId }
  */

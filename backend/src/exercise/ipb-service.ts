@@ -37,6 +37,29 @@ export interface DeltaSummary {
   significanceLevel: 'minor' | 'major' | 'critical';
 }
 
+// ─── SITREP Delta Preview ─────────────────────────────────────────────────────
+
+/**
+ * Preview of IPB changes that would result from incorporating a SITREP document.
+ * Returned by previewIPBFromSITREP — does NOT commit any changes.
+ * Matches the frontend SITREPDeltaPreview interface in frontend/src/types/exercise.ts.
+ */
+export interface SITREPDeltaPreview {
+  changedFields: Array<{
+    section: string;
+    fieldPath: string;
+    oldValue: unknown;
+    newValue: unknown;
+    changeType: 'added' | 'modified' | 'removed';
+  }>;
+  affectedCOAs: Array<{
+    coaId: string;
+    coaName: string;
+    impactReason: string;
+  }>;
+  sitrepSummary: string;
+}
+
 // ─── LLM Extraction Shapes ────────────────────────────────────────────────────
 
 interface ExtractedForceUnit {
@@ -427,6 +450,215 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
     });
 
     return newVersion;
+  }
+
+  // ─── Preview SITREP Delta (no persist) ─────────────────────────────────────
+
+  /**
+   * Preview the IPB delta that would result from incorporating a SITREP document
+   * WITHOUT creating a new version. Staff reviews the SITREPDeltaPreview before
+   * deciding to confirm (via updateIPBFromSITREP) or cancel.
+   *
+   * Reuses the same LLM delta extraction logic as updateIPBFromSITREP but
+   * stops before calling ipbStore.createNewVersion().
+   */
+  async previewIPBFromSITREP(
+    assessmentId: string,
+    sitrepDocId: string,
+    visibleTeams: string[]
+  ): Promise<SITREPDeltaPreview> {
+    // 1. Load existing assessment
+    const existing = await this.ipbStore.findById(assessmentId, visibleTeams);
+    if (!existing) {
+      throw new Error(`IPB assessment ${assessmentId} not found or not visible`);
+    }
+
+    // 2. Load the SITREP document
+    const sitrep = await this.documentStore.findById(sitrepDocId, visibleTeams);
+    if (!sitrep) {
+      throw new Error(`SITREP document ${sitrepDocId} not found or not visible`);
+    }
+
+    // 3. Use LLM to identify deltas between existing assessment and SITREP
+    const deltaPrompt = `You are a military intelligence analyst reviewing a new SITREP.
+
+EXISTING IPB ASSESSMENT:
+Threat Assessment: ${existing.threatAssessment}
+Force Dispositions: ${JSON.stringify(existing.forceDispositions, null, 2)}
+Named Areas of Interest: ${JSON.stringify(existing.namedAreasOfInterest, null, 2)}
+
+NEW SITREP DOCUMENT:
+Type: ${sitrep.documentType}
+Content: ${sitrep.textContent.slice(0, 3000)}
+Extracted Data: ${JSON.stringify(sitrep.extractedData, null, 2)}
+
+Identify what has changed. Output JSON:
+{
+  "updatedThreatAssessment": "...",
+  "updatedForceDispositions": [...],
+  "updatedNAIs": [...]
+}
+
+Only include fields that have actually changed based on the SITREP. Preserve existing data where the SITREP provides no update. Output only valid JSON.`;
+
+    let updates: Partial<{
+      updatedThreatAssessment: string;
+      updatedForceDispositions: ExtractedForceUnit[];
+      updatedNAIs: ExtractedNAI[];
+    }> = {};
+
+    try {
+      const response = await this.llm.complete({
+        messages: [
+          { role: 'system', content: 'You are a military intelligence analyst. Output only valid JSON.' },
+          { role: 'user', content: deltaPrompt },
+        ],
+        max_tokens: 2000,
+        temperature: 0.1,
+      });
+      const raw = response.content ?? '{}';
+      const cleaned = raw.replace(/^```[a-z]*\n?/m, '').replace(/```$/m, '').trim();
+      updates = JSON.parse(cleaned);
+    } catch (err) {
+      console.error('[IPBService] SITREP delta extraction failed (preview):', err);
+      // Proceed with empty updates — preview will show no changes
+    }
+
+    // 4. Build updated force dispositions and NAIs from LLM response (same as updateIPBFromSITREP)
+    const updatedForceDispositions: ForceDisposition[] = updates.updatedForceDispositions
+      ? updates.updatedForceDispositions.map(unit => ({
+          unitName: unit.unitName,
+          unitType: unit.echelon,
+          strength: unit.strength,
+          position: {
+            type: 'Point',
+            coordinates: [
+              unit.location?.lng ?? THEATER_DEFAULTS.center.lng,
+              unit.location?.lat ?? THEATER_DEFAULTS.center.lat,
+            ],
+          },
+          readiness: 'ready' as const,
+          notes: unit.equipment,
+        }))
+      : existing.forceDispositions;
+
+    const updatedNAIs: NamedAreaOfInterest[] = updates.updatedNAIs
+      ? updates.updatedNAIs.map((nai, idx) => ({
+          id: `nai-${idx + 1}`,
+          name: nai.name,
+          geometry: nai.geometry ?? { type: 'Point', coordinates: [THEATER_DEFAULTS.center.lng, THEATER_DEFAULTS.center.lat] },
+          significance: nai.purpose ?? '',
+          expectedActivity: nai.triggers ?? '',
+        }))
+      : existing.namedAreasOfInterest;
+
+    // 5. Build a synthetic assessment-shaped object to pass to generateDeltaSummary
+    //    (Only the fields that generateDeltaSummary inspects are required)
+    const syntheticNew: IPBAssessment = {
+      ...existing,
+      threatAssessment: updates.updatedThreatAssessment ?? existing.threatAssessment,
+      forceDispositions: updatedForceDispositions,
+      namedAreasOfInterest: updatedNAIs,
+      civilConsiderations: existing.civilConsiderations,
+    };
+
+    const delta = this.generateDeltaSummary(existing, syntheticNew);
+
+    // 6. Convert DeltaSummary into the SITREPDeltaPreview.changedFields array
+    const changedFields: SITREPDeltaPreview['changedFields'] = [];
+
+    for (const field of delta.changedFields) {
+      const section = field.split(':')[0];
+      if (field === 'threatAssessment') {
+        changedFields.push({
+          section: 'threatAssessment',
+          fieldPath: 'threatAssessment',
+          oldValue: existing.threatAssessment,
+          newValue: syntheticNew.threatAssessment,
+          changeType: 'modified',
+        });
+      } else if (field === 'civilConsiderations') {
+        changedFields.push({
+          section: 'civilConsiderations',
+          fieldPath: 'civilConsiderations',
+          oldValue: existing.civilConsiderations,
+          newValue: syntheticNew.civilConsiderations,
+          changeType: 'modified',
+        });
+      } else if (field === 'namedAreasOfInterest') {
+        changedFields.push({
+          section: 'namedAreasOfInterest',
+          fieldPath: 'namedAreasOfInterest',
+          oldValue: existing.namedAreasOfInterest,
+          newValue: syntheticNew.namedAreasOfInterest,
+          changeType: 'modified',
+        });
+      } else {
+        // forceDisposition:unitName:position or forceDisposition:unitName:strength
+        const parts = field.split(':');
+        changedFields.push({
+          section,
+          fieldPath: field,
+          oldValue: existing.forceDispositions.find(u => u.unitName === parts[1]) ?? null,
+          newValue: syntheticNew.forceDispositions.find(u => u.unitName === parts[1]) ?? null,
+          changeType: 'modified',
+        });
+      }
+    }
+
+    for (const unitName of delta.addedUnits) {
+      changedFields.push({
+        section: 'forceDispositions',
+        fieldPath: `forceDispositions:${unitName}`,
+        oldValue: null,
+        newValue: syntheticNew.forceDispositions.find(u => u.unitName === unitName) ?? null,
+        changeType: 'added',
+      });
+    }
+
+    for (const unitName of delta.removedUnits) {
+      changedFields.push({
+        section: 'forceDispositions',
+        fieldPath: `forceDispositions:${unitName}`,
+        oldValue: existing.forceDispositions.find(u => u.unitName === unitName) ?? null,
+        newValue: null,
+        changeType: 'removed',
+      });
+    }
+
+    // 7. Query affected COAs for the same scenario+team
+    const impactReason = delta.significanceLevel === 'critical'
+      ? 'IPB changes are critical — new or removed units detected'
+      : delta.significanceLevel === 'major'
+        ? 'IPB threat assessment or force positions changed (major)'
+        : 'IPB minor updates — unit strength or equipment changed';
+
+    let affectedCOAs: SITREPDeltaPreview['affectedCOAs'] = [];
+    try {
+      const coaResult = await this.pool.query<{ id: string; name: string }>(
+        `SELECT id, name FROM scenario_coas
+         WHERE scenario_id = $1 AND team = $2 AND team = ANY($3::text[])`,
+        [existing.scenarioId, existing.team, visibleTeams]
+      );
+      affectedCOAs = coaResult.rows.map(row => ({
+        coaId: row.id,
+        coaName: row.name,
+        impactReason,
+      }));
+    } catch (err) {
+      console.error('[IPBService] Failed to query affected COAs:', err);
+      // Non-fatal — return empty affected COAs list
+    }
+
+    // 8. Build sitrepSummary from SITREP text content
+    const sitrepSummary = sitrep.textContent.slice(0, 500);
+
+    // 9. Return the SITREPDeltaPreview — do NOT call ipbStore.createNewVersion()
+    return {
+      changedFields,
+      affectedCOAs,
+      sitrepSummary,
+    };
   }
 
   // ─── Delta Summary ─────────────────────────────────────────────────────────
