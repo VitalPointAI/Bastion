@@ -99,6 +99,7 @@ export class ScenarioStore {
     if (data.currentPhaseIndex !== undefined){ setClauses.push(`current_phase_index = $${i++}`);  values.push(data.currentPhaseIndex); }
     if (data.status !== undefined)           { setClauses.push(`status = $${i++}`);               values.push(data.status); }
     if (data.enabledRoles !== undefined)     { setClauses.push(`enabled_roles = $${i++}`);        values.push(data.enabledRoles); }
+    if (data.roleAssignments !== undefined)  { setClauses.push(`role_assignments = $${i++}`);     values.push(JSON.stringify(data.roleAssignments)); }
 
     values.push(id);
     await this.pool.query(
@@ -128,6 +129,28 @@ export class ScenarioStore {
     const result = await this.pool.query(
       'SELECT * FROM exercise_scenarios WHERE id = $1',
       [id]
+    );
+    return rowToScenario(result.rows[0]);
+  }
+
+  /**
+   * Update the role assignments for a scenario.
+   * Replaces the entire roleAssignments map atomically.
+   */
+  async updateRoleAssignments(
+    scenarioId: string,
+    roleAssignments: Record<string, import('./types.js').RoleAssignment>
+  ): Promise<ExerciseScenario> {
+    await this.pool.query(
+      `UPDATE exercise_scenarios
+       SET role_assignments = $2, updated_at = NOW()
+       WHERE id = $1`,
+      [scenarioId, JSON.stringify(roleAssignments)]
+    );
+
+    const result = await this.pool.query(
+      'SELECT * FROM exercise_scenarios WHERE id = $1',
+      [scenarioId]
     );
     return rowToScenario(result.rows[0]);
   }
