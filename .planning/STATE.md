@@ -11,11 +11,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 15 of 15 (JPP Staff Organization Workspaces)
-Plan: 4 of TBD in current phase — Plan 04 complete
-Status: Executing
-Last activity: 2026-03-01 - Completed 15-04 cross-staff notification system (useStaffNotifications hook, NotificationPanel, StaffWorkspace integration)
+Plan: 5 of 5 in current phase — Plan 05 complete
+Status: Complete
+Last activity: 2026-03-02 - Completed 15-05 diff integration view, AI agent suggestion panel, backend suggest endpoint (all Phase 15 plans complete)
 
-Progress: ██████████████████████ 138 plans complete
+Progress: ████████████████████████ 139 plans complete
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: ██████████████████████ 138
 | Phase 15-jpp-staff-organization-workspaces P02 | 7 | 2 tasks | 8 files |
 | Phase 15-jpp-staff-organization-workspaces P04 | 4 | 2 tasks | 5 files |
 | Phase 15 P03 | 5 | 2 tasks | 6 files |
+| Phase 15-jpp-staff-organization-workspaces P05 | 9 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -76,10 +77,16 @@ Progress: ██████████████████████ 138
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+**Phase 15 Plan 05 (Diff View, AI Suggestion Panel, Strategic Import):**
+- ProductDiffView managed from StaffWorkspace (not NotificationPanel) — avoids prop drilling
+- Merge strategy: structured fields overwritten per diff snapshot, content appended with attribution (preserves existing work)
+- Suggestion blocks apply to narrative content only (not structured fields) — safer than auto-updating arbitrary form state
+- Suggest endpoint wraps non-JSON LLM responses as single narrative block (graceful degradation)
+
 **Phase 15 Plan 04 (Cross-Staff Notification System):**
 - WebSocket URL uses window.location.hostname + port 3001 — matches backend messaging.ts setup
 - Filter mode state lives in NotificationPanel (not StaffWorkspace) — self-contained UI concern
-- onIntegrate is a placeholder alert referencing Plan 15-05 — diff view deferred by design
+- onIntegrate was a placeholder alert referencing Plan 15-05 — diff view now implemented
 - onViewProduct navigates to source role via setActiveRole — no URL changes needed
 
 **Phase 15 Plan 02 (Staff Workspace Frontend Shell):**

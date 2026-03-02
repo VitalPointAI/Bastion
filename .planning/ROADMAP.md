@@ -37,7 +37,7 @@ None
 - [ ] **Phase 12.1: Coalition Health Monitoring** - Coalition health agent, narrative impact agent, national caveat tracking, coalition gates (INSERTED)
 - [x] **Phase 13: Research Whitepaper** - Comprehensive documentation for master's research requirement (completed 2026-01-24)
 - [x] **Phase 14: Friendly & Adversary IPB Complete Cycle** - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations (completed 2026-02-28)
-- [ ] **Phase 15: JPP Staff Organization Workspaces** - Role-based exercise workspaces (Commander, J1–J35) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and strategic direction import from Design tab
+- [x] **Phase 15: JPP Staff Organization Workspaces** - Role-based exercise workspaces (Commander, J1–J35) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and strategic direction import from Design tab
 
 ## Phase Details
 
@@ -877,11 +877,11 @@ This phase restructures the exercise area to model a doctrinal Joint staff organ
 - Later extend to remodel the rest of the application
 
 Plans:
-- [ ] 15-01-PLAN.md — Database migration (staff_products, staff_notifications, enabled_roles), backend stores, notification service, strategic import service, and REST routes (wave 1)
-- [ ] 15-02-PLAN.md — Exercise shell restructure: StaffWorkspace sidebar with category-grouped roles, RoleDashboard, ExerciseDashboard modification with role selection in Create Scenario (wave 2)
-- [ ] 15-03-PLAN.md — Doctrinal product templates with hybrid editor (structured fields + narrative), pre-population from Phase 14 IPB/COA/order data (wave 3)
-- [ ] 15-04-PLAN.md — Cross-staff notification panel with bell icon, WebSocket real-time delivery, role filtering, and per-role sidebar badges (wave 3, parallel with 03)
-- [ ] 15-05-PLAN.md — Product diff integration view, strategic direction import UI, AI agent suggestion panel with per-block accept/reject (wave 4)
+- [x] 15-01-PLAN.md — Database migration (staff_products, staff_notifications, enabled_roles), backend stores, notification service, strategic import service, and REST routes (wave 1)
+- [x] 15-02-PLAN.md — Exercise shell restructure: StaffWorkspace sidebar with category-grouped roles, RoleDashboard, ExerciseDashboard modification with role selection in Create Scenario (wave 2)
+- [x] 15-03-PLAN.md — Doctrinal product templates with hybrid editor (structured fields + narrative), pre-population from Phase 14 IPB/COA/order data (wave 3)
+- [x] 15-04-PLAN.md — Cross-staff notification panel with bell icon, WebSocket real-time delivery, role filtering, and per-role sidebar badges (wave 3, parallel with 03)
+- [x] 15-05-PLAN.md — Product diff integration view, strategic direction import UI, AI agent suggestion panel with per-block accept/reject (wave 4)
 
 ## Progress
 
@@ -917,4 +917,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 12.1 Coalition Health Monitoring | 0/5 | Not started | - |
 | 13. Research Whitepaper | 9/9 | Complete | 2026-01-24 |
 | 14. Friendly & Adversary IPB Complete Cycle | 11/11 | Complete    | 2026-03-01 |
-| 15. JPP Staff Organization Workspaces | 4/5 | In Progress|  |
+| 15. JPP Staff Organization Workspaces | 5/5 | Complete | 2026-03-02 |
