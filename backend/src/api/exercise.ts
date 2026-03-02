@@ -1246,11 +1246,21 @@ exerciseRouter.get('/scenarios/:id/gates/phase-ready/:phase', async (req: Reques
  * GET /api/exercise/scenarios/:id/staff-products
  * List staff products. Query param `roleKey` filters to a specific role;
  * omit to return all products for the scenario.
+ *
+ * Seed-on-first-access: when `roleKey` is provided, triggers idempotent
+ * workspace seeding before returning results. If the workspace already has
+ * products the seed is a no-op (returns existing). This implements the
+ * RESEARCH.md recommendation: "Trigger on first GET to the workspace endpoint."
  */
 exerciseRouter.get('/scenarios/:id/staff-products', async (req: Request, res: Response) => {
   try {
     const roleKey = qstr(req.query.roleKey);
     const scenarioId = req.params.id as string;
+
+    if (roleKey) {
+      // Seed-on-first-access: idempotent — returns existing if already seeded
+      await staffProductStore.seedRoleWorkspace(scenarioId, roleKey);
+    }
 
     const products = roleKey
       ? await staffProductStore.findByRole(scenarioId, roleKey)

@@ -12,6 +12,7 @@ import type {
   CreateStaffProductInput,
   UpdateStaffProductInput,
 } from './types.js';
+import { STAFF_ROLE_CONFIG, PRODUCT_TYPE_REGISTRY } from './types.js';
 
 // ─── Row Mapper ───────────────────────────────────────────────────────────────
 
@@ -220,5 +221,156 @@ export class StaffProductStore {
    */
   async delete(id: string): Promise<void> {
     await this.pool.query('DELETE FROM staff_products WHERE id = $1', [id]);
+  }
+
+  /**
+   * Seed a role workspace with pre-populated draft products from Phase 14 data.
+   *
+   * Idempotent: if the workspace already has products, returns them unchanged.
+   *
+   * - J2: creates one ipb_assessment product per IPB assessment row (reference ID in structured)
+   * - J35: creates one coa_development product per ScenarioCOA row
+   * - J3: creates one execute_order product per ExerciseOrder row
+   * - Commander: creates one coa_decision product per COA that has a commander_decision
+   * - All other roles: creates default products from STAFF_ROLE_CONFIG.defaultProducts
+   *
+   * Per research anti-pattern: does NOT copy Phase 14 content into staff_products.content.
+   * Only reference IDs are stored in the structured field. Content is reserved for the
+   * user's own narrative.
+   */
+  async seedRoleWorkspace(scenarioId: string, roleKey: string): Promise<StaffProduct[]> {
+    // Idempotency check: if already seeded, return existing
+    const existing = await this.findByRole(scenarioId, roleKey);
+    if (existing.length > 0) return existing;
+
+    const seeded: StaffProduct[] = [];
+
+    switch (roleKey) {
+      case 'j2': {
+        // Pull IPB assessments from Phase 14
+        const ipbRows = await this.pool.query(
+          'SELECT id, team, perspective, exercise_phase FROM ipb_assessments WHERE scenario_id = $1',
+          [scenarioId]
+        );
+        for (const ipb of ipbRows.rows) {
+          const product = await this.create({
+            scenarioId,
+            roleKey: 'j2',
+            productType: 'ipb_assessment',
+            title: `IPB — ${ipb.perspective === 'own' ? 'Own Forces' : 'Enemy Assessment'} — ${ipb.exercise_phase as string}`,
+            structured: {
+              ipbAssessmentId: ipb.id,
+              team: ipb.team,
+              perspective: ipb.perspective,
+              exercisePhase: ipb.exercise_phase,
+            },
+            content: '',
+            createdBy: 'system',
+          });
+          seeded.push(product);
+        }
+        break;
+      }
+
+      case 'j35': {
+        // Pull COAs from Phase 14
+        const coaRows = await this.pool.query(
+          'SELECT id, name, team, exercise_phase, status FROM scenario_coas WHERE scenario_id = $1',
+          [scenarioId]
+        );
+        for (const coa of coaRows.rows) {
+          const product = await this.create({
+            scenarioId,
+            roleKey: 'j35',
+            productType: 'coa_development',
+            title: `COA: ${coa.name as string} — ${coa.exercise_phase as string}`,
+            structured: {
+              coaId: coa.id,
+              team: coa.team,
+              exercisePhase: coa.exercise_phase,
+              status: coa.status,
+            },
+            content: '',
+            createdBy: 'system',
+          });
+          seeded.push(product);
+        }
+        break;
+      }
+
+      case 'j3': {
+        // Pull orders from Phase 14
+        const orderRows = await this.pool.query(
+          'SELECT id, order_type, title, exercise_phase, status FROM exercise_orders WHERE scenario_id = $1',
+          [scenarioId]
+        );
+        for (const order of orderRows.rows) {
+          const product = await this.create({
+            scenarioId,
+            roleKey: 'j3',
+            productType: 'execute_order',
+            title: `${order.order_type as string}: ${order.title as string}`,
+            structured: {
+              orderId: order.id,
+              orderType: order.order_type,
+              exercisePhase: order.exercise_phase,
+            },
+            content: '',
+            createdBy: 'system',
+          });
+          seeded.push(product);
+        }
+        break;
+      }
+
+      case 'commander': {
+        // Pull commander decisions from Phase 14 COAs
+        const decisionRows = await this.pool.query(
+          `SELECT sc.id, sc.name, sc.commander_decision, sc.exercise_phase
+           FROM scenario_coas sc
+           WHERE sc.scenario_id = $1 AND sc.commander_decision IS NOT NULL`,
+          [scenarioId]
+        );
+        for (const dec of decisionRows.rows) {
+          const product = await this.create({
+            scenarioId,
+            roleKey: 'commander',
+            productType: 'coa_decision',
+            title: `COA Decision: ${dec.name as string}`,
+            structured: {
+              coaId: dec.id,
+              decision: dec.commander_decision,
+              exercisePhase: dec.exercise_phase,
+            },
+            content: (dec.commander_decision as string) || '',
+            createdBy: 'system',
+          });
+          seeded.push(product);
+        }
+        break;
+      }
+
+      default: {
+        // All other roles: create empty default products from STAFF_ROLE_CONFIG
+        const roleConfig = STAFF_ROLE_CONFIG[roleKey];
+        if (roleConfig) {
+          for (const productType of roleConfig.defaultProducts) {
+            const registry = PRODUCT_TYPE_REGISTRY[productType];
+            const product = await this.create({
+              scenarioId,
+              roleKey,
+              productType,
+              title: registry?.label ?? productType,
+              structured: {},
+              content: '',
+              createdBy: 'system',
+            });
+            seeded.push(product);
+          }
+        }
+      }
+    }
+
+    return seeded;
   }
 }
