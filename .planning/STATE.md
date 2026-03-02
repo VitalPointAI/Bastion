@@ -11,11 +11,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 15 of 15 (JPP Staff Organization Workspaces)
-Plan: 2 of TBD in current phase — Plan 02 complete
+Plan: 4 of TBD in current phase — Plan 04 complete
 Status: Executing
-Last activity: 2026-03-01 - Completed 15-02 frontend staff workspace shell (StaffWorkspace, RoleDashboard, ExerciseDashboard restructure)
+Last activity: 2026-03-01 - Completed 15-04 cross-staff notification system (useStaffNotifications hook, NotificationPanel, StaffWorkspace integration)
 
-Progress: ██████████████████████ 136 plans complete
+Progress: ██████████████████████ 138 plans complete
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: ██████████████████████ 136
 | Phase quick-5 P1 | 6 | 3 tasks | 7 files |
 | Phase 15-jpp-staff-organization-workspaces P01 | 13 | 2 tasks | 7 files |
 | Phase 15-jpp-staff-organization-workspaces P02 | 7 | 2 tasks | 8 files |
+| Phase 15-jpp-staff-organization-workspaces P04 | 4 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,12 @@ Progress: ██████████████████████ 136
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 15 Plan 04 (Cross-Staff Notification System):**
+- WebSocket URL uses window.location.hostname + port 3001 — matches backend messaging.ts setup
+- Filter mode state lives in NotificationPanel (not StaffWorkspace) — self-contained UI concern
+- onIntegrate is a placeholder alert referencing Plan 15-05 — diff view deferred by design
+- onViewProduct navigates to source role via setActiveRole — no URL changes needed
 
 **Phase 15 Plan 02 (Staff Workspace Frontend Shell):**
 - Data fetching delegated to RoleDashboard (not StaffWorkspace) — each role's data fetches independently on selection, StaffWorkspace manages navigation state only
