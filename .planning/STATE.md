@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-02T20:20:00Z"
+last_updated: "2026-03-02T20:32:13.655Z"
 progress:
   total_phases: 29
   completed_phases: 16
   total_plans: 160
-  completed_plans: 168
+  completed_plans: 171
 ---
 
 # Project State
@@ -80,6 +80,7 @@ Progress: ███████████████████████�
 | Phase 16 P02 | 4 | 2 tasks | 6 files |
 | Phase 16 P03 | 7 | 2 tasks | 5 files |
 | Phase 16 P05 | 9 | 2 tasks | 10 files |
+| Phase 16-ai-assigned-staff-workspaces P04 | 6 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -346,6 +347,8 @@ Recent decisions affecting current work:
 - [Phase 16]: roleAssignments added to ExerciseScenario as required field and to CreateExerciseScenario as optional for backward compatibility
 - [Phase 16]: 16-02: Store classes use Pool constructor injection (not getPool singleton) for LangGraph runner testability
 - [Phase 16]: 16-02: AIContextStore uses JSONB || merge (never full overwrite) with pg_notify on context:{scenarioId} for cross-role coordination
+- [Phase 16]: canControl = isControllerView === true (strict equality) so undefined props default to observer read-only
+- [Phase 16]: Plan 05 parallel execution had already added all AI workspace types/service methods; Plan 04 only needed ExerciseScenario.roleAssignments field and component files
 
 ### Roadmap Evolution
 
