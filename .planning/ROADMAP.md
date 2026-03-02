@@ -366,7 +366,7 @@ Following best practices for production-grade agentic workflows:
 
 **Goal:** AI-assigned staff roles with full agent team execution, human-in-the-loop review, real-time channel observability, and cross-role AI coordination — extending Phase 15 workspaces to support Human | AI | Disabled assignment per position with a seeded library of doctrinal AI agents for all 31 staff roles.
 **Depends on:** Phase 15
-**Plans:** 1/6 plans executed
+**Plans:** 2/6 plans executed
 
 Plans:
 - [ ] 16-01-PLAN.md — Database schema (7 tables) + TypeScript types + 31-role agent library seed data

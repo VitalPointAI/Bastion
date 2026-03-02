@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-02T19:49:24.647Z"
+last_updated: "2026-03-02T19:56:24.617Z"
 progress:
   total_phases: 29
   completed_phases: 16
   total_plans: 160
-  completed_plans: 167
+  completed_plans: 168
 ---
 
 # Project State
@@ -24,9 +24,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 16 of 16 (AI Assigned Staff Workspaces)
-Plan: 1 of 6 in current phase — Plan 01 complete
+Plan: 2 of 6 in current phase — Plan 02 complete
 Status: Executing
-Last activity: 2026-03-02 - Completed 16-01 database migration (6 AI workspace tables) + TypeScript types + 108-agent library for all 31 roles
+Last activity: 2026-03-02 - Completed 16-02 backend data stores (AIRunStore, AIChannelStore, ProductVersionStore, AIContextStore, AICoordinationStore + scenario roleAssignments)
 
 Progress: ████████████████████████ 140 plans complete
 
@@ -77,6 +77,7 @@ Progress: ███████████████████████�
 | Phase 15 P03 | 5 | 2 tasks | 6 files |
 | Phase 15-jpp-staff-organization-workspaces P05 | 9 | 2 tasks | 11 files |
 | Phase 16 P01 | 8 | 2 tasks | 4 files |
+| Phase 16 P02 | 4 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -329,6 +330,8 @@ Recent decisions affecting current work:
 - [Phase 15]: PRODUCT_TYPE_REGISTRY duplicated to frontend as pure data (no backend import possible in React app)
 - [Phase 15]: Seed-on-first-access for staff workspaces: GET /staff-products with roleKey triggers idempotent seeding from Phase 14 IPB/COA/order data, reference IDs only in structured field
 - [Phase 16]: roleAssignments added to ExerciseScenario as required field and to CreateExerciseScenario as optional for backward compatibility
+- [Phase 16]: 16-02: Store classes use Pool constructor injection (not getPool singleton) for LangGraph runner testability
+- [Phase 16]: 16-02: AIContextStore uses JSONB || merge (never full overwrite) with pg_notify on context:{scenarioId} for cross-role coordination
 
 ### Roadmap Evolution
 
@@ -1009,7 +1012,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-01
-Stopped at: Completed Phase 14 Plan 11 — SITREP delta preview endpoint (POST /ipb/:assessmentId/sitrep-preview) closing EX-15 gap
+Last session: 2026-03-02
+Stopped at: Completed Phase 16 Plan 02 — 5 AI workspace data stores (AIRunStore, AIChannelStore, ProductVersionStore, AIContextStore, AICoordinationStore) + scenario roleAssignments
 Resume file: None
-Next action: Phase 14 complete — all exercise components built, SITREP two-step review flow fully implemented end-to-end
+Next action: Phase 16 Plan 03 — LangGraph agent runner
