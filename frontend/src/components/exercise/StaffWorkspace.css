@@ -7,9 +7,11 @@
 /* ─── Workspace layout wrapper ───────────────────────────────────────────────── */
 
 .staff-workspace {
+  display: flex;          /* must be declared explicitly; tab-layout alone is not enough here */
   flex: 1;
   min-height: 0;
-  flex-direction: column; /* override tab-layout row to allow topbar above */
+  flex-direction: column; /* topbar above, body below */
+  overflow: hidden;
 }
 
 /* ─── Topbar (holds notification bell) ──────────────────────────────────────── */
@@ -195,7 +197,7 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden !important; /* override tab-content's overflow:auto; role-dashboard/role-editor-main scroll */
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
@@ -225,4 +227,42 @@
   color: var(--color-text-secondary, #94a3b8);
   padding: 0.25rem 0.75rem;
   font-style: italic;
+}
+
+/* ─── Role disabled message (Plan 16-06) ─────────────────────────────────────── */
+
+.role-disabled-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: var(--text-secondary, #64748b);
+  font-style: italic;
+}
+
+/* ─── Manage Roles button wrapper in sidebar (Plan 16-06) ────────────────────── */
+
+.staff-manage-roles-btn-wrapper {
+  padding: 0.5rem 0.6rem 0.25rem;
+}
+
+.staff-manage-roles-btn {
+  display: block;
+  width: 100%;
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-elevated, #1e1e2e);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 4px;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.staff-manage-roles-btn:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--text-primary, #e2e8f0);
+  border-color: var(--border-medium, #3a3a50);
 }

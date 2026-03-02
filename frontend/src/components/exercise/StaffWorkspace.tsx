@@ -4,6 +4,9 @@
  * Phase 15 Plan 02: Role-based sidebar navigation for the exercise area.
  * Phase 15 Plan 04: Integrated NotificationPanel (bell icon + real-time WebSocket).
  * Phase 15 Plan 05: ProductDiffView modal for cross-staff integration review.
+ * Phase 16 Plan 06: Three-way role routing (Human → RoleDashboard, AI → AIRoleWorkspace,
+ *                   Disabled → message). ManageRolesModal integration with roleAssignments
+ *                   state. Key props force remount on mode switch (prevents CSS collision).
  *
  * Replaces the flat horizontal tab navigation with a collapsible, category-grouped
  * role sidebar. 31 roles are organized into 6 categories matching STAFF_ROLE_CONFIG.
@@ -22,10 +25,16 @@
  * Plan 05 additions:
  *   - diffViewNotification state drives ProductDiffView modal
  *   - onAccept handler: fetches source/target products, merges, saves, marks integrated
+ *
+ * Plan 06 additions:
+ *   - roleAssignments state loaded from exerciseService.getRoleAssignments
+ *   - Three-way routing in content area: AI → AIRoleWorkspace, Disabled → message, Human → RoleDashboard
+ *   - ManageRolesModal integrated with initialAssignments prop and onSave callback
+ *   - key props on AIRoleWorkspace and RoleDashboard force remount on mode switch
  */
 
-import { useState, useMemo } from 'react';
-import type { ExerciseScenario, StaffNotification, StaffProduct } from '../../types/exercise';
+import { useState, useMemo, useEffect } from 'react';
+import type { ExerciseScenario, StaffNotification, StaffProduct, RoleAssignment } from '../../types/exercise';
 import {
   STAFF_ROLE_CONFIG,
   STAFF_ROLE_CATEGORIES,
@@ -34,6 +43,8 @@ import { exerciseService } from '../../services/exercise-service';
 import { RoleDashboard } from './RoleDashboard';
 import { NotificationPanel } from './NotificationPanel';
 import { ProductDiffView } from './ProductDiffView';
+import { ManageRolesModal } from './ManageRolesModal';
+import { AIRoleWorkspace } from './AIRoleWorkspace';
 import { useStaffNotifications } from '../../hooks/useStaffNotifications';
 import './StaffWorkspace.css';
 
@@ -64,6 +75,16 @@ export function StaffWorkspace({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const enabledRoles = scenario.enabledRoles ?? [];
+
+  // ── Role assignments (Plan 16-06) ────────────────────────────────────────────
+  const [roleAssignments, setRoleAssignments] = useState<Record<string, RoleAssignment>>({});
+  const [showManageRoles, setShowManageRoles] = useState(false);
+
+  useEffect(() => {
+    exerciseService.getRoleAssignments(scenario.id)
+      .then(setRoleAssignments)
+      .catch(console.error);
+  }, [scenario.id]);
 
   // ── Notifications (Plan 04) ──────────────────────────────────────────────────
   const {
@@ -229,6 +250,18 @@ export function StaffWorkspace({
       <div className="staff-workspace-body">
         {/* ── Sidebar ── */}
         <aside className={`tab-sidebar staff-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          {/* Manage Roles button — controller only */}
+          {isControllerView && !sidebarCollapsed && (
+            <div className="staff-manage-roles-btn-wrapper">
+              <button
+                className="staff-manage-roles-btn"
+                onClick={() => setShowManageRoles(true)}
+                type="button"
+              >
+                Manage Roles
+              </button>
+            </div>
+          )}
           {/* Sidebar collapse toggle */}
           <button
             className="sidebar-toggle"
@@ -298,14 +331,38 @@ export function StaffWorkspace({
 
         {/* ── Content area ── */}
         <div className="tab-content staff-content">
-          <RoleDashboard
-            key={activeRole}
-            roleKey={activeRole}
-            scenarioId={scenario.id}
-            exercisePhase={exercisePhase}
-            perspective={perspective}
-            isControllerView={isControllerView}
-          />
+          {/* Three-way routing: AI → AIRoleWorkspace, Disabled → message, Human → RoleDashboard */}
+          {(() => {
+            const assignment: RoleAssignment = roleAssignments[activeRole] ?? 'human';
+            if (assignment === 'ai') {
+              return (
+                <AIRoleWorkspace
+                  key={`ai-${activeRole}`}
+                  roleKey={activeRole}
+                  scenarioId={scenario.id}
+                  exercisePhase={exercisePhase}
+                  isControllerView={isControllerView}
+                />
+              );
+            }
+            if (assignment === 'disabled') {
+              return (
+                <div className="role-disabled-message">
+                  <p>This position is not staffed for this exercise.</p>
+                </div>
+              );
+            }
+            return (
+              <RoleDashboard
+                key={`human-${activeRole}`}
+                roleKey={activeRole}
+                scenarioId={scenario.id}
+                exercisePhase={exercisePhase}
+                perspective={perspective}
+                isControllerView={isControllerView}
+              />
+            );
+          })()}
         </div>
       </div>
 
@@ -318,6 +375,17 @@ export function StaffWorkspace({
           onAccept={handleDiffAccept}
           onReject={handleDiffReject}
           onClose={handleDiffClose}
+        />
+      )}
+
+      {/* ── Manage Roles Modal (Plan 16-06) ── */}
+      {showManageRoles && (
+        <ManageRolesModal
+          scenarioId={scenario.id}
+          enabledRoles={enabledRoles}
+          initialAssignments={roleAssignments}
+          onSave={(updated) => setRoleAssignments(updated)}
+          onClose={() => setShowManageRoles(false)}
         />
       )}
     </div>
