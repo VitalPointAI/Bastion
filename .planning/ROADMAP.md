@@ -362,6 +362,20 @@ Following best practices for production-grade agentic workflows:
 - `resolve_conflict(conflict_id, resolution, approver)` - Mark conflict resolved
 - `notify_reviewers(conflict_id, reviewer_ids)` - Send review notifications
 
+### Phase 16: AI Assigned Staff Workspaces
+
+**Goal:** AI-assigned staff roles with full agent team execution, human-in-the-loop review, real-time channel observability, and cross-role AI coordination — extending Phase 15 workspaces to support Human | AI | Disabled assignment per position with a seeded library of doctrinal AI agents for all 31 staff roles.
+**Depends on:** Phase 15
+**Plans:** 6 plans
+
+Plans:
+- [ ] 16-01-PLAN.md — Database schema (7 tables) + TypeScript types + 31-role agent library seed data
+- [ ] 16-02-PLAN.md — Backend stores: ai-run-store, ai-channel-store, product-version-store, ai-context-store, ai-coordination-store
+- [ ] 16-03-PLAN.md — LangGraph AI role graph + trigger router (debounce merge) + 9 new API routes
+- [ ] 16-04-PLAN.md — ManageRoles modal (Human|AI|Disabled toggle) + AIRoleWorkspace + AgentRosterCard
+- [ ] 16-05-PLAN.md — ChannelFeed (SSE) + ChannelEvent renderer + ProductReviewPanel + ProductVersionHistory
+- [ ] 16-06-PLAN.md — StaffWorkspace three-way routing + complete wiring + human verify checkpoint
+
 ---
 
 **Key Capabilities:**
