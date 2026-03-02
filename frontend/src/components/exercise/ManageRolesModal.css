@@ -1,0 +1,288 @@
+/* ============================================================================
+   ManageRolesModal - Phase 16 Plan 04
+   Human | AI | Disabled three-state toggle for role assignment.
+   Uses CSS variable conventions from StaffWorkspace.css and RoleDashboard.css.
+   ============================================================================ */
+
+/* ─── Overlay ────────────────────────────────────────────────────────────────── */
+
+.manage-roles-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+/* ─── Modal Container ────────────────────────────────────────────────────────── */
+
+.manage-roles-modal {
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────────── */
+
+.mrm-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-subtle, #2a2a38);
+  flex-shrink: 0;
+}
+
+.mrm-title-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.mrm-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+}
+
+.mrm-subtitle {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted, #666678);
+  line-height: 1.4;
+}
+
+.mrm-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #666678);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.mrm-close-btn:hover {
+  color: var(--text-primary, #fff);
+}
+
+/* ─── Body ───────────────────────────────────────────────────────────────────── */
+
+.mrm-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.mrm-loading {
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: var(--text-muted, #666678);
+  font-size: 0.875rem;
+}
+
+.mrm-error {
+  margin: 0.75rem 1.5rem;
+  padding: 0.625rem 0.875rem;
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #ff6b6b;
+  font-size: 0.875rem;
+}
+
+/* ─── Role List ──────────────────────────────────────────────────────────────── */
+
+.mrm-roles-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mrm-role-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle, #2a2a38);
+  transition: background 0.1s ease;
+}
+
+.mrm-role-row:last-child {
+  border-bottom: none;
+}
+
+.mrm-role-row:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.02));
+}
+
+.mrm-role-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.mrm-role-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mrm-role-ai-hint {
+  font-size: 0.72rem;
+  color: #a78bfa;
+}
+
+/* ─── Three-State Toggle ─────────────────────────────────────────────────────── */
+
+.role-assignment-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-medium, #3a3a48);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.toggle-btn {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-medium, #3a3a48);
+  color: var(--text-muted, #666678);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  white-space: nowrap;
+  user-select: none;
+  opacity: 0.75;
+}
+
+.toggle-btn:last-child {
+  border-right: none;
+}
+
+.toggle-btn:hover:not(:disabled) {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+  opacity: 1;
+}
+
+.toggle-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* Active states */
+
+.toggle-btn.active {
+  opacity: 1;
+  font-weight: 600;
+}
+
+/* Human — blue, consistent with .role-action-btn--primary */
+.toggle-btn.active.toggle-human {
+  background: rgba(74, 144, 217, 0.2);
+  color: #60a5fa;
+  border-right-color: rgba(74, 144, 217, 0.3);
+}
+
+/* AI — purple/violet, distinct AI identity color */
+.toggle-btn.active.toggle-ai {
+  background: rgba(124, 58, 237, 0.2);
+  color: #a78bfa;
+  border-right-color: rgba(124, 58, 237, 0.3);
+}
+
+/* Disabled — grey, neutral */
+.toggle-btn.active.toggle-disabled {
+  background: rgba(100, 100, 120, 0.2);
+  color: var(--text-secondary, #aaa);
+  border-right-color: rgba(100, 100, 120, 0.3);
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────────────── */
+
+.mrm-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.5rem;
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  flex-shrink: 0;
+  background: var(--bg-primary, #111118);
+}
+
+.mrm-ai-summary {
+  flex: 1;
+  font-size: 0.8rem;
+  color: #a78bfa;
+  font-weight: 500;
+}
+
+.mrm-save-success {
+  font-size: 0.8rem;
+  color: #34d399;
+  font-weight: 600;
+}
+
+.mrm-footer-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────────── */
+
+.mrm-btn {
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid var(--border-medium, #3a3a48);
+}
+
+.mrm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mrm-btn-cancel {
+  background: transparent;
+  color: var(--text-secondary, #aaa);
+}
+
+.mrm-btn-cancel:hover:not(:disabled) {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+  color: var(--text-primary, #fff);
+}
+
+.mrm-btn-save {
+  background: rgba(74, 144, 217, 0.1);
+  border-color: rgba(74, 144, 217, 0.4);
+  color: var(--accent-blue, #4a90d9);
+}
+
+.mrm-btn-save:hover:not(:disabled) {
+  background: rgba(74, 144, 217, 0.18);
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 2px 8px rgba(74, 144, 217, 0.2);
+}

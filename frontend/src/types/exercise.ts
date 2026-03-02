@@ -716,6 +716,8 @@ export interface ExerciseScenario {
   status: 'draft' | 'active' | 'complete';
   /** Array of enabled staff role keys for this scenario. Phase 15 addition. */
   enabledRoles: string[];
+  /** Per-role assignment mode. Phase 16 addition. Defaults to 'human' if absent. */
+  roleAssignments?: Record<string, RoleAssignment>;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
