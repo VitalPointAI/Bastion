@@ -36,6 +36,16 @@ import { STAFF_ROLE_CONFIG, PRODUCT_TYPE_REGISTRY } from '../exercise/types.js';
 import { configService } from '../strategic/config/service.js';
 import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
 import { OpenAICompatibleProvider } from '../strategic/extraction/providers/openai-provider.js';
+import { AIRunStore } from '../exercise/ai-run-store.js';
+import { AIChannelStore } from '../exercise/ai-channel-store.js';
+import { ProductVersionStore } from '../exercise/product-version-store.js';
+import { AIContextStore } from '../exercise/ai-context-store.js';
+import { AICoordinationStore } from '../exercise/ai-coordination-store.js';
+import { TriggerRouter, registerAIRoleWorker } from '../exercise/trigger-router.js';
+import { LangGraphAgentRunner } from '../exercise/ai-role-runner.js';
+import { getDefaultAgentsForRole } from '../exercise/agent-library.js';
+import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
+import type { ReviewFeedback } from '../exercise/types.js';
 // ─── Multer Setup ─────────────────────────────────────────────────────────────
 
 const upload = multer({
@@ -55,6 +65,79 @@ const gateStore = new GateStore();
 const staffProductStore = new StaffProductStore();
 const staffNotificationService = new StaffNotificationService();
 const strategicImportService = new StrategicImportService();
+
+// ─── AI Workspace Store / Runner / Router Singletons ─────────────────────────
+
+/**
+ * Build or return the AI workspace singletons.
+ * Uses lazy initialization so the database pool is available when first accessed.
+ */
+let _aiWorkspaceInit = false;
+let _aiRunStore: AIRunStore;
+let _aiChannelStore: AIChannelStore;
+let _productVersionStore: ProductVersionStore;
+let _aiContextStore: AIContextStore;
+let _aiCoordinationStore: AICoordinationStore;
+let _agentRunner: LangGraphAgentRunner;
+let _triggerRouter: TriggerRouter;
+
+async function getAIWorkspace(): Promise<{
+  aiRunStore: AIRunStore;
+  aiChannelStore: AIChannelStore;
+  productVersionStore: ProductVersionStore;
+  aiContextStore: AIContextStore;
+  aiCoordinationStore: AICoordinationStore;
+  agentRunner: LangGraphAgentRunner;
+  triggerRouter: TriggerRouter;
+}> {
+  if (_aiWorkspaceInit) {
+    return {
+      aiRunStore: _aiRunStore,
+      aiChannelStore: _aiChannelStore,
+      productVersionStore: _productVersionStore,
+      aiContextStore: _aiContextStore,
+      aiCoordinationStore: _aiCoordinationStore,
+      agentRunner: _agentRunner,
+      triggerRouter: _triggerRouter,
+    };
+  }
+
+  const pool = getPool();
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) throw new Error('DATABASE_URL is required for AI workspace');
+
+  _aiRunStore = new AIRunStore(pool);
+  _aiChannelStore = new AIChannelStore(pool);
+  _productVersionStore = new ProductVersionStore(pool);
+  _aiContextStore = new AIContextStore(pool);
+  _aiCoordinationStore = new AICoordinationStore(pool);
+
+  const checkpointer = PostgresSaver.fromConnString(dbUrl);
+  _agentRunner = new LangGraphAgentRunner(
+    checkpointer,
+    _aiRunStore,
+    _aiChannelStore,
+    _productVersionStore,
+    _aiContextStore,
+  );
+
+  const { PgBoss } = await import('pg-boss');
+  const boss = new PgBoss(dbUrl);
+  await boss.start();
+  _triggerRouter = new TriggerRouter(boss, _aiRunStore);
+  registerAIRoleWorker(boss, _agentRunner, _aiRunStore);
+
+  _aiWorkspaceInit = true;
+  return {
+    aiRunStore: _aiRunStore,
+    aiChannelStore: _aiChannelStore,
+    productVersionStore: _productVersionStore,
+    aiContextStore: _aiContextStore,
+    aiCoordinationStore: _aiCoordinationStore,
+    agentRunner: _agentRunner,
+    triggerRouter: _triggerRouter,
+  };
+}
 
 /**
  * Build an LLM ProviderConfig from the admin-configured settings.
@@ -216,8 +299,31 @@ exerciseRouter.put('/scenarios/:id', async (req: Request, res: Response) => {
  */
 exerciseRouter.post('/scenarios/:id/advance-phase', async (req: Request, res: Response) => {
   try {
-    const scenario = await scenarioStore.advancePhase(req.params.id as string);
+    const scenarioId = req.params.id as string;
+    const previousScenario = await scenarioStore.findById(scenarioId);
+    const previousPhase = previousScenario?.exercisePhases?.[previousScenario.currentPhaseIndex];
+    const scenario = await scenarioStore.advancePhase(scenarioId);
+    const newPhase = scenario.exercisePhases?.[scenario.currentPhaseIndex];
     res.json(scenario);
+
+    // Auto-trigger: phase change fires all AI-assigned roles (non-blocking)
+    setImmediate(async () => {
+      try {
+        const aiRoles = Object.entries(scenario.roleAssignments ?? {})
+          .filter(([, mode]) => mode === 'ai')
+          .map(([roleKey]) => roleKey);
+        if (aiRoles.length === 0) return;
+        const { triggerRouter } = await getAIWorkspace();
+        for (const roleKey of aiRoles) {
+          await triggerRouter.trigger(scenarioId, roleKey, {
+            triggerType: 'phase_change',
+            payload: { newPhase, previousPhase },
+          });
+        }
+      } catch (err) {
+        console.error('[advance-phase] phase_change auto-trigger failed:', err);
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to advance phase' });
   }
@@ -320,6 +426,29 @@ exerciseRouter.post(
           exercisePhase: d.exercisePhase,
           documentType: d.documentType,
         })),
+      });
+
+      // Auto-trigger: OPORD upload fires all AI-assigned roles (non-blocking)
+      setImmediate(async () => {
+        try {
+          const scenario = await scenarioStore.findById(scenarioId);
+          if (!scenario) return;
+          const aiRoles = Object.entries(scenario.roleAssignments ?? {})
+            .filter(([, mode]) => mode === 'ai')
+            .map(([roleKey]) => roleKey);
+          if (aiRoles.length === 0) return;
+          const { triggerRouter } = await getAIWorkspace();
+          for (const roleKey of aiRoles) {
+            for (const uploadedDoc of createdDocs) {
+              await triggerRouter.trigger(scenarioId, roleKey, {
+                triggerType: 'opord_upload',
+                payload: { documentId: uploadedDoc.id, documentType: uploadedDoc.documentType },
+              });
+            }
+          }
+        } catch (err) {
+          console.error('[exercise-upload] opord_upload auto-trigger failed:', err);
+        }
       });
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : 'Upload failed' });
@@ -1370,6 +1499,32 @@ exerciseRouter.post('/scenarios/:id/staff-products/:productId/publish', async (r
     // Return the updated product
     const product = await staffProductStore.findById(productId);
     res.json(product);
+
+    if (!product) return;
+
+    // Auto-trigger: upstream publish fires all other AI-assigned roles (non-blocking)
+    const publishingRoleKey = product.roleKey;
+    setImmediate(async () => {
+      try {
+        const aiRoles = Object.entries(scenario.roleAssignments ?? {})
+          .filter(([key, mode]) => mode === 'ai' && key !== publishingRoleKey)
+          .map(([roleKey]) => roleKey);
+        if (aiRoles.length === 0) return;
+        const { triggerRouter } = await getAIWorkspace();
+        for (const roleKey of aiRoles) {
+          await triggerRouter.trigger(scenarioId, roleKey, {
+            triggerType: 'upstream_publish',
+            payload: {
+              publishedRoleKey: publishingRoleKey,
+              productId: product.id,
+              productType: product.productType,
+            },
+          });
+        }
+      } catch (err) {
+        console.error('[staff-products-publish] upstream_publish auto-trigger failed:', err);
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to publish staff product' });
   }
@@ -1606,6 +1761,267 @@ exerciseRouter.delete('/scenarios/:id/agent-team-config/:configId', async (req: 
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to delete agent team config' });
+  }
+});
+
+// ============ AI WORKSPACE ROUTES ============
+
+/**
+ * GET /api/exercise/scenarios/:id/role-assignments
+ * Returns current roleAssignments map for the scenario.
+ */
+exerciseRouter.get('/scenarios/:id/role-assignments', async (req: Request, res: Response) => {
+  try {
+    const scenario = await scenarioStore.findById(req.params.id as string);
+    if (!scenario) {
+      res.status(404).json({ error: 'Scenario not found' });
+      return;
+    }
+    res.json({ roleAssignments: scenario.roleAssignments ?? {} });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to get role assignments' });
+  }
+});
+
+/**
+ * PUT /api/exercise/scenarios/:id/role-assignments
+ * Body: { roleAssignments: Record<string, 'human' | 'ai' | 'disabled'> }
+ */
+exerciseRouter.put('/scenarios/:id/role-assignments', async (req: Request, res: Response) => {
+  try {
+    const { roleAssignments } = req.body as { roleAssignments?: Record<string, string> };
+    if (!roleAssignments || typeof roleAssignments !== 'object') {
+      res.status(400).json({ error: 'roleAssignments object required' });
+      return;
+    }
+    const updated = await scenarioStore.updateRoleAssignments(
+      req.params.id as string,
+      roleAssignments as Record<string, import('../exercise/types.js').RoleAssignment>
+    );
+    res.json({ roleAssignments: updated.roleAssignments });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to update role assignments' });
+  }
+});
+
+/**
+ * POST /api/exercise/scenarios/:id/roles/:roleKey/runs
+ * Manual trigger — queues an AI execution run via TriggerRouter.
+ */
+exerciseRouter.post('/scenarios/:id/roles/:roleKey/runs', async (req: Request, res: Response) => {
+  try {
+    const scenarioId = req.params.id as string;
+    const roleKey = req.params.roleKey as string;
+    const { triggerRouter } = await getAIWorkspace();
+    await triggerRouter.trigger(scenarioId, roleKey, {
+      triggerType: 'manual',
+      payload: (req.body as Record<string, unknown>) ?? {},
+    });
+    res.status(202).json({ status: 'queued' });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to trigger AI run' });
+  }
+});
+
+/**
+ * GET /api/exercise/scenarios/:id/roles/:roleKey/runs
+ * List all AI runs for a role within a scenario.
+ */
+exerciseRouter.get('/scenarios/:id/roles/:roleKey/runs', async (req: Request, res: Response) => {
+  try {
+    const { aiRunStore } = await getAIWorkspace();
+    const runs = await aiRunStore.findByScenarioAndRole(
+      req.params.id as string,
+      req.params.roleKey as string
+    );
+    res.json({ runs });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to list AI runs' });
+  }
+});
+
+/**
+ * PATCH /api/exercise/scenarios/:id/roles/:roleKey/runs/:runId/pause
+ * Pause an in-flight AI run.
+ */
+exerciseRouter.patch('/scenarios/:id/roles/:roleKey/runs/:runId/pause', async (req: Request, res: Response) => {
+  try {
+    const { agentRunner } = await getAIWorkspace();
+    await agentRunner.pause(req.params.runId as string);
+    res.json({ status: 'paused' });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to pause AI run' });
+  }
+});
+
+/**
+ * PATCH /api/exercise/scenarios/:id/roles/:roleKey/runs/:runId/resume
+ * Resume a paused AI run.
+ */
+exerciseRouter.patch('/scenarios/:id/roles/:roleKey/runs/:runId/resume', async (req: Request, res: Response) => {
+  try {
+    const { agentRunner } = await getAIWorkspace();
+    await agentRunner.resume(req.params.runId as string);
+    res.json({ status: 'resumed' });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to resume AI run' });
+  }
+});
+
+/**
+ * POST /api/exercise/scenarios/:id/roles/:roleKey/runs/:runId/review
+ * Body: ReviewFeedback { action, notes?, annotations?, edits? }
+ * Resumes the interrupted LangGraph graph with human review feedback.
+ */
+exerciseRouter.post('/scenarios/:id/roles/:roleKey/runs/:runId/review', async (req: Request, res: Response) => {
+  try {
+    const feedback = req.body as ReviewFeedback;
+    if (!feedback?.action) {
+      res.status(400).json({ error: 'action required' });
+      return;
+    }
+    const { agentRunner } = await getAIWorkspace();
+    await agentRunner.resume(req.params.runId as string, feedback as unknown as Record<string, unknown>);
+    res.json({ status: 'resumed' });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to submit review' });
+  }
+});
+
+/**
+ * GET /api/exercise/scenarios/:id/roles/:roleKey/channel
+ * SSE stream — backfills existing events then streams new ones via pg LISTEN.
+ */
+exerciseRouter.get('/scenarios/:id/roles/:roleKey/channel', async (req: Request, res: Response) => {
+  const scenarioId = req.params.id as string;
+  const roleKey = req.params.roleKey as string;
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  try {
+    const { aiChannelStore } = await getAIWorkspace();
+
+    // Backfill: send existing events
+    const existing = await aiChannelStore.findByRole(scenarioId, roleKey, 100);
+    for (const event of existing) {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    }
+
+    // Subscribe to new events via pg LISTEN
+    const pool = getPool();
+    const pgClient = await pool.connect();
+    try {
+      await pgClient.query(`LISTEN "channel:${scenarioId}:${roleKey}"`);
+      pgClient.on('notification', (msg) => {
+        if (msg.payload) {
+          res.write(`data: ${msg.payload}\n\n`);
+        }
+      });
+    } catch (err) {
+      pgClient.release();
+      res.end();
+      return;
+    }
+
+    req.on('close', () => {
+      pgClient.query(`UNLISTEN "channel:${scenarioId}:${roleKey}"`).finally(() => pgClient.release());
+      res.end();
+    });
+  } catch (error) {
+    res.write(`data: ${JSON.stringify({ error: 'Channel initialization failed' })}\n\n`);
+    res.end();
+  }
+});
+
+/**
+ * GET /api/exercise/scenarios/:id/roles/:roleKey/agents
+ * List default agents for a role (from agent library).
+ */
+exerciseRouter.get('/scenarios/:id/roles/:roleKey/agents', async (req: Request, res: Response) => {
+  try {
+    const agents = getDefaultAgentsForRole(req.params.roleKey as string);
+    res.json({ agents });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to get agents' });
+  }
+});
+
+/**
+ * GET /api/exercise/scenarios/:id/staff-products/:productId/versions
+ * Returns version history for a specific staff product.
+ */
+exerciseRouter.get('/scenarios/:id/staff-products/:productId/versions', async (req: Request, res: Response) => {
+  try {
+    const { productVersionStore } = await getAIWorkspace();
+    const versions = await productVersionStore.findByProduct(req.params.productId as string);
+    res.json({ versions });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to get product versions' });
+  }
+});
+
+/**
+ * POST /api/exercise/scenarios/:id/roles/commander/directives
+ * Save a commander directive product and trigger all other AI-assigned roles.
+ * Body: { productType: string, title: string, content?: string, structured?: Record<string, unknown> }
+ */
+exerciseRouter.post('/scenarios/:id/roles/commander/directives', async (req: Request, res: Response) => {
+  try {
+    const scenarioId = req.params.id as string;
+    const createdBy = (req.headers['x-did'] as string) || 'anonymous';
+    const { productType, title, content, structured } = req.body as {
+      productType?: string;
+      title?: string;
+      content?: string;
+      structured?: Record<string, unknown>;
+    };
+
+    if (!title) {
+      res.status(400).json({ error: 'title is required' });
+      return;
+    }
+
+    // Create the commander directive product
+    const savedProduct = await staffProductStore.create({
+      scenarioId,
+      roleKey: 'commander',
+      productType: productType ?? 'commander_directive',
+      title,
+      structured: structured ?? {},
+      content: content ?? '',
+      createdBy,
+    });
+
+    res.status(201).json(savedProduct);
+
+    // Auto-trigger: commander_directive fires all other AI-assigned roles (non-blocking)
+    setImmediate(async () => {
+      try {
+        const scenario = await scenarioStore.findById(scenarioId);
+        if (!scenario) return;
+        const aiRoles = Object.entries(scenario.roleAssignments ?? {})
+          .filter(([key, mode]) => mode === 'ai' && key !== 'commander')
+          .map(([roleKey]) => roleKey);
+        if (aiRoles.length === 0) return;
+        const { triggerRouter } = await getAIWorkspace();
+        for (const roleKey of aiRoles) {
+          await triggerRouter.trigger(scenarioId, roleKey, {
+            triggerType: 'commander_directive',
+            payload: {
+              directiveProductId: savedProduct.id,
+              directiveType: savedProduct.productType,
+            },
+          });
+        }
+      } catch (err) {
+        console.error('[commander-directives] commander_directive auto-trigger failed:', err);
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to create commander directive' });
   }
 });
 

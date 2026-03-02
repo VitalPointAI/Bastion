@@ -89,6 +89,28 @@ export { OrderStore } from './order-store.js';
 export { TaskStore } from './task-store.js';
 export { GateStore } from './gate-store.js';
 
+// ─── AI Workspace Stores ──────────────────────────────────────────────────────
+
+export { AIRunStore } from './ai-run-store.js';
+export { AIChannelStore } from './ai-channel-store.js';
+export { ProductVersionStore } from './product-version-store.js';
+export { AIContextStore } from './ai-context-store.js';
+export type { AIContextEntry } from './ai-context-store.js';
+export { AICoordinationStore } from './ai-coordination-store.js';
+export type { AICoordinationEntry } from './ai-coordination-store.js';
+
+// ─── AI Workspace Runner & Graph ──────────────────────────────────────────────
+
+export type { AgentRunner } from './ai-role-runner.js';
+export { LangGraphAgentRunner } from './ai-role-runner.js';
+export { createAIRoleGraph, runAIRoleGraph } from './ai-role-graph.js';
+export type { StoreContext as AIRoleStoreContext } from './ai-role-graph.js';
+export { TriggerRouter, registerAIRoleWorker } from './trigger-router.js';
+
+// ─── Agent Library ────────────────────────────────────────────────────────────
+
+export { getDefaultAgentsForRole, DEFAULT_AGENT_LIBRARY } from './agent-library.js';
+
 // ─── Package Parser & Extraction Service ──────────────────────────────────────
 
 export type { PackageTags, ScenarioPackageFile, TaggedScenarioFile } from './package-parser.js';
