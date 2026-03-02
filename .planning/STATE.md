@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: unknown
+last_updated: "2026-03-02T19:49:24.647Z"
+progress:
+  total_phases: 29
+  completed_phases: 16
+  total_plans: 160
+  completed_plans: 167
+---
+
 # Project State
 
 ## Project Reference
@@ -6,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 15 executing — JPP Staff Organization Workspaces
+**Current focus:** Phase 16 executing — AI Assigned Staff Workspaces
 
 ## Current Position
 
-Phase: 15 of 15 (JPP Staff Organization Workspaces)
-Plan: 5 of 5 in current phase — Plan 05 complete
-Status: Complete
-Last activity: 2026-03-02 - Completed 15-05 diff integration view, AI agent suggestion panel, backend suggest endpoint (all Phase 15 plans complete)
+Phase: 16 of 16 (AI Assigned Staff Workspaces)
+Plan: 1 of 6 in current phase — Plan 01 complete
+Status: Executing
+Last activity: 2026-03-02 - Completed 16-01 database migration (6 AI workspace tables) + TypeScript types + 108-agent library for all 31 roles
 
-Progress: ████████████████████████ 139 plans complete
+Progress: ████████████████████████ 140 plans complete
 
 ## Performance Metrics
 
@@ -63,6 +76,7 @@ Progress: ███████████████████████�
 | Phase 15-jpp-staff-organization-workspaces P04 | 4 | 2 tasks | 5 files |
 | Phase 15 P03 | 5 | 2 tasks | 6 files |
 | Phase 15-jpp-staff-organization-workspaces P05 | 9 | 2 tasks | 11 files |
+| Phase 16 P01 | 8 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -314,6 +328,7 @@ Recent decisions affecting current work:
 - [Phase quick-5]: Use Anthropic native PDF document blocks instead of image rendering for map vision extraction — avoids canvas dependencies
 - [Phase 15]: PRODUCT_TYPE_REGISTRY duplicated to frontend as pure data (no backend import possible in React app)
 - [Phase 15]: Seed-on-first-access for staff workspaces: GET /staff-products with roleKey triggers idempotent seeding from Phase 14 IPB/COA/order data, reference IDs only in structured field
+- [Phase 16]: roleAssignments added to ExerciseScenario as required field and to CreateExerciseScenario as optional for backward compatibility
 
 ### Roadmap Evolution
 
