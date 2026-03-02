@@ -1,0 +1,147 @@
+/* ProductVersionHistory.css
+ * Phase 16 Plan 05: Version chain timeline for staff product draft iterations.
+ */
+
+.product-version-history {
+  padding: 0.5rem 0;
+}
+
+/* Timeline */
+.pvh-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pvh-entry {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  align-items: flex-start;
+  min-height: 2.5rem;
+}
+
+/* Dot + connector column */
+.pvh-dot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 1rem;
+  flex-shrink: 0;
+  padding-top: 0.3rem;
+}
+
+.pvh-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: #94a3b8;
+  border: 2px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.pvh-dot-current {
+  background: #3b82f6;
+  border-color: #bfdbfe;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.pvh-connector {
+  width: 2px;
+  flex: 1;
+  min-height: 0.75rem;
+  background: #e2e8f0;
+  margin-top: 2px;
+}
+
+/* Content column */
+.pvh-content {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 0.75rem;
+}
+
+.pvh-last .pvh-content {
+  padding-bottom: 0;
+}
+
+.pvh-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Version badge */
+.pvh-version-badge {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.pvh-version-current {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.pvh-current-label {
+  font-size: 0.7rem;
+  color: #3b82f6;
+  font-style: italic;
+  flex-shrink: 0;
+}
+
+.pvh-created-by {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.pvh-timestamp {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.pvh-view-btn {
+  margin-left: auto;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 3px;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s;
+}
+
+.pvh-view-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+/* Revision notes */
+.pvh-notes {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+/* Empty state */
+.pvh-empty {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 0.5rem 0;
+}
