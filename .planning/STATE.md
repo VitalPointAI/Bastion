@@ -11,18 +11,18 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 15 of 15 (JPP Staff Organization Workspaces)
-Plan: 1 of TBD in current phase — Plan 01 complete
+Plan: 2 of TBD in current phase — Plan 02 complete
 Status: Executing
-Last activity: 2026-03-01 - Completed 15-01 staff workspace backend (database, stores, routes)
+Last activity: 2026-03-01 - Completed 15-02 frontend staff workspace shell (StaffWorkspace, RoleDashboard, ExerciseDashboard restructure)
 
-Progress: ██████████████████████ 135 plans complete
+Progress: ██████████████████████ 136 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 135
+- Total plans completed: 136
 - Average duration: 10 min
-- Total execution time: 19.77 hours
+- Total execution time: 19.89 hours
 
 **By Phase:**
 
@@ -59,6 +59,7 @@ Progress: ██████████████████████ 135
 | Phase 14-friendly-adversary-ipb-complete-cycle P11 | 2 | 1 task | 2 files |
 | Phase quick-5 P1 | 6 | 3 tasks | 7 files |
 | Phase 15-jpp-staff-organization-workspaces P01 | 13 | 2 tasks | 7 files |
+| Phase 15-jpp-staff-organization-workspaces P02 | 7 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,12 @@ Progress: ██████████████████████ 135
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 15 Plan 02 (Staff Workspace Frontend Shell):**
+- Data fetching delegated to RoleDashboard (not StaffWorkspace) — each role's data fetches independently on selection, StaffWorkspace manages navigation state only
+- View mode state lives in ExerciseDashboard (staff/legacy toggle is purely client-side, not a router)
+- Commander is always enabled (disabled checkbox) — prevents broken workspace state
+- StaffWorkspace uses key={activeRole} on RoleDashboard to force remount on role switch ensuring clean state
 
 **Phase 1 Plan 1 (NEAR Contract Foundation):**
 - State versioning: Inline state_version field instead of enum-based approach (borsh macro compatibility)
