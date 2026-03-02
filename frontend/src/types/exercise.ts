@@ -350,6 +350,35 @@ export interface StaffNotification {
   createdAt: string;
 }
 
+// ─── Agent Team Config (Phase 15) ─────────────────────────────────────────────
+
+export interface AgentTeamConfig {
+  id: string;
+  scenarioId: string;
+  roleKey: string;
+  /** null = role default; non-null = override for this product type only */
+  productType: string | null;
+  agentTeamId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Agent Suggestion (Phase 15) ──────────────────────────────────────────────
+
+export type SuggestionBlockStatus = 'pending' | 'accepted' | 'rejected';
+
+export interface SuggestionBlock {
+  id: string;
+  type: 'structured_field' | 'narrative';
+  fieldName?: string;
+  content: string;
+  status: SuggestionBlockStatus;
+}
+
+export interface AgentSuggestion {
+  blocks: SuggestionBlock[];
+}
+
 // ─── Product Type Registry (Phase 15) ─────────────────────────────────────────
 
 export type StructuredFieldType = 'text' | 'textarea' | 'select' | 'number' | 'date' | 'unit_table';

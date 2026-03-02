@@ -3,6 +3,7 @@
  *
  * Phase 15 Plan 02: Role-based sidebar navigation for the exercise area.
  * Phase 15 Plan 04: Integrated NotificationPanel (bell icon + real-time WebSocket).
+ * Phase 15 Plan 05: ProductDiffView modal for cross-staff integration review.
  *
  * Replaces the flat horizontal tab navigation with a collapsible, category-grouped
  * role sidebar. 31 roles are organized into 6 categories matching STAFF_ROLE_CONFIG.
@@ -16,17 +17,23 @@
  *   - NotificationPanel rendered in workspace header area (top-right bell icon)
  *   - Per-role unread badge counts in sidebar role buttons
  *   - onViewProduct navigates to source role workspace
- *   - onIntegrate marks as integrated + shows placeholder alert
+ *   - onIntegrate opens ProductDiffView modal (Plan 05)
+ *
+ * Plan 05 additions:
+ *   - diffViewNotification state drives ProductDiffView modal
+ *   - onAccept handler: fetches source/target products, merges, saves, marks integrated
  */
 
 import { useState, useMemo } from 'react';
-import type { ExerciseScenario, StaffNotification } from '../../types/exercise';
+import type { ExerciseScenario, StaffNotification, StaffProduct } from '../../types/exercise';
 import {
   STAFF_ROLE_CONFIG,
   STAFF_ROLE_CATEGORIES,
 } from '../../types/exercise';
+import { exerciseService } from '../../services/exercise-service';
 import { RoleDashboard } from './RoleDashboard';
 import { NotificationPanel } from './NotificationPanel';
+import { ProductDiffView } from './ProductDiffView';
 import { useStaffNotifications } from '../../hooks/useStaffNotifications';
 import './StaffWorkspace.css';
 
@@ -65,6 +72,7 @@ export function StaffWorkspace({
     roleUnreadCount,
     markRead,
     markIntegrated,
+    refresh: refreshNotifications,
   } = useStaffNotifications(scenario.id, activeRole);
 
   // Build per-role unread count map for sidebar badges
@@ -78,15 +86,100 @@ export function StaffWorkspace({
     return map;
   }, [notifications]);
 
+  // ── Diff view state (Plan 05) ────────────────────────────────────────────────
+  const [diffViewNotification, setDiffViewNotification] = useState<StaffNotification | null>(null);
+  const [diffSourceProduct, setDiffSourceProduct] = useState<StaffProduct | null>(null);
+  const [diffTargetProduct, setDiffTargetProduct] = useState<StaffProduct | null>(null);
+  const [diffViewLoading, setDiffViewLoading] = useState(false);
+
   // Navigate to source role when user clicks "View" on a notification
   const handleViewProduct = (notification: StaffNotification) => {
     setActiveRole(notification.sourceRole);
   };
 
-  // Integrate: mark as integrated + show placeholder (diff view in Plan 15-05)
-  const handleIntegrate = (notification: StaffNotification) => {
-    void markIntegrated(notification.id);
-    alert(`Integration view coming soon (Plan 15-05).\nSource: ${notification.sourceRole} — Product ID: ${notification.sourceProductId}`);
+  // Integrate: fetch source product + current target product, open diff view
+  const handleIntegrate = async (notification: StaffNotification) => {
+    setDiffViewLoading(true);
+    try {
+      // Fetch the source product
+      const source = await exerciseService.getStaffProduct(scenario.id, notification.sourceProductId);
+
+      // Attempt to find a matching target product for the active role
+      // Match by product type in the same role as the active role
+      let target: StaffProduct | null = null;
+      try {
+        const roleProducts = await exerciseService.getStaffProducts(scenario.id, notification.targetRole);
+        const match = roleProducts.find((p) => p.productType === source.productType);
+        target = match ?? null;
+      } catch {
+        // No target products found — diff view will show source only
+      }
+
+      setDiffSourceProduct(source);
+      setDiffTargetProduct(target);
+      setDiffViewNotification(notification);
+    } catch (err) {
+      console.error('Failed to load diff view:', err);
+    } finally {
+      setDiffViewLoading(false);
+    }
+  };
+
+  // Accept & Integrate: merge source fields + content into target product, mark as integrated
+  const handleDiffAccept = async () => {
+    if (!diffViewNotification || !diffSourceProduct) return;
+
+    // Build merged structured data from the diff snapshot
+    const diffSnapshot = diffViewNotification.diffSnapshot as {
+      structuredChanges?: Array<{ field: string; oldValue: unknown; newValue: unknown }>;
+      contentChanged?: boolean;
+    } | null;
+
+    if (diffTargetProduct) {
+      // Merge structured field changes from the source into target
+      const mergedStructured = { ...diffTargetProduct.structured };
+      for (const change of diffSnapshot?.structuredChanges ?? []) {
+        mergedStructured[change.field] = change.newValue;
+      }
+
+      // Merge content if changed
+      let mergedContent = diffTargetProduct.content;
+      if (diffSnapshot?.contentChanged && diffSourceProduct.content) {
+        mergedContent = diffTargetProduct.content
+          ? `${diffTargetProduct.content}\n\n---\n\n[Integrated from ${STAFF_ROLE_CONFIG[diffViewNotification.sourceRole]?.label ?? diffViewNotification.sourceRole} v${diffSourceProduct.version}]\n\n${diffSourceProduct.content}`
+          : diffSourceProduct.content;
+      }
+
+      await exerciseService.updateStaffProduct(scenario.id, diffTargetProduct.id, {
+        structured: mergedStructured,
+        content: mergedContent,
+      });
+    }
+
+    // Mark the notification as integrated
+    await markIntegrated(diffViewNotification.id);
+    refreshNotifications();
+
+    // Close the diff view
+    setDiffViewNotification(null);
+    setDiffSourceProduct(null);
+    setDiffTargetProduct(null);
+  };
+
+  // Reject: mark as read, close diff view
+  const handleDiffReject = () => {
+    if (diffViewNotification) {
+      void markRead(diffViewNotification.id);
+    }
+    setDiffViewNotification(null);
+    setDiffSourceProduct(null);
+    setDiffTargetProduct(null);
+  };
+
+  const handleDiffClose = () => {
+    setDiffViewNotification(null);
+    setDiffSourceProduct(null);
+    setDiffTargetProduct(null);
   };
 
   // Toggle a category's collapsed state
@@ -123,8 +216,13 @@ export function StaffWorkspace({
           onMarkRead={markRead}
           onMarkIntegrated={markIntegrated}
           onViewProduct={handleViewProduct}
-          onIntegrate={handleIntegrate}
+          onIntegrate={(notification) => { void handleIntegrate(notification); }}
         />
+        {diffViewLoading && (
+          <div className="staff-diff-loading" aria-live="polite">
+            Loading integration review...
+          </div>
+        )}
       </div>
 
       {/* ── Main layout (sidebar + content) ── */}
@@ -210,6 +308,18 @@ export function StaffWorkspace({
           />
         </div>
       </div>
+
+      {/* ── Product Diff View Modal (Plan 05) ── */}
+      {diffViewNotification && diffSourceProduct && (
+        <ProductDiffView
+          notification={diffViewNotification}
+          sourceProduct={diffSourceProduct}
+          targetProduct={diffTargetProduct}
+          onAccept={handleDiffAccept}
+          onReject={handleDiffReject}
+          onClose={handleDiffClose}
+        />
+      )}
     </div>
   );
 }
