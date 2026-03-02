@@ -61,6 +61,7 @@ Progress: ██████████████████████ 138
 | Phase 15-jpp-staff-organization-workspaces P01 | 13 | 2 tasks | 7 files |
 | Phase 15-jpp-staff-organization-workspaces P02 | 7 | 2 tasks | 8 files |
 | Phase 15-jpp-staff-organization-workspaces P04 | 4 | 2 tasks | 5 files |
+| Phase 15 P03 | 5 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -304,6 +305,8 @@ Recent decisions affecting current work:
 - [Phase 14-friendly-adversary-ipb-complete-cycle P07]: ValidityMap auto-fit-bounds disabled when ipbLayers present to preserve theater view (Western Pacific: lat=20, lng=125, zoom=4)
 - [Phase 14-friendly-adversary-ipb-complete-cycle P11]: previewIPBFromSITREP reuses same LLM delta extraction logic as updateIPBFromSITREP with synthetic IPBAssessment for comparison — stops before createNewVersion(), closing EX-15 gap
 - [Phase quick-5]: Use Anthropic native PDF document blocks instead of image rendering for map vision extraction — avoids canvas dependencies
+- [Phase 15]: PRODUCT_TYPE_REGISTRY duplicated to frontend as pure data (no backend import possible in React app)
+- [Phase 15]: Seed-on-first-access for staff workspaces: GET /staff-products with roleKey triggers idempotent seeding from Phase 14 IPB/COA/order data, reference IDs only in structured field
 
 ### Roadmap Evolution
 
