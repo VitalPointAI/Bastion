@@ -165,6 +165,15 @@ server.listen(port, async () => {
   } catch (error) {
     console.error('Failed to initialize RAFT schema:', error);
   }
+
+  // Initialize AI workspace (PgBoss + PostgresSaver) eagerly to avoid cold-start 500s
+  try {
+    const { initAIWorkspace } = await import('./api/exercise.js');
+    await initAIWorkspace();
+    console.log('AI workspace initialized');
+  } catch (error) {
+    console.error('Failed to initialize AI workspace:', error);
+  }
 });
 
 // Graceful shutdown handlers

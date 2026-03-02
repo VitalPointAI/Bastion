@@ -107,11 +107,12 @@ export class TriggerRouter {
  * Register the pg-boss worker for 'ai-role-execution' jobs.
  * Call once at app startup after pg-boss is initialized.
  */
-export function registerAIRoleWorker(
+export async function registerAIRoleWorker(
   boss: PgBoss,
   runner: AgentRunner,
   aiRunStore: AIRunStore
-): void {
+): Promise<void> {
+  await boss.createQueue('ai-role-execution');
   boss.work(
     'ai-role-execution',
     { localConcurrency: 3 } as WorkOptions,

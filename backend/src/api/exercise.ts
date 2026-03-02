@@ -81,6 +81,10 @@ let _aiCoordinationStore: AICoordinationStore;
 let _agentRunner: LangGraphAgentRunner;
 let _triggerRouter: TriggerRouter;
 
+export async function initAIWorkspace(): Promise<void> {
+  await getAIWorkspace();
+}
+
 async function getAIWorkspace(): Promise<{
   aiRunStore: AIRunStore;
   aiChannelStore: AIChannelStore;
@@ -125,7 +129,7 @@ async function getAIWorkspace(): Promise<{
   const boss = new PgBoss(dbUrl);
   await boss.start();
   _triggerRouter = new TriggerRouter(boss, _aiRunStore);
-  registerAIRoleWorker(boss, _agentRunner, _aiRunStore);
+  await registerAIRoleWorker(boss, _agentRunner, _aiRunStore);
 
   _aiWorkspaceInit = true;
   return {
