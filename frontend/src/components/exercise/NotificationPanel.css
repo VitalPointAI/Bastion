@@ -1,0 +1,381 @@
+/* ============================================================================
+   NotificationPanel - Phase 15 Plan 04
+   Bell icon + real-time notification dropdown for the staff workspace.
+   ============================================================================ */
+
+/* ─── Wrapper — contains bell button + panel ─────────────────────────────────── */
+
+.notif-panel-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ─── Bell button ────────────────────────────────────────────────────────────── */
+
+.notif-bell-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary, #aaa);
+  font-size: 1rem;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.notif-bell-btn:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+  border-color: var(--border-active, #444456);
+  color: var(--text-primary, #e0e0e0);
+}
+
+.notif-bell-btn--open {
+  background: var(--bg-elevated, #1e1e2e);
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue, #4a90d9);
+}
+
+.notif-bell-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+/* ─── Unread badge ───────────────────────────────────────────────────────────── */
+
+.notif-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  background: #e53e3e;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ─── Panel ──────────────────────────────────────────────────────────────────── */
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 380px;
+  max-height: 500px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated, #1e1e2e);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  overflow: hidden;
+  animation: notif-slide-down 0.15s ease forwards;
+}
+
+@keyframes notif-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Panel header ───────────────────────────────────────────────────────────── */
+
+.notif-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border-subtle, #2a2a38);
+  flex-shrink: 0;
+}
+
+.notif-panel-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #aaa);
+}
+
+/* ─── Filter toggle ──────────────────────────────────────────────────────────── */
+
+.notif-filter-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-primary, #111118);
+  padding: 2px;
+  border-radius: 5px;
+}
+
+.notif-filter-btn {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted, #666678);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.notif-filter-btn:hover {
+  color: var(--text-secondary, #aaa);
+}
+
+.notif-filter-btn--active {
+  background: var(--bg-elevated, #1e1e2e);
+  color: var(--text-primary, #e0e0e0);
+  font-weight: 600;
+}
+
+/* ─── Mark all read ──────────────────────────────────────────────────────────── */
+
+.notif-panel-actions {
+  padding: 0.4rem 0.85rem;
+  border-bottom: 1px solid var(--border-subtle, #2a2a38);
+  flex-shrink: 0;
+}
+
+.notif-mark-all-btn {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  color: var(--text-muted, #666678);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.notif-mark-all-btn:hover {
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue, #4a90d9);
+}
+
+/* ─── Notification list ──────────────────────────────────────────────────────── */
+
+.notif-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0.3rem 0;
+}
+
+/* ─── Empty state ────────────────────────────────────────────────────────────── */
+
+.notif-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 2rem 1rem;
+  color: var(--text-muted, #666678);
+  font-size: 0.82rem;
+}
+
+.notif-empty p {
+  margin: 0;
+}
+
+.notif-empty-icon {
+  font-size: 1.4rem;
+  color: var(--text-dim, #444456);
+}
+
+/* ─── Notification item ──────────────────────────────────────────────────────── */
+
+.notif-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--border-subtle, #1a1a26);
+  transition: background 0.12s ease;
+  /* Left border accent by category — set via modifier classes below */
+  border-left: 3px solid transparent;
+}
+
+.notif-item:last-child {
+  border-bottom: none;
+}
+
+.notif-item:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.03));
+}
+
+/* Unread items: slightly highlighted background */
+.notif-item--unread {
+  background: rgba(74, 144, 217, 0.04);
+}
+
+/* ─── Category-coded left border ─────────────────────────────────────────────── */
+
+.notif-item--command   { border-left-color: #c8a96e; } /* gold */
+.notif-item--jstaff    { border-left-color: #4a90d9; } /* blue */
+.notif-item--special   { border-left-color: #9f7aea; } /* purple */
+.notif-item--supporting{ border-left-color: #48bb78; } /* green */
+.notif-item--component { border-left-color: #38b2ac; } /* teal */
+.notif-item--additional{ border-left-color: #ed8936; } /* orange */
+.notif-item--other     { border-left-color: var(--border-active, #444456); }
+
+/* ─── Unread dot ─────────────────────────────────────────────────────────────── */
+
+.notif-unread-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-blue, #4a90d9);
+  margin-top: 5px;
+}
+
+/* ─── Item body ──────────────────────────────────────────────────────────────── */
+
+.notif-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+
+/* ─── Role badge pill ────────────────────────────────────────────────────────── */
+
+.notif-role-badge {
+  display: inline-block;
+  padding: 0.12rem 0.4rem;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.notif-role-badge--command    { background: rgba(200, 169, 110, 0.18); color: #c8a96e; }
+.notif-role-badge--jstaff     { background: rgba(74, 144, 217, 0.18);  color: #4a90d9; }
+.notif-role-badge--special    { background: rgba(159, 122, 234, 0.18); color: #9f7aea; }
+.notif-role-badge--supporting { background: rgba(72, 187, 120, 0.18);  color: #48bb78; }
+.notif-role-badge--component  { background: rgba(56, 178, 172, 0.18);  color: #38b2ac; }
+.notif-role-badge--additional { background: rgba(237, 137, 54, 0.18);  color: #ed8936; }
+.notif-role-badge--other      { background: var(--bg-hover, rgba(255,255,255,0.05)); color: var(--text-muted, #666678); }
+
+/* ─── Notification type ──────────────────────────────────────────────────────── */
+
+.notif-type {
+  font-size: 0.72rem;
+  color: var(--text-muted, #666678);
+  text-transform: capitalize;
+}
+
+/* ─── Timestamp ──────────────────────────────────────────────────────────────── */
+
+.notif-time {
+  font-size: 0.7rem;
+  color: var(--text-dim, #444456);
+  margin-left: auto;
+}
+
+/* ─── Product title ──────────────────────────────────────────────────────────── */
+
+.notif-product-title {
+  font-size: 0.82rem;
+  color: var(--text-primary, #e0e0e0);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Action buttons ─────────────────────────────────────────────────────────── */
+
+.notif-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.notif-btn {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.7rem;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.notif-btn--view {
+  background: transparent;
+  border-color: var(--border-subtle, #2a2a38);
+  color: var(--text-muted, #666678);
+}
+.notif-btn--view:hover {
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue, #4a90d9);
+}
+
+.notif-btn--integrate {
+  background: transparent;
+  border-color: var(--border-subtle, #2a2a38);
+  color: var(--text-muted, #666678);
+}
+.notif-btn--integrate:hover:not(:disabled) {
+  border-color: #48bb78;
+  color: #48bb78;
+}
+.notif-btn--integrate:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.notif-btn--dismiss {
+  background: transparent;
+  border-color: var(--border-subtle, #2a2a38);
+  color: var(--text-dim, #444456);
+}
+.notif-btn--dismiss:hover:not(:disabled) {
+  border-color: #e53e3e;
+  color: #e53e3e;
+}
+.notif-btn--dismiss:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ─── Responsive: narrower panel on small screens ────────────────────────────── */
+
+@media (max-width: 480px) {
+  .notif-panel {
+    width: calc(100vw - 2rem);
+    right: -0.5rem;
+  }
+}
