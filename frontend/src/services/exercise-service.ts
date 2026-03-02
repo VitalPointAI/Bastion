@@ -31,6 +31,8 @@ import type {
   CreateGateInput,
   StaffProduct,
   StaffNotification,
+  AgentTeamConfig,
+  AgentSuggestion,
   CreateStaffProductInput,
   UpdateStaffProductInput,
 } from '../types/exercise';
@@ -759,6 +761,56 @@ export const exerciseService = {
   importStrategicDirection(scenarioId: string): Promise<StaffProduct> {
     return fetchJson<StaffProduct>(
       `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/import-strategic-direction`,
+      { method: 'POST' }
+    );
+  },
+
+  // ─── Agent Team Config (Phase 15) ─────────────────────────────────────────
+
+  /**
+   * Get agent team configs for a scenario, optionally filtered by roleKey.
+   */
+  async getAgentTeamConfig(scenarioId: string, roleKey?: string): Promise<AgentTeamConfig[]> {
+    const params = roleKey ? `?roleKey=${encodeURIComponent(roleKey)}` : '';
+    const data = await fetchJson<{ configs: AgentTeamConfig[] }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/agent-team-config${params}`
+    );
+    return data.configs;
+  },
+
+  /**
+   * Upsert an agent team config for a role (optionally scoped to a product type).
+   */
+  upsertAgentTeamConfig(
+    scenarioId: string,
+    input: { roleKey: string; productType?: string; agentTeamId: string }
+  ): Promise<AgentTeamConfig> {
+    return fetchJson<AgentTeamConfig>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/agent-team-config`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(input),
+      }
+    );
+  },
+
+  /**
+   * Delete an agent team config entry (reverts to role default).
+   */
+  deleteAgentTeamConfig(scenarioId: string, configId: string): Promise<void> {
+    return fetchJson<void>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/agent-team-config/${encodeURIComponent(configId)}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  /**
+   * Request AI-generated suggestion blocks for a staff product.
+   * Calls the backend LLM with role-specific context and returns structured blocks.
+   */
+  suggestForProduct(scenarioId: string, productId: string): Promise<AgentSuggestion> {
+    return fetchJson<AgentSuggestion>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-products/${encodeURIComponent(productId)}/suggest`,
       { method: 'POST' }
     );
   },

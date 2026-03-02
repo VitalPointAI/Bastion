@@ -32,8 +32,10 @@ import { StaffNotificationService } from '../exercise/staff-notification-service
 import { StrategicImportService } from '../exercise/strategic-import-service.js';
 import { inferTagsFromPath } from '../exercise/package-parser.js';
 import type { AgentTeamConfig } from '../exercise/types.js';
+import { STAFF_ROLE_CONFIG, PRODUCT_TYPE_REGISTRY } from '../exercise/types.js';
 import { configService } from '../strategic/config/service.js';
 import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
+import { OpenAICompatibleProvider } from '../strategic/extraction/providers/openai-provider.js';
 // ─── Multer Setup ─────────────────────────────────────────────────────────────
 
 const upload = multer({
@@ -1604,5 +1606,153 @@ exerciseRouter.delete('/scenarios/:id/agent-team-config/:configId', async (req: 
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to delete agent team config' });
+  }
+});
+
+// ============ AI SUGGESTION ROUTE ============
+
+/**
+ * POST /api/exercise/scenarios/:id/staff-products/:productId/suggest
+ *
+ * Generate AI-assisted suggestion blocks for a staff product.
+ *
+ * Resolution chain for agent team (LLM config):
+ *   1. agent_team_config with matching (scenarioId, roleKey, productType) — product override
+ *   2. agent_team_config with matching (scenarioId, roleKey, NULL productType) — role default
+ *   3. STAFF_ROLE_CONFIG[roleKey].agentTeamId — static role default (currently null for all)
+ *   4. Admin-configured LLM from configService (system default)
+ *
+ * Returns: { blocks: Array<{ id, type, fieldName?, content, status: 'pending' }> }
+ */
+exerciseRouter.post('/scenarios/:id/staff-products/:productId/suggest', async (req: Request, res: Response) => {
+  try {
+    const pool = getPool();
+    const scenarioId = req.params.id as string;
+    const productId = req.params.productId as string;
+
+    // 1. Load the staff product
+    const product = await staffProductStore.findById(productId);
+    if (!product || product.scenarioId !== scenarioId) {
+      res.status(404).json({ error: 'Staff product not found' });
+      return;
+    }
+
+    const { roleKey, productType, structured, content } = product;
+
+    // 2. Resolve agent team config (fallback chain)
+    const configResult = await pool.query(
+      `SELECT agent_team_id FROM agent_team_config
+       WHERE scenario_id = $1 AND role_key = $2
+       ORDER BY (product_type = $3) DESC NULLS LAST, created_at DESC
+       LIMIT 1`,
+      [scenarioId, roleKey, productType]
+    );
+
+    // For now, agent team config maps to LLM config — use system LLM
+    // (In a fuller implementation, each agent team ID would map to a specific LLM profile)
+    const llmConfig = await getLLMConfig();
+    const llm = new OpenAICompatibleProvider(llmConfig);
+
+    // 3. Build role-specific system prompt
+    const roleConfig = STAFF_ROLE_CONFIG[roleKey];
+    const productTypeDef = PRODUCT_TYPE_REGISTRY[productType];
+    const agentTeamId = (configResult.rows[0] as { agent_team_id: string } | undefined)?.agent_team_id ?? null;
+
+    const systemPrompt = `You are an AI staff assistant supporting the ${roleConfig?.label ?? roleKey} role in a Joint Planning Process (JPP) exercise.
+
+Your doctrinal focus: ${roleConfig?.doctrinalFocus ?? 'Staff planning and coordination'}
+Product type: ${productTypeDef?.label ?? productType}
+${agentTeamId ? `Agent team: ${agentTeamId}` : ''}
+
+Generate concise, actionable suggestions for the staff officer completing this product.
+Break your response into clearly separated blocks — one per structured field that needs content,
+plus a narrative block if the overall narrative content can be improved.
+
+Output your response as a JSON object with this exact shape:
+{
+  "blocks": [
+    {
+      "id": "unique-string-id",
+      "type": "structured_field",
+      "fieldName": "fieldNameHere",
+      "content": "suggested content for this field"
+    },
+    {
+      "id": "unique-string-id",
+      "type": "narrative",
+      "content": "suggested narrative paragraph(s)"
+    }
+  ]
+}
+
+Output ONLY the JSON object — no markdown fences, no preamble, no explanation.`;
+
+    // 4. Build user prompt with current product state
+    const structuredFields = productTypeDef?.structuredFields ?? [];
+    const structuredSummary = structuredFields.length > 0
+      ? structuredFields.map((f) => `  ${f.name}: ${JSON.stringify((structured as Record<string, unknown>)[f.name] ?? '(empty)')}`).join('\n')
+      : '  (no structured fields defined)';
+
+    const userPrompt = `Current product state for "${product.title}":
+
+Structured fields:
+${structuredSummary}
+
+Current narrative content:
+${content?.trim() || '(empty — no narrative written yet)'}
+
+Generate suggestions to improve or complete this product. Focus on the most important gaps.`;
+
+    // 5. Call LLM
+    const response = await llm.complete({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 2000,
+      temperature: 0.4,
+    });
+
+    // 6. Parse response into suggestion blocks
+    let blocks: Array<{
+      id: string;
+      type: 'structured_field' | 'narrative';
+      fieldName?: string;
+      content: string;
+      status: 'pending';
+    }>;
+
+    try {
+      const raw = response.content ?? '{"blocks":[]}';
+      const cleaned = raw.replace(/^```[a-z]*\n?/m, '').replace(/```$/m, '').trim();
+      const parsed = JSON.parse(cleaned) as { blocks?: unknown[] };
+      const rawBlocks = Array.isArray(parsed.blocks) ? parsed.blocks : [];
+
+      const { randomUUID } = await import('crypto');
+      blocks = rawBlocks.map((b) => {
+        const block = b as Record<string, unknown>;
+        return {
+          id: (typeof block.id === 'string' && block.id) ? block.id : randomUUID(),
+          type: block.type === 'structured_field' ? 'structured_field' : 'narrative',
+          fieldName: typeof block.fieldName === 'string' ? block.fieldName : undefined,
+          content: typeof block.content === 'string' ? block.content : String(block.content ?? ''),
+          status: 'pending' as const,
+        };
+      });
+    } catch (parseErr) {
+      // LLM returned non-JSON — wrap entire response as a single narrative block
+      console.warn('[suggest] LLM response was not valid JSON, wrapping as narrative:', parseErr);
+      const { randomUUID } = await import('crypto');
+      blocks = [{
+        id: randomUUID(),
+        type: 'narrative',
+        content: response.content ?? '(no suggestion generated)',
+        status: 'pending',
+      }];
+    }
+
+    res.json({ blocks });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to generate suggestion' });
   }
 });

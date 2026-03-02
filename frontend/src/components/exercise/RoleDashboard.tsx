@@ -4,6 +4,8 @@
  * Phase 15 Plan 02: Per-role dashboard overview in the exercise staff workspace.
  * Phase 15 Plan 03: Wired product card click to StaffProduct editor.
  *                   Added "New Product" button with template selection modal.
+ * Phase 15 Plan 05: Added AgentSuggestionPanel alongside product editor.
+ *                   Added success message for strategic direction import.
  *
  * On mount (and when roleKey changes): fetches staff products for the role
  * and the unread notification count. Displays:
@@ -16,11 +18,12 @@
  * published products across all roles.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { exerciseService } from '../../services/exercise-service';
 import type { StaffProduct } from '../../types/exercise';
 import { STAFF_ROLE_CONFIG } from '../../types/exercise';
 import { StaffProduct as StaffProductEditor, NewProductModal } from './StaffProduct';
+import { AgentSuggestionPanel } from './AgentSuggestionPanel';
 import './RoleDashboard.css';
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
@@ -94,6 +97,8 @@ export function RoleDashboard({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(false);
+  const importSuccessTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Product editor navigation
   const [selectedProduct, setSelectedProduct] = useState<StaffProduct | null>(null);
@@ -134,6 +139,7 @@ export function RoleDashboard({
 
   const handleImportStrategicDirection = async () => {
     setIsImporting(true);
+    setImportSuccess(false);
     try {
       const product = await exerciseService.importStrategicDirection(scenarioId);
       setProducts((prev) => {
@@ -145,6 +151,10 @@ export function RoleDashboard({
         }
         return [product, ...prev];
       });
+      // Show success message for 3 seconds
+      setImportSuccess(true);
+      if (importSuccessTimer.current) clearTimeout(importSuccessTimer.current);
+      importSuccessTimer.current = setTimeout(() => setImportSuccess(false), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');
     } finally {
@@ -188,18 +198,44 @@ export function RoleDashboard({
     }
   };
 
+  // ── Agent suggestion: apply block to selected product ──────────────────────
+
+  const handleApplySuggestionBlock = useCallback((_blockIndex: number, content: string) => {
+    if (!selectedProduct) return;
+    // Append suggestion content to the product's narrative content field
+    setSelectedProduct((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        content: prev.content
+          ? `${prev.content}\n\n${content}`
+          : content,
+      };
+    });
+  }, [selectedProduct]);
+
   // ── Product editor view ──────────────────────────────────────────────────────
 
   if (selectedProduct) {
     return (
-      <StaffProductEditor
-        product={selectedProduct}
-        roleKey={roleKey}
-        scenarioId={scenarioId}
-        onSave={handleProductSave}
-        onPublish={handleProductPublish}
-        onBack={() => setSelectedProduct(null)}
-      />
+      <div className="role-editor-container">
+        <div className="role-editor-main">
+          <StaffProductEditor
+            product={selectedProduct}
+            roleKey={roleKey}
+            scenarioId={scenarioId}
+            onSave={handleProductSave}
+            onPublish={handleProductPublish}
+            onBack={() => setSelectedProduct(null)}
+          />
+        </div>
+        <AgentSuggestionPanel
+          product={selectedProduct}
+          scenarioId={scenarioId}
+          roleKey={roleKey}
+          onApplyBlock={handleApplySuggestionBlock}
+        />
+      </div>
     );
   }
 
@@ -236,6 +272,11 @@ export function RoleDashboard({
         </div>
 
         {error && <div className="role-dashboard-error">{error}</div>}
+        {importSuccess && (
+          <div className="role-dashboard-success">
+            Strategic direction imported successfully
+          </div>
+        )}
 
         {/* ── Outstanding Actions ── */}
         <section className="role-section">

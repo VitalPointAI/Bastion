@@ -1,0 +1,457 @@
+/**
+ * AgentSuggestionPanel.css
+ * Phase 15 Plan 05: Styles for the right-side AI suggestion panel.
+ */
+
+/* ── Wrapper (positions the toggle button + panel) ── */
+.asp-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+/* ── Toggle button ── */
+.asp-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-height: 80px;
+  background: var(--color-bg-secondary, #1a1e2e);
+  border: 1px solid var(--color-border, #2a3050);
+  border-radius: 6px 0 0 6px;
+  color: var(--color-text-secondary, #94a3b8);
+  cursor: pointer;
+  writing-mode: vertical-lr;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background 0.15s, color 0.15s;
+  padding: 0.5rem 0;
+  flex-shrink: 0;
+}
+
+.asp-toggle-btn:hover {
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  border-color: var(--color-accent, #6366f1);
+}
+
+.asp-wrapper--open .asp-toggle-btn {
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  border-color: var(--color-accent, #6366f1);
+  border-radius: 6px 0 0 6px;
+}
+
+.asp-toggle-label {
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+}
+
+/* ── Slide-in panel ── */
+.asp-panel {
+  width: 300px;
+  flex-shrink: 0;
+  background: var(--color-bg-secondary, #1a1e2e);
+  border: 1px solid var(--color-border, #2a3050);
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: asp-slide-in 0.18s ease-out;
+}
+
+@keyframes asp-slide-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Panel header ── */
+.asp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--color-border, #2a3050);
+  background: var(--color-bg-tertiary, #151827);
+  flex-shrink: 0;
+}
+
+.asp-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.asp-header-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #e2e8f0);
+}
+
+.asp-product-label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #94a3b8);
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asp-header-actions {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.asp-gear-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary, #94a3b8);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.asp-gear-btn:hover,
+.asp-gear-btn--active {
+  color: var(--color-accent, #6366f1);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.asp-close-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary, #94a3b8);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+
+.asp-close-btn:hover {
+  color: var(--color-text-primary, #e2e8f0);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Agent settings sub-panel ── */
+.asp-settings {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border, #2a3050);
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.asp-settings-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.asp-settings-loading {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #64748b);
+  font-style: italic;
+  margin: 0;
+}
+
+.asp-config-status {
+  font-size: 0.8125rem;
+}
+
+.asp-config-active {
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.asp-config-active strong {
+  color: var(--color-text-primary, #e2e8f0);
+}
+
+.asp-config-default {
+  color: var(--color-text-muted, #64748b);
+}
+
+.asp-reset-link {
+  background: none;
+  border: none;
+  color: var(--color-accent, #6366f1);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  text-align: left;
+}
+
+.asp-reset-link:hover {
+  opacity: 0.8;
+}
+
+.asp-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.asp-config-label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #94a3b8);
+  font-weight: 600;
+}
+
+.asp-config-input {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--color-border, #2a3050);
+  border-radius: 4px;
+  background: var(--color-bg-primary, #0f1117);
+  color: var(--color-text-primary, #e2e8f0);
+  font-size: 0.8125rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.asp-config-input:focus {
+  outline: none;
+  border-color: var(--color-accent, #6366f1);
+}
+
+.asp-config-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #94a3b8);
+  cursor: pointer;
+}
+
+.asp-config-save-btn {
+  padding: 0.375rem 0.75rem;
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.asp-config-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.asp-settings-error {
+  font-size: 0.8125rem;
+  color: #fca5a5;
+  margin: 0;
+}
+
+/* ── Generate section ── */
+.asp-generate-section {
+  padding: 0.875rem;
+  border-bottom: 1px solid var(--color-border, #2a3050);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.asp-generate-btn {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.asp-generate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.asp-generate-btn:not(:disabled):hover {
+  opacity: 0.9;
+}
+
+.asp-spinner-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.asp-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-border, #2a3050);
+  border-top-color: var(--color-accent, #6366f1);
+  border-radius: 50%;
+  animation: asp-spin 0.7s linear infinite;
+}
+
+@keyframes asp-spin {
+  to { transform: rotate(360deg); }
+}
+
+.asp-spinner-text {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #94a3b8);
+  font-style: italic;
+}
+
+/* ── Error ── */
+.asp-error {
+  margin: 0.5rem 0.875rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #fca5a5;
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+}
+
+/* ── Blocks list (scrollable) ── */
+.asp-blocks {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ── Empty state ── */
+.asp-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.asp-empty p {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #64748b);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Suggestion block ── */
+.asp-block {
+  border: 1px solid var(--color-border, #2a3050);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: opacity 0.2s;
+}
+
+.asp-block--pending {
+  border-left: 3px solid var(--color-accent, #6366f1);
+}
+
+.asp-block--accepted {
+  border-left: 3px solid var(--color-success, #16a34a);
+  opacity: 0.9;
+}
+
+.asp-block--rejected {
+  border-left: 3px solid var(--color-danger, #dc2626);
+  opacity: 0.5;
+}
+
+.asp-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0.625rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--color-border, #2a3050);
+}
+
+.asp-block-field,
+.asp-block-type {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-secondary, #94a3b8);
+  text-transform: capitalize;
+}
+
+.asp-block-status-icon {
+  font-size: 0.875rem;
+}
+
+.asp-icon--accepted {
+  color: #86efac;
+}
+
+.asp-icon--rejected {
+  color: #fca5a5;
+}
+
+.asp-block-content {
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #94a3b8);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.asp-block-content--rejected {
+  color: var(--color-text-muted, #64748b);
+  text-decoration: line-through;
+}
+
+.asp-block-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.375rem 0.625rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--color-border, #2a3050);
+}
+
+.asp-block-btn {
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.asp-block-btn:hover {
+  opacity: 0.85;
+}
+
+.asp-block-btn--accept {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.asp-block-btn--reject {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
