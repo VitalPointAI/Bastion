@@ -6,7 +6,7 @@
  * Uses singletonKey for pg-boss deduplication: one active job per role.
  */
 
-import { PgBoss, type Job } from 'pg-boss';
+import { PgBoss, type Job, type WorkOptions } from 'pg-boss';
 import type { AIRoleRun } from './types.js';
 import type { AIRunStore } from './ai-run-store.js';
 import type { AgentRunner } from './ai-role-runner.js';
@@ -114,7 +114,7 @@ export function registerAIRoleWorker(
 ): void {
   boss.work(
     'ai-role-execution',
-    { localConcurrency: 3 },
+    { localConcurrency: 3 } as WorkOptions,
     async (jobs: Job<{ scenarioId: string; roleKey: string; triggerContext: Record<string, unknown>; triggerType: AIRoleRun['triggerType'] }>[]) => {
       for (const job of jobs) {
         const { scenarioId, roleKey, triggerContext, triggerType } = job.data;
