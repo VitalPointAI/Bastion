@@ -35,6 +35,11 @@ import type {
   AgentSuggestion,
   CreateStaffProductInput,
   UpdateStaffProductInput,
+  RoleAssignment,
+  AIRoleRun,
+  StaffAgentDef,
+  ReviewFeedback,
+  StaffProductVersion,
 } from '../types/exercise';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -813,5 +818,120 @@ export const exerciseService = {
       `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-products/${encodeURIComponent(productId)}/suggest`,
       { method: 'POST' }
     );
+  },
+
+  // ─── AI Role Assignments (Phase 16) ───────────────────────────────────────
+
+  /**
+   * Get role assignments (human | ai | disabled) for all roles in a scenario.
+   */
+  async getRoleAssignments(scenarioId: string): Promise<Record<string, RoleAssignment>> {
+    const data = await fetchJson<{ roleAssignments: Record<string, RoleAssignment> }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/role-assignments`
+    );
+    return data.roleAssignments;
+  },
+
+  /**
+   * Update role assignments for a scenario.
+   * Replaces all provided role assignments atomically.
+   */
+  async updateRoleAssignments(
+    scenarioId: string,
+    roleAssignments: Record<string, RoleAssignment>
+  ): Promise<Record<string, RoleAssignment>> {
+    const data = await fetchJson<{ roleAssignments: Record<string, RoleAssignment> }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/role-assignments`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ roleAssignments }),
+      }
+    );
+    return data.roleAssignments;
+  },
+
+  // ─── AI Runs (Phase 16) ───────────────────────────────────────────────────
+
+  /**
+   * Trigger an AI role execution run (manual trigger from Begin button).
+   */
+  async triggerAIRole(scenarioId: string, roleKey: string, payload?: Record<string, unknown>): Promise<void> {
+    await fetchJson<void>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/roles/${encodeURIComponent(roleKey)}/runs`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload ?? {}),
+      }
+    );
+  },
+
+  /**
+   * Get all AI execution runs for a role.
+   */
+  async getAIRuns(scenarioId: string, roleKey: string): Promise<AIRoleRun[]> {
+    const data = await fetchJson<{ runs: AIRoleRun[] }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/roles/${encodeURIComponent(roleKey)}/runs`
+    );
+    return data.runs;
+  },
+
+  /**
+   * Pause an active AI run.
+   */
+  pauseAIRun(scenarioId: string, roleKey: string, runId: string): Promise<void> {
+    return fetchJson<void>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/roles/${encodeURIComponent(roleKey)}/runs/${encodeURIComponent(runId)}/pause`,
+      { method: 'PATCH' }
+    );
+  },
+
+  /**
+   * Resume a paused AI run.
+   */
+  resumeAIRun(scenarioId: string, roleKey: string, runId: string): Promise<void> {
+    return fetchJson<void>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/roles/${encodeURIComponent(roleKey)}/runs/${encodeURIComponent(runId)}/resume`,
+      { method: 'PATCH' }
+    );
+  },
+
+  /**
+   * Submit a review decision for an AI-generated product draft.
+   * feedback.action determines the outcome: approve | edit_approve | request_revision | edit_request_revision | reject
+   */
+  submitReview(
+    scenarioId: string,
+    roleKey: string,
+    runId: string,
+    feedback: ReviewFeedback
+  ): Promise<void> {
+    return fetchJson<void>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/roles/${encodeURIComponent(roleKey)}/runs/${encodeURIComponent(runId)}/review`,
+      {
+        method: 'POST',
+        body: JSON.stringify(feedback),
+      }
+    );
+  },
+
+  /**
+   * Get the default agent team definitions for a role in a scenario.
+   */
+  async getAgentsForRole(scenarioId: string, roleKey: string): Promise<StaffAgentDef[]> {
+    const data = await fetchJson<{ agents: StaffAgentDef[] }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/roles/${encodeURIComponent(roleKey)}/agents`
+    );
+    return data.agents;
+  },
+
+  /**
+   * Get the full version history for a staff product.
+   * Returns all draft iterations with revision notes and created-by attribution.
+   */
+  async getProductVersionHistory(scenarioId: string, productId: string): Promise<StaffProductVersion[]> {
+    const data = await fetchJson<{ versions: StaffProductVersion[] }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/staff-products/${encodeURIComponent(productId)}/versions`
+    );
+    return data.versions;
   },
 };

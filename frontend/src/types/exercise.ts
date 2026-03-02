@@ -1027,3 +1027,76 @@ export interface InferredFileTags {
   documentType: ExerciseDocumentType;
   confidence: number; // 0–1
 }
+
+// ─── AI Workspace Types (Phase 16) ────────────────────────────────────────────
+
+export type RoleAssignment = 'human' | 'ai' | 'disabled';
+
+export interface StaffAgentDef {
+  id: string;
+  roleKey: string;
+  name: string;
+  rank: string;
+  branch: string;
+  specialty: string;
+  focus: string;
+  tools: string[];
+  personality: string[];
+  systemPromptHint: string;
+  isDefault: boolean;
+}
+
+export interface AIRoleRun {
+  id: string;
+  scenarioId: string;
+  roleKey: string;
+  triggerType: 'manual' | 'opord_upload' | 'phase_change' | 'upstream_publish' | 'commander_directive';
+  triggerContext: Record<string, unknown>;
+  status: 'queued' | 'running' | 'paused' | 'awaiting_review' | 'complete' | 'failed';
+  pausedAt?: string;
+  resumedAt?: string;
+  completedAt?: string;
+  error?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AIChannelEventType =
+  | 'task_started' | 'task_progress' | 'draft_ready' | 'review_required'
+  | 'revision_requested' | 'approved' | 'rejected' | 'waiting_on_role'
+  | 'ai_to_ai_request' | 'ai_to_ai_response' | 'error' | 'paused' | 'resumed';
+
+export interface AIChannelEvent {
+  id: string;
+  scenarioId: string;
+  roleKey: string;
+  runId?: string;
+  eventType: AIChannelEventType;
+  payload: Record<string, unknown>;
+  agentName?: string;
+  createdAt: string;
+}
+
+export interface ReviewFeedback {
+  action: 'approve' | 'edit_approve' | 'request_revision' | 'edit_request_revision' | 'reject';
+  notes?: string;
+  annotations?: Array<{
+    paragraphIndex: number;
+    startChar: number;
+    endChar: number;
+    highlightedText: string;
+    comment: string;
+  }>;
+  edits?: Record<string, string>;
+}
+
+export interface StaffProductVersion {
+  id: string;
+  productId: string;
+  version: number;
+  content: string;
+  structured: Record<string, unknown>;
+  createdBy: string;
+  revisionNotes?: string;
+  createdAt: string;
+}
