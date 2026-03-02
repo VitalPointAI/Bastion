@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-02T19:56:24.617Z"
+last_updated: "2026-03-02T20:05:21Z"
 progress:
   total_phases: 29
   completed_phases: 16
@@ -24,9 +24,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 16 of 16 (AI Assigned Staff Workspaces)
-Plan: 2 of 6 in current phase — Plan 02 complete
+Plan: 3 of 6 in current phase — Plan 03 complete
 Status: Executing
-Last activity: 2026-03-02 - Completed 16-02 backend data stores (AIRunStore, AIChannelStore, ProductVersionStore, AIContextStore, AICoordinationStore + scenario roleAssignments)
+Last activity: 2026-03-02 - Completed 16-03 AI agent execution engine (LangGraph runner, trigger router, 10 API routes, auto-trigger wiring)
 
 Progress: ████████████████████████ 140 plans complete
 
@@ -78,6 +78,7 @@ Progress: ███████████████████████�
 | Phase 15-jpp-staff-organization-workspaces P05 | 9 | 2 tasks | 11 files |
 | Phase 16 P01 | 8 | 2 tasks | 4 files |
 | Phase 16 P02 | 4 | 2 tasks | 6 files |
+| Phase 16 P03 | 7 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 16 Plan 03 (AI Agent Execution Engine):**
+- LangGraphAgentRunner accepts PostgresSaver via constructor injection (not singleton) for testability
+- awaitReviewNode dispatches via MessageBus.publish to `exercise.staff.${scenarioId}` channel — reuses existing notification infrastructure
+- Auto-trigger hooks use setImmediate() so HTTP response is sent before trigger processing
+- pg-boss work() uses localConcurrency: 3 (replaces deprecated teamSize in pg-boss v12)
 
 **Phase 15 Plan 05 (Diff View, AI Suggestion Panel, Strategic Import):**
 - ProductDiffView managed from StaffWorkspace (not NotificationPanel) — avoids prop drilling
