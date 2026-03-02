@@ -32,6 +32,26 @@ export class ProductVersionStore {
   constructor(private pool: Pool) {}
 
   /**
+   * Ensure a staff_products parent row exists for an AI draft product.
+   * Uses INSERT ... ON CONFLICT DO NOTHING so it's safe to call every iteration.
+   */
+  async ensureProduct(
+    productId: string,
+    scenarioId: string,
+    roleKey: string,
+    productType: string,
+    createdBy: string,
+  ): Promise<void> {
+    const title = `${roleKey.toUpperCase()} AI Draft`;
+    await this.pool.query(
+      `INSERT INTO staff_products (id, scenario_id, role_key, product_type, title, status, structured, content, created_by, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, 'draft', '{}', '', $6, NOW(), NOW())
+       ON CONFLICT (id) DO NOTHING`,
+      [productId, scenarioId, roleKey, productType, title, createdBy]
+    );
+  }
+
+  /**
    * Create a new version snapshot for a product.
    * Version number is automatically set to max(existing versions) + 1.
    */

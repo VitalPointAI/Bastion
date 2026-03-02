@@ -253,10 +253,21 @@ function mergeDraftsNode(stores: StoreContext) {
     // Save a version snapshot
     let draftProductId: string | null = state.draftProductId;
     try {
-      const productType = agentTeam[0]?.roleKey ? `${roleKey}_ai_draft` : 'ai_draft';
-      // Find or use the existing product ID if we have one
+      const productType = `${roleKey}_ai_draft`;
+      // Derive a stable product ID from scenario+role (not runId) so it survives iterations
+      if (!draftProductId) {
+        const { createHash } = await import('crypto');
+        draftProductId = createHash('sha256')
+          .update(`${scenarioId}:${roleKey}:ai_draft`)
+          .digest('hex')
+          .slice(0, 36);
+      }
+      // Ensure the parent staff_products row exists (idempotent)
+      await stores.productVersionStore.ensureProduct(
+        draftProductId, scenarioId, roleKey, productType, 'agent:ai-role-graph'
+      );
       const versionEntry = await stores.productVersionStore.create({
-        productId: draftProductId ?? runId, // Use runId as a stand-in product ID if no real product yet
+        productId: draftProductId,
         version: state.iterationCount + 1,
         content: mergedContent,
         structured: {
