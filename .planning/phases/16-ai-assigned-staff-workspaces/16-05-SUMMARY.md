@@ -142,3 +142,23 @@ None - no external service configuration required.
 ---
 *Phase: 16-ai-assigned-staff-workspaces*
 *Completed: 2026-03-02*
+
+---
+## Self-Check: PASSED
+
+Files verified:
+- FOUND: frontend/src/components/exercise/ChannelFeed.tsx
+- FOUND: frontend/src/components/exercise/ChannelFeed.css
+- FOUND: frontend/src/components/exercise/ChannelEvent.tsx
+- FOUND: frontend/src/components/exercise/ChannelEvent.css
+- FOUND: frontend/src/components/exercise/ProductReviewPanel.tsx
+- FOUND: frontend/src/components/exercise/ProductReviewPanel.css
+- FOUND: frontend/src/components/exercise/ProductVersionHistory.tsx
+- FOUND: frontend/src/components/exercise/ProductVersionHistory.css
+- FOUND: .planning/phases/16-ai-assigned-staff-workspaces/16-05-SUMMARY.md
+
+Commits verified:
+- FOUND: 4121106 (feat(16-05): ChannelFeed SSE component and ChannelEvent type-specific renderer)
+- FOUND: 9c56888 (feat(16-05): ProductReviewPanel with 5 reviewer actions and ProductVersionHistory)
+
+TypeScript: PASS (zero errors via Node 22 + tsc 5.9.3)
