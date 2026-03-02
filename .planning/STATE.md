@@ -325,6 +325,7 @@ Recent decisions affecting current work:
 - Phase 4.5 inserted after Phase 4.4: ATAK/CoT Tactical Interoperability - CoT message protocol, TAK Server integration, real-time position sharing, data package export
 - Phase 1.2 inserted after Phase 1.1: Passkey Authentication & NEAR Implicit Accounts (URGENT) - Replace Privy.io with passkey/magic link/recovery patterns from StratBrain + NEAR implicit account identity
 - Phase 1.3 inserted after Phase 1.2: NEAR Implicit Account Funding - Activate implicit accounts with minimum NEAR transfer on registration
+- Phase 16 added: AI Assigned Staff Workspaces - Human vs AI role assignment per staff position, default AI agent teams per role, agent personality/identity config, ironclaw integration for autonomous staff work, channel interface for agent interaction
 - Phase 1.4 inserted after Phase 1.3: Navigation Architecture Restructure - Restructure navigation to doctrine-aligned Decide/Design/Campaign/Monitor + Admin
 - Phase 14 added: Friendly & Adversary IPB Complete Cycle - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations
 - Phase 15 added: JPP Staff Organization Workspaces - Role-based exercise workspaces (Commander, J1–J35) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and strategic direction import
