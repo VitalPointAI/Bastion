@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-02T20:05:21Z"
+last_updated: "2026-03-02T20:20:00Z"
 progress:
   total_phases: 29
   completed_phases: 16
@@ -24,9 +24,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 16 of 16 (AI Assigned Staff Workspaces)
-Plan: 3 of 6 in current phase — Plan 03 complete
+Plan: 5 of 6 in current phase — Plan 05 complete
 Status: Executing
-Last activity: 2026-03-02 - Completed 16-03 AI agent execution engine (LangGraph runner, trigger router, 10 API routes, auto-trigger wiring)
+Last activity: 2026-03-02 - Completed 16-05 ChannelFeed SSE, ChannelEvent type renderer, ProductReviewPanel (5 actions + annotation), ProductVersionHistory
 
 Progress: ████████████████████████ 140 plans complete
 
@@ -79,6 +79,7 @@ Progress: ███████████████████████�
 | Phase 16 P01 | 8 | 2 tasks | 4 files |
 | Phase 16 P02 | 4 | 2 tasks | 6 files |
 | Phase 16 P03 | 7 | 2 tasks | 5 files |
+| Phase 16 P05 | 9 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 16 Plan 05 (Channel Feed, Review Panel, Version History):**
+- review_required event renders as amber card with "Review Now" CTA — most prominent event type
+- ProductVersionHistory is purely presentational — parent (ProductReviewPanel) owns getProductVersionHistory() fetch
+- ProductReviewPanel mode state machine: first click sets mode, second click submits (avoids accidental instant submission)
+- AI workspace types (AIChannelEvent, ReviewFeedback, StaffProductVersion etc.) added as prerequisite since plan 04 not yet executed
 
 **Phase 16 Plan 03 (AI Agent Execution Engine):**
 - LangGraphAgentRunner accepts PostgresSaver via constructor injection (not singleton) for testability

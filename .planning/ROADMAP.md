@@ -373,7 +373,7 @@ Plans:
 - [ ] 16-02-PLAN.md — Backend stores: ai-run-store, ai-channel-store, product-version-store, ai-context-store, ai-coordination-store
 - [ ] 16-03-PLAN.md — LangGraph AI role graph + trigger router (debounce merge) + 9 new API routes
 - [ ] 16-04-PLAN.md — ManageRoles modal (Human|AI|Disabled toggle) + AIRoleWorkspace + AgentRosterCard
-- [ ] 16-05-PLAN.md — ChannelFeed (SSE) + ChannelEvent renderer + ProductReviewPanel + ProductVersionHistory
+- [x] 16-05-PLAN.md — ChannelFeed (SSE) + ChannelEvent renderer + ProductReviewPanel + ProductVersionHistory
 - [ ] 16-06-PLAN.md — StaffWorkspace three-way routing + complete wiring + human verify checkpoint
 
 ---
