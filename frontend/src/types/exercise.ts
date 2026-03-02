@@ -350,6 +350,315 @@ export interface StaffNotification {
   createdAt: string;
 }
 
+// ─── Product Type Registry (Phase 15) ─────────────────────────────────────────
+
+export type StructuredFieldType = 'text' | 'textarea' | 'select' | 'number' | 'date' | 'unit_table';
+
+export interface StructuredFieldDef {
+  name: string;
+  type: StructuredFieldType;
+  options?: string[];
+}
+
+export interface ProductTypeDef {
+  label: string;
+  roles: string[];
+  structuredFields: StructuredFieldDef[];
+}
+
+/**
+ * Registry of all product types with their labels, owning roles, and structured fields.
+ * Duplicated from backend/src/exercise/types.ts — pure data, no import possible.
+ */
+export const PRODUCT_TYPE_REGISTRY: Record<string, ProductTypeDef> = {
+  // ── Commander products ──────────────────────────────────────────────────
+  commander_intent: {
+    label: "Commander's Intent",
+    roles: ['commander'],
+    structuredFields: [
+      { name: 'purpose', type: 'textarea' },
+      { name: 'keyTasks', type: 'textarea' },
+      { name: 'endState', type: 'textarea' },
+      { name: 'expandedPurpose', type: 'textarea' },
+      { name: 'rationale', type: 'textarea' },
+    ],
+  },
+  coa_decision: {
+    label: 'COA Decision Brief',
+    roles: ['commander'],
+    structuredFields: [
+      { name: 'selectedCOA', type: 'text' },
+      { name: 'decisionRationale', type: 'textarea' },
+      { name: 'modifications', type: 'textarea' },
+    ],
+  },
+  strategic_guidance: {
+    label: 'Strategic Guidance',
+    roles: ['commander', 'dcom', 'j5'],
+    structuredFields: [
+      { name: 'objectiveCount', type: 'number' },
+      { name: 'objectives', type: 'textarea' },
+      { name: 'priority', type: 'select', options: ['primary', 'secondary', 'tertiary'] },
+    ],
+  },
+  warnord_approval: {
+    label: 'WARNORD Approval',
+    roles: ['commander'],
+    structuredFields: [
+      { name: 'approvalStatus', type: 'select', options: ['approved', 'approved_with_changes', 'returned'] },
+      { name: 'notes', type: 'textarea' },
+    ],
+  },
+  // ── J2 Intelligence products ─────────────────────────────────────────────
+  ipb_assessment: {
+    label: 'IPB Assessment',
+    roles: ['j2'],
+    structuredFields: [
+      { name: 'threatLevel', type: 'select', options: ['low', 'moderate', 'high', 'severe'] },
+      { name: 'areaOfOperations', type: 'textarea' },
+      { name: 'namedAreasOfInterest', type: 'textarea' },
+    ],
+  },
+  threat_assessment: {
+    label: 'Threat Assessment',
+    roles: ['j2'],
+    structuredFields: [
+      { name: 'threatActor', type: 'text' },
+      { name: 'capabilitySummary', type: 'textarea' },
+      { name: 'mostLikelyCOA', type: 'textarea' },
+      { name: 'mostDangerousCOA', type: 'textarea' },
+    ],
+  },
+  oob: {
+    label: 'Order of Battle',
+    roles: ['j2'],
+    structuredFields: [
+      { name: 'forceComposition', type: 'unit_table' },
+      { name: 'keyCapabilities', type: 'textarea' },
+      { name: 'equipmentSummary', type: 'textarea' },
+    ],
+  },
+  intel_summary: {
+    label: 'Intelligence Summary (INTSUM)',
+    roles: ['j2'],
+    structuredFields: [
+      { name: 'reportingPeriod', type: 'text' },
+      { name: 'significantActivity', type: 'textarea' },
+      { name: 'assessments', type: 'textarea' },
+    ],
+  },
+  pir: {
+    label: 'Priority Intelligence Requirements (PIR)',
+    roles: ['j2'],
+    structuredFields: [
+      { name: 'requirements', type: 'textarea' },
+      { name: 'collectionPlan', type: 'textarea' },
+    ],
+  },
+  // ── J3 Operations products ───────────────────────────────────────────────
+  sync_matrix: {
+    label: 'Synchronization Matrix',
+    roles: ['j3', 'fires'],
+    structuredFields: [
+      { name: 'phases', type: 'textarea' },
+      { name: 'tasks', type: 'textarea' },
+      { name: 'resources', type: 'textarea' },
+    ],
+  },
+  coa_sketch: {
+    label: 'COA Sketch',
+    roles: ['j3'],
+    structuredFields: [
+      { name: 'conceptOfOperation', type: 'textarea' },
+      { name: 'mainEffort', type: 'text' },
+      { name: 'supportingEfforts', type: 'textarea' },
+    ],
+  },
+  task_org: {
+    label: 'Task Organization',
+    roles: ['j3', 'socom', 'jfacc', 'jflcc', 'jfmcc', 'jfsocc'],
+    structuredFields: [
+      { name: 'commandElement', type: 'text' },
+      { name: 'attachments', type: 'textarea' },
+      { name: 'detachments', type: 'textarea' },
+    ],
+  },
+  roe: {
+    label: 'Rules of Engagement (ROE)',
+    roles: ['j3', 'sja'],
+    structuredFields: [
+      { name: 'authorizedActions', type: 'textarea' },
+      { name: 'restrictedActions', type: 'textarea' },
+      { name: 'legalReview', type: 'textarea' },
+    ],
+  },
+  execute_order: {
+    label: 'Execute Order (EXORD)',
+    roles: ['j3'],
+    structuredFields: [
+      { name: 'effectiveDateTime', type: 'date' },
+      { name: 'tasks', type: 'textarea' },
+      { name: 'coordinatingInstructions', type: 'textarea' },
+    ],
+  },
+  // ── J35 Future Plans products ────────────────────────────────────────────
+  coa_development: {
+    label: 'COA Development',
+    roles: ['j35'],
+    structuredFields: [
+      { name: 'coaNumber', type: 'number' },
+      { name: 'coaName', type: 'text' },
+      { name: 'conceptOfOperation', type: 'textarea' },
+      { name: 'schemeOfManeuver', type: 'textarea' },
+    ],
+  },
+  coa_analysis: {
+    label: 'COA Analysis (Wargame)',
+    roles: ['j35'],
+    structuredFields: [
+      { name: 'methodology', type: 'select', options: ['belt', 'avenue', 'box'] },
+      { name: 'advantages', type: 'textarea' },
+      { name: 'disadvantages', type: 'textarea' },
+      { name: 'recommendation', type: 'textarea' },
+    ],
+  },
+  staff_estimate: {
+    label: 'Staff Estimate',
+    roles: ['cos', 'j35', 'j7', 'j8', 'j9', 'sja', 'polad', 'pao', 'surgeon',
+            'cyber', 'space', 'transcom', 'socom', 'io', 'fires', 'ew',
+            'jfacc', 'jflcc', 'jfmcc', 'jfsocc', 'engineer', 'cbrn', 'knowledge_mgmt'],
+    structuredFields: [
+      { name: 'missionImpact', type: 'textarea' },
+      { name: 'currentStatus', type: 'textarea' },
+      { name: 'considerations', type: 'textarea' },
+      { name: 'recommendation', type: 'textarea' },
+    ],
+  },
+  campaign_plan: {
+    label: 'Campaign Plan',
+    roles: ['j35'],
+    structuredFields: [
+      { name: 'campaignObjective', type: 'textarea' },
+      { name: 'phases', type: 'textarea' },
+      { name: 'endState', type: 'textarea' },
+    ],
+  },
+  // ── J4 Logistics products ────────────────────────────────────────────────
+  logistics_estimate: {
+    label: 'Logistics Estimate',
+    roles: ['j4', 'transcom'],
+    structuredFields: [
+      { name: 'supplyStatus', type: 'select', options: ['green', 'amber', 'red'] },
+      { name: 'sustainmentConcept', type: 'textarea' },
+      { name: 'criticalShortfalls', type: 'textarea' },
+    ],
+  },
+  css_annex: {
+    label: 'CSS Annex',
+    roles: ['j4'],
+    structuredFields: [
+      { name: 'cssOrganization', type: 'textarea' },
+      { name: 'supplyClasses', type: 'textarea' },
+      { name: 'maintenancePlan', type: 'textarea' },
+    ],
+  },
+  supply_plan: {
+    label: 'Supply Plan',
+    roles: ['j4'],
+    structuredFields: [
+      { name: 'supplyClasses', type: 'textarea' },
+      { name: 'distributionPlan', type: 'textarea' },
+      { name: 'prepositioningRequirements', type: 'textarea' },
+    ],
+  },
+  // ── J5 Strategic Plans products ──────────────────────────────────────────
+  strategic_estimate: {
+    label: 'Strategic Estimate',
+    roles: ['j5', 'polad'],
+    structuredFields: [
+      { name: 'situation', type: 'textarea' },
+      { name: 'missionAnalysis', type: 'textarea' },
+      { name: 'courses', type: 'textarea' },
+    ],
+  },
+  strategic_direction: {
+    label: 'Strategic Direction',
+    roles: ['j5', 'commander'],
+    structuredFields: [
+      { name: 'nationalObjectives', type: 'textarea' },
+      { name: 'militaryObjectives', type: 'textarea' },
+      { name: 'constraints', type: 'textarea' },
+      { name: 'restraints', type: 'textarea' },
+    ],
+  },
+  campaign_objectives: {
+    label: 'Campaign Objectives',
+    roles: ['j5'],
+    structuredFields: [
+      { name: 'primaryObjective', type: 'textarea' },
+      { name: 'secondaryObjectives', type: 'textarea' },
+      { name: 'conditions', type: 'textarea' },
+    ],
+  },
+  // ── J6 Communications products ───────────────────────────────────────────
+  comms_plan: {
+    label: 'Communications Plan',
+    roles: ['j6'],
+    structuredFields: [
+      { name: 'primaryFrequencies', type: 'textarea' },
+      { name: 'backupProcedures', type: 'textarea' },
+      { name: 'networkArchitecture', type: 'textarea' },
+    ],
+  },
+  c2_architecture: {
+    label: 'C2 Architecture',
+    roles: ['j6'],
+    structuredFields: [
+      { name: 'c2Nodes', type: 'textarea' },
+      { name: 'commandRelationships', type: 'textarea' },
+      { name: 'liaisons', type: 'textarea' },
+    ],
+  },
+  network_diagram: {
+    label: 'Network Diagram',
+    roles: ['j6'],
+    structuredFields: [
+      { name: 'networkTopology', type: 'textarea' },
+      { name: 'keyNodes', type: 'textarea' },
+      { name: 'redundancy', type: 'textarea' },
+    ],
+  },
+  // ── J1 Personnel products ────────────────────────────────────────────────
+  personnel_estimate: {
+    label: 'Personnel Estimate',
+    roles: ['j1'],
+    structuredFields: [
+      { name: 'authorizedStrength', type: 'number' },
+      { name: 'presentForDuty', type: 'number' },
+      { name: 'shortfalls', type: 'textarea' },
+    ],
+  },
+  manning_status: {
+    label: 'Manning Status Report',
+    roles: ['j1'],
+    structuredFields: [
+      { name: 'reportDate', type: 'date' },
+      { name: 'totalStrength', type: 'number' },
+      { name: 'byUnit', type: 'unit_table' },
+    ],
+  },
+  casualty_tracking: {
+    label: 'Casualty Tracking',
+    roles: ['j1'],
+    structuredFields: [
+      { name: 'killed', type: 'number' },
+      { name: 'wounded', type: 'number' },
+      { name: 'missing', type: 'number' },
+      { name: 'notes', type: 'textarea' },
+    ],
+  },
+};
+
 // ─── Document Types ────────────────────────────────────────────────────────────
 
 export type ExerciseDocumentType =
