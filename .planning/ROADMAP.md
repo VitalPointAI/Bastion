@@ -366,7 +366,7 @@ Following best practices for production-grade agentic workflows:
 
 **Goal:** AI-assigned staff roles with full agent team execution, human-in-the-loop review, real-time channel observability, and cross-role AI coordination — extending Phase 15 workspaces to support Human | AI | Disabled assignment per position with a seeded library of doctrinal AI agents for all 31 staff roles.
 **Depends on:** Phase 15
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans executed (checkpoint:human-verify pending on Plan 06)
 
 Plans:
 - [ ] 16-01-PLAN.md — Database schema (7 tables) + TypeScript types + 31-role agent library seed data
@@ -374,7 +374,7 @@ Plans:
 - [ ] 16-03-PLAN.md — LangGraph AI role graph + trigger router (debounce merge) + 9 new API routes
 - [ ] 16-04-PLAN.md — ManageRoles modal (Human|AI|Disabled toggle) + AIRoleWorkspace + AgentRosterCard
 - [x] 16-05-PLAN.md — ChannelFeed (SSE) + ChannelEvent renderer + ProductReviewPanel + ProductVersionHistory
-- [ ] 16-06-PLAN.md — StaffWorkspace three-way routing + complete wiring + human verify checkpoint
+- [x] 16-06-PLAN.md — StaffWorkspace three-way routing + complete wiring + human verify checkpoint
 
 ---
 

@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-02T20:32:13.655Z"
+last_updated: "2026-03-02T20:40:24.000Z"
 progress:
   total_phases: 29
   completed_phases: 16
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 16 of 16 (AI Assigned Staff Workspaces)
-Plan: 5 of 6 in current phase — Plan 05 complete
-Status: Executing
-Last activity: 2026-03-02 - Completed 16-05 ChannelFeed SSE, ChannelEvent type renderer, ProductReviewPanel (5 actions + annotation), ProductVersionHistory
+Plan: 6 of 6 in current phase — Plan 06 Task 1 complete (checkpoint:human-verify pending)
+Status: Executing — awaiting human verification checkpoint
+Last activity: 2026-03-02 - Completed 16-06 Task 1: StaffWorkspace three-way routing (AI/Human/Disabled), AIRoleWorkspace full wiring with ChannelFeed + ProductReviewPanel, Pause/Resume wired, canControl access gates
 
-Progress: ████████████████████████ 140 plans complete
+Progress: ████████████████████████ 141 plans complete
 
 ## Performance Metrics
 
@@ -81,6 +81,7 @@ Progress: ███████████████████████�
 | Phase 16 P03 | 7 | 2 tasks | 5 files |
 | Phase 16 P05 | 9 | 2 tasks | 10 files |
 | Phase 16-ai-assigned-staff-workspaces P04 | 6 | 2 tasks | 7 files |
+| Phase 16-ai-assigned-staff-workspaces P06 | 5 | 1 task (checkpoint pending) | 3 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,13 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 16 Plan 06 (StaffWorkspace Three-Way Routing + AIRoleWorkspace Full Wiring):**
+- Used IIFE pattern (() => { ... })() in JSX for three-way routing clarity instead of nested ternaries
+- roleAssignments defaults to 'human' when key not in map — safe fallback preserves existing behavior for unset roles
+- ManageRolesModal Manage Roles button placed in sidebar (controller-only, hidden when sidebar collapsed)
+- handleReviewRequired silently returns (no error, no state) for observers — clean observer mode with zero side effects
+- Pause/Resume use inline void-wrapped promises with optimistic status update — no additional loading state needed
 
 **Phase 16 Plan 05 (Channel Feed, Review Panel, Version History):**
 - review_required event renders as amber card with "Review Now" CTA — most prominent event type
