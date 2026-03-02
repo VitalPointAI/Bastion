@@ -1,0 +1,196 @@
+/* ============================================================================
+   AIRoleWorkspace - Phase 16 Plan 04
+   Two-panel layout for AI-assigned role workspaces.
+   Product panel (flex:1, left) + Channel feed panel (320px, right).
+   ============================================================================ */
+
+/* ─── Workspace root ─────────────────────────────────────────────────────────── */
+
+.ai-role-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ─── Initial state (AgentRosterCard centered) ───────────────────────────────── */
+
+.ai-workspace-initial {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* ─── Active state (two-panel layout) ───────────────────────────────────────── */
+
+.ai-workspace-active {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ─── Product Panel (left, wider) ────────────────────────────────────────────── */
+
+.ai-product-panel {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 1.5rem;
+  border-right: 1px solid var(--border-subtle, #2a2a38);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Placeholder shown before product content loads */
+.aip-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #666678);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 3rem 2rem;
+  border: 1px dashed var(--border-subtle, #2a2a38);
+  border-radius: 8px;
+  background: var(--bg-primary, #111118);
+}
+
+/* Controller action buttons in the product panel header */
+.aip-pause-btn,
+.aip-resume-btn,
+.aip-review-btn {
+  align-self: flex-start;
+  padding: 0.4rem 0.875rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.aip-pause-btn {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.aip-pause-btn:hover {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: #fbbf24;
+}
+
+.aip-resume-btn {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.aip-resume-btn:hover {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: #34d399;
+}
+
+.aip-review-btn {
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  color: #a78bfa;
+}
+
+.aip-review-btn:hover {
+  background: rgba(124, 58, 237, 0.18);
+  border-color: #a78bfa;
+}
+
+/* ─── Channel Panel (right, 320px fixed) ─────────────────────────────────────── */
+
+.ai-channel-panel {
+  width: 320px;
+  min-width: 280px;
+  max-width: 380px;
+  overflow-y: auto;
+  background: var(--bg-primary, #111118);
+  border-left: 1px solid var(--border-subtle, #2a2a38);
+  flex-shrink: 0;
+}
+
+/* Channel feed placeholder — replaced by ChannelFeed component in Plan 05 */
+.channel-feed-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  gap: 0.5rem;
+  color: var(--text-muted, #666678);
+}
+
+.cfp-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+  color: var(--text-dim, #444456);
+}
+
+/* ─── Error state ────────────────────────────────────────────────────────────── */
+
+.ai-workspace-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.ai-workspace-error-msg {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #ff6b6b;
+  max-width: 360px;
+}
+
+.ai-workspace-retry-btn {
+  padding: 0.45rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #ff6b6b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ai-workspace-retry-btn:hover {
+  background: rgba(255, 68, 68, 0.18);
+  border-color: #ff6b6b;
+}
+
+/* ─── Responsive: collapse channel panel on small screens ────────────────────── */
+
+@media (max-width: 900px) {
+  .ai-workspace-active {
+    flex-direction: column;
+  }
+
+  .ai-channel-panel {
+    width: 100%;
+    max-width: none;
+    height: 200px;
+    min-width: 0;
+    border-top: 1px solid var(--border-subtle, #2a2a38);
+    border-left: none;
+    flex-shrink: 0;
+  }
+}
