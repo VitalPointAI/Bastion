@@ -37,6 +37,111 @@ export type ExerciseDocumentType =
   | 'DIRECTIVE'
   | 'OTHER';
 
+// ─── AI Staff Workspace Types ─────────────────────────────────────────────────
+
+/** Per-position assignment mode for AI staff workspaces */
+export type RoleAssignment = 'human' | 'ai' | 'disabled';
+
+/**
+ * An individual AI agent definition belonging to a staff role team.
+ * Seeded from DEFAULT_AGENT_LIBRARY; can be overridden per scenario.
+ */
+export interface StaffAgentDef {
+  id: string;
+  roleKey: string;
+  name: string;          // e.g. "MAJ S. Nguyen"
+  rank: string;          // e.g. "MAJ"
+  branch: string;        // e.g. "MI"
+  specialty: string;     // e.g. "All-Source Intelligence Analysis"
+  focus: string;         // Single sentence — exactly what this agent produces
+  tools: string[];       // Tool type identifiers
+  personality: string[]; // Communication style tokens
+  systemPromptHint: string; // 1-2 sentence LLM persona primer
+  isDefault: boolean;
+}
+
+/** An AI execution run for a single role invocation */
+export interface AIRoleRun {
+  id: string;
+  scenarioId: string;
+  roleKey: string;
+  triggerType: 'manual' | 'opord_upload' | 'phase_change' | 'upstream_publish' | 'commander_directive';
+  triggerContext: Record<string, unknown>;
+  status: 'queued' | 'running' | 'paused' | 'awaiting_review' | 'complete' | 'failed';
+  pausedAt?: Date;
+  resumedAt?: Date;
+  completedAt?: Date;
+  error?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** Channel activity log entry for an AI-assigned role */
+export interface AIChannelEvent {
+  id: string;
+  scenarioId: string;
+  roleKey: string;
+  runId?: string;
+  eventType:
+    | 'task_started'
+    | 'task_progress'
+    | 'draft_ready'
+    | 'review_required'
+    | 'revision_requested'
+    | 'approved'
+    | 'rejected'
+    | 'waiting_on_role'
+    | 'ai_to_ai_request'
+    | 'ai_to_ai_response'
+    | 'error'
+    | 'paused'
+    | 'resumed';
+  payload: Record<string, unknown>;
+  agentName?: string;
+  createdAt: Date;
+}
+
+/** Version history entry for a staff product draft */
+export interface StaffProductVersion {
+  id: string;
+  productId: string;
+  version: number;
+  content: string;
+  structured: Record<string, unknown>;
+  createdBy: string; // 'agent:agentName' or 'user:did'
+  revisionNotes?: string;
+  annotatedFeedback?: Array<{
+    paragraphIndex: number;
+    startChar: number;
+    endChar: number;
+    highlightedText: string;
+    comment: string;
+  }>;
+  createdAt: Date;
+}
+
+/** Human review feedback for an AI-generated product draft */
+export interface ReviewFeedback {
+  action: 'approve' | 'edit_approve' | 'request_revision' | 'edit_request_revision' | 'reject';
+  notes?: string;
+  annotations?: Array<{
+    paragraphIndex: number;
+    startChar: number;
+    endChar: number;
+    highlightedText: string;
+    comment: string;
+  }>;
+  edits?: Record<string, string>; // fieldName -> edited value
+}
+
+/** Create input for an AI role run */
+export interface CreateAIRoleRun {
+  scenarioId: string;
+  roleKey: string;
+  triggerType: AIRoleRun['triggerType'];
+  triggerContext: Record<string, unknown>;
+}
+
 // ─── Exercise Scenario ────────────────────────────────────────────────────────
 
 /**
@@ -60,13 +165,19 @@ export interface ExerciseScenario {
    * Defaults to all 31 roles if not specified.
    */
   enabledRoles: string[];
+  /**
+   * Per-position assignment mode: human | ai | disabled
+   * Empty object = all positions default to "human"
+   */
+  roleAssignments: Record<string, RoleAssignment>;
   createdBy: string; // DID
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type CreateExerciseScenario = Omit<ExerciseScenario, 'id' | 'createdAt' | 'updatedAt' | 'enabledRoles'> & {
+export type CreateExerciseScenario = Omit<ExerciseScenario, 'id' | 'createdAt' | 'updatedAt' | 'enabledRoles' | 'roleAssignments'> & {
   enabledRoles?: string[];
+  roleAssignments?: Record<string, RoleAssignment>;
 };
 
 // ─── Scenario Document ────────────────────────────────────────────────────────

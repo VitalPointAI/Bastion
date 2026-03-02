@@ -19,6 +19,7 @@ function rowToScenario(row: Record<string, unknown>): ExerciseScenario {
     currentPhaseIndex: row.current_phase_index as number,
     status: row.status as ExerciseScenario['status'],
     enabledRoles: (row.enabled_roles as string[] | null) ?? [],
+    roleAssignments: (row.role_assignments as Record<string, import('./types.js').RoleAssignment> | null) ?? {},
     createdBy: row.created_by as string,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
