@@ -1,0 +1,104 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [master]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/vitalpointai/bastion
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Backend image
+      - name: Backend metadata
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/backend
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          target: runtime
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+
+      # Frontend image
+      - name: Frontend metadata
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/frontend
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          target: production
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          build-args: |
+            VITE_PRIVY_APP_ID=${{ secrets.VITE_PRIVY_APP_ID }}
+            VITE_NEAR_NETWORK=${{ vars.VITE_NEAR_NETWORK }}
+            VITE_NEAR_RPC=${{ vars.VITE_NEAR_RPC }}
+            VITE_PINATA_GATEWAY=${{ secrets.VITE_PINATA_GATEWAY }}
+            VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Hetzner
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            cd /home/deploy/bastion
+
+            # Pull latest code (for docker-compose.prod.yml, database files)
+            git pull origin master
+
+            # Log in to GHCR (needed for private repo images)
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USER }} --password-stdin
+
+            # Pull latest images
+            docker compose -f docker-compose.prod.yml pull
+
+            # Restart services with new images (never use down -v!)
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Clean up old images
+            docker image prune -f
+
+            # Verify backend health (backend port not exposed to host — use docker exec)
+            sleep 15
+            docker compose -f docker-compose.prod.yml exec -T backend node -e "fetch('http://localhost:3001/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
+            echo "Deployment successful"
