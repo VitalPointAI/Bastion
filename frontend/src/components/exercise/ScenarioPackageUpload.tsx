@@ -15,7 +15,7 @@
  * backend/src/exercise/package-parser.ts for instant client-side preview.
  */
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { exerciseService } from '../../services/exercise-service';
 import type { ExerciseScenario, ScenarioDocument, InferredFileTags, ExerciseDocumentType } from '../../types/exercise';
 import './ScenarioPackageUpload.css';
@@ -134,6 +134,7 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete }: ScenarioPa
 
   // ── Upload state ────────────────────────────────────────────────────────────
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ loaded: number; total: number } | null>(null);
   const [uploadedDocs, setUploadedDocs] = useState<ScenarioDocument[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
@@ -141,6 +142,80 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete }: ScenarioPa
   // ── Refs ────────────────────────────────────────────────────────────────────
   const folderInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Load existing documents + poll for extraction progress ──────────────────
+  const docsRef = useRef(uploadedDocs);
+  docsRef.current = uploadedDocs;
+
+  useEffect(() => {
+    if (!scenario) return;
+    let cancelled = false;
+
+    const fetchDocs = () => {
+      exerciseService.getDocuments(scenario.id).then((docs) => {
+        if (!cancelled) setUploadedDocs(docs);
+      }).catch(() => { /* non-fatal */ });
+    };
+
+    fetchDocs();
+
+    // Poll every 5s while any doc is still pending extraction
+    const interval = setInterval(() => {
+      if (cancelled) return;
+      const hasPending = docsRef.current.some((d) => d.extractionConfidence === 0);
+      if (hasPending) fetchDocs();
+    }, 5000);
+
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [scenario?.id]);
+
+  // ── Document edit/delete handlers ─────────────────────────────────────────
+  const handleDocUpdate = async (
+    docId: string,
+    updates: { team?: string; exercisePhase?: string; documentType?: string }
+  ) => {
+    try {
+      const updated = await exerciseService.updateDocument(docId, updates);
+      setUploadedDocs((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+    } catch {
+      /* non-fatal */
+    }
+  };
+
+  const handleDocDelete = async (docId: string) => {
+    try {
+      await exerciseService.deleteDocument(docId);
+      setUploadedDocs((prev) => prev.filter((d) => d.id !== docId));
+    } catch {
+      /* non-fatal */
+    }
+  };
+
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
+
+  const handleRetryExtraction = async (docId: string) => {
+    setRetryingIds((prev) => new Set(prev).add(docId));
+    try {
+      await exerciseService.retryExtraction(docId);
+      // Reset local state to show pending while extraction runs
+      setUploadedDocs((prev) =>
+        prev.map((d) =>
+          d.id === docId
+            ? { ...d, extractionConfidence: 0, extractedData: {} }
+            : d
+        )
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Retry failed';
+      setUploadError(msg);
+    } finally {
+      setRetryingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(docId);
+        return next;
+      });
+    }
+  };
 
   // ── File processing ─────────────────────────────────────────────────────────
 
@@ -231,14 +306,26 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete }: ScenarioPa
   const handleUpload = async () => {
     if (!scenario || fileEntries.length === 0) return;
     setIsUploading(true);
+    setUploadProgress(null);
     setUploadError(null);
     setUploadSuccess(null);
 
     try {
       const files = fileEntries.map((e) => e.file);
-      const docs = await exerciseService.uploadPackage(scenario.id, files);
-      setUploadedDocs(docs);
+      const tags = fileEntries.map((e) => ({
+        team: e.tags.team === 'unknown' ? 'controller' : e.tags.team,
+        exercisePhase: e.tags.exercisePhase,
+        documentType: e.tags.documentType,
+      }));
+      const docs = await exerciseService.uploadPackage(
+        scenario.id,
+        files,
+        tags,
+        (loaded, total) => setUploadProgress({ loaded, total }),
+      );
+      setUploadedDocs((prev) => [...docs, ...prev]);
       setFileEntries([]);
+      setUploadProgress(null);
       setUploadSuccess(
         `${docs.length} document${docs.length !== 1 ? 's' : ''} uploaded. LLM extraction running in background.`
       );
@@ -247,6 +334,7 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete }: ScenarioPa
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -439,6 +527,20 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete }: ScenarioPa
             <div className="upload-summary">
               {fileEntries.length} file{fileEntries.length !== 1 ? 's' : ''} &bull; {formatSize(totalSize)}
             </div>
+            {isUploading && uploadProgress && (
+              <div className="upload-progress">
+                <div className="upload-progress-bar">
+                  <div
+                    className="upload-progress-fill"
+                    style={{ width: `${Math.round((uploadProgress.loaded / uploadProgress.total) * 100)}%` }}
+                  />
+                </div>
+                <span className="upload-progress-text">
+                  {formatSize(uploadProgress.loaded)} / {formatSize(uploadProgress.total)}
+                  {' '}({Math.round((uploadProgress.loaded / uploadProgress.total) * 100)}%)
+                </span>
+              </div>
+            )}
             <button
               className="upload-button"
               onClick={handleUpload}
@@ -487,19 +589,117 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete }: ScenarioPa
       {/* Uploaded documents list */}
       {uploadedDocs.length > 0 && (
         <div className="uploaded-docs">
-          <h3 className="uploaded-docs-title">Uploaded Documents</h3>
-          <div className="uploaded-docs-list">
-            {uploadedDocs.map((doc) => (
-              <div key={doc.id} className="uploaded-doc-row">
-                <span className={`doc-team doc-team--${doc.team}`}>{doc.team}</span>
-                <span className="doc-phase">{doc.exercisePhase}</span>
-                <span className="doc-type">{doc.documentType}</span>
-                <span className="doc-filename">{doc.filename}</span>
-                <span className="doc-status doc-status--pending">
-                  Extracting...
-                </span>
-              </div>
-            ))}
+          <div className="uploaded-docs-header">
+            <h3 className="uploaded-docs-title">Uploaded Documents ({uploadedDocs.length})</h3>
+            <button
+              className="input-btn input-btn--clear"
+              onClick={async () => {
+                if (!confirm(`Delete all ${uploadedDocs.length} documents?`)) return;
+                try {
+                  await Promise.all(uploadedDocs.map((d) => exerciseService.deleteDocument(d.id)));
+                  setUploadedDocs([]);
+                } catch { /* non-fatal */ }
+              }}
+            >
+              Delete All
+            </button>
+          </div>
+          <div className="uploaded-docs-table-wrapper">
+            <table className="uploaded-docs-table">
+              <thead>
+                <tr>
+                  <th>Filename</th>
+                  <th>Team</th>
+                  <th>Phase</th>
+                  <th>Type</th>
+                  <th>Extraction</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {uploadedDocs.map((doc) => {
+                  const conf = doc.extractionConfidence;
+                  const dataKeys = Object.keys(doc.extractedData ?? {});
+                  const hasData = dataKeys.length > 0;
+                  const isEmpty = hasData && (doc.extractedData as Record<string, unknown>)?.summary === 'Document was empty or could not be parsed.';
+                  const statusClass = isEmpty ? 'failed' : hasData ? 'extracted' : 'pending';
+                  const statusLabel = isEmpty
+                    ? 'Parse failed'
+                    : hasData
+                      ? `Extracted (${Math.round(conf * 100)}%)`
+                      : 'Pending';
+                  const displayName = doc.filename.length > 50
+                    ? `...${doc.filename.slice(-47)}`
+                    : doc.filename;
+
+                  return (
+                    <tr key={doc.id}>
+                      <td className="doc-col-filename" title={doc.filename}>{displayName}</td>
+                      <td>
+                        <select
+                          className={`tag-select team-select team-select--${doc.team}`}
+                          value={doc.team}
+                          onChange={(e) => handleDocUpdate(doc.id, { team: e.target.value })}
+                        >
+                          {ALL_TEAMS.filter((t) => t.value !== 'unknown').map((t) => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          className="tag-select"
+                          value={doc.exercisePhase}
+                          onChange={(e) => handleDocUpdate(doc.id, { exercisePhase: e.target.value })}
+                        >
+                          {scenarioPhases.map((p) => (
+                            <option key={p} value={p}>{p}</option>
+                          ))}
+                          {!scenarioPhases.includes(doc.exercisePhase) && (
+                            <option value={doc.exercisePhase}>{doc.exercisePhase}</option>
+                          )}
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          className="tag-select"
+                          value={doc.documentType}
+                          onChange={(e) => handleDocUpdate(doc.id, { documentType: e.target.value })}
+                        >
+                          {ALL_TYPES.map((t) => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <span className={`doc-status doc-status--${statusClass}`}>
+                          {statusLabel}
+                        </span>
+                      </td>
+                      <td className="doc-col-actions">
+                        <button
+                          className="retry-btn"
+                          onClick={() => handleRetryExtraction(doc.id)}
+                          disabled={retryingIds.has(doc.id) || statusClass === 'pending'}
+                          title={statusClass === 'pending' ? 'Extraction in progress' : 'Retry extraction'}
+                          aria-label={`Retry extraction for ${doc.filename}`}
+                        >
+                          {retryingIds.has(doc.id) ? '...' : '\u21BB'}
+                        </button>
+                        <button
+                          className="remove-btn"
+                          onClick={() => handleDocDelete(doc.id)}
+                          title="Delete document"
+                          aria-label={`Delete ${doc.filename}`}
+                        >
+                          x
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

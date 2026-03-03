@@ -9,6 +9,9 @@
   display: flex;
   flex-direction: row;
   align-items: stretch;
+  flex-shrink: 0;   /* do not compress sideways */
+  min-height: 0;    /* allow vertical shrinkage inside flex column ancestors */
+  overflow: hidden; /* clip panel content; asp-blocks provides the scroll */
 }
 
 /* ── Toggle button ── */
@@ -335,6 +338,7 @@
 .asp-blocks {
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
   padding: 0.75rem;
   display: flex;
   flex-direction: column;

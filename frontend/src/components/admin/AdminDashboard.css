@@ -18,11 +18,13 @@ body:has(.admin-dashboard),
 
 .admin-dashboard {
   width: 100%;
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
   background: linear-gradient(180deg, var(--bg-deepest, #050508) 0%, var(--bg-deep, #0a0a0f) 100%);
   color: var(--text-primary, #ffffff);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* ============================================================================
@@ -145,6 +147,7 @@ body:has(.admin-dashboard),
   background: linear-gradient(180deg, var(--bg-secondary, #1a1a24) 0%, var(--bg-primary, #111118) 100%);
   border-bottom: 1px solid var(--border-subtle, #2a2a38);
   position: relative;
+  flex-shrink: 0;
 }
 
 .admin-dashboard .dashboard-header::after {
@@ -233,6 +236,14 @@ body:has(.admin-dashboard),
   flex: 1;
   min-height: 0;
   display: flex;
+  overflow: hidden;
+}
+
+/* Override tab-content flex layout for admin panels so overflow scrolling works */
+.admin-sidebar-wrapper .tab-content {
+  display: block;
+  overflow-y: auto;
+  padding: 1.5rem;
 }
 
 /* ============================================================================
@@ -317,6 +328,7 @@ body:has(.admin-dashboard),
 
 .config-panel {
   max-width: 900px;
+  padding-bottom: 2rem;
 }
 
 .config-panel--loading {

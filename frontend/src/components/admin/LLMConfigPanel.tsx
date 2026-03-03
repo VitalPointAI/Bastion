@@ -427,7 +427,7 @@ export function LLMConfigPanel() {
           <button
             type="submit"
             className="btn btn--primary"
-            disabled={!isDirty || isSaving}
+            disabled={isSaving}
           >
             {isSaving ? 'Saving...' : 'Save Changes'}
           </button>

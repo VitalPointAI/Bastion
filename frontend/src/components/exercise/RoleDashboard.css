@@ -12,7 +12,8 @@
   gap: 1.5rem;
   padding: 1.5rem;
   overflow-y: auto;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .role-dashboard--loading {
@@ -363,12 +364,16 @@
 .role-editor-container {
   display: flex;
   flex-direction: row;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
 .role-editor-main {
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }

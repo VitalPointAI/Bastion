@@ -352,6 +352,39 @@
   height: 16px;
 }
 
+/* Upload progress bar */
+.upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  flex-basis: 100%;
+  order: 3;
+}
+
+.upload-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--surface-alt, #1e1e2e);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue, #4a90d9), #5ba0e9);
+  border-radius: 3px;
+  transition: width 0.15s ease;
+}
+
+.upload-progress-text {
+  font-size: 0.8rem;
+  color: var(--text-muted, #666678);
+  white-space: nowrap;
+  min-width: 140px;
+  text-align: right;
+}
+
 /* Spinner */
 .spinner {
   display: inline-block;
@@ -407,8 +440,15 @@
   padding: 1rem;
 }
 
+.uploaded-docs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
 .uploaded-docs-title {
-  margin: 0 0 0.75rem 0;
+  margin: 0;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-muted, #666678);
@@ -416,56 +456,46 @@
   letter-spacing: 0.08em;
 }
 
-.uploaded-docs-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.uploaded-docs-table-wrapper {
+  overflow-x: auto;
 }
 
-.uploaded-doc-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 4px;
+.uploaded-docs-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 0.825rem;
+}
+
+.uploaded-docs-table thead th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border-subtle, #2a2a38);
+}
+
+.uploaded-docs-table tbody tr {
   transition: background 0.15s;
 }
 
-.uploaded-doc-row:hover {
+.uploaded-docs-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.02);
 }
 
-.doc-team {
-  font-weight: 600;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  min-width: 70px;
+.uploaded-docs-table td {
+  padding: 0.4rem 0.5rem;
+  vertical-align: middle;
 }
 
-.doc-team--blue { color: var(--exercise-blue-light, #3388ff); }
-.doc-team--red { color: var(--exercise-red-light, #ff3333); }
-.doc-team--controller { color: #a78bfa; }
-
-.doc-phase {
-  color: var(--text-muted, #666678);
-  min-width: 120px;
-  font-size: 0.8rem;
-}
-
-.doc-type {
-  color: var(--text-secondary, #aaa);
-  min-width: 100px;
-  font-size: 0.8rem;
-}
-
-.doc-filename {
-  flex: 1;
+.doc-col-filename {
   color: var(--text-primary, #fff);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 280px;
 }
 
 .doc-status {
@@ -491,6 +521,41 @@
   background: rgba(255, 68, 68, 0.1);
   color: #ff4444;
   border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+/* Actions column */
+.doc-col-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+/* Retry extraction button */
+.retry-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 4px;
+  color: var(--text-muted, #666678);
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.retry-btn:hover:not(:disabled) {
+  border-color: var(--accent-blue, #4a90d9);
+  color: var(--accent-blue, #4a90d9);
+  background: rgba(74, 144, 217, 0.1);
+}
+
+.retry-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
