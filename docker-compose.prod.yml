@@ -1,0 +1,126 @@
+# Production deployment — run with: docker compose -f docker-compose.prod.yml up -d
+# Requires .env.prod file with POSTGRES_PASSWORD, NEO4J_PASSWORD
+# Images pulled from GHCR (built by GitHub Actions)
+# GitHub repository: VitalPointAI/Bastion
+
+services:
+  # ==========================================
+  # PostgreSQL Database with TimescaleDB
+  # ==========================================
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: bastion-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: coalition_ops
+    # NO host port mapping — only accessible on bastion-network
+    # Databases must not be reachable from the internet
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d coalition_ops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bastion-network
+
+  # ==========================================
+  # Neo4j Graph Database
+  # ==========================================
+  neo4j:
+    image: neo4j:2025-community
+    container_name: bastion-neo4j
+    restart: always
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
+      NEO4J_PLUGINS: '["apoc"]'
+      # Tuned for CAX21 (8GB RAM shared with all services)
+      # Reduced from dev (1g→512m) to leave headroom for PostgreSQL + Node.js
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 256m
+    # NO host port mapping — only accessible on bastion-network
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bastion-network
+
+  # ==========================================
+  # Backend API Server
+  # ==========================================
+  backend:
+    image: ghcr.io/vitalpointai/bastion/backend:latest
+    # NO build block — uses pre-built GHCR image pushed by GitHub Actions
+    container_name: bastion-backend
+    restart: always
+    # NO host port mapping — only accessible via bastion-network
+    # Frontend container's nginx proxies /api/ to http://backend:3001
+    env_file:
+      - .env.prod
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/coalition_ops
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    networks:
+      - bastion-network
+
+  # ==========================================
+  # Frontend (nginx:alpine serving static files)
+  # ==========================================
+  frontend:
+    image: ghcr.io/vitalpointai/bastion/frontend:latest
+    # NO build block — uses pre-built GHCR image pushed by GitHub Actions
+    container_name: bastion-frontend
+    restart: always
+    ports:
+      # Host nginx (port 443) proxies to this port
+      # Container runs nginx:alpine serving pre-built static files on port 80
+      - "8080:80"
+    # NO source volume mounts — production serves pre-built static files from image
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+    networks:
+      - bastion-network
+
+# Named volumes for persistent data
+volumes:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:
+
+# Internal Docker network — databases never exposed to host network
+networks:
+  bastion-network:
+    driver: bridge
