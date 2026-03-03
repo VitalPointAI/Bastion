@@ -19,6 +19,7 @@
     "@simplewebauthn/browser": "^13.2.2",
     "@tanstack/react-table": "^8.21.3",
     "@types/leaflet-draw": "^1.0.13",
+    "@vitalpoint/near-phantom-auth": "0.4.2",
     "axios": "^1.13.2",
     "gantt-task-react": "^0.3.9",
     "leaflet": "^1.9.4",
