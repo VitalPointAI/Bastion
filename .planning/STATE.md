@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-02T20:40:24.000Z"
+last_updated: "2026-03-03T02:53:15.225Z"
 progress:
   total_phases: 30
-  completed_phases: 16
-  total_plans: 160
-  completed_plans: 171
+  completed_phases: 17
+  total_plans: 163
+  completed_plans: 174
 ---
 
 # Project State
@@ -83,6 +83,7 @@ Progress: ███████████████████████�
 | Phase 16-ai-assigned-staff-workspaces P04 | 6 | 2 tasks | 7 files |
 | Phase 16-ai-assigned-staff-workspaces P06 | 5 | 1 task (checkpoint pending) | 3 files |
 | Phase 17-deployment-cicd-hetzner P02 | 7 | 2 tasks | 2 files |
+| Phase 17 P01 | 108 | 4 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -365,6 +366,9 @@ Recent decisions affecting current work:
 - [Phase 16]: 16-02: AIContextStore uses JSONB || merge (never full overwrite) with pg_notify on context:{scenarioId} for cross-role coordination
 - [Phase 16]: canControl = isControllerView === true (strict equality) so undefined props default to observer read-only
 - [Phase 16]: Plan 05 parallel execution had already added all AI workspace types/service methods; Plan 04 only needed ExerciseScenario.roleAssignments field and component files
+- [Phase 17]: Standalone prod compose (not merge override) — simpler to reason about, single -f flag deploys everything
+- [Phase 17]: GHCR image paths use vitalpointai/bastion/* (not ALuhning from research notes) — plan explicitly specified VitalPointAI as GitHub org
+- [Phase 17]: Phase 17 co-locates all services on one server — TEE separation documented as future production concern, not Phase 17 deliverable
 
 ### Roadmap Evolution
 
