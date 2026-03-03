@@ -122,7 +122,7 @@ Confirmed on all backend API routes:
 
 Task 1 produced no file changes (verification only — no commit needed).
 
-**Plan metadata:** `[docs commit hash]` (docs: complete plan)
+**Plan metadata:** `4f06b5e` (docs: complete plan)
 
 ## Files Created/Modified
 
@@ -170,3 +170,7 @@ Phase 18 is complete pending human e2e verification. All code changes are in pla
 ---
 *Phase: 18-replace-current-login-with-vitalpoint-near-phantom-auth*
 *Completed: 2026-03-03*
+## Self-Check: PASSED
+
+- FOUND: 18-06-SUMMARY.md
+- FOUND: commit 4f06b5e

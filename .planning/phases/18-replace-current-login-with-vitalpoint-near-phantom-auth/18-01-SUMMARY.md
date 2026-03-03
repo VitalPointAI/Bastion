@@ -86,7 +86,7 @@ Each task was committed atomically:
 1. **Task 1: Install @vitalpoint/near-phantom-auth@0.4.2** - `57776b8` (chore)
 2. **Task 2: Bootstrap backend — DB migration, package init, CORS update** - `5d170c1` (feat)
 
-**Plan metadata:** `[docs commit hash]` (docs: complete plan)
+**Plan metadata:** `5d13373` (docs: complete plan)
 
 ## Files Created/Modified
 
