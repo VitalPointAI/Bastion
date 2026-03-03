@@ -33,3 +33,9 @@ near_openclaw.pub
 
 # Whitepaper exports (generated files)
 docs/whitepaper/exports/
+
+# Binary/document files (use scenario upload instead of git)
+*.pdf
+*.docx
+*.pptx
+*.xlsx

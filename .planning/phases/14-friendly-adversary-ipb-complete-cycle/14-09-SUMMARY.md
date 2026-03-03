@@ -117,6 +117,17 @@ None — no external service configuration required.
 - Planning Board provides at-a-glance task progress for both teams with role filtering
 - Phase 14-10 (Gate Management and Phase Transitions) can build on top of the PlanningBoard and the existing exerciseService.getGates/openGate/isPhaseReady methods
 
+## Self-Check: PASSED
+
+- FOUND: frontend/src/components/exercise/OrderEditor.tsx
+- FOUND: frontend/src/components/exercise/PlanningBoard.tsx
+- FOUND: frontend/src/components/exercise/OrderEditor.css
+- FOUND: frontend/src/components/exercise/PlanningBoard.css
+- FOUND: .planning/phases/14-friendly-adversary-ipb-complete-cycle/14-09-SUMMARY.md
+- FOUND: commit 22bd639 (OrderEditor)
+- FOUND: commit 3283f3c (PlanningBoard)
+- TypeScript: CLEAN (no errors)
+
 ---
 *Phase: 14-friendly-adversary-ipb-complete-cycle*
 *Completed: 2026-02-28*

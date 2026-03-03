@@ -120,6 +120,18 @@ None — TypeScript compilation clean on first pass. No type errors, no missing 
 - `ExerciseDashboard` tab stubs (IPB, COAs, Orders, Planning Board, Timeline, Gates) are ready to be filled by Plans 14-07 through 14-10
 - Exercise module is accessible at `/exercise` from the main application navigation
 
+## Self-Check: PASSED
+
+- FOUND: frontend/src/types/exercise.ts
+- FOUND: frontend/src/services/exercise-service.ts
+- FOUND: frontend/src/components/exercise/ExerciseDashboard.tsx
+- FOUND: frontend/src/components/exercise/ScenarioPackageUpload.tsx
+- FOUND: frontend/src/components/exercise/index.ts
+- FOUND: 14-06-SUMMARY.md
+- FOUND commit: af502df (Task 1)
+- FOUND commit: 48b9c0c (Task 2)
+- TypeScript compilation: CLEAN (no errors)
+
 ---
 *Phase: 14-friendly-adversary-ipb-complete-cycle*
 *Completed: 2026-02-28*

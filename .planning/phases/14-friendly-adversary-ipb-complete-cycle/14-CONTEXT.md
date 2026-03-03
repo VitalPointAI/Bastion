@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Build an exercise scenario from provided documents (PDFs, DOCX, PPTX) with dual-perspective IPB (friendly and adversary), COA development with combined doctrinal + wargame-informed probability scoring, concurrent operation support across exercise phases, and commander decision-forcing workflows. The exercise documents in `scenario/` (Pacific Strategy AY26) serve as the reference implementation.
+Build an exercise scenario from provided documents (PDFs, DOCX, PPTX) with dual-perspective IPB (friendly and adversary), COA development with combined doctrinal + wargame-informed probability scoring, concurrent operation support across exercise phases, commander decision-forcing workflows, and WARNORD/OPORD/FRAGO generation with task assignment and planning board tracking. The exercise documents in `scenario/` (Pacific Strategy AY26) serve as the reference implementation.
 
 </domain>
 
@@ -35,6 +35,17 @@ Build an exercise scenario from provided documents (PDFs, DOCX, PPTX) with dual-
 - Staff can edit the AI-generated narrative before presenting to the commander
 - Full commander decision workflow — commander can accept, reject, modify, combine elements from multiple COAs, or send back for more analysis
 - Hybrid recording — commander decisions stored in PostgreSQL for speed; hash of the decision record anchored on NEAR blockchain for tamper-evident verification
+
+### WARNORD & Order Generation
+- Both AI-generated and manual authoring modes — system auto-generates a WARNORD from ingested scenario documents (OOBs, timelines, objectives, force dispositions); staff can also manually author/edit WARNORDs with AI assistance pulling from scenario data
+- Full 5-paragraph OPORD format (Situation, Mission, Execution, Service & Support, Command & Signal) for major exercise phase transitions; simplified FRAGO format for within-phase updates and adjustments
+- Orders create actionable tasks assigned to planning teams (Blue staff, Red cell, exercise control) with role-based assignment, status tracking, deadlines, and completion gates
+- Notifications — assigned teams/roles are notified when orders are published; planning board provides at-a-glance view of task progress through the exercise planning cycle
+- WARNORD serves as the exercise initiation mechanism — loading a scenario package and publishing a WARNORD kicks off the planning cycle, creating initial tasks for all teams
+- Order sequence follows doctrinal flow: WARNORD → OPORD → FRAGOs as the exercise progresses through phases
+- Orders are versioned and linked to the exercise phase timeline — each order references which phase gate it corresponds to
+- Per-team order generation — orders can be generated for Blue, Red, or both teams; each order reflects that team's perspective, objectives, intelligence picture, and force structure (e.g., Blue WARNORD references CJTF WestPAC mission and INDOPACOM guidance; Red WARNORD references PRC/TCC campaign objectives and PLA force structure)
+- Respects information barriers — Blue orders contain only Blue-visible information; Red orders contain only Red-visible information; exercise controller can generate and view orders for both sides
 
 ### Concurrent Operations & Phasing
 - Timeline + gates — master timeline for visualization and context, but phase transitions are explicit decisions (not automatic time-based triggers); gates control when new information becomes available

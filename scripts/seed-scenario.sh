@@ -59,11 +59,7 @@ MISSION=$(curl -s -X POST "$API/missions" \
       ]]
     }
   }')
-MISSION_ID=$(echo "$MISSION" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id', json.load(sys.stdin).get('mission',{}).get('id','')))" 2>/dev/null || echo "")
-if [ -z "$MISSION_ID" ]; then
-  # Try alternate response shape
-  MISSION_ID=$(echo "$MISSION" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id','') or d.get('mission',{}).get('id',''))" 2>/dev/null || echo "")
-fi
+MISSION_ID=$(echo "$MISSION" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('missionId',''))" 2>/dev/null || echo "")
 if [ -z "$MISSION_ID" ]; then
   echo "  Failed to create mission. Response: $MISSION"
   echo "  Continuing with placeholder ID..."
@@ -355,7 +351,9 @@ PLAN=$(curl -s -X POST "$API/planning/plans" \
   -d "{
     \"missionId\": \"$MISSION_ID\",
     \"name\": \"OPLAN Pacific Shield\",
-    \"description\": \"Operational plan for coalition deterrence in the Taiwan Strait and South China Sea. Establishes naval presence, air superiority posture, and ISR coverage to deter PRC unilateral military action.\"
+    \"description\": \"Operational plan for coalition deterrence in the Taiwan Strait and South China Sea. Establishes naval presence, air superiority posture, and ISR coverage to deter PRC unilateral military action.\",
+    \"classification\": \"SECRET\",
+    \"planType\": \"OPLAN\"
   }")
 PLAN_ID=$(echo "$PLAN" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "")
 if [ -z "$PLAN_ID" ]; then
@@ -370,13 +368,24 @@ COA1=$(curl -s -X POST "$API/planning/plans/$PLAN_ID/coas" \
   -H "X-DID: $DID_COMMANDER" \
   -d "{
     \"planId\": \"$PLAN_ID\",
+    \"number\": 1,
     \"name\": \"COA 1: Forward Presence\",
     \"description\": \"Establish persistent naval presence in Taiwan Strait with CSG patrol rotation. Maintain F-35 combat air patrols from Kadena. Continuous MQ-9 ISR coverage of PLA Navy ports.\",
+    \"scheme\": \"Concentrate force in Taiwan Strait with persistent naval and air presence. CSG-7 maintains patrol rotation while F-35s provide 24/7 CAP from Kadena. MQ-9 ISR orbits monitor PLA Navy ports.\",
+    \"commandersIntent\": {
+      \"purpose\": \"Deter PRC unilateral military action through visible coalition presence\",
+      \"keyTasks\": [\"Maintain continuous CSG presence in Taiwan Strait\", \"Establish 24/7 combat air patrol coverage\", \"Provide persistent ISR over PLA Navy bases\"],
+      \"endState\": \"PRC deterred from kinetic action; freedom of navigation maintained; alliance credibility strengthened\",
+      \"context\": \"Increased PLA Navy activity and DPRK ICBM tests require immediate visible deterrence posture\",
+      \"constraints\": [\"Avoid provocative transits within 12nm of contested features\", \"Maintain deconfliction with commercial shipping\"],
+      \"criticalFactors\": [\"Sustained carrier readiness\", \"Tanker support for extended CAP\", \"Real-time ISR processing\"],
+      \"antigoals\": [\"Escalation to kinetic exchange\", \"Disruption of commercial shipping lanes\", \"Diplomatic incident with PRC\"]
+    },
     \"tasks\": [
-      {\"name\": \"Deploy CSG-7 to Taiwan Strait patrol zone\", \"assignedUnit\": \"NAVFOR\"},
-      {\"name\": \"Establish 24/7 CAP coverage from Kadena AB\", \"assignedUnit\": \"AIRFOR\"},
-      {\"name\": \"Position MQ-9 ISR orbits over PLA Navy bases\", \"assignedUnit\": \"AIRFOR\"},
-      {\"name\": \"Conduct FONOPs through South China Sea\", \"assignedUnit\": \"NAVFOR\"}
+      {\"id\": \"task-1-1\", \"unitId\": \"$NAVFOR_ID\", \"task\": \"Deploy CSG-7 to Taiwan Strait patrol zone\", \"purpose\": \"Establish visible deterrent presence\"},
+      {\"id\": \"task-1-2\", \"unitId\": \"$AIRFOR_ID\", \"task\": \"Establish 24/7 CAP coverage from Kadena AB\", \"purpose\": \"Maintain air superiority posture\"},
+      {\"id\": \"task-1-3\", \"unitId\": \"$AIRFOR_ID\", \"task\": \"Position MQ-9 ISR orbits over PLA Navy bases\", \"purpose\": \"Provide early warning of force movements\"},
+      {\"id\": \"task-1-4\", \"unitId\": \"$NAVFOR_ID\", \"task\": \"Conduct FONOPs through South China Sea\", \"purpose\": \"Assert freedom of navigation rights\"}
     ]
   }")
 COA1_ID=$(echo "$COA1" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "coa-1")
@@ -387,13 +396,24 @@ COA2=$(curl -s -X POST "$API/planning/plans/$PLAN_ID/coas" \
   -H "X-DID: $DID_COMMANDER" \
   -d "{
     \"planId\": \"$PLAN_ID\",
+    \"number\": 2,
     \"name\": \"COA 2: Distributed Deterrence\",
     \"description\": \"Distribute forces across multiple bases and sea lanes to complicate PRC targeting. Leverage Quad alliance for layered maritime domain awareness. Pre-position logistics for rapid surge.\",
+    \"scheme\": \"Disperse coalition forces across multiple operating areas to present complex targeting problem. Quad nations provide layered maritime domain awareness. Forward-positioned logistics enable rapid surge if needed.\",
+    \"commandersIntent\": {
+      \"purpose\": \"Complicate PRC military calculus through distributed force posture\",
+      \"keyTasks\": [\"Disperse naval assets to multiple operating areas\", \"Establish Quad maritime patrol schedule\", \"Pre-position logistics at forward locations\"],
+      \"endState\": \"PRC unable to neutralize coalition capability with single strike; sustained deterrence through resilience\",
+      \"context\": \"Concentrated forces present attractive target; distribution increases survivability and coverage\",
+      \"constraints\": [\"Maintain mutual support distance between dispersed elements\", \"Coordinate with Quad partners for coverage gaps\"],
+      \"criticalFactors\": [\"Logistics throughput to forward locations\", \"Communications reliability across distributed force\", \"Quad partner commitment to patrol schedule\"],
+      \"antigoals\": [\"Force dilution below effective deterrence threshold\", \"Logistics overextension\", \"Communication breakdown between dispersed elements\"]
+    },
     \"tasks\": [
-      {\"name\": \"Disperse naval assets to multiple operating areas\", \"assignedUnit\": \"NAVFOR\"},
-      {\"name\": \"Establish joint Quad maritime patrol schedule\", \"assignedUnit\": \"JTF\"},
-      {\"name\": \"Pre-position fuel and ammunition at forward locations\", \"assignedUnit\": \"Logistics\"},
-      {\"name\": \"Deploy undersea sensor network in key chokepoints\", \"assignedUnit\": \"SPECOPS\"}
+      {\"id\": \"task-2-1\", \"unitId\": \"$NAVFOR_ID\", \"task\": \"Disperse naval assets to multiple operating areas\", \"purpose\": \"Complicate adversary targeting\"},
+      {\"id\": \"task-2-2\", \"unitId\": \"$JTF_ID\", \"task\": \"Establish joint Quad maritime patrol schedule\", \"purpose\": \"Achieve layered maritime domain awareness\"},
+      {\"id\": \"task-2-3\", \"unitId\": \"$JTF_ID\", \"task\": \"Pre-position fuel and ammunition at forward locations\", \"purpose\": \"Enable rapid surge capability\"},
+      {\"id\": \"task-2-4\", \"unitId\": \"$SPECOPS_ID\", \"task\": \"Deploy undersea sensor network in key chokepoints\", \"purpose\": \"Provide persistent subsurface surveillance\"}
     ]
   }")
 COA2_ID=$(echo "$COA2" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "coa-2")
@@ -404,13 +424,24 @@ COA3=$(curl -s -X POST "$API/planning/plans/$PLAN_ID/coas" \
   -H "X-DID: $DID_COMMANDER" \
   -d "{
     \"planId\": \"$PLAN_ID\",
+    \"number\": 3,
     \"name\": \"COA 3: Active Defense\",
     \"description\": \"Establish defensive zones around key maritime chokepoints with layered ISR and rapid response posture. Integrate allied naval forces for combined ASW and AAW operations.\",
+    \"scheme\": \"Establish layered defensive zones at Luzon Strait and Miyako Strait chokepoints. Japanese MSDF integration for combined AAW. SPECOPS forward-deployed for intelligence collection on PLA activity.\",
+    \"commandersIntent\": {
+      \"purpose\": \"Deny adversary freedom of action through control of key maritime chokepoints\",
+      \"keyTasks\": [\"Establish ADIZ coverage over Taiwan Strait\", \"Deploy ASW pickets at key straits\", \"Integrate JMSDF for combined operations\"],
+      \"endState\": \"Key chokepoints controlled; PLA freedom of maneuver constrained; allied interoperability demonstrated\",
+      \"context\": \"Chokepoint control provides maximum leverage with minimum force commitment\",
+      \"constraints\": [\"Operate within Japanese constitutional limitations\", \"Maintain international strait transit rights\"],
+      \"criticalFactors\": [\"JMSDF interoperability standards\", \"ASW detection capability in shallow waters\", \"ADIZ enforcement protocols\"],
+      \"antigoals\": [\"Violation of international waterway transit rights\", \"Friendly fire incident with allied forces\", \"Intelligence compromise of SPECOPS positions\"]
+    },
     \"tasks\": [
-      {\"name\": \"Establish ADIZ coverage over Taiwan Strait\", \"assignedUnit\": \"AIRFOR\"},
-      {\"name\": \"Deploy ASW pickets at Luzon and Miyako Straits\", \"assignedUnit\": \"NAVFOR\"},
-      {\"name\": \"Integrate Japanese MSDF for combined AAW\", \"assignedUnit\": \"NAVFOR\"},
-      {\"name\": \"Position SPECOPS for intelligence collection on PLA activity\", \"assignedUnit\": \"SOCFOR\"}
+      {\"id\": \"task-3-1\", \"unitId\": \"$AIRFOR_ID\", \"task\": \"Establish ADIZ coverage over Taiwan Strait\", \"purpose\": \"Control airspace and deter aerial incursions\"},
+      {\"id\": \"task-3-2\", \"unitId\": \"$NAVFOR_ID\", \"task\": \"Deploy ASW pickets at Luzon and Miyako Straits\", \"purpose\": \"Deny submarine transit through key chokepoints\"},
+      {\"id\": \"task-3-3\", \"unitId\": \"$NAVFOR_ID\", \"task\": \"Integrate Japanese MSDF for combined AAW\", \"purpose\": \"Achieve layered air defense coverage\"},
+      {\"id\": \"task-3-4\", \"unitId\": \"$SPECOPS_ID\", \"task\": \"Position SPECOPS for intelligence collection on PLA activity\", \"purpose\": \"Provide early warning and threat assessment\"}
     ]
   }")
 COA3_ID=$(echo "$COA3" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "coa-3")
