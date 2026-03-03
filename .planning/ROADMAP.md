@@ -388,6 +388,21 @@ Plans:
 - [ ] 17-02-PLAN.md — GitHub Actions CI and Deploy workflows
 - [ ] 17-03-PLAN.md — Server provisioning, GitHub secrets setup, end-to-end verification
 
+### Phase 18: replace current login with @vitalpoint/near-phantom-auth
+
+**Goal:** Replace the entire custom passkey/magic-link/TOTP authentication system with @vitalpoint/near-phantom-auth@0.4.2 — email-required registration, HttpOnly cookie sessions, password+IPFS recovery, clean break migration
+**Requirements**: TBD
+**Depends on:** Phase 17
+**Plans:** 6 plans
+
+Plans:
+- [ ] 18-01-PLAN.md — Install package, bootstrap backend (DB migration, auth.initialize, CORS update)
+- [ ] 18-02-PLAN.md — Backend route migration (replace getUserDID with requireAuth, wire NEAR funding)
+- [ ] 18-03-PLAN.md — Frontend auth provider swap (AnonAuthProvider, AuthWrapper, App.tsx routes)
+- [ ] 18-04-PLAN.md — Frontend service migration (Bearer tokens to credentials: 'include')
+- [ ] 18-05-PLAN.md — Cleanup and deletion (remove 25+ legacy auth files, clean packages)
+- [ ] 18-06-PLAN.md — End-to-end verification (build checks + human verification checkpoint)
+
 ---
 
 **Key Capabilities:**
