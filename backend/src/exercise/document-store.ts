@@ -9,6 +9,11 @@ import { randomUUID } from 'crypto';
 import { getPool } from '../lib/database.js';
 import type { ScenarioDocument, CreateScenarioDocument } from './types.js';
 
+// ─── Column list (excludes file_data blob to avoid loading large buffers) ────
+
+const DOC_COLUMNS = `id, scenario_id, team, exercise_phase, document_type, filename,
+  mime_type, text_content, extracted_data, extraction_confidence, created_at, updated_at`;
+
 // ─── Row Mapper ───────────────────────────────────────────────────────────────
 
 function rowToDocument(row: Record<string, unknown>): ScenarioDocument {
@@ -34,17 +39,20 @@ export class ScenarioDocumentStore {
   private pool = getPool();
 
   /**
-   * Create a new scenario document
+   * Create a new scenario document, optionally storing the original file buffer.
    */
-  async create(data: CreateScenarioDocument): Promise<ScenarioDocument> {
+  async create(
+    data: CreateScenarioDocument,
+    fileData?: Buffer
+  ): Promise<ScenarioDocument> {
     const id = randomUUID();
     const now = new Date();
 
     await this.pool.query(
       `INSERT INTO scenario_documents
          (id, scenario_id, team, exercise_phase, document_type, filename, mime_type,
-          text_content, extracted_data, extraction_confidence, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          text_content, extracted_data, extraction_confidence, file_data, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         id,
         data.scenarioId,
@@ -56,13 +64,14 @@ export class ScenarioDocumentStore {
         data.textContent,
         JSON.stringify(data.extractedData ?? {}),
         data.extractionConfidence ?? 0,
+        fileData ?? null,
         now,
         now,
       ]
     );
 
     const result = await this.pool.query(
-      'SELECT * FROM scenario_documents WHERE id = $1',
+      `SELECT ${DOC_COLUMNS} FROM scenario_documents WHERE id = $1`,
       [id]
     );
     return rowToDocument(result.rows[0]);
@@ -76,7 +85,7 @@ export class ScenarioDocumentStore {
     visibleTeams: string[]
   ): Promise<ScenarioDocument[]> {
     const result = await this.pool.query(
-      `SELECT * FROM scenario_documents
+      `SELECT ${DOC_COLUMNS} FROM scenario_documents
        WHERE scenario_id = $1 AND team = ANY($2)
        ORDER BY created_at DESC`,
       [scenarioId, visibleTeams]
@@ -93,7 +102,7 @@ export class ScenarioDocumentStore {
     visibleTeams: string[]
   ): Promise<ScenarioDocument[]> {
     const result = await this.pool.query(
-      `SELECT * FROM scenario_documents
+      `SELECT ${DOC_COLUMNS} FROM scenario_documents
        WHERE scenario_id = $1 AND exercise_phase = $2 AND team = ANY($3)
        ORDER BY created_at DESC`,
       [scenarioId, phase, visibleTeams]
@@ -109,7 +118,7 @@ export class ScenarioDocumentStore {
     visibleTeams: string[]
   ): Promise<ScenarioDocument | null> {
     const result = await this.pool.query(
-      `SELECT * FROM scenario_documents
+      `SELECT ${DOC_COLUMNS} FROM scenario_documents
        WHERE id = $1 AND team = ANY($2)`,
       [id, visibleTeams]
     );
@@ -130,6 +139,64 @@ export class ScenarioDocumentStore {
        WHERE id = $3`,
       [JSON.stringify(extractedData), confidence, id]
     );
+  }
+
+  /**
+   * Update editable fields (team, phase, type) on a document
+   */
+  async updateTags(
+    id: string,
+    updates: { team?: string; exercisePhase?: string; documentType?: string }
+  ): Promise<ScenarioDocument | null> {
+    const sets: string[] = [];
+    const vals: unknown[] = [];
+    let idx = 1;
+
+    if (updates.team) { sets.push(`team = $${idx++}`); vals.push(updates.team); }
+    if (updates.exercisePhase) { sets.push(`exercise_phase = $${idx++}`); vals.push(updates.exercisePhase); }
+    if (updates.documentType) { sets.push(`document_type = $${idx++}`); vals.push(updates.documentType); }
+
+    if (sets.length === 0) return this.findById(id, ['blue', 'red', 'controller']);
+
+    sets.push(`updated_at = NOW()`);
+    vals.push(id);
+
+    await this.pool.query(
+      `UPDATE scenario_documents SET ${sets.join(', ')} WHERE id = $${idx}`,
+      vals
+    );
+
+    const result = await this.pool.query(`SELECT ${DOC_COLUMNS} FROM scenario_documents WHERE id = $1`, [id]);
+    return result.rows[0] ? rowToDocument(result.rows[0]) : null;
+  }
+
+  /**
+   * Retrieve the stored original file buffer for a document.
+   * Returns null if no file_data was stored (legacy uploads).
+   */
+  async getFileData(id: string): Promise<Buffer | null> {
+    const result = await this.pool.query(
+      'SELECT file_data FROM scenario_documents WHERE id = $1',
+      [id]
+    );
+    return (result.rows[0]?.file_data as Buffer) ?? null;
+  }
+
+  /**
+   * Update the text_content for a document (used after re-parsing from file_data).
+   */
+  async updateTextContent(id: string, textContent: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE scenario_documents SET text_content = $1, updated_at = NOW() WHERE id = $2`,
+      [textContent, id]
+    );
+  }
+
+  /**
+   * Delete a document by ID
+   */
+  async delete(id: string): Promise<void> {
+    await this.pool.query('DELETE FROM scenario_documents WHERE id = $1', [id]);
   }
 
   /**

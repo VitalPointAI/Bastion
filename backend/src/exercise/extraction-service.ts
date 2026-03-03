@@ -347,61 +347,67 @@ export class ExerciseExtractionService {
     console.log(`[exercise-extraction] Batch complete for scenario ${scenarioId}`);
   }
 
-  // ─── Vision Extraction (Planning Maps) ──────────────────────────────────────
+  // ─── Vision Extraction (Scanned / Image-based PDFs) ─────────────────────────
 
   /**
-   * Extract structured military map data from a planning map PDF using Claude vision.
+   * Extract structured data from a PDF using Claude vision.
    *
-   * Quick Task 5: Planning map PDFs contain visual/spatial content (terrain features,
-   * hex grids, unit positions) that `unpdf` cannot extract as text. This method sends
-   * the raw PDF buffer directly to Claude as a native base64 document block and uses
-   * the exercise extraction tool to produce structured IPBLayer-compatible output.
+   * Used for scanned / image-based PDFs where text extraction returns nothing.
+   * Works for both PLANNING_MAP documents (extracts terrain, units, hex grids)
+   * and general documents (extracts text-level content via OCR).
+   *
+   * Oversized PDFs (>32 MB or >100 pages) are automatically truncated to the
+   * first N pages via pdf-lib before submission.
    *
    * After extraction:
    * - The LLM-generated summary is persisted as textContent for future standard extraction
-   * - Generated IPBLayer[] are stored in rawExtraction.ipbLayers for downstream use
+   * - For PLANNING_MAP docs, IPBLayer[] are stored in rawExtraction.ipbLayers
    *
    * @param docId     - Scenario document ID for persistence
    * @param pdfBuffer - Raw PDF file buffer (from documentStore.getFileData)
    * @param tags      - PackageTags (team, exercisePhase, documentType, confidence)
-   * @returns ExtractedExerciseData with forceDispositions, rawExtraction, etc.
+   * @returns ExtractedExerciseData with structured fields
    */
-  async extractMapWithVision(
+  async extractWithVision(
     docId: string,
     pdfBuffer: Buffer,
     tags: PackageTags
   ): Promise<ExtractedExerciseData> {
-    const { base64, mediaType, sizeBytes, oversized } = preparePdfForVision(pdfBuffer);
+    const payload = await preparePdfForVision(pdfBuffer);
 
-    if (oversized) {
-      console.warn(
-        `[exercise-extraction] PDF for doc ${docId} (${(sizeBytes / 1024 / 1024).toFixed(1)} MB) ` +
-          'may be rejected by Anthropic API due to size limits.'
-      );
-    }
+    const truncationNote = payload.truncated
+      ? `\n\nNOTE: This document was truncated from ${payload.originalPages} to ${payload.includedPages} pages due to size limits. Extract as much as possible from the available pages.`
+      : '';
 
-    const systemPrompt =
-      'You are a military map analyst. Extract structured geographic and military data from this planning map.\n\n' +
-      'Identify:\n' +
-      '- Named regions and hex grid identifiers\n' +
-      '- Key terrain features (mountains, rivers, urban areas, chokepoints)\n' +
-      '- Unit positions and symbols (identify SIDC codes if possible)\n' +
-      '- Boundaries (operational areas, phase lines, boundaries between units)\n' +
-      '- Avenues of approach and engagement areas\n' +
-      '- Named Areas of Interest (NAIs)\n\n' +
-      'For each feature, estimate geographic coordinates or provide hex grid references.\n\n' +
-      `Team context: ${tags.team} | Exercise phase: ${tags.exercisePhase}\n\n` +
-      'You MUST use the extract_exercise_data tool to provide your structured response.';
+    const isMap = tags.documentType === 'PLANNING_MAP';
+
+    const systemPrompt = isMap
+      ? 'You are a military map analyst. Extract structured geographic and military data from this planning map.\n\n' +
+        'Identify:\n' +
+        '- Named regions and hex grid identifiers\n' +
+        '- Key terrain features (mountains, rivers, urban areas, chokepoints)\n' +
+        '- Unit positions and symbols (identify SIDC codes if possible)\n' +
+        '- Boundaries (operational areas, phase lines, boundaries between units)\n' +
+        '- Avenues of approach and engagement areas\n' +
+        '- Named Areas of Interest (NAIs)\n\n' +
+        'For each feature, estimate geographic coordinates or provide hex grid references.\n\n' +
+        `Team context: ${tags.team} | Exercise phase: ${tags.exercisePhase}` +
+        truncationNote + '\n\n' +
+        'You MUST use the extract_exercise_data tool to provide your structured response.'
+      : buildExerciseSystemPrompt(tags, false) +
+        '\n\nNOTE: This PDF appears to be scanned or image-based. Read the visual content carefully and extract all text and structured data you can identify.' +
+        truncationNote;
+
+    const userText = isMap
+      ? 'Extract structured military map data from this planning map PDF. Focus on terrain features, unit positions, avenues of approach, NAIs, and engagement areas.'
+      : 'Extract structured exercise data from this scanned PDF document. Read all visible text and extract structured data according to the document type.';
 
     const content: LLMContentBlock[] = [
       {
         type: 'document',
-        source: { type: 'base64', media_type: mediaType, data: base64 },
+        source: { type: 'base64', media_type: payload.mediaType, data: payload.base64 },
       },
-      {
-        type: 'text',
-        text: 'Extract structured military map data from this planning map PDF. Focus on terrain features, unit positions, avenues of approach, NAIs, and engagement areas.',
-      },
+      { type: 'text', text: userText },
     ];
 
     const request: LLMCompletionRequest = {
@@ -414,7 +420,11 @@ export class ExerciseExtractionService {
       max_tokens: 8192,
     };
 
-    console.log(`[exercise-extraction] Starting vision extraction for doc ${docId}`);
+    console.log(
+      `[exercise-extraction] Starting vision extraction for doc ${docId} ` +
+        `(${(payload.sizeBytes / 1024 / 1024).toFixed(1)} MB, ${payload.includedPages}/${payload.originalPages} pages` +
+        `${payload.truncated ? ', truncated' : ''})`
+    );
 
     let extractionInput: Record<string, unknown> | null = null;
 
@@ -436,8 +446,8 @@ export class ExerciseExtractionService {
     if (!extractionInput) {
       console.warn(`[exercise-extraction] Vision extraction produced no structured data for ${docId}`);
       const emptyResult: ExtractedExerciseData = {
-        summary: 'Vision extraction produced no structured data from this map.',
-        rawExtraction: { visionExtracted: true },
+        summary: 'Vision extraction produced no structured data from this document.',
+        rawExtraction: { visionExtracted: true, truncated: payload.truncated },
       };
       await this.documentStore.updateExtraction(
         docId,
@@ -449,7 +459,7 @@ export class ExerciseExtractionService {
 
     // Build the result object from extraction input
     const result: ExtractedExerciseData = {
-      summary: (extractionInput.summary as string) || 'Vision-extracted planning map data.',
+      summary: (extractionInput.summary as string) || 'Vision-extracted document data.',
       forceDispositions: extractionInput.forceDispositions as ExtractedExerciseData['forceDispositions'],
       objectives: extractionInput.objectives as ExtractedExerciseData['objectives'],
       timeline: extractionInput.timeline as ExtractedExerciseData['timeline'],
@@ -457,18 +467,21 @@ export class ExerciseExtractionService {
       accessBasingOverflight: extractionInput.accessBasingOverflight as ExtractedExerciseData['accessBasingOverflight'],
       tasks: extractionInput.tasks as ExtractedExerciseData['tasks'],
       changedItems: extractionInput.changedItems as ExtractedExerciseData['changedItems'],
-      rawExtraction: { ...extractionInput, visionExtracted: true },
+      rawExtraction: { ...extractionInput, visionExtracted: true, truncated: payload.truncated },
     };
 
-    // Generate IPBLayer[] from extracted data
-    const team = (tags.team === 'blue' || tags.team === 'red') ? tags.team : 'blue';
-    const ipbLayers = mapFeaturesToIPBLayers(result, team);
-    result.rawExtraction.ipbLayers = ipbLayers;
-
-    console.log(
-      `[exercise-extraction] Vision extraction complete for ${docId}: ` +
-        `${ipbLayers.length} IPB layers generated`
-    );
+    // Generate IPBLayer[] from extracted data (primarily useful for map docs)
+    if (isMap) {
+      const team = (tags.team === 'blue' || tags.team === 'red') ? tags.team : 'blue';
+      const ipbLayers = mapFeaturesToIPBLayers(result, team);
+      result.rawExtraction.ipbLayers = ipbLayers;
+      console.log(
+        `[exercise-extraction] Vision extraction complete for ${docId}: ` +
+          `${ipbLayers.length} IPB layers generated`
+      );
+    } else {
+      console.log(`[exercise-extraction] Vision extraction complete for ${docId}`);
+    }
 
     // Persist extraction data
     const confidence = Math.min(tags.confidence, 0.8); // Cap vision confidence at 0.8

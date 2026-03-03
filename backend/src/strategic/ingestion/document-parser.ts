@@ -14,6 +14,8 @@ const SUPPORTED_MIME_TYPES = new Map<string, 'pdf' | 'office'>([
   ['application/msword', 'office'], // .doc
   ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'office'], // .pptx
   ['application/vnd.ms-powerpoint', 'office'], // .ppt
+  ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'office'], // .xlsx
+  ['application/vnd.ms-excel', 'office'], // .xls
 ]);
 
 /**
