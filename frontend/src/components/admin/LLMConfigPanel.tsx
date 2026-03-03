@@ -55,7 +55,7 @@ export function LLMConfigPanel() {
     reset,
     watch,
     control,
-    formState: { errors, isDirty },
+    formState: { errors, isDirty: _isDirty },
   } = useForm<LLMConfigFormData>({
     resolver: zodResolver(LLMConfigSchema),
   });

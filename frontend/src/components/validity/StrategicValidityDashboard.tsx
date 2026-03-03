@@ -74,8 +74,10 @@ export function StrategicValidityDashboard() {
     fetchJSON<{ workspaces: Workspace[] }>('/api/graph/workspaces')
       .then(data => {
         if (!data) return;
+         
         setWorkspaces(data.workspaces || []);
         if (data.workspaces.length > 0) {
+           
           setSelectedWorkspaceId(data.workspaces[0].id);
         }
       });
@@ -84,23 +86,29 @@ export function StrategicValidityDashboard() {
   // Load workspace data when workspace changes
   useEffect(() => {
     if (!selectedWorkspaceId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronous loading indicator before async fetch
     setLoading(true);
 
     Promise.all([
       fetchJSON<{ events: OsintEvent[] }>(`/api/graph/osint/events?workspaceId=${selectedWorkspaceId}&limit=50`),
       fetchJSON<{ objectives: ObjectiveValidity[] }>(`/api/graph/validity/objectives?workspaceId=${selectedWorkspaceId}`),
       fetchJSON<{ alerts: Alert[] }>(`/api/graph/validity/alerts?workspaceId=${selectedWorkspaceId}&acknowledged=false`),
-      fetchJSON<{ nodes: any[]; edges: any[] }>(`/api/graph/workspaces/${selectedWorkspaceId}/graph`),
+      fetchJSON<GraphData>(`/api/graph/workspaces/${selectedWorkspaceId}/graph`),
     ]).then(([eventsData, objectivesData, alertsData, graphResponse]) => {
+       
       setEvents(eventsData?.events || []);
+       
       setObjectives(objectivesData?.objectives || []);
+       
       setAlerts(alertsData?.alerts || []);
       if (graphResponse) {
+         
         setGraphData({
           nodes: graphResponse.nodes || [],
           edges: graphResponse.edges || [],
         });
       }
+       
     }).finally(() => setLoading(false));
   }, [selectedWorkspaceId]);
 
@@ -254,7 +262,7 @@ export function StrategicValidityDashboard() {
                   onClick={() => handleEventClick(event.id)}
                 >
                   <span className="event-title">{event.title}</span>
-                  <span className="event-time">{new Date(event.timestamp).toLocaleDateString()}</span>
+                  <span className="event-time">{new Date(event.timestamp || event.publishedAt || '').toLocaleDateString()}</span>
                 </div>
               ))}
               {events.length === 0 && <p className="empty">No events</p>}

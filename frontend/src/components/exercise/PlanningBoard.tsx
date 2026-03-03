@@ -271,7 +271,7 @@ export function PlanningBoard({ scenarioId, perspective, exercisePhase }: Planni
   const [tasks, setTasks] = useState<PlanningTask[]>([]);
   const [summary, setSummary] = useState<BoardSummary | null>(null);
   const [filterRole, setFilterRole] = useState<string>('all');
-  const [filterPhase, setFilterPhase] = useState<string>('all');
+  const [_filterPhase, _setFilterPhase] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingTask, setUpdatingTask] = useState<string | null>(null);
@@ -319,7 +319,7 @@ export function PlanningBoard({ scenarioId, perspective, exercisePhase }: Planni
   // ── Derived ──────────────────────────────────────────────────────────────────
 
   // Available phases from tasks
-  const availablePhases = Array.from(new Set(tasks.map((t) => {
+  const _availablePhases = Array.from(new Set(tasks.map((_t) => {
     // Tasks don't have exercisePhase directly, derive from orderId
     // We'll show 'all' only for now — phase filtering available if task has phase field
     return 'all';

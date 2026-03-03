@@ -82,7 +82,7 @@ export function AgentAssignmentModal({
           setSelectedTeamId(data.teams[0].teamId);
         }
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load agents and teams');
     } finally {
       setLoading(false);

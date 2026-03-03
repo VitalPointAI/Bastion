@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { Importer, ImporterField } from 'react-csv-importer';
 import 'react-csv-importer/dist/index.css';
-import { resourceService, type BulkImportRow, type ResourceStatus } from '../../../lib/resource-service.js';
+import { resourceService, type BulkImportRow } from '../../../lib/resource-service.js';
 
 interface BulkImporterProps {
   missionId: string;
@@ -104,20 +104,12 @@ export function BulkImporter({ missionId, onClose, onSuccess }: BulkImporterProp
               </div>
 
               <div className="csv-importer-wrapper">
-                <Importer
+                <Importer<BulkImportRow>
                   dataHandler={async (rows) => {
-                    // Collect all rows first
-                    const allRows: BulkImportRow[] = [];
-                    for (const row of rows) {
-                      allRows.push(row as BulkImportRow);
-                    }
-                    await handleImport(allRows);
+                    await handleImport(rows as unknown as BulkImportRow[]);
                   }}
                   defaultNoHeader={false}
                   restartable={false}
-                  processChunk={async (rows) => {
-                    // Just collect rows, actual processing happens in dataHandler
-                  }}
                 >
                   <ImporterField name="name" label="Resource Name" />
                   <ImporterField name="category" label="Category" />

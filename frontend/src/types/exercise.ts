@@ -310,7 +310,7 @@ export interface StaffProduct {
   roleKey: string;
   productType: string;
   title: string;
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'pending_review';
   structured: Record<string, unknown>;
   content: string;
   version: number;

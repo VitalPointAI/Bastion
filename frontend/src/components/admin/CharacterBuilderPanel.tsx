@@ -294,6 +294,7 @@ export function CharacterBuilderPanel() {
           fields.map((field, idx) => (
             <div key={field.id} className="dynamic-list-item">
               <textarea
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form dynamic path
                 {...registerFn(`${idx}.value` as any)}
                 className="form-input form-textarea--sm"
                 placeholder={placeholder}
@@ -409,6 +410,7 @@ export function CharacterBuilderPanel() {
                   remove={adjectivesFields.remove}
                   label="Personality Traits"
                   placeholder="e.g., analytical, cautious, helpful"
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form dynamic field array path
                   register={(name) => register(`adjectives.${name}` as any)}
                 />
 
@@ -418,6 +420,7 @@ export function CharacterBuilderPanel() {
                   remove={topicsFields.remove}
                   label="Topics of Interest"
                   placeholder="e.g., governance, security, AI ethics"
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form dynamic field array path
                   register={(name) => register(`topics.${name}` as any)}
                 />
               </div>
@@ -434,6 +437,7 @@ export function CharacterBuilderPanel() {
                   remove={bioFields.remove}
                   label="Biography Entries"
                   placeholder="A brief statement about who the character is..."
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form dynamic field array path
                   register={(name) => register(`bio.${name}` as any)}
                 />
 
@@ -443,6 +447,7 @@ export function CharacterBuilderPanel() {
                   remove={loreFields.remove}
                   label="Lore & History"
                   placeholder="Background details, history, or world-building..."
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form dynamic field array path
                   register={(name) => register(`lore.${name}` as any)}
                 />
               </div>
@@ -462,6 +467,7 @@ export function CharacterBuilderPanel() {
                   remove={styleAllFields.remove}
                   label="Universal Style (All Contexts)"
                   placeholder="e.g., uses technical terminology, asks clarifying questions"
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form dynamic field array path
                   register={(name) => register(`styleAll.${name}` as any)}
                 />
 
@@ -471,6 +477,7 @@ export function CharacterBuilderPanel() {
                   remove={styleChatFields.remove}
                   label="Chat Style (Conversational)"
                   placeholder="e.g., uses contractions, keeps responses concise"
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form dynamic field array path
                   register={(name) => register(`styleChat.${name}` as any)}
                 />
 
@@ -480,6 +487,7 @@ export function CharacterBuilderPanel() {
                   remove={stylePostFields.remove}
                   label="Post Style (Formal Writing)"
                   placeholder="e.g., uses bullet points, includes citations"
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form dynamic field array path
                   register={(name) => register(`stylePost.${name}` as any)}
                 />
 
@@ -489,6 +497,7 @@ export function CharacterBuilderPanel() {
                   remove={postExamplesFields.remove}
                   label="Example Posts"
                   placeholder="An example of how this character writes formally..."
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form dynamic field array path
                   register={(name) => register(`postExamples.${name}` as any)}
                 />
               </div>
@@ -508,6 +517,7 @@ export function CharacterBuilderPanel() {
                   remove={knowledgeFields.remove}
                   label="Knowledge Entries"
                   placeholder="A fact, definition, or piece of information the character knows..."
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form dynamic field array path
                   register={(name) => register(`knowledge.${name}` as any)}
                 />
               </div>

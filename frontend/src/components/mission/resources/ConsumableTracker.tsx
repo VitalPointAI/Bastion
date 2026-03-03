@@ -14,7 +14,7 @@ interface ConsumableTrackerProps {
   onUpdate: () => void;
 }
 
-export function ConsumableTracker({ missionId, consumables, onUpdate }: ConsumableTrackerProps) {
+export function ConsumableTracker({ missionId: _missionId, consumables, onUpdate }: ConsumableTrackerProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
 

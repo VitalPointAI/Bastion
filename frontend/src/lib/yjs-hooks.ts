@@ -62,12 +62,13 @@ export function useYjsDocument({
       }
     );
 
-    // Track connection status
+    // Track connection status from external WebSocket provider
     wsProvider.on('status', (event: { status: string }) => {
+       
       setConnected(event.status === 'connected');
     });
 
-    // Track connected users via awareness
+    // Track connected users via awareness (external Yjs source)
     wsProvider.awareness.on('change', () => {
       const users: User[] = [];
       wsProvider.awareness.getStates().forEach((state) => {
@@ -75,12 +76,15 @@ export function useYjsDocument({
           users.push(state.user as User);
         }
       });
+       
       setConnectedUsers(users);
     });
 
     // Set local user state
     wsProvider.awareness.setLocalStateField('user', user);
 
+    // Sync Yjs doc reference to React state - intentional setState in effect
+     
     setDoc(ydoc);
 
     // Cleanup on unmount
@@ -88,6 +92,7 @@ export function useYjsDocument({
       wsProvider.destroy();
       ydoc.destroy();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reconnecting on user.name/user.role change is unnecessary; only reconnect on identity (user.did) or document change
   }, [documentId, planId, user.did, wsUrl]);
 
   // Helper to get Y.Text
@@ -134,11 +139,13 @@ export function useYjsText(text: Y.Text | null): string {
   useEffect(() => {
     if (!text) return;
 
-    // Set initial value
+    // Sync React state with external Yjs document - intentional setState in effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(text.toString());
 
-    // Observe changes
+    // Observe changes from Yjs (external source) and sync to React state
     const observer = () => {
+       
       setValue(text.toString());
     };
 
@@ -159,11 +166,13 @@ export function useYjsArray<T>(array: Y.Array<T> | null): T[] {
   useEffect(() => {
     if (!array) return;
 
-    // Set initial value
+    // Sync React state with external Yjs document - intentional setState in effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(array.toArray());
 
-    // Observe changes
+    // Observe changes from Yjs (external source) and sync to React state
     const observer = () => {
+       
       setValue(array.toArray());
     };
 
@@ -184,15 +193,17 @@ export function useYjsMap<T>(map: Y.Map<T> | null): Map<string, T> {
   useEffect(() => {
     if (!map) return;
 
-    // Set initial value
+    // Sync React state with external Yjs document - intentional setState in effect
     const entries = new Map<string, T>();
     map.forEach((v, k) => entries.set(k, v));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(entries);
 
-    // Observe changes
+    // Observe changes from Yjs (external source) and sync to React state
     const observer = () => {
       const newEntries = new Map<string, T>();
       map.forEach((v, k) => newEntries.set(k, v));
+       
       setValue(newEntries);
     };
 

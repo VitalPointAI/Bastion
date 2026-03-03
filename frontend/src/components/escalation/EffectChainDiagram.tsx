@@ -5,12 +5,14 @@ import './EffectChainDiagram.css';
 // Frontend Types (mirror backend effect-cascader.ts)
 // ==========================================================================
 
-export enum DIMEDomain {
-  Diplomatic = 'Diplomatic',
-  Information = 'Information',
-  Military = 'Military',
-  Economic = 'Economic',
-}
+export const DIMEDomain = {
+  Diplomatic: 'Diplomatic',
+  Information: 'Information',
+  Military: 'Military',
+  Economic: 'Economic',
+} as const;
+
+export type DIMEDomain = (typeof DIMEDomain)[keyof typeof DIMEDomain];
 
 export type EffectOrder = 'first' | 'second' | 'third';
 

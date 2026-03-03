@@ -31,17 +31,17 @@ type MigrationStep =
   | 'complete'
   | 'error';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
+const _BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
 
 export function MigrationFlow({
   email,
   onComplete,
   onSkip,
-  migrationType = 'security-upgrade',
+  migrationType: _migrationType = 'security-upgrade',
 }: MigrationFlowProps) {
   const [step, setStep] = useState<MigrationStep>('intro');
   const [error, setError] = useState<string | null>(null);
-  const [didPreserved, setDidPreserved] = useState(false);
+  const [didPreserved, _setDidPreserved] = useState(false);
 
   const handleStartMigration = async () => {
     setStep('processing');

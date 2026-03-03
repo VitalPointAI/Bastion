@@ -7,7 +7,11 @@ import { MilSymbolMarker } from './MilSymbolMarker.js';
 import { SensorCoverage } from './SensorCoverage.js';
 import { commandService } from '../../../lib/command-service.js';
 import { sensorService, type CoverageArea } from '../../../lib/sensor-service.js';
-import type { CommandUnit } from '../../../lib/types/command.js';
+import type { CommandUnit as CommandUnitBase } from '../../../lib/types/command.js';
+
+interface CommandUnitWithLocation extends CommandUnitBase {
+  location?: { lat: number; lng: number };
+}
 
 /**
  * MissionMap
@@ -32,7 +36,7 @@ function MapBounds({
   coverageAreas,
   areaOfOps,
 }: {
-  units: CommandUnit[];
+  units: CommandUnitWithLocation[];
   coverageAreas: CoverageArea[];
   areaOfOps?: { type: 'Polygon'; coordinates: number[][][] };
 }) {
@@ -76,7 +80,7 @@ const STADIA_TILE_URL = STADIA_API_KEY
   : 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png';
 
 export function MissionMap({ missionId, areaOfOps, onMarkerClick }: MissionMapProps) {
-  const [units, setUnits] = useState<CommandUnit[]>([]);
+  const [units, setUnits] = useState<CommandUnitWithLocation[]>([]);
   const [coverageAreas, setCoverageAreas] = useState<CoverageArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

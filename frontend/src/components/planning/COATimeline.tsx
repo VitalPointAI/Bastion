@@ -37,7 +37,7 @@ export function COATimeline({
   onPlayPause,
 }: COATimelineProps) {
   const [scrubberValue, setScrubberValue] = useState(currentPhase);
-  const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const playIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync scrubber with currentPhase prop
   useEffect(() => {

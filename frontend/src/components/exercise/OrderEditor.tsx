@@ -362,7 +362,7 @@ function OPORDEditor({ content, editMode, onChange }: OPORDEditorProps) {
   const situation = content.situation as Record<string, unknown>;
   const mission = content.mission as Record<string, unknown>;
   const execution = content.execution as Record<string, unknown>;
-  const sustainment = content.serviceAndSupport as Record<string, unknown>;
+  const _sustainment = content.serviceAndSupport as Record<string, unknown>;
   const cmdSig = content.commandAndSignal as Record<string, unknown>;
 
   return (

@@ -8,7 +8,6 @@
 import { useEffect, useRef } from 'react';
 import type { CommandUnit, RelationshipType } from '../../../lib/types/command';
 import { getRelationshipTypeName, getRelationshipTypeColor } from '../../../lib/command-service';
-// @ts-ignore - milsymbol doesn't have types
 import ms from 'milsymbol';
 
 interface CommandNodeProps {

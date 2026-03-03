@@ -40,14 +40,14 @@ interface AreaStepProps {
 export function AreaStep({ formData, updateFormData }: AreaStepProps) {
   const featureGroupRef = useRef<L.FeatureGroup | null>(null);
 
-  const handleCreated = (e: any) => {
-    const layer = e.layer;
+  const handleCreated = (e: L.DrawEvents.Created) => {
+    const layer = e.layer as L.Polygon;
     const geoJSON = layer.toGeoJSON();
 
     if (geoJSON.geometry.type === 'Polygon') {
       const polygon: GeoJSONPolygon = {
         type: 'Polygon',
-        coordinates: geoJSON.geometry.coordinates,
+        coordinates: geoJSON.geometry.coordinates as number[][][],
       };
       updateFormData('areaOfOperations', polygon);
     }
@@ -62,14 +62,14 @@ export function AreaStep({ formData, updateFormData }: AreaStepProps) {
     }
   };
 
-  const handleEdited = (e: any) => {
+  const handleEdited = (e: L.DrawEvents.Edited) => {
     const layers = e.layers;
-    layers.eachLayer((layer: any) => {
-      const geoJSON = layer.toGeoJSON();
+    layers.eachLayer((layer) => {
+      const geoJSON = (layer as L.Polygon).toGeoJSON();
       if (geoJSON.geometry.type === 'Polygon') {
         const polygon: GeoJSONPolygon = {
           type: 'Polygon',
-          coordinates: geoJSON.geometry.coordinates,
+          coordinates: geoJSON.geometry.coordinates as number[][][],
         };
         updateFormData('areaOfOperations', polygon);
       }

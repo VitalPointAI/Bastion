@@ -271,7 +271,7 @@ export function AgentManagementPanel() {
       }
 
       return { valid: false, errors };
-    } catch (parseErr) {
+    } catch (_parseErr) {
       return { valid: false, errors: ['Invalid JSON format'] };
     }
   };
@@ -303,7 +303,7 @@ export function AgentManagementPanel() {
       const content = await file.text();
       const result = validateJson(content);
       setJsonValidation(result);
-    } catch (err) {
+    } catch (_err) {
       setJsonValidation({ valid: false, errors: ['Failed to read file'] });
     }
   };

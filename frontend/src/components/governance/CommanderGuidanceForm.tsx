@@ -60,7 +60,7 @@ export function CommanderGuidanceForm({
 
     const guidance: CommanderGuidanceData = {
       guidance_text: guidanceText.trim(),
-      modifies_assumptions: modifiesAssumptions,
+      modifies_assumptions: modifiesAssumptions.length > 0,
     };
 
     onSubmit(guidance);

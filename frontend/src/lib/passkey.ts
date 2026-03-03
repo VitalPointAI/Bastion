@@ -159,7 +159,7 @@ export async function isConditionalMediationSupported(): Promise<boolean> {
 
   try {
     // isConditionalMediationAvailable is a newer API not in all TypeScript defs
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const available = await PublicKeyCredential.isConditionalMediationAvailable?.();
     return available ?? false;
   } catch {

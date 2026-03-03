@@ -61,6 +61,7 @@ export interface Consumable {
 }
 
 export interface BulkImportRow {
+  [key: string]: unknown;
   name: string;
   category: string;
   serialNumber?: string;

@@ -21,7 +21,7 @@ import './StrategicDashboard.css';
 
 export function StrategicDashboard() {
   const { isAuthenticated } = useAuth();
-  const { userDID, accountId } = useUser();
+  const { userDID, accountId: _accountId } = useUser();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedDocument, setSelectedDocument] = useState<StrategicDocument | null>(null);
   const [selectedObjective, setSelectedObjective] = useState<StrategicObjective | null>(null);

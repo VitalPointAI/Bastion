@@ -17,6 +17,7 @@ import {
 } from '../../../lib/resource-service.js';
 
 // Zod schema for validation
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used only via z.infer<typeof resourceSchema>
 const resourceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   category: z.enum(['vehicles', 'weapons', 'communications', 'sensors', 'medical', 'other']),
@@ -74,7 +75,7 @@ export function ResourceForm({ missionId, resource, onClose, onSuccess }: Resour
       if (data.specifications && data.specifications.trim()) {
         try {
           specifications = JSON.parse(data.specifications);
-        } catch (err) {
+        } catch (_err) {
           alert('Invalid JSON in specifications field');
           return;
         }

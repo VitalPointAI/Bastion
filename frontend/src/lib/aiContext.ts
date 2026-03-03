@@ -34,7 +34,7 @@ export type Classification = typeof Classification[keyof typeof Classification];
  */
 export interface ContextEntry {
   /** Context data (may be encrypted) */
-  data: any;
+  data: unknown;
   /** Classification level */
   classification: Classification;
   /** Timestamp when context was added */
@@ -98,7 +98,7 @@ export class AIContextManager {
    */
   async addContext(
     sessionId: string,
-    context: any,
+    context: unknown,
     classification: Classification
   ): Promise<void> {
     const timestamp = Date.now();
@@ -135,7 +135,7 @@ export class AIContextManager {
    */
   private async addEncryptedContext(
     sessionId: string,
-    context: any,
+    context: unknown,
     classification: Classification,
     timestamp: number
   ): Promise<void> {
@@ -164,10 +164,10 @@ export class AIContextManager {
   async getContext(
     sessionId: string,
     classification: Classification
-  ): Promise<any | null> {
+  ): Promise<unknown | null> {
     switch (classification) {
       case Classification.TS:
-      case Classification.SECRET:
+      case Classification.SECRET: {
         // Retrieve from ephemeral storage
         const ephemeralEntry = this.ephemeralContext.get(sessionId);
         if (!ephemeralEntry) {
@@ -179,6 +179,7 @@ export class AIContextManager {
           return null;
         }
         return ephemeralEntry.data;
+      }
 
       case Classification.CONFIDENTIAL:
       case Classification.UNCLASS:
@@ -190,7 +191,7 @@ export class AIContextManager {
   /**
    * Get and decrypt encrypted context entry
    */
-  private async getEncryptedContext(sessionId: string): Promise<any | null> {
+  private async getEncryptedContext(sessionId: string): Promise<unknown | null> {
     const encryptedEntry = this.encryptedContext.get(sessionId);
     if (!encryptedEntry) {
       console.warn(`[AIContext] No encrypted context found for session: ${sessionId}`);

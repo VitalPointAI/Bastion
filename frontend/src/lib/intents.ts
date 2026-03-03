@@ -1,7 +1,6 @@
 // NEAR Intents Client
 // Intent-based transaction abstraction for blockchain operations
 // Users express WHAT they want, not HOW to do it
-// @ts-nocheck - Mocked implementation for v1, production will use these fields
 
 /**
  * Intent types for coalition operations
@@ -69,6 +68,14 @@ export interface DocumentVerificationIntentParams {
 }
 
 /**
+ * Privy wallet interface for NEAR contract interactions
+ */
+interface PrivyWallet {
+  callMethod?: (args: Record<string, unknown>) => Promise<unknown>;
+  viewMethod?: (args: Record<string, unknown>) => Promise<unknown>;
+}
+
+/**
  * Solver quote for intent execution
  * In production, multiple solvers compete for best execution
  */
@@ -86,9 +93,9 @@ export interface SolverQuote {
  */
 export class IntentClient {
   private _contractId: string;
-  private _wallet: any; // Privy wallet interface
+  private _wallet: PrivyWallet;
 
-  constructor(contractId: string, wallet: any) {
+  constructor(contractId: string, wallet: PrivyWallet) {
     this._contractId = contractId;
     this._wallet = wallet;
   }
@@ -153,7 +160,7 @@ export class IntentClient {
   private async getSolverQuotes(
     intentId: string,
     _type: IntentTypeValue,
-    _params: any
+    _params: TransferIntentParams | MissionOrderIntentParams | DocumentVerificationIntentParams
   ): Promise<SolverQuote[]> {
     // In production, this would broadcast to solver network
     // For development, return mock quotes
@@ -304,6 +311,6 @@ export class IntentClient {
  * @param wallet Privy wallet instance
  * @returns Intent client
  */
-export function createIntentClient(contractId: string, wallet: any): IntentClient {
+export function createIntentClient(contractId: string, wallet: PrivyWallet): IntentClient {
   return new IntentClient(contractId, wallet);
 }

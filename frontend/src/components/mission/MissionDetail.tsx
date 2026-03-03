@@ -363,10 +363,16 @@ export function MissionDetail({ missionId, onBack }: MissionDetailProps) {
                 Invite Participant
               </button>
             </div>
-            <ParticipantList missionId={missionId} />
+            <ParticipantList
+              missionId={missionId}
+              participants={[]}
+              userDID={userDID || ''}
+              isCommander={mission.creatorDID === userDID}
+            />
             {showInviteModal && (
               <InviteModal
                 missionId={missionId}
+                userDID={userDID || ''}
                 onClose={() => setShowInviteModal(false)}
               />
             )}

@@ -417,7 +417,7 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete }: ScenarioPa
           ref={folderInputRef}
           type="file"
           style={{ display: 'none' }}
-          // @ts-ignore — webkitdirectory is non-standard but widely supported
+          // @ts-expect-error webkitdirectory is non-standard but widely supported
           webkitdirectory=""
           multiple
           onChange={onFolderInputChange}

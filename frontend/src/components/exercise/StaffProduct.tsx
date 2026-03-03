@@ -278,7 +278,7 @@ interface StaffProductProps {
 
 export function StaffProduct({
   product: initialProduct,
-  roleKey,
+  roleKey: _roleKey,
   scenarioId,
   onSave,
   onPublish,

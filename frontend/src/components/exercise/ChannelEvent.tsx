@@ -66,7 +66,7 @@ function renderEventBody(
       return (
         <div className="ce-content">
           <span className="ce-primary">Draft ready for review</span>
-          {p.productType && (
+          {!!p.productType && (
             <span className="ce-sub">{String(p.productType)}</span>
           )}
         </div>
@@ -113,7 +113,7 @@ function renderEventBody(
       return (
         <div className="ce-content">
           <span className="ce-primary">Approved and published</span>
-          {p.productType && (
+          {!!p.productType && (
             <span className="ce-sub">{String(p.productType)}</span>
           )}
         </div>
@@ -123,7 +123,7 @@ function renderEventBody(
       return (
         <div className="ce-content">
           <span className="ce-primary">Rejected</span>
-          {p.reason && <span className="ce-sub">{String(p.reason)}</span>}
+          {!!p.reason && <span className="ce-sub">{String(p.reason)}</span>}
         </div>
       );
 

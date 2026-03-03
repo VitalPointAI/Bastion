@@ -11,6 +11,48 @@ import type { PhaseProgressionData } from '../components/governance/PhaseProgres
 
 const API_BASE = '/api/mdmp';
 
+/** Raw gate data from the backend API */
+interface RawGate {
+  gateType?: string;
+  gate_type?: string;
+  phase?: string;
+  satisfied?: boolean;
+  satisfiedBy?: string;
+  satisfied_by?: string;
+  satisfiedAt?: string;
+  satisfied_at?: string;
+  proposalId?: number;
+  proposal_id?: number;
+  description?: string;
+}
+
+/** Raw assumption data from the backend API */
+interface RawAssumption {
+  id?: string;
+  assumptionId?: string;
+  description?: string;
+  sensitivity?: string;
+  validationMethod?: string;
+  validation_method?: string;
+  acceptedBy?: string;
+  accepted_by?: string;
+  status?: string;
+  sourcePhase?: string;
+  source_phase?: string;
+}
+
+/** Raw workflow data from the backend API */
+interface RawWorkflow {
+  missionId?: string;
+  daoId?: string;
+  currentPhase?: string;
+  createdAt?: number;
+  createdBy?: string;
+  phaseGates?: Record<string, RawGate>;
+  assumptions?: RawAssumption[];
+  phaseTransitions?: Array<Record<string, unknown>>;
+}
+
 // Helper for fetch with error handling
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -45,17 +87,17 @@ export interface WorkflowState {
   currentPhase: string;
   createdAt: number;
   createdBy: string;
-  phaseGates: Record<string, any>;
-  assumptions: any[];
-  phaseTransitions: any[];
+  phaseGates: Record<string, RawGate>;
+  assumptions: RawAssumption[];
+  phaseTransitions: Array<Record<string, unknown>>;
 }
 
 export async function createWorkflow(params: CreateWorkflowParams): Promise<WorkflowState> {
-  const response = await fetchJson<{ success: boolean; workflow: any }>(`${API_BASE}/workflows`, {
+  const response = await fetchJson<{ success: boolean; workflow: RawWorkflow }>(`${API_BASE}/workflows`, {
     method: 'POST',
     body: JSON.stringify(params),
   });
-  return response.workflow;
+  return response.workflow as unknown as WorkflowState;
 }
 
 export async function getWorkflow(missionId: string): Promise<{
@@ -65,7 +107,7 @@ export async function getWorkflow(missionId: string): Promise<{
   phaseProgression: PhaseProgressionData[];
 } | null> {
   try {
-    const response = await fetchJson<{ success: boolean; workflow: any }>(
+    const response = await fetchJson<{ success: boolean; workflow: RawWorkflow }>(
       `${API_BASE}/workflows/${encodeURIComponent(missionId)}`
     );
 
@@ -73,19 +115,19 @@ export async function getWorkflow(missionId: string): Promise<{
 
     // Transform phaseGates object to GateDisplayData array
     const gates: GateDisplayData[] = Object.entries(workflow.phaseGates || {}).map(
-      ([gateId, gate]: [string, any]) => transformGate(gateId, gate)
+      ([gateId, gate]) => transformGate(gateId, gate)
     );
 
     // Transform assumptions to AssumptionDisplayData array
     const assumptions: AssumptionDisplayData[] = (workflow.assumptions || []).map(
-      (assumption: any) => transformAssumption(assumption)
+      (assumption) => transformAssumption(assumption)
     );
 
     // Build phase progression data
-    const phaseProgression: PhaseProgressionData[] = transformWorkflowToPhaseProgression(workflow, gates);
+    const phaseProgression: PhaseProgressionData[] = transformWorkflowToPhaseProgression(workflow as unknown as WorkflowState, gates);
 
     return {
-      workflow,
+      workflow: workflow as unknown as WorkflowState,
       gates,
       assumptions,
       phaseProgression,
@@ -150,7 +192,7 @@ export async function requestPhaseTransition(
 // ============================================================================
 
 export async function getAssumptions(missionId: string): Promise<AssumptionDisplayData[]> {
-  const response = await fetchJson<{ success: boolean; assumptions: any[] }>(
+  const response = await fetchJson<{ success: boolean; assumptions: RawAssumption[] }>(
     `${API_BASE}/workflows/${encodeURIComponent(missionId)}/assumptions`
   );
   return response.assumptions.map(transformAssumption);
@@ -161,7 +203,7 @@ export async function registerAssumption(
   description: string,
   source: string
 ): Promise<AssumptionDisplayData> {
-  const response = await fetchJson<{ success: boolean; assumption: any }>(
+  const response = await fetchJson<{ success: boolean; assumption: RawAssumption }>(
     `${API_BASE}/workflows/${encodeURIComponent(missionId)}/assumptions`,
     {
       method: 'POST',
@@ -236,7 +278,7 @@ export async function getPhaseStatistics(phase: string): Promise<PhaseStatistics
 // Transform Functions (Backend → Frontend)
 // ============================================================================
 
-function transformAssumption(raw: any): AssumptionDisplayData {
+function transformAssumption(raw: RawAssumption): AssumptionDisplayData {
   return {
     id: raw.id || raw.assumptionId || '',
     description: raw.description || '',
@@ -248,7 +290,7 @@ function transformAssumption(raw: any): AssumptionDisplayData {
   };
 }
 
-function transformGate(gateId: string, raw: any): GateDisplayData {
+function transformGate(gateId: string, raw: RawGate): GateDisplayData {
   return {
     gateId,
     gateType: raw.gateType || raw.gate_type || 'Unknown',

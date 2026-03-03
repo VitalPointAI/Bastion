@@ -27,6 +27,59 @@ import {
 // Use environment variable or empty string for relative URLs (Vite proxy)
 const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '';
 
+/** Raw DAO data from the backend API */
+interface RawDAO {
+  dao_id: string;
+  config?: {
+    name?: string;
+    description?: string;
+    classification?: Classification;
+    default_autonomy_level?: AutonomyLevel;
+    parent_dao_id?: string;
+  };
+  name?: string;
+  description?: string;
+  member_count?: number;
+  active_proposal_count?: number;
+  created_at?: string;
+  created_by?: string;
+}
+
+/** Raw proposal data from the backend API */
+interface RawProposal {
+  id: number;
+  kind: ProposalKind | string | { Custom: string };
+  proposer: string;
+  description: string;
+  classification?: Classification;
+  autonomy_override?: AutonomyLevel;
+  status: ProposalStatus;
+  votes_approve?: number;
+  votes_reject?: number;
+  created_at?: string;
+  voting_deadline?: string;
+  execution_result?: string;
+}
+
+/** Raw vote data from the backend API */
+interface RawVote {
+  voter: string;
+  vote_type: VoteType;
+  weight?: number;
+  timestamp?: string;
+}
+
+/** Raw coalition status data from the backend API */
+interface RawCoalitionStatus {
+  required_parties?: string[];
+  party_approvals?: Record<string, {
+    approved: boolean;
+    approved_by?: string;
+    approved_at?: string;
+  }>;
+  all_parties_required?: boolean;
+}
+
 // ============================================================================
 // Copilot Analysis Types
 // ============================================================================
@@ -327,7 +380,7 @@ export class GovernanceService {
     if (USE_MOCK_DATA) {
       return MOCK_DAOS.slice(offset, offset + limit);
     }
-    const rawDAOs = await this.fetch<any[]>(`/api/dao?offset=${offset}&limit=${limit}`);
+    const rawDAOs = await this.fetch<RawDAO[]>(`/api/dao?offset=${offset}&limit=${limit}`);
     return rawDAOs.map(this.transformDAO);
   }
 
@@ -340,7 +393,7 @@ export class GovernanceService {
       if (!dao) throw new Error(`DAO ${daoId} not found`);
       return dao;
     }
-    const rawDAO = await this.fetch<any>(`/api/dao/${encodeURIComponent(daoId)}`);
+    const rawDAO = await this.fetch<RawDAO>(`/api/dao/${encodeURIComponent(daoId)}`);
     return this.transformDAO(rawDAO);
   }
 
@@ -372,7 +425,7 @@ export class GovernanceService {
     if (status) {
       path += `&status=${status}`;
     }
-    const rawProposals = await this.fetch<any[]>(path);
+    const rawProposals = await this.fetch<RawProposal[]>(path);
     return rawProposals.map((p) => this.transformProposal(p, daoId));
   }
 
@@ -386,7 +439,7 @@ export class GovernanceService {
       if (!proposal) throw new Error(`Proposal ${proposalId} not found`);
       return proposal;
     }
-    const rawProposal = await this.fetch<any>(`/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}`);
+    const rawProposal = await this.fetch<RawProposal>(`/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}`);
     return this.transformProposal(rawProposal, daoId);
   }
 
@@ -465,7 +518,7 @@ export class GovernanceService {
       }
       return votes;
     }
-    const rawVotes = await this.fetch<any[]>(
+    const rawVotes = await this.fetch<RawVote[]>(
       `/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}/votes`
     );
     return rawVotes.map(this.transformVote);
@@ -557,7 +610,7 @@ export class GovernanceService {
       return null;
     }
     try {
-      const raw = await this.fetch<any>(
+      const raw = await this.fetch<RawCoalitionStatus>(
         `/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}/coalition`
       );
       return this.transformCoalitionStatus(raw);
@@ -831,7 +884,7 @@ export class GovernanceService {
   // Transform Functions (Backend → Frontend)
   // ============================================================================
 
-  private transformDAO(raw: any): DAOMetadata {
+  private transformDAO(raw: RawDAO): DAOMetadata {
     return {
       daoId: raw.dao_id,
       name: raw.config?.name || raw.name || '',
@@ -841,20 +894,22 @@ export class GovernanceService {
       memberCount: raw.member_count || 0,
       activeProposalCount: raw.active_proposal_count || 0,
       parentDaoId: raw.config?.parent_dao_id || undefined,
-      createdAt: parseInt(raw.created_at) || 0,
+      createdAt: parseInt(raw.created_at ?? '0') || 0,
       createdBy: raw.created_by || '',
     };
   }
 
-  private transformProposal(raw: any, daoId: string): Proposal {
-    const deadlineNs = parseInt(raw.voting_deadline) || 0;
+  private transformProposal(raw: RawProposal, daoId: string): Proposal {
+    const deadlineNs = parseInt(raw.voting_deadline ?? '0') || 0;
     const autonomyOverride = raw.autonomy_override || undefined;
     const effectiveAutonomy = autonomyOverride || AutonomyLevel.NotAutonomous;
 
     // Parse kind - could be string or { Custom: string }
-    let kind: ProposalKind | string = raw.kind;
-    if (typeof raw.kind === 'object' && raw.kind.Custom) {
-      kind = `Custom:${raw.kind.Custom}`;
+    let kind: ProposalKind | string;
+    if (typeof raw.kind === 'object' && raw.kind !== null && 'Custom' in raw.kind) {
+      kind = `Custom:${(raw.kind as { Custom: string }).Custom}`;
+    } else {
+      kind = raw.kind as ProposalKind | string;
     }
 
     // Determine execution state
@@ -887,7 +942,7 @@ export class GovernanceService {
       status: raw.status,
       votesApprove: raw.votes_approve || 0,
       votesReject: raw.votes_reject || 0,
-      createdAt: parseInt(raw.created_at) || 0,
+      createdAt: parseInt(raw.created_at ?? '0') || 0,
       votingDeadline: deadlineNs,
       executionState,
       executionResult: raw.execution_result,
@@ -899,16 +954,16 @@ export class GovernanceService {
     };
   }
 
-  private transformVote(raw: any): Vote {
+  private transformVote(raw: RawVote): Vote {
     return {
       voter: raw.voter,
       voteType: raw.vote_type,
       weight: raw.weight || 1,
-      timestamp: parseInt(raw.timestamp) || 0,
+      timestamp: parseInt(raw.timestamp ?? '0') || 0,
     };
   }
 
-  private transformCoalitionStatus(raw: any): CoalitionStatus {
+  private transformCoalitionStatus(raw: RawCoalitionStatus): CoalitionStatus {
     const approvals: Record<string, { approved: boolean; approvedBy?: string; approvedAt?: number }> = {};
     const pendingParties: string[] = [];
 
@@ -918,7 +973,7 @@ export class GovernanceService {
         approvals[party] = {
           approved: approval.approved,
           approvedBy: approval.approved_by,
-          approvedAt: parseInt(approval.approved_at) || undefined,
+          approvedAt: approval.approved_at ? parseInt(approval.approved_at) : undefined,
         };
         if (!approval.approved) {
           pendingParties.push(party);

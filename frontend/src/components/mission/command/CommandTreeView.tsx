@@ -97,7 +97,7 @@ export function CommandTreeView({ missionId }: CommandTreeViewProps) {
   return (
     <div className="command-tree-container">
       <div className="command-tree-wrapper">
-        {hierarchyRoots.map((root, index) => (
+        {hierarchyRoots.map((root, _index) => (
           <Tree
             key={root.unit.id}
             lineWidth="2px"

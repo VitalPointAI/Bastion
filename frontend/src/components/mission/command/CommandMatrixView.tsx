@@ -13,7 +13,7 @@ import {
   createColumnHelper,
   type ColumnDef,
 } from '@tanstack/react-table';
-import type { CommandUnit, CommandMatrix, MatrixCell, RelationshipType } from '../../../lib/types/command';
+import type { CommandUnit, CommandMatrix, MatrixCell } from '../../../lib/types/command';
 import { commandService, getRelationshipTypeName, getRelationshipTypeColor } from '../../../lib/command-service';
 import { RelationshipEditor } from './RelationshipEditor';
 import './CommandMatrixView.css';
@@ -71,12 +71,14 @@ export function CommandMatrixView({ missionId }: CommandMatrixViewProps) {
     loadMatrix(); // Reload matrix after editing
   }
 
-  const columns = useMemo<ColumnDef<MatrixRow>[]>(() => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const columns = useMemo<ColumnDef<MatrixRow, any>[]>(() => {
     if (!matrixData) return [];
 
     const columnHelper = createColumnHelper<MatrixRow>();
 
-    const cols: ColumnDef<MatrixRow>[] = [
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cols: ColumnDef<MatrixRow, any>[] = [
       columnHelper.accessor('subordinateUnit', {
         header: 'Subordinate Unit',
         cell: (info) => (

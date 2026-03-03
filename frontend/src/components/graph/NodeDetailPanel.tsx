@@ -73,7 +73,7 @@ export function NodeDetailPanel({ actorId, onClose, onNavigateToActor }: NodeDet
           .map((r: RelationshipDetail) => r.targetActor!.id);
         if (unknownIds.length > 0) {
           Promise.all(
-            [...new Set(unknownIds)].map((id: string) =>
+            [...new Set(unknownIds as string[])].map((id: string) =>
               fetch(`/api/graph/actors/${id}`).then(r => r.json()).then(d => ({ id, name: d.actor?.name || id })).catch(() => ({ id, name: id }))
             )
           ).then(resolved => {

@@ -8,6 +8,21 @@
 import { Classification } from './aiContext.js';
 
 /**
+ * Wallet connection interface for NEAR blockchain operations
+ */
+interface WalletConnection {
+  callContract?: (args: Record<string, unknown>) => Promise<unknown>;
+}
+
+/**
+ * Result from a NEAR contract call
+ */
+interface NearContractResult {
+  transaction?: { hash: string };
+  status?: string;
+}
+
+/**
  * TEE session handle returned after sending context to TEE
  */
 export interface TEESessionHandle {
@@ -29,7 +44,7 @@ export interface TEESessionHandle {
  */
 export class TEEClient {
   private readonly nearContractId: string;
-  private walletConnection: any; // Privy wallet connection
+  private walletConnection: WalletConnection | undefined;
 
   /**
    * Create TEE client
@@ -37,7 +52,7 @@ export class TEEClient {
    * @param nearContractId - NEAR contract address for routing
    * @param walletConnection - Privy embedded NEAR wallet connection
    */
-  constructor(nearContractId: string, walletConnection?: any) {
+  constructor(nearContractId: string, walletConnection?: WalletConnection) {
     this.nearContractId = nearContractId;
     this.walletConnection = walletConnection;
     console.log(`[TEEClient] Initialized for contract: ${this.nearContractId}`);
@@ -56,7 +71,7 @@ export class TEEClient {
    */
   async sendToTEEMemory(
     sessionId: string,
-    context: any,
+    context: unknown,
     classification: Classification
   ): Promise<TEESessionHandle> {
     if (!this.walletConnection) {
@@ -130,7 +145,7 @@ export class TEEClient {
    * @param args - Method arguments
    * @returns Transaction result
    */
-  private async callNearContract(method: string, args: any): Promise<any> {
+  private async callNearContract(method: string, args: Record<string, unknown>): Promise<NearContractResult> {
     if (!this.walletConnection) {
       throw new Error('Wallet not connected');
     }
@@ -178,7 +193,7 @@ export class TEEClient {
   /**
    * Set wallet connection (for delayed initialization)
    */
-  setWalletConnection(walletConnection: any): void {
+  setWalletConnection(walletConnection: WalletConnection): void {
     this.walletConnection = walletConnection;
     console.log('[TEEClient] Wallet connection configured');
   }
@@ -193,7 +208,7 @@ export class TEEClient {
  */
 export function createTEEClient(
   nearContractId: string,
-  walletConnection?: any
+  walletConnection?: WalletConnection
 ): TEEClient {
   return new TEEClient(nearContractId, walletConnection);
 }
