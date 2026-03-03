@@ -38,6 +38,8 @@ None
 - [x] **Phase 13: Research Whitepaper** - Comprehensive documentation for master's research requirement (completed 2026-01-24)
 - [x] **Phase 14: Friendly & Adversary IPB Complete Cycle** - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations (completed 2026-02-28)
 - [x] **Phase 15: JPP Staff Organization Workspaces** - Role-based exercise workspaces (Commander, J1–J35) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and strategic direction import from Design tab
+- [ ] **Phase 16: AI Assigned Staff Workspaces** - AI-assigned staff roles with full agent team execution, human-in-the-loop review, real-time channel observability, and cross-role AI coordination
+- [ ] **Phase 17: Deployment - CI/CD Pipeline & Hetzner Server** - GitHub Actions CI/CD pipeline deploying Bastion to Hetzner server, TEE-aware component separation documented for production, single-server dev deployment
 
 ## Phase Details
 
@@ -375,6 +377,16 @@ Plans:
 - [ ] 16-04-PLAN.md — ManageRoles modal (Human|AI|Disabled toggle) + AIRoleWorkspace + AgentRosterCard
 - [x] 16-05-PLAN.md — ChannelFeed (SSE) + ChannelEvent renderer + ProductReviewPanel + ProductVersionHistory
 - [x] 16-06-PLAN.md — StaffWorkspace three-way routing + complete wiring + human verify checkpoint
+
+### Phase 17: Deployment - CI/CD Pipeline & Hetzner Server
+**Goal:** Set up GitHub Actions CI/CD pipeline to deploy Bastion from https://github.com/VitalPointAI/Bastion.git to an economical Hetzner server, with TEE-aware component separation documented for production while co-locating everything on a single server for development
+**Depends on:** Phase 16
+**Plans:** 3 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Production Docker Compose, host nginx config, server bootstrap script
+- [ ] 17-02-PLAN.md — GitHub Actions CI and Deploy workflows
+- [ ] 17-03-PLAN.md — Server provisioning, GitHub secrets setup, end-to-end verification
 
 ---
 
