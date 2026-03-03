@@ -857,10 +857,34 @@
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .exercise-header {
     padding: 0.5rem 0.75rem;
     gap: 0.5rem;
+    min-height: auto;
+  }
+
+  .scenario-select {
+    min-width: 140px;
+    font-size: 0.82rem;
+  }
+
+  .perspective-btn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  .phase-label {
+    min-width: 100px;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .exercise-header {
+    padding: 0.4rem 0.5rem;
+    gap: 0.4rem;
+    min-height: auto;
   }
 
   .phase-indicator {
@@ -873,5 +897,9 @@
 
   .view-mode-toggle {
     display: none; /* On mobile, only staff view */
+  }
+
+  .manage-roles-button {
+    display: none;
   }
 }

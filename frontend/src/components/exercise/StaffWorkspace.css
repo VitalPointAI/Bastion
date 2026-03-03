@@ -197,7 +197,7 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  overflow: hidden !important; /* override tab-content's overflow:auto; role-dashboard/role-editor-main scroll */
+  overflow: clip; /* clip without creating a scroll context — prevents focus-driven scroll shift */
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
