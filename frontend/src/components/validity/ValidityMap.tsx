@@ -305,12 +305,12 @@ function IPBLayerRenderer({ ipbLayers, layerVisibility, perspective }: IPBLayerR
                             {layer.team.toUpperCase()} FORCE
                           </div>
                           <h4>{layer.name}</h4>
-                          {props.echelon && (
+                          {!!props.echelon && (
                             <p className="ipb-unit-detail">
                               <span>Echelon:</span> {String(props.echelon)}
                             </p>
                           )}
-                          {props.strength && (
+                          {!!props.strength && (
                             <p className="ipb-unit-detail">
                               <span>Strength:</span> {String(props.strength)}
                             </p>
@@ -340,8 +340,8 @@ function IPBLayerRenderer({ ipbLayers, layerVisibility, perspective }: IPBLayerR
                   if (geom.coordinates) {
                     // GeoJSON Polygon: coordinates[0] is outer ring [lng, lat][]
                     const ring = Array.isArray(geom.coordinates[0]?.[0])
-                      ? (geom.coordinates[0] as number[][])
-                      : (geom.coordinates as number[][]);
+                      ? (geom.coordinates[0] as unknown as number[][])
+                      : (geom.coordinates as unknown as number[][]);
                     positions = ring.map(([lng, lat]) => [lat, lng] as L.LatLngExpression);
                   }
 
@@ -408,12 +408,12 @@ function IPBLayerRenderer({ ipbLayers, layerVisibility, perspective }: IPBLayerR
                             AVENUE OF APPROACH
                           </div>
                           <h4>{layer.name}</h4>
-                          {props.direction && (
+                          {!!props.direction && (
                             <p className="ipb-line-detail">
                               <span>Direction:</span> {String(props.direction)}
                             </p>
                           )}
-                          {props.classification && (
+                          {!!props.classification && (
                             <p className="ipb-line-detail">
                               <span>Classification:</span> {String(props.classification)}
                             </p>
@@ -467,12 +467,12 @@ function IPBLayerRenderer({ ipbLayers, layerVisibility, perspective }: IPBLayerR
                             NAI
                           </div>
                           <h4>{layer.name}</h4>
-                          {props.purpose && (
+                          {!!props.purpose && (
                             <p className="ipb-nai-detail">
                               <span>Purpose:</span> {String(props.purpose)}
                             </p>
                           )}
-                          {props.triggers && (
+                          {!!props.triggers && (
                             <p className="ipb-nai-detail">
                               <span>Triggers:</span> {String(props.triggers)}
                             </p>

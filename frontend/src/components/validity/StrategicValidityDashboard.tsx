@@ -318,7 +318,7 @@ export function StrategicValidityDashboard() {
             )}
             <p>{selectedEvent.description}</p>
             <div className="event-meta">
-              <span>📅 {new Date(selectedEvent.timestamp).toLocaleString()}</span>
+              <span>📅 {new Date(selectedEvent.timestamp || '').toLocaleString()}</span>
               {selectedEvent.location && (selectedEvent.location.lat ?? selectedEvent.location.latitude) != null && (
                 <span>📍 {((selectedEvent.location.lat ?? selectedEvent.location.latitude) as number).toFixed(2)}, {((selectedEvent.location.lng ?? selectedEvent.location.longitude) as number).toFixed(2)}</span>
               )}

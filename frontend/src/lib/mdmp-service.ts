@@ -261,7 +261,7 @@ function transformGate(gateId: string, raw: any): GateDisplayData {
   };
 }
 
-function transformWorkflowToPhaseProgression(workflow: WorkflowState, gates: GateDisplayData[]): PhaseProgressionData[] {
+function transformWorkflowToPhaseProgression(_workflow: WorkflowState, gates: GateDisplayData[]): PhaseProgressionData[] {
   const phases = [
     { phase: 'phase_0_continuous', label: 'Phase 0: Continuous' },
     { phase: 'phase_1_receipt_of_mission', label: 'Phase 1: Receipt' },
