@@ -317,15 +317,7 @@ const MOCK_COALITION_STATUS: CoalitionStatus = {
  * GovernanceService class for DAO operations.
  */
 export class GovernanceService {
-  private token: string | null = null;
   private userDID: string | null = null;
-
-  /**
-   * Set authentication token for API requests.
-   */
-  setAuthToken(token: string): void {
-    this.token = token;
-  }
 
   /**
    * Set user DID for action-required detection.
@@ -336,6 +328,7 @@ export class GovernanceService {
 
   /**
    * Make authenticated API request.
+   * Authentication is via HttpOnly cookie sent automatically with credentials: 'include'.
    */
   private async fetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     const headers: HeadersInit = {
@@ -343,16 +336,13 @@ export class GovernanceService {
       ...options.headers,
     };
 
-    if (this.token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`;
-    }
-
     if (this.userDID) {
       (headers as Record<string, string>)['X-DID'] = this.userDID;
     }
 
     const response = await fetch(`${API_BASE}${path}`, {
       ...options,
+      credentials: 'include',
       headers,
     });
 
@@ -532,9 +522,9 @@ export class GovernanceService {
       `${API_BASE}/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}/vote`,
       {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
           ...(this.userDID ? { 'X-DID': this.userDID } : {}),
         },
         body: JSON.stringify({ vote_type: voteType }),
@@ -556,9 +546,9 @@ export class GovernanceService {
       `${API_BASE}/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}/veto`,
       {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
           ...(this.userDID ? { 'X-DID': this.userDID } : {}),
         },
       }
@@ -579,9 +569,9 @@ export class GovernanceService {
       `${API_BASE}/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}/approve`,
       {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
           ...(this.userDID ? { 'X-DID': this.userDID } : {}),
         },
       }
@@ -628,9 +618,9 @@ export class GovernanceService {
       `${API_BASE}/api/dao/${encodeURIComponent(daoId)}/proposals/${proposalId}/coalition/approve`,
       {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
           ...(this.userDID ? { 'X-DID': this.userDID } : {}),
         },
         body: JSON.stringify({ party }),

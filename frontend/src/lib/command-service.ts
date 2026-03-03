@@ -50,15 +50,7 @@ interface ValidationResponse {
  * Manages command units, relationships, hierarchy, and validation.
  */
 class CommandService {
-  private token: string | null = null;
   private userDID: string | null = null;
-
-  /**
-   * Set authentication token for API requests.
-   */
-  setAuthToken(token: string): void {
-    this.token = token;
-  }
 
   /**
    * Set user DID for API requests.
@@ -70,6 +62,7 @@ class CommandService {
   /**
    * Make authenticated API request.
    * Returns raw JSON response from backend (no success wrapper expected).
+   * Authentication is via HttpOnly cookie sent automatically with credentials: 'include'.
    */
   private async fetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     const headers: HeadersInit = {
@@ -77,16 +70,13 @@ class CommandService {
       ...options.headers,
     };
 
-    if (this.token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`;
-    }
-
     if (this.userDID) {
       (headers as Record<string, string>)['X-DID'] = this.userDID;
     }
 
     const response = await fetch(`${API_BASE}${path}`, {
       ...options,
+      credentials: 'include',
       headers,
     });
 
