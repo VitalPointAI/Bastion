@@ -30,6 +30,7 @@ import { MCPToolInputSchema, MCPToolUpdateSchema, AgentTeamInputSchema, AgentTea
 import { AgentModelConfigSchema } from '../strategic/config/types.js';
 import { clearLLMCache } from '../agents/langgraph/llm-factory.js';
 import { getFundingService } from '../auth/funding-service.js';
+import { requireAuth } from '../auth/auth-instance.js';
 
 const router = Router();
 
@@ -50,34 +51,14 @@ async function ensureTableExists(): Promise<void> {
 // ============================================================================
 
 /**
- * Extract user DID from request headers
- */
-function getUserDID(req: Request): string | null {
-  // Check Authorization header (Bearer token)
-  const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.substring(7);
-  }
-
-  // Check X-DID header
-  const xDid = req.headers['x-did'];
-  if (typeof xDid === 'string') {
-    return xDid;
-  }
-
-  return null;
-}
-
-/**
  * Middleware to check SYSTEM_ADMIN role
- * For now, checks against allowed DIDs in env: ADMIN_DIDS
+ * requireAuth must run first (via router.use(requireAuth, requireSystemAdmin))
+ * so req.anonUser is guaranteed to be populated when this runs.
  */
 async function requireSystemAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const did = getUserDID(req);
-  if (!did) {
-    res.status(401).json({ error: 'Authentication required' });
-    return;
-  }
+  // Derive DID from authenticated user's NEAR account
+  const nearAccountId = req.anonUser!.nearAccountId;
+  const did = `did:near:${nearAccountId}`;
 
   // Check for SYSTEM_ADMIN role via env-based allowlist
   // In production, this would integrate with credential service / ABAC
@@ -145,8 +126,10 @@ function handleValidationError(error: z.ZodError, res: Response): void {
   });
 }
 
-// Apply SYSTEM_ADMIN requirement to all routes
-router.use(requireSystemAdmin);
+// Apply requireAuth then SYSTEM_ADMIN requirement to all routes
+// requireAuth ensures req.anonUser is populated (401 if not authenticated)
+// requireSystemAdmin checks the authenticated user's DID against ADMIN_DIDS env
+router.use(requireAuth, requireSystemAdmin);
 
 // ============================================================================
 // LLM Configuration Endpoints
