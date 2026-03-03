@@ -85,15 +85,7 @@ const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '';
  * Manages system configuration for LLM providers, agents, workflows, and OSINT sources.
  */
 class AdminService {
-  private token: string | null = null;
   private userDID: string | null = null;
-
-  /**
-   * Set authentication token for API requests.
-   */
-  setAuthToken(token: string): void {
-    this.token = token;
-  }
 
   /**
    * Set user DID for admin authorization.
@@ -104,6 +96,7 @@ class AdminService {
 
   /**
    * Make authenticated API request with X-DID header.
+   * Authentication is via HttpOnly cookie sent automatically with credentials: 'include'.
    */
   private async fetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     const headers: HeadersInit = {
@@ -111,16 +104,13 @@ class AdminService {
       ...options.headers,
     };
 
-    if (this.token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`;
-    }
-
     if (this.userDID) {
       (headers as Record<string, string>)['X-DID'] = this.userDID;
     }
 
     const response = await fetch(`${API_BASE}${path}`, {
       ...options,
+      credentials: 'include',
       headers,
     });
 
