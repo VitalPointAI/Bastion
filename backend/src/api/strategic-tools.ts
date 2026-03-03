@@ -16,31 +16,9 @@ import {
   type PrioritizeObjective,
 } from '../strategic/tools/domain-prioritizer.js';
 import { objectiveStore } from '../strategic/objectives/index.js';
+import { requireAuth } from '../auth/auth-instance.js';
 
 const router = express.Router();
-
-/**
- * Extract user DID from request headers
- */
-function getUserDID(req: express.Request): string | null {
-  const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7).trim();
-    if (token) return token;
-  }
-
-  const xDid = req.headers['x-did'];
-  if (typeof xDid === 'string' && xDid.trim()) {
-    return xDid.trim();
-  }
-
-  const queryDid = req.query.did;
-  if (typeof queryDid === 'string' && queryDid.trim()) {
-    return queryDid.trim();
-  }
-
-  return null;
-}
 
 /**
  * POST /api/strategic/tools/categorize-midlife
@@ -60,14 +38,9 @@ function getUserDID(req: express.Request): string | null {
  * - indicators: string[]
  * - toolVersion: string
  */
-router.post('/categorize-midlife', async (req, res) => {
+router.post('/categorize-midlife', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = req.anonUser!.nearAccountId;
 
     const { objectiveId, description, context } = req.body;
 
@@ -144,14 +117,9 @@ router.post('/categorize-midlife', async (req, res) => {
  * - methodology: string
  * - toolVersion: string
  */
-router.post('/prioritize-domain', async (req, res) => {
+router.post('/prioritize-domain', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = req.anonUser!.nearAccountId;
 
     const { objectives, documentId, domain, criteria } = req.body;
 

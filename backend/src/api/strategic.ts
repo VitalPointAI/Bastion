@@ -5,6 +5,7 @@
 
 import express from 'express';
 import multer from 'multer';
+import { requireAuth } from '../auth/auth-instance.js';
 import { DocumentParser } from '../strategic/ingestion/document-parser.js';
 import {
   DocumentStore,
@@ -123,30 +124,10 @@ const upload = multer({
 });
 
 /**
- * Extract user DID from request headers
- * Supports: Authorization Bearer, X-DID header, query param
+ * Build DID from NEAR account ID
  */
-function getUserDID(req: express.Request): string | null {
-  // Check Authorization header (Bearer token)
-  const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7).trim();
-    if (token) return token;
-  }
-
-  // Check X-DID header
-  const xDid = req.headers['x-did'];
-  if (typeof xDid === 'string' && xDid.trim()) {
-    return xDid.trim();
-  }
-
-  // Check query param
-  const queryDid = req.query.did;
-  if (typeof queryDid === 'string' && queryDid.trim()) {
-    return queryDid.trim();
-  }
-
-  return null;
+function buildDID(nearAccountId: string): string {
+  return `did:near:${nearAccountId}`;
 }
 
 /**
@@ -159,17 +140,12 @@ function getUserDID(req: express.Request): string | null {
  * - classification: ClassificationLevel (optional, default: 'UNCLASSIFIED')
  * - backupToIPFS: boolean (optional, default: false)
  */
-router.post('/documents', upload.single('document'), async (req, res) => {
+router.post('/documents', requireAuth, upload.single('document'), async (req, res) => {
   try {
     await ensureTableExists();
 
-    // Get user DID
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required. Provide DID via Authorization Bearer, X-DID header, or did query param',
-      });
-    }
+    // Get user DID from authenticated session
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Get uploaded file
     const file = req.file;
@@ -285,17 +261,12 @@ router.post('/documents', upload.single('document'), async (req, res) => {
  * - limit: number (default: 20)
  * - offset: number (default: 0)
  */
-router.get('/documents', async (req, res) => {
+router.get('/documents', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
-    // Get user DID
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    // Get user DID from authenticated session
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = parseInt(req.query.offset as string) || 0;
@@ -318,19 +289,14 @@ router.get('/documents', async (req, res) => {
 /**
  * GET /api/strategic/documents/:id - Get document by ID
  */
-router.get('/documents/:id', async (req, res) => {
+router.get('/documents/:id', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const documentId = req.params.id as string;
 
-    // Get user DID
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    // Get user DID from authenticated session
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const document = await store.get(documentId);
 
@@ -365,19 +331,14 @@ router.get('/documents/:id', async (req, res) => {
  * - chunk: number (optional) - return specific chunk index
  * - chunkSize: number (optional, default: 8000) - chunk size for splitting
  */
-router.get('/documents/:id/text', async (req, res) => {
+router.get('/documents/:id/text', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const documentId = req.params.id as string;
 
-    // Get user DID
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    // Get user DID from authenticated session
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // First verify ownership
     const document = await store.get(documentId);
@@ -441,19 +402,14 @@ router.get('/documents/:id/text', async (req, res) => {
 /**
  * DELETE /api/strategic/documents/:id - Delete a document
  */
-router.delete('/documents/:id', async (req, res) => {
+router.delete('/documents/:id', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const documentId = req.params.id as string;
 
-    // Get user DID
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    // Get user DID from authenticated session
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Verify ownership
     const document = await store.get(documentId);
@@ -483,16 +439,12 @@ router.delete('/documents/:id', async (req, res) => {
 /**
  * POST /api/strategic/documents/:documentId/extract - Extract objectives from document
  */
-router.post('/documents/:documentId/extract', async (req, res) => {
+router.post('/documents/:documentId/extract', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Verify document exists and user owns it
     const document = await store.get(documentId);
@@ -598,17 +550,12 @@ router.post('/documents/:documentId/extract', async (req, res) => {
  * Uses Server-Sent Events to stream extraction progress to the client.
  * Returns progress updates as each chunk is processed, then final results.
  */
-router.get('/documents/:documentId/extract/stream', async (req, res) => {
+router.get('/documents/:documentId/extract/stream', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      res.status(401).json({ error: 'Authentication required' });
-      return;
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Verify document exists and user owns it
     const document = await store.get(documentId);
@@ -744,16 +691,12 @@ router.get('/documents/:documentId/extract/stream', async (req, res) => {
 /**
  * GET /api/strategic/documents/:documentId/objectives - Get objectives for a document
  */
-router.get('/documents/:documentId/objectives', async (req, res) => {
+router.get('/documents/:documentId/objectives', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Verify document ownership
     const document = await store.get(documentId);
@@ -781,14 +724,11 @@ router.get('/documents/:documentId/objectives', async (req, res) => {
 /**
  * GET /api/strategic/objectives - List all objectives with filters
  */
-router.get('/objectives', async (req, res) => {
+router.get('/objectives', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = parseInt(req.query.offset as string) || 0;
@@ -820,16 +760,12 @@ router.get('/objectives', async (req, res) => {
 /**
  * GET /api/strategic/objectives/:id - Get single objective
  */
-router.get('/objectives/:id', async (req, res) => {
+router.get('/objectives/:id', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
 
@@ -851,16 +787,12 @@ router.get('/objectives/:id', async (req, res) => {
  * Supports MIDLIFE category updates with human override tracking.
  * When midlifeCategory is updated, automatically sets midlifeCategorizedBy to 'HUMAN'.
  */
-router.put('/objectives/:id', async (req, res) => {
+router.put('/objectives/:id', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -908,16 +840,12 @@ router.put('/objectives/:id', async (req, res) => {
 /**
  * DELETE /api/strategic/objectives/:id - Delete objective
  */
-router.delete('/objectives/:id', async (req, res) => {
+router.delete('/objectives/:id', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -937,16 +865,12 @@ router.delete('/objectives/:id', async (req, res) => {
 /**
  * POST /api/strategic/objectives/:id/verify - Mark objective as human-verified
  */
-router.post('/objectives/:id/verify', async (req, res) => {
+router.post('/objectives/:id/verify', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { verified } = req.body;
     if (typeof verified !== 'boolean') {
@@ -979,16 +903,12 @@ router.post('/objectives/:id/verify', async (req, res) => {
 /**
  * POST /api/strategic/objectives/:id/submit - Submit objective for approval
  */
-router.post('/objectives/:id/submit', async (req, res) => {
+router.post('/objectives/:id/submit', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1033,16 +953,12 @@ router.post('/objectives/:id/submit', async (req, res) => {
 /**
  * POST /api/strategic/objectives/:id/review - Submit review decision
  */
-router.post('/objectives/:id/review', async (req, res) => {
+router.post('/objectives/:id/review', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1088,16 +1004,12 @@ router.post('/objectives/:id/review', async (req, res) => {
 /**
  * GET /api/strategic/objectives/:id/workflow - Get workflow status
  */
-router.get('/objectives/:id/workflow', async (req, res) => {
+router.get('/objectives/:id/workflow', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const status = await workflowEngine.getWorkflowStatus(objectiveId);
 
@@ -1116,16 +1028,12 @@ router.get('/objectives/:id/workflow', async (req, res) => {
 /**
  * POST /api/strategic/objectives/:id/workflow/comment - Add comment to workflow
  */
-router.post('/objectives/:id/workflow/comment', async (req, res) => {
+router.post('/objectives/:id/workflow/comment', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { content } = req.body;
     if (!content || typeof content !== 'string') {
@@ -1154,16 +1062,12 @@ router.post('/objectives/:id/workflow/comment', async (req, res) => {
 /**
  * POST /api/strategic/objectives/:id/workflow/escalate - Escalate workflow
  */
-router.post('/objectives/:id/workflow/escalate', async (req, res) => {
+router.post('/objectives/:id/workflow/escalate', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { reason, escalateTo } = req.body;
     if (!reason || typeof reason !== 'string') {
@@ -1199,16 +1103,12 @@ router.post('/objectives/:id/workflow/escalate', async (req, res) => {
 /**
  * POST /api/strategic/objectives/:id/assess - Generate AI risk assessment
  */
-router.post('/objectives/:id/assess', async (req, res) => {
+router.post('/objectives/:id/assess', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1244,16 +1144,12 @@ router.post('/objectives/:id/assess', async (req, res) => {
 /**
  * GET /api/strategic/objectives/:id/risk - Get risk assessments for objective
  */
-router.get('/objectives/:id/risk', async (req, res) => {
+router.get('/objectives/:id/risk', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const assessments = await riskAssessmentStore.getAssessmentsForObjective(objectiveId);
 
@@ -1272,16 +1168,12 @@ router.get('/objectives/:id/risk', async (req, res) => {
 /**
  * POST /api/strategic/objectives/:id/risk - Create manual risk assessment
  */
-router.post('/objectives/:id/risk', async (req, res) => {
+router.post('/objectives/:id/risk', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1323,16 +1215,12 @@ router.post('/objectives/:id/risk', async (req, res) => {
 /**
  * PUT /api/strategic/risk/:assessmentId/review - Review risk assessment
  */
-router.put('/risk/:assessmentId/review', async (req, res) => {
+router.put('/risk/:assessmentId/review', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const assessmentId = req.params.assessmentId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { approved, modifications } = req.body;
     if (typeof approved !== 'boolean') {
@@ -1358,14 +1246,11 @@ router.put('/risk/:assessmentId/review', async (req, res) => {
 /**
  * GET /api/strategic/risk/high-risk - Get high/extreme risk assessments
  */
-router.get('/risk/high-risk', async (req, res) => {
+router.get('/risk/high-risk', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const assessments = await riskAssessmentStore.getHighRiskAssessments();
 
@@ -1389,16 +1274,12 @@ const intents = intentStore;
 /**
  * POST /api/strategic/objectives/:id/intent - Create commander's intent from objective
  */
-router.post('/objectives/:id/intent', async (req, res) => {
+router.post('/objectives/:id/intent', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1465,16 +1346,12 @@ router.post('/objectives/:id/intent', async (req, res) => {
 /**
  * GET /api/strategic/objectives/:id/intent - Get intents for objective
  */
-router.get('/objectives/:id/intent', async (req, res) => {
+router.get('/objectives/:id/intent', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objectiveIntents = await intents.getIntentsForObjective(objectiveId);
 
@@ -1493,16 +1370,12 @@ router.get('/objectives/:id/intent', async (req, res) => {
 /**
  * PUT /api/strategic/intent/:intentId - Update commander's intent
  */
-router.put('/intent/:intentId', async (req, res) => {
+router.put('/intent/:intentId', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const intentId = req.params.intentId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const intent = await intents.getIntent(intentId);
     if (!intent) {
@@ -1528,16 +1401,12 @@ router.put('/intent/:intentId', async (req, res) => {
 /**
  * POST /api/strategic/objectives/:id/intent/generate - AI-assist intent generation
  */
-router.post('/objectives/:id/intent/generate', async (req, res) => {
+router.post('/objectives/:id/intent/generate', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1575,16 +1444,12 @@ router.post('/objectives/:id/intent/generate', async (req, res) => {
 /**
  * GET /api/strategic/objectives/:id/operationalize - Check operationalization readiness
  */
-router.get('/objectives/:id/operationalize', async (req, res) => {
+router.get('/objectives/:id/operationalize', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1635,12 +1500,12 @@ router.get('/objectives/:id/operationalize', async (req, res) => {
 /**
  * POST /api/strategic/objectives/:id/operationalize - Mark objective as OPERATIONALIZED
  */
-router.post('/objectives/:id/operationalize', async (req, res) => {
+router.post('/objectives/:id/operationalize', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = getUserDID(req);
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     if (!userDID) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -1713,16 +1578,12 @@ router.post('/objectives/:id/operationalize', async (req, res) => {
  * - prioritizationDomain: 'strategic' | 'operational' | 'tactical' | 'resource'
  * - onlyUncategorized: boolean
  */
-router.post('/documents/:documentId/review', async (req, res) => {
+router.post('/documents/:documentId/review', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Verify document exists and user owns it
     const document = await store.get(documentId);
@@ -1768,17 +1629,12 @@ router.post('/documents/:documentId/review', async (req, res) => {
  * - confidenceThreshold: number (default: 0.7)
  * - prioritizationDomain: 'strategic' | 'operational' | 'tactical' | 'resource'
  */
-router.get('/documents/:documentId/review/stream', async (req, res) => {
+router.get('/documents/:documentId/review/stream', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      res.status(401).json({ error: 'Authentication required' });
-      return;
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Verify document exists and user owns it
     const document = await store.get(documentId);
@@ -1914,16 +1770,12 @@ router.get('/documents/:documentId/review/stream', async (req, res) => {
 /**
  * GET /api/strategic/documents/:documentId/reviews - List reviews for document
  */
-router.get('/documents/:documentId/reviews', async (req, res) => {
+router.get('/documents/:documentId/reviews', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Verify document exists
     const document = await store.get(documentId);
@@ -1951,16 +1803,12 @@ router.get('/documents/:documentId/reviews', async (req, res) => {
 /**
  * GET /api/strategic/reviews/:reviewId - Get specific review
  */
-router.get('/reviews/:reviewId', async (req, res) => {
+router.get('/reviews/:reviewId', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const reviewId = req.params.reviewId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const review = await reviewStore.getReview(reviewId);
 
@@ -1979,16 +1827,12 @@ router.get('/reviews/:reviewId', async (req, res) => {
 /**
  * POST /api/strategic/reviews/:reviewId/accept - Accept all suggestions
  */
-router.post('/reviews/:reviewId/accept', async (req, res) => {
+router.post('/reviews/:reviewId/accept', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const reviewId = req.params.reviewId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const review = await reviewStore.getReview(reviewId);
     if (!review) {
@@ -2038,16 +1882,12 @@ router.post('/reviews/:reviewId/accept', async (req, res) => {
  * - acceptCategories: boolean (default: true) - Whether to apply category suggestions
  * - acceptPriorities: boolean (default: true) - Whether to apply priority suggestions
  */
-router.post('/reviews/:reviewId/accept-partial', async (req, res) => {
+router.post('/reviews/:reviewId/accept-partial', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const reviewId = req.params.reviewId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const review = await reviewStore.getReview(reviewId);
     if (!review) {
@@ -2113,16 +1953,12 @@ router.post('/reviews/:reviewId/accept-partial', async (req, res) => {
  * Request body:
  * - reason: string (optional)
  */
-router.post('/reviews/:reviewId/reject', async (req, res) => {
+router.post('/reviews/:reviewId/reject', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const reviewId = req.params.reviewId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const review = await reviewStore.getReview(reviewId);
     if (!review) {
@@ -2161,14 +1997,11 @@ router.post('/reviews/:reviewId/reject', async (req, res) => {
  * - autoReview?: boolean (default: false)
  * - reviewOptions?: { confidenceThreshold?, prioritizationDomain?, onlyUncategorized? }
  */
-router.post('/assignments', async (req, res) => {
+router.post('/assignments', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { documentId, agentId, autoReview, reviewOptions } = req.body;
 
@@ -2215,14 +2048,11 @@ router.post('/assignments', async (req, res) => {
  * - status?: 'active' | 'completed' | 'revoked'
  * - autoReview?: boolean
  */
-router.get('/assignments', async (req, res) => {
+router.get('/assignments', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { documentId, agentId, status, autoReview } = req.query;
 
@@ -2248,16 +2078,12 @@ router.get('/assignments', async (req, res) => {
 /**
  * GET /api/strategic/documents/:documentId/assignments - Get assignments for document
  */
-router.get('/documents/:documentId/assignments', async (req, res) => {
+router.get('/documents/:documentId/assignments', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Verify document exists
     const document = await store.get(documentId);
@@ -2289,16 +2115,12 @@ router.get('/documents/:documentId/assignments', async (req, res) => {
  * - autoReview?: boolean
  * - reviewOptions?: object
  */
-router.patch('/assignments/:id', async (req, res) => {
+router.patch('/assignments/:id', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const assignmentId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const assignment = await assignmentStore.getAssignment(assignmentId);
     if (!assignment) {
@@ -2324,16 +2146,12 @@ router.patch('/assignments/:id', async (req, res) => {
 /**
  * DELETE /api/strategic/assignments/:id - Revoke assignment
  */
-router.delete('/assignments/:id', async (req, res) => {
+router.delete('/assignments/:id', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
     const assignmentId = req.params.id as string;
-    const userDID = getUserDID(req);
-
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const assignment = await assignmentStore.getAssignment(assignmentId);
     if (!assignment) {

@@ -11,28 +11,15 @@ import { participantStore } from '../mission/participant-store.js';
 import { inviteStore } from '../mission/invite-store.js';
 import { MissionInputSchema } from '../mission/schemas.js';
 import type { MissionState, ParticipantRole } from '../mission/types.js';
+import { requireAuth } from '../auth/auth-instance.js';
 
 const router = Router();
 
 /**
- * Extract user DID from request headers
- * Supports: X-DID header, Authorization Bearer token
+ * Build DID from NEAR account ID
  */
-function getUserDID(req: Request): string | null {
-  // Check X-DID header
-  const xDid = req.headers['x-did'];
-  if (typeof xDid === 'string' && xDid.trim()) {
-    return xDid.trim();
-  }
-
-  // Check Authorization header (Bearer token)
-  const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7).trim();
-    if (token) return token;
-  }
-
-  return null;
+function buildDID(nearAccountId: string): string {
+  return `did:near:${nearAccountId}`;
 }
 
 /**
@@ -89,14 +76,9 @@ function toFrontendMission(mission: {
  * Body: MissionInput (name, description?, classification, areaOfOperations?, workspaceId?, pendingInvites?)
  * Requires: X-DID header for createdBy tracking
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required. Provide DID via X-DID header or Authorization Bearer',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const input = MissionInputSchema.parse(req.body);
     const { pendingInvites, ...missionData } = input;
@@ -139,14 +121,9 @@ router.post('/', async (req: Request, res: Response) => {
  * - classification: UNCLASS | SECRET | TOPSECRET
  * - workspaceId: string
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const state = getQueryString(req.query.state) as MissionState | undefined;
     const workspaceId = getQueryString(req.query.workspaceId);
@@ -167,14 +144,9 @@ router.get('/', async (req: Request, res: Response) => {
 /**
  * GET /api/missions/:id - Get single mission
  */
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -197,14 +169,9 @@ router.get('/:id', async (req: Request, res: Response) => {
  * Body: Partial mission fields (name, description, areaOfOperations)
  * Cannot change workspaceId or state (use state transition endpoints)
  */
-router.patch('/:id', async (req: Request, res: Response) => {
+router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -234,14 +201,9 @@ router.patch('/:id', async (req: Request, res: Response) => {
 /**
  * POST /api/missions/:id/activate - Transition from planning to active
  */
-router.post('/:id/activate', async (req: Request, res: Response) => {
+router.post('/:id/activate', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -264,14 +226,9 @@ router.post('/:id/activate', async (req: Request, res: Response) => {
 /**
  * POST /api/missions/:id/complete - Transition from active to complete
  */
-router.post('/:id/complete', async (req: Request, res: Response) => {
+router.post('/:id/complete', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -294,14 +251,9 @@ router.post('/:id/complete', async (req: Request, res: Response) => {
 /**
  * POST /api/missions/:id/archive - Transition from complete to archived
  */
-router.post('/:id/archive', async (req: Request, res: Response) => {
+router.post('/:id/archive', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -328,14 +280,9 @@ router.post('/:id/archive', async (req: Request, res: Response) => {
 /**
  * GET /api/missions/:id/participants - List mission participants
  */
-router.get('/:id/participants', async (req: Request, res: Response) => {
+router.get('/:id/participants', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -357,14 +304,9 @@ router.get('/:id/participants', async (req: Request, res: Response) => {
 /**
  * DELETE /api/missions/:id/participants/:participantId - Remove participant
  */
-router.delete('/:id/participants/:participantId', async (req: Request, res: Response) => {
+router.delete('/:id/participants/:participantId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const participantId = req.params.participantId as string;
@@ -414,14 +356,9 @@ router.delete('/:id/participants/:participantId', async (req: Request, res: Resp
  * - inviteeDid?: string (optional)
  * - expirationHours?: number (default: 72)
  */
-router.post('/:id/invites', async (req: Request, res: Response) => {
+router.post('/:id/invites', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -469,14 +406,9 @@ router.post('/:id/invites', async (req: Request, res: Response) => {
 /**
  * GET /api/missions/:id/invites - List pending invites for mission
  */
-router.get('/:id/invites', async (req: Request, res: Response) => {
+router.get('/:id/invites', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -511,14 +443,9 @@ router.get('/:id/invites', async (req: Request, res: Response) => {
 /**
  * DELETE /api/missions/:id/invites/:inviteId - Cancel invite
  */
-router.delete('/:id/invites/:inviteId', async (req: Request, res: Response) => {
+router.delete('/:id/invites/:inviteId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const inviteId = req.params.inviteId as string;
@@ -557,14 +484,9 @@ router.delete('/:id/invites/:inviteId', async (req: Request, res: Response) => {
  * Body:
  * - token: string (required) - The raw invite token
  */
-router.post('/accept-invite', async (req: Request, res: Response) => {
+router.post('/accept-invite', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({
-        error: 'Authentication required',
-      });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { token } = req.body;
 

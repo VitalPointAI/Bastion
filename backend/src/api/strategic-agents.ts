@@ -13,26 +13,15 @@ import {
   type ThreatType,
   type ThreatSeverity,
 } from '../strategic/agents/index.js';
+import { requireAuth } from '../auth/auth-instance.js';
 
 const router = express.Router();
 
 /**
- * Extract user DID from request headers
+ * Build DID from NEAR account ID
  */
-function getUserDID(req: express.Request): string | null {
-  const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.substring(7);
-  }
-  const xDid = req.headers['x-did'];
-  if (typeof xDid === 'string') {
-    return xDid;
-  }
-  const queryDid = req.query.did;
-  if (typeof queryDid === 'string') {
-    return queryDid;
-  }
-  return null;
+function buildDID(nearAccountId: string): string {
+  return `did:near:${nearAccountId}`;
 }
 
 // ============================================================================
@@ -49,12 +38,9 @@ function getUserDID(req: express.Request): string | null {
  * - sourceIds?: string[] - Specific source IDs to use (optional)
  * - maxResults?: number - Maximum results to return (default: 100)
  */
-router.post('/osint/collect', async (req, res) => {
+router.post('/osint/collect', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { keywords, regions, sourceIds, maxResults } = req.body;
 
@@ -98,12 +84,9 @@ router.post('/osint/collect', async (req, res) => {
  * - severityThreshold?: ThreatSeverity - Minimum severity to report (default: 'LOW')
  * - osintReports?: OSINTReport[] - Reports to analyze (optional, uses recent collection if not provided)
  */
-router.post('/threats/monitor', async (req, res) => {
+router.post('/threats/monitor', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { regions, threatTypes, severityThreshold, osintReports } = req.body;
 
@@ -160,12 +143,9 @@ router.post('/threats/monitor', async (req, res) => {
  * Query params:
  * - acknowledged: boolean - Filter by acknowledged status (optional)
  */
-router.get('/threats/alerts', async (req, res) => {
+router.get('/threats/alerts', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const acknowledged = req.query.acknowledged === 'true' ? true :
                          req.query.acknowledged === 'false' ? false : undefined;
@@ -187,14 +167,11 @@ router.get('/threats/alerts', async (req, res) => {
  * POST /api/strategic/agents/threats/alerts/:alertId/acknowledge
  * Acknowledge a threat alert
  */
-router.post('/threats/alerts/:alertId/acknowledge', async (req, res) => {
+router.post('/threats/alerts/:alertId/acknowledge', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
-    const { alertId } = req.params;
+    const alertId = req.params.alertId as string;
 
     const success = agentOrchestrator.acknowledgeAlert(alertId, userDID);
 
@@ -223,12 +200,9 @@ router.post('/threats/alerts/:alertId/acknowledge', async (req, res) => {
  * - threatIndicators?: ThreatIndicator[] - Threat indicators to include
  * - context?: string - Additional document context
  */
-router.post('/fuse', async (req, res) => {
+router.post('/fuse', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { osintReports, threatIndicators, context } = req.body;
 
@@ -262,12 +236,9 @@ router.post('/fuse', async (req, res) => {
  * - threatRequest: ThreatMonitorRequest - Threat monitoring parameters
  * - documentContext?: string - Additional document context
  */
-router.post('/cycle', async (req, res) => {
+router.post('/cycle', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { osintRequest, threatRequest, documentContext } = req.body;
 
@@ -302,14 +273,11 @@ router.post('/cycle', async (req, res) => {
  * GET /api/strategic/agents/fused/:id
  * Get a fused intelligence product by ID
  */
-router.get('/fused/:id', async (req, res) => {
+router.get('/fused/:id', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const product = fusionAgent.getProduct(id);
 
@@ -332,12 +300,9 @@ router.get('/fused/:id', async (req, res) => {
  * Query params:
  * - status: 'PENDING' | 'REVIEWED' | 'APPROVED' - Filter by review status
  */
-router.get('/fused', async (req, res) => {
+router.get('/fused', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const status = req.query.status as 'PENDING' | 'REVIEWED' | 'APPROVED' | undefined;
 
@@ -369,14 +334,11 @@ router.get('/fused', async (req, res) => {
  * - approved: boolean - Whether to approve the product
  * - notes?: string - Review notes
  */
-router.post('/fused/:id/review', async (req, res) => {
+router.post('/fused/:id/review', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { approved, notes } = req.body;
 
     if (typeof approved !== 'boolean') {
@@ -414,12 +376,9 @@ router.post('/fused/:id/review', async (req, res) => {
  * Query params:
  * - status: 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' - Filter by status
  */
-router.get('/checkpoints', async (req, res) => {
+router.get('/checkpoints', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const status = req.query.status as 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | undefined;
 
@@ -451,14 +410,11 @@ router.get('/checkpoints', async (req, res) => {
  * - action: 'APPROVE' | 'REJECT' | 'REVISE' - Decision action
  * - rationale: string - Reason for decision
  */
-router.post('/checkpoints/:id/resolve', async (req, res) => {
+router.post('/checkpoints/:id/resolve', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { action, rationale } = req.body;
 
     const validActions = ['APPROVE', 'REJECT', 'REVISE'];
@@ -493,12 +449,9 @@ router.post('/checkpoints/:id/resolve', async (req, res) => {
  * GET /api/strategic/agents/status
  * Get agent status and configuration
  */
-router.get('/status', async (req, res) => {
+router.get('/status', requireAuth, async (req, res) => {
   try {
-    const userDID = getUserDID(req);
-    if (!userDID) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     const agentStatus = await agentOrchestrator.getAgentStatus();
     const executionHistory = agentOrchestrator.getExecutionHistory();

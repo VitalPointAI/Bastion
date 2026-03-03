@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { createAnonAuth } from '@vitalpoint/near-phantom-auth/server';
 import { dropLegacyAuthTables } from './auth/migration-drop-legacy.js';
+import { setAuthInstance } from './auth/auth-instance.js';
+import { getFundingService } from './auth/funding-service.js';
 import encryptionRouter from './api/encryption.js';
 import documentsRouter from './api/documents.js';
 import edgeSyncRouter from './api/edge-sync.js';
@@ -106,12 +108,43 @@ const auth = createAnonAuth({
   },
 });
 
+// Register the auth instance so route files can use requireAuth via auth-instance.ts
+setAuthInstance(auth.requireAuth, auth.middleware);
+
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
 // Mount API routes
-app.use('/api/auth', auth.router);
+// Wire NEAR account funding to package registration completion:
+// Intercept /register/finish responses and trigger fundAccount on success
+app.use('/api/auth', (req, res, next) => {
+  if (req.method === 'POST' && req.path === '/register/finish') {
+    const originalJson = res.json.bind(res);
+    res.json = (body: unknown) => {
+      // After package handles registration, trigger NEAR funding if response was successful
+      // The package returns { nearAccountId, ... } on successful registration
+      const responseBody = body as Record<string, unknown>;
+      if (res.statusCode < 400 && responseBody?.nearAccountId) {
+        const accountId = responseBody.nearAccountId as string;
+        const fundingService = getFundingService();
+        if (fundingService.isEnabled()) {
+          fundingService.fundAccount(accountId).then((result) => {
+            if (result.success) {
+              console.log(`[near-funding] Account ${accountId} funded successfully (${result.attempts} attempt(s))`);
+            } else {
+              console.error(`[near-funding] Failed to fund account ${accountId}: ${result.error}`);
+            }
+          }).catch((err) => {
+            console.error('[near-funding] Unexpected error funding account:', err);
+          });
+        }
+      }
+      return originalJson(body);
+    };
+  }
+  next();
+}, auth.router);
 app.use('/api/encryption', encryptionRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/edge', edgeSyncRouter);
