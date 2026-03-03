@@ -110,11 +110,11 @@ export class MDMPWorkflowService {
       phaseTransitions: [],
     };
 
+    // Store workflow first (registerPhaseGates looks it up in the map)
+    this.workflows.set(missionId, workflow);
+
     // Register all gates for Phase 0
     await this.registerPhaseGates(missionId, MDMPPhase.PHASE_0_CONTINUOUS);
-
-    // Store workflow
-    this.workflows.set(missionId, workflow);
 
     // TODO (5.1-14): Call smart contract to create on-chain workflow
 

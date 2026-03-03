@@ -33,7 +33,7 @@ import {
   AuthorityDesignation,
 } from '../../src/mdmp/types.js';
 
-describe.skip('MDMP End-to-End Workflow Integration', () => {
+describe('MDMP End-to-End Workflow Integration', () => {
   let workflowService: MDMPWorkflowService;
   let safetyEnforcer: SafetyMatrixEnforcer;
   let orchestrator: MDMPIntegrationOrchestrator;
@@ -193,22 +193,22 @@ describe.skip('MDMP End-to-End Workflow Integration', () => {
   });
 
   describe('INVARIANT 1: Strike Authorization Always NotAutonomous', () => {
-    it('should reject AI_AUTONOMOUS for strike authorization activities', () => {
-      // Strike authorization is not in our current activity registry,
-      // but would fall under AuthorityDecision or RiskJudgment categories
+    it('should reject lowest authority (Individual) for strike authorization activities', () => {
+      // AuthorityDecision requires GeneralOfficer — Individual is far below minimum
       const result = safetyEnforcer.validateAuthorityAssignment(
-        ActivityCategory.AUTHORITY_DECISION,
-        AuthorityDesignation.AI_AUTONOMOUS
+        ActivityCategory.AuthorityDecision,
+        AuthorityDesignation.Individual
       );
 
       expect(result.valid).toBe(false);
       expect(result.reason).toContain('INVARIANT');
     });
 
-    it('should only allow HUMAN_ONLY for lethal decision categories', () => {
+    it('should only allow GeneralOfficer for lethal decision categories', () => {
+      // AuthorityDecision: min=GeneralOfficer, max=GeneralOfficer
       const result = safetyEnforcer.validateAuthorityAssignment(
-        ActivityCategory.AUTHORITY_DECISION,
-        AuthorityDesignation.HUMAN_ONLY
+        ActivityCategory.AuthorityDecision,
+        AuthorityDesignation.GeneralOfficer
       );
 
       expect(result.valid).toBe(true);
@@ -541,9 +541,10 @@ describe.skip('MDMP End-to-End Workflow Integration', () => {
 
   describe('INVARIANT 8: FullyDelegated Scope Restriction', () => {
     it('should permit FullyDelegated for DataAggregation', () => {
+      // DataAggregation: min=Individual, max=NCO, permitsFullyDelegated=true
       const result = safetyEnforcer.validateAuthorityAssignment(
-        ActivityCategory.DATA_AGGREGATION,
-        AuthorityDesignation.AI_AUTONOMOUS
+        ActivityCategory.DataAggregation,
+        AuthorityDesignation.Individual
       );
 
       expect(result.valid).toBe(true);
@@ -551,9 +552,11 @@ describe.skip('MDMP End-to-End Workflow Integration', () => {
     });
 
     it('should block FullyDelegated for MissionAnalysis', () => {
+      // MissionAnalysis: min=CompanyGrade, max=FieldGrade, permitsFullyDelegated=false
+      // Individual is below minimum → INVARIANT 8 violation
       const result = safetyEnforcer.validateAuthorityAssignment(
-        ActivityCategory.MISSION_ANALYSIS,
-        AuthorityDesignation.AI_AUTONOMOUS
+        ActivityCategory.MissionAnalysis,
+        AuthorityDesignation.Individual
       );
 
       expect(result.valid).toBe(false);
@@ -562,9 +565,11 @@ describe.skip('MDMP End-to-End Workflow Integration', () => {
     });
 
     it('should block FullyDelegated for RiskJudgment', () => {
+      // RiskJudgment: min=FieldGrade, max=GeneralOfficer, permitsFullyDelegated=false
+      // Individual is below minimum → INVARIANT 8 violation
       const result = safetyEnforcer.validateAuthorityAssignment(
-        ActivityCategory.RISK_JUDGMENT,
-        AuthorityDesignation.AI_AUTONOMOUS
+        ActivityCategory.RiskJudgment,
+        AuthorityDesignation.Individual
       );
 
       expect(result.valid).toBe(false);
@@ -574,9 +579,10 @@ describe.skip('MDMP End-to-End Workflow Integration', () => {
 
   describe('INVARIANT 9: Safety Matrix Enforcement', () => {
     it('should permit authority within range', () => {
+      // PatternRecognition: min=NCO, max=CompanyGrade
       const result = safetyEnforcer.validateAuthorityAssignment(
-        ActivityCategory.PATTERN_RECOGNITION,
-        AuthorityDesignation.AI_PRIMARY
+        ActivityCategory.PatternRecognition,
+        AuthorityDesignation.NCO
       );
 
       expect(result.valid).toBe(true);
@@ -584,23 +590,23 @@ describe.skip('MDMP End-to-End Workflow Integration', () => {
     });
 
     it('should reject authority exceeding max', () => {
-      // DataAggregation maxAuthority is typically NCO or CompanyGrade
-      // Requesting HUMAN_ONLY exceeds this if max is lower
+      // DataAggregation: min=Individual, max=NCO
+      // GeneralOfficer exceeds max
       const result = safetyEnforcer.validateAuthorityAssignment(
-        ActivityCategory.DATA_AGGREGATION,
-        AuthorityDesignation.HUMAN_ONLY
+        ActivityCategory.DataAggregation,
+        AuthorityDesignation.GeneralOfficer
       );
 
-      // This may or may not fail depending on matrix definition
-      // The test validates that matrix enforcement is working
-      expect(result).toHaveProperty('valid');
-      expect(result).toHaveProperty('violatesInvariant9');
+      expect(result.valid).toBe(false);
+      expect(result.violatesInvariant9).toBe(true);
     });
 
-    it('should enforce HUMAN_ONLY for human-in-loop categories', () => {
+    it('should enforce human-in-loop for restricted categories', () => {
+      // RiskJudgment: min=FieldGrade, max=GeneralOfficer, requiresHumanInLoop=true
+      // FieldGrade is in range but below max → human-in-loop rejects it
       const result = safetyEnforcer.validateAuthorityAssignment(
-        ActivityCategory.RISK_JUDGMENT,
-        AuthorityDesignation.AI_PRIMARY
+        ActivityCategory.RiskJudgment,
+        AuthorityDesignation.FieldGrade
       );
 
       expect(result.valid).toBe(false);
