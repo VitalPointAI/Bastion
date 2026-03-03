@@ -132,7 +132,8 @@ export function ReviewStep({ formData, onEdit }: ReviewStepProps) {
                 style={{ height: '250px', width: '100%' }}
               >
                 <TileLayer
-                  url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  subdomains="abcd"
                   maxZoom={18}
                   noWrap={true}
                 />

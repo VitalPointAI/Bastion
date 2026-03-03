@@ -73,11 +73,7 @@ function MapBounds({
   return null;
 }
 
-// Support optional API key for non-localhost deployments (Stadia Maps returns 401 without it)
-const STADIA_API_KEY = import.meta.env.VITE_STADIA_MAPS_API_KEY as string | undefined;
-const STADIA_TILE_URL = STADIA_API_KEY
-  ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`
-  : 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png';
+const DARK_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
 export function MissionMap({ missionId, areaOfOps, onMarkerClick }: MissionMapProps) {
   const [units, setUnits] = useState<CommandUnitWithLocation[]>([]);
@@ -170,10 +166,11 @@ export function MissionMap({ missionId, areaOfOps, onMarkerClick }: MissionMapPr
         maxBoundsViscosity={1.0}
         className="map-container"
       >
-        {/* Dark theme tiles from Stadia Maps */}
+        {/* Dark theme tiles from CARTO */}
         <TileLayer
-          attribution='&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url={STADIA_TILE_URL}
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url={DARK_TILE_URL}
+          subdomains="abcd"
           maxZoom={18}
           noWrap={true}
           bounds={[[-85, -180], [85, 180]]}
