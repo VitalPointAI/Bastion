@@ -2,9 +2,11 @@
 set -euo pipefail
 
 # ============================================
-# Bastion Server Setup - One-Time Bootstrap
-# Run as root on a fresh Ubuntu 24.04 server (Hetzner CAX21/CAX31)
+# Bastion Server Setup - Idempotent Bootstrap
+# Run as root on a fresh Ubuntu 24.04 server (Hetzner CX33)
 # Usage: bash server-setup.sh <domain> <ssh-public-key>
+#
+# Safe to re-run — each step checks if it's already done.
 #
 # This script:
 #   1. Creates a non-root 'deploy' user with Docker access
@@ -26,7 +28,11 @@ echo "=== Setting up Bastion server for $DOMAIN ==="
 
 # 1. Create deploy user with Docker group
 echo "--- Creating deploy user ---"
-useradd -m -s /bin/bash -G sudo deploy
+if id deploy &>/dev/null; then
+  echo "User 'deploy' already exists, skipping creation"
+else
+  useradd -m -s /bin/bash -G sudo deploy
+fi
 mkdir -p /home/deploy/.ssh
 echo "$SSH_PUB_KEY" > /home/deploy/.ssh/authorized_keys
 chmod 700 /home/deploy/.ssh
@@ -36,14 +42,18 @@ echo "deploy ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/deploy
 
 # 2. Install Docker
 echo "--- Installing Docker ---"
-apt-get update
-apt-get install -y apt-transport-https ca-certificates curl gnupg
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-chmod a+r /etc/apt/keyrings/docker.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-apt-get update
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+if command -v docker &>/dev/null; then
+  echo "Docker already installed, skipping"
+else
+  apt-get update
+  apt-get install -y apt-transport-https ca-certificates curl gnupg
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  chmod a+r /etc/apt/keyrings/docker.gpg
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  apt-get update
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+fi
 usermod -aG docker deploy
 
 # 3. Install nginx and certbot
@@ -65,30 +75,75 @@ mkdir -p /home/deploy/bastion
 chown deploy:deploy /home/deploy/bastion
 
 # 6. Clone repository (for docker-compose.prod.yml and database init files)
+# Requires deploy key at /home/deploy/.ssh/bastion-deploy (copy before running this step)
 echo "--- Cloning Bastion repository ---"
-su - deploy -c "git clone https://github.com/VitalPointAI/Bastion.git /home/deploy/bastion"
+cat > /home/deploy/.ssh/config << 'SSHEOF'
+Host github.com
+  IdentityFile ~/.ssh/bastion-deploy
+  StrictHostKeyChecking accept-new
+SSHEOF
+chmod 600 /home/deploy/.ssh/config
+chown deploy:deploy /home/deploy/.ssh/config
+if [ -d /home/deploy/bastion/.git ]; then
+  echo "Repository already cloned, pulling latest"
+  su - deploy -c "cd /home/deploy/bastion && git pull origin master"
+else
+  su - deploy -c "git clone git@github.com:VitalPointAI/Bastion.git /home/deploy/bastion"
+fi
 
-# 7. Install host nginx config
+# 7. Install HTTP-only nginx config first (certbot needs this to serve ACME challenge)
 echo "--- Installing nginx config for $DOMAIN ---"
-cp /home/deploy/bastion/nginx/nginx.prod.conf /etc/nginx/sites-available/bastion
-sed -i "s/\${DOMAIN}/$DOMAIN/g" /etc/nginx/sites-available/bastion
-ln -sf /etc/nginx/sites-available/bastion /etc/nginx/sites-enabled/bastion
 rm -f /etc/nginx/sites-enabled/default
+cat > /etc/nginx/sites-available/bastion << NGINXEOF
+server {
+    listen 80;
+    server_name $DOMAIN;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+NGINXEOF
+ln -sf /etc/nginx/sites-available/bastion /etc/nginx/sites-enabled/bastion
+mkdir -p /var/www/certbot
 nginx -t
 systemctl reload nginx
 
-# 8. Obtain TLS certificate
+# 8. Obtain TLS certificate (certbot will modify the nginx config to add SSL)
 echo "--- Obtaining TLS certificate for $DOMAIN ---"
-certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email admin@"$DOMAIN" --redirect
+if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+  echo "TLS certificate already exists, skipping"
+else
+  certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email admin@"$DOMAIN" --redirect
+fi
 
-# 9. Disable root SSH login
+# 9. Install full production nginx config (with SSL, SSE support, WebSocket upgrade)
+echo "--- Installing production nginx config ---"
+cp /home/deploy/bastion/nginx/nginx.prod.conf /etc/nginx/sites-available/bastion
+sed -i "s/\${DOMAIN}/$DOMAIN/g" /etc/nginx/sites-available/bastion
+nginx -t
+systemctl reload nginx
+
+# 10. Disable root SSH login
 echo "--- Hardening SSH ---"
 sed -i 's/#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-systemctl reload sshd
+systemctl reload ssh
 
-# 10. Create .env.prod template
+# 11. Create .env.prod template
 echo "--- Creating .env.prod template ---"
-cat > /home/deploy/bastion/.env.prod << 'ENVEOF'
+if [ -f /home/deploy/bastion/.env.prod ]; then
+  echo ".env.prod already exists, skipping (won't overwrite your secrets)"
+else
+  cat > /home/deploy/bastion/.env.prod << 'ENVEOF'
 # Production environment - fill in all values before starting services
 # This file is NOT committed to git — it lives only on the server
 # Domain: bastion.vitalpoint.ai
@@ -97,18 +152,48 @@ cat > /home/deploy/bastion/.env.prod << 'ENVEOF'
 POSTGRES_PASSWORD=CHANGE_ME
 NEO4J_PASSWORD=CHANGE_ME
 
-# Backend runtime secrets
-# (Copy relevant values from backend/.env in development)
-# NEAR_ACCOUNT_ID=
-# NEAR_PRIVATE_KEY=
-# ANTHROPIC_API_KEY=
-# SESSION_SECRET=
+# IPFS (Pinata) — backend uploads via server-side JWT
+PINATA_JWT=CHANGE_ME
+PINATA_GATEWAY=https://coffee-kind-eagle-207.mypinata.cloud
+
+# AI providers (at least one required for strategic extraction)
+ANTHROPIC_API_KEY=CHANGE_ME
+# OPENAI_API_KEY=
+# NEAR_AI_API_KEY=
+
+# Encryption keys
+# Generate each with: openssl rand -hex 32
+ENCRYPTION_KEY=CHANGE_ME
+CONFIG_ENCRYPTION_KEY=CHANGE_ME
+TOTP_ENCRYPTION_KEY=CHANGE_ME
+
+# Admin access control (comma-separated DIDs)
+ADMIN_DIDS=CHANGE_ME
+
+# NEAR blockchain
+NEAR_NETWORK_ID=testnet
+NEAR_RPC_URL=https://rpc.testnet.fastnear.com
+# NEAR_BACKEND_ACCOUNT_ID=
+# NEAR_BACKEND_PRIVATE_KEY=
+# NEAR_FUNDING_CONTRACT_ID=
+# NEAR_FUNDING_ACCOUNT_ID=
+# NEAR_FUNDING_PRIVATE_KEY=
+
+# Passkey / WebAuthn
+RP_ID=bastion.vitalpoint.ai
+RP_NAME=BASTION
+ORIGIN=https://bastion.vitalpoint.ai
+
+# Email (AWS SES) — optional
 # AWS_ACCESS_KEY_ID=
 # AWS_SECRET_ACCESS_KEY=
-# AWS_REGION=
+# AWS_REGION=us-east-1
+# FROM_EMAIL=noreply@bastion.vitalpoint.ai
+APP_URL=https://bastion.vitalpoint.ai
 ENVEOF
-chown deploy:deploy /home/deploy/bastion/.env.prod
-chmod 600 /home/deploy/bastion/.env.prod
+  chown deploy:deploy /home/deploy/bastion/.env.prod
+  chmod 600 /home/deploy/bastion/.env.prod
+fi
 
 echo ""
 echo "=== Setup complete ==="
