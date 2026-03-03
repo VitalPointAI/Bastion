@@ -1,106 +1,51 @@
 /**
- * useAuth Hook - Replaces usePrivy for passkey-based authentication
+ * useAuth Hook - Wraps @vitalpoint/near-phantom-auth useAnonAuth
+ *
+ * Thin adapter that re-exports the package's AnonAuthProvider and useAnonAuth
+ * with the interface expected by AuthWrapper and other components.
+ *
+ * Field mapping:
+ *   package.nearAccountId  -> accountId  (used by UserContext, DID init, StrategicDashboard)
+ *   package.email          -> email       (from OAuth/magic-link; null for passkey-only)
+ *   package.isLoading      -> isLoading
+ *   package.isAuthenticated -> isAuthenticated
+ *   package.login          -> login
+ *   package.logout         -> logout
+ *   package.refreshSession -> refreshSession
  */
 
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import type { ReactNode } from 'react';
-import { authService, type AuthSession } from '../lib/auth-service';
+import { AnonAuthProvider, useAnonAuth } from '@vitalpoint/near-phantom-auth/client';
 
-interface AuthState {
+// Re-export the provider so AuthWrapper can import it as AuthProvider
+export { AnonAuthProvider as AuthProvider };
+
+export interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
-  session: AuthSession | null;
   accountId: string | null;
   email: string | null;
-  prfAvailable: boolean;
-}
-
-interface AuthContextValue extends AuthState {
-  login: () => void;        // Redirect to login page
+  login: (codename?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    isLoading: true,
-    isAuthenticated: false,
-    session: null,
-    accountId: null,
-    email: null,
-    prfAvailable: false
-  });
-
-  // Check session on mount
-  useEffect(() => {
-    checkSession();
-  }, []);
-
-  const checkSession = useCallback(async () => {
-    setState(prev => ({ ...prev, isLoading: true }));
-
-    const session = await authService.getSession();
-
-    if (session) {
-      setState({
-        isLoading: false,
-        isAuthenticated: true,
-        session,
-        accountId: session.accountId,
-        email: session.email || null,
-        prfAvailable: session.prfAvailable
-      });
-    } else {
-      setState({
-        isLoading: false,
-        isAuthenticated: false,
-        session: null,
-        accountId: null,
-        email: null,
-        prfAvailable: false
-      });
-    }
-  }, []);
-
-  const login = useCallback(() => {
-    // Navigate to login page
-    window.location.href = '/login';
-  }, []);
-
-  const logout = useCallback(async () => {
-    await authService.logout();
-    setState({
-      isLoading: false,
-      isAuthenticated: false,
-      session: null,
-      accountId: null,
-      email: null,
-      prfAvailable: false
-    });
-    // Redirect to home or login
-    window.location.href = '/';
-  }, []);
-
-  const value: AuthContextValue = {
-    ...state,
-    login,
-    logout,
-    refreshSession: checkSession
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
+/**
+ * Adapter hook: maps package useAnonAuth fields to the AuthContextValue interface
+ * used by AuthWrapper and StrategicDashboard.
+ *
+ * Note: prfAvailable is intentionally removed — the package handles PRF internally.
+ */
 export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
+  const auth = useAnonAuth();
+
+  return {
+    isLoading: auth.isLoading,
+    isAuthenticated: auth.isAuthenticated,
+    // Package uses nearAccountId; map to accountId for all downstream consumers
+    accountId: auth.nearAccountId,
+    email: auth.email,
+    login: auth.login,
+    logout: auth.logout,
+    refreshSession: auth.refreshSession,
+  };
 }
