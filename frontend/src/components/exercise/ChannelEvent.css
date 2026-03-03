@@ -16,7 +16,7 @@
 }
 
 .channel-event + .channel-event {
-  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  border-top: 1px solid var(--border-subtle, #2a2a38);
 }
 
 /* Meta row: icon + timestamp + agent name */
@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  color: var(--text-muted, #64748b);
+  color: var(--text-dim, #444456);
   font-size: 0.75rem;
 }
 
@@ -42,10 +42,10 @@
 
 .ce-agent {
   font-size: 0.7rem;
-  background: rgba(100, 116, 139, 0.12);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 3px;
   padding: 0 0.3rem;
-  color: var(--text-secondary, #475569);
+  color: var(--text-muted, #666678);
 }
 
 /* Body row */
@@ -60,12 +60,12 @@
 }
 
 .ce-primary {
-  color: var(--text-primary, #1e293b);
+  color: var(--text-secondary, #a0a0b0);
   font-weight: 500;
 }
 
 .ce-sub {
-  color: var(--text-muted, #64748b);
+  color: var(--text-dim, #444456);
   font-size: 0.75rem;
   font-style: italic;
 }
@@ -73,76 +73,80 @@
 /* ─── Event type color coding ─────────────────────────────────────────────── */
 
 .ce-task_started {
-  border-left-color: #3b82f6; /* blue */
+  border-left-color: #3b82f6;
 }
 
 .ce-task_progress {
-  border-left-color: #94a3b8; /* grey */
+  border-left-color: #64748b;
 }
 
 .ce-draft_ready {
-  border-left-color: #22c55e; /* green */
+  border-left-color: #22c55e;
+}
+
+.ce-draft_ready .ce-primary {
+  color: #86efac;
 }
 
 .ce-revision_requested {
-  border-left-color: #f59e0b; /* yellow */
+  border-left-color: #f59e0b;
 }
 
 .ce-approved {
-  border-left-color: #16a34a; /* green */
-  background: rgba(22, 163, 74, 0.04);
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.06);
 }
 
 .ce-approved .ce-primary {
-  color: #166534;
+  color: #86efac;
 }
 
 .ce-rejected {
-  border-left-color: #ef4444; /* red */
-  background: rgba(239, 68, 68, 0.04);
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
 }
 
 .ce-rejected .ce-primary {
-  color: #991b1b;
+  color: #fca5a5;
 }
 
 .ce-waiting_on_role {
-  border-left: 3px dashed #3b82f6; /* blue dashed */
+  border-left: 3px dashed #3b82f6;
 }
 
 .ce-ai_to_ai_request,
 .ce-ai_to_ai_response {
-  border-left-color: #8b5cf6; /* purple */
+  border-left-color: #8b5cf6;
 }
 
 .ce-ai_to_ai_request .ce-primary,
 .ce-ai_to_ai_response .ce-primary {
-  color: #6d28d9;
+  color: #c4b5fd;
 }
 
 .ce-error {
-  border-left-color: #ef4444; /* red */
+  border-left-color: #ef4444;
 }
 
 .ce-error .ce-primary {
-  color: #991b1b;
+  color: #fca5a5;
 }
 
 .ce-paused,
 .ce-resumed {
-  border-left-color: #94a3b8; /* grey */
+  border-left-color: #64748b;
 }
 
 .ce-paused .ce-primary,
 .ce-resumed .ce-primary {
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted, #666678);
 }
 
 /* ─── Review Required — most prominent event type ─────────────────────────── */
 
 .ce-review_required {
-  border-left: 3px solid #f59e0b; /* amber */
-  background: rgba(245, 158, 11, 0.06);
+  border-left: 3px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
   padding: 0.75rem;
 }
 
@@ -160,14 +164,14 @@
 
 .ce-review-title {
   font-weight: 600;
-  color: #92400e;
+  color: #fbbf24;
   font-size: 0.875rem;
 }
 
 .ce-escalated-badge {
   font-size: 0.7rem;
-  color: #b45309;
-  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
   border-radius: 3px;
   padding: 0.1rem 0.4rem;
   display: inline-block;
@@ -177,7 +181,7 @@
 .ce-review-btn {
   align-self: flex-start;
   background: #f59e0b;
-  color: #fff;
+  color: #000;
   border: none;
   border-radius: 4px;
   padding: 0.375rem 0.875rem;
@@ -188,9 +192,9 @@
 }
 
 .ce-review-btn:hover {
-  background: #d97706;
+  background: #fbbf24;
 }
 
 .ce-review-btn:active {
-  background: #b45309;
+  background: #d97706;
 }

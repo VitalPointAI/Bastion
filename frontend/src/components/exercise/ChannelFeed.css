@@ -7,7 +7,7 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: var(--sidebar-bg, #f8fafc);
+  background: var(--bg-primary, #111118);
 }
 
 /* ─── Header ──────────────────────────────────────────────────────────────── */
@@ -17,15 +17,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--border-color, #e2e8f0);
-  background: var(--card-bg, #fff);
+  border-bottom: 1px solid var(--border-subtle, #2a2a38);
+  background: var(--bg-secondary, #1a1a24);
   flex-shrink: 0;
 }
 
 .cf-title {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--text-secondary, #475569);
+  color: var(--text-muted, #666678);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -44,11 +44,11 @@
 }
 
 .cf-connected {
-  color: #22c55e; /* green */
+  color: #22c55e;
 }
 
 .cf-disconnected {
-  color: #94a3b8; /* grey */
+  color: var(--text-dim, #444456);
 }
 
 .cf-error-label {
@@ -83,7 +83,7 @@
 }
 
 .cf-event-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 2px;
 }
 
@@ -91,7 +91,7 @@
 .cf-empty {
   padding: 2rem 1rem;
   text-align: center;
-  color: var(--text-muted, #94a3b8);
+  color: var(--text-muted, #666678);
   font-size: 0.8125rem;
   font-style: italic;
 }

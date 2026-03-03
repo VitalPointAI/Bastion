@@ -62,6 +62,84 @@
   background: var(--bg-primary, #111118);
 }
 
+/* ─── Status indicator ───────────────────────────────────────────────────────── */
+
+.aip-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.aip-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted, #666678);
+  flex-shrink: 0;
+}
+
+.aip-status-dot.aip-status-queued {
+  background: #94a3b8;
+}
+
+.aip-status-dot.aip-status-running {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+  animation: aip-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes aip-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.aip-status-dot.aip-status-paused {
+  background: #f59e0b;
+}
+
+.aip-status-dot.aip-status-awaiting_review {
+  background: #a78bfa;
+  box-shadow: 0 0 6px rgba(167, 139, 250, 0.4);
+}
+
+.aip-status-dot.aip-status-complete {
+  background: #22c55e;
+}
+
+.aip-status-dot.aip-status-failed {
+  background: #ef4444;
+}
+
+/* ─── Pending review badge ──────────────────────────────────────────────────── */
+
+.aip-review-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  border-radius: 8px;
+}
+
+.aip-badge-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #a78bfa;
+}
+
+/* ─── Products placeholder label ────────────────────────────────────────────── */
+
+.aip-products-label {
+  margin: 0;
+  color: var(--text-muted, #666678);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
 /* Controller action buttons in the product panel header */
 .aip-pause-btn,
 .aip-resume-btn,
