@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 18 Plan 01 complete — @vitalpoint/near-phantom-auth bootstrapped on backend
+**Current focus:** Phase 18 Plan 03 complete — frontend auth layer replaced with AnonAuthProvider/useAnonAuth; AuthWrapper rewired; routes updated
 
 ## Current Position
 
 Phase: 18 of 18 (Replace Current Login with @vitalpoint/near-phantom-auth)
-Plan: 1 of 5 in current phase — 18-01 complete, ready for 18-02 (frontend AnonAuthProvider)
-Status: In progress — Plan 18-01 complete
-Last activity: 2026-03-03 - Phase 18 Plan 01 complete: createAnonAuth bootstrapped, legacy DB tables drop migration, CORS updated for cookies
+Plan: 3 of 5 in current phase — 18-03 complete, ready for 18-04 (backend requireAuth middleware replacement)
+Status: In progress — Plan 18-03 complete
+Last activity: 2026-03-03 - Phase 18 Plan 03 complete: useAuth adapter wraps useAnonAuth, AuthWrapper rewired (MigrationFlow removed), App.tsx wrapped in AnonAuthProvider, LoginPage/RegisterPage rewritten for passkey-only flow
 
-Progress: ████████████████████████ 143 plans complete
+Progress: ████████████████████████ 145 plans complete
 
 ## Performance Metrics
 
@@ -85,6 +85,7 @@ Progress: ███████████████████████�
 | Phase 17-deployment-cicd-hetzner P02 | 7 | 2 tasks | 2 files |
 | Phase 17 P01 | 108 | 4 tasks | 4 files |
 | Phase 18 P01 | 35 | 2 tasks | 6 files |
+| Phase 18 P03 | 20 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,14 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 18 Plan 03 (Frontend Auth Layer Replacement):**
+- AnonAuthProvider placed at App.tsx root level (not inside AuthWrapper) — required for LoginPage/RegisterPage to call useAnonAuth()
+- useAuth.tsx kept as adapter layer mapping nearAccountId -> accountId for StrategicDashboard and other consumers
+- prfAvailable removed from AuthWrapper DID init — package handles PRF internally; DID always created on authentication
+- credentials: include added to /api/identity/register fetch in AuthWrapper for cookie-based auth
+- MigrationFlow removed completely — clean break; legacy auth tables already dropped by 18-01
+- LoginPage and RegisterPage rewritten using useAnonAuth() — passkey-only, no magic link, no email at registration
 
 **Phase 18 Plan 01 (@vitalpoint/near-phantom-auth Bootstrap):**
 - Use createAnonAuth from /server entry (not bare index) — server-side only, keeps client bundle clean
