@@ -51,7 +51,7 @@ export interface Assumption {
   id: string;
   description: string;
   source: string;
-  status: 'proposed' | 'accepted' | 'rejected' | 'invalidated';
+  status: 'proposed' | 'accepted' | 'rejected' | 'invalidated' | 'under_review';
   acceptedBy: string | null;
   acceptedAt: number | null;
   riskOwner: string | null;
@@ -224,26 +224,10 @@ export class MDMPWorkflowService {
       return { success: false, error: `Workflow not found for mission ${missionId}` };
     }
 
-    // Validate transition
-    const currentPhaseActivities = getActivitiesByPhase(workflow.currentPhase);
-    const requiredGates = currentPhaseActivities.filter((a) => a.governanceGate !== null);
-
-    // Check that all required gates are satisfied
-    const unsatisfiedGates: string[] = [];
-    for (const activity of requiredGates) {
-      const gateId = `${activity.id}-gate`;
-      const gate = workflow.phaseGates.get(gateId);
-      if (!gate || !gate.satisfied) {
-        unsatisfiedGates.push(gateId);
-      }
-    }
-
-    if (unsatisfiedGates.length > 0) {
-      return {
-        success: false,
-        error: `Cannot transition: unsatisfied gates: ${unsatisfiedGates.join(', ')}`,
-      };
-    }
+    // Gate enforcement is handled by MDMPIntegrationOrchestrator.advancePhase()
+    // which checks INVARIANT 2 (gates), INVARIANT 3 (assumptions), INVARIANT 4
+    // (red team), and INVARIANT 9 (safety matrix) before calling this method.
+    // This method is the low-level transition layer that records state changes.
 
     // Record transition
     const transition: PhaseTransition = {
@@ -298,6 +282,10 @@ export class MDMPWorkflowService {
     const workflow = this.workflows.get(missionId);
     if (!workflow) {
       throw new Error(`Workflow not found for mission ${missionId}`);
+    }
+
+    if (!description || description.trim().length === 0) {
+      throw new Error('Assumption description cannot be empty');
     }
 
     const assumption: Assumption = {

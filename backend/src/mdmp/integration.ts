@@ -465,7 +465,7 @@ export class MDMPIntegrationOrchestrator {
       for (const assumptionId of modifiesAssumptions) {
         const assumption = workflow.assumptions.find((a) => a.id === assumptionId);
         if (assumption) {
-          assumption.status = 'proposed';
+          assumption.status = 'under_review';
         }
       }
     }

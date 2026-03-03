@@ -45,7 +45,7 @@ describe('MDMP End-to-End Workflow Integration', () => {
   });
 
   describe('Workflow Lifecycle', () => {
-    it('should create workflow and register Phase 0 gates', async () => {
+    it('should create workflow and start at Phase 0 (Continuous)', async () => {
       const workflow = await orchestrator.initializeWorkflow({
         missionId: 'mission-001',
         daoId: 'dao-strategic',
@@ -55,7 +55,8 @@ describe('MDMP End-to-End Workflow Integration', () => {
       expect(workflow).toBeDefined();
       expect(workflow.missionId).toBe('mission-001');
       expect(workflow.currentPhase).toBe(MDMPPhase.PHASE_0_CONTINUOUS);
-      expect(workflow.phaseGates.size).toBeGreaterThan(0);
+      // Phase 0 (Continuous) activities are monitoring/aggregation with no governance gates
+      expect(workflow.phaseGates.size).toBe(0);
     });
 
     it('should advance from Phase 1 to Phase 2 when gates satisfied', async () => {
@@ -380,24 +381,36 @@ describe('MDMP End-to-End Workflow Integration', () => {
         initiator: 'commander.near',
       });
 
-      // In full implementation, red team challenges would be registered
-      // For now, the orchestrator checks for unaddressed challenges
-
       await workflowService.requestPhaseTransition({
         missionId,
         toPhase: MDMPPhase.PHASE_1_RECEIPT,
         requestedBy: 'commander.near',
       });
 
+      // Satisfy all gates so the test reaches the red team check
+      const workflow = await workflowService.getWorkflowState(missionId);
+      if (workflow) {
+        for (const [gateId] of workflow.phaseGates.entries()) {
+          await workflowService.satisfyGate({
+            missionId,
+            gateId,
+            satisfiedBy: 'commander.near',
+          });
+        }
+      }
+
       // Note: Full red team challenge system would be tested here
-      // Currently returns empty array, so test validates structure
+      // Currently the stub returns empty array, so the advance succeeds.
+      // This test validates the result structure includes challenge tracking fields.
       const result = await orchestrator.advancePhase({
         missionId,
         authorizedBy: 'commander.near',
       });
 
-      // Validate result structure includes challenge tracking
+      // Validate result structure
       expect(result).toHaveProperty('success');
+      // When red team system is fully implemented, failed results will
+      // include unaddressedChallenges. For now, stub passes.
       if (!result.success) {
         expect(result).toHaveProperty('unaddressedChallenges');
       }
@@ -631,6 +644,13 @@ describe('MDMP End-to-End Workflow Integration', () => {
         missionId,
         daoId: 'dao-strategic',
         initiator: 'commander.near',
+      });
+
+      // Advance to Phase 1 so governance gates are registered
+      await workflowService.requestPhaseTransition({
+        missionId,
+        toPhase: MDMPPhase.PHASE_1_RECEIPT,
+        requestedBy: 'commander.near',
       });
 
       await workflowService.registerAssumption({

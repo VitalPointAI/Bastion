@@ -78,23 +78,36 @@ export interface ActivityViolation {
 // ==========================================================================
 
 /**
- * Authority designation ordering from least to most authority/human control.
- * Uses the military rank values that match SAFETY_MATRIX entries.
+ * Authority rank mapping from designation to numeric rank.
+ *
+ * The AuthorityDesignation enum has two naming conventions (merged via
+ * TypeScript enum merging in types.ts):
+ *   - Military ranks: Individual, NCO, CompanyGrade, FieldGrade, GeneralOfficer
+ *   - AI autonomy levels: AI_AUTONOMOUS, AI_PRIMARY, HYBRID_AI_LED, HYBRID_HUMAN_LED, HUMAN_ONLY
+ *
+ * Both map to the same 5-tier authority model (0 = least human control, 4 = most).
  */
-const AUTHORITY_ORDER: AuthorityDesignation[] = [
-  AuthorityDesignation.Individual,     // Least authority
-  AuthorityDesignation.NCO,
-  AuthorityDesignation.CompanyGrade,
-  AuthorityDesignation.FieldGrade,
-  AuthorityDesignation.GeneralOfficer, // Most authority / most human control
-];
+const AUTHORITY_RANK: Map<string, number> = new Map([
+  // Military rank values (used by SAFETY_MATRIX)
+  [AuthorityDesignation.Individual, 0],
+  [AuthorityDesignation.NCO, 1],
+  [AuthorityDesignation.CompanyGrade, 2],
+  [AuthorityDesignation.FieldGrade, 3],
+  [AuthorityDesignation.GeneralOfficer, 4],
+  // AI autonomy values (used by activity registry)
+  [AuthorityDesignation.AI_AUTONOMOUS, 0],
+  [AuthorityDesignation.AI_PRIMARY, 1],
+  [AuthorityDesignation.HYBRID_AI_LED, 2],
+  [AuthorityDesignation.HYBRID_HUMAN_LED, 3],
+  [AuthorityDesignation.HUMAN_ONLY, 4],
+]);
 
 /**
  * Get numeric rank for authority level (0 = least human control, 4 = most).
  */
 function getAuthorityRank(authority: AuthorityDesignation): number {
-  const rank = AUTHORITY_ORDER.indexOf(authority);
-  if (rank === -1) {
+  const rank = AUTHORITY_RANK.get(authority);
+  if (rank === undefined) {
     throw new Error(`Unknown authority designation: ${authority}`);
   }
   return rank;
