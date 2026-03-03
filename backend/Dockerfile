@@ -14,8 +14,9 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy package files for dependency caching
+# Copy package files and patches for dependency caching
 COPY package.json pnpm-lock.yaml ./
+COPY patches/ ./patches/
 
 # Install dependencies (including devDependencies for build)
 RUN pnpm install
@@ -44,8 +45,9 @@ RUN groupadd --gid 1001 nodejs && \
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and patches
 COPY package.json pnpm-lock.yaml ./
+COPY patches/ ./patches/
 
 # Install only production dependencies
 RUN pnpm install --prod
