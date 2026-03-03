@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-03T03:30:00.000Z"
+last_updated: "2026-03-03T19:51:00.000Z"
 progress:
   total_phases: 30
   completed_phases: 17
   total_plans: 163
-  completed_plans: 175
+  completed_plans: 176
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 18 Plan 03 complete — frontend auth layer replaced with AnonAuthProvider/useAnonAuth; AuthWrapper rewired; routes updated
+**Current focus:** Phase 18 Plan 04 complete — all 5 frontend service files migrated from Bearer token auth to cookie auth via credentials: 'include'
 
 ## Current Position
 
 Phase: 18 of 18 (Replace Current Login with @vitalpoint/near-phantom-auth)
-Plan: 3 of 5 in current phase — 18-03 complete, ready for 18-04 (backend requireAuth middleware replacement)
-Status: In progress — Plan 18-03 complete
-Last activity: 2026-03-03 - Phase 18 Plan 03 complete: useAuth adapter wraps useAnonAuth, AuthWrapper rewired (MigrationFlow removed), App.tsx wrapped in AnonAuthProvider, LoginPage/RegisterPage rewritten for passkey-only flow
+Plan: 4 of 5 in current phase — 18-04 complete, ready for 18-05 (cleanup and types migration)
+Status: In progress — Plan 18-04 complete
+Last activity: 2026-03-03 - Phase 18 Plan 04 complete: all 5 frontend service files (strategic, admin, governance, command, resource) migrated to credentials: 'include'; Bearer token/setAuthToken removed from all services; 4 direct fetch calls in GovernanceService updated
 
-Progress: ████████████████████████ 145 plans complete
+Progress: ████████████████████████ 146 plans complete
 
 ## Performance Metrics
 
@@ -87,6 +87,7 @@ Progress: ███████████████████████�
 | Phase 18 P01 | 35 | 2 tasks | 6 files |
 | Phase 18 P02 | 13 | 2 tasks | 7 files |
 | Phase 18 P03 | 20 | 2 tasks | 5 files |
+| Phase 18 P04 | 4 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,12 @@ Recent decisions affecting current work:
 - auth-instance.ts singleton pattern chosen over re-exporting auth directly from index.ts — avoids circular dependency
 - requireAuth is a wrapper middleware that delegates to getRequireAuth() at request time — ensures initialization order safety
 - NEAR funding uses res.json intercept (Option B) because package has no onRegistration callback — async fire-and-forget
+
+**Phase 18 Plan 04 (Frontend Service Cookie Auth Migration):**
+- X-DID header kept in all service classes — still used for DID-based route identification even with cookie auth
+- GovernanceService had 4 direct fetch() calls bypassing private this.fetch() — all updated individually with credentials: 'include'
+- auth-service.ts Authorization Bearer header intentionally retained — it IS the passkey auth service itself, out of scope
+- No WebSocket calls in governance-service despite research indication — standard fetch migration applied
 
 **Phase 18 Plan 03 (Frontend Auth Layer Replacement):**
 - AnonAuthProvider placed at App.tsx root level (not inside AuthWrapper) — required for LoginPage/RegisterPage to call useAnonAuth()
