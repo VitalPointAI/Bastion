@@ -393,15 +393,14 @@ Plans:
 **Goal:** Replace the entire custom passkey/magic-link/TOTP authentication system with @vitalpoint/near-phantom-auth@0.4.2 — email-required registration, HttpOnly cookie sessions, password+IPFS recovery, clean break migration
 **Requirements**: TBD
 **Depends on:** Phase 17
-**Plans:** 4/6 plans executed
+**Plans:** 5/5 plans executed (complete)
 
 Plans:
 - [x] 18-01-PLAN.md — Install package, bootstrap backend (DB migration, auth.initialize, CORS update)
-- [ ] 18-02-PLAN.md — Backend route migration (replace getUserDID with requireAuth, wire NEAR funding)
-- [ ] 18-03-PLAN.md — Frontend auth provider swap (AnonAuthProvider, AuthWrapper, App.tsx routes)
-- [ ] 18-04-PLAN.md — Frontend service migration (Bearer tokens to credentials: 'include')
-- [ ] 18-05-PLAN.md — Cleanup and deletion (remove 25+ legacy auth files, clean packages)
-- [ ] 18-06-PLAN.md — End-to-end verification (build checks + human verification checkpoint)
+- [x] 18-02-PLAN.md — Backend route migration (replace getUserDID with requireAuth, wire NEAR funding)
+- [x] 18-03-PLAN.md — Frontend auth provider swap (AnonAuthProvider, AuthWrapper, App.tsx routes)
+- [x] 18-04-PLAN.md — Frontend service migration (Bearer tokens to credentials: 'include')
+- [x] 18-05-PLAN.md — Cleanup and deletion (removed 12 backend + 10 frontend legacy files; 5 unused packages)
 
 ---
 

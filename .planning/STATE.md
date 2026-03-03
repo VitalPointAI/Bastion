@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-03T19:51:00.000Z"
+last_updated: "2026-03-03T20:08:00.000Z"
 progress:
   total_phases: 30
-  completed_phases: 17
+  completed_phases: 18
   total_plans: 163
-  completed_plans: 176
+  completed_plans: 177
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 18 Plan 04 complete — all 5 frontend service files migrated from Bearer token auth to cookie auth via credentials: 'include'
+**Current focus:** Phase 18 complete — all legacy auth code deleted; codebase now uses only @vitalpoint/near-phantom-auth package
 
 ## Current Position
 
-Phase: 18 of 18 (Replace Current Login with @vitalpoint/near-phantom-auth)
-Plan: 4 of 5 in current phase — 18-04 complete, ready for 18-05 (cleanup and types migration)
-Status: In progress — Plan 18-04 complete
-Last activity: 2026-03-03 - Phase 18 Plan 04 complete: all 5 frontend service files (strategic, admin, governance, command, resource) migrated to credentials: 'include'; Bearer token/setAuthToken removed from all services; 4 direct fetch calls in GovernanceService updated
+Phase: 18 of 18 (Replace Current Login with @vitalpoint/near-phantom-auth) - COMPLETE
+Plan: 5 of 5 in current phase — 18-05 complete; phase 18 done
+Status: Phase complete — all plans executed
+Last activity: 2026-03-03 - Phase 18 Plan 05 complete: deleted 12 legacy backend auth files, 10 legacy frontend files; removed @simplewebauthn/server, otplib from backend and @privy-io, @simplewebauthn/browser from frontend; both projects build cleanly
 
-Progress: ████████████████████████ 146 plans complete
+Progress: ████████████████████████ 177 plans complete
 
 ## Performance Metrics
 
@@ -88,6 +88,7 @@ Progress: ███████████████████████�
 | Phase 18 P02 | 13 | 2 tasks | 7 files |
 | Phase 18 P03 | 20 | 2 tasks | 5 files |
 | Phase 18 P04 | 4 | 2 tasks | 5 files |
+| Phase 18 P05 | 9 | 2 tasks | 23 files deleted + 2 package.json |
 
 ## Accumulated Context
 
@@ -101,6 +102,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 18 Plan 05 (Legacy Auth Code Deletion):**
+- prf-did-integration.ts kept — still imported by backend/src/api/identity.ts for DID operations; not legacy auth but active identity infrastructure
+- LoginPage.tsx and RegisterPage.tsx kept — already rewritten in 18-03 to use package; deleting would break app
+- @privy-io packages removed from frontend — were unused (frontend never imported them; @privy-io/server-auth was accidentally added to frontend deps)
+- @simplewebauthn/server + otplib removed from backend; @simplewebauthn/browser removed from frontend — all only used by deleted legacy files
 
 **Phase 18 Plan 02 (Backend Route Auth Migration):**
 - auth-instance.ts singleton pattern chosen over re-exporting auth directly from index.ts — avoids circular dependency
