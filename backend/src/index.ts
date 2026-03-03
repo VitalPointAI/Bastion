@@ -48,6 +48,11 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
 ];
 
+// Add production origin from APP_URL env var (e.g. https://bastion.vitalpoint.ai)
+if (process.env.APP_URL) {
+  allowedOrigins.push(process.env.APP_URL);
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl)
