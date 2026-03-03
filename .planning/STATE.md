@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-03T02:53:15.225Z"
+last_updated: "2026-03-03T03:30:00.000Z"
 progress:
   total_phases: 30
   completed_phases: 17
   total_plans: 163
-  completed_plans: 174
+  completed_plans: 175
 ---
 
 # Project State
@@ -19,14 +19,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 18 context gathered — Replace current login with @vitalpoint/near-phantom-auth
+**Current focus:** Phase 18 Plan 01 complete — @vitalpoint/near-phantom-auth bootstrapped on backend
 
 ## Current Position
 
 Phase: 18 of 18 (Replace Current Login with @vitalpoint/near-phantom-auth)
-Plan: 0 of 0 in current phase — context gathered, ready for planning
-Status: Context gathered — ready for /gsd:plan-phase 18
-Last activity: 2026-03-03 - Phase 18 context gathered: email-required registration, HttpOnly cookies, password+IPFS recovery, clean break migration
+Plan: 1 of 5 in current phase — 18-01 complete, ready for 18-02 (frontend AnonAuthProvider)
+Status: In progress — Plan 18-01 complete
+Last activity: 2026-03-03 - Phase 18 Plan 01 complete: createAnonAuth bootstrapped, legacy DB tables drop migration, CORS updated for cookies
 
 Progress: ████████████████████████ 143 plans complete
 
@@ -84,6 +84,7 @@ Progress: ███████████████████████�
 | Phase 16-ai-assigned-staff-workspaces P06 | 5 | 1 task (checkpoint pending) | 3 files |
 | Phase 17-deployment-cicd-hetzner P02 | 7 | 2 tasks | 2 files |
 | Phase 17 P01 | 108 | 4 tasks | 4 files |
+| Phase 18 P01 | 35 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,14 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 18 Plan 01 (@vitalpoint/near-phantom-auth Bootstrap):**
+- Use createAnonAuth from /server entry (not bare index) — server-side only, keeps client bundle clean
+- auth.initialize() placed AFTER dropLegacyAuthTables() — prevents FK conflicts during migration
+- rp.id dynamically derived from APP_URL hostname in production, hardcoded 'localhost' in dev
+- recovery.wallet = false — Phantom wallet recovery disabled initially; IPFS Pinata enabled
+- DeploymentConfig extracted to deployment-types.ts (not deleted) — phased migration; types.ts deleted in Plan 18-05
+- Authorization removed from CORS allowedHeaders — package uses HttpOnly cookies, no bearer tokens
 
 **Phase 17 Plan 02 (GitHub Actions CI/CD Workflows):**
 - Two-workflow split: ci.yml validates on PRs and master push; deploy.yml builds+pushes+deploys on master push only
