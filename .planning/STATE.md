@@ -85,6 +85,7 @@ Progress: ███████████████████████�
 | Phase 17-deployment-cicd-hetzner P02 | 7 | 2 tasks | 2 files |
 | Phase 17 P01 | 108 | 4 tasks | 4 files |
 | Phase 18 P01 | 35 | 2 tasks | 6 files |
+| Phase 18 P02 | 13 | 2 tasks | 7 files |
 | Phase 18 P03 | 20 | 2 tasks | 5 files |
 
 ## Accumulated Context
@@ -99,6 +100,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 18 Plan 02 (Backend Route Auth Migration):**
+- auth-instance.ts singleton pattern chosen over re-exporting auth directly from index.ts — avoids circular dependency
+- requireAuth is a wrapper middleware that delegates to getRequireAuth() at request time — ensures initialization order safety
+- NEAR funding uses res.json intercept (Option B) because package has no onRegistration callback — async fire-and-forget
 
 **Phase 18 Plan 03 (Frontend Auth Layer Replacement):**
 - AnonAuthProvider placed at App.tsx root level (not inside AuthWrapper) — required for LoginPage/RegisterPage to call useAnonAuth()
