@@ -19,14 +19,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 17 executing — Deployment CI/CD & Hetzner
+**Current focus:** Phase 18 context gathered — Replace current login with @vitalpoint/near-phantom-auth
 
 ## Current Position
 
-Phase: 17 of 17 (Deployment CI/CD & Hetzner)
-Plan: 2 of 5 in current phase — Plan 02 complete
-Status: Executing — Phase 17 Plan 02 complete
-Last activity: 2026-03-03 - Completed 17-02: GitHub Actions CI workflow (parallel pnpm jobs) and Deploy workflow (GHCR image push + SSH deploy with health check)
+Phase: 18 of 18 (Replace Current Login with @vitalpoint/near-phantom-auth)
+Plan: 0 of 0 in current phase — context gathered, ready for planning
+Status: Context gathered — ready for /gsd:plan-phase 18
+Last activity: 2026-03-03 - Phase 18 context gathered: email-required registration, HttpOnly cookies, password+IPFS recovery, clean break migration
 
 Progress: ████████████████████████ 143 plans complete
 
@@ -385,6 +385,7 @@ Recent decisions affecting current work:
 - Phase 14 added: Friendly & Adversary IPB Complete Cycle - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations
 - Phase 15 added: JPP Staff Organization Workspaces - Role-based exercise workspaces (Commander, J1–J35) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and strategic direction import
 - Phase 17 added: Deployment - CI/CD Pipeline & Hetzner Server - GitHub Actions CI/CD pipeline deploying Bastion to Hetzner, TEE-aware component separation documented for production, single-server dev deployment
+- Phase 18 added: replace current login with @vitalpoint/near-phantom-auth
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
