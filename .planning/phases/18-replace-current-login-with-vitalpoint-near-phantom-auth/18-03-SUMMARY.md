@@ -135,6 +135,21 @@ None - no external service configuration required for this plan.
 - Plan 18-04 can proceed: replace `requireAuth` Bearer token middleware in backend API routes
 - Plan 18-05 can proceed: update frontend service layer (`credentials: 'include'`, remove `setAuthToken()`)
 
+## Self-Check: PASSED
+
+Files verified present:
+- `frontend/src/hooks/useAuth.tsx` — FOUND
+- `frontend/src/components/AuthWrapper.tsx` — FOUND
+- `frontend/src/App.tsx` — FOUND
+- `frontend/src/components/LoginPage.tsx` — FOUND
+- `frontend/src/components/RegisterPage.tsx` — FOUND
+- `.planning/phases/18-replace-current-login-with-vitalpoint-near-phantom-auth/18-03-SUMMARY.md` — FOUND
+
+Commits verified:
+- `3bf59ed` feat(18-03): replace useAuth hook — FOUND
+- `a31229b` feat(18-03): rewire AuthWrapper — FOUND
+- `376d05b` docs(18-03): complete plan — FOUND
+
 ---
 *Phase: 18-replace-current-login-with-vitalpoint-near-phantom-auth*
 *Completed: 2026-03-03*
