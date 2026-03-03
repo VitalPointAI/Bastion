@@ -62,11 +62,11 @@ jobs:
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
           build-args: |
-            VITE_PRIVY_APP_ID=${{ secrets.VITE_PRIVY_APP_ID }}
             VITE_NEAR_NETWORK=${{ vars.VITE_NEAR_NETWORK }}
             VITE_NEAR_RPC=${{ vars.VITE_NEAR_RPC }}
             VITE_PINATA_GATEWAY=${{ secrets.VITE_PINATA_GATEWAY }}
             VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL }}
+            VITE_STADIA_MAPS_API_KEY=${{ secrets.VITE_STADIA_MAPS_API_KEY }}
 
   deploy:
     needs: build-and-push

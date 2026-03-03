@@ -91,13 +91,21 @@ echo "--- Creating .env.prod template ---"
 cat > /home/deploy/bastion/.env.prod << 'ENVEOF'
 # Production environment - fill in all values before starting services
 # This file is NOT committed to git — it lives only on the server
+# Domain: bastion.vitalpoint.ai
 
 # Database passwords
 POSTGRES_PASSWORD=CHANGE_ME
 NEO4J_PASSWORD=CHANGE_ME
 
-# Add other secrets that the backend needs at runtime
-# (NEAR keys, AI API keys, etc. — same variables as backend/.env in development)
+# Backend runtime secrets
+# (Copy relevant values from backend/.env in development)
+# NEAR_ACCOUNT_ID=
+# NEAR_PRIVATE_KEY=
+# ANTHROPIC_API_KEY=
+# SESSION_SECRET=
+# AWS_ACCESS_KEY_ID=
+# AWS_SECRET_ACCESS_KEY=
+# AWS_REGION=
 ENVEOF
 chown deploy:deploy /home/deploy/bastion/.env.prod
 chmod 600 /home/deploy/bastion/.env.prod
