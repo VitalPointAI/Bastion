@@ -381,7 +381,7 @@ Plans:
 ### Phase 17: Deployment - CI/CD Pipeline & Hetzner Server
 **Goal:** Set up GitHub Actions CI/CD pipeline to deploy Bastion from https://github.com/VitalPointAI/Bastion.git to an economical Hetzner server, with TEE-aware component separation documented for production while co-locating everything on a single server for development
 **Depends on:** Phase 16
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 17-01-PLAN.md — Production Docker Compose, host nginx config, server bootstrap script

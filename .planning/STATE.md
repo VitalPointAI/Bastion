@@ -5,7 +5,7 @@ milestone_name: milestone
 status: unknown
 last_updated: "2026-03-02T20:40:24.000Z"
 progress:
-  total_phases: 29
+  total_phases: 30
   completed_phases: 16
   total_plans: 160
   completed_plans: 171
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 16 executing — AI Assigned Staff Workspaces
+**Current focus:** Phase 17 executing — Deployment CI/CD & Hetzner
 
 ## Current Position
 
-Phase: 16 of 16 (AI Assigned Staff Workspaces)
-Plan: 6 of 6 in current phase — Plan 06 Task 1 complete (checkpoint:human-verify pending)
-Status: Executing — awaiting human verification checkpoint
-Last activity: 2026-03-02 - Completed 16-06 Task 1: StaffWorkspace three-way routing (AI/Human/Disabled), AIRoleWorkspace full wiring with ChannelFeed + ProductReviewPanel, Pause/Resume wired, canControl access gates
+Phase: 17 of 17 (Deployment CI/CD & Hetzner)
+Plan: 2 of 5 in current phase — Plan 02 complete
+Status: Executing — Phase 17 Plan 02 complete
+Last activity: 2026-03-03 - Completed 17-02: GitHub Actions CI workflow (parallel pnpm jobs) and Deploy workflow (GHCR image push + SSH deploy with health check)
 
-Progress: ████████████████████████ 141 plans complete
+Progress: ████████████████████████ 143 plans complete
 
 ## Performance Metrics
 
@@ -82,6 +82,7 @@ Progress: ███████████████████████�
 | Phase 16 P05 | 9 | 2 tasks | 10 files |
 | Phase 16-ai-assigned-staff-workspaces P04 | 6 | 2 tasks | 7 files |
 | Phase 16-ai-assigned-staff-workspaces P06 | 5 | 1 task (checkpoint pending) | 3 files |
+| Phase 17-deployment-cicd-hetzner P02 | 7 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,13 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 17 Plan 02 (GitHub Actions CI/CD Workflows):**
+- Two-workflow split: ci.yml validates on PRs and master push; deploy.yml builds+pushes+deploys on master push only
+- IMAGE_PREFIX hardcoded as ghcr.io/vitalpointai/bastion (lowercase per GHCR requirement, not derived from github.repository)
+- VITE_* vars passed as Docker build-args to bake into Vite static bundle at build time
+- Health check uses docker compose exec -T (not curl localhost) because backend port 3001 not exposed to host in production
+- git pull origin master in deploy step ensures docker-compose.prod.yml and SQL files stay current on server
 
 **Phase 16 Plan 06 (StaffWorkspace Three-Way Routing + AIRoleWorkspace Full Wiring):**
 - Used IIFE pattern (() => { ... })() in JSX for three-way routing clarity instead of nested ternaries
@@ -372,6 +380,7 @@ Recent decisions affecting current work:
 - Phase 1.4 inserted after Phase 1.3: Navigation Architecture Restructure - Restructure navigation to doctrine-aligned Decide/Design/Campaign/Monitor + Admin
 - Phase 14 added: Friendly & Adversary IPB Complete Cycle - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations
 - Phase 15 added: JPP Staff Organization Workspaces - Role-based exercise workspaces (Commander, J1–J35) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and strategic direction import
+- Phase 17 added: Deployment - CI/CD Pipeline & Hetzner Server - GitHub Actions CI/CD pipeline deploying Bastion to Hetzner, TEE-aware component separation documented for production, single-server dev deployment
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
