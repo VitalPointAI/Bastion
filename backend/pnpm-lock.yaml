@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@vitalpoint/near-phantom-auth':
+    hash: 8753883ebf372fbd636ae9fb27655175cf0aca5e3ab1290b8c64a97c4f7b5070
+    path: patches/@vitalpoint__near-phantom-auth.patch
+
 importers:
 
   .:
@@ -67,7 +72,7 @@ importers:
         version: 6.0.0(expo@54.0.31(@babel/core@7.28.6)(react-native@0.83.1(@babel/core@7.28.6)(react@19.2.3))(react@19.2.3))(msrcrypto@1.5.8)(react-native@0.83.1(@babel/core@7.28.6)(react@19.2.3))(web-streams-polyfill@3.3.3)
       '@vitalpoint/near-phantom-auth':
         specifier: 0.4.2
-        version: 0.4.2(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1))(express@5.2.1)(react@19.2.3)
+        version: 0.4.2(patch_hash=8753883ebf372fbd636ae9fb27655175cf0aca5e3ab1290b8c64a97c4f7b5070)(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1))(express@5.2.1)(react@19.2.3)
       axios:
         specifier: ^1.13.2
         version: 1.13.2
@@ -8765,7 +8770,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@vitalpoint/near-phantom-auth@0.4.2(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1))(express@5.2.1)(react@19.2.3)':
+  '@vitalpoint/near-phantom-auth@0.4.2(patch_hash=8753883ebf372fbd636ae9fb27655175cf0aca5e3ab1290b8c64a97c4f7b5070)(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1))(express@5.2.1)(react@19.2.3)':
     dependencies:
       '@near-js/crypto': 2.5.1(@near-js/types@2.5.1)(@near-js/utils@2.5.1(@near-js/types@2.5.1))
       '@near-js/keystores': 0.2.2
