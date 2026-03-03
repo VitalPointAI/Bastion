@@ -2,7 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
-import authRouter from './api/auth.js';
+import { createAnonAuth } from '@vitalpoint/near-phantom-auth/server';
+import { dropLegacyAuthTables } from './auth/migration-drop-legacy.js';
 import encryptionRouter from './api/encryption.js';
 import documentsRouter from './api/documents.js';
 import edgeSyncRouter from './api/edge-sync.js';
@@ -73,16 +74,44 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-DID', 'Accept'],
+  allowedHeaders: ['Content-Type', 'X-DID', 'Accept'],
 }));
 app.use(express.json());
+
+// Initialize @vitalpoint/near-phantom-auth
+// auth.initialize() is called in the server startup sequence (see server.listen below)
+const auth = createAnonAuth({
+  nearNetwork: (process.env.NEAR_NETWORK as 'testnet' | 'mainnet') || 'testnet',
+  sessionSecret: process.env.SESSION_SECRET!,
+  database: {
+    type: 'postgres',
+    connectionString: process.env.DATABASE_URL!,
+  },
+  rp: {
+    name: 'Bastion',
+    id: process.env.NODE_ENV === 'production'
+      ? new URL(process.env.APP_URL || 'https://localhost').hostname
+      : 'localhost',
+    origin: process.env.NODE_ENV === 'production'
+      ? (process.env.APP_URL || 'https://localhost')
+      : 'http://localhost:5173',
+  },
+  recovery: {
+    wallet: false,
+    ipfs: {
+      pinningService: 'pinata',
+      apiKey: process.env.PINATA_API_KEY,
+      apiSecret: process.env.PINATA_API_SECRET,
+    },
+  },
+});
 
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
 // Mount API routes
-app.use('/api/auth', authRouter);
+app.use('/api/auth', auth.router);
 app.use('/api/encryption', encryptionRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/edge', edgeSyncRouter);
@@ -123,6 +152,21 @@ console.log('Collaboration WebSocket server mounted at /ws/collab');
 server.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+
+  // Drop legacy auth tables (idempotent, must run before auth.initialize())
+  try {
+    await dropLegacyAuthTables();
+  } catch (error) {
+    console.error('Failed to drop legacy auth tables:', error);
+  }
+
+  // Initialize @vitalpoint/near-phantom-auth (creates anon_* schema tables)
+  try {
+    await auth.initialize();
+    console.log('Anonymous auth initialized');
+  } catch (error) {
+    console.error('Failed to initialize anonymous auth:', error);
+  }
 
   // Start blockchain sync workers
   try {

@@ -11,7 +11,7 @@
  */
 
 import { getPool } from '../lib/database.js';
-import type { DeploymentConfig } from './types.js';
+import type { DeploymentConfig } from './deployment-types.js';
 
 /**
  * Initialize platform settings table
