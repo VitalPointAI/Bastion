@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-03T20:08:00.000Z"
+last_updated: "2026-03-03T20:27:00.000Z"
 progress:
   total_phases: 30
   completed_phases: 18
   total_plans: 163
-  completed_plans: 177
+  completed_plans: 178
 ---
 
 # Project State
@@ -19,14 +19,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 18 complete — all legacy auth code deleted; codebase now uses only @vitalpoint/near-phantom-auth package
+**Current focus:** Phase 18 verification complete — automated checks all pass; awaiting human e2e browser testing (Task 2 checkpoint)
 
 ## Current Position
 
-Phase: 18 of 18 (Replace Current Login with @vitalpoint/near-phantom-auth) - COMPLETE
-Plan: 5 of 5 in current phase — 18-05 complete; phase 18 done
-Status: Phase complete — all plans executed
-Last activity: 2026-03-03 - Phase 18 Plan 05 complete: deleted 12 legacy backend auth files, 10 legacy frontend files; removed @simplewebauthn/server, otplib from backend and @privy-io, @simplewebauthn/browser from frontend; both projects build cleanly
+Phase: 18 of 18 (Replace Current Login with @vitalpoint/near-phantom-auth) - COMPLETE (verification)
+Plan: 6 of 6 in current phase — 18-06 complete (Task 1 automated checks pass; Task 2 human checkpoint pending)
+Status: Phase complete — all plans executed; human e2e verification checkpoint presented
+Last activity: 2026-03-03 - Phase 18 Plan 06 complete: automated verification — both builds clean, 48 backend tests pass, 1 security test passes, all auth patterns confirmed; human e2e checkpoint presented for registration/login/logout flows
 
 Progress: ████████████████████████ 177 plans complete
 
@@ -89,6 +89,7 @@ Progress: ███████████████████████�
 | Phase 18 P03 | 20 | 2 tasks | 5 files |
 | Phase 18 P04 | 4 | 2 tasks | 5 files |
 | Phase 18 P05 | 9 | 2 tasks | 23 files deleted + 2 package.json |
+| Phase 18 P06 | 10 | 1 task (Task 2 is human checkpoint) | 0 files (verification only) |
 
 ## Accumulated Context
 
@@ -102,6 +103,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 18 Plan 06 (End-to-End Verification):**
+- Legacy grep matches for Authorization Bearer in IPFS (Pinata JWT) and LLM API calls are correct — external service API keys, not user session tokens
+- LoginPage.tsx exists but is the new package-based version using useAnonAuth() — replaced not deleted
+- Both builds clean, 48 backend tests pass, 1 security test passes; human e2e verification presented as checkpoint
 
 **Phase 18 Plan 05 (Legacy Auth Code Deletion):**
 - prf-did-integration.ts kept — still imported by backend/src/api/identity.ts for DID operations; not legacy auth but active identity infrastructure
