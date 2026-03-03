@@ -1,16 +1,18 @@
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { AnonAuthProvider } from '@vitalpoint/near-phantom-auth/client'
 import { AuthWrapper } from './components/AuthWrapper'
 import { UserStatusBar } from './components/UserStatusBar'
 import { AdminDashboard } from './components/admin'
 import { LoginPage } from './components/LoginPage'
 import { RegisterPage } from './components/RegisterPage'
-import { MagicLinkVerify } from './components/MagicLinkVerify'
 import { DecideTab } from './components/tabs/DecideTab'
 import { DesignTab } from './components/tabs/DesignTab'
 import { CampaignTab } from './components/tabs/CampaignTab'
 import { MonitorTab } from './components/tabs/MonitorTab'
 import { ExerciseDashboard } from './components/exercise'
 import './App.css'
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
 
 const MAIN_TABS = ['decide', 'design', 'campaign', 'monitor', 'exercise'] as const;
 type MainTab = typeof MAIN_TABS[number];
@@ -105,55 +107,56 @@ function AppContent() {
 
 function App() {
   return (
-    <Routes>
-      {/* Auth routes - outside AuthWrapper */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/auth/verify" element={<MagicLinkVerify />} />
-      <Route path="/auth/recover" element={<LoginPage />} />
+    // AnonAuthProvider at top level — shared by auth pages and protected routes
+    <AnonAuthProvider apiUrl={`${BACKEND_URL}/api/auth`}>
+      <Routes>
+        {/* Auth routes - outside AuthWrapper guard but inside AnonAuthProvider */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-      {/* Legacy redirects - fire before auth check */}
-      <Route path="/" element={<Navigate to="/monitor" replace />} />
-      <Route path="/governance" element={<Navigate to="/decide" replace />} />
-      <Route path="/strategic" element={<Navigate to="/design" replace />} />
-      <Route path="/validity" element={<Navigate to="/monitor" replace />} />
-      <Route path="/missions" element={<Navigate to="/campaign" replace />} />
+        {/* Legacy redirects - fire before auth check */}
+        <Route path="/" element={<Navigate to="/monitor" replace />} />
+        <Route path="/governance" element={<Navigate to="/decide" replace />} />
+        <Route path="/strategic" element={<Navigate to="/design" replace />} />
+        <Route path="/validity" element={<Navigate to="/monitor" replace />} />
+        <Route path="/missions" element={<Navigate to="/campaign" replace />} />
 
-      {/* Main app routes - protected by AuthWrapper */}
-      <Route path="/decide" element={
-        <AuthWrapper>
-          <AppContent />
-        </AuthWrapper>
-      } />
-      <Route path="/design" element={
-        <AuthWrapper>
-          <AppContent />
-        </AuthWrapper>
-      } />
-      <Route path="/campaign" element={
-        <AuthWrapper>
-          <AppContent />
-        </AuthWrapper>
-      } />
-      <Route path="/monitor" element={
-        <AuthWrapper>
-          <AppContent />
-        </AuthWrapper>
-      } />
-      <Route path="/exercise" element={
-        <AuthWrapper>
-          <AppContent />
-        </AuthWrapper>
-      } />
-      <Route path="/admin/*" element={
-        <AuthWrapper>
-          <AppContent />
-        </AuthWrapper>
-      } />
+        {/* Main app routes - protected by AuthWrapper */}
+        <Route path="/decide" element={
+          <AuthWrapper>
+            <AppContent />
+          </AuthWrapper>
+        } />
+        <Route path="/design" element={
+          <AuthWrapper>
+            <AppContent />
+          </AuthWrapper>
+        } />
+        <Route path="/campaign" element={
+          <AuthWrapper>
+            <AppContent />
+          </AuthWrapper>
+        } />
+        <Route path="/monitor" element={
+          <AuthWrapper>
+            <AppContent />
+          </AuthWrapper>
+        } />
+        <Route path="/exercise" element={
+          <AuthWrapper>
+            <AppContent />
+          </AuthWrapper>
+        } />
+        <Route path="/admin/*" element={
+          <AuthWrapper>
+            <AppContent />
+          </AuthWrapper>
+        } />
 
-      {/* 404 catch-all - must be last */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        {/* 404 catch-all - must be last */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AnonAuthProvider>
   )
 }
 

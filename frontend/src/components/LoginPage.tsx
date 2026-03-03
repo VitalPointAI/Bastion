@@ -1,178 +1,83 @@
 /**
- * LoginPage - Unified login with passkey and magic link options
+ * LoginPage - Passkey authentication using @vitalpoint/near-phantom-auth
+ *
+ * Replaces the previous magic-link/passkey login page.
+ * Uses useAnonAuth() from the package (provided by AnonAuthProvider in App.tsx).
+ * Magic link and TOTP removed — passkey-only authentication.
  */
 
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authenticateWithPasskey, isPasskeySupported } from '../lib/passkey';
-import { authService } from '../lib/auth-service';
+import { useAnonAuth } from '@vitalpoint/near-phantom-auth/client';
 import './LoginPage.css';
-
-type LoginMode = 'choose' | 'passkey' | 'magic-link';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<LoginMode>('choose');
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const [passkeySupported, setPasskeySupported] = useState<boolean | null>(null);
+  const {
+    isLoading,
+    isAuthenticated,
+    login,
+    error,
+    clearError,
+    webAuthnSupported,
+  } = useAnonAuth();
 
-  // Check passkey support on mount
-  useState(() => {
-    isPasskeySupported().then(setPasskeySupported);
-  });
+  // Already authenticated — redirect to app
+  if (isAuthenticated) {
+    navigate('/', { replace: true });
+    return null;
+  }
 
-  const handlePasskeyLogin = async () => {
-    setError(null);
-    setLoading(true);
-
-    const result = await authenticateWithPasskey(email || undefined);
-
-    setLoading(false);
-
-    if (result.success) {
-      // Redirect to app
-      navigate('/');
-    } else {
-      setError(result.error || 'Authentication failed');
-    }
+  const handleLogin = async () => {
+    clearError();
+    await login();
+    // On success the session cookie is set; isAuthenticated will become true
+    // AuthWrapper redirect will navigate to the protected page
   };
 
-  const handleMagicLinkRequest = async () => {
-    if (!email) {
-      setError('Please enter your email');
-      return;
-    }
-
-    setError(null);
-    setLoading(true);
-
-    try {
-      const result = await authService.sendMagicLink(email);
-      setMagicLinkSent(true);
-
-      // In dev mode, show token
-      if (result.devToken) {
-        console.log('DEV: Magic link token:', result.devToken);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to send magic link');
-    }
-
-    setLoading(false);
-  };
+  if (!webAuthnSupported) {
+    return (
+      <div className="login-page">
+        <div className="login-card">
+          <h1>BASTION</h1>
+          <p className="subtitle">Secure Command &amp; Control</p>
+          <div className="error-message">
+            Your browser does not support passkeys (WebAuthn).
+            Please use a modern browser such as Chrome, Firefox, or Safari.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">
       <div className="login-card">
         <h1>BASTION</h1>
-        <p className="subtitle">Secure Command & Control</p>
+        <p className="subtitle">Secure Command &amp; Control</p>
 
         {error && (
-          <div className="error-message">{error}</div>
-        )}
-
-        {mode === 'choose' && (
-          <div className="login-options">
-            {passkeySupported !== false && (
-              <button
-                className="login-button primary"
-                onClick={() => setMode('passkey')}
-              >
-                <span className="icon">🔐</span>
-                Sign in with Passkey
-              </button>
-            )}
-
-            <button
-              className="login-button secondary"
-              onClick={() => setMode('magic-link')}
-            >
-              <span className="icon">📧</span>
-              Sign in with Email
-            </button>
-
-            <p className="new-user-link">
-              New user? <a href="/register">Create an account</a>
-            </p>
-          </div>
-        )}
-
-        {mode === 'passkey' && (
-          <div className="passkey-login">
-            <input
-              type="email"
-              placeholder="Email (optional for discoverable credentials)"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="email-input"
-            />
-
-            <button
-              className="login-button primary"
-              onClick={handlePasskeyLogin}
-              disabled={loading}
-            >
-              {loading ? 'Authenticating...' : 'Continue with Passkey'}
-            </button>
-
-            <button
-              className="back-link"
-              onClick={() => setMode('choose')}
-            >
-              ← Back to options
+          <div className="error-message">
+            {error}{' '}
+            <button className="back-link" onClick={clearError}>
+              Dismiss
             </button>
           </div>
         )}
 
-        {mode === 'magic-link' && !magicLinkSent && (
-          <div className="magic-link-login">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="email-input"
-              required
-            />
+        <div className="login-options">
+          <button
+            className="login-button primary"
+            onClick={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Authenticating...' : 'Sign in with Passkey'}
+          </button>
 
-            <button
-              className="login-button primary"
-              onClick={handleMagicLinkRequest}
-              disabled={loading || !email}
-            >
-              {loading ? 'Sending...' : 'Send Magic Link'}
-            </button>
-
-            <button
-              className="back-link"
-              onClick={() => setMode('choose')}
-            >
-              ← Back to options
-            </button>
-          </div>
-        )}
-
-        {mode === 'magic-link' && magicLinkSent && (
-          <div className="magic-link-sent">
-            <div className="success-icon">✓</div>
-            <h2>Check your email</h2>
-            <p>We sent a login link to <strong>{email}</strong></p>
-            <p className="hint">The link expires in 15 minutes.</p>
-
-            <button
-              className="back-link"
-              onClick={() => {
-                setMagicLinkSent(false);
-                setMode('choose');
-              }}
-            >
-              ← Try a different method
-            </button>
-          </div>
-        )}
+          <p className="new-user-link">
+            New user?{' '}
+            <a href="/register">Create an account</a>
+          </p>
+        </div>
       </div>
     </div>
   );
