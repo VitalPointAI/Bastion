@@ -32,7 +32,7 @@ export interface UseStaffNotificationsResult {
 
 const WS_BASE_URL =
   typeof window !== 'undefined'
-    ? `ws://${window.location.hostname}:3001/ws/messages`
+    ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/messages`
     : 'ws://localhost:3001/ws/messages';
 
 const RECONNECT_BASE_MS = 1000;
