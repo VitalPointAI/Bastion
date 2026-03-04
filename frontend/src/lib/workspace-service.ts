@@ -353,11 +353,11 @@ class WorkspaceService {
     if (options?.offset !== undefined) params.append('offset', String(options.offset));
     const queryString = params.toString() ? `?${params.toString()}` : '';
 
-    const response = await this.fetchJSON<{ activity: WorkspaceActivityItem[] }>(
+    const response = await this.fetchJSON<{ activities: WorkspaceActivityItem[] }>(
       `${this.baseUrl}/${workspaceId}/activity${queryString}`,
       { headers: { 'X-DID': userDID } }
     );
-    return response.activity;
+    return response.activities;
   }
 
   // ─── Compartments ────────────────────────────────────────────────────────────
@@ -451,7 +451,7 @@ class WorkspaceService {
     lastSeenMap: Record<string, string>,
     userDID: string
   ): Promise<Record<string, number>> {
-    return this.fetchJSON<Record<string, number>>(
+    const response = await this.fetchJSON<{ counts: Record<string, number> }>(
       `${this.baseUrl}/notifications/counts`,
       {
         method: 'POST',
@@ -459,6 +459,7 @@ class WorkspaceService {
         body: JSON.stringify({ lastSeenMap }),
       }
     );
+    return response.counts;
   }
 }
 
