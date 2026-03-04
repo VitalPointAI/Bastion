@@ -154,12 +154,12 @@ function AppContent() {
             <ExerciseDashboard />
           ) : isWorkspace ? (
             <Routes>
-              <Route path="/workspace/invite/:token" element={<InviteAcceptPage />} />
-              <Route path="/workspace/:workspaceId" element={<WorkspaceDashboard />} />
-              <Route path="/workspace/:workspaceId/members" element={<WorkspaceMemberManagerPage />} />
-              <Route path="/workspace/:workspaceId/directory" element={<MemberDirectoryPage />} />
-              <Route path="/workspace/:workspaceId/invite" element={<WorkspacePlaceholder label="Invite" />} />
-              <Route path="/workspace/:workspaceId/settings" element={<WorkspacePlaceholder label="Settings" />} />
+              <Route path="invite/:token" element={<InviteAcceptPage />} />
+              <Route path=":workspaceId" element={<WorkspaceDashboard />} />
+              <Route path=":workspaceId/members" element={<WorkspaceMemberManagerPage />} />
+              <Route path=":workspaceId/directory" element={<MemberDirectoryPage />} />
+              <Route path=":workspaceId/invite" element={<WorkspacePlaceholder label="Invite" />} />
+              <Route path=":workspaceId/settings" element={<WorkspacePlaceholder label="Settings" />} />
             </Routes>
           ) : (
             <>
