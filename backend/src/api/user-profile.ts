@@ -9,6 +9,14 @@ import { Router, type Request, type Response } from 'express';
 import { getPool } from '../lib/database.js';
 import { requireAuth } from '../auth/auth-instance.js';
 import { getPlatformSettingsStore } from '../auth/platform-settings-store.js';
+import { issueUserProfile } from '../credentials/credential-service.js';
+import { deriveUserSecretFromAccount } from '../near/user-secret.js';
+import { anchorCredentialOnChain } from '../near/tx-signer.js';
+import { utf8ToBytes, hexToBytes } from '@noble/hashes/utils.js';
+import { chacha20poly1305 } from '@noble/ciphers/chacha.js';
+import { randomBytes } from 'node:crypto';
+import { hkdf } from '@noble/hashes/hkdf.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 
 const router = Router();
 
@@ -27,9 +35,19 @@ async function ensureTable(): Promise<void> {
       near_account_id TEXT UNIQUE NOT NULL,
       display_name TEXT NOT NULL,
       org_email TEXT,
+      profile_credential JSONB,
+      credential_hash TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
+  `);
+  // Add credential columns if table already existed without them
+  await pool.query(`
+    DO $$ BEGIN
+      ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS profile_credential JSONB;
+      ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS credential_hash TEXT;
+    EXCEPTION WHEN others THEN NULL;
+    END $$;
   `);
   tableInitialized = true;
 }
@@ -104,7 +122,10 @@ router.get('/registration-requirements', async (_req: Request, res: Response) =>
 
 /**
  * GET / — Get current user's profile.
- * Returns { displayName, orgEmail } or 404.
+ * Returns { displayName, orgEmail, credential?, credentialHash? } or 404.
+ *
+ * The credential is the canonical W3C VerifiableCredential record.
+ * displayName/orgEmail are convenience fields derived from the credential.
  */
 router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -113,7 +134,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     const pool = getPool();
 
     const result = await pool.query(
-      'SELECT display_name, org_email FROM user_profiles WHERE near_account_id = $1',
+      'SELECT display_name, org_email, profile_credential, credential_hash FROM user_profiles WHERE near_account_id = $1',
       [nearAccountId]
     );
 
@@ -126,6 +147,8 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     res.json({
       displayName: row.display_name,
       orgEmail: row.org_email,
+      credential: row.profile_credential || null,
+      credentialHash: row.credential_hash || null,
     });
   } catch (error) {
     console.error('[user-profile] GET error:', error);
@@ -136,6 +159,11 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
 /**
  * POST / — Create or update user profile (upsert).
  * Body: { displayName: string, orgEmail?: string }
+ *
+ * Issues a W3C UserProfileCredential (self-issued by user's DID) and stores
+ * both the credential and flat fields. The credential is the canonical record;
+ * flat columns are a convenience cache. Credential hash is ready for on-chain
+ * anchoring via the CredentialRegistry contract.
  */
 router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -148,19 +176,71 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       return;
     }
 
+    const trimmedName = displayName.trim();
+    const trimmedEmail = orgEmail?.trim() || null;
+
+    // Build the user's DID
+    const userDid = `did:near:${nearAccountId}`;
+
+    // Issue a UserProfileCredential — self-issued (user attests to own profile)
+    const { credential, credentialHash } = await issueUserProfile(userDid, {
+      id: userDid,
+      displayName: trimmedName,
+      ...(trimmedEmail ? { orgEmail: trimmedEmail } : {}),
+    });
+
     const pool = getPool();
 
     await pool.query(
-      `INSERT INTO user_profiles (near_account_id, display_name, org_email, updated_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO user_profiles (near_account_id, display_name, org_email, profile_credential, credential_hash, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
        ON CONFLICT (near_account_id)
-       DO UPDATE SET display_name = $2, org_email = $3, updated_at = NOW()`,
-      [nearAccountId, displayName.trim(), orgEmail?.trim() || null]
+       DO UPDATE SET display_name = $2, org_email = $3, profile_credential = $4, credential_hash = $5, updated_at = NOW()`,
+      [nearAccountId, trimmedName, trimmedEmail, JSON.stringify(credential), credentialHash]
     );
 
+    // Anchor credential on-chain (non-blocking — don't fail the profile save if anchoring fails)
+    // The credential hash is the canonical commitment; on-chain anchor provides tamper evidence.
+    let anchorTxHash: string | undefined;
+    try {
+      const userSecret = deriveUserSecretFromAccount(nearAccountId);
+      const credentialHashBytes = hexToBytes(credentialHash);
+
+      // Encrypt credential metadata (type + issuer + subject DID) for on-chain storage
+      const metadata = JSON.stringify({
+        type: 'UserProfileCredential',
+        issuer: userDid,
+        subject: userDid,
+      });
+      const metadataBytes = utf8ToBytes(metadata);
+      const encNonce = randomBytes(24);
+      const encKey = hkdf(sha256, userSecret, utf8ToBytes('credential-encryption'), utf8ToBytes('metadata'), 32);
+      const cipher = chacha20poly1305(encKey, encNonce);
+      const encryptedMetadata = cipher.encrypt(metadataBytes);
+
+      const result = await anchorCredentialOnChain(
+        userSecret,
+        credentialHashBytes,
+        encryptedMetadata,
+        encNonce,
+      );
+
+      if (result.success) {
+        anchorTxHash = result.txHash;
+        console.log(`[user-profile] Credential anchored on-chain (tx: ${anchorTxHash})`);
+      } else {
+        console.warn(`[user-profile] On-chain anchoring failed (will retry): ${result.error}`);
+      }
+    } catch (anchorError) {
+      console.warn('[user-profile] On-chain anchoring error (non-fatal):', anchorError);
+    }
+
     res.json({
-      displayName: displayName.trim(),
-      orgEmail: orgEmail?.trim() || null,
+      displayName: trimmedName,
+      orgEmail: trimmedEmail,
+      credential,
+      credentialHash,
+      anchorTxHash: anchorTxHash || null,
     });
   } catch (error) {
     console.error('[user-profile] POST error:', error);

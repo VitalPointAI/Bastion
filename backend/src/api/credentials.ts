@@ -5,6 +5,7 @@ import {
   issueRoleAssignment,
   issueCoalitionMembership,
   issueDerivativeData,
+  issueUserProfile,
   hashCredential,
   verifyCredentialHash,
   VerifiableCredential,
@@ -15,6 +16,7 @@ import {
   RoleAssignmentCredentialSubject,
   CoalitionMembershipCredentialSubject,
   DerivativeDataCredentialSubject,
+  UserProfileCredentialSubject,
   CREDENTIAL_TYPES,
 } from '../credentials/schemas.js';
 
@@ -229,6 +231,38 @@ router.post('/hash', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/credentials/issue/user-profile
+ * Issue a user profile credential (self-issued)
+ */
+router.post('/issue/user-profile', async (req: Request, res: Response) => {
+  try {
+    const { issuerDid, subject } = req.body as {
+      issuerDid: string;
+      subject: UserProfileCredentialSubject;
+    };
+
+    if (!issuerDid || !subject) {
+      return res.status(400).json({ error: 'issuerDid and subject required' });
+    }
+
+    if (!subject.id || !subject.displayName) {
+      return res.status(400).json({ error: 'subject must include id and displayName' });
+    }
+
+    const result = await issueUserProfile(issuerDid, subject);
+
+    res.json({
+      success: true,
+      credential: result.credential,
+      credentialHash: result.credentialHash,
+    });
+  } catch (error) {
+    console.error('Credential issuance error:', error);
+    res.status(500).json({ error: 'Failed to issue credential' });
+  }
+});
+
+/**
  * GET /api/credentials/types
  * List available credential types
  */
@@ -241,6 +275,7 @@ router.get('/types', (req: Request, res: Response) => {
       [CREDENTIAL_TYPES.ROLE_ASSIGNMENT]: 'Role within organization or mission',
       [CREDENTIAL_TYPES.COALITION_MEMBERSHIP]: 'Coalition membership and information sharing rules',
       [CREDENTIAL_TYPES.DERIVATIVE_DATA]: 'Provenance for derived/redacted data objects',
+      [CREDENTIAL_TYPES.USER_PROFILE]: 'User profile (display name, org email)',
     }
   });
 });

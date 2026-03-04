@@ -1,6 +1,7 @@
 import { DIDDocument, EntityType, EncryptedDIDEntry } from './types.js';
 import { deriveDIDBlindedKey, deriveUserSecret, blindedKeyToHex } from './blinded-keys.js';
 import { encryptDIDDocument, decryptDIDDocument, deriveEncryptionKey } from './did-encryption.js';
+import { storeDIDOnChain } from '../near/tx-signer.js';
 
 const NEAR_RPC_URL = process.env.NEAR_RPC_URL || 'https://rpc.testnet.fastnear.com';
 const DID_CONTRACT_ID = process.env.DID_CONTRACT_ID || 'did-registry.testnet';
@@ -19,7 +20,11 @@ export class DIDService {
 
   /**
    * Create and store a new DID
-   * Handles encryption and blinded key derivation
+   * Handles encryption, blinded key derivation, and on-chain storage.
+   *
+   * The DID is stored on-chain via a transaction signed by the user's
+   * derived signing account (from tx-signer). This gives a proper audit trail:
+   * the on-chain record shows the user's own key signed the store_did call.
    */
   async createDID(
     accountId: string,
@@ -58,14 +63,23 @@ export class DIDService {
       encryptionKey
     );
 
-    // Store on-chain (via NEAR RPC call)
-    await this.storeEncryptedDID(
+    // Store on-chain via user-signed transaction
+    // The nonce field sent to the contract is the document nonce (entityTypeNonce is kept for local decryption)
+    const chainResult = await storeDIDOnChain(
+      userSecret,
       blindedKey,
       encryptedDocument,
       encryptedEntityType,
       nonce,
-      entityTypeNonce
     );
+
+    if (!chainResult.success) {
+      // Log but don't fail — DID creation continues with local state
+      // On-chain storage can be retried on next login
+      console.warn(`[did-service] On-chain DID storage failed (will retry): ${chainResult.error}`);
+    } else {
+      console.log(`[did-service] DID stored on-chain: ${did} (tx: ${chainResult.txHash})`);
+    }
 
     return { did, blindedKey: blindedKeyToHex(blindedKey) };
   }
@@ -108,21 +122,7 @@ export class DIDService {
     return this.checkDIDActive(blindedKey);
   }
 
-  // Private: NEAR RPC calls
-
-  private async storeEncryptedDID(
-    blindedKey: Uint8Array,
-    encryptedDocument: Uint8Array,
-    encryptedEntityType: Uint8Array,
-    nonce: Uint8Array,
-    entityTypeNonce: Uint8Array
-  ): Promise<void> {
-    // This will be a signed transaction to the contract
-    // For now, structure the call - actual signing happens via wallet
-    console.log('Store DID - blinded key length:', blindedKey.length);
-    console.log('Store DID - nonces:', nonce.length, entityTypeNonce.length);
-    // Implementation requires wallet integration for signing
-  }
+  // Private: NEAR RPC calls (read operations — no signing needed)
 
   private async getEncryptedDID(blindedKey: Uint8Array): Promise<EncryptedDIDEntry | null> {
     try {

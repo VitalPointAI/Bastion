@@ -92,6 +92,18 @@ export interface DerivativeDataCredentialSubject {
   redactionSummary?: string;  // Human-readable description of what was removed
 }
 
+/**
+ * User Profile Credential
+ * Attests to a human user's profile information (self-issued)
+ * Canonical source of truth for display name, org email, etc.
+ */
+export interface UserProfileCredentialSubject {
+  id: string;  // Subject DID (did:near:{accountId})
+  displayName: string;
+  orgEmail?: string;
+  // Extensible: future fields like security classification go here
+}
+
 // Credential type string constants
 export const CREDENTIAL_TYPES = {
   SECURITY_CLEARANCE: 'SecurityClearanceCredential',
@@ -99,4 +111,5 @@ export const CREDENTIAL_TYPES = {
   ROLE_ASSIGNMENT: 'RoleAssignmentCredential',
   COALITION_MEMBERSHIP: 'CoalitionMembershipCredential',
   DERIVATIVE_DATA: 'DerivativeDataCredential',
+  USER_PROFILE: 'UserProfileCredential',
 } as const;

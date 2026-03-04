@@ -7,6 +7,9 @@ import {
   resolveDIDFromPRF,
   normalizePRFOutput
 } from '../auth/prf-did-integration.js';
+import { deriveUserSecretFromAccount } from '../near/user-secret.js';
+import { getSigningAccountId, isSigningAccountFunded } from '../near/tx-signer.js';
+import { getFundingService } from '../auth/funding-service.js';
 
 const router = Router();
 const didService = getDIDService();
@@ -341,27 +344,37 @@ router.post('/register', async (req: Request, res: Response) => {
       return;
     }
 
-    // For automatic DID creation, derive a deterministic secret from account ID
-    // In production, this would come from secure key management (TEE/MPC)
-    const { hkdf } = await import('@noble/hashes/hkdf.js');
-    const { sha256 } = await import('@noble/hashes/sha2.js');
-    const { utf8ToBytes } = await import('@noble/hashes/utils.js');
-
     // Derive user secret deterministically from account ID
-    // This ensures the same account always gets the same DID encryption key
-    const salt = utf8ToBytes('bastion-did-v1');
-    const info = utf8ToBytes(`did:near:${accountId}`);
-    const ikm = utf8ToBytes(accountId + ':' + (process.env.DID_SECRET_SEED || 'dev-seed'));
-    const userSecret = hkdf(sha256, ikm, salt, info, 32);
+    // This ensures the same account always gets the same DID encryption + signing keys
+    const userSecret = deriveUserSecretFromAccount(accountId);
 
     // Generate a placeholder public key (in production, from user's actual key)
     const publicKeyBase58 = 'placeholder-' + accountId.slice(0, 16);
+
+    // Fund the user's signing account (implicit account derived from DID secret)
+    // so it has gas for on-chain DID storage and credential anchoring
+    const signingAccountId = getSigningAccountId(userSecret);
+    const alreadyFunded = await isSigningAccountFunded(userSecret);
+    if (!alreadyFunded) {
+      const fundingService = getFundingService();
+      if (fundingService.isEnabled()) {
+        const fundResult = await fundingService.fundAccount(signingAccountId);
+        if (fundResult.success) {
+          console.log(`[identity] Signing account funded: ${signingAccountId}`);
+        } else {
+          console.warn(`[identity] Signing account funding failed: ${fundResult.error}`);
+        }
+      } else {
+        console.warn(`[identity] Funding disabled — signing account ${signingAccountId} unfunded`);
+      }
+    }
 
     const result = await didService.createDID(accountId, entityType, userSecret, publicKeyBase58);
 
     res.json({
       success: true,
       did: result.did,
+      signingAccountId,
       message: 'DID registered successfully'
     });
   } catch (error: any) {

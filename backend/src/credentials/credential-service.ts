@@ -8,6 +8,7 @@ import {
   RoleAssignmentCredentialSubject,
   CoalitionMembershipCredentialSubject,
   DerivativeDataCredentialSubject,
+  UserProfileCredentialSubject,
 } from './schemas.js';
 
 export interface VerifiableCredential {
@@ -119,6 +120,27 @@ export async function issueDerivativeData(
   const credential: VerifiableCredential = {
     '@context': CREDENTIAL_CONTEXTS,
     type: ['VerifiableCredential', CREDENTIAL_TYPES.DERIVATIVE_DATA],
+    issuer: issuerDid,
+    issuanceDate: new Date().toISOString(),
+    credentialSubject: subject,
+  };
+
+  const credentialHash = hashCredential(credential);
+
+  return { credential, credentialHash };
+}
+
+/**
+ * Issue a User Profile Credential
+ * Self-issued by the user to attest to their display name, org email, etc.
+ */
+export async function issueUserProfile(
+  issuerDid: string,
+  subject: UserProfileCredentialSubject
+): Promise<IssuanceResult> {
+  const credential: VerifiableCredential = {
+    '@context': CREDENTIAL_CONTEXTS,
+    type: ['VerifiableCredential', CREDENTIAL_TYPES.USER_PROFILE],
     issuer: issuerDid,
     issuanceDate: new Date().toISOString(),
     credentialSubject: subject,
