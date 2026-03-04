@@ -12,6 +12,7 @@ import { MonitorTab } from './components/tabs/MonitorTab'
 import { ExerciseDashboard } from './components/exercise'
 import { WorkspaceProvider } from './context/WorkspaceContext'
 import { WorkspaceSwitcher } from './components/workspace/WorkspaceSwitcher'
+import { InviteAcceptPage } from './components/workspace/InviteAcceptPage'
 import { useWorkspace } from './context/WorkspaceContext'
 import './App.css'
 
@@ -148,6 +149,7 @@ function AppContent() {
             <ExerciseDashboard />
           ) : isWorkspace ? (
             <Routes>
+              <Route path="/workspace/invite/:token" element={<InviteAcceptPage />} />
               <Route path="/workspace/:workspaceId" element={<WorkspaceDashboard />} />
               <Route path="/workspace/:workspaceId/members" element={<WorkspacePlaceholder label="Members" />} />
               <Route path="/workspace/:workspaceId/invite" element={<WorkspacePlaceholder label="Invite" />} />
