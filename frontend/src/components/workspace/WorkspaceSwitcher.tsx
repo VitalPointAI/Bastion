@@ -1,20 +1,21 @@
 /**
  * WorkspaceSwitcher
  *
- * Sidebar component for workspace navigation using the Slack/Discord pattern.
- * - Shows all workspaces user belongs to as icon tiles
- * - Active workspace has highlighted border
- * - Notification badges with count
- * - Primary workspace indicator
- * - Tooltip on hover with full name and type
- * - "+" button to create new workspace
+ * Compact dropdown button in the nav bar for workspace navigation.
+ * - Shows active workspace abbreviation as the trigger label
+ * - Dropdown lists all workspaces with type icons, badges, notifications
+ * - "+" button at bottom to create a new workspace
+ * - Closes on outside click
+ *
+ * Styled with WorkspaceSwitcher.css (plain CSS, no Tailwind).
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { CreateWorkspaceWizard } from './CreateWorkspaceWizard';
 import { NotificationBadge } from './NotificationBadge';
+import './WorkspaceSwitcher.css';
 
 // ─── Type label maps ─────────────────────────────────────────────────────────
 
@@ -24,10 +25,10 @@ const TYPE_LABEL: Record<string, string> = {
   Team: 'T',
 };
 
-const TYPE_COLOR: Record<string, string> = {
-  Organization: 'bg-blue-700',
-  Unit: 'bg-purple-700',
-  Team: 'bg-green-700',
+const TYPE_ICON_CLASS: Record<string, string> = {
+  Organization: 'org',
+  Unit: 'unit',
+  Team: 'team',
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -37,7 +38,22 @@ export function WorkspaceSwitcher() {
     useWorkspace();
   const navigate = useNavigate();
   const [showWizard, setShowWizard] = useState(false);
-  const [tooltip, setTooltip] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
 
   // Sort: primary workspace first, then alphabetically
   const sorted = [...memberships].sort((a, b) => {
@@ -49,6 +65,7 @@ export function WorkspaceSwitcher() {
   const handleWorkspaceClick = (workspaceId: string) => {
     setActiveWorkspace(workspaceId);
     navigate(`/workspace/${workspaceId}`);
+    setIsOpen(false);
   };
 
   const handleCreated = async (workspaceId: string) => {
@@ -58,7 +75,7 @@ export function WorkspaceSwitcher() {
     navigate(`/workspace/${workspaceId}`);
   };
 
-  // Abbreviation: first 2 characters of workspace name, uppercase
+  // Abbreviation: first letters of each word, max 2, uppercase
   const getAbbreviation = (name: string) =>
     name
       .trim()
@@ -68,115 +85,95 @@ export function WorkspaceSwitcher() {
       .slice(0, 2)
       .toUpperCase() || name.slice(0, 2).toUpperCase();
 
+  // Active workspace info for trigger label
+  const activeWs = memberships.find((m) => m.workspaceId === activeWorkspaceId);
+  const triggerAbbrev = activeWs ? getAbbreviation(activeWs.name) : 'WS';
+
+  // Total unread notifications across all non-active workspaces
+  const totalNotifs = sorted
+    .filter((ws) => ws.workspaceId !== activeWorkspaceId)
+    .reduce((sum, ws) => sum + (notificationCounts[ws.workspaceId] ?? 0), 0);
+
   return (
     <>
-      <aside
-        className="flex flex-col items-center gap-2 py-3 px-1 bg-gray-900 border-r border-gray-700"
-        style={{ width: '64px', minHeight: '100vh', flexShrink: 0 }}
-        aria-label="Workspace switcher"
-      >
-        {sorted.map((ws) => {
-          const isActive = ws.workspaceId === activeWorkspaceId;
-          const isPrimary = ws.workspaceId === primaryWorkspaceId;
-          const notifCount = notificationCounts[ws.workspaceId] ?? 0;
-          const typeColor = TYPE_COLOR[ws.workspaceType] ?? 'bg-gray-700';
-          const abbreviation = getAbbreviation(ws.name);
-
-          return (
-            <div key={ws.workspaceId} className="relative flex items-center" style={{ width: '48px' }}>
-              {/* Active indicator bar on left */}
-              {isActive && (
-                <div
-                  className="absolute bg-white rounded-r"
-                  style={{ left: '-4px', width: '4px', height: '32px' }}
-                />
-              )}
-
-              {/* Workspace icon */}
-              <button
-                onClick={() => handleWorkspaceClick(ws.workspaceId)}
-                onMouseEnter={() => setTooltip(ws.workspaceId)}
-                onMouseLeave={() => setTooltip(null)}
-                title={`${ws.name} (${ws.workspaceType})`}
-                className={[
-                  'relative flex items-center justify-center w-12 h-12 rounded-xl text-white text-sm font-bold transition-all duration-150',
-                  typeColor,
-                  isActive
-                    ? 'ring-2 ring-white ring-offset-1 ring-offset-gray-900'
-                    : 'hover:rounded-lg opacity-80 hover:opacity-100',
-                ].join(' ')}
-                style={{ cursor: 'pointer', border: 'none', outline: 'none' }}
-                aria-label={`Switch to ${ws.name}`}
-                aria-pressed={isActive}
-              >
-                {/* Type label (O/U/T) */}
-                <span className="text-xs font-bold">{abbreviation}</span>
-
-                {/* Workspace type badge */}
-                <span
-                  className="absolute bottom-0 right-0 text-xs leading-none bg-black bg-opacity-60 rounded text-white"
-                  style={{ fontSize: '8px', padding: '1px 2px' }}
-                >
-                  {TYPE_LABEL[ws.workspaceType] ?? '?'}
-                </span>
-
-                {/* Primary star indicator */}
-                {isPrimary && (
-                  <span
-                    className="absolute top-0 right-0 text-yellow-400"
-                    style={{ fontSize: '8px', lineHeight: 1, marginTop: '1px', marginRight: '1px' }}
-                    title="Primary workspace"
-                  >
-                    ★
-                  </span>
-                )}
-
-                {/* Notification badge — hidden for currently active workspace */}
-                {!isActive && (
-                  <NotificationBadge count={notifCount} />
-                )}
-              </button>
-
-              {/* Tooltip */}
-              {tooltip === ws.workspaceId && (
-                <div
-                  className="absolute z-50 left-14 bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg pointer-events-none"
-                  role="tooltip"
-                >
-                  <div className="font-semibold">{ws.name}</div>
-                  <div className="text-gray-400">{ws.workspaceType} · {ws.role}</div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Divider */}
-        {sorted.length > 0 && (
-          <div className="w-8 border-t border-gray-600 my-1" />
-        )}
-
-        {/* Create workspace button */}
+      <div className="ws-switcher" ref={containerRef} aria-label="Workspace switcher">
         <button
-          onClick={() => setShowWizard(true)}
-          onMouseEnter={() => setTooltip('__create__')}
-          onMouseLeave={() => setTooltip(null)}
-          className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-gray-700 hover:bg-green-600 text-white text-2xl font-light transition-all duration-150"
-          style={{ cursor: 'pointer', border: 'none', outline: 'none' }}
-          aria-label="Create new workspace"
-          title="Create new workspace"
+          className={`ws-switcher-trigger${isOpen ? ' open' : ''}`}
+          onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          title={activeWs ? `${activeWs.name} (${activeWs.workspaceType})` : 'Workspaces'}
         >
-          +
-          {tooltip === '__create__' && (
-            <div
-              className="absolute z-50 left-14 bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg pointer-events-none"
-              role="tooltip"
-            >
-              Create new workspace
-            </div>
-          )}
+          <span className="ws-trigger-abbrev">{triggerAbbrev}</span>
+          {totalNotifs > 0 && <span className="ws-notif-dot" />}
+          <span className="ws-trigger-caret">&#9660;</span>
         </button>
-      </aside>
+
+        {isOpen && (
+          <div className="ws-switcher-dropdown" role="listbox">
+            <div className="ws-dropdown-header">Workspaces</div>
+
+            <div className="ws-list">
+              {sorted.map((ws) => {
+                const isActive = ws.workspaceId === activeWorkspaceId;
+                const isPrimary = ws.workspaceId === primaryWorkspaceId;
+                const notifCount = notificationCounts[ws.workspaceId] ?? 0;
+                const abbreviation = getAbbreviation(ws.name);
+                const iconClass = TYPE_ICON_CLASS[ws.workspaceType] ?? 'org';
+
+                return (
+                  <button
+                    key={ws.workspaceId}
+                    className={`ws-item${isActive ? ' active' : ''}`}
+                    onClick={() => handleWorkspaceClick(ws.workspaceId)}
+                    role="option"
+                    aria-selected={isActive}
+                    aria-label={`Switch to ${ws.name} (${ws.workspaceType})`}
+                  >
+                    {/* Workspace icon */}
+                    <div className={`ws-item-icon ${iconClass}`}>
+                      <span>{abbreviation}</span>
+                      <span className="ws-item-type-badge">{TYPE_LABEL[ws.workspaceType] ?? '?'}</span>
+                      {isPrimary && <span className="ws-item-primary-star">★</span>}
+                    </div>
+
+                    {/* Text content */}
+                    <div className="ws-item-text">
+                      <span className="ws-item-name">{ws.name}</span>
+                      <span className="ws-item-meta">{ws.workspaceType} · {ws.role}</span>
+                    </div>
+
+                    {/* Active indicator */}
+                    {isActive && <span className="ws-item-active-dot" />}
+
+                    {/* Notification badge — hidden for active workspace */}
+                    {!isActive && notifCount > 0 && (
+                      <span className="ws-item-notif">{notifCount}</span>
+                    )}
+
+                    {/* NotificationBadge component (for pulse animation) */}
+                    {!isActive && (
+                      <NotificationBadge count={notifCount} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {sorted.length > 0 && <hr className="ws-dropdown-divider" />}
+
+            {/* Create new workspace */}
+            <button
+              className="ws-create-btn"
+              onClick={() => { setShowWizard(true); setIsOpen(false); }}
+              aria-label="Create new workspace"
+            >
+              <span className="ws-create-icon">+</span>
+              <span>Create new workspace</span>
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Create workspace modal */}
       {showWizard && (

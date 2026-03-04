@@ -7,12 +7,14 @@
  * - Step 3: Review and confirm
  *
  * Uses workspaceService.createWorkspace on submit.
+ * Styled with CreateWorkspaceWizard.css (plain CSS, no Tailwind).
  */
 
 import { useState } from 'react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useUser } from '../../context/UserContext';
 import { workspaceService, type CreateWorkspaceInput } from '../../lib/workspace-service';
+import './CreateWorkspaceWizard.css';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -75,26 +77,24 @@ const INVITE_MODE_DESC: Record<InviteMode, string> = {
   gated: 'Invitees must be approved by an admin before joining.',
 };
 
-// ─── Step components ─────────────────────────────────────────────────────────
+// ─── Step Indicator ───────────────────────────────────────────────────────────
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
-    <div className="flex items-center gap-2 mb-6">
+    <div className="step-indicator">
       {Array.from({ length: total }, (_, i) => i + 1).map((step) => (
-        <div key={step} className="flex items-center gap-2">
+        <div key={step} className="step-item">
           <div
             className={[
-              'flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold',
-              step === current
-                ? 'bg-blue-600 text-white'
-                : step < current
-                ? 'bg-blue-900 text-blue-300'
-                : 'bg-gray-700 text-gray-400',
+              'step-circle',
+              step === current ? 'active' : step < current ? 'completed' : 'upcoming',
             ].join(' ')}
           >
             {step < current ? '✓' : step}
           </div>
-          {step < total && <div className={`w-8 h-0.5 ${step < current ? 'bg-blue-600' : 'bg-gray-700'}`} />}
+          {step < total && (
+            <div className={`step-connector ${step < current ? 'done' : 'pending'}`} />
+          )}
         </div>
       ))}
     </div>
@@ -158,19 +158,19 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+    <div className="wizard-overlay">
       <div
-        className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg p-6"
+        className="wizard-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Create workspace"
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-white text-lg font-bold">Create Workspace</h2>
+        <div className="wizard-header">
+          <h2>Create Workspace</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-xl leading-none"
+            className="wizard-close-btn"
             aria-label="Close"
           >
             &times;
@@ -181,15 +181,15 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
 
         {/* ─── Step 1: Name / Type / Parent ─────────────────────────────── */}
         {step === 1 && (
-          <div className="space-y-4">
+          <div className="wizard-section">
             <div>
-              <label className="block text-sm text-gray-300 mb-1" htmlFor="ws-name">
-                Workspace Name <span className="text-red-400">*</span>
+              <label className="wizard-label" htmlFor="ws-name">
+                Workspace Name <span className="required">*</span>
               </label>
               <input
                 id="ws-name"
                 type="text"
-                className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="wizard-input"
                 placeholder="e.g. Alpha Company"
                 value={state.name}
                 onChange={(e) => update({ name: e.target.value })}
@@ -199,12 +199,12 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
             </div>
 
             <div>
-              <label className="block text-sm text-gray-300 mb-1" htmlFor="ws-desc">
+              <label className="wizard-label" htmlFor="ws-desc">
                 Description
               </label>
               <textarea
                 id="ws-desc"
-                className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="wizard-textarea"
                 placeholder="Brief description of this workspace's purpose"
                 value={state.description}
                 onChange={(e) => update({ description: e.target.value })}
@@ -214,17 +214,12 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
             </div>
 
             <div>
-              <span className="block text-sm text-gray-300 mb-2">Workspace Type</span>
-              <div className="flex gap-3">
+              <span className="wizard-group-label">Workspace Type</span>
+              <div className="type-card-group">
                 {(['Organization', 'Unit', 'Team'] as WorkspaceType[]).map((type) => (
                   <label
                     key={type}
-                    className={[
-                      'flex-1 flex flex-col items-center p-3 rounded-lg border cursor-pointer transition-colors',
-                      state.workspaceType === type
-                        ? 'border-blue-500 bg-blue-900 bg-opacity-30 text-white'
-                        : 'border-gray-600 bg-gray-800 text-gray-400 hover:border-gray-500',
-                    ].join(' ')}
+                    className={`type-card${state.workspaceType === type ? ' selected' : ''}`}
                   >
                     <input
                       type="radio"
@@ -234,8 +229,8 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
                       onChange={() => update({ workspaceType: type, parentWorkspaceId: '' })}
                       className="sr-only"
                     />
-                    <span className="font-semibold text-sm">{type}</span>
-                    <span className="text-xs mt-0.5 text-center text-gray-500">
+                    <span className="type-card-name">{type}</span>
+                    <span className="type-card-desc">
                       {type === 'Organization' ? 'Top-level' : type === 'Unit' ? 'Within org' : 'Smallest unit'}
                     </span>
                   </label>
@@ -246,17 +241,17 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
             {/* Parent workspace selector (only for Unit/Team) */}
             {needsParent && (
               <div>
-                <label className="block text-sm text-gray-300 mb-1" htmlFor="ws-parent">
-                  Parent Workspace <span className="text-red-400">*</span>
+                <label className="wizard-label" htmlFor="ws-parent">
+                  Parent Workspace <span className="required">*</span>
                 </label>
                 {parentEligible.length === 0 ? (
-                  <p className="text-yellow-400 text-sm bg-yellow-900 bg-opacity-20 border border-yellow-700 rounded px-3 py-2">
+                  <div className="wizard-warning">
                     You have no eligible parent workspaces. Create an Organization first.
-                  </p>
+                  </div>
                 ) : (
                   <select
                     id="ws-parent"
-                    className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="wizard-select"
                     value={state.parentWorkspaceId}
                     onChange={(e) => update({ parentWorkspaceId: e.target.value })}
                   >
@@ -275,20 +270,15 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
 
         {/* ─── Step 2: Classification / Invite Mode / Discoverability ───── */}
         {step === 2 && (
-          <div className="space-y-5">
+          <div className="wizard-section">
             {/* Classification */}
             <div>
-              <span className="block text-sm text-gray-300 mb-2">Classification Level</span>
-              <div className="space-y-2">
+              <span className="wizard-group-label">Classification Level</span>
+              <div className="radio-option-group">
                 {(['UNCLASSIFIED', 'SECRET', 'TOPSECRET'] as Classification[]).map((cls) => (
                   <label
                     key={cls}
-                    className={[
-                      'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
-                      state.classification === cls
-                        ? 'border-blue-500 bg-blue-900 bg-opacity-20'
-                        : 'border-gray-600 bg-gray-800 hover:border-gray-500',
-                    ].join(' ')}
+                    className={`radio-option${state.classification === cls ? ' selected' : ''}`}
                   >
                     <input
                       type="radio"
@@ -296,11 +286,14 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
                       value={cls}
                       checked={state.classification === cls}
                       onChange={() => update({ classification: cls })}
-                      className="mt-0.5"
+                      className="sr-only"
                     />
-                    <div>
-                      <div className="text-white text-sm font-medium">{CLASSIFICATION_LABELS[cls]}</div>
-                      <div className="text-gray-400 text-xs">{CLASSIFICATION_DESC[cls]}</div>
+                    <div className="radio-dot-wrapper">
+                      <div className={`radio-dot${state.classification === cls ? ' checked' : ''}`} />
+                    </div>
+                    <div className="radio-text">
+                      <span className="radio-label">{CLASSIFICATION_LABELS[cls]}</span>
+                      <span className="radio-desc">{CLASSIFICATION_DESC[cls]}</span>
                     </div>
                   </label>
                 ))}
@@ -309,17 +302,12 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
 
             {/* Invite mode */}
             <div>
-              <span className="block text-sm text-gray-300 mb-2">Invite Mode</span>
-              <div className="space-y-2">
+              <span className="wizard-group-label">Invite Mode</span>
+              <div className="radio-option-group">
                 {(['open', 'invite_only', 'gated'] as InviteMode[]).map((mode) => (
                   <label
                     key={mode}
-                    className={[
-                      'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
-                      state.inviteMode === mode
-                        ? 'border-blue-500 bg-blue-900 bg-opacity-20'
-                        : 'border-gray-600 bg-gray-800 hover:border-gray-500',
-                    ].join(' ')}
+                    className={`radio-option${state.inviteMode === mode ? ' selected' : ''}`}
                   >
                     <input
                       type="radio"
@@ -327,11 +315,14 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
                       value={mode}
                       checked={state.inviteMode === mode}
                       onChange={() => update({ inviteMode: mode })}
-                      className="mt-0.5"
+                      className="sr-only"
                     />
-                    <div>
-                      <div className="text-white text-sm font-medium">{INVITE_MODE_LABELS[mode]}</div>
-                      <div className="text-gray-400 text-xs">{INVITE_MODE_DESC[mode]}</div>
+                    <div className="radio-dot-wrapper">
+                      <div className={`radio-dot${state.inviteMode === mode ? ' checked' : ''}`} />
+                    </div>
+                    <div className="radio-text">
+                      <span className="radio-label">{INVITE_MODE_LABELS[mode]}</span>
+                      <span className="radio-desc">{INVITE_MODE_DESC[mode]}</span>
                     </div>
                   </label>
                 ))}
@@ -340,17 +331,12 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
 
             {/* Discoverability */}
             <div>
-              <span className="block text-sm text-gray-300 mb-2">Discoverability</span>
-              <div className="flex gap-3">
+              <span className="wizard-group-label">Discoverability</span>
+              <div className="radio-option-group horizontal">
                 {(['public', 'private'] as Discoverability[]).map((d) => (
                   <label
                     key={d}
-                    className={[
-                      'flex-1 flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors',
-                      state.discoverability === d
-                        ? 'border-blue-500 bg-blue-900 bg-opacity-20 text-white'
-                        : 'border-gray-600 bg-gray-800 text-gray-400 hover:border-gray-500',
-                    ].join(' ')}
+                    className={`radio-option${state.discoverability === d ? ' selected' : ''}`}
                   >
                     <input
                       type="radio"
@@ -358,12 +344,13 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
                       value={d}
                       checked={state.discoverability === d}
                       onChange={() => update({ discoverability: d })}
+                      className="sr-only"
                     />
-                    <div>
-                      <div className="text-sm font-medium capitalize">{d}</div>
-                      <div className="text-xs text-gray-500">
+                    <div className="radio-text">
+                      <span className="radio-label" style={{ textTransform: 'capitalize' }}>{d}</span>
+                      <span className="radio-desc">
                         {d === 'public' ? 'Visible in workspace directory' : 'Hidden from non-members'}
-                      </div>
+                      </span>
                     </div>
                   </label>
                 ))}
@@ -374,50 +361,49 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
 
         {/* ─── Step 3: Review ───────────────────────────────────────────── */}
         {step === 3 && (
-          <div className="space-y-4">
-            <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wide mb-3">Review Your Workspace</h3>
+          <div className="wizard-section">
+            <p className="wizard-review-title">Review Your Workspace</p>
 
-            <div className="bg-gray-800 rounded-lg p-4 space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Name</span>
-                <span className="text-white font-medium">{state.name}</span>
+            <div className="wizard-review-panel">
+              <div className="review-row">
+                <span className="review-key">Name</span>
+                <span className="review-val">{state.name}</span>
               </div>
               {state.description && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Description</span>
-                  <span className="text-white text-right max-w-xs truncate">{state.description}</span>
+                <div className="review-row">
+                  <span className="review-key">Description</span>
+                  <span className="review-val">{state.description}</span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span className="text-gray-400">Type</span>
-                <span className="text-white">{state.workspaceType}</span>
+              <div className="review-row">
+                <span className="review-key">Type</span>
+                <span className="review-val">{state.workspaceType}</span>
               </div>
               {state.parentWorkspaceId && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Parent</span>
-                  <span className="text-white">
+                <div className="review-row">
+                  <span className="review-key">Parent</span>
+                  <span className="review-val">
                     {memberships.find((m) => m.workspaceId === state.parentWorkspaceId)?.name ?? state.parentWorkspaceId}
                   </span>
                 </div>
               )}
-              <div className="border-t border-gray-700 pt-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Classification</span>
-                  <span className="text-white">{CLASSIFICATION_LABELS[state.classification]}</span>
-                </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-gray-400">Invite Mode</span>
-                  <span className="text-white">{INVITE_MODE_LABELS[state.inviteMode]}</span>
-                </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-gray-400">Discoverability</span>
-                  <span className="text-white capitalize">{state.discoverability}</span>
-                </div>
+              <hr className="review-divider" />
+              <div className="review-row">
+                <span className="review-key">Classification</span>
+                <span className="review-val">{CLASSIFICATION_LABELS[state.classification]}</span>
+              </div>
+              <div className="review-row">
+                <span className="review-key">Invite Mode</span>
+                <span className="review-val">{INVITE_MODE_LABELS[state.inviteMode]}</span>
+              </div>
+              <div className="review-row">
+                <span className="review-key">Discoverability</span>
+                <span className="review-val" style={{ textTransform: 'capitalize' }}>{state.discoverability}</span>
               </div>
             </div>
 
             {error && (
-              <div className="bg-red-900 bg-opacity-40 border border-red-700 rounded px-3 py-2 text-red-300 text-sm">
+              <div className="wizard-error">
                 {error}
               </div>
             )}
@@ -425,19 +411,19 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
         )}
 
         {/* ─── Navigation Buttons ───────────────────────────────────────── */}
-        <div className="flex justify-between mt-6 pt-4 border-t border-gray-700">
+        <div className="wizard-footer">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+            className="wizard-btn-cancel"
           >
             Cancel
           </button>
 
-          <div className="flex gap-3">
+          <div className="wizard-footer-right">
             {step > 1 && (
               <button
                 onClick={() => setStep(step - 1)}
-                className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                className="wizard-btn-back"
                 disabled={loading}
               >
                 Back
@@ -448,12 +434,7 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
               <button
                 onClick={() => setStep(step + 1)}
                 disabled={step === 1 && !step1Valid}
-                className={[
-                  'px-5 py-2 text-sm rounded font-medium transition-colors',
-                  step === 1 && !step1Valid
-                    ? 'bg-blue-900 text-blue-600 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white',
-                ].join(' ')}
+                className="wizard-btn-next"
               >
                 Next
               </button>
@@ -461,12 +442,7 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
               <button
                 onClick={handleCreate}
                 disabled={loading}
-                className={[
-                  'px-5 py-2 text-sm rounded font-medium transition-colors',
-                  loading
-                    ? 'bg-blue-900 text-blue-600 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white',
-                ].join(' ')}
+                className="wizard-btn-create"
               >
                 {loading ? 'Creating...' : 'Create Workspace'}
               </button>

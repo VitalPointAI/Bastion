@@ -136,6 +136,7 @@ function AppContent() {
             Exercise
           </button>
           <div className="nav-spacer" />
+          <WorkspaceSwitcher />
           <button
             className={`nav-button nav-button--admin ${isAdmin ? 'active' : ''}`}
             onClick={() => navigate('/admin')}
@@ -146,13 +147,7 @@ function AppContent() {
         <UserStatusBar />
       </header>
 
-      {/* Main layout: WorkspaceSwitcher sidebar + content area */}
-      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        {/* Workspace sidebar */}
-        <WorkspaceSwitcher />
-
-        {/* Content area */}
-        <main className="app-main" style={{ flex: 1, minWidth: 0 }}>
+      <main className="app-main">
           {isAdmin ? (
             <AdminDashboard onBack={() => navigate('/monitor')} />
           ) : isExercise ? (
@@ -175,7 +170,6 @@ function AppContent() {
             </>
           )}
         </main>
-      </div>
     </div>
   )
 }
