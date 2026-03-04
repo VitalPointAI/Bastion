@@ -408,7 +408,7 @@ Plans:
 **Goal:** DAO-backed workspace membership and invite system with 3-level military hierarchy (Organization → Unit → Team), role templates, and PostgreSQL off-chain shadow tables
 **Requirements**: WS-MODEL, WS-HIERARCHY, WS-ROLES, WS-MEMBERS, WS-INVITE, WS-DASHBOARD
 **Depends on:** Phase 18
-**Plans:** 3/10 plans executed
+**Plans:** 4/10 plans executed
 
 Plans:
 - [x] 19-01-PLAN.md — Workspace type system, workspace store, and role template store (complete 2026-03-04)
