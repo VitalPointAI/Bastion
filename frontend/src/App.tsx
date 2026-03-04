@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { AnonAuthProvider } from '@vitalpoint/near-phantom-auth/client'
 import { AuthWrapper } from './components/AuthWrapper'
 import { UserStatusBar } from './components/UserStatusBar'
@@ -14,6 +14,8 @@ import { WorkspaceProvider } from './context/WorkspaceContext'
 import { WorkspaceSwitcher } from './components/workspace/WorkspaceSwitcher'
 import { InviteAcceptPage } from './components/workspace/InviteAcceptPage'
 import { WorkspaceDashboard } from './components/workspace/WorkspaceDashboard'
+import { WorkspaceMemberManager } from './components/workspace/WorkspaceMemberManager'
+import { MemberDirectory } from './components/workspace/MemberDirectory'
 import './App.css'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
@@ -36,6 +38,46 @@ function WorkspacePlaceholder({ label }: { label: string }) {
     <div className="content-container" style={{ padding: '2rem' }}>
       <h2 style={{ color: '#f9fafb' }}>{label}</h2>
       <p style={{ color: '#9ca3af' }}>This section is coming soon.</p>
+    </div>
+  );
+}
+
+function WorkspaceMemberManagerPage() {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const navigate = useNavigate();
+  if (!workspaceId) return <WorkspacePlaceholder label="Members" />;
+  return (
+    <div className="p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={() => navigate(`/workspace/${workspaceId}`)}
+          className="text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          &larr; Back to Dashboard
+        </button>
+        <h2 className="text-lg font-semibold text-white">Manage Members</h2>
+      </div>
+      <WorkspaceMemberManager workspaceId={workspaceId} />
+    </div>
+  );
+}
+
+function MemberDirectoryPage() {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const navigate = useNavigate();
+  if (!workspaceId) return <WorkspacePlaceholder label="Directory" />;
+  return (
+    <div className="p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={() => navigate(`/workspace/${workspaceId}`)}
+          className="text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          &larr; Back to Dashboard
+        </button>
+        <h2 className="text-lg font-semibold text-white">Member Directory</h2>
+      </div>
+      <MemberDirectory workspaceId={workspaceId} />
     </div>
   );
 }
@@ -119,8 +161,10 @@ function AppContent() {
             <Routes>
               <Route path="/workspace/invite/:token" element={<InviteAcceptPage />} />
               <Route path="/workspace/:workspaceId" element={<WorkspaceDashboard />} />
-              <Route path="/workspace/:workspaceId/members" element={<WorkspacePlaceholder label="Members" />} />
+              <Route path="/workspace/:workspaceId/members" element={<WorkspaceMemberManagerPage />} />
+              <Route path="/workspace/:workspaceId/directory" element={<MemberDirectoryPage />} />
               <Route path="/workspace/:workspaceId/invite" element={<WorkspacePlaceholder label="Invite" />} />
+              <Route path="/workspace/:workspaceId/settings" element={<WorkspacePlaceholder label="Settings" />} />
             </Routes>
           ) : (
             <>
