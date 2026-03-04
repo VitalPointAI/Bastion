@@ -77,13 +77,13 @@ export function WorkspaceSwitcher() {
 
   // Abbreviation: first letters of each word, max 2, uppercase
   const getAbbreviation = (name: string) =>
-    name
+    (name || 'WS')
       .trim()
       .split(/\s+/)
       .map((w) => w[0])
       .join('')
       .slice(0, 2)
-      .toUpperCase() || name.slice(0, 2).toUpperCase();
+      .toUpperCase() || 'WS';
 
   // Active workspace info for trigger label
   const activeWs = memberships.find((m) => m.workspaceId === activeWorkspaceId);

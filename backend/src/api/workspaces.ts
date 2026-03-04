@@ -277,9 +277,9 @@ router.get('/me', requireAuth, async (req: Request, res: Response) => {
         const workspace = await workspaceStore.getWorkspace(membership.workspaceId);
         return {
           ...membership,
-          workspaceName: workspace?.name ?? null,
-          workspaceType: workspace?.workspaceType ?? null,
-          workspaceClassification: workspace?.classification ?? null,
+          name: workspace?.name ?? 'Unknown',
+          workspaceType: workspace?.workspaceType ?? 'Organization',
+          classification: workspace?.classification ?? 'UNCLASSIFIED',
         };
       }),
     );

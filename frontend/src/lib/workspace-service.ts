@@ -30,6 +30,7 @@ export interface WorkspaceMembership {
   workspaceId: string;
   name: string;
   workspaceType: 'Organization' | 'Unit' | 'Team';
+  classification: string;
   role: string;
   daoRole: string;
   isPrimary: boolean;
