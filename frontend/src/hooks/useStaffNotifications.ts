@@ -70,7 +70,7 @@ export function useStaffNotifications(
 
   // ─── WebSocket connection ─────────────────────────────────────────────────
 
-  const connectWebSocketRef = useRef<() => void>();
+  const connectWebSocketRef = useRef<(() => void) | undefined>(undefined);
 
   const connectWebSocket = useCallback(() => {
     if (!scenarioId || !mountedRef.current) return;
