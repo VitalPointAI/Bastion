@@ -335,7 +335,7 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
                     <div className="radio-text">
                       <span className="radio-label" style={{ textTransform: 'capitalize' }}>{d}</span>
                       <span className="radio-desc">
-                        {d === 'public' ? 'Visible in workspace directory' : 'Hidden from non-members'}
+                        {d === 'discoverable' ? 'Visible in workspace directory' : 'Hidden from non-members'}
                       </span>
                     </div>
                   </label>
