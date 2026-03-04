@@ -198,7 +198,7 @@ export class WorkspaceActivityStore {
     const pool = getPool();
 
     // Build a CASE/WHEN expression to count per-workspace since each workspace's last-seen time
-    const caseWhenParts = workspaceIds.map((wsId, idx) => {
+    const caseWhenParts = workspaceIds.map((_wsId, idx) => {
       const paramIdx = idx * 2 + 1; // Parameters come in pairs: workspace_id, timestamp
       return `SUM(CASE WHEN workspace_id = $${paramIdx} AND created_at > $${paramIdx + 1} THEN 1 ELSE 0 END) AS ws_${idx}`;
     });
@@ -209,14 +209,14 @@ export class WorkspaceActivityStore {
       params.push(new Date(lastSeenMap[wsId]));
     });
 
-    // Add the workspace_id list for the WHERE clause
-    const whereParamStart = params.length + 1;
+    // Build WHERE IN clause with individual parameters (ANY(::text[]) needs a single array param)
+    const whereParams = workspaceIds.map((_, idx) => `$${params.length + idx + 1}`).join(', ');
     params.push(...workspaceIds);
 
     const query = `
       SELECT ${caseWhenParts.join(', ')}
       FROM workspace_activity
-      WHERE workspace_id = ANY($${whereParamStart}::text[])
+      WHERE workspace_id IN (${whereParams})
     `;
 
     const result = await pool.query(query, params);

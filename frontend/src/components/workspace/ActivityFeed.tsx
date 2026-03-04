@@ -57,9 +57,15 @@ function shortDid(did: string): string {
   return last.length > 10 ? `${last.slice(0, 6)}...${last.slice(-4)}` : last;
 }
 
-function buildDescription(item: WorkspaceActivityItem): string {
-  const actor = shortDid(item.actorDid);
-  const subject = item.subjectDid ? shortDid(item.subjectDid) : null;
+function resolveName(did: string, displayNames: Record<string, string>): string {
+  if (!did) return 'Unknown';
+  if (displayNames[did]) return displayNames[did];
+  return shortDid(did);
+}
+
+function buildDescription(item: WorkspaceActivityItem, displayNames: Record<string, string>): string {
+  const actor = resolveName(item.actorDid, displayNames);
+  const subject = item.subjectDid ? resolveName(item.subjectDid, displayNames) : null;
   const meta = item.metadata;
 
   switch (item.activityType) {
@@ -227,6 +233,7 @@ interface ActivityFeedProps {
 export function ActivityFeed({ workspaceId, userRole, limit = 20 }: ActivityFeedProps) {
   const { userDID } = useUser();
   const [activities, setActivities] = useState<WorkspaceActivityItem[]>([]);
+  const [displayNames, setDisplayNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
@@ -243,16 +250,17 @@ export function ActivityFeed({ workspaceId, userRole, limit = 20 }: ActivityFeed
       setLoading(true);
       setError(null);
       try {
-        const items = await workspaceService.listActivity(workspaceId, userDID, {
+        const result = await workspaceService.listActivity(workspaceId, userDID, {
           limit: limit + 1,
           offset: currentOffset,
         });
 
-        const hasMoreItems = items.length > limit;
-        const page = hasMoreItems ? items.slice(0, limit) : items;
+        const hasMoreItems = result.activities.length > limit;
+        const page = hasMoreItems ? result.activities.slice(0, limit) : result.activities;
 
         setHasMore(hasMoreItems);
         setActivities((prev) => (replace ? page : [...prev, ...page]));
+        setDisplayNames((prev) => ({ ...prev, ...result.displayNames }));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load activity');
       } finally {
@@ -333,7 +341,7 @@ export function ActivityFeed({ workspaceId, userRole, limit = 20 }: ActivityFeed
               {/* Content */}
               <div className="flex-1 min-w-0 pt-1">
                 <p className="text-sm text-gray-200 leading-snug">
-                  {buildDescription(item)}
+                  {buildDescription(item, displayNames)}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <time

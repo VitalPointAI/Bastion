@@ -136,12 +136,9 @@ export function WorkspaceDashboard() {
         <p className="text-sm text-gray-500 mb-4">
           Select a workspace from the sidebar or create a new one.
         </p>
-        <button
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors"
-          onClick={() => navigate('/workspace/new')}
-        >
-          Create Workspace
-        </button>
+        <p className="text-xs text-gray-600">
+          Use the workspace switcher in the sidebar to create one.
+        </p>
       </div>
     );
   }

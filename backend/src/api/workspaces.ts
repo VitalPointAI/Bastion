@@ -989,7 +989,31 @@ router.get('/:id/activity', requireAuth, async (req: Request, res: Response) => 
       types,
     });
 
-    res.json({ activities, count: activities.length });
+    // Batch-lookup display names for all DIDs referenced in this page of activity
+    const didSet = new Set<string>();
+    for (const a of activities) {
+      if (a.actorDid) didSet.add(a.actorDid);
+      if (a.subjectDid) didSet.add(a.subjectDid);
+    }
+    const displayNames: Record<string, string> = {};
+    if (didSet.size > 0) {
+      try {
+        const { getPool } = await import('../lib/database.js');
+        const pool = getPool();
+        const nearIds = [...didSet].map((d) => d.replace(/^did:near:/, ''));
+        const result = await pool.query(
+          `SELECT near_account_id, display_name FROM user_profiles WHERE near_account_id = ANY($1::text[])`,
+          [nearIds],
+        );
+        for (const row of result.rows as { near_account_id: string; display_name: string }[]) {
+          displayNames[`did:near:${row.near_account_id}`] = row.display_name;
+        }
+      } catch {
+        // Non-fatal — just omit display names
+      }
+    }
+
+    res.json({ activities, displayNames, count: activities.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('List activity failed:', message);

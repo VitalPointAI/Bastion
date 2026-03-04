@@ -347,17 +347,17 @@ class WorkspaceService {
     workspaceId: string,
     userDID: string,
     options?: { limit?: number; offset?: number }
-  ): Promise<WorkspaceActivityItem[]> {
+  ): Promise<{ activities: WorkspaceActivityItem[]; displayNames: Record<string, string> }> {
     const params = new URLSearchParams();
     if (options?.limit !== undefined) params.append('limit', String(options.limit));
     if (options?.offset !== undefined) params.append('offset', String(options.offset));
     const queryString = params.toString() ? `?${params.toString()}` : '';
 
-    const response = await this.fetchJSON<{ activities: WorkspaceActivityItem[] }>(
+    const response = await this.fetchJSON<{ activities: WorkspaceActivityItem[]; displayNames?: Record<string, string> }>(
       `${this.baseUrl}/${workspaceId}/activity${queryString}`,
       { headers: { 'X-DID': userDID } }
     );
-    return response.activities;
+    return { activities: response.activities, displayNames: response.displayNames ?? {} };
   }
 
   // ─── Compartments ────────────────────────────────────────────────────────────

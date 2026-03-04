@@ -2,16 +2,11 @@
  * ObserverPanel
  *
  * Read-only workspace panel for observer-role users.
- * Shows workspace info, activity summary (summary-level only), and mission list.
- * No action buttons — purely informational.
- *
- * Phase 19 Plan 07: Role-adaptive dashboard panels.
+ * Shows workspace info and mission list placeholder.
+ * Activity is handled by the dashboard-level ActivityFeed.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { workspaceService, type WorkspaceActivityItem } from '../../lib/workspace-service';
 import { useWorkspace } from '../../context/WorkspaceContext';
-import { useUser } from '../../context/UserContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -32,27 +27,6 @@ function workspaceTypeBadge(type: string): string {
   }
 }
 
-/**
- * Observer-visible summary of activity — only top-level summary events.
- * Observers see: joins/departures only (by count, not identity).
- */
-function summarizeActivity(items: WorkspaceActivityItem[]): string {
-  const joins = items.filter((i) => i.activityType === 'member_joined').length;
-  const leaves = items.filter((i) => i.activityType === 'member_left').length;
-  const parts: string[] = [];
-  if (joins > 0) parts.push(`${joins} member${joins !== 1 ? 's' : ''} joined`);
-  if (leaves > 0) parts.push(`${leaves} member${leaves !== 1 ? 's' : ''} left`);
-  return parts.length > 0 ? parts.join(', ') : 'No recent membership changes';
-}
-
-function timeAgo(iso: string): string {
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface ObserverPanelProps {
@@ -61,40 +35,8 @@ interface ObserverPanelProps {
 
 // ─── ObserverPanel ────────────────────────────────────────────────────────────
 
-export function ObserverPanel({ workspaceId }: ObserverPanelProps) {
+export function ObserverPanel({ workspaceId: _workspaceId }: ObserverPanelProps) {
   const { activeWorkspace } = useWorkspace();
-  const { userDID } = useUser();
-
-  const [activity, setActivity] = useState<WorkspaceActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // ─── Load activity ──────────────────────────────────────────────────────────
-
-  const loadActivity = useCallback(async () => {
-    if (!userDID) return;
-    setLoading(true);
-    try {
-      const items = await workspaceService.listActivity(workspaceId, userDID, { limit: 20 });
-      setActivity(items);
-    } catch {
-      // Non-fatal
-    } finally {
-      setLoading(false);
-    }
-  }, [workspaceId, userDID]);
-
-  useEffect(() => {
-    void loadActivity();
-  }, [loadActivity]);
-
-  // ─── Derived ────────────────────────────────────────────────────────────────
-
-  // Observers only see join/leave events with anonymized identity
-  const visibleActivity = activity
-    .filter((i) => ['member_joined', 'member_left'].includes(i.activityType))
-    .slice(0, 5);
-
-  // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
@@ -158,39 +100,6 @@ export function ObserverPanel({ workspaceId }: ObserverPanelProps) {
             Use the Campaign tab to view all active missions.
           </p>
         </div>
-      </div>
-
-      {/* Activity Summary — condensed, observer-level visibility */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-5">
-        <h3 className="text-base font-semibold text-gray-100 mb-1">Activity Summary</h3>
-        <p className="text-xs text-gray-500 mb-4">Summary-level membership changes only</p>
-
-        {loading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
-        ) : (
-          <>
-            {/* Condensed summary line */}
-            <div className="mb-4 px-4 py-3 bg-gray-700 rounded text-sm text-gray-300">
-              {summarizeActivity(activity)}
-            </div>
-
-            {/* Individual visible events */}
-            {visibleActivity.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No membership changes to display.</p>
-            ) : (
-              <ul className="divide-y divide-gray-700">
-                {visibleActivity.map((item) => (
-                  <li key={item.id} className="flex items-center justify-between py-2">
-                    <span className="text-sm text-gray-300 capitalize">
-                      {item.activityType === 'member_joined' ? 'Member joined' : 'Member left'}
-                    </span>
-                    <span className="text-xs text-gray-500">{timeAgo(item.createdAt)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
       </div>
 
     </div>
