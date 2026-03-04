@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { CreateWorkspaceWizard } from './CreateWorkspaceWizard';
+import { NotificationBadge } from './NotificationBadge';
 
 // ─── Type label maps ─────────────────────────────────────────────────────────
 
@@ -130,21 +131,9 @@ export function WorkspaceSwitcher() {
                   </span>
                 )}
 
-                {/* Notification badge */}
-                {notifCount > 0 && (
-                  <span
-                    className="absolute flex items-center justify-center bg-red-500 text-white rounded-full font-bold"
-                    style={{
-                      top: '-4px',
-                      left: '-4px',
-                      minWidth: '16px',
-                      height: '16px',
-                      fontSize: '9px',
-                      padding: '0 2px',
-                    }}
-                  >
-                    {notifCount > 99 ? '99+' : notifCount}
-                  </span>
+                {/* Notification badge — hidden for currently active workspace */}
+                {!isActive && (
+                  <NotificationBadge count={notifCount} />
                 )}
               </button>
 

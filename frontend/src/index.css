@@ -65,6 +65,12 @@ select option {
   color: #e0e0e0;
 }
 
+@keyframes badge-pulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
