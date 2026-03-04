@@ -422,6 +422,16 @@ Plans:
 - [ ] 19-09-PLAN.md — OrgTree visualization
 - [x] 19-10-PLAN.md — Integration: WorkspaceDashboard + OrgTree + ActivityFeed wired; all routes registered (Task 1 complete; Task 2 human-verify checkpoint)
 
+### Phase 20: Workspace Operational Panels & Cross-Workspace Intelligence Sharing
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 19
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 20 to break down)
+
 ---
 
 **Key Capabilities:**

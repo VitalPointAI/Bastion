@@ -464,6 +464,7 @@ Recent decisions affecting current work:
 - Phase 17 added: Deployment - CI/CD Pipeline & Hetzner Server - GitHub Actions CI/CD pipeline deploying Bastion to Hetzner, TEE-aware component separation documented for production, single-server dev deployment
 - Phase 18 added: replace current login with @vitalpoint/near-phantom-auth
 - Phase 19 added: Workspace membership and invite system
+- Phase 20 added: Workspace Operational Panels & Cross-Workspace Intelligence Sharing
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
