@@ -5,12 +5,12 @@ import type { Workspace, WorkspaceInput, WorkspaceStats, WorkspaceType } from '.
 export async function initWorkspaceTable(): Promise<void> {
   const pool = getPool();
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS workspaces (
+    CREATE TABLE IF NOT EXISTS graph_workspaces (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT NOT NULL DEFAULT '',
-      type TEXT NOT NULL,
-      parent_workspace_id TEXT REFERENCES workspaces(id),
+      workspace_type TEXT NOT NULL,
+      parent_workspace_id TEXT,
       linked_workspace_ids TEXT[] NOT NULL DEFAULT '{}',
       tags TEXT[] NOT NULL DEFAULT '{}',
       classification TEXT NOT NULL DEFAULT 'SECRET',
@@ -19,8 +19,9 @@ export async function initWorkspaceTable(): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       metadata JSONB NOT NULL DEFAULT '{}'
     );
-    CREATE INDEX IF NOT EXISTS idx_workspace_type ON workspaces(type);
-    CREATE INDEX IF NOT EXISTS idx_workspace_parent ON workspaces(parent_workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_graph_workspace_type ON graph_workspaces(workspace_type);
+    CREATE INDEX IF NOT EXISTS idx_graph_workspace_parent ON graph_workspaces(parent_workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_graph_workspace_classification ON graph_workspaces(classification);
   `);
 }
 
@@ -41,8 +42,8 @@ export class WorkspaceStore {
     const now = new Date();
 
     await pool.query(`
-      INSERT INTO workspaces (
-        id, name, description, type, parent_workspace_id, linked_workspace_ids,
+      INSERT INTO graph_workspaces (
+        id, name, description, workspace_type, parent_workspace_id, linked_workspace_ids,
         tags, classification, created_by, created_at, updated_at, metadata
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     `, [
@@ -63,7 +64,7 @@ export class WorkspaceStore {
   async getWorkspace(id: string): Promise<Workspace | null> {
     await this.ensureInitialized();
     const pool = getPool();
-    const result = await pool.query('SELECT * FROM workspaces WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM graph_workspaces WHERE id = $1', [id]);
     if (result.rows.length === 0) return null;
     return this.rowToWorkspace(result.rows[0]);
   }
@@ -81,7 +82,7 @@ export class WorkspaceStore {
     let idx = 1;
 
     if (options.type) {
-      conditions.push(`type = $${idx++}`);
+      conditions.push(`workspace_type = $${idx++}`);
       params.push(options.type);
     }
     if (options.parentId) {
@@ -95,7 +96,7 @@ export class WorkspaceStore {
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const result = await pool.query(
-      `SELECT * FROM workspaces ${where} ORDER BY name ASC`,
+      `SELECT * FROM graph_workspaces ${where} ORDER BY name ASC`,
       params
     );
 
@@ -133,7 +134,7 @@ export class WorkspaceStore {
 
     params.push(id);
     const result = await pool.query(
-      `UPDATE workspaces SET ${setClauses.join(', ')} WHERE id = $${idx}`,
+      `UPDATE graph_workspaces SET ${setClauses.join(', ')} WHERE id = $${idx}`,
       params
     );
 
@@ -143,7 +144,7 @@ export class WorkspaceStore {
   async deleteWorkspace(id: string): Promise<boolean> {
     await this.ensureInitialized();
     const pool = getPool();
-    const result = await pool.query('DELETE FROM workspaces WHERE id = $1', [id]);
+    const result = await pool.query('DELETE FROM graph_workspaces WHERE id = $1', [id]);
     return (result.rowCount ?? 0) > 0;
   }
 
@@ -176,7 +177,7 @@ export class WorkspaceStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      'SELECT * FROM workspaces WHERE parent_workspace_id = $1 ORDER BY name ASC',
+      'SELECT * FROM graph_workspaces WHERE parent_workspace_id = $1 ORDER BY name ASC',
       [parentId]
     );
     return result.rows.map(row => this.rowToWorkspace(row));
@@ -189,7 +190,7 @@ export class WorkspaceStore {
 
     const pool = getPool();
     const result = await pool.query(
-      `SELECT * FROM workspaces WHERE id = ANY($1)`,
+      `SELECT * FROM graph_workspaces WHERE id = ANY($1)`,
       [workspace.linkedWorkspaceIds]
     );
     return result.rows.map(row => this.rowToWorkspace(row));
@@ -200,7 +201,7 @@ export class WorkspaceStore {
       id: row.id as string,
       name: row.name as string,
       description: row.description as string,
-      type: row.type as WorkspaceType,
+      type: row.workspace_type as WorkspaceType,
       parentWorkspaceId: row.parent_workspace_id as string | undefined,
       linkedWorkspaceIds: row.linked_workspace_ids as string[],
       tags: row.tags as string[],
