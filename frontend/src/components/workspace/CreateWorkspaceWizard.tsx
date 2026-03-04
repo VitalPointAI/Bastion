@@ -59,11 +59,6 @@ const CLASSIFICATION_LABELS: Record<Classification, string> = {
   TOPSECRET: 'Top Secret',
 };
 
-const CLASSIFICATION_DESC: Record<Classification, string> = {
-  UNCLASSIFIED: 'Accessible to all cleared members.',
-  SECRET: 'Restricted — requires SECRET clearance.',
-  TOPSECRET: 'Highly restricted — requires TOP SECRET clearance.',
-};
 
 const INVITE_MODE_LABELS: Record<InviteMode, string> = {
   open: 'Open',
@@ -293,7 +288,6 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
                     </div>
                     <div className="radio-text">
                       <span className="radio-label">{CLASSIFICATION_LABELS[cls]}</span>
-                      <span className="radio-desc">{CLASSIFICATION_DESC[cls]}</span>
                     </div>
                   </label>
                 ))}
