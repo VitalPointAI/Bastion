@@ -122,6 +122,18 @@ None - no external service configuration required.
 - All compartment endpoints secured behind requireAuth + permission checks
 - Compartment-based visibility can be extended in later plans as the data model is now live
 
+## Self-Check: PASSED
+
+All files found and both task commits verified:
+- FOUND: `frontend/src/components/workspace/OrgTree.tsx`
+- FOUND: `frontend/src/components/workspace/MemberDirectory.tsx`
+- FOUND: `frontend/src/components/workspace/CompartmentManager.tsx`
+- FOUND: `backend/src/workspace/workspace-compartment-store.ts`
+- FOUND: `.planning/phases/19-workspace-membership-and-invite-system/19-08-SUMMARY.md`
+- FOUND commit: `041c10f` (Task 1: OrgTree + react-d3-tree)
+- FOUND commit: `53c37f6` (Task 2: MemberDirectory + CompartmentManager + backend)
+- TypeScript: `tsc --noEmit` passes for both frontend and backend
+
 ---
 *Phase: 19-workspace-membership-and-invite-system*
 *Completed: 2026-03-04*

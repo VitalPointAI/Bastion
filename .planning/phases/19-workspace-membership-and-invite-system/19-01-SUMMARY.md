@@ -82,7 +82,7 @@ Each task was committed atomically:
 1. **Task 1: Create workspace type definitions and constants** - `7d3d85b` (feat)
 2. **Task 2: Create workspace store with DAO on-chain integration and role store** - `39904cd` (feat)
 
-**Plan metadata:** (pending final commit)
+**Plan metadata:** `426d466` (docs: complete plan)
 
 ## Files Created/Modified
 - `backend/src/workspace/types.ts` - All workspace type definitions, MILITARY_ROLE_TEMPLATES constant, CLEARANCE_LEVELS, and clearanceSufficient() utility
