@@ -20,8 +20,8 @@ export interface CreateWorkspaceInput {
   workspaceType: 'Organization' | 'Unit' | 'Team';
   classification?: string;
   parentWorkspaceId?: string;
-  inviteMode?: 'open' | 'invite_only' | 'gated';
-  discoverability?: 'public' | 'private';
+  inviteMode?: 'open' | 'gated';
+  discoverability?: 'discoverable' | 'private';
 }
 
 // ─── Response Types ───────────────────────────────────────────────────────────
@@ -126,8 +126,17 @@ class WorkspaceService {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error((error as { error?: string }).error || `HTTP ${response.status}`);
+      const errBody = await response.json().catch(() => ({ error: response.statusText })) as {
+        error?: string;
+        details?: Array<{ path?: (string | number)[]; message?: string }>;
+      };
+      let message = errBody.error || `HTTP ${response.status}`;
+      if (errBody.details?.length) {
+        message = errBody.details
+          .map((d) => d.path?.length ? `${d.path.join('.')}: ${d.message}` : d.message)
+          .join('; ');
+      }
+      throw new Error(message);
     }
 
     return response.json() as Promise<T>;
@@ -277,8 +286,17 @@ class WorkspaceService {
     }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error((error as { error?: string }).error || `HTTP ${response.status}`);
+      const errBody = await response.json().catch(() => ({ error: response.statusText })) as {
+        error?: string;
+        details?: Array<{ path?: (string | number)[]; message?: string }>;
+      };
+      let message = errBody.error || `HTTP ${response.status}`;
+      if (errBody.details?.length) {
+        message = errBody.details
+          .map((d) => d.path?.length ? `${d.path.join('.')}: ${d.message}` : d.message)
+          .join('; ');
+      }
+      throw new Error(message);
     }
 
     return response.json() as Promise<WorkspaceMemberDetail>;

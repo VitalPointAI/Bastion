@@ -20,8 +20,8 @@ import './CreateWorkspaceWizard.css';
 
 type WorkspaceType = 'Organization' | 'Unit' | 'Team';
 type Classification = 'UNCLASSIFIED' | 'SECRET' | 'TOPSECRET';
-type InviteMode = 'open' | 'invite_only' | 'gated';
-type Discoverability = 'public' | 'private';
+type InviteMode = 'open' | 'gated';
+type Discoverability = 'discoverable' | 'private';
 
 interface WizardState {
   // Step 1
@@ -41,7 +41,7 @@ const INITIAL_STATE: WizardState = {
   workspaceType: 'Organization',
   parentWorkspaceId: '',
   classification: 'UNCLASSIFIED',
-  inviteMode: 'invite_only',
+  inviteMode: 'gated',
   discoverability: 'private',
 };
 
@@ -62,14 +62,7 @@ const CLASSIFICATION_LABELS: Record<Classification, string> = {
 
 const INVITE_MODE_LABELS: Record<InviteMode, string> = {
   open: 'Open',
-  invite_only: 'Invite Only',
-  gated: 'Gated (approval required)',
-};
-
-const INVITE_MODE_DESC: Record<InviteMode, string> = {
-  open: 'Anyone in the parent organization can join.',
-  invite_only: 'Members must be explicitly invited.',
-  gated: 'Invitees must be approved by an admin before joining.',
+  gated: 'Invite Only',
 };
 
 // ─── Step Indicator ───────────────────────────────────────────────────────────
@@ -298,7 +291,7 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
             <div>
               <span className="wizard-group-label">Invite Mode</span>
               <div className="radio-option-group">
-                {(['open', 'invite_only', 'gated'] as InviteMode[]).map((mode) => (
+                {(['open', 'gated'] as InviteMode[]).map((mode) => (
                   <label
                     key={mode}
                     className={`radio-option${state.inviteMode === mode ? ' selected' : ''}`}
@@ -316,7 +309,6 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
                     </div>
                     <div className="radio-text">
                       <span className="radio-label">{INVITE_MODE_LABELS[mode]}</span>
-                      <span className="radio-desc">{INVITE_MODE_DESC[mode]}</span>
                     </div>
                   </label>
                 ))}
@@ -327,7 +319,7 @@ export function CreateWorkspaceWizard({ onClose, onCreated, parentWorkspaceId }:
             <div>
               <span className="wizard-group-label">Discoverability</span>
               <div className="radio-option-group horizontal">
-                {(['public', 'private'] as Discoverability[]).map((d) => (
+                {(['discoverable', 'private'] as Discoverability[]).map((d) => (
                   <label
                     key={d}
                     className={`radio-option${state.discoverability === d ? ' selected' : ''}`}
