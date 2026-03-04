@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T16:00:01Z"
+last_updated: "2026-03-04T16:03:25.744Z"
 progress:
   total_phases: 32
   completed_phases: 19
   total_plans: 179
-  completed_plans: 188
+  completed_plans: 190
 ---
 
 # Project State
@@ -20,6 +20,7 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
 **Current focus:** Phase 19 Plan 09 complete — ActivityFeed (role-filtered timeline), NotificationBadge (cross-workspace count badge)
+*Note: 19-08 completed: OrgTree (react-d3-tree), MemberDirectory (need-to-know compartment filter), CompartmentManager (CRUD + member assignment), WorkspaceCompartmentStore (postgres tables + 6 REST endpoints)*
 
 ## Current Position
 
@@ -93,6 +94,7 @@ Progress: ███████████████████████�
 | Phase 19 P04 | 5 | 2 tasks | 2 files |
 | Phase 19 P05 | 12 | 2 tasks | 3 files |
 | Phase 19-workspace-membership-and-invite-system P07 | 3 | 2 tasks | 5 files |
+| Phase 19 P08 | 6 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -441,6 +443,9 @@ Recent decisions affecting current work:
 - [Phase 19]: WorkspaceSwitcher is 64px additive left sidebar; existing nav header and tab buttons unchanged
 - [Phase 19-workspace-membership-and-invite-system]: WorkspaceDashboard uses single component with useMemo role-to-panel mapping — no separate routes per role
 - [Phase 19-workspace-membership-and-invite-system]: COMMANDER_ROLES=['commander','xo'] -> CommanderPanel; named staff roles -> StaffPanel; no-role -> ObserverPanel
+- [Phase 19]: OrgTree uses react-d3-tree v3 custom SVG nodes with buildCustomNode factory for current-user highlight and navigation
+- [Phase 19]: MemberDirectory 3-tier need-to-know: commander sees all, staff sees shared-compartment + unrestricted, observer sees public roles only
+- [Phase 19]: WorkspaceCompartmentStore: workspace_compartments + workspace_member_compartments tables, ensureInitialized singleton, 6 backend REST endpoints
 
 ### Roadmap Evolution
 
