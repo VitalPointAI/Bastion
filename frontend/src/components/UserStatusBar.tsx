@@ -7,13 +7,22 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import { useAuth } from '../hooks/useAuth';
 import './UserStatusBar.css';
 
 export function UserStatusBar() {
   const { displayName, orgEmail, email, accountId, userDID, mpcRegistered, isAuthenticated } = useUser();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -104,6 +113,12 @@ export function UserStatusBar() {
                 {mpcRegistered ? 'Enabled' : 'Pending'}
               </span>
             </div>
+          </div>
+
+          <div className="dropdown-actions">
+            <button className="logout-btn" onClick={handleLogout}>
+              Sign Out
+            </button>
           </div>
         </div>
       )}
