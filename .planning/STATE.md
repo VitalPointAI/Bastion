@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T15:12:30.000Z"
+last_updated: "2026-03-04T15:30:00.000Z"
 progress:
   total_phases: 30
   completed_phases: 18
   total_plans: 163
-  completed_plans: 179
+  completed_plans: 180
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 19 Plan 01 complete — workspace type system and store foundation created
+**Current focus:** Phase 19 Plan 02 complete — workspace member store, invite store, and activity store created
 
 ## Current Position
 
 Phase: 19 of 30 (Workspace Membership and Invite System) - IN PROGRESS
-Plan: 1 of 10 in current phase — 19-01 complete (workspace types, workspace-store, workspace-role-store)
-Status: Executing — plan 19-01 complete, proceeding to 19-02
-Last activity: 2026-03-04 - Phase 19 Plan 01 complete: workspace type definitions, WorkspaceStore (workspaces table + exercise_scenarios FK migration), WorkspaceRoleStore (military templates auto-init), full backend TypeScript compile passes
+Plan: 2 of 10 in current phase — 19-02 complete (WorkspaceMemberStore, WorkspaceInviteStore, WorkspaceActivityStore)
+Status: Executing — plan 19-02 complete, proceeding to 19-03
+Last activity: 2026-03-04 - Phase 19 Plan 02 complete: WorkspaceMemberStore (full CRUD, transactional setPrimary, partial unique index), WorkspaceInviteStore (SHA-256 token lifecycle, approval flow), WorkspaceActivityStore (activity log, cross-workspace CASE/WHEN unread counts), full backend TypeScript compile passes
 
-Progress: ████████████████████████ 179 plans complete
+Progress: ████████████████████████ 180 plans complete
 
 ## Performance Metrics
 
@@ -103,6 +103,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 19 Plan 02 (Workspace Member, Invite, and Activity Stores):**
+- Agent DIDs (did:near:{agentAccountId}) accepted identically to human DIDs in member store; API layer enforces max_agent_tier limits
+- setPrimary uses explicit transaction (BEGIN/COMMIT) not single-query UPDATE to prevent race conditions with partial unique index
+- getUnreadCountsForUser uses single CASE/WHEN query for N workspaces (efficient polling pattern)
+- dao_role column added to workspace_invites table (not in research schema) — required for addMember on invite acceptance
 
 **Phase 19 Plan 01 (Workspace Type System and Store Foundation):**
 - createWorkspace() does NOT trigger on-chain DAO creation — API routes handle on-chain; store manages PostgreSQL only
