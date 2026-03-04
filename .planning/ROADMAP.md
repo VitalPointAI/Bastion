@@ -403,6 +403,25 @@ Plans:
 - [x] 18-05-PLAN.md — Cleanup and deletion (removed 12 backend + 10 frontend legacy files; 5 unused packages)
 - [x] 18-06-PLAN.md — End-to-end verification (automated checks pass; human e2e browser testing checkpoint)
 
+### Phase 19: Workspace membership and invite system
+
+**Goal:** DAO-backed workspace membership and invite system with 3-level military hierarchy (Organization → Unit → Team), role templates, and PostgreSQL off-chain shadow tables
+**Requirements**: WS-MODEL, WS-HIERARCHY, WS-ROLES, WS-MEMBERS, WS-INVITE, WS-DASHBOARD
+**Depends on:** Phase 18
+**Plans:** 1/10 complete
+
+Plans:
+- [x] 19-01-PLAN.md — Workspace type system, workspace store, and role template store (complete 2026-03-04)
+- [ ] 19-02-PLAN.md — Workspace member store
+- [ ] 19-03-PLAN.md — Workspace invite store
+- [ ] 19-04-PLAN.md — Workspace REST API routes
+- [ ] 19-05-PLAN.md — WorkspaceContext React provider
+- [ ] 19-06-PLAN.md — WorkspaceSwitcher sidebar component
+- [ ] 19-07-PLAN.md — WorkspaceDashboard with role-adaptive panels
+- [ ] 19-08-PLAN.md — MemberDirectory and compartment filtering
+- [ ] 19-09-PLAN.md — OrgTree visualization
+- [ ] 19-10-PLAN.md — CreateWorkspaceWizard and InviteModal
+
 ---
 
 **Key Capabilities:**

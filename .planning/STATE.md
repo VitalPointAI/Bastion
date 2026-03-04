@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-03T20:27:00.000Z"
+last_updated: "2026-03-04T15:12:30.000Z"
 progress:
   total_phases: 30
   completed_phases: 18
   total_plans: 163
-  completed_plans: 178
+  completed_plans: 179
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 18 verification complete — automated checks all pass; awaiting human e2e browser testing (Task 2 checkpoint)
+**Current focus:** Phase 19 Plan 01 complete — workspace type system and store foundation created
 
 ## Current Position
 
-Phase: 18 of 18 (Replace Current Login with @vitalpoint/near-phantom-auth) - COMPLETE (verification)
-Plan: 6 of 6 in current phase — 18-06 complete (Task 1 automated checks pass; Task 2 human checkpoint pending)
-Status: Phase complete — all plans executed; human e2e verification checkpoint presented
-Last activity: 2026-03-03 - Phase 18 Plan 06 complete: automated verification — both builds clean, 48 backend tests pass, 1 security test passes, all auth patterns confirmed; human e2e checkpoint presented for registration/login/logout flows
+Phase: 19 of 30 (Workspace Membership and Invite System) - IN PROGRESS
+Plan: 1 of 10 in current phase — 19-01 complete (workspace types, workspace-store, workspace-role-store)
+Status: Executing — plan 19-01 complete, proceeding to 19-02
+Last activity: 2026-03-04 - Phase 19 Plan 01 complete: workspace type definitions, WorkspaceStore (workspaces table + exercise_scenarios FK migration), WorkspaceRoleStore (military templates auto-init), full backend TypeScript compile passes
 
-Progress: ████████████████████████ 177 plans complete
+Progress: ████████████████████████ 179 plans complete
 
 ## Performance Metrics
 
@@ -103,6 +103,13 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 19 Plan 01 (Workspace Type System and Store Foundation):**
+- createWorkspace() does NOT trigger on-chain DAO creation — API routes handle on-chain; store manages PostgreSQL only
+- DAO ID generated as ws-${workspaceType.toLowerCase()}-${randomUUID()} to prevent naming collisions on-chain
+- Military labels (commander/xo/s1-s9) are presentation layer; DAO role names (council/member/agent) are authority layer
+- exercise_scenarios.workspace_id FK added in workspace table init migration (nullable — existing exercises unaffected)
+- initRolesForWorkspace() uses ON CONFLICT DO NOTHING for idempotency — safe to call multiple times
 
 **Phase 18 Plan 06 (End-to-End Verification):**
 - Legacy grep matches for Authorization Bearer in IPFS (Pinata JWT) and LLM API calls are correct — external service API keys, not user session tokens
