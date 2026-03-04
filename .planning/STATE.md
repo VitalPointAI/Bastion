@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T15:54:42.300Z"
+last_updated: "2026-03-04T16:00:01Z"
 progress:
   total_phases: 32
   completed_phases: 19
@@ -19,14 +19,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 19 Plan 07 complete — WorkspaceDashboard (role-adaptive), CommanderPanel, StaffPanel, ObserverPanel
+**Current focus:** Phase 19 Plan 09 complete — ActivityFeed (role-filtered timeline), NotificationBadge (cross-workspace count badge)
 
 ## Current Position
 
 Phase: 19 of 30 (Workspace Membership and Invite System) - IN PROGRESS
-Plan: 7 of 10 in current phase — 19-07 complete (WorkspaceDashboard role-adaptive shell, CommanderPanel with pending invite approvals and command overview, StaffPanel with military role labels, ObserverPanel read-only)
-Status: Executing — plan 19-07 complete, proceeding to 19-08
-Last activity: 2026-03-04 - Phase 19 Plan 07 complete: WorkspaceDashboard (single component, useMemo role-to-panel mapping, COMMANDER_ROLES=['commander','xo']), CommanderPanel (command overview grid, pending invite approvals inline, quick actions, recent activity), StaffPanel (ROLE_META map for s1-s9/xo, content placeholder, filtered member activity), ObserverPanel (read-only info card, mission placeholder, anonymized join/leave summary)
+Plan: 9 of 10 in current phase — 19-09 complete (ActivityFeed with COMMANDER_VISIBLE/STAFF_VISIBLE/OBSERVER_VISIBLE filtering, NotificationBadge with pulse animation, WorkspaceSwitcher integration)
+Status: Executing — plan 19-09 complete, proceeding to 19-10
+Last activity: 2026-03-04 - Phase 19 Plan 09 complete: ActivityFeed (3-tier role-based filtering, SVG icons per type, relative timestamps, NEAR TX hash links, 15s polling, load-more pagination), NotificationBadge (count/maxDisplay props, badge-pulse keyframe, hidden when count=0), WorkspaceSwitcher (badge hidden on active workspace)
 
 Progress: ████████████████████████ 181 plans complete
 
