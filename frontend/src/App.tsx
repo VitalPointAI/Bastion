@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { AnonAuthProvider } from '@vitalpoint/near-phantom-auth/client'
 import { AuthWrapper } from './components/AuthWrapper'
 import { UserStatusBar } from './components/UserStatusBar'
@@ -13,7 +13,7 @@ import { ExerciseDashboard } from './components/exercise'
 import { WorkspaceProvider } from './context/WorkspaceContext'
 import { WorkspaceSwitcher } from './components/workspace/WorkspaceSwitcher'
 import { InviteAcceptPage } from './components/workspace/InviteAcceptPage'
-import { useWorkspace } from './context/WorkspaceContext'
+import { WorkspaceDashboard } from './components/workspace/WorkspaceDashboard'
 import './App.css'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
@@ -29,38 +29,6 @@ function NotFound() {
       <a href="/monitor">Return to Home</a>
     </div>
   )
-}
-
-// ─── Placeholder WorkspaceDashboard ─────────────────────────────────────────
-// Real dashboard built in 19-07. This is a structural placeholder.
-
-function WorkspaceDashboard() {
-  const { workspaceId } = useParams<{ workspaceId: string }>();
-  const { activeWorkspace, loading } = useWorkspace();
-
-  if (loading) {
-    return (
-      <div className="content-container" style={{ padding: '2rem' }}>
-        <p style={{ color: '#9ca3af' }}>Loading workspace...</p>
-      </div>
-    );
-  }
-
-  const name = activeWorkspace?.name ?? workspaceId;
-
-  return (
-    <div className="content-container" style={{ padding: '2rem' }}>
-      <h2 style={{ color: '#f9fafb', marginBottom: '0.5rem' }}>Workspace Dashboard</h2>
-      <p style={{ color: '#9ca3af' }}>{name}</p>
-      {activeWorkspace && (
-        <div style={{ marginTop: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-          <div>Type: {activeWorkspace.workspaceType}</div>
-          <div>Classification: {activeWorkspace.classification}</div>
-          <div>Members: {activeWorkspace.memberCount}</div>
-        </div>
-      )}
-    </div>
-  );
 }
 
 function WorkspacePlaceholder({ label }: { label: string }) {
