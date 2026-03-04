@@ -168,11 +168,11 @@ class WorkspaceService {
   }
 
   async getHierarchy(workspaceId: string, userDID: string): Promise<HierarchyNode[]> {
-    const response = await this.fetchJSON<{ tree: HierarchyNode[] }>(
+    const response = await this.fetchJSON<{ hierarchy: HierarchyNode[] }>(
       `${this.baseUrl}/${workspaceId}/hierarchy`,
       { headers: { 'X-DID': userDID } }
     );
-    return response.tree;
+    return response.hierarchy;
   }
 
   async updateWorkspace(
