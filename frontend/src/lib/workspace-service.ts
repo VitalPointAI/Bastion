@@ -100,6 +100,17 @@ export interface HierarchyNode {
   children?: HierarchyNode[];
 }
 
+export interface WorkspaceCompartment {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description: string | null;
+  createdBy: string;
+  createdAt: string;
+  /** Member DIDs assigned to this compartment (populated when requested with members) */
+  memberDids?: string[];
+}
+
 // ─── Service Class ────────────────────────────────────────────────────────────
 
 class WorkspaceService {
@@ -328,6 +339,91 @@ class WorkspaceService {
       { headers: { 'X-DID': userDID } }
     );
     return response.activity;
+  }
+
+  // ─── Compartments ────────────────────────────────────────────────────────────
+
+  async listCompartments(
+    workspaceId: string,
+    userDID: string,
+  ): Promise<WorkspaceCompartment[]> {
+    const response = await this.fetchJSON<{ compartments: WorkspaceCompartment[] }>(
+      `${this.baseUrl}/${workspaceId}/compartments`,
+      { headers: { 'X-DID': userDID } },
+    );
+    return response.compartments;
+  }
+
+  async createCompartment(
+    workspaceId: string,
+    name: string,
+    description: string | null,
+    userDID: string,
+  ): Promise<WorkspaceCompartment> {
+    return this.fetchJSON<WorkspaceCompartment>(
+      `${this.baseUrl}/${workspaceId}/compartments`,
+      {
+        method: 'POST',
+        headers: { 'X-DID': userDID },
+        body: JSON.stringify({ name, description }),
+      },
+    );
+  }
+
+  async deleteCompartment(
+    workspaceId: string,
+    compartmentId: string,
+    userDID: string,
+  ): Promise<void> {
+    await this.fetchJSON<void>(
+      `${this.baseUrl}/${workspaceId}/compartments/${compartmentId}`,
+      {
+        method: 'DELETE',
+        headers: { 'X-DID': userDID },
+      },
+    );
+  }
+
+  async assignMemberToCompartment(
+    workspaceId: string,
+    compartmentId: string,
+    memberDid: string,
+    userDID: string,
+  ): Promise<void> {
+    await this.fetchJSON<void>(
+      `${this.baseUrl}/${workspaceId}/compartments/${compartmentId}/members`,
+      {
+        method: 'POST',
+        headers: { 'X-DID': userDID },
+        body: JSON.stringify({ memberDid }),
+      },
+    );
+  }
+
+  async removeMemberFromCompartment(
+    workspaceId: string,
+    compartmentId: string,
+    memberDid: string,
+    userDID: string,
+  ): Promise<void> {
+    await this.fetchJSON<void>(
+      `${this.baseUrl}/${workspaceId}/compartments/${compartmentId}/members/${memberDid}`,
+      {
+        method: 'DELETE',
+        headers: { 'X-DID': userDID },
+      },
+    );
+  }
+
+  async getMyCompartments(
+    workspaceId: string,
+    userDID: string,
+  ): Promise<string[]> {
+    const response = await this.fetchJSON<{ compartmentIds: string[] }>(
+      `${this.baseUrl}/${workspaceId}/members/${encodeURIComponent(userDID)}/compartments`,
+      { headers: { 'X-DID': userDID } },
+    );
+    return response.compartmentIds;
   }
 
   // ─── Notifications ──────────────────────────────────────────────────────────

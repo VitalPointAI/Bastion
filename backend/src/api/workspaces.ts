@@ -16,6 +16,7 @@ import { workspaceMemberStore } from '../workspace/workspace-member-store.js';
 import { workspaceInviteStore } from '../workspace/workspace-invite-store.js';
 import { workspaceActivityStore } from '../workspace/workspace-activity-store.js';
 import { workspaceRoleStore } from '../workspace/workspace-role-store.js';
+import { workspaceCompartmentStore } from '../workspace/workspace-compartment-store.js';
 import { signAndSubmitFunctionCall } from '../near/tx-signer.js';
 import { clearanceSufficient } from '../workspace/types.js';
 import type { WorkspaceType } from '../workspace/types.js';
@@ -49,6 +50,15 @@ const CreateInviteSchema = z.object({
 const UpdateRoleSchema = z.object({
   newRole: z.string().min(1),
   newDaoRole: z.string().min(1),
+});
+
+const CreateCompartmentSchema = z.object({
+  name: z.string().min(1).max(50),
+  description: z.string().max(200).optional(),
+});
+
+const AssignMemberCompartmentSchema = z.object({
+  memberDid: z.string().min(1),
 });
 
 // ============================================================================
@@ -983,6 +993,255 @@ router.get('/:id/activity', requireAuth, async (req: Request, res: Response) => 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('List activity failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// Compartment Endpoints
+// ============================================================================
+
+/**
+ * GET /api/workspaces/:id/compartments - List all compartments with members
+ * Caller must be a member.
+ */
+router.get('/:id/compartments', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+
+    // Verify caller is a member
+    const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+    if (!member) {
+      return res.status(403).json({ error: 'Not a member of this workspace' });
+    }
+
+    const compartments = await workspaceCompartmentStore.listCompartmentsWithMembers(workspaceId);
+
+    res.json({ compartments, count: compartments.length });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List compartments failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/workspaces/:id/compartments - Create a compartment
+ * Requires manage_workspace or manage_members permission.
+ */
+router.post('/:id/compartments', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+
+    let body: z.infer<typeof CreateCompartmentSchema>;
+    try {
+      body = CreateCompartmentSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    // Require manage_workspace permission
+    try {
+      await checkPermission(workspaceId, userDid, 'manage_workspace');
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    const compartment = await workspaceCompartmentStore.createCompartment(
+      workspaceId,
+      body.name,
+      body.description ?? null,
+      userDid,
+    );
+
+    await workspaceActivityStore.log(
+      workspaceId,
+      'compartment_created',
+      userDid,
+      null,
+      { compartmentId: compartment.id, name: compartment.name },
+    );
+
+    console.log(`✓ Compartment created: ${compartment.id} (${compartment.name}) in workspace ${workspaceId}`);
+    res.status(201).json(compartment);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create compartment failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * DELETE /api/workspaces/:id/compartments/:cid - Delete a compartment
+ * Requires manage_workspace permission.
+ */
+router.delete('/:id/compartments/:cid', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+    const compartmentId = req.params.cid as string;
+
+    try {
+      await checkPermission(workspaceId, userDid, 'manage_workspace');
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    // Verify compartment belongs to this workspace
+    const compartment = await workspaceCompartmentStore.getCompartment(compartmentId);
+    if (!compartment || compartment.workspaceId !== workspaceId) {
+      return res.status(404).json({ error: 'Compartment not found' });
+    }
+
+    await workspaceCompartmentStore.deleteCompartment(compartmentId);
+
+    await workspaceActivityStore.log(
+      workspaceId,
+      'compartment_deleted',
+      userDid,
+      null,
+      { compartmentId, name: compartment.name },
+    );
+
+    console.log(`✓ Compartment ${compartmentId} deleted from workspace ${workspaceId}`);
+    res.json({ success: true, compartmentId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete compartment failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * POST /api/workspaces/:id/compartments/:cid/members - Assign member to compartment
+ * Requires manage_workspace or manage_members permission.
+ * Body: { memberDid: string }
+ */
+router.post('/:id/compartments/:cid/members', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+    const compartmentId = req.params.cid as string;
+
+    let body: z.infer<typeof AssignMemberCompartmentSchema>;
+    try {
+      body = AssignMemberCompartmentSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    try {
+      await checkPermission(workspaceId, userDid, 'manage_members');
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    // Verify compartment belongs to this workspace
+    const compartment = await workspaceCompartmentStore.getCompartment(compartmentId);
+    if (!compartment || compartment.workspaceId !== workspaceId) {
+      return res.status(404).json({ error: 'Compartment not found' });
+    }
+
+    // Verify the member being assigned is a workspace member
+    const member = await workspaceMemberStore.getMember(workspaceId, body.memberDid);
+    if (!member) {
+      return res.status(404).json({ error: 'Member not found in workspace' });
+    }
+
+    await workspaceCompartmentStore.assignMember(workspaceId, body.memberDid, compartmentId, userDid);
+
+    await workspaceActivityStore.log(
+      workspaceId,
+      'compartment_member_assigned',
+      userDid,
+      body.memberDid,
+      { compartmentId, compartmentName: compartment.name },
+    );
+
+    console.log(`✓ Member ${body.memberDid} assigned to compartment ${compartmentId}`);
+    res.json({ success: true, memberDid: body.memberDid, compartmentId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Assign compartment member failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * DELETE /api/workspaces/:id/compartments/:cid/members/:mid - Remove member from compartment
+ * Requires manage_members permission.
+ */
+router.delete('/:id/compartments/:cid/members/:mid', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+    const compartmentId = req.params.cid as string;
+    const memberDid = req.params.mid as string;
+
+    try {
+      await checkPermission(workspaceId, userDid, 'manage_members');
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    // Verify compartment belongs to this workspace
+    const compartment = await workspaceCompartmentStore.getCompartment(compartmentId);
+    if (!compartment || compartment.workspaceId !== workspaceId) {
+      return res.status(404).json({ error: 'Compartment not found' });
+    }
+
+    await workspaceCompartmentStore.removeMember(workspaceId, memberDid, compartmentId);
+
+    await workspaceActivityStore.log(
+      workspaceId,
+      'compartment_member_removed',
+      userDid,
+      memberDid,
+      { compartmentId, compartmentName: compartment.name },
+    );
+
+    console.log(`✓ Member ${memberDid} removed from compartment ${compartmentId}`);
+    res.json({ success: true, memberDid, compartmentId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Remove compartment member failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * GET /api/workspaces/:id/members/:did/compartments - Get compartments for a specific member
+ */
+router.get('/:id/members/:did/compartments', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+    const targetDid = req.params.did as string;
+
+    // Must be a member to query
+    const callerMember = await workspaceMemberStore.getMember(workspaceId, userDid);
+    if (!callerMember) {
+      return res.status(403).json({ error: 'Not a member of this workspace' });
+    }
+
+    const compartmentIds = await workspaceCompartmentStore.listCompartmentsForMember(workspaceId, targetDid);
+
+    res.json({ compartmentIds, count: compartmentIds.length });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get member compartments failed:', message);
     res.status(500).json({ error: message });
   }
 });
