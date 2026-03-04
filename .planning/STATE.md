@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T15:46:00Z"
+last_updated: "2026-03-04T15:54:42.300Z"
 progress:
   total_phases: 32
   completed_phases: 19
   total_plans: 179
-  completed_plans: 187
+  completed_plans: 188
 ---
 
 # Project State
@@ -19,14 +19,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 19 Plan 06 complete — WorkspaceInviteModal, InviteAcceptPage, WorkspaceMemberManager
+**Current focus:** Phase 19 Plan 07 complete — WorkspaceDashboard (role-adaptive), CommanderPanel, StaffPanel, ObserverPanel
 
 ## Current Position
 
 Phase: 19 of 30 (Workspace Membership and Invite System) - IN PROGRESS
-Plan: 6 of 10 in current phase — 19-06 complete (WorkspaceInviteModal with role/target/expiry, InviteAcceptPage with all accept states, WorkspaceMemberManager with permission-gated member management)
-Status: Executing — plan 19-06 complete, proceeding to 19-07
-Last activity: 2026-03-04 - Phase 19 Plan 06 complete: WorkspaceInviteModal (role selection, DID/email/open targeting, expiry picker, link copy, pending invites list with approve/cancel), InviteAcceptPage (8 state machine: joined, pending, clearance_error, invalid, already_member, unauthenticated, error, loading), WorkspaceMemberManager (member table, role change, suspend/unsuspend, remove with confirmation dialogs, AI agent badges, search filter, permission gating via manage_members)
+Plan: 7 of 10 in current phase — 19-07 complete (WorkspaceDashboard role-adaptive shell, CommanderPanel with pending invite approvals and command overview, StaffPanel with military role labels, ObserverPanel read-only)
+Status: Executing — plan 19-07 complete, proceeding to 19-08
+Last activity: 2026-03-04 - Phase 19 Plan 07 complete: WorkspaceDashboard (single component, useMemo role-to-panel mapping, COMMANDER_ROLES=['commander','xo']), CommanderPanel (command overview grid, pending invite approvals inline, quick actions, recent activity), StaffPanel (ROLE_META map for s1-s9/xo, content placeholder, filtered member activity), ObserverPanel (read-only info card, mission placeholder, anonymized join/leave summary)
 
 Progress: ████████████████████████ 181 plans complete
 
@@ -92,6 +92,7 @@ Progress: ███████████████████████�
 | Phase 18 P06 | 10 | 1 task (Task 2 is human checkpoint) | 0 files (verification only) |
 | Phase 19 P04 | 5 | 2 tasks | 2 files |
 | Phase 19 P05 | 12 | 2 tasks | 3 files |
+| Phase 19-workspace-membership-and-invite-system P07 | 3 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -438,6 +439,8 @@ Recent decisions affecting current work:
 - [Phase 19]: WorkspaceContext NOT integrated into App.tsx — deferred to Plan 19-05 when UI components are ready
 - [Phase 19]: AuthenticatedShell wraps WorkspaceProvider inside AuthWrapper to maintain proper context nesting
 - [Phase 19]: WorkspaceSwitcher is 64px additive left sidebar; existing nav header and tab buttons unchanged
+- [Phase 19-workspace-membership-and-invite-system]: WorkspaceDashboard uses single component with useMemo role-to-panel mapping — no separate routes per role
+- [Phase 19-workspace-membership-and-invite-system]: COMMANDER_ROLES=['commander','xo'] -> CommanderPanel; named staff roles -> StaffPanel; no-role -> ObserverPanel
 
 ### Roadmap Evolution
 
