@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T16:03:25.744Z"
+last_updated: "2026-03-04T11:08:00.000Z"
 progress:
   total_phases: 32
   completed_phases: 19
@@ -19,15 +19,15 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 19 Plan 09 complete — ActivityFeed (role-filtered timeline), NotificationBadge (cross-workspace count badge)
-*Note: 19-08 completed: OrgTree (react-d3-tree), MemberDirectory (need-to-know compartment filter), CompartmentManager (CRUD + member assignment), WorkspaceCompartmentStore (postgres tables + 6 REST endpoints)*
+**Current focus:** Phase 19 Plan 10 — Task 1 complete (WorkspaceDashboard integration + App.tsx routes), at human-verify checkpoint (Task 2)
+*Note: 19-09 completed: ActivityFeed (3-tier role-based filtering), NotificationBadge (badge-pulse animation), WorkspaceSwitcher integration*
 
 ## Current Position
 
 Phase: 19 of 30 (Workspace Membership and Invite System) - IN PROGRESS
-Plan: 9 of 10 in current phase — 19-09 complete (ActivityFeed with COMMANDER_VISIBLE/STAFF_VISIBLE/OBSERVER_VISIBLE filtering, NotificationBadge with pulse animation, WorkspaceSwitcher integration)
-Status: Executing — plan 19-09 complete, proceeding to 19-10
-Last activity: 2026-03-04 - Phase 19 Plan 09 complete: ActivityFeed (3-tier role-based filtering, SVG icons per type, relative timestamps, NEAR TX hash links, 15s polling, load-more pagination), NotificationBadge (count/maxDisplay props, badge-pulse keyframe, hidden when count=0), WorkspaceSwitcher (badge hidden on active workspace)
+Plan: 10 of 10 in current phase — 19-10 Task 1 complete; at human-verify checkpoint (Task 2)
+Status: Executing — plan 19-10 Task 1 done (WorkspaceDashboard integrated with OrgTree, ActivityFeed, WorkspaceInviteModal; App.tsx routes for /members, /directory, /settings registered)
+Last activity: 2026-03-04 - Phase 19 Plan 10 Task 1: WorkspaceDashboard grid layout (2/3 main + 1/3 sidebar), OrgTree in sidebar, ActivityFeed in main, WorkspaceInviteModal via quick action; App.tsx added WorkspaceMemberManagerPage + MemberDirectoryPage wrappers, /directory and /settings routes; both builds clean, 48 tests pass
 
 Progress: ████████████████████████ 181 plans complete
 
