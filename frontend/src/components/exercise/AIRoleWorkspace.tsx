@@ -124,11 +124,9 @@ export function AIRoleWorkspace({
 
   // ── Review required handler (Plan 06) ───────────────────────────────────────
   // Called by ChannelFeed when a review_required event fires.
-  // Silently returns when canControl is false (observer mode).
+  // Any user viewing the AI workspace can review products.
 
   const handleReviewRequired = async (runId: string) => {
-    if (!canControl) return;
-
     try {
       const products = await exerciseService.getStaffProducts(scenarioId, roleKey);
       const pendingProduct = products.find(
@@ -197,8 +195,8 @@ export function AIRoleWorkspace({
         <div className="ai-workspace-active">
           {/* Product Panel (wider, left) */}
           <div className="ai-product-panel">
-            {/* Pending Review badge — only shown to controllers */}
-            {canControl && activeRun?.status === 'awaiting_review' && !reviewContext && (
+            {/* Pending Review badge */}
+            {activeRun?.status === 'awaiting_review' && !reviewContext && (
               <div className="aip-review-badge">
                 <span className="aip-badge-label">Pending Review</span>
                 <button
@@ -256,8 +254,8 @@ export function AIRoleWorkspace({
             />
           </div>
 
-          {/* ProductReviewPanel modal — only opens for controllers (canControl) */}
-          {reviewContext && canControl && (
+          {/* ProductReviewPanel modal */}
+          {reviewContext && (
             <ProductReviewPanel
               scenarioId={scenarioId}
               roleKey={roleKey}
