@@ -2,7 +2,7 @@
  * UserStatusBar Component
  *
  * Compact user info display for header placement.
- * Shows profile icon, truncated name, and connected indicator.
+ * Shows display name with org email underneath, and connected indicator.
  * Click to expand dropdown with full account details.
  */
 
@@ -11,7 +11,7 @@ import { useUser } from '../context/UserContext';
 import './UserStatusBar.css';
 
 export function UserStatusBar() {
-  const { email, accountId, userDID, mpcRegistered, isAuthenticated } = useUser();
+  const { displayName, orgEmail, email, accountId, userDID, mpcRegistered, isAuthenticated } = useUser();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -33,17 +33,20 @@ export function UserStatusBar() {
     return null;
   }
 
-  // Get display name (truncated email or "User")
-  const displayName = email || 'User';
-  const truncatedName = displayName.length > 20
-    ? displayName.substring(0, 17) + '...'
-    : displayName;
+  // Primary display: displayName > email > 'User'
+  const primaryName = displayName || email || 'User';
+  const truncatedName = primaryName.length > 20
+    ? primaryName.substring(0, 17) + '...'
+    : primaryName;
 
-  // Get initials for avatar
-  const initials = displayName
-    .split('@')[0]
+  // Initials from display name or email
+  const initials = (displayName || email || 'U')
+    .split(/[\s@]/)[0]
     .substring(0, 2)
     .toUpperCase();
+
+  // Secondary line: org email (only if different from primary)
+  const secondaryEmail = orgEmail || null;
 
   return (
     <div className="user-status-bar" ref={dropdownRef}>
@@ -54,7 +57,12 @@ export function UserStatusBar() {
         aria-haspopup="true"
       >
         <span className="user-avatar">{initials}</span>
-        <span className="user-name">{truncatedName}</span>
+        <div className="user-info-stack">
+          <span className="user-name">{truncatedName}</span>
+          {secondaryEmail && (
+            <span className="user-org-email">{secondaryEmail}</span>
+          )}
+        </div>
         <span className="connected-indicator" title="Connected" />
       </button>
 
@@ -63,7 +71,10 @@ export function UserStatusBar() {
           <div className="dropdown-header">
             <span className="user-avatar large">{initials}</span>
             <div className="dropdown-user-info">
-              <span className="dropdown-email">{email || 'User'}</span>
+              <span className="dropdown-email">{primaryName}</span>
+              {secondaryEmail && (
+                <span className="dropdown-org-email">{secondaryEmail}</span>
+              )}
               <span className="dropdown-status">Logged in</span>
             </div>
           </div>

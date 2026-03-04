@@ -46,6 +46,17 @@ async function initPlatformSettingsTable(): Promise<void> {
         ALTER TABLE platform_settings ADD COLUMN allowed_email_domains JSONB DEFAULT '[]'::jsonb;
       END IF;
     END $$;
+
+    -- Add blocked_emails column if it doesn't exist
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'platform_settings' AND column_name = 'blocked_emails'
+      ) THEN
+        ALTER TABLE platform_settings ADD COLUMN blocked_emails JSONB DEFAULT '[]'::jsonb;
+      END IF;
+    END $$;
   `);
 }
 
@@ -358,6 +369,48 @@ export class PlatformSettingsStore {
 
     const domain = emailLower.substring(atIndex + 1);
     return allowedDomains.includes(domain);
+  }
+
+  /**
+   * Get blocked email addresses
+   * Returns array of blocked email addresses (lowercase)
+   */
+  async getBlockedEmails(): Promise<string[]> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    const result = await pool.query(
+      `SELECT blocked_emails FROM platform_settings WHERE id = 'default'`
+    );
+    return result.rows[0]?.blocked_emails || [];
+  }
+
+  /**
+   * Set blocked email addresses
+   * Normalizes to lowercase, trims whitespace
+   */
+  async setBlockedEmails(emails: string[]): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const normalized = emails
+      .map(e => e.toLowerCase().trim())
+      .filter(e => e.length > 0 && e.includes('@'));
+
+    await pool.query(
+      `UPDATE platform_settings SET blocked_emails = $1, updated_at = NOW() WHERE id = 'default'`,
+      [JSON.stringify(normalized)]
+    );
+
+    this.cachedConfig = null;
+  }
+
+  /**
+   * Check if a specific email address is blocked
+   */
+  async isEmailBlocked(email: string): Promise<boolean> {
+    const blocked = await this.getBlockedEmails();
+    if (blocked.length === 0) return false;
+    return blocked.includes(email.toLowerCase().trim());
   }
 }
 

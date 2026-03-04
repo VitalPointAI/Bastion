@@ -25,6 +25,8 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
   const location = useLocation();
   const [status, setStatus] = useState<'idle' | 'creating-did' | 'ready' | 'error'>('idle');
   const [userDID, setUserDID] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [orgEmail, setOrgEmail] = useState<string | null>(null);
 
   // Initialize DID after authentication
   // prfAvailable removed — package handles PRF internally; DID always created on auth
@@ -70,6 +72,20 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
           setUserDID(didValue);
         }
 
+        // Load user profile (display name + org email)
+        try {
+          const profileRes = await fetch(`${BACKEND_URL}/api/user-profile`, {
+            credentials: 'include',
+          });
+          if (profileRes.ok) {
+            const profile = await profileRes.json() as { displayName: string; orgEmail: string | null };
+            setDisplayName(profile.displayName);
+            setOrgEmail(profile.orgEmail);
+          }
+        } catch {
+          // Profile not found is fine — user may not have set one yet
+        }
+
         setStatus('ready');
         console.log('======================================');
 
@@ -102,6 +118,8 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
     userDID,
     accountId,
     email,
+    displayName,
+    orgEmail,
     mpcRegistered: true, // MPC IS used for NEAR accounts
     isAuthenticated,
   };

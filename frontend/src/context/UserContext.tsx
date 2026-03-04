@@ -11,6 +11,8 @@ interface UserContextType {
   userDID: string | null;
   accountId: string | null;
   email: string | null;
+  displayName: string | null;
+  orgEmail: string | null;
   mpcRegistered: boolean;
   isAuthenticated: boolean;
 }
@@ -19,6 +21,8 @@ const defaultContext: UserContextType = {
   userDID: null,
   accountId: null,
   email: null,
+  displayName: null,
+  orgEmail: null,
   mpcRegistered: false,
   isAuthenticated: false,
 };

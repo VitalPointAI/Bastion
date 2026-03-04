@@ -20,6 +20,7 @@ import { WorkflowConfigPanel } from './WorkflowConfigPanel';
 import { OSINTSourcePanel } from './OSINTSourcePanel';
 import { AuditLogPanel } from './AuditLogPanel';
 import { FundingPanel } from './FundingPanel';
+import { RegistrationControlPanel } from './RegistrationControlPanel';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -36,7 +37,8 @@ type AdminView =
   | 'workflow'
   | 'osint'
   | 'audit'
-  | 'funding';
+  | 'funding'
+  | 'registration';
 
 const ADMIN_ITEMS: SidebarItem[] = [
   { id: 'llm', label: 'LLM Provider', tooltip: 'Configure LLM provider settings' },
@@ -49,6 +51,7 @@ const ADMIN_ITEMS: SidebarItem[] = [
   { id: 'osint', label: 'OSINT Sources', tooltip: 'Open source intelligence feeds' },
   { id: 'audit', label: 'Audit Log', tooltip: 'System audit trail' },
   { id: 'funding', label: 'Funding', tooltip: 'NEAR account funding management' },
+  { id: 'registration', label: 'Registration', tooltip: 'Domain whitelist & email blacklist' },
 ];
 
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
@@ -171,6 +174,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           {selectedView === 'osint' && <OSINTSourcePanel />}
           {selectedView === 'audit' && <AuditLogPanel />}
           {selectedView === 'funding' && <FundingPanel />}
+          {selectedView === 'registration' && <RegistrationControlPanel />}
         </TabLayout>
       </div>
     </div>

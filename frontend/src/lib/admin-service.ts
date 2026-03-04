@@ -625,6 +625,44 @@ class AdminService {
   }
 
   // ============================================================================
+  // Registration Access Control (Domain Whitelist + Email Blacklist)
+  // ============================================================================
+
+  async getEmailDomains(): Promise<{ domains: string[]; restricted: boolean }> {
+    return this.fetch<{ domains: string[]; restricted: boolean }>('/api/admin/config/email-domains');
+  }
+
+  async setEmailDomains(domains: string[]): Promise<void> {
+    await this.fetch<unknown>('/api/admin/config/email-domains', {
+      method: 'PUT',
+      body: JSON.stringify({ domains }),
+    });
+  }
+
+  async clearEmailDomains(): Promise<void> {
+    await this.fetch<unknown>('/api/admin/config/email-domains', {
+      method: 'DELETE',
+    });
+  }
+
+  async getBlockedEmails(): Promise<{ emails: string[]; count: number }> {
+    return this.fetch<{ emails: string[]; count: number }>('/api/admin/config/blocked-emails');
+  }
+
+  async setBlockedEmails(emails: string[]): Promise<void> {
+    await this.fetch<unknown>('/api/admin/config/blocked-emails', {
+      method: 'PUT',
+      body: JSON.stringify({ emails }),
+    });
+  }
+
+  async clearBlockedEmails(): Promise<void> {
+    await this.fetch<unknown>('/api/admin/config/blocked-emails', {
+      method: 'DELETE',
+    });
+  }
+
+  // ============================================================================
   // Funding Contract Management
   // ============================================================================
 

@@ -1,15 +1,17 @@
 /**
  * RegisterPage - New user passkey registration using @vitalpoint/near-phantom-auth
  *
- * Replaces the previous RegisterPage that used custom passkey library.
- * Uses useAnonAuth() from the package (provided by AnonAuthProvider in App.tsx).
- * Email input removed per CONTEXT.md — package uses codename-based registration.
- * DID and UserContext population handled by AuthWrapper after registration completes.
+ * Collects display name + organization email before passkey creation.
+ * Validates email against domain whitelist / email blacklist via backend.
+ * After passkey is created, saves user profile to /api/user-profile.
  */
 
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnonAuth } from '@vitalpoint/near-phantom-auth/client';
 import './RegisterPage.css';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -22,17 +24,90 @@ export function RegisterPage() {
     webAuthnSupported,
   } = useAnonAuth();
 
+  const [displayName, setDisplayName] = useState('');
+  const [orgEmail, setOrgEmail] = useState('');
+  const [emailRequired, setEmailRequired] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Check if email is required (domain whitelist active)
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/user-profile/registration-requirements`)
+      .then(res => res.json())
+      .then((data: { emailRequired: boolean }) => {
+        setEmailRequired(data.emailRequired);
+      })
+      .catch(() => {
+        // Default to not required if endpoint unavailable
+      });
+  }, []);
+
   // Already authenticated — redirect to app
-  if (isAuthenticated) {
+  if (isAuthenticated && !isSavingProfile) {
     navigate('/', { replace: true });
     return null;
   }
 
   const handleRegister = async () => {
     clearError();
-    await register();
-    // On success the session cookie is set; isAuthenticated will become true
-    // AuthWrapper will handle DID initialization and redirect
+    setValidationError(null);
+
+    // Validate display name
+    if (!displayName.trim()) {
+      setValidationError('Display name is required');
+      return;
+    }
+
+    // Validate email if required or provided
+    const emailValue = orgEmail.trim();
+    if (emailRequired && !emailValue) {
+      setValidationError('Organization email is required');
+      return;
+    }
+
+    // Validate email against whitelist/blacklist if provided
+    if (emailValue) {
+      try {
+        const valRes = await fetch(`${BACKEND_URL}/api/user-profile/validate-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailValue }),
+        });
+        const valData = await valRes.json() as { allowed: boolean; reason?: string };
+        if (!valData.allowed) {
+          setValidationError(valData.reason || 'This email is not permitted for registration');
+          return;
+        }
+      } catch {
+        setValidationError('Unable to validate email. Please try again.');
+        return;
+      }
+    }
+
+    // Create passkey
+    setIsSavingProfile(true);
+    try {
+      await register();
+
+      // Save profile after passkey creation (session cookie is now set)
+      try {
+        await fetch(`${BACKEND_URL}/api/user-profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            displayName: displayName.trim(),
+            orgEmail: emailValue || null,
+          }),
+        });
+      } catch (err) {
+        console.error('[RegisterPage] Failed to save profile:', err);
+      }
+    } catch (err) {
+      console.error('[RegisterPage] Registration failed:', err);
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   if (!webAuthnSupported) {
@@ -59,22 +134,49 @@ export function RegisterPage() {
         <h1>BASTION</h1>
         <p className="subtitle">Create Your Account</p>
 
-        {error && (
+        {(error || validationError) && (
           <div className="error-message">
-            {error}{' '}
-            <button className="back-link" onClick={clearError} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ff4d4d', textDecoration: 'underline' }}>
+            {validationError || error}{' '}
+            <button
+              className="back-link"
+              onClick={() => {
+                clearError();
+                setValidationError(null);
+              }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ff4d4d', textDecoration: 'underline' }}
+            >
               Dismiss
             </button>
           </div>
         )}
 
         <div className="register-form">
+          <input
+            className="email-input"
+            type="text"
+            placeholder="Display Name *"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            disabled={isLoading || isSavingProfile}
+            autoComplete="name"
+          />
+
+          <input
+            className="email-input"
+            type="email"
+            placeholder={emailRequired ? 'Organization Email *' : 'Organization Email (optional)'}
+            value={orgEmail}
+            onChange={(e) => setOrgEmail(e.target.value)}
+            disabled={isLoading || isSavingProfile}
+            autoComplete="email"
+          />
+
           <button
             className="register-button primary"
             onClick={handleRegister}
-            disabled={isLoading}
+            disabled={isLoading || isSavingProfile}
           >
-            {isLoading ? 'Creating account...' : 'Create Account with Passkey'}
+            {isLoading || isSavingProfile ? 'Creating account...' : 'Create Account with Passkey'}
           </button>
 
           <p className="info-text">

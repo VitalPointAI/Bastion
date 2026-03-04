@@ -686,6 +686,76 @@ router.delete('/config/email-domains', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// Blocked Email Endpoints
+// ============================================================================
+
+/**
+ * GET /api/admin/config/blocked-emails - Get blocked email addresses
+ */
+router.get('/config/blocked-emails', async (req: Request, res: Response) => {
+  try {
+    const platformSettings = getPlatformSettingsStore();
+    const emails = await platformSettings.getBlockedEmails();
+    res.json({ emails, count: emails.length });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get blocked emails failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * PUT /api/admin/config/blocked-emails - Set blocked email addresses
+ * Body: { emails: ["user@example.com", ...] }
+ */
+router.put('/config/blocked-emails', async (req: Request, res: Response) => {
+  try {
+    const { emails } = req.body;
+    if (!Array.isArray(emails)) {
+      res.status(400).json({ error: 'emails must be an array of strings' });
+      return;
+    }
+
+    const invalid = emails.find((e: unknown) => typeof e !== 'string' || !String(e).includes('@'));
+    if (invalid) {
+      res.status(400).json({ error: `Invalid email address: ${invalid}` });
+      return;
+    }
+
+    const platformSettings = getPlatformSettingsStore();
+    await platformSettings.setBlockedEmails(emails);
+    const updated = await platformSettings.getBlockedEmails();
+
+    res.json({
+      emails: updated,
+      count: updated.length,
+      message: updated.length > 0
+        ? `${updated.length} email(s) blocked`
+        : 'Email blacklist cleared',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Set blocked emails failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * DELETE /api/admin/config/blocked-emails - Clear all blocked emails
+ */
+router.delete('/config/blocked-emails', async (req: Request, res: Response) => {
+  try {
+    const platformSettings = getPlatformSettingsStore();
+    await platformSettings.setBlockedEmails([]);
+    res.json({ emails: [], count: 0, message: 'Email blacklist cleared' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Clear blocked emails failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
 // Agent Management Endpoints
 // ============================================================================
 
