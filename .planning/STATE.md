@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T15:30:00.000Z"
+last_updated: "2026-03-04T15:25:13Z"
 progress:
   total_phases: 30
   completed_phases: 18
   total_plans: 163
-  completed_plans: 180
+  completed_plans: 181
 ---
 
 # Project State
@@ -19,14 +19,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 19 Plan 02 complete — workspace member store, invite store, and activity store created
+**Current focus:** Phase 19 Plan 03 complete — workspace REST API router with 19 endpoints, registered at /api/workspaces
 
 ## Current Position
 
 Phase: 19 of 30 (Workspace Membership and Invite System) - IN PROGRESS
-Plan: 2 of 10 in current phase — 19-02 complete (WorkspaceMemberStore, WorkspaceInviteStore, WorkspaceActivityStore)
-Status: Executing — plan 19-02 complete, proceeding to 19-03
-Last activity: 2026-03-04 - Phase 19 Plan 02 complete: WorkspaceMemberStore (full CRUD, transactional setPrimary, partial unique index), WorkspaceInviteStore (SHA-256 token lifecycle, approval flow), WorkspaceActivityStore (activity log, cross-workspace CASE/WHEN unread counts), full backend TypeScript compile passes
+Plan: 3 of 10 in current phase — 19-03 complete (workspace REST API router: 19 endpoints, on-chain DAO calls, clearance gating, activity logging)
+Status: Executing — plan 19-03 complete, proceeding to 19-04
+Last activity: 2026-03-04 - Phase 19 Plan 03 complete: Express Router at /api/workspaces with 19 endpoints (workspace CRUD, membership, invites, roles, activity, notifications), on-chain DAO operations via signAndSubmitFunctionCall, Zod validation, clearance gate on invite accept, gated workspace 202 approval flow, full backend TypeScript compile passes
 
 Progress: ████████████████████████ 180 plans complete
 
@@ -103,6 +103,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 19 Plan 03 (Workspace REST API Router):**
+- Static routes (/me, /invite/accept, /me/primary, /notifications/counts) registered before parametric /:id routes to prevent Express route shadowing
+- deriveUserSecret derives from DID_SECRET_SEED + accountId for signAndSubmitFunctionCall calls in API route handlers
+- ZodError.issues used (not .errors) for TypeScript strict mode compatibility
+- On-chain DAO_CONTRACT_ID env var drives all workspace DAO calls (create_dao, add_member, remove_member, assign_role)
 
 **Phase 19 Plan 02 (Workspace Member, Invite, and Activity Stores):**
 - Agent DIDs (did:near:{agentAccountId}) accepted identically to human DIDs in member store; API layer enforces max_agent_tier limits
