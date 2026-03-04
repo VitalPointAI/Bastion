@@ -44,6 +44,7 @@ export function NodeDetailPanel({ actorId, onClose, onNavigateToActor }: NodeDet
 
   useEffect(() => {
     if (!actorId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActor(null);
       return;
     }

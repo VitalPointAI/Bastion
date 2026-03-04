@@ -20,6 +20,7 @@ interface MilSymbolMarkerProps {
 /**
  * Creates a Leaflet icon from a MIL-STD-2525D SIDC code
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function createMilSymbolIcon(
   sidc: string,
   options?: {

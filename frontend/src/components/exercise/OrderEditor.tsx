@@ -297,6 +297,75 @@ function WARNORDEditor({ content, editMode, onChange }: WARNORDEditorProps) {
   );
 }
 
+// ─── OPORD Sub-components (extracted to module scope for React Fast Refresh) ──
+
+function SubField({
+  paragraph,
+  fieldKey,
+  label,
+  placeholder,
+  content,
+  editMode,
+  onChange,
+}: {
+  paragraph: string;
+  fieldKey: string;
+  label: string;
+  placeholder?: string;
+  content: OPORDContent;
+  editMode: boolean;
+  onChange: (updated: OPORDContent) => void;
+}) {
+  const paragraphData = content[paragraph as keyof OPORDContent] as Record<string, unknown>;
+  const val = paragraphData[fieldKey] as string;
+  return (
+    <div className="order-sub-section">
+      <label className="order-sub-label">{label}</label>
+      {editMode ? (
+        <textarea
+          className="order-textarea"
+          value={val || ''}
+          placeholder={placeholder}
+          rows={3}
+          onChange={(e) => {
+            onChange({
+              ...content,
+              [paragraph]: {
+                ...paragraphData,
+                [fieldKey]: e.target.value,
+              },
+            });
+          }}
+        />
+      ) : (
+        <p className="order-section-text">{val || <em className="order-empty">Not specified</em>}</p>
+      )}
+    </div>
+  );
+}
+
+function SectionHeader({
+  num,
+  title,
+  sectionKey,
+  collapsed,
+  toggleSection,
+}: {
+  num: string;
+  title: string;
+  sectionKey: string;
+  collapsed: Record<string, boolean>;
+  toggleSection: (key: string) => void;
+}) {
+  return (
+    <div className="order-para-header" onClick={() => toggleSection(sectionKey)}>
+      <span className="order-para-num">{num}</span>
+      <span className="order-para-title">{title}</span>
+      <span className="order-para-toggle">{collapsed[sectionKey] ? '+' : '−'}</span>
+    </div>
+  );
+}
+
 // ─── OPORD Editor ────────────────────────────────────────────────────────────────
 
 interface OPORDEditorProps {
@@ -312,53 +381,6 @@ function OPORDEditor({ content, editMode, onChange }: OPORDEditorProps) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const SubField = ({
-    paragraph,
-    fieldKey,
-    label,
-    placeholder,
-  }: {
-    paragraph: string;
-    fieldKey: string;
-    label: string;
-    placeholder?: string;
-  }) => {
-    const paragraphData = content[paragraph as keyof OPORDContent] as Record<string, unknown>;
-    const val = paragraphData[fieldKey] as string;
-    return (
-      <div className="order-sub-section">
-        <label className="order-sub-label">{label}</label>
-        {editMode ? (
-          <textarea
-            className="order-textarea"
-            value={val || ''}
-            placeholder={placeholder}
-            rows={3}
-            onChange={(e) => {
-              onChange({
-                ...content,
-                [paragraph]: {
-                  ...paragraphData,
-                  [fieldKey]: e.target.value,
-                },
-              });
-            }}
-          />
-        ) : (
-          <p className="order-section-text">{val || <em className="order-empty">Not specified</em>}</p>
-        )}
-      </div>
-    );
-  };
-
-  const SectionHeader = ({ num, title, sectionKey }: { num: string; title: string; sectionKey: string }) => (
-    <div className="order-para-header" onClick={() => toggleSection(sectionKey)}>
-      <span className="order-para-num">{num}</span>
-      <span className="order-para-title">{title}</span>
-      <span className="order-para-toggle">{collapsed[sectionKey] ? '+' : '−'}</span>
-    </div>
-  );
-
   const situation = content.situation as Record<string, unknown>;
   const mission = content.mission as Record<string, unknown>;
   const execution = content.execution as Record<string, unknown>;
@@ -369,7 +391,7 @@ function OPORDEditor({ content, editMode, onChange }: OPORDEditorProps) {
     <div className="order-body">
       {/* Paragraph 1 - Situation */}
       <div className="order-paragraph">
-        <SectionHeader num="1." title="Situation" sectionKey="situation" />
+        <SectionHeader num="1." title="Situation" sectionKey="situation" collapsed={collapsed} toggleSection={toggleSection} />
         {!collapsed['situation'] && (
           <div className="order-para-body">
             <div className="order-sub-section">
@@ -426,7 +448,7 @@ function OPORDEditor({ content, editMode, onChange }: OPORDEditorProps) {
 
       {/* Paragraph 2 - Mission */}
       <div className="order-paragraph">
-        <SectionHeader num="2." title="Mission" sectionKey="mission" />
+        <SectionHeader num="2." title="Mission" sectionKey="mission" collapsed={collapsed} toggleSection={toggleSection} />
         {!collapsed['mission'] && (
           <div className="order-para-body">
             {editMode ? (
@@ -453,7 +475,7 @@ function OPORDEditor({ content, editMode, onChange }: OPORDEditorProps) {
 
       {/* Paragraph 3 - Execution */}
       <div className="order-paragraph">
-        <SectionHeader num="3." title="Execution" sectionKey="execution" />
+        <SectionHeader num="3." title="Execution" sectionKey="execution" collapsed={collapsed} toggleSection={toggleSection} />
         {!collapsed['execution'] && (
           <div className="order-para-body">
             <div className="order-sub-section">
@@ -494,18 +516,18 @@ function OPORDEditor({ content, editMode, onChange }: OPORDEditorProps) {
 
       {/* Paragraph 4 - Service & Support */}
       <div className="order-paragraph">
-        <SectionHeader num="4." title="Service & Support" sectionKey="sustainment" />
+        <SectionHeader num="4." title="Service & Support" sectionKey="sustainment" collapsed={collapsed} toggleSection={toggleSection} />
         {!collapsed['sustainment'] && (
           <div className="order-para-body">
-            <SubField paragraph="serviceAndSupport" fieldKey="logistics" label="Logistics" placeholder="Logistics support details..." />
-            <SubField paragraph="serviceAndSupport" fieldKey="medical" label="Medical" placeholder="Medical support details..." />
+            <SubField paragraph="serviceAndSupport" fieldKey="logistics" label="Logistics" placeholder="Logistics support details..." content={content} editMode={editMode} onChange={onChange} />
+            <SubField paragraph="serviceAndSupport" fieldKey="medical" label="Medical" placeholder="Medical support details..." content={content} editMode={editMode} onChange={onChange} />
           </div>
         )}
       </div>
 
       {/* Paragraph 5 - Command & Signal */}
       <div className="order-paragraph">
-        <SectionHeader num="5." title="Command & Signal" sectionKey="cmdSig" />
+        <SectionHeader num="5." title="Command & Signal" sectionKey="cmdSig" collapsed={collapsed} toggleSection={toggleSection} />
         {!collapsed['cmdSig'] && (
           <div className="order-para-body">
             <div className="order-sub-section">
@@ -872,6 +894,7 @@ export function OrderEditor({ scenarioId, perspective, exercisePhase }: OrderEdi
       }
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenarioId, perspective, exercisePhase]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────

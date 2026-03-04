@@ -40,6 +40,7 @@ export function CommandMatrixView({ missionId }: CommandMatrixViewProps) {
 
   useEffect(() => {
     loadMatrix();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [missionId]);
 
   async function loadMatrix() {

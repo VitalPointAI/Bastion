@@ -52,42 +52,42 @@ export function AgentAssignmentModal({
   const [assignmentType, setAssignmentType] = useState<AssignmentType>('review');
 
   useEffect(() => {
+    const loadAgentsAndTeams = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Load agents
+        const agentsRes = await fetch(`${API_BASE}/api/admin/agents`, {
+          headers: { 'X-DID': userDID },
+        });
+        if (agentsRes.ok) {
+          const data = await agentsRes.json();
+          setAgents(data.agents || []);
+          if (data.agents?.length > 0) {
+            setSelectedAgentId(data.agents[0].agentId);
+          }
+        }
+
+        // Load teams
+        const teamsRes = await fetch(`${API_BASE}/api/admin/teams`, {
+          headers: { 'X-DID': userDID },
+        });
+        if (teamsRes.ok) {
+          const data = await teamsRes.json();
+          setTeams(data.teams || []);
+          if (data.teams?.length > 0) {
+            setSelectedTeamId(data.teams[0].teamId);
+          }
+        }
+      } catch (_err) {
+        setError('Failed to load agents and teams');
+      } finally {
+        setLoading(false);
+      }
+    };
     loadAgentsAndTeams();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const loadAgentsAndTeams = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Load agents
-      const agentsRes = await fetch(`${API_BASE}/api/admin/agents`, {
-        headers: { 'X-DID': userDID },
-      });
-      if (agentsRes.ok) {
-        const data = await agentsRes.json();
-        setAgents(data.agents || []);
-        if (data.agents?.length > 0) {
-          setSelectedAgentId(data.agents[0].agentId);
-        }
-      }
-
-      // Load teams
-      const teamsRes = await fetch(`${API_BASE}/api/admin/teams`, {
-        headers: { 'X-DID': userDID },
-      });
-      if (teamsRes.ok) {
-        const data = await teamsRes.json();
-        setTeams(data.teams || []);
-        if (data.teams?.length > 0) {
-          setSelectedTeamId(data.teams[0].teamId);
-        }
-      }
-    } catch (_err) {
-      setError('Failed to load agents and teams');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAssign = async () => {
     if (assignmentMode === 'agent' && !selectedAgentId) {

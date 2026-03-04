@@ -34,23 +34,29 @@ export function InviteAcceptPage() {
   const { userDID, isAuthenticated } = useUser();
   const { refreshMemberships } = useWorkspace();
 
-  const [status, setStatus] = useState<AcceptStatus>('loading');
+  // Derive guard states during render to avoid synchronous setState in effects
+  const guardStatus: AcceptStatus | null = !token
+    ? 'invalid'
+    : (!isAuthenticated || !userDID)
+      ? 'unauthenticated'
+      : null;
+
+  const [asyncStatus, setAsyncStatus] = useState<AcceptStatus | null>(null);
   const [workspaceName, setWorkspaceName] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [joinedWorkspaceId, setJoinedWorkspaceId] = useState<string>('');
 
-  useEffect(() => {
-    if (!token) {
-      setStatus('invalid');
-      return;
-    }
+  const status: AcceptStatus = asyncStatus ?? guardStatus ?? 'loading';
 
-    // Not authenticated — store token and redirect to login
-    if (!isAuthenticated || !userDID) {
+  // Store token for unauthenticated users
+  useEffect(() => {
+    if (token && !isAuthenticated) {
       sessionStorage.setItem('workspace-invite-token', token);
-      setStatus('unauthenticated');
-      return;
     }
+  }, [token, isAuthenticated]);
+
+  useEffect(() => {
+    if (guardStatus || !token || !userDID) return;
 
     // Authenticated — attempt to accept the invite
     void (async () => {
@@ -59,12 +65,12 @@ export function InviteAcceptPage() {
 
         if (member === null) {
           // 202 = pending approval (gated workspace)
-          setStatus('pending');
+          setAsyncStatus('pending');
         } else {
           // Successful join
           setJoinedWorkspaceId(member.workspaceId);
           await refreshMemberships();
-          setStatus('joined');
+          setAsyncStatus('joined');
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
@@ -74,26 +80,26 @@ export function InviteAcceptPage() {
           message.toLowerCase().includes('classification')
         ) {
           setWorkspaceName(extractWorkspaceName(message));
-          setStatus('clearance_error');
+          setAsyncStatus('clearance_error');
         } else if (
           message.toLowerCase().includes('already') ||
           message.toLowerCase().includes('member')
         ) {
-          setStatus('already_member');
+          setAsyncStatus('already_member');
         } else if (
           message.toLowerCase().includes('expired') ||
           message.toLowerCase().includes('invalid') ||
           message.toLowerCase().includes('not found') ||
           message.toLowerCase().includes('404')
         ) {
-          setStatus('invalid');
+          setAsyncStatus('invalid');
         } else {
           setErrorMessage(message);
-          setStatus('error');
+          setAsyncStatus('error');
         }
       }
     })();
-  }, [token, isAuthenticated, userDID, refreshMemberships]);
+  }, [guardStatus, token, userDID, refreshMemberships]);
 
   const handleLoginRedirect = () => {
     navigate(`/login?redirect=/workspace/invite/${token ?? ''}`);

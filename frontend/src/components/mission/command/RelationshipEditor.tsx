@@ -49,17 +49,16 @@ export function RelationshipEditor({
   const isEditing = !!existingRelationship?.relationshipId;
 
   useEffect(() => {
+    async function loadUnits() {
+      try {
+        const unitList = await commandService.getUnits(missionId);
+        setUnits(unitList);
+      } catch (err) {
+        console.error('Failed to load units:', err);
+      }
+    }
     loadUnits();
   }, [missionId]);
-
-  async function loadUnits() {
-    try {
-      const unitList = await commandService.getUnits(missionId);
-      setUnits(unitList);
-    } catch (err) {
-      console.error('Failed to load units:', err);
-    }
-  }
 
   async function handleSave() {
     try {

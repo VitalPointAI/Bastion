@@ -144,8 +144,6 @@ export function CommanderPanel({ workspaceId }: CommanderPanelProps) {
   // ─── Derived ────────────────────────────────────────────────────────────────
 
   const childCount = hierarchy.reduce((sum, node) => {
-    const countChildren = (n: HierarchyNode): number =>
-      1 + (n.children ?? []).reduce((s, c) => s + countChildren(c), 0);
     return sum + (node.id === workspaceId ? (node.children?.length ?? 0) : 0);
   }, 0);
 

@@ -10,6 +10,7 @@ import type { IPBLayer } from '../../types/exercise';
 
 // ─── Layer Colors (IPB Military Convention Colors) ─────────────────────────────
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const IPB_LAYER_COLORS: Record<string, string> = {
   blue_forces: '#0066cc',
   red_forces: '#cc0000',

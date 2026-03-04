@@ -96,6 +96,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
     };
 
     initializeDID();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, accountId, status]);
 
   // Get display status

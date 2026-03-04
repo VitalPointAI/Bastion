@@ -23,6 +23,7 @@ export function CommandTreeView({ missionId }: CommandTreeViewProps) {
 
   useEffect(() => {
     loadHierarchy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [missionId]);
 
   async function loadHierarchy() {

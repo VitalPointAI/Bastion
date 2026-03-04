@@ -167,6 +167,7 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete }: ScenarioPa
     }, 5000);
 
     return () => { cancelled = true; clearInterval(interval); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenario?.id]);
 
   // ── Document edit/delete handlers ─────────────────────────────────────────

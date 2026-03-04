@@ -87,6 +87,7 @@ export function LLMConfigPanel() {
     if (selectedProvider) {
       fetchModels(selectedProvider, currentApiKey, currentBaseUrl);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvider, fetchModels]);
 
   // Load current configuration on mount

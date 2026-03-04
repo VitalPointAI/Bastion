@@ -73,6 +73,7 @@ export function EffectChainDiagram({
   // Auto-select first chain if none selected
   useEffect(() => {
     if (chains.length > 0 && !selectedChainId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisibleChainIds(new Set([chains[0].rootAction.id]));
     }
   }, [chains, selectedChainId]);

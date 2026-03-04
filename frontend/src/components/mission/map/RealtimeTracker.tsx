@@ -141,6 +141,7 @@ export function RealtimeTracker({
  * }, []);
  * ```
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useRealtimeTracking(websocketUrl?: string) {
   const subscribersRef = useRef<Map<string, (position: L.LatLng) => void>>(new Map());
 

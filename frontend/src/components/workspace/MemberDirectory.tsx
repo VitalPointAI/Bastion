@@ -190,10 +190,10 @@ export function MemberDirectory({ workspaceId }: MemberDirectoryProps) {
 
   useEffect(() => {
     if (!workspaceId || !userDID) return;
-    setLoading(true);
-    setError(null);
 
     const loadAll = async () => {
+      setLoading(true);
+      setError(null);
       const [allMembers, allCompartments, myCompIds] = await Promise.all([
         workspaceService.listMembers(workspaceId, userDID),
         workspaceService.listCompartments(workspaceId, userDID).catch(() => [] as WorkspaceCompartment[]),

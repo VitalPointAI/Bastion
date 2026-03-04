@@ -9,7 +9,7 @@
  * - Designed for absolute positioning inside a relative container
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -22,15 +22,14 @@ interface NotificationBadgeProps {
 
 export function NotificationBadge({ count, maxDisplay = 99 }: NotificationBadgeProps) {
   const prevCountRef = useRef(count);
-  const [isPulsing, setIsPulsing] = useState(false);
+  const badgeRef = useRef<HTMLSpanElement>(null);
 
-  // Trigger pulse animation when count changes
+  // Trigger pulse animation via DOM ref (avoids setState in effect)
   useEffect(() => {
-    if (count !== prevCountRef.current && count > 0) {
-      setIsPulsing(true);
-      const timer = setTimeout(() => setIsPulsing(false), 600);
-      prevCountRef.current = count;
-      return () => clearTimeout(timer);
+    if (count !== prevCountRef.current && count > 0 && badgeRef.current) {
+      badgeRef.current.style.animation = 'none';
+      void badgeRef.current.offsetHeight; // force reflow
+      badgeRef.current.style.animation = 'badge-pulse 0.6s ease-out';
     }
     prevCountRef.current = count;
   }, [count]);
@@ -42,8 +41,8 @@ export function NotificationBadge({ count, maxDisplay = 99 }: NotificationBadgeP
 
   return (
     <span
+      ref={badgeRef}
       className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 min-w-[1.25rem] flex items-center justify-center font-bold px-0.5"
-      style={isPulsing ? { animation: 'badge-pulse 0.6s ease-out' } : undefined}
       aria-label={`${count} unread notification${count !== 1 ? 's' : ''}`}
       role="status"
     >

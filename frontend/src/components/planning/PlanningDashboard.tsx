@@ -70,6 +70,7 @@ export function PlanningDashboard({ missionId, userDID }: PlanningDashboardProps
     }
 
     loadPlans();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [missionId]);
 
   // Load workflow state when plan selected

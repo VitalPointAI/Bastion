@@ -42,6 +42,7 @@ export function UserProvider({ children, value }: UserProviderProps) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useUser(): UserContextType {
   return useContext(UserContext);
 }

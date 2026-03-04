@@ -254,6 +254,7 @@ export function OSINTSourcePanel() {
         ),
       },
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 

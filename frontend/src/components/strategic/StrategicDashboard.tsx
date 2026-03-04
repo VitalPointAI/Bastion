@@ -26,15 +26,12 @@ export function StrategicDashboard() {
   const [selectedDocument, setSelectedDocument] = useState<StrategicDocument | null>(null);
   const [selectedObjective, setSelectedObjective] = useState<StrategicObjective | null>(null);
   const [showUpload, setShowUpload] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const isReady = isAuthenticated && !!userDID;
 
   // Set user DID on service when authenticated
   useEffect(() => {
     if (isAuthenticated && userDID) {
       strategicService.setUserDID(userDID);
-      setIsReady(true);
-    } else {
-      setIsReady(false);
     }
   }, [isAuthenticated, userDID]);
 

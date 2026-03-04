@@ -49,6 +49,7 @@ export function ResourceCatalog({ missionId }: ResourceCatalogProps) {
   // Load data
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [missionId]);
 
   const loadData = async () => {

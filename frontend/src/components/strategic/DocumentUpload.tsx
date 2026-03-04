@@ -46,6 +46,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
     if (droppedFile) {
       validateAndSetFile(droppedFile);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const validateAndSetFile = (selectedFile: File) => {

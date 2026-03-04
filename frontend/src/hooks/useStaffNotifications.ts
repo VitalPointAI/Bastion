@@ -70,6 +70,8 @@ export function useStaffNotifications(
 
   // ─── WebSocket connection ─────────────────────────────────────────────────
 
+  const connectWebSocketRef = useRef<() => void>();
+
   const connectWebSocket = useCallback(() => {
     if (!scenarioId || !mountedRef.current) return;
 
@@ -116,7 +118,7 @@ export function useStaffNotifications(
       reconnectDelayRef.current = Math.min(delay * 2, RECONNECT_MAX_MS);
       reconnectTimerRef.current = setTimeout(() => {
         if (mountedRef.current) {
-          connectWebSocket();
+          connectWebSocketRef.current?.();
         }
       }, delay);
     };
@@ -127,12 +129,17 @@ export function useStaffNotifications(
     };
   }, [scenarioId, refresh]);
 
+  useEffect(() => {
+    connectWebSocketRef.current = connectWebSocket;
+  }, [connectWebSocket]);
+
   // ─── Lifecycle: load + connect on scenarioId change ──────────────────────
 
   useEffect(() => {
     mountedRef.current = true;
 
     if (!scenarioId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNotifications([]);
       return;
     }

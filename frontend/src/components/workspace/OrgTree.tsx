@@ -243,21 +243,27 @@ export function OrgTree({ rootWorkspaceId, currentUserWorkspaceId, onNavigate }:
 
   useEffect(() => {
     if (!rootWorkspaceId || !userDID) return;
-    setLoading(true);
-    setError(null);
+    let cancelled = false;
 
-    workspaceService
-      .getHierarchy(rootWorkspaceId, userDID)
-      .then((nodes) => {
+    const fetchHierarchy = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const nodes = await workspaceService.getHierarchy(rootWorkspaceId, userDID);
+        if (cancelled) return;
         const transformed = transformHierarchy(nodes);
         setTreeData(transformed);
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Failed to load hierarchy');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load hierarchy');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void fetchHierarchy();
+    return () => { cancelled = true; };
   }, [rootWorkspaceId, userDID]);
 
   const handleNavigate = useCallback(
