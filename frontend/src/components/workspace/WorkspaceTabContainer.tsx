@@ -18,6 +18,7 @@
  * Unknown roles fall back to ['overview', 'monitor'].
  *
  * Phase 20 Plan 04: Wired all tab panels with workspaceId prop injection
+ * Phase 20 Plan 07: Tab notification badges + TabNotificationDropdown + CrossWorkspaceLayerToggle
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -25,6 +26,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { WorkspaceDashboard } from './WorkspaceDashboard';
 import { OrgTreeSidebar } from './OrgTreeSidebar';
+import { NotificationBadge } from './NotificationBadge';
+import { TabNotificationDropdown } from './TabNotificationDropdown';
+import { CrossWorkspaceLayerToggle } from './CrossWorkspaceLayerToggle';
 import { DecideTab } from '../tabs/DecideTab';
 import { DesignTab } from '../tabs/DesignTab';
 import { CampaignTab } from '../tabs/CampaignTab';
@@ -78,10 +82,14 @@ export function WorkspaceTabContainer() {
     memberships,
     loading,
     setActiveWorkspace,
+    tabNotifications,
+    crossWorkspaceUpdates,
   } = useWorkspace();
 
   // Sidebar state
   const [orgTreeOpen, setOrgTreeOpen] = useState(false);
+  // Dropdown state: which tab's notification dropdown is open (null = none)
+  const [dropdownTab, setDropdownTab] = useState<string | null>(null);
 
   // Sync URL workspaceId → context (same pattern as WorkspaceDashboard)
   useEffect(() => {
@@ -169,7 +177,12 @@ export function WorkspaceTabContainer() {
 
   function renderTabContent() {
     if (activeTab === 'overview') {
-      return <WorkspaceDashboard />;
+      return (
+        <div>
+          <CrossWorkspaceLayerToggle workspaceId={displayId} />
+          <WorkspaceDashboard />
+        </div>
+      );
     }
     if (activeTab === 'decide') {
       return <DecideTab workspaceId={displayId} daoId={activeWorkspace?.daoId} />;
@@ -202,20 +215,46 @@ export function WorkspaceTabContainer() {
       >
         {/* Visible tabs in fixed order */}
         {WORKSPACE_TABS.filter((t) => visibleTabs.includes(t)).map((tab) => (
-          <button
-            key={tab}
-            role="tab"
-            aria-selected={activeTab === tab}
-            onClick={() => handleTabClick(tab)}
-            className={[
-              'px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap',
-              activeTab === tab
-                ? 'border-b-2 border-blue-500 text-white'
-                : 'text-gray-400 hover:text-gray-200 border-b-2 border-transparent',
-            ].join(' ')}
-          >
-            {TAB_LABELS[tab]}
-          </button>
+          <div key={tab} className="relative">
+            <button
+              role="tab"
+              aria-selected={activeTab === tab}
+              onClick={() => handleTabClick(tab)}
+              className={[
+                'px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap relative',
+                activeTab === tab
+                  ? 'border-b-2 border-blue-500 text-white'
+                  : 'text-gray-400 hover:text-gray-200 border-b-2 border-transparent',
+              ].join(' ')}
+            >
+              {TAB_LABELS[tab]}
+              {(tabNotifications[tab] ?? 0) > 0 && (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDropdownTab(dropdownTab === tab ? null : tab);
+                  }}
+                  className="ml-1 inline-block relative align-middle cursor-pointer"
+                  role="button"
+                  aria-label={`${tabNotifications[tab]} notifications for ${TAB_LABELS[tab]}`}
+                >
+                  <NotificationBadge count={tabNotifications[tab] ?? 0} />
+                </span>
+              )}
+            </button>
+            {dropdownTab === tab && (
+              <TabNotificationDropdown
+                tab={tab}
+                updates={crossWorkspaceUpdates}
+                onClose={() => setDropdownTab(null)}
+                onAction={(update) => {
+                  setActiveTab(update.tab as WorkspaceTab);
+                  setDropdownTab(null);
+                  // Future: navigate to specific item via update.actionableItemId
+                }}
+              />
+            )}
+          </div>
         ))}
 
         {/* Org tree toggle — far right */}
