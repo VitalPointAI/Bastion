@@ -289,15 +289,15 @@
   margin: 0;
 }
 
-/* Leaflet control styling for dark theme */
-.leaflet-control-layers {
+/* Leaflet control styling for dark theme — high specificity */
+.leaflet-control.leaflet-control-layers {
   background: rgba(10, 14, 39, 0.95);
   border: 1px solid rgba(74, 158, 255, 0.3);
   border-radius: 8px;
   backdrop-filter: blur(10px);
 }
 
-.leaflet-control-layers-toggle {
+.leaflet-control.leaflet-control-layers .leaflet-control-layers-toggle {
   background-color: rgba(10, 14, 39, 0.95);
   border: 1px solid rgba(74, 158, 255, 0.3);
 }
@@ -311,25 +311,32 @@
   border-top: 1px solid rgba(74, 158, 255, 0.2);
 }
 
-/* Zoom controls */
-.leaflet-control-zoom {
+/* Zoom controls — high specificity to override leaflet defaults */
+.leaflet-bar.leaflet-control-zoom {
   border: 1px solid rgba(74, 158, 255, 0.3);
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-.leaflet-control-zoom a {
+.leaflet-touch .leaflet-bar.leaflet-control-zoom {
+  border: 1px solid rgba(74, 158, 255, 0.3);
+}
+
+.leaflet-bar.leaflet-control-zoom a,
+.leaflet-touch .leaflet-bar.leaflet-control-zoom a {
   background-color: rgba(10, 14, 39, 0.95);
   color: var(--text-primary, #e0e7ff);
   border-bottom: 1px solid rgba(74, 158, 255, 0.3);
 }
 
-.leaflet-control-zoom a:hover {
+.leaflet-bar.leaflet-control-zoom a:hover,
+.leaflet-bar.leaflet-control-zoom a:focus {
   background-color: rgba(74, 158, 255, 0.2);
   color: var(--accent-primary, #4a9eff);
 }
 
-.leaflet-control-zoom a:last-child {
+.leaflet-bar.leaflet-control-zoom a:last-child {
   border-bottom: none;
 }
 
