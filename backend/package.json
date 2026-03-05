@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && cp src/cop/cco/cco-classes.json dist/cop/cco/cco-classes.json",
     "start": "node dist/index.js",
     "test": "vitest run"
   },
