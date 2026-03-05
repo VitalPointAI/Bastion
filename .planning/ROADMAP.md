@@ -437,7 +437,7 @@ Plans:
 - WOP-09: OrgTree Collapsible Sidebar — slide-out sidebar accessible from any tab
 - WOP-10: Workspace Breadcrumb — compact header identity showing active workspace
 **Depends on:** Phase 19
-**Plans:** 9 plans (4 waves)
+**Plans:** 3/9 plans executed
 
 Plans:
 - [ ] 20-01-PLAN.md — Routing restructure + WorkspaceSelector landing page + WorkspaceBreadcrumb (Wave 1)
