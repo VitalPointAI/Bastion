@@ -39,6 +39,7 @@ import { getCheckpointManager } from './orchestration/human-checkpoints.js';
 import { seedLangGraphAgents } from './agents/langgraph/agent-seeder.js';
 import { closeNeo4jDriver } from './graph/index.js';
 import { initRAFTSchema } from './graph/raft/schema-init.js';
+import { copRouter, initCOP } from './cop/index.js';
 
 dotenv.config();
 
@@ -172,6 +173,7 @@ app.use('/api/planning', planningRouter);
 app.use('/api/mdmp', mdmpRouter);
 app.use('/api/exercise', exerciseRouter);
 app.use('/api/user-profile', userProfileRouter);
+app.use('/api/cop', copRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -243,6 +245,14 @@ server.listen(port, async () => {
     console.log('LangGraph agents seeded');
   } catch (error) {
     console.error('Failed to seed LangGraph agents:', error);
+  }
+
+  // Initialize COP module (schema, tables, triggers, agent definitions)
+  try {
+    await initCOP();
+    console.log('COP module initialized');
+  } catch (error) {
+    console.error('Failed to initialize COP module:', error);
   }
 
   // Initialize RAFT Neo4j schema (constraints and indexes)

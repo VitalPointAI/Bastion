@@ -47,6 +47,7 @@ import { triggerAutoReview } from '../strategic/extraction/auto-review-hook.js';
 import { executeStrategyReview } from '../agents/langgraph/graphs/strategy-reviewer-graph.js';
 import { getReviewCheckpointManager } from '../agents/langgraph/graphs/strategy-reviewer-checkpoint.js';
 import { randomUUID } from 'crypto';
+import { getCOPTriggerHandler } from '../cop/index.js';
 
 const router = express.Router();
 
@@ -987,6 +988,21 @@ router.post('/objectives/:id/review', requireAuth, async (req, res) => {
     // Update objective status based on workflow state
     if (status.state === 'approved') {
       await objectives.updateObjective(objectiveId, { status: 'APPROVED' });
+
+      // COP trigger: document approved -> fire COP layer generation
+      try {
+        const copTrigger = getCOPTriggerHandler();
+        if (copTrigger) {
+          // Use workspaceId from objective if available, fallback to 'default'
+          const wsId = (objective as Record<string, unknown>).workspaceId as string || 'default';
+          const secId = (objective as Record<string, unknown>).sectionId as string || 'default';
+          copTrigger.handleCommitTrigger(wsId, secId, objectiveId);
+          console.log(`[COP] Objective approval triggered COP generation: ${objectiveId}`);
+        }
+      } catch (copErr) {
+        // Non-fatal: COP trigger failure should not break strategic workflow
+        console.warn('[COP] Trigger failed after objective approval:', copErr instanceof Error ? copErr.message : copErr);
+      }
     } else if (status.state === 'rejected') {
       await objectives.updateObjective(objectiveId, { status: 'REJECTED' });
     } else if (status.state === 'pendingRevision') {
@@ -1337,6 +1353,19 @@ router.post('/objectives/:id/intent', requireAuth, async (req, res) => {
     const intent = await intents.getIntent(intentId);
 
     console.log(`✓ Commander's intent created: ${intentId}`);
+
+    // COP trigger: intent creation -> fire COP layer generation
+    try {
+      const copTrigger = getCOPTriggerHandler();
+      if (copTrigger) {
+        const wsId = (objective as Record<string, unknown>).workspaceId as string || 'default';
+        const secId = (objective as Record<string, unknown>).sectionId as string || 'default';
+        copTrigger.handleCommitTrigger(wsId, secId, intentId);
+        console.log(`[COP] Intent creation triggered COP generation: ${intentId}`);
+      }
+    } catch (copErr) {
+      console.warn('[COP] Trigger failed after intent creation:', copErr instanceof Error ? copErr.message : copErr);
+    }
 
     res.status(201).json(intent);
   } catch (error) {
