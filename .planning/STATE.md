@@ -5,7 +5,7 @@ milestone_name: milestone
 status: unknown
 last_updated: "2026-03-05T22:37:14.000Z"
 progress:
-  total_phases: 34
+  total_phases: 42
   completed_phases: 22
   total_plans: 198
   completed_plans: 212
@@ -23,10 +23,10 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 21 of 32 (AI COP Layer Agent Team) - COMPLETE
+Phase: 21 of 40 (AI COP Layer Agent Team) - COMPLETE
 Plan: 13 of 13 in current phase — 21-01 through 21-13 complete
-Status: Plan 21-13 complete — Auto-trigger COP generation and workspace status badge
-Last activity: 2026-03-05 - Completed 21-13: Auto-trigger and Status Badge
+Status: Phase 21 complete — 8 new restructuring phases (22-29) added to roadmap
+Last activity: 2026-03-05 - Added Phases 22-29: Training mode, Problem Set rename, Doctrinal tab restructure, Operational design, Strategic environment, Resource registry, Embedded DAO, Contextual AI
 
 Progress: █████████████████████████ 212 plans complete
 
