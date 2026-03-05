@@ -1,21 +1,22 @@
 /**
  * WorkspaceTabContainer
  *
- * Shell component that replaces WorkspaceDashboard as the primary workspace
- * view. Renders a horizontal tab bar (Overview | Decide | Design | Campaign |
- * Monitor | Train) with role-gated visibility, URL-driven tab state, and a
- * collapsible OrgTreeSidebar slide-out overlay.
+ * Shell component that renders workspace tabs. Horizontal tab bar
+ * (COP | Decide | Design | Campaign | Train | Overview) with role-gated
+ * visibility, URL-driven tab state, and a collapsible OrgTreeSidebar overlay.
  *
  * Tab content:
- * - Overview: renders existing WorkspaceDashboard (role-adaptive panels + ActivityFeed)
+ * - COP: renders unified COPTab (map + AI layers + actor graph + activity feeds)
  * - Decide: renders DecideTab scoped to workspace daoId
- * - Design: renders DesignTab (workspace-scoped strategic docs, TODO full scoping)
+ * - Design: renders DesignTab (workspace-scoped strategic docs)
  * - Campaign: renders CampaignTab (workspace-scoped missions)
- * - Monitor: renders MonitorTab with dynamic workspaceId (not hardcoded 'default')
  * - Train: renders TrainTab wrapping ExerciseDashboard
+ * - Overview: renders WorkspaceDashboard (simple dashboard alternative)
  *
  * Role gating: each role sees only its allowed tabs (see DEFAULT_TAB_ACCESS).
- * Unknown roles fall back to ['overview', 'monitor'].
+ * Unknown roles fall back to ['cop', 'overview'].
+ *
+ * Phase 21 Plan 12: Monitor tab removed; COP replaces it as the primary/default tab.
  *
  * Phase 20 Plan 04: Wired all tab panels with workspaceId prop injection
  * Phase 20 Plan 07: Tab notification badges + TabNotificationDropdown + CrossWorkspaceLayerToggle
@@ -35,44 +36,42 @@ import { WorkspaceInviteModal } from './WorkspaceInviteModal';
 import { DecideTab } from '../tabs/DecideTab';
 import { DesignTab } from '../tabs/DesignTab';
 import { CampaignTab } from '../tabs/CampaignTab';
-import { MonitorTab } from '../tabs/MonitorTab';
 import { TrainTab } from '../tabs/TrainTab';
 import { COPTab } from '../cop/COPTab';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
-const WORKSPACE_TABS = ['overview', 'decide', 'design', 'campaign', 'monitor', 'train', 'cop'] as const;
+const WORKSPACE_TABS = ['cop', 'decide', 'design', 'campaign', 'train', 'overview'] as const;
 type WorkspaceTab = typeof WORKSPACE_TABS[number];
 
 const TAB_LABELS: Record<WorkspaceTab, string> = {
-  overview: 'Overview',
+  cop: 'COP',
   decide: 'Decide',
   design: 'Design',
   campaign: 'Campaign',
-  monitor: 'Monitor',
   train: 'Train',
-  cop: 'COP',
+  overview: 'Overview',
 };
 
 // ─── Role → tab access map ────────────────────────────────────────────────────
 
 const DEFAULT_TAB_ACCESS: Record<string, WorkspaceTab[]> = {
-  commander: ['overview', 'decide', 'design', 'campaign', 'monitor', 'train', 'cop'],
-  xo: ['overview', 'decide', 'design', 'campaign', 'monitor', 'train', 'cop'],
-  team_lead: ['overview', 'decide', 'campaign', 'monitor', 'train', 'cop'],
-  s2: ['overview', 'decide', 'monitor', 'cop'],
-  s3: ['overview', 'decide', 'campaign', 'cop'],
-  s4: ['overview', 'campaign'],
-  s5: ['overview', 'decide', 'design', 'campaign'],
-  s6: ['overview'],
-  s7: ['overview'],
-  s8: ['overview'],
-  s9: ['overview'],
-  member: ['overview', 'monitor'],
-  observer: ['overview'],
+  commander: ['cop', 'decide', 'design', 'campaign', 'train', 'overview'],
+  xo: ['cop', 'decide', 'design', 'campaign', 'train', 'overview'],
+  team_lead: ['cop', 'decide', 'campaign', 'train', 'overview'],
+  s2: ['cop', 'decide', 'overview'],
+  s3: ['cop', 'decide', 'campaign', 'overview'],
+  s4: ['cop', 'campaign', 'overview'],
+  s5: ['cop', 'decide', 'design', 'campaign', 'overview'],
+  s6: ['cop', 'overview'],
+  s7: ['cop', 'overview'],
+  s8: ['cop', 'overview'],
+  s9: ['cop', 'overview'],
+  member: ['cop', 'overview'],
+  observer: ['cop', 'overview'],
 };
 
-const FALLBACK_TABS: WorkspaceTab[] = ['overview', 'monitor'];
+const FALLBACK_TABS: WorkspaceTab[] = ['cop', 'overview'];
 
 // ─── WorkspaceTabContainer ────────────────────────────────────────────────────
 
@@ -135,9 +134,9 @@ export function WorkspaceTabContainer() {
     if (urlTab && WORKSPACE_TABS.includes(urlTab as WorkspaceTab)) {
       const t = urlTab as WorkspaceTab;
       // If role doesn't allow this tab, fall back to overview
-      return visibleTabs.includes(t) ? t : 'overview';
+      return visibleTabs.includes(t) ? t : 'cop';
     }
-    return 'overview';
+    return 'cop';
   }, [urlTab, visibleTabs]);
 
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(resolvedTab);
@@ -209,9 +208,6 @@ export function WorkspaceTabContainer() {
     }
     if (activeTab === 'campaign') {
       return <CampaignTab workspaceId={displayId} />;
-    }
-    if (activeTab === 'monitor') {
-      return <MonitorTab workspaceId={displayId} />;
     }
     if (activeTab === 'train') {
       return <TrainTab workspaceId={displayId} />;
