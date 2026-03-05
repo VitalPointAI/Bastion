@@ -22,6 +22,7 @@ import type {
   LayerTransitionInput,
   ReviewFeedback,
 } from './layer-types.js';
+import { versionStore } from './version-store.js';
 
 // Re-use shared types from layer-types for AuditEntry and COPLayer
 export interface AuditEntry {
@@ -162,6 +163,9 @@ export class LayerStoreMemory implements ILayerStore {
       );
     }
 
+    // Capture previous spec before mutation for version snapshot
+    const previousSpec = JSON.parse(JSON.stringify(layer.spec)) as COPLayerSpec;
+
     // Recall from COP requires reason
     if (currentState === 'cop' && targetState === 'review') {
       if (!input.reason) {
@@ -191,6 +195,13 @@ export class LayerStoreMemory implements ILayerStore {
       reason: input.reason,
     };
     layer.auditTrail.push(auditEntry);
+
+    // Create version snapshot (non-fatal: log warning on failure)
+    try {
+      await versionStore.createSnapshot(layer, previousSpec);
+    } catch (err) {
+      console.warn('[COP] Version snapshot failed (non-fatal):', err instanceof Error ? err.message : err);
+    }
 
     return { ...layer };
   }
@@ -384,6 +395,9 @@ export class LayerStore implements ILayerStore {
       }
     }
 
+    // Capture previous spec before mutation for version snapshot
+    const previousSpec = layer.spec;
+
     const { getPool } = await import('../../lib/database.js');
     const pool = getPool();
     const now = new Date();
@@ -428,7 +442,16 @@ export class LayerStore implements ILayerStore {
       params
     );
 
-    return (await this.getLayer(input.layerId))!;
+    const updatedLayer = (await this.getLayer(input.layerId))!;
+
+    // Create version snapshot (non-fatal: log warning on failure)
+    try {
+      await versionStore.createSnapshot(updatedLayer, previousSpec);
+    } catch (err) {
+      console.warn('[COP] Version snapshot failed (non-fatal):', err instanceof Error ? err.message : err);
+    }
+
+    return updatedLayer;
   }
 
   async updateLayerSpec(layerId: string, spec: COPLayerSpec): Promise<COPLayer> {
