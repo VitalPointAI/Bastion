@@ -4,6 +4,7 @@
  * Phase 21 Plan 05 Task 1: Confidence threshold evaluation and linkage store CRUD.
  * Tests use in-memory implementations for unit testing without database dependencies.
  */
+import { describe, it, expect, beforeEach } from 'vitest';
 
 import {
   evaluateConfidence,
