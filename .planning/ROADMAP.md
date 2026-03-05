@@ -459,7 +459,7 @@ Plans:
 **Plans:** 10 plans
 
 Plans:
-- [ ] 21-01-PLAN.md — COP types + CCO schema loader/validator + SVG sanitizer (Wave 1)
+- [x] 21-01-PLAN.md — COP types + CCO schema loader/validator + SVG sanitizer (Wave 1)
 - [x] 21-02-PLAN.md — Event bus + agent definitions + trigger handler + agent pool (Wave 1)
 - [ ] 21-03-PLAN.md — Layer store + lifecycle state machine + version snapshots + conflict detector (Wave 2)
 - [ ] 21-04-PLAN.md — SIDC builder + SVG spec builder + LLM fragment generator (Wave 2)

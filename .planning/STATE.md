@@ -25,11 +25,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 21 of 32 (AI COP Layer Agent Team) - IN PROGRESS
-Plan: 02 of 10 in current phase — 21-02 complete (Event bus + agent definitions + trigger handler + agent pool)
-Status: Executing — plan 21-02 complete: Typed event bus with 7 COP event types, triple trigger handler, activity bridge, 7 StaffAgentDef COP agents, pool-with-affinity manager
-Last activity: 2026-03-05 - Completed 21-02: Agent infrastructure layer
+Plan: 02 of 10 in current phase — 21-01 and 21-02 complete (wave 1 plans)
+Status: Executing — 21-01 complete: COP type system + CCO ontology loader + SVG sanitizer; 21-02 complete: Event bus + agent definitions + trigger handler + agent pool
+Last activity: 2026-03-05 - Completed 21-01: Foundation types, CCO schema, SVG security
 
-Progress: ████████████████████████ 192 plans complete
+Progress: ████████████████████████ 193 plans complete
 
 ## Performance Metrics
 
@@ -96,6 +96,7 @@ Progress: ███████████████████████�
 | Phase 19-workspace-membership-and-invite-system P07 | 3 | 2 tasks | 5 files |
 | Phase 19 P08 | 6 | 2 tasks | 7 files |
 | Phase 20 P06 | 8 | 2 tasks | 2 files |
+| Phase 21 P01 | 9 | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 21 Plan 01 (COP foundation types + CCO schema + SVG sanitizer):**
+- Bundled curated CCO classes as JSON (48 classes) instead of parsing OWL/Turtle files to avoid n3 dependency
+- Re-declared shared COP types in backend layer-types.ts to maintain frontend/backend module boundary
+- Used jsdom for DOMPurify Node.js support; SVG sanitizer uses belt-and-suspenders approach (detection + enforcement + isolation)
 
 **Phase 20 Plan 06 (WorkspaceContext tab notifications + service layer):**
 - Tab notifications derived from existing activity feed polling — no new backend endpoint needed
