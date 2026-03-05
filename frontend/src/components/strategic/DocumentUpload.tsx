@@ -13,9 +13,10 @@ import './DocumentUpload.css';
 
 interface DocumentUploadProps {
   onUploadComplete?: (doc: StrategicDocument) => void;
+  workspaceId?: string;
 }
 
-export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
+export function DocumentUpload({ onUploadComplete, workspaceId }: DocumentUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [level, setLevel] = useState<typeof DocumentLevel[keyof typeof DocumentLevel]>('OTHER');
@@ -94,7 +95,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
     setSuccess(false);
 
     try {
-      const doc = await strategicService.uploadDocument(file, title, level, classification);
+      const doc = await strategicService.uploadDocument(file, title, level, classification, workspaceId);
       setSuccess(true);
       setFile(null);
       setTitle('');

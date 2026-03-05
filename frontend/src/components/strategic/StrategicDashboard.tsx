@@ -19,7 +19,11 @@ import { MidlifeLegend } from './MidlifeLegend.js';
 import { ReviewPanel } from './ReviewPanel.js';
 import './StrategicDashboard.css';
 
-export function StrategicDashboard() {
+interface StrategicDashboardProps {
+  workspaceId?: string;
+}
+
+export function StrategicDashboard({ workspaceId }: StrategicDashboardProps = {}) {
   const { isAuthenticated } = useAuth();
   const { userDID, accountId: _accountId } = useUser();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -105,7 +109,7 @@ export function StrategicDashboard() {
         {/* Upload Panel */}
         {showUpload && (
           <section className="upload-section">
-            <DocumentUpload onUploadComplete={handleUploadComplete} />
+            <DocumentUpload onUploadComplete={handleUploadComplete} workspaceId={workspaceId} />
           </section>
         )}
 
@@ -198,6 +202,7 @@ export function StrategicDashboard() {
               onExtractObjectives={handleExtractComplete}
               refreshTrigger={refreshTrigger}
               userDID={userDID || undefined}
+              workspaceId={workspaceId}
             />
           </section>
         )}

@@ -159,6 +159,7 @@ router.post('/documents', requireAuth, upload.single('document'), async (req, re
       level = 'OTHER',
       classification = 'UNCLASSIFIED',
       backupToIPFS = false,
+      workspaceId,
     } = req.body;
 
     // Validate level
@@ -235,6 +236,7 @@ router.post('/documents', requireAuth, upload.single('document'), async (req, re
       classification: classification as ClassificationLevel,
       ipfsCid,
       createdBy: userDID,
+      workspaceId: workspaceId as string | undefined,
     });
 
     console.log(`✓ Strategic document stored: ${documentId}`);
@@ -270,8 +272,9 @@ router.get('/documents', requireAuth, async (req, res) => {
 
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = parseInt(req.query.offset as string) || 0;
+    const workspaceId = req.query.workspaceId as string | undefined;
 
-    const documents = await store.list(userDID, limit, offset);
+    const documents = await store.list(userDID, limit, offset, workspaceId);
 
     res.json({
       documents,

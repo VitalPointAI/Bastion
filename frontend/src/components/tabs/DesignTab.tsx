@@ -9,16 +9,14 @@ interface DesignTabProps {
   workspaceId: string;
 }
 
-export function DesignTab({ workspaceId: _workspaceId }: DesignTabProps) {
-  // TODO Phase 20: Pass workspaceId to filter strategic docs by workspace
-  // StrategicDashboard needs internal update to accept workspaceId prop
+export function DesignTab({ workspaceId }: DesignTabProps) {
   return (
     <TabLayout
       items={DESIGN_ITEMS}
       selectedItem="strategic-docs"
       onSelectItem={() => {}}
     >
-      <StrategicDashboard />
+      <StrategicDashboard workspaceId={workspaceId} />
     </TabLayout>
   );
 }

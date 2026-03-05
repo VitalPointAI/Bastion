@@ -35,6 +35,12 @@ export async function initStrategicDocumentsTable(): Promise<void> {
     )
   `);
 
+  // Add workspace_id column if not exists (migration for existing deployments)
+  await pool.query(`
+    ALTER TABLE strategic_documents
+    ADD COLUMN IF NOT EXISTS workspace_id TEXT
+  `);
+
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_strategic_documents_created_by
     ON strategic_documents(created_by)
@@ -44,6 +50,30 @@ export async function initStrategicDocumentsTable(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_strategic_documents_level
     ON strategic_documents(level)
   `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_strategic_documents_workspace
+    ON strategic_documents(workspace_id)
+  `);
+
+  // Backfill: associate orphaned docs with first workspace matching 'World Space'
+  try {
+    const wsResult = await pool.query(
+      `SELECT id FROM workspaces WHERE name = 'World Space' LIMIT 1`
+    );
+    if (wsResult.rows.length > 0) {
+      const wsId = wsResult.rows[0].id;
+      const updated = await pool.query(
+        `UPDATE strategic_documents SET workspace_id = $1 WHERE workspace_id IS NULL`,
+        [wsId]
+      );
+      if ((updated.rowCount ?? 0) > 0) {
+        console.log(`✓ Backfilled ${updated.rowCount} documents to workspace ${wsId}`);
+      }
+    }
+  } catch {
+    // Workspaces table may not exist yet — skip backfill
+  }
 
   console.log('✓ strategic_documents table initialized');
 }
@@ -64,8 +94,8 @@ export async function storeDocument(
     INSERT INTO strategic_documents (
       id, title, level, original_filename, mime_type,
       page_count, text_content, text_length, classification,
-      ipfs_cid, created_by
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ipfs_cid, created_by, workspace_id
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     `,
     [
       id,
@@ -79,6 +109,7 @@ export async function storeDocument(
       input.classification || 'UNCLASSIFIED',
       input.ipfsCid || null,
       input.createdBy,
+      input.workspaceId || null,
     ]
   );
 
@@ -146,26 +177,33 @@ export interface DocumentWithObjectiveCount extends Omit<StrategicDocument, 'tex
 export async function listDocuments(
   createdBy: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  workspaceId?: string
 ): Promise<DocumentWithObjectiveCount[]> {
   const pool = getPool();
+
+  // Filter by workspace_id if provided, otherwise fall back to created_by
+  const whereClause = workspaceId
+    ? 'd.workspace_id = $1'
+    : 'd.created_by = $1';
+  const filterParam = workspaceId || createdBy;
 
   const result = await pool.query(
     `
     SELECT d.id, d.title, d.level, d.original_filename, d.mime_type,
            d.page_count, d.text_length, d.classification, d.ipfs_cid,
-           d.created_by, d.created_at,
+           d.created_by, d.workspace_id, d.created_at,
            COALESCE(COUNT(o.id), 0)::int as objective_count
     FROM strategic_documents d
     LEFT JOIN strategic_objectives o ON o.document_id = d.id
-    WHERE d.created_by = $1
+    WHERE ${whereClause}
     GROUP BY d.id, d.title, d.level, d.original_filename, d.mime_type,
              d.page_count, d.text_length, d.classification, d.ipfs_cid,
-             d.created_by, d.created_at
+             d.created_by, d.workspace_id, d.created_at
     ORDER BY d.created_at DESC
     LIMIT $2 OFFSET $3
     `,
-    [createdBy, limit, offset]
+    [filterParam, limit, offset]
   );
 
   return result.rows.map(mapRowToDocumentWithCount);
@@ -230,6 +268,7 @@ function mapRowToDocument(row: Record<string, unknown>): StrategicDocument {
     classification: row.classification as ClassificationLevel,
     ipfsCid: row.ipfs_cid as string | undefined,
     createdBy: row.created_by as string,
+    workspaceId: row.workspace_id as string | undefined,
     createdAt: new Date(row.created_at as string),
   };
 }
@@ -251,6 +290,7 @@ function mapRowToDocumentSummary(
     classification: row.classification as ClassificationLevel,
     ipfsCid: row.ipfs_cid as string | undefined,
     createdBy: row.created_by as string,
+    workspaceId: row.workspace_id as string | undefined,
     createdAt: new Date(row.created_at as string),
   };
 }
@@ -272,6 +312,7 @@ function mapRowToDocumentWithCount(
     classification: row.classification as ClassificationLevel,
     ipfsCid: row.ipfs_cid as string | undefined,
     createdBy: row.created_by as string,
+    workspaceId: row.workspace_id as string | undefined,
     createdAt: new Date(row.created_at as string),
     objectiveCount: row.objective_count as number,
   };
@@ -300,9 +341,10 @@ export class DocumentStore {
   async list(
     createdBy: string,
     limit?: number,
-    offset?: number
+    offset?: number,
+    workspaceId?: string
   ): Promise<Omit<StrategicDocument, 'textContent'>[]> {
-    return listDocuments(createdBy, limit, offset);
+    return listDocuments(createdBy, limit, offset, workspaceId);
   }
 
   async listAll(

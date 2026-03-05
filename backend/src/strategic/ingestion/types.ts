@@ -87,6 +87,8 @@ export interface StrategicDocument {
   ipfsCid?: string;
   /** DID of user who created */
   createdBy: string;
+  /** Workspace this document belongs to */
+  workspaceId?: string;
   /** Creation timestamp */
   createdAt: Date;
 }
@@ -104,6 +106,7 @@ export interface CreateStrategicDocumentInput {
   classification?: ClassificationLevel;
   ipfsCid?: string;
   createdBy: string;
+  workspaceId?: string;
 }
 
 /**
