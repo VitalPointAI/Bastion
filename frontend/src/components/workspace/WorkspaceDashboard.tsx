@@ -29,36 +29,18 @@
  * - WorkspaceInviteModal opens inline (no route navigation needed)
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { CommanderPanel } from './CommanderPanel';
 import { StaffPanel } from './StaffPanel';
 import { ObserverPanel } from './ObserverPanel';
 import { ActivityFeed } from './ActivityFeed';
-import { WorkspaceInviteModal } from './WorkspaceInviteModal';
 import { StrategicValidityDashboard } from '../validity/index.js';
 
 // ─── Role mappings ────────────────────────────────────────────────────────────
 
 const COMMANDER_ROLES = ['commander', 'xo'];
-
-function classificationColor(level: string): string {
-  switch (level?.toUpperCase()) {
-    case 'TOPSECRET': return 'bg-red-900 text-red-200 border-red-700';
-    case 'SECRET': return 'bg-yellow-900 text-yellow-200 border-yellow-700';
-    default: return 'bg-green-900 text-green-200 border-green-700';
-  }
-}
-
-function workspaceTypeBadge(type: string): string {
-  switch (type) {
-    case 'Organization': return 'bg-blue-900/50 text-blue-300 border-blue-700';
-    case 'Unit': return 'bg-purple-900/50 text-purple-300 border-purple-700';
-    case 'Team': return 'bg-teal-900/50 text-teal-300 border-teal-700';
-    default: return 'bg-gray-700 text-gray-300 border-gray-600';
-  }
-}
 
 // ─── WorkspaceDashboard ───────────────────────────────────────────────────────
 
@@ -73,9 +55,6 @@ export function WorkspaceDashboard() {
     loading,
     setActiveWorkspace,
   } = useWorkspace();
-
-  // Modal state
-  const [showInviteModal, setShowInviteModal] = useState(false);
 
   // If the URL workspaceId differs from stored active, switch to it
   useEffect(() => {
@@ -145,79 +124,7 @@ export function WorkspaceDashboard() {
   return (
     <div className="flex flex-col min-h-full bg-gray-900">
 
-      {/* Dashboard Header */}
-      <div className="border-b border-gray-700 bg-gray-800 px-6 py-4">
-        <div className="flex items-start justify-between gap-4">
-
-          {/* Workspace identity */}
-          <div className="flex-1 min-w-0">
-            {activeWorkspace ? (
-              <>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h2 className="text-xl font-bold text-white truncate">
-                    {activeWorkspace.name}
-                  </h2>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded border ${workspaceTypeBadge(activeWorkspace.workspaceType)}`}
-                  >
-                    {activeWorkspace.workspaceType}
-                  </span>
-                  <span
-                    className={`text-xs font-mono px-2 py-0.5 rounded border ${classificationColor(activeWorkspace.classification)}`}
-                  >
-                    {activeWorkspace.classification}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-400 mt-1">
-                  {activeWorkspace.memberCount} member{activeWorkspace.memberCount !== 1 ? 's' : ''}
-                  {userRoleInActive && (
-                    <>
-                      {' '}&middot;{' '}
-                      <span className="text-gray-300 capitalize">{userRoleInActive}</span>
-                    </>
-                  )}
-                </p>
-              </>
-            ) : (
-              <div>
-                <h2 className="text-xl font-bold text-gray-400">Workspace</h2>
-                <p className="text-sm text-gray-600">Loading details...</p>
-              </div>
-            )}
-          </div>
-
-          {/* Quick actions — desktop only */}
-          <div className="hidden lg:flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="text-xs px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-600 text-white transition-colors"
-            >
-              Invite Member
-            </button>
-            <Link
-              to={`/workspace/${displayId}/members`}
-              className="text-xs px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-            >
-              Manage Members
-            </Link>
-            <Link
-              to={`/workspace/${displayId}/directory`}
-              className="text-xs px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-            >
-              Directory
-            </Link>
-            <Link
-              to={`/workspace/${displayId}/settings`}
-              className="text-xs px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-            >
-              Settings
-            </Link>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Main content — full width (OrgTree moved to global OrgTreeSidebar in WorkspaceTabContainer) */}
+      {/* Main content */}
       <div className="flex-1 grid grid-cols-1 gap-4 p-4">
 
         {/* Validity map centerpiece — Common Operating Picture */}
@@ -250,46 +157,7 @@ export function WorkspaceDashboard() {
           </section>
         )}
 
-        {/* Mobile quick actions */}
-        <section className="lg:hidden bg-gray-800 rounded-lg border border-gray-700 p-4">
-          <h3 className="text-sm font-semibold text-gray-300 mb-3">Actions</h3>
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="text-sm px-3 py-2 rounded bg-blue-700 hover:bg-blue-600 text-white transition-colors text-left"
-            >
-              Invite Member
-            </button>
-            <Link
-              to={`/workspace/${displayId}/members`}
-              className="text-sm px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-            >
-              Manage Members
-            </Link>
-            <Link
-              to={`/workspace/${displayId}/directory`}
-              className="text-sm px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-            >
-              Directory
-            </Link>
-            <Link
-              to={`/workspace/${displayId}/settings`}
-              className="text-sm px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-            >
-              Settings
-            </Link>
-          </div>
-        </section>
       </div>
-
-      {/* WorkspaceInviteModal */}
-      {showInviteModal && displayId && (
-        <WorkspaceInviteModal
-          workspaceId={displayId}
-          workspaceName={activeWorkspace?.name ?? 'Workspace'}
-          onClose={() => setShowInviteModal(false)}
-        />
-      )}
 
     </div>
   );

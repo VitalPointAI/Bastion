@@ -23,7 +23,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useUser } from '../../context/UserContext';
 import { workspaceService } from '../../lib/workspace-service';
@@ -31,7 +31,7 @@ import { WorkspaceDashboard } from './WorkspaceDashboard';
 import { OrgTreeSidebar } from './OrgTreeSidebar';
 import { NotificationBadge } from './NotificationBadge';
 import { TabNotificationDropdown } from './TabNotificationDropdown';
-import { CrossWorkspaceLayerToggle } from './CrossWorkspaceLayerToggle';
+import { WorkspaceInviteModal } from './WorkspaceInviteModal';
 import { DecideTab } from '../tabs/DecideTab';
 import { DesignTab } from '../tabs/DesignTab';
 import { CampaignTab } from '../tabs/CampaignTab';
@@ -98,6 +98,8 @@ export function WorkspaceTabContainer() {
   const [orgTreeOpen, setOrgTreeOpen] = useState(false);
   // Dropdown state: which tab's notification dropdown is open (null = none)
   const [dropdownTab, setDropdownTab] = useState<string | null>(null);
+  // Invite modal state (moved from WorkspaceDashboard)
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   // Sync URL workspaceId → context (same pattern as WorkspaceDashboard)
   useEffect(() => {
@@ -195,12 +197,7 @@ export function WorkspaceTabContainer() {
 
   function renderTabContent() {
     if (activeTab === 'overview') {
-      return (
-        <div>
-          <CrossWorkspaceLayerToggle workspaceId={displayId} />
-          <WorkspaceDashboard />
-        </div>
-      );
+      return <WorkspaceDashboard />;
     }
     if (activeTab === 'decide') {
       return <DecideTab workspaceId={displayId} daoId={activeWorkspace?.daoId} />;
@@ -276,26 +273,69 @@ export function WorkspaceTabContainer() {
           </div>
         ))}
 
-        {/* Org tree toggle — far right */}
+        {/* Right-aligned actions + Org toggle */}
+        <div className="ml-auto hidden lg:flex items-center gap-1 pr-1">
+          <button
+            onClick={() => setShowInviteModal(true)}
+            className="px-3 py-2 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors whitespace-nowrap"
+          >
+            Invite
+          </button>
+          <Link
+            to={`/workspace/${displayId}/members`}
+            className="px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors whitespace-nowrap"
+          >
+            Members
+          </Link>
+          <Link
+            to={`/workspace/${displayId}/directory`}
+            className="px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors whitespace-nowrap"
+          >
+            Directory
+          </Link>
+          <Link
+            to={`/workspace/${displayId}/settings`}
+            className="px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors whitespace-nowrap"
+          >
+            Settings
+          </Link>
+
+          <span className="w-px h-5 bg-gray-700 mx-1" />
+
+          <button
+            onClick={() => setOrgTreeOpen(true)}
+            className="px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1"
+            aria-label="Open organization tree"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h8m-8 6h16" />
+            </svg>
+            Org
+          </button>
+        </div>
+
+        {/* Mobile: just Org toggle */}
         <button
           onClick={() => setOrgTreeOpen(true)}
-          className="ml-auto px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1.5"
+          className="lg:hidden ml-auto px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1"
           aria-label="Open organization tree"
         >
-          {/* Org icon (simple hierarchy SVG) */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
+            className="h-3.5 w-3.5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             strokeWidth={2}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 6h16M4 12h8m-8 6h16"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h8m-8 6h16" />
           </svg>
           Org
         </button>
@@ -308,6 +348,15 @@ export function WorkspaceTabContainer() {
 
       {/* OrgTreeSidebar — rendered outside tab content to avoid overflow clipping */}
       {orgTreeOpen && <OrgTreeSidebar onClose={() => setOrgTreeOpen(false)} />}
+
+      {/* Invite modal */}
+      {showInviteModal && displayId && (
+        <WorkspaceInviteModal
+          workspaceId={displayId}
+          workspaceName={activeWorkspace?.name ?? 'Workspace'}
+          onClose={() => setShowInviteModal(false)}
+        />
+      )}
 
     </div>
   );
