@@ -467,7 +467,7 @@ Plans:
 - [x] 21-06-PLAN.md — COP coordinator LangGraph StateGraph + 6 layer sub-agents (Wave 3)
 - [x] 21-07-PLAN.md — COP REST API endpoints + module initialization (Wave 3)
 - [x] 21-08-PLAN.md — COP API client + map view + layer controls + perspective toggle (Wave 4)
-- [ ] 21-09-PLAN.md — Entity tooltips/detail + review panel + lifecycle UI + conflict banner (Wave 4)
+- [x] 21-09-PLAN.md — Entity tooltips/detail + review panel + lifecycle UI + conflict banner (Wave 4)
 - [ ] 21-10-PLAN.md — Phase slider + playback + version browser + agent activity feed + human verify (Wave 4)
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
