@@ -29,6 +29,8 @@ import { ActivityBridge } from './messaging/activity-bridge.js';
 import { runCOPGeneration } from './agents/cop-coordinator.js';
 import { COP_AGENT_DEFINITIONS } from './agents/agent-definitions.js';
 import { setHandlerDependencies } from './api/cop-handlers.js';
+import { objectiveStore } from '../strategic/objectives/index.js';
+import { actorStore } from '../graph/raft/actor-store.js';
 
 // ─── Module State ────────────────────────────────────────────────────────────
 
@@ -103,10 +105,41 @@ function wireGenerationTrigger(triggerHandler: TriggerHandler): void {
   copEventBus.on('layer:generation:start', async (data) => {
     console.log(`[COP] Generation triggered: workspace=${data.workspaceId}, section=${data.sectionId}, by=${data.triggeredBy}`);
     try {
+      // Fetch real documents (objectives) for sub-agent context
+      let documents: Array<{ id: string; content: string; type: string }> = [];
+      let graphEntities: Array<{ id: string; name: string; type: string; properties: Record<string, unknown> }> = [];
+
+      try {
+        const { objectives } = await objectiveStore.listObjectives({
+          status: 'APPROVED',
+        });
+        documents = objectives.map(obj => ({
+          id: obj.id,
+          content: [obj.description, obj.sourceReference || ''].filter(Boolean).join('\n'),
+          type: 'objective',
+        }));
+      } catch (err) {
+        console.warn('[COP] Failed to fetch objectives:', err instanceof Error ? err.message : err);
+      }
+
+      // Fetch real graph entities (actors) for sub-agent context
+      try {
+        const actors = await actorStore.listActors(data.workspaceId);
+        graphEntities = actors.map(actor => ({
+          id: actor.id,
+          name: actor.name,
+          type: actor.type,
+          properties: actor.attributes || {},
+        }));
+      } catch (err) {
+        console.warn('[COP] Failed to fetch graph entities:', err instanceof Error ? err.message : err);
+      }
+
       const layer = await runCOPGeneration(
         data.workspaceId,
         data.sectionId,
         data.triggeredBy,
+        { documents, graphEntities },
       );
       if (layer) {
         console.log(`[COP] Layer ${layer.id} generated successfully`);
