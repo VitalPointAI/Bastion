@@ -220,7 +220,7 @@ export function WorkspaceTabContainer() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col min-h-full bg-gray-900">
+    <div className="flex flex-col h-full bg-gray-900">
 
       {/* Horizontal tab bar */}
       <nav
@@ -342,7 +342,7 @@ export function WorkspaceTabContainer() {
       </nav>
 
       {/* Tab content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-hidden min-h-0">
         {renderTabContent()}
       </div>
 
