@@ -41,6 +41,14 @@ None
 - [ ] **Phase 16: AI Assigned Staff Workspaces** - AI-assigned staff roles with full agent team execution, human-in-the-loop review, real-time channel observability, and cross-role AI coordination
 - [ ] **Phase 17: Deployment - CI/CD Pipeline & Hetzner Server** - GitHub Actions CI/CD pipeline deploying Bastion to Hetzner server, TEE-aware component separation documented for production, single-server dev deployment
 - [x] **Phase 21: AI COP Layer Agent Team** - Autonomous agent team per workspace section that parses documents/plans, derives location/resource/intent, and generates MIL-STD-2525 interactive SVG overlay layers with standard military symbology for the common operating picture; layers include image specs for model-generated SVGs, update on commit, support publish control before promotion to top-level COP, provide entity-data linkages with hover/click detail, animate movement/phasing, and render both friendly and adversary perspectives (completed 2026-03-05)
+- [ ] **Phase 22: Training/Operational Global Mode** - Global app toggle switching between training (exercise) and operational modes with visual distinction, data isolation, governance weight adjustment, and reset/checkpoint capability (INSERTED)
+- [ ] **Phase 23: Problem Set Model & Workspace Rename** - Rename workspaces to problem sets throughout the application, add echelon-awareness (strategic/operational/tactical), update data model, UI, routes, and API (INSERTED)
+- [ ] **Phase 24: Doctrinal Tab Restructure** - Replace COP/Decide/Design/Campaign/Train/Overview tabs with doctrinal lifecycle flow: Understand/Design/Plan/Direct/COP/Assess — reorganize existing components into doctrinally-aligned tabs (INSERTED)
+- [ ] **Phase 25: Operational Design Workspace** - Build the Design tab with problem framing, center of gravity analysis, lines of effort/operation, operational approach development, and AI-assisted design recommendations (INSERTED)
+- [ ] **Phase 26: Strategic Environment & Inheritance** - Strategic-level problem set as context provider with inheritance mechanism for directives, policy, and intelligence; update propagation to child problem sets (INSERTED)
+- [ ] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED)
+- [ ] **Phase 28: Embedded DAO Governance at Decision Gates** - Move DAO governance from dedicated tab into contextual workflow decision gates; proposals trigger at natural planning decision points (objective approval, COA selection, order release) (INSERTED)
+- [ ] **Phase 29: Contextual AI Staff Integration** - Surface AI agent output contextually per tab; per-tab AI assistant aware of workflow phase; recommendation engine tied to doctrinal workflow position (INSERTED)
 
 ## Phase Details
 
@@ -472,6 +480,180 @@ Plans:
 - [x] 21-11-PLAN.md — Gap closure: wire version snapshots + fetch data for sub-agents (Wave 5)
 - [x] 21-12-PLAN.md — Gap closure: merge Overview/Monitor/COP into unified COP tab (Wave 5)
 - [x] 21-13-PLAN.md — Gap closure: auto-trigger COP generation + workspace status badge (Wave 6)
+
+### Phase 22: Training/Operational Global Mode (INSERTED)
+**Goal:** Global app-level toggle that switches the entire BASTION instance between training (exercise) and operational modes — same UI, same workflow, same AI agents, different data context and consequence level
+**Depends on:** Phase 21
+**Research:** Unlikely
+**Plans:** 5 plans
+
+**Context:**
+"Train as you fight" — the training environment must be identical to the operational environment so users build muscle memory on the same system they'll use for real planning. A global toggle (not per-workspace) prevents the dangerous scenario of mixing training and operational actions.
+
+**Key Capabilities:**
+1. **Global Mode Toggle** — App-wide TRAINING/OPERATIONAL switch in header, requires confirmation to change, persisted per user session
+2. **Visual Distinction** — Training mode: persistent amber "EXERCISE - EXERCISE - EXERCISE" banner (mimicking military exercise message headers), amber border on workspace areas. Operational mode: clean UI with subtle green indicator
+3. **Data Isolation** — Training mode loads from exercise scenarios with simulated forces; operational mode uses real workspace data. Separate data contexts, no cross-contamination
+4. **Governance Weight** — Training proposals can be fast-tracked or auto-approved for iteration speed; operational proposals go through full DAO process
+5. **Reset/Checkpoint** — Training mode supports reset to phase checkpoints and replay. Operational mode has no reset capability
+6. **After-Action Review** — Training mode captures all decisions, AI recommendations, and outcomes for AAR analysis
+
+Plans:
+- [ ] 22-01-PLAN.md — Backend mode infrastructure (DB schema, API, middleware)
+- [ ] 22-02-PLAN.md — Frontend ModeContext, toggle UI, banner, modal
+- [ ] 22-03-PLAN.md — Workspace mode filtering and Train tab removal
+- [ ] 22-04-PLAN.md — AAR event store and checkpoint/reset store
+- [ ] 22-05-PLAN.md — End-to-end integration verification
+
+### Phase 23: Problem Set Model & Workspace Rename (INSERTED)
+**Goal:** Rename "workspace" to "problem set" throughout the application to align with JP 5-0 doctrinal terminology, and enhance the model with echelon-awareness for strategic/operational/tactical classification
+**Depends on:** Phase 22
+**Research:** Unlikely
+**Plans:** TBD
+
+**Context:**
+In JP 5-0, operational design addresses a "problem set" — the complex of conditions, circumstances, and influences that define the operational environment and the challenge to be addressed. Renaming workspaces to problem sets aligns the tool with doctrinal language and reinforces that each workspace represents a distinct operational problem at a specific echelon with its own design-plan-execute-assess cycle.
+
+**Key Capabilities:**
+1. **Terminology Update** — Rename workspace → problem set in all UI labels, routes, API endpoints, database columns, TypeScript types, and documentation
+2. **Echelon Classification** — Each problem set tagged as strategic, operational, or tactical level, affecting available tools, planning depth, and staff composition
+3. **Problem Set Selector** — Updated landing page: "Select Problem Set" with echelon indicators and operational status
+4. **Hierarchy Awareness** — Strategic problem sets contain/inform operational ones, which contain/inform tactical ones — data flows down, decisions escalate up
+5. **Route Updates** — `/workspace/{id}` → `/problem-set/{id}` with redirects for backward compatibility
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 23 to create plans)
+
+### Phase 24: Doctrinal Tab Restructure (INSERTED)
+**Goal:** Replace the current tab structure (COP/Decide/Design/Campaign/Train/Overview) with a doctrinal lifecycle flow (Understand/Design/Plan/Direct/COP/Assess) that guides users through the military planning process
+**Depends on:** Phase 23
+**Research:** Unlikely
+**Plans:** TBD
+
+**Context:**
+The current tabs are organized by feature category, not by how commanders and staff actually work through a problem. The doctrinal lifecycle — Understand → Design → Plan → Direct → COP → Assess — mirrors JP 5-0 and MDMP, guiding users through the natural progression from understanding the environment to assessing results. This is primarily a reorganization of existing components into doctrinally-aligned containers.
+
+**Key Capabilities:**
+1. **Understand Tab** — Strategic environment, intelligence assessments, threat analysis, operational variables (PMESII-PT), scenario documents, RAFT analysis, IPB assessments. Consolidates content from current Design (strategic docs) and exercise scenario/IPB views
+2. **Design Tab** — Operational design workspace for problem framing, operational approach development, center of gravity analysis, lines of effort/operation. Currently the thinnest area — Phase 25 builds this out
+3. **Plan Tab** — Structured JPP/MDMP planning: mission analysis, COA development, wargaming, COA comparison, COA approval. Consolidates current planning dashboard, COA tools, red team, MDMP workflow, exercise planning board
+4. **Direct Tab** — Orders production (WARNORD/OPORD/FRAGO), task organization, synchronization matrices, resource allocation. Consolidates current mission/order components and resource management
+5. **COP Tab** — Common Operating Picture with AI-generated overlay layers, force tracking, map visualization. Already strong from Phase 21
+6. **Assess Tab** — MOE/MOP tracking, running estimates, reframing triggers, branch/sequel planning, validity dashboard. Fills a gap in the current structure
+7. **Train Tab Elimination** — Training functionality absorbed by global training mode toggle (Phase 22), not a separate tab
+8. **Role-Based Visibility** — Updated role→tab access matrix for the new tab structure
+9. **Decide Tab Elimination** — DAO governance moved to contextual decision gates within each tab (Phase 28)
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 24 to create plans)
+
+### Phase 25: Operational Design Workspace (INSERTED)
+**Goal:** Build the Design tab as a full operational design workspace with problem framing, center of gravity analysis, lines of effort/operation definition, operational approach development, and AI-assisted design recommendations
+**Depends on:** Phase 24
+**Research:** Required
+**Research topics:** JP 5-0 Chapter III operational design methodology, center of gravity analysis frameworks (Strange's model, CG-CC-CR-CV), lines of effort vs lines of operation, operational approach visualization, decisive points, operational reach, culmination, AI-assisted problem framing patterns
+**Plans:** TBD
+
+**Context:**
+Operational design is where the creative, iterative work happens before structured planning begins. Currently the Design tab is just document upload. This phase transforms it into the workspace where commanders and planners frame the problem, identify centers of gravity, define their operational approach, and establish lines of effort — all with AI assistance that can suggest frameworks, challenge assumptions, and identify gaps in the design.
+
+**Key Capabilities:**
+1. **Problem Framing Canvas** — Interactive workspace for defining the problem: current state, desired end state, conditions, obstacles, opportunities. AI-assisted identification of key tensions and contradictions
+2. **Center of Gravity Analysis** — Strange's CG-CC-CR-CV framework with AI assistance for identifying critical capabilities, requirements, and vulnerabilities for both friendly and adversary forces
+3. **Lines of Effort/Operation** — Visual definition and management of LOEs/LOOs with linkage to objectives, decisive points, and phasing
+4. **Operational Approach Builder** — Synthesize CoG analysis and LOEs into a coherent operational approach with phasing, transitions, and decision points
+5. **Design-to-Plan Handoff** — Operational approach outputs feed directly into the Plan tab's mission analysis and COA development
+6. **AI Design Assistant** — Contextual AI that suggests alternative framings, challenges assumptions, identifies gaps, and recommends operational approaches based on historical patterns and doctrinal principles
+7. **Collaborative Design** — Real-time collaborative editing (Yjs) for design artifacts so multiple staff members can contribute simultaneously
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 25 to create plans)
+
+### Phase 26: Strategic Environment & Inheritance (INSERTED)
+**Goal:** Enable strategic-level problem sets to serve as context providers, with inheritance mechanisms that propagate directives, policy, intelligence, and strategic guidance to subordinate operational and tactical problem sets
+**Depends on:** Phase 24, Phase 23
+**Research:** Unlikely
+**Plans:** TBD
+
+**Context:**
+The "overarching world view" — national/theater directives, policy, guidance, intelligence — must be accessible and inheritable by all subordinate problem sets. A strategic-level problem set publishes context that operational-level problem sets subscribe to and inherit, ensuring planning at every echelon is grounded in current strategic direction. This builds on existing cross-workspace subscription and escalation mechanisms.
+
+**Key Capabilities:**
+1. **Strategic Context Problem Set** — Special problem set type that serves as the authoritative source for strategic direction, policy, and intelligence at theater/national level
+2. **Inheritance Mechanism** — Child problem sets automatically receive and display inherited strategic context in their Understand tab
+3. **Update Propagation** — Changes to strategic direction (new intelligence, updated policy, revised guidance) propagate to all subscribing problem sets with notifications
+4. **Context Override** — Subordinate problem sets can annotate inherited context with local interpretation without modifying the source
+5. **Multi-Level Cascade** — Strategic → operational → tactical inheritance chain, with each level adding specificity
+6. **Context Dashboard** — Visual display of what strategic context is inherited, when it was last updated, and what has changed
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 26 to create plans)
+
+### Phase 27: Resource Registry & DID Plugin Architecture (INSERTED)
+**Goal:** Elevate resources from data records to first-class entities with DIDs, a plugin registration system for resource types, and full integration with the COP, DAO governance, and AI agent ecosystem
+**Depends on:** Phase 24
+**Research:** Required
+**Research topics:** Resource identity patterns in military C2 systems, DID-based asset tracking, plugin architecture patterns (Strategy/Factory), IoT device identity management, MIL-STD-2525D resource symbology, telemetry data ingestion patterns, edge device registration protocols
+**Plans:** TBD
+
+**Context:**
+Currently resources (vehicles, sensors, weapons, personnel, consumables) are simple data rows with prefixed UUIDs. Agents have full DID support, registries, capabilities, and team membership. Resources deserve the same treatment — especially autonomous vehicles, sensors, and comms equipment that actively participate in operations. A plugin architecture allows new resource types to be added without core changes.
+
+**Key Capabilities:**
+1. **Resource DID System** — `did:near:resource-{id}` with blinded keys and public keys (same HKDF pattern as agents), blockchain-anchored identity
+2. **Resource Registry** — Singleton registry modeled on AgentRegistry: registerResource(manifest), lookup by DID, capability queries, area queries
+3. **Resource Type Plugin Interface** — Extensible plugin system: each resource type defines its schema, state machine, capabilities, data feed handler, and COP renderer
+4. **Built-in Plugins** — AutonomousVehiclePlugin, SensorPlatformPlugin, WeaponSystemPlugin, CommsPlugin, LogisticsPlugin
+5. **COP Integration** — Resources with location data render as MIL-STD-2525D symbols on the COP alongside AI-generated layers
+6. **Telemetry Ingestion** — Resources that produce data (sensors, autonomous vehicles) can push telemetry feeds that AI agents consume
+7. **DAO-Governed Allocation** — Resource assignment and employment governed through DAO proposals at decision gates
+8. **Status Tracking** — Real-time readiness status (FMC/PMC/NMC) with location tracking, capability degradation, and maintenance scheduling
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 27 to create plans)
+
+### Phase 28: Embedded DAO Governance at Decision Gates (INSERTED)
+**Goal:** Move DAO governance from a dedicated Decide tab into contextual decision gates embedded within each tab of the doctrinal workflow, making governance a natural part of the planning process rather than a separate activity
+**Depends on:** Phase 24, Phase 3
+**Research:** Unlikely
+**Plans:** TBD
+
+**Context:**
+Currently governance lives in the Decide tab with a separate governance dashboard, proposal list, and MDMP workflow view. This creates a disconnect — planners must leave their workflow to submit proposals, and commanders must navigate to a separate area to approve them. Moving governance into contextual decision gates means proposals appear naturally at decision points: approving an objective (Understand tab), selecting an operational approach (Design tab), choosing a COA (Plan tab), releasing an order (Direct tab), and reframing based on assessment (Assess tab).
+
+**Key Capabilities:**
+1. **Inline Proposal Creation** — "Submit for Approval" buttons at natural decision points within each tab, pre-populated with context from the current workflow step
+2. **Contextual Approval Workflow** — Pending approvals appear as banners/modals within the tab where the decision is relevant, not in a separate governance area
+3. **Decision Gate Registry** — Configurable gates at key workflow transitions: objective approval, operational approach approval, COA selection, order release, reframing decision
+4. **Governance Timeline** — Compact governance history visible within each tab showing decision trail
+5. **Commander Quick Actions** — Commander role sees pending approvals surfaced in context with one-click approve/reject/modify
+6. **MDMP Gate Integration** — Existing MDMP governance gates (Phase 5.1) rendered within the Plan tab's workflow rather than a separate MDMP view
+7. **Escalation In-Context** — Escalation to parent problem set triggered from within the workflow, not from a separate escalation panel
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 28 to create plans)
+
+### Phase 29: Contextual AI Staff Integration (INSERTED)
+**Goal:** Surface AI agent output contextually within each tab of the doctrinal workflow, providing per-tab AI assistants that are aware of the current workflow phase and deliver relevant recommendations, analysis, and automation
+**Depends on:** Phase 24, Phase 25, Phase 4.2
+**Research:** Required
+**Research topics:** Contextual AI assistant UX patterns, workflow-aware agent orchestration, recommendation engine design for multi-phase processes, conversational AI in planning tools, agent output rendering patterns (inline, sidebar, overlay)
+**Plans:** TBD
+
+**Context:**
+BASTION has 19 AI agent roles organized in teams, but their output is largely behind-the-scenes or in dedicated agent views. This phase makes AI agents visible collaborators within each tab — the right agent surfaces the right insight at the right time in the workflow.
+
+**Key Capabilities:**
+1. **Per-Tab AI Assistant Panel** — Collapsible AI panel in each tab showing contextual agent output: Understand (intelligence fusion, threat assessment), Design (problem framing, CoG analysis), Plan (COA generation, wargaming results), Direct (order validation, ROE compliance), COP (layer generation status, entity resolution), Assess (trend analysis, reframing recommendations)
+2. **Workflow-Aware Agent Routing** — Agent orchestration considers which tab/phase the user is in and prioritizes relevant agents accordingly
+3. **Inline Recommendations** — AI suggestions appear inline within the content area (not just in a sidebar), with accept/reject/modify actions
+4. **Agent Attribution** — All AI-generated content clearly attributed to the specific agent that produced it, with confidence scores
+5. **Human-AI Handoff** — Smooth transitions between AI-drafted content and human editing, with change tracking
+6. **Agent Activity Feed** — Per-tab activity log showing what agents are working on, what they've produced, and what needs human review
+7. **Conversational AI Interface** — Optional chat-style interaction with the AI staff for asking questions, requesting analysis, or tasking specific agents
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 29 to create plans)
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
@@ -982,3 +1164,17 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 13. Research Whitepaper | 9/9 | Complete | 2026-01-24 |
 | 14. Friendly & Adversary IPB Complete Cycle | 11/11 | Complete    | 2026-03-01 |
 | 15. JPP Staff Organization Workspaces | 5/5 | Complete    | 2026-03-02 |
+| 16. AI Assigned Staff Workspaces | 2/6 | In progress | - |
+| 17. Deployment - CI/CD & Hetzner | 0/3 | Not started | - |
+| 18. Near-Phantom-Auth | 6/6 | Complete | - |
+| 19. Workspace Membership & Invites | 4/10 | In progress | - |
+| 20. Workspace Operational Panels | 3/9 | In progress | - |
+| 21. AI COP Layer Agent Team | 13/13 | Complete | 2026-03-05 |
+| 22. Training/Operational Global Mode | 0/TBD | Not started | - |
+| 23. Problem Set Model & Rename | 0/TBD | Not started | - |
+| 24. Doctrinal Tab Restructure | 0/TBD | Not started | - |
+| 25. Operational Design Workspace | 0/TBD | Not started | - |
+| 26. Strategic Environment & Inheritance | 0/TBD | Not started | - |
+| 27. Resource Registry & DID Plugin | 0/TBD | Not started | - |
+| 28. Embedded DAO Governance | 0/TBD | Not started | - |
+| 29. Contextual AI Staff Integration | 0/TBD | Not started | - |
