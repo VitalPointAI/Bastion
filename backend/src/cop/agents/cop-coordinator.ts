@@ -305,7 +305,7 @@ async function validateCCONode(
 async function persistNode(
   state: COPCoordinatorStateType,
 ): Promise<Partial<COPCoordinatorStateType>> {
-  if (state.status === 'error' && state.layerSpecs.length === 0) {
+  if (state.layerSpecs.length === 0) {
     // Persist with error status
     copEventBus.emit('layer:generation:complete', {
       layerId: 'none',
