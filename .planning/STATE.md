@@ -27,7 +27,7 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 Phase: 20 of 32 (Workspace Operational Panels & Cross-Workspace Intelligence Sharing) - IN PROGRESS
 Plan: 06 of 09 in current phase — 20-06 complete (WorkspaceContext extension + workspace-service API methods)
 Status: Executing — plan 20-06 complete: WorkspaceContext extended with tabNotifications/crossWorkspaceUpdates; workspace-service extended with panel-config, subscription, and escalation methods
-Last activity: 2026-03-05 - Phase 20 Plan 06 complete: WorkspaceContext tab notifications + service layer extensions
+Last activity: 2026-03-05 - Completed quick task 7: Fix click-to-browse on strategic documents upload dialog
 
 Progress: ████████████████████████ 191 plans complete
 
@@ -518,6 +518,7 @@ None.
 | 3 | fix agent assignment 404 on strategic do | 2026-02-23 | 4a1ad87 | [3-fix-agent-assignment-404-on-strategic-do](./quick/3-fix-agent-assignment-404-on-strategic-do/) |
 | 4 | fix PDF objective extraction for diverse documents | 2026-02-23 | f9f98da | [4-fix-pdf-objective-extraction-agent-not-f](./quick/4-fix-pdf-objective-extraction-agent-not-f/) |
 | 5 | map PDFs to IPB graph via vision extraction | 2026-03-01 | 7981a5e | [5-map-pdfs-to-ipb-graph-plan-as-documented](./quick/5-map-pdfs-to-ipb-graph-plan-as-documented/) |
+| 7 | Fix click-to-browse on strategic documents upload dialog | 2026-03-05 | d6c6878 | [7-fix-click-to-browse-on-strategic-documen](./quick/7-fix-click-to-browse-on-strategic-documen/) |
 
 **Phase 4 Plan 6-FIX (Strategic API Table Init Fix):**
 - Unified lazy init: all strategic API tables initialized from single ensureTableExists()
