@@ -456,7 +456,7 @@ Plans:
 **Goal:** Autonomous agent team assigned per workspace section that monitors work, parses documents/plans, derives location/resource/intent, and generates MIL-STD-2525 interactive SVG overlay layers with standard military symbology for the common operating picture. Layers begin with detailed image specs for model-generated SVGs, update on commit, support staff-controlled publish before promotion to top-level COP, provide entity-data linkages with hover/click detail, animate movement/phasing/connections, and render both friendly and adversary perspectives.
 **Depends on:** Phase 20
 **Research:** Complete (21-RESEARCH.md)
-**Plans:** 13 plans (12 complete + 1 gap closure remaining)
+**Plans:** 13 plans (13 complete)
 
 Plans:
 - [x] 21-01-PLAN.md — COP types + CCO schema loader/validator + SVG sanitizer (Wave 1)
@@ -471,7 +471,7 @@ Plans:
 - [ ] 21-10-PLAN.md — Phase slider + playback + version browser + agent activity feed + human verify (Wave 4)
 - [x] 21-11-PLAN.md — Gap closure: wire version snapshots + fetch data for sub-agents (Wave 5)
 - [x] 21-12-PLAN.md — Gap closure: merge Overview/Monitor/COP into unified COP tab (Wave 5)
-- [ ] 21-13-PLAN.md — Gap closure: auto-trigger COP generation + workspace status badge (Wave 6)
+- [x] 21-13-PLAN.md — Gap closure: auto-trigger COP generation + workspace status badge (Wave 6)
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
