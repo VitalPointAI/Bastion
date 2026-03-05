@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-05T19:57:21.000Z"
+last_updated: "2026-03-05T20:12:17.000Z"
 progress:
   total_phases: 32
   completed_phases: 19
@@ -19,14 +19,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 21 Plan 03 complete — Layer persistence, lifecycle state machine, version snapshots, conflict detection
+**Current focus:** Phase 21 Plan 06 complete — COP coordinator StateGraph + 6 domain sub-agents for layer generation
 
 ## Current Position
 
 Phase: 21 of 32 (AI COP Layer Agent Team) - IN PROGRESS
-Plan: 06 of 10 in current phase — 21-01, 21-02, 21-03, 21-04, 21-05 complete
-Status: Executing — 21-03 complete: Layer CRUD store, 4-state lifecycle, version snapshots (full/patch), conflict detector with source authority
-Last activity: 2026-03-05 - Completed 21-03: Layer persistence & lifecycle
+Plan: 07 of 10 in current phase — 21-01, 21-02, 21-03, 21-04, 21-05, 21-06 complete
+Status: Executing — 21-06 complete: LangGraph coordinator orchestrating 6 parallel sub-agents with deterministic SIDC, CCO validation, draft persistence
+Last activity: 2026-03-05 - Completed 21-06: COP Coordinator & Layer Sub-Agents
 
 Progress: ████████████████████████ 196 plans complete
 
@@ -111,6 +111,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 21 Plan 06 (COP coordinator & sub-agents):**
+- Common SubAgentInput interface with createEmptyLayerSpec helper for error/fallback consistency across all 6 sub-agents
+- Conditional edge in StateGraph skips assemble/validate and goes straight to persist with error status when zero specs produced
+- Entity linkage integration is best-effort in persist node -- failures don't block layer creation
 
 **Phase 21 Plan 03 (Layer persistence & lifecycle):**
 - In-memory store pattern (LayerStoreMemory/VersionStoreMemory) for unit testing without PostgreSQL dependency
