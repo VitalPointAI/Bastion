@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T11:08:00.000Z"
+last_updated: "2026-03-05T01:30:00.000Z"
 progress:
   total_phases: 32
   completed_phases: 19
   total_plans: 179
-  completed_plans: 190
+  completed_plans: 191
 ---
 
 # Project State
@@ -25,11 +25,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 20 of 32 (Workspace Operational Panels & Cross-Workspace Intelligence Sharing) - IN PROGRESS
-Plan: 02 of 09 in current phase — 20-02 complete (WorkspaceTabContainer + OrgTreeSidebar)
-Status: Executing — plan 20-02 complete: WorkspaceTabContainer (role-gated tab bar shell) and OrgTreeSidebar (slide-out overlay) created; not yet wired into App.tsx (deferred to Plan 04)
-Last activity: 2026-03-05 - Phase 20 Plan 02 complete: WorkspaceTabContainer + OrgTreeSidebar
+Plan: 06 of 09 in current phase — 20-06 complete (WorkspaceContext extension + workspace-service API methods)
+Status: Executing — plan 20-06 complete: WorkspaceContext extended with tabNotifications/crossWorkspaceUpdates; workspace-service extended with panel-config, subscription, and escalation methods
+Last activity: 2026-03-05 - Phase 20 Plan 06 complete: WorkspaceContext tab notifications + service layer extensions
 
-Progress: ████████████████████████ 183 plans complete
+Progress: ████████████████████████ 191 plans complete
 
 ## Performance Metrics
 
@@ -95,6 +95,7 @@ Progress: ███████████████████████�
 | Phase 19 P05 | 12 | 2 tasks | 3 files |
 | Phase 19-workspace-membership-and-invite-system P07 | 3 | 2 tasks | 5 files |
 | Phase 19 P08 | 6 | 2 tasks | 7 files |
+| Phase 20 P06 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 20 Plan 06 (WorkspaceContext tab notifications + service layer):**
+- Tab notifications derived from existing activity feed polling — no new backend endpoint needed
+- CrossWorkspaceUpdate interface tracks escalation/directive items with source workspace, tab, and actionable item ID
+- Subscription and EscalationRule types exported from workspace-service for downstream panel component reuse
 
 **Phase 20 Plan 02 (WorkspaceTabContainer + OrgTreeSidebar):**
 - Tab order fixed via WORKSPACE_TABS const array — filter preserves order without sorting

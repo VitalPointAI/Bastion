@@ -437,7 +437,7 @@ Plans:
 - WOP-09: OrgTree Collapsible Sidebar — slide-out sidebar accessible from any tab
 - WOP-10: Workspace Breadcrumb — compact header identity showing active workspace
 **Depends on:** Phase 19
-**Plans:** 3/9 plans executed
+**Plans:** 4/9 plans executed
 
 Plans:
 - [ ] 20-01-PLAN.md — Routing restructure + WorkspaceSelector landing page + WorkspaceBreadcrumb (Wave 1)
@@ -445,7 +445,7 @@ Plans:
 - [ ] 20-03-PLAN.md — Backend stores: panel config, subscriptions, escalation rules (Wave 1)
 - [ ] 20-04-PLAN.md — Panel context injection: all 5 tabs accept workspaceId + App.tsx wiring (Wave 2)
 - [ ] 20-05-PLAN.md — Backend API: panel-config, subscription, escalation endpoints (Wave 2)
-- [ ] 20-06-PLAN.md — WorkspaceContext extension: tab notifications + cross-workspace state (Wave 2)
+- [x] 20-06-PLAN.md — WorkspaceContext extension: tab notifications + cross-workspace state (Wave 2)
 - [ ] 20-07-PLAN.md — CrossWorkspaceLayerToggle + TabNotificationDropdown + badge integration (Wave 3)
 - [ ] 20-08-PLAN.md — EscalationPanel + SubscriptionManager + DecideTab integration (Wave 3)
 - [ ] 20-09-PLAN.md — Integration: backend panel config wiring, Overview refinement, human verification (Wave 4)
