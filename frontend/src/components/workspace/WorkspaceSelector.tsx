@@ -94,7 +94,7 @@ export function WorkspaceSelector() {
         </button>
 
         {showCreateWizard && (
-          <CreateWorkspaceWizard onClose={() => setShowCreateWizard(false)} />
+          <CreateWorkspaceWizard onClose={() => setShowCreateWizard(false)} onCreated={() => setShowCreateWizard(false)} />
         )}
       </div>
     );
@@ -139,7 +139,7 @@ export function WorkspaceSelector() {
                 <div className="flex items-start gap-4 mb-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-xl font-bold text-white truncate mb-2">
-                      {selectedMembership.workspaceName}
+                      {selectedMembership.name}
                     </h3>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
@@ -161,7 +161,7 @@ export function WorkspaceSelector() {
                   <div>
                     <dt className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Members</dt>
                     <dd className="text-gray-200">
-                      {selectedMembership.memberCount ?? '—'}
+                      {'—'}
                     </dd>
                   </div>
                   <div>
