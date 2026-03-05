@@ -21,8 +21,9 @@ import {
 } from './svg-allowlist.js';
 
 // Create a jsdom window for DOMPurify (required in Node.js environment)
-const window = new JSDOM('').window;
-const purify = DOMPurify(window as unknown as Window);
+const jsdomWindow = new JSDOM('').window;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const purify = DOMPurify(jsdomWindow as any);
 
 /**
  * Sanitize an SVG string by stripping all elements and attributes
