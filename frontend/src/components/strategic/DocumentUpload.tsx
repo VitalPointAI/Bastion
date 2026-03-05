@@ -5,7 +5,7 @@
  * Allows commanders to upload strategic documents (PDF, DOCX).
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { StrategicDocument } from '../../lib/types/strategic.js';
 import { DocumentLevel, Classification } from '../../lib/types/strategic.js';
 import { strategicService, formatFileSize } from '../../lib/strategic-service.js';
@@ -25,6 +25,7 @@ export function DocumentUpload({ onUploadComplete, workspaceId }: DocumentUpload
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -109,6 +110,12 @@ export function DocumentUpload({ onUploadComplete, workspaceId }: DocumentUpload
     }
   };
 
+  const handleDropzoneClick = () => {
+    if (!file) {
+      fileInputRef.current?.click();
+    }
+  };
+
   const handleClearFile = () => {
     setFile(null);
     setError(null);
@@ -125,6 +132,7 @@ export function DocumentUpload({ onUploadComplete, workspaceId }: DocumentUpload
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
+        onClick={handleDropzoneClick}
       >
         {file ? (
           <div className="file-preview">
@@ -169,6 +177,7 @@ export function DocumentUpload({ onUploadComplete, workspaceId }: DocumentUpload
             <span className="drop-text">Drop PDF or DOCX file here</span>
             <span className="drop-hint">or click to browse</span>
             <input
+              ref={fileInputRef}
               type="file"
               accept=".pdf,.docx,.doc"
               onChange={handleFileChange}
