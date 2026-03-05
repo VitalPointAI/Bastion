@@ -56,29 +56,20 @@ export async function initStrategicDocumentsTable(): Promise<void> {
     ON strategic_documents(workspace_id)
   `);
 
-  // Backfill: associate orphaned docs with a workspace (prefer 'World Space', fall back to any)
+  // One-time fix: previous deploy incorrectly backfilled workspace_id.
+  // Reset to NULL so docs appear in all workspaces via the IS NULL fallback.
+  // Safe to re-run: newly uploaded docs will get correct workspace_id on next upload.
   try {
-    let wsResult = await pool.query(
-      `SELECT id, name FROM workspaces WHERE name = 'World Space' LIMIT 1`
+    const orphanCount = await pool.query(
+      `SELECT COUNT(*) FROM strategic_documents WHERE workspace_id IS NOT NULL`
     );
-    if (wsResult.rows.length === 0) {
-      wsResult = await pool.query(
-        `SELECT id, name FROM workspaces ORDER BY created_at ASC LIMIT 1`
-      );
-    }
-    if (wsResult.rows.length > 0) {
-      const wsId = wsResult.rows[0].id;
-      const wsName = wsResult.rows[0].name;
-      const updated = await pool.query(
-        `UPDATE strategic_documents SET workspace_id = $1 WHERE workspace_id IS NULL`,
-        [wsId]
-      );
-      if ((updated.rowCount ?? 0) > 0) {
-        console.log(`✓ Backfilled ${updated.rowCount} documents to workspace "${wsName}" (${wsId})`);
-      }
+    const count = parseInt(orphanCount.rows[0].count, 10);
+    if (count > 0) {
+      await pool.query(`UPDATE strategic_documents SET workspace_id = NULL`);
+      console.log(`✓ Reset workspace_id on ${count} documents (one-time migration fix)`);
     }
   } catch {
-    // Workspaces table may not exist yet — skip backfill
+    // Ignore — table might not exist yet
   }
 
   console.log('✓ strategic_documents table initialized');
