@@ -1,0 +1,197 @@
+/* COP Layer Controls Panel */
+.cop-layer-controls {
+  background: #1f2937;
+  border-left: 1px solid #374151;
+  padding: 12px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: #d1d5db;
+  min-width: 260px;
+  max-width: 320px;
+}
+
+.cop-layer-controls-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #374151;
+  margin-bottom: 10px;
+}
+
+.cop-layer-controls-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.cop-layer-count {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* Bulk actions */
+.cop-layer-bulk-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cop-layer-bulk-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cop-layer-bulk-btn:hover {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+/* Layer group */
+.cop-layer-group {
+  margin-bottom: 8px;
+}
+
+.cop-layer-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.cop-layer-group-header:hover {
+  background: #374151;
+}
+
+.cop-layer-group-expand {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #6b7280;
+  transition: transform 0.15s;
+}
+
+.cop-layer-group-expand.expanded {
+  transform: rotate(90deg);
+}
+
+.cop-layer-checkbox {
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.cop-layer-color-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.cop-layer-group-label {
+  font-weight: 500;
+  color: #e5e7eb;
+  flex: 1;
+  cursor: pointer;
+}
+
+.cop-layer-group-count {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Layer items (individual layers) */
+.cop-layer-group-items {
+  padding-left: 22px;
+}
+
+.cop-layer-group-items.collapsed {
+  display: none;
+}
+
+.cop-layer-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.cop-layer-item:hover {
+  background: #374151;
+}
+
+.cop-layer-item-label {
+  flex: 1;
+  font-size: 12px;
+  color: #d1d5db;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* State badge */
+.cop-layer-state-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.cop-layer-state-draft {
+  background: #374151;
+  color: #9ca3af;
+}
+
+.cop-layer-state-review {
+  background: #7c3aed20;
+  color: #a78bfa;
+}
+
+.cop-layer-state-published {
+  background: #05966920;
+  color: #34d399;
+}
+
+.cop-layer-state-cop {
+  background: #2563eb20;
+  color: #60a5fa;
+}
+
+/* Opacity slider */
+.cop-layer-opacity {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 22px;
+}
+
+.cop-layer-opacity-slider {
+  flex: 1;
+  height: 4px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.cop-layer-opacity-value {
+  font-size: 10px;
+  color: #6b7280;
+  width: 28px;
+  text-align: right;
+}
