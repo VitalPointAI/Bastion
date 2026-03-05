@@ -1,0 +1,289 @@
+[
+  {
+    "uri": "cco:Entity",
+    "label": "Entity",
+    "module": "core"
+  },
+  {
+    "uri": "cco:Agent",
+    "label": "Agent",
+    "module": "agent",
+    "parentClass": "cco:Entity"
+  },
+  {
+    "uri": "cco:Person",
+    "label": "Person",
+    "module": "agent",
+    "parentClass": "cco:Agent"
+  },
+  {
+    "uri": "cco:Organization",
+    "label": "Organization",
+    "module": "agent",
+    "parentClass": "cco:Agent"
+  },
+  {
+    "uri": "cco:GovernmentOrganization",
+    "label": "Government Organization",
+    "module": "agent",
+    "parentClass": "cco:Organization"
+  },
+  {
+    "uri": "cco:MilitaryOrganization",
+    "label": "Military Organization",
+    "module": "agent",
+    "parentClass": "cco:GovernmentOrganization"
+  },
+  {
+    "uri": "cco:Group",
+    "label": "Group",
+    "module": "agent",
+    "parentClass": "cco:Agent"
+  },
+  {
+    "uri": "cco:GeospatialRegion",
+    "label": "Geospatial Region",
+    "module": "geospatial",
+    "parentClass": "cco:Entity"
+  },
+  {
+    "uri": "cco:GeospatialLocation",
+    "label": "Geospatial Location",
+    "module": "geospatial",
+    "parentClass": "cco:GeospatialRegion"
+  },
+  {
+    "uri": "cco:GeospatialBoundary",
+    "label": "Geospatial Boundary",
+    "module": "geospatial",
+    "parentClass": "cco:GeospatialRegion"
+  },
+  {
+    "uri": "cco:GeographicFeature",
+    "label": "Geographic Feature",
+    "module": "geospatial",
+    "parentClass": "cco:GeospatialRegion"
+  },
+  {
+    "uri": "cco:AdministrativeRegion",
+    "label": "Administrative Region",
+    "module": "geospatial",
+    "parentClass": "cco:GeospatialRegion"
+  },
+  {
+    "uri": "cco:Act",
+    "label": "Act",
+    "module": "event",
+    "parentClass": "cco:Entity"
+  },
+  {
+    "uri": "cco:ActOfConflict",
+    "label": "Act of Conflict",
+    "module": "event",
+    "parentClass": "cco:Act"
+  },
+  {
+    "uri": "cco:ActOfPerforming",
+    "label": "Act of Performing",
+    "module": "event",
+    "parentClass": "cco:Act"
+  },
+  {
+    "uri": "cco:ActOfCommunication",
+    "label": "Act of Communication",
+    "module": "event",
+    "parentClass": "cco:Act"
+  },
+  {
+    "uri": "cco:ActOfDirectiveAction",
+    "label": "Act of Directive Action",
+    "module": "event",
+    "parentClass": "cco:Act"
+  },
+  {
+    "uri": "cco:ActOfRelating",
+    "label": "Act of Relating",
+    "module": "event",
+    "parentClass": "cco:Act"
+  },
+  {
+    "uri": "cco:ActOfTransporting",
+    "label": "Act of Transporting",
+    "module": "event",
+    "parentClass": "cco:Act"
+  },
+  {
+    "uri": "cco:ActOfObservation",
+    "label": "Act of Observation",
+    "module": "event",
+    "parentClass": "cco:Act"
+  },
+  {
+    "uri": "cco:ActOfDefending",
+    "label": "Act of Defending",
+    "module": "event",
+    "parentClass": "cco:ActOfConflict"
+  },
+  {
+    "uri": "cco:ActOfAttacking",
+    "label": "Act of Attacking",
+    "module": "event",
+    "parentClass": "cco:ActOfConflict"
+  },
+  {
+    "uri": "cco:ActOfManeuver",
+    "label": "Act of Maneuver",
+    "module": "event",
+    "parentClass": "cco:Act"
+  },
+  {
+    "uri": "cco:Artifact",
+    "label": "Artifact",
+    "module": "artifact",
+    "parentClass": "cco:Entity"
+  },
+  {
+    "uri": "cco:Vehicle",
+    "label": "Vehicle",
+    "module": "artifact",
+    "parentClass": "cco:Artifact"
+  },
+  {
+    "uri": "cco:Weapon",
+    "label": "Weapon",
+    "module": "artifact",
+    "parentClass": "cco:Artifact"
+  },
+  {
+    "uri": "cco:MilitaryVehicle",
+    "label": "Military Vehicle",
+    "module": "artifact",
+    "parentClass": "cco:Vehicle"
+  },
+  {
+    "uri": "cco:Aircraft",
+    "label": "Aircraft",
+    "module": "artifact",
+    "parentClass": "cco:Vehicle"
+  },
+  {
+    "uri": "cco:Watercraft",
+    "label": "Watercraft",
+    "module": "artifact",
+    "parentClass": "cco:Vehicle"
+  },
+  {
+    "uri": "cco:Facility",
+    "label": "Facility",
+    "module": "artifact",
+    "parentClass": "cco:Artifact"
+  },
+  {
+    "uri": "cco:Infrastructure",
+    "label": "Infrastructure",
+    "module": "artifact",
+    "parentClass": "cco:Artifact"
+  },
+  {
+    "uri": "cco:CommunicationDevice",
+    "label": "Communication Device",
+    "module": "artifact",
+    "parentClass": "cco:Artifact"
+  },
+  {
+    "uri": "cco:Sensor",
+    "label": "Sensor",
+    "module": "artifact",
+    "parentClass": "cco:Artifact"
+  },
+  {
+    "uri": "cco:InformationContentEntity",
+    "label": "Information Content Entity",
+    "module": "information_entity",
+    "parentClass": "cco:Entity"
+  },
+  {
+    "uri": "cco:Document",
+    "label": "Document",
+    "module": "information_entity",
+    "parentClass": "cco:InformationContentEntity"
+  },
+  {
+    "uri": "cco:Plan",
+    "label": "Plan",
+    "module": "information_entity",
+    "parentClass": "cco:InformationContentEntity"
+  },
+  {
+    "uri": "cco:Order",
+    "label": "Order",
+    "module": "information_entity",
+    "parentClass": "cco:InformationContentEntity"
+  },
+  {
+    "uri": "cco:Report",
+    "label": "Report",
+    "module": "information_entity",
+    "parentClass": "cco:InformationContentEntity"
+  },
+  {
+    "uri": "cco:Map",
+    "label": "Map",
+    "module": "information_entity",
+    "parentClass": "cco:InformationContentEntity"
+  },
+  {
+    "uri": "cco:Image",
+    "label": "Image",
+    "module": "information_entity",
+    "parentClass": "cco:InformationContentEntity"
+  },
+  {
+    "uri": "cco:IntelligenceProduct",
+    "label": "Intelligence Product",
+    "module": "information_entity",
+    "parentClass": "cco:InformationContentEntity"
+  },
+  {
+    "uri": "cco:SupplyItem",
+    "label": "Supply Item",
+    "module": "artifact",
+    "parentClass": "cco:Artifact"
+  },
+  {
+    "uri": "cco:Route",
+    "label": "Route",
+    "module": "geospatial",
+    "parentClass": "cco:GeospatialRegion"
+  },
+  {
+    "uri": "cco:Objective",
+    "label": "Objective",
+    "module": "information_entity",
+    "parentClass": "cco:InformationContentEntity"
+  },
+  {
+    "uri": "cco:ControlMeasure",
+    "label": "Control Measure",
+    "module": "information_entity",
+    "parentClass": "cco:InformationContentEntity"
+  },
+  {
+    "uri": "cco:Role",
+    "label": "Role",
+    "module": "agent",
+    "parentClass": "cco:Entity"
+  },
+  {
+    "uri": "cco:MilitaryRole",
+    "label": "Military Role",
+    "module": "agent",
+    "parentClass": "cco:Role"
+  },
+  {
+    "uri": "cco:CommandRelationship",
+    "label": "Command Relationship",
+    "module": "agent",
+    "parentClass": "cco:Entity"
+  }
+]
