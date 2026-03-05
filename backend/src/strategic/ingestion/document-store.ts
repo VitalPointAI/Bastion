@@ -56,22 +56,6 @@ export async function initStrategicDocumentsTable(): Promise<void> {
     ON strategic_documents(workspace_id)
   `);
 
-  // One-time fix: previous deploy incorrectly backfilled workspace_id.
-  // Reset to NULL so docs appear in all workspaces via the IS NULL fallback.
-  // Safe to re-run: newly uploaded docs will get correct workspace_id on next upload.
-  try {
-    const orphanCount = await pool.query(
-      `SELECT COUNT(*) FROM strategic_documents WHERE workspace_id IS NOT NULL`
-    );
-    const count = parseInt(orphanCount.rows[0].count, 10);
-    if (count > 0) {
-      await pool.query(`UPDATE strategic_documents SET workspace_id = NULL`);
-      console.log(`✓ Reset workspace_id on ${count} documents (one-time migration fix)`);
-    }
-  } catch {
-    // Ignore — table might not exist yet
-  }
-
   console.log('✓ strategic_documents table initialized');
 }
 

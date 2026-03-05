@@ -68,22 +68,6 @@ async function ensureTableExists(): Promise<void> {
 }
 
 /**
- * Temporary diagnostic endpoint (no auth) — remove after debugging
- */
-router.get('/debug/doc-count', async (_req, res) => {
-  try {
-    await ensureTableExists();
-    const { getPool } = await import('../lib/database.js');
-    const pool = getPool();
-    const total = await pool.query('SELECT COUNT(*) as cnt FROM strategic_documents');
-    const sample = await pool.query('SELECT id, title, workspace_id, created_by FROM strategic_documents LIMIT 3');
-    res.json({ total: total.rows[0].cnt, sample: sample.rows });
-  } catch (err) {
-    res.json({ error: String(err) });
-  }
-});
-
-/**
  * Infer MIME type from file extension
  * Used as fallback when client sends application/octet-stream
  */
