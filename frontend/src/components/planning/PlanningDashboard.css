@@ -6,10 +6,11 @@
 .planning-dashboard {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
   background: linear-gradient(180deg, var(--bg-deepest, #050508) 0%, var(--bg-deep, #0a0a0f) 100%);
   color: var(--text-primary, #ffffff);
+  overflow: hidden;
 }
 
 /* ============================================================================
@@ -24,6 +25,7 @@
   background: linear-gradient(180deg, var(--bg-secondary, #1a1a24) 0%, var(--bg-primary, #111118) 100%);
   border-bottom: 1px solid var(--border-subtle, #2a2a38);
   position: relative;
+  flex-shrink: 0;
 }
 
 /* Command bar bottom accent line */
@@ -119,6 +121,7 @@
 .planning-content {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -550,7 +553,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  flex: 1;
   color: var(--text-muted, #666678);
   font-size: 1rem;
 }
