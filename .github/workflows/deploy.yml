@@ -94,6 +94,11 @@ jobs:
             # Restart services with new images (never use down -v!)
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
+            # Sync host nginx config (TLS termination layer)
+            sudo cp /home/deploy/bastion/nginx/nginx.prod.conf /etc/nginx/sites-available/bastion
+            sudo sed -i 's/\${DOMAIN}/bastion.vitalpoint.ai/g' /etc/nginx/sites-available/bastion
+            sudo nginx -t && sudo systemctl reload nginx
+
             # Clean up old images
             docker image prune -f
 
