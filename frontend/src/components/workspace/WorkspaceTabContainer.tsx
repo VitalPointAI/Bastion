@@ -37,10 +37,11 @@ import { DesignTab } from '../tabs/DesignTab';
 import { CampaignTab } from '../tabs/CampaignTab';
 import { MonitorTab } from '../tabs/MonitorTab';
 import { TrainTab } from '../tabs/TrainTab';
+import { COPTab } from '../cop/COPTab';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
-const WORKSPACE_TABS = ['overview', 'decide', 'design', 'campaign', 'monitor', 'train'] as const;
+const WORKSPACE_TABS = ['overview', 'decide', 'design', 'campaign', 'monitor', 'train', 'cop'] as const;
 type WorkspaceTab = typeof WORKSPACE_TABS[number];
 
 const TAB_LABELS: Record<WorkspaceTab, string> = {
@@ -50,16 +51,17 @@ const TAB_LABELS: Record<WorkspaceTab, string> = {
   campaign: 'Campaign',
   monitor: 'Monitor',
   train: 'Train',
+  cop: 'COP',
 };
 
 // ─── Role → tab access map ────────────────────────────────────────────────────
 
 const DEFAULT_TAB_ACCESS: Record<string, WorkspaceTab[]> = {
-  commander: ['overview', 'decide', 'design', 'campaign', 'monitor', 'train'],
-  xo: ['overview', 'decide', 'design', 'campaign', 'monitor', 'train'],
-  team_lead: ['overview', 'decide', 'campaign', 'monitor', 'train'],
-  s2: ['overview', 'decide', 'monitor'],
-  s3: ['overview', 'decide', 'campaign'],
+  commander: ['overview', 'decide', 'design', 'campaign', 'monitor', 'train', 'cop'],
+  xo: ['overview', 'decide', 'design', 'campaign', 'monitor', 'train', 'cop'],
+  team_lead: ['overview', 'decide', 'campaign', 'monitor', 'train', 'cop'],
+  s2: ['overview', 'decide', 'monitor', 'cop'],
+  s3: ['overview', 'decide', 'campaign', 'cop'],
   s4: ['overview', 'campaign'],
   s5: ['overview', 'decide', 'design', 'campaign'],
   s6: ['overview'],
@@ -213,6 +215,9 @@ export function WorkspaceTabContainer() {
     }
     if (activeTab === 'train') {
       return <TrainTab workspaceId={displayId} />;
+    }
+    if (activeTab === 'cop') {
+      return <COPTab workspaceId={displayId} />;
     }
     return null;
   }
