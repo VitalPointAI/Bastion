@@ -19,17 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 19 Plan 10 — Task 1 complete (WorkspaceDashboard integration + App.tsx routes), at human-verify checkpoint (Task 2)
-*Note: 19-09 completed: ActivityFeed (3-tier role-based filtering), NotificationBadge (badge-pulse animation), WorkspaceSwitcher integration*
+**Current focus:** Phase 21 Plan 04 complete — SVG generation pipeline (SIDC builder + spec builder + LLM fragment generator)
 
 ## Current Position
 
 Phase: 21 of 32 (AI COP Layer Agent Team) - IN PROGRESS
-Plan: 02 of 10 in current phase — 21-01 and 21-02 complete (wave 1 plans)
-Status: Executing — 21-01 complete: COP type system + CCO ontology loader + SVG sanitizer; 21-02 complete: Event bus + agent definitions + trigger handler + agent pool
-Last activity: 2026-03-05 - Completed 21-01: Foundation types, CCO schema, SVG security
+Plan: 04 of 10 in current phase — 21-01, 21-02, 21-04 complete
+Status: Executing — 21-04 complete: Deterministic SIDC builder, milsymbol render data converter, LLM annotation fragment generator with sanitization
+Last activity: 2026-03-05 - Completed 21-04: SVG generation pipeline
 
-Progress: ████████████████████████ 193 plans complete
+Progress: ████████████████████████ 194 plans complete
 
 ## Performance Metrics
 
@@ -110,6 +109,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 21 Plan 04 (SVG generation pipeline):**
+- SIDC codes built deterministically from lookup maps, never by LLM — ensures MIL-STD-2525D compliance
+- Used LLM factory createLLMForAgent with cop-annotation-generator agent ID for SVG fragment generation
+- Belt-and-suspenders sanitization for LLM SVG: sanitizeSVG first (enforcement), then validateSVGSafety (detection/logging)
 
 **Phase 21 Plan 01 (COP foundation types + CCO schema + SVG sanitizer):**
 - Bundled curated CCO classes as JSON (48 classes) instead of parsing OWL/Turtle files to avoid n3 dependency
@@ -1150,7 +1154,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-02
-Stopped at: Completed Phase 16 Plan 02 — 5 AI workspace data stores (AIRunStore, AIChannelStore, ProductVersionStore, AIContextStore, AICoordinationStore) + scenario roleAssignments
+Last session: 2026-03-05
+Stopped at: Completed 21-04-PLAN.md — SVG generation pipeline (SIDC builder, spec builder, fragment generator)
 Resume file: None
-Next action: Phase 16 Plan 03 — LangGraph agent runner
+Next action: Continue phase 21 wave 2 plans (21-03, 21-05, 21-06)
