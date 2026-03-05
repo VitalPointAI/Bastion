@@ -135,6 +135,50 @@ function validateBody<T>(
 }
 
 // =========================================================================
+// Status Handler
+// =========================================================================
+
+export const statusHandlers = {
+  /**
+   * GET /cop/status - Get COP generation status and layer counts for a workspace.
+   */
+  async getStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const workspaceId = qs(req.query.workspaceId);
+      if (!workspaceId) {
+        res.status(400).json({ error: 'workspaceId required' });
+        return;
+      }
+
+      const layers = await layerStore.queryLayers({ workspaceId });
+      const hasLayers = layers.length > 0;
+      const layerCount = layers.length;
+      const draftCount = layers.filter(l => l.state === 'draft').length;
+      const copCount = layers.filter(l => l.state === 'cop').length;
+
+      // Check if generation is in progress by looking for recent agent activity
+      const activity = activityBridge.getActivities(workspaceId, 10);
+      const recentGeneration = activity.find(a =>
+        a.action === 'generating' &&
+        Date.now() - new Date(a.timestamp).getTime() < 60000
+      );
+      const status = recentGeneration ? 'generating' : (hasLayers ? 'ready' : 'idle');
+
+      res.json({
+        status, // 'idle' | 'generating' | 'ready'
+        layerCount,
+        draftCount,
+        copCount,
+        hasLayers,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: message });
+    }
+  },
+};
+
+// =========================================================================
 // Layer Handlers
 // =========================================================================
 

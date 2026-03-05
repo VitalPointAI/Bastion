@@ -58,6 +58,16 @@ interface LayerFilters {
   layerType?: COPLayerType;
 }
 
+// ─── Status types ────────────────────────────────────────────────────────────
+
+export interface COPStatus {
+  status: 'idle' | 'generating' | 'ready';
+  layerCount: number;
+  draftCount: number;
+  copCount: number;
+  hasLayers: boolean;
+}
+
 // ─── COP Service ────────────────────────────────────────────────────────────
 
 class COPService {
@@ -96,6 +106,17 @@ class COPService {
     }
 
     return response.json();
+  }
+
+  // ==========================================================================
+  // Status Operations
+  // ==========================================================================
+
+  /**
+   * Get COP generation status and layer counts for a workspace.
+   */
+  async getStatus(workspaceId: string): Promise<COPStatus> {
+    return this.fetch<COPStatus>(`/api/cop/status?workspaceId=${encodeURIComponent(workspaceId)}`);
   }
 
   // ==========================================================================

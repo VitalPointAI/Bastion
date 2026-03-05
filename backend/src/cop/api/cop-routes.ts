@@ -14,6 +14,7 @@
 import express from 'express';
 import { requireAuth } from '../../auth/auth-instance.js';
 import {
+  statusHandlers,
   layerHandlers,
   versionHandlers,
   agentHandlers,
@@ -22,6 +23,12 @@ import {
 } from './cop-handlers.js';
 
 const router = express.Router();
+
+// =========================================================================
+// Status
+// =========================================================================
+
+router.get('/status', requireAuth, (req, res) => statusHandlers.getStatus(req, res));
 
 // =========================================================================
 // Layer CRUD & Lifecycle

@@ -10,8 +10,9 @@
  * MonitorTab, and the old COPTab. Now consolidated here.
  */
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { COPLayer, Perspective, COPPhaseSpec } from '../../types/cop.js';
+import { copService } from '../../lib/cop-service.js';
 import { useWorkspace } from '../../context/WorkspaceContext.js';
 import { COPMapView } from './COPMapView.js';
 import { COPLayerControls } from './COPLayerControls.js';
@@ -124,6 +125,10 @@ export function COPTab({ workspaceId }: COPTabProps) {
   // Selected layer for lifecycle/version/review views
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 
+  // Auto-trigger state
+  const [generating, setGenerating] = useState(false);
+  const autoTriggeredRef = useRef(false);
+
   // Role from workspace context (for ActivityFeed)
   const { userRoleInActive } = useWorkspace();
 
@@ -151,6 +156,51 @@ export function COPTab({ workspaceId }: COPTabProps) {
         // Graph data unavailable
       });
   }, [workspaceId]);
+
+  // ─── Auto-trigger COP generation on first visit ─────────────────────────
+
+  useEffect(() => {
+    if (autoTriggeredRef.current) return;
+
+    async function checkAndTrigger() {
+      try {
+        const status = await copService.getStatus(workspaceId);
+        if (status.status === 'idle' && !status.hasLayers) {
+          autoTriggeredRef.current = true;
+          setGenerating(true);
+          try {
+            await copService.triggerGeneration(workspaceId, 'default');
+            // Refresh layers after auto-generation
+            const newLayers = await copService.queryLayers(workspaceId);
+            handleLayersLoaded(newLayers);
+          } finally {
+            setGenerating(false);
+          }
+        }
+      } catch (err) {
+        console.warn('[COP] Auto-trigger check failed:', err);
+        setGenerating(false);
+      }
+    }
+
+    checkAndTrigger();
+  }, [workspaceId, handleLayersLoaded]);
+
+  // ─── Manual generation handler ──────────────────────────────────────────
+
+  async function handleManualGenerate() {
+    setGenerating(true);
+    try {
+      await copService.triggerGeneration(workspaceId, 'default');
+      // Refresh layers after generation
+      const newLayers = await copService.queryLayers(workspaceId);
+      handleLayersLoaded(newLayers);
+    } catch (err) {
+      console.error('[COP] Manual generation failed:', err);
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   // ─── Layer callbacks (existing) ───────────────────────────────────────────
 
@@ -362,6 +412,34 @@ export function COPTab({ workspaceId }: COPTabProps) {
             currentPhase={currentPhase || undefined}
             onLayersLoaded={handleLayersLoaded}
           />
+
+          {/* Empty state: Generate COP Layers button */}
+          {layers.length === 0 && !generating && (
+            <div className="absolute inset-0 flex items-center justify-center z-[500] pointer-events-none">
+              <div className="pointer-events-auto bg-gray-800/95 border border-gray-600 rounded-xl p-8 text-center max-w-md">
+                <h3 className="text-lg font-semibold text-white mb-2">No COP Layers</h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Generate AI-powered Common Operating Picture layers from workspace objectives and intelligence.
+                </p>
+                <button
+                  onClick={handleManualGenerate}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  Generate COP Layers
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Generating spinner overlay */}
+          {generating && (
+            <div className="absolute inset-0 flex items-center justify-center z-[500] pointer-events-none">
+              <div className="pointer-events-auto bg-gray-800/95 border border-blue-500/50 rounded-xl p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-3" />
+                <p className="text-sm text-blue-300">Generating COP layers...</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Phase slider — bottom of map area */}
@@ -432,10 +510,20 @@ export function COPTab({ workspaceId }: COPTabProps) {
 
           {/* Sidebar content */}
           <div className="flex-1 overflow-y-auto min-w-0">
-            <div className="px-3 py-2 border-b border-gray-700">
+            <div className="px-3 py-2 border-b border-gray-700 flex items-center justify-between">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 {SIDEBAR_NAV.find((n) => n.id === sidebarView)?.label ?? 'COP'}
               </h3>
+              {layers.length > 0 && sidebarView === 'layers' && (
+                <button
+                  onClick={handleManualGenerate}
+                  disabled={generating}
+                  className="text-[10px] px-2 py-0.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors disabled:opacity-50"
+                  title="Regenerate COP layers"
+                >
+                  {generating ? 'Generating...' : 'Regenerate'}
+                </button>
+              )}
             </div>
             <div className="flex-1 min-h-0">
               {renderSidebarContent()}
