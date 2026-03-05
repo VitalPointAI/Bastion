@@ -107,7 +107,7 @@ export function WorkspaceDashboard() {
           {/* Activity button */}
           <button
             onClick={() => { setSidebarOpen(true); setActiveFeed('activity'); }}
-            className="relative p-2 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
+            className="relative p-2 rounded-lg bg-gray-800 border border-gray-600 text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
             title="Activity Feed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -123,7 +123,7 @@ export function WorkspaceDashboard() {
           {/* Decisions button */}
           <button
             onClick={() => { setSidebarOpen(true); setActiveFeed('decisions'); }}
-            className="relative p-2 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
+            className="relative p-2 rounded-lg bg-gray-800 border border-gray-600 text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
             title="Decision Feed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -227,7 +227,7 @@ export function WorkspaceDashboard() {
       </div>
 
       {/* ── Map: fills remaining space ─────────────────────────────────────── */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 flex flex-col min-h-0">
         <StrategicValidityDashboard />
       </div>
 

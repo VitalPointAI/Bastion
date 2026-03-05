@@ -220,7 +220,7 @@ export function WorkspaceTabContainer() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full bg-gray-900">
+    <div className="flex flex-col flex-1 min-h-0 bg-gray-900">
 
       {/* Horizontal tab bar */}
       <nav
