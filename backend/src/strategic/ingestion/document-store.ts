@@ -56,19 +56,25 @@ export async function initStrategicDocumentsTable(): Promise<void> {
     ON strategic_documents(workspace_id)
   `);
 
-  // Backfill: associate orphaned docs with first workspace matching 'World Space'
+  // Backfill: associate orphaned docs with a workspace (prefer 'World Space', fall back to any)
   try {
-    const wsResult = await pool.query(
-      `SELECT id FROM workspaces WHERE name = 'World Space' LIMIT 1`
+    let wsResult = await pool.query(
+      `SELECT id, name FROM workspaces WHERE name = 'World Space' LIMIT 1`
     );
+    if (wsResult.rows.length === 0) {
+      wsResult = await pool.query(
+        `SELECT id, name FROM workspaces ORDER BY created_at ASC LIMIT 1`
+      );
+    }
     if (wsResult.rows.length > 0) {
       const wsId = wsResult.rows[0].id;
+      const wsName = wsResult.rows[0].name;
       const updated = await pool.query(
         `UPDATE strategic_documents SET workspace_id = $1 WHERE workspace_id IS NULL`,
         [wsId]
       );
       if ((updated.rowCount ?? 0) > 0) {
-        console.log(`✓ Backfilled ${updated.rowCount} documents to workspace ${wsId}`);
+        console.log(`✓ Backfilled ${updated.rowCount} documents to workspace "${wsName}" (${wsId})`);
       }
     }
   } catch {
@@ -183,8 +189,9 @@ export async function listDocuments(
   const pool = getPool();
 
   // Filter by workspace_id if provided, otherwise fall back to created_by
+  // Include docs with NULL workspace_id so pre-migration documents still appear
   const whereClause = workspaceId
-    ? 'd.workspace_id = $1'
+    ? '(d.workspace_id = $1 OR d.workspace_id IS NULL)'
     : 'd.created_by = $1';
   const filterParam = workspaceId || createdBy;
 
