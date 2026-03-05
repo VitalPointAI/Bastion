@@ -485,16 +485,16 @@ Plans:
 **Goal:** Global app-level toggle that switches the entire BASTION instance between training (exercise) and operational modes — same UI, same workflow, same AI agents, different data context and consequence level
 **Depends on:** Phase 21
 **Research:** Unlikely
-**Plans:** 5 plans
+**Plans:** 6 plans
 
 **Context:**
 "Train as you fight" — the training environment must be identical to the operational environment so users build muscle memory on the same system they'll use for real planning. A global toggle (not per-workspace) prevents the dangerous scenario of mixing training and operational actions.
 
 **Key Capabilities:**
 1. **Global Mode Toggle** — App-wide TRAINING/OPERATIONAL switch in header, requires confirmation to change, persisted per user session
-2. **Visual Distinction** — Training mode: persistent amber "EXERCISE - EXERCISE - EXERCISE" banner (mimicking military exercise message headers), amber border on workspace areas. Operational mode: clean UI with subtle green indicator
+2. **Visual Distinction** — Training mode: persistent amber "EXERCISE - EXERCISE - EXERCISE" banner (mimicking military exercise message headers), banner only — no theme changes or accent color modifications. Operational mode: clean UI with no indicator — absence of exercise banner IS the indicator. All documents/exports in training mode auto-stamped with "EXERCISE" watermark
 3. **Data Isolation** — Training mode loads from exercise scenarios with simulated forces; operational mode uses real workspace data. Separate data contexts, no cross-contamination
-4. **Governance Weight** — Training proposals can be fast-tracked or auto-approved for iteration speed; operational proposals go through full DAO process
+4. **Governance Weight** — Identical DAO governance process in both modes — no fast-tracking in training. Practice the full governance flow ("train as you fight")
 5. **Reset/Checkpoint** — Training mode supports reset to phase checkpoints and replay. Operational mode has no reset capability
 6. **After-Action Review** — Training mode captures all decisions, AI recommendations, and outcomes for AAR analysis
 
@@ -504,6 +504,7 @@ Plans:
 - [ ] 22-03-PLAN.md — Workspace mode filtering and Train tab removal
 - [ ] 22-04-PLAN.md — AAR event store and checkpoint/reset store
 - [ ] 22-05-PLAN.md — End-to-end integration verification
+- [ ] 22-06-PLAN.md — EXERCISE watermark, per-mode workspace memory, scenario-to-workspace wiring
 
 ### Phase 23: Problem Set Model & Workspace Rename (INSERTED)
 **Goal:** Rename "workspace" to "problem set" throughout the application to align with JP 5-0 doctrinal terminology, and enhance the model with echelon-awareness for strategic/operational/tactical classification
@@ -1015,7 +1016,7 @@ Plans:
 **Depends on:** Phase 3, Phase 5.1, Phase 12
 **Research:** Complete (12.1-RESEARCH.md, .planning/mdmp-governance/)
 **Research topics:** JP 3-16 Multinational Operations, coalition partner force posture monitoring, national caveat management, multi-party approval gates, coalition cohesion metrics, narrative/info op impact modeling
-**Plans:** 5 plans
+**Plans:** 6 plans
 
 **Context:**
 This phase addresses coalition-specific capabilities identified during MDMP governance analysis. Two new AI agents provide continuous assessment of coalition partner health and narrative impact, while smart contract extensions to the existing linkages contract enable national caveat tracking and coalition gate enforcement.
