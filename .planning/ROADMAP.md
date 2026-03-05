@@ -40,6 +40,7 @@ None
 - [x] **Phase 15: JPP Staff Organization Workspaces** - Role-based exercise workspaces (Commander, J1–J35) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and strategic direction import from Design tab
 - [ ] **Phase 16: AI Assigned Staff Workspaces** - AI-assigned staff roles with full agent team execution, human-in-the-loop review, real-time channel observability, and cross-role AI coordination
 - [ ] **Phase 17: Deployment - CI/CD Pipeline & Hetzner Server** - GitHub Actions CI/CD pipeline deploying Bastion to Hetzner server, TEE-aware component separation documented for production, single-server dev deployment
+- [ ] **Phase 21: AI COP Layer Agent Team** - Autonomous agent team per workspace section that parses documents/plans, derives location/resource/intent, and generates MIL-STD-2525 interactive SVG overlay layers with standard military symbology for the common operating picture; layers include image specs for model-generated SVGs, update on commit, support publish control before promotion to top-level COP, provide entity-data linkages with hover/click detail, animate movement/phasing, and render both friendly and adversary perspectives
 
 ## Phase Details
 
@@ -450,52 +451,24 @@ Plans:
 - [ ] 20-08-PLAN.md — EscalationPanel + SubscriptionManager + DecideTab integration (Wave 3)
 - [ ] 20-09-PLAN.md — Integration: backend panel config wiring, Overview refinement, human verification (Wave 4)
 
----
+### Phase 21: AI COP Layer Agent Team
 
-**Key Capabilities:**
-
-1. **Multi-Document Strategic Fusion**
-   - Process multiple strategic documents through existing extraction pipeline
-   - Entity resolution to identify same objectives/actors across documents
-   - Semantic deduplication preserving unique perspectives and details
-   - Hierarchical consolidation (e.g., NDS objectives under NSS goals)
-   - Conflict detection when documents have contradictory guidance
-   - Comprehensive strategic picture without information loss
-
-2. **Strategic Validity Dashboard**
-   - Real-time assessment of objective progress against world events
-   - OSINT data integration (news, social media, satellite, signals)
-   - Automated validity scoring based on observable indicators
-   - Alert system for objectives becoming outdated or invalidated
-   - Trend analysis showing objective trajectory over time
-   - Evidence linking between objectives and supporting/contradicting events
-
-3. **RAFT Graph Database & Visualization**
-   - **R**elationships: Connections between actors (alliances, conflicts, dependencies)
-   - **A**ctors: Nations, organizations, individuals, non-state actors
-   - **F**unctions: Roles actors play (economic, military, diplomatic, informational)
-   - **T**ensions: Points of friction, competition, or conflict
-   - Weighted edges reflecting relationship strength/importance
-   - Temporal tracking of relationship evolution
-   - Interactive graph visualization with filtering and exploration
-   - Integration with strategic objectives for impact analysis
+**Goal:** Autonomous agent team assigned per workspace section that monitors work, parses documents/plans, derives location/resource/intent, and generates MIL-STD-2525 interactive SVG overlay layers with standard military symbology for the common operating picture. Layers begin with detailed image specs for model-generated SVGs, update on commit, support staff-controlled publish before promotion to top-level COP, provide entity-data linkages with hover/click detail, animate movement/phasing/connections, and render both friendly and adversary perspectives.
+**Depends on:** Phase 20
+**Research:** Complete (21-RESEARCH.md)
+**Plans:** 10 plans
 
 Plans:
-- [x] Plan 4.3-01: Neo4j Infrastructure (completed 2026-01-22)
-- [x] Plan 4.3-02: RAFT Graph Schema (completed 2026-01-22)
-- [x] Plan 4.3-03: Entity Resolution Pipeline (completed 2026-01-22)
-- [x] Plan 4.3-04: Graph Construction Pipeline (completed 2026-01-22)
-- [x] Plan 4.3-05: Strategic Fusion Agents & MCP Tools (completed 2026-01-22)
-- [x] Plan 4.3-06: OSINT Integration & Validity Dashboard (completed 2026-01-22)
-- [x] Plan 4.3-07: Intelligence Analysis Agents (completed 2026-01-22)
-- [x] Plan 4.3-08: RAFT Graph Agents & Tools (completed 2026-01-22)
-- [x] Plan 4.3-09: Workspace Isolation & Graph REST API (completed 2026-01-22)
-- [x] Plan 4.3-10: Validity Dashboard UI (completed 2026-01-24)
-- [x] Plan 4.3-11: End-to-End Fusion Flow (completed 2026-01-24)
-- [x] Plan 4.3-12: Eigenvector Centrality & PageRank Upgrade (completed 2026-02-22)
-- [x] Plan 4.3-13: (gap closure plan)
-- [x] Plan 4.3-14: Validity Trend Gap Closure — bulk endpoint wired to real calculateTrend() (completed 2026-02-22)
-- [x] Plan 4.3-15: Stadia Maps Tile 404 Fix — TileLayer bounds prop prevents Leaflet out-of-bounds tile requests (completed 2026-02-22)
+- [ ] 21-01-PLAN.md — COP types + CCO schema loader/validator + SVG sanitizer (Wave 1)
+- [ ] 21-02-PLAN.md — Event bus + agent definitions + trigger handler + agent pool (Wave 1)
+- [ ] 21-03-PLAN.md — Layer store + lifecycle state machine + version snapshots + conflict detector (Wave 2)
+- [ ] 21-04-PLAN.md — SIDC builder + SVG spec builder + LLM fragment generator (Wave 2)
+- [ ] 21-05-PLAN.md — Entity linker + confidence threshold + linkage store (Wave 2)
+- [ ] 21-06-PLAN.md — COP coordinator LangGraph StateGraph + 6 layer sub-agents (Wave 3)
+- [ ] 21-07-PLAN.md — COP REST API endpoints + module initialization (Wave 3)
+- [ ] 21-08-PLAN.md — COP API client + map view + layer controls + perspective toggle (Wave 4)
+- [ ] 21-09-PLAN.md — Entity tooltips/detail + review panel + lifecycle UI + conflict banner (Wave 4)
+- [ ] 21-10-PLAN.md — Phase slider + playback + version browser + agent activity feed + human verify (Wave 4)
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
