@@ -5,13 +5,10 @@ import { UserStatusBar } from './components/UserStatusBar'
 import { AdminDashboard } from './components/admin'
 import { LoginPage } from './components/LoginPage'
 import { RegisterPage } from './components/RegisterPage'
-import { DecideTab } from './components/tabs/DecideTab'
-import { DesignTab } from './components/tabs/DesignTab'
-import { CampaignTab } from './components/tabs/CampaignTab'
-import { MonitorTab } from './components/tabs/MonitorTab'
-import { ExerciseDashboard } from './components/exercise'
 import { WorkspaceProvider } from './context/WorkspaceContext'
 import { WorkspaceSwitcher } from './components/workspace/WorkspaceSwitcher'
+import { WorkspaceSelector } from './components/workspace/WorkspaceSelector'
+import { WorkspaceBreadcrumb } from './components/workspace/WorkspaceBreadcrumb'
 import { InviteAcceptPage } from './components/workspace/InviteAcceptPage'
 import { WorkspaceDashboard } from './components/workspace/WorkspaceDashboard'
 import { WorkspaceMemberManager } from './components/workspace/WorkspaceMemberManager'
@@ -20,15 +17,12 @@ import './App.css'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
 
-const MAIN_TABS = ['decide', 'design', 'campaign', 'monitor', 'exercise'] as const;
-type MainTab = typeof MAIN_TABS[number];
-
 function NotFound() {
   return (
     <div className="content-container">
       <h2>404 - Page Not Found</h2>
       <p>The page you're looking for doesn't exist.</p>
-      <a href="/monitor">Return to Home</a>
+      <a href="/">Return to Home</a>
     </div>
   )
 }
@@ -88,53 +82,15 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Derive active tab from URL pathname
-  const activeTab: MainTab = (() => {
-    for (const tab of MAIN_TABS) {
-      if (location.pathname.startsWith(`/${tab}`)) return tab;
-    }
-    return 'monitor';
-  })();
-
   const isAdmin = location.pathname.startsWith('/admin');
-  const isExercise = location.pathname.startsWith('/exercise');
   const isWorkspace = location.pathname.startsWith('/workspace');
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1 onClick={() => navigate('/monitor')} style={{ cursor: 'pointer' }}>BASTION</h1>
+        <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>BASTION</h1>
         <nav className="app-nav">
-          <button
-            className={`nav-button ${activeTab === 'decide' && !isAdmin && !isExercise && !isWorkspace ? 'active' : ''}`}
-            onClick={() => navigate('/decide')}
-          >
-            Decide
-          </button>
-          <button
-            className={`nav-button ${activeTab === 'design' && !isAdmin && !isExercise && !isWorkspace ? 'active' : ''}`}
-            onClick={() => navigate('/design')}
-          >
-            Design
-          </button>
-          <button
-            className={`nav-button ${activeTab === 'campaign' && !isAdmin && !isExercise && !isWorkspace ? 'active' : ''}`}
-            onClick={() => navigate('/campaign')}
-          >
-            Campaign
-          </button>
-          <button
-            className={`nav-button ${activeTab === 'monitor' && !isAdmin && !isExercise && !isWorkspace ? 'active' : ''}`}
-            onClick={() => navigate('/monitor')}
-          >
-            Monitor
-          </button>
-          <button
-            className={`nav-button ${isExercise ? 'active' : ''}`}
-            onClick={() => navigate('/exercise')}
-          >
-            Exercise
-          </button>
+          <WorkspaceBreadcrumb />
           <div className="nav-spacer" />
           <WorkspaceSwitcher />
           <button
@@ -148,28 +104,21 @@ function AppContent() {
       </header>
 
       <main className="app-main">
-          {isAdmin ? (
-            <AdminDashboard onBack={() => navigate('/monitor')} />
-          ) : isExercise ? (
-            <ExerciseDashboard />
-          ) : isWorkspace ? (
-            <Routes>
-              <Route path="invite/:token" element={<InviteAcceptPage />} />
-              <Route path=":workspaceId" element={<WorkspaceDashboard />} />
-              <Route path=":workspaceId/members" element={<WorkspaceMemberManagerPage />} />
-              <Route path=":workspaceId/directory" element={<MemberDirectoryPage />} />
-              <Route path=":workspaceId/invite" element={<WorkspacePlaceholder label="Invite" />} />
-              <Route path=":workspaceId/settings" element={<WorkspacePlaceholder label="Settings" />} />
-            </Routes>
-          ) : (
-            <>
-              {activeTab === 'decide' && <DecideTab />}
-              {activeTab === 'design' && <DesignTab />}
-              {activeTab === 'campaign' && <CampaignTab />}
-              {activeTab === 'monitor' && <MonitorTab />}
-            </>
-          )}
-        </main>
+        {isAdmin ? (
+          <AdminDashboard onBack={() => navigate('/')} />
+        ) : isWorkspace ? (
+          <Routes>
+            <Route path="invite/:token" element={<InviteAcceptPage />} />
+            <Route path=":workspaceId" element={<WorkspaceDashboard />} />
+            <Route path=":workspaceId/members" element={<WorkspaceMemberManagerPage />} />
+            <Route path=":workspaceId/directory" element={<MemberDirectoryPage />} />
+            <Route path=":workspaceId/invite" element={<WorkspacePlaceholder label="Invite" />} />
+            <Route path=":workspaceId/settings" element={<WorkspacePlaceholder label="Settings" />} />
+          </Routes>
+        ) : (
+          <WorkspaceSelector />
+        )}
+      </main>
     </div>
   )
 }
@@ -195,39 +144,27 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Legacy redirects - fire before auth check */}
-        <Route path="/" element={<Navigate to="/monitor" replace />} />
-        <Route path="/governance" element={<Navigate to="/decide" replace />} />
-        <Route path="/strategic" element={<Navigate to="/design" replace />} />
-        <Route path="/validity" element={<Navigate to="/monitor" replace />} />
-        <Route path="/missions" element={<Navigate to="/campaign" replace />} />
+        {/* Root route — workspace selector landing page */}
+        <Route path="/" element={
+          <AuthWrapper>
+            <AuthenticatedShell />
+          </AuthWrapper>
+        } />
 
-        {/* Main app routes - protected by AuthWrapper + WorkspaceProvider */}
-        <Route path="/decide" element={
-          <AuthWrapper>
-            <AuthenticatedShell />
-          </AuthWrapper>
-        } />
-        <Route path="/design" element={
-          <AuthWrapper>
-            <AuthenticatedShell />
-          </AuthWrapper>
-        } />
-        <Route path="/campaign" element={
-          <AuthWrapper>
-            <AuthenticatedShell />
-          </AuthWrapper>
-        } />
-        <Route path="/monitor" element={
-          <AuthWrapper>
-            <AuthenticatedShell />
-          </AuthWrapper>
-        } />
-        <Route path="/exercise" element={
-          <AuthWrapper>
-            <AuthenticatedShell />
-          </AuthWrapper>
-        } />
+        {/* Legacy redirects — old panel URLs redirect to workspace selector */}
+        <Route path="/decide" element={<Navigate to="/" replace />} />
+        <Route path="/design" element={<Navigate to="/" replace />} />
+        <Route path="/campaign" element={<Navigate to="/" replace />} />
+        <Route path="/monitor" element={<Navigate to="/" replace />} />
+        <Route path="/exercise" element={<Navigate to="/" replace />} />
+
+        {/* Older legacy redirects */}
+        <Route path="/governance" element={<Navigate to="/" replace />} />
+        <Route path="/strategic" element={<Navigate to="/" replace />} />
+        <Route path="/validity" element={<Navigate to="/" replace />} />
+        <Route path="/missions" element={<Navigate to="/" replace />} />
+
+        {/* Admin routes - protected by AuthWrapper + WorkspaceProvider */}
         <Route path="/admin/*" element={
           <AuthWrapper>
             <AuthenticatedShell />

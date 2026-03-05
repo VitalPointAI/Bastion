@@ -109,7 +109,7 @@ export function InviteAcceptPage() {
     if (joinedWorkspaceId) {
       navigate(`/workspace/${joinedWorkspaceId}`);
     } else {
-      navigate('/monitor');
+      navigate('/');
     }
   };
 
@@ -176,7 +176,7 @@ export function InviteAcceptPage() {
             </p>
             <button
               className="w-full px-4 py-2.5 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
-              onClick={() => navigate('/monitor')}
+              onClick={() => navigate('/')}
             >
               Return Home
             </button>
@@ -199,7 +199,7 @@ export function InviteAcceptPage() {
             )}
             <button
               className="w-full px-4 py-2.5 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
-              onClick={() => navigate('/monitor')}
+              onClick={() => navigate('/')}
             >
               Return Home
             </button>
@@ -217,7 +217,7 @@ export function InviteAcceptPage() {
             </p>
             <button
               className="w-full px-4 py-2.5 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
-              onClick={() => navigate('/monitor')}
+              onClick={() => navigate('/')}
             >
               Return Home
             </button>
@@ -235,7 +235,7 @@ export function InviteAcceptPage() {
             </p>
             <button
               className="w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-              onClick={() => navigate('/monitor')}
+              onClick={() => navigate('/')}
             >
               Go to Workspace
             </button>
@@ -256,7 +256,7 @@ export function InviteAcceptPage() {
             </p>
             <button
               className="w-full px-4 py-2.5 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
-              onClick={() => navigate('/monitor')}
+              onClick={() => navigate('/')}
             >
               Return Home
             </button>
