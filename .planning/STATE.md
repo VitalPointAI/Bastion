@@ -112,6 +112,11 @@ Progress: ███████████████████████�
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+**Phase 21 Plan 03 (Layer persistence & lifecycle):**
+- In-memory store pattern (LayerStoreMemory/VersionStoreMemory) for unit testing without PostgreSQL dependency
+- Shallow field-level diff for version patches instead of JSON Patch library -- sufficient for COPLayerSpec structure
+- Haversine distance for position conflict threshold (100m) instead of simple coordinate comparison
+
 **Phase 21 Plan 05 (Entity linkage system):**
 - Hybrid discovery: graph traversal first (confidence 1.0/0.9), embedding similarity fallback for entities with < 3 relationships
 - 2-hop graph relationships get 0.9 confidence (vs 1.0 for direct) to reflect distance uncertainty
