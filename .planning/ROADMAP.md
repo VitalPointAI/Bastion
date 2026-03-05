@@ -456,7 +456,7 @@ Plans:
 **Goal:** Autonomous agent team assigned per workspace section that monitors work, parses documents/plans, derives location/resource/intent, and generates MIL-STD-2525 interactive SVG overlay layers with standard military symbology for the common operating picture. Layers begin with detailed image specs for model-generated SVGs, update on commit, support staff-controlled publish before promotion to top-level COP, provide entity-data linkages with hover/click detail, animate movement/phasing/connections, and render both friendly and adversary perspectives.
 **Depends on:** Phase 20
 **Research:** Complete (21-RESEARCH.md)
-**Plans:** 7/10 plans executed
+**Plans:** 8/10 plans executed
 
 Plans:
 - [x] 21-01-PLAN.md — COP types + CCO schema loader/validator + SVG sanitizer (Wave 1)
@@ -465,8 +465,8 @@ Plans:
 - [x] 21-04-PLAN.md — SIDC builder + SVG spec builder + LLM fragment generator (Wave 2)
 - [x] 21-05-PLAN.md — Entity linker + confidence threshold + linkage store (Wave 2)
 - [x] 21-06-PLAN.md — COP coordinator LangGraph StateGraph + 6 layer sub-agents (Wave 3)
-- [ ] 21-07-PLAN.md — COP REST API endpoints + module initialization (Wave 3)
-- [ ] 21-08-PLAN.md — COP API client + map view + layer controls + perspective toggle (Wave 4)
+- [x] 21-07-PLAN.md — COP REST API endpoints + module initialization (Wave 3)
+- [x] 21-08-PLAN.md — COP API client + map view + layer controls + perspective toggle (Wave 4)
 - [ ] 21-09-PLAN.md — Entity tooltips/detail + review panel + lifecycle UI + conflict banner (Wave 4)
 - [ ] 21-10-PLAN.md — Phase slider + playback + version browser + agent activity feed + human verify (Wave 4)
 

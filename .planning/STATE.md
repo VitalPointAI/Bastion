@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-05T20:25:00.966Z"
+last_updated: "2026-03-05T20:33:34Z"
 progress:
   total_phases: 34
   completed_phases: 21
   total_plans: 198
-  completed_plans: 207
+  completed_plans: 208
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 21 Plan 07 complete — COP REST API with 20 endpoints and document commit trigger wiring
+**Current focus:** Phase 21 Plan 09 complete — COP entity interaction UI with tooltip, detail views, review panel, lifecycle controls, and conflict banner
 
 ## Current Position
 
 Phase: 21 of 32 (AI COP Layer Agent Team) - IN PROGRESS
-Plan: 08 of 10 in current phase — 21-01, 21-02, 21-03, 21-04, 21-05, 21-06, 21-07 complete
-Status: Executing — 21-07 complete: Full COP REST API (layers, versions, agents, linkages, conflicts) with module init and strategic API trigger wiring
-Last activity: 2026-03-05 - Completed 21-07: COP REST API & Module Initialization
+Plan: 10 of 10 in current phase — 21-01, 21-02, 21-03, 21-04, 21-05, 21-06, 21-07, 21-08, 21-09 complete
+Status: Executing — 21-09 complete: Entity tooltip/detail, review panel, lifecycle controls, conflict banner
+Last activity: 2026-03-05 - Completed 21-09: COP Entity Interaction & Review UI
 
-Progress: ████████████████████████ 197 plans complete
+Progress: █████████████████████████ 199 plans complete
 
 ## Performance Metrics
 
@@ -112,6 +112,16 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 21 Plan 09 (COP entity interaction & review UI):**
+- EntityLinkage display adapted to plan 08 interface (entityId + confidence + discoveryMethod) rather than assumed name + relationshipType
+- Source authority extraction from conflict description via regex pattern matching with entity ID prefix fallback
+- Recall modal with required reason input ensures accountability per audit requirements
+
+**Phase 21 Plan 08 (COP frontend map & controls):**
+- Shadow DOM with closed mode + allowlist sanitization for LLM-generated SVG (belt and suspenders)
+- COP tab access: commander, xo, s2, s3, team_lead; other roles excluded
+- Annotations rendered as Marker + Popup; full SVG overlay positioning deferred to Plan 10
 
 **Phase 21 Plan 06 (COP coordinator & sub-agents):**
 - Common SubAgentInput interface with createEmptyLayerSpec helper for error/fallback consistency across all 6 sub-agents
