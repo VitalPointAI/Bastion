@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-05T01:30:00.000Z"
+last_updated: "2026-03-05T19:57:21.000Z"
 progress:
   total_phases: 32
   completed_phases: 19
   total_plans: 179
-  completed_plans: 191
+  completed_plans: 192
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 21 Plan 04 complete — SVG generation pipeline (SIDC builder + spec builder + LLM fragment generator)
+**Current focus:** Phase 21 Plan 03 complete — Layer persistence, lifecycle state machine, version snapshots, conflict detection
 
 ## Current Position
 
 Phase: 21 of 32 (AI COP Layer Agent Team) - IN PROGRESS
-Plan: 04 of 10 in current phase — 21-01, 21-02, 21-04 complete
-Status: Executing — 21-04 complete: Deterministic SIDC builder, milsymbol render data converter, LLM annotation fragment generator with sanitization
-Last activity: 2026-03-05 - Completed 21-04: SVG generation pipeline
+Plan: 06 of 10 in current phase — 21-01, 21-02, 21-03, 21-04, 21-05 complete
+Status: Executing — 21-03 complete: Layer CRUD store, 4-state lifecycle, version snapshots (full/patch), conflict detector with source authority
+Last activity: 2026-03-05 - Completed 21-03: Layer persistence & lifecycle
 
-Progress: ████████████████████████ 194 plans complete
+Progress: ████████████████████████ 196 plans complete
 
 ## Performance Metrics
 
@@ -96,6 +96,8 @@ Progress: ███████████████████████�
 | Phase 19 P08 | 6 | 2 tasks | 7 files |
 | Phase 20 P06 | 8 | 2 tasks | 2 files |
 | Phase 21 P01 | 9 | 3 tasks | 12 files |
+| Phase 21 P05 | 6 | 2 tasks | 4 files |
+| Phase 21 P03 | 6 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -109,6 +111,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 21 Plan 05 (Entity linkage system):**
+- Hybrid discovery: graph traversal first (confidence 1.0/0.9), embedding similarity fallback for entities with < 3 relationships
+- 2-hop graph relationships get 0.9 confidence (vs 1.0 for direct) to reflect distance uncertainty
+- Embedding similarity candidate threshold at 0.7, separate from auto-commit threshold at 0.85
+- Store embeddings as Neo4j entity properties for reuse and future vector index
 
 **Phase 21 Plan 04 (SVG generation pipeline):**
 - SIDC codes built deterministically from lookup maps, never by LLM — ensures MIL-STD-2525D compliance
