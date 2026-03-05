@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-05T20:12:17.000Z"
+last_updated: "2026-03-05T20:25:00.966Z"
 progress:
-  total_phases: 32
-  completed_phases: 19
-  total_plans: 179
-  completed_plans: 192
+  total_phases: 34
+  completed_phases: 21
+  total_plans: 198
+  completed_plans: 207
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 21 Plan 06 complete — COP coordinator StateGraph + 6 domain sub-agents for layer generation
+**Current focus:** Phase 21 Plan 07 complete — COP REST API with 20 endpoints and document commit trigger wiring
 
 ## Current Position
 
 Phase: 21 of 32 (AI COP Layer Agent Team) - IN PROGRESS
-Plan: 07 of 10 in current phase — 21-01, 21-02, 21-03, 21-04, 21-05, 21-06 complete
-Status: Executing — 21-06 complete: LangGraph coordinator orchestrating 6 parallel sub-agents with deterministic SIDC, CCO validation, draft persistence
-Last activity: 2026-03-05 - Completed 21-06: COP Coordinator & Layer Sub-Agents
+Plan: 08 of 10 in current phase — 21-01, 21-02, 21-03, 21-04, 21-05, 21-06, 21-07 complete
+Status: Executing — 21-07 complete: Full COP REST API (layers, versions, agents, linkages, conflicts) with module init and strategic API trigger wiring
+Last activity: 2026-03-05 - Completed 21-07: COP REST API & Module Initialization
 
-Progress: ████████████████████████ 196 plans complete
+Progress: ████████████████████████ 197 plans complete
 
 ## Performance Metrics
 
@@ -98,6 +98,7 @@ Progress: ███████████████████████�
 | Phase 21 P01 | 9 | 3 tasks | 12 files |
 | Phase 21 P05 | 6 | 2 tasks | 4 files |
 | Phase 21 P03 | 6 | 2 tasks | 6 files |
+| Phase 21 P07 | 5 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -486,6 +487,8 @@ Recent decisions affecting current work:
 - [Phase 19]: OrgTree uses react-d3-tree v3 custom SVG nodes with buildCustomNode factory for current-user highlight and navigation
 - [Phase 19]: MemberDirectory 3-tier need-to-know: commander sees all, staff sees shared-compartment + unrestricted, observer sees public roles only
 - [Phase 19]: WorkspaceCompartmentStore: workspace_compartments + workspace_member_compartments tables, ensureInitialized singleton, 6 backend REST endpoints
+- [Phase 21]: Handler dependency injection via setHandlerDependencies() called from initCOP() to avoid circular imports
+- [Phase 21]: Document commit trigger uses direct getCOPTriggerHandler() calls in strategic.ts (Option C) with non-fatal try/catch
 
 ### Roadmap Evolution
 
