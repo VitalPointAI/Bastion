@@ -477,6 +477,7 @@ Recent decisions affecting current work:
 - Phase 18 added: replace current login with @vitalpoint/near-phantom-auth
 - Phase 19 added: Workspace membership and invite system
 - Phase 20 added: Workspace Operational Panels & Cross-Workspace Intelligence Sharing
+- Phase 21 added: AI COP Layer Agent Team - Autonomous agent team per workspace section generating MIL-STD-2525 interactive SVG overlays for common operating picture with publish control, entity-data linkages, and dual-perspective rendering
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
