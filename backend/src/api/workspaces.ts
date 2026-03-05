@@ -65,7 +65,7 @@ const AssignMemberCompartmentSchema = z.object({
 });
 
 const PanelConfigSchema = z.object({
-  panelVisibility: z.record(z.array(z.string())),
+  panelVisibility: z.record(z.string(), z.array(z.string())),
   defaultTab: z.string().optional(),
 });
 
@@ -81,7 +81,7 @@ const UpdateSubscriptionStatusSchema = z.object({
 const EscalationRuleSchema = z.object({
   ruleType: z.string(),
   proposalKind: z.string(),
-  thresholdConfig: z.record(z.unknown()).optional(),
+  thresholdConfig: z.record(z.string(), z.unknown()).optional(),
   votingMechanism: z.enum(['autocratic', 'democratic']).default('democratic'),
   autoRouteTo: z.string().optional(),
 });
@@ -90,7 +90,7 @@ const EscalateSchema = z.object({
   proposalKind: z.string(),
   description: z.string().min(1).max(2000),
   urgency: z.enum(['urgent', 'standard']).default('standard'),
-  data: z.record(z.unknown()).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ============================================================================
@@ -1395,7 +1395,7 @@ router.put('/:id/panel-config', requireAuth, async (req: Request, res: Response)
 
     const config = await workspacePanelConfigStore.upsertConfig(
       workspaceId,
-      body.panelVisibility,
+      body.panelVisibility as Record<string, string[]>,
       body.defaultTab,
     );
 
