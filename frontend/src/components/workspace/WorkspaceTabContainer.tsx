@@ -23,7 +23,7 @@
  * Phase 20 Plan 09: Backend-driven panel config with client-side fallback
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useUser } from '../../context/UserContext';
@@ -38,6 +38,7 @@ import { DesignTab } from '../tabs/DesignTab';
 import { CampaignTab } from '../tabs/CampaignTab';
 import { TrainTab } from '../tabs/TrainTab';
 import { COPTab } from '../cop/COPTab';
+import { copService } from '../../lib/cop-service';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -102,6 +103,12 @@ export function WorkspaceTabContainer() {
   // Invite modal state (moved from WorkspaceDashboard)
   const [showInviteModal, setShowInviteModal] = useState(false);
 
+  // COP team status (for badge in tab bar)
+  const [copStatus, setCopStatus] = useState<{
+    status: 'idle' | 'generating' | 'ready';
+    layerCount: number;
+  } | null>(null);
+
   // Sync URL workspaceId → context (same pattern as WorkspaceDashboard)
   useEffect(() => {
     if (workspaceId && workspaceId !== activeWorkspaceId) {
@@ -120,6 +127,25 @@ export function WorkspaceTabContainer() {
       .then(config => setPanelConfig(config.panelVisibility))
       .catch(() => setPanelConfig(null)); // Fall back to client defaults on error
   }, [displayId, userDID]);
+
+  // Poll COP status every 10 seconds for tab badge
+  const fetchCopStatus = useCallback(async () => {
+    if (!displayId) return;
+    try {
+      const status = await copService.getStatus(displayId);
+      setCopStatus({ status: status.status, layerCount: status.layerCount });
+    } catch {
+      // Non-fatal — badge just won't show
+    }
+  }, [displayId]);
+
+  useEffect(() => {
+    if (!displayId) return;
+
+    fetchCopStatus();
+    const interval = setInterval(fetchCopStatus, 10_000);
+    return () => clearInterval(interval);
+  }, [displayId, fetchCopStatus]);
 
   // Derive visible tabs: use backend config if available, fall back to client defaults
   const visibleTabs = useMemo((): WorkspaceTab[] => {
@@ -244,6 +270,27 @@ export function WorkspaceTabContainer() {
               ].join(' ')}
             >
               {TAB_LABELS[tab]}
+              {tab === 'cop' && copStatus && (
+                <span
+                  className={[
+                    'ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium',
+                    copStatus.status === 'generating'
+                      ? 'bg-blue-500/20 text-blue-400 animate-pulse'
+                      : copStatus.status === 'ready'
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-gray-500/20 text-gray-500',
+                  ].join(' ')}
+                  title={
+                    copStatus.status === 'generating'
+                      ? 'AI COP team is generating layers...'
+                      : copStatus.status === 'ready'
+                      ? `${copStatus.layerCount} COP layer${copStatus.layerCount !== 1 ? 's' : ''} ready`
+                      : 'AI COP team idle'
+                  }
+                >
+                  {copStatus.status === 'generating' ? 'AI' : copStatus.status === 'ready' ? copStatus.layerCount : ''}
+                </span>
+              )}
               {(tabNotifications[tab] ?? 0) > 0 && (
                 <span
                   onClick={(e) => {
