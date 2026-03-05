@@ -17,6 +17,9 @@ import { workspaceInviteStore } from '../workspace/workspace-invite-store.js';
 import { workspaceActivityStore } from '../workspace/workspace-activity-store.js';
 import { workspaceRoleStore } from '../workspace/workspace-role-store.js';
 import { workspaceCompartmentStore } from '../workspace/workspace-compartment-store.js';
+import { workspacePanelConfigStore } from '../workspace/workspace-panel-config-store.js';
+import { workspaceSubscriptionStore } from '../workspace/workspace-subscription-store.js';
+import { workspaceEscalationStore } from '../workspace/workspace-escalation-store.js';
 import { signAndSubmitFunctionCall } from '../near/tx-signer.js';
 import { clearanceSufficient } from '../workspace/types.js';
 import type { WorkspaceType } from '../workspace/types.js';
@@ -59,6 +62,35 @@ const CreateCompartmentSchema = z.object({
 
 const AssignMemberCompartmentSchema = z.object({
   memberDid: z.string().min(1),
+});
+
+const PanelConfigSchema = z.object({
+  panelVisibility: z.record(z.array(z.string())),
+  defaultTab: z.string().optional(),
+});
+
+const CreateSubscriptionSchema = z.object({
+  publisherWorkspaceId: z.string().min(1),
+  dataTypes: z.array(z.string()),
+});
+
+const UpdateSubscriptionStatusSchema = z.object({
+  status: z.enum(['approved', 'rejected']),
+});
+
+const EscalationRuleSchema = z.object({
+  ruleType: z.string(),
+  proposalKind: z.string(),
+  thresholdConfig: z.record(z.unknown()).optional(),
+  votingMechanism: z.enum(['autocratic', 'democratic']).default('democratic'),
+  autoRouteTo: z.string().optional(),
+});
+
+const EscalateSchema = z.object({
+  proposalKind: z.string(),
+  description: z.string().min(1).max(2000),
+  urgency: z.enum(['urgent', 'standard']).default('standard'),
+  data: z.record(z.unknown()).optional(),
 });
 
 // ============================================================================
@@ -133,6 +165,32 @@ async function getWorkspaceDepth(workspaceId: string): Promise<number> {
   }
 
   return depth;
+}
+
+/**
+ * Check if a user is commander or XO (council-level role) in a workspace.
+ * Returns the member record if authorized, throws 403 otherwise.
+ */
+async function requireCommanderOrXo(
+  workspaceId: string,
+  userDid: string,
+): Promise<void> {
+  const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+  if (!member) {
+    const err = new Error('Not a member of this workspace');
+    (err as NodeJS.ErrnoException).code = '403';
+    throw err;
+  }
+  if (member.status === 'suspended') {
+    const err = new Error('Your membership is suspended');
+    (err as NodeJS.ErrnoException).code = '403';
+    throw err;
+  }
+  if (member.role !== 'commander' && member.role !== 'xo') {
+    const err = new Error('Commander or XO role required');
+    (err as NodeJS.ErrnoException).code = '403';
+    throw err;
+  }
 }
 
 /**
@@ -1267,6 +1325,510 @@ router.get('/:id/members/:did/compartments', requireAuth, async (req: Request, r
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Get member compartments failed:', message);
     res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// Panel Config Endpoints
+// ============================================================================
+
+/**
+ * GET /api/workspaces/:id/panel-config - Get role→tab visibility for a workspace
+ * Caller must be a member of the workspace.
+ */
+router.get('/:id/panel-config', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+
+    const workspace = await workspaceStore.getWorkspace(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    // Verify caller is a member
+    const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+    if (!member) {
+      return res.status(403).json({ error: 'Not a member of this workspace' });
+    }
+
+    const config = await workspacePanelConfigStore.getOrCreateDefault(workspaceId, workspace.workspaceType);
+
+    res.json({ panelVisibility: config.panelVisibility, defaultTab: config.defaultTab });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get panel config failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * PUT /api/workspaces/:id/panel-config - Update panel visibility
+ * Requires commander or XO role.
+ */
+router.put('/:id/panel-config', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+
+    const workspace = await workspaceStore.getWorkspace(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    try {
+      await requireCommanderOrXo(workspaceId, userDid);
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    let body: z.infer<typeof PanelConfigSchema>;
+    try {
+      body = PanelConfigSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    const config = await workspacePanelConfigStore.upsertConfig(
+      workspaceId,
+      body.panelVisibility,
+      body.defaultTab,
+    );
+
+    await workspaceActivityStore.log(
+      workspaceId,
+      'panel_config_updated',
+      userDid,
+      null,
+      { defaultTab: config.defaultTab },
+    );
+
+    console.log(`✓ Panel config updated for workspace ${workspaceId}`);
+    res.json(config);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update panel config failed:', message);
+    handleError(res, error);
+  }
+});
+
+// ============================================================================
+// Subscription Endpoints
+// ============================================================================
+
+/**
+ * POST /api/workspaces/:id/subscriptions - Request subscription to another workspace's data
+ * Caller must be commander or XO of the subscriber workspace (:id).
+ */
+router.post('/:id/subscriptions', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+
+    const workspace = await workspaceStore.getWorkspace(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    try {
+      await requireCommanderOrXo(workspaceId, userDid);
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    let body: z.infer<typeof CreateSubscriptionSchema>;
+    try {
+      body = CreateSubscriptionSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    // Get publisher workspace for clearance check
+    const publisherWorkspace = await workspaceStore.getWorkspace(body.publisherWorkspaceId);
+    if (!publisherWorkspace) {
+      return res.status(404).json({ error: 'Publisher workspace not found' });
+    }
+
+    // Classification check: subscriber must have sufficient clearance for publisher
+    if (!clearanceSufficient(workspace.classification, publisherWorkspace.classification)) {
+      return res.status(403).json({
+        error: `Insufficient clearance. Publisher workspace requires ${publisherWorkspace.classification}`,
+      });
+    }
+
+    const subscription = await workspaceSubscriptionStore.createSubscription({
+      subscriberWorkspaceId: workspaceId,
+      publisherWorkspaceId: body.publisherWorkspaceId,
+      dataTypes: body.dataTypes,
+      requestedBy: userDid,
+    });
+
+    // Log activity in both workspaces
+    await workspaceActivityStore.log(
+      workspaceId,
+      'subscription_requested',
+      userDid,
+      null,
+      { subscriptionId: subscription.id, publisherWorkspaceId: body.publisherWorkspaceId, dataTypes: body.dataTypes },
+    );
+    await workspaceActivityStore.log(
+      body.publisherWorkspaceId,
+      'subscription_requested',
+      userDid,
+      null,
+      { subscriptionId: subscription.id, subscriberWorkspaceId: workspaceId, dataTypes: body.dataTypes },
+    );
+
+    console.log(`✓ Subscription requested: ${subscription.id} (${workspaceId} → ${body.publisherWorkspaceId})`);
+    res.status(201).json(subscription);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create subscription failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * GET /api/workspaces/:id/subscriptions - List subscriptions (as subscriber and publisher)
+ * Caller must be a member of the workspace.
+ */
+router.get('/:id/subscriptions', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+
+    // Verify caller is a member
+    const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+    if (!member) {
+      return res.status(403).json({ error: 'Not a member of this workspace' });
+    }
+
+    const [asSubscriber, asPublisher] = await Promise.all([
+      workspaceSubscriptionStore.listBySubscriber(workspaceId),
+      workspaceSubscriptionStore.listByPublisher(workspaceId),
+    ]);
+
+    res.json({ asSubscriber, asPublisher });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List subscriptions failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * PATCH /api/workspaces/:id/subscriptions/:subId - Approve or reject a subscription
+ * Caller must be commander or XO of the PUBLISHER workspace (not the subscriber).
+ */
+router.patch('/:id/subscriptions/:subId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+    const subId = req.params.subId as string;
+
+    // Get subscription to confirm this workspace is the publisher
+    const subscription = await workspaceSubscriptionStore.getSubscription(subId);
+    if (!subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+    if (subscription.publisherWorkspaceId !== workspaceId) {
+      return res.status(403).json({ error: 'Only the publisher workspace can approve or reject subscriptions' });
+    }
+
+    // Caller must be commander/xo of the PUBLISHER workspace
+    try {
+      await requireCommanderOrXo(workspaceId, userDid);
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    let body: z.infer<typeof UpdateSubscriptionStatusSchema>;
+    try {
+      body = UpdateSubscriptionStatusSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    const updated = await workspaceSubscriptionStore.updateApprovalStatus(subId, body.status, userDid);
+
+    const activityType = body.status === 'approved' ? 'subscription_approved' : 'subscription_rejected';
+    await workspaceActivityStore.log(
+      workspaceId,
+      activityType,
+      userDid,
+      null,
+      { subscriptionId: subId, subscriberWorkspaceId: subscription.subscriberWorkspaceId },
+    );
+
+    console.log(`✓ Subscription ${subId} ${body.status} by ${userDid}`);
+    res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update subscription status failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * DELETE /api/workspaces/:id/subscriptions/:subId - Cancel a subscription
+ * Caller must be commander or XO of the SUBSCRIBER workspace.
+ */
+router.delete('/:id/subscriptions/:subId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+    const subId = req.params.subId as string;
+
+    // Get subscription to confirm this workspace is the subscriber
+    const subscription = await workspaceSubscriptionStore.getSubscription(subId);
+    if (!subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+    if (subscription.subscriberWorkspaceId !== workspaceId) {
+      return res.status(403).json({ error: 'Only the subscriber workspace can cancel subscriptions' });
+    }
+
+    try {
+      await requireCommanderOrXo(workspaceId, userDid);
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    await workspaceSubscriptionStore.deleteSubscription(subId);
+
+    console.log(`✓ Subscription ${subId} cancelled by ${userDid}`);
+    res.status(204).send();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete subscription failed:', message);
+    handleError(res, error);
+  }
+});
+
+// ============================================================================
+// Escalation Rule Endpoints
+// ============================================================================
+
+/**
+ * GET /api/workspaces/:id/escalation-rules - List escalation rules for workspace
+ * Requires commander or XO role.
+ */
+router.get('/:id/escalation-rules', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+
+    try {
+      await requireCommanderOrXo(workspaceId, userDid);
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    const rules = await workspaceEscalationStore.listRulesForWorkspace(workspaceId);
+
+    res.json({ rules, count: rules.length });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List escalation rules failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * POST /api/workspaces/:id/escalation-rules - Create an escalation rule
+ * Requires commander or XO role.
+ */
+router.post('/:id/escalation-rules', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+
+    try {
+      await requireCommanderOrXo(workspaceId, userDid);
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    let body: z.infer<typeof EscalationRuleSchema>;
+    try {
+      body = EscalationRuleSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    const rule = await workspaceEscalationStore.createRule({
+      workspaceId,
+      ruleType: body.ruleType,
+      proposalKind: body.proposalKind,
+      thresholdConfig: body.thresholdConfig ?? null,
+      votingMechanism: body.votingMechanism,
+      autoRouteTo: body.autoRouteTo ?? null,
+    });
+
+    console.log(`✓ Escalation rule created: ${rule.id} for workspace ${workspaceId}`);
+    res.status(201).json(rule);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create escalation rule failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * DELETE /api/workspaces/:id/escalation-rules/:ruleId - Delete an escalation rule
+ * Requires commander or XO role.
+ */
+router.delete('/:id/escalation-rules/:ruleId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+    const ruleId = req.params.ruleId as string;
+
+    try {
+      await requireCommanderOrXo(workspaceId, userDid);
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    await workspaceEscalationStore.deleteRule(ruleId);
+
+    console.log(`✓ Escalation rule ${ruleId} deleted from workspace ${workspaceId}`);
+    res.status(204).send();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete escalation rule failed:', message);
+    handleError(res, error);
+  }
+});
+
+// ============================================================================
+// Escalation Trigger Endpoint
+// ============================================================================
+
+/**
+ * POST /api/workspaces/:id/escalate - Escalate a decision to parent workspace
+ *
+ * Creates off-chain activity records in both source and parent workspaces.
+ * On-chain proposal creation is deferred until commander credential delegation is implemented.
+ *
+ * Requires commander or XO role.
+ */
+router.post('/:id/escalate', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const workspaceId = req.params.id as string;
+
+    const workspace = await workspaceStore.getWorkspace(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    try {
+      await requireCommanderOrXo(workspaceId, userDid);
+    } catch (permErr) {
+      const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
+      return res.status(403).json({ error: msg });
+    }
+
+    let body: z.infer<typeof EscalateSchema>;
+    try {
+      body = EscalateSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    // Verify workspace has a parent to escalate to
+    if (!workspace.parentWorkspaceId) {
+      return res.status(400).json({ error: 'No parent workspace to escalate to' });
+    }
+
+    const parentWorkspace = await workspaceStore.getWorkspace(workspace.parentWorkspaceId);
+    if (!parentWorkspace) {
+      return res.status(404).json({ error: 'Parent workspace not found' });
+    }
+
+    // Look up escalation rules for this proposal kind
+    const rules = await workspaceEscalationStore.getRulesForKind(workspaceId, body.proposalKind);
+    const matchingRule = rules[0] ?? null;
+
+    // Determine voting mechanism: urgent → autocratic, else use rule or default democratic
+    const votingMechanism =
+      body.urgency === 'urgent'
+        ? 'autocratic'
+        : (matchingRule?.votingMechanism ?? 'democratic');
+
+    // Voting period: autocratic = 1 hour, democratic = 7 days (nanoseconds)
+    const votingPeriod = votingMechanism === 'autocratic' ? '3600000000000' : '604800000000000';
+
+    // Create off-chain escalation record in source workspace
+    const sourceActivity = await workspaceActivityStore.log(
+      workspaceId,
+      'decision_escalated',
+      userDid,
+      null,
+      {
+        proposalKind: body.proposalKind,
+        description: body.description,
+        urgency: body.urgency,
+        votingMechanism,
+        votingPeriod,
+        parentWorkspaceId: workspace.parentWorkspaceId,
+        data: body.data ?? null,
+      },
+    );
+
+    // Create off-chain escalation record in parent workspace
+    await workspaceActivityStore.log(
+      workspace.parentWorkspaceId,
+      'escalation_received',
+      userDid,
+      null,
+      {
+        sourceWorkspaceId: workspaceId,
+        proposalKind: body.proposalKind,
+        description: body.description,
+        urgency: body.urgency,
+        votingMechanism,
+        votingPeriod,
+        escalationActivityId: sourceActivity.id,
+        data: body.data ?? null,
+      },
+    );
+
+    console.log(`✓ Decision escalated from ${workspaceId} to ${workspace.parentWorkspaceId} (${body.proposalKind})`);
+    res.status(201).json({
+      escalationId: sourceActivity.id,
+      parentWorkspaceId: workspace.parentWorkspaceId,
+      votingMechanism,
+      votingPeriod,
+      status: 'escalated',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Escalate decision failed:', message);
+    handleError(res, error);
   }
 });
 

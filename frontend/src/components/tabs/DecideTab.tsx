@@ -24,7 +24,12 @@ const VIEW_TO_INITIAL: Record<DecideView, 'governance' | 'proposals' | 'mdmp'> =
   'mdmp-workflow': 'mdmp',
 };
 
-export function DecideTab() {
+interface DecideTabProps {
+  workspaceId: string;
+  daoId?: string;
+}
+
+export function DecideTab({ workspaceId: _workspaceId, daoId }: DecideTabProps) {
   const [selectedView, setSelectedView] = useState<DecideView>('governance');
 
   return (
@@ -33,7 +38,7 @@ export function DecideTab() {
       selectedItem={selectedView}
       onSelectItem={(id) => setSelectedView(id as DecideView)}
     >
-      <DAODashboard key={selectedView} initialView={VIEW_TO_INITIAL[selectedView]} />
+      <DAODashboard key={selectedView} daoId={daoId} initialView={VIEW_TO_INITIAL[selectedView]} />
     </TabLayout>
   );
 }

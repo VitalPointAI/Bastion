@@ -8,15 +8,16 @@
  *
  * Tab content:
  * - Overview: renders existing WorkspaceDashboard (role-adaptive panels + ActivityFeed)
- * - Other tabs: placeholder "Panel content will be wired in next plan."
+ * - Decide: renders DecideTab scoped to workspace daoId
+ * - Design: renders DesignTab (workspace-scoped strategic docs, TODO full scoping)
+ * - Campaign: renders CampaignTab (workspace-scoped missions)
+ * - Monitor: renders MonitorTab with dynamic workspaceId (not hardcoded 'default')
+ * - Train: renders TrainTab wrapping ExerciseDashboard
  *
  * Role gating: each role sees only its allowed tabs (see DEFAULT_TAB_ACCESS).
  * Unknown roles fall back to ['overview', 'monitor'].
  *
- * NOTE: This component is NOT wired into App.tsx in this plan. That happens
- * in Plan 04 after panel context injection is ready.
- *
- * Phase 20 Plan 02: WorkspaceTabContainer + OrgTreeSidebar
+ * Phase 20 Plan 04: Wired all tab panels with workspaceId prop injection
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -24,6 +25,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { WorkspaceDashboard } from './WorkspaceDashboard';
 import { OrgTreeSidebar } from './OrgTreeSidebar';
+import { DecideTab } from '../tabs/DecideTab';
+import { DesignTab } from '../tabs/DesignTab';
+import { CampaignTab } from '../tabs/CampaignTab';
+import { MonitorTab } from '../tabs/MonitorTab';
+import { TrainTab } from '../tabs/TrainTab';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -156,17 +162,31 @@ export function WorkspaceTabContainer() {
     );
   }
 
+  // Resolved workspace ID to pass into tab components
+  const displayId = resolvedId ?? '';
+
   // ─── Tab content ──────────────────────────────────────────────────────────
 
   function renderTabContent() {
     if (activeTab === 'overview') {
       return <WorkspaceDashboard />;
     }
-    return (
-      <div className="p-8 text-center text-gray-500">
-        Panel content will be wired in next plan.
-      </div>
-    );
+    if (activeTab === 'decide') {
+      return <DecideTab workspaceId={displayId} daoId={activeWorkspace?.daoId} />;
+    }
+    if (activeTab === 'design') {
+      return <DesignTab workspaceId={displayId} />;
+    }
+    if (activeTab === 'campaign') {
+      return <CampaignTab workspaceId={displayId} />;
+    }
+    if (activeTab === 'monitor') {
+      return <MonitorTab workspaceId={displayId} />;
+    }
+    if (activeTab === 'train') {
+      return <TrainTab workspaceId={displayId} />;
+    }
+    return null;
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────

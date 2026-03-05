@@ -32,6 +32,18 @@ import { useUser } from './UserContext';
 const ACTIVE_WORKSPACE_KEY = 'workspace-active-id';
 const LAST_SEEN_KEY = 'workspace-last-seen';
 
+// ─── Cross-Workspace Types ────────────────────────────────────────────────────
+
+interface CrossWorkspaceUpdate {
+  sourceWorkspaceId: string;
+  sourceWorkspaceName: string;
+  tab: string;
+  updateType: 'new_directive' | 'data_change' | 'escalation';
+  summary: string;
+  actionableItemId: string;
+  timestamp: string;
+}
+
 // ─── Context Type ─────────────────────────────────────────────────────────────
 
 interface WorkspaceContextType {
@@ -42,12 +54,16 @@ interface WorkspaceContextType {
   userRoleInActive: string | null;
   primaryWorkspaceId: string | null;
   notificationCounts: Record<string, number>;
+  tabNotifications: Record<string, number>;
+  crossWorkspaceUpdates: CrossWorkspaceUpdate[];
   loading: boolean;
 
   // Actions
   setActiveWorkspace: (id: string) => void;
   refreshMemberships: () => Promise<void>;
   refreshActiveWorkspace: () => Promise<void>;
+  clearTabNotifications: (tab: string) => void;
+  refreshCrossWorkspaceData: () => Promise<void>;
 }
 
 // ─── Context Default ──────────────────────────────────────────────────────────
@@ -59,10 +75,14 @@ const defaultContext: WorkspaceContextType = {
   userRoleInActive: null,
   primaryWorkspaceId: null,
   notificationCounts: {},
+  tabNotifications: {},
+  crossWorkspaceUpdates: [],
   loading: false,
   setActiveWorkspace: () => undefined,
   refreshMemberships: async () => undefined,
   refreshActiveWorkspace: async () => undefined,
+  clearTabNotifications: () => undefined,
+  refreshCrossWorkspaceData: async () => undefined,
 };
 
 const WorkspaceContext = createContext<WorkspaceContextType>(defaultContext);
@@ -96,6 +116,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeWorkspaceId, setActiveWorkspaceIdState] = useState<string | null>(null);
   const [activeWorkspaceDetail, setActiveWorkspaceDetail] = useState<WorkspaceDetail | null>(null);
   const [notificationCounts, setNotificationCounts] = useState<Record<string, number>>({});
+  const [tabNotifications, setTabNotifications] = useState<Record<string, number>>({});
+  const [crossWorkspaceUpdates, setCrossWorkspaceUpdates] = useState<CrossWorkspaceUpdate[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Track whether tab is visible for polling
@@ -140,6 +162,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setActiveWorkspaceIdState(null);
       setActiveWorkspaceDetail(null);
       setNotificationCounts({});
+      setTabNotifications({});
+      setCrossWorkspaceUpdates([]);
       return;
     }
 
@@ -201,7 +225,62 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } catch {
       // Silently fail — polling errors should not disrupt UX
     }
-  }, [userDID, isAuthenticated, memberships]);
+
+    // Derive tab-level notifications from cross-workspace activity types.
+    // Uses the active workspace's activity feed filtered for cross-workspace events.
+    if (activeWorkspaceId) {
+      try {
+        const { activities } = await workspaceService.listActivity(activeWorkspaceId, userDID, { limit: 50 });
+
+        // Map activity types to tab names for badge counts
+        const activityTypeToTab: Record<string, string> = {
+          escalation_received: 'escalations',
+          directive_received: 'directives',
+          data_change: 'intelligence',
+          subscription_approved: 'intelligence',
+          subscription_rejected: 'intelligence',
+        };
+
+        const crossWorkspaceActivityTypes = new Set(Object.keys(activityTypeToTab));
+        const crossActivities = activities.filter((a) => crossWorkspaceActivityTypes.has(a.activityType));
+
+        // Derive tab notification counts from unread cross-workspace activities
+        const tabCounts: Record<string, number> = {};
+        const updates: CrossWorkspaceUpdate[] = [];
+
+        for (const activity of crossActivities) {
+          const tab = activityTypeToTab[activity.activityType];
+          if (tab) {
+            tabCounts[tab] = (tabCounts[tab] ?? 0) + 1;
+          }
+
+          // Build CrossWorkspaceUpdate items for actionable directives and escalations
+          if (activity.activityType === 'escalation_received' || activity.activityType === 'directive_received') {
+            const meta = activity.metadata as {
+              sourceWorkspaceId?: string;
+              sourceWorkspaceName?: string;
+              summary?: string;
+              itemId?: string;
+            };
+            updates.push({
+              sourceWorkspaceId: meta.sourceWorkspaceId ?? '',
+              sourceWorkspaceName: meta.sourceWorkspaceName ?? 'Unknown Workspace',
+              tab: activityTypeToTab[activity.activityType] ?? 'intelligence',
+              updateType: activity.activityType === 'escalation_received' ? 'escalation' : 'new_directive',
+              summary: meta.summary ?? activity.activityType,
+              actionableItemId: meta.itemId ?? activity.id,
+              timestamp: activity.createdAt,
+            });
+          }
+        }
+
+        setTabNotifications(tabCounts);
+        setCrossWorkspaceUpdates(updates);
+      } catch {
+        // Silently fail — tab notification errors should not disrupt UX
+      }
+    }
+  }, [userDID, isAuthenticated, memberships, activeWorkspaceId]);
 
   // Set up polling interval
   useEffect(() => {
@@ -259,6 +338,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [activeWorkspaceId]
   );
 
+  // ─── Tab notification actions ────────────────────────────────────────────────
+
+  const clearTabNotifications = useCallback((tab: string) => {
+    setTabNotifications(prev => ({ ...prev, [tab]: 0 }));
+  }, []);
+
+  const refreshCrossWorkspaceData = useCallback(async () => {
+    if (!activeWorkspaceId || !userDID) return;
+    // Future: fetch from dedicated cross-workspace data endpoints
+    // For now, trigger a re-poll of notifications which includes cross-workspace activity
+    await pollNotifications();
+  }, [activeWorkspaceId, userDID, pollNotifications]);
+
   // ─── Context value ──────────────────────────────────────────────────────────
 
   const value: WorkspaceContextType = {
@@ -268,10 +360,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     userRoleInActive,
     primaryWorkspaceId,
     notificationCounts,
+    tabNotifications,
+    crossWorkspaceUpdates,
     loading,
     setActiveWorkspace,
     refreshMemberships,
     refreshActiveWorkspace,
+    clearTabNotifications,
+    refreshCrossWorkspaceData,
   };
 
   return (

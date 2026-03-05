@@ -7,7 +7,11 @@ const CAMPAIGN_ITEMS: SidebarItem[] = [
   { id: 'missions', label: 'Missions' },
 ];
 
-export function CampaignTab() {
+interface CampaignTabProps {
+  workspaceId: string;
+}
+
+export function CampaignTab({ workspaceId: _workspaceId }: CampaignTabProps) {
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [showWizard, setShowWizard] = useState(false);
   const { userDID } = useUser();

@@ -10,7 +10,7 @@ import { WorkspaceSwitcher } from './components/workspace/WorkspaceSwitcher'
 import { WorkspaceSelector } from './components/workspace/WorkspaceSelector'
 import { WorkspaceBreadcrumb } from './components/workspace/WorkspaceBreadcrumb'
 import { InviteAcceptPage } from './components/workspace/InviteAcceptPage'
-import { WorkspaceDashboard } from './components/workspace/WorkspaceDashboard'
+import { WorkspaceTabContainer } from './components/workspace/WorkspaceTabContainer'
 import { WorkspaceMemberManager } from './components/workspace/WorkspaceMemberManager'
 import { MemberDirectory } from './components/workspace/MemberDirectory'
 import './App.css'
@@ -109,11 +109,14 @@ function AppContent() {
         ) : isWorkspace ? (
           <Routes>
             <Route path="invite/:token" element={<InviteAcceptPage />} />
-            <Route path=":workspaceId" element={<WorkspaceDashboard />} />
+            {/* Specific sub-routes must come before /:tab catch-all */}
             <Route path=":workspaceId/members" element={<WorkspaceMemberManagerPage />} />
             <Route path=":workspaceId/directory" element={<MemberDirectoryPage />} />
             <Route path=":workspaceId/invite" element={<WorkspacePlaceholder label="Invite" />} />
             <Route path=":workspaceId/settings" element={<WorkspacePlaceholder label="Settings" />} />
+            {/* Tab-aware routes — WorkspaceTabContainer reads :tab param for URL-driven tab state */}
+            <Route path=":workspaceId/:tab" element={<WorkspaceTabContainer />} />
+            <Route path=":workspaceId" element={<WorkspaceTabContainer />} />
           </Routes>
         ) : (
           <WorkspaceSelector />

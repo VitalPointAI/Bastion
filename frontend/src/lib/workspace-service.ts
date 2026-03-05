@@ -7,6 +7,9 @@
  * - Invite management
  * - Roles and activity
  * - Notification counts
+ * - Panel config
+ * - Cross-workspace subscriptions
+ * - Escalation rules
  */
 
 // Use environment variable or empty string for relative URLs (Vite proxy)
@@ -110,6 +113,28 @@ export interface WorkspaceCompartment {
   createdAt: string;
   /** Member DIDs assigned to this compartment (populated when requested with members) */
   memberDids?: string[];
+}
+
+export interface Subscription {
+  id: string;
+  subscriberWorkspaceId: string;
+  publisherWorkspaceId: string;
+  dataTypes: string[];
+  approvalStatus: string;
+  approvalMechanism: string;
+  approvedBy: string | null;
+  requestedBy: string;
+  createdAt: string;
+}
+
+export interface EscalationRule {
+  id: string;
+  workspaceId: string;
+  ruleType: string;
+  proposalKind: string;
+  votingMechanism: string;
+  autoRouteTo: string | null;
+  isActive: boolean;
 }
 
 // ─── Service Class ────────────────────────────────────────────────────────────
@@ -460,6 +485,135 @@ class WorkspaceService {
       }
     );
     return response.counts;
+  }
+
+  // ─── Panel Config ────────────────────────────────────────────────────────────
+
+  async getPanelConfig(
+    workspaceId: string,
+    userDID: string
+  ): Promise<{ panelVisibility: Record<string, string[]>; defaultTab: string }> {
+    return this.fetchJSON<{ panelVisibility: Record<string, string[]>; defaultTab: string }>(
+      `${this.baseUrl}/${workspaceId}/panel-config`,
+      { headers: { 'X-DID': userDID } }
+    );
+  }
+
+  async updatePanelConfig(
+    workspaceId: string,
+    panelVisibility: Record<string, string[]>,
+    userDID: string,
+    defaultTab?: string
+  ): Promise<void> {
+    await this.fetchJSON<void>(
+      `${this.baseUrl}/${workspaceId}/panel-config`,
+      {
+        method: 'PUT',
+        headers: { 'X-DID': userDID },
+        body: JSON.stringify({ panelVisibility, defaultTab }),
+      }
+    );
+  }
+
+  // ─── Subscriptions ───────────────────────────────────────────────────────────
+
+  async getSubscriptions(
+    workspaceId: string,
+    userDID: string
+  ): Promise<{ asSubscriber: Subscription[]; asPublisher: Subscription[] }> {
+    return this.fetchJSON<{ asSubscriber: Subscription[]; asPublisher: Subscription[] }>(
+      `${this.baseUrl}/${workspaceId}/subscriptions`,
+      { headers: { 'X-DID': userDID } }
+    );
+  }
+
+  async createSubscription(
+    workspaceId: string,
+    publisherWorkspaceId: string,
+    dataTypes: string[],
+    userDID: string
+  ): Promise<Subscription> {
+    return this.fetchJSON<Subscription>(
+      `${this.baseUrl}/${workspaceId}/subscriptions`,
+      {
+        method: 'POST',
+        headers: { 'X-DID': userDID },
+        body: JSON.stringify({ publisherWorkspaceId, dataTypes }),
+      }
+    );
+  }
+
+  async updateSubscriptionStatus(
+    workspaceId: string,
+    subId: string,
+    status: 'approved' | 'rejected',
+    userDID: string
+  ): Promise<void> {
+    await this.fetchJSON<void>(
+      `${this.baseUrl}/${workspaceId}/subscriptions/${subId}/status`,
+      {
+        method: 'PUT',
+        headers: { 'X-DID': userDID },
+        body: JSON.stringify({ status }),
+      }
+    );
+  }
+
+  async deleteSubscription(
+    workspaceId: string,
+    subId: string,
+    userDID: string
+  ): Promise<void> {
+    await this.fetchJSON<void>(
+      `${this.baseUrl}/${workspaceId}/subscriptions/${subId}`,
+      {
+        method: 'DELETE',
+        headers: { 'X-DID': userDID },
+      }
+    );
+  }
+
+  // ─── Escalation ──────────────────────────────────────────────────────────────
+
+  async escalateDecision(
+    workspaceId: string,
+    data: { proposalKind: string; description: string; urgency: 'urgent' | 'standard' },
+    userDID: string
+  ): Promise<{ escalationId: string; parentWorkspaceId: string; votingMechanism: string; status: string }> {
+    return this.fetchJSON<{ escalationId: string; parentWorkspaceId: string; votingMechanism: string; status: string }>(
+      `${this.baseUrl}/${workspaceId}/escalate`,
+      {
+        method: 'POST',
+        headers: { 'X-DID': userDID },
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  async getEscalationRules(
+    workspaceId: string,
+    userDID: string
+  ): Promise<EscalationRule[]> {
+    const response = await this.fetchJSON<{ rules: EscalationRule[] }>(
+      `${this.baseUrl}/${workspaceId}/escalation-rules`,
+      { headers: { 'X-DID': userDID } }
+    );
+    return response.rules;
+  }
+
+  async createEscalationRule(
+    workspaceId: string,
+    rule: { ruleType: string; proposalKind: string; votingMechanism?: string },
+    userDID: string
+  ): Promise<EscalationRule> {
+    return this.fetchJSON<EscalationRule>(
+      `${this.baseUrl}/${workspaceId}/escalation-rules`,
+      {
+        method: 'POST',
+        headers: { 'X-DID': userDID },
+        body: JSON.stringify(rule),
+      }
+    );
   }
 }
 
