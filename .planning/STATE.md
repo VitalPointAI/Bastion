@@ -24,12 +24,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 20 of 32 (Workspace Operational Panels & Cross-Workspace Intelligence Sharing) - IN PROGRESS
-Plan: 06 of 09 in current phase — 20-06 complete (WorkspaceContext extension + workspace-service API methods)
-Status: Executing — plan 20-06 complete: WorkspaceContext extended with tabNotifications/crossWorkspaceUpdates; workspace-service extended with panel-config, subscription, and escalation methods
-Last activity: 2026-03-05 - Completed quick task 7: Fix click-to-browse on strategic documents upload dialog
+Phase: 21 of 32 (AI COP Layer Agent Team) - IN PROGRESS
+Plan: 02 of 10 in current phase — 21-02 complete (Event bus + agent definitions + trigger handler + agent pool)
+Status: Executing — plan 21-02 complete: Typed event bus with 7 COP event types, triple trigger handler, activity bridge, 7 StaffAgentDef COP agents, pool-with-affinity manager
+Last activity: 2026-03-05 - Completed 21-02: Agent infrastructure layer
 
-Progress: ████████████████████████ 191 plans complete
+Progress: ████████████████████████ 192 plans complete
 
 ## Performance Metrics
 
