@@ -9,7 +9,7 @@
  * currentPhase prop on COPMapView for temporal symbol positioning.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { COPPhaseSpec } from '../../types/cop.js';
 import './COPPhaseSlider.css';
 
@@ -53,8 +53,14 @@ export function COPPhaseSlider({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sorted phase numbers for navigation
-  const sortedPhases = [...phases].sort((a, b) => a.phaseNumber - b.phaseNumber);
-  const phaseNumbers = sortedPhases.map((p) => p.phaseNumber);
+  const sortedPhases = useMemo(
+    () => [...phases].sort((a, b) => a.phaseNumber - b.phaseNumber),
+    [phases],
+  );
+  const phaseNumbers = useMemo(
+    () => sortedPhases.map((p) => p.phaseNumber),
+    [sortedPhases],
+  );
   const minPhase = phaseNumbers.length > 0 ? phaseNumbers[0] : 0;
   const maxPhase = phaseNumbers.length > 0 ? phaseNumbers[phaseNumbers.length - 1] : 0;
 
