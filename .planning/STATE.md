@@ -24,12 +24,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 19 of 30 (Workspace Membership and Invite System) - IN PROGRESS
-Plan: 10 of 10 in current phase — 19-10 Task 1 complete; at human-verify checkpoint (Task 2)
-Status: Executing — plan 19-10 Task 1 done (WorkspaceDashboard integrated with OrgTree, ActivityFeed, WorkspaceInviteModal; App.tsx routes for /members, /directory, /settings registered)
-Last activity: 2026-03-04 - Phase 20 context gathered: Workspace Operational Panels & Cross-Workspace Intelligence Sharing
+Phase: 20 of 32 (Workspace Operational Panels & Cross-Workspace Intelligence Sharing) - IN PROGRESS
+Plan: 02 of 09 in current phase — 20-02 complete (WorkspaceTabContainer + OrgTreeSidebar)
+Status: Executing — plan 20-02 complete: WorkspaceTabContainer (role-gated tab bar shell) and OrgTreeSidebar (slide-out overlay) created; not yet wired into App.tsx (deferred to Plan 04)
+Last activity: 2026-03-05 - Phase 20 Plan 02 complete: WorkspaceTabContainer + OrgTreeSidebar
 
-Progress: ████████████████████████ 181 plans complete
+Progress: ████████████████████████ 183 plans complete
 
 ## Performance Metrics
 
@@ -108,6 +108,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 20 Plan 02 (WorkspaceTabContainer + OrgTreeSidebar):**
+- Tab order fixed via WORKSPACE_TABS const array — filter preserves order without sorting
+- Unknown roles fall back to ['overview', 'monitor'] — conservative default access
+- WorkspaceDashboard rendered as-is in Overview tab — no props needed (uses useParams internally)
+- App.tsx wiring deferred to Plan 04 — components created but not routed yet
 
 **Phase 19 Plan 03 (Workspace REST API Router):**
 - Static routes (/me, /invite/accept, /me/primary, /notifications/counts) registered before parametric /:id routes to prevent Express route shadowing

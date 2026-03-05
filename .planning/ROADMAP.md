@@ -424,13 +424,31 @@ Plans:
 
 ### Phase 20: Workspace Operational Panels & Cross-Workspace Intelligence Sharing
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Move 5 operational panels (Decide, Design, Campaign, Monitor, Train) into per-workspace tab bars, add workspace selector landing page, enable cross-workspace data sharing with classification-gated subscriptions, and implement decision escalation routing with tiered DAO voting.
+**Requirements**: [WOP-01, WOP-02, WOP-03, WOP-04, WOP-05, WOP-06, WOP-07, WOP-08, WOP-09, WOP-10]
+- WOP-01: Workspace Tab Container — horizontal tab bar (Overview|Decide|Design|Campaign|Monitor|Train) with role-gated visibility
+- WOP-02: Workspace Selector Landing Page — post-login landing with org hierarchy tree + workspace cards
+- WOP-03: Panel Context Injection — all 5 panel tabs accept workspaceId and scope data to active workspace
+- WOP-04: Panel Visibility Configuration — per-workspace role→tab access stored in PostgreSQL, commander-configurable
+- WOP-05: Cross-Workspace Subscription System — subscription model for non-hierarchical data sharing with approval workflow
+- WOP-06: Cross-Workspace Notifications & Layer Toggle — tab badges with count, dropdown with actionable items, layer toggle for data overlays
+- WOP-07: Decision Escalation Routing — manual + threshold-based escalation to parent workspace, tiered voting (autocratic/democratic)
+- WOP-08: Routing Restructure — remove top-level panel routes, workspace-first navigation paradigm
+- WOP-09: OrgTree Collapsible Sidebar — slide-out sidebar accessible from any tab
+- WOP-10: Workspace Breadcrumb — compact header identity showing active workspace
 **Depends on:** Phase 19
-**Plans:** 0 plans
+**Plans:** 9 plans (4 waves)
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 20 to break down)
+- [ ] 20-01-PLAN.md — Routing restructure + WorkspaceSelector landing page + WorkspaceBreadcrumb (Wave 1)
+- [x] 20-02-PLAN.md — WorkspaceTabContainer + OrgTreeSidebar (Wave 1)
+- [ ] 20-03-PLAN.md — Backend stores: panel config, subscriptions, escalation rules (Wave 1)
+- [ ] 20-04-PLAN.md — Panel context injection: all 5 tabs accept workspaceId + App.tsx wiring (Wave 2)
+- [ ] 20-05-PLAN.md — Backend API: panel-config, subscription, escalation endpoints (Wave 2)
+- [ ] 20-06-PLAN.md — WorkspaceContext extension: tab notifications + cross-workspace state (Wave 2)
+- [ ] 20-07-PLAN.md — CrossWorkspaceLayerToggle + TabNotificationDropdown + badge integration (Wave 3)
+- [ ] 20-08-PLAN.md — EscalationPanel + SubscriptionManager + DecideTab integration (Wave 3)
+- [ ] 20-09-PLAN.md — Integration: backend panel config wiring, Overview refinement, human verification (Wave 4)
 
 ---
 
