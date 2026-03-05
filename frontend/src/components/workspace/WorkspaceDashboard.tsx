@@ -5,9 +5,9 @@
  * panels based on the user's role — no separate pages per role.
  *
  * Integrated components:
+ * - StrategicValidityDashboard (validity map centerpiece — Common Operating Picture)
  * - CommanderPanel / StaffPanel / ObserverPanel (role-adaptive)
  * - ActivityFeed (role-filtered timeline, 15s polling)
- * - OrgTree (hierarchy visualization, navigate to child workspaces)
  * - WorkspaceInviteModal (opened via "Invite Member" quick action)
  *
  * Quick actions:
@@ -15,10 +15,9 @@
  * - "Manage Members" → navigates to /workspace/:id/members
  * - "Directory" → navigates to /workspace/:id/directory
  *
- * Root workspace derivation: If activeWorkspace.parentWorkspaceId is null,
- * the active workspace IS the root. Otherwise, walk the parent chain.
- *
  * Phase 19 Plan 10: Integration and verification.
+ * Phase 20 Plan 09: OrgTree sidebar removed (now in global OrgTreeSidebar via WorkspaceTabContainer).
+ *                   StrategicValidityDashboard added as centerpiece.
  *
  * Decisions:
  * - Role-to-panel mapping via useMemo (no routing split per role)
@@ -26,19 +25,19 @@
  * - Loading state: spinner while workspace loads
  * - Not a member: access denied message
  * - No workspace: prompt to select or create
- * - OrgTree + ActivityFeed in sidebar/main respectively
+ * - ActivityFeed in main content, OrgTree moved to global sidebar
  * - WorkspaceInviteModal opens inline (no route navigation needed)
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { CommanderPanel } from './CommanderPanel';
 import { StaffPanel } from './StaffPanel';
 import { ObserverPanel } from './ObserverPanel';
-import { OrgTree } from './OrgTree';
 import { ActivityFeed } from './ActivityFeed';
 import { WorkspaceInviteModal } from './WorkspaceInviteModal';
+import { StrategicValidityDashboard } from '../validity/index.js';
 
 // ─── Role mappings ────────────────────────────────────────────────────────────
 
@@ -65,7 +64,6 @@ function workspaceTypeBadge(type: string): string {
 
 export function WorkspaceDashboard() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
-  const navigate = useNavigate();
 
   const {
     activeWorkspaceId,
@@ -94,25 +92,6 @@ export function WorkspaceDashboard() {
     // All named staff roles (s1-s9 and any other non-commander role) → StaffPanel
     return StaffPanel;
   }, [userRoleInActive]);
-
-  // ─── Root workspace ID for OrgTree ─────────────────────────────────────────
-
-  // The OrgTree needs the root (Organization-level) workspace ID.
-  // If the active workspace has no parent, it IS the root.
-  // If it has a parent, the membership list may contain the root — but we
-  // cannot easily traverse the full chain without extra API calls.
-  // Use parentWorkspaceId=null heuristic: if current workspace is root, use it.
-  // Otherwise, find a membership where the workspace is an Organization type
-  // and is an ancestor — fall back to the active workspace ID itself.
-  const rootWorkspaceId = useMemo((): string | null => {
-    if (!activeWorkspace) return activeWorkspaceId;
-    // If this workspace has no parent, it IS the root
-    if (!activeWorkspace.parentWorkspaceId) return activeWorkspace.id;
-    // Otherwise, try to find an Organization membership (likely the root)
-    // We don't have workspace types in memberships, so just use activeWorkspaceId
-    // The OrgTree API will return the tree regardless
-    return activeWorkspaceId;
-  }, [activeWorkspace, activeWorkspaceId]);
 
   // ─── Guards ─────────────────────────────────────────────────────────────────
 
@@ -238,77 +217,69 @@ export function WorkspaceDashboard() {
         </div>
       </div>
 
-      {/* Main grid layout */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
+      {/* Main content — full width (OrgTree moved to global OrgTreeSidebar in WorkspaceTabContainer) */}
+      <div className="flex-1 grid grid-cols-1 gap-4 p-4">
 
-        {/* Left column (2/3 width): role panel + activity feed */}
-        <main className="lg:col-span-2 space-y-4">
-          {/* Role-adaptive panel */}
-          {displayId ? (
-            <RolePanel workspaceId={displayId} staffRole={userRoleInActive ?? undefined} />
-          ) : (
-            <div className="text-center text-gray-500 text-sm py-12">
-              No workspace available. Select one from the sidebar.
-            </div>
-          )}
-
-          {/* Activity Feed */}
-          {displayId && (
-            <section className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-              <h3 className="text-sm font-semibold text-gray-300 mb-3">Activity Feed</h3>
-              <ActivityFeed
-                workspaceId={displayId}
-                userRole={userRoleInActive}
-              />
-            </section>
-          )}
-        </main>
-
-        {/* Right sidebar (1/3 width): org tree + quick actions */}
-        <aside className="space-y-4">
-          {/* Org Tree */}
-          {rootWorkspaceId && (
-            <section className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-              <h3 className="text-sm font-semibold text-gray-300 mb-3">Organization</h3>
-              <OrgTree
-                rootWorkspaceId={rootWorkspaceId}
-                currentUserWorkspaceId={displayId || undefined}
-                onNavigate={(wsId) => navigate(`/workspace/${wsId}`)}
-              />
-            </section>
-          )}
-
-          {/* Mobile quick actions */}
-          <section className="lg:hidden bg-gray-800 rounded-lg border border-gray-700 p-4">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">Actions</h3>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setShowInviteModal(true)}
-                className="text-sm px-3 py-2 rounded bg-blue-700 hover:bg-blue-600 text-white transition-colors text-left"
-              >
-                Invite Member
-              </button>
-              <Link
-                to={`/workspace/${displayId}/members`}
-                className="text-sm px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-              >
-                Manage Members
-              </Link>
-              <Link
-                to={`/workspace/${displayId}/directory`}
-                className="text-sm px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-              >
-                Directory
-              </Link>
-              <Link
-                to={`/workspace/${displayId}/settings`}
-                className="text-sm px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-              >
-                Settings
-              </Link>
+        {/* Validity map centerpiece — Common Operating Picture */}
+        {displayId && (
+          <section className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <h3 className="text-sm font-semibold text-gray-300 mb-3">Common Operating Picture</h3>
+            <div className="h-64 lg:h-80">
+              <StrategicValidityDashboard />
             </div>
           </section>
-        </aside>
+        )}
+
+        {/* Role-adaptive panel */}
+        {displayId ? (
+          <RolePanel workspaceId={displayId} staffRole={userRoleInActive ?? undefined} />
+        ) : (
+          <div className="text-center text-gray-500 text-sm py-12">
+            No workspace available. Select one from the sidebar.
+          </div>
+        )}
+
+        {/* Activity Feed */}
+        {displayId && (
+          <section className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <h3 className="text-sm font-semibold text-gray-300 mb-3">Activity Feed</h3>
+            <ActivityFeed
+              workspaceId={displayId}
+              userRole={userRoleInActive}
+            />
+          </section>
+        )}
+
+        {/* Mobile quick actions */}
+        <section className="lg:hidden bg-gray-800 rounded-lg border border-gray-700 p-4">
+          <h3 className="text-sm font-semibold text-gray-300 mb-3">Actions</h3>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="text-sm px-3 py-2 rounded bg-blue-700 hover:bg-blue-600 text-white transition-colors text-left"
+            >
+              Invite Member
+            </button>
+            <Link
+              to={`/workspace/${displayId}/members`}
+              className="text-sm px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
+            >
+              Manage Members
+            </Link>
+            <Link
+              to={`/workspace/${displayId}/directory`}
+              className="text-sm px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
+            >
+              Directory
+            </Link>
+            <Link
+              to={`/workspace/${displayId}/settings`}
+              className="text-sm px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
+            >
+              Settings
+            </Link>
+          </div>
+        </section>
       </div>
 
       {/* WorkspaceInviteModal */}

@@ -34,7 +34,7 @@ const LAST_SEEN_KEY = 'workspace-last-seen';
 
 // ─── Cross-Workspace Types ────────────────────────────────────────────────────
 
-interface CrossWorkspaceUpdate {
+export interface CrossWorkspaceUpdate {
   sourceWorkspaceId: string;
   sourceWorkspaceName: string;
   tab: string;

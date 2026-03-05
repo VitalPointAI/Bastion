@@ -17,19 +17,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { useWorkspace } from '../../context/WorkspaceContext';
-
-// ─── Types (re-declared locally to avoid circular import; match WorkspaceContext) ──
-
-interface CrossWorkspaceUpdate {
-  sourceWorkspaceId: string;
-  sourceWorkspaceName: string;
-  tab: string;
-  updateType: 'new_directive' | 'data_change' | 'escalation';
-  summary: string;
-  actionableItemId: string;
-  timestamp: string;
-}
+import { useWorkspace, type CrossWorkspaceUpdate } from '../../context/WorkspaceContext';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 

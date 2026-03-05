@@ -19,11 +19,14 @@
  *
  * Phase 20 Plan 04: Wired all tab panels with workspaceId prop injection
  * Phase 20 Plan 07: Tab notification badges + TabNotificationDropdown + CrossWorkspaceLayerToggle
+ * Phase 20 Plan 09: Backend-driven panel config with client-side fallback
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import { useUser } from '../../context/UserContext';
+import { workspaceService } from '../../lib/workspace-service';
 import { WorkspaceDashboard } from './WorkspaceDashboard';
 import { OrgTreeSidebar } from './OrgTreeSidebar';
 import { NotificationBadge } from './NotificationBadge';
@@ -86,6 +89,11 @@ export function WorkspaceTabContainer() {
     crossWorkspaceUpdates,
   } = useWorkspace();
 
+  const { userDID } = useUser();
+
+  // Panel config from backend (null = not loaded yet, use client defaults)
+  const [panelConfig, setPanelConfig] = useState<Record<string, string[]> | null>(null);
+
   // Sidebar state
   const [orgTreeOpen, setOrgTreeOpen] = useState(false);
   // Dropdown state: which tab's notification dropdown is open (null = none)
@@ -98,11 +106,25 @@ export function WorkspaceTabContainer() {
     }
   }, [workspaceId, activeWorkspaceId, setActiveWorkspace]);
 
-  // Derive visible tabs from role
+  // Resolved workspace ID to pass into tab components (needed before guards)
+  const resolvedId = workspaceId ?? activeWorkspaceId;
+  const displayId = resolvedId ?? '';
+
+  // Fetch panel config from backend when workspace or user changes
+  useEffect(() => {
+    if (!displayId || !userDID) return;
+    workspaceService.getPanelConfig(displayId, userDID)
+      .then(config => setPanelConfig(config.panelVisibility))
+      .catch(() => setPanelConfig(null)); // Fall back to client defaults on error
+  }, [displayId, userDID]);
+
+  // Derive visible tabs: use backend config if available, fall back to client defaults
   const visibleTabs = useMemo((): WorkspaceTab[] => {
-    if (!userRoleInActive) return FALLBACK_TABS;
-    return DEFAULT_TAB_ACCESS[userRoleInActive] ?? FALLBACK_TABS;
-  }, [userRoleInActive]);
+    const source = panelConfig ?? DEFAULT_TAB_ACCESS;
+    const tabs = source[userRoleInActive ?? 'member'] ?? FALLBACK_TABS;
+    // Maintain fixed tab order — filter WORKSPACE_TABS by what's in tabs
+    return WORKSPACE_TABS.filter(t => tabs.includes(t));
+  }, [panelConfig, userRoleInActive]);
 
   // Resolve active tab from URL or default to 'overview'
   const resolvedTab = useMemo((): WorkspaceTab => {
@@ -155,7 +177,6 @@ export function WorkspaceTabContainer() {
     );
   }
 
-  const resolvedId = workspaceId ?? activeWorkspaceId;
   const isMember = memberships.some((m) => m.workspaceId === resolvedId);
 
   if (resolvedId && !loading && memberships.length > 0 && !isMember) {
@@ -169,9 +190,6 @@ export function WorkspaceTabContainer() {
       </div>
     );
   }
-
-  // Resolved workspace ID to pass into tab components
-  const displayId = resolvedId ?? '';
 
   // ─── Tab content ──────────────────────────────────────────────────────────
 
@@ -247,10 +265,11 @@ export function WorkspaceTabContainer() {
                 tab={tab}
                 updates={crossWorkspaceUpdates}
                 onClose={() => setDropdownTab(null)}
-                onAction={(update) => {
-                  setActiveTab(update.tab as WorkspaceTab);
+                onAction={(_update) => {
+                  // The tab is already active; close dropdown and focus it
+                  // Future: navigate to specific item via _update.actionableItemId
+                  setActiveTab(tab);
                   setDropdownTab(null);
-                  // Future: navigate to specific item via update.actionableItemId
                 }}
               />
             )}
