@@ -1,5 +1,6 @@
 /**
  * AgentAssignmentModal Component Styles
+ * Dark theme consistent with BASTION Command Center
  */
 
 .modal-overlay {
@@ -8,7 +9,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -16,11 +17,12 @@
 }
 
 .assignment-modal {
-  background: white;
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
   border-radius: 12px;
   width: 90%;
   max-width: 480px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
 
@@ -30,13 +32,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--border-subtle, #2a2a38);
 }
 
 .modal-header h3 {
   margin: 0;
   font-size: 1.125rem;
-  color: var(--text-primary, #111827);
+  color: var(--text-primary, #fff);
 }
 
 .close-btn {
@@ -50,13 +52,13 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-muted, #666678);
   transition: background 0.2s, color 0.2s;
 }
 
 .close-btn:hover {
-  background: var(--bg-secondary, #f3f4f6);
-  color: var(--text-primary, #111827);
+  background: var(--bg-hover, #2a2a38);
+  color: var(--text-primary, #fff);
 }
 
 .close-btn svg {
@@ -71,10 +73,10 @@
 
 .modal-error {
   padding: 0.75rem 1rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
   border-radius: 6px;
-  color: #991b1b;
+  color: var(--accent-red, #ff4444);
   font-size: 0.875rem;
   margin-bottom: 1rem;
 }
@@ -85,14 +87,14 @@
   justify-content: center;
   gap: 0.75rem;
   padding: 2rem;
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-muted, #666678);
 }
 
 .modal-loading .spinner {
   width: 1.25rem;
   height: 1.25rem;
-  border: 2px solid var(--border-color, #e5e7eb);
-  border-top-color: #3b82f6;
+  border: 2px solid var(--border-subtle, #2a2a38);
+  border-top-color: var(--accent-blue, #4a90d9);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -104,60 +106,64 @@
 }
 
 /* Form */
-.form-group {
+.assignment-modal .form-group {
   margin-bottom: 1.25rem;
 }
 
-.form-group:last-child {
+.assignment-modal .form-group:last-child {
   margin-bottom: 0;
 }
 
-.form-group label {
+.assignment-modal .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-primary, #111827);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted, #666678);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
-.form-group select {
+.assignment-modal .form-group select {
   width: 100%;
   padding: 0.625rem 0.75rem;
   font-size: 0.875rem;
-  border: 1px solid var(--border-color, #d1d5db);
+  border: 1px solid var(--border-subtle, #2a2a38);
   border-radius: 6px;
-  background: white;
+  background: var(--bg-primary, #111118);
+  color: var(--text-primary, #fff);
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.form-group select:focus {
+.assignment-modal .form-group select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--accent-blue, #4a90d9);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
 }
 
 .no-items {
   margin: 0;
   padding: 0.75rem;
-  background: var(--bg-secondary, #f9fafb);
+  background: var(--bg-primary, #111118);
+  border: 1px dashed var(--border-subtle, #2a2a38);
   border-radius: 6px;
   font-size: 0.875rem;
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-muted, #666678);
   text-align: center;
 }
 
 .item-description {
   margin: 0.5rem 0 0 0;
   font-size: 0.75rem;
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-muted, #666678);
   line-height: 1.4;
 }
 
 /* Mode Toggle */
 .mode-toggle {
   display: flex;
-  border: 1px solid var(--border-color, #d1d5db);
+  border: 1px solid var(--border-subtle, #2a2a38);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -166,24 +172,25 @@
   flex: 1;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  background: white;
+  background: var(--bg-primary, #111118);
   border: none;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-muted, #666678);
 }
 
 .mode-toggle button:first-child {
-  border-right: 1px solid var(--border-color, #d1d5db);
+  border-right: 1px solid var(--border-subtle, #2a2a38);
 }
 
 .mode-toggle button:hover:not(.active) {
-  background: var(--bg-secondary, #f9fafb);
+  background: var(--bg-hover, #2a2a38);
+  color: var(--text-primary, #fff);
 }
 
 .mode-toggle button.active {
-  background: #3b82f6;
-  color: white;
+  background: var(--accent-blue, #4a90d9);
+  color: #fff;
 }
 
 /* Actions */
@@ -192,8 +199,8 @@
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-secondary, #f9fafb);
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  background: var(--bg-primary, #111118);
 }
 
 .modal-actions button {
@@ -211,21 +218,22 @@
 }
 
 .cancel-btn {
-  background: white;
-  border: 1px solid var(--border-color, #d1d5db);
-  color: var(--text-secondary, #6b7280);
+  background: var(--bg-secondary, #1a1a24);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  color: var(--text-muted, #666678);
 }
 
 .cancel-btn:hover:not(:disabled) {
-  background: var(--bg-secondary, #f3f4f6);
+  background: var(--bg-hover, #2a2a38);
+  color: var(--text-primary, #fff);
 }
 
 .assign-btn {
-  background: #3b82f6;
+  background: linear-gradient(135deg, var(--accent-blue, #4a90d9) 0%, #3a7ac9 100%);
   border: none;
-  color: white;
+  color: #fff;
 }
 
 .assign-btn:hover:not(:disabled) {
-  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(74, 144, 217, 0.4);
 }

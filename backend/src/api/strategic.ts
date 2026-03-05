@@ -2173,4 +2173,53 @@ router.delete('/assignments/:id', requireAuth, async (req, res) => {
   }
 });
 
+// ============================================================================
+// Public Agent/Team Listings (authenticated, not admin-only)
+// Used by AgentAssignmentModal so regular users can assign agents to docs
+// ============================================================================
+
+router.get('/agents', requireAuth, async (_req, res) => {
+  try {
+    const { getAgentRegistry } = await import('../agents/registry.js');
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    const agents = await registry.listAgents();
+    res.json({
+      agents: agents.map(a => ({
+        agentId: a.agentId,
+        displayName: a.name,
+        description: a.description,
+        phase: a.phase,
+        capabilities: a.capabilities,
+      })),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List agents failed:', message);
+    res.status(500).json({ error: 'Failed to list agents' });
+  }
+});
+
+router.get('/teams', requireAuth, async (_req, res) => {
+  try {
+    const { getTeamRegistry } = await import('../agents/team-registry.js');
+    const registry = getTeamRegistry();
+    await registry.ensureInitialized();
+    const teams = await registry.listTeams();
+    res.json({
+      teams: teams.map(t => ({
+        teamId: t.teamId,
+        name: t.name,
+        description: t.description,
+        workflowType: t.workflow?.type ?? 'unknown',
+        memberCount: t.members?.length ?? 0,
+      })),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List teams failed:', message);
+    res.status(500).json({ error: 'Failed to list teams' });
+  }
+});
+
 export default router;

@@ -57,7 +57,7 @@ export function AgentAssignmentModal({
       setError(null);
       try {
         // Load agents
-        const agentsRes = await fetch(`${API_BASE}/api/admin/agents`, {
+        const agentsRes = await fetch(`${API_BASE}/api/strategic/agents`, {
           headers: { 'X-DID': userDID },
         });
         if (agentsRes.ok) {
@@ -69,7 +69,7 @@ export function AgentAssignmentModal({
         }
 
         // Load teams
-        const teamsRes = await fetch(`${API_BASE}/api/admin/teams`, {
+        const teamsRes = await fetch(`${API_BASE}/api/strategic/teams`, {
           headers: { 'X-DID': userDID },
         });
         if (teamsRes.ok) {
