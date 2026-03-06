@@ -13,10 +13,6 @@ import { STAFF_PRESET_TEMPLATES } from '../../types/exercise.js';
 import type { ExerciseScenario } from '../../types/exercise.js';
 import './CreateScenarioPanel.css';
 
-const DEFAULT_PHASES = [
-  'Competition', 'Crisis', 'Conflict Day 4', 'Conflict Day 10', 'Conflict Day 22', 'Negotiation',
-];
-
 const PRESET_LABELS: Record<string, string> = {
   core_staff: 'Core Staff (9 roles)',
   full_joint_staff: 'Full Joint Staff (31 roles)',
@@ -34,7 +30,7 @@ export function CreateScenarioPanel({ problemSetId, problemSetName, onCreated }:
     'choose',
   );
   const [name, setName] = useState(`${problemSetName} Scenario`);
-  const [phases, setPhases] = useState(DEFAULT_PHASES.join(', '));
+  const [phases, setPhases] = useState('');
   const [preset, setPreset] = useState('core_staff');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +41,13 @@ export function CreateScenarioPanel({ problemSetId, problemSetName, onCreated }:
     try {
       const scenarioName = quickCreate ? `${problemSetName} Scenario` : name.trim();
       const exercisePhases = quickCreate
-        ? DEFAULT_PHASES
+        ? undefined
         : phases.split(',').map((p) => p.trim()).filter(Boolean);
 
       const scenario = await problemSetService.createLinkedScenario(problemSetId, {
         name: scenarioName,
         designation: 'training/exercise',
-        exercisePhases: exercisePhases.length > 0 ? exercisePhases : undefined,
+        exercisePhases: exercisePhases && exercisePhases.length > 0 ? exercisePhases : undefined,
         enabledRoles: STAFF_PRESET_TEMPLATES[preset],
       });
       onCreated(scenario);
@@ -146,7 +142,7 @@ export function CreateScenarioPanel({ problemSetId, problemSetName, onCreated }:
             onChange={(e) => setPhases(e.target.value)}
             placeholder="Comma-separated phase names"
           />
-          <span className="create-scenario-hint">Comma-separated. Default: Competition through Negotiation.</span>
+          <span className="create-scenario-hint">Comma-separated. Leave blank to add phases later or let AI suggest structure.</span>
         </div>
 
         <div className="create-scenario-field">
