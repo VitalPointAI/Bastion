@@ -22,7 +22,7 @@ import { workspaceSubscriptionStore } from '../workspace/workspace-subscription-
 import { workspaceEscalationStore } from '../workspace/workspace-escalation-store.js';
 import { signAndSubmitFunctionCall } from '../near/tx-signer.js';
 import { clearanceSufficient } from '../workspace/types.js';
-import type { WorkspaceType } from '../workspace/types.js';
+import type { AppMode, WorkspaceType } from '../workspace/types.js';
 
 const DAO_CONTRACT_ID = process.env.DAO_CONTRACT_ID || 'dao-registry.testnet';
 
@@ -326,6 +326,8 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
 router.get('/me', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
+    const mode = req.query.mode as AppMode | undefined;
+    const userMode = (req as unknown as Record<string, unknown>).userMode as AppMode | undefined;
 
     const memberships = await workspaceMemberStore.listMemberships(userDid);
 
@@ -338,11 +340,21 @@ router.get('/me', requireAuth, async (req: Request, res: Response) => {
           name: workspace?.name ?? 'Unknown',
           workspaceType: workspace?.workspaceType ?? 'Organization',
           classification: workspace?.classification ?? 'UNCLASSIFIED',
+          mode: workspace?.mode ?? 'operational',
         };
       }),
     );
 
-    res.json({ memberships: enriched, count: enriched.length });
+    // Filter by mode if query parameter provided
+    const filtered = mode
+      ? enriched.filter((m) => m.mode === mode)
+      : enriched;
+
+    res.json({
+      memberships: filtered,
+      count: filtered.length,
+      _meta: { mode: userMode ?? 'operational' },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('List memberships failed:', message);

@@ -48,6 +48,12 @@ async function initWorkspaceTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_workspace_type ON workspaces(workspace_type);
   `);
 
+  // Phase 22: Add mode column for training/operational mode filtering
+  await pool.query(`
+    ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'operational';
+    CREATE INDEX IF NOT EXISTS idx_workspace_mode ON workspaces(mode);
+  `);
+
   // Add workspace_id FK to exercise_scenarios (missions AND exercises nest under workspaces)
   // This is a nullable column migration — existing exercises remain unaffected
   await pool.query(`
@@ -128,13 +134,15 @@ export class WorkspaceStore {
     const daoId = `ws-${input.workspaceType.toLowerCase()}-${randomUUID()}`;
     const now = new Date();
 
+    const mode = input.mode ?? 'operational';
+
     await pool.query(
       `
       INSERT INTO workspaces (
         id, dao_id, name, description, workspace_type, classification,
-        parent_workspace_id, invite_mode, discoverability, created_by,
+        parent_workspace_id, invite_mode, discoverability, mode, created_by,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       `,
       [
         id,
@@ -146,6 +154,7 @@ export class WorkspaceStore {
         input.parentWorkspaceId ?? null,
         input.inviteMode ?? 'gated',
         input.discoverability ?? 'private',
+        mode,
         createdBy,
         now,
         now,
@@ -217,6 +226,29 @@ export class WorkspaceStore {
     const result = await pool.query(
       'SELECT * FROM workspaces WHERE workspace_type = $1 ORDER BY created_at ASC',
       [type],
+    );
+    return result.rows.map((row) => this.mapRow(row as WorkspaceRow));
+  }
+
+  /**
+   * List workspaces for a user filtered by mode.
+   * Joins with workspace_members to return only workspaces the user belongs to,
+   * filtered by the specified app mode.
+   *
+   * @param userDid - User DID (did:near:{accountId})
+   * @param mode - App mode to filter by ('training' or 'operational')
+   * @returns Array of workspaces matching the mode where user is an active member
+   */
+  async listForUser(userDid: string, mode: AppMode): Promise<Workspace[]> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `SELECT w.* FROM workspaces w
+       INNER JOIN workspace_members wm ON w.id = wm.workspace_id
+       WHERE wm.user_did = $1 AND wm.status = 'active' AND w.mode = $2
+       ORDER BY w.created_at ASC`,
+      [userDid, mode],
     );
     return result.rows.map((row) => this.mapRow(row as WorkspaceRow));
   }
