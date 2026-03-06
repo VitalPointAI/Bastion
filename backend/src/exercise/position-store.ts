@@ -41,6 +41,53 @@ function rowToPhaseMapping(row: Record<string, unknown>): PositionPhaseMapping {
   };
 }
 
+// ─── Table Init ─────────────────────────────────────────────────────────────
+
+let tablesInitialized = false;
+
+export async function initPositionTables(): Promise<void> {
+  if (tablesInitialized) return;
+  const pool = getPool();
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS exercise_positions (
+      id TEXT PRIMARY KEY,
+      problem_set_id TEXT NOT NULL,
+      side VARCHAR(20) NOT NULL CHECK (side IN ('blue', 'red', 'neutral', 'green')),
+      title VARCHAR(200) NOT NULL,
+      duties TEXT,
+      sort_order INT NOT NULL DEFAULT 0,
+      assigned_to VARCHAR(200),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_exercise_positions_problem_set
+    ON exercise_positions(problem_set_id)
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS exercise_position_phase_mappings (
+      id TEXT PRIMARY KEY,
+      position_id TEXT NOT NULL REFERENCES exercise_positions(id) ON DELETE CASCADE,
+      exercise_phase VARCHAR(100) NOT NULL,
+      title VARCHAR(200) NOT NULL,
+      duties TEXT,
+      UNIQUE(position_id, exercise_phase)
+    )
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_position_phase_mappings_position
+    ON exercise_position_phase_mappings(position_id)
+  `);
+
+  tablesInitialized = true;
+  console.log('+ exercise position tables initialized');
+}
+
 // ─── Store ───────────────────────────────────────────────────────────────────
 
 export class PositionStore {

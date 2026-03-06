@@ -24,7 +24,7 @@ import { signAndSubmitFunctionCall } from '../near/tx-signer.js';
 import { clearanceSufficient, validateEchelonHierarchy } from '../problem-set/types.js';
 import type { AppMode, Echelon, ProblemSetClassification } from '../problem-set/types.js';
 import { ScenarioStore } from '../exercise/scenario-store.js';
-import { PositionStore } from '../exercise/position-store.js';
+import { PositionStore, initPositionTables } from '../exercise/position-store.js';
 import { modeMiddleware } from '../middleware/mode-context.js';
 
 const DAO_CONTRACT_ID = process.env.DAO_CONTRACT_ID || 'dao-registry.testnet';
@@ -516,6 +516,108 @@ router.put('/me/primary', requireAuth, async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Set primary problem set failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/problem-sets/invite/code/:code - Look up invite by short code
+ * Returns the raw token so the frontend can redirect to the accept flow.
+ */
+router.get('/invite/code/:code', async (req: Request, res: Response) => {
+  try {
+    const code = req.params.code as string;
+    const invite = await problemSetInviteStore.getInviteByShortCode(code);
+    if (!invite) {
+      return res.status(404).json({ error: 'Invite not found or expired' });
+    }
+    // We need the raw token for the accept flow, but we only store the hash.
+    // Return the invite ID + short code; the frontend will use the short code
+    // accept endpoint instead.
+    res.json({ inviteId: invite.id, problemSetId: invite.problemSetId, shortCode: invite.shortCode });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Short code lookup failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/problem-sets/invite/accept-by-code - Accept invite using short code
+ * Body: { code: string }
+ */
+router.post('/invite/accept-by-code', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const userSecret = deriveUserSecret(req.anonUser!.nearAccountId);
+
+    const { code } = req.body;
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ error: 'code is required' });
+    }
+
+    const invite = await problemSetInviteStore.getInviteByShortCode(code);
+    if (!invite) {
+      return res.status(404).json({ error: 'Invite not found, expired, or already used' });
+    }
+
+    // Reuse the same accept logic — check clearance, check existing membership, etc.
+    // Forward to the accept-by-token flow internally
+    req.body.token = null; // Clear so we use invite directly
+    req.body._resolvedInvite = invite;
+
+    // Check if user is already a member
+    const existingMember = await problemSetMemberStore.getMember(invite.problemSetId, userDid);
+    if (existingMember) {
+      return res.status(409).json({ error: 'You are already a member of this problem set' });
+    }
+
+    // Clearance check
+    const ps = await problemSetStore.getById(invite.problemSetId);
+    if (!ps) {
+      return res.status(404).json({ error: 'Problem set not found' });
+    }
+    if (!clearanceSufficient(userDid, ps.classification)) {
+      return res.status(403).json({ error: `Insufficient clearance for ${ps.classification} problem set` });
+    }
+
+    // Add member on-chain
+    const addMemberResult = await signAndSubmitFunctionCall(
+      DAO_CONTRACT_ID,
+      'add_member',
+      {
+        dao_id: ps.daoId,
+        member_did: userDid,
+        role: invite.daoRole,
+      },
+      userSecret,
+    );
+
+    // Add member locally
+    const member = await problemSetMemberStore.addMember(
+      invite.problemSetId,
+      userDid,
+      invite.role,
+      invite.daoRole,
+    );
+
+    // Mark invite accepted
+    await problemSetInviteStore.markAccepted(invite.id);
+
+    // Log activity
+    await problemSetActivityStore.log(
+      invite.problemSetId,
+      'member_joined',
+      userDid,
+      null,
+      { role: invite.role, daoRole: invite.daoRole, viaShortCode: code },
+    );
+
+    console.log(`User ${userDid} accepted invite to problem set ${invite.problemSetId} via code ${code}`);
+    res.json({ member, txHash: addMemberResult.txHash });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Accept by code failed:', message);
     res.status(500).json({ error: message });
   }
 });
@@ -2084,6 +2186,7 @@ const BulkCreatePositionsSchema = z.object({
  */
 router.get('/:id/positions', requireAuth, async (req: Request, res: Response) => {
   try {
+    await initPositionTables();
     const problemSetId = req.params.id as string;
     const positions = await positionStore.findByProblemSet(problemSetId);
     res.json({ positions });
@@ -2099,6 +2202,7 @@ router.get('/:id/positions', requireAuth, async (req: Request, res: Response) =>
  */
 router.post('/:id/positions', requireAuth, async (req: Request, res: Response) => {
   try {
+    await initPositionTables();
     const problemSetId = req.params.id as string;
 
     let body: z.infer<typeof CreatePositionSchema>;
@@ -2125,6 +2229,7 @@ router.post('/:id/positions', requireAuth, async (req: Request, res: Response) =
  */
 router.patch('/:id/positions/:positionId', requireAuth, async (req: Request, res: Response) => {
   try {
+    await initPositionTables();
     const positionId = req.params.positionId as string;
 
     let body: z.infer<typeof UpdatePositionSchema>;
@@ -2151,6 +2256,7 @@ router.patch('/:id/positions/:positionId', requireAuth, async (req: Request, res
  */
 router.delete('/:id/positions/:positionId', requireAuth, async (req: Request, res: Response) => {
   try {
+    await initPositionTables();
     const positionId = req.params.positionId as string;
     await positionStore.delete(positionId);
     res.status(204).send();
@@ -2166,6 +2272,7 @@ router.delete('/:id/positions/:positionId', requireAuth, async (req: Request, re
  */
 router.put('/:id/positions/:positionId/phase-mappings', requireAuth, async (req: Request, res: Response) => {
   try {
+    await initPositionTables();
     const positionId = req.params.positionId as string;
 
     let body: z.infer<typeof PhaseMappingsSchema>;
@@ -2192,6 +2299,7 @@ router.put('/:id/positions/:positionId/phase-mappings', requireAuth, async (req:
  */
 router.post('/:id/positions/bulk', requireAuth, async (req: Request, res: Response) => {
   try {
+    await initPositionTables();
     const problemSetId = req.params.id as string;
 
     let body: z.infer<typeof BulkCreatePositionsSchema>;
