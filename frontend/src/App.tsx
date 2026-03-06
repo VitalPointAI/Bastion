@@ -6,6 +6,7 @@ import { AdminDashboard } from './components/admin'
 import { LoginPage } from './components/LoginPage'
 import { RegisterPage } from './components/RegisterPage'
 import { WorkspaceProvider } from './context/WorkspaceContext'
+import { ModeProvider } from './context/ModeContext'
 import { WorkspaceSwitcher } from './components/workspace/WorkspaceSwitcher'
 import { WorkspaceSelector } from './components/workspace/WorkspaceSelector'
 import { WorkspaceBreadcrumb } from './components/workspace/WorkspaceBreadcrumb'
@@ -130,9 +131,11 @@ function AppContent() {
 
 function AuthenticatedShell() {
   return (
-    <WorkspaceProvider>
-      <AppContent />
-    </WorkspaceProvider>
+    <ModeProvider>
+      <WorkspaceProvider>
+        <AppContent />
+      </WorkspaceProvider>
+    </ModeProvider>
   );
 }
 

@@ -10,11 +10,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { useAuth } from '../hooks/useAuth';
+import { useMode } from '../context/ModeContext';
 import './UserStatusBar.css';
 
 export function UserStatusBar() {
   const { displayName, orgEmail, email, accountId, userDID, mpcRegistered, isAuthenticated } = useUser();
   const { logout } = useAuth();
+  const { mode, isTraining, requestModeSwitch } = useMode();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -59,6 +61,28 @@ export function UserStatusBar() {
 
   return (
     <div className="user-status-bar" ref={dropdownRef}>
+      <button
+        className={`mode-toggle ${isTraining ? 'mode-training' : 'mode-operational'}`}
+        onClick={() => requestModeSwitch(isTraining ? 'operational' : 'training')}
+        title={`Switch to ${isTraining ? 'Operational' : 'Training'} mode`}
+        style={{
+          padding: '4px 10px',
+          borderRadius: '4px',
+          border: 'none',
+          fontSize: '11px',
+          fontWeight: 700,
+          letterSpacing: '0.05em',
+          cursor: 'pointer',
+          marginRight: '8px',
+          textTransform: 'uppercase' as const,
+          ...(isTraining
+            ? { background: '#D97706', color: '#000' }
+            : { background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }
+          ),
+        }}
+      >
+        {isTraining ? 'TRAINING' : 'OPERATIONAL'}
+      </button>
       <button
         className="user-status-trigger"
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
