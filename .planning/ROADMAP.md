@@ -663,7 +663,7 @@ Plans:
 - [x] 25.3-02-PLAN.md -- Container-scoped graph entity tagging and queries
 Plans:
 - [x] 25.3-03-PLAN.md -- Graph summary service with centrality analysis and temporal boosting
-- [ ] 25.3-04-PLAN.md -- StrategicContextService and AI pipeline integration
+- [x] 25.3-04-PLAN.md -- StrategicContextService and AI pipeline integration
 - [ ] 25.3-05-PLAN.md -- Strategic context preview UI in Understand tab
 
 ### Phase 26: Strategic Environment & Inheritance (INSERTED)

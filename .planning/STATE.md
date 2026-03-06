@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-06T11:55:14.000Z"
+last_updated: "2026-03-06T12:02:32.000Z"
 progress:
   total_phases: 40
   completed_phases: 26
   total_plans: 228
-  completed_plans: 244
+  completed_plans: 245
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 25.3 of 40 (AI Strategic Context & Knowledge Graph Integration)
-Plan: 3 of 5 in current phase — 25.3-03 complete
-Status: GraphSummaryService with centrality analysis, temporal boosting, TTL cache, and API endpoints
-Last activity: 2026-03-06 - Completed 25.3-03 (Graph Summary Service)
+Plan: 4 of 5 in current phase — 25.3-04 complete
+Status: StrategicContextService orchestrating cached docs + graph summaries into token-budgeted context for AI agents
+Last activity: 2026-03-06 - Completed 25.3-04 (AI Context Assembly & Pipeline Integration)
 
-Progress: █████████████████████████ 244 plans complete
+Progress: █████████████████████████ 245 plans complete
 
 ## Performance Metrics
 
@@ -119,6 +119,7 @@ Progress: ███████████████████████�
 | Phase 25 P04 | 4 | 2 tasks | 4 files |
 | Phase 25 P05 | 6 | 3 tasks | 6 files |
 | Phase 25.3 P03 | 3 | 2 tasks | 2 files |
+| Phase 25.3 P04 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 25.3 Plan 04 (AI Context Assembly & Pipeline Integration):**
+- Read-only environment lookup via direct SQL instead of auto-creating getEnvironmentByProblemSet()
+- Single combined query for scenario problem_set_id and phases to minimize DB round-trips
+- StrategicContextService instantiated per-workspace with dependency injection (not singleton)
 
 **Phase 25.3 Plan 03 (Graph Summary Service):**
 - Connected-component BFS for community detection -- simpler than Louvain, sufficient for container-scoped sub-graphs
