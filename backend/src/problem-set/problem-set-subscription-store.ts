@@ -13,7 +13,7 @@
  * ID formats: PSUB-{uuid}, PDC-{uuid}
  */
 
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import { getPool } from '../lib/database.js';
 
 // ============================================================================
@@ -55,6 +55,11 @@ async function initProblemSetSubscriptionTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_pdc_consumer ON problem_set_data_cache(consumer_problem_set_id);
     CREATE INDEX IF NOT EXISTS idx_pdc_source ON problem_set_data_cache(source_problem_set_id);
   `);
+
+  // Add stale_at column for stale-while-revalidate pattern (Phase 25.3)
+  await pool.query(`
+    ALTER TABLE problem_set_data_cache ADD COLUMN IF NOT EXISTS stale_at TIMESTAMPTZ
+  `);
 }
 
 // ============================================================================
@@ -85,6 +90,13 @@ interface ProblemSetSubscriptionRow {
   approved_at: Date | null;
   requested_by: string;
   created_at: Date;
+}
+
+export interface CachedDoc {
+  dataType: string;
+  payload: unknown;
+  sourceVersion: string;
+  staleAt: Date | null;
 }
 
 // ============================================================================
@@ -237,6 +249,165 @@ export class ProblemSetSubscriptionStore {
     const pool = getPool();
 
     await pool.query('DELETE FROM problem_set_subscriptions WHERE id = $1', [id]);
+  }
+
+  // ==========================================================================
+  // Cache Materialization (Phase 25.3)
+  // ==========================================================================
+
+  /**
+   * Materialize cache for a subscriber problem set.
+   * Fetches strategic documents from each approved publisher subscription,
+   * groups by data_type (doc level), computes a version hash, and upserts
+   * into problem_set_data_cache. Skips re-materialization when source
+   * documents haven't changed (version match).
+   */
+  async materializeCache(subscriberProblemSetId: string): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const subscriptions = await this.listBySubscriber(subscriberProblemSetId);
+    const approved = subscriptions.filter(s => s.approvalStatus === 'approved');
+
+    for (const sub of approved) {
+      // Fetch matching strategic documents from publisher problem set
+      // The strategic_documents table uses 'level' as the document type field
+      // and 'workspace_id' as the problem set link
+      const docsResult = await pool.query(
+        `SELECT id, title, level, text_content, created_at
+         FROM strategic_documents
+         WHERE workspace_id = $1
+           AND level = ANY($2)
+         ORDER BY created_at DESC`,
+        [sub.publisherProblemSetId, sub.dataTypes],
+      );
+
+      const docs = docsResult.rows as Array<{
+        id: string;
+        title: string;
+        level: string;
+        text_content: string;
+        created_at: Date;
+      }>;
+
+      // Compute source version hash from document timestamps
+      const versionInput = docs
+        .map(d => new Date(d.created_at).toISOString())
+        .join('|');
+      const sourceVersion = createHash('sha256')
+        .update(versionInput)
+        .digest('hex')
+        .slice(0, 16);
+
+      // Check existing cache version -- skip if unchanged
+      const existingResult = await pool.query(
+        `SELECT source_version FROM problem_set_data_cache
+         WHERE consumer_problem_set_id = $1
+           AND source_problem_set_id = $2
+         LIMIT 1`,
+        [subscriberProblemSetId, sub.publisherProblemSetId],
+      );
+
+      if (
+        existingResult.rows.length > 0 &&
+        (existingResult.rows[0] as { source_version: string }).source_version === sourceVersion
+      ) {
+        // Source hasn't changed, skip re-materialization
+        continue;
+      }
+
+      // Delete stale cache entries for this subscriber-publisher pair
+      await pool.query(
+        `DELETE FROM problem_set_data_cache
+         WHERE consumer_problem_set_id = $1
+           AND source_problem_set_id = $2`,
+        [subscriberProblemSetId, sub.publisherProblemSetId],
+      );
+
+      // Group documents by level (data_type) and insert one cache entry per type
+      // The UNIQUE constraint is (consumer, source, data_type) so we bundle
+      // multiple documents of the same type into a single payload array
+      const docsByType = new Map<string, Array<{ title: string; textContent: string }>>();
+      for (const doc of docs) {
+        const existing = docsByType.get(doc.level) || [];
+        existing.push({
+          title: doc.title,
+          textContent: (doc.text_content || '').slice(0, 2000),
+        });
+        docsByType.set(doc.level, existing);
+      }
+
+      for (const [dataType, typeDocs] of docsByType) {
+        const id = `PDC-${randomUUID()}`;
+        const payload = { documents: typeDocs };
+
+        await pool.query(
+          `INSERT INTO problem_set_data_cache
+            (id, consumer_problem_set_id, source_problem_set_id, data_type, payload, source_version, cached_at, stale_at)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW(), NULL)`,
+          [
+            id,
+            subscriberProblemSetId,
+            sub.publisherProblemSetId,
+            dataType,
+            JSON.stringify(payload),
+            sourceVersion,
+          ],
+        );
+      }
+    }
+  }
+
+  /**
+   * Refresh cache for all subscribers of a publisher problem set.
+   * Called by the pg-boss worker when publisher documents change.
+   */
+  async refreshCacheForPublisher(publisherProblemSetId: string): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `SELECT subscriber_problem_set_id FROM problem_set_subscriptions
+       WHERE publisher_problem_set_id = $1
+         AND approval_status = 'approved'`,
+      [publisherProblemSetId],
+    );
+
+    for (const row of result.rows) {
+      const subscriberId = (row as { subscriber_problem_set_id: string }).subscriber_problem_set_id;
+      await this.materializeCache(subscriberId);
+    }
+  }
+
+  /**
+   * Get all cached documents for a subscriber problem set.
+   */
+  async getCachedDocs(subscriberProblemSetId: string): Promise<CachedDoc[]> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `SELECT data_type, payload, source_version, stale_at
+       FROM problem_set_data_cache
+       WHERE consumer_problem_set_id = $1
+       ORDER BY cached_at DESC`,
+      [subscriberProblemSetId],
+    );
+
+    return result.rows.map((row) => {
+      const r = row as {
+        data_type: string;
+        payload: unknown;
+        source_version: string;
+        stale_at: Date | null;
+      };
+      return {
+        dataType: r.data_type,
+        payload: r.payload,
+        sourceVersion: r.source_version,
+        staleAt: r.stale_at ? new Date(r.stale_at) : null,
+      };
+    });
   }
 }
 
