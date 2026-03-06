@@ -12,7 +12,7 @@ import { useUser } from '../../context/UserContext';
 import type { StrategicDocument, StrategicObjective } from '../../lib/types/strategic.js';
 import { strategicService } from '../../lib/strategic-service.js';
 import { DocumentUpload } from './DocumentUpload.js';
-import { DocumentList } from './DocumentList.js';
+import { ContainerBrowser } from './ContainerBrowser.js';
 import { ObjectiveList } from './ObjectiveList.js';
 import { ObjectiveDetail } from './ObjectiveDetail.js';
 import { MidlifeLegend } from './MidlifeLegend.js';
@@ -194,16 +194,26 @@ export function StrategicDashboard({ problemSetId }: StrategicDashboardProps = {
           </section>
         )}
 
-        {/* Document List */}
-        {!selectedDocument && isReady && (
+        {/* Container Browser (replaces flat DocumentList) */}
+        {!selectedDocument && isReady && problemSetId && (
           <section className="documents-section">
-            <DocumentList
-              onSelectDocument={handleSelectDocument}
-              onExtractObjectives={handleExtractComplete}
-              refreshTrigger={refreshTrigger}
-              userDID={userDID || undefined}
+            <ContainerBrowser
               problemSetId={problemSetId}
+              onSelectDocument={handleSelectDocument}
+              userDID={userDID || undefined}
+              refreshTrigger={refreshTrigger}
             />
+          </section>
+        )}
+
+        {/* Fallback: no problem set selected */}
+        {!selectedDocument && isReady && !problemSetId && (
+          <section className="documents-section">
+            <div className="document-list empty">
+              <div className="empty-content">
+                <p>Select a problem set to view strategic containers</p>
+              </div>
+            </div>
           </section>
         )}
 
