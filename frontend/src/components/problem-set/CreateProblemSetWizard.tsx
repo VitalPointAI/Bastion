@@ -16,6 +16,8 @@ import { useState, useEffect } from 'react';
 import { useProblemSet } from '../../context/ProblemSetContext';
 import { useUser } from '../../context/UserContext';
 import { problemSetService, type CreateProblemSetInput } from '../../lib/problem-set-service';
+import { exerciseService } from '../../services/exercise-service';
+import type { ExerciseScenario } from '../../types/exercise';
 import './CreateProblemSetWizard.css';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -51,9 +53,11 @@ const INITIAL_STATE: WizardState = {
 
 interface Props {
   onClose: () => void;
-  onCreated: (problemSetId: string) => void;
+  onCreated: (problemSetId: string, options?: { navigateTo?: string }) => void;
   parentProblemSetId?: string;
 }
+
+type SourceMode = 'fresh' | 'scenario' | null;
 
 // ─── Helper labels ────────────────────────────────────────────────────────────
 
@@ -119,13 +123,20 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId }: Props) {
   const { memberships } = useProblemSet();
   const { userDID } = useUser();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>({
     ...INITIAL_STATE,
     parentProblemSetId: parentProblemSetId ?? '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Step 0: Source mode state
+  const [sourceMode, setSourceMode] = useState<SourceMode>(null);
+  const [scenarios, setScenarios] = useState<ExerciseScenario[]>([]);
+  const [usageCounts, setUsageCounts] = useState<Record<string, number>>({});
+  const [selectedScenario, setSelectedScenario] = useState<ExerciseScenario | null>(null);
+  const [loadingScenarios, setLoadingScenarios] = useState(false);
 
   const update = (patch: Partial<WizardState>) => setState((s) => ({ ...s, ...patch }));
 
@@ -158,6 +169,37 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
   // Step 1 validation: name required, echelon required, parent required if sub-level
   const step1Valid = state.name.trim().length >= 2 && state.echelon !== '' && (!needsParent || state.parentProblemSetId !== '');
 
+  const handleSelectFromScenario = async () => {
+    setSourceMode('scenario');
+    if (scenarios.length === 0) {
+      setLoadingScenarios(true);
+      try {
+        const [scenarioList, counts] = await Promise.all([
+          exerciseService.getScenarios(),
+          problemSetService.getScenarioUsageCounts(),
+        ]);
+        setScenarios(scenarioList);
+        setUsageCounts(counts);
+      } catch {
+        // Non-fatal, show empty list
+      } finally {
+        setLoadingScenarios(false);
+      }
+    }
+  };
+
+  const handleScenarioSelect = (scenario: ExerciseScenario) => {
+    setSelectedScenario(scenario);
+    update({
+      name: scenario.name,
+      description: `Training exercise based on ${scenario.name}`,
+      echelon: 'strategic',
+      classification: 'UNCLASSIFIED',
+      problemStatement: '',
+    });
+    setStep(1);
+  };
+
   const handleCreate = async () => {
     if (!userDID) {
       setError('Not authenticated. Please reload.');
@@ -183,6 +225,19 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
     };
 
     try {
+      if (sourceMode === 'scenario' && selectedScenario) {
+        const result = await problemSetService.createFromScenario(selectedScenario.id, {
+          name: state.name.trim(),
+          description: state.description.trim() || undefined,
+          echelon: state.echelon as Echelon,
+          classification: state.classification,
+          inviteMode: state.inviteMode,
+          discoverability: state.discoverability,
+          problemStatement: state.problemStatement.trim() || undefined,
+        });
+        onCreated(result.id, { navigateTo: 'understand' });
+        return;
+      }
       const problemSet = await problemSetService.createProblemSet(input, userDID);
       onCreated(problemSet.id);
     } catch (err) {
@@ -212,11 +267,73 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
           </button>
         </div>
 
-        <StepIndicator current={step} total={3} />
+        <StepIndicator current={step + 1} total={4} />
+
+        {/* Step 0: Source Choice */}
+        {step === 0 && (
+          <div className="wizard-section">
+            <p className="wizard-hint">How would you like to start?</p>
+            <div className="source-choice-cards">
+              <button
+                className={`source-card${sourceMode === 'fresh' ? ' selected' : ''}`}
+                onClick={() => { setSourceMode('fresh'); setStep(1); }}
+                type="button"
+              >
+                <span className="source-card-icon">+</span>
+                <span className="source-card-title">Start Fresh</span>
+                <span className="source-card-desc">Create a new problem set from scratch</span>
+              </button>
+              <button
+                className={`source-card${sourceMode === 'scenario' ? ' selected' : ''}`}
+                onClick={handleSelectFromScenario}
+                type="button"
+              >
+                <span className="source-card-icon">S</span>
+                <span className="source-card-title">From Scenario</span>
+                <span className="source-card-desc">Pre-fill from an exercise scenario</span>
+              </button>
+            </div>
+
+            {sourceMode === 'scenario' && (
+              <div className="scenario-picker">
+                {loadingScenarios ? (
+                  <p className="wizard-hint">Loading scenarios...</p>
+                ) : scenarios.length === 0 ? (
+                  <p className="wizard-hint">No scenarios available.</p>
+                ) : (
+                  <div className="scenario-list">
+                    {scenarios.map((s) => (
+                      <button
+                        key={s.id}
+                        className={`scenario-item${selectedScenario?.id === s.id ? ' selected' : ''}`}
+                        onClick={() => handleScenarioSelect(s)}
+                        type="button"
+                      >
+                        <div className="scenario-item-text">
+                          <span className="scenario-item-name">{s.name}</span>
+                          <span className="scenario-item-meta">{s.designation} &middot; {s.status}</span>
+                        </div>
+                        {(usageCounts[s.id] ?? 0) > 0 && (
+                          <span className="scenario-badge">In use ({usageCounts[s.id]})</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Step 1: Name / Echelon / Parent / Problem Statement */}
         {step === 1 && (
           <div className="wizard-section">
+            {sourceMode === 'scenario' && (
+              <div className="mode-locked-indicator">
+                <span className="mode-locked-badge">TRNG</span>
+                <span className="mode-locked-text">Mode: Training (locked for scenario-based problem sets)</span>
+              </div>
+            )}
             <div>
               <label className="wizard-label" htmlFor="ps-name">
                 Problem Set Name <span className="required">*</span>
@@ -423,6 +540,12 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
             <p className="wizard-review-title">Review Your Problem Set</p>
 
             <div className="wizard-review-panel">
+              {selectedScenario && (
+                <div className="review-row">
+                  <span className="review-key">Source Scenario</span>
+                  <span className="review-val">{selectedScenario.name} ({selectedScenario.designation})</span>
+                </div>
+              )}
               <div className="review-row">
                 <span className="review-key">Name</span>
                 <span className="review-val">{state.name}</span>
@@ -486,7 +609,7 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
           </button>
 
           <div className="wizard-footer-right">
-            {step > 1 && (
+            {step > 0 && (
               <button
                 onClick={() => setStep(step - 1)}
                 className="wizard-btn-back"
@@ -496,7 +619,7 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
               </button>
             )}
 
-            {step < 3 ? (
+            {step < 3 && step > 0 ? (
               <button
                 onClick={() => setStep(step + 1)}
                 disabled={step === 1 && !step1Valid}
@@ -504,7 +627,7 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
               >
                 Next
               </button>
-            ) : (
+            ) : step === 3 ? (
               <button
                 onClick={handleCreate}
                 disabled={loading}
@@ -512,7 +635,7 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
               >
                 {loading ? 'Creating...' : 'Create Problem Set'}
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

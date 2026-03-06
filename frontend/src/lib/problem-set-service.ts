@@ -634,11 +634,30 @@ class ProblemSetService {
 
   // ─── Scenario-to-ProblemSet ────────────────────────────────────────────────
 
-  async createFromScenario(scenarioId: string, name?: string): Promise<ProblemSetDetail> {
+  async createFromScenario(
+    scenarioId: string,
+    fields?: {
+      name?: string; description?: string; echelon?: string;
+      classification?: string; inviteMode?: string;
+      discoverability?: string; problemStatement?: string;
+    }
+  ): Promise<ProblemSetDetail> {
     return this.fetchJSON<ProblemSetDetail>(`${this.baseUrl}/from-scenario`, {
       method: 'POST',
-      body: JSON.stringify({ scenarioId, name }),
+      body: JSON.stringify({ scenarioId, ...fields }),
     });
+  }
+
+  async getScenarioUsageCounts(): Promise<Record<string, number>> {
+    return this.fetchJSON<Record<string, number>>(`${this.baseUrl}/scenario-usage-counts`);
+  }
+
+  async getLinkedScenario(problemSetId: string): Promise<import('../types/exercise').ExerciseScenario | null> {
+    try {
+      return await this.fetchJSON<import('../types/exercise').ExerciseScenario>(`${this.baseUrl}/${problemSetId}/linked-scenario`);
+    } catch {
+      return null;
+    }
   }
 }
 
