@@ -645,6 +645,26 @@ export class ContainerStore {
   }
 
   /**
+   * Get agents with auto-process enabled for a container.
+   * Called after document assignment to trigger automatic processing.
+   */
+  async getAutoProcessAgents(containerId: string): Promise<Array<{ agentId: string; assignmentType: string }>> {
+    const pool = getPool();
+
+    const result = await pool.query(
+      `SELECT agent_id, assignment_type FROM container_agent_assignments
+       WHERE container_id = $1 AND auto_process_new = true
+       ORDER BY assigned_at`,
+      [containerId]
+    );
+
+    return result.rows.map((r: Record<string, unknown>) => ({
+      agentId: r.agent_id as string,
+      assignmentType: r.assignment_type as string,
+    }));
+  }
+
+  /**
    * Remove an agent assignment from a container.
    */
   async removeAgentFromContainer(

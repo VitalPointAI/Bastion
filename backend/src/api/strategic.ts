@@ -2438,6 +2438,30 @@ router.put('/documents/:documentId/containers', requireAuth, async (req, res) =>
     const userDID = (req as unknown as Record<string, unknown>).userDID as string || 'system';
     const documentId = req.params.documentId as string;
     await containerStore.assignDocumentToContainers(documentId, containerIds, userDID);
+
+    // Fire-and-forget: trigger auto-process agents for each container
+    for (const cId of containerIds) {
+      containerStore.getAutoProcessAgents(cId).then((autoAgents) => {
+        for (const agent of autoAgents) {
+          // Create assignment for each auto-process agent (fire-and-forget)
+          assignmentStore.createAssignment(
+            {
+              documentId,
+              agentId: agent.agentId,
+              autoReview: agent.assignmentType === 'monitor',
+            },
+            userDID
+          ).then(() => {
+            console.log(`+ auto-process: agent ${agent.agentId} triggered for document ${documentId} in container ${cId}`);
+          }).catch((err: unknown) => {
+            console.error(`auto-process agent ${agent.agentId} failed:`, err instanceof Error ? err.message : err);
+          });
+        }
+      }).catch((err: unknown) => {
+        console.error(`getAutoProcessAgents for container ${cId} failed:`, err instanceof Error ? err.message : err);
+      });
+    }
+
     res.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

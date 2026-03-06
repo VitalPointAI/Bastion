@@ -13,3 +13,4 @@ export { ContainerCard } from './ContainerCard.js';
 export { ContainerDocumentList } from './ContainerDocumentList.js';
 export { ActorCategoryBadge } from './ActorCategoryBadge.js';
 export { ContainerManager } from './ContainerManager.js';
+export { ContainerAgentPanel } from './ContainerAgentPanel.js';
