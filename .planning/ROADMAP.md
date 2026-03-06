@@ -538,7 +538,7 @@ Plans:
 **Goal:** Replace the current tab structure (COP/Decide/Design/Campaign/Train/Overview) with a doctrinal lifecycle flow (Understand/Design/Plan/Direct/COP/Assess) that guides users through the military planning process
 **Depends on:** Phase 23
 **Research:** Unlikely
-**Plans:** TBD
+**Plans:** 3 plans
 
 **Context:**
 The current tabs are organized by feature category, not by how commanders and staff actually work through a problem. The doctrinal lifecycle — Understand → Design → Plan → Direct → COP → Assess — mirrors JP 5-0 and MDMP, guiding users through the natural progression from understanding the environment to assessing results. This is primarily a reorganization of existing components into doctrinally-aligned containers.
@@ -555,7 +555,9 @@ The current tabs are organized by feature category, not by how commanders and st
 9. **Decide Tab Elimination** — DAO governance moved to contextual decision gates within each tab (Phase 28)
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 24 to create plans)
+- [ ] 24-01-PLAN.md — Create doctrinal tab components (UnderstandTab, PlanTab, DirectTab, AssessTab, DoctrinalPlaceholder) (Wave 1)
+- [ ] 24-02-PLAN.md — Rewire ProblemSetTabContainer, update notifications, delete old tabs (Wave 2)
+- [ ] 24-03-PLAN.md — Backend panel config store and DB migration (Wave 1)
 
 ### Phase 25: Operational Design Workspace (INSERTED)
 **Goal:** Build the Design tab as a full operational design workspace with problem framing, center of gravity analysis, lines of effort/operation definition, operational approach development, and AI-assisted design recommendations
