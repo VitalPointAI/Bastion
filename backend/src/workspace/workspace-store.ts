@@ -13,6 +13,7 @@
 import { randomUUID } from 'crypto';
 import { getPool } from '../lib/database.js';
 import type {
+  AppMode,
   Workspace,
   WorkspaceType,
   CreateWorkspaceInput,
@@ -69,6 +70,7 @@ interface WorkspaceRow {
   parent_workspace_id: string | null;
   invite_mode: string;
   discoverability: string;
+  mode: string;
   created_by: string;
   created_at: Date;
   updated_at: Date;
@@ -99,6 +101,7 @@ export class WorkspaceStore {
       parentWorkspaceId: row.parent_workspace_id,
       inviteMode: row.invite_mode as Workspace['inviteMode'],
       discoverability: row.discoverability as Workspace['discoverability'],
+      mode: (row.mode ?? 'operational') as AppMode,
       createdBy: row.created_by,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
@@ -159,6 +162,7 @@ export class WorkspaceStore {
       parentWorkspaceId: input.parentWorkspaceId ?? null,
       inviteMode: input.inviteMode ?? 'gated',
       discoverability: input.discoverability ?? 'private',
+      mode: input.mode ?? 'operational',
       createdBy,
       createdAt: now,
       updatedAt: now,

@@ -6,6 +6,9 @@
  * Workspace = DAO is the core invariant — every workspace has an on-chain NEAR DAO.
  */
 
+// Global application mode: training exercises vs operational use
+export type AppMode = 'training' | 'operational';
+
 // Workspace type hierarchy: Organization → Unit → Team (3-level max)
 export type WorkspaceType = 'Organization' | 'Unit' | 'Team';
 export type InviteMode = 'open' | 'gated';
@@ -23,6 +26,7 @@ export interface Workspace {
   parentWorkspaceId: string | null;
   inviteMode: InviteMode;
   discoverability: Discoverability;
+  mode: AppMode;
   createdBy: string;    // DID (did:near:{accountId})
   createdAt: Date;
   updatedAt: Date;
@@ -96,6 +100,7 @@ export interface CreateWorkspaceInput {
   parentDaoId?: string;
   inviteMode?: InviteMode;
   discoverability?: Discoverability;
+  mode?: AppMode;
 }
 
 // Military role templates per workspace type

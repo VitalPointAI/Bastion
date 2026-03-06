@@ -31,6 +31,7 @@ import planningRouter from './api/planning.js';
 import mdmpRouter from './routes/mdmp.js';
 import { exerciseRouter } from './api/exercise.js';
 import userProfileRouter from './api/user-profile.js';
+import userModeRouter from './api/user-mode.js';
 import { startSyncWorkers } from './lib/blockchain-sync.js';
 import { getMessageBus } from './messaging/message-bus.js';
 import { getCheckpointer } from './orchestration/checkpointer.js';
@@ -173,6 +174,7 @@ app.use('/api/planning', planningRouter);
 app.use('/api/mdmp', mdmpRouter);
 app.use('/api/exercise', exerciseRouter);
 app.use('/api/user-profile', userProfileRouter);
+app.use('/api/user-mode', userModeRouter);
 app.use('/api/cop', copRouter);
 
 // Create HTTP server for WebSocket support

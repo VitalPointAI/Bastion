@@ -49,6 +49,10 @@ async function ensureTable(): Promise<void> {
     EXCEPTION WHEN others THEN NULL;
     END $$;
   `);
+  // Phase 22: Add app_mode column for training/operational global mode
+  await pool.query(`
+    ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS app_mode TEXT NOT NULL DEFAULT 'operational';
+  `);
   tableInitialized = true;
 }
 
