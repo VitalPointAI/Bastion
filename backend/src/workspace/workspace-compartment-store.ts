@@ -1,7 +1,7 @@
 /**
  * Workspace Compartment Store
  *
- * Manages workspace_compartments and workspace_member_compartments tables.
+ * Manages problem_set_compartments and problem_set_member_compartments tables.
  * Compartments enforce need-to-know access beyond classification level.
  *
  * Example compartment names: 'SIGINT', 'HUMINT', 'OP-PLAN-X', 'CYBER'
@@ -18,29 +18,29 @@ import type { WorkspaceCompartment } from './types.js';
 async function initCompartmentTables(): Promise<void> {
   const pool = getPool();
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS workspace_compartments (
+    CREATE TABLE IF NOT EXISTS problem_set_compartments (
       id TEXT PRIMARY KEY,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+      problem_set_id TEXT NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       description TEXT,
       created_by TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE(workspace_id, name)
+      UNIQUE(problem_set_id, name)
     );
-    CREATE INDEX IF NOT EXISTS idx_wc_workspace ON workspace_compartments(workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_pc_problem_set ON problem_set_compartments(problem_set_id);
 
-    CREATE TABLE IF NOT EXISTS workspace_member_compartments (
+    CREATE TABLE IF NOT EXISTS problem_set_member_compartments (
       id TEXT PRIMARY KEY,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+      problem_set_id TEXT NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
       member_did TEXT NOT NULL,
-      compartment_id TEXT NOT NULL REFERENCES workspace_compartments(id) ON DELETE CASCADE,
+      compartment_id TEXT NOT NULL REFERENCES problem_set_compartments(id) ON DELETE CASCADE,
       assigned_by TEXT NOT NULL,
       assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE(workspace_id, member_did, compartment_id)
+      UNIQUE(problem_set_id, member_did, compartment_id)
     );
-    CREATE INDEX IF NOT EXISTS idx_wmc_workspace ON workspace_member_compartments(workspace_id);
-    CREATE INDEX IF NOT EXISTS idx_wmc_member ON workspace_member_compartments(member_did);
-    CREATE INDEX IF NOT EXISTS idx_wmc_compartment ON workspace_member_compartments(compartment_id);
+    CREATE INDEX IF NOT EXISTS idx_pmc_problem_set ON problem_set_member_compartments(problem_set_id);
+    CREATE INDEX IF NOT EXISTS idx_pmc_member ON problem_set_member_compartments(member_did);
+    CREATE INDEX IF NOT EXISTS idx_pmc_compartment ON problem_set_member_compartments(compartment_id);
   `);
 }
 
@@ -48,7 +48,7 @@ async function initCompartmentTables(): Promise<void> {
 
 interface CompartmentRow {
   id: string;
-  workspace_id: string;
+  problem_set_id: string;
   name: string;
   description: string | null;
   created_by: string;
@@ -58,7 +58,7 @@ interface CompartmentRow {
 function mapCompartment(row: CompartmentRow): WorkspaceCompartment {
   return {
     id: row.id,
-    workspaceId: row.workspace_id,
+    workspaceId: row.problem_set_id,
     name: row.name,
     description: row.description,
     createdBy: row.created_by,
@@ -93,7 +93,7 @@ export class WorkspaceCompartmentStore {
     const id = `WC-${randomUUID()}`;
 
     const result = await pool.query<CompartmentRow>(
-      `INSERT INTO workspace_compartments (id, workspace_id, name, description, created_by)
+      `INSERT INTO problem_set_compartments (id, problem_set_id, name, description, created_by)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
       [id, workspaceId, name.trim().toUpperCase(), description, createdBy],
@@ -110,7 +110,7 @@ export class WorkspaceCompartmentStore {
     const pool = getPool();
 
     const result = await pool.query<CompartmentRow>(
-      `SELECT * FROM workspace_compartments WHERE workspace_id = $1 ORDER BY name ASC`,
+      `SELECT * FROM problem_set_compartments WHERE problem_set_id = $1 ORDER BY name ASC`,
       [workspaceId],
     );
 
@@ -125,7 +125,7 @@ export class WorkspaceCompartmentStore {
     const pool = getPool();
 
     const result = await pool.query<CompartmentRow>(
-      `SELECT * FROM workspace_compartments WHERE id = $1`,
+      `SELECT * FROM problem_set_compartments WHERE id = $1`,
       [compartmentId],
     );
 
@@ -140,7 +140,7 @@ export class WorkspaceCompartmentStore {
     const pool = getPool();
 
     await pool.query(
-      `DELETE FROM workspace_compartments WHERE id = $1`,
+      `DELETE FROM problem_set_compartments WHERE id = $1`,
       [compartmentId],
     );
   }
@@ -160,10 +160,10 @@ export class WorkspaceCompartmentStore {
     const id = `WMC-${randomUUID()}`;
 
     await pool.query(
-      `INSERT INTO workspace_member_compartments
-         (id, workspace_id, member_did, compartment_id, assigned_by)
+      `INSERT INTO problem_set_member_compartments
+         (id, problem_set_id, member_did, compartment_id, assigned_by)
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (workspace_id, member_did, compartment_id) DO NOTHING`,
+       ON CONFLICT (problem_set_id, member_did, compartment_id) DO NOTHING`,
       [id, workspaceId, memberDid, compartmentId, assignedBy],
     );
   }
@@ -180,8 +180,8 @@ export class WorkspaceCompartmentStore {
     const pool = getPool();
 
     await pool.query(
-      `DELETE FROM workspace_member_compartments
-       WHERE workspace_id = $1 AND member_did = $2 AND compartment_id = $3`,
+      `DELETE FROM problem_set_member_compartments
+       WHERE problem_set_id = $1 AND member_did = $2 AND compartment_id = $3`,
       [workspaceId, memberDid, compartmentId],
     );
   }
@@ -195,7 +195,7 @@ export class WorkspaceCompartmentStore {
     const pool = getPool();
 
     const result = await pool.query<{ member_did: string }>(
-      `SELECT member_did FROM workspace_member_compartments
+      `SELECT member_did FROM problem_set_member_compartments
        WHERE compartment_id = $1
        ORDER BY assigned_at ASC`,
       [compartmentId],
@@ -215,8 +215,8 @@ export class WorkspaceCompartmentStore {
     const pool = getPool();
 
     const result = await pool.query<{ compartment_id: string }>(
-      `SELECT compartment_id FROM workspace_member_compartments
-       WHERE workspace_id = $1 AND member_did = $2`,
+      `SELECT compartment_id FROM problem_set_member_compartments
+       WHERE problem_set_id = $1 AND member_did = $2`,
       [workspaceId, memberDid],
     );
 

@@ -8,7 +8,7 @@
  * Rules define: which proposal kinds trigger escalation, threshold conditions, and
  * whether to use autocratic (single commander) or democratic (multi-vote) resolution.
  *
- * Table: workspace_escalation_rules
+ * Table: problem_set_escalation_rules
  * ID format: WER-{uuid}
  */
 
@@ -23,9 +23,9 @@ async function initWorkspaceEscalationTable(): Promise<void> {
   const pool = getPool();
 
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS workspace_escalation_rules (
+    CREATE TABLE IF NOT EXISTS problem_set_escalation_rules (
       id TEXT PRIMARY KEY,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+      problem_set_id TEXT NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
       rule_type TEXT NOT NULL,
       proposal_kind TEXT NOT NULL,
       threshold_config JSONB,
@@ -34,9 +34,9 @@ async function initWorkspaceEscalationTable(): Promise<void> {
       is_active BOOLEAN NOT NULL DEFAULT true,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-    CREATE INDEX IF NOT EXISTS idx_wer_workspace ON workspace_escalation_rules(workspace_id);
-    CREATE INDEX IF NOT EXISTS idx_wer_kind ON workspace_escalation_rules(workspace_id, proposal_kind);
-    CREATE INDEX IF NOT EXISTS idx_wer_active ON workspace_escalation_rules(workspace_id, is_active);
+    CREATE INDEX IF NOT EXISTS idx_per_problem_set ON problem_set_escalation_rules(problem_set_id);
+    CREATE INDEX IF NOT EXISTS idx_per_kind ON problem_set_escalation_rules(problem_set_id, proposal_kind);
+    CREATE INDEX IF NOT EXISTS idx_per_active ON problem_set_escalation_rules(problem_set_id, is_active);
   `);
 }
 
@@ -84,7 +84,7 @@ export interface UpdateEscalationRuleInput {
 
 interface EscalationRuleRow {
   id: string;
-  workspace_id: string;
+  problem_set_id: string;
   rule_type: string;
   proposal_kind: string;
   threshold_config: Record<string, unknown> | null;
@@ -111,7 +111,7 @@ export class WorkspaceEscalationStore {
   private mapRow(row: EscalationRuleRow): EscalationRule {
     return {
       id: row.id,
-      workspaceId: row.workspace_id,
+      workspaceId: row.problem_set_id,
       ruleType: row.rule_type,
       proposalKind: row.proposal_kind,
       thresholdConfig: row.threshold_config,
@@ -133,8 +133,8 @@ export class WorkspaceEscalationStore {
 
     const result = await pool.query(
       `
-      INSERT INTO workspace_escalation_rules (
-        id, workspace_id, rule_type, proposal_kind,
+      INSERT INTO problem_set_escalation_rules (
+        id, problem_set_id, rule_type, proposal_kind,
         threshold_config, voting_mechanism, auto_route_to, is_active, created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW())
       RETURNING *
@@ -161,7 +161,7 @@ export class WorkspaceEscalationStore {
     const pool = getPool();
 
     const result = await pool.query(
-      'SELECT * FROM workspace_escalation_rules WHERE workspace_id = $1 ORDER BY created_at ASC',
+      'SELECT * FROM problem_set_escalation_rules WHERE problem_set_id = $1 ORDER BY created_at ASC',
       [workspaceId],
     );
 
@@ -178,8 +178,8 @@ export class WorkspaceEscalationStore {
 
     const result = await pool.query(
       `
-      SELECT * FROM workspace_escalation_rules
-      WHERE workspace_id = $1 AND proposal_kind = $2 AND is_active = true
+      SELECT * FROM problem_set_escalation_rules
+      WHERE problem_set_id = $1 AND proposal_kind = $2 AND is_active = true
       ORDER BY created_at ASC
       `,
       [workspaceId, proposalKind],
@@ -233,7 +233,7 @@ export class WorkspaceEscalationStore {
 
     values.push(id);
     const result = await pool.query(
-      `UPDATE workspace_escalation_rules SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      `UPDATE problem_set_escalation_rules SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
       values,
     );
 
@@ -251,7 +251,7 @@ export class WorkspaceEscalationStore {
     await this.ensureInitialized();
     const pool = getPool();
 
-    await pool.query('DELETE FROM workspace_escalation_rules WHERE id = $1', [id]);
+    await pool.query('DELETE FROM problem_set_escalation_rules WHERE id = $1', [id]);
   }
 }
 

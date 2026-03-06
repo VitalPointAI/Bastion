@@ -26,9 +26,9 @@ import type { WorkspaceActivity } from './types.js';
 async function initWorkspaceActivityTable(): Promise<void> {
   const pool = getPool();
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS workspace_activity (
+    CREATE TABLE IF NOT EXISTS problem_set_activity (
       id TEXT PRIMARY KEY,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+      problem_set_id TEXT NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
       activity_type TEXT NOT NULL,
       actor_did TEXT NOT NULL,
       subject_did TEXT,
@@ -36,9 +36,9 @@ async function initWorkspaceActivityTable(): Promise<void> {
       tx_hash TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-    CREATE INDEX IF NOT EXISTS idx_wa_workspace ON workspace_activity(workspace_id);
-    CREATE INDEX IF NOT EXISTS idx_wa_created ON workspace_activity(created_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_wa_actor ON workspace_activity(actor_did);
+    CREATE INDEX IF NOT EXISTS idx_pa_problem_set ON problem_set_activity(problem_set_id);
+    CREATE INDEX IF NOT EXISTS idx_pa_created ON problem_set_activity(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_pa_actor ON problem_set_activity(actor_did);
   `);
 }
 
@@ -65,13 +65,13 @@ export class WorkspaceActivityStore {
   ): Promise<WorkspaceActivity> {
     await this.ensureInitialized();
     const pool = getPool();
-    const id = `WA-${randomUUID()}`;
+    const id = `PA-${randomUUID()}`;
     const now = new Date();
 
     await pool.query(
       `
-      INSERT INTO workspace_activity (
-        id, workspace_id, activity_type, actor_did, subject_did, metadata, tx_hash, created_at
+      INSERT INTO problem_set_activity (
+        id, problem_set_id, activity_type, actor_did, subject_did, metadata, tx_hash, created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       `,
       [
@@ -121,16 +121,16 @@ export class WorkspaceActivityStore {
 
     if (options?.types && options.types.length > 0) {
       query = `
-        SELECT * FROM workspace_activity
-        WHERE workspace_id = $1 AND activity_type = ANY($2)
+        SELECT * FROM problem_set_activity
+        WHERE problem_set_id = $1 AND activity_type = ANY($2)
         ORDER BY created_at DESC
         LIMIT $3 OFFSET $4
       `;
       params = [workspaceId, options.types, limit, offset];
     } else {
       query = `
-        SELECT * FROM workspace_activity
-        WHERE workspace_id = $1
+        SELECT * FROM problem_set_activity
+        WHERE problem_set_id = $1
         ORDER BY created_at DESC
         LIMIT $2 OFFSET $3
       `;
@@ -155,7 +155,7 @@ export class WorkspaceActivityStore {
     const limit = options?.limit ?? 50;
 
     const result = await pool.query(
-      `SELECT * FROM workspace_activity
+      `SELECT * FROM problem_set_activity
        WHERE actor_did = $1 OR subject_did = $1
        ORDER BY created_at DESC
        LIMIT $2`,
@@ -173,7 +173,7 @@ export class WorkspaceActivityStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      'SELECT COUNT(*) FROM workspace_activity WHERE workspace_id = $1 AND created_at > $2',
+      'SELECT COUNT(*) FROM problem_set_activity WHERE problem_set_id = $1 AND created_at > $2',
       [workspaceId, since],
     );
     return parseInt(result.rows[0].count, 10);
@@ -200,7 +200,7 @@ export class WorkspaceActivityStore {
     // Build a CASE/WHEN expression to count per-workspace since each workspace's last-seen time
     const caseWhenParts = workspaceIds.map((_wsId, idx) => {
       const paramIdx = idx * 2 + 1; // Parameters come in pairs: workspace_id, timestamp
-      return `SUM(CASE WHEN workspace_id = $${paramIdx} AND created_at > $${paramIdx + 1} THEN 1 ELSE 0 END) AS ws_${idx}`;
+      return `SUM(CASE WHEN problem_set_id = $${paramIdx} AND created_at > $${paramIdx + 1} THEN 1 ELSE 0 END) AS ws_${idx}`;
     });
 
     const params: (string | Date)[] = [];
@@ -215,8 +215,8 @@ export class WorkspaceActivityStore {
 
     const query = `
       SELECT ${caseWhenParts.join(', ')}
-      FROM workspace_activity
-      WHERE workspace_id IN (${whereParams})
+      FROM problem_set_activity
+      WHERE problem_set_id IN (${whereParams})
     `;
 
     const result = await pool.query(query, params);
@@ -237,7 +237,7 @@ export class WorkspaceActivityStore {
    */
   private mapRow(row: {
     id: string;
-    workspace_id: string;
+    problem_set_id: string;
     activity_type: string;
     actor_did: string;
     subject_did: string | null;
@@ -247,7 +247,7 @@ export class WorkspaceActivityStore {
   }): WorkspaceActivity {
     return {
       id: row.id,
-      workspaceId: row.workspace_id,
+      workspaceId: row.problem_set_id,
       activityType: row.activity_type,
       actorDid: row.actor_did,
       subjectDid: row.subject_did,

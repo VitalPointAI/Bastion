@@ -15,9 +15,9 @@ import type { WorkspaceInvite } from './types.js';
 async function initWorkspaceInviteTable(): Promise<void> {
   const pool = getPool();
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS workspace_invites (
+    CREATE TABLE IF NOT EXISTS problem_set_invites (
       id TEXT PRIMARY KEY,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+      problem_set_id TEXT NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
       token TEXT NOT NULL UNIQUE,
       invitee_email TEXT,
       invitee_did TEXT,
@@ -30,8 +30,8 @@ async function initWorkspaceInviteTable(): Promise<void> {
       created_by TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-    CREATE INDEX IF NOT EXISTS idx_wi_workspace ON workspace_invites(workspace_id);
-    CREATE INDEX IF NOT EXISTS idx_wi_token ON workspace_invites(token);
+    CREATE INDEX IF NOT EXISTS idx_pi_problem_set ON problem_set_invites(problem_set_id);
+    CREATE INDEX IF NOT EXISTS idx_pi_token ON problem_set_invites(token);
   `);
 }
 
@@ -79,7 +79,7 @@ export class WorkspaceInviteStore {
   ): Promise<{ invite: WorkspaceInvite; rawToken: string }> {
     await this.ensureInitialized();
     const pool = getPool();
-    const id = `WI-${randomUUID()}`;
+    const id = `PI-${randomUUID()}`;
     const now = new Date();
 
     const { rawToken, hashedToken, expiresAt } = this.generateToken(
@@ -88,8 +88,8 @@ export class WorkspaceInviteStore {
 
     await pool.query(
       `
-      INSERT INTO workspace_invites (
-        id, workspace_id, token, invitee_email, invitee_did,
+      INSERT INTO problem_set_invites (
+        id, problem_set_id, token, invitee_email, invitee_did,
         role, dao_role, expires_at, created_by, created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       `,
@@ -136,7 +136,7 @@ export class WorkspaceInviteStore {
     const hashedToken = createHash('sha256').update(rawToken).digest('hex');
 
     const result = await pool.query(
-      `SELECT * FROM workspace_invites
+      `SELECT * FROM problem_set_invites
        WHERE token = $1
        AND expires_at > NOW()
        AND accepted_at IS NULL`,
@@ -153,7 +153,7 @@ export class WorkspaceInviteStore {
   async getInviteById(id: string): Promise<WorkspaceInvite | null> {
     await this.ensureInitialized();
     const pool = getPool();
-    const result = await pool.query('SELECT * FROM workspace_invites WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM problem_set_invites WHERE id = $1', [id]);
     if (result.rows.length === 0) return null;
     return this.mapRow(result.rows[0]);
   }
@@ -165,7 +165,7 @@ export class WorkspaceInviteStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      'SELECT * FROM workspace_invites WHERE workspace_id = $1 ORDER BY created_at DESC',
+      'SELECT * FROM problem_set_invites WHERE problem_set_id = $1 ORDER BY created_at DESC',
       [workspaceId],
     );
     return result.rows.map((row) => this.mapRow(row));
@@ -178,8 +178,8 @@ export class WorkspaceInviteStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      `SELECT * FROM workspace_invites
-       WHERE workspace_id = $1
+      `SELECT * FROM problem_set_invites
+       WHERE problem_set_id = $1
        AND accepted_at IS NULL
        AND expires_at > NOW()
        ORDER BY created_at DESC`,
@@ -195,7 +195,7 @@ export class WorkspaceInviteStore {
     await this.ensureInitialized();
     const pool = getPool();
     await pool.query(
-      'UPDATE workspace_invites SET accepted_at = NOW() WHERE id = $1',
+      'UPDATE problem_set_invites SET accepted_at = NOW() WHERE id = $1',
       [id],
     );
   }
@@ -207,7 +207,7 @@ export class WorkspaceInviteStore {
     await this.ensureInitialized();
     const pool = getPool();
     await pool.query(
-      'UPDATE workspace_invites SET approved_at = NOW(), approved_by = $2 WHERE id = $1',
+      'UPDATE problem_set_invites SET approved_at = NOW(), approved_by = $2 WHERE id = $1',
       [id, approvedBy],
     );
   }
@@ -218,7 +218,7 @@ export class WorkspaceInviteStore {
   async cancelInvite(id: string): Promise<void> {
     await this.ensureInitialized();
     const pool = getPool();
-    await pool.query('DELETE FROM workspace_invites WHERE id = $1', [id]);
+    await pool.query('DELETE FROM problem_set_invites WHERE id = $1', [id]);
   }
 
   /**
@@ -229,7 +229,7 @@ export class WorkspaceInviteStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      'DELETE FROM workspace_invites WHERE expires_at < NOW() AND accepted_at IS NULL',
+      'DELETE FROM problem_set_invites WHERE expires_at < NOW() AND accepted_at IS NULL',
     );
     return result.rowCount ?? 0;
   }
@@ -239,7 +239,7 @@ export class WorkspaceInviteStore {
    */
   private mapRow(row: {
     id: string;
-    workspace_id: string;
+    problem_set_id: string;
     token: string;
     invitee_email: string | null;
     invitee_did: string | null;
@@ -254,7 +254,7 @@ export class WorkspaceInviteStore {
   }): WorkspaceInvite {
     return {
       id: row.id,
-      workspaceId: row.workspace_id,
+      workspaceId: row.problem_set_id,
       token: row.token,
       inviteeEmail: row.invitee_email,
       inviteeDid: row.invitee_did,

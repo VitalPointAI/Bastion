@@ -26,39 +26,40 @@ import type {
 async function initWorkspaceTables(): Promise<void> {
   const pool = getPool();
 
-  // Primary workspace registry — off-chain mirror of on-chain DAOs
+  // Primary problem set registry — off-chain mirror of on-chain DAOs
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS workspaces (
+    CREATE TABLE IF NOT EXISTS problem_sets (
       id TEXT PRIMARY KEY,
       dao_id TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
       description TEXT,
-      workspace_type TEXT NOT NULL,
+      echelon TEXT NOT NULL,
       classification TEXT NOT NULL DEFAULT 'UNCLASSIFIED',
-      parent_workspace_id TEXT REFERENCES workspaces(id),
+      parent_problem_set_id TEXT REFERENCES problem_sets(id),
       invite_mode TEXT NOT NULL DEFAULT 'gated',
       discoverability TEXT NOT NULL DEFAULT 'private',
+      problem_statement TEXT,
       created_by TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
-    CREATE INDEX IF NOT EXISTS idx_workspace_parent ON workspaces(parent_workspace_id);
-    CREATE INDEX IF NOT EXISTS idx_workspace_classification ON workspaces(classification);
-    CREATE INDEX IF NOT EXISTS idx_workspace_type ON workspaces(workspace_type);
+    CREATE INDEX IF NOT EXISTS idx_problem_set_parent ON problem_sets(parent_problem_set_id);
+    CREATE INDEX IF NOT EXISTS idx_problem_set_classification ON problem_sets(classification);
+    CREATE INDEX IF NOT EXISTS idx_problem_set_echelon ON problem_sets(echelon);
   `);
 
   // Phase 22: Add mode column for training/operational mode filtering
   await pool.query(`
-    ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'operational';
-    CREATE INDEX IF NOT EXISTS idx_workspace_mode ON workspaces(mode);
+    ALTER TABLE problem_sets ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'operational';
+    CREATE INDEX IF NOT EXISTS idx_problem_set_mode ON problem_sets(mode);
   `);
 
-  // Add workspace_id FK to exercise_scenarios (missions AND exercises nest under workspaces)
+  // Add problem_set_id FK to exercise_scenarios (missions AND exercises nest under problem sets)
   // This is a nullable column migration — existing exercises remain unaffected
   await pool.query(`
     ALTER TABLE exercise_scenarios
-    ADD COLUMN IF NOT EXISTS workspace_id TEXT REFERENCES workspaces(id);
+    ADD COLUMN IF NOT EXISTS problem_set_id TEXT REFERENCES problem_sets(id);
   `);
 }
 
@@ -71,9 +72,9 @@ interface WorkspaceRow {
   dao_id: string;
   name: string;
   description: string | null;
-  workspace_type: string;
+  echelon: string;
   classification: string;
-  parent_workspace_id: string | null;
+  parent_problem_set_id: string | null;
   invite_mode: string;
   discoverability: string;
   mode: string;
@@ -102,9 +103,9 @@ export class WorkspaceStore {
       daoId: row.dao_id,
       name: row.name,
       description: row.description,
-      workspaceType: row.workspace_type as WorkspaceType,
+      workspaceType: row.echelon as WorkspaceType,
       classification: row.classification as Workspace['classification'],
-      parentWorkspaceId: row.parent_workspace_id,
+      parentWorkspaceId: row.parent_problem_set_id,
       inviteMode: row.invite_mode as Workspace['inviteMode'],
       discoverability: row.discoverability as Workspace['discoverability'],
       mode: (row.mode ?? 'operational') as AppMode,
@@ -129,18 +130,18 @@ export class WorkspaceStore {
     await this.ensureInitialized();
     const pool = getPool();
 
-    const id = `WS-${randomUUID()}`;
+    const id = `PS-${randomUUID()}`;
     // DAO ID includes UUID to prevent naming collisions on-chain
-    const daoId = `ws-${input.workspaceType.toLowerCase()}-${randomUUID()}`;
+    const daoId = `ps-${input.workspaceType.toLowerCase()}-${randomUUID()}`;
     const now = new Date();
 
     const mode = input.mode ?? 'operational';
 
     await pool.query(
       `
-      INSERT INTO workspaces (
-        id, dao_id, name, description, workspace_type, classification,
-        parent_workspace_id, invite_mode, discoverability, mode, created_by,
+      INSERT INTO problem_sets (
+        id, dao_id, name, description, echelon, classification,
+        parent_problem_set_id, invite_mode, discoverability, mode, created_by,
         created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       `,
@@ -185,7 +186,7 @@ export class WorkspaceStore {
     await this.ensureInitialized();
     const pool = getPool();
 
-    const result = await pool.query('SELECT * FROM workspaces WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM problem_sets WHERE id = $1', [id]);
     if (result.rows.length === 0) return null;
     return this.mapRow(result.rows[0] as WorkspaceRow);
   }
@@ -197,7 +198,7 @@ export class WorkspaceStore {
     await this.ensureInitialized();
     const pool = getPool();
 
-    const result = await pool.query('SELECT * FROM workspaces WHERE dao_id = $1', [daoId]);
+    const result = await pool.query('SELECT * FROM problem_sets WHERE dao_id = $1', [daoId]);
     if (result.rows.length === 0) return null;
     return this.mapRow(result.rows[0] as WorkspaceRow);
   }
@@ -210,7 +211,7 @@ export class WorkspaceStore {
     const pool = getPool();
 
     const result = await pool.query(
-      'SELECT * FROM workspaces WHERE parent_workspace_id = $1 ORDER BY created_at ASC',
+      'SELECT * FROM problem_sets WHERE parent_problem_set_id = $1 ORDER BY created_at ASC',
       [parentId],
     );
     return result.rows.map((row) => this.mapRow(row as WorkspaceRow));
@@ -224,7 +225,7 @@ export class WorkspaceStore {
     const pool = getPool();
 
     const result = await pool.query(
-      'SELECT * FROM workspaces WHERE workspace_type = $1 ORDER BY created_at ASC',
+      'SELECT * FROM problem_sets WHERE echelon = $1 ORDER BY created_at ASC',
       [type],
     );
     return result.rows.map((row) => this.mapRow(row as WorkspaceRow));
@@ -244,8 +245,8 @@ export class WorkspaceStore {
     const pool = getPool();
 
     const result = await pool.query(
-      `SELECT w.* FROM workspaces w
-       INNER JOIN workspace_members wm ON w.id = wm.workspace_id
+      `SELECT w.* FROM problem_sets w
+       INNER JOIN problem_set_members wm ON w.id = wm.problem_set_id
        WHERE wm.user_did = $1 AND wm.status = 'active' AND w.mode = $2
        ORDER BY w.created_at ASC`,
       [userDid, mode],
@@ -296,7 +297,7 @@ export class WorkspaceStore {
     values.push(id); // for WHERE clause
 
     const result = await pool.query(
-      `UPDATE workspaces SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      `UPDATE problem_sets SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
       values,
     );
 
@@ -317,16 +318,16 @@ export class WorkspaceStore {
 
     const result = await pool.query(
       `
-      WITH RECURSIVE workspace_tree AS (
+      WITH RECURSIVE problem_set_tree AS (
         -- Base case: start from the root
-        SELECT *, 0 AS depth FROM workspaces WHERE id = $1
+        SELECT *, 0 AS depth FROM problem_sets WHERE id = $1
         UNION ALL
         -- Recursive: find children of each level
-        SELECT w.*, wt.depth + 1
-        FROM workspaces w
-        INNER JOIN workspace_tree wt ON w.parent_workspace_id = wt.id
+        SELECT ps.*, pst.depth + 1
+        FROM problem_sets ps
+        INNER JOIN problem_set_tree pst ON ps.parent_problem_set_id = pst.id
       )
-      SELECT * FROM workspace_tree ORDER BY depth ASC, created_at ASC
+      SELECT * FROM problem_set_tree ORDER BY depth ASC, created_at ASC
       `,
       [rootId],
     );

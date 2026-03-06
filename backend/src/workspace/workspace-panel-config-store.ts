@@ -7,7 +7,7 @@
  * Default templates are derived from doctrinal workspace type conventions and are
  * auto-populated on first access via getOrCreateDefault().
  *
- * Table: workspace_panel_config
+ * Table: problem_set_panel_config
  * ID format: WPC-{uuid}
  */
 
@@ -64,15 +64,15 @@ const DEFAULT_VISIBILITY_BY_TYPE: Record<string, Record<string, string[]>> = {
 async function initWorkspacePanelConfigTable(): Promise<void> {
   const pool = getPool();
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS workspace_panel_config (
+    CREATE TABLE IF NOT EXISTS problem_set_panel_config (
       id TEXT PRIMARY KEY,
-      workspace_id TEXT NOT NULL UNIQUE REFERENCES workspaces(id) ON DELETE CASCADE,
+      problem_set_id TEXT NOT NULL UNIQUE REFERENCES problem_sets(id) ON DELETE CASCADE,
       panel_visibility JSONB NOT NULL DEFAULT '{}',
       default_tab TEXT NOT NULL DEFAULT 'overview',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-    CREATE INDEX IF NOT EXISTS idx_wpc_workspace ON workspace_panel_config(workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_ppc_problem_set ON problem_set_panel_config(problem_set_id);
   `);
 }
 
@@ -91,7 +91,7 @@ export interface PanelConfig {
 
 interface PanelConfigRow {
   id: string;
-  workspace_id: string;
+  problem_set_id: string;
   panel_visibility: Record<string, string[]>;
   default_tab: string;
   created_at: Date;
@@ -115,7 +115,7 @@ export class WorkspacePanelConfigStore {
   private mapRow(row: PanelConfigRow): PanelConfig {
     return {
       id: row.id,
-      workspaceId: row.workspace_id,
+      workspaceId: row.problem_set_id,
       panelVisibility: row.panel_visibility,
       defaultTab: row.default_tab,
       createdAt: new Date(row.created_at),
@@ -131,7 +131,7 @@ export class WorkspacePanelConfigStore {
     const pool = getPool();
 
     const result = await pool.query(
-      'SELECT * FROM workspace_panel_config WHERE workspace_id = $1',
+      'SELECT * FROM problem_set_panel_config WHERE problem_set_id = $1',
       [workspaceId],
     );
 
@@ -141,7 +141,7 @@ export class WorkspacePanelConfigStore {
 
   /**
    * Create or update panel visibility config for a workspace.
-   * On conflict (same workspace_id), updates panel_visibility, default_tab, and updated_at.
+   * On conflict (same problem_set_id), updates panel_visibility, default_tab, and updated_at.
    */
   async upsertConfig(
     workspaceId: string,
@@ -156,9 +156,9 @@ export class WorkspacePanelConfigStore {
 
     const result = await pool.query(
       `
-      INSERT INTO workspace_panel_config (id, workspace_id, panel_visibility, default_tab, created_at, updated_at)
+      INSERT INTO problem_set_panel_config (id, problem_set_id, panel_visibility, default_tab, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, $6)
-      ON CONFLICT (workspace_id) DO UPDATE SET
+      ON CONFLICT (problem_set_id) DO UPDATE SET
         panel_visibility = EXCLUDED.panel_visibility,
         default_tab = EXCLUDED.default_tab,
         updated_at = EXCLUDED.updated_at
@@ -201,7 +201,7 @@ export class WorkspacePanelConfigStore {
     await this.ensureInitialized();
     const pool = getPool();
 
-    await pool.query('DELETE FROM workspace_panel_config WHERE workspace_id = $1', [workspaceId]);
+    await pool.query('DELETE FROM problem_set_panel_config WHERE problem_set_id = $1', [workspaceId]);
   }
 }
 

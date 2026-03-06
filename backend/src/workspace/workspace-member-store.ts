@@ -16,9 +16,9 @@ import type { WorkspaceMember, MemberStatus } from './types.js';
 async function initWorkspaceMemberTable(): Promise<void> {
   const pool = getPool();
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS workspace_members (
+    CREATE TABLE IF NOT EXISTS problem_set_members (
       id TEXT PRIMARY KEY,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+      problem_set_id TEXT NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
       user_did TEXT NOT NULL,
       role TEXT NOT NULL,
       dao_role TEXT NOT NULL,
@@ -28,13 +28,13 @@ async function initWorkspaceMemberTable(): Promise<void> {
       suspended_by TEXT,
       joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       invited_by TEXT NOT NULL,
-      UNIQUE(workspace_id, user_did)
+      UNIQUE(problem_set_id, user_did)
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_one_primary_per_user
-      ON workspace_members(user_did) WHERE is_primary = true;
-    CREATE INDEX IF NOT EXISTS idx_wm_workspace ON workspace_members(workspace_id);
-    CREATE INDEX IF NOT EXISTS idx_wm_user ON workspace_members(user_did);
-    CREATE INDEX IF NOT EXISTS idx_wm_primary ON workspace_members(user_did, is_primary);
+      ON problem_set_members(user_did) WHERE is_primary = true;
+    CREATE INDEX IF NOT EXISTS idx_pm_problem_set ON problem_set_members(problem_set_id);
+    CREATE INDEX IF NOT EXISTS idx_pm_user ON problem_set_members(user_did);
+    CREATE INDEX IF NOT EXISTS idx_pm_primary ON problem_set_members(user_did, is_primary);
   `);
 }
 
@@ -62,12 +62,12 @@ export class WorkspaceMemberStore {
   ): Promise<WorkspaceMember> {
     await this.ensureInitialized();
     const pool = getPool();
-    const id = `WM-${randomUUID()}`;
+    const id = `PM-${randomUUID()}`;
     const now = new Date();
 
-    // Check if this is the user's first workspace membership
+    // Check if this is the user's first problem set membership
     const countResult = await pool.query(
-      'SELECT COUNT(*) FROM workspace_members WHERE user_did = $1',
+      'SELECT COUNT(*) FROM problem_set_members WHERE user_did = $1',
       [userDid],
     );
     const existingCount = parseInt(countResult.rows[0].count, 10);
@@ -75,8 +75,8 @@ export class WorkspaceMemberStore {
 
     await pool.query(
       `
-      INSERT INTO workspace_members (
-        id, workspace_id, user_did, role, dao_role, is_primary, status, joined_at, invited_by
+      INSERT INTO problem_set_members (
+        id, problem_set_id, user_did, role, dao_role, is_primary, status, joined_at, invited_by
       ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8)
       `,
       [id, workspaceId, userDid, role, daoRole, isPrimary, now, invitedBy],
@@ -104,7 +104,7 @@ export class WorkspaceMemberStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      'SELECT * FROM workspace_members WHERE workspace_id = $1 AND user_did = $2',
+      'SELECT * FROM problem_set_members WHERE problem_set_id = $1 AND user_did = $2',
       [workspaceId, userDid],
     );
     if (result.rows.length === 0) return null;
@@ -117,7 +117,7 @@ export class WorkspaceMemberStore {
   async getMemberById(id: string): Promise<WorkspaceMember | null> {
     await this.ensureInitialized();
     const pool = getPool();
-    const result = await pool.query('SELECT * FROM workspace_members WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM problem_set_members WHERE id = $1', [id]);
     if (result.rows.length === 0) return null;
     return this.mapRow(result.rows[0]);
   }
@@ -129,7 +129,7 @@ export class WorkspaceMemberStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      "SELECT * FROM workspace_members WHERE workspace_id = $1 AND status = 'active' ORDER BY joined_at ASC",
+      "SELECT * FROM problem_set_members WHERE problem_set_id = $1 AND status = 'active' ORDER BY joined_at ASC",
       [workspaceId],
     );
     return result.rows.map((row) => this.mapRow(row));
@@ -142,7 +142,7 @@ export class WorkspaceMemberStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      'SELECT * FROM workspace_members WHERE user_did = $1 ORDER BY joined_at ASC',
+      'SELECT * FROM problem_set_members WHERE user_did = $1 ORDER BY joined_at ASC',
       [userDid],
     );
     return result.rows.map((row) => this.mapRow(row));
@@ -160,9 +160,9 @@ export class WorkspaceMemberStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      `UPDATE workspace_members
+      `UPDATE problem_set_members
        SET role = $3, dao_role = $4
-       WHERE workspace_id = $1 AND user_did = $2
+       WHERE problem_set_id = $1 AND user_did = $2
        RETURNING *`,
       [workspaceId, userDid, newRole, newDaoRole],
     );
@@ -186,12 +186,12 @@ export class WorkspaceMemberStore {
       await client.query('BEGIN');
       // Clear existing primary for this user
       await client.query(
-        "UPDATE workspace_members SET is_primary = false WHERE user_did = $1 AND is_primary = true",
+        "UPDATE problem_set_members SET is_primary = false WHERE user_did = $1 AND is_primary = true",
         [userDid],
       );
       // Set new primary
       await client.query(
-        'UPDATE workspace_members SET is_primary = true WHERE workspace_id = $1 AND user_did = $2',
+        'UPDATE problem_set_members SET is_primary = true WHERE problem_set_id = $1 AND user_did = $2',
         [workspaceId, userDid],
       );
       await client.query('COMMIT');
@@ -215,9 +215,9 @@ export class WorkspaceMemberStore {
     const pool = getPool();
     const now = new Date();
     const result = await pool.query(
-      `UPDATE workspace_members
+      `UPDATE problem_set_members
        SET status = 'suspended', suspended_at = $3, suspended_by = $4
-       WHERE workspace_id = $1 AND user_did = $2
+       WHERE problem_set_id = $1 AND user_did = $2
        RETURNING *`,
       [workspaceId, userDid, now, suspendedBy],
     );
@@ -234,9 +234,9 @@ export class WorkspaceMemberStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      `UPDATE workspace_members
+      `UPDATE problem_set_members
        SET status = 'active', suspended_at = NULL, suspended_by = NULL
-       WHERE workspace_id = $1 AND user_did = $2
+       WHERE problem_set_id = $1 AND user_did = $2
        RETURNING *`,
       [workspaceId, userDid],
     );
@@ -253,7 +253,7 @@ export class WorkspaceMemberStore {
     await this.ensureInitialized();
     const pool = getPool();
     await pool.query(
-      'DELETE FROM workspace_members WHERE workspace_id = $1 AND user_did = $2',
+      'DELETE FROM problem_set_members WHERE problem_set_id = $1 AND user_did = $2',
       [workspaceId, userDid],
     );
   }
@@ -265,7 +265,7 @@ export class WorkspaceMemberStore {
     await this.ensureInitialized();
     const pool = getPool();
     const result = await pool.query(
-      'SELECT COUNT(*) FROM workspace_members WHERE workspace_id = $1',
+      'SELECT COUNT(*) FROM problem_set_members WHERE problem_set_id = $1',
       [workspaceId],
     );
     return parseInt(result.rows[0].count, 10);
@@ -276,7 +276,7 @@ export class WorkspaceMemberStore {
    */
   private mapRow(row: {
     id: string;
-    workspace_id: string;
+    problem_set_id: string;
     user_did: string;
     role: string;
     dao_role: string;
@@ -289,7 +289,7 @@ export class WorkspaceMemberStore {
   }): WorkspaceMember {
     return {
       id: row.id,
-      workspaceId: row.workspace_id,
+      workspaceId: row.problem_set_id,
       userDid: row.user_did,
       role: row.role,
       daoRole: row.dao_role,

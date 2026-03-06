@@ -23,18 +23,18 @@ async function initWorkspaceRoleTable(): Promise<void> {
   const pool = getPool();
 
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS workspace_roles (
+    CREATE TABLE IF NOT EXISTS problem_set_roles (
       id TEXT PRIMARY KEY,
-      workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+      problem_set_id TEXT NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
       military_label TEXT NOT NULL,
       dao_role_name TEXT NOT NULL,
       permissions TEXT[] NOT NULL DEFAULT '{}',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE(workspace_id, military_label)
+      UNIQUE(problem_set_id, military_label)
     );
 
-    CREATE INDEX IF NOT EXISTS idx_workspace_roles_workspace ON workspace_roles(workspace_id);
-    CREATE INDEX IF NOT EXISTS idx_workspace_roles_label ON workspace_roles(workspace_id, military_label);
+    CREATE INDEX IF NOT EXISTS idx_problem_set_roles_problem_set ON problem_set_roles(problem_set_id);
+    CREATE INDEX IF NOT EXISTS idx_problem_set_roles_label ON problem_set_roles(problem_set_id, military_label);
   `);
 }
 
@@ -44,7 +44,7 @@ async function initWorkspaceRoleTable(): Promise<void> {
 
 interface WorkspaceRoleRow {
   id: string;
-  workspace_id: string;
+  problem_set_id: string;
   military_label: string;
   dao_role_name: string;
   permissions: string[];
@@ -68,7 +68,7 @@ export class WorkspaceRoleStore {
   private mapRow(row: WorkspaceRoleRow): WorkspaceRole {
     return {
       id: row.id,
-      workspaceId: row.workspace_id,
+      workspaceId: row.problem_set_id,
       militaryLabel: row.military_label,
       daoRoleName: row.dao_role_name,
       permissions: row.permissions,
@@ -80,7 +80,7 @@ export class WorkspaceRoleStore {
    * Initialize military role templates for a newly created workspace.
    *
    * Looks up the pre-defined MILITARY_ROLE_TEMPLATES for the workspace type and
-   * inserts each as a workspace_roles row. Called by the API route after workspace
+   * inserts each as a problem_set_roles row. Called by the API route after workspace
    * creation succeeds (off-chain + on-chain).
    *
    * @param workspaceId - Off-chain workspace ID (WS-{uuid})
@@ -103,9 +103,9 @@ export class WorkspaceRoleStore {
 
       await pool.query(
         `
-        INSERT INTO workspace_roles (id, workspace_id, military_label, dao_role_name, permissions, created_at)
+        INSERT INTO problem_set_roles (id, problem_set_id, military_label, dao_role_name, permissions, created_at)
         VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (workspace_id, military_label) DO NOTHING
+        ON CONFLICT (problem_set_id, military_label) DO NOTHING
         `,
         [id, workspaceId, template.label, template.daoRole, template.permissions, now],
       );
@@ -131,7 +131,7 @@ export class WorkspaceRoleStore {
     const pool = getPool();
 
     const result = await pool.query(
-      'SELECT * FROM workspace_roles WHERE workspace_id = $1 ORDER BY created_at ASC',
+      'SELECT * FROM problem_set_roles WHERE problem_set_id = $1 ORDER BY created_at ASC',
       [workspaceId],
     );
     return result.rows.map((row) => this.mapRow(row as WorkspaceRoleRow));
@@ -145,7 +145,7 @@ export class WorkspaceRoleStore {
     const pool = getPool();
 
     const result = await pool.query(
-      'SELECT * FROM workspace_roles WHERE workspace_id = $1 AND military_label = $2',
+      'SELECT * FROM problem_set_roles WHERE problem_set_id = $1 AND military_label = $2',
       [workspaceId, label],
     );
     if (result.rows.length === 0) return null;
@@ -175,7 +175,7 @@ export class WorkspaceRoleStore {
 
     await pool.query(
       `
-      INSERT INTO workspace_roles (id, workspace_id, military_label, dao_role_name, permissions, created_at)
+      INSERT INTO problem_set_roles (id, problem_set_id, military_label, dao_role_name, permissions, created_at)
       VALUES ($1, $2, $3, $4, $5, $6)
       `,
       [id, workspaceId, label, daoRoleName, permissions, now],
@@ -201,7 +201,7 @@ export class WorkspaceRoleStore {
     const pool = getPool();
 
     await pool.query(
-      'DELETE FROM workspace_roles WHERE workspace_id = $1 AND military_label = $2',
+      'DELETE FROM problem_set_roles WHERE problem_set_id = $1 AND military_label = $2',
       [workspaceId, label],
     );
   }
