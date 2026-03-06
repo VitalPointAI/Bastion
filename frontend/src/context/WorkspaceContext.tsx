@@ -30,8 +30,13 @@ import { useMode } from './ModeContext';
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
-const ACTIVE_WORKSPACE_KEY = 'workspace-active-id';
+const ACTIVE_WORKSPACE_KEY_BASE = 'workspace-active-id';
 const LAST_SEEN_KEY = 'workspace-last-seen';
+
+/** Returns mode-specific localStorage key for active workspace persistence */
+function getActiveWorkspaceKey(mode: string): string {
+  return `${ACTIVE_WORKSPACE_KEY_BASE}-${mode}`;
+}
 
 // ─── Cross-Workspace Types ────────────────────────────────────────────────────
 
@@ -149,7 +154,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (activeWorkspaceId && !result.some((m) => m.workspaceId === activeWorkspaceId)) {
         setActiveWorkspaceIdState(null);
         setActiveWorkspaceDetail(null);
-        localStorage.removeItem(ACTIVE_WORKSPACE_KEY);
+        localStorage.removeItem(getActiveWorkspaceKey(mode));
       }
 
       return result;
@@ -183,8 +188,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         const result = await workspaceService.listMyMemberships(userDID, mode);
         setMemberships(result);
 
-        // Determine initial active workspace
-        const savedId = localStorage.getItem(ACTIVE_WORKSPACE_KEY);
+        // Determine initial active workspace (mode-keyed persistence)
+        const modeKey = getActiveWorkspaceKey(mode);
+        const savedId = localStorage.getItem(modeKey);
         const savedValid = savedId && result.some((m) => m.workspaceId === savedId);
 
         const primary = result.find((m) => m.isPrimary);
@@ -196,12 +202,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
         if (initialId) {
           setActiveWorkspaceIdState(initialId);
-          localStorage.setItem(ACTIVE_WORKSPACE_KEY, initialId);
+          localStorage.setItem(modeKey, initialId);
         } else {
           // No workspaces in this mode — clear active
           setActiveWorkspaceIdState(null);
           setActiveWorkspaceDetail(null);
-          localStorage.removeItem(ACTIVE_WORKSPACE_KEY);
+          localStorage.removeItem(modeKey);
         }
       } catch {
         // Silently fail
@@ -348,9 +354,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       setActiveWorkspaceIdState(id);
-      localStorage.setItem(ACTIVE_WORKSPACE_KEY, id);
+      localStorage.setItem(getActiveWorkspaceKey(mode), id);
     },
-    [activeWorkspaceId]
+    [activeWorkspaceId, mode]
   );
 
   // ─── Tab notification actions ────────────────────────────────────────────────

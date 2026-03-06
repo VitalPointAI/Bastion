@@ -23,8 +23,11 @@ import { workspaceEscalationStore } from '../workspace/workspace-escalation-stor
 import { signAndSubmitFunctionCall } from '../near/tx-signer.js';
 import { clearanceSufficient } from '../workspace/types.js';
 import type { AppMode, WorkspaceType } from '../workspace/types.js';
+import { ScenarioStore } from '../exercise/scenario-store.js';
+import { modeMiddleware } from '../middleware/mode-context.js';
 
 const DAO_CONTRACT_ID = process.env.DAO_CONTRACT_ID || 'dao-registry.testnet';
+const scenarioStore = new ScenarioStore();
 
 const router = Router();
 
@@ -92,6 +95,11 @@ const EscalateSchema = z.object({
   description: z.string().min(1).max(2000),
   urgency: z.enum(['urgent', 'standard']).default('standard'),
   data: z.record(z.string(), z.unknown()).optional(),
+});
+
+const CreateFromScenarioSchema = z.object({
+  scenarioId: z.string().min(1),
+  name: z.string().min(2).max(100).optional(),
 });
 
 // ============================================================================
@@ -321,6 +329,94 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Create workspace failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/workspaces/from-scenario - Create a training workspace from an exercise scenario
+ *
+ * Always creates workspace with mode='training' regardless of user's current mode.
+ * Pre-populates workspace with scenario snapshot data.
+ */
+router.post('/from-scenario', requireAuth, modeMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const userSecret = deriveUserSecret(req.anonUser!.nearAccountId);
+
+    let body: z.infer<typeof CreateFromScenarioSchema>;
+    try {
+      body = CreateFromScenarioSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    // Load scenario
+    const scenario = await scenarioStore.findById(body.scenarioId);
+    if (!scenario) {
+      return res.status(404).json({ error: 'Scenario not found' });
+    }
+
+    // Create workspace in training mode (scenarios are inherently training)
+    const workspaceName = body.name ?? scenario.name;
+    const workspace = await workspaceStore.createWorkspace(
+      {
+        name: workspaceName,
+        description: `Training workspace created from scenario: ${scenario.name}`,
+        workspaceType: 'Team' as WorkspaceType,
+        classification: 'UNCLASSIFIED',
+        inviteMode: 'gated',
+        discoverability: 'private',
+        mode: 'training' as AppMode,
+      },
+      userDid,
+    );
+
+    // On-chain: create DAO
+    const createDaoResult = await signAndSubmitFunctionCall(
+      userSecret,
+      DAO_CONTRACT_ID,
+      'create_dao',
+      {
+        dao_id: workspace.daoId,
+        name: workspace.name,
+        description: workspace.description ?? '',
+        classification: workspace.classification,
+      },
+    );
+
+    // Initialize military role templates
+    await workspaceRoleStore.initRolesForWorkspace(workspace.id, workspace.workspaceType);
+
+    // Add creator as commander
+    await workspaceMemberStore.addMember(workspace.id, userDid, 'commander', 'council', userDid);
+
+    // Log scenario load activity
+    await workspaceActivityStore.log(
+      workspace.id,
+      'scenario_loaded',
+      userDid,
+      null,
+      {
+        scenarioId: scenario.id,
+        scenarioName: scenario.name,
+        designation: scenario.designation,
+        exercisePhases: scenario.exercisePhases,
+        currentPhaseIndex: scenario.currentPhaseIndex,
+        status: scenario.status,
+        daoId: workspace.daoId,
+      },
+      createDaoResult.txHash,
+    );
+
+    console.log(`✓ Training workspace created from scenario: ${workspace.id} (scenario: ${scenario.id})`);
+    res.status(201).json(workspace);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create workspace from scenario failed:', message);
     res.status(500).json({ error: message });
   }
 });

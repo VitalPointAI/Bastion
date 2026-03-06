@@ -618,6 +618,16 @@ class WorkspaceService {
       }
     );
   }
+
+  // ─── Scenario-to-Workspace ──────────────────────────────────────────────────
+
+  async createFromScenario(scenarioId: string, name?: string): Promise<WorkspaceDetail> {
+    return this.fetchJSON<WorkspaceDetail>(`${this.baseUrl}/from-scenario`, {
+      method: 'POST',
+      credentials: 'include',
+      body: JSON.stringify({ scenarioId, name }),
+    });
+  }
 }
 
 export const workspaceService = new WorkspaceService();
