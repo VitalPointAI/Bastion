@@ -530,7 +530,7 @@ Plans:
 - [ ] 23-05-PLAN.md — Backend API routes and cross-cutting module updates (Wave 3)
 - [ ] 23-06-PLAN.md — Frontend service layer and context provider rename (Wave 3)
 - [ ] 23-07-PLAN.md — Frontend component file renames to problem-set directory (Wave 4)
-- [ ] 23-08-PLAN.md — Frontend routing, cross-cutting imports, and cleanup (Wave 4)
+- [x] 23-08-PLAN.md — Frontend routing, cross-cutting imports, and cleanup (Wave 4)
 - [ ] 23-09-PLAN.md — Echelon UI: OrgTree symbols, detail card, create wizard (Wave 5)
 - [ ] 23-10-PLAN.md — Build verification and human-verify checkpoint (Wave 5)
 

@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 23 of 40 (Problem Set Model & Workspace Rename) — IN PROGRESS
-Plan: 7 of 10 in current phase — complete
-Status: Phase 23 plan 07 complete — frontend workspace components renamed and relocated to problem-set
-Last activity: 2026-03-06 - Completed 23-07 (frontend component rename & old directory deletion)
+Plan: 8 of 10 in current phase — complete
+Status: Phase 23 plan 08 complete — frontend routing, cross-cutting rename, and cleanup done
+Last activity: 2026-03-06 - Completed 23-08 (frontend routing + cross-cutting files + old workspace deleted)
 
-Progress: █████████████████████████ 225 plans complete
+Progress: █████████████████████████ 226 plans complete
 
 ## Performance Metrics
 
