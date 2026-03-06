@@ -143,9 +143,9 @@ export class ProblemSetStore {
       `
       INSERT INTO problem_sets (
         id, dao_id, name, description, echelon, classification,
-        parent_problem_set_id, invite_mode, discoverability, mode, created_by,
+        parent_problem_set_id, invite_mode, discoverability, problem_statement, mode, created_by,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       `,
       [
         id,
@@ -157,6 +157,7 @@ export class ProblemSetStore {
         input.parentProblemSetId ?? null,
         input.inviteMode ?? 'gated',
         input.discoverability ?? 'private',
+        input.problemStatement ?? null,
         mode,
         createdBy,
         now,
@@ -169,7 +170,7 @@ export class ProblemSetStore {
       daoId,
       name: input.name,
       description: input.description ?? null,
-      problemStatement: null,
+      problemStatement: input.problemStatement ?? null,
       echelon: input.echelon,
       classification: input.classification,
       parentProblemSetId: input.parentProblemSetId ?? null,

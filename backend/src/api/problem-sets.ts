@@ -100,6 +100,12 @@ const EscalateSchema = z.object({
 const CreateFromScenarioSchema = z.object({
   scenarioId: z.string().min(1),
   name: z.string().min(2).max(100).optional(),
+  description: z.string().max(500).optional(),
+  echelon: z.enum(['strategic', 'operational', 'tactical']).optional(),
+  classification: z.string().optional(),
+  inviteMode: z.string().optional(),
+  discoverability: z.string().optional(),
+  problemStatement: z.string().max(2000).optional(),
 });
 
 // ============================================================================
@@ -380,11 +386,12 @@ router.post('/from-scenario', requireAuth, modeMiddleware, async (req: Request, 
     const problemSet = await problemSetStore.createProblemSet(
       {
         name: problemSetName,
-        description: `Training problem set created from scenario: ${scenario.name}`,
-        echelon: 'tactical' as Echelon,
-        classification: 'UNCLASSIFIED' as ProblemSetClassification,
-        inviteMode: 'gated',
-        discoverability: 'private',
+        description: body.description ?? `Training problem set based on ${scenario.name}`,
+        echelon: (body.echelon ?? 'strategic') as Echelon,
+        classification: (body.classification ?? 'UNCLASSIFIED') as ProblemSetClassification,
+        inviteMode: (body.inviteMode ?? 'gated') as 'open' | 'gated',
+        discoverability: (body.discoverability ?? 'private') as 'discoverable' | 'private',
+        problemStatement: body.problemStatement,
         mode: 'training' as AppMode,
       },
       userDid,
@@ -426,6 +433,9 @@ router.post('/from-scenario', requireAuth, modeMiddleware, async (req: Request, 
       },
       createDaoResult.txHash,
     );
+
+    // Link scenario to the newly created problem set
+    await scenarioStore.updateProblemSetLink(body.scenarioId, problemSet.id);
 
     console.log(`Training problem set created from scenario: ${problemSet.id} (scenario: ${scenario.id})`);
     res.status(201).json(problemSet);
@@ -626,8 +636,44 @@ router.post('/notifications/counts', requireAuth, async (req: Request, res: Resp
 });
 
 // ============================================================================
+// Scenario Linkage Endpoints (before /:id to avoid param conflict)
+// ============================================================================
+
+/**
+ * GET /api/problem-sets/scenario-usage-counts - Get usage counts for each scenario
+ * Returns a map of scenarioId -> number of problem sets created from it.
+ */
+router.get('/scenario-usage-counts', requireAuth, async (_req: Request, res: Response) => {
+  try {
+    const counts = await scenarioStore.getUsageCounts();
+    res.json(counts);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get scenario usage counts failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
 // Per-Problem-Set Endpoints (/:id prefix)
 // ============================================================================
+
+/**
+ * GET /api/problem-sets/:id/linked-scenario - Get the scenario linked to a problem set
+ */
+router.get('/:id/linked-scenario', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const scenario = await scenarioStore.findByProblemSetId(req.params.id as string);
+    if (!scenario) {
+      return res.status(404).json({ error: 'No linked scenario' });
+    }
+    res.json(scenario);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get linked scenario failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
 
 /**
  * GET /api/problem-sets/:id - Get problem set details

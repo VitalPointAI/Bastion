@@ -156,6 +156,47 @@ export class ScenarioStore {
   }
 
   /**
+   * Link a scenario to a problem set by updating the problem_set_id column.
+   * Phase 25.1: Used after from-scenario problem set creation.
+   */
+  async updateProblemSetLink(scenarioId: string, problemSetId: string): Promise<void> {
+    await this.pool.query(
+      'UPDATE exercise_scenarios SET problem_set_id = $1, updated_at = NOW() WHERE id = $2',
+      [problemSetId, scenarioId]
+    );
+  }
+
+  /**
+   * Find the scenario linked to a problem set via the problem_set_id column.
+   * Returns the first match or null.
+   */
+  async findByProblemSetId(problemSetId: string): Promise<ExerciseScenario | null> {
+    const result = await this.pool.query(
+      'SELECT * FROM exercise_scenarios WHERE problem_set_id = $1 LIMIT 1',
+      [problemSetId]
+    );
+    return result.rows[0] ? rowToScenario(result.rows[0]) : null;
+  }
+
+  /**
+   * Get usage counts — how many problem sets were created from each scenario.
+   * Queries the problem_set_activity_log for 'scenario_loaded' events.
+   */
+  async getUsageCounts(): Promise<Record<string, number>> {
+    const result = await this.pool.query(
+      `SELECT data->>'scenarioId' as scenario_id, COUNT(DISTINCT problem_set_id) as count
+       FROM problem_set_activity_log
+       WHERE action = 'scenario_loaded' AND data->>'scenarioId' IS NOT NULL
+       GROUP BY data->>'scenarioId'`
+    );
+    const counts: Record<string, number> = {};
+    for (const row of result.rows) {
+      counts[row.scenario_id as string] = parseInt(row.count as string, 10);
+    }
+    return counts;
+  }
+
+  /**
    * Delete a scenario (cascades to all child tables)
    */
   async delete(id: string): Promise<void> {

@@ -106,6 +106,7 @@ export interface CreateProblemSetInput {
   parentDaoId?: string;
   inviteMode?: InviteMode;
   discoverability?: Discoverability;
+  problemStatement?: string;
   mode?: AppMode;
 }
 
