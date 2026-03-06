@@ -40,6 +40,7 @@ const CreateWorkspaceSchema = z.object({
   parentWorkspaceId: z.string().optional(),
   inviteMode: z.enum(['open', 'gated']).default('gated'),
   discoverability: z.enum(['discoverable', 'private']).default('private'),
+  mode: z.enum(['training', 'operational']).default('operational'),
 });
 
 const CreateInviteSchema = z.object({
@@ -252,6 +253,9 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       }
     }
 
+    // Resolve mode: prefer body param, fall back to middleware-injected userMode, default 'operational'
+    const mode = (body.mode ?? (req as unknown as Record<string, unknown>).userMode ?? 'operational') as AppMode;
+
     // Create off-chain workspace record (generates daoId)
     const workspace = await workspaceStore.createWorkspace(
       {
@@ -262,6 +266,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         parentWorkspaceId: body.parentWorkspaceId,
         inviteMode: body.inviteMode,
         discoverability: body.discoverability,
+        mode,
       },
       userDid,
     );

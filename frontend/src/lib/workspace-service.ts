@@ -25,6 +25,8 @@ export interface CreateWorkspaceInput {
   parentWorkspaceId?: string;
   inviteMode?: 'open' | 'gated';
   discoverability?: 'discoverable' | 'private';
+  /** App mode — new workspaces inherit the user's current mode */
+  mode?: 'training' | 'operational';
 }
 
 // ─── Response Types ───────────────────────────────────────────────────────────

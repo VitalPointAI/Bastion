@@ -46,6 +46,8 @@ import { LangGraphAgentRunner } from '../exercise/ai-role-runner.js';
 import { getDefaultAgentsForRole } from '../exercise/agent-library.js';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
 import type { ReviewFeedback } from '../exercise/types.js';
+import { aarStore } from '../exercise/aar-store.js';
+import { checkpointStore } from '../exercise/checkpoint-store.js';
 // ─── Multer Setup ─────────────────────────────────────────────────────────────
 
 const upload = multer({
@@ -83,6 +85,10 @@ let _triggerRouter: TriggerRouter;
 
 export async function initAIWorkspace(): Promise<void> {
   await getAIWorkspace();
+
+  // Phase 22: Initialize training infrastructure tables (idempotent)
+  await aarStore.init();
+  await checkpointStore.init();
 }
 
 async function getAIWorkspace(): Promise<{

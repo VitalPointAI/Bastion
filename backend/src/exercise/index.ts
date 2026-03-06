@@ -128,6 +128,13 @@ export { ExerciseExtractionService } from './extraction-service.js';
 export type { DeltaSummary } from './ipb-service.js';
 export { IPBService } from './ipb-service.js';
 
+// ─── Training Infrastructure (Phase 22) ──────────────────────────────────────
+
+export { aarStore } from './aar-store.js';
+export type { AAREvent } from './aar-store.js';
+export { checkpointStore } from './checkpoint-store.js';
+export type { ExerciseCheckpoint } from './checkpoint-store.js';
+
 // ─── COA Scoring Service ──────────────────────────────────────────────────────
 
 export type { COAComparisonResult } from './coa-scoring-service.js';
