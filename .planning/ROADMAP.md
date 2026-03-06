@@ -566,7 +566,7 @@ Plans:
 **Depends on:** Phase 24
 **Research:** Required
 **Research topics:** JP 5-0 Chapter III operational design methodology, center of gravity analysis frameworks (Strange's model, CG-CC-CR-CV), lines of effort vs lines of operation, operational approach visualization, decisive points, operational reach, culmination, AI-assisted problem framing patterns
-**Plans:** 5/5 plans complete
+**Plans:** 6 plans (5 complete + 1 gap closure)
 
 **Context:**
 Operational design is where the creative, iterative work happens before structured planning begins. Currently the Design tab is just document upload. This phase transforms it into the workspace where commanders and planners frame the problem, identify centers of gravity, define their operational approach, and establish lines of effort — all with AI assistance that can suggest frameworks, challenge assumptions, and identify gaps in the design.
@@ -586,6 +586,7 @@ Plans:
 - [x] 25-03-PLAN.md — CoG Analysis with interactive SVG tree diagrams (friendly + adversary)
 - [x] 25-04-PLAN.md — Lines of Effort timeline with lanes, decisive points, and CoG linkages
 - [x] 25-05-PLAN.md — Operational Approach synthesis, Design-to-Plan handoff, and end-to-end verification
+- [ ] 25-06-PLAN.md — Gap closure: AI analysis agents for CoG and LOE sections
 
 ### Phase 25.1: Training Package Upload & From-Scenario Integration (INSERTED)
 
