@@ -13,15 +13,14 @@ import { getSubjectAttributes, getObjectAttributes, isValidNearDID } from './att
  */
 
 // Extend Express Request with zero trust context
-declare module 'express-serve-static-core' {
-  interface Request {
-    zeroTrust?: {
-      did: string;
-      attributes: SubjectAttributes;
-      verifiedAt: number;
-    };
-  }
-}
+// eslint-disable-next-line @typescript-eslint/no-namespace
+declare global { namespace Express { interface Request {
+  zeroTrust?: {
+    did: string;
+    attributes: SubjectAttributes;
+    verifiedAt: number;
+  };
+} } }
 
 // Initialize ABAC enforcer (singleton)
 let enforcerInstance: ABACEnforcer | null = null;
