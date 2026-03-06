@@ -669,8 +669,9 @@ Plans:
 ### Phase 26: Strategic Environment & Inheritance (INSERTED)
 **Goal:** Enable strategic-level problem sets to serve as context providers, with inheritance mechanisms that propagate directives, policy, intelligence, and strategic guidance to subordinate operational and tactical problem sets
 **Depends on:** Phase 24, Phase 23
-**Research:** Unlikely
-**Plans:** TBD
+**Research:** Complete (26-RESEARCH.md)
+**Plans:** 5 plans
+**Requirements:** SEI-01 (Auto-Inheritance), SEI-02 (Update Propagation), SEI-03 (Context Display), SEI-04 (Commander Acknowledgment), SEI-05 (Changelog), SEI-06 (Annotations), SEI-07 (RFI Threads)
 
 **Context:**
 The "overarching world view" — national/theater directives, policy, guidance, intelligence — must be accessible and inheritable by all subordinate problem sets. A strategic-level problem set publishes context that operational-level problem sets subscribe to and inherit, ensuring planning at every echelon is grounded in current strategic direction. This builds on existing cross-workspace subscription and escalation mechanisms.
@@ -684,7 +685,11 @@ The "overarching world view" — national/theater directives, policy, guidance, 
 6. **Context Dashboard** — Visual display of what strategic context is inherited, when it was last updated, and what has changed
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 26 to create plans)
+- [ ] 26-01-PLAN.md -- Backend: inheritance types, store, service, auto-inheritance hook, API routes
+- [ ] 26-02-PLAN.md -- Frontend: API client, InheritedItemCard, ContextDashboardWidget, AcknowledgmentBanner
+- [ ] 26-03-PLAN.md -- InheritedContextSection, ChangelogView, UnderstandTab integration
+- [ ] 26-04-PLAN.md -- AnnotationPanel and RFIThread components
+- [ ] 26-05-PLAN.md -- Wire annotations/RFI into section, propagation hooks, backfill, end-to-end verification
 
 ### Phase 27: Resource Registry & DID Plugin Architecture (INSERTED)
 **Goal:** Elevate resources from data records to first-class entities with DIDs, a plugin registration system for resource types, and full integration with the COP, DAO governance, and AI agent ecosystem
