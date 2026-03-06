@@ -84,13 +84,15 @@ jobs:
             cd /home/deploy/bastion
 
             # Pull latest code (for docker-compose.prod.yml, database files)
-            # Preserve .env and backend/.env (not tracked in git) across reset
-            [ -f .env ] && cp .env .env.bak
-            [ -f backend/.env ] && cp backend/.env backend/.env.bak
+            # Preserve env files (not tracked in git) across reset
+            for f in .env .env.prod backend/.env; do
+              [ -f "$f" ] && cp "$f" "$f.bak"
+            done
             git fetch origin master
             git reset --hard origin/master
-            [ -f .env.bak ] && mv .env.bak .env
-            [ -f backend/.env.bak ] && mv backend/.env.bak backend/.env
+            for f in .env .env.prod backend/.env; do
+              [ -f "$f.bak" ] && mv "$f.bak" "$f"
+            done
 
             # Log in to GHCR (needed for private repo images)
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USER }} --password-stdin
