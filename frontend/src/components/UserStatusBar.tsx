@@ -16,7 +16,7 @@ import './UserStatusBar.css';
 export function UserStatusBar() {
   const { displayName, orgEmail, email, accountId, userDID, mpcRegistered, isAuthenticated } = useUser();
   const { logout } = useAuth();
-  const { mode, isTraining, requestModeSwitch } = useMode();
+  const { isTraining, requestModeSwitch } = useMode();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

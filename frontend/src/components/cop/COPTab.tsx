@@ -21,7 +21,6 @@ import { COPPhaseSlider } from './COPPhaseSlider.js';
 import { COPAgentActivity } from './COPAgentActivity.js';
 import { COPVersionBrowser } from './COPVersionBrowser.js';
 import { COPLayerLifecycle } from './COPLayerLifecycle.js';
-import { COPConflictBanner } from './COPConflictBanner.js';
 import { COPReviewPanel } from './COPReviewPanel.js';
 import { GraphExplorer, type GraphData } from '../graph/GraphExplorer.js';
 import { NodeDetailPanel } from '../graph/NodeDetailPanel.js';
@@ -135,7 +134,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
   // Extract temporal phases from loaded layers
   const temporalPhases = useMemo((): COPPhaseSpec[] => {
     for (const layer of layers) {
-      const spec = (layer as any).spec;
+      const spec = layer.spec;
       if (spec?.temporalPhases?.length) {
         return spec.temporalPhases;
       }
@@ -321,7 +320,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
         return (
           <COPVersionBrowser
             layerId={selectedLayer.id}
-            currentVersion={(selectedLayer as any).version ?? 1}
+            currentVersion={selectedLayer.currentVersion ?? 1}
             onVersionSelect={() => {
               // Version selection handled by map view refresh
             }}
