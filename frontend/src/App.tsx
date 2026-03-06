@@ -6,7 +6,8 @@ import { AdminDashboard } from './components/admin'
 import { LoginPage } from './components/LoginPage'
 import { RegisterPage } from './components/RegisterPage'
 import { WorkspaceProvider } from './context/WorkspaceContext'
-import { ModeProvider } from './context/ModeContext'
+import { ModeProvider, useMode } from './context/ModeContext'
+import { ExerciseBanner } from './components/ExerciseBanner'
 import { WorkspaceSwitcher } from './components/workspace/WorkspaceSwitcher'
 import { WorkspaceSelector } from './components/workspace/WorkspaceSelector'
 import { WorkspaceBreadcrumb } from './components/workspace/WorkspaceBreadcrumb'
@@ -82,12 +83,14 @@ function MemberDirectoryPage() {
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isTraining } = useMode();
 
   const isAdmin = location.pathname.startsWith('/admin');
   const isWorkspace = location.pathname.startsWith('/workspace');
 
   return (
     <div className="app">
+      {isTraining && <ExerciseBanner />}
       <header className="app-header">
         <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>BASTION</h1>
         <nav className="app-nav">

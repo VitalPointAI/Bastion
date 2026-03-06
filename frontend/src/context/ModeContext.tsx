@@ -22,7 +22,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useUser } from './UserContext';
 import { ModeConfirmationModal } from '../components/ModeConfirmationModal';
-import { ExerciseBanner } from '../components/ExerciseBanner';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -144,7 +143,6 @@ export function ModeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ModeContext.Provider value={value}>
-      {isTraining && <ExerciseBanner />}
       {children}
       {pendingMode !== null && (
         <ModeConfirmationModal
