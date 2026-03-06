@@ -5,6 +5,7 @@ import { SubscriptionManager } from '../problem-set/SubscriptionManager.js';
 import { TrainingPackagesView } from './TrainingPackagesView.js';
 import { StrategicContextPreview } from '../strategic/StrategicContextPreview.js';
 import { TeamRoster } from '../exercise/TeamRoster.js';
+import { InheritedContextSection } from '../inheritance/InheritedContextSection.tsx';
 import { useMode } from '../../context/ModeContext.js';
 
 type UnderstandView = 'strategic-docs' | 'subscriptions' | 'ai-context-preview' | 'training-packages' | 'team-roster';
@@ -52,6 +53,10 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
   ];
 
   return (
+    <>
+    {problemSetId && (
+      <InheritedContextSection problemSetId={problemSetId} />
+    )}
     <TabLayout
       items={items}
       selectedItem={selectedView}
@@ -77,5 +82,6 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
         <TeamRoster problemSetId={problemSetId} />
       )}
     </TabLayout>
+    </>
   );
 }
