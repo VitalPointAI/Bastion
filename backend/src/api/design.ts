@@ -8,7 +8,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { designStore } from '../design/design-store.js';
-import type { CoGAnalysis, LineOfEffort } from '../design/types.js';
+import type { CoGAnalysis, LineOfEffort, OperationalApproach } from '../design/types.js';
 
 const router = Router();
 
@@ -139,6 +139,17 @@ router.post('/:problemSetId/analyze', async (req: Request, res: Response) => {
       const loeData = ((context as Record<string, unknown>)?.loes as LineOfEffort[]) || [];
       const cogData = ((context as Record<string, unknown>)?.cogAnalysis as CoGAnalysis) || { friendly: { root: null }, adversary: { root: null } };
       const output = await analyzeLOEGaps(loeData, cogData);
+      res.json(output);
+    } else if (section === 'operational-approach') {
+      const { synthesizeNarrative } = await import('../agents/narrative-synthesis.js');
+      // Need full design data for synthesis -- fetch from store
+      const design = await designStore.getByProblemSetId(req.params.problemSetId as string);
+      const output = synthesizeNarrative({
+        problemFraming: design.problemFraming,
+        cogAnalysis: design.cogAnalysis,
+        linesOfEffort: design.linesOfEffort,
+        operationalApproach: design.operationalApproach,
+      });
       res.json(output);
     } else {
       res.status(400).json({ error: `Unsupported analysis section: ${section}` });
