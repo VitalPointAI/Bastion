@@ -11,6 +11,8 @@ import type { SidebarItem } from './TabLayout.tsx';
 import { designService } from '../../lib/design-service.ts';
 import type { OperationalDesign, SectionStatus } from '../../lib/design-service.ts';
 import { DesignOverview } from '../design/DesignOverview.tsx';
+import { ProblemFramingSection } from '../design/ProblemFramingSection.tsx';
+import type { ProblemFramingData } from '../../lib/design-service.ts';
 
 type DesignView = 'overview' | 'problem-framing' | 'cog-analysis' | 'lines-of-effort' | 'operational-approach';
 
@@ -71,9 +73,6 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
     }
   }, [problemSetId]);
 
-  // Keep handleSectionUpdate available for future section components
-  void handleSectionUpdate;
-
   const sidebarItems = buildSidebarItems(designData?.status);
 
   if (loading) {
@@ -111,7 +110,15 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
         />
       )}
 
-      {selectedView !== 'overview' && (
+      {selectedView === 'problem-framing' && designData && (
+        <ProblemFramingSection
+          problemSetId={problemSetId}
+          initialData={designData.problemFraming}
+          onUpdate={(data: ProblemFramingData) => handleSectionUpdate('problem-framing', data)}
+        />
+      )}
+
+      {selectedView !== 'overview' && selectedView !== 'problem-framing' && (
         <div className="flex flex-col items-center justify-center h-64 text-gray-400 gap-2">
           <h3 className="text-lg font-medium text-gray-300">
             {sidebarItems.find(i => i.id === selectedView)?.label ?? selectedView}
