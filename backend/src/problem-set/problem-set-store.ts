@@ -72,6 +72,7 @@ interface ProblemSetRow {
   dao_id: string;
   name: string;
   description: string | null;
+  problem_statement: string | null;
   echelon: string;
   classification: string;
   parent_problem_set_id: string | null;
@@ -103,6 +104,7 @@ export class ProblemSetStore {
       daoId: row.dao_id,
       name: row.name,
       description: row.description,
+      problemStatement: row.problem_statement ?? null,
       echelon: row.echelon as Echelon,
       classification: row.classification as ProblemSet['classification'],
       parentProblemSetId: row.parent_problem_set_id,
@@ -167,6 +169,7 @@ export class ProblemSetStore {
       daoId,
       name: input.name,
       description: input.description ?? null,
+      problemStatement: null,
       echelon: input.echelon,
       classification: input.classification,
       parentProblemSetId: input.parentProblemSetId ?? null,

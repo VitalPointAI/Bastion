@@ -13,7 +13,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { getPool } from '../lib/database.js';
-import type { AppMode } from '../workspace/types.js';
+import type { AppMode } from '../problem-set/types.js';
 
 /**
  * Middleware that reads the authenticated user's app_mode from user_profiles
