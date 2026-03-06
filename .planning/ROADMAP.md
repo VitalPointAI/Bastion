@@ -557,7 +557,7 @@ The current tabs are organized by feature category, not by how commanders and st
 Plans:
 - [ ] 24-01-PLAN.md — Create doctrinal tab components (UnderstandTab, PlanTab, DirectTab, AssessTab, DoctrinalPlaceholder) (Wave 1)
 - [ ] 24-02-PLAN.md — Rewire ProblemSetTabContainer, update notifications, delete old tabs (Wave 2)
-- [ ] 24-03-PLAN.md — Backend panel config store and DB migration (Wave 1)
+- [x] 24-03-PLAN.md — Backend panel config store and DB migration (Wave 1) (completed 2026-03-06)
 
 ### Phase 25: Operational Design Workspace (INSERTED)
 **Goal:** Build the Design tab as a full operational design workspace with problem framing, center of gravity analysis, lines of effort/operation definition, operational approach development, and AI-assisted design recommendations

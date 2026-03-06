@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 23 — Problem Set Model & Workspace Rename (executing)
+**Current focus:** Phase 24 — Doctrinal Tab Restructure (complete)
 
 ## Current Position
 
-Phase: 23 of 40 (Problem Set Model & Workspace Rename) — IN PROGRESS
-Plan: 9 of 10 in current phase — complete
-Status: Phase 23 plan 09 complete — echelon UI enhancements (symbols, detail card, wizard)
-Last activity: 2026-03-06 - Completed 23-09 (echelon symbols on OrgTree, detail card redesign, wizard hierarchy enforcement)
+Phase: 24 of 40 (Doctrinal Tab Restructure) — COMPLETE
+Plan: 3 of 3 in current phase — complete
+Status: Phase 24 plan 01 complete — doctrinal tab components with JP 5-0 content redistribution
+Last activity: 2026-03-06 - Completed 24-01 (DoctrinalPlaceholder, UnderstandTab, PlanTab, DirectTab, AssessTab, DesignTab rewrite)
 
-Progress: █████████████████████████ 227 plans complete
+Progress: █████████████████████████ 231 plans complete
 
 ## Performance Metrics
 
@@ -124,6 +124,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 24 Plan 03 (Backend panel config & DB migration):**
+- All roles see all 6 doctrinal tabs regardless of echelon (per user decision)
+- Default tab is 'cop' for all echelons, replacing per-echelon defaults (strategic->design, operational->campaign, tactical->train)
+- ALL_DOCTRINAL_TABS constant as single source of truth for tab names
 
 **Phase 22 Plan 01 (Backend mode infrastructure):**
 - Mode defaults to 'operational' everywhere for backward compatibility
