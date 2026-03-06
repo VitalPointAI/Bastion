@@ -79,7 +79,7 @@ interface TensionCircle {
 // ─── ValidityMap Props ─────────────────────────────────────────────────────────
 
 interface ValidityMapProps {
-  workspaceId?: string;
+  problemSetId?: string;
   events?: EventMarker[];
   actors?: ActorMarker[];
   tensions?: TensionCircle[];
@@ -500,7 +500,7 @@ const DARK_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}
 // ─── ValidityMap ───────────────────────────────────────────────────────────────
 
 export function ValidityMap({
-  workspaceId: _workspaceId,
+  problemSetId: _problemSetId,
   events = [],
   actors = [],
   tensions = [],
@@ -513,7 +513,7 @@ export function ValidityMap({
   center,
   zoom,
 }: ValidityMapProps) {
-  void _workspaceId; // Reserved for future workspace-specific filtering
+  void _problemSetId; // Reserved for future problem-set-specific filtering
   void _onPerspectiveChange; // Perspective changes handled externally by IPBPanel
   const [visibleLayers] = useState({
     events: true,

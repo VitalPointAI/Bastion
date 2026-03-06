@@ -4,7 +4,7 @@ import { GraphExplorer, type GraphData } from '../graph/GraphExplorer.js';
 import { NodeDetailPanel } from '../graph/NodeDetailPanel.js';
 import './StrategicValidityDashboard.css';
 
-interface Workspace {
+interface ProblemSet {
   id: string;
   name: string;
   type: string;
@@ -57,8 +57,8 @@ async function fetchJSON<T>(url: string): Promise<T | null> {
 }
 
 export function StrategicValidityDashboard() {
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>('');
+  const [problemSets, setProblemSets] = useState<ProblemSet[]>([]);
+  const [selectedProblemSetId, setSelectedProblemSetId] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>('map');
   const [events, setEvents] = useState<OsintEvent[]>([]);
   const [objectives, setObjectives] = useState<ObjectiveValidity[]>([]);
@@ -69,31 +69,31 @@ export function StrategicValidityDashboard() {
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Load workspaces on mount
+  // Load problemSets on mount
   useEffect(() => {
-    fetchJSON<{ workspaces: Workspace[] }>('/api/graph/workspaces')
+    fetchJSON<{ workspaces: ProblemSet[] }>('/api/graph/workspaces')
       .then(data => {
         if (!data) return;
          
-        setWorkspaces(data.workspaces || []);
+        setProblemSets(data.workspaces || []);
         if (data.workspaces.length > 0) {
-           
-          setSelectedWorkspaceId(data.workspaces[0].id);
+
+          setSelectedProblemSetId(data.workspaces[0].id);
         }
       });
   }, []);
 
-  // Load workspace data when workspace changes
+  // Load problem set data when selection changes
   useEffect(() => {
-    if (!selectedWorkspaceId) return;
+    if (!selectedProblemSetId) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronous loading indicator before async fetch
     setLoading(true);
 
     Promise.all([
-      fetchJSON<{ events: OsintEvent[] }>(`/api/graph/osint/events?workspaceId=${selectedWorkspaceId}&limit=50`),
-      fetchJSON<{ objectives: ObjectiveValidity[] }>(`/api/graph/validity/objectives?workspaceId=${selectedWorkspaceId}`),
-      fetchJSON<{ alerts: Alert[] }>(`/api/graph/validity/alerts?workspaceId=${selectedWorkspaceId}&acknowledged=false`),
-      fetchJSON<GraphData>(`/api/graph/workspaces/${selectedWorkspaceId}/graph`),
+      fetchJSON<{ events: OsintEvent[] }>(`/api/graph/osint/events?workspaceId=${selectedProblemSetId}&limit=50`),
+      fetchJSON<{ objectives: ObjectiveValidity[] }>(`/api/graph/validity/objectives?workspaceId=${selectedProblemSetId}`),
+      fetchJSON<{ alerts: Alert[] }>(`/api/graph/validity/alerts?workspaceId=${selectedProblemSetId}&acknowledged=false`),
+      fetchJSON<GraphData>(`/api/graph/workspaces/${selectedProblemSetId}/graph`),
     ]).then(([eventsData, objectivesData, alertsData, graphResponse]) => {
        
       setEvents(eventsData?.events || []);
@@ -110,7 +110,7 @@ export function StrategicValidityDashboard() {
       }
        
     }).finally(() => setLoading(false));
-  }, [selectedWorkspaceId]);
+  }, [selectedProblemSetId]);
 
   const handleAcknowledgeAlert = useCallback((alertId: string) => {
     fetch(`/api/graph/validity/alerts/${alertId}/acknowledge`, { method: 'POST' })
@@ -157,13 +157,13 @@ export function StrategicValidityDashboard() {
 
         <div className="header-controls">
           <select
-            value={selectedWorkspaceId}
-            onChange={e => setSelectedWorkspaceId(e.target.value)}
-            className="workspace-select"
+            value={selectedProblemSetId}
+            onChange={e => setSelectedProblemSetId(e.target.value)}
+            className="problem-set-select"
             disabled={loading}
           >
-            {workspaces.length === 0 && <option value="">No workspaces</option>}
-            {workspaces.map(ws => (
+            {problemSets.length === 0 && <option value="">No problem sets</option>}
+            {problemSets.map(ws => (
               <option key={ws.id} value={ws.id}>{ws.name}</option>
             ))}
           </select>
@@ -202,7 +202,7 @@ export function StrategicValidityDashboard() {
 
         {viewMode === 'map' && (
           <ValidityMap
-            workspaceId={selectedWorkspaceId}
+            problemSetId={selectedProblemSetId}
             events={mapEvents}
             actors={[]}
             tensions={[]}
@@ -213,7 +213,7 @@ export function StrategicValidityDashboard() {
         {viewMode === 'graph' && (
           <GraphExplorer
             data={graphData}
-            workspaceId={selectedWorkspaceId}
+            problemSetId={selectedProblemSetId}
             onNodeClick={(node) => handleActorClick(node.id)}
             selectedNodeId={selectedActorId || undefined}
             height={window.innerHeight - 60}
@@ -224,7 +224,7 @@ export function StrategicValidityDashboard() {
           <div className="split-container">
             <div className="split-pane">
               <ValidityMap
-                workspaceId={selectedWorkspaceId}
+                problemSetId={selectedProblemSetId}
                 events={mapEvents}
                 actors={[]}
                 tensions={[]}
@@ -234,7 +234,7 @@ export function StrategicValidityDashboard() {
             <div className="split-pane">
               <GraphExplorer
                 data={graphData}
-                workspaceId={selectedWorkspaceId}
+                problemSetId={selectedProblemSetId}
                 onNodeClick={(node) => handleActorClick(node.id)}
                 selectedNodeId={selectedActorId || undefined}
                 height={(window.innerHeight - 60) / 2}

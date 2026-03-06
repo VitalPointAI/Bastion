@@ -5,7 +5,7 @@
  * - Mission name (required, 1-100 chars)
  * - Description (optional)
  * - Classification dropdown
- * - Workspace selector (optional)
+ * - Problem Set selector (optional)
  */
 
 import type { MissionFormData } from '../MissionWizard.js';
@@ -81,16 +81,16 @@ export function NameStep({ formData, updateFormData }: NameStepProps) {
       </div>
 
       <div className="form-group">
-        <label htmlFor="mission-workspace">Workspace (Optional)</label>
+        <label htmlFor="mission-problem-set">Problem Set (Optional)</label>
         <input
-          id="mission-workspace"
+          id="mission-problem-set"
           type="text"
-          value={formData.workspaceId}
-          onChange={(e) => updateFormData('workspaceId', e.target.value)}
-          placeholder="WS-12345"
+          value={formData.problemSetId}
+          onChange={(e) => updateFormData('problemSetId', e.target.value)}
+          placeholder="PS-12345"
         />
         <span className="help-text">
-          Link to existing strategic workspace from Phase 4.3
+          Link to existing problem set
         </span>
       </div>
     </div>

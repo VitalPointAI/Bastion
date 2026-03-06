@@ -45,7 +45,7 @@ export interface AgentActivity {
   agentId: string;
   action: string;
   detail: string;
-  workspaceId: string;
+  workspaceId: string; // Backend wire format
   sectionId: string;
   timestamp: string;
 }
@@ -115,8 +115,8 @@ class COPService {
   /**
    * Get COP generation status and layer counts for a workspace.
    */
-  async getStatus(workspaceId: string): Promise<COPStatus> {
-    return this.fetch<COPStatus>(`/api/cop/status?workspaceId=${encodeURIComponent(workspaceId)}`);
+  async getStatus(problemSetId: string): Promise<COPStatus> {
+    return this.fetch<COPStatus>(`/api/cop/status?workspaceId=${encodeURIComponent(problemSetId)}`);
   }
 
   // ==========================================================================
@@ -126,8 +126,8 @@ class COPService {
   /**
    * Query layers for a workspace with optional filters.
    */
-  async queryLayers(workspaceId: string, filters?: LayerFilters): Promise<COPLayer[]> {
-    const params = new URLSearchParams({ workspaceId });
+  async queryLayers(problemSetId: string, filters?: LayerFilters): Promise<COPLayer[]> {
+    const params = new URLSearchParams({ workspaceId: problemSetId });
     if (filters?.sectionId) params.append('sectionId', filters.sectionId);
     if (filters?.state) params.append('state', filters.state);
     if (filters?.layerType) params.append('layerType', filters.layerType);
@@ -145,14 +145,16 @@ class COPService {
    * Create a new COP layer.
    */
   async createLayer(input: {
-    workspaceId: string;
+    problemSetId: string;
     sectionId: string;
     layerType: COPLayerType;
     spec?: Partial<COPLayerSpec>;
   }): Promise<COPLayer> {
+    // Backend expects workspaceId
+    const { problemSetId, ...rest } = input;
     return this.fetch<COPLayer>('/api/cop/layers', {
       method: 'POST',
-      body: JSON.stringify(input),
+      body: JSON.stringify({ workspaceId: problemSetId, ...rest }),
     });
   }
 
@@ -236,38 +238,38 @@ class COPService {
   /**
    * Trigger COP layer generation for a workspace section.
    */
-  async triggerGeneration(workspaceId: string, sectionId: string): Promise<COPLayer> {
+  async triggerGeneration(problemSetId: string, sectionId: string): Promise<COPLayer> {
     return this.fetch<COPLayer>('/api/cop/agents/trigger', {
       method: 'POST',
-      body: JSON.stringify({ workspaceId, sectionId }),
+      body: JSON.stringify({ workspaceId: problemSetId, sectionId }),
     });
   }
 
   /**
-   * Start polling for a workspace section.
+   * Start polling for a problem set section.
    */
-  async startPolling(workspaceId: string, sectionId: string, intervalMs?: number): Promise<void> {
+  async startPolling(problemSetId: string, sectionId: string, intervalMs?: number): Promise<void> {
     await this.fetch<void>('/api/cop/agents/polling/start', {
       method: 'POST',
-      body: JSON.stringify({ workspaceId, sectionId, intervalMs }),
+      body: JSON.stringify({ workspaceId: problemSetId, sectionId, intervalMs }),
     });
   }
 
   /**
    * Stop polling for a workspace section.
    */
-  async stopPolling(workspaceId: string, sectionId: string): Promise<void> {
+  async stopPolling(problemSetId: string, sectionId: string): Promise<void> {
     await this.fetch<void>('/api/cop/agents/polling/stop', {
       method: 'POST',
-      body: JSON.stringify({ workspaceId, sectionId }),
+      body: JSON.stringify({ workspaceId: problemSetId, sectionId }),
     });
   }
 
   /**
-   * Get recent agent activity for a workspace.
+   * Get recent agent activity for a problem set.
    */
-  async getAgentActivity(workspaceId: string, limit?: number): Promise<AgentActivity[]> {
-    const params = new URLSearchParams({ workspaceId });
+  async getAgentActivity(problemSetId: string, limit?: number): Promise<AgentActivity[]> {
+    const params = new URLSearchParams({ workspaceId: problemSetId });
     if (limit !== undefined) params.append('limit', String(limit));
     return this.fetch<AgentActivity[]>(`/api/cop/agents/activity?${params.toString()}`);
   }
@@ -279,9 +281,9 @@ class COPService {
   /**
    * Get pending (unreviewed) entity linkages.
    */
-  async getPendingLinkages(workspaceId?: string): Promise<EntityLinkage[]> {
-    const params = workspaceId
-      ? `?workspaceId=${encodeURIComponent(workspaceId)}`
+  async getPendingLinkages(problemSetId?: string): Promise<EntityLinkage[]> {
+    const params = problemSetId
+      ? `?workspaceId=${encodeURIComponent(problemSetId)}`
       : '';
     return this.fetch<EntityLinkage[]>(`/api/cop/linkages/pending${params}`);
   }
@@ -315,9 +317,9 @@ class COPService {
   /**
    * Get detected conflicts across COP layers in a workspace.
    */
-  async getConflicts(workspaceId: string): Promise<COPConflict[]> {
+  async getConflicts(problemSetId: string): Promise<COPConflict[]> {
     return this.fetch<COPConflict[]>(
-      `/api/cop/conflicts?workspaceId=${encodeURIComponent(workspaceId)}`
+      `/api/cop/conflicts?workspaceId=${encodeURIComponent(problemSetId)}`
     );
   }
 }

@@ -24,7 +24,7 @@ export interface CreateMissionInput {
   name: string;
   description?: string;
   classification: Classification;
-  workspaceId?: string;
+  problemSetId?: string;
   areaOfOperations?: GeoJSONPolygon;
   pendingInvites?: {
     inviteeDID?: string;
@@ -40,7 +40,7 @@ export interface Mission {
   description?: string;
   classification: Classification;
   status: MissionStatus;
-  workspaceId?: string;
+  workspaceId?: string; // Backend wire format — will be renamed when backend is updated
   areaOfOperations?: GeoJSONPolygon;
   creatorDID: string;
   createdAt: string;
@@ -77,7 +77,7 @@ export interface Invite {
 export interface ListMissionsFilters {
   status?: MissionStatus;
   classification?: Classification;
-  workspaceId?: string;
+  problemSetId?: string;
   includeArchived?: boolean;
 }
 
@@ -102,10 +102,13 @@ class MissionService {
   // Mission CRUD
 
   async createMission(data: CreateMissionInput, userDID: string): Promise<Mission> {
+    // Map problemSetId to workspaceId for backend compatibility
+    const { problemSetId, ...rest } = data;
+    const payload = { ...rest, workspaceId: problemSetId };
     return this.fetchJSON<Mission>(`${API_BASE}/api/missions`, {
       method: 'POST',
       headers: { 'X-DID': userDID },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -119,7 +122,7 @@ class MissionService {
     const params = new URLSearchParams();
     if (filters.status) params.append('status', filters.status);
     if (filters.classification) params.append('classification', filters.classification);
-    if (filters.workspaceId) params.append('workspaceId', filters.workspaceId);
+    if (filters.problemSetId) params.append('workspaceId', filters.problemSetId);
     if (filters.includeArchived) params.append('includeArchived', 'true');
 
     const queryString = params.toString() ? `?${params.toString()}` : '';

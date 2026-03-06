@@ -21,16 +21,16 @@ const MONITOR_ITEMS: SidebarItem[] = [
 ];
 
 interface MonitorTabProps {
-  workspaceId: string;
+  problemSetId: string;
 }
 
-export function MonitorTab({ workspaceId }: MonitorTabProps) {
+export function MonitorTab({ problemSetId }: MonitorTabProps) {
   const [selectedView, setSelectedView] = useState<MonitorView>('validity-dashboard');
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [graphData, setGraphData] = useState<GraphData | null>(null);
 
   useEffect(() => {
-    fetch(`/api/graph?workspaceId=${workspaceId}`)
+    fetch(`/api/graph?workspaceId=${problemSetId}`)
       .then(res => {
         if (!res.ok) return null;
         return res.json() as Promise<GraphData>;
@@ -41,7 +41,7 @@ export function MonitorTab({ workspaceId }: MonitorTabProps) {
       .catch(() => {
         // Graph data unavailable — will show loading message
       });
-  }, [workspaceId]);
+  }, [problemSetId]);
 
   return (
     <TabLayout
@@ -56,7 +56,7 @@ export function MonitorTab({ workspaceId }: MonitorTabProps) {
           : (
             <GraphExplorer
               data={graphData}
-              workspaceId={workspaceId}
+              problemSetId={problemSetId}
               onNodeClick={(node) => {
                 setSelectedActorId(node.id);
                 setSelectedView('actor-detail');

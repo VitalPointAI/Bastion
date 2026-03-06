@@ -28,7 +28,7 @@ import { SandboxedSVG } from './SandboxedSVG.js';
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 interface COPMapViewProps {
-  workspaceId: string;
+  problemSetId: string;
   layerVisibility: Record<string, boolean>;
   layerOpacity: Record<string, number>;
   currentPerspective: Perspective;
@@ -86,8 +86,8 @@ export function COPMapView({
     try {
       // Fetch COP-state layers (top-level promoted) and published (section-level)
       const [copLayers, publishedLayers] = await Promise.all([
-        copService.queryLayers(workspaceId, { state: 'cop' }),
-        copService.queryLayers(workspaceId, { state: 'published' }),
+        copService.queryLayers(problemSetId, { state: 'cop' }),
+        copService.queryLayers(problemSetId, { state: 'published' }),
       ]);
 
       // Combine and deduplicate by ID

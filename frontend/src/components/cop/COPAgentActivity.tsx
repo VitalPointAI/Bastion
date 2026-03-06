@@ -17,8 +17,8 @@ import './COPAgentActivity.css';
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 interface COPAgentActivityProps {
-  /** Workspace ID to poll activity for */
-  workspaceId: string;
+  /** Problem Set ID to poll activity for */
+  problemSetId: string;
 }
 
 // ─── Action Type Classification ─────────────────────────────────────────────
@@ -59,7 +59,7 @@ const ACTIVITY_LIMIT = 50;
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function COPAgentActivity({ workspaceId }: COPAgentActivityProps) {
+export function COPAgentActivity({ problemSetId }: COPAgentActivityProps) {
   const [activities, setActivities] = useState<AgentActivity[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
   const [compact, setCompact] = useState(false);
@@ -70,7 +70,7 @@ export function COPAgentActivity({ workspaceId }: COPAgentActivityProps) {
 
   const fetchActivity = useCallback(async () => {
     try {
-      const result = await copService.getAgentActivity(workspaceId, ACTIVITY_LIMIT);
+      const result = await copService.getAgentActivity(problemSetId, ACTIVITY_LIMIT);
       setActivities(result);
     } catch (err) {
       console.error('[COPAgentActivity] Failed to fetch activity:', err);

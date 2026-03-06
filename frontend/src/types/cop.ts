@@ -117,7 +117,7 @@ export interface COPPhaseSpec {
 export interface COPLayerSpec {
   layerId: string;
   layerType: COPLayerType;
-  workspaceId: string;
+  workspaceId: string; // Backend wire format — will be renamed when backend COP is updated
   sectionId: string;
   symbols: COPSymbolSpec[];
   controlMeasures: COPControlMeasureSpec[];
@@ -176,7 +176,7 @@ export interface AuditEntry {
  */
 export interface COPLayer {
   id: string;
-  workspaceId: string;
+  workspaceId: string; // Backend wire format — will be renamed when backend COP is updated
   sectionId: string;
   layerType: COPLayerType;
   state: LayerState;

@@ -99,10 +99,10 @@ export function ReviewStep({ formData, onEdit }: ReviewStepProps) {
               </>
             )}
 
-            {formData.workspaceId && (
+            {formData.problemSetId && (
               <>
                 <dt>Workspace</dt>
-                <dd>{formData.workspaceId}</dd>
+                <dd>{formData.problemSetId}</dd>
               </>
             )}
           </dl>

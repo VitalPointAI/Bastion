@@ -6,17 +6,17 @@ const DESIGN_ITEMS: SidebarItem[] = [
 ];
 
 interface DesignTabProps {
-  workspaceId: string;
+  problemSetId: string;
 }
 
-export function DesignTab({ workspaceId }: DesignTabProps) {
+export function DesignTab({ problemSetId }: DesignTabProps) {
   return (
     <TabLayout
       items={DESIGN_ITEMS}
       selectedItem="strategic-docs"
       onSelectItem={() => {}}
     >
-      <StrategicDashboard workspaceId={workspaceId} />
+      <StrategicDashboard problemSetId={problemSetId} />
     </TabLayout>
   );
 }

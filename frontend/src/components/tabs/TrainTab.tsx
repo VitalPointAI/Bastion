@@ -6,11 +6,11 @@ const TRAIN_ITEMS: SidebarItem[] = [
 ];
 
 interface TrainTabProps {
-  workspaceId: string;
+  problemSetId: string;
 }
 
-export function TrainTab({ workspaceId: _workspaceId }: TrainTabProps) {
-  // TODO Phase 20: Pass workspaceId to ExerciseDashboard for workspace-scoped exercise filtering
+export function TrainTab({ problemSetId: _problemSetId }: TrainTabProps) {
+  // TODO Phase 20: Pass problemSetId to ExerciseDashboard for problem-set-scoped exercise filtering
   return (
     <TabLayout
       items={TRAIN_ITEMS}

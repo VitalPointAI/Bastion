@@ -41,7 +41,7 @@
   gap: 12px;
 }
 
-.workspace-select {
+.problem-set-select {
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(74, 158, 255, 0.3);
@@ -52,7 +52,7 @@
   cursor: pointer;
 }
 
-.workspace-select:focus {
+.problem-set-select:focus {
   outline: none;
   border-color: var(--accent-primary, #4a9eff);
 }

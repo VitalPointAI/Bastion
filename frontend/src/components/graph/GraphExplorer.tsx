@@ -6,7 +6,7 @@ export interface GraphNode {
   id: string;
   label: string;
   type: 'nation' | 'organization' | 'individual' | 'non_state_actor' | 'tension';
-  workspaceId?: string;
+  problemSetId?: string;
   data?: Record<string, unknown>;
 }
 
@@ -24,7 +24,7 @@ export interface GraphData {
 
 interface GraphExplorerProps {
   data: GraphData;
-  workspaceId?: string;
+  problemSetId?: string;
   onNodeClick?: (node: GraphNode) => void;
   onEdgeClick?: (edge: GraphEdge) => void;
   selectedNodeId?: string;
@@ -49,7 +49,7 @@ const EDGE_COLORS: Record<string, string> = {
 
 export function GraphExplorer({
   data,
-  workspaceId: _workspaceId,
+  problemSetId: _problemSetId,
   onNodeClick,
   onEdgeClick: _onEdgeClick,
   selectedNodeId,

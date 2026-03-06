@@ -126,14 +126,14 @@ class StrategicService {
     title: string,
     level: DocumentLevel,
     classification: Classification,
-    workspaceId?: string
+    problemSetId?: string
   ): Promise<StrategicDocument> {
     const formData = new FormData();
     formData.append('document', file);
     formData.append('title', title);
     formData.append('level', level);
     formData.append('classification', classification);
-    if (workspaceId) formData.append('workspaceId', workspaceId);
+    if (problemSetId) formData.append('workspaceId', problemSetId);
 
     const response = await this.fetchFormData<DocumentUploadResponse>(
       '/api/strategic/documents',
@@ -147,8 +147,8 @@ class StrategicService {
   /**
    * Get all strategic documents.
    */
-  async getDocuments(workspaceId?: string): Promise<StrategicDocument[]> {
-    const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
+  async getDocuments(problemSetId?: string): Promise<StrategicDocument[]> {
+    const qs = problemSetId ? `?workspaceId=${encodeURIComponent(problemSetId)}` : '';
     const response = await this.fetch<PaginatedResponse<StrategicDocument>>(`/api/strategic/documents${qs}`);
     return response.documents || [];
   }

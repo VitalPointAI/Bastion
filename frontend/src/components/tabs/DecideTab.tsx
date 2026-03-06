@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { TabLayout, type SidebarItem } from './TabLayout.js';
 import { DAODashboard } from '../dao/index.js';
-import { EscalationPanel } from '../workspace/EscalationPanel.js';
-import { SubscriptionManager } from '../workspace/SubscriptionManager.js';
+import { EscalationPanel } from '../problem-set/EscalationPanel.js';
+import { SubscriptionManager } from '../problem-set/SubscriptionManager.js';
 
 type DecideView = 'governance' | 'proposals' | 'mdmp-workflow' | 'escalation' | 'subscriptions';
 
@@ -21,12 +21,12 @@ const DECIDE_ITEMS: SidebarItem[] = [
   {
     id: 'escalation',
     label: 'Escalation',
-    tooltip: 'Escalate decisions to parent workspace',
+    tooltip: 'Escalate decisions to parent problem set',
   },
   {
     id: 'subscriptions',
     label: 'Data Sharing',
-    tooltip: 'Manage cross-workspace data subscriptions',
+    tooltip: 'Manage cross-problem-set data subscriptions',
   },
 ];
 
@@ -39,11 +39,11 @@ const VIEW_TO_INITIAL: Record<'governance' | 'proposals' | 'mdmp-workflow', 'gov
 };
 
 interface DecideTabProps {
-  workspaceId: string;
+  problemSetId: string;
   daoId?: string;
 }
 
-export function DecideTab({ workspaceId, daoId }: DecideTabProps) {
+export function DecideTab({ problemSetId, daoId }: DecideTabProps) {
   const [selectedView, setSelectedView] = useState<DecideView>('governance');
 
   return (
@@ -60,10 +60,10 @@ export function DecideTab({ workspaceId, daoId }: DecideTabProps) {
         />
       )}
       {selectedView === 'escalation' && (
-        <EscalationPanel workspaceId={workspaceId} />
+        <EscalationPanel problemSetId={problemSetId} />
       )}
       {selectedView === 'subscriptions' && (
-        <SubscriptionManager workspaceId={workspaceId} />
+        <SubscriptionManager problemSetId={problemSetId} />
       )}
     </TabLayout>
   );

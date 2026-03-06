@@ -37,7 +37,7 @@ interface DocumentListProps {
   onExtractObjectives?: (doc: StrategicDocument) => void;
   refreshTrigger?: number;
   userDID?: string;
-  workspaceId?: string;
+  problemSetId?: string;
 }
 
 export function DocumentList({
@@ -62,7 +62,7 @@ export function DocumentList({
     setLoading(true);
     setError(null);
     try {
-      const docs = await strategicService.getDocuments(workspaceId);
+      const docs = await strategicService.getDocuments(problemSetId);
       setDocuments(docs);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load documents');

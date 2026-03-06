@@ -20,10 +20,10 @@ import { ReviewPanel } from './ReviewPanel.js';
 import './StrategicDashboard.css';
 
 interface StrategicDashboardProps {
-  workspaceId?: string;
+  problemSetId?: string;
 }
 
-export function StrategicDashboard({ workspaceId }: StrategicDashboardProps = {}) {
+export function StrategicDashboard({ problemSetId }: StrategicDashboardProps = {}) {
   const { isAuthenticated } = useAuth();
   const { userDID, accountId: _accountId } = useUser();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -109,7 +109,7 @@ export function StrategicDashboard({ workspaceId }: StrategicDashboardProps = {}
         {/* Upload Panel */}
         {showUpload && (
           <section className="upload-section">
-            <DocumentUpload onUploadComplete={handleUploadComplete} workspaceId={workspaceId} />
+            <DocumentUpload onUploadComplete={handleUploadComplete} problemSetId={problemSetId} />
           </section>
         )}
 
@@ -202,7 +202,7 @@ export function StrategicDashboard({ workspaceId }: StrategicDashboardProps = {}
               onExtractObjectives={handleExtractComplete}
               refreshTrigger={refreshTrigger}
               userDID={userDID || undefined}
-              workspaceId={workspaceId}
+              problemSetId={problemSetId}
             />
           </section>
         )}

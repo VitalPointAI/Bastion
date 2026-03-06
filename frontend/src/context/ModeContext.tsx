@@ -8,7 +8,7 @@
  * - Defaults to 'operational' if no persisted mode
  * - Shows confirmation modal before switching
  * - Renders amber EXERCISE banner when in training mode
- * - Navigates to workspace selector after confirmed switch
+ * - Navigates to problem set selector after confirmed switch
  */
 
 import {

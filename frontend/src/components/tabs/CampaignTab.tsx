@@ -8,10 +8,10 @@ const CAMPAIGN_ITEMS: SidebarItem[] = [
 ];
 
 interface CampaignTabProps {
-  workspaceId: string;
+  problemSetId: string;
 }
 
-export function CampaignTab({ workspaceId: _workspaceId }: CampaignTabProps) {
+export function CampaignTab({ problemSetId: _problemSetId }: CampaignTabProps) {
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [showWizard, setShowWizard] = useState(false);
   const { userDID } = useUser();

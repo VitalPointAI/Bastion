@@ -13,7 +13,7 @@ import './DocumentUpload.css';
 
 interface DocumentUploadProps {
   onUploadComplete?: (doc: StrategicDocument) => void;
-  workspaceId?: string;
+  problemSetId?: string;
 }
 
 export function DocumentUpload({ onUploadComplete, workspaceId }: DocumentUploadProps) {

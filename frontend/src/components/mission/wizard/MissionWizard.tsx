@@ -40,7 +40,7 @@ export interface MissionFormData {
   name: string;
   description: string;
   classification: 'UNCLASSIFIED' | 'SECRET' | 'TOPSECRET';
-  workspaceId: string;
+  problemSetId: string;
   areaOfOperations: GeoJSONPolygon | null;
   pendingInvites: PendingInvite[];
 }
@@ -60,7 +60,7 @@ export function MissionWizard({ userDID, onClose, onMissionCreated }: MissionWiz
     name: '',
     description: '',
     classification: 'UNCLASSIFIED',
-    workspaceId: '',
+    problemSetId: '',
     areaOfOperations: null,
     pendingInvites: [],
   });
@@ -119,7 +119,7 @@ export function MissionWizard({ userDID, onClose, onMissionCreated }: MissionWiz
         name: formData.name,
         description: formData.description || undefined,
         classification: formData.classification,
-        workspaceId: formData.workspaceId || undefined,
+        problemSetId: formData.problemSetId || undefined,
         areaOfOperations: formData.areaOfOperations || undefined,
         pendingInvites: formData.pendingInvites.length > 0 ? formData.pendingInvites : undefined,
       };

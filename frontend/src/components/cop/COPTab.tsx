@@ -1,8 +1,8 @@
 /**
- * COPTab — Unified COP Workspace View
+ * COPTab — Unified COP Problem Set View
  *
  * Phase 21 Plan 12: Merges Overview, Monitor, and COP into a single primary
- * workspace view. The map with AI layers is the main content area. A collapsible
+ * problem set view. The map with AI layers is the main content area. A collapsible
  * sidebar provides selectable views: layer controls, actor graph, actor detail,
  * activity feed, agent activity, version history, layer lifecycle, and review.
  *
@@ -13,7 +13,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { COPLayer, Perspective, COPPhaseSpec } from '../../types/cop.js';
 import { copService } from '../../lib/cop-service.js';
-import { useWorkspace } from '../../context/WorkspaceContext.js';
+import { useProblemSet } from '../../context/ProblemSetContext.js';
 import { COPMapView } from './COPMapView.js';
 import { COPLayerControls } from './COPLayerControls.js';
 import { COPPerspectiveToggle } from './COPPerspectiveToggle.js';
@@ -24,7 +24,7 @@ import { COPLayerLifecycle } from './COPLayerLifecycle.js';
 import { COPReviewPanel } from './COPReviewPanel.js';
 import { GraphExplorer, type GraphData } from '../graph/GraphExplorer.js';
 import { NodeDetailPanel } from '../graph/NodeDetailPanel.js';
-import { ActivityFeed } from '../workspace/ActivityFeed.js';
+import { ActivityFeed } from '../problem-set/ActivityFeed.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ type SidebarView =
   | 'review';
 
 interface COPTabProps {
-  workspaceId: string;
+  problemSetId: string;
 }
 
 // ─── Sidebar nav items ──────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function COPTab({ workspaceId }: COPTabProps) {
+export function COPTab({ problemSetId }: COPTabProps) {
   // Existing COP state
   const [layers, setLayers] = useState<COPLayer[]>([]);
   const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>({});
@@ -129,7 +129,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
   const autoTriggeredRef = useRef(false);
 
   // Role from workspace context (for ActivityFeed)
-  const { userRoleInActive } = useWorkspace();
+  const { userRoleInActive } = useProblemSet();
 
   // Extract temporal phases from loaded layers
   const temporalPhases = useMemo((): COPPhaseSpec[] => {
@@ -146,7 +146,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
 
   // Fetch graph data on mount (same pattern as MonitorTab)
   useEffect(() => {
-    fetch(`/api/graph?workspaceId=${workspaceId}`)
+    fetch(`/api/graph?workspaceId=${problemSetId}`)
       .then((res) => (res.ok ? (res.json() as Promise<GraphData>) : null))
       .then((data) => {
         if (data) setGraphData(data);
@@ -154,7 +154,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
       .catch(() => {
         // Graph data unavailable
       });
-  }, [workspaceId]);
+  }, [problemSetId]);
 
   // ─── Layer callbacks (existing) ───────────────────────────────────────────
 
@@ -196,14 +196,14 @@ export function COPTab({ workspaceId }: COPTabProps) {
 
     async function checkAndTrigger() {
       try {
-        const status = await copService.getStatus(workspaceId);
+        const status = await copService.getStatus(problemSetId);
         if (status.status === 'idle' && !status.hasLayers) {
           autoTriggeredRef.current = true;
           setGenerating(true);
           try {
-            await copService.triggerGeneration(workspaceId, 'default');
+            await copService.triggerGeneration(problemSetId, 'default');
             // Refresh layers after auto-generation
-            const newLayers = await copService.queryLayers(workspaceId);
+            const newLayers = await copService.queryLayers(problemSetId);
             handleLayersLoaded(newLayers);
           } finally {
             setGenerating(false);
@@ -216,16 +216,16 @@ export function COPTab({ workspaceId }: COPTabProps) {
     }
 
     checkAndTrigger();
-  }, [workspaceId, handleLayersLoaded]);
+  }, [problemSetId, handleLayersLoaded]);
 
   // ─── Manual generation handler ──────────────────────────────────────────
 
   async function handleManualGenerate() {
     setGenerating(true);
     try {
-      await copService.triggerGeneration(workspaceId, 'default');
+      await copService.triggerGeneration(problemSetId, 'default');
       // Refresh layers after generation
-      const newLayers = await copService.queryLayers(workspaceId);
+      const newLayers = await copService.queryLayers(problemSetId);
       handleLayersLoaded(newLayers);
     } catch (err) {
       console.error('[COP] Manual generation failed:', err);
@@ -282,7 +282,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
         return (
           <GraphExplorer
             data={graphData}
-            workspaceId={workspaceId}
+            problemSetId={problemSetId}
             onNodeClick={handleNodeClick}
             selectedNodeId={selectedActorId ?? undefined}
             height={500}
@@ -301,13 +301,13 @@ export function COPTab({ workspaceId }: COPTabProps) {
       case 'activity':
         return (
           <ActivityFeed
-            workspaceId={workspaceId}
+            problemSetId={problemSetId}
             userRole={userRoleInActive}
           />
         );
 
       case 'agent-status':
-        return <COPAgentActivity workspaceId={workspaceId} />;
+        return <COPAgentActivity problemSetId={problemSetId} />;
 
       case 'versions':
         if (!selectedLayer) {
@@ -404,7 +404,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
         {/* Map */}
         <div className="flex-1 min-h-0 relative">
           <COPMapView
-            workspaceId={workspaceId}
+            problemSetId={problemSetId}
             layerVisibility={layerVisibility}
             layerOpacity={layerOpacity}
             currentPerspective={currentPerspective}
