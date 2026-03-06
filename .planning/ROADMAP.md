@@ -485,7 +485,7 @@ Plans:
 **Goal:** Global app-level toggle that switches the entire BASTION instance between training (exercise) and operational modes — same UI, same workflow, same AI agents, different data context and consequence level
 **Depends on:** Phase 21
 **Research:** Unlikely
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 
 **Context:**
 "Train as you fight" — the training environment must be identical to the operational environment so users build muscle memory on the same system they'll use for real planning. A global toggle (not per-workspace) prevents the dangerous scenario of mixing training and operational actions.
@@ -1171,7 +1171,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 19. Workspace Membership & Invites | 4/10 | In progress | - |
 | 20. Workspace Operational Panels | 3/9 | In progress | - |
 | 21. AI COP Layer Agent Team | 13/13 | Complete | 2026-03-05 |
-| 22. Training/Operational Global Mode | 0/TBD | Not started | - |
+| 22. Training/Operational Global Mode | 1/6 | In Progress|  |
 | 23. Problem Set Model & Rename | 0/TBD | Not started | - |
 | 24. Doctrinal Tab Restructure | 0/TBD | Not started | - |
 | 25. Operational Design Workspace | 0/TBD | Not started | - |

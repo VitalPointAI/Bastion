@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 21 of 40 (AI COP Layer Agent Team) - COMPLETE
-Plan: 13 of 13 in current phase — 21-01 through 21-13 complete
-Status: Phase 21 complete — 8 new restructuring phases (22-29) added to roadmap
-Last activity: 2026-03-05 - Added Phases 22-29: Training mode, Problem Set rename, Doctrinal tab restructure, Operational design, Strategic environment, Resource registry, Embedded DAO, Contextual AI
+Phase: 22 of 40 (Training/Operational Global Mode)
+Plan: 1 of 6 in current phase — 22-01 complete
+Status: Phase 22 in progress — backend mode infrastructure complete
+Last activity: 2026-03-06 - Completed 22-01: Backend mode types, API endpoints, middleware, mode-aware workspace queries
 
-Progress: █████████████████████████ 212 plans complete
+Progress: █████████████████████████ 213 plans complete
 
 ## Performance Metrics
 
@@ -114,6 +114,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 22 Plan 01 (Backend mode infrastructure):**
+- Mode defaults to 'operational' everywhere for backward compatibility
+- Mode middleware is non-blocking (errors default to operational rather than failing requests)
+- Workspace mode filtering uses query parameter approach rather than global middleware enforcement
 
 **Phase 21 Plan 09 (COP entity interaction & review UI):**
 - EntityLinkage display adapted to plan 08 interface (entityId + confidence + discoveryMethod) rather than assumed name + relationshipType
