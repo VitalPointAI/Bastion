@@ -47,8 +47,13 @@ async function initProblemSetInviteTable(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_pi_problem_set ON problem_set_invites(problem_set_id);
     CREATE INDEX IF NOT EXISTS idx_pi_token ON problem_set_invites(token);
-    CREATE INDEX IF NOT EXISTS idx_pi_short_code ON problem_set_invites(short_code);
+  `);
+  // Run ALTER separately so it applies even if the table already existed without short_code
+  await pool.query(`
     ALTER TABLE problem_set_invites ADD COLUMN IF NOT EXISTS short_code TEXT UNIQUE;
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_pi_short_code ON problem_set_invites(short_code);
   `);
 }
 

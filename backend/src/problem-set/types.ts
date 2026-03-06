@@ -213,6 +213,11 @@ export const ECHELON_ROLE_TEMPLATES: Record<
       daoRole: 'member',
       permissions: ['create_proposals', 'vote', 'advise_legal'],
     },
+    {
+      label: 'member',
+      daoRole: 'member',
+      permissions: ['vote'],
+    },
   ],
   // Corps/Division level — G-staff
   operational: [
@@ -256,6 +261,11 @@ export const ECHELON_ROLE_TEMPLATES: Record<
       daoRole: 'member',
       permissions: ['create_proposals', 'vote', 'manage_fires'],
     },
+    {
+      label: 'member',
+      daoRole: 'member',
+      permissions: ['vote'],
+    },
   ],
   // Brigade/Battalion level — S-staff
   tactical: [
@@ -288,6 +298,11 @@ export const ECHELON_ROLE_TEMPLATES: Record<
       label: 'fso',
       daoRole: 'member',
       permissions: ['create_proposals', 'vote', 'manage_fires'],
+    },
+    {
+      label: 'member',
+      daoRole: 'member',
+      permissions: ['vote'],
     },
   ],
 };
