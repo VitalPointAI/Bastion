@@ -5,16 +5,16 @@ import { UserStatusBar } from './components/UserStatusBar'
 import { AdminDashboard } from './components/admin'
 import { LoginPage } from './components/LoginPage'
 import { RegisterPage } from './components/RegisterPage'
-import { WorkspaceProvider } from './context/WorkspaceContext'
+import { ProblemSetProvider } from './context/ProblemSetContext'
 import { ModeProvider, useMode } from './context/ModeContext'
 import { ExerciseBanner } from './components/ExerciseBanner'
-import { WorkspaceSwitcher } from './components/workspace/WorkspaceSwitcher'
-import { WorkspaceSelector } from './components/workspace/WorkspaceSelector'
-import { WorkspaceBreadcrumb } from './components/workspace/WorkspaceBreadcrumb'
-import { InviteAcceptPage } from './components/workspace/InviteAcceptPage'
-import { WorkspaceTabContainer } from './components/workspace/WorkspaceTabContainer'
-import { WorkspaceMemberManager } from './components/workspace/WorkspaceMemberManager'
-import { MemberDirectory } from './components/workspace/MemberDirectory'
+import { ProblemSetSwitcher } from './components/problem-set/ProblemSetSwitcher'
+import { ProblemSetSelector } from './components/problem-set/ProblemSetSelector'
+import { ProblemSetBreadcrumb } from './components/problem-set/ProblemSetBreadcrumb'
+import { InviteAcceptPage } from './components/problem-set/InviteAcceptPage'
+import { ProblemSetTabContainer } from './components/problem-set/ProblemSetTabContainer'
+import { ProblemSetMemberManager } from './components/problem-set/ProblemSetMemberManager'
+import { MemberDirectory } from './components/problem-set/MemberDirectory'
 import './App.css'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
@@ -29,7 +29,7 @@ function NotFound() {
   )
 }
 
-function WorkspacePlaceholder({ label }: { label: string }) {
+function ProblemSetPlaceholder({ label }: { label: string }) {
   return (
     <div className="content-container" style={{ padding: '2rem' }}>
       <h2 style={{ color: '#f9fafb' }}>{label}</h2>
@@ -38,44 +38,51 @@ function WorkspacePlaceholder({ label }: { label: string }) {
   );
 }
 
-function WorkspaceMemberManagerPage() {
-  const { workspaceId } = useParams<{ workspaceId: string }>();
+function ProblemSetMemberManagerPage() {
+  const { problemSetId } = useParams<{ problemSetId: string }>();
   const navigate = useNavigate();
-  if (!workspaceId) return <WorkspacePlaceholder label="Members" />;
+  if (!problemSetId) return <ProblemSetPlaceholder label="Members" />;
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate(`/workspace/${workspaceId}`)}
+          onClick={() => navigate(`/problem-set/${problemSetId}`)}
           className="text-sm text-gray-400 hover:text-white transition-colors"
         >
           &larr; Back to Dashboard
         </button>
         <h2 className="text-lg font-semibold text-white">Manage Members</h2>
       </div>
-      <WorkspaceMemberManager workspaceId={workspaceId} />
+      <ProblemSetMemberManager problemSetId={problemSetId} />
     </div>
   );
 }
 
 function MemberDirectoryPage() {
-  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const { problemSetId } = useParams<{ problemSetId: string }>();
   const navigate = useNavigate();
-  if (!workspaceId) return <WorkspacePlaceholder label="Directory" />;
+  if (!problemSetId) return <ProblemSetPlaceholder label="Directory" />;
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate(`/workspace/${workspaceId}`)}
+          onClick={() => navigate(`/problem-set/${problemSetId}`)}
           className="text-sm text-gray-400 hover:text-white transition-colors"
         >
           &larr; Back to Dashboard
         </button>
         <h2 className="text-lg font-semibold text-white">Member Directory</h2>
       </div>
-      <MemberDirectory workspaceId={workspaceId} />
+      <MemberDirectory problemSetId={problemSetId} />
     </div>
   );
+}
+
+// ─── Backward-compatibility redirect: /workspace/* -> /problem-set/* ─────────
+
+function WorkspaceRedirect() {
+  const location = useLocation();
+  return <Navigate to={location.pathname.replace('/workspace', '/problem-set') + location.search} replace />;
 }
 
 // ─── AppContent ──────────────────────────────────────────────────────────────
@@ -86,7 +93,7 @@ function AppContent() {
   const { isTraining } = useMode();
 
   const isAdmin = location.pathname.startsWith('/admin');
-  const isWorkspace = location.pathname.startsWith('/workspace');
+  const isProblemSet = location.pathname.startsWith('/problem-set');
 
   return (
     <div className="app">
@@ -94,9 +101,9 @@ function AppContent() {
       <header className="app-header">
         <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>BASTION</h1>
         <nav className="app-nav">
-          <WorkspaceBreadcrumb />
+          <ProblemSetBreadcrumb />
           <div className="nav-spacer" />
-          <WorkspaceSwitcher />
+          <ProblemSetSwitcher />
           <button
             className={`nav-button nav-button--admin ${isAdmin ? 'active' : ''}`}
             onClick={() => navigate('/admin')}
@@ -110,34 +117,34 @@ function AppContent() {
       <main className="app-main">
         {isAdmin ? (
           <AdminDashboard onBack={() => navigate('/')} />
-        ) : isWorkspace ? (
+        ) : isProblemSet ? (
           <Routes>
             <Route path="invite/:token" element={<InviteAcceptPage />} />
             {/* Specific sub-routes must come before /:tab catch-all */}
-            <Route path=":workspaceId/members" element={<WorkspaceMemberManagerPage />} />
-            <Route path=":workspaceId/directory" element={<MemberDirectoryPage />} />
-            <Route path=":workspaceId/invite" element={<WorkspacePlaceholder label="Invite" />} />
-            <Route path=":workspaceId/settings" element={<WorkspacePlaceholder label="Settings" />} />
-            {/* Tab-aware routes — WorkspaceTabContainer reads :tab param for URL-driven tab state */}
-            <Route path=":workspaceId/:tab" element={<WorkspaceTabContainer />} />
-            <Route path=":workspaceId" element={<WorkspaceTabContainer />} />
+            <Route path=":problemSetId/members" element={<ProblemSetMemberManagerPage />} />
+            <Route path=":problemSetId/directory" element={<MemberDirectoryPage />} />
+            <Route path=":problemSetId/invite" element={<ProblemSetPlaceholder label="Invite" />} />
+            <Route path=":problemSetId/settings" element={<ProblemSetPlaceholder label="Settings" />} />
+            {/* Tab-aware routes — ProblemSetTabContainer reads :tab param for URL-driven tab state */}
+            <Route path=":problemSetId/:tab" element={<ProblemSetTabContainer />} />
+            <Route path=":problemSetId" element={<ProblemSetTabContainer />} />
           </Routes>
         ) : (
-          <WorkspaceSelector />
+          <ProblemSetSelector />
         )}
       </main>
     </div>
   )
 }
 
-// ─── Authenticated shell with WorkspaceProvider ──────────────────────────────
+// ─── Authenticated shell with ProblemSetProvider ──────────────────────────────
 
 function AuthenticatedShell() {
   return (
     <ModeProvider>
-      <WorkspaceProvider>
+      <ProblemSetProvider>
         <AppContent />
-      </WorkspaceProvider>
+      </ProblemSetProvider>
     </ModeProvider>
   );
 }
@@ -153,14 +160,14 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Root route — workspace selector landing page */}
+        {/* Root route — problem set selector landing page */}
         <Route path="/" element={
           <AuthWrapper>
             <AuthenticatedShell />
           </AuthWrapper>
         } />
 
-        {/* Legacy redirects — old panel URLs redirect to workspace selector */}
+        {/* Legacy redirects — old panel URLs redirect to problem set selector */}
         <Route path="/decide" element={<Navigate to="/" replace />} />
         <Route path="/design" element={<Navigate to="/" replace />} />
         <Route path="/campaign" element={<Navigate to="/" replace />} />
@@ -173,19 +180,22 @@ function App() {
         <Route path="/validity" element={<Navigate to="/" replace />} />
         <Route path="/missions" element={<Navigate to="/" replace />} />
 
-        {/* Admin routes - protected by AuthWrapper + WorkspaceProvider */}
+        {/* Admin routes - protected by AuthWrapper + ProblemSetProvider */}
         <Route path="/admin/*" element={
           <AuthWrapper>
             <AuthenticatedShell />
           </AuthWrapper>
         } />
 
-        {/* Workspace routes - protected by AuthWrapper + WorkspaceProvider */}
-        <Route path="/workspace/*" element={
+        {/* Problem set routes - protected by AuthWrapper + ProblemSetProvider */}
+        <Route path="/problem-set/*" element={
           <AuthWrapper>
             <AuthenticatedShell />
           </AuthWrapper>
         } />
+
+        {/* Backward-compat redirect: /workspace/* -> /problem-set/* */}
+        <Route path="/workspace/*" element={<WorkspaceRedirect />} />
 
         {/* 404 catch-all - must be last */}
         <Route path="*" element={<NotFound />} />
