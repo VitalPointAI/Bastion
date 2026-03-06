@@ -653,6 +653,102 @@
 }
 
 /* ============================================================================
+   Drag-and-Drop
+   ============================================================================ */
+
+.drop-target-active {
+  transition: all 0.2s ease;
+}
+
+.drag-overlay-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-elevated, #222230);
+  border: 2px solid var(--accent-blue, #4a90d9);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  color: var(--text-primary, #fff);
+  font-size: 0.85rem;
+  font-weight: 500;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: grabbing;
+  pointer-events: none;
+}
+
+.drag-overlay-card svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.drag-error-toast {
+  padding: 0.75rem 1rem;
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 6px;
+  color: var(--accent-red, #ff4444);
+  font-size: 0.85rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================================
+   Container Document Header with Agent Button
+   ============================================================================ */
+
+.container-doc-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.manage-agents-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--bg-elevated, #222230);
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  color: var(--accent-blue, #4a90d9);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.manage-agents-btn:hover {
+  border-color: var(--accent-blue, #4a90d9);
+  background: rgba(74, 144, 217, 0.1);
+}
+
+.manage-agents-btn svg {
+  opacity: 0.8;
+}
+
+.agent-count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--accent-blue, #4a90d9);
+  color: #fff;
+  border-radius: 999px;
+}
+
+/* ============================================================================
    Responsive
    ============================================================================ */
 

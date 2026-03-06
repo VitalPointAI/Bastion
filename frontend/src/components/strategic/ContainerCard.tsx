@@ -3,8 +3,10 @@
  *
  * Card for a single strategic container within the category-grouped view.
  * Shows container name, doc/agent counts, description, and category color accent.
+ * Droppable target for drag-and-drop document assignment.
  */
 
+import { useDroppable } from '@dnd-kit/core';
 import type { StrategicContainer } from '../../lib/types/strategic.js';
 
 interface ContainerCardProps {
@@ -24,14 +26,31 @@ export function ContainerCard({
   onDelete,
   onReassign,
 }: ContainerCardProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `container-drop-${container.id}`,
+    data: { type: 'container', containerId: container.id },
+  });
+
   return (
     <div
-      className="container-card"
+      ref={setNodeRef}
+      className={`container-card${isOver ? ' drop-target-active' : ''}`}
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyPress={(e) => e.key === 'Enter' && onClick()}
-      style={{ borderLeftColor: categoryColor }}
+      style={{
+        borderLeftColor: categoryColor,
+        ...(isOver
+          ? {
+              borderColor: categoryColor,
+              borderStyle: 'dashed',
+              borderWidth: '2px',
+              transform: 'scale(1.02)',
+            }
+          : {}),
+      }}
+      aria-label={`Container: ${container.name}, ${container.documentCount} documents`}
     >
       {/* Container header */}
       <div className="container-card-header">
