@@ -26,6 +26,7 @@ import type { AppMode, Echelon, ProblemSetClassification } from '../problem-set/
 import { ScenarioStore } from '../exercise/scenario-store.js';
 import { PositionStore, initPositionTables } from '../exercise/position-store.js';
 import { modeMiddleware } from '../middleware/mode-context.js';
+import { inheritanceService } from '../inheritance/inheritance-service.js';
 
 const DAO_CONTRACT_ID = process.env.DAO_CONTRACT_ID || 'dao-registry.testnet';
 const scenarioStore = new ScenarioStore();
@@ -336,6 +337,17 @@ router.post('/', requireAuth, modeMiddleware, async (req: Request, res: Response
 
     // Add creator as commander (council DAO role)
     await problemSetMemberStore.addMember(problemSet.id, userDid, 'commander', 'council', userDid);
+
+    // Auto-create inheritance subscriptions if child PS has a parent
+    if (body.parentProblemSetId) {
+      try {
+        await inheritanceService.createInheritanceChain(problemSet.id, body.parentProblemSetId, userDid);
+        console.log(`Inheritance chain created for ${problemSet.id} -> ${body.parentProblemSetId}`);
+      } catch (inheritError) {
+        // Log but don't fail PS creation if inheritance setup fails
+        console.warn('Auto-inheritance setup failed:', inheritError instanceof Error ? inheritError.message : inheritError);
+      }
+    }
 
     // Log activity
     await problemSetActivityStore.log(

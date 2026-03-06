@@ -45,6 +45,7 @@ import { initRAFTSchema } from './graph/raft/schema-init.js';
 import { copRouter, initCOP } from './cop/index.js';
 import { strategicContextRouter } from './api/strategic-context.js';
 import { problemSetSubscriptionStore } from './problem-set/problem-set-subscription-store.js';
+import inheritanceRouter from './api/inheritance.js';
 
 dotenv.config();
 
@@ -172,6 +173,7 @@ app.use('/api/graph', graphRouter);
 app.use('/api/command', commandRouter);
 app.use('/api/missions', missionRouter);
 app.use('/api/problem-sets', problemSetsRouter);
+app.use('/api/problem-sets', inheritanceRouter);
 app.use('/api/resources', resourceRouter);
 app.use('/api/sensors', sensorRouter);
 app.use('/api/planning', planningRouter);
