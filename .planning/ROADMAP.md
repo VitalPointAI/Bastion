@@ -41,7 +41,7 @@ None
 - [ ] **Phase 16: AI Assigned Staff Workspaces** - AI-assigned staff roles with full agent team execution, human-in-the-loop review, real-time channel observability, and cross-role AI coordination
 - [ ] **Phase 17: Deployment - CI/CD Pipeline & Hetzner Server** - GitHub Actions CI/CD pipeline deploying Bastion to Hetzner server, TEE-aware component separation documented for production, single-server dev deployment
 - [x] **Phase 21: AI COP Layer Agent Team** - Autonomous agent team per workspace section that parses documents/plans, derives location/resource/intent, and generates MIL-STD-2525 interactive SVG overlay layers with standard military symbology for the common operating picture; layers include image specs for model-generated SVGs, update on commit, support publish control before promotion to top-level COP, provide entity-data linkages with hover/click detail, animate movement/phasing, and render both friendly and adversary perspectives (completed 2026-03-05)
-- [ ] **Phase 22: Training/Operational Global Mode** - Global app toggle switching between training (exercise) and operational modes with visual distinction, data isolation, governance weight adjustment, and reset/checkpoint capability (INSERTED)
+- [x] **Phase 22: Training/Operational Global Mode** - Global app toggle switching between training (exercise) and operational modes with visual distinction, data isolation, governance weight adjustment, and reset/checkpoint capability (INSERTED) (completed 2026-03-06)
 - [ ] **Phase 23: Problem Set Model & Workspace Rename** - Rename workspaces to problem sets throughout the application, add echelon-awareness (strategic/operational/tactical), update data model, UI, routes, and API (INSERTED)
 - [ ] **Phase 24: Doctrinal Tab Restructure** - Replace COP/Decide/Design/Campaign/Train/Overview tabs with doctrinal lifecycle flow: Understand/Design/Plan/Direct/COP/Assess — reorganize existing components into doctrinally-aligned tabs (INSERTED)
 - [ ] **Phase 25: Operational Design Workspace** - Build the Design tab with problem framing, center of gravity analysis, lines of effort/operation, operational approach development, and AI-assisted design recommendations (INSERTED)
@@ -485,7 +485,7 @@ Plans:
 **Goal:** Global app-level toggle that switches the entire BASTION instance between training (exercise) and operational modes — same UI, same workflow, same AI agents, different data context and consequence level
 **Depends on:** Phase 21
 **Research:** Unlikely
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 
 **Context:**
 "Train as you fight" — the training environment must be identical to the operational environment so users build muscle memory on the same system they'll use for real planning. A global toggle (not per-workspace) prevents the dangerous scenario of mixing training and operational actions.
@@ -1171,7 +1171,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 19. Workspace Membership & Invites | 4/10 | In progress | - |
 | 20. Workspace Operational Panels | 3/9 | In progress | - |
 | 21. AI COP Layer Agent Team | 13/13 | Complete | 2026-03-05 |
-| 22. Training/Operational Global Mode | 5/6 | In Progress|  |
+| 22. Training/Operational Global Mode | 6/6 | Complete   | 2026-03-06 |
 | 23. Problem Set Model & Rename | 0/TBD | Not started | - |
 | 24. Doctrinal Tab Restructure | 0/TBD | Not started | - |
 | 25. Operational Design Workspace | 0/TBD | Not started | - |
