@@ -231,7 +231,7 @@ function handleError(res: Response, error: unknown): void {
  * Auto-initializes military role templates and adds creator as commander.
  * Validates echelon hierarchy when parent is specified.
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post('/', requireAuth, modeMiddleware, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
     const userSecret = deriveUserSecret(req.anonUser!.nearAccountId);
