@@ -45,7 +45,7 @@ const CreateProblemSetSchema = z.object({
   parentProblemSetId: z.string().optional(),
   inviteMode: z.enum(['open', 'gated']).default('gated'),
   discoverability: z.enum(['discoverable', 'private']).default('private'),
-  mode: z.enum(['training', 'operational']).default('operational'),
+  mode: z.enum(['training', 'operational']).optional(),
 });
 
 const CreateInviteSchema = z.object({

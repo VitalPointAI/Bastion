@@ -15,6 +15,7 @@
 import { useState, useEffect } from 'react';
 import { useProblemSet } from '../../context/ProblemSetContext';
 import { useUser } from '../../context/UserContext';
+import { useMode } from '../../context/ModeContext';
 import { problemSetService, type CreateProblemSetInput } from '../../lib/problem-set-service';
 import { exerciseService } from '../../services/exercise-service';
 import type { ExerciseScenario } from '../../types/exercise';
@@ -123,6 +124,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId }: Props) {
   const { memberships } = useProblemSet();
   const { userDID } = useUser();
+  const { mode } = useMode();
   const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>({
     ...INITIAL_STATE,
@@ -222,6 +224,7 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
       inviteMode: state.inviteMode,
       discoverability: state.discoverability,
       problemStatement: state.problemStatement.trim() || undefined,
+      mode,
     };
 
     try {
