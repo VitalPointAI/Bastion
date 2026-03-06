@@ -2499,6 +2499,28 @@ router.get('/documents/:documentId/containers', requireAuth, async (req, res) =>
 });
 
 /**
+ * POST /api/strategic/documents/:documentId/suggest-containers
+ * AI-powered container suggestions based on document text.
+ * Called after text extraction completes (not during upload).
+ */
+router.post('/documents/:documentId/suggest-containers', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const documentId = req.params.documentId as string;
+    const { environmentId } = req.body;
+    if (!environmentId) {
+      return res.status(400).json({ error: 'environmentId is required' });
+    }
+    const suggestions = await containerStore.suggestContainers(documentId, environmentId);
+    res.json({ suggestions });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Suggest containers failed:', message);
+    res.status(500).json({ error: 'Failed to suggest containers' });
+  }
+});
+
+/**
  * POST /api/strategic/containers/:containerId/agents
  * Assign an agent to a container.
  */

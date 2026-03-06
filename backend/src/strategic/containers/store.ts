@@ -12,8 +12,12 @@ import type {
   StrategicContainer,
   ContainerAgentAssignment,
   CategoryGroup,
+  ContainerSuggestion,
 } from './types.js';
 import { DEFAULT_ACTOR_CATEGORIES } from './types.js';
+import { createProvider, getDefaultConfig } from '../../strategic/extraction/providers/index.js';
+import type { ProviderConfig } from '../../strategic/extraction/providers/types.js';
+import { configService } from '../../strategic/config/service.js';
 
 // =============================================================================
 // Table Initialization
@@ -653,6 +657,89 @@ export class ContainerStore {
       `DELETE FROM container_agent_assignments WHERE container_id = $1 AND agent_id = $2`,
       [containerId, agentId]
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // AI Container Suggestions
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Use LLM to suggest container assignments for a document.
+   * Analyzes the document's extracted text and existing containers.
+   * Returns empty array on failure (non-blocking).
+   */
+  async suggestContainers(
+    documentId: string,
+    environmentId: string
+  ): Promise<ContainerSuggestion[]> {
+    try {
+      const pool = getPool();
+
+      // Fetch document text (first 3000 chars)
+      const docResult = await pool.query(
+        `SELECT text_content FROM strategic_documents WHERE id = $1`,
+        [documentId]
+      );
+      if (docResult.rows.length === 0 || !docResult.rows[0].text_content) {
+        return [];
+      }
+      const textContent = (docResult.rows[0].text_content as string).slice(0, 3000);
+
+      // Fetch existing containers grouped by category
+      const groups = await this.getContainersGroupedByCategory(environmentId);
+      const containerList = groups
+        .flatMap((g) =>
+          g.containers.map((c) => ({
+            id: c.id,
+            name: c.name,
+            category: g.category.name,
+          }))
+        );
+
+      if (containerList.length === 0 && textContent.length < 50) {
+        return [];
+      }
+
+      // Build prompt
+      const containerListStr = containerList.length > 0
+        ? containerList.map((c) => `- "${c.name}" (category: ${c.category}, id: ${c.id})`).join('\n')
+        : '(No containers exist yet)';
+
+      const systemPrompt = `You are a strategic document classifier. Analyze the document text and suggest which existing containers it belongs to. Return a JSON array.`;
+      const userPrompt = `Existing containers:\n${containerListStr}\n\nDocument text (first 3000 chars):\n${textContent}\n\nInstructions:\n1. Return a JSON array of container suggestions.\n2. For matching existing containers, use: { "containerName": "name", "containerId": "id", "confidence": 0.0-1.0, "reasoning": "why" }\n3. Only include matches with confidence > 0.5\n4. If no existing container fits well, suggest a new one: { "containerName": "suggested name", "newContainerName": "suggested name", "suggestedCategory": "category name", "confidence": 0.8, "reasoning": "why" }\n5. Return ONLY valid JSON array, no other text.`;
+
+      // Get LLM provider config
+      const llmConfig = await configService.getLLMConfig();
+      const providerType = llmConfig.provider === 'local' ? 'ollama' : llmConfig.provider;
+      const providerConfig: ProviderConfig = {
+        type: providerType as ProviderConfig['type'],
+        model: llmConfig.models.extraction,
+        apiKey: llmConfig.apiKey || undefined,
+        baseUrl: llmConfig.baseUrl,
+      };
+
+      const provider = createProvider(providerConfig);
+      const response = await provider.complete({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        max_tokens: 2000,
+        temperature: 0.3,
+      });
+
+      // Parse JSON from response
+      const content = response.content || '';
+      // Try to extract JSON array from response
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) return [];
+
+      const parsed = JSON.parse(jsonMatch[0]) as ContainerSuggestion[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.error('suggestContainers failed (non-blocking):', err);
+      return [];
+    }
   }
 
   // ---------------------------------------------------------------------------
