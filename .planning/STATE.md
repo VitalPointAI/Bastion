@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-06T07:36:00.000Z"
+last_updated: "2026-03-06T07:51:00.000Z"
 progress:
   total_phases: 40
   completed_phases: 25
   total_plans: 225
-  completed_plans: 237
+  completed_plans: 238
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 25 — Operational Design Workspace (COMPLETE - gap closure done)
+**Current focus:** Phase 25.1 — Training Package Upload from Scenario Integration
 
 ## Current Position
 
-Phase: 25 of 40 (Operational Design Workspace) — COMPLETE (with gap closure)
-Plan: 6 of 6 in current phase — 25-06 complete
-Status: AI-assisted CoG and LOE analysis agents implemented; all Phase 25 verification gaps closed
-Last activity: 2026-03-06 - Completed 25-06 (CoG & LOE AI Analysis Gap Closure)
+Phase: 25.1 of 40 (Training Package Upload from Scenario Integration)
+Plan: 1 of 2 in current phase — 25.1-01 complete
+Status: Wizard source choice, scenario picker, from-scenario endpoint fixed, auto-navigation to Understand tab
+Last activity: 2026-03-06 - Completed 25.1-01 (Scenario-to-Problem-Set Wizard Integration)
 
-Progress: █████████████████████████ 236 plans complete
+Progress: █████████████████████████ 238 plans complete
 
 ## Performance Metrics
 

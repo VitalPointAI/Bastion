@@ -607,7 +607,7 @@ Plans:
 - API: `POST /api/exercise/scenarios/:id/upload`, `POST /api/problem-sets/from-scenario`
 
 Plans:
-- [ ] 25.1-01-PLAN.md -- Backend fixes + Wizard Step 0 (from-scenario endpoint, scenario picker, pre-fill)
+- [x] 25.1-01-PLAN.md -- Backend fixes + Wizard Step 0 (from-scenario endpoint, scenario picker, pre-fill)
 - [ ] 25.1-02-PLAN.md -- Training Packages sidebar in UnderstandTab (mode-gated, doc preview)
 
 ### Phase 25.2: Strategic Document Containers & Actor Categorization (INSERTED)
