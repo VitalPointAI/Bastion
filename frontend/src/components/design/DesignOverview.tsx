@@ -1,11 +1,11 @@
 /**
  * DesignOverview
  *
- * Phase 25 Plan 01: Dashboard landing page showing all design sections as cards
- * with status, descriptions per JP 5-0, and navigation.
+ * Phase 25 Plan 05: Updated dashboard with live section summaries,
+ * progress bar, and rich data cards per JP 5-0 workflow.
  */
 
-import type { OperationalDesign } from '../../lib/design-service.ts';
+import type { OperationalDesign, CoGNode, SectionStatus } from '../../lib/design-service.ts';
 import { DesignStatusBadge } from './DesignStatusBadge.tsx';
 
 interface DesignOverviewProps {
@@ -47,37 +47,182 @@ const SECTION_CARDS: SectionCard[] = [
   },
 ];
 
+// ─── Helper: count CoG nodes recursively ──────────────────────────────────────
+
+function countCoGNodes(node: CoGNode | null): number {
+  if (!node) return 0;
+  return 1 + (node.children ?? []).reduce((sum, c) => sum + countCoGNodes(c), 0);
+}
+
+// ─── Section-specific summary renderers ──────────────────────────────────────
+
+function getProblemFramingSummary(designData: OperationalDesign): string | null {
+  const pf = designData.problemFraming;
+  if (!pf) return null;
+
+  if (pf.problemStatement) {
+    const truncated =
+      pf.problemStatement.length > 100
+        ? pf.problemStatement.slice(0, 100) + '...'
+        : pf.problemStatement;
+    const parts: string[] = [truncated];
+    const assumptionCount = (pf.assumptions ?? []).length;
+    const constraintCount = (pf.constraints ?? []).length;
+    if (assumptionCount > 0 || constraintCount > 0) {
+      parts.push(
+        `${assumptionCount} assumption${assumptionCount !== 1 ? 's' : ''}, ${constraintCount} constraint${constraintCount !== 1 ? 's' : ''}`
+      );
+    }
+    return parts.join(' | ');
+  }
+
+  if (pf.currentState || pf.desiredEndState) return 'Partially defined';
+  return null;
+}
+
+function getCogAnalysisSummary(designData: OperationalDesign): string | null {
+  const cog = designData.cogAnalysis;
+  if (!cog) return null;
+
+  const friendlyLabel = cog.friendly?.root?.label;
+  const adversaryLabel = cog.adversary?.root?.label;
+
+  if (!friendlyLabel && !adversaryLabel) return null;
+
+  const parts: string[] = [];
+  if (friendlyLabel) parts.push(`Friendly: ${friendlyLabel}`);
+  if (adversaryLabel) parts.push(`Adversary: ${adversaryLabel}`);
+
+  const totalNodes =
+    countCoGNodes(cog.friendly?.root) + countCoGNodes(cog.adversary?.root);
+  parts.push(`${totalNodes} total node${totalNodes !== 1 ? 's' : ''}`);
+
+  return parts.join(' | ');
+}
+
+function getLinesOfEffortSummary(designData: OperationalDesign): string | null {
+  const loes = designData.linesOfEffort;
+  if (!loes || loes.length === 0) return null;
+
+  const totalDPs = loes.reduce(
+    (sum, loe) => sum + (loe.decisivePoints?.length ?? 0),
+    0
+  );
+  let cvLinked = 0;
+  for (const loe of loes) {
+    for (const dp of loe.decisivePoints ?? []) {
+      if ((dp.cogLinks ?? []).length > 0) cvLinked++;
+    }
+  }
+
+  const parts = [
+    `${loes.length} LOE${loes.length !== 1 ? 's' : ''}`,
+    `${totalDPs} decisive point${totalDPs !== 1 ? 's' : ''}`,
+  ];
+  if (totalDPs > 0) {
+    parts.push(`${cvLinked}/${totalDPs} CoG-linked`);
+  }
+  return parts.join(', ');
+}
+
+function getOperationalApproachSummary(designData: OperationalDesign): string | null {
+  const oa = designData.operationalApproach;
+  if (!oa) return null;
+
+  const parts: string[] = [];
+  const phaseCount = (oa.phases ?? []).length;
+  const transitionCount = (oa.transitions ?? []).length;
+  const dpCount = (oa.decisionPoints ?? []).length;
+  const hasNarrative = (oa.narrative ?? '').trim().length > 0;
+
+  if (phaseCount === 0 && transitionCount === 0 && dpCount === 0 && !hasNarrative) {
+    return null;
+  }
+
+  if (phaseCount > 0) parts.push(`${phaseCount} phase${phaseCount !== 1 ? 's' : ''}`);
+  if (transitionCount > 0)
+    parts.push(`${transitionCount} transition${transitionCount !== 1 ? 's' : ''}`);
+  if (dpCount > 0)
+    parts.push(`${dpCount} decision point${dpCount !== 1 ? 's' : ''}`);
+  if (hasNarrative) parts.push('narrative written');
+
+  return parts.join(', ');
+}
+
 function getSectionSummary(designData: OperationalDesign, sectionId: string): string | null {
   switch (sectionId) {
-    case 'problem-framing': {
-      const pf = designData.problemFraming;
-      if (pf.problemStatement) return pf.problemStatement;
-      if (pf.currentState || pf.desiredEndState) return 'Partially defined';
-      return null;
-    }
-    case 'cog-analysis': {
-      const cog = designData.cogAnalysis;
-      const parts: string[] = [];
-      if (cog.friendly?.root) parts.push('Friendly CoG defined');
-      if (cog.adversary?.root) parts.push('Adversary CoG defined');
-      return parts.length > 0 ? parts.join(', ') : null;
-    }
-    case 'lines-of-effort': {
-      const loes = designData.linesOfEffort;
-      if (loes.length === 0) return null;
-      const totalDPs = loes.reduce((sum, loe) => sum + (loe.decisivePoints?.length ?? 0), 0);
-      return `${loes.length} LOE${loes.length !== 1 ? 's' : ''}, ${totalDPs} decisive point${totalDPs !== 1 ? 's' : ''}`;
-    }
-    case 'operational-approach': {
-      const oa = designData.operationalApproach;
-      if (oa.narrative) return oa.narrative.slice(0, 120) + (oa.narrative.length > 120 ? '...' : '');
-      if ((oa.phases?.length ?? 0) > 0) return `${oa.phases.length} phase${oa.phases.length !== 1 ? 's' : ''} defined`;
-      return null;
-    }
+    case 'problem-framing':
+      return getProblemFramingSummary(designData);
+    case 'cog-analysis':
+      return getCogAnalysisSummary(designData);
+    case 'lines-of-effort':
+      return getLinesOfEffortSummary(designData);
+    case 'operational-approach':
+      return getOperationalApproachSummary(designData);
     default:
       return null;
   }
 }
+
+function getEmptyMessage(sectionId: string): string {
+  switch (sectionId) {
+    case 'problem-framing':
+      return 'No problem framing yet';
+    case 'cog-analysis':
+      return 'No CoG analysis yet';
+    case 'lines-of-effort':
+      return 'No lines of effort yet';
+    case 'operational-approach':
+      return 'No operational approach yet';
+    default:
+      return 'Not started';
+  }
+}
+
+// ─── Progress Bar ─────────────────────────────────────────────────────────────
+
+const STATUS_COLORS: Record<SectionStatus, string> = {
+  'not-started': 'bg-gray-700',
+  'in-progress': 'bg-yellow-600',
+  complete: 'bg-green-600',
+};
+
+function DesignProgressBar({ status }: { status: OperationalDesign['status'] }) {
+  const sections = SECTION_CARDS.map((c) => ({
+    name: c.name,
+    status: status[c.statusKey],
+  }));
+  const completeCount = sections.filter((s) => s.status === 'complete').length;
+
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-medium text-gray-300">Design Progress</h3>
+        <span className="text-sm text-gray-400">
+          {completeCount}/{sections.length} sections complete
+        </span>
+      </div>
+      <div className="flex gap-1 h-2 rounded overflow-hidden">
+        {sections.map((s) => (
+          <div
+            key={s.name}
+            className={`flex-1 ${STATUS_COLORS[s.status]} transition-colors`}
+            title={`${s.name}: ${s.status}`}
+          />
+        ))}
+      </div>
+      <div className="flex gap-1 mt-1">
+        {sections.map((s) => (
+          <span key={s.name} className="flex-1 text-center text-[10px] text-gray-500 truncate">
+            {s.name}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 
 export function DesignOverview({ designData, onNavigate }: DesignOverviewProps) {
   return (
@@ -90,8 +235,12 @@ export function DesignOverview({ designData, onNavigate }: DesignOverviewProps) 
         </p>
       </div>
 
+      {/* Progress Bar */}
+      <DesignProgressBar status={designData.status} />
+
+      {/* Section Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {SECTION_CARDS.map(card => {
+        {SECTION_CARDS.map((card) => {
           const status = designData.status[card.statusKey];
           const summary = getSectionSummary(designData, card.id);
 
@@ -107,9 +256,13 @@ export function DesignOverview({ designData, onNavigate }: DesignOverviewProps) 
 
               <p className="text-sm text-gray-400 mb-3">{card.description}</p>
 
-              {summary && (
+              {summary ? (
                 <p className="text-sm text-gray-300 bg-gray-900/50 rounded px-3 py-2 mb-3">
                   {summary}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 italic bg-gray-900/30 rounded px-3 py-2 mb-3">
+                  {getEmptyMessage(card.id)}
                 </p>
               )}
 
