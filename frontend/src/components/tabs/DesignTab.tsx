@@ -13,7 +13,8 @@ import type { OperationalDesign, SectionStatus } from '../../lib/design-service.
 import { DesignOverview } from '../design/DesignOverview.tsx';
 import { ProblemFramingSection } from '../design/ProblemFramingSection.tsx';
 import { CoGAnalysisSection } from '../design/CoGAnalysisSection.tsx';
-import type { ProblemFramingData, CoGAnalysis } from '../../lib/design-service.ts';
+import { LOETimelineSection } from '../design/LOETimelineSection.tsx';
+import type { ProblemFramingData, CoGAnalysis, LineOfEffort } from '../../lib/design-service.ts';
 
 type DesignView = 'overview' | 'problem-framing' | 'cog-analysis' | 'lines-of-effort' | 'operational-approach';
 
@@ -37,8 +38,8 @@ function buildSidebarItems(status?: OperationalDesign['status']): SidebarItem[] 
 const SECTION_PLAN_MAP: Record<string, string> = {
   'problem-framing': 'Plan 02',
   'cog-analysis': 'Plan 03',
-  'lines-of-effort': 'Plan 03',
-  'operational-approach': 'Plan 04',
+  'lines-of-effort': 'Plan 04',
+  'operational-approach': 'Plan 05',
 };
 
 export function DesignTab({ problemSetId }: DesignTabProps) {
@@ -127,7 +128,16 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
         />
       )}
 
-      {selectedView !== 'overview' && selectedView !== 'problem-framing' && selectedView !== 'cog-analysis' && (
+      {selectedView === 'lines-of-effort' && designData && (
+        <LOETimelineSection
+          problemSetId={problemSetId}
+          initialLOEs={designData.linesOfEffort}
+          cogAnalysis={designData.cogAnalysis}
+          onUpdate={(loes: LineOfEffort[]) => handleSectionUpdate('lines-of-effort', loes)}
+        />
+      )}
+
+      {selectedView !== 'overview' && selectedView !== 'problem-framing' && selectedView !== 'cog-analysis' && selectedView !== 'lines-of-effort' && (
         <div className="flex flex-col items-center justify-center h-64 text-gray-400 gap-2">
           <h3 className="text-lg font-medium text-gray-300">
             {sidebarItems.find(i => i.id === selectedView)?.label ?? selectedView}
