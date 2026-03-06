@@ -144,7 +144,7 @@ export function ProblemSetProvider({ children }: { children: ReactNode }) {
   migrateLocalStorageKeys();
 
   const { userDID, isAuthenticated } = useUser();
-  const { mode } = useMode();
+  const { mode, loading: modeLoading } = useMode();
 
   const [memberships, setMemberships] = useState<ProblemSetMembership[]>([]);
   const [activeProblemSetId, setActiveProblemSetIdState] = useState<string | null>(null);
@@ -152,7 +152,7 @@ export function ProblemSetProvider({ children }: { children: ReactNode }) {
   const [notificationCounts, setNotificationCounts] = useState<Record<string, number>>({});
   const [tabNotifications, setTabNotifications] = useState<Record<string, number>>({});
   const [crossProblemSetUpdates, setCrossProblemSetUpdates] = useState<CrossProblemSetUpdate[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start true — prevents premature empty-state guards
 
   // Track whether tab is visible for polling
   const isVisibleRef = useRef(true);
@@ -206,13 +206,20 @@ export function ProblemSetProvider({ children }: { children: ReactNode }) {
       setNotificationCounts({});
       setTabNotifications({});
       setCrossProblemSetUpdates([]);
+      setLoading(false);
       return;
     }
+
+    // Wait for mode to be determined before fetching memberships
+    if (modeLoading) return;
+
+    let cancelled = false;
 
     void (async () => {
       setLoading(true);
       try {
         const result = await problemSetService.listMyMemberships(userDID, mode);
+        if (cancelled) return; // Stale fetch from previous mode — discard
         setMemberships(result);
 
         // Determine initial active problem set (mode-keyed persistence)
@@ -239,10 +246,12 @@ export function ProblemSetProvider({ children }: { children: ReactNode }) {
       } catch {
         // Silently fail
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [isAuthenticated, userDID, mode]);
+
+    return () => { cancelled = true; };
+  }, [isAuthenticated, userDID, mode, modeLoading]);
 
   // ─── Load active problem set details ────────────────────────────────────────
 
