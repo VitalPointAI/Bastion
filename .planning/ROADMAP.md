@@ -660,7 +660,7 @@ Plans:
 6. Context size management — ~8000 token cap with prioritization (graph summary > extracted_data > text_content)
 
 - [x] 25.3-01-PLAN.md -- Subscription cache materializer (materializeCache + pg-boss + API)
-- [ ] 25.3-02-PLAN.md -- Container-scoped graph entity tagging and queries
+- [x] 25.3-02-PLAN.md -- Container-scoped graph entity tagging and queries
 Plans:
 - [ ] 25.3-03-PLAN.md -- Graph summary service with centrality analysis and temporal boosting
 - [ ] 25.3-04-PLAN.md -- StrategicContextService and AI pipeline integration

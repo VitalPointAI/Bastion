@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 25.3 of 40 (AI Strategic Context & Knowledge Graph Integration)
-Plan: 1 of 5 in current phase — 25.3-01 complete
-Status: Subscription cache materializer with version-based skip logic, pg-boss async invalidation, and strategic-context API endpoints
-Last activity: 2026-03-06 - Completed 25.3-01 (Subscription Cache Materializer)
+Plan: 2 of 5 in current phase — 25.3-02 complete
+Status: containerIds tagging on all RAFT entities with container-scoped graph queries and auto-trigger extraction
+Last activity: 2026-03-06 - Completed 25.3-02 (Container-Scoped Knowledge Graph)
 
-Progress: █████████████████████████ 242 plans complete
+Progress: █████████████████████████ 243 plans complete
 
 ## Performance Metrics
 
@@ -131,6 +131,10 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 25.3 Plan 02 (Container-Scoped Knowledge Graph):**
+- Used Neo4j array containment ($containerId IN a.containerIds) for container-scoped queries
+- Fire-and-forget RAFT extraction after document assignment per CONTEXT.md locked decision
 
 **Phase 25.2 Plan 01 (Data Model Foundation):**
 - Auto-create strategic environment on first problem set access via getEnvironmentByProblemSet
