@@ -686,8 +686,8 @@ The "overarching world view" — national/theater directives, policy, guidance, 
 
 Plans:
 - [x] 26-01-PLAN.md -- Backend: inheritance types, store, service, auto-inheritance hook, API routes (completed 2026-03-06)
-- [ ] 26-02-PLAN.md -- Frontend: API client, InheritedItemCard, ContextDashboardWidget, AcknowledgmentBanner
-- [ ] 26-03-PLAN.md -- InheritedContextSection, ChangelogView, UnderstandTab integration
+- [x] 26-02-PLAN.md -- Frontend: API client, InheritedItemCard, ContextDashboardWidget, AcknowledgmentBanner (completed 2026-03-06)
+- [x] 26-03-PLAN.md -- InheritedContextSection, ChangelogView, UnderstandTab integration (completed 2026-03-06)
 - [ ] 26-04-PLAN.md -- AnnotationPanel and RFIThread components
 - [ ] 26-05-PLAN.md -- Wire annotations/RFI into section, propagation hooks, backfill, end-to-end verification
 
@@ -1276,7 +1276,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 23. Problem Set Model & Rename | 9/10 | In Progress|  |
 | 24. Doctrinal Tab Restructure | 3/3 | Complete    | 2026-03-06 |
 | 25. Operational Design Workspace | 6/6 | Complete   | 2026-03-06 |
-| 26. Strategic Environment & Inheritance | 2/5 | In Progress|  |
+| 26. Strategic Environment & Inheritance | 3/5 | In Progress|  |
 | 27. Resource Registry & DID Plugin | 0/TBD | Not started | - |
 | 28. Embedded DAO Governance | 0/TBD | Not started | - |
 | 29. Contextual AI Staff Integration | 0/TBD | Not started | - |
