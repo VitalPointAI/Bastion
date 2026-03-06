@@ -180,14 +180,14 @@ export class ScenarioStore {
 
   /**
    * Get usage counts — how many problem sets were created from each scenario.
-   * Queries the problem_set_activity_log for 'scenario_loaded' events.
+   * Queries the problem_set_activity table for 'scenario_loaded' events.
    */
   async getUsageCounts(): Promise<Record<string, number>> {
     const result = await this.pool.query(
-      `SELECT data->>'scenarioId' as scenario_id, COUNT(DISTINCT problem_set_id) as count
-       FROM problem_set_activity_log
-       WHERE action = 'scenario_loaded' AND data->>'scenarioId' IS NOT NULL
-       GROUP BY data->>'scenarioId'`
+      `SELECT metadata->>'scenarioId' as scenario_id, COUNT(DISTINCT problem_set_id) as count
+       FROM problem_set_activity
+       WHERE activity_type = 'scenario_loaded' AND metadata->>'scenarioId' IS NOT NULL
+       GROUP BY metadata->>'scenarioId'`
     );
     const counts: Record<string, number> = {};
     for (const row of result.rows) {
