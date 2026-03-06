@@ -125,9 +125,10 @@ Progress: ███████████████████████�
 
 ### Pending Todos
 
-2 pending todo(s) in `.planning/todos/pending/`:
+3 pending todo(s) in `.planning/todos/pending/`:
 - **Fix login landing page dashboard** (ui) — Authenticated users see "login to access command center" instead of dashboard
 - **Fix browser back button triggers verification failed error** (auth) — Browser back shows "Verification Failed" and redirects to login
+- **Create deception, exploit, and de-escalator agents** (ai) — Add three new agent archetypes for MILDEC, exploitation, and escalation management
 
 ### Decisions
 
