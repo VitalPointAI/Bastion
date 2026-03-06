@@ -510,7 +510,7 @@ Plans:
 **Goal:** Rename "workspace" to "problem set" throughout the application to align with JP 5-0 doctrinal terminology, and enhance the model with echelon-awareness for strategic/operational/tactical classification
 **Depends on:** Phase 22
 **Research:** Unlikely
-**Plans:** TBD
+**Plans:** 10 plans
 
 **Context:**
 In JP 5-0, operational design addresses a "problem set" — the complex of conditions, circumstances, and influences that define the operational environment and the challenge to be addressed. Renaming workspaces to problem sets aligns the tool with doctrinal language and reinforces that each workspace represents a distinct operational problem at a specific echelon with its own design-plan-execute-assess cycle.
@@ -523,7 +523,16 @@ In JP 5-0, operational design addresses a "problem set" — the complex of condi
 5. **Route Updates** — `/workspace/{id}` → `/problem-set/{id}` with redirects for backward compatibility
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 23 to create plans)
+- [ ] 23-01-PLAN.md — Problem-set types module with echelon model (Wave 1)
+- [ ] 23-02-PLAN.md — Database migration and store SQL updates (Wave 1)
+- [ ] 23-03-PLAN.md — Backend store file renames to problem-set directory (Wave 2)
+- [ ] 23-04-PLAN.md — Graph workspace module rename to graph problem-set (Wave 2)
+- [ ] 23-05-PLAN.md — Backend API routes and cross-cutting module updates (Wave 3)
+- [ ] 23-06-PLAN.md — Frontend service layer and context provider rename (Wave 3)
+- [ ] 23-07-PLAN.md — Frontend component file renames to problem-set directory (Wave 4)
+- [ ] 23-08-PLAN.md — Frontend routing, cross-cutting imports, and cleanup (Wave 4)
+- [ ] 23-09-PLAN.md — Echelon UI: OrgTree symbols, detail card, create wizard (Wave 5)
+- [ ] 23-10-PLAN.md — Build verification and human-verify checkpoint (Wave 5)
 
 ### Phase 24: Doctrinal Tab Restructure (INSERTED)
 **Goal:** Replace the current tab structure (COP/Decide/Design/Campaign/Train/Overview) with a doctrinal lifecycle flow (Understand/Design/Plan/Direct/COP/Assess) that guides users through the military planning process
