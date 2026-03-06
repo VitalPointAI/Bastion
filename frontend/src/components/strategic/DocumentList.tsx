@@ -45,7 +45,7 @@ export function DocumentList({
   onExtractObjectives,
   refreshTrigger,
   userDID: propUserDID,
-  workspaceId,
+  problemSetId,
 }: DocumentListProps) {
   // Prefer prop DID (from parent component), fall back to context
   const contextUser = useUser();
@@ -69,7 +69,7 @@ export function DocumentList({
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [problemSetId]);
 
   const loadAssignments = useCallback(async (docIds: string[]) => {
     if (!userDID || docIds.length === 0) return;

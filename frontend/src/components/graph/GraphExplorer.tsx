@@ -55,7 +55,7 @@ export function GraphExplorer({
   selectedNodeId,
   height = 600,
 }: GraphExplorerProps) {
-  void _workspaceId; // Reserved for future use
+  void _problemSetId; // Reserved for future use
   void _onEdgeClick; // Reserved for future use
   const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);

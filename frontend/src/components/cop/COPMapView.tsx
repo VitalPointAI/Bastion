@@ -69,7 +69,7 @@ const DEFAULT_ZOOM = 5;
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export function COPMapView({
-  workspaceId,
+  problemSetId,
   layerVisibility,
   layerOpacity,
   currentPerspective,
@@ -80,7 +80,7 @@ export function COPMapView({
   const [layers, setLayers] = useState<COPLayer[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch layers on mount and when workspaceId changes
+  // Fetch layers on mount and when problemSetId changes
   const fetchLayers = useCallback(async () => {
     setLoading(true);
     try {
@@ -105,7 +105,7 @@ export function COPMapView({
     } finally {
       setLoading(false);
     }
-  }, [workspaceId, onLayersLoaded]);
+  }, [problemSetId, onLayersLoaded]);
 
   useEffect(() => {
     fetchLayers();

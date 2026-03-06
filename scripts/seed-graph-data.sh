@@ -1,6 +1,6 @@
 #!/bin/bash
 # Seed script for Strategic Intelligence Fusion dashboard
-# Creates sample workspaces, actors, relationships, tensions, and OSINT events
+# Creates sample problem sets, actors, relationships, tensions, and OSINT events
 # so you can verify graph/map visualizations are working.
 #
 # Usage: bash scripts/seed-graph-data.sh
@@ -14,10 +14,10 @@ NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 echo "=== Seeding Strategic Intelligence Fusion data ==="
 
 # ────────────────────────────────────────────────────
-# 1. Create Workspace
+# 1. Create Problem Set (graph workspace)
 # ────────────────────────────────────────────────────
 echo ""
-echo "--- Creating workspace ---"
+echo "--- Creating graph workspace ---"
 WKS=$(curl -s -X POST "$API/workspaces" \
   -H "Content-Type: application/json" \
   -H "x-did: seed-script" \
@@ -30,11 +30,11 @@ WKS=$(curl -s -X POST "$API/workspaces" \
   }')
 WKS_ID=$(echo "$WKS" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null || echo "")
 if [ -z "$WKS_ID" ]; then
-  echo "  Failed to create workspace. Response: $WKS"
+  echo "  Failed to create graph workspace. Response: $WKS"
   echo "  Is the backend running? Try: docker compose ps"
   exit 1
 fi
-echo "  Created workspace: $WKS_ID"
+echo "  Created graph workspace: $WKS_ID"
 
 # ────────────────────────────────────────────────────
 # 2. Create Actors via Neo4j Cypher (no REST endpoint)
@@ -349,11 +349,11 @@ create_event '{
 echo ""
 echo "=== Seed complete ==="
 echo ""
-echo "Workspace ID: $WKS_ID"
+echo "Graph Workspace ID: $WKS_ID"
 echo "Actors: 8 (5 nations, 2 orgs, 1 individual)"
 echo "Relationships: 7"
 echo "Tensions: 4"
 echo "OSINT Events: 8 (with geographic coordinates for map markers)"
 echo ""
 echo "Open the app and navigate to Strategic Intelligence to see the data."
-echo "Select the 'Indo-Pacific Theater' workspace."
+echo "Select the 'Indo-Pacific Theater' problem set."

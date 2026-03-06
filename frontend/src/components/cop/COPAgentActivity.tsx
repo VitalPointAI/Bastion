@@ -75,7 +75,7 @@ export function COPAgentActivity({ problemSetId }: COPAgentActivityProps) {
     } catch (err) {
       console.error('[COPAgentActivity] Failed to fetch activity:', err);
     }
-  }, [workspaceId]);
+  }, [problemSetId]);
 
   useEffect(() => {
     const initial = setTimeout(fetchActivity, 0);

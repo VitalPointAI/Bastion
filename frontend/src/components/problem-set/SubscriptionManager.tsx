@@ -85,7 +85,7 @@ export function SubscriptionManager({ problemSetId }: SubscriptionManagerProps) 
     : false;
 
   // Available problem sets for subscription creation (exclude current problem set)
-  const availableProblem Sets = memberships.filter(
+  const availableProblemSets = memberships.filter(
     (m) => m.problemSetId !== problemSetId
   );
 
@@ -281,7 +281,7 @@ export function SubscriptionManager({ problemSetId }: SubscriptionManagerProps) 
             <label className="block text-xs font-medium text-gray-400 mb-1.5">
               Publisher Problem Set
             </label>
-            {availableProblem Sets.length === 0 ? (
+            {availableProblemSets.length === 0 ? (
               <p className="text-sm text-gray-500 italic">No other problem sets available.</p>
             ) : (
               <select
@@ -290,8 +290,8 @@ export function SubscriptionManager({ problemSetId }: SubscriptionManagerProps) 
                 required
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-blue-500"
               >
-                <option value="">Select problemSet...</option>
-                {availableProblem Sets.map((m) => (
+                <option value="">Select problem set...</option>
+                {availableProblemSets.map((m) => (
                   <option key={m.problemSetId} value={m.problemSetId}>
                     {m.name} ({m.echelon})
                   </option>

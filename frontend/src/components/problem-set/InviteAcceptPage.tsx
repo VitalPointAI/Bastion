@@ -105,7 +105,7 @@ export function InviteAcceptPage() {
     navigate(`/login?redirect=/problem-set/invite/${token ?? ''}`);
   };
 
-  const handleGoToProblem Set = () => {
+  const handleGoToProblemSet = () => {
     if (joinedProblemSetId) {
       navigate(`/problem-set/${joinedProblemSetId}`);
     } else {
@@ -157,7 +157,7 @@ export function InviteAcceptPage() {
             </p>
             <button
               className="w-full px-4 py-2.5 text-sm font-medium text-white bg-green-700 hover:bg-green-800 rounded-md transition-colors"
-              onClick={handleGoToProblem Set}
+              onClick={handleGoToProblemSet}
             >
               Go to Problem Set
             </button>

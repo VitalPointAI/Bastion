@@ -16,7 +16,7 @@ interface DocumentUploadProps {
   problemSetId?: string;
 }
 
-export function DocumentUpload({ onUploadComplete, workspaceId }: DocumentUploadProps) {
+export function DocumentUpload({ onUploadComplete, problemSetId }: DocumentUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [level, setLevel] = useState<typeof DocumentLevel[keyof typeof DocumentLevel]>('OTHER');
@@ -96,7 +96,7 @@ export function DocumentUpload({ onUploadComplete, workspaceId }: DocumentUpload
     setSuccess(false);
 
     try {
-      const doc = await strategicService.uploadDocument(file, title, level, classification, workspaceId);
+      const doc = await strategicService.uploadDocument(file, title, level, classification, problemSetId);
       setSuccess(true);
       setFile(null);
       setTitle('');
