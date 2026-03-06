@@ -227,6 +227,101 @@
   line-height: 1.4;
 }
 
+/* ─── Delete button (hover-reveal on each item) ─────────────────────────── */
+
+.ws-item-row {
+  position: relative;
+}
+
+.ws-item-delete {
+  display: none;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: none;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  font-size: 0.7rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease;
+  z-index: 2;
+}
+
+.ws-item-row:hover .ws-item-delete {
+  display: flex;
+}
+
+.ws-item-delete:hover {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+/* ─── Delete confirmation row ────────────────────────────────────────────── */
+
+.ws-delete-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: rgba(239, 68, 68, 0.08);
+  border-left: 2px solid #ef4444;
+}
+
+.ws-delete-confirm-text {
+  font-size: 0.75rem;
+  color: #fca5a5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 8px;
+}
+
+.ws-delete-confirm-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ws-delete-cancel-btn,
+.ws-delete-confirm-btn {
+  border: none;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.ws-delete-cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ws-delete-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.ws-delete-confirm-btn {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.ws-delete-confirm-btn:hover {
+  background: #ef4444;
+}
+
+.ws-delete-confirm-btn:disabled,
+.ws-delete-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ─── Divider between list and create button ──────────────────────────────── */
 
 .ws-dropdown-divider {

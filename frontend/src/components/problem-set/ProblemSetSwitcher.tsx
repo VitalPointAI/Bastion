@@ -13,6 +13,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProblemSet } from '../../context/ProblemSetContext';
+import { useUser } from '../../context/UserContext';
+import { problemSetService } from '../../lib/problem-set-service';
 import { CreateProblemSetWizard } from './CreateProblemSetWizard';
 import { NotificationBadge } from './NotificationBadge';
 import './ProblemSetSwitcher.css';
@@ -36,9 +38,12 @@ const TYPE_ICON_CLASS: Record<string, string> = {
 export function ProblemSetSwitcher() {
   const { memberships, activeProblemSetId, notificationCounts, primaryProblemSetId, setActiveProblemSet, refreshMemberships } =
     useProblemSet();
+  const { userDID } = useUser();
   const navigate = useNavigate();
   const [showWizard, setShowWizard] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -66,6 +71,24 @@ export function ProblemSetSwitcher() {
     setActiveProblemSet(problemSetId);
     navigate(`/problem-set/${problemSetId}`);
     setIsOpen(false);
+  };
+
+  const handleDelete = async (problemSetId: string) => {
+    if (!userDID) return;
+    setDeleting(true);
+    try {
+      await problemSetService.deleteProblemSet(problemSetId, userDID);
+      setDeleteTarget(null);
+      if (activeProblemSetId === problemSetId) {
+        // Navigate back to selector if we deleted the active one
+        navigate('/');
+      }
+      await refreshMemberships();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleCreated = async (problemSetId: string, options?: { navigateTo?: string }) => {
@@ -123,42 +146,79 @@ export function ProblemSetSwitcher() {
                 const notifCount = notificationCounts[ws.problemSetId] ?? 0;
                 const abbreviation = getAbbreviation(ws.name);
                 const iconClass = TYPE_ICON_CLASS[ws.echelon] ?? 'org';
+                const isDeleteTarget = deleteTarget === ws.problemSetId;
 
                 return (
-                  <button
-                    key={ws.problemSetId}
-                    className={`ws-item${isActive ? ' active' : ''}`}
-                    onClick={() => handleProblemSetClick(ws.problemSetId)}
-                    role="option"
-                    aria-selected={isActive}
-                    aria-label={`Switch to ${ws.name} (${ws.echelon})`}
-                  >
-                    {/* Problem Set icon */}
-                    <div className={`ws-item-icon ${iconClass}`}>
-                      <span>{abbreviation}</span>
-                      <span className="ws-item-type-badge">{TYPE_LABEL[ws.echelon] ?? '?'}</span>
-                      {isPrimary && <span className="ws-item-primary-star">★</span>}
-                    </div>
+                  <div key={ws.problemSetId} className="ws-item-row">
+                    {isDeleteTarget ? (
+                      <div className="ws-delete-confirm">
+                        <span className="ws-delete-confirm-text">Delete {ws.name}?</span>
+                        <div className="ws-delete-confirm-actions">
+                          <button
+                            className="ws-delete-cancel-btn"
+                            onClick={() => setDeleteTarget(null)}
+                            disabled={deleting}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="ws-delete-confirm-btn"
+                            onClick={() => handleDelete(ws.problemSetId)}
+                            disabled={deleting}
+                          >
+                            {deleting ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        className={`ws-item${isActive ? ' active' : ''}`}
+                        onClick={() => handleProblemSetClick(ws.problemSetId)}
+                        role="option"
+                        aria-selected={isActive}
+                        aria-label={`Switch to ${ws.name} (${ws.echelon})`}
+                      >
+                        {/* Problem Set icon */}
+                        <div className={`ws-item-icon ${iconClass}`}>
+                          <span>{abbreviation}</span>
+                          <span className="ws-item-type-badge">{TYPE_LABEL[ws.echelon] ?? '?'}</span>
+                          {isPrimary && <span className="ws-item-primary-star">★</span>}
+                        </div>
 
-                    {/* Text content */}
-                    <div className="ws-item-text">
-                      <span className="ws-item-name">{ws.name}</span>
-                      <span className="ws-item-meta">{ws.echelon} · {ws.role}</span>
-                    </div>
+                        {/* Text content */}
+                        <div className="ws-item-text">
+                          <span className="ws-item-name">{ws.name}</span>
+                          <span className="ws-item-meta">{ws.echelon} · {ws.role}</span>
+                        </div>
 
-                    {/* Active indicator */}
-                    {isActive && <span className="ws-item-active-dot" />}
+                        {/* Active indicator */}
+                        {isActive && <span className="ws-item-active-dot" />}
 
-                    {/* Notification badge — hidden for active problem set */}
-                    {!isActive && notifCount > 0 && (
-                      <span className="ws-item-notif">{notifCount}</span>
+                        {/* Notification badge — hidden for active problem set */}
+                        {!isActive && notifCount > 0 && (
+                          <span className="ws-item-notif">{notifCount}</span>
+                        )}
+
+                        {/* NotificationBadge component (for pulse animation) */}
+                        {!isActive && (
+                          <NotificationBadge count={notifCount} />
+                        )}
+
+                        {/* Delete button — visible on hover */}
+                        <button
+                          className="ws-item-delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTarget(ws.problemSetId);
+                          }}
+                          aria-label={`Delete ${ws.name}`}
+                          title="Delete problem set"
+                        >
+                          ✕
+                        </button>
+                      </button>
                     )}
-
-                    {/* NotificationBadge component (for pulse animation) */}
-                    {!isActive && (
-                      <NotificationBadge count={notifCount} />
-                    )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
