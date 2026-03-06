@@ -1,11 +1,15 @@
 /**
  * Problem Set Panel Config Store
  *
- * Phase 23: Problem Set Model & Workspace Rename
+ * Phase 24: Doctrinal Tab Restructure
+ * (Originally Phase 23: Problem Set Model & Workspace Rename)
  *
  * Manages per-problem-set panel visibility configuration — which tabs each role can see.
- * Default templates are derived from doctrinal echelon conventions and are
- * auto-populated on first access via getOrCreateDefault().
+ * Default templates use the JP 5-0 doctrinal lifecycle tabs:
+ *   Understand -> Design -> Plan -> Direct -> COP -> Assess
+ *
+ * All roles see all 6 tabs by default (per user decision).
+ * Default tab for all echelons is 'cop'.
  *
  * Table: problem_set_panel_config
  * ID format: PPC-{uuid}
@@ -19,41 +23,41 @@ import { getPool } from '../lib/database.js';
 // ============================================================================
 
 /**
- * Default tab visibility by echelon and role.
- * strategic = theater/combatant command focus (Design/Decide prominent)
- * operational = corps/division focus (Campaign/Monitor prominent)
- * tactical = brigade/battalion focus (Train/Campaign prominent)
+ * The 6 doctrinal lifecycle tabs (JP 5-0 aligned).
+ * Phase 24: All roles see all tabs — no per-role restrictions.
  */
+const ALL_DOCTRINAL_TABS = ['understand', 'design', 'plan', 'direct', 'cop', 'assess'];
+
 const DEFAULT_VISIBILITY_BY_ECHELON: Record<string, Record<string, string[]>> = {
   strategic: {
-    commander: ['overview', 'decide', 'design', 'campaign', 'monitor', 'train'],
-    xo: ['overview', 'decide', 'design', 'campaign', 'monitor', 'train'],
-    s2: ['overview', 'decide', 'monitor'],
-    s3: ['overview', 'decide', 'design', 'campaign'],
-    s4: ['overview', 'campaign'],
-    s5: ['overview', 'decide', 'design', 'campaign'],
-    member: ['overview', 'monitor'],
-    observer: ['overview'],
+    commander: ALL_DOCTRINAL_TABS,
+    xo: ALL_DOCTRINAL_TABS,
+    s2: ALL_DOCTRINAL_TABS,
+    s3: ALL_DOCTRINAL_TABS,
+    s4: ALL_DOCTRINAL_TABS,
+    s5: ALL_DOCTRINAL_TABS,
+    member: ALL_DOCTRINAL_TABS,
+    observer: ALL_DOCTRINAL_TABS,
   },
   operational: {
-    commander: ['overview', 'decide', 'design', 'campaign', 'monitor', 'train'],
-    xo: ['overview', 'decide', 'campaign', 'monitor', 'train'],
-    s2: ['overview', 'monitor'],
-    s3: ['overview', 'decide', 'campaign', 'monitor'],
-    s4: ['overview', 'campaign'],
-    s5: ['overview', 'campaign'],
-    member: ['overview', 'campaign', 'train'],
-    observer: ['overview'],
+    commander: ALL_DOCTRINAL_TABS,
+    xo: ALL_DOCTRINAL_TABS,
+    s2: ALL_DOCTRINAL_TABS,
+    s3: ALL_DOCTRINAL_TABS,
+    s4: ALL_DOCTRINAL_TABS,
+    s5: ALL_DOCTRINAL_TABS,
+    member: ALL_DOCTRINAL_TABS,
+    observer: ALL_DOCTRINAL_TABS,
   },
   tactical: {
-    commander: ['overview', 'decide', 'design', 'campaign', 'monitor', 'train'],
-    xo: ['overview', 'decide', 'campaign', 'train'],
-    s2: ['overview', 'monitor'],
-    s3: ['overview', 'campaign', 'train'],
-    s4: ['overview', 'campaign'],
-    s5: ['overview', 'campaign', 'train'],
-    member: ['overview', 'campaign', 'train'],
-    observer: ['overview'],
+    commander: ALL_DOCTRINAL_TABS,
+    xo: ALL_DOCTRINAL_TABS,
+    s2: ALL_DOCTRINAL_TABS,
+    s3: ALL_DOCTRINAL_TABS,
+    s4: ALL_DOCTRINAL_TABS,
+    s5: ALL_DOCTRINAL_TABS,
+    member: ALL_DOCTRINAL_TABS,
+    observer: ALL_DOCTRINAL_TABS,
   },
 };
 
@@ -68,7 +72,7 @@ async function initProblemSetPanelConfigTable(): Promise<void> {
       id TEXT PRIMARY KEY,
       problem_set_id TEXT NOT NULL UNIQUE REFERENCES problem_sets(id) ON DELETE CASCADE,
       panel_visibility JSONB NOT NULL DEFAULT '{}',
-      default_tab TEXT NOT NULL DEFAULT 'overview',
+      default_tab TEXT NOT NULL DEFAULT 'cop',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -146,7 +150,7 @@ export class ProblemSetPanelConfigStore {
   async upsertConfig(
     problemSetId: string,
     panelVisibility: Record<string, string[]>,
-    defaultTab = 'overview',
+    defaultTab = 'cop',
   ): Promise<PanelConfig> {
     await this.ensureInitialized();
     const pool = getPool();
@@ -172,10 +176,7 @@ export class ProblemSetPanelConfigStore {
 
   /**
    * Return existing config, or create default visibility for the echelon.
-   * Echelon defaults:
-   *   - strategic    -> default_tab 'design'
-   *   - operational  -> default_tab 'campaign'
-   *   - tactical     -> default_tab 'train'
+   * Phase 24: All echelons default to 'cop' tab.
    */
   async getOrCreateDefault(problemSetId: string, echelon: string): Promise<PanelConfig> {
     const existing = await this.getConfig(problemSetId);
@@ -184,14 +185,8 @@ export class ProblemSetPanelConfigStore {
     const visibility =
       DEFAULT_VISIBILITY_BY_ECHELON[echelon] ?? DEFAULT_VISIBILITY_BY_ECHELON['tactical'];
 
-    const defaultTabByEchelon: Record<string, string> = {
-      strategic: 'design',
-      operational: 'campaign',
-      tactical: 'train',
-    };
-    const defaultTab = defaultTabByEchelon[echelon] ?? 'overview';
-
-    return this.upsertConfig(problemSetId, visibility, defaultTab);
+    // Phase 24: All echelons default to COP tab
+    return this.upsertConfig(problemSetId, visibility, 'cop');
   }
 
   /**
