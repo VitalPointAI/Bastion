@@ -4,9 +4,10 @@ import { StrategicDashboard } from '../strategic/index.js';
 import { SubscriptionManager } from '../problem-set/SubscriptionManager.js';
 import { TrainingPackagesView } from './TrainingPackagesView.js';
 import { StrategicContextPreview } from '../strategic/StrategicContextPreview.js';
+import { TeamRoster } from '../exercise/TeamRoster.js';
 import { useMode } from '../../context/ModeContext.js';
 
-type UnderstandView = 'strategic-docs' | 'subscriptions' | 'ai-context-preview' | 'training-packages';
+type UnderstandView = 'strategic-docs' | 'subscriptions' | 'ai-context-preview' | 'training-packages' | 'team-roster';
 
 interface UnderstandTabProps {
   problemSetId: string;
@@ -18,9 +19,9 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
   const [trainingDocCount, setTrainingDocCount] = useState(0);
   const [hasPendingExtraction, setHasPendingExtraction] = useState(false);
 
-  // Reset to strategic-docs when mode switches away from training while viewing training-packages
+  // Reset to strategic-docs when mode switches away from training while viewing training-only views
   useEffect(() => {
-    if (mode !== 'training' && selectedView === 'training-packages') {
+    if (mode !== 'training' && (selectedView === 'training-packages' || selectedView === 'team-roster')) {
       setSelectedView('strategic-docs');
     }
   }, [mode, selectedView]);
@@ -37,10 +38,17 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
       label: 'AI Context Preview',
       tooltip: 'Preview what AI agents know about the strategic environment',
     },
-    ...(mode === 'training' ? [{
-      id: 'training-packages',
-      label: `Training Packages${trainingDocCount > 0 ? ` (${trainingDocCount})` : ''}${hasPendingExtraction ? ' *' : ''}`,
-    }] : []),
+    ...(mode === 'training' ? [
+      {
+        id: 'training-packages',
+        label: `Training Packages${trainingDocCount > 0 ? ` (${trainingDocCount})` : ''}${hasPendingExtraction ? ' *' : ''}`,
+      },
+      {
+        id: 'team-roster',
+        label: 'Team Roster',
+        tooltip: 'Manage exercise positions and phase-transition mappings',
+      },
+    ] : []),
   ];
 
   return (
@@ -64,6 +72,9 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
           onDocCountChange={setTrainingDocCount}
           onPendingChange={setHasPendingExtraction}
         />
+      )}
+      {selectedView === 'team-roster' && mode === 'training' && (
+        <TeamRoster problemSetId={problemSetId} />
       )}
     </TabLayout>
   );

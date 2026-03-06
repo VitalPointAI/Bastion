@@ -1,0 +1,324 @@
+/* ============================================================================
+   BASTION Command Center - Team Roster
+   Exercise Position Management with Phase-Transition Mapping
+   Quick Task 9
+   ============================================================================ */
+
+/* ─── CSS Custom Properties ──────────────────────────────────────────────────── */
+
+:root {
+  --roster-blue: #3b82f6;
+  --roster-red: #ef4444;
+  --roster-neutral: #6b7280;
+  --roster-green: #22c55e;
+}
+
+/* ─── Container ──────────────────────────────────────────────────────────────── */
+
+.team-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  color: var(--text-primary, #fff);
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────────── */
+
+.team-roster__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.team-roster__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.team-roster__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.team-roster__btn {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 4px;
+  background: var(--bg-secondary, #1a1a24);
+  color: var(--text-primary, #fff);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.team-roster__btn:hover {
+  background: var(--bg-tertiary, #252535);
+  border-color: var(--border-active, #4a4a5a);
+}
+
+.team-roster__btn--primary {
+  background: var(--roster-blue);
+  border-color: var(--roster-blue);
+}
+
+.team-roster__btn--primary:hover {
+  background: #2563eb;
+}
+
+.team-roster__btn--danger {
+  color: var(--roster-red);
+  border-color: var(--roster-red);
+}
+
+.team-roster__btn--danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.team-roster__btn--sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* ─── Loading / Empty States ─────────────────────────────────────────────────── */
+
+.team-roster__loading,
+.team-roster__empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted, #888);
+  font-size: 0.9rem;
+}
+
+/* ─── Side Group ─────────────────────────────────────────────────────────────── */
+
+.team-roster__side-group {
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.team-roster__side-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.team-roster__side-header--blue { background: rgba(59, 130, 246, 0.15); color: var(--roster-blue); }
+.team-roster__side-header--red { background: rgba(239, 68, 68, 0.15); color: var(--roster-red); }
+.team-roster__side-header--neutral { background: rgba(107, 114, 128, 0.15); color: var(--roster-neutral); }
+.team-roster__side-header--green { background: rgba(34, 197, 94, 0.15); color: var(--roster-green); }
+
+.team-roster__side-count {
+  font-weight: 400;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.team-roster__side-content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Position Card ──────────────────────────────────────────────────────────── */
+
+.team-roster__position {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.team-roster__position:hover {
+  background: var(--bg-secondary, #1a1a24);
+}
+
+.team-roster__position-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.team-roster__position-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.team-roster__position-duties {
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+
+.team-roster__position-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.team-roster__position-assigned {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  background: var(--bg-tertiary, #252535);
+  color: var(--text-muted, #888);
+}
+
+.team-roster__position-assigned--active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--roster-blue);
+}
+
+.team-roster__phase-badge {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background: var(--bg-tertiary, #252535);
+  color: var(--text-muted, #888);
+}
+
+/* ─── Edit Form ──────────────────────────────────────────────────────────────── */
+
+.team-roster__edit-form {
+  padding: 1rem;
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  background: var(--bg-deep, #0a0a0f);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.team-roster__form-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.team-roster__form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.team-roster__form-group--small {
+  flex: 0 0 120px;
+}
+
+.team-roster__form-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #888);
+}
+
+.team-roster__form-input,
+.team-roster__form-select,
+.team-roster__form-textarea {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 4px;
+  background: var(--bg-secondary, #1a1a24);
+  color: var(--text-primary, #fff);
+  font-size: 0.8rem;
+  font-family: inherit;
+}
+
+.team-roster__form-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.team-roster__form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+/* ─── Phase Mappings ─────────────────────────────────────────────────────────── */
+
+.team-roster__phase-section {
+  border: 1px solid var(--border-subtle, #2a2a38);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.team-roster__phase-header {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--bg-secondary, #1a1a24);
+  cursor: pointer;
+  user-select: none;
+}
+
+.team-roster__phase-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.team-roster__phase-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-top: 1px solid var(--border-subtle, #2a2a38);
+  align-items: center;
+}
+
+.team-roster__phase-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted, #888);
+}
+
+/* ─── Confirm Dialog ─────────────────────────────────────────────────────────── */
+
+.team-roster__confirm {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-top: 1px solid var(--roster-red);
+  font-size: 0.8rem;
+}
+
+.team-roster__confirm-text {
+  flex: 1;
+  color: var(--roster-red);
+}
+
+/* ─── Error ──────────────────────────────────────────────────────────────────── */
+
+.team-roster__error {
+  padding: 0.5rem 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--roster-red);
+  border-radius: 4px;
+  color: var(--roster-red);
+  font-size: 0.8rem;
+}
