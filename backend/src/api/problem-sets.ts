@@ -705,6 +705,43 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
 });
 
 /**
+ * DELETE /api/problem-sets/:id - Delete a problem set (creator only)
+ *
+ * Cascades to all child tables (members, invites, activity, roles, etc.).
+ * Only the original creator (created_by) can delete.
+ */
+router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const problemSetId = req.params.id as string;
+
+    const problemSet = await problemSetStore.getProblemSet(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
+    }
+
+    if (problemSet.createdBy !== userDid) {
+      return res.status(403).json({ error: 'Only the creator can delete a problem set' });
+    }
+
+    // Check for child problem sets — prevent deletion if children exist
+    const children = await problemSetStore.listChildProblemSets(problemSetId);
+    if (children.length > 0) {
+      return res.status(400).json({ error: 'Cannot delete a problem set that has child problem sets. Delete children first.' });
+    }
+
+    await problemSetStore.deleteProblemSet(problemSetId);
+
+    console.log(`Problem set deleted: ${problemSetId} by ${userDid}`);
+    res.status(204).send();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete problem set failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
  * GET /api/problem-sets/:id/hierarchy - Get full problem set hierarchy tree
  */
 router.get('/:id/hierarchy', requireAuth, async (req: Request, res: Response) => {

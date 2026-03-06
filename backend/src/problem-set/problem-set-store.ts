@@ -309,6 +309,20 @@ export class ProblemSetStore {
   }
 
   /**
+   * Delete a problem set by ID.
+   * Child tables use ON DELETE CASCADE so members, invites, activity, roles,
+   * compartments, subscriptions, escalation rules, and panel config are removed automatically.
+   *
+   * @returns true if deleted, false if not found
+   */
+  async deleteProblemSet(id: string): Promise<boolean> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    const result = await pool.query('DELETE FROM problem_sets WHERE id = $1', [id]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /**
    * Get the full hierarchy rooted at a problem set — all descendants (not just direct children).
    * Uses a recursive CTE for efficient single-query traversal.
    *

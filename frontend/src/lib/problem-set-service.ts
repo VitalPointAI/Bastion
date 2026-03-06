@@ -206,6 +206,16 @@ class ProblemSetService {
     return response.hierarchy;
   }
 
+  async deleteProblemSet(id: string, userDID: string): Promise<void> {
+    await fetch(`${this.baseUrl}/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: { 'X-DID': userDID },
+    }).then((res) => {
+      if (!res.ok) return res.json().then((b: { error?: string }) => { throw new Error(b.error || `HTTP ${res.status}`); });
+    });
+  }
+
   async updateProblemSet(
     id: string,
     updates: Partial<{ name: string; description: string; inviteMode: string; discoverability: string; problemStatement: string }>,

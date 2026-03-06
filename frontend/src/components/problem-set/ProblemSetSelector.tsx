@@ -67,6 +67,8 @@ export function ProblemSetSelector() {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [detail, setDetail] = useState<ProblemSetDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Derive root problem set ID for OrgTree -- prefer strategic echelon, fallback to first
   const rootProblemSetId = useMemo((): string | null => {
@@ -86,6 +88,7 @@ export function ProblemSetSelector() {
     if (!selectedId || !userDID) return;
     let cancelled = false;
     setDetailLoading(true);
+    setDeleteConfirm(false);
     problemSetService.getProblemSet(selectedId, userDID)
       .then((d) => { if (!cancelled) setDetail(d); })
       .catch(() => { if (!cancelled) setDetail(null); })
@@ -241,6 +244,55 @@ export function ProblemSetSelector() {
                 >
                   Enter Problem Set
                 </button>
+
+                {/* Delete — creator only */}
+                {detail && userDID && detail.createdBy === `did:near:${userDID}` && (
+                  <div className="mt-3 pt-3 border-t border-gray-700">
+                    {!deleteConfirm ? (
+                      <button
+                        onClick={() => setDeleteConfirm(true)}
+                        className="w-full py-2 rounded border border-red-800 text-red-400 hover:bg-red-900/30 text-xs font-medium transition-colors"
+                      >
+                        Delete Problem Set
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-xs text-red-400 text-center">
+                          This will permanently delete this problem set and all its data. This cannot be undone.
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setDeleteConfirm(false)}
+                            disabled={deleting}
+                            className="flex-1 py-2 rounded border border-gray-600 text-gray-300 hover:bg-gray-700 text-xs font-medium transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={async () => {
+                              setDeleting(true);
+                              try {
+                                await problemSetService.deleteProblemSet(selectedMembership.problemSetId, userDID);
+                                setSelectedId(null);
+                                setDetail(null);
+                                setDeleteConfirm(false);
+                                await refreshMemberships();
+                              } catch (err) {
+                                alert(err instanceof Error ? err.message : 'Delete failed');
+                              } finally {
+                                setDeleting(false);
+                              }
+                            }}
+                            disabled={deleting}
+                            className="flex-1 py-2 rounded bg-red-700 hover:bg-red-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
+                          >
+                            {deleting ? 'Deleting...' : 'Confirm Delete'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
