@@ -1,8 +1,8 @@
 /**
- * Workspace API
- * REST endpoints for workspace CRUD, membership, invites, roles, and activity.
+ * Problem Set API
+ * REST endpoints for problem set CRUD, membership, invites, roles, and activity.
  *
- * Phase 19 Plan 03: Workspace REST API
+ * Phase 23: Problem Set Model & Workspace Rename
  *
  * All on-chain DAO operations (create_dao, add_member, remove_member, assign_role)
  * are triggered from these routes via signAndSubmitFunctionCall.
@@ -11,18 +11,18 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../auth/auth-instance.js';
-import { workspaceStore } from '../workspace/workspace-store.js';
-import { workspaceMemberStore } from '../workspace/workspace-member-store.js';
-import { workspaceInviteStore } from '../workspace/workspace-invite-store.js';
-import { workspaceActivityStore } from '../workspace/workspace-activity-store.js';
-import { workspaceRoleStore } from '../workspace/workspace-role-store.js';
-import { workspaceCompartmentStore } from '../workspace/workspace-compartment-store.js';
-import { workspacePanelConfigStore } from '../workspace/workspace-panel-config-store.js';
-import { workspaceSubscriptionStore } from '../workspace/workspace-subscription-store.js';
-import { workspaceEscalationStore } from '../workspace/workspace-escalation-store.js';
+import { problemSetStore } from '../problem-set/problem-set-store.js';
+import { problemSetMemberStore } from '../problem-set/problem-set-member-store.js';
+import { problemSetInviteStore } from '../problem-set/problem-set-invite-store.js';
+import { problemSetActivityStore } from '../problem-set/problem-set-activity-store.js';
+import { problemSetRoleStore } from '../problem-set/problem-set-role-store.js';
+import { problemSetCompartmentStore } from '../problem-set/problem-set-compartment-store.js';
+import { problemSetPanelConfigStore } from '../problem-set/problem-set-panel-config-store.js';
+import { problemSetSubscriptionStore } from '../problem-set/problem-set-subscription-store.js';
+import { problemSetEscalationStore } from '../problem-set/problem-set-escalation-store.js';
 import { signAndSubmitFunctionCall } from '../near/tx-signer.js';
-import { clearanceSufficient } from '../workspace/types.js';
-import type { AppMode, WorkspaceType } from '../workspace/types.js';
+import { clearanceSufficient, validateEchelonHierarchy } from '../problem-set/types.js';
+import type { AppMode, Echelon, ProblemSetClassification } from '../problem-set/types.js';
 import { ScenarioStore } from '../exercise/scenario-store.js';
 import { modeMiddleware } from '../middleware/mode-context.js';
 
@@ -35,12 +35,12 @@ const router = Router();
 // Validation Schemas
 // ============================================================================
 
-const CreateWorkspaceSchema = z.object({
+const CreateProblemSetSchema = z.object({
   name: z.string().min(2).max(100),
   description: z.string().max(500).optional(),
-  workspaceType: z.enum(['Organization', 'Unit', 'Team']),
+  echelon: z.enum(['strategic', 'operational', 'tactical']),
   classification: z.enum(['UNCLASSIFIED', 'SECRET', 'TOPSECRET']).default('UNCLASSIFIED'),
-  parentWorkspaceId: z.string().optional(),
+  parentProblemSetId: z.string().optional(),
   inviteMode: z.enum(['open', 'gated']).default('gated'),
   discoverability: z.enum(['discoverable', 'private']).default('private'),
   mode: z.enum(['training', 'operational']).default('operational'),
@@ -74,7 +74,7 @@ const PanelConfigSchema = z.object({
 });
 
 const CreateSubscriptionSchema = z.object({
-  publisherWorkspaceId: z.string().min(1),
+  publisherProblemSetId: z.string().min(1),
   dataTypes: z.array(z.string()),
 });
 
@@ -115,7 +115,7 @@ function buildDID(nearAccountId: string): string {
 
 /**
  * Derive user secret from account ID (deterministic, server-side)
- * Uses a simple derivation for workspace operations — same approach as existing code.
+ * Uses a simple derivation for problem set operations -- same approach as existing code.
  */
 function deriveUserSecret(accountId: string): Uint8Array {
   const encoder = new TextEncoder();
@@ -128,17 +128,17 @@ function deriveUserSecret(accountId: string): Uint8Array {
 }
 
 /**
- * Check if a user has a given permission in a workspace.
+ * Check if a user has a given permission in a problem set.
  * Throws an error with HTTP status 403 if permission is missing.
  */
 async function checkPermission(
-  workspaceId: string,
+  problemSetId: string,
   userDid: string,
   permission: string,
 ): Promise<void> {
-  const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+  const member = await problemSetMemberStore.getMember(problemSetId, userDid);
   if (!member) {
-    const err = new Error('Not a member of this workspace');
+    const err = new Error('Not a member of this problem set');
     (err as NodeJS.ErrnoException).code = '403';
     throw err;
   }
@@ -148,7 +148,7 @@ async function checkPermission(
     throw err;
   }
 
-  const roles = await workspaceRoleStore.getRolesForWorkspace(workspaceId);
+  const roles = await problemSetRoleStore.getRolesForProblemSet(problemSetId);
   const memberRole = roles.find((r) => r.militaryLabel === member.role);
   if (!memberRole || !memberRole.permissions.includes(permission)) {
     const err = new Error(`Missing permission: ${permission}`);
@@ -158,18 +158,18 @@ async function checkPermission(
 }
 
 /**
- * Determine the hierarchy level of a workspace (0 = root, 1 = child, 2 = grandchild).
+ * Determine the hierarchy level of a problem set (0 = root, 1 = child, 2 = grandchild).
  * Used to enforce max 3-level hierarchy.
  */
-async function getWorkspaceDepth(workspaceId: string): Promise<number> {
+async function getProblemSetDepth(problemSetId: string): Promise<number> {
   let depth = 0;
-  let currentId: string | null = workspaceId;
+  let currentId: string | null = problemSetId;
 
   while (currentId) {
-    const ws = await workspaceStore.getWorkspace(currentId);
-    if (!ws || !ws.parentWorkspaceId) break;
+    const ps = await problemSetStore.getProblemSet(currentId);
+    if (!ps || !ps.parentProblemSetId) break;
     depth++;
-    currentId = ws.parentWorkspaceId;
+    currentId = ps.parentProblemSetId;
     if (depth > 3) break; // Safety: avoid infinite loop on circular ref
   }
 
@@ -177,16 +177,16 @@ async function getWorkspaceDepth(workspaceId: string): Promise<number> {
 }
 
 /**
- * Check if a user is commander or XO (council-level role) in a workspace.
+ * Check if a user is commander or XO (council-level role) in a problem set.
  * Returns the member record if authorized, throws 403 otherwise.
  */
 async function requireCommanderOrXo(
-  workspaceId: string,
+  problemSetId: string,
   userDid: string,
 ): Promise<void> {
-  const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+  const member = await problemSetMemberStore.getMember(problemSetId, userDid);
   if (!member) {
-    const err = new Error('Not a member of this workspace');
+    const err = new Error('Not a member of this problem set');
     (err as NodeJS.ErrnoException).code = '403';
     throw err;
   }
@@ -221,23 +221,24 @@ function handleError(res: Response, error: unknown): void {
 }
 
 // ============================================================================
-// Workspace CRUD Endpoints
+// Problem Set CRUD Endpoints
 // ============================================================================
 
 /**
- * POST /api/workspaces - Create a new workspace
+ * POST /api/problem-sets - Create a new problem set
  *
  * Creates off-chain record + triggers on-chain DAO creation.
  * Auto-initializes military role templates and adds creator as commander.
+ * Validates echelon hierarchy when parent is specified.
  */
 router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
     const userSecret = deriveUserSecret(req.anonUser!.nearAccountId);
 
-    let body: z.infer<typeof CreateWorkspaceSchema>;
+    let body: z.infer<typeof CreateProblemSetSchema>;
     try {
-      body = CreateWorkspaceSchema.parse(req.body);
+      body = CreateProblemSetSchema.parse(req.body);
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
@@ -245,33 +246,47 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       throw validationError;
     }
 
-    // Validate hierarchy depth if parent specified
+    // Validate hierarchy depth and echelon if parent specified
     let parentDaoId: string | undefined;
-    if (body.parentWorkspaceId) {
-      const parent = await workspaceStore.getWorkspace(body.parentWorkspaceId);
+    if (body.parentProblemSetId) {
+      const parent = await problemSetStore.getProblemSet(body.parentProblemSetId);
       if (!parent) {
-        return res.status(404).json({ error: 'Parent workspace not found' });
+        return res.status(404).json({ error: 'Parent problem set not found' });
       }
       parentDaoId = parent.daoId;
 
-      // Check depth — max 3 levels (Organization → Unit → Team)
-      const parentDepth = await getWorkspaceDepth(body.parentWorkspaceId);
+      // Validate echelon hierarchy (strategic > operational > tactical)
+      if (!validateEchelonHierarchy(parent.echelon, body.echelon)) {
+        return res.status(400).json({
+          error: `Invalid echelon hierarchy: ${parent.echelon} cannot contain ${body.echelon}`,
+        });
+      }
+
+      // Check depth -- max 3 levels (strategic > operational > tactical)
+      const parentDepth = await getProblemSetDepth(body.parentProblemSetId);
       if (parentDepth >= 2) {
-        return res.status(400).json({ error: 'Maximum workspace hierarchy depth (3 levels) exceeded' });
+        return res.status(400).json({ error: 'Maximum problem set hierarchy depth (3 levels) exceeded' });
+      }
+    } else {
+      // Top-level must be strategic
+      if (!validateEchelonHierarchy(null, body.echelon)) {
+        return res.status(400).json({
+          error: 'Top-level problem sets must be strategic echelon',
+        });
       }
     }
 
     // Resolve mode: prefer body param, fall back to middleware-injected userMode, default 'operational'
     const mode = (body.mode ?? (req as unknown as Record<string, unknown>).userMode ?? 'operational') as AppMode;
 
-    // Create off-chain workspace record (generates daoId)
-    const workspace = await workspaceStore.createWorkspace(
+    // Create off-chain problem set record (generates daoId)
+    const problemSet = await problemSetStore.createProblemSet(
       {
         name: body.name,
         description: body.description,
-        workspaceType: body.workspaceType as WorkspaceType,
-        classification: body.classification,
-        parentWorkspaceId: body.parentWorkspaceId,
+        echelon: body.echelon as Echelon,
+        classification: body.classification as ProblemSetClassification,
+        parentProblemSetId: body.parentProblemSetId,
         inviteMode: body.inviteMode,
         discoverability: body.discoverability,
         mode,
@@ -285,23 +300,23 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       DAO_CONTRACT_ID,
       'create_dao',
       {
-        dao_id: workspace.daoId,
-        name: workspace.name,
-        description: workspace.description ?? '',
-        classification: workspace.classification,
+        dao_id: problemSet.daoId,
+        name: problemSet.name,
+        description: problemSet.description ?? '',
+        classification: problemSet.classification,
       },
     );
 
     let txHash = createDaoResult.txHash;
 
-    // On-chain: set parent DAO if workspace is a child
+    // On-chain: set parent DAO if problem set is a child
     if (parentDaoId) {
       const setParentResult = await signAndSubmitFunctionCall(
         userSecret,
         DAO_CONTRACT_ID,
         'set_dao_parent',
         {
-          dao_id: workspace.daoId,
+          dao_id: problemSet.daoId,
           parent_dao_id: parentDaoId,
         },
       );
@@ -309,35 +324,35 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     }
 
     // Initialize military role templates
-    await workspaceRoleStore.initRolesForWorkspace(workspace.id, workspace.workspaceType);
+    await problemSetRoleStore.initRolesForProblemSet(problemSet.id, problemSet.echelon);
 
     // Add creator as commander (council DAO role)
-    await workspaceMemberStore.addMember(workspace.id, userDid, 'commander', 'council', userDid);
+    await problemSetMemberStore.addMember(problemSet.id, userDid, 'commander', 'council', userDid);
 
     // Log activity
-    await workspaceActivityStore.log(
-      workspace.id,
-      'workspace_created',
+    await problemSetActivityStore.log(
+      problemSet.id,
+      'problem_set_created',
       userDid,
       null,
-      { workspaceType: workspace.workspaceType, daoId: workspace.daoId },
+      { echelon: problemSet.echelon, daoId: problemSet.daoId },
       txHash,
     );
 
-    console.log(`✓ Workspace created: ${workspace.id} (DAO: ${workspace.daoId})`);
-    res.status(201).json(workspace);
+    console.log(`Problem set created: ${problemSet.id} (DAO: ${problemSet.daoId})`);
+    res.status(201).json(problemSet);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Create workspace failed:', message);
+    console.error('Create problem set failed:', message);
     res.status(500).json({ error: message });
   }
 });
 
 /**
- * POST /api/workspaces/from-scenario - Create a training workspace from an exercise scenario
+ * POST /api/problem-sets/from-scenario - Create a training problem set from an exercise scenario
  *
- * Always creates workspace with mode='training' regardless of user's current mode.
- * Pre-populates workspace with scenario snapshot data.
+ * Always creates problem set with mode='training' regardless of user's current mode.
+ * Pre-populates problem set with scenario snapshot data.
  */
 router.post('/from-scenario', requireAuth, modeMiddleware, async (req: Request, res: Response) => {
   try {
@@ -360,14 +375,14 @@ router.post('/from-scenario', requireAuth, modeMiddleware, async (req: Request, 
       return res.status(404).json({ error: 'Scenario not found' });
     }
 
-    // Create workspace in training mode (scenarios are inherently training)
-    const workspaceName = body.name ?? scenario.name;
-    const workspace = await workspaceStore.createWorkspace(
+    // Create problem set in training mode (scenarios are inherently training)
+    const problemSetName = body.name ?? scenario.name;
+    const problemSet = await problemSetStore.createProblemSet(
       {
-        name: workspaceName,
-        description: `Training workspace created from scenario: ${scenario.name}`,
-        workspaceType: 'Team' as WorkspaceType,
-        classification: 'UNCLASSIFIED',
+        name: problemSetName,
+        description: `Training problem set created from scenario: ${scenario.name}`,
+        echelon: 'tactical' as Echelon,
+        classification: 'UNCLASSIFIED' as ProblemSetClassification,
         inviteMode: 'gated',
         discoverability: 'private',
         mode: 'training' as AppMode,
@@ -381,22 +396,22 @@ router.post('/from-scenario', requireAuth, modeMiddleware, async (req: Request, 
       DAO_CONTRACT_ID,
       'create_dao',
       {
-        dao_id: workspace.daoId,
-        name: workspace.name,
-        description: workspace.description ?? '',
-        classification: workspace.classification,
+        dao_id: problemSet.daoId,
+        name: problemSet.name,
+        description: problemSet.description ?? '',
+        classification: problemSet.classification,
       },
     );
 
     // Initialize military role templates
-    await workspaceRoleStore.initRolesForWorkspace(workspace.id, workspace.workspaceType);
+    await problemSetRoleStore.initRolesForProblemSet(problemSet.id, problemSet.echelon);
 
     // Add creator as commander
-    await workspaceMemberStore.addMember(workspace.id, userDid, 'commander', 'council', userDid);
+    await problemSetMemberStore.addMember(problemSet.id, userDid, 'commander', 'council', userDid);
 
     // Log scenario load activity
-    await workspaceActivityStore.log(
-      workspace.id,
+    await problemSetActivityStore.log(
+      problemSet.id,
       'scenario_loaded',
       userDid,
       null,
@@ -407,22 +422,22 @@ router.post('/from-scenario', requireAuth, modeMiddleware, async (req: Request, 
         exercisePhases: scenario.exercisePhases,
         currentPhaseIndex: scenario.currentPhaseIndex,
         status: scenario.status,
-        daoId: workspace.daoId,
+        daoId: problemSet.daoId,
       },
       createDaoResult.txHash,
     );
 
-    console.log(`✓ Training workspace created from scenario: ${workspace.id} (scenario: ${scenario.id})`);
-    res.status(201).json(workspace);
+    console.log(`Training problem set created from scenario: ${problemSet.id} (scenario: ${scenario.id})`);
+    res.status(201).json(problemSet);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Create workspace from scenario failed:', message);
+    console.error('Create problem set from scenario failed:', message);
     res.status(500).json({ error: message });
   }
 });
 
 /**
- * GET /api/workspaces/me - List user's workspace memberships (enriched)
+ * GET /api/problem-sets/me - List user's problem set memberships (enriched)
  */
 router.get('/me', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -430,18 +445,18 @@ router.get('/me', requireAuth, async (req: Request, res: Response) => {
     const mode = req.query.mode as AppMode | undefined;
     const userMode = (req as unknown as Record<string, unknown>).userMode as AppMode | undefined;
 
-    const memberships = await workspaceMemberStore.listMemberships(userDid);
+    const memberships = await problemSetMemberStore.listMemberships(userDid);
 
-    // Enrich each membership with workspace name and type
+    // Enrich each membership with problem set name and echelon
     const enriched = await Promise.all(
       memberships.map(async (membership) => {
-        const workspace = await workspaceStore.getWorkspace(membership.workspaceId);
+        const problemSet = await problemSetStore.getProblemSet(membership.problemSetId);
         return {
           ...membership,
-          name: workspace?.name ?? 'Unknown',
-          workspaceType: workspace?.workspaceType ?? 'Organization',
-          classification: workspace?.classification ?? 'UNCLASSIFIED',
-          mode: workspace?.mode ?? 'operational',
+          name: problemSet?.name ?? 'Unknown',
+          echelon: problemSet?.echelon ?? 'strategic',
+          classification: problemSet?.classification ?? 'UNCLASSIFIED',
+          mode: problemSet?.mode ?? 'operational',
         };
       }),
     );
@@ -464,37 +479,37 @@ router.get('/me', requireAuth, async (req: Request, res: Response) => {
 });
 
 /**
- * PUT /api/workspaces/me/primary - Set primary workspace
+ * PUT /api/problem-sets/me/primary - Set primary problem set
  *
- * Body: { workspaceId: string }
+ * Body: { problemSetId: string }
  */
 router.put('/me/primary', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const { workspaceId } = req.body;
+    const { problemSetId } = req.body;
 
-    if (!workspaceId || typeof workspaceId !== 'string') {
-      return res.status(400).json({ error: 'workspaceId is required' });
+    if (!problemSetId || typeof problemSetId !== 'string') {
+      return res.status(400).json({ error: 'problemSetId is required' });
     }
 
     // Verify membership exists
-    const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+    const member = await problemSetMemberStore.getMember(problemSetId, userDid);
     if (!member) {
-      return res.status(404).json({ error: 'You are not a member of this workspace' });
+      return res.status(404).json({ error: 'You are not a member of this problem set' });
     }
 
-    await workspaceMemberStore.setPrimary(userDid, workspaceId);
+    await problemSetMemberStore.setPrimary(userDid, problemSetId);
 
-    res.json({ success: true, workspaceId });
+    res.json({ success: true, problemSetId });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Set primary workspace failed:', message);
+    console.error('Set primary problem set failed:', message);
     res.status(500).json({ error: message });
   }
 });
 
 /**
- * POST /api/workspaces/invite/accept - Accept a workspace invite
+ * POST /api/problem-sets/invite/accept - Accept a problem set invite
  *
  * Body: { token: string }
  * Handles clearance validation and gated approval flow.
@@ -510,7 +525,7 @@ router.post('/invite/accept', requireAuth, async (req: Request, res: Response) =
     }
 
     // Look up invite by raw token
-    const invite = await workspaceInviteStore.getInviteByToken(token);
+    const invite = await problemSetInviteStore.getInviteByToken(token);
     if (!invite) {
       return res.status(404).json({ error: 'Invite not found, expired, or already accepted' });
     }
@@ -520,27 +535,25 @@ router.post('/invite/accept', requireAuth, async (req: Request, res: Response) =
       return res.status(403).json({ error: 'This invite is for a different user' });
     }
 
-    // Get workspace for clearance and mode checks
-    const workspace = await workspaceStore.getWorkspace(invite.workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+    // Get problem set for clearance and mode checks
+    const problemSet = await problemSetStore.getProblemSet(invite.problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
     }
 
-    // Clearance gate: check user clearance against workspace classification
-    // For now, we treat the user's DID scope as UNCLASSIFIED unless profile says otherwise.
-    // A future user-profile integration can provide the actual clearance level.
+    // Clearance gate: check user clearance against problem set classification
     const userClearance = (req.anonUser as unknown as Record<string, unknown>)?.clearance as string | undefined;
-    if (!clearanceSufficient(userClearance ?? 'UNCLASSIFIED', workspace.classification)) {
+    if (!clearanceSufficient(userClearance ?? 'UNCLASSIFIED', problemSet.classification)) {
       return res.status(403).json({
-        error: `Insufficient clearance. Workspace requires ${workspace.classification}`,
+        error: `Insufficient clearance. Problem set requires ${problemSet.classification}`,
       });
     }
 
-    // Gated mode: if workspace.inviteMode === 'gated' and invite not yet approved, return 202
-    if (workspace.inviteMode === 'gated' && !invite.approvedAt) {
+    // Gated mode: if problemSet.inviteMode === 'gated' and invite not yet approved, return 202
+    if (problemSet.inviteMode === 'gated' && !invite.approvedAt) {
       return res.status(202).json({
         status: 'pending_approval',
-        message: 'Your membership request is awaiting approval from a workspace administrator',
+        message: 'Your membership request is awaiting approval from a problem set administrator',
         inviteId: invite.id,
       });
     }
@@ -551,15 +564,15 @@ router.post('/invite/accept', requireAuth, async (req: Request, res: Response) =
       DAO_CONTRACT_ID,
       'add_member',
       {
-        dao_id: workspace.daoId,
+        dao_id: problemSet.daoId,
         member_id: userDid,
         role: invite.daoRole,
       },
     );
 
     // Off-chain: add member record
-    const member = await workspaceMemberStore.addMember(
-      invite.workspaceId,
+    const member = await problemSetMemberStore.addMember(
+      invite.problemSetId,
       userDid,
       invite.role,
       invite.daoRole,
@@ -567,11 +580,11 @@ router.post('/invite/accept', requireAuth, async (req: Request, res: Response) =
     );
 
     // Mark invite accepted
-    await workspaceInviteStore.markAccepted(invite.id);
+    await problemSetInviteStore.markAccepted(invite.id);
 
     // Log activity
-    await workspaceActivityStore.log(
-      invite.workspaceId,
+    await problemSetActivityStore.log(
+      invite.problemSetId,
       'member_joined',
       userDid,
       userDid,
@@ -579,7 +592,7 @@ router.post('/invite/accept', requireAuth, async (req: Request, res: Response) =
       addMemberResult.txHash,
     );
 
-    console.log(`✓ User ${userDid} accepted invite to workspace ${invite.workspaceId}`);
+    console.log(`User ${userDid} accepted invite to problem set ${invite.problemSetId}`);
     res.json({ member, txHash: addMemberResult.txHash });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -589,9 +602,9 @@ router.post('/invite/accept', requireAuth, async (req: Request, res: Response) =
 });
 
 /**
- * POST /api/workspaces/notifications/counts - Get unread activity counts
+ * POST /api/problem-sets/notifications/counts - Get unread activity counts
  *
- * Body: { lastSeenMap: Record<string, string> } (workspaceId → ISO timestamp)
+ * Body: { lastSeenMap: Record<string, string> } (problemSetId -> ISO timestamp)
  */
 router.post('/notifications/counts', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -602,7 +615,7 @@ router.post('/notifications/counts', requireAuth, async (req: Request, res: Resp
       return res.status(400).json({ error: 'lastSeenMap is required' });
     }
 
-    const counts = await workspaceActivityStore.getUnreadCountsForUser(userDid, lastSeenMap);
+    const counts = await problemSetActivityStore.getUnreadCountsForUser(userDid, lastSeenMap);
 
     res.json({ counts });
   } catch (error) {
@@ -613,71 +626,71 @@ router.post('/notifications/counts', requireAuth, async (req: Request, res: Resp
 });
 
 // ============================================================================
-// Per-Workspace Endpoints (/:id prefix)
+// Per-Problem-Set Endpoints (/:id prefix)
 // ============================================================================
 
 /**
- * GET /api/workspaces/:id - Get workspace details
+ * GET /api/problem-sets/:id - Get problem set details
  * Caller must be a member.
  */
 router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
-    const workspace = await workspaceStore.getWorkspace(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+    const problemSet = await problemSetStore.getProblemSet(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
     }
 
     // Verify caller is a member
-    const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+    const member = await problemSetMemberStore.getMember(problemSetId, userDid);
     if (!member) {
-      return res.status(403).json({ error: 'Not a member of this workspace' });
+      return res.status(403).json({ error: 'Not a member of this problem set' });
     }
 
-    const memberCount = await workspaceMemberStore.getMemberCount(workspaceId);
+    const memberCount = await problemSetMemberStore.getMemberCount(problemSetId);
 
-    res.json({ ...workspace, memberCount });
+    res.json({ ...problemSet, memberCount });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Get workspace failed:', message);
+    console.error('Get problem set failed:', message);
     res.status(500).json({ error: message });
   }
 });
 
 /**
- * PATCH /api/workspaces/:id - Update workspace settings
+ * PATCH /api/problem-sets/:id - Update problem set settings
  * Requires manage_workspace permission.
  */
 router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
-    const workspace = await workspaceStore.getWorkspace(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+    const problemSet = await problemSetStore.getProblemSet(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
     }
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_workspace');
+      await checkPermission(problemSetId, userDid, 'manage_workspace');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
     const { name, description, inviteMode, discoverability } = req.body;
-    const updated = await workspaceStore.updateWorkspace(workspaceId, {
+    const updated = await problemSetStore.updateProblemSet(problemSetId, {
       name,
       description,
       inviteMode,
       discoverability,
     });
 
-    await workspaceActivityStore.log(
-      workspaceId,
-      'workspace_updated',
+    await problemSetActivityStore.log(
+      problemSetId,
+      'problem_set_updated',
       userDid,
       null,
       { changes: { name, description, inviteMode, discoverability } },
@@ -686,26 +699,26 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
     res.json(updated);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Update workspace failed:', message);
+    console.error('Update problem set failed:', message);
     res.status(500).json({ error: message });
   }
 });
 
 /**
- * GET /api/workspaces/:id/hierarchy - Get full workspace hierarchy tree
+ * GET /api/problem-sets/:id/hierarchy - Get full problem set hierarchy tree
  */
 router.get('/:id/hierarchy', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
-    const hierarchy = await workspaceStore.getHierarchy(workspaceId);
+    const hierarchy = await problemSetStore.getHierarchy(problemSetId);
 
-    // Enrich each workspace with member count
+    // Enrich each problem set with member count
     const enriched = await Promise.all(
-      hierarchy.map(async (ws) => {
-        const memberCount = await workspaceMemberStore.getMemberCount(ws.id);
-        return { ...ws, memberCount };
+      hierarchy.map(async (ps) => {
+        const memberCount = await problemSetMemberStore.getMemberCount(ps.id);
+        return { ...ps, memberCount };
       }),
     );
 
@@ -722,13 +735,13 @@ router.get('/:id/hierarchy', requireAuth, async (req: Request, res: Response) =>
 // ============================================================================
 
 /**
- * GET /api/workspaces/:id/members - List workspace members
+ * GET /api/problem-sets/:id/members - List problem set members
  */
 router.get('/:id/members', requireAuth, async (req: Request, res: Response) => {
   try {
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
-    const members = await workspaceMemberStore.listMembers(workspaceId);
+    const members = await problemSetMemberStore.listMembers(problemSetId);
 
     res.json({ members, count: members.length });
   } catch (error) {
@@ -739,14 +752,14 @@ router.get('/:id/members', requireAuth, async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/workspaces/:id/members/:memberDid/role - Change member role
+ * POST /api/problem-sets/:id/members/:memberDid/role - Change member role
  * Requires manage_roles permission.
  */
 router.post('/:id/members/:memberDid/role', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
     const userSecret = deriveUserSecret(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const memberDid = req.params.memberDid as string;
 
     let body: z.infer<typeof UpdateRoleSchema>;
@@ -760,21 +773,21 @@ router.post('/:id/members/:memberDid/role', requireAuth, async (req: Request, re
     }
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_roles');
+      await checkPermission(problemSetId, userDid, 'manage_roles');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
     // Get current member state for activity log metadata
-    const currentMember = await workspaceMemberStore.getMember(workspaceId, memberDid);
+    const currentMember = await problemSetMemberStore.getMember(problemSetId, memberDid);
     if (!currentMember) {
       return res.status(404).json({ error: 'Member not found' });
     }
 
-    const workspace = await workspaceStore.getWorkspace(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+    const problemSet = await problemSetStore.getProblemSet(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
     }
 
     // On-chain: assign new role
@@ -783,22 +796,22 @@ router.post('/:id/members/:memberDid/role', requireAuth, async (req: Request, re
       DAO_CONTRACT_ID,
       'assign_role',
       {
-        dao_id: workspace.daoId,
+        dao_id: problemSet.daoId,
         member_id: memberDid,
         role: body.newDaoRole,
       },
     );
 
     // Off-chain: update role
-    const updated = await workspaceMemberStore.updateRole(
-      workspaceId,
+    const updated = await problemSetMemberStore.updateRole(
+      problemSetId,
       memberDid,
       body.newRole,
       body.newDaoRole,
     );
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'role_changed',
       userDid,
       memberDid,
@@ -811,7 +824,7 @@ router.post('/:id/members/:memberDid/role', requireAuth, async (req: Request, re
       assignRoleResult.txHash,
     );
 
-    console.log(`✓ Role updated for ${memberDid} in workspace ${workspaceId}`);
+    console.log(`Role updated for ${memberDid} in problem set ${problemSetId}`);
     res.json(updated);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -821,33 +834,33 @@ router.post('/:id/members/:memberDid/role', requireAuth, async (req: Request, re
 });
 
 /**
- * POST /api/workspaces/:id/members/:memberDid/suspend - Suspend member
+ * POST /api/problem-sets/:id/members/:memberDid/suspend - Suspend member
  * Requires manage_members permission.
  */
 router.post('/:id/members/:memberDid/suspend', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const memberDid = req.params.memberDid as string;
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_members');
+      await checkPermission(problemSetId, userDid, 'manage_members');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    const suspended = await workspaceMemberStore.suspendMember(workspaceId, memberDid, userDid);
+    const suspended = await problemSetMemberStore.suspendMember(problemSetId, memberDid, userDid);
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'member_suspended',
       userDid,
       memberDid,
       { suspendedBy: userDid },
     );
 
-    console.log(`✓ Member ${memberDid} suspended in workspace ${workspaceId}`);
+    console.log(`Member ${memberDid} suspended in problem set ${problemSetId}`);
     res.json(suspended);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -857,33 +870,33 @@ router.post('/:id/members/:memberDid/suspend', requireAuth, async (req: Request,
 });
 
 /**
- * POST /api/workspaces/:id/members/:memberDid/unsuspend - Unsuspend member
+ * POST /api/problem-sets/:id/members/:memberDid/unsuspend - Unsuspend member
  * Requires manage_members permission.
  */
 router.post('/:id/members/:memberDid/unsuspend', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const memberDid = req.params.memberDid as string;
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_members');
+      await checkPermission(problemSetId, userDid, 'manage_members');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    const unsuspended = await workspaceMemberStore.unsuspendMember(workspaceId, memberDid);
+    const unsuspended = await problemSetMemberStore.unsuspendMember(problemSetId, memberDid);
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'member_unsuspended',
       userDid,
       memberDid,
       { unsuspendedBy: userDid },
     );
 
-    console.log(`✓ Member ${memberDid} unsuspended in workspace ${workspaceId}`);
+    console.log(`Member ${memberDid} unsuspended in problem set ${problemSetId}`);
     res.json(unsuspended);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -893,26 +906,26 @@ router.post('/:id/members/:memberDid/unsuspend', requireAuth, async (req: Reques
 });
 
 /**
- * DELETE /api/workspaces/:id/members/:memberDid - Remove member
+ * DELETE /api/problem-sets/:id/members/:memberDid - Remove member
  * Requires manage_members permission.
  */
 router.delete('/:id/members/:memberDid', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
     const userSecret = deriveUserSecret(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const memberDid = req.params.memberDid as string;
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_members');
+      await checkPermission(problemSetId, userDid, 'manage_members');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    const workspace = await workspaceStore.getWorkspace(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+    const problemSet = await problemSetStore.getProblemSet(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
     }
 
     // On-chain: remove member from DAO
@@ -921,16 +934,16 @@ router.delete('/:id/members/:memberDid', requireAuth, async (req: Request, res: 
       DAO_CONTRACT_ID,
       'remove_member',
       {
-        dao_id: workspace.daoId,
+        dao_id: problemSet.daoId,
         member_id: memberDid,
       },
     );
 
     // Off-chain: remove member record
-    await workspaceMemberStore.removeMember(workspaceId, memberDid);
+    await problemSetMemberStore.removeMember(problemSetId, memberDid);
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'member_removed',
       userDid,
       memberDid,
@@ -938,7 +951,7 @@ router.delete('/:id/members/:memberDid', requireAuth, async (req: Request, res: 
       removeMemberResult.txHash,
     );
 
-    console.log(`✓ Member ${memberDid} removed from workspace ${workspaceId}`);
+    console.log(`Member ${memberDid} removed from problem set ${problemSetId}`);
     res.json({ success: true, memberDid });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -952,13 +965,13 @@ router.delete('/:id/members/:memberDid', requireAuth, async (req: Request, res: 
 // ============================================================================
 
 /**
- * POST /api/workspaces/:id/invite - Create an invite
+ * POST /api/problem-sets/:id/invite - Create an invite
  * Requires manage_members permission.
  */
 router.post('/:id/invite', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
     let body: z.infer<typeof CreateInviteSchema>;
     try {
@@ -971,14 +984,14 @@ router.post('/:id/invite', requireAuth, async (req: Request, res: Response) => {
     }
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_members');
+      await checkPermission(problemSetId, userDid, 'manage_members');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    const { invite, rawToken } = await workspaceInviteStore.createInvite(
-      workspaceId,
+    const { invite, rawToken } = await problemSetInviteStore.createInvite(
+      problemSetId,
       body.role,
       body.daoRole,
       userDid,
@@ -989,15 +1002,15 @@ router.post('/:id/invite', requireAuth, async (req: Request, res: Response) => {
       },
     );
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'invite_sent',
       userDid,
       body.inviteeDid ?? null,
       { role: body.role, daoRole: body.daoRole, inviteId: invite.id },
     );
 
-    console.log(`✓ Invite created for workspace ${workspaceId}: ${invite.id}`);
+    console.log(`Invite created for problem set ${problemSetId}: ${invite.id}`);
     // Return invite with raw token (only time it's visible)
     res.status(201).json({ ...invite, token: rawToken });
   } catch (error) {
@@ -1008,18 +1021,18 @@ router.post('/:id/invite', requireAuth, async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/workspaces/:id/invites - List pending invites
+ * GET /api/problem-sets/:id/invites - List pending invites
  */
 router.get('/:id/invites', requireAuth, async (req: Request, res: Response) => {
   try {
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
-    const invites = await workspaceInviteStore.listPendingInvites(workspaceId);
+    const invites = await problemSetInviteStore.listPendingInvites(problemSetId);
 
     // Filter out raw token from response (security)
     const sanitized = invites.map((inv) => ({
       id: inv.id,
-      workspaceId: inv.workspaceId,
+      problemSetId: inv.problemSetId,
       inviteeEmail: inv.inviteeEmail,
       inviteeDid: inv.inviteeDid,
       role: inv.role,
@@ -1041,33 +1054,33 @@ router.get('/:id/invites', requireAuth, async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/workspaces/:id/invites/:inviteId/approve - Approve a gated invite
+ * POST /api/problem-sets/:id/invites/:inviteId/approve - Approve a gated invite
  * Requires manage_members permission.
  */
 router.post('/:id/invites/:inviteId/approve', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const inviteId = req.params.inviteId as string;
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_members');
+      await checkPermission(problemSetId, userDid, 'manage_members');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    await workspaceInviteStore.markApproved(inviteId, userDid);
+    await problemSetInviteStore.markApproved(inviteId, userDid);
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'invite_approved',
       userDid,
       null,
       { inviteId, approvedBy: userDid },
     );
 
-    console.log(`✓ Invite ${inviteId} approved by ${userDid}`);
+    console.log(`Invite ${inviteId} approved by ${userDid}`);
     res.json({ success: true, inviteId });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1077,33 +1090,33 @@ router.post('/:id/invites/:inviteId/approve', requireAuth, async (req: Request, 
 });
 
 /**
- * DELETE /api/workspaces/:id/invites/:inviteId - Cancel invite
+ * DELETE /api/problem-sets/:id/invites/:inviteId - Cancel invite
  * Requires manage_members permission.
  */
 router.delete('/:id/invites/:inviteId', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const inviteId = req.params.inviteId as string;
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_members');
+      await checkPermission(problemSetId, userDid, 'manage_members');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    await workspaceInviteStore.cancelInvite(inviteId);
+    await problemSetInviteStore.cancelInvite(inviteId);
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'invite_cancelled',
       userDid,
       null,
       { inviteId, cancelledBy: userDid },
     );
 
-    console.log(`✓ Invite ${inviteId} cancelled`);
+    console.log(`Invite ${inviteId} cancelled`);
     res.json({ success: true, inviteId });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1117,13 +1130,13 @@ router.delete('/:id/invites/:inviteId', requireAuth, async (req: Request, res: R
 // ============================================================================
 
 /**
- * GET /api/workspaces/:id/roles - List workspace roles
+ * GET /api/problem-sets/:id/roles - List problem set roles
  */
 router.get('/:id/roles', requireAuth, async (req: Request, res: Response) => {
   try {
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
-    const roles = await workspaceRoleStore.getRolesForWorkspace(workspaceId);
+    const roles = await problemSetRoleStore.getRolesForProblemSet(problemSetId);
 
     res.json({ roles, count: roles.length });
   } catch (error) {
@@ -1138,7 +1151,7 @@ router.get('/:id/roles', requireAuth, async (req: Request, res: Response) => {
 // ============================================================================
 
 /**
- * GET /api/workspaces/:id/activity - List workspace activity
+ * GET /api/problem-sets/:id/activity - List problem set activity
  *
  * Query params:
  * - limit: number (default 50)
@@ -1147,14 +1160,14 @@ router.get('/:id/roles', requireAuth, async (req: Request, res: Response) => {
  */
 router.get('/:id/activity', requireAuth, async (req: Request, res: Response) => {
   try {
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
     const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
     const typesRaw = req.query.types as string | undefined;
     const types = typesRaw ? typesRaw.split(',').map((t) => t.trim()) : undefined;
 
-    const activities = await workspaceActivityStore.listActivities(workspaceId, {
+    const activities = await problemSetActivityStore.listActivities(problemSetId, {
       limit,
       offset,
       types,
@@ -1180,7 +1193,7 @@ router.get('/:id/activity', requireAuth, async (req: Request, res: Response) => 
           displayNames[`did:near:${row.near_account_id}`] = row.display_name;
         }
       } catch {
-        // Non-fatal — just omit display names
+        // Non-fatal -- just omit display names
       }
     }
 
@@ -1197,21 +1210,21 @@ router.get('/:id/activity', requireAuth, async (req: Request, res: Response) => 
 // ============================================================================
 
 /**
- * GET /api/workspaces/:id/compartments - List all compartments with members
+ * GET /api/problem-sets/:id/compartments - List all compartments with members
  * Caller must be a member.
  */
 router.get('/:id/compartments', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
     // Verify caller is a member
-    const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+    const member = await problemSetMemberStore.getMember(problemSetId, userDid);
     if (!member) {
-      return res.status(403).json({ error: 'Not a member of this workspace' });
+      return res.status(403).json({ error: 'Not a member of this problem set' });
     }
 
-    const compartments = await workspaceCompartmentStore.listCompartmentsWithMembers(workspaceId);
+    const compartments = await problemSetCompartmentStore.listCompartmentsWithMembers(problemSetId);
 
     res.json({ compartments, count: compartments.length });
   } catch (error) {
@@ -1222,13 +1235,13 @@ router.get('/:id/compartments', requireAuth, async (req: Request, res: Response)
 });
 
 /**
- * POST /api/workspaces/:id/compartments - Create a compartment
+ * POST /api/problem-sets/:id/compartments - Create a compartment
  * Requires manage_workspace or manage_members permission.
  */
 router.post('/:id/compartments', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
     let body: z.infer<typeof CreateCompartmentSchema>;
     try {
@@ -1242,28 +1255,28 @@ router.post('/:id/compartments', requireAuth, async (req: Request, res: Response
 
     // Require manage_workspace permission
     try {
-      await checkPermission(workspaceId, userDid, 'manage_workspace');
+      await checkPermission(problemSetId, userDid, 'manage_workspace');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    const compartment = await workspaceCompartmentStore.createCompartment(
-      workspaceId,
+    const compartment = await problemSetCompartmentStore.createCompartment(
+      problemSetId,
       body.name,
       body.description ?? null,
       userDid,
     );
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'compartment_created',
       userDid,
       null,
       { compartmentId: compartment.id, name: compartment.name },
     );
 
-    console.log(`✓ Compartment created: ${compartment.id} (${compartment.name}) in workspace ${workspaceId}`);
+    console.log(`Compartment created: ${compartment.id} (${compartment.name}) in problem set ${problemSetId}`);
     res.status(201).json(compartment);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1273,39 +1286,39 @@ router.post('/:id/compartments', requireAuth, async (req: Request, res: Response
 });
 
 /**
- * DELETE /api/workspaces/:id/compartments/:cid - Delete a compartment
+ * DELETE /api/problem-sets/:id/compartments/:cid - Delete a compartment
  * Requires manage_workspace permission.
  */
 router.delete('/:id/compartments/:cid', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const compartmentId = req.params.cid as string;
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_workspace');
+      await checkPermission(problemSetId, userDid, 'manage_workspace');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    // Verify compartment belongs to this workspace
-    const compartment = await workspaceCompartmentStore.getCompartment(compartmentId);
-    if (!compartment || compartment.workspaceId !== workspaceId) {
+    // Verify compartment belongs to this problem set
+    const compartment = await problemSetCompartmentStore.getCompartment(compartmentId);
+    if (!compartment || compartment.problemSetId !== problemSetId) {
       return res.status(404).json({ error: 'Compartment not found' });
     }
 
-    await workspaceCompartmentStore.deleteCompartment(compartmentId);
+    await problemSetCompartmentStore.deleteCompartment(compartmentId);
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'compartment_deleted',
       userDid,
       null,
       { compartmentId, name: compartment.name },
     );
 
-    console.log(`✓ Compartment ${compartmentId} deleted from workspace ${workspaceId}`);
+    console.log(`Compartment ${compartmentId} deleted from problem set ${problemSetId}`);
     res.json({ success: true, compartmentId });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1315,14 +1328,14 @@ router.delete('/:id/compartments/:cid', requireAuth, async (req: Request, res: R
 });
 
 /**
- * POST /api/workspaces/:id/compartments/:cid/members - Assign member to compartment
+ * POST /api/problem-sets/:id/compartments/:cid/members - Assign member to compartment
  * Requires manage_workspace or manage_members permission.
  * Body: { memberDid: string }
  */
 router.post('/:id/compartments/:cid/members', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const compartmentId = req.params.cid as string;
 
     let body: z.infer<typeof AssignMemberCompartmentSchema>;
@@ -1336,35 +1349,35 @@ router.post('/:id/compartments/:cid/members', requireAuth, async (req: Request, 
     }
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_members');
+      await checkPermission(problemSetId, userDid, 'manage_members');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    // Verify compartment belongs to this workspace
-    const compartment = await workspaceCompartmentStore.getCompartment(compartmentId);
-    if (!compartment || compartment.workspaceId !== workspaceId) {
+    // Verify compartment belongs to this problem set
+    const compartment = await problemSetCompartmentStore.getCompartment(compartmentId);
+    if (!compartment || compartment.problemSetId !== problemSetId) {
       return res.status(404).json({ error: 'Compartment not found' });
     }
 
-    // Verify the member being assigned is a workspace member
-    const member = await workspaceMemberStore.getMember(workspaceId, body.memberDid);
+    // Verify the member being assigned is a problem set member
+    const member = await problemSetMemberStore.getMember(problemSetId, body.memberDid);
     if (!member) {
-      return res.status(404).json({ error: 'Member not found in workspace' });
+      return res.status(404).json({ error: 'Member not found in problem set' });
     }
 
-    await workspaceCompartmentStore.assignMember(workspaceId, body.memberDid, compartmentId, userDid);
+    await problemSetCompartmentStore.assignMember(problemSetId, body.memberDid, compartmentId, userDid);
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'compartment_member_assigned',
       userDid,
       body.memberDid,
       { compartmentId, compartmentName: compartment.name },
     );
 
-    console.log(`✓ Member ${body.memberDid} assigned to compartment ${compartmentId}`);
+    console.log(`Member ${body.memberDid} assigned to compartment ${compartmentId}`);
     res.json({ success: true, memberDid: body.memberDid, compartmentId });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1374,40 +1387,40 @@ router.post('/:id/compartments/:cid/members', requireAuth, async (req: Request, 
 });
 
 /**
- * DELETE /api/workspaces/:id/compartments/:cid/members/:mid - Remove member from compartment
+ * DELETE /api/problem-sets/:id/compartments/:cid/members/:mid - Remove member from compartment
  * Requires manage_members permission.
  */
 router.delete('/:id/compartments/:cid/members/:mid', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const compartmentId = req.params.cid as string;
     const memberDid = req.params.mid as string;
 
     try {
-      await checkPermission(workspaceId, userDid, 'manage_members');
+      await checkPermission(problemSetId, userDid, 'manage_members');
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    // Verify compartment belongs to this workspace
-    const compartment = await workspaceCompartmentStore.getCompartment(compartmentId);
-    if (!compartment || compartment.workspaceId !== workspaceId) {
+    // Verify compartment belongs to this problem set
+    const compartment = await problemSetCompartmentStore.getCompartment(compartmentId);
+    if (!compartment || compartment.problemSetId !== problemSetId) {
       return res.status(404).json({ error: 'Compartment not found' });
     }
 
-    await workspaceCompartmentStore.removeMember(workspaceId, memberDid, compartmentId);
+    await problemSetCompartmentStore.removeMember(problemSetId, memberDid, compartmentId);
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'compartment_member_removed',
       userDid,
       memberDid,
       { compartmentId, compartmentName: compartment.name },
     );
 
-    console.log(`✓ Member ${memberDid} removed from compartment ${compartmentId}`);
+    console.log(`Member ${memberDid} removed from compartment ${compartmentId}`);
     res.json({ success: true, memberDid, compartmentId });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1417,21 +1430,21 @@ router.delete('/:id/compartments/:cid/members/:mid', requireAuth, async (req: Re
 });
 
 /**
- * GET /api/workspaces/:id/members/:did/compartments - Get compartments for a specific member
+ * GET /api/problem-sets/:id/members/:did/compartments - Get compartments for a specific member
  */
 router.get('/:id/members/:did/compartments', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const targetDid = req.params.did as string;
 
     // Must be a member to query
-    const callerMember = await workspaceMemberStore.getMember(workspaceId, userDid);
+    const callerMember = await problemSetMemberStore.getMember(problemSetId, userDid);
     if (!callerMember) {
-      return res.status(403).json({ error: 'Not a member of this workspace' });
+      return res.status(403).json({ error: 'Not a member of this problem set' });
     }
 
-    const compartmentIds = await workspaceCompartmentStore.listCompartmentsForMember(workspaceId, targetDid);
+    const compartmentIds = await problemSetCompartmentStore.listCompartmentsForMember(problemSetId, targetDid);
 
     res.json({ compartmentIds, count: compartmentIds.length });
   } catch (error) {
@@ -1446,26 +1459,26 @@ router.get('/:id/members/:did/compartments', requireAuth, async (req: Request, r
 // ============================================================================
 
 /**
- * GET /api/workspaces/:id/panel-config - Get role→tab visibility for a workspace
- * Caller must be a member of the workspace.
+ * GET /api/problem-sets/:id/panel-config - Get role->tab visibility for a problem set
+ * Caller must be a member of the problem set.
  */
 router.get('/:id/panel-config', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
-    const workspace = await workspaceStore.getWorkspace(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+    const problemSet = await problemSetStore.getProblemSet(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
     }
 
     // Verify caller is a member
-    const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+    const member = await problemSetMemberStore.getMember(problemSetId, userDid);
     if (!member) {
-      return res.status(403).json({ error: 'Not a member of this workspace' });
+      return res.status(403).json({ error: 'Not a member of this problem set' });
     }
 
-    const config = await workspacePanelConfigStore.getOrCreateDefault(workspaceId, workspace.workspaceType);
+    const config = await problemSetPanelConfigStore.getOrCreateDefault(problemSetId, problemSet.echelon);
 
     res.json({ panelVisibility: config.panelVisibility, defaultTab: config.defaultTab });
   } catch (error) {
@@ -1476,21 +1489,21 @@ router.get('/:id/panel-config', requireAuth, async (req: Request, res: Response)
 });
 
 /**
- * PUT /api/workspaces/:id/panel-config - Update panel visibility
+ * PUT /api/problem-sets/:id/panel-config - Update panel visibility
  * Requires commander or XO role.
  */
 router.put('/:id/panel-config', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
-    const workspace = await workspaceStore.getWorkspace(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+    const problemSet = await problemSetStore.getProblemSet(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
     }
 
     try {
-      await requireCommanderOrXo(workspaceId, userDid);
+      await requireCommanderOrXo(problemSetId, userDid);
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
@@ -1506,21 +1519,21 @@ router.put('/:id/panel-config', requireAuth, async (req: Request, res: Response)
       throw validationError;
     }
 
-    const config = await workspacePanelConfigStore.upsertConfig(
-      workspaceId,
+    const config = await problemSetPanelConfigStore.upsertConfig(
+      problemSetId,
       body.panelVisibility as Record<string, string[]>,
       body.defaultTab,
     );
 
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       'panel_config_updated',
       userDid,
       null,
       { defaultTab: config.defaultTab },
     );
 
-    console.log(`✓ Panel config updated for workspace ${workspaceId}`);
+    console.log(`Panel config updated for problem set ${problemSetId}`);
     res.json(config);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1534,21 +1547,21 @@ router.put('/:id/panel-config', requireAuth, async (req: Request, res: Response)
 // ============================================================================
 
 /**
- * POST /api/workspaces/:id/subscriptions - Request subscription to another workspace's data
- * Caller must be commander or XO of the subscriber workspace (:id).
+ * POST /api/problem-sets/:id/subscriptions - Request subscription to another problem set's data
+ * Caller must be commander or XO of the subscriber problem set (:id).
  */
 router.post('/:id/subscriptions', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
-    const workspace = await workspaceStore.getWorkspace(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+    const problemSet = await problemSetStore.getProblemSet(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
     }
 
     try {
-      await requireCommanderOrXo(workspaceId, userDid);
+      await requireCommanderOrXo(problemSetId, userDid);
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
@@ -1564,43 +1577,43 @@ router.post('/:id/subscriptions', requireAuth, async (req: Request, res: Respons
       throw validationError;
     }
 
-    // Get publisher workspace for clearance check
-    const publisherWorkspace = await workspaceStore.getWorkspace(body.publisherWorkspaceId);
-    if (!publisherWorkspace) {
-      return res.status(404).json({ error: 'Publisher workspace not found' });
+    // Get publisher problem set for clearance check
+    const publisherProblemSet = await problemSetStore.getProblemSet(body.publisherProblemSetId);
+    if (!publisherProblemSet) {
+      return res.status(404).json({ error: 'Publisher problem set not found' });
     }
 
     // Classification check: subscriber must have sufficient clearance for publisher
-    if (!clearanceSufficient(workspace.classification, publisherWorkspace.classification)) {
+    if (!clearanceSufficient(problemSet.classification, publisherProblemSet.classification)) {
       return res.status(403).json({
-        error: `Insufficient clearance. Publisher workspace requires ${publisherWorkspace.classification}`,
+        error: `Insufficient clearance. Publisher problem set requires ${publisherProblemSet.classification}`,
       });
     }
 
-    const subscription = await workspaceSubscriptionStore.createSubscription({
-      subscriberWorkspaceId: workspaceId,
-      publisherWorkspaceId: body.publisherWorkspaceId,
+    const subscription = await problemSetSubscriptionStore.createSubscription({
+      subscriberProblemSetId: problemSetId,
+      publisherProblemSetId: body.publisherProblemSetId,
       dataTypes: body.dataTypes,
       requestedBy: userDid,
     });
 
-    // Log activity in both workspaces
-    await workspaceActivityStore.log(
-      workspaceId,
+    // Log activity in both problem sets
+    await problemSetActivityStore.log(
+      problemSetId,
       'subscription_requested',
       userDid,
       null,
-      { subscriptionId: subscription.id, publisherWorkspaceId: body.publisherWorkspaceId, dataTypes: body.dataTypes },
+      { subscriptionId: subscription.id, publisherProblemSetId: body.publisherProblemSetId, dataTypes: body.dataTypes },
     );
-    await workspaceActivityStore.log(
-      body.publisherWorkspaceId,
+    await problemSetActivityStore.log(
+      body.publisherProblemSetId,
       'subscription_requested',
       userDid,
       null,
-      { subscriptionId: subscription.id, subscriberWorkspaceId: workspaceId, dataTypes: body.dataTypes },
+      { subscriptionId: subscription.id, subscriberProblemSetId: problemSetId, dataTypes: body.dataTypes },
     );
 
-    console.log(`✓ Subscription requested: ${subscription.id} (${workspaceId} → ${body.publisherWorkspaceId})`);
+    console.log(`Subscription requested: ${subscription.id} (${problemSetId} -> ${body.publisherProblemSetId})`);
     res.status(201).json(subscription);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1610,23 +1623,23 @@ router.post('/:id/subscriptions', requireAuth, async (req: Request, res: Respons
 });
 
 /**
- * GET /api/workspaces/:id/subscriptions - List subscriptions (as subscriber and publisher)
- * Caller must be a member of the workspace.
+ * GET /api/problem-sets/:id/subscriptions - List subscriptions (as subscriber and publisher)
+ * Caller must be a member of the problem set.
  */
 router.get('/:id/subscriptions', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
     // Verify caller is a member
-    const member = await workspaceMemberStore.getMember(workspaceId, userDid);
+    const member = await problemSetMemberStore.getMember(problemSetId, userDid);
     if (!member) {
-      return res.status(403).json({ error: 'Not a member of this workspace' });
+      return res.status(403).json({ error: 'Not a member of this problem set' });
     }
 
     const [asSubscriber, asPublisher] = await Promise.all([
-      workspaceSubscriptionStore.listBySubscriber(workspaceId),
-      workspaceSubscriptionStore.listByPublisher(workspaceId),
+      problemSetSubscriptionStore.listBySubscriber(problemSetId),
+      problemSetSubscriptionStore.listByPublisher(problemSetId),
     ]);
 
     res.json({ asSubscriber, asPublisher });
@@ -1638,27 +1651,27 @@ router.get('/:id/subscriptions', requireAuth, async (req: Request, res: Response
 });
 
 /**
- * PATCH /api/workspaces/:id/subscriptions/:subId - Approve or reject a subscription
- * Caller must be commander or XO of the PUBLISHER workspace (not the subscriber).
+ * PATCH /api/problem-sets/:id/subscriptions/:subId - Approve or reject a subscription
+ * Caller must be commander or XO of the PUBLISHER problem set (not the subscriber).
  */
 router.patch('/:id/subscriptions/:subId', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const subId = req.params.subId as string;
 
-    // Get subscription to confirm this workspace is the publisher
-    const subscription = await workspaceSubscriptionStore.getSubscription(subId);
+    // Get subscription to confirm this problem set is the publisher
+    const subscription = await problemSetSubscriptionStore.getSubscription(subId);
     if (!subscription) {
       return res.status(404).json({ error: 'Subscription not found' });
     }
-    if (subscription.publisherWorkspaceId !== workspaceId) {
-      return res.status(403).json({ error: 'Only the publisher workspace can approve or reject subscriptions' });
+    if (subscription.publisherProblemSetId !== problemSetId) {
+      return res.status(403).json({ error: 'Only the publisher problem set can approve or reject subscriptions' });
     }
 
-    // Caller must be commander/xo of the PUBLISHER workspace
+    // Caller must be commander/xo of the PUBLISHER problem set
     try {
-      await requireCommanderOrXo(workspaceId, userDid);
+      await requireCommanderOrXo(problemSetId, userDid);
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
@@ -1674,18 +1687,18 @@ router.patch('/:id/subscriptions/:subId', requireAuth, async (req: Request, res:
       throw validationError;
     }
 
-    const updated = await workspaceSubscriptionStore.updateApprovalStatus(subId, body.status, userDid);
+    const updated = await problemSetSubscriptionStore.updateApprovalStatus(subId, body.status, userDid);
 
     const activityType = body.status === 'approved' ? 'subscription_approved' : 'subscription_rejected';
-    await workspaceActivityStore.log(
-      workspaceId,
+    await problemSetActivityStore.log(
+      problemSetId,
       activityType,
       userDid,
       null,
-      { subscriptionId: subId, subscriberWorkspaceId: subscription.subscriberWorkspaceId },
+      { subscriptionId: subId, subscriberProblemSetId: subscription.subscriberProblemSetId },
     );
 
-    console.log(`✓ Subscription ${subId} ${body.status} by ${userDid}`);
+    console.log(`Subscription ${subId} ${body.status} by ${userDid}`);
     res.json(updated);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1695,34 +1708,34 @@ router.patch('/:id/subscriptions/:subId', requireAuth, async (req: Request, res:
 });
 
 /**
- * DELETE /api/workspaces/:id/subscriptions/:subId - Cancel a subscription
- * Caller must be commander or XO of the SUBSCRIBER workspace.
+ * DELETE /api/problem-sets/:id/subscriptions/:subId - Cancel a subscription
+ * Caller must be commander or XO of the SUBSCRIBER problem set.
  */
 router.delete('/:id/subscriptions/:subId', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const subId = req.params.subId as string;
 
-    // Get subscription to confirm this workspace is the subscriber
-    const subscription = await workspaceSubscriptionStore.getSubscription(subId);
+    // Get subscription to confirm this problem set is the subscriber
+    const subscription = await problemSetSubscriptionStore.getSubscription(subId);
     if (!subscription) {
       return res.status(404).json({ error: 'Subscription not found' });
     }
-    if (subscription.subscriberWorkspaceId !== workspaceId) {
-      return res.status(403).json({ error: 'Only the subscriber workspace can cancel subscriptions' });
+    if (subscription.subscriberProblemSetId !== problemSetId) {
+      return res.status(403).json({ error: 'Only the subscriber problem set can cancel subscriptions' });
     }
 
     try {
-      await requireCommanderOrXo(workspaceId, userDid);
+      await requireCommanderOrXo(problemSetId, userDid);
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    await workspaceSubscriptionStore.deleteSubscription(subId);
+    await problemSetSubscriptionStore.deleteSubscription(subId);
 
-    console.log(`✓ Subscription ${subId} cancelled by ${userDid}`);
+    console.log(`Subscription ${subId} cancelled by ${userDid}`);
     res.status(204).send();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1736,22 +1749,22 @@ router.delete('/:id/subscriptions/:subId', requireAuth, async (req: Request, res
 // ============================================================================
 
 /**
- * GET /api/workspaces/:id/escalation-rules - List escalation rules for workspace
+ * GET /api/problem-sets/:id/escalation-rules - List escalation rules for problem set
  * Requires commander or XO role.
  */
 router.get('/:id/escalation-rules', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
     try {
-      await requireCommanderOrXo(workspaceId, userDid);
+      await requireCommanderOrXo(problemSetId, userDid);
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    const rules = await workspaceEscalationStore.listRulesForWorkspace(workspaceId);
+    const rules = await problemSetEscalationStore.listRulesForProblemSet(problemSetId);
 
     res.json({ rules, count: rules.length });
   } catch (error) {
@@ -1762,16 +1775,16 @@ router.get('/:id/escalation-rules', requireAuth, async (req: Request, res: Respo
 });
 
 /**
- * POST /api/workspaces/:id/escalation-rules - Create an escalation rule
+ * POST /api/problem-sets/:id/escalation-rules - Create an escalation rule
  * Requires commander or XO role.
  */
 router.post('/:id/escalation-rules', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
     try {
-      await requireCommanderOrXo(workspaceId, userDid);
+      await requireCommanderOrXo(problemSetId, userDid);
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
@@ -1787,8 +1800,8 @@ router.post('/:id/escalation-rules', requireAuth, async (req: Request, res: Resp
       throw validationError;
     }
 
-    const rule = await workspaceEscalationStore.createRule({
-      workspaceId,
+    const rule = await problemSetEscalationStore.createRule({
+      problemSetId,
       ruleType: body.ruleType,
       proposalKind: body.proposalKind,
       thresholdConfig: body.thresholdConfig ?? null,
@@ -1796,7 +1809,7 @@ router.post('/:id/escalation-rules', requireAuth, async (req: Request, res: Resp
       autoRouteTo: body.autoRouteTo ?? null,
     });
 
-    console.log(`✓ Escalation rule created: ${rule.id} for workspace ${workspaceId}`);
+    console.log(`Escalation rule created: ${rule.id} for problem set ${problemSetId}`);
     res.status(201).json(rule);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1806,25 +1819,25 @@ router.post('/:id/escalation-rules', requireAuth, async (req: Request, res: Resp
 });
 
 /**
- * DELETE /api/workspaces/:id/escalation-rules/:ruleId - Delete an escalation rule
+ * DELETE /api/problem-sets/:id/escalation-rules/:ruleId - Delete an escalation rule
  * Requires commander or XO role.
  */
 router.delete('/:id/escalation-rules/:ruleId', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
     const ruleId = req.params.ruleId as string;
 
     try {
-      await requireCommanderOrXo(workspaceId, userDid);
+      await requireCommanderOrXo(problemSetId, userDid);
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
     }
 
-    await workspaceEscalationStore.deleteRule(ruleId);
+    await problemSetEscalationStore.deleteRule(ruleId);
 
-    console.log(`✓ Escalation rule ${ruleId} deleted from workspace ${workspaceId}`);
+    console.log(`Escalation rule ${ruleId} deleted from problem set ${problemSetId}`);
     res.status(204).send();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -1838,9 +1851,9 @@ router.delete('/:id/escalation-rules/:ruleId', requireAuth, async (req: Request,
 // ============================================================================
 
 /**
- * POST /api/workspaces/:id/escalate - Escalate a decision to parent workspace
+ * POST /api/problem-sets/:id/escalate - Escalate a decision to parent problem set
  *
- * Creates off-chain activity records in both source and parent workspaces.
+ * Creates off-chain activity records in both source and parent problem sets.
  * On-chain proposal creation is deferred until commander credential delegation is implemented.
  *
  * Requires commander or XO role.
@@ -1848,15 +1861,15 @@ router.delete('/:id/escalation-rules/:ruleId', requireAuth, async (req: Request,
 router.post('/:id/escalate', requireAuth, async (req: Request, res: Response) => {
   try {
     const userDid = buildDID(req.anonUser!.nearAccountId);
-    const workspaceId = req.params.id as string;
+    const problemSetId = req.params.id as string;
 
-    const workspace = await workspaceStore.getWorkspace(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+    const problemSet = await problemSetStore.getProblemSet(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
     }
 
     try {
-      await requireCommanderOrXo(workspaceId, userDid);
+      await requireCommanderOrXo(problemSetId, userDid);
     } catch (permErr) {
       const msg = permErr instanceof Error ? permErr.message : 'Forbidden';
       return res.status(403).json({ error: msg });
@@ -1872,21 +1885,21 @@ router.post('/:id/escalate', requireAuth, async (req: Request, res: Response) =>
       throw validationError;
     }
 
-    // Verify workspace has a parent to escalate to
-    if (!workspace.parentWorkspaceId) {
-      return res.status(400).json({ error: 'No parent workspace to escalate to' });
+    // Verify problem set has a parent to escalate to
+    if (!problemSet.parentProblemSetId) {
+      return res.status(400).json({ error: 'No parent problem set to escalate to' });
     }
 
-    const parentWorkspace = await workspaceStore.getWorkspace(workspace.parentWorkspaceId);
-    if (!parentWorkspace) {
-      return res.status(404).json({ error: 'Parent workspace not found' });
+    const parentProblemSet = await problemSetStore.getProblemSet(problemSet.parentProblemSetId);
+    if (!parentProblemSet) {
+      return res.status(404).json({ error: 'Parent problem set not found' });
     }
 
     // Look up escalation rules for this proposal kind
-    const rules = await workspaceEscalationStore.getRulesForKind(workspaceId, body.proposalKind);
+    const rules = await problemSetEscalationStore.getRulesForKind(problemSetId, body.proposalKind);
     const matchingRule = rules[0] ?? null;
 
-    // Determine voting mechanism: urgent → autocratic, else use rule or default democratic
+    // Determine voting mechanism: urgent -> autocratic, else use rule or default democratic
     const votingMechanism =
       body.urgency === 'urgent'
         ? 'autocratic'
@@ -1895,9 +1908,9 @@ router.post('/:id/escalate', requireAuth, async (req: Request, res: Response) =>
     // Voting period: autocratic = 1 hour, democratic = 7 days (nanoseconds)
     const votingPeriod = votingMechanism === 'autocratic' ? '3600000000000' : '604800000000000';
 
-    // Create off-chain escalation record in source workspace
-    const sourceActivity = await workspaceActivityStore.log(
-      workspaceId,
+    // Create off-chain escalation record in source problem set
+    const sourceActivity = await problemSetActivityStore.log(
+      problemSetId,
       'decision_escalated',
       userDid,
       null,
@@ -1907,19 +1920,19 @@ router.post('/:id/escalate', requireAuth, async (req: Request, res: Response) =>
         urgency: body.urgency,
         votingMechanism,
         votingPeriod,
-        parentWorkspaceId: workspace.parentWorkspaceId,
+        parentProblemSetId: problemSet.parentProblemSetId,
         data: body.data ?? null,
       },
     );
 
-    // Create off-chain escalation record in parent workspace
-    await workspaceActivityStore.log(
-      workspace.parentWorkspaceId,
+    // Create off-chain escalation record in parent problem set
+    await problemSetActivityStore.log(
+      problemSet.parentProblemSetId,
       'escalation_received',
       userDid,
       null,
       {
-        sourceWorkspaceId: workspaceId,
+        sourceProblemSetId: problemSetId,
         proposalKind: body.proposalKind,
         description: body.description,
         urgency: body.urgency,
@@ -1930,10 +1943,10 @@ router.post('/:id/escalate', requireAuth, async (req: Request, res: Response) =>
       },
     );
 
-    console.log(`✓ Decision escalated from ${workspaceId} to ${workspace.parentWorkspaceId} (${body.proposalKind})`);
+    console.log(`Decision escalated from ${problemSetId} to ${problemSet.parentProblemSetId} (${body.proposalKind})`);
     res.status(201).json({
       escalationId: sourceActivity.id,
-      parentWorkspaceId: workspace.parentWorkspaceId,
+      parentProblemSetId: problemSet.parentProblemSetId,
       votingMechanism,
       votingPeriod,
       status: 'escalated',
