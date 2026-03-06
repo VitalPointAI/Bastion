@@ -614,8 +614,8 @@ Plans:
 
 **Goal:** Organize strategic documents into persistent nation/group containers with actor categorization, enabling incremental construction of strategic environments that feed into Phase 26 inheritance.
 **Depends on:** Phase 25.1 (upload pipeline), Phase 24 (Understand tab)
-**Research:** Likely (data model design for container hierarchy)
-**Plans:** TBD
+**Research:** Complete (25.2-RESEARCH.md)
+**Plans:** 4 plans
 
 **Scope:**
 1. New data model: `strategic_containers` table — name (e.g., "United States", "China", "NATO"), actor_category (ally, adversary, neutral, partner), problem_set_id, parent_container_id (for hierarchy)
@@ -639,7 +639,10 @@ Neutral / Partner
 ```
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 25.2 to break down)
+- [ ] 25.2-01-PLAN.md -- Data model, ContainerStore, API routes, frontend types & service
+- [ ] 25.2-02-PLAN.md -- Container browser UI (category filter, container cards, breadcrumb nav, inline CRUD)
+- [ ] 25.2-03-PLAN.md -- Upload integration with container selector & AI recommendations
+- [ ] 25.2-04-PLAN.md -- Drag-and-drop assignment & container-level agent standing orders
 
 ### Phase 26: Strategic Environment & Inheritance (INSERTED)
 **Goal:** Enable strategic-level problem sets to serve as context providers, with inheritance mechanisms that propagate directives, policy, intelligence, and strategic guidance to subordinate operational and tactical problem sets
