@@ -26,7 +26,7 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 Phase: 25.2 of 40 (Strategic Document Containers & Actor Categorization)
 Plan: 1 of 4 in current phase — 25.2-01 complete
 Status: ContainerStore with 6 PostgreSQL tables, 16 API routes, frontend types and service methods
-Last activity: 2026-03-06 - Completed 25.2-01 (Data Model Foundation)
+Last activity: 2026-03-06 - Completed quick task 8: AI agent for operational narrative
 
 Progress: █████████████████████████ 240 plans complete
 
@@ -636,6 +636,7 @@ None.
 | 4 | fix PDF objective extraction for diverse documents | 2026-02-23 | f9f98da | [4-fix-pdf-objective-extraction-agent-not-f](./quick/4-fix-pdf-objective-extraction-agent-not-f/) |
 | 5 | map PDFs to IPB graph via vision extraction | 2026-03-01 | 7981a5e | [5-map-pdfs-to-ipb-graph-plan-as-documented](./quick/5-map-pdfs-to-ipb-graph-plan-as-documented/) |
 | 7 | Fix click-to-browse on strategic documents upload dialog | 2026-03-05 | d6c6878 | [7-fix-click-to-browse-on-strategic-documen](./quick/7-fix-click-to-browse-on-strategic-documen/) |
+| 8 | AI agent for operational narrative drafting | 2026-03-06 | 41b35ea | [8-ai-agent-operational-narrative](./quick/8-ai-agent-operational-narrative/) |
 
 **Phase 4 Plan 6-FIX (Strategic API Table Init Fix):**
 - Unified lazy init: all strategic API tables initialized from single ensureTableExists()
