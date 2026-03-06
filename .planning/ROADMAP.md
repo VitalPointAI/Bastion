@@ -566,7 +566,7 @@ Plans:
 **Depends on:** Phase 24
 **Research:** Required
 **Research topics:** JP 5-0 Chapter III operational design methodology, center of gravity analysis frameworks (Strange's model, CG-CC-CR-CV), lines of effort vs lines of operation, operational approach visualization, decisive points, operational reach, culmination, AI-assisted problem framing patterns
-**Plans:** 5 plans
+**Plans:** 5/5 plans complete
 
 **Context:**
 Operational design is where the creative, iterative work happens before structured planning begins. Currently the Design tab is just document upload. This phase transforms it into the workspace where commanders and planners frame the problem, identify centers of gravity, define their operational approach, and establish lines of effort — all with AI assistance that can suggest frameworks, challenge assumptions, and identify gaps in the design.
@@ -1243,7 +1243,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 22. Training/Operational Global Mode | 6/6 | Complete   | 2026-03-06 |
 | 23. Problem Set Model & Rename | 9/10 | In Progress|  |
 | 24. Doctrinal Tab Restructure | 3/3 | Complete    | 2026-03-06 |
-| 25. Operational Design Workspace | 1/5 | In Progress | - |
+| 25. Operational Design Workspace | 1/5 | Complete    | 2026-03-06 |
 | 26. Strategic Environment & Inheritance | 0/TBD | Not started | - |
 | 27. Resource Registry & DID Plugin | 0/TBD | Not started | - |
 | 28. Embedded DAO Governance | 0/TBD | Not started | - |
