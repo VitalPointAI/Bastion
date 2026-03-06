@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { CategoryGroup, StrategicContainer } from '../../lib/types/strategic.js';
+import type { CategoryGroup } from '../../lib/types/strategic.js';
 import { strategicService } from '../../lib/strategic-service.js';
 
 export interface ContainerSuggestion {

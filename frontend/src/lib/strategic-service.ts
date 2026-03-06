@@ -16,7 +16,6 @@ import type {
   Classification,
   StrategicEnvironment,
   CategoryGroup,
-  ActorCategory,
   StrategicContainer,
   ContainerAgentAssignment,
   ContainerSuggestion,

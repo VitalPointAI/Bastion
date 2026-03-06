@@ -50,7 +50,7 @@ export function StrategicDashboard({ problemSetId }: StrategicDashboardProps = {
     console.log('Document selected:', doc.title);
   }, []);
 
-  const handleExtractComplete = useCallback((doc: StrategicDocument) => {
+  const _handleExtractComplete = useCallback((doc: StrategicDocument) => {
     setRefreshTrigger((prev) => prev + 1);
     console.log('Extraction complete for:', doc.title);
   }, []);
