@@ -26,7 +26,7 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 Phase: 25.3 of 40 (AI Strategic Context & Knowledge Graph Integration)
 Plan: 4 of 5 in current phase — 25.3-04 complete
 Status: StrategicContextService orchestrating cached docs + graph summaries into token-budgeted context for AI agents
-Last activity: 2026-03-06 - Completed 25.3-04 (AI Context Assembly & Pipeline Integration)
+Last activity: 2026-03-06 - Completed quick task 9: custom exercise positions with phase-transition mapping
 
 Progress: █████████████████████████ 245 plans complete
 
@@ -653,6 +653,7 @@ None.
 | 5 | map PDFs to IPB graph via vision extraction | 2026-03-01 | 7981a5e | [5-map-pdfs-to-ipb-graph-plan-as-documented](./quick/5-map-pdfs-to-ipb-graph-plan-as-documented/) |
 | 7 | Fix click-to-browse on strategic documents upload dialog | 2026-03-05 | d6c6878 | [7-fix-click-to-browse-on-strategic-documen](./quick/7-fix-click-to-browse-on-strategic-documen/) |
 | 8 | AI agent for operational narrative drafting | 2026-03-06 | 41b35ea | [8-ai-agent-operational-narrative](./quick/8-ai-agent-operational-narrative/) |
+| 9 | Custom exercise positions with phase-transition mapping | 2026-03-06 | 91a7758 | [9-custom-exercise-positions-with-phase-tra](./quick/9-custom-exercise-positions-with-phase-tra/) |
 
 **Phase 4 Plan 6-FIX (Strategic API Table Init Fix):**
 - Unified lazy init: all strategic API tables initialized from single ensureTableExists()
