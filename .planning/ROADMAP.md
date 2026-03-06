@@ -593,7 +593,7 @@ Plans:
 **Goal:** Wire existing training package upload infrastructure into the new tab structure and problem set creation flow, so users can create problem sets from scenarios and upload document packages directly from the Understand tab.
 **Depends on:** Phase 24 (tab structure), Phase 23 (problem set model)
 **Research:** Unlikely (components exist, this is integration work)
-**Plans:** TBD
+**Plans:** 2 plans
 
 **Scope:**
 1. Add "Create from Scenario" option to CreateProblemSetWizard — list available scenarios, call `/api/problem-sets/from-scenario`, navigate to new problem set
@@ -607,7 +607,8 @@ Plans:
 - API: `POST /api/exercise/scenarios/:id/upload`, `POST /api/problem-sets/from-scenario`
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 25.1 to break down)
+- [ ] 25.1-01-PLAN.md -- Backend fixes + Wizard Step 0 (from-scenario endpoint, scenario picker, pre-fill)
+- [ ] 25.1-02-PLAN.md -- Training Packages sidebar in UnderstandTab (mode-gated, doc preview)
 
 ### Phase 25.2: Strategic Document Containers & Actor Categorization (INSERTED)
 
