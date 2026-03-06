@@ -135,6 +135,11 @@ Progress: ███████████████████████�
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+**Phase 26 Plan 01 (Inheritance Data Model & Backend):**
+- Extended existing subscription system with subscription_type column rather than parallel inheritance tables
+- Auto-inheritance creates subscriptions for full ancestor chain (parent + grandparent) on PS creation
+- Inheritance subscriptions auto-approved with subscription_type='inheritance' to distinguish from manual
+
 **Phase 25.3 Plan 04 (AI Context Assembly & Pipeline Integration):**
 - Read-only environment lookup via direct SQL instead of auto-creating getEnvironmentByProblemSet()
 - Single combined query for scenario problem_set_id and phases to minimize DB round-trips
