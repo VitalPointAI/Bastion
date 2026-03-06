@@ -127,7 +127,7 @@ export function ProblemSetSelector() {
         </button>
 
         {showCreateWizard && (
-          <CreateProblemSetWizard onClose={() => setShowCreateWizard(false)} onCreated={(id) => { setShowCreateWizard(false); void refreshMemberships().then(() => setActiveProblemSet(id)); }} />
+          <CreateProblemSetWizard onClose={() => setShowCreateWizard(false)} onCreated={(id, _options?) => { setShowCreateWizard(false); void refreshMemberships().then(() => setActiveProblemSet(id)); }} />
         )}
       </div>
     );
@@ -246,7 +246,7 @@ export function ProblemSetSelector() {
                 </button>
 
                 {/* Delete — creator only */}
-                {detail && userDID && detail.createdBy === `did:near:${userDID}` && (
+                {detail && userDID && detail.createdBy === userDID && (
                   <div className="mt-3 pt-3 border-t border-gray-700">
                     {!deleteConfirm ? (
                       <button

@@ -267,7 +267,7 @@ export function CommanderPanel({ problemSetId }: CommanderPanelProps) {
         <CreateProblemSetWizard
           parentProblemSetId={problemSetId}
           onClose={() => setShowCreateWizard(false)}
-          onCreated={() => {
+          onCreated={(_id, _options?) => {
             setShowCreateWizard(false);
             void loadHierarchy();
           }}

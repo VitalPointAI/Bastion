@@ -68,11 +68,14 @@ export function ProblemSetSwitcher() {
     setIsOpen(false);
   };
 
-  const handleCreated = async (problemSetId: string) => {
+  const handleCreated = async (problemSetId: string, options?: { navigateTo?: string }) => {
     setShowWizard(false);
     await refreshMemberships();
     setActiveProblemSet(problemSetId);
-    navigate(`/problem-set/${problemSetId}`);
+    const path = options?.navigateTo
+      ? `/problem-set/${problemSetId}/${options.navigateTo}`
+      : `/problem-set/${problemSetId}`;
+    navigate(path);
   };
 
   // Abbreviation: first letters of each word, max 2, uppercase
