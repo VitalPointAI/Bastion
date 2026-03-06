@@ -616,7 +616,7 @@ Plans:
 **Goal:** Organize strategic documents into persistent nation/group containers with actor categorization, enabling incremental construction of strategic environments that feed into Phase 26 inheritance.
 **Depends on:** Phase 25.1 (upload pipeline), Phase 24 (Understand tab)
 **Research:** Complete (25.2-RESEARCH.md)
-**Plans:** 4 plans
+**Plans:** 3/4 plans executed
 
 **Scope:**
 1. New data model: `strategic_containers` table — name (e.g., "United States", "China", "NATO"), actor_category (ally, adversary, neutral, partner), problem_set_id, parent_container_id (for hierarchy)
