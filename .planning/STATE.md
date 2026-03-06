@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-06T03:22:25.652Z"
+last_updated: "2026-03-06T06:02:42Z"
 progress:
   total_phases: 36
   completed_phases: 23
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 24 of 40 (Doctrinal Tab Restructure) — IN PROGRESS
-Plan: 2 of 3 in current phase — plans 01, 03 complete; plan 02 remaining
-Status: Phase 24 plan 01 complete — doctrinal tab components with JP 5-0 content redistribution
-Last activity: 2026-03-06 - Completed 24-01 (DoctrinalPlaceholder, UnderstandTab, PlanTab, DirectTab, AssessTab, DesignTab rewrite)
+Phase: 24 of 40 (Doctrinal Tab Restructure) — COMPLETE
+Plan: 3 of 3 in current phase — all plans complete (01, 02, 03)
+Status: Phase 24 complete — 6 JP 5-0 doctrinal tabs wired, old tabs deleted, backend config updated
+Last activity: 2026-03-06 - Completed 24-02 (tab container rewiring, notification remapping, old tab deletion)
 
-Progress: █████████████████████████ 231 plans complete
+Progress: █████████████████████████ 232 plans complete
 
 ## Performance Metrics
 
@@ -125,6 +125,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 24 Plan 02 (Tab container rewiring):**
+- All roles see all 6 tabs with simplified access (can restore per-role gating later)
+- Old URLs redirect via OLD_TAB_REDIRECTS map (decide->direct, campaign->plan, overview/monitor/train->cop)
+- SubscriptionManager DATA_TYPE_OPTIONS updated to match new tab names
 
 **Phase 24 Plan 01 (Doctrinal tab components):**
 - Used DoctrinalPlaceholder pattern for tabs awaiting future phase content (Design Phase 25, Assess Phase 28+)
@@ -1232,6 +1237,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-06
-Stopped at: Completed 24-01-PLAN.md — Doctrinal tab components with JP 5-0 content redistribution
+Stopped at: Completed 24-02-PLAN.md — Tab container rewiring with 6 doctrinal tabs, old tab deletion
 Resume file: None
 Next action: Phase 24 complete — all 3 plans done, proceed to next phase

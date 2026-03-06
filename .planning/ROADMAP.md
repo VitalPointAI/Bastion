@@ -43,7 +43,7 @@ None
 - [x] **Phase 21: AI COP Layer Agent Team** - Autonomous agent team per workspace section that parses documents/plans, derives location/resource/intent, and generates MIL-STD-2525 interactive SVG overlay layers with standard military symbology for the common operating picture; layers include image specs for model-generated SVGs, update on commit, support publish control before promotion to top-level COP, provide entity-data linkages with hover/click detail, animate movement/phasing, and render both friendly and adversary perspectives (completed 2026-03-05)
 - [x] **Phase 22: Training/Operational Global Mode** - Global app toggle switching between training (exercise) and operational modes with visual distinction, data isolation, governance weight adjustment, and reset/checkpoint capability (INSERTED) (completed 2026-03-06)
 - [ ] **Phase 23: Problem Set Model & Workspace Rename** - Rename workspaces to problem sets throughout the application, add echelon-awareness (strategic/operational/tactical), update data model, UI, routes, and API (INSERTED)
-- [ ] **Phase 24: Doctrinal Tab Restructure** - Replace COP/Decide/Design/Campaign/Train/Overview tabs with doctrinal lifecycle flow: Understand/Design/Plan/Direct/COP/Assess — reorganize existing components into doctrinally-aligned tabs (INSERTED)
+- [x] **Phase 24: Doctrinal Tab Restructure** - Replace COP/Decide/Design/Campaign/Train/Overview tabs with doctrinal lifecycle flow: Understand/Design/Plan/Direct/COP/Assess — reorganize existing components into doctrinally-aligned tabs (INSERTED)
 - [ ] **Phase 25: Operational Design Workspace** - Build the Design tab with problem framing, center of gravity analysis, lines of effort/operation, operational approach development, and AI-assisted design recommendations (INSERTED)
 - [ ] **Phase 26: Strategic Environment & Inheritance** - Strategic-level problem set as context provider with inheritance mechanism for directives, policy, and intelligence; update propagation to child problem sets (INSERTED)
 - [ ] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED)
@@ -538,7 +538,7 @@ Plans:
 **Goal:** Replace the current tab structure (COP/Decide/Design/Campaign/Train/Overview) with a doctrinal lifecycle flow (Understand/Design/Plan/Direct/COP/Assess) that guides users through the military planning process
 **Depends on:** Phase 23
 **Research:** Unlikely
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans executed
 
 **Context:**
 The current tabs are organized by feature category, not by how commanders and staff actually work through a problem. The doctrinal lifecycle — Understand → Design → Plan → Direct → COP → Assess — mirrors JP 5-0 and MDMP, guiding users through the natural progression from understanding the environment to assessing results. This is primarily a reorganization of existing components into doctrinally-aligned containers.
@@ -555,8 +555,8 @@ The current tabs are organized by feature category, not by how commanders and st
 9. **Decide Tab Elimination** — DAO governance moved to contextual decision gates within each tab (Phase 28)
 
 Plans:
-- [ ] 24-01-PLAN.md — Create doctrinal tab components (UnderstandTab, PlanTab, DirectTab, AssessTab, DoctrinalPlaceholder) (Wave 1)
-- [ ] 24-02-PLAN.md — Rewire ProblemSetTabContainer, update notifications, delete old tabs (Wave 2)
+- [x] 24-01-PLAN.md — Create doctrinal tab components (UnderstandTab, PlanTab, DirectTab, AssessTab, DoctrinalPlaceholder) (Wave 1) (completed 2026-03-06)
+- [x] 24-02-PLAN.md — Rewire ProblemSetTabContainer, update notifications, delete old tabs (Wave 2) (completed 2026-03-06)
 - [x] 24-03-PLAN.md — Backend panel config store and DB migration (Wave 1) (completed 2026-03-06)
 
 ### Phase 25: Operational Design Workspace (INSERTED)
@@ -1184,7 +1184,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 21. AI COP Layer Agent Team | 13/13 | Complete | 2026-03-05 |
 | 22. Training/Operational Global Mode | 6/6 | Complete   | 2026-03-06 |
 | 23. Problem Set Model & Rename | 9/10 | In Progress|  |
-| 24. Doctrinal Tab Restructure | 2/3 | In Progress|  |
+| 24. Doctrinal Tab Restructure | 3/3 | Complete |  |
 | 25. Operational Design Workspace | 0/TBD | Not started | - |
 | 26. Strategic Environment & Inheritance | 0/TBD | Not started | - |
 | 27. Resource Registry & DID Plugin | 0/TBD | Not started | - |
