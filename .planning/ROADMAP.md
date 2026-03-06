@@ -510,7 +510,7 @@ Plans:
 **Goal:** Rename "workspace" to "problem set" throughout the application to align with JP 5-0 doctrinal terminology, and enhance the model with echelon-awareness for strategic/operational/tactical classification
 **Depends on:** Phase 22
 **Research:** Unlikely
-**Plans:** 2/10 plans executed
+**Plans:** 3/10 plans executed
 
 **Context:**
 In JP 5-0, operational design addresses a "problem set" — the complex of conditions, circumstances, and influences that define the operational environment and the challenge to be addressed. Renaming workspaces to problem sets aligns the tool with doctrinal language and reinforces that each workspace represents a distinct operational problem at a specific echelon with its own design-plan-execute-assess cycle.
@@ -1181,7 +1181,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 20. Workspace Operational Panels | 3/9 | In progress | - |
 | 21. AI COP Layer Agent Team | 13/13 | Complete | 2026-03-05 |
 | 22. Training/Operational Global Mode | 6/6 | Complete   | 2026-03-06 |
-| 23. Problem Set Model & Rename | 2/10 | In Progress|  |
+| 23. Problem Set Model & Rename | 3/10 | In Progress|  |
 | 24. Doctrinal Tab Restructure | 0/TBD | Not started | - |
 | 25. Operational Design Workspace | 0/TBD | Not started | - |
 | 26. Strategic Environment & Inheritance | 0/TBD | Not started | - |
