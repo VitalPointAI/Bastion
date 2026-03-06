@@ -12,7 +12,7 @@
  * Phase 23 Plan 07: Renamed from CreateWorkspaceWizard; echelon replaces workspace type.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProblemSet } from '../../context/ProblemSetContext';
 import { useUser } from '../../context/UserContext';
 import { problemSetService, type CreateProblemSetInput } from '../../lib/problem-set-service';
@@ -57,11 +57,27 @@ interface Props {
 
 // ─── Helper labels ────────────────────────────────────────────────────────────
 
-const ECHELON_LABELS: Record<Echelon, { name: string; desc: string }> = {
-  strategic: { name: 'Strategic', desc: 'Theater / national level' },
-  operational: { name: 'Operational', desc: 'Campaign / JTF level' },
-  tactical: { name: 'Tactical', desc: 'Unit / task force level' },
+const ECHELON_SYMBOLS: Record<Echelon, string> = {
+  strategic: 'XX',
+  operational: 'III',
+  tactical: 'II',
 };
+
+const ECHELON_LABELS: Record<Echelon, { name: string; symbol: string; desc: string }> = {
+  strategic: { name: 'Strategic', symbol: 'XX', desc: 'Theater / combatant command level' },
+  operational: { name: 'Operational', symbol: 'III', desc: 'Corps / division level' },
+  tactical: { name: 'Tactical', symbol: 'II', desc: 'Brigade / battalion level' },
+};
+
+/** Determine valid child echelons based on parent echelon */
+function getValidEchelons(parentEchelon: string | undefined): Echelon[] {
+  if (!parentEchelon) return ['strategic'];
+  switch (parentEchelon) {
+    case 'strategic': return ['operational'];
+    case 'operational': return ['tactical'];
+    default: return [];
+  }
+}
 
 const CLASSIFICATION_LABELS: Record<Classification, string> = {
   UNCLASSIFIED: 'Unclassified',
@@ -113,10 +129,27 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
 
   const update = (patch: Partial<WizardState>) => setState((s) => ({ ...s, ...patch }));
 
+  // Determine parent echelon from prop or selected parent
+  const parentMembership = parentProblemSetId
+    ? memberships.find((m) => m.problemSetId === parentProblemSetId)
+    : state.parentProblemSetId
+      ? memberships.find((m) => m.problemSetId === state.parentProblemSetId)
+      : undefined;
+
+  // Valid echelons based on parent (enforces hierarchy)
+  const validEchelons = getValidEchelons(parentMembership?.echelon);
+
+  // Auto-select echelon when only one option is valid
+  useEffect(() => {
+    if (validEchelons.length === 1 && state.echelon !== validEchelons[0]) {
+      update({ echelon: validEchelons[0] });
+    }
+  }, [validEchelons.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Problem sets eligible to be parents (strategic can parent operational, operational can parent tactical)
   const parentEligible = memberships.filter((m) => {
     if (state.echelon === 'operational') return m.echelon === 'strategic';
-    if (state.echelon === 'tactical') return m.echelon === 'strategic' || m.echelon === 'operational';
+    if (state.echelon === 'tactical') return m.echelon === 'operational';
     return false;
   });
 
@@ -217,25 +250,36 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
 
             <div>
               <span className="wizard-group-label">Echelon <span className="required">*</span></span>
-              <div className="type-card-group">
-                {(['strategic', 'operational', 'tactical'] as Echelon[]).map((echelon) => (
-                  <label
-                    key={echelon}
-                    className={`type-card${state.echelon === echelon ? ' selected' : ''}`}
-                  >
-                    <input
-                      type="radio"
-                      name="echelon"
-                      value={echelon}
-                      checked={state.echelon === echelon}
-                      onChange={() => update({ echelon, parentProblemSetId: '' })}
-                      className="sr-only"
-                    />
-                    <span className="type-card-name">{ECHELON_LABELS[echelon].name}</span>
-                    <span className="type-card-desc">{ECHELON_LABELS[echelon].desc}</span>
-                  </label>
-                ))}
-              </div>
+              <p className="wizard-hint">Strategic problem sets contain operational, which contain tactical.</p>
+              {validEchelons.length === 1 ? (
+                <div className="type-card selected" style={{ cursor: 'default' }}>
+                  <span className="type-card-symbol">{ECHELON_LABELS[validEchelons[0]].symbol}</span>
+                  <span className="type-card-name">{ECHELON_LABELS[validEchelons[0]].name}</span>
+                  <span className="type-card-desc">{ECHELON_LABELS[validEchelons[0]].desc}</span>
+                  <span className="type-card-auto">Auto-selected based on parent echelon</span>
+                </div>
+              ) : (
+                <div className="type-card-group">
+                  {validEchelons.map((echelon) => (
+                    <label
+                      key={echelon}
+                      className={`type-card${state.echelon === echelon ? ' selected' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="echelon"
+                        value={echelon}
+                        checked={state.echelon === echelon}
+                        onChange={() => update({ echelon, parentProblemSetId: '' })}
+                        className="sr-only"
+                      />
+                      <span className="type-card-symbol">{ECHELON_LABELS[echelon].symbol}</span>
+                      <span className="type-card-name">{ECHELON_LABELS[echelon].name}</span>
+                      <span className="type-card-desc">{ECHELON_LABELS[echelon].desc}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Parent problem set selector (only for operational/tactical) */}
@@ -274,7 +318,7 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
               <textarea
                 id="ps-statement"
                 className="wizard-textarea"
-                placeholder="Define the problem this set addresses (optional)"
+                placeholder="What operational problem does this set address? (Optional)"
                 value={state.problemStatement}
                 onChange={(e) => update({ problemStatement: e.target.value })}
                 rows={3}
@@ -391,7 +435,9 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
               )}
               <div className="review-row">
                 <span className="review-key">Echelon</span>
-                <span className="review-val" style={{ textTransform: 'capitalize' }}>{state.echelon}</span>
+                <span className="review-val">
+                  {state.echelon ? `${ECHELON_SYMBOLS[state.echelon as Echelon]} ${ECHELON_LABELS[state.echelon as Echelon].name}` : ''}
+                </span>
               </div>
               {state.parentProblemSetId && (
                 <div className="review-row">

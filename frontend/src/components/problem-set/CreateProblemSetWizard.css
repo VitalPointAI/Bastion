@@ -246,8 +246,38 @@
   line-height: 1.3;
 }
 
+.type-card-symbol {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+.type-card.selected .type-card-symbol {
+  color: #93c5fd;
+}
+
+.type-card-auto {
+  display: block;
+  font-size: 0.625rem;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 2px;
+}
+
 .type-card.selected .type-card-name {
   color: #ffffff;
+}
+
+/* ─── Hint text below group labels ─────────────────────────────────────────── */
+
+.wizard-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: -4px 0 8px 0;
+  line-height: 1.4;
 }
 
 /* ─── Radio options (classification, invite mode, discoverability) ─────────── */
