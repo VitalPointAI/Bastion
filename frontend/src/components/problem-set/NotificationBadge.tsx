@@ -42,7 +42,7 @@ export function NotificationBadge({ count, maxDisplay = 99 }: NotificationBadgeP
   return (
     <span
       ref={badgeRef}
-      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 min-w-[1.25rem] flex items-center justify-center font-bold px-0.5"
+      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center font-bold px-0.5"
       aria-label={`${count} unread notification${count !== 1 ? 's' : ''}`}
       role="status"
     >
