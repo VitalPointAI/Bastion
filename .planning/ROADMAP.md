@@ -47,6 +47,7 @@ None
 - [x] **Phase 25: Operational Design Workspace** - Build the Design tab with problem framing, center of gravity analysis, lines of effort/operation, operational approach development, and AI-assisted design recommendations (INSERTED, completed 2026-03-06)
 - [x] **Phase 25.1: Training Package Upload & From-Scenario Integration** - Wire ScenarioPackageUpload wizard into Understand tab; add "Create from Scenario" option to CreateProblemSetWizard; integrate multi-file drag-drop upload with tag inference (team/phase/doc type) and async LLM extraction; surface upload status and extracted documents in Understand tab (INSERTED, completed 2026-03-06)
 - [ ] **Phase 25.2: Strategic Document Containers & Actor Categorization** - Organize strategic documents into nation/group containers (e.g., United States, China, NATO) with actor categories (ally, adversary, neutral, partner); persistent container-based organization for building strategic environments over time; feeds into Phase 26 strategic environment inheritance (INSERTED)
+- [ ] **Phase 25.3: AI Strategic Context & Knowledge Graph Integration** - Wire subscribed strategic environment data and container-scoped knowledge graphs into AI agent context; subscription cache materializer populates problem_set_data_cache; container-scoped RAFT graph construction with auto-trigger on document changes; graph summary injection into assembleContextNode for exercise AI agents; context size management with truncation and prioritization (INSERTED)
 - [ ] **Phase 26: Strategic Environment & Inheritance** - Strategic-level problem set as context provider with inheritance mechanism for directives, policy, and intelligence; update propagation to child problem sets (INSERTED)
 - [ ] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED)
 - [ ] **Phase 28: Embedded DAO Governance at Decision Gates** - Move DAO governance from dedicated tab into contextual workflow decision gates; proposals trigger at natural planning decision points (objective approval, COA selection, order release) (INSERTED)
@@ -639,7 +640,7 @@ Neutral / Partner
 ```
 
 Plans:
-- [ ] 25.2-01-PLAN.md -- Data model, ContainerStore, API routes, frontend types & service
+- [x] 25.2-01-PLAN.md -- Data model, ContainerStore, API routes, frontend types & service
 - [ ] 25.2-02-PLAN.md -- Container browser UI (category filter, container cards, breadcrumb nav, inline CRUD)
 - [ ] 25.2-03-PLAN.md -- Upload integration with container selector & AI recommendations
 - [ ] 25.2-04-PLAN.md -- Drag-and-drop assignment & container-level agent standing orders

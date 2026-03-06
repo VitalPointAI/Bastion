@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-06T08:03:29.983Z"
+last_updated: "2026-03-06T08:26:45.000Z"
 progress:
   total_phases: 40
   completed_phases: 26
   total_plans: 228
-  completed_plans: 239
+  completed_plans: 240
 ---
 
 # Project State
@@ -19,23 +19,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 25.1 — Training Package Upload from Scenario Integration
+**Current focus:** Phase 25.2 — Strategic Document Containers & Actor Categorization
 
 ## Current Position
 
-Phase: 25.1 of 40 (Training Package Upload from Scenario Integration)
-Plan: 2 of 2 in current phase — 25.1-02 complete (phase complete)
-Status: Training Packages view with mode-gated sidebar, classification banner, inline document preview
-Last activity: 2026-03-06 - Completed 25.1-02 (Training Packages View & Document Preview)
+Phase: 25.2 of 40 (Strategic Document Containers & Actor Categorization)
+Plan: 1 of 4 in current phase — 25.2-01 complete
+Status: ContainerStore with 6 PostgreSQL tables, 16 API routes, frontend types and service methods
+Last activity: 2026-03-06 - Completed 25.2-01 (Data Model Foundation)
 
-Progress: █████████████████████████ 239 plans complete
+Progress: █████████████████████████ 240 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 137
+- Total plans completed: 138
 - Average duration: 10 min
-- Total execution time: 19.99 hours
+- Total execution time: 20.11 hours
 
 **By Phase:**
 
@@ -131,6 +131,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 25.2 Plan 01 (Data Model Foundation):**
+- Auto-create strategic environment on first problem set access via getEnvironmentByProblemSet
+- Used problem_set_environments mapping table as lightweight bridge until Phase 26
+- Prevent deletion of default categories (is_default=false check)
+- Used COUNT(DISTINCT) in grouped aggregate query to avoid inflated counts from multiple LEFT JOINs
 
 **Phase 25.1 Plan 02 (Training Packages View & Document Preview):**
 - Mode-gated sidebar items compute items array inside component body using useMode() spread pattern
