@@ -19,14 +19,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 22 Plan 06 complete — EXERCISE watermark, per-mode workspace memory, scenario-to-workspace wiring
+**Current focus:** Phase 22 approved — ready for Phase 23 (Problem Set Model & Workspace Rename)
 
 ## Current Position
 
-Phase: 22 of 40 (Training/Operational Global Mode)
-Plan: 6 of 6 in current phase — 22-06 complete (phase complete)
-Status: Phase 22 complete — training/operational global mode fully implemented
-Last activity: 2026-03-06 - Completed 22-06: EXERCISE watermark, per-mode workspace memory, scenario-to-workspace creation
+Phase: 22 of 40 (Training/Operational Global Mode) — APPROVED
+Plan: 6 of 6 in current phase — all plans complete, phase approved
+Status: Phase 22 approved — deployed to production, user-verified
+Last activity: 2026-03-06 - Phase 22 approved after production deployment and verification
 
 Progress: █████████████████████████ 218 plans complete
 
