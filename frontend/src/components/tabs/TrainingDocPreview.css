@@ -1,0 +1,200 @@
+/* ─── Training Doc Preview Panel ─────────────────────────────────────────── */
+
+.training-doc-preview {
+  width: 400px;
+  min-width: 400px;
+  height: 100%;
+  border-left: 1px solid var(--border-color, #333);
+  background: var(--bg-tertiary, #151525);
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.preview-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-filename {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #e0e0e0);
+  word-break: break-word;
+}
+
+.preview-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.preview-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--bg-secondary, #1a1a2e);
+  color: var(--text-muted, #888);
+  border: 1px solid var(--border-color, #333);
+}
+
+.preview-badge--team {
+  color: #fff;
+}
+
+.preview-badge--blue {
+  background: #1565c0;
+  border-color: #1565c0;
+}
+
+.preview-badge--red {
+  background: #c62828;
+  border-color: #c62828;
+}
+
+.preview-badge--controller {
+  background: #6a1b9a;
+  border-color: #6a1b9a;
+}
+
+.preview-close {
+  background: none;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 4px;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-left: 0.75rem;
+}
+
+.preview-close:hover {
+  color: var(--text-primary, #e0e0e0);
+  border-color: var(--text-muted, #888);
+}
+
+/* ─── Sections ───────────────────────────────────────────────────────────── */
+
+.preview-section {
+  margin-bottom: 1.5rem;
+}
+
+.preview-section-heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #888);
+}
+
+.preview-summary-text {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.preview-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted, #888);
+  font-style: italic;
+}
+
+/* ─── Extraction Pending ─────────────────────────────────────────────────── */
+
+.extraction-pending {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--accent-color, #4a9eff);
+  font-style: italic;
+  animation: extraction-pulse 2s ease-in-out infinite;
+}
+
+@keyframes extraction-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ─── Entities ───────────────────────────────────────────────────────────── */
+
+.preview-entities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.preview-entity-chip {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  background: var(--accent-color-dim, rgba(74, 158, 255, 0.15));
+  color: var(--accent-color, #4a9eff);
+  border: 1px solid var(--accent-color-border, rgba(74, 158, 255, 0.3));
+}
+
+/* ─── Full Text ──────────────────────────────────────────────────────────── */
+
+.preview-fulltext-snippet,
+.preview-fulltext {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-secondary, #b0b0b0);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.preview-fulltext {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.preview-toggle-btn {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent-color, #4a9eff);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.preview-toggle-btn:hover {
+  background: var(--bg-secondary, #1a1a2e);
+}
+
+/* ─── Metadata Footer ────────────────────────────────────────────────────── */
+
+.preview-metadata {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #333);
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+}

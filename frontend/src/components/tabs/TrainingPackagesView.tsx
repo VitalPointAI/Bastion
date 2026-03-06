@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ScenarioPackageUpload } from '../exercise/ScenarioPackageUpload.js';
+import { TrainingDocPreview } from './TrainingDocPreview.js';
 import { exerciseService } from '../../services/exercise-service.js';
 import { problemSetService } from '../../lib/problem-set-service.js';
 import { useProblemSet } from '../../context/ProblemSetContext.js';
@@ -109,16 +110,9 @@ export function TrainingPackagesView({ problemSetId, onDocCountChange, onPending
           />
         </div>
         {selectedDoc && (
-          <TrainingDocPreviewInline document={selectedDoc} onClose={() => setSelectedDoc(null)} />
+          <TrainingDocPreview document={selectedDoc} onClose={() => setSelectedDoc(null)} />
         )}
       </div>
     </div>
   );
-}
-
-// Inline preview placeholder -- will be extracted to its own file in Task 2
-function TrainingDocPreviewInline({ document: _doc, onClose }: { document: ScenarioDocument; onClose: () => void }) {
-  void _doc;
-  void onClose;
-  return null;
 }
