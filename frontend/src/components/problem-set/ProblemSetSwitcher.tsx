@@ -103,17 +103,17 @@ export function ProblemSetSwitcher() {
 
   // Abbreviation: first letters of each word, max 2, uppercase
   const getAbbreviation = (name: string) =>
-    (name || 'WS')
+    (name || 'PS')
       .trim()
       .split(/\s+/)
       .map((w) => w[0])
       .join('')
       .slice(0, 2)
-      .toUpperCase() || 'WS';
+      .toUpperCase() || 'PS';
 
   // Active problem set info for trigger label
   const activeWs = memberships.find((m) => m.problemSetId === activeProblemSetId);
-  const triggerAbbrev = activeWs ? getAbbreviation(activeWs.name) : 'WS';
+  const triggerAbbrev = activeWs ? getAbbreviation(activeWs.name) : 'PS';
 
   // Total unread notifications across all non-active problem sets
   const totalNotifs = sorted
