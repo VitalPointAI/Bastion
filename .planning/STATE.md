@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-06T11:48:47.000Z"
+last_updated: "2026-03-06T11:55:14.000Z"
 progress:
   total_phases: 40
   completed_phases: 26
   total_plans: 228
-  completed_plans: 243
+  completed_plans: 244
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 25.3 of 40 (AI Strategic Context & Knowledge Graph Integration)
-Plan: 2 of 5 in current phase — 25.3-02 complete
-Status: containerIds tagging on all RAFT entities with container-scoped graph queries and auto-trigger extraction
-Last activity: 2026-03-06 - Completed 25.3-02 (Container-Scoped Knowledge Graph)
+Plan: 3 of 5 in current phase — 25.3-03 complete
+Status: GraphSummaryService with centrality analysis, temporal boosting, TTL cache, and API endpoints
+Last activity: 2026-03-06 - Completed 25.3-03 (Graph Summary Service)
 
-Progress: █████████████████████████ 243 plans complete
+Progress: █████████████████████████ 244 plans complete
 
 ## Performance Metrics
 
@@ -118,6 +118,7 @@ Progress: ███████████████████████�
 | Phase 25 P03 | 4 | 2 tasks | 4 files |
 | Phase 25 P04 | 4 | 2 tasks | 4 files |
 | Phase 25 P05 | 6 | 3 tasks | 6 files |
+| Phase 25.3 P03 | 3 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -131,6 +132,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 25.3 Plan 03 (Graph Summary Service):**
+- Connected-component BFS for community detection -- simpler than Louvain, sufficient for container-scoped sub-graphs
+- Relationship type inferred from weight magnitude (cooperative >= 0.5, adversarial <= -0.5) since adjacency list only carries weight
+- Cache key format containerId:scenarioPhase enables per-phase caching with prefix-based invalidation
 
 **Phase 25.3 Plan 02 (Container-Scoped Knowledge Graph):**
 - Used Neo4j array containment ($containerId IN a.containerIds) for container-scoped queries
@@ -1265,7 +1271,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-06 - Completed 25.2-03 (Upload Integration)
+Last session: 2026-03-06 - Completed 25.3-03 (Graph Summary Service)
 Stopped at: Completed 25.2-03-PLAN.md — ContainerSelector multi-select dropdown with AI container suggestions
 Resume file: None
 Next action: Continue Phase 25.2 — execute 25.2-04-PLAN.md (Drag-and-Drop)
