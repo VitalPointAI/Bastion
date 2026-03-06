@@ -110,7 +110,7 @@ export class ThreatMonitor implements StrategicAgent {
     reports: OSINTReport[],
     request: ThreatMonitorRequest
   ): Promise<AgentOutput<ThreatIndicator[]>> {
-    const { regions, threatTypes, severityThreshold = 'LOW' } = request;
+    const { regions: _regions, threatTypes, severityThreshold = 'LOW' } = request;
 
     // Check if agent is enabled
     const enabled = await this.isEnabled();
@@ -163,7 +163,7 @@ export class ThreatMonitor implements StrategicAgent {
    * @param request - Monitoring parameters
    * @returns AgentOutput containing threat indicators
    */
-  async monitor(request: ThreatMonitorRequest): Promise<AgentOutput<ThreatIndicator[]>> {
+  async monitor(_request: ThreatMonitorRequest): Promise<AgentOutput<ThreatIndicator[]>> {
     // In production, this would:
     // 1. Trigger OSINT collection
     // 2. Analyze collected reports

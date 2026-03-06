@@ -2,7 +2,7 @@ import { getPool } from './database.js';
 
 interface Operation {
   operation_type: string;
-  payload: any;
+  payload: Record<string, unknown>;
 }
 
 /**

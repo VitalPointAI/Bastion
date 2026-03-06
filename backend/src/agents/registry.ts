@@ -14,7 +14,6 @@ import {
   AgentManifest,
   AgentPhase,
   AutonomyLevel,
-  DelegationScope,
   ProposalKind,
 } from './types.js';
 import { CharacterSchema } from './character-schema.js';
@@ -158,8 +157,9 @@ export class AgentRegistry {
    */
   private cleanupMessenger(agentId: string): void {
     const messenger = this.messengers.get(agentId);
-    if (messenger && typeof (messenger as any).cleanup === 'function') {
-      (messenger as any).cleanup().catch((err: Error) => {
+    const messengerObj = messenger as Record<string, unknown>;
+    if (messenger && typeof messengerObj.cleanup === 'function') {
+      (messengerObj.cleanup as () => Promise<void>)().catch((err: Error) => {
         console.error(`[AgentRegistry] Error cleaning up messenger for ${agentId}:`, err);
       });
     }

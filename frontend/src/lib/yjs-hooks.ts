@@ -140,7 +140,7 @@ export function useYjsText(text: Y.Text | null): string {
     if (!text) return;
 
     // Sync React state with external Yjs document - intentional setState in effect
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setValue(text.toString());
 
     // Observe changes from Yjs (external source) and sync to React state
@@ -167,7 +167,7 @@ export function useYjsArray<T>(array: Y.Array<T> | null): T[] {
     if (!array) return;
 
     // Sync React state with external Yjs document - intentional setState in effect
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setValue(array.toArray());
 
     // Observe changes from Yjs (external source) and sync to React state
@@ -196,7 +196,7 @@ export function useYjsMap<T>(map: Y.Map<T> | null): Map<string, T> {
     // Sync React state with external Yjs document - intentional setState in effect
     const entries = new Map<string, T>();
     map.forEach((v, k) => entries.set(k, v));
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setValue(entries);
 
     // Observe changes from Yjs (external source) and sync to React state

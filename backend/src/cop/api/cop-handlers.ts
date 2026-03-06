@@ -15,7 +15,6 @@ import { versionStore } from '../layers/version-store.js';
 import { detectConflicts } from '../layers/conflict-detector.js';
 import { linkageStore } from '../linkage/linkage-store.js';
 import { runCOPGeneration } from '../agents/cop-coordinator.js';
-import { copEventBus } from '../messaging/event-bus.js';
 import { TriggerHandler } from '../messaging/trigger-handler.js';
 import { ActivityBridge } from '../messaging/activity-bridge.js';
 

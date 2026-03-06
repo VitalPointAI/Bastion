@@ -34,7 +34,8 @@ async function initVersionTable(): Promise<void> {
 /**
  * Helper to convert database row to PlanVersion
  */
-function rowToVersion(row: any): PlanVersion {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToVersion(row: Record<string, any>): PlanVersion {
   return {
     id: row.id,
     planId: row.plan_id,

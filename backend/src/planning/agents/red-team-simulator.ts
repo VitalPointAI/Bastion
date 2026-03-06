@@ -49,7 +49,7 @@ export function createRedTeamGraph() {
 
   // Agent node
   const agent = async (state: RedTeamStateType) => {
-    const { messages, planId, coaIds, currentCoaIndex, analyzedCoaIds } = state;
+    const { messages, planId, coaIds, currentCoaIndex, analyzedCoaIds: _analyzedCoaIds } = state;
 
     if (currentCoaIndex >= coaIds.length) {
       return { complete: true, messages: [] };

@@ -1,6 +1,6 @@
 import * as Y from 'yjs';
 import { getPool } from '../lib/database.js';
-import { YjsDocument, DocumentMetadata, PlanYjsStructure } from './types.js';
+import { YjsDocument, DocumentMetadata } from './types.js';
 
 class YjsDocumentProvider {
   private documents: Map<string, YjsDocument> = new Map();
@@ -77,7 +77,7 @@ class YjsDocumentProvider {
     };
 
     // Set up persistence on changes
-    doc.on('update', async (update: Uint8Array) => {
+    doc.on('update', async (_update: Uint8Array) => {
       await this.persistUpdate(docId, planId, doc);
     });
 
@@ -129,11 +129,11 @@ class YjsDocumentProvider {
   /**
    * Create a version snapshot
    */
-  async createSnapshot(documentId: string, version: number, changedBy: string, reason?: string): Promise<void> {
+  async createSnapshot(documentId: string, version: number, _changedBy: string, _reason?: string): Promise<void> {
     const yjsDoc = this.documents.get(documentId);
     if (!yjsDoc) return;
 
-    const state = Y.encodeStateAsUpdate(yjsDoc.doc);
+    const _state = Y.encodeStateAsUpdate(yjsDoc.doc);
 
     // Use versionStore from planning module (will be imported in actual implementation)
     // For now, just log the intent
@@ -158,8 +158,10 @@ class YjsDocumentProvider {
     this.documents.delete(documentId);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
     let timeout: NodeJS.Timeout | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return ((...args: any[]) => {
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(() => fn(...args), delay);

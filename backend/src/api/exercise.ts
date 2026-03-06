@@ -1930,7 +1930,7 @@ exerciseRouter.get('/scenarios/:id/roles/:roleKey/channel', async (req: Request,
           res.write(`data: ${msg.payload}\n\n`);
         }
       });
-    } catch (err) {
+    } catch (_err) {
       pgClient.release();
       res.end();
       return;
@@ -1940,7 +1940,7 @@ exerciseRouter.get('/scenarios/:id/roles/:roleKey/channel', async (req: Request,
       pgClient.query(`UNLISTEN "channel:${scenarioId}:${roleKey}"`).finally(() => pgClient.release());
       res.end();
     });
-  } catch (error) {
+  } catch (_error) {
     res.write(`data: ${JSON.stringify({ error: 'Channel initialization failed' })}\n\n`);
     res.end();
   }

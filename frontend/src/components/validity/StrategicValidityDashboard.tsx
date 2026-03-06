@@ -86,7 +86,7 @@ export function StrategicValidityDashboard() {
   // Load problem set data when selection changes
   useEffect(() => {
     if (!selectedProblemSetId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronous loading indicator before async fetch
+     
     setLoading(true);
 
     Promise.all([

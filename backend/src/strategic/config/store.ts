@@ -5,7 +5,7 @@
 
 import { randomUUID } from 'crypto';
 import { getPool } from '../../lib/database.js';
-import { encryptData, decryptData, generateEncryptionKey } from '../../lib/encryption.js';
+import { encryptData, decryptData } from '../../lib/encryption.js';
 import type { ConfigAuditEntry } from './types.js';
 
 // Encryption key for config values (should be set via env var in production)
@@ -302,7 +302,7 @@ export class ConfigStore {
     query += ' ORDER BY changed_at DESC';
 
     if (options?.limit) {
-      query += ` LIMIT $${paramIndex++}`;
+      query += ` LIMIT $${paramIndex}`;
       params.push(options.limit);
     }
 

@@ -86,7 +86,7 @@ router.get('/workflows/:missionId', async (req: Request, res: Response) => {
     }
 
     // Convert Map to object for JSON serialization
-    const phaseGates: Record<string, any> = {};
+    const phaseGates: Record<string, unknown> = {};
     workflow.phaseGates.forEach((gate, gateId) => {
       phaseGates[gateId] = gate;
     });

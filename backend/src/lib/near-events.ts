@@ -124,7 +124,7 @@ async function storeBlockchainEvents(events: BlockchainEvent[]): Promise<void> {
 /**
  * Sync a document that was registered on blockchain but not in PostgreSQL
  */
-async function syncExternalDocument(client: any, event: BlockchainEvent): Promise<void> {
+async function syncExternalDocument(client: { query: (sql: string, params?: unknown[]) => Promise<{ rows: unknown[] }> }, event: BlockchainEvent): Promise<void> {
   const docHash = event.eventData.document_hash as string;
   if (!docHash) return;
 
@@ -153,7 +153,7 @@ async function syncExternalDocument(client: any, event: BlockchainEvent): Promis
 /**
  * Sync a DID that was registered on blockchain but not in local cache
  */
-async function syncExternalDID(_client: any, event: BlockchainEvent): Promise<void> {
+async function syncExternalDID(_client: { query: (sql: string, params?: unknown[]) => Promise<{ rows: unknown[] }> }, event: BlockchainEvent): Promise<void> {
   // DIDs are resolved on-demand from blockchain, but we log the event
   console.log(`DID registered on chain: ${event.eventData.did || event.aggregateId}`);
 }
@@ -219,24 +219,27 @@ export async function pollBlockchainEvents(): Promise<void> {
                 }
               }
             }
-          } catch (chunkError: any) {
+          } catch (chunkError: unknown) {
             // Chunk might not be available, skip
-            if (!chunkError.message?.includes('UNKNOWN_CHUNK')) {
-              console.warn(`Error processing chunk: ${chunkError.message}`);
+            const chunkErrMsg = chunkError instanceof Error ? chunkError.message : String(chunkError);
+            if (!chunkErrMsg.includes('UNKNOWN_CHUNK')) {
+              console.warn(`Error processing chunk: ${chunkErrMsg}`);
             }
           }
         }
-      } catch (blockError: any) {
-        if (!blockError.message?.includes('UNKNOWN_BLOCK')) {
-          console.warn(`Error processing block ${blockHeight}: ${blockError.message}`);
+      } catch (blockError: unknown) {
+        const blockErrMsg = blockError instanceof Error ? blockError.message : String(blockError);
+        if (!blockErrMsg.includes('UNKNOWN_BLOCK')) {
+          console.warn(`Error processing block ${blockHeight}: ${blockErrMsg}`);
         }
       }
     }
 
     lastProcessedBlock = Math.min(currentBlock, lastProcessedBlock + blocksToProcess);
 
-  } catch (error: any) {
-    console.error('Blockchain event polling error:', error.message);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('Blockchain event polling error:', errMsg);
     // Don't throw - let the worker retry
   }
 }

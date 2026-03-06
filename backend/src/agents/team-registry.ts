@@ -10,10 +10,6 @@ import { getAgentRegistry } from './registry.js';
 import type {
   AgentTeam,
   TeamMember,
-  TeamWorkflow,
-  EscalationPolicy,
-  TeamMemberRole,
-  WorkflowType,
 } from './types.js';
 import {
   AgentTeamInputSchema,

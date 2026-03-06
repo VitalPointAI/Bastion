@@ -40,7 +40,7 @@ const router = express.Router();
  */
 router.post('/categorize-midlife', requireAuth, async (req, res) => {
   try {
-    const userDID = req.anonUser!.nearAccountId;
+    const _userDID = req.anonUser!.nearAccountId;
 
     const { objectiveId, description, context } = req.body;
 
@@ -119,7 +119,7 @@ router.post('/categorize-midlife', requireAuth, async (req, res) => {
  */
 router.post('/prioritize-domain', requireAuth, async (req, res) => {
   try {
-    const userDID = req.anonUser!.nearAccountId;
+    const _userDID = req.anonUser!.nearAccountId;
 
     const { objectives, documentId, domain, criteria } = req.body;
 

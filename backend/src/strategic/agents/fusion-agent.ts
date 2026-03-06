@@ -170,7 +170,7 @@ export class FusionAgent implements StrategicAgent {
   async fuse(
     osintReports: OSINTReport[],
     threatIndicators: ThreatIndicator[],
-    documentContext?: string
+    _documentContext?: string
   ): Promise<AgentOutput<FusedIntelligenceProduct>> {
     // Check if agent is enabled
     const enabled = await this.isEnabled();
@@ -394,7 +394,7 @@ export class FusionAgent implements StrategicAgent {
    */
   private buildOperationalEnvironment(
     reports: OSINTReport[],
-    correlations: CorrelationResult
+    _correlations: CorrelationResult
   ): OperationalEnvironment {
     // Initialize empty environment
     const env: OperationalEnvironment = {

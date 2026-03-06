@@ -8,7 +8,7 @@
  * with SemiAutonomous level - requires human approval for changes.
  */
 
-import type { AgentManifest, AgentCharacter, AgentPhase } from '../../agents/types.js';
+import type { AgentManifest, AgentCharacter, AgentPhase, AgentCapability, AutonomyLevel } from '../../agents/types.js';
 import type { MidlifeCategory } from '../schemas/dime.js';
 import type { Priority } from '../schemas/strategic-objective.js';
 
@@ -22,12 +22,12 @@ export const STRATEGY_REVIEWER_MANIFEST: Omit<AgentManifest, 'agentDID' | 'agent
   description: 'Reviews strategic documents and categorizes objectives using MIDLIFE framework. Provides category suggestions and priority recommendations that require human approval.',
   phase: 'Support' as AgentPhase,
   capabilities: [
-    'ObjectiveReview' as any,
-    'MidlifeCategorization' as any,
-    'PriorityAssessment' as any,
-    'DocumentSummary' as any,
+    'ObjectiveReview' as unknown as AgentCapability,
+    'MidlifeCategorization' as unknown as AgentCapability,
+    'PriorityAssessment' as unknown as AgentCapability,
+    'DocumentSummary' as unknown as AgentCapability,
   ],
-  maxAutonomy: 'SemiAutonomous' as any,
+  maxAutonomy: 'SemiAutonomous' as unknown as AutonomyLevel,
   allowedProposalKinds: [], // Not involved in DAO proposals
   requiresHumanApproval: [], // All changes require approval by design
   active: true,

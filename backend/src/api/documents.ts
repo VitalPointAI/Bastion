@@ -81,9 +81,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       },
       message: 'Document uploaded, encrypted, and registered for blockchain sync'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Upload failed:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Upload failed' });
   }
 });
 
@@ -100,9 +100,9 @@ router.get('/:documentId', async (req, res) => {
     // TODO: Verify user has access to this document
 
     res.json(doc);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get document failed:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Get document failed' });
   }
 });
 
@@ -125,9 +125,9 @@ router.get('/', async (req, res) => {
       parseInt(offset as string) || 0
     );
     res.json({ documents: docs, count: docs.length });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('List documents failed:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'List documents failed' });
   }
 });
 

@@ -8,7 +8,8 @@
  * with SemiAutonomous level - provides analysis but requires human validation.
  */
 
-import type { AgentManifest, AgentCharacter, AgentPhase } from '../../agents/types.js';
+import { AutonomyLevel } from '../../agents/types.js';
+import type { AgentManifest, AgentCharacter, AgentPhase, AgentCapability } from '../../agents/types.js';
 
 /**
  * Agent ID for consistent reference
@@ -38,11 +39,11 @@ export const RAFT_REASONING_MANIFEST: Omit<
     'Analyzes RAFT graph for strategic insights using network analysis. Identifies key actors, critical relationships, and emerging tensions.',
   phase: 'Support' as AgentPhase,
   capabilities: [
-    'GraphAnalysis' as any,
-    'NetworkReasoning' as any,
-    'StrategicAssessment' as any,
+    'GraphAnalysis' as AgentCapability,
+    'NetworkReasoning' as AgentCapability,
+    'StrategicAssessment' as AgentCapability,
   ],
-  maxAutonomy: 'SemiAutonomous' as any,
+  maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [], // Not involved in DAO proposals
   requiresHumanApproval: [], // Analysis always requires human review
   active: true,

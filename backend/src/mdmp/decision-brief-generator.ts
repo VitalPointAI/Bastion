@@ -8,8 +8,7 @@
  * INVARIANT 5: All AI-generated elements include confidence intervals.
  */
 
-import { assessUncertainty, ConfidenceInterval } from '../agents/uncertainty-quantifier.js';
-import { ActivityCategory } from './types.js';
+
 
 // ==========================================================================
 // Output Interfaces
@@ -406,7 +405,7 @@ export class DecisionBriefGenerator {
     criteria: Array<{ name: string; weight: number; description: string }>
   ): Promise<COAComparisonEntry[]> {
     // Stub implementation - would use AI agent to score each COA against criteria
-    const coaComparison: COAComparisonEntry[] = coaData.map((coa, index) => {
+    const coaComparison: COAComparisonEntry[] = coaData.map((coa, _index) => {
       const criteriaScores: COAComparisonEntry['criteria'] = {};
 
       // Generate scores for each criterion (placeholder - would be AI-generated)
@@ -461,7 +460,7 @@ export class DecisionBriefGenerator {
    * Generate risk assessments from COA data
    */
   private async generateRiskAssessments(
-    coaData: Array<{ coaId: string; coaName: string; coaDetails: unknown }>
+    _coaData: Array<{ coaId: string; coaName: string; coaDetails: unknown }>
   ): Promise<RiskAssessment[]> {
     // Stub implementation - would pull from risk assessment framework
     const risks: RiskAssessment[] = [
@@ -497,7 +496,7 @@ export class DecisionBriefGenerator {
   /**
    * Generate assumption summary
    */
-  private async generateAssumptionSummary(missionId: string): Promise<AssumptionSummary[]> {
+  private async generateAssumptionSummary(_missionId: string): Promise<AssumptionSummary[]> {
     // Stub implementation - would query assumption registry
     const assumptions: AssumptionSummary[] = [
       {
@@ -522,7 +521,7 @@ export class DecisionBriefGenerator {
   /**
    * Generate red team summary
    */
-  private async generateRedTeamSummary(missionId: string): Promise<RedTeamSummary[]> {
+  private async generateRedTeamSummary(_missionId: string): Promise<RedTeamSummary[]> {
     // Stub implementation - would query red team challenges from workflow
     const redTeamSummary: RedTeamSummary[] = [
       {

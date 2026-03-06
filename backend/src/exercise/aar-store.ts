@@ -113,7 +113,7 @@ class AARStore {
       params.push(opts.eventType);
     }
 
-    const limitClause = opts?.limit ? ` LIMIT $${paramIndex++}` : '';
+    const limitClause = opts?.limit ? ` LIMIT $${paramIndex}` : '';
     if (opts?.limit) params.push(opts.limit);
 
     const result = await pool.query(

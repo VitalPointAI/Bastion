@@ -15,9 +15,8 @@
 import { randomUUID } from 'crypto';
 import type { BaseMessage } from '@langchain/core/messages';
 import { getPool } from '../lib/database.js';
-import { ABACEnforcer, CLASSIFICATION_LEVELS } from '../security/abac-enforcer.js';
+import { ABACEnforcer } from '../security/abac-enforcer.js';
 import {
-  BastionStateAnnotation,
   type BastionState,
   type ClassificationLevel,
   type ExecutionTraceEntry,
@@ -143,7 +142,7 @@ export class ClassificationFilter {
     await this.ensureInitialized();
 
     const targetLevel = CLASSIFICATION_ORDER[targetClearance];
-    const sourceLevel = CLASSIFICATION_ORDER[state.classification];
+    const _sourceLevel = CLASSIFICATION_ORDER[state.classification];
 
     // Track what gets filtered
     const filteredMessageIds: string[] = [];

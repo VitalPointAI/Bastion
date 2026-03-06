@@ -232,7 +232,7 @@ class JP50WorkflowEngine {
   /**
    * Get workflow history for a plan
    */
-  async getHistory(planId: string): Promise<any[]> {
+  async getHistory(planId: string): Promise<Record<string, unknown>[]> {
     const pool = getPool();
     const result = await pool.query(
       'SELECT * FROM jp50_workflow_events WHERE plan_id = $1 ORDER BY created_at ASC',

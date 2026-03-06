@@ -1,7 +1,7 @@
 import { Engine, RuleProperties } from 'json-rules-engine';
 import { roeStore } from '../stores/roe-store.js';
 import { TacticalAction, ROECheckResult, ROEViolation, ROEWarning } from './types.js';
-import { ROERule } from '../types.js';
+import { ROERule, CreateROERuleInput } from '../types.js';
 
 class ROEEngine {
   private engines: Map<string, Engine> = new Map();
@@ -25,7 +25,7 @@ class ROEEngine {
     for (const rule of rules) {
       const ruleProperties: RuleProperties = {
         name: rule.name,
-        conditions: rule.conditions as any, // json-rules-engine TopLevelCondition
+        conditions: rule.conditions as unknown as RuleProperties['conditions'],
         event: {
           ...rule.event,
           params: {
@@ -75,7 +75,7 @@ class ROEEngine {
     };
 
     // Run rules
-    const { events, almanac } = await engine.run(facts);
+    const { events } = await engine.run(facts);
 
     // Categorize results
     const violations: ROEViolation[] = [];
@@ -124,7 +124,7 @@ class ROEEngine {
       rulesChecked: rules.length,
       checkedAt: new Date(),
       requiresOverride,
-      overrideAuthority: requiresOverride ? overrideAuthority as any : undefined,
+      overrideAuthority: requiresOverride ? overrideAuthority as ROECheckResult['overrideAuthority'] : undefined,
     };
   }
 
@@ -206,7 +206,7 @@ class ROEEngine {
 
     const created: ROERule[] = [];
     for (const rule of defaultRules) {
-      const r = await roeStore.createRule(rule as any, createdBy);
+      const r = await roeStore.createRule(rule as CreateROERuleInput, createdBy);
       created.push(r);
     }
 

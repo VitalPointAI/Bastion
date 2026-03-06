@@ -9,7 +9,8 @@
  * with NotAutonomous level - ALL conflict assessments require human review.
  */
 
-import type { AgentManifest, AgentCharacter, AgentPhase } from '../../agents/types.js';
+import { AutonomyLevel } from '../../agents/types.js';
+import type { AgentManifest, AgentCharacter, AgentPhase, AgentCapability } from '../../agents/types.js';
 
 /**
  * Agent ID for consistent reference
@@ -39,11 +40,11 @@ export const CONFLICT_DETECTION_MANIFEST: Omit<
     'Identifies contradictory guidance between documents and recommends resolution',
   phase: 'Support' as AgentPhase,
   capabilities: [
-    'ConflictDetection' as any,
-    'SeverityAssessment' as any,
-    'ResolutionRecommendation' as any,
+    'ConflictDetection' as AgentCapability,
+    'SeverityAssessment' as AgentCapability,
+    'ResolutionRecommendation' as AgentCapability,
   ],
-  maxAutonomy: 'NotAutonomous' as any, // Always requires human review
+  maxAutonomy: AutonomyLevel.NotAutonomous,
   allowedProposalKinds: [], // Not involved in DAO proposals
   requiresHumanApproval: [], // All conflict assessments require review
   active: true,

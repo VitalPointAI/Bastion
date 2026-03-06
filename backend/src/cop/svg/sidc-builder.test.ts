@@ -12,7 +12,6 @@ import {
   IDENTITY_MAP,
   SYMBOL_SET_MAP,
   ECHELON_MAP,
-  type SIDCParams,
 } from './sidc-builder.js';
 
 describe('buildSIDC', () => {

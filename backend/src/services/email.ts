@@ -125,7 +125,7 @@ export async function sendLoginMagicLinkEmail(email: string, token: string): Pro
     await sesClient.send(command);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    throw new Error(`Failed to send login email via SES: ${message}`);
+    throw new Error(`Failed to send login email via SES: ${message}`, { cause: error });
   }
 }
 
@@ -170,7 +170,7 @@ export async function sendRegistrationMagicLinkEmail(email: string, token: strin
     await sesClient.send(command);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    throw new Error(`Failed to send registration email via SES: ${message}`);
+    throw new Error(`Failed to send registration email via SES: ${message}`, { cause: error });
   }
 }
 
@@ -215,6 +215,6 @@ export async function sendRecoveryEmail(email: string, token: string): Promise<v
     await sesClient.send(command);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    throw new Error(`Failed to send recovery email via SES: ${message}`);
+    throw new Error(`Failed to send recovery email via SES: ${message}`, { cause: error });
   }
 }

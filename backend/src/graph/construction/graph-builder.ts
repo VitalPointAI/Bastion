@@ -11,7 +11,6 @@ import { actorStore } from '../raft/actor-store.js';
 import { relationshipStore } from '../raft/relationship-store.js';
 import { tensionStore } from '../raft/tension-store.js';
 import { entityResolutionService } from '../resolution/resolution-service.js';
-import type { Actor } from '../raft/types.js';
 import {
   ActorExtractionResponseSchema,
   RelationshipExtractionResponseSchema,

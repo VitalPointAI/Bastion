@@ -358,7 +358,7 @@ export class LayerStore implements ILayerStore {
       params.push(filters.beforeDate);
     }
     if (filters.afterDate) {
-      conditions.push(`created_at > $${idx++}`);
+      conditions.push(`created_at > $${idx}`);
       params.push(filters.afterDate);
     }
 

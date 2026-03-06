@@ -123,7 +123,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  */
 router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const state = getQueryString(req.query.state) as MissionState | undefined;
     const workspaceId = getQueryString(req.query.workspaceId);
@@ -146,7 +146,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  */
 router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -171,7 +171,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  */
 router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -203,7 +203,7 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
  */
 router.post('/:id/activate', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -228,7 +228,7 @@ router.post('/:id/activate', requireAuth, async (req: Request, res: Response) =>
  */
 router.post('/:id/complete', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -253,7 +253,7 @@ router.post('/:id/complete', requireAuth, async (req: Request, res: Response) =>
  */
 router.post('/:id/archive', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -282,7 +282,7 @@ router.post('/:id/archive', requireAuth, async (req: Request, res: Response) => 
  */
 router.get('/:id/participants', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -306,7 +306,7 @@ router.get('/:id/participants', requireAuth, async (req: Request, res: Response)
  */
 router.delete('/:id/participants/:participantId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const participantId = req.params.participantId as string;
@@ -408,7 +408,7 @@ router.post('/:id/invites', requireAuth, async (req: Request, res: Response) => 
  */
 router.get('/:id/invites', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const mission = await missionStore.getMission(missionId);
@@ -445,7 +445,7 @@ router.get('/:id/invites', requireAuth, async (req: Request, res: Response) => {
  */
 router.delete('/:id/invites/:inviteId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const missionId = req.params.id as string;
     const inviteId = req.params.inviteId as string;

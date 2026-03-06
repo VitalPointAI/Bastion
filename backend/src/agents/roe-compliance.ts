@@ -245,7 +245,7 @@ Every output MUST include:
  * @returns Parsed ROE rules with metadata
  */
 export async function parseROE(
-  roeDocument: string,
+  _roeDocument: string,
 ): Promise<ROERule[]> {
   // Placeholder implementation.
   // Production version would use LLM with the system prompt to parse ROE.
@@ -275,7 +275,7 @@ export async function parseROE(
 export async function checkCompliance(
   parsedRules: ROERule[],
   plannedActivities: Array<{ activityId: string; description: string; requiredAuthority: string }>,
-  coalitionPartners: string[],
+  _coalitionPartners: string[],
 ): Promise<ROEComplianceOutput> {
   // Placeholder implementation.
   // Production version would use LLM with the system prompt to analyze compliance.

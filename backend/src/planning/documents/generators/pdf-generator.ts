@@ -5,6 +5,7 @@
  */
 
 import * as PDFKit from 'pdfkit';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PDFDocument = (PDFKit as any).default || PDFKit;
 import type { GeneratedDocument, OPORDGeneratorOptions, DocumentMetadata } from '../types.js';
 import { planStore } from '../../stores/plan-store.js';

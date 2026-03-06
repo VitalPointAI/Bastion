@@ -9,8 +9,6 @@ import { createToolDID } from './tool-did.js';
 import type {
   MCPTool,
   ToolCategory,
-  ToolHandler,
-  ToolConfig,
 } from './types.js';
 import {
   MCPToolInputSchema,

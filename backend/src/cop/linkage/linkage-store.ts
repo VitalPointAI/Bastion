@@ -147,7 +147,7 @@ export class LinkageStore {
   /**
    * Get linkages pending human review (autoCommitted=false, no reviewer).
    */
-  async getPendingReviews(workspaceId?: string): Promise<EntityLinkage[]> {
+  async getPendingReviews(_workspaceId?: string): Promise<EntityLinkage[]> {
     await this.ensureTable();
     const pool = getPool();
     // Note: workspaceId filtering would require a join to layers table;

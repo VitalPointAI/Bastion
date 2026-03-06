@@ -384,7 +384,6 @@ export class GovernanceCopilot {
 
   private generateRecommendation(proposal: Proposal): string {
     const kind = this.getProposalKind(proposal);
-    const description = (proposal.description || '').toLowerCase();
 
     // Generic recommendations based on proposal type
     switch (kind) {
@@ -509,7 +508,7 @@ export class GovernanceCopilot {
     return precedents;
   }
 
-  private identifyContextGaps(proposal: Proposal, dao: DAOMetadata): string[] {
+  private identifyContextGaps(proposal: Proposal, _dao: DAOMetadata): string[] {
     const gaps: string[] = [];
     const description = (proposal.description || '').toLowerCase();
     const kind = this.getProposalKind(proposal);
@@ -614,7 +613,6 @@ export class GovernanceCopilot {
 
   private determineNextSteps(proposal: Proposal, dao: DAOMetadata): string[] {
     const steps: string[] = [];
-    const kind = this.getProposalKind(proposal);
     const effectiveAutonomy = proposal.autonomy_override || dao.config.default_autonomy_level;
 
     // Voting phase

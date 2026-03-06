@@ -179,7 +179,7 @@ export class OSINTCollector implements StrategicAgent {
   /**
    * Extract entities (stub - would use NER model)
    */
-  private extractEntities(content: string): ExtractedEntity[] {
+  private extractEntities(_content: string): ExtractedEntity[] {
     // Stub: Return empty
     // Production would use:
     // - spaCy via API
@@ -191,7 +191,7 @@ export class OSINTCollector implements StrategicAgent {
   /**
    * Analyze sentiment (stub - would use sentiment model)
    */
-  private analyzeSentiment(content: string): Sentiment {
+  private analyzeSentiment(_content: string): Sentiment {
     // Stub: Default to neutral
     // Production would use sentiment analysis model
     return 'NEUTRAL';

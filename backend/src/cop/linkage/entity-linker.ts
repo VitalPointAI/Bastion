@@ -160,7 +160,7 @@ export class EntityLinker {
       );
 
       // Persist the linkage
-      const linkage = await this.store.createLinkage({
+      await this.store.createLinkage({
         entityId: result.entityId,
         symbolEntityId: result.entityId, // Self-reference for source symbol
         layerId: workspaceId, // Layer context
@@ -272,8 +272,7 @@ export class EntityLinker {
     // Determine affiliation from strongest alliance relationship
     const affiliation = relationships
       .filter((r) => r.relationshipType === 'alliance' && r.strength > 0.5)
-      .sort((a, b) => b.strength - a.strength)
-      [0]?.name ?? null;
+      .sort((a, b) => b.strength - a.strength)[0]?.name ?? null;
 
     return {
       entityId,

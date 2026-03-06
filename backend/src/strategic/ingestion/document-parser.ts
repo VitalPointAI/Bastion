@@ -74,7 +74,7 @@ export class DocumentParser {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to parse PDF: ${message}`);
+      throw new Error(`Failed to parse PDF: ${message}`, { cause: error });
     }
   }
 
@@ -113,7 +113,7 @@ export class DocumentParser {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to parse Office document: ${message}`);
+      throw new Error(`Failed to parse Office document: ${message}`, { cause: error });
     }
   }
 

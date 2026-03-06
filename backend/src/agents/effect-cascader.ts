@@ -14,7 +14,6 @@
  * see unintended consequences before committing to a COA.
  */
 
-import { MDMPPhase, ActivityCategory } from '../mdmp/types.js';
 import { AgentManifest, AgentCapability } from './types.js';
 import { AutonomyLevel } from '../dao/types.js';
 
@@ -128,7 +127,7 @@ export const EFFECT_CASCADER_MANIFEST: AgentManifest = {
   name: 'Effect Cascader',
   description:
     'Maps second/third-order effects of COAs across DIME domains with directed chain analysis',
-  phase: 'Support' as any, // AgentPhase.Support
+  phase: 'Support' as unknown as AgentManifest['phase'],
   capabilities: [AgentCapability.EffectCascading],
   maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [],
@@ -259,9 +258,9 @@ Pay special attention to:
  */
 export async function cascadeEffects(
   coaId: string,
-  coaDescription: string,
-  coaActions: Array<{ description: string; domain: string }>,
-  operationalEnvironment: string
+  _coaDescription: string,
+  _coaActions: Array<{ description: string; domain: string }>,
+  _operationalEnvironment: string
 ): Promise<EffectCascadeOutput> {
   // TODO: Implement via agent executor framework
   // This stub returns empty results for now

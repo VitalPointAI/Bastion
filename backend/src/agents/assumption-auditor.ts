@@ -14,12 +14,10 @@
 
 import {
   SensitivityLevel,
-  AssumptionStatus,
   AssumptionSource,
   MDMPPhase,
-  ActivityCategory,
 } from '../mdmp/types.js';
-import { AgentManifest, AgentCapability, DelegationScope } from './types.js';
+import { AgentManifest, AgentCapability } from './types.js';
 import { AutonomyLevel } from '../dao/types.js';
 
 // ==========================================================================
@@ -103,7 +101,7 @@ export const ASSUMPTION_AUDITOR_MANIFEST: AgentManifest = {
   name: 'Assumption Auditor',
   description:
     'Surfaces hidden and explicit planning assumptions, classifies sensitivity, and tracks validity',
-  phase: 'Support' as any, // AgentPhase.Support
+  phase: 'Support' as unknown as AgentManifest['phase'],
   capabilities: [AgentCapability.AssumptionAuditing],
   maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [],
@@ -208,10 +206,10 @@ Categories of hidden assumptions to check:
  * @returns Audit output with surfaced assumptions and confidence metrics
  */
 export async function auditAssumptions(
-  documentText: string,
-  missionId: string,
-  currentPhase: MDMPPhase,
-  existingAssumptions: Array<{ id: string; description: string }>
+  _documentText: string,
+  _missionId: string,
+  _currentPhase: MDMPPhase,
+  _existingAssumptions: Array<{ id: string; description: string }>
 ): Promise<AssumptionAuditOutput> {
   // TODO: Implement via agent executor framework
   // This stub returns empty results for now
@@ -239,8 +237,8 @@ export async function auditAssumptions(
  */
 export async function validateAssumption(
   assumptionId: string,
-  assumptionDescription: string,
-  currentIntelligence: string
+  _assumptionDescription: string,
+  _currentIntelligence: string
 ): Promise<AssumptionValidationOutput> {
   // TODO: Implement via agent executor framework
   // This stub returns conservative results for now

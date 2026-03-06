@@ -14,7 +14,7 @@
  * Integration with smart contracts is tracked in plan 5.1-14.
  */
 
-import { getActivityById, getActivitiesByPhase, getActivitiesRequiringGate } from './activity-registry.js';
+import { getActivitiesByPhase, getActivitiesRequiringGate } from './activity-registry.js';
 import { MDMPPhase, type MDMPActivity } from './types.js';
 
 /**

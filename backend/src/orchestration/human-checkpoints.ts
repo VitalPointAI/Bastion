@@ -17,10 +17,8 @@ import { randomUUID } from 'crypto';
 import { getPool } from '../lib/database.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import {
-  BastionStateAnnotation,
   type BastionState,
   type ClassificationLevel,
-  type InterruptSignal,
   CLASSIFICATION_ORDER,
 } from './state.js';
 

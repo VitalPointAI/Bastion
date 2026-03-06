@@ -157,7 +157,7 @@ export async function issueUserProfile(
  */
 export function hashCredential(credential: VerifiableCredential): string {
   // Remove proof for hashing (proof is added after hash is computed)
-  const { proof, ...credentialWithoutProof } = credential;
+  const { proof: _proof, ...credentialWithoutProof } = credential;
 
   // Canonical JSON: sorted keys
   const canonical = JSON.stringify(credentialWithoutProof, Object.keys(credentialWithoutProof).sort());

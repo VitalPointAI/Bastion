@@ -158,7 +158,7 @@ export class OSINTEventStore {
     const total = parseInt(countResult.rows[0].count, 10);
 
     const result = await pool.query(
-      `SELECT * FROM osint_events ${where} ORDER BY published_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
+      `SELECT * FROM osint_events ${where} ORDER BY published_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
       [...params, options.limit || 50, options.offset || 0]
     );
 

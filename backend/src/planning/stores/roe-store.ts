@@ -65,7 +65,8 @@ async function initROETables(): Promise<void> {
 /**
  * Helper to convert database row to ROERule
  */
-function rowToRule(row: any): ROERule {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToRule(row: Record<string, any>): ROERule {
   return {
     id: row.id,
     missionId: row.mission_id,
@@ -84,7 +85,8 @@ function rowToRule(row: any): ROERule {
 /**
  * Helper to convert database row to ROEOverride
  */
-function rowToOverride(row: any): ROEOverride {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToOverride(row: Record<string, any>): ROEOverride {
   return {
     id: row.id,
     planId: row.plan_id,
@@ -189,7 +191,7 @@ class ROEStore {
     const now = new Date();
 
     const setClauses: string[] = ['updated_at = $1'];
-    const values: any[] = [now];
+    const values: unknown[] = [now];
     let paramIndex = 2;
 
     if (updates.name !== undefined) {

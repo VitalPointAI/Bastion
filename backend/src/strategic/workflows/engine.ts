@@ -175,7 +175,7 @@ export class WorkflowEngine {
     actor.subscribe({
       next: async (snapshot) => {
         try {
-          const context = snapshot.context as ApprovalContext;
+          const _context = snapshot.context as ApprovalContext;
           await this.persistState(workflowId, objectiveId, snapshot);
         } catch (error) {
           console.error('[WorkflowEngine] Auto-persist failed:', { workflowId, error });
@@ -331,7 +331,7 @@ export class WorkflowEngine {
    * Stop all actors
    */
   async shutdown(): Promise<void> {
-    for (const [workflowId, actor] of this.actors) {
+    for (const [_workflowId, actor] of this.actors) {
       actor.stop();
     }
     this.actors.clear();

@@ -11,7 +11,6 @@ import {
   WargamingSession,
   WargamingMove,
   WhatIfAdjustment,
-  SessionState,
 } from './types.js';
 import { WargamingEngine } from './wargaming-engine.js';
 
@@ -247,7 +246,7 @@ export class WargamingService {
     session.whatIfAdjustments.push(adjustment);
 
     // Replay cycles from adjustment point
-    const replayedCycles = await engine.applyWhatIf(adjustment);
+    const _replayedCycles = await engine.applyWhatIf(adjustment);
 
     // TODO: Replace cycles from adjustment point forward with replayed cycles
     // Current implementation logs the adjustment for tracking

@@ -8,7 +8,8 @@
  * with SemiAutonomous level - requires human approval for graph modifications.
  */
 
-import type { AgentManifest, AgentCharacter, AgentPhase } from '../../agents/types.js';
+import { AutonomyLevel } from '../../agents/types.js';
+import type { AgentManifest, AgentCharacter, AgentPhase, AgentCapability } from '../../agents/types.js';
 
 /**
  * Agent ID for consistent reference
@@ -39,11 +40,11 @@ export const RAFT_EXTRACTION_MANIFEST: Omit<
     'Extracts actors, relationships, functions, and tensions from documents to build the RAFT graph. Classifies relationship types and suggests edge weights.',
   phase: 'Support' as AgentPhase,
   capabilities: [
-    'ActorExtraction' as any,
-    'RelationshipMapping' as any,
-    'TensionIdentification' as any,
+    'ActorExtraction' as AgentCapability,
+    'RelationshipMapping' as AgentCapability,
+    'TensionIdentification' as AgentCapability,
   ],
-  maxAutonomy: 'SemiAutonomous' as any,
+  maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [], // Not involved in DAO proposals
   requiresHumanApproval: [], // All graph changes require approval by design
   active: true,

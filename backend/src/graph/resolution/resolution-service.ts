@@ -7,7 +7,6 @@
 
 import { createLLMForAgent } from '../../agents/langgraph/llm-factory.js';
 import { actorStore } from '../raft/actor-store.js';
-import type { Actor } from '../raft/types.js';
 import { findCandidateMatches } from './blocking.js';
 import type { MatchCandidate } from './string-matcher.js';
 

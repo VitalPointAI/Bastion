@@ -13,18 +13,16 @@ import {
   CoalitionProposal,
   DAOConfig,
   DAOMetadata,
-  ExecutionConfig,
   ExecutionState,
   Proposal,
   ProposalKind,
   TransactionArgs,
   Vote,
   VoteType,
-  VotingResult,
 } from './types.js';
 
 /** Default gas for view calls (not used but kept for documentation) */
-const VIEW_GAS = '30000000000000'; // 30 TGas
+const _VIEW_GAS = '30000000000000'; // 30 TGas
 
 /** Default gas for change calls */
 const CHANGE_GAS = '100000000000000'; // 100 TGas

@@ -7,7 +7,6 @@
 
 import { randomUUID } from 'crypto';
 import { PgBoss } from 'pg-boss';
-import { getPool } from '../lib/database.js';
 import { getAgentRegistry } from '../agents/registry.js';
 import { getTeamRegistry } from '../agents/team-registry.js';
 import { getMessageStore, MessageStore } from './message-store.js';
@@ -26,6 +25,7 @@ import {
   type SubscriptionOptions,
   type MessageHandler,
   type MessageQueryOptions,
+  type StoredMessage,
 } from './types.js';
 import {
   MessageValidationError,
@@ -507,30 +507,34 @@ export class MessageBus {
     input.correlationId = correlationId;
 
     // Create promise for response
-    return new Promise<MessageEnvelope>(async (resolve, reject) => {
-      // Set timeout
-      const timeoutId = setTimeout(() => {
-        this.pendingRequests.delete(correlationId);
-        reject(new RequestTimeoutError(correlationId, timeoutMs));
-      }, timeoutMs);
-
-      // Track pending request
-      this.pendingRequests.set(correlationId, {
-        correlationId,
-        resolve,
-        reject,
-        timeoutId,
-      });
-
-      try {
-        // Publish the request message
-        await this.publish(input);
-      } catch (error) {
-        clearTimeout(timeoutId);
-        this.pendingRequests.delete(correlationId);
-        reject(error);
-      }
+    let resolve: (value: MessageEnvelope) => void;
+    let reject: (reason?: unknown) => void;
+    const promise = new Promise<MessageEnvelope>((res, rej) => {
+      resolve = res;
+      reject = rej;
     });
+
+    const timeoutId = setTimeout(() => {
+      this.pendingRequests.delete(correlationId);
+      reject!(new RequestTimeoutError(correlationId, timeoutMs));
+    }, timeoutMs);
+
+    this.pendingRequests.set(correlationId, {
+      correlationId,
+      resolve: resolve!,
+      reject: reject!,
+      timeoutId,
+    });
+
+    try {
+      await this.publish(input);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      this.pendingRequests.delete(correlationId);
+      reject!(error);
+    }
+
+    return promise;
   }
 
   /**
@@ -580,7 +584,7 @@ export class MessageBus {
     // Apply ABAC filtering
     const authorized = await this.filter.getAuthorizedMessages(messages, recipientDid);
 
-    return authorized.map(m => this.store.storedMessageToEnvelope(m as any));
+    return authorized.map(m => this.store.storedMessageToEnvelope(m as StoredMessage));
   }
 
   /**
@@ -620,7 +624,7 @@ export class MessageBus {
     // Apply ABAC filtering
     const authorized = await this.filter.getAuthorizedMessages(messages, requestorDid);
 
-    return authorized.map(m => this.store.storedMessageToEnvelope(m as any));
+    return authorized.map(m => this.store.storedMessageToEnvelope(m as StoredMessage));
   }
 
   /**

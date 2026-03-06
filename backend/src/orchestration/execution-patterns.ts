@@ -15,19 +15,15 @@
  */
 
 import { randomUUID } from 'crypto';
-import { StateGraph, END, START } from '@langchain/langgraph';
-
 import {
-  BastionStateAnnotation,
   type BastionState,
   type ClassificationLevel,
   type ExecutionTraceEntry,
   createTaskState,
 } from './state.js';
 import { LangGraphAgentWrapper } from './agent-wrapper.js';
-import { createClassificationFilterNode, getClassificationFilter } from './classification-filter.js';
+import { getClassificationFilter } from './classification-filter.js';
 import { BastionSupervisor } from './supervisor.js';
-import { getCheckpointer } from './checkpointer.js';
 
 /**
  * Execution pattern types
@@ -427,7 +423,7 @@ export class TaskExecutor {
     threadId: string,
     classification: ClassificationLevel
   ): Promise<TaskResults> {
-    const startTime = Date.now();
+    const _startTime = Date.now();
 
     // For consensus, we execute in parallel and then check for agreement
     const parallelResults = await this.executeParallel(
@@ -552,10 +548,10 @@ export class TaskExecutor {
           })),
         };
 
-      case 'latest':
-        // Take the last successful result
+      case 'latest': {
         const latest = results.filter(r => r.success).pop();
         return latest?.output || {};
+      }
 
       case 'majority':
         // For now, just return concatenated (proper majority voting needs structured output)

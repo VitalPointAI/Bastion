@@ -22,7 +22,6 @@ import { ed25519 } from '@noble/curves/ed25519.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { utf8ToBytes, bytesToHex } from '@noble/hashes/utils.js';
-import { KeyPair } from '@near-js/crypto';
 import { type KeyPairString } from '@near-js/crypto';
 import { Account } from '@near-js/accounts';
 import { JsonRpcProvider } from '@near-js/providers';

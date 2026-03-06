@@ -9,7 +9,8 @@
  * with SemiAutonomous level - requires human approval for significant changes.
  */
 
-import type { AgentManifest, AgentCharacter, AgentPhase } from '../../agents/types.js';
+import { AutonomyLevel } from '../../agents/types.js';
+import type { AgentManifest, AgentCharacter, AgentPhase, AgentCapability } from '../../agents/types.js';
 
 /**
  * Agent ID for consistent reference
@@ -40,11 +41,11 @@ export const OSINT_MONITOR_MANIFEST: Omit<
     'Evaluates incoming OSINT data for strategic relevance and links to objectives',
   phase: 'Support' as AgentPhase,
   capabilities: [
-    'EventRelevance' as any,
-    'SourceEvaluation' as any,
-    'ObjectiveLinking' as any,
+    'EventRelevance' as AgentCapability,
+    'SourceEvaluation' as AgentCapability,
+    'ObjectiveLinking' as AgentCapability,
   ],
-  maxAutonomy: 'SemiAutonomous' as any,
+  maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [], // Not involved in DAO proposals
   requiresHumanApproval: [], // Event linking should be reviewed
   active: true,

@@ -10,8 +10,6 @@ import { getMessageABACFilter, MessageABACFilter } from '../messaging/abac-filte
 import {
   type MessageEnvelope,
   type MessageClassification,
-  type MessageHandler,
-  type SubscriptionOptions,
 } from '../messaging/types.js';
 import { type CreateMessageInput } from '../messaging/schemas.js';
 import { InsufficientClearanceError } from '../messaging/errors.js';

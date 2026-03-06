@@ -709,7 +709,6 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
  */
 router.get('/:id/hierarchy', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userDid = buildDID(req.anonUser!.nearAccountId);
     const problemSetId = req.params.id as string;
 
     const hierarchy = await problemSetStore.getHierarchy(problemSetId);

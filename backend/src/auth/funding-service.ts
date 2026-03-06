@@ -15,7 +15,7 @@ import { Account } from '@near-js/accounts';
 import { JsonRpcProvider } from '@near-js/providers';
 import { KeyPairSigner } from '@near-js/signers';
 
-const NEAR_NETWORK_ID = process.env.NEAR_NETWORK_ID || 'testnet';
+const _NEAR_NETWORK_ID = process.env.NEAR_NETWORK_ID || 'testnet';
 const NEAR_RPC_URL = process.env.NEAR_RPC_URL || 'https://rpc.testnet.fastnear.com';
 const FUNDING_CONTRACT_ID = process.env.NEAR_FUNDING_CONTRACT_ID;
 const BACKEND_ACCOUNT_ID = process.env.NEAR_BACKEND_ACCOUNT_ID;

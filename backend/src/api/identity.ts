@@ -199,7 +199,7 @@ router.post('/register-prf', async (req, res) => {
     let normalizedSecret: Uint8Array;
     try {
       normalizedSecret = normalizePRFOutput(prfSecret);
-    } catch (e) {
+    } catch (_e) {
       return res.status(400).json({
         error: 'Invalid PRF secret format'
       });
@@ -377,11 +377,11 @@ router.post('/register', async (req: Request, res: Response) => {
       signingAccountId,
       message: 'DID registered successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('DID registration error:', error);
 
     // Check if DID already exists
-    if (error.message?.includes('already exists') || error.message?.includes('duplicate')) {
+    if (error instanceof Error && (error.message?.includes('already exists') || error.message?.includes('duplicate'))) {
       res.status(409).json({ error: 'DID already registered for this account' });
       return;
     }

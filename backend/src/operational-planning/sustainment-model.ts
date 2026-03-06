@@ -231,7 +231,7 @@ function calculateFeasibility(phaseRisks: PhaseRiskAssessment[]): {
 } {
   let criticalPhase: number | null = null;
   let hasEarlyRed = false;
-  let hasLateRed = false;
+  let _hasLateRed = false;
 
   const totalPhases = phaseRisks.length;
   const earlyPhaseThreshold = Math.floor(totalPhases * 0.5); // First 50% are "early"
@@ -244,7 +244,7 @@ function calculateFeasibility(phaseRisks: PhaseRiskAssessment[]): {
       if (risk.phase < earlyPhaseThreshold) {
         hasEarlyRed = true;
       } else {
-        hasLateRed = true;
+        _hasLateRed = true;
       }
     }
   }

@@ -20,9 +20,9 @@ router.post('/sync', async (req, res) => {
   try {
     const result = await processSyncRequest(device_id, operations);
     res.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Edge sync error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Edge sync error' });
   }
 });
 
@@ -41,9 +41,9 @@ router.get('/sync/delta', async (req, res) => {
   try {
     const updates = await getSyncDelta(device_id as string, since as string);
     res.json({ updates });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Edge delta sync error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Edge delta sync error' });
   }
 });
 

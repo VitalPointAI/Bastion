@@ -18,7 +18,7 @@ import { randomUUID } from 'crypto';
 import { StateGraph, END, START } from '@langchain/langgraph';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOpenAI } from '@langchain/openai';
-import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import type { BaseMessage } from '@langchain/core/messages';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 
@@ -175,12 +175,12 @@ export class BastionSupervisor {
     for (const agent of this.agents) {
       const filterNodeName = `filter_${agent.agentId}`;
       // Edge from filter to agent
-      (graph as any).addEdge(filterNodeName, agent.agentId);
-      // Edge from agent back to supervisor
-      (graph as any).addEdge(agent.agentId, supervisorNode);
+      (graph as unknown as { addEdge: (a: string, b: string) => void }).addEdge(filterNodeName, agent.agentId);
+      (graph as unknown as { addEdge: (a: string, b: string) => void }).addEdge(agent.agentId, supervisorNode);
     }
 
     // Conditional routing from supervisor
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (graph as any).addConditionalEdges(
       supervisorNode,
       this.routeFromSupervisor.bind(this),
@@ -192,7 +192,7 @@ export class BastionSupervisor {
     );
 
     // Compile with checkpointer
-    this.compiled = graph.compile({ checkpointer }) as any;
+    this.compiled = graph.compile({ checkpointer }) as ReturnType<StateGraph<typeof BastionStateAnnotation>['compile']>;
 
     console.log(`[Supervisor] ${this.config.name} initialized with ${this.agents.length} agents`);
   }

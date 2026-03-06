@@ -3,7 +3,7 @@
  * Implements the 5x5 risk matrix per CJCSM 3105.01 and ATP 5-19
  */
 
-import type { RiskLevel, Likelihood, Impact, RiskAssessment } from './types.js';
+import type { RiskLevel, Likelihood, Impact } from './types.js';
 
 /**
  * Likelihood ordering for matrix indexing

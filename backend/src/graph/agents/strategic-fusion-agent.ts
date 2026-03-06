@@ -8,7 +8,8 @@
  * with SemiAutonomous level - requires human approval for changes.
  */
 
-import type { AgentManifest, AgentCharacter, AgentPhase } from '../../agents/types.js';
+import { AutonomyLevel } from '../../agents/types.js';
+import type { AgentManifest, AgentCharacter, AgentPhase, AgentCapability } from '../../agents/types.js';
 
 /**
  * Agent ID for consistent reference
@@ -39,11 +40,11 @@ export const STRATEGIC_FUSION_MANIFEST: Omit<
     'Consolidates objectives from multiple strategic documents into unified picture. Identifies semantic duplicates while preserving unique perspectives and details.',
   phase: 'Support' as AgentPhase,
   capabilities: [
-    'DocumentFusion' as any,
-    'ObjectiveConsolidation' as any,
-    'ConflictDetection' as any,
+    'DocumentFusion' as AgentCapability,
+    'ObjectiveConsolidation' as AgentCapability,
+    'ConflictDetection' as AgentCapability,
   ],
-  maxAutonomy: 'SemiAutonomous' as any,
+  maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [], // Not involved in DAO proposals
   requiresHumanApproval: [], // All changes require approval by design
   active: true,

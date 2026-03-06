@@ -171,7 +171,7 @@ export class SafetyMatrixEnforcer {
       return {
         valid: false,
         reason: `Activity category ${category} not found in safety matrix`,
-        matrixEntry: null as any,
+        matrixEntry: null as unknown as SafetyMatrixEntry,
         requestedAuthority,
         violatesInvariant8: false,
         violatesInvariant9: true,

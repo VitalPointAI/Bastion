@@ -11,12 +11,6 @@ import { CollaborationUser, YjsDocument } from './types.js';
 const messageSync = 0;
 const messageAwareness = 1;
 
-interface ConnectionContext {
-  documentId: string;
-  user: CollaborationUser;
-  clientId: number;
-}
-
 /**
  * Create WebSocket server for Yjs document sync
  */
@@ -44,7 +38,7 @@ export function createSyncServer(server: http.Server, path: string = '/ws/collab
     let yjsDoc: YjsDocument;
     try {
       yjsDoc = await yjsProvider.getDocument(planId, documentId);
-    } catch (error) {
+    } catch (_error) {
       ws.close(4001, 'Failed to load document');
       return;
     }
@@ -97,8 +91,7 @@ export function createSyncServer(server: http.Server, path: string = '/ws/collab
         const messageType = decoding.readVarUint(decoder);
 
         switch (messageType) {
-          case messageSync:
-            // Handle sync message
+          case messageSync: {
             const syncEncoder = encoding.createEncoder();
             encoding.writeVarUint(syncEncoder, messageSync);
             syncProtocol.readSyncMessage(decoder, syncEncoder, yjsDoc.doc, null);
@@ -107,26 +100,25 @@ export function createSyncServer(server: http.Server, path: string = '/ws/collab
               ws.send(encoding.toUint8Array(syncEncoder));
             }
 
-            // Broadcast update to other clients
             const update = Y.encodeStateAsUpdate(yjsDoc.doc);
             broadcastToOthers(documentId, ws, messageSync, update);
             break;
+          }
 
-          case messageAwareness:
-            // Handle awareness update
+          case messageAwareness: {
             awarenessProtocol.applyAwarenessUpdate(
               awareness,
               decoding.readVarUint8Array(decoder),
               ws
             );
 
-            // Broadcast awareness to others
             const awarenessUpdate = awarenessProtocol.encodeAwarenessUpdate(
               awareness,
               [clientId]
             );
             broadcastToOthers(documentId, ws, messageAwareness, awarenessUpdate);
             break;
+          }
         }
       });
     });

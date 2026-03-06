@@ -14,7 +14,7 @@
 import type { AgentManifest } from './types.js';
 import { AgentCapability, AgentPhase, AutonomyLevel, ProposalKind } from './types.js';
 import { PlanningProduct } from '../mdmp/types.js';
-import type { MDMPPhase } from '../mdmp/types.js';
+
 
 // ==========================================================================
 // Output Interfaces

@@ -83,10 +83,7 @@ export function ProblemSetSelector() {
 
   // Fetch full detail when a node is selected
   useEffect(() => {
-    if (!selectedId || !userDID) {
-      setDetail(null);
-      return;
-    }
+    if (!selectedId || !userDID) return;
     let cancelled = false;
     setDetailLoading(true);
     problemSetService.getProblemSet(selectedId, userDID)
@@ -171,7 +168,7 @@ export function ProblemSetSelector() {
                 {/* Header: name + echelon symbol + classification */}
                 <div className="flex items-start gap-4 mb-4">
                   {/* Echelon military symbol */}
-                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gray-900 border border-gray-600 flex items-center justify-center">
+                  <div className="shrink-0 w-12 h-12 rounded-lg bg-gray-900 border border-gray-600 flex items-center justify-center">
                     <span className="text-lg font-bold font-mono text-gray-300">
                       {ECHELON_SYMBOLS[selectedMembership.echelon] ?? ''}
                     </span>

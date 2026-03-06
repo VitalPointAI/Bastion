@@ -146,7 +146,7 @@ class ROEAuditLog {
   /**
    * Get audit history for a plan
    */
-  async getAuditHistory(planId: string): Promise<any[]> {
+  async getAuditHistory(planId: string): Promise<Record<string, unknown>[]> {
     await this.ensureInitialized();
 
     const pool = getPool();

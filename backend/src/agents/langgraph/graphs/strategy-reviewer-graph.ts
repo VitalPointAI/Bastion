@@ -438,7 +438,7 @@ function routeAfterAnalyze(state: StrategyReviewerStateType): string {
 /**
  * Route after prioritization.
  */
-function routeAfterPrioritize(state: StrategyReviewerStateType): string {
+function _routeAfterPrioritize(_state: StrategyReviewerStateType): string {
   return 'build_report';
 }
 

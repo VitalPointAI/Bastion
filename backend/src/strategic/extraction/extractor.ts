@@ -17,7 +17,6 @@ import type {
   ExtractionResult,
   ExtractedObjective,
   ExtractionProgressCallback,
-  ExtractionProgress,
 } from './types.js';
 import { DocumentParser } from '../ingestion/document-parser.js';
 import { createProvider, getDefaultConfig } from './providers/index.js';

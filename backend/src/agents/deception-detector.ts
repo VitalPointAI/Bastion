@@ -14,7 +14,6 @@
  * adversary narratives and a dedicated deception analysis section for detailed assessment.
  */
 
-import { MDMPPhase, AgentRole, AgentOutputType } from '../mdmp/types.js';
 import { AgentManifest, AgentCapability } from './types.js';
 import { AutonomyLevel } from '../dao/types.js';
 
@@ -129,7 +128,7 @@ export const DECEPTION_DETECTOR_MANIFEST: AgentManifest = {
   name: 'Deception Detector',
   description:
     'Identifies inconsistencies between adversary stated intent and observed behavior to detect denial and deception',
-  phase: 'Support' as any, // AgentPhase.Support
+  phase: 'Support' as unknown as AgentManifest['phase'],
   capabilities: [AgentCapability.DeceptionDetection],
   maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [],
@@ -252,10 +251,10 @@ Deception detection workflow:
  * @returns Deception detection output with indicators and analysis
  */
 export async function detectDeception(
-  statedIntent: string,
-  observedBehaviors: Array<{ source: string; observation: string; timestamp: number }>,
-  adversaryProfile: string,
-  historicalContext: string
+  _statedIntent: string,
+  _observedBehaviors: Array<{ source: string; observation: string; timestamp: number }>,
+  _adversaryProfile: string,
+  _historicalContext: string
 ): Promise<DeceptionDetectionOutput> {
   // TODO: Implement via agent executor framework
   // This stub returns empty results for now
@@ -290,8 +289,8 @@ export async function detectDeception(
  * @returns Array of inline flags for embedding in narrative
  */
 export async function generateInlineFlags(
-  adversaryNarrative: string,
-  indicators: DeceptionIndicator[]
+  _adversaryNarrative: string,
+  _indicators: DeceptionIndicator[]
 ): Promise<InlineDeceptionFlag[]> {
   // TODO: Implement via agent executor framework
   // This stub returns empty results for now

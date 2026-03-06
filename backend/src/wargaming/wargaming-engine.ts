@@ -12,8 +12,8 @@ import {
   WargamingCycle,
   WargamingSession,
   MoveActor,
+  WhatIfAdjustment,
 } from './types.js';
-import { AdversaryCOA } from '../agents/adversary-modeler.js';
 import { EffectCascadeOutput } from '../agents/effect-cascader.js';
 import { EscalationRiskAssessment } from '../agents/escalation-modeler.js';
 
@@ -203,7 +203,7 @@ export class WargamingEngine {
    * @param adjustment The what-if adjustment to apply
    * @returns Replayed cycles from adjustment point forward
    */
-  async applyWhatIf(adjustment: any): Promise<WargamingCycle[]> {
+  async applyWhatIf(adjustment: WhatIfAdjustment): Promise<WargamingCycle[]> {
     // TODO: Implement what-if replay logic
     // - Take existing session state up to adjustment.appliedFromCycle
     // - Apply the parameter change

@@ -52,7 +52,8 @@ async function initCOATable(): Promise<void> {
 /**
  * Helper to convert database row to COA
  */
-function rowToCOA(row: any): COA {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToCOA(row: Record<string, any>): COA {
   return {
     id: row.id,
     planId: row.plan_id,
@@ -184,7 +185,7 @@ class COAStore {
     const now = new Date();
 
     const setClauses: string[] = ['updated_at = $1'];
-    const values: any[] = [now];
+    const values: unknown[] = [now];
     let paramIndex = 2;
 
     if (updates.name !== undefined) {

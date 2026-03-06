@@ -432,7 +432,6 @@ function buildHierarchyTree(
   });
 
   // Find root units (units with no superior)
-  const superiorIds = new Set(relationships.map((r) => r.superiorUnitId));
   const subordinateIds = new Set(relationships.map((r) => r.subordinateUnitId));
   const rootUnitIds = units
     .filter((unit) => !subordinateIds.has(unit.id))

@@ -1,6 +1,6 @@
 import { PgBoss } from 'pg-boss';
 import { getPool } from './database.js';
-import { pollBlockchainEvents, getSyncStatus } from './near-events.js';
+import { pollBlockchainEvents } from './near-events.js';
 
 let boss: PgBoss;
 
@@ -9,7 +9,7 @@ let boss: PgBoss;
  */
 async function processOutboxWorker() {
   // Poll outbox for unprocessed records
-  await boss.work('process-outbox', async (job: any) => {
+  await boss.work('process-outbox', async (_job: unknown) => {
     const client = await getPool().connect();
     let outboxResult;
     try {
@@ -26,7 +26,7 @@ async function processOutboxWorker() {
 
       const outboxRecord = outboxResult.rows[0];
       // payload is JSONB - already parsed by pg driver
-      const payload = outboxRecord.payload;
+      const _payload = outboxRecord.payload;
 
       // Write to NEAR blockchain
       // TODO: Integrate with NEAR contract from Plan 1-01
@@ -57,17 +57,18 @@ async function processOutboxWorker() {
 
       console.log(`✓ Synced document ${outboxRecord.aggregate_id} to blockchain: ${blockchainTxHash}`);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error processing outbox record:', error);
 
       // Increment retry count and log error
       if (outboxResult?.rows?.[0]) {
+        const errMsg = error instanceof Error ? error.message : String(error);
         await client.query(`
           UPDATE outbox
           SET retry_count = retry_count + 1,
               error = $1
           WHERE outbox_id = $2
-        `, [error.message, outboxResult.rows[0].outbox_id]);
+        `, [errMsg, outboxResult.rows[0].outbox_id]);
 
         // If max retries exceeded, alert
         if (outboxResult.rows[0].retry_count >= 5) {
@@ -86,7 +87,7 @@ async function processOutboxWorker() {
  * Listen to NEAR blockchain events and sync to PostgreSQL
  */
 async function syncBlockchainEventsWorker() {
-  await boss.work('sync-blockchain-events', async (_job: any) => {
+  await boss.work('sync-blockchain-events', async (_job: unknown) => {
     await pollBlockchainEvents();
   });
 }

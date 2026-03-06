@@ -1,6 +1,6 @@
 import { graphProblemSetStore, type GraphProblemSet, type GraphProblemSetStats } from './index.js';
 import { actorStore } from '../raft/actor-store.js';
-import { relationshipStore } from '../raft/relationship-store.js';
+
 import { tensionStore } from '../raft/tension-store.js';
 import { osintEventStore } from '../osint/event-store.js';
 import { validityService } from '../osint/validity-service.js';

@@ -16,9 +16,6 @@
 
 import {
   MDMPPhase,
-  AgentRole,
-  AgentOutputType,
-  ActivityCategory,
 } from '../mdmp/types.js';
 import { AgentManifest, AgentCapability } from './types.js';
 import { AutonomyLevel } from '../dao/types.js';
@@ -136,7 +133,7 @@ export const ADVERSARY_MODELER_MANIFEST: AgentManifest = {
   name: 'Adversary Modeler',
   description:
     'Synthesizes adversary capability models and generates MLCOA/MDCOA per ATP 2-01.3',
-  phase: 'Support' as any, // AgentPhase.Support
+  phase: 'Support' as unknown as AgentManifest['phase'],
   capabilities: [AgentCapability.AdversaryModeling],
   maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [],
@@ -256,10 +253,10 @@ COA development criteria:
  * @returns Adversary analysis output with force model and COAs
  */
 export async function analyzeAdversary(
-  intelligenceInputs: string[],
-  missionId: string,
-  currentPhase: MDMPPhase,
-  existingForceModel?: AdversaryForceModel
+  _intelligenceInputs: string[],
+  _missionId: string,
+  _currentPhase: MDMPPhase,
+  _existingForceModel?: AdversaryForceModel
 ): Promise<AdversaryAnalysisOutput> {
   // TODO: Implement via agent executor framework
   // This stub returns empty results for now
@@ -267,7 +264,7 @@ export async function analyzeAdversary(
     forceModel: {
       id: 'temp-id',
       adversaryName: 'Unknown',
-      forceType: 'unknown' as any,
+      forceType: 'unknown' as AdversaryForceModel['forceType'],
       capabilities: [],
       doctrineTTPs: [],
       objectives: [],
@@ -299,9 +296,9 @@ export async function analyzeAdversary(
  * @returns Array of adversary COAs (MLCOA and MDCOA)
  */
 export async function generateAdversaryCOAs(
-  forceModel: AdversaryForceModel,
-  friendlyMission: string,
-  operationalEnvironment: string
+  _forceModel: AdversaryForceModel,
+  _friendlyMission: string,
+  _operationalEnvironment: string
 ): Promise<AdversaryCOA[]> {
   // TODO: Implement via agent executor framework
   // This stub returns empty results for now

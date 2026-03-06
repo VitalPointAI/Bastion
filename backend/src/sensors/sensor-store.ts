@@ -129,7 +129,7 @@ export class SensorStore {
       params.push(filters.category);
     }
     if (filters.status) {
-      conditions.push(`status = $${idx++}`);
+      conditions.push(`status = $${idx}`);
       params.push(filters.status);
     }
 

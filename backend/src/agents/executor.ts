@@ -6,7 +6,6 @@
  */
 
 import {
-  AgentAction,
   AgentActionType,
   AgentCapability,
   AgentDelegation,
@@ -17,7 +16,6 @@ import {
 import { AgentRegistry, getAgentRegistry } from './registry.js';
 import { DAOMetadata, Proposal } from '../dao/types.js';
 import { governanceCopilot } from './copilot.js';
-import type { ProposalSummaryOutput, ContextAnalysisOutput, VotingGuidanceOutput } from './copilot.js';
 import { DAOService, getDAOService } from '../dao/dao-service.js';
 
 /**
@@ -477,7 +475,7 @@ export class AgentExecutor {
     context: AgentContext,
     input: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
-    const { proposal, dao, userDID } = context;
+    const { proposal, dao } = context;
     if (!proposal) {
       throw new Error('Proposal required for VotingGuidance');
     }

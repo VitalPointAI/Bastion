@@ -1,5 +1,5 @@
 import { DIDDocument, EntityType, EncryptedDIDEntry } from './types.js';
-import { deriveDIDBlindedKey, deriveUserSecret, blindedKeyToHex } from './blinded-keys.js';
+import { deriveDIDBlindedKey, blindedKeyToHex } from './blinded-keys.js';
 import { encryptDIDDocument, decryptDIDDocument, deriveEncryptionKey } from './did-encryption.js';
 import { storeDIDOnChain } from '../near/tx-signer.js';
 
@@ -57,7 +57,7 @@ export class DIDService {
     const encryptionKey = deriveEncryptionKey(userSecret);
 
     // Encrypt document
-    const { encryptedDocument, encryptedEntityType, nonce, entityTypeNonce } = encryptDIDDocument(
+    const { encryptedDocument, encryptedEntityType, nonce, entityTypeNonce: _entityTypeNonce } = encryptDIDDocument(
       document,
       entityType,
       encryptionKey

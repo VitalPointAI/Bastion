@@ -10,20 +10,16 @@ import { Server as HTTPServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { randomUUID } from 'crypto';
 import { getMessageBus } from '../messaging/message-bus.js';
-import { getMessageStore } from '../messaging/message-store.js';
 import { getMessageABACFilter } from '../messaging/abac-filter.js';
 import {
   CreateMessageSchema,
   MessageQueryOptionsSchema,
 } from '../messaging/schemas.js';
 import {
-  DeliveryStatus,
   SystemChannels,
   type MessageEnvelope,
   type MessageClassification,
 } from '../messaging/types.js';
-import type { SubjectAttributes } from '../security/abac-enforcer.js';
-
 const router = Router();
 
 // ==========================================================================
@@ -43,19 +39,6 @@ function getUserDid(req: Request): string {
 function getUserClearance(req: Request): MessageClassification {
   const clearance = (req.headers['x-clearance'] as string) || 'UNCLASS';
   return clearance as MessageClassification;
-}
-
-/**
- * Build subject attributes from request
- */
-function getSubjectAttributes(req: Request): Partial<SubjectAttributes> {
-  return {
-    did: getUserDid(req),
-    clearance: getUserClearance(req),
-    nationality: (req.headers['x-nationality'] as string) || 'USA',
-    organization: (req.headers['x-organization'] as string) || 'unknown',
-    role: (req.headers['x-role'] as string) || 'user',
-  };
 }
 
 // ==========================================================================

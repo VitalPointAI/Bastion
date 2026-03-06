@@ -211,7 +211,7 @@ export class MessageABACFilter {
     const result = await this.canDeliver(message, recipientDid, recipientAttributes);
 
     if (!result.allowed) {
-      const messageId = message.messageId;
+      const _messageId = message.messageId;
       const classification = this.getClassification(message);
 
       throw new MessageAuthorizationError(

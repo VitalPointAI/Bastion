@@ -65,7 +65,7 @@ import { entityToolDefinitions } from '../../graph/tools/entity-tools.js';
 import { osintToolDefinitions } from '../../graph/tools/osint-tools.js';
 import { validityToolDefinitions } from '../../graph/tools/validity-tools.js';
 import { raftToolDefinitions } from '../../graph/tools/raft-tools.js';
-import type { AgentPhase, AutonomyLevel, ProposalKind } from '../types.js';
+
 import { getReviewCheckpointManager } from './graphs/strategy-reviewer-checkpoint.js';
 
 // Phase 5.1 - MDMP Governance Integration agents

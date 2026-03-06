@@ -472,7 +472,7 @@ router.get('/governance-copilot/analyze', async (req: Request, res: Response): P
     const relatedProposals = allProposals.filter((p) => p.id !== proposalId);
 
     // Get user info from headers (if available)
-    const userDID = req.headers['x-did'] as string | undefined;
+    const _userDID = req.headers['x-did'] as string | undefined;
     const userRoles = (req.query.userRoles as string)?.split(',') || [];
     const userParty = req.query.userParty as string | undefined;
 

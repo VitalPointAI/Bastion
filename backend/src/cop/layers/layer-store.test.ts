@@ -8,7 +8,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { LayerStoreMemory } from './layer-store.js';
 import type {
   CreateLayerInput,
-  LayerTransitionInput,
   COPLayerSpec,
   ReviewFeedback,
 } from './layer-types.js';

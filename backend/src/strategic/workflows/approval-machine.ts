@@ -50,7 +50,7 @@ export const approvalMachine = setup({
     /**
      * Check if any reviewer has rejected
      */
-    hasRejection: ({ context, event }) => {
+    hasRejection: ({ context: _context, event }) => {
       if (event.type !== 'REVIEW') return false;
       return event.decision === 'REJECT';
     },
@@ -58,7 +58,7 @@ export const approvalMachine = setup({
     /**
      * Check if any reviewer has requested revision
      */
-    hasRevisionRequest: ({ context, event }) => {
+    hasRevisionRequest: ({ context: _context, event }) => {
       if (event.type !== 'REVIEW') return false;
       return event.decision === 'REQUEST_REVISION';
     },

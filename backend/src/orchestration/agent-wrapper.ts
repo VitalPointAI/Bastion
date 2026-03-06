@@ -15,7 +15,7 @@
 import { randomUUID } from 'crypto';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOpenAI } from '@langchain/openai';
-import { HumanMessage, SystemMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
+import { SystemMessage, AIMessage } from '@langchain/core/messages';
 import type { BaseMessage } from '@langchain/core/messages';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { DynamicStructuredTool } from '@langchain/core/tools';
@@ -24,15 +24,13 @@ import { z } from 'zod';
 import type { AgentManifest, AgentCharacter, MCPTool, JSONSchema } from '../agents/types.js';
 import { getAgentRegistry } from '../agents/registry.js';
 import { buildSystemPrompt, buildKnowledgeContext } from '../agents/character-builder.js';
-import type { LLMProvider, ProviderConfig } from '../strategic/extraction/providers/types.js';
-import { createProvider } from '../strategic/extraction/providers/index.js';
+import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
 import {
-  BastionStateAnnotation,
   type BastionState,
   type ClassificationLevel,
   type ExecutionTraceEntry,
 } from './state.js';
-import { createClassificationFilterNode, getClassificationFilter } from './classification-filter.js';
+import { getClassificationFilter } from './classification-filter.js';
 import {
   raftToolHandlers,
   objectiveToolHandlers,
@@ -540,9 +538,9 @@ export function createTestAgent(
     agentId: `test-${name.toLowerCase().replace(/\s+/g, '-')}`,
     name,
     description,
-    phase: 'Support' as any,
+    phase: 'Support' as unknown as AgentManifest['phase'],
     capabilities: [],
-    maxAutonomy: 'NotAutonomous' as any,
+    maxAutonomy: 'NotAutonomous' as unknown as AgentManifest['maxAutonomy'],
     allowedProposalKinds: [],
     requiresHumanApproval: [],
     createdAt: new Date(),

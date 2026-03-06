@@ -13,7 +13,6 @@
  * how actions could spiral and identifies de-escalation options per JP 3-0.
  */
 
-import { MDMPPhase, AgentRole, AgentOutputType } from '../mdmp/types.js';
 import { AgentManifest, AgentCapability } from './types.js';
 import { AutonomyLevel } from '../dao/types.js';
 
@@ -142,7 +141,7 @@ export const ESCALATION_MODELER_MANIFEST: AgentManifest = {
   name: 'Escalation Modeler',
   description:
     'Models escalation dynamics using multiple theoretical frameworks with ladder visualization and risk assessment',
-  phase: 'Support' as any, // AgentPhase.Support
+  phase: 'Support' as unknown as AgentManifest['phase'],
   capabilities: [AgentCapability.EscalationModeling],
   maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [],
@@ -313,7 +312,7 @@ export async function assessEscalationRisk(
   action: string,
   coaId: string,
   currentRung: number,
-  ladder: EscalationLadder
+  _ladder: EscalationLadder
 ): Promise<EscalationRiskAssessment> {
   // TODO: Implement via agent executor framework
   // This stub returns conservative results for now

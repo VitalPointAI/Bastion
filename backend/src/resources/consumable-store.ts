@@ -124,7 +124,7 @@ export class ConsumableStore {
       params.push(filters.missionId);
     }
     if (filters.category) {
-      conditions.push(`category = $${idx++}`);
+      conditions.push(`category = $${idx}`);
       params.push(filters.category);
     }
 

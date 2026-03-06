@@ -35,7 +35,7 @@ class AwarenessManager {
   getConnectedUsers(awareness: Awareness): CollaborationUser[] {
     const users: CollaborationUser[] = [];
 
-    awareness.getStates().forEach((state, clientId) => {
+    awareness.getStates().forEach((state, _clientId) => {
       if (state.user) {
         users.push(state.user as CollaborationUser);
       }

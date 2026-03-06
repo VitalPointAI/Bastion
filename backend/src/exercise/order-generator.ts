@@ -24,7 +24,6 @@ import type {
   FRAGOContent,
   ScenarioDocument,
   IPBAssessment,
-  ScenarioCOA,
 } from './types.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -525,7 +524,8 @@ Requirements:
       return JSON.parse(raw.slice(start, end + 1)) as T;
     } catch (err) {
       throw new Error(
-        `Failed to parse ${orderType} JSON from LLM response: ${err instanceof Error ? err.message : String(err)}`
+        `Failed to parse ${orderType} JSON from LLM response: ${err instanceof Error ? err.message : String(err)}`,
+        { cause: err }
       );
     }
   }

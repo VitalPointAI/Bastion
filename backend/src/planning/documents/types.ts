@@ -4,7 +4,6 @@
  * Phase 05 Plan 08: Types for OPLAN/OPORD document generation
  */
 
-import type { OperationalPlan, COA } from '../types.js';
 
 /**
  * Document metadata for OPORD generation

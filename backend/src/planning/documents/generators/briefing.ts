@@ -7,6 +7,7 @@
 import { planStore } from '../../stores/plan-store.js';
 import { coaStore } from '../../stores/coa-store.js';
 import type { GeneratedDocument } from '../types.js';
+import type { OperationalPlan, COA } from '../../types.js';
 
 export interface BriefingOptions {
   type: 'commander' | 'staff' | 'rehearsal';
@@ -58,7 +59,7 @@ export async function generateBriefingSlides(
 /**
  * Build commander's decision brief
  */
-function buildCommanderBriefing(plan: any, selectedCOA: any): string {
+function buildCommanderBriefing(plan: OperationalPlan, selectedCOA: COA | undefined): string {
   const slides: string[] = [];
 
   // Title slide
@@ -109,7 +110,7 @@ function buildCommanderBriefing(plan: any, selectedCOA: any): string {
 /**
  * Build staff synchronization brief
  */
-function buildStaffBriefing(plan: any, coas: any[]): string {
+function buildStaffBriefing(plan: OperationalPlan, coas: COA[]): string {
   const slides: string[] = [];
 
   // Title slide
@@ -135,7 +136,7 @@ function buildStaffBriefing(plan: any, coas: any[]): string {
   slides.push('Phase | Main Effort | Supporting Effort | Fires | Logistics');
   slides.push('--- | --- | --- | --- | ---');
   const phases = plan.execution?.conceptOfOperations?.phases || [];
-  phases.forEach((phase: any) => {
+  phases.forEach((phase) => {
     slides.push(`${phase.name} | ${phase.purpose} | TBD | TBD | TBD`);
   });
 
@@ -145,7 +146,7 @@ function buildStaffBriefing(plan: any, coas: any[]): string {
 /**
  * Build rehearsal brief
  */
-function buildRehearsalBriefing(plan: any, selectedCOA: any): string {
+function buildRehearsalBriefing(plan: OperationalPlan, selectedCOA: COA | undefined): string {
   const slides: string[] = [];
 
   // Title slide
@@ -157,7 +158,7 @@ function buildRehearsalBriefing(plan: any, selectedCOA: any): string {
   // Tasks by unit
   slides.push('=== SLIDE 2: TASKS BY UNIT ===');
   if (selectedCOA?.tasks) {
-    selectedCOA.tasks.forEach((task: any) => {
+    selectedCOA.tasks.forEach((task) => {
       slides.push(`${task.unitId}:`);
       slides.push(`  Task: ${task.task}`);
       slides.push(`  Purpose: ${task.purpose}`);
@@ -168,7 +169,7 @@ function buildRehearsalBriefing(plan: any, selectedCOA: any): string {
   // Timeline
   slides.push('=== SLIDE 3: TIMELINE ===');
   const phases = plan.execution?.conceptOfOperations?.phases || [];
-  phases.forEach((phase: any, i: number) => {
+  phases.forEach((phase, i: number) => {
     slides.push(`Phase ${i + 1}: ${phase.name}`);
     slides.push(`  Purpose: ${phase.purpose}`);
     phase.tasks?.forEach((t: string) => {

@@ -12,10 +12,7 @@
  * Both produce 32-byte deterministic values suitable for HKDF input.
  */
 
-import { hkdf } from '@noble/hashes/hkdf.js';
-import { sha256 } from '@noble/hashes/sha2.js';
-import { utf8ToBytes } from '@noble/hashes/utils.js';
-import { DIDService, getDIDService } from '../identity/did-service.js';
+import { getDIDService } from '../identity/did-service.js';
 import { deriveDIDBlindedKey, blindedKeyToHex } from '../identity/blinded-keys.js';
 import { deriveEncryptionKey } from '../identity/did-encryption.js';
 import type { DIDDocument, EntityType } from '../identity/types.js';

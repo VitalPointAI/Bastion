@@ -16,28 +16,20 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { randomUUID } from 'crypto';
 import { HumanMessage } from '@langchain/core/messages';
 
-import { getCheckpointer } from '../orchestration/checkpointer.js';
 import {
   type ClassificationLevel,
-  createTaskState,
 } from '../orchestration/state.js';
 import { getClassificationFilter } from '../orchestration/classification-filter.js';
 import { createLangGraphAgent, LangGraphAgentWrapper } from '../orchestration/agent-wrapper.js';
 import { BastionSupervisor, createSupervisor } from '../orchestration/supervisor.js';
 import { TaskExecutor, ExecutionPattern, createTask, type Task } from '../orchestration/execution-patterns.js';
 import {
-  ExecutionTracer,
   getTracer,
-  type ExecutionTrace,
 } from '../orchestration/observability.js';
 import {
-  HumanCheckpointManager,
   getCheckpointManager,
-  type PendingCheckpoint,
-  type HumanDecision,
 } from '../orchestration/human-checkpoints.js';
 import { getAgentRegistry } from '../agents/registry.js';
-import type { SubjectAttributes } from '../security/abac-enforcer.js';
 
 const router = Router();
 
@@ -64,19 +56,6 @@ function getUserDid(req: Request): string {
 function getUserClearance(req: Request): ClassificationLevel {
   const clearance = (req.headers['x-clearance'] as string) || 'UNCLASS';
   return clearance as ClassificationLevel;
-}
-
-/**
- * Build subject attributes from request
- */
-function getSubjectAttributes(req: Request): Partial<SubjectAttributes> {
-  return {
-    did: getUserDid(req),
-    clearance: getUserClearance(req),
-    nationality: (req.headers['x-nationality'] as string) || 'USA',
-    organization: (req.headers['x-organization'] as string) || 'unknown',
-    role: (req.headers['x-role'] as string) || 'user',
-  };
 }
 
 /**
@@ -473,7 +452,7 @@ router.get('/executions/:id/graph', async (req: Request, res: Response): Promise
  */
 router.post('/supervisors', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userDid = getUserDid(req);
+    const _userDid = getUserDid(req);
     const userClearance = getUserClearance(req);
 
     const {
@@ -552,7 +531,7 @@ router.post('/supervisors', async (req: Request, res: Response): Promise<void> =
  */
 router.get('/supervisors', async (req: Request, res: Response): Promise<void> => {
   try {
-    const supervisors = Array.from(activeSupervisors.entries()).map(([id, sup]) => ({
+    const supervisors = Array.from(activeSupervisors.entries()).map(([id, _sup]) => ({
       supervisorId: id,
       // Note: In production, would store more metadata
     }));

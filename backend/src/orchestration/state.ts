@@ -12,7 +12,6 @@
  */
 
 import { Annotation, MessagesAnnotation } from '@langchain/langgraph';
-import type { BaseMessage } from '@langchain/core/messages';
 
 /**
  * Classification levels - matches ABAC enforcer

@@ -13,15 +13,13 @@ import { getSubjectAttributes, getObjectAttributes, isValidNearDID } from './att
  */
 
 // Extend Express Request with zero trust context
-declare global {
-  namespace Express {
-    interface Request {
-      zeroTrust?: {
-        did: string;
-        attributes: SubjectAttributes;
-        verifiedAt: number;
-      };
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    zeroTrust?: {
+      did: string;
+      attributes: SubjectAttributes;
+      verifiedAt: number;
+    };
   }
 }
 

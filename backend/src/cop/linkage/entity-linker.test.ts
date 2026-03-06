@@ -9,7 +9,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   evaluateConfidence,
   DEFAULT_CONFIDENCE_THRESHOLD,
-  type ConfidenceConfig,
 } from './confidence-threshold.js';
 import {
   LinkageStore,

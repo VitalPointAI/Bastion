@@ -1,4 +1,3 @@
-import { Event } from 'json-rules-engine';
 
 export interface TacticalAction {
   id: string;

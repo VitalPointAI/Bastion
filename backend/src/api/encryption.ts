@@ -11,8 +11,8 @@ router.post('/encrypt', async (req, res) => {
     const key = await generateEncryptionKey();
     const result = await encryptData(data, key);
     res.json({ ...result, key });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Encryption failed' });
   }
 });
 
@@ -25,8 +25,8 @@ router.post('/decrypt', async (req, res) => {
   try {
     const decrypted = await decryptData(encrypted, key, nonce);
     res.json({ data: decrypted.toString('utf-8') });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Decryption failed' });
   }
 });
 

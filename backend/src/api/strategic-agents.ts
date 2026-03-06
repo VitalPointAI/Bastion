@@ -145,7 +145,7 @@ router.post('/threats/monitor', requireAuth, async (req, res) => {
  */
 router.get('/threats/alerts', requireAuth, async (req, res) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const acknowledged = req.query.acknowledged === 'true' ? true :
                          req.query.acknowledged === 'false' ? false : undefined;
@@ -275,7 +275,7 @@ router.post('/cycle', requireAuth, async (req, res) => {
  */
 router.get('/fused/:id', requireAuth, async (req, res) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const id = req.params.id as string;
 
@@ -302,7 +302,7 @@ router.get('/fused/:id', requireAuth, async (req, res) => {
  */
 router.get('/fused', requireAuth, async (req, res) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const status = req.query.status as 'PENDING' | 'REVIEWED' | 'APPROVED' | undefined;
 
@@ -378,7 +378,7 @@ router.post('/fused/:id/review', requireAuth, async (req, res) => {
  */
 router.get('/checkpoints', requireAuth, async (req, res) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const status = req.query.status as 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | undefined;
 
@@ -451,7 +451,7 @@ router.post('/checkpoints/:id/resolve', requireAuth, async (req, res) => {
  */
 router.get('/status', requireAuth, async (req, res) => {
   try {
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const agentStatus = await agentOrchestrator.getAgentStatus();
     const executionHistory = agentOrchestrator.getExecutionHistory();

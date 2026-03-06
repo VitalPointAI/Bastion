@@ -8,7 +8,8 @@
  * with SemiAutonomous level - requires human approval for entity merges.
  */
 
-import type { AgentManifest, AgentCharacter, AgentPhase } from '../../agents/types.js';
+import { AutonomyLevel } from '../../agents/types.js';
+import type { AgentManifest, AgentCharacter, AgentPhase, AgentCapability } from '../../agents/types.js';
 
 /**
  * Agent ID for consistent reference
@@ -38,11 +39,11 @@ export const ENTITY_RESOLUTION_MANIFEST: Omit<
     'Identifies and merges duplicate entities across documents. Resolves aliases, abbreviations, and variant names to canonical forms.',
   phase: 'Support' as AgentPhase,
   capabilities: [
-    'EntityMatching' as any,
-    'AliasManagement' as any,
-    'Deduplication' as any,
+    'EntityMatching' as AgentCapability,
+    'AliasManagement' as AgentCapability,
+    'Deduplication' as AgentCapability,
   ],
-  maxAutonomy: 'SemiAutonomous' as any,
+  maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [], // Not involved in DAO proposals
   requiresHumanApproval: [], // All merges require approval by design
   active: true,

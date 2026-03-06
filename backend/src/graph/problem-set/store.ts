@@ -90,7 +90,7 @@ export class GraphProblemSetStore {
       params.push(options.parentId);
     }
     if (options.classification) {
-      conditions.push(`classification = $${idx++}`);
+      conditions.push(`classification = $${idx}`);
       params.push(options.classification);
     }
 
@@ -153,7 +153,7 @@ export class GraphProblemSetStore {
     const pool = getPool();
 
     // Query counts from various tables
-    const [actors, objectives, events, alerts] = await Promise.all([
+    const [_actors, objectives, events, alerts] = await Promise.all([
       pool.query("SELECT COUNT(*) FROM (SELECT 1 FROM information_schema.tables WHERE table_name = 'actors') t"),
       pool.query("SELECT COUNT(*) FROM strategic_objectives WHERE document_id IN (SELECT id FROM strategic_documents)"),
       pool.query("SELECT COUNT(*) FROM osint_events WHERE workspace_id = $1", [problemSetId]),

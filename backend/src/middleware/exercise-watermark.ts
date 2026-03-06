@@ -11,6 +11,18 @@
 
 import type { Request } from 'express';
 
+interface PDFDocumentLike {
+  save(): unknown;
+  restore(): unknown;
+  opacity(val: number): unknown;
+  fontSize(val: number): unknown;
+  fillColor(val: string): unknown;
+  font(val: string): unknown;
+  rotate(angle: number, options: { origin: number[] }): unknown;
+  text(text: string, x?: number | Record<string, unknown>, y?: number, options?: Record<string, unknown>): unknown;
+  moveDown(val: number): unknown;
+}
+
 /**
  * Check if the current request is in training mode.
  * Relies on modeMiddleware having set req.userMode.
@@ -25,7 +37,7 @@ export function isTrainingMode(req: Request): boolean {
  * Uses PDFKit save/restore pattern with low opacity red text
  * rotated 45 degrees. Should be called before doc.end().
  */
-export function addPdfExerciseWatermark(doc: any): void {
+export function addPdfExerciseWatermark(doc: PDFDocumentLike): void {
   // Save current graphics state
   doc.save();
 
@@ -51,7 +63,7 @@ export function addPdfExerciseWatermark(doc: any): void {
  * Add a bold red "EXERCISE - EXERCISE - EXERCISE" header line at the
  * current cursor position. Mimics military exercise message header convention.
  */
-export function addExerciseHeader(doc: any): void {
+export function addExerciseHeader(doc: PDFDocumentLike): void {
   doc.save();
   doc.fontSize(10);
   doc.fillColor('#CC0000');

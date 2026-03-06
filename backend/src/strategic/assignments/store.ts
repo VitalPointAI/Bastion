@@ -10,7 +10,6 @@ import type {
   DocumentAssignment,
   AssignmentInput,
   AssignmentFilters,
-  AssignmentStatus,
 } from './types.js';
 
 /**

@@ -8,7 +8,6 @@
 import type {
   StrategyReviewReport,
   ReviewStatus,
-  CategoryAssessment,
 } from './types.js';
 
 /**

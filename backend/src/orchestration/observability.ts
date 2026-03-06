@@ -16,7 +16,7 @@
 
 import { randomUUID } from 'crypto';
 import { getPool } from '../lib/database.js';
-import type { ClassificationLevel, ExecutionTraceEntry } from './state.js';
+import type { ClassificationLevel } from './state.js';
 
 /**
  * Full execution trace
@@ -758,7 +758,6 @@ export class ExecutionTracer {
     if (until) {
       conditions.push(`started_at <= $${paramIdx}`);
       params.push(until.toISOString());
-      paramIdx++;
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

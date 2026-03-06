@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { sensorStore } from '../sensors/sensor-store.js';
-import type { Sensor, SensorCategory, SensorStatus, SensorCapabilities } from '../sensors/types.js';
+import type { Sensor, SensorCategory, SensorStatus } from '../sensors/types.js';
 
 const router = Router();
 

@@ -18,11 +18,11 @@ import type {
   ClassificationLevel,
   DocumentUploadResponse,
 } from '../strategic/ingestion/types.js';
-import { ObjectiveStore, objectiveStore, initStrategicObjectivesTable } from '../strategic/objectives/index.js';
+import { objectiveStore, initStrategicObjectivesTable } from '../strategic/objectives/index.js';
 import type { ObjectiveInput, ObjectiveUpdate } from '../strategic/objectives/index.js';
 import { ExtractionService } from '../strategic/extraction/index.js';
 import type { ExtractedObjective, ExtractionProgress } from '../strategic/extraction/index.js';
-import { WorkflowEngine, workflowEngine } from '../strategic/workflows/index.js';
+import { workflowEngine } from '../strategic/workflows/index.js';
 import type { ApprovalEvent } from '../strategic/workflows/index.js';
 import {
   getRiskAssessmentService,
@@ -30,11 +30,11 @@ import {
   calculateRiskLevel,
   initRiskAssessmentTable,
 } from '../strategic/assessment/index.js';
-import type { RiskAssessment, Likelihood, Impact } from '../strategic/assessment/index.js';
+import type { Likelihood, Impact } from '../strategic/assessment/index.js';
 import type { StrategicObjective } from '../strategic/schemas/strategic-objective.js';
 import type { DIMEInstrument } from '../strategic/schemas/dime.js';
 import { dimeToMidlife } from '../strategic/schemas/dime.js';
-import { IntentStore, intentStore } from '../strategic/intent/index.js';
+import { intentStore } from '../strategic/intent/index.js';
 import { configService } from '../strategic/config/service.js';
 import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
 import type { IntentInput, IntentUpdate } from '../strategic/intent/index.js';
@@ -46,7 +46,6 @@ import type { AssignmentInput } from '../strategic/assignments/index.js';
 import { triggerAutoReview } from '../strategic/extraction/auto-review-hook.js';
 import { executeStrategyReview } from '../agents/langgraph/graphs/strategy-reviewer-graph.js';
 import { getReviewCheckpointManager } from '../agents/langgraph/graphs/strategy-reviewer-checkpoint.js';
-import { randomUUID } from 'crypto';
 import { getCOPTriggerHandler } from '../cop/index.js';
 
 const router = express.Router();
@@ -732,7 +731,7 @@ router.get('/objectives', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = parseInt(req.query.offset as string) || 0;
@@ -769,7 +768,7 @@ router.get('/objectives/:id', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
 
@@ -849,7 +848,7 @@ router.delete('/objectives/:id', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1028,7 +1027,7 @@ router.get('/objectives/:id/workflow', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const status = await workflowEngine.getWorkflowStatus(objectiveId);
 
@@ -1127,7 +1126,7 @@ router.post('/objectives/:id/assess', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1168,7 +1167,7 @@ router.get('/objectives/:id/risk', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const assessments = await riskAssessmentStore.getAssessmentsForObjective(objectiveId);
 
@@ -1269,7 +1268,7 @@ router.get('/risk/high-risk', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const assessments = await riskAssessmentStore.getHighRiskAssessments();
 
@@ -1383,7 +1382,7 @@ router.get('/objectives/:id/intent', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objectiveIntents = await intents.getIntentsForObjective(objectiveId);
 
@@ -1407,7 +1406,7 @@ router.put('/intent/:intentId', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const intentId = req.params.intentId as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const intent = await intents.getIntent(intentId);
     if (!intent) {
@@ -1438,7 +1437,7 @@ router.post('/objectives/:id/intent/generate', requireAuth, async (req, res) => 
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1481,7 +1480,7 @@ router.get('/objectives/:id/operationalize', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const objectiveId = req.params.id as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const objective = await objectives.getObjective(objectiveId);
     if (!objective) {
@@ -1840,7 +1839,7 @@ router.get('/reviews/:reviewId', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const reviewId = req.params.reviewId as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const review = await reviewStore.getReview(reviewId);
 
@@ -2084,7 +2083,7 @@ router.get('/assignments', requireAuth, async (req, res) => {
   try {
     await ensureTableExists();
 
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const { documentId, agentId, status, autoReview } = req.query;
 
@@ -2152,7 +2151,7 @@ router.patch('/assignments/:id', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const assignmentId = req.params.id as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
+    const _userDID = buildDID(req.anonUser!.nearAccountId);
 
     const assignment = await assignmentStore.getAssignment(assignmentId);
     if (!assignment) {

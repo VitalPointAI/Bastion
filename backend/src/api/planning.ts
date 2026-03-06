@@ -121,7 +121,7 @@ planningRouter.patch('/plans/:id', async (req: Request, res: Response) => {
     }
 
     // Type assertion for Zod output compatibility with store interface
-    const plan = await planStore.update(req.params.id as string, parsed.data as any);
+    const plan = await planStore.update(req.params.id as string, parsed.data as unknown as Parameters<typeof planStore.update>[1]);
     res.json(plan);
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to update plan' });
@@ -304,7 +304,7 @@ planningRouter.post('/missions/:missionId/roe', async (req: Request, res: Respon
 
     // Type assertion for Zod output compatibility with store interface
     const rule = await roeStore.createRule(
-      parsed.data as any,
+      parsed.data as unknown as Parameters<typeof roeStore.createRule>[0],
       (req.headers['x-did'] as string) || 'anonymous'
     );
 

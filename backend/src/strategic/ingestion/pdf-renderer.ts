@@ -80,13 +80,12 @@ async function truncatePdf(buffer: Buffer, maxPages: number): Promise<Buffer> {
  * @returns PdfVisionPayload with base64 data and size metadata
  */
 export async function preparePdfForVision(buffer: Buffer): Promise<PdfVisionPayload> {
-  let originalPages = 0;
+  let originalPages: number;
 
   try {
     const srcDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
     originalPages = srcDoc.getPageCount();
   } catch {
-    // Fall back to unpdf for page count
     try {
       const pdf = await getDocumentProxy(new Uint8Array(buffer));
       originalPages = pdf.numPages;

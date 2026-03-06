@@ -139,7 +139,7 @@ export function useStaffNotifications(
     mountedRef.current = true;
 
     if (!scenarioId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setNotifications([]);
       return;
     }

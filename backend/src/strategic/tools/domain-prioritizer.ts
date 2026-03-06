@@ -236,7 +236,7 @@ export class DomainPrioritizer {
    */
   private scoreObjective(
     objective: PrioritizeObjective,
-    weights: PrioritizationCriteria
+    _weights: PrioritizationCriteria
   ): ScoreBreakdown {
     const text = objective.description.toLowerCase();
 

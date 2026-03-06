@@ -133,7 +133,7 @@ export class MissionStore {
       params.push(filters.state);
     }
     if (filters.createdBy) {
-      conditions.push(`created_by = $${idx++}`);
+      conditions.push(`created_by = $${idx}`);
       params.push(filters.createdBy);
     }
 

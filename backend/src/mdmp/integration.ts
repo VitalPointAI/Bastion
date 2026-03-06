@@ -14,20 +14,14 @@
  * and enforces all 9 governance invariants during execution.
  */
 
-import { MDMPWorkflowService, type MDMPWorkflowState, type Assumption } from './workflow-service.js';
+import { MDMPWorkflowService, type MDMPWorkflowState } from './workflow-service.js';
 import { SafetyMatrixEnforcer } from './safety-enforcement.js';
 import {
-  getActivityById,
   getActivitiesByPhase,
-  getActivitiesRequiringGate,
 } from './activity-registry.js';
 import {
   MDMPPhase,
-  ActivityCategory,
-  AuthorityDesignation,
-  type MDMPActivity,
 } from './types.js';
-import { auditAssumptions } from '../agents/assumption-auditor.js';
 
 // ==========================================================================
 // Types
@@ -304,7 +298,7 @@ export class MDMPIntegrationOrchestrator {
   async handleAssumptionInvalidation(
     params: AssumptionInvalidationParams
   ): Promise<{ replanningGateCreated: boolean; reason: string }> {
-    const { missionId, assumptionId, evidence, sensitivity } = params;
+    const { missionId, assumptionId, evidence: _evidence, sensitivity } = params;
 
     console.log('[MDMP Integration] Assumption invalidation detected', {
       missionId,
@@ -377,7 +371,7 @@ export class MDMPIntegrationOrchestrator {
    * @param output - Agent output object
    * @returns Validation result
    */
-  validateAgentOutput(agentId: string, output: any): AgentOutputValidationResult {
+  validateAgentOutput(agentId: string, output: Record<string, unknown>): AgentOutputValidationResult {
     console.log('[MDMP Integration] Validating agent output for INVARIANT 5', {
       agentId,
       timestamp: Date.now(),
@@ -439,7 +433,7 @@ export class MDMPIntegrationOrchestrator {
   async recordCommanderGuidance(
     params: CommanderGuidanceParams
   ): Promise<CommanderGuidanceResult> {
-    const { missionId, daoId, guidanceText, modifiesAssumptions, authoredBy } = params;
+    const { missionId, daoId, guidanceText: _guidanceText, modifiesAssumptions, authoredBy } = params;
 
     console.log('[MDMP Integration] Recording commander guidance', {
       missionId,

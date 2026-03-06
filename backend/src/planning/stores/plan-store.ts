@@ -59,7 +59,8 @@ async function initPlanTable(): Promise<void> {
 /**
  * Helper to convert database row to OperationalPlan
  */
-function rowToPlan(row: any): OperationalPlan {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToPlan(row: Record<string, any>): OperationalPlan {
   return {
     id: row.id,
     missionId: row.mission_id,
@@ -162,7 +163,7 @@ class PlanStore {
     const pool = getPool();
 
     let query = 'SELECT * FROM operational_plans ORDER BY created_at DESC';
-    const values: any[] = [];
+    const values: unknown[] = [];
 
     if (limit !== undefined) {
       values.push(limit);
@@ -223,7 +224,7 @@ class PlanStore {
     const now = new Date();
 
     const setClauses: string[] = ['updated_at = $1'];
-    const values: any[] = [now];
+    const values: unknown[] = [now];
     let paramIndex = 2;
 
     if (updates.name !== undefined) {

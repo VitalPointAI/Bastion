@@ -190,7 +190,8 @@ export async function generateCCIR(planId: string): Promise<CCIR> {
 
   // Extract from plan or generate defaults
   // Note: coordinatingInstructions may store CCIR in various formats
-  const storedCCIR = (plan.execution?.coordinatingInstructions as any)?.ccir;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const storedCCIR = (plan.execution?.coordinatingInstructions as any)?.ccir as any;
 
   // Priority Intelligence Requirements
   const pir: PIR[] = storedCCIR?.pir?.map((q: string, i: number) => ({

@@ -101,7 +101,7 @@ async function seedCOPAgents(): Promise<void> {
  * Wire the trigger handler to the COP coordinator.
  * When triggerHandler emits layer:generation:start, invoke runCOPGeneration.
  */
-function wireGenerationTrigger(triggerHandler: TriggerHandler): void {
+function wireGenerationTrigger(_triggerHandler: TriggerHandler): void {
   copEventBus.on('layer:generation:start', async (data) => {
     console.log(`[COP] Generation triggered: workspace=${data.workspaceId}, section=${data.sectionId}, by=${data.triggeredBy}`);
     try {

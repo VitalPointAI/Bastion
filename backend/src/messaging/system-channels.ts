@@ -307,7 +307,7 @@ export class SystemEventPublisher {
   /**
    * Publish team created event
    */
-  async teamCreated(teamId: string, teamDid: string, name: string): Promise<string> {
+  async teamCreated(teamId: string, teamDid: string, _name: string): Promise<string> {
     return this.publishTeamEvent(TeamEventType.CREATED, teamId, teamDid);
   }
 
