@@ -29,6 +29,8 @@ export interface OPORDGeneratorOptions {
   includeGraphics?: boolean;
   classificationBanner?: boolean;
   portionMarkings?: boolean;
+  /** When true, stamps document with EXERCISE watermark and header */
+  exerciseMode?: boolean;
 }
 
 /**

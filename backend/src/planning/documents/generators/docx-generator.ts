@@ -16,6 +16,7 @@ import type { GeneratedDocument, OPORDGeneratorOptions, DocumentMetadata } from 
 import { planStore } from '../../stores/plan-store.js';
 import { coaStore } from '../../stores/coa-store.js';
 import { buildOPORDStructure } from '../templates/opord-template.js';
+import { getExerciseFilenamePrefix } from '../../../middleware/exercise-watermark.js';
 
 /**
  * Generate OPORD as DOCX
@@ -45,6 +46,22 @@ export async function generateOPORDDocx(
         },
       },
       children: [
+        // Exercise Header (before classification banner)
+        ...(options.exerciseMode ? [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: 'EXERCISE - EXERCISE - EXERCISE',
+                bold: true,
+                size: 20,
+                color: 'CC0000',
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 100 },
+          }),
+        ] : []),
+
         // Classification Banner
         ...(options.classificationBanner !== false ? [
           new Paragraph({
@@ -260,7 +277,10 @@ export async function generateOPORDDocx(
   // Generate buffer
   const buffer = await Packer.toBuffer(doc);
 
-  const filename = `${opord.header.unit.replace(/\s+/g, '_')}_${opord.header.orderType}_${opord.header.orderNumber}.docx`;
+  const baseFilename = `${opord.header.unit.replace(/\s+/g, '_')}_${opord.header.orderType}_${opord.header.orderNumber}.docx`;
+  const filename = options.exerciseMode
+    ? `${getExerciseFilenamePrefix()}${baseFilename}`
+    : baseFilename;
 
   return {
     buffer: Buffer.from(buffer),

@@ -10,6 +10,11 @@ import type { GeneratedDocument, OPORDGeneratorOptions, DocumentMetadata } from 
 import { planStore } from '../../stores/plan-store.js';
 import { coaStore } from '../../stores/coa-store.js';
 import { buildOPORDStructure } from '../templates/opord-template.js';
+import {
+  addPdfExerciseWatermark,
+  addExerciseHeader,
+  getExerciseFilenamePrefix,
+} from '../../../middleware/exercise-watermark.js';
 
 /**
  * Generate OPORD as PDF
@@ -42,7 +47,10 @@ export async function generateOPORDPdf(
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => {
         const buffer = Buffer.concat(chunks);
-        const filename = `${opord.header.unit.replace(/\s+/g, '_')}_${opord.header.orderType}_${opord.header.orderNumber}.pdf`;
+        const baseFilename = `${opord.header.unit.replace(/\s+/g, '_')}_${opord.header.orderType}_${opord.header.orderNumber}.pdf`;
+        const filename = options.exerciseMode
+          ? `${getExerciseFilenamePrefix()}${baseFilename}`
+          : baseFilename;
 
         resolve({
           buffer,
@@ -52,6 +60,11 @@ export async function generateOPORDPdf(
           generatedAt: new Date(),
         });
       });
+
+      // Exercise header (before classification banner)
+      if (options.exerciseMode) {
+        addExerciseHeader(doc);
+      }
 
       // Classification Banner
       if (options.classificationBanner !== false) {
@@ -145,6 +158,11 @@ export async function generateOPORDPdf(
         doc.moveDown(2);
         doc.fontSize(14).font('Helvetica-Bold')
           .text(opord.classification, { align: 'center' });
+      }
+
+      // Exercise watermark (applied last, overlays content)
+      if (options.exerciseMode) {
+        addPdfExerciseWatermark(doc);
       }
 
       doc.end();

@@ -12,6 +12,8 @@
 
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
+import { isTrainingMode } from '../middleware/exercise-watermark.js';
+import { modeMiddleware } from '../middleware/mode-context.js';
 import { planStore, coaStore, versionStore, roeStore } from '../planning/index.js';
 import { jp50WorkflowEngine } from '../planning/workflow/index.js';
 import { roeEngine, roeOverrideWorkflow, roeAuditLog } from '../planning/roe/index.js';
@@ -363,7 +365,7 @@ planningRouter.post('/roe/override', async (req: Request, res: Response) => {
 // ============ DOCUMENTS ============
 
 // Generate OPORD DOCX
-planningRouter.get('/plans/:id/documents/opord.docx', async (req: Request, res: Response) => {
+planningRouter.get('/plans/:id/documents/opord.docx', modeMiddleware, async (req: Request, res: Response) => {
   try {
     const doc = await generateOPORDDocx(req.params.id as string, {
       classification: (req.query.classification as string) || 'UNCLASSIFIED',
@@ -372,7 +374,7 @@ planningRouter.get('/plans/:id/documents/opord.docx', async (req: Request, res: 
       dtg: new Date().toISOString(),
       references: [],
       timeZone: 'ZULU',
-    });
+    }, { exerciseMode: isTrainingMode(req) });
 
     res.setHeader('Content-Type', doc.mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${doc.filename}"`);
@@ -383,7 +385,7 @@ planningRouter.get('/plans/:id/documents/opord.docx', async (req: Request, res: 
 });
 
 // Generate OPORD PDF
-planningRouter.get('/plans/:id/documents/opord.pdf', async (req: Request, res: Response) => {
+planningRouter.get('/plans/:id/documents/opord.pdf', modeMiddleware, async (req: Request, res: Response) => {
   try {
     const doc = await generateOPORDPdf(req.params.id as string, {
       classification: (req.query.classification as string) || 'UNCLASSIFIED',
@@ -392,7 +394,7 @@ planningRouter.get('/plans/:id/documents/opord.pdf', async (req: Request, res: R
       dtg: new Date().toISOString(),
       references: [],
       timeZone: 'ZULU',
-    });
+    }, { exerciseMode: isTrainingMode(req) });
 
     res.setHeader('Content-Type', doc.mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${doc.filename}"`);
