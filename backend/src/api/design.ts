@@ -8,6 +8,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { designStore } from '../design/design-store.js';
+import type { CoGAnalysis, LineOfEffort } from '../design/types.js';
 
 const router = Router();
 
@@ -128,9 +129,17 @@ router.post('/:problemSetId/analyze', async (req: Request, res: Response) => {
       // Return default + alternative framings as a flat array
       const framings = [output.defaultFraming, ...output.alternativeFramings];
       res.json({ framings });
-    } else if (section === 'cog-analysis' || section === 'lines-of-effort') {
-      // Stub for future plans
-      res.json({ suggestions: [] });
+    } else if (section === 'cog-analysis') {
+      const { analyzeCenterOfGravity } = await import('../agents/cog-analysis.js');
+      const cogData = context as unknown as CoGAnalysis;
+      const output = await analyzeCenterOfGravity(cogData);
+      res.json(output);
+    } else if (section === 'lines-of-effort') {
+      const { analyzeLOEGaps } = await import('../agents/loe-gap-analysis.js');
+      const loeData = ((context as Record<string, unknown>)?.loes as LineOfEffort[]) || [];
+      const cogData = ((context as Record<string, unknown>)?.cogAnalysis as CoGAnalysis) || { friendly: { root: null }, adversary: { root: null } };
+      const output = await analyzeLOEGaps(loeData, cogData);
+      res.json(output);
     } else {
       res.status(400).json({ error: `Unsupported analysis section: ${section}` });
     }
