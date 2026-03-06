@@ -47,6 +47,7 @@ import { triggerAutoReview } from '../strategic/extraction/auto-review-hook.js';
 import { executeStrategyReview } from '../agents/langgraph/graphs/strategy-reviewer-graph.js';
 import { getReviewCheckpointManager } from '../agents/langgraph/graphs/strategy-reviewer-checkpoint.js';
 import { getCOPTriggerHandler } from '../cop/index.js';
+import { containerStore, initContainerTables } from '../strategic/containers/index.js';
 
 const router = express.Router();
 
@@ -63,6 +64,7 @@ async function ensureTableExists(): Promise<void> {
     await initStrategicObjectivesTable();
     await initRiskAssessmentTable();
     await workflowEngine.initialize();
+    await initContainerTables();
     tableInitialized = true;
   }
 }
@@ -2247,6 +2249,311 @@ router.get('/teams', requireAuth, async (_req, res) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('List teams failed:', message);
     res.status(500).json({ error: 'Failed to list teams' });
+  }
+});
+
+// =============================================================================
+// Container Routes
+// =============================================================================
+
+/**
+ * GET /api/strategic/environments/by-problem-set/:problemSetId
+ * Get or auto-create environment for a problem set.
+ */
+router.get('/environments/by-problem-set/:problemSetId', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const problemSetId = req.params.problemSetId as string;
+    const userDID = (req as unknown as Record<string, unknown>).userDID as string || 'system';
+    const environment = await containerStore.getEnvironmentByProblemSet(problemSetId, userDID);
+    res.json(environment);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get environment by problem set failed:', message);
+    res.status(500).json({ error: 'Failed to get environment' });
+  }
+});
+
+/**
+ * GET /api/strategic/environments/:envId/containers
+ * Get containers grouped by category for an environment.
+ */
+router.get('/environments/:envId/containers', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const envId = req.params.envId as string;
+    const groups = await containerStore.getContainersGroupedByCategory(envId);
+    res.json(groups);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get containers grouped failed:', message);
+    res.status(500).json({ error: 'Failed to get containers' });
+  }
+});
+
+/**
+ * POST /api/strategic/environments/:envId/categories
+ * Create a new actor category.
+ */
+router.post('/environments/:envId/categories', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const { name, color, displayOrder } = req.body;
+    if (!name || !color) {
+      return res.status(400).json({ error: 'name and color are required' });
+    }
+    const envId = req.params.envId as string;
+    const id = await containerStore.createCategory(envId, name, color, displayOrder);
+    res.status(201).json({ id });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create category failed:', message);
+    res.status(500).json({ error: 'Failed to create category' });
+  }
+});
+
+/**
+ * PUT /api/strategic/categories/:categoryId
+ * Update a category's name or color.
+ */
+router.put('/categories/:categoryId', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const { name, color } = req.body;
+    const categoryId = req.params.categoryId as string;
+    await containerStore.updateCategory(categoryId, { name, color });
+    res.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update category failed:', message);
+    res.status(500).json({ error: 'Failed to update category' });
+  }
+});
+
+/**
+ * DELETE /api/strategic/categories/:categoryId
+ * Delete a category (409 if it has containers).
+ */
+router.delete('/categories/:categoryId', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const categoryId = req.params.categoryId as string;
+    const success = await containerStore.deleteCategory(categoryId);
+    if (!success) {
+      return res.status(409).json({ error: 'Category has containers or is a default category' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete category failed:', message);
+    res.status(500).json({ error: 'Failed to delete category' });
+  }
+});
+
+/**
+ * POST /api/strategic/environments/:envId/containers
+ * Create a new container.
+ */
+router.post('/environments/:envId/containers', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const { categoryId, name, description } = req.body;
+    if (!categoryId || !name) {
+      return res.status(400).json({ error: 'categoryId and name are required' });
+    }
+    const userDID = (req as unknown as Record<string, unknown>).userDID as string || 'system';
+    const envId = req.params.envId as string;
+    const id = await containerStore.createContainer(envId, categoryId, name, description, userDID);
+    res.status(201).json({ id });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create container failed:', message);
+    res.status(500).json({ error: 'Failed to create container' });
+  }
+});
+
+/**
+ * PUT /api/strategic/containers/:containerId
+ * Update a container's name, description, or category.
+ */
+router.put('/containers/:containerId', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const { name, description, categoryId } = req.body;
+    const containerId = req.params.containerId as string;
+    await containerStore.updateContainer(containerId, { name, description, categoryId });
+    res.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update container failed:', message);
+    res.status(500).json({ error: 'Failed to update container' });
+  }
+});
+
+/**
+ * DELETE /api/strategic/containers/:containerId
+ * Delete a container. Returns orphaned document IDs.
+ */
+router.delete('/containers/:containerId', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const containerId = req.params.containerId as string;
+    const result = await containerStore.deleteContainer(containerId);
+    res.json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete container failed:', message);
+    res.status(500).json({ error: 'Failed to delete container' });
+  }
+});
+
+/**
+ * GET /api/strategic/containers/:containerId/documents
+ * Get documents in a container.
+ */
+router.get('/containers/:containerId/documents', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const containerId = req.params.containerId as string;
+    const documents = await containerStore.getContainerDocuments(containerId);
+    res.json({ documents });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get container documents failed:', message);
+    res.status(500).json({ error: 'Failed to get container documents' });
+  }
+});
+
+/**
+ * PUT /api/strategic/documents/:documentId/containers
+ * Assign a document to containers.
+ */
+router.put('/documents/:documentId/containers', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const { containerIds } = req.body;
+    if (!Array.isArray(containerIds)) {
+      return res.status(400).json({ error: 'containerIds array is required' });
+    }
+    const userDID = (req as unknown as Record<string, unknown>).userDID as string || 'system';
+    const documentId = req.params.documentId as string;
+    await containerStore.assignDocumentToContainers(documentId, containerIds, userDID);
+    res.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Assign document to containers failed:', message);
+    res.status(500).json({ error: 'Failed to assign document to containers' });
+  }
+});
+
+/**
+ * DELETE /api/strategic/documents/:documentId/containers/:containerId
+ * Remove a document from a container.
+ */
+router.delete('/documents/:documentId/containers/:containerId', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const documentId = req.params.documentId as string;
+    const containerId = req.params.containerId as string;
+    await containerStore.removeDocumentFromContainer(documentId, containerId);
+    res.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Remove document from container failed:', message);
+    res.status(500).json({ error: 'Failed to remove document from container' });
+  }
+});
+
+/**
+ * GET /api/strategic/environments/:envId/unorganized
+ * Get documents not in any container.
+ */
+router.get('/environments/:envId/unorganized', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const envId = req.params.envId as string;
+    const documents = await containerStore.getUnorganizedDocuments(envId);
+    res.json({ documents });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get unorganized documents failed:', message);
+    res.status(500).json({ error: 'Failed to get unorganized documents' });
+  }
+});
+
+/**
+ * GET /api/strategic/documents/:documentId/containers
+ * Get containers a document belongs to.
+ */
+router.get('/documents/:documentId/containers', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const documentId = req.params.documentId as string;
+    const containers = await containerStore.getDocumentContainers(documentId);
+    res.json({ containers });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get document containers failed:', message);
+    res.status(500).json({ error: 'Failed to get document containers' });
+  }
+});
+
+/**
+ * POST /api/strategic/containers/:containerId/agents
+ * Assign an agent to a container.
+ */
+router.post('/containers/:containerId/agents', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const { agentId, assignmentType, autoProcessNew } = req.body;
+    if (!agentId) {
+      return res.status(400).json({ error: 'agentId is required' });
+    }
+    const userDID = (req as unknown as Record<string, unknown>).userDID as string || 'system';
+    const containerId = req.params.containerId as string;
+    const id = await containerStore.assignAgentToContainer(
+      containerId, agentId, assignmentType, autoProcessNew, userDID
+    );
+    res.status(201).json({ id });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Assign agent to container failed:', message);
+    res.status(500).json({ error: 'Failed to assign agent to container' });
+  }
+});
+
+/**
+ * GET /api/strategic/containers/:containerId/agents
+ * Get agent assignments for a container.
+ */
+router.get('/containers/:containerId/agents', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const containerId = req.params.containerId as string;
+    const assignments = await containerStore.getContainerAgentAssignments(containerId);
+    res.json({ assignments });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get container agents failed:', message);
+    res.status(500).json({ error: 'Failed to get container agents' });
+  }
+});
+
+/**
+ * DELETE /api/strategic/containers/:containerId/agents/:agentId
+ * Remove an agent from a container.
+ */
+router.delete('/containers/:containerId/agents/:agentId', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+    const containerId = req.params.containerId as string;
+    const agentId = req.params.agentId as string;
+    await containerStore.removeAgentFromContainer(containerId, agentId);
+    res.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Remove agent from container failed:', message);
+    res.status(500).json({ error: 'Failed to remove agent from container' });
   }
 });
 

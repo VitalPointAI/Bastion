@@ -14,6 +14,11 @@ import type {
   ObjectiveFilters,
   DocumentLevel,
   Classification,
+  StrategicEnvironment,
+  CategoryGroup,
+  ActorCategory,
+  StrategicContainer,
+  ContainerAgentAssignment,
 } from './types/strategic.js';
 
 // Use environment variable or empty string for relative URLs (Vite proxy)
@@ -319,6 +324,194 @@ class StrategicService {
    */
   async getRiskAssessment(id: string): Promise<RiskAssessment> {
     return this.fetch<RiskAssessment>(`/api/strategic/risk/${encodeURIComponent(id)}`);
+  }
+
+  // ============================================================================
+  // Container Operations
+  // ============================================================================
+
+  /**
+   * Get or auto-create environment for a problem set.
+   */
+  async getEnvironmentByProblemSet(problemSetId: string): Promise<StrategicEnvironment> {
+    return this.fetch<StrategicEnvironment>(
+      `/api/strategic/environments/by-problem-set/${encodeURIComponent(problemSetId)}`
+    );
+  }
+
+  /**
+   * Get containers grouped by category for an environment.
+   */
+  async getContainersGrouped(environmentId: string): Promise<CategoryGroup[]> {
+    return this.fetch<CategoryGroup[]>(
+      `/api/strategic/environments/${encodeURIComponent(environmentId)}/containers`
+    );
+  }
+
+  /**
+   * Create a new actor category.
+   */
+  async createCategory(
+    environmentId: string,
+    data: { name: string; color: string; displayOrder?: number }
+  ): Promise<{ id: string }> {
+    return this.fetch<{ id: string }>(
+      `/api/strategic/environments/${encodeURIComponent(environmentId)}/categories`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  /**
+   * Update a category's name or color.
+   */
+  async updateCategory(
+    categoryId: string,
+    data: { name?: string; color?: string }
+  ): Promise<void> {
+    await this.fetch<void>(
+      `/api/strategic/categories/${encodeURIComponent(categoryId)}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  }
+
+  /**
+   * Delete a category.
+   */
+  async deleteCategory(categoryId: string): Promise<void> {
+    await this.fetch<void>(
+      `/api/strategic/categories/${encodeURIComponent(categoryId)}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /**
+   * Create a new container.
+   */
+  async createContainer(
+    environmentId: string,
+    data: { categoryId: string; name: string; description?: string }
+  ): Promise<{ id: string }> {
+    return this.fetch<{ id: string }>(
+      `/api/strategic/environments/${encodeURIComponent(environmentId)}/containers`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  /**
+   * Update a container.
+   */
+  async updateContainer(
+    containerId: string,
+    data: { name?: string; description?: string; categoryId?: string }
+  ): Promise<void> {
+    await this.fetch<void>(
+      `/api/strategic/containers/${encodeURIComponent(containerId)}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  }
+
+  /**
+   * Delete a container. Returns orphaned document IDs.
+   */
+  async deleteContainer(
+    containerId: string
+  ): Promise<{ deletedContainerId: string; orphanedDocumentIds: string[] }> {
+    return this.fetch<{ deletedContainerId: string; orphanedDocumentIds: string[] }>(
+      `/api/strategic/containers/${encodeURIComponent(containerId)}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /**
+   * Get documents in a container.
+   */
+  async getContainerDocuments(containerId: string): Promise<StrategicDocument[]> {
+    const response = await this.fetch<{ documents: StrategicDocument[] }>(
+      `/api/strategic/containers/${encodeURIComponent(containerId)}/documents`
+    );
+    return response.documents;
+  }
+
+  /**
+   * Assign a document to containers.
+   */
+  async assignDocumentToContainers(
+    documentId: string,
+    containerIds: string[]
+  ): Promise<void> {
+    await this.fetch<void>(
+      `/api/strategic/documents/${encodeURIComponent(documentId)}/containers`,
+      { method: 'PUT', body: JSON.stringify({ containerIds }) }
+    );
+  }
+
+  /**
+   * Remove a document from a container.
+   */
+  async removeDocumentFromContainer(
+    documentId: string,
+    containerId: string
+  ): Promise<void> {
+    await this.fetch<void>(
+      `/api/strategic/documents/${encodeURIComponent(documentId)}/containers/${encodeURIComponent(containerId)}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /**
+   * Get unorganized documents (not in any container).
+   */
+  async getUnorganizedDocuments(environmentId: string): Promise<StrategicDocument[]> {
+    const response = await this.fetch<{ documents: StrategicDocument[] }>(
+      `/api/strategic/environments/${encodeURIComponent(environmentId)}/unorganized`
+    );
+    return response.documents;
+  }
+
+  /**
+   * Get containers a document belongs to.
+   */
+  async getDocumentContainers(documentId: string): Promise<StrategicContainer[]> {
+    const response = await this.fetch<{ containers: StrategicContainer[] }>(
+      `/api/strategic/documents/${encodeURIComponent(documentId)}/containers`
+    );
+    return response.containers;
+  }
+
+  /**
+   * Assign an agent to a container.
+   */
+  async assignAgentToContainer(
+    containerId: string,
+    data: { agentId: string; assignmentType?: string; autoProcessNew?: boolean }
+  ): Promise<{ id: string }> {
+    return this.fetch<{ id: string }>(
+      `/api/strategic/containers/${encodeURIComponent(containerId)}/agents`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
+
+  /**
+   * Get agent assignments for a container.
+   */
+  async getContainerAgents(containerId: string): Promise<ContainerAgentAssignment[]> {
+    const response = await this.fetch<{ assignments: ContainerAgentAssignment[] }>(
+      `/api/strategic/containers/${encodeURIComponent(containerId)}/agents`
+    );
+    return response.assignments;
+  }
+
+  /**
+   * Remove an agent from a container.
+   */
+  async removeAgentFromContainer(
+    containerId: string,
+    agentId: string
+  ): Promise<void> {
+    await this.fetch<void>(
+      `/api/strategic/containers/${encodeURIComponent(containerId)}/agents/${encodeURIComponent(agentId)}`,
+      { method: 'DELETE' }
+    );
   }
 }
 

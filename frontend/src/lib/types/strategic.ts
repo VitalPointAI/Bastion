@@ -401,3 +401,99 @@ export interface DocumentAgentAssignment {
   agentDisplayName?: string;
   teamName?: string;
 }
+
+// =============================================================================
+// Container Types
+// =============================================================================
+
+export interface StrategicEnvironment {
+  id: string;
+  name: string;
+  description?: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface ActorCategory {
+  id: string;
+  environmentId: string;
+  name: string;
+  color: string;
+  displayOrder: number;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface StrategicContainer {
+  id: string;
+  environmentId: string;
+  categoryId: string;
+  name: string;
+  description?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  documentCount: number;
+  agentCount: number;
+}
+
+export interface CategoryGroup {
+  category: ActorCategory;
+  containers: StrategicContainer[];
+}
+
+export interface ContainerAgentAssignment {
+  id: string;
+  containerId: string;
+  agentId: string;
+  assignmentType: string;
+  autoProcessNew: boolean;
+  assignedBy: string;
+  assignedAt: string;
+}
+
+/**
+ * Default actor categories matching backend constants.
+ * Color-coded for doctrinal intuition.
+ */
+export const DEFAULT_ACTOR_CATEGORIES = {
+  FRIENDLY: {
+    name: 'Friendly',
+    color: '#2563eb',
+    description: 'Allied and coalition forces',
+  },
+  ADVERSARY: {
+    name: 'Adversary',
+    color: '#dc2626',
+    description: 'Opposing forces and hostile actors',
+  },
+  NEUTRAL: {
+    name: 'Neutral',
+    color: '#6b7280',
+    description: 'Non-aligned entities and organizations',
+  },
+  PARTNER: {
+    name: 'Partner',
+    color: '#16a34a',
+    description: 'Partner nations and cooperative entities',
+  },
+} as const;
+
+/**
+ * Color palette for custom categories.
+ * 12 Tailwind 600-weight colors excluding the 4 defaults.
+ */
+export const CUSTOM_CATEGORY_PALETTE = [
+  '#475569', // slate-600
+  '#ea580c', // orange-600
+  '#d97706', // amber-600
+  '#65a30d', // lime-600
+  '#0d9488', // teal-600
+  '#0891b2', // cyan-600
+  '#4f46e5', // indigo-600
+  '#7c3aed', // violet-600
+  '#c026d3', // fuchsia-600
+  '#e11d48', // rose-600
+  '#78716c', // stone-600
+  '#0284c7', // sky-600
+] as const;
