@@ -16,6 +16,7 @@ import {
   computeEigenvectorCentrality,
   computePageRank,
 } from '../graph/tools/raft-tools.js';
+import { graphSummaryService } from '../exercise/graph-summary-service.js';
 
 const router = Router();
 
@@ -497,6 +498,33 @@ router.post('/graph/build/:documentId', async (req: Request, res: Response) => {
     );
 
     res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
+// GRAPH SUMMARY ENDPOINTS
+// =====================
+
+// Get graph summary for a container
+router.get('/summary/:containerId', async (req: Request, res: Response) => {
+  try {
+    const containerId = req.params.containerId as string;
+    const scenarioPhase = getQueryString(req.query.scenarioPhase);
+    const summary = await graphSummaryService.getGraphSummary(containerId, scenarioPhase);
+    res.json({ summary });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// Invalidate graph summary cache for a container
+router.post('/summary/:containerId/invalidate', async (req: Request, res: Response) => {
+  try {
+    const containerId = req.params.containerId as string;
+    graphSummaryService.invalidateContainer(containerId);
+    res.json({ status: 'invalidated' });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
