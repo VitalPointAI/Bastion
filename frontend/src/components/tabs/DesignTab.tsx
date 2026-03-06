@@ -14,7 +14,8 @@ import { DesignOverview } from '../design/DesignOverview.tsx';
 import { ProblemFramingSection } from '../design/ProblemFramingSection.tsx';
 import { CoGAnalysisSection } from '../design/CoGAnalysisSection.tsx';
 import { LOETimelineSection } from '../design/LOETimelineSection.tsx';
-import type { ProblemFramingData, CoGAnalysis, LineOfEffort } from '../../lib/design-service.ts';
+import { OperationalApproachSection } from '../design/OperationalApproachSection.tsx';
+import type { ProblemFramingData, CoGAnalysis, LineOfEffort, OperationalApproach } from '../../lib/design-service.ts';
 
 type DesignView = 'overview' | 'problem-framing' | 'cog-analysis' | 'lines-of-effort' | 'operational-approach';
 
@@ -137,15 +138,13 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
         />
       )}
 
-      {selectedView !== 'overview' && selectedView !== 'problem-framing' && selectedView !== 'cog-analysis' && selectedView !== 'lines-of-effort' && (
-        <div className="flex flex-col items-center justify-center h-64 text-gray-400 gap-2">
-          <h3 className="text-lg font-medium text-gray-300">
-            {sidebarItems.find(i => i.id === selectedView)?.label ?? selectedView}
-          </h3>
-          <p className="text-sm">
-            Coming in {SECTION_PLAN_MAP[selectedView] ?? 'a future plan'}
-          </p>
-        </div>
+      {selectedView === 'operational-approach' && designData && (
+        <OperationalApproachSection
+          problemSetId={problemSetId}
+          initialData={designData.operationalApproach}
+          designData={designData}
+          onUpdate={(data: OperationalApproach) => handleSectionUpdate('operational-approach', data)}
+        />
       )}
     </TabLayout>
   );

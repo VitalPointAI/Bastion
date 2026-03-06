@@ -156,4 +156,16 @@ export const designService = {
     if (!res.ok) throw new Error(`Failed to get handoff: ${res.statusText}`);
     return res.json();
   },
+
+  /**
+   * Push handoff payload to database (persists for Plan tab consumption).
+   */
+  async pushHandoff(problemSetId: string): Promise<{ success: boolean; pushedAt: string }> {
+    const res = await fetch(`${API_BASE}/api/design/${problemSetId}/push-handoff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error(`Failed to push handoff: ${res.statusText}`);
+    return res.json();
+  },
 };

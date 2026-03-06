@@ -39,6 +39,13 @@ async function initDesignTable(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_operational_designs_problem_set
       ON operational_designs(problem_set_id);
   `);
+
+  // Add handoff columns if they don't exist (Plan 05)
+  await pool.query(`
+    ALTER TABLE operational_designs
+      ADD COLUMN IF NOT EXISTS handoff_payload JSONB,
+      ADD COLUMN IF NOT EXISTS handoff_pushed_at TIMESTAMPTZ;
+  `);
 }
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
@@ -301,6 +308,25 @@ class DesignStore {
       assumptions: design.problemFraming.assumptions,
       constraints: design.problemFraming.constraints,
     };
+  }
+  /**
+   * Package and persist handoff payload for Plan tab consumption.
+   */
+  async pushHandoff(problemSetId: string): Promise<{ success: boolean; pushedAt: string }> {
+    const payload = await this.getHandoffPayload(problemSetId);
+    const pushedAt = new Date();
+
+    const pool = getPool();
+    await pool.query(
+      `UPDATE operational_designs
+       SET handoff_payload = $1,
+           handoff_pushed_at = $2,
+           updated_at = NOW()
+       WHERE problem_set_id = $3`,
+      [JSON.stringify(payload), pushedAt, problemSetId]
+    );
+
+    return { success: true, pushedAt: pushedAt.toISOString() };
   }
 }
 

@@ -88,6 +88,22 @@ router.get('/:problemSetId/handoff', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/design/:problemSetId/push-handoff
+ * Packages handoff payload and persists it in the database.
+ */
+router.post('/:problemSetId/push-handoff', async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.problemSetId as string;
+    const result = await designStore.pushHandoff(problemSetId);
+    res.json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[design] POST /${req.params.problemSetId}/push-handoff failed:`, message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
  * POST /api/design/:problemSetId/analyze
  * AI analysis for a design section. Body = { section: string, context: object }.
  */
