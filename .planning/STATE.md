@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-06T00:25:27.260Z"
+last_updated: "2026-03-06T00:27:39.804Z"
 progress:
   total_phases: 35
   completed_phases: 22
   total_plans: 207
-  completed_plans: 217
+  completed_plans: 218
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 22 Plan 04 complete — Training infrastructure (AAR store, checkpoint store, mode-aware workspace creation)
+**Current focus:** Phase 22 Plan 06 complete — EXERCISE watermark, per-mode workspace memory, scenario-to-workspace wiring
 
 ## Current Position
 
 Phase: 22 of 40 (Training/Operational Global Mode)
-Plan: 4 of 6 in current phase — 22-04 complete
-Status: Phase 22 in progress — training infrastructure complete
-Last activity: 2026-03-06 - Completed 22-04: AAR event store, checkpoint store, mode-aware workspace creation
+Plan: 6 of 6 in current phase — 22-06 complete (phase complete)
+Status: Phase 22 complete — training/operational global mode fully implemented
+Last activity: 2026-03-06 - Completed 22-06: EXERCISE watermark, per-mode workspace memory, scenario-to-workspace creation
 
-Progress: █████████████████████████ 216 plans complete
+Progress: █████████████████████████ 218 plans complete
 
 ## Performance Metrics
 
@@ -516,6 +516,8 @@ Recent decisions affecting current work:
 - [Phase 22]: Mode toggle in UserStatusBar with amber (training) and green (operational) visual states
 - [Phase 22]: Active workspace cleared on mode change when not in new mode's workspace list
 - [Phase 22]: AAR events are append-only with no delete/update to ensure data persists across checkpoint resets
+- [Phase 22]: Exercise watermark uses PDFKit save/restore with 0.15 opacity red diagonal text for training-mode documents
+- [Phase 22]: Mode-keyed localStorage (workspace-active-id-{mode}) for independent workspace memory per mode
 
 ### Roadmap Evolution
 
