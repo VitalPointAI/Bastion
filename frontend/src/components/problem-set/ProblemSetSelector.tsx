@@ -60,7 +60,7 @@ const ECHELON_LABELS: Record<string, string> = {
 
 export function ProblemSetSelector() {
   const navigate = useNavigate();
-  const { memberships, loading } = useProblemSet();
+  const { memberships, loading, refreshMemberships, setActiveProblemSet } = useProblemSet();
   const { userDID } = useUser();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -124,7 +124,7 @@ export function ProblemSetSelector() {
         </button>
 
         {showCreateWizard && (
-          <CreateProblemSetWizard onClose={() => setShowCreateWizard(false)} onCreated={() => setShowCreateWizard(false)} />
+          <CreateProblemSetWizard onClose={() => setShowCreateWizard(false)} onCreated={(id) => { setShowCreateWizard(false); void refreshMemberships().then(() => setActiveProblemSet(id)); }} />
         )}
       </div>
     );

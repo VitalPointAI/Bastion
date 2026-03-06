@@ -149,6 +149,7 @@ class ProblemSetService {
   private async fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
     const response = await fetch(url, {
       ...options,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...options?.headers,
@@ -626,7 +627,6 @@ class ProblemSetService {
   async createFromScenario(scenarioId: string, name?: string): Promise<ProblemSetDetail> {
     return this.fetchJSON<ProblemSetDetail>(`${this.baseUrl}/from-scenario`, {
       method: 'POST',
-      credentials: 'include',
       body: JSON.stringify({ scenarioId, name }),
     });
   }
