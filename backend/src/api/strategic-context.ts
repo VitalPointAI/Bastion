@@ -15,6 +15,9 @@
 
 import { Router } from 'express';
 import { problemSetSubscriptionStore } from '../problem-set/problem-set-subscription-store.js';
+import { containerStore } from '../strategic/containers/index.js';
+import { graphSummaryService } from '../exercise/graph-summary-service.js';
+import { StrategicContextService } from '../exercise/strategic-context-service.js';
 import { getSharedBoss } from '../lib/database.js';
 
 export const strategicContextRouter = Router();
@@ -61,6 +64,37 @@ strategicContextRouter.post('/cache/invalidate', async (req, res) => {
   } catch (error) {
     console.error('[strategic-context] Cache invalidation failed:', error);
     return res.status(500).json({ error: 'Cache invalidation failed' });
+  }
+});
+
+/**
+ * GET /preview/:problemSetId
+ * Assemble and return the full strategic context for a problem set.
+ * Used by the frontend preview panel so users can inspect what AI agents know.
+ * Optional query param: ?scenarioPhase=Competition
+ */
+strategicContextRouter.get('/preview/:problemSetId', async (req, res) => {
+  try {
+    const { problemSetId } = req.params;
+    const scenarioPhase = req.query.scenarioPhase as string | undefined;
+
+    const service = new StrategicContextService(
+      problemSetSubscriptionStore,
+      containerStore,
+      graphSummaryService,
+    );
+
+    const context = await service.assembleContext(problemSetId, scenarioPhase);
+
+    // Return null if completely empty (no subscriptions, no containers)
+    const isEmpty =
+      Object.keys(context.graphSummaries).length === 0 &&
+      context.documentSummaries.length === 0;
+
+    return res.json({ context: isEmpty ? null : context });
+  } catch (error) {
+    console.error('[strategic-context] Preview assembly failed:', error);
+    return res.status(500).json({ error: 'Preview assembly failed' });
   }
 });
 
