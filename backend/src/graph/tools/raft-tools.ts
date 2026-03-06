@@ -399,6 +399,83 @@ export async function fetchAdjacencyList(
 }
 
 /**
+ * Fetch the adjacency list for a specific container's sub-graph.
+ * Returns a Map<actorId, AdjacencyEntry> scoped to actors tagged with the given containerId.
+ * Used for container-scoped centrality analysis and graph summaries.
+ */
+export async function fetchAdjacencyListByContainer(
+  containerId: string
+): Promise<Map<string, AdjacencyEntry>> {
+  const cypher = `
+    MATCH (a:Actor)
+    WHERE $containerId IN a.containerIds
+    OPTIONAL MATCH (a)-[r:RELATES_TO]-(b:Actor)
+    WHERE $containerId IN b.containerIds
+    RETURN a.id as actorId, a.name as name, a.type as type,
+           collect({neighborId: b.id, strength: abs(r.strength)}) as neighbors
+  `;
+
+  const result = await executeReadQuery(cypher, { containerId });
+  const adjacency = new Map<string, AdjacencyEntry>();
+
+  for (const record of result.records) {
+    const actorId = record.get('actorId') as string;
+    if (!actorId) continue;
+
+    const name = record.get('name') as string;
+    const type = record.get('type') as string;
+    const rawNeighbors = record.get('neighbors') as Array<{ neighborId: string | null; strength: number | null }>;
+
+    const neighbors: Array<{ id: string; weight: number }> = rawNeighbors
+      .filter(n => n.neighborId !== null && n.neighborId !== undefined)
+      .map(n => ({
+        id: n.neighborId as string,
+        weight: n.strength != null ? n.strength : 0,
+      }));
+
+    adjacency.set(actorId, { name, type, neighbors });
+  }
+
+  return adjacency;
+}
+
+/**
+ * Tension data for container-scoped graph summaries
+ */
+export interface ContainerTension {
+  id: string;
+  description: string;
+  intensity: string;
+  domain: string;
+  actorIds: string[];
+}
+
+/**
+ * Fetch tensions scoped to a specific container.
+ * Returns tension objects for use in container graph summaries.
+ */
+export async function fetchTensionsByContainer(
+  containerId: string
+): Promise<ContainerTension[]> {
+  const cypher = `
+    MATCH (t:Tension)
+    WHERE $containerId IN t.containerIds
+    RETURN t.id as id, t.description as description, t.intensity as intensity,
+           t.domain as domain, t.actorIds as actorIds
+  `;
+
+  const result = await executeReadQuery(cypher, { containerId });
+
+  return result.records.map(record => ({
+    id: record.get('id') as string,
+    description: record.get('description') as string,
+    intensity: record.get('intensity') as string,
+    domain: record.get('domain') as string,
+    actorIds: record.get('actorIds') as string[] || [],
+  }));
+}
+
+/**
  * Eigenvector centrality result entry
  */
 export interface EigenvectorResult {
