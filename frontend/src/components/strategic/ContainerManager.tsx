@@ -50,7 +50,7 @@ export function ContainerManager({
 
   // Create category state
   const [categoryName, setCategoryName] = useState('');
-  const [categoryColor, setCategoryColor] = useState(CUSTOM_CATEGORY_PALETTE[0]);
+  const [categoryColor, setCategoryColor] = useState<string>(CUSTOM_CATEGORY_PALETTE[0]);
 
   // Reassign state
   const [reassignCategoryId, setReassignCategoryId] = useState(

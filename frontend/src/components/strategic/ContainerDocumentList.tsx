@@ -60,12 +60,12 @@ function DraggableDocumentCard({
       className="document-card"
       style={{ opacity: isDragging ? 0.4 : 1 }}
       onClick={() => onSelectDocument(doc)}
-      role="button"
-      tabIndex={0}
       onKeyPress={(e) => e.key === 'Enter' && onSelectDocument(doc)}
-      aria-roledescription="draggable document"
       {...attributes}
       {...listeners}
+      role="button"
+      tabIndex={0}
+      aria-roledescription="draggable document"
     >
       {/* Classification badge */}
       <div className={`classification-badge ${getClassificationColor(doc.classification)}`}>
