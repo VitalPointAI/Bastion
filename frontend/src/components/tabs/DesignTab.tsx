@@ -12,7 +12,8 @@ import { designService } from '../../lib/design-service.ts';
 import type { OperationalDesign, SectionStatus } from '../../lib/design-service.ts';
 import { DesignOverview } from '../design/DesignOverview.tsx';
 import { ProblemFramingSection } from '../design/ProblemFramingSection.tsx';
-import type { ProblemFramingData } from '../../lib/design-service.ts';
+import { CoGAnalysisSection } from '../design/CoGAnalysisSection.tsx';
+import type { ProblemFramingData, CoGAnalysis } from '../../lib/design-service.ts';
 
 type DesignView = 'overview' | 'problem-framing' | 'cog-analysis' | 'lines-of-effort' | 'operational-approach';
 
@@ -118,7 +119,15 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
         />
       )}
 
-      {selectedView !== 'overview' && selectedView !== 'problem-framing' && (
+      {selectedView === 'cog-analysis' && designData && (
+        <CoGAnalysisSection
+          problemSetId={problemSetId}
+          initialData={designData.cogAnalysis}
+          onUpdate={(data: CoGAnalysis) => handleSectionUpdate('cog-analysis', data)}
+        />
+      )}
+
+      {selectedView !== 'overview' && selectedView !== 'problem-framing' && selectedView !== 'cog-analysis' && (
         <div className="flex flex-col items-center justify-center h-64 text-gray-400 gap-2">
           <h3 className="text-lg font-medium text-gray-300">
             {sidebarItems.find(i => i.id === selectedView)?.label ?? selectedView}
