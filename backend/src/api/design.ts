@@ -102,7 +102,7 @@ router.post('/:problemSetId/analyze', async (req: Request, res: Response) => {
     }
 
     if (section === 'problem-framing') {
-      const { generateFramings } = await import('../../agents/problem-framing.js');
+      const { generateFramings } = await import('../agents/problem-framing.js');
       const output = await generateFramings(
         (context?.currentState as string) || '',
         (context?.problemStatement as string) || '',
