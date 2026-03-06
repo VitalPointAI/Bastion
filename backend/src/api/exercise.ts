@@ -48,6 +48,10 @@ import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
 import type { ReviewFeedback } from '../exercise/types.js';
 import { aarStore } from '../exercise/aar-store.js';
 import { checkpointStore } from '../exercise/checkpoint-store.js';
+import { StrategicContextService } from '../exercise/strategic-context-service.js';
+import { problemSetSubscriptionStore } from '../problem-set/problem-set-subscription-store.js';
+import { containerStore } from '../strategic/containers/index.js';
+import { graphSummaryService } from '../exercise/graph-summary-service.js';
 // ─── Multer Setup ─────────────────────────────────────────────────────────────
 
 const upload = multer({
@@ -82,6 +86,7 @@ let _aiContextStore: AIContextStore;
 let _aiCoordinationStore: AICoordinationStore;
 let _agentRunner: LangGraphAgentRunner;
 let _triggerRouter: TriggerRouter;
+let _strategicContextService: StrategicContextService;
 
 export async function initAIWorkspace(): Promise<void> {
   await getAIWorkspace();
@@ -99,6 +104,7 @@ async function getAIWorkspace(): Promise<{
   aiCoordinationStore: AICoordinationStore;
   agentRunner: LangGraphAgentRunner;
   triggerRouter: TriggerRouter;
+  strategicContextService: StrategicContextService;
 }> {
   if (_aiWorkspaceInit) {
     return {
@@ -109,6 +115,7 @@ async function getAIWorkspace(): Promise<{
       aiCoordinationStore: _aiCoordinationStore,
       agentRunner: _agentRunner,
       triggerRouter: _triggerRouter,
+      strategicContextService: _strategicContextService,
     };
   }
 
@@ -122,6 +129,11 @@ async function getAIWorkspace(): Promise<{
   _aiContextStore = new AIContextStore(pool);
   _aiCoordinationStore = new AICoordinationStore(pool);
 
+  // Strategic context service for AI agent pipeline (Phase 25.3)
+  _strategicContextService = new StrategicContextService(
+    problemSetSubscriptionStore, containerStore, graphSummaryService,
+  );
+
   const checkpointer = PostgresSaver.fromConnString(dbUrl);
   _agentRunner = new LangGraphAgentRunner(
     checkpointer,
@@ -129,6 +141,7 @@ async function getAIWorkspace(): Promise<{
     _aiChannelStore,
     _productVersionStore,
     _aiContextStore,
+    _strategicContextService,
   );
 
   const boss = await getSharedBoss();
@@ -144,6 +157,7 @@ async function getAIWorkspace(): Promise<{
     aiCoordinationStore: _aiCoordinationStore,
     agentRunner: _agentRunner,
     triggerRouter: _triggerRouter,
+    strategicContextService: _strategicContextService,
   };
 }
 

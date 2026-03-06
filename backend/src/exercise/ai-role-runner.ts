@@ -11,6 +11,7 @@ import type { AIRunStore } from './ai-run-store.js';
 import type { AIChannelStore } from './ai-channel-store.js';
 import type { ProductVersionStore } from './product-version-store.js';
 import type { AIContextStore } from './ai-context-store.js';
+import type { StrategicContextService } from './strategic-context-service.js';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
 import { createAIRoleGraph } from './ai-role-graph.js';
 
@@ -33,6 +34,7 @@ export class LangGraphAgentRunner implements AgentRunner {
     private aiChannelStore: AIChannelStore,
     private productVersionStore: ProductVersionStore,
     private aiContextStore: AIContextStore,
+    private strategicContextService?: StrategicContextService,
   ) {}
 
   async start(run: AIRoleRun, triggerContext: Record<string, unknown>): Promise<void> {
@@ -44,6 +46,7 @@ export class LangGraphAgentRunner implements AgentRunner {
       aiChannelStore: this.aiChannelStore,
       productVersionStore: this.productVersionStore,
       aiContextStore: this.aiContextStore,
+      strategicContextService: this.strategicContextService,
     });
 
     const config = { configurable: { thread_id: run.id } };
@@ -73,6 +76,7 @@ export class LangGraphAgentRunner implements AgentRunner {
       aiChannelStore: this.aiChannelStore,
       productVersionStore: this.productVersionStore,
       aiContextStore: this.aiContextStore,
+      strategicContextService: this.strategicContextService,
     });
 
     const config = { configurable: { thread_id: runId } };

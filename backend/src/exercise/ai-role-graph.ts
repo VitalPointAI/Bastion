@@ -19,8 +19,10 @@ import type { AIRunStore } from './ai-run-store.js';
 import type { AIChannelStore } from './ai-channel-store.js';
 import type { ProductVersionStore } from './product-version-store.js';
 import type { AIContextStore } from './ai-context-store.js';
+import type { StrategicContextService, StrategicEnvironmentContext } from './strategic-context-service.js';
 import type { StaffAgentDef, ReviewFeedback } from './types.js';
 import { getDefaultAgentsForRole } from './agent-library.js';
+import { getPool } from '../lib/database.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -86,6 +88,7 @@ export type StoreContext = {
   aiChannelStore: AIChannelStore;
   productVersionStore: ProductVersionStore;
   aiContextStore: AIContextStore;
+  strategicContextService?: StrategicContextService;
 };
 
 // ─── Node Functions ───────────────────────────────────────────────────────────
@@ -104,6 +107,37 @@ function assembleContextNode(stores: StoreContext) {
     // Load shared context from AIContextStore
     const sharedContext = await stores.aiContextStore.readAll(scenarioId);
 
+    // Assemble strategic environment context (Phase 25.3)
+    let strategicEnvironment: StrategicEnvironmentContext | undefined;
+    try {
+      if (stores.strategicContextService) {
+        const pool = getPool();
+        const scenarioRow = await pool.query(
+          'SELECT problem_set_id, phases, current_phase_index FROM exercise_scenarios WHERE id = $1',
+          [scenarioId],
+        );
+        const row = scenarioRow.rows[0] as {
+          problem_set_id?: string;
+          phases?: unknown;
+          current_phase_index?: number;
+        } | undefined;
+        const problemSetId = row?.problem_set_id;
+
+        if (problemSetId) {
+          // Get current scenario phase for temporal boosting
+          const phases = row?.phases;
+          const currentPhaseIndex = row?.current_phase_index || 0;
+          const currentPhase = Array.isArray(phases) ? (phases[currentPhaseIndex] as { name?: string })?.name : undefined;
+
+          strategicEnvironment = await stores.strategicContextService.assembleContext(
+            problemSetId, currentPhase,
+          );
+        }
+      }
+    } catch (err) {
+      console.error('[ai-role-graph] Strategic context assembly failed (degraded):', err);
+    }
+
     // Emit task_started channel event
     await stores.aiChannelStore.create({
       scenarioId,
@@ -118,7 +152,10 @@ function assembleContextNode(stores: StoreContext) {
 
     return {
       agentTeam,
-      sharedContext,
+      sharedContext: {
+        ...sharedContext,
+        ...(strategicEnvironment ? { strategicEnvironment } : {}),
+      },
       messages: [
         new HumanMessage(`Starting AI run for ${roleKey} with ${agentTeam.length} agents.`),
       ],
