@@ -3,9 +3,10 @@ import { TabLayout, type SidebarItem } from './TabLayout.js';
 import { StrategicDashboard } from '../strategic/index.js';
 import { SubscriptionManager } from '../problem-set/SubscriptionManager.js';
 import { TrainingPackagesView } from './TrainingPackagesView.js';
+import { StrategicContextPreview } from '../strategic/StrategicContextPreview.js';
 import { useMode } from '../../context/ModeContext.js';
 
-type UnderstandView = 'strategic-docs' | 'subscriptions' | 'training-packages';
+type UnderstandView = 'strategic-docs' | 'subscriptions' | 'ai-context-preview' | 'training-packages';
 
 interface UnderstandTabProps {
   problemSetId: string;
@@ -31,6 +32,11 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
       label: 'Data Sharing',
       tooltip: 'Manage cross-problem-set data subscriptions',
     },
+    {
+      id: 'ai-context-preview',
+      label: 'AI Context Preview',
+      tooltip: 'Preview what AI agents know about the strategic environment',
+    },
     ...(mode === 'training' ? [{
       id: 'training-packages',
       label: `Training Packages${trainingDocCount > 0 ? ` (${trainingDocCount})` : ''}${hasPendingExtraction ? ' *' : ''}`,
@@ -48,6 +54,9 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
       )}
       {selectedView === 'subscriptions' && (
         <SubscriptionManager problemSetId={problemSetId} />
+      )}
+      {selectedView === 'ai-context-preview' && (
+        <StrategicContextPreview problemSetId={problemSetId} />
       )}
       {selectedView === 'training-packages' && mode === 'training' && (
         <TrainingPackagesView
