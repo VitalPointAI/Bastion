@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { DesignStatusBadge } from '../design/DesignStatusBadge.tsx';
 import './TabLayout.css';
 
 export interface SidebarItem {
   id: string;
   label: string;
   tooltip?: string;
+  status?: 'not-started' | 'in-progress' | 'complete';
 }
 
 export interface TabLayoutProps {
@@ -39,6 +41,7 @@ export function TabLayout({ items, selectedItem, onSelectItem, children }: TabLa
                   title={item.tooltip}
                 >
                   {item.label}
+                  {item.status !== undefined && <DesignStatusBadge status={item.status} />}
                 </button>
               ))}
             </nav>
