@@ -18,6 +18,8 @@ import { DEFAULT_ACTOR_CATEGORIES } from './types.js';
 import { createProvider, getDefaultConfig } from '../../strategic/extraction/providers/index.js';
 import type { ProviderConfig } from '../../strategic/extraction/providers/types.js';
 import { configService } from '../../strategic/config/service.js';
+import { graphBuilder } from '../../graph/construction/graph-builder.js';
+import { objectiveStore } from '../../strategic/objectives/store.js';
 
 // =============================================================================
 // Table Initialization
@@ -525,6 +527,31 @@ export class ContainerStore {
         [randomUUID(), containerId, documentId, assignedBy]
       );
     }
+
+    // Auto-trigger RAFT extraction for the document with container scoping
+    // Fire-and-forget: don't await, don't block the assignment response
+    (async () => {
+      try {
+        // Derive workspaceId from the container's parent environment
+        const containerRow = await pool.query(
+          `SELECT se.problem_set_id
+           FROM strategic_containers sc
+           JOIN problem_set_environments se ON se.environment_id = sc.environment_id
+           WHERE sc.id = $1`,
+          [containerIds[0]]
+        );
+        const workspaceId = containerRow.rows[0]?.problem_set_id as string | undefined;
+
+        const objectives = await objectiveStore.getObjectivesForDocument(documentId);
+        await graphBuilder.buildFromDocument(
+          documentId,
+          objectives.map(o => ({ id: o.id, description: o.description })),
+          { containerIds, workspaceId }
+        );
+      } catch (err) {
+        console.error(`[container-store] Auto RAFT extraction failed for doc ${documentId}:`, err);
+      }
+    })();
   }
 
   /**
