@@ -178,9 +178,10 @@ class WorkspaceService {
     });
   }
 
-  async listMyMemberships(userDID: string): Promise<WorkspaceMembership[]> {
+  async listMyMemberships(userDID: string, mode?: string): Promise<WorkspaceMembership[]> {
+    const url = mode ? `${this.baseUrl}/me?mode=${encodeURIComponent(mode)}` : `${this.baseUrl}/me`;
     const response = await this.fetchJSON<{ memberships: WorkspaceMembership[] }>(
-      `${this.baseUrl}/me`,
+      url,
       { headers: { 'X-DID': userDID } }
     );
     return response.memberships;

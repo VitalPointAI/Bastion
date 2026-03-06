@@ -26,6 +26,7 @@ import {
   type WorkspaceDetail,
 } from '../lib/workspace-service';
 import { useUser } from './UserContext';
+import { useMode } from './ModeContext';
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
@@ -111,6 +112,7 @@ function writeLastSeenMap(map: Record<string, string>): void {
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { userDID, isAuthenticated } = useUser();
+  const { mode } = useMode();
 
   const [memberships, setMemberships] = useState<WorkspaceMembership[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceIdState] = useState<string | null>(null);
@@ -140,15 +142,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!isAuthenticated || !userDID) return;
     setLoading(true);
     try {
-      const result = await workspaceService.listMyMemberships(userDID);
+      const result = await workspaceService.listMyMemberships(userDID, mode);
       setMemberships(result);
+
+      // If active workspace is no longer in the filtered list, clear it
+      if (activeWorkspaceId && !result.some((m) => m.workspaceId === activeWorkspaceId)) {
+        setActiveWorkspaceIdState(null);
+        setActiveWorkspaceDetail(null);
+        localStorage.removeItem(ACTIVE_WORKSPACE_KEY);
+      }
+
       return result;
     } catch {
       // Silently fail — user may have no memberships yet
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, userDID]);
+  }, [isAuthenticated, userDID, mode, activeWorkspaceId]);
 
   const refreshMemberships = useCallback(async () => {
     await loadMemberships();
@@ -170,7 +180,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     void (async () => {
       setLoading(true);
       try {
-        const result = await workspaceService.listMyMemberships(userDID);
+        const result = await workspaceService.listMyMemberships(userDID, mode);
         setMemberships(result);
 
         // Determine initial active workspace
@@ -187,6 +197,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         if (initialId) {
           setActiveWorkspaceIdState(initialId);
           localStorage.setItem(ACTIVE_WORKSPACE_KEY, initialId);
+        } else {
+          // No workspaces in this mode — clear active
+          setActiveWorkspaceIdState(null);
+          setActiveWorkspaceDetail(null);
+          localStorage.removeItem(ACTIVE_WORKSPACE_KEY);
         }
       } catch {
         // Silently fail
@@ -194,7 +209,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     })();
-  }, [isAuthenticated, userDID]);
+  }, [isAuthenticated, userDID, mode]);
 
   // ─── Load active workspace details ──────────────────────────────────────────
 
