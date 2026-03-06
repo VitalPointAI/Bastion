@@ -48,6 +48,18 @@ interface LOEGapSuggestion {
 }
 
 // ==========================================================================
+// Narrative Synthesis Types (mirrors backend NarrativeSynthesisOutput)
+// ==========================================================================
+
+interface NarrativeDraft {
+  narrative: string;
+  sections: Array<{ heading: string; content: string }>;
+  confidence: number;
+  confidenceBounds: { lower: number; upper: number };
+  synthesisNotes: string[];
+}
+
+// ==========================================================================
 // Props
 // ==========================================================================
 
@@ -62,6 +74,7 @@ interface DesignAIPanelProps {
   onMerge?: (framing: AlternativeFraming) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onApplyCogSuggestion?: (suggestion: any) => void;
+  onApplyNarrative?: (narrative: string) => void;
 }
 
 // ==========================================================================
@@ -270,6 +283,7 @@ export function DesignAIPanel({
   onAdopt,
   onMerge,
   onApplyCogSuggestion,
+  onApplyNarrative,
 }: DesignAIPanelProps) {
   // Section-keyed cache to prevent stale results on section switch
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -446,6 +460,107 @@ export function DesignAIPanel({
     );
   };
 
+  const renderOperationalApproachResults = () => {
+    if (!cachedResults) return null;
+
+    const drafts = (cachedResults.drafts || []) as NarrativeDraft[];
+    const completenessScore = (cachedResults.completenessScore as number) ?? 0;
+
+    // Collect synthesis notes from all drafts
+    const allNotes: string[] = [];
+    for (const draft of drafts) {
+      for (const note of draft.synthesisNotes ?? []) {
+        if (!allNotes.includes(note)) allNotes.push(note);
+      }
+    }
+
+    const visibleDrafts = drafts.filter((_, i) => !dismissed.has(i));
+    const allDismissed = drafts.length > 0 && visibleDrafts.length === 0;
+
+    return (
+      <div>
+        {/* Design Completeness Score */}
+        <ScoreBar label="Design Completeness" score={completenessScore} />
+
+        {/* Synthesis Notes */}
+        {allNotes.length > 0 && (
+          <div className="mb-3">
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">
+              Synthesis Notes ({allNotes.length})
+            </p>
+            {allNotes.map((note, i) => (
+              <div
+                key={`note-${i}`}
+                className="p-2 mb-1 rounded text-xs bg-blue-900/20 border-l-2 border-blue-500 text-blue-300"
+              >
+                {note}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Narrative Drafts */}
+        {drafts.map((draft, index) =>
+          dismissed.has(index) ? null : (
+            <div key={`draft-${index}`} className="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3">
+              {/* Header */}
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border bg-purple-500/20 text-purple-400 border-purple-500/40">
+                  Draft {index + 1}
+                </span>
+                <span className={`text-xs font-medium ml-auto ${confidenceLabel(draft.confidence).color}`}>
+                  {confidenceLabel(draft.confidence).text} ({Math.round(draft.confidence * 100)}%)
+                </span>
+              </div>
+
+              {/* Sections Preview */}
+              {(draft.sections ?? []).map((section, sIdx) => (
+                <div key={`section-${sIdx}`} className="mb-2">
+                  <p className="text-xs font-medium text-gray-300 mb-0.5">{section.heading}</p>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    {section.content.length > 100
+                      ? section.content.slice(0, 100) + '...'
+                      : section.content}
+                  </p>
+                </div>
+              ))}
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-700">
+                {onApplyNarrative && (
+                  <button
+                    onClick={() => onApplyNarrative(draft.narrative)}
+                    className="px-3 py-1 text-xs font-medium rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                  >
+                    Apply
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDismiss(index)}
+                  className="px-3 py-1 text-xs font-medium rounded text-red-400 hover:text-red-300 transition-colors ml-auto"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )
+        )}
+
+        {allDismissed && (
+          <div className="text-xs text-gray-500 text-center mt-4">
+            All drafts dismissed. Click Analyze again for fresh results.
+          </div>
+        )}
+
+        {drafts.length === 0 && (
+          <div className="text-xs text-gray-500 text-center mt-4">
+            No narrative drafts generated. Add more design data and try again.
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="relative w-80 shrink-0 bg-gray-900 border-l border-gray-700 flex flex-col overflow-hidden">
       {toggleButton}
@@ -509,10 +624,14 @@ export function DesignAIPanel({
         {/* Lines of Effort Gap Results */}
         {activeSection === 'lines-of-effort' && renderLoeGapResults()}
 
+        {/* Operational Approach Results */}
+        {activeSection === 'operational-approach' && renderOperationalApproachResults()}
+
         {/* Unsupported section fallback */}
         {activeSection !== 'problem-framing' &&
           activeSection !== 'cog-analysis' &&
           activeSection !== 'lines-of-effort' &&
+          activeSection !== 'operational-approach' &&
           cachedResults && (
             <div className="text-xs text-gray-500 text-center mt-8">
               Analysis results available for {sectionLabel}.

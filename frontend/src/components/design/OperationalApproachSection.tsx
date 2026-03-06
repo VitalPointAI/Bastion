@@ -13,6 +13,7 @@ import type {
   OperationalDesign,
   CoGNode,
 } from '../../lib/design-service.ts';
+import { DesignAIPanel } from './DesignAIPanel.tsx';
 
 interface OperationalApproachSectionProps {
   problemSetId: string;
@@ -61,6 +62,7 @@ export function OperationalApproachSection({
   const [handoffState, setHandoffState] = useState<HandoffState>('idle');
   const [handoffTimestamp, setHandoffTimestamp] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -220,6 +222,10 @@ export function OperationalApproachSection({
     updateApproach((prev) => ({ ...prev, narrative: value }));
   };
 
+  const handleApplyNarrative = useCallback((narrative: string) => {
+    updateApproach((prev) => ({ ...prev, narrative }));
+  }, [updateApproach]);
+
   // ─── Available phases (from LOEs or operationalApproach) ──────────────────
 
   const availablePhases = approach.phases.length > 0
@@ -275,7 +281,8 @@ export function OperationalApproachSection({
   const cvLinkCount = countCVLinks(designData.linesOfEffort ?? []);
 
   return (
-    <div className="space-y-6">
+    <div className="flex gap-0">
+      <div className="flex-1 min-w-0 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -284,11 +291,13 @@ export function OperationalApproachSection({
             Synthesize problem framing, CoG analysis, and lines of effort into a coherent operational approach.
           </p>
         </div>
-        {saveStatus !== 'idle' && (
-          <span className="text-xs text-gray-500">
-            {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {saveStatus !== 'idle' && (
+            <span className="text-xs text-gray-500">
+              {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ─── Summary Cards Row ─────────────────────────────────────────────── */}
@@ -558,6 +567,17 @@ export function OperationalApproachSection({
               : 'Push to Plan Tab'}
         </button>
       </div>
+      </div>
+
+      {/* AI Panel */}
+      <DesignAIPanel
+        problemSetId={problemSetId}
+        activeSection="operational-approach"
+        sectionData={{ ...approach, designData }}
+        isOpen={aiPanelOpen}
+        onToggle={() => setAiPanelOpen(!aiPanelOpen)}
+        onApplyNarrative={handleApplyNarrative}
+      />
     </div>
   );
 }
