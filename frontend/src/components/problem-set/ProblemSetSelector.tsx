@@ -69,6 +69,7 @@ export function ProblemSetSelector() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showChildWizard, setShowChildWizard] = useState(false);
 
   // Derive root problem set ID for OrgTree -- prefer strategic echelon, fallback to first
   const rootProblemSetId = useMemo((): string | null => {
@@ -245,8 +246,29 @@ export function ProblemSetSelector() {
                   Enter Problem Set
                 </button>
 
-                {/* Delete — creator only */}
-                {detail && userDID && detail.createdBy === userDID && (
+                {/* Create child — strategic/operational can have children */}
+                {(selectedMembership.echelon === 'strategic' || selectedMembership.echelon === 'operational') && (
+                  <button
+                    onClick={() => setShowChildWizard(true)}
+                    className="w-full mt-2 py-2 rounded border border-blue-800 text-blue-400 hover:bg-blue-900/30 text-xs font-medium transition-colors"
+                  >
+                    Create {selectedMembership.echelon === 'strategic' ? 'Operational' : 'Tactical'} Sub-Problem Set
+                  </button>
+                )}
+
+                {showChildWizard && (
+                  <CreateProblemSetWizard
+                    parentProblemSetId={selectedMembership.problemSetId}
+                    onClose={() => setShowChildWizard(false)}
+                    onCreated={(id) => {
+                      setShowChildWizard(false);
+                      void refreshMemberships().then(() => setActiveProblemSet(id));
+                    }}
+                  />
+                )}
+
+                {/* Delete — commander or creator */}
+                {detail && userDID && (detail.createdBy === userDID || selectedMembership.role === 'commander') && (
                   <div className="mt-3 pt-3 border-t border-gray-700">
                     {!deleteConfirm ? (
                       <button
