@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   problemSetService,
   type ProblemSetMemberDetail,
@@ -305,6 +306,18 @@ export function MemberDirectory({ problemSetId }: MemberDirectoryProps) {
 
   return (
     <div className="space-y-4">
+      {/* Manage members link for commanders */}
+      {isCommander && (
+        <div className="flex justify-end">
+          <Link
+            to={`/problem-set/${problemSetId}/members`}
+            className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            Manage Members &rarr;
+          </Link>
+        </div>
+      )}
+
       {/* Compartment filtering notice for non-commanders */}
       {!isCommander && myCompartmentIds.length > 0 && (
         <div className="text-xs text-yellow-400/80 bg-yellow-900/20 border border-yellow-800/50 rounded px-3 py-2">
