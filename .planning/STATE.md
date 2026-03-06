@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 24 — Doctrinal Tab Restructure (executing)
+**Current focus:** Phase 25 — Operational Design Workspace (executing)
 
 ## Current Position
 
-Phase: 24 of 40 (Doctrinal Tab Restructure) — COMPLETE
-Plan: 3 of 3 in current phase — all plans complete (01, 02, 03)
-Status: Phase 24 complete — 6 JP 5-0 doctrinal tabs wired, old tabs deleted, backend config updated
-Last activity: 2026-03-06 - Completed 24-02 (tab container rewiring, notification remapping, old tab deletion)
+Phase: 25 of 40 (Operational Design Workspace) — IN PROGRESS
+Plan: 1 of N in current phase — 25-01 complete
+Status: Phase 25 started — foundation types, backend store/API, Design tab shell with sidebar navigation and overview dashboard
+Last activity: 2026-03-06 - Completed 25-01 (backend foundation, frontend Design tab shell)
 
-Progress: █████████████████████████ 232 plans complete
+Progress: █████████████████████████ 233 plans complete
 
 ## Performance Metrics
 
@@ -1237,6 +1237,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-06
-Stopped at: Completed 24-02-PLAN.md — Tab container rewiring with 6 doctrinal tabs, old tab deletion
+Stopped at: Completed 25-01-PLAN.md — Backend operational design foundation and frontend Design tab shell
 Resume file: None
-Next action: Phase 24 complete — all 3 plans done, proceed to next phase
+Next action: Continue Phase 25 — execute 25-02-PLAN.md (Problem Framing section)

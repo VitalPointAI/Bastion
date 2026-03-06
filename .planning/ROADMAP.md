@@ -1189,7 +1189,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 22. Training/Operational Global Mode | 6/6 | Complete   | 2026-03-06 |
 | 23. Problem Set Model & Rename | 9/10 | In Progress|  |
 | 24. Doctrinal Tab Restructure | 3/3 | Complete    | 2026-03-06 |
-| 25. Operational Design Workspace | 0/TBD | Not started | - |
+| 25. Operational Design Workspace | 1/5 | In Progress | - |
 | 26. Strategic Environment & Inheritance | 0/TBD | Not started | - |
 | 27. Resource Registry & DID Plugin | 0/TBD | Not started | - |
 | 28. Embedded DAO Governance | 0/TBD | Not started | - |
