@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
-import { workspaceStore } from '../graph/workspace/store.js';
-import { WorkspaceInputSchema, type WorkspaceType } from '../graph/workspace/types.js';
-import { aggregationService } from '../graph/workspace/aggregation-service.js';
+import { graphProblemSetStore } from '../graph/problem-set/store.js';
+import { GraphProblemSetInputSchema, type GraphProblemSetCategory } from '../graph/problem-set/types.js';
+import { graphProblemSetAggregationService } from '../graph/problem-set/aggregation-service.js';
 import { actorStore } from '../graph/raft/actor-store.js';
 import { relationshipStore } from '../graph/raft/relationship-store.js';
 import { tensionStore } from '../graph/raft/tension-store.js';
@@ -35,15 +35,15 @@ function getQueryString(value: unknown): string | undefined {
 // List workspaces
 router.get('/workspaces', async (req: Request, res: Response) => {
   try {
-    const type = getQueryString(req.query.type) as WorkspaceType | undefined;
+    const type = getQueryString(req.query.type) as GraphProblemSetCategory | undefined;
     const parentId = getQueryString(req.query.parentId);
     const classification = getQueryString(req.query.classification);
-    const workspaces = await workspaceStore.listWorkspaces({
+    const problemSets = await graphProblemSetStore.listProblemSets({
       type,
       parentId,
       classification,
     });
-    res.json({ workspaces });
+    res.json({ problemSets });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
@@ -52,10 +52,10 @@ router.get('/workspaces', async (req: Request, res: Response) => {
 // Create workspace
 router.post('/workspaces', async (req: Request, res: Response) => {
   try {
-    const input = WorkspaceInputSchema.parse(req.body);
+    const input = GraphProblemSetInputSchema.parse(req.body);
     const createdBy = (req.headers['x-did'] as string) || 'anonymous';
-    const workspace = await workspaceStore.createWorkspace(input, createdBy);
-    res.status(201).json(workspace);
+    const problemSet = await graphProblemSetStore.createProblemSet(input, createdBy);
+    res.status(201).json(problemSet);
   } catch (error) {
     res.status(400).json({ error: String(error) });
   }
@@ -64,24 +64,24 @@ router.post('/workspaces', async (req: Request, res: Response) => {
 // Get workspace with context
 router.get('/workspaces/:id', async (req: Request, res: Response) => {
   try {
-    const workspaceId = req.params.id as string;
-    const workspace = await aggregationService.getWorkspaceWithContext(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: 'Workspace not found' });
+    const problemSetId = req.params.id as string;
+    const problemSet = await graphProblemSetAggregationService.getProblemSetWithContext(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
     }
-    res.json(workspace);
+    res.json(problemSet);
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
 });
 
-// Update workspace
+// Update problem set
 router.put('/workspaces/:id', async (req: Request, res: Response) => {
   try {
-    const workspaceId = req.params.id as string;
-    const updated = await workspaceStore.updateWorkspace(workspaceId, req.body);
+    const problemSetId = req.params.id as string;
+    const updated = await graphProblemSetStore.updateProblemSet(problemSetId, req.body);
     if (!updated) {
-      return res.status(404).json({ error: 'Workspace not found' });
+      return res.status(404).json({ error: 'Problem set not found' });
     }
     res.json({ success: true });
   } catch (error) {
@@ -89,13 +89,13 @@ router.put('/workspaces/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Delete workspace
+// Delete problem set
 router.delete('/workspaces/:id', async (req: Request, res: Response) => {
   try {
-    const workspaceId = req.params.id as string;
-    const deleted = await workspaceStore.deleteWorkspace(workspaceId);
+    const problemSetId = req.params.id as string;
+    const deleted = await graphProblemSetStore.deleteProblemSet(problemSetId);
     if (!deleted) {
-      return res.status(404).json({ error: 'Workspace not found' });
+      return res.status(404).json({ error: 'Problem set not found' });
     }
     res.json({ success: true });
   } catch (error) {
@@ -107,18 +107,18 @@ router.delete('/workspaces/:id', async (req: Request, res: Response) => {
 router.get('/master-view', async (req: Request, res: Response) => {
   try {
     const classification = getQueryString(req.query.classification) as 'UNCLASSIFIED' | 'SECRET' | 'TOPSECRET' | undefined;
-    const view = await aggregationService.getMasterView(classification);
+    const view = await graphProblemSetAggregationService.getMasterView(classification);
     res.json(view);
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
 });
 
-// Get workspace tree
+// Get problem set tree
 router.get('/workspaces/:id/tree', async (req: Request, res: Response) => {
   try {
-    const workspaceId = req.params.id as string;
-    const tree = await aggregationService.getWorkspaceTree(workspaceId);
+    const problemSetId = req.params.id as string;
+    const tree = await graphProblemSetAggregationService.getProblemSetTree(problemSetId);
     res.json({ tree });
   } catch (error) {
     res.status(500).json({ error: String(error) });
