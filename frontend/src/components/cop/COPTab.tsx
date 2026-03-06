@@ -382,8 +382,8 @@ export function COPTab({ problemSetId }: COPTabProps) {
     <div className="flex flex-1 min-h-0 relative" style={{ height: '100%' }}>
       {/* Main map area */}
       <div className="flex-1 min-w-0 relative flex flex-col">
-        {/* Perspective toggle — top left corner */}
-        <div className="absolute top-3 left-3 z-1000">
+        {/* Perspective toggle — top left, below Leaflet zoom controls */}
+        <div className="absolute top-20 left-3 z-1000">
           <COPPerspectiveToggle
             currentPerspective={currentPerspective}
             onPerspectiveChange={setCurrentPerspective}

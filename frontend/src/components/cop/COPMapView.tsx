@@ -125,7 +125,7 @@ export function COPMapView({
       {!loading && layers.length === 0 && (
         <div className="cop-map-empty">
           <h3>No COP Layers</h3>
-          <p>No published or promoted layers found for this workspace.</p>
+          <p>No published or promoted layers found for this problem set.</p>
         </div>
       )}
 
@@ -179,7 +179,7 @@ function LayerContent({ layer, opacity, perspective, currentPhase, onEntityClick
   return (
     <>
       {/* Military symbols */}
-      {spec.symbols
+      {(spec.symbols ?? [])
         .filter((s) => matchesPerspective(s, perspective))
         .map((symbol) => {
           // Use movement path position if filtering by phase
@@ -217,7 +217,7 @@ function LayerContent({ layer, opacity, perspective, currentPhase, onEntityClick
         })}
 
       {/* Control measures (polylines, polygons) */}
-      {spec.controlMeasures
+      {(spec.controlMeasures ?? [])
         .filter((cm) => isInPhase(cm, currentPhase))
         .map((cm) => {
           const positions = cm.points.map(toLatLng);
@@ -259,7 +259,7 @@ function LayerContent({ layer, opacity, perspective, currentPhase, onEntityClick
         })}
 
       {/* Custom annotations (LLM-generated SVG in shadow DOM) */}
-      {spec.customAnnotations.map((annotation) => (
+      {(spec.customAnnotations ?? []).map((annotation) => (
         <AnnotationOverlay
           key={`${layer.id}-ann-${annotation.id}`}
           annotation={annotation}

@@ -211,6 +211,21 @@ export function ProblemSetTabContainer() {
     );
   }
 
+  // If finished loading and user has no memberships at all, show empty state
+  if (!loading && memberships.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-64 p-8 text-center">
+        <h3 className="text-lg font-semibold text-gray-200 mb-2">No Problem Sets</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          You don't have any problem set memberships yet.
+        </p>
+        <p className="text-xs text-gray-600">
+          Return to the home page to create or join a problem set.
+        </p>
+      </div>
+    );
+  }
+
   const isMember = memberships.some((m) => m.problemSetId === resolvedId);
 
   if (resolvedId && !loading && memberships.length > 0 && !isMember) {

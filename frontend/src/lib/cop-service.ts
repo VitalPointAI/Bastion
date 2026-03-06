@@ -241,7 +241,7 @@ class COPService {
   async triggerGeneration(problemSetId: string, sectionId: string): Promise<COPLayer> {
     return this.fetch<COPLayer>('/api/cop/agents/trigger', {
       method: 'POST',
-      body: JSON.stringify({ workspaceId: problemSetId, sectionId }),
+      body: JSON.stringify({ workspaceId: problemSetId, sectionId, triggeredBy: 'manual' }),
     });
   }
 
