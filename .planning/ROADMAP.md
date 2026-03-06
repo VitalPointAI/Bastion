@@ -641,7 +641,7 @@ Neutral / Partner
 
 Plans:
 - [x] 25.2-01-PLAN.md -- Data model, ContainerStore, API routes, frontend types & service
-- [ ] 25.2-02-PLAN.md -- Container browser UI (category filter, container cards, breadcrumb nav, inline CRUD)
+- [x] 25.2-02-PLAN.md -- Container browser UI (category filter, container cards, breadcrumb nav, inline CRUD)
 - [ ] 25.2-03-PLAN.md -- Upload integration with container selector & AI recommendations
 - [ ] 25.2-04-PLAN.md -- Drag-and-drop assignment & container-level agent standing orders
 
