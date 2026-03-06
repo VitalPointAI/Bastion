@@ -282,11 +282,11 @@ export function ProblemSetProvider({ children }: { children: ReactNode }) {
 
         // Map activity types to tab names for badge counts
         const activityTypeToTab: Record<string, string> = {
-          escalation_received: 'escalations',
-          directive_received: 'directives',
-          data_change: 'intelligence',
-          subscription_approved: 'intelligence',
-          subscription_rejected: 'intelligence',
+          escalation_received: 'direct',
+          directive_received: 'direct',
+          data_change: 'understand',
+          subscription_approved: 'understand',
+          subscription_rejected: 'understand',
         };
 
         const crossProblemSetActivityTypes = new Set(Object.keys(activityTypeToTab));
@@ -313,7 +313,7 @@ export function ProblemSetProvider({ children }: { children: ReactNode }) {
             updates.push({
               sourceProblemSetId: meta.sourceProblemSetId ?? '',
               sourceProblemSetName: meta.sourceProblemSetName ?? 'Unknown Problem Set',
-              tab: activityTypeToTab[activity.activityType] ?? 'intelligence',
+              tab: activityTypeToTab[activity.activityType] ?? 'understand',
               updateType: activity.activityType === 'escalation_received' ? 'escalation' : 'new_directive',
               summary: meta.summary ?? activity.activityType,
               actionableItemId: meta.itemId ?? activity.id,

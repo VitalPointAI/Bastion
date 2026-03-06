@@ -11,6 +11,7 @@
  * - Notifies parent of enabled layer set via onLayersChange callback
  *
  * Phase 20 Plan 07: Cross-problem set layer visibility toggles
+ * Phase 24 Plan 02: Updated data type labels/colors for doctrinal tab names
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -31,14 +32,12 @@ interface CrossProblemSetLayerToggleProps {
 
 /** Map raw data type keys to human-readable badge labels */
 const DATA_TYPE_LABELS: Record<string, string> = {
-  decide: 'Decide',
-  monitor: 'Monitor',
+  understand: 'Understand',
   design: 'Design',
-  campaign: 'Campaign',
-  train: 'Train',
-  intelligence: 'Intel',
-  escalations: 'Escalations',
-  directives: 'Directives',
+  plan: 'Plan',
+  direct: 'Direct',
+  cop: 'COP',
+  assess: 'Assess',
 };
 
 function dataTypeLabel(type: string): string {
@@ -47,14 +46,12 @@ function dataTypeLabel(type: string): string {
 
 /** Badge color per data type */
 const DATA_TYPE_COLORS: Record<string, string> = {
-  decide: 'bg-purple-700 text-purple-100',
-  monitor: 'bg-blue-700 text-blue-100',
+  understand: 'bg-blue-700 text-blue-100',
   design: 'bg-teal-700 text-teal-100',
-  campaign: 'bg-orange-700 text-orange-100',
-  train: 'bg-green-700 text-green-100',
-  intelligence: 'bg-cyan-700 text-cyan-100',
-  escalations: 'bg-red-700 text-red-100',
-  directives: 'bg-yellow-700 text-yellow-100',
+  plan: 'bg-orange-700 text-orange-100',
+  direct: 'bg-purple-700 text-purple-100',
+  cop: 'bg-green-700 text-green-100',
+  assess: 'bg-yellow-700 text-yellow-100',
 };
 
 function dataTypeColor(type: string): string {

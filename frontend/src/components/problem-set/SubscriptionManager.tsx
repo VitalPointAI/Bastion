@@ -22,7 +22,7 @@ interface SubscriptionManagerProps {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DATA_TYPE_OPTIONS = ['decide', 'design', 'campaign', 'monitor', 'train'];
+const DATA_TYPE_OPTIONS = ['understand', 'design', 'plan', 'direct', 'cop', 'assess'];
 
 const COMMANDER_ROLES = ['commander', 'xo', 'Commander', 'XO'];
 

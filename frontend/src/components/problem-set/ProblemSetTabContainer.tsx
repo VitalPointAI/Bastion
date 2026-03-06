@@ -166,7 +166,7 @@ export function ProblemSetTabContainer() {
     return PROBLEM_SET_TABS.filter(t => tabs.includes(t));
   }, [panelConfig, userRoleInActive]);
 
-  // Resolve active tab from URL or default to 'overview'
+  // Resolve active tab from URL or default to 'cop'
   const resolvedTab = useMemo((): ProblemSetTab => {
     if (urlTab && PROBLEM_SET_TABS.includes(urlTab as ProblemSetTab)) {
       const t = urlTab as ProblemSetTab;
