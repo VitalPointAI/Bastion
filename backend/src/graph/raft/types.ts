@@ -36,6 +36,8 @@ export interface Actor {
   workspaceId?: string;
   /** Document IDs this actor was extracted from */
   sourceDocumentIds: string[];
+  /** Container IDs this actor is scoped to */
+  containerIds: string[];
   /** When this record was created */
   createdAt: Date;
   /** When this record was last updated */
@@ -83,6 +85,8 @@ export interface Relationship {
   workspaceId?: string;
   /** Document IDs this relationship was extracted from */
   sourceDocumentIds: string[];
+  /** Container IDs this relationship is scoped to */
+  containerIds: string[];
   /** When this record was created */
   createdAt: Date;
   /** When this record was last updated */
@@ -178,6 +182,8 @@ export interface Tension {
   workspaceId?: string;
   /** Document IDs this tension was extracted from */
   sourceDocumentIds: string[];
+  /** Container IDs this tension is scoped to */
+  containerIds: string[];
   /** When this record was created */
   createdAt: Date;
   /** When this record was last updated */
@@ -196,6 +202,7 @@ export interface ActorInput {
   attributes?: Record<string, unknown>;
   workspaceId?: string;
   sourceDocumentIds?: string[];
+  containerIds?: string[];
 }
 
 /** Input for creating a new Relationship */
@@ -210,6 +217,7 @@ export interface RelationshipInput {
   temporalEnd?: Date;
   workspaceId?: string;
   sourceDocumentIds?: string[];
+  containerIds?: string[];
 }
 
 /** Input for creating a new ActorFunction */
@@ -234,4 +242,5 @@ export interface TensionInput {
   linkedObjectiveIds?: string[];
   workspaceId?: string;
   sourceDocumentIds?: string[];
+  containerIds?: string[];
 }

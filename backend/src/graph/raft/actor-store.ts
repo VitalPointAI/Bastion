@@ -22,6 +22,7 @@ function recordToActor(record: Record<string, unknown>): Actor {
     attributes: record.attributes ? JSON.parse(record.attributes as string) : {},
     workspaceId: record.workspaceId as string | undefined,
     sourceDocumentIds: record.sourceDocumentIds as string[] || [],
+    containerIds: record.containerIds as string[] || [],
     createdAt: new Date(record.createdAt as string),
     updatedAt: new Date(record.updatedAt as string),
   };
@@ -47,6 +48,7 @@ export class ActorStore {
         attributes: $attributes,
         workspaceId: $workspaceId,
         sourceDocumentIds: $sourceDocumentIds,
+        containerIds: $containerIds,
         createdAt: $createdAt,
         updatedAt: $updatedAt
       })
@@ -59,6 +61,7 @@ export class ActorStore {
       attributes: JSON.stringify(input.attributes || {}),
       workspaceId: input.workspaceId || null,
       sourceDocumentIds: input.sourceDocumentIds || [],
+      containerIds: input.containerIds || [],
       createdAt: now,
       updatedAt: now,
     });
@@ -176,6 +179,11 @@ export class ActorStore {
     if (updates.sourceDocumentIds !== undefined) {
       setClauses.push('a.sourceDocumentIds = $sourceDocumentIds');
       params.sourceDocumentIds = updates.sourceDocumentIds;
+    }
+
+    if (updates.containerIds !== undefined) {
+      setClauses.push('a.containerIds = $containerIds');
+      params.containerIds = updates.containerIds;
     }
 
     const result = await executeWriteQuery(`

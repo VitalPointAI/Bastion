@@ -50,6 +50,8 @@ export interface GraphBuildOptions {
   runEntityResolution?: boolean;
   /** Source document ID for provenance tracking */
   sourceDocumentId: string;
+  /** Container IDs for container-scoped graph tagging */
+  containerIds?: string[];
 }
 
 // ============================================================================
@@ -244,6 +246,7 @@ export class GraphBuilder {
               attributes: actor.role ? { role: actor.role } : {},
               workspaceId: options.workspaceId,
               sourceDocumentIds: [options.sourceDocumentId],
+              containerIds: options.containerIds || [],
             });
             actorNameToId.set(actor.name.toLowerCase(), newActor.id);
 
@@ -275,6 +278,7 @@ export class GraphBuilder {
               evidence: [objectiveId],
               workspaceId: options.workspaceId,
               sourceDocumentIds: [options.sourceDocumentId],
+              containerIds: options.containerIds || [],
             });
             result.relationshipsCreated++;
           } else {
@@ -305,6 +309,7 @@ export class GraphBuilder {
               linkedObjectiveIds: [objectiveId],
               workspaceId: options.workspaceId,
               sourceDocumentIds: [options.sourceDocumentId],
+              containerIds: options.containerIds || [],
             });
             result.tensionsCreated++;
           } else {

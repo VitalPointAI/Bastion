@@ -32,6 +32,7 @@ function recordToRelationship(
     temporalEnd: relProps.temporalEnd ? new Date(relProps.temporalEnd as string) : undefined,
     workspaceId: relProps.workspaceId as string | undefined,
     sourceDocumentIds: relProps.sourceDocumentIds as string[] || [],
+    containerIds: relProps.containerIds as string[] || [],
     createdAt: new Date(relProps.createdAt as string),
     updatedAt: new Date(relProps.updatedAt as string),
   };
@@ -64,6 +65,7 @@ export class RelationshipStore {
         temporalEnd: $temporalEnd,
         workspaceId: $workspaceId,
         sourceDocumentIds: $sourceDocumentIds,
+        containerIds: $containerIds,
         createdAt: $createdAt,
         updatedAt: $updatedAt
       }]->(target)
@@ -80,6 +82,7 @@ export class RelationshipStore {
       temporalEnd: input.temporalEnd?.toISOString() || null,
       workspaceId: input.workspaceId || null,
       sourceDocumentIds: input.sourceDocumentIds || [],
+      containerIds: input.containerIds || [],
       createdAt: now,
       updatedAt: now,
     });
@@ -233,6 +236,11 @@ export class RelationshipStore {
     if (updates.sourceDocumentIds !== undefined) {
       setClauses.push('r.sourceDocumentIds = $sourceDocumentIds');
       params.sourceDocumentIds = updates.sourceDocumentIds;
+    }
+
+    if (updates.containerIds !== undefined) {
+      setClauses.push('r.containerIds = $containerIds');
+      params.containerIds = updates.containerIds;
     }
 
     const result = await executeWriteQuery(`

@@ -25,6 +25,7 @@ function recordToTension(record: Record<string, unknown>): Tension {
     linkedObjectiveIds: record.linkedObjectiveIds as string[] || [],
     workspaceId: record.workspaceId as string | undefined,
     sourceDocumentIds: record.sourceDocumentIds as string[] || [],
+    containerIds: record.containerIds as string[] || [],
     createdAt: new Date(record.createdAt as string),
     updatedAt: new Date(record.updatedAt as string),
   };
@@ -54,6 +55,7 @@ export class TensionStore {
         linkedObjectiveIds: $linkedObjectiveIds,
         workspaceId: $workspaceId,
         sourceDocumentIds: $sourceDocumentIds,
+        containerIds: $containerIds,
         createdAt: $createdAt,
         updatedAt: $updatedAt
       })
@@ -69,6 +71,7 @@ export class TensionStore {
       linkedObjectiveIds: input.linkedObjectiveIds || [],
       workspaceId: input.workspaceId || null,
       sourceDocumentIds: input.sourceDocumentIds || [],
+      containerIds: input.containerIds || [],
       createdAt: now,
       updatedAt: now,
     });
@@ -222,6 +225,11 @@ export class TensionStore {
     if (updates.sourceDocumentIds !== undefined) {
       setClauses.push('t.sourceDocumentIds = $sourceDocumentIds');
       params.sourceDocumentIds = updates.sourceDocumentIds;
+    }
+
+    if (updates.containerIds !== undefined) {
+      setClauses.push('t.containerIds = $containerIds');
+      params.containerIds = updates.containerIds;
     }
 
     const result = await executeWriteQuery(`
