@@ -40,6 +40,7 @@ import { getTracer } from './orchestration/observability.js';
 import { getCheckpointManager } from './orchestration/human-checkpoints.js';
 import { seedLangGraphAgents } from './agents/langgraph/agent-seeder.js';
 import { closeNeo4jDriver } from './graph/index.js';
+import { stopSharedBoss } from './lib/database.js';
 import { initRAFTSchema } from './graph/raft/schema-init.js';
 import { copRouter, initCOP } from './cop/index.js';
 
@@ -279,6 +280,13 @@ server.listen(port, async () => {
 // Graceful shutdown handlers
 async function gracefulShutdown(signal: string) {
   console.log(`\nReceived ${signal}, starting graceful shutdown...`);
+
+  // Stop shared pg-boss
+  try {
+    await stopSharedBoss();
+  } catch (error) {
+    console.error('Error stopping pg-boss:', error);
+  }
 
   // Close Neo4j driver
   try {

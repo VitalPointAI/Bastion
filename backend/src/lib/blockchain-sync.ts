@@ -1,5 +1,5 @@
 import { PgBoss } from 'pg-boss';
-import { getPool } from './database.js';
+import { getPool, getSharedBoss } from './database.js';
 import { pollBlockchainEvents } from './near-events.js';
 
 let boss: PgBoss;
@@ -96,22 +96,12 @@ async function syncBlockchainEventsWorker() {
  * Start all sync workers
  */
 export async function startSyncWorkers() {
-  // Initialize pg-boss with DATABASE_URL
-  if (!boss) {
-    const dbUrl = process.env.DATABASE_URL;
-    if (!dbUrl) {
-      console.error('⚠️  DATABASE_URL not set, skipping sync workers');
-      return;
-    }
-    boss = new PgBoss(dbUrl);
+  if (!process.env.DATABASE_URL) {
+    console.error('⚠️  DATABASE_URL not set, skipping sync workers');
+    return;
   }
 
-  // Handle pg-boss errors gracefully - don't crash the server
-  boss.on('error', (error) => {
-    console.error('⚠️  pg-boss error (non-fatal):', error.message);
-  });
-
-  await boss.start();
+  boss = await getSharedBoss();
 
   // In pg-boss v12+, queues must be explicitly created before use
   await boss.createQueue('process-outbox');
@@ -136,7 +126,7 @@ export async function startSyncWorkers() {
  * Graceful shutdown
  */
 export async function stopSyncWorkers() {
-  await boss.stop();
+  // Boss lifecycle managed by shared singleton in database.ts
   console.log('✓ Blockchain sync workers stopped');
 }
 

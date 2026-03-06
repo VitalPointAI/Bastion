@@ -7,6 +7,7 @@
 
 import { randomUUID } from 'crypto';
 import { PgBoss } from 'pg-boss';
+import { getSharedBoss } from '../lib/database.js';
 import { getAgentRegistry } from '../agents/registry.js';
 import { getTeamRegistry } from '../agents/team-registry.js';
 import { getMessageStore, MessageStore } from './message-store.js';
@@ -89,16 +90,10 @@ export class MessageBus {
     await this.store.initialize();
     await this.filter.initialize();
 
-    // Initialize pg-boss
+    // Initialize pg-boss via shared singleton
     const dbUrl = process.env.DATABASE_URL;
     if (dbUrl) {
-      this.boss = new PgBoss(dbUrl);
-
-      this.boss.on('error', (error) => {
-        console.error('[MessageBus] pg-boss error:', error.message);
-      });
-
-      await this.boss.start();
+      this.boss = await getSharedBoss();
 
       // Create queues
       await this.boss.createQueue('message-delivery');
@@ -710,10 +705,7 @@ export class MessageBus {
     }
     this.pendingRequests.clear();
 
-    // Stop pg-boss
-    if (this.boss) {
-      await this.boss.stop();
-    }
+    // Boss lifecycle managed by shared singleton in database.ts
 
     console.log('[MessageBus] Shutdown complete');
   }

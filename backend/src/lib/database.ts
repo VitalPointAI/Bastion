@@ -1,7 +1,40 @@
 import { Pool } from 'pg';
+import { PgBoss } from 'pg-boss';
 
 // Lazy-initialized connection pool (created after dotenv.config runs)
 let pool: Pool;
+
+// Shared PgBoss singleton to avoid duplicate type creation on startup
+let bossInstance: PgBoss | null = null;
+let bossStartPromise: Promise<PgBoss> | null = null;
+
+export async function getSharedBoss(): Promise<PgBoss> {
+  if (bossInstance) return bossInstance;
+  if (bossStartPromise) return bossStartPromise;
+
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) throw new Error('DATABASE_URL is required for pg-boss');
+
+  bossStartPromise = (async () => {
+    const boss = new PgBoss(dbUrl);
+    boss.on('error', (error) => {
+      console.error('[pg-boss] error:', error.message);
+    });
+    await boss.start();
+    bossInstance = boss;
+    return boss;
+  })();
+
+  return bossStartPromise;
+}
+
+export async function stopSharedBoss(): Promise<void> {
+  if (bossInstance) {
+    await bossInstance.stop();
+    bossInstance = null;
+    bossStartPromise = null;
+  }
+}
 
 function getPool(): Pool {
   if (!pool) {

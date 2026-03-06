@@ -11,7 +11,7 @@
 
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
-import { getPool } from '../lib/database.js';
+import { getPool, getSharedBoss } from '../lib/database.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import { withExerciseBarrier } from '../exercise/information-barrier.js';
 import { DocumentParser } from '../strategic/ingestion/document-parser.js';
@@ -131,9 +131,7 @@ async function getAIWorkspace(): Promise<{
     _aiContextStore,
   );
 
-  const { PgBoss } = await import('pg-boss');
-  const boss = new PgBoss(dbUrl);
-  await boss.start();
+  const boss = await getSharedBoss();
   _triggerRouter = new TriggerRouter(boss, _aiRunStore);
   await registerAIRoleWorker(boss, _agentRunner, _aiRunStore);
 
