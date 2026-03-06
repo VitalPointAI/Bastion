@@ -65,11 +65,18 @@ export function COPEntityTooltip({
   const [loading, setLoading] = useState(true);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [prevEntityId, setPrevEntityId] = useState(symbol.entityId);
+
+  // Reset loading state when entityId changes (React-endorsed setState during render)
+  if (symbol.entityId !== prevEntityId) {
+    setPrevEntityId(symbol.entityId);
+    setLoading(true);
+    setLinkages([]);
+  }
 
   // Fetch entity linkages on mount
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     copService.getEntityLinkages(symbol.entityId).then((result) => {
       if (!cancelled) {
         setLinkages(result.slice(0, 5));

@@ -78,9 +78,9 @@ export function COPAgentActivity({ workspaceId }: COPAgentActivityProps) {
   }, [workspaceId]);
 
   useEffect(() => {
-    fetchActivity();
+    const initial = setTimeout(fetchActivity, 0);
     const timer = setInterval(fetchActivity, POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
+    return () => { clearTimeout(initial); clearInterval(timer); };
   }, [fetchActivity]);
 
   // ─── Auto-scroll ────────────────────────────────────────────────────────

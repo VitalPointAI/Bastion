@@ -156,6 +156,39 @@ export function COPTab({ workspaceId }: COPTabProps) {
       });
   }, [workspaceId]);
 
+  // ─── Layer callbacks (existing) ───────────────────────────────────────────
+
+  const handleLayersLoaded = useCallback((loadedLayers: COPLayer[]) => {
+    setLayers(loadedLayers);
+
+    // Initialize visibility (all visible by default)
+    setLayerVisibility((prev) => {
+      const next = { ...prev };
+      for (const layer of loadedLayers) {
+        if (next[layer.id] === undefined) {
+          next[layer.id] = true;
+        }
+      }
+      return next;
+    });
+
+    // Initialize opacity (100% by default)
+    setLayerOpacity((prev) => {
+      const next = { ...prev };
+      for (const layer of loadedLayers) {
+        if (next[layer.id] === undefined) {
+          next[layer.id] = 100;
+        }
+      }
+      return next;
+    });
+
+    // Auto-select first layer if none selected
+    if (loadedLayers.length > 0) {
+      setSelectedLayerId((prev) => prev ?? loadedLayers[0].id);
+    }
+  }, []);
+
   // ─── Auto-trigger COP generation on first visit ─────────────────────────
 
   useEffect(() => {
@@ -200,39 +233,6 @@ export function COPTab({ workspaceId }: COPTabProps) {
       setGenerating(false);
     }
   }
-
-  // ─── Layer callbacks (existing) ───────────────────────────────────────────
-
-  const handleLayersLoaded = useCallback((loadedLayers: COPLayer[]) => {
-    setLayers(loadedLayers);
-
-    // Initialize visibility (all visible by default)
-    setLayerVisibility((prev) => {
-      const next = { ...prev };
-      for (const layer of loadedLayers) {
-        if (next[layer.id] === undefined) {
-          next[layer.id] = true;
-        }
-      }
-      return next;
-    });
-
-    // Initialize opacity (100% by default)
-    setLayerOpacity((prev) => {
-      const next = { ...prev };
-      for (const layer of loadedLayers) {
-        if (next[layer.id] === undefined) {
-          next[layer.id] = 100;
-        }
-      }
-      return next;
-    });
-
-    // Auto-select first layer if none selected
-    if (loadedLayers.length > 0) {
-      setSelectedLayerId((prev) => prev ?? loadedLayers[0].id);
-    }
-  }, []);
 
   function handleVisibilityChange(layerId: string, visible: boolean) {
     setLayerVisibility((prev) => ({ ...prev, [layerId]: visible }));
@@ -383,7 +383,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
       {/* Main map area */}
       <div className="flex-1 min-w-0 relative flex flex-col">
         {/* Perspective toggle — top left corner */}
-        <div className="absolute top-3 left-3 z-[1000]">
+        <div className="absolute top-3 left-3 z-1000">
           <COPPerspectiveToggle
             currentPerspective={currentPerspective}
             onPerspectiveChange={setCurrentPerspective}
@@ -394,7 +394,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="absolute top-3 right-3 z-[1000] px-3 py-1.5 text-xs font-medium bg-gray-800/90 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors"
+            className="absolute top-3 right-3 z-1000 px-3 py-1.5 text-xs font-medium bg-gray-800/90 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors"
             aria-label="Show sidebar"
           >
             Sidebar
@@ -414,7 +414,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
 
           {/* Empty state: Generate COP Layers button */}
           {layers.length === 0 && !generating && (
-            <div className="absolute inset-0 flex items-center justify-center z-[500] pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-center z-500 pointer-events-none">
               <div className="pointer-events-auto bg-gray-800/95 border border-gray-600 rounded-xl p-8 text-center max-w-md">
                 <h3 className="text-lg font-semibold text-white mb-2">No COP Layers</h3>
                 <p className="text-sm text-gray-400 mb-4">
@@ -432,7 +432,7 @@ export function COPTab({ workspaceId }: COPTabProps) {
 
           {/* Generating spinner overlay */}
           {generating && (
-            <div className="absolute inset-0 flex items-center justify-center z-[500] pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-center z-500 pointer-events-none">
               <div className="pointer-events-auto bg-gray-800/95 border border-blue-500/50 rounded-xl p-8 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-3" />
                 <p className="text-sm text-blue-300">Generating COP layers...</p>

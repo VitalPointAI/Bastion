@@ -115,7 +115,7 @@ export function WorkspaceDashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             {activityCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold text-white bg-blue-500 rounded-full px-1">
+              <span className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 flex items-center justify-center text-[10px] font-bold text-white bg-blue-500 rounded-full px-1">
                 {activityCount > 99 ? '99+' : activityCount}
               </span>
             )}
@@ -132,7 +132,7 @@ export function WorkspaceDashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {decisionCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold text-white bg-amber-500 rounded-full px-1">
+              <span className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 flex items-center justify-center text-[10px] font-bold text-white bg-amber-500 rounded-full px-1">
                 {decisionCount > 99 ? '99+' : decisionCount}
               </span>
             )}
@@ -156,7 +156,7 @@ export function WorkspaceDashboard() {
                 >
                   Activity
                   {activityCount > 0 && (
-                    <span className="ml-1 inline-flex items-center justify-center min-w-[16px] h-4 text-[10px] font-bold bg-blue-500 text-white rounded-full px-1">
+                    <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 text-[10px] font-bold bg-blue-500 text-white rounded-full px-1">
                       {activityCount}
                     </span>
                   )}
@@ -172,7 +172,7 @@ export function WorkspaceDashboard() {
                 >
                   Decisions
                   {decisionCount > 0 && (
-                    <span className="ml-1 inline-flex items-center justify-center min-w-[16px] h-4 text-[10px] font-bold bg-amber-500 text-white rounded-full px-1">
+                    <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 text-[10px] font-bold bg-amber-500 text-white rounded-full px-1">
                       {decisionCount}
                     </span>
                   )}

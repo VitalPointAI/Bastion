@@ -199,7 +199,7 @@ export function CrossWorkspaceLayerToggle({
                     enabledLayers.has(sub.publisherWorkspaceId)
                       ? 'bg-blue-600'
                       : 'bg-gray-600',
-                    'after:content-[""] after:absolute after:top-[2px] after:start-[2px]',
+                    'after:content-[""] after:absolute after:top-0.5 after:inset-s-0.5',
                     'after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all',
                     enabledLayers.has(sub.publisherWorkspaceId)
                       ? 'after:translate-x-4'

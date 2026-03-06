@@ -58,11 +58,18 @@ export function COPEntityDetail({
 }: COPEntityDetailProps) {
   const [linkages, setLinkages] = useState<EntityLinkage[]>([]);
   const [loadingLinkages, setLoadingLinkages] = useState(true);
+  const [prevEntityId, setPrevEntityId] = useState(symbol.entityId);
+
+  // Reset loading state when entityId changes (React-endorsed setState during render)
+  if (symbol.entityId !== prevEntityId) {
+    setPrevEntityId(symbol.entityId);
+    setLoadingLinkages(true);
+    setLinkages([]);
+  }
 
   // Fetch linkages
   useEffect(() => {
     let cancelled = false;
-    setLoadingLinkages(true);
     copService.getEntityLinkages(symbol.entityId).then((result) => {
       if (!cancelled) {
         setLinkages(result);
