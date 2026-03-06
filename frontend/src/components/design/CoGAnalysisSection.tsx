@@ -84,7 +84,7 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
             <div className="w-2 h-2 rounded-full bg-blue-500" />
             <h3 className="text-sm font-medium text-blue-400">Friendly Forces</h3>
           </div>
-          <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3 min-h-[300px]">
+          <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3 min-h-75">
             <CoGTree
               tree={cogAnalysis.friendly}
               side="friendly"
@@ -103,7 +103,7 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
             <div className="w-2 h-2 rounded-full bg-red-500" />
             <h3 className="text-sm font-medium text-red-400">Adversary Forces</h3>
           </div>
-          <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3 min-h-[300px]">
+          <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3 min-h-75">
             <CoGTree
               tree={cogAnalysis.adversary}
               side="adversary"

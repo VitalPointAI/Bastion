@@ -36,13 +36,6 @@ function buildSidebarItems(status?: OperationalDesign['status']): SidebarItem[] 
   ];
 }
 
-const SECTION_PLAN_MAP: Record<string, string> = {
-  'problem-framing': 'Plan 02',
-  'cog-analysis': 'Plan 03',
-  'lines-of-effort': 'Plan 04',
-  'operational-approach': 'Plan 05',
-};
-
 export function DesignTab({ problemSetId }: DesignTabProps) {
   const [selectedView, setSelectedView] = useState<DesignView>('overview');
   const [designData, setDesignData] = useState<OperationalDesign | null>(null);

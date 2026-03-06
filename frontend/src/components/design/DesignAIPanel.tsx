@@ -97,14 +97,14 @@ export function DesignAIPanel({
 
   if (!isOpen) {
     return (
-      <div className="relative w-0 flex-shrink-0">
+      <div className="relative w-0 shrink-0">
         {toggleButton}
       </div>
     );
   }
 
   return (
-    <div className="relative w-80 flex-shrink-0 bg-gray-900 border-l border-gray-700 flex flex-col overflow-hidden">
+    <div className="relative w-80 shrink-0 bg-gray-900 border-l border-gray-700 flex flex-col overflow-hidden">
       {toggleButton}
 
       {/* Header */}
