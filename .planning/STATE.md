@@ -8,7 +8,7 @@ progress:
   total_phases: 40
   completed_phases: 25
   total_plans: 225
-  completed_plans: 238
+  completed_plans: 239
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 25.1 of 40 (Training Package Upload from Scenario Integration)
-Plan: 1 of 2 in current phase — 25.1-01 complete
-Status: Wizard source choice, scenario picker, from-scenario endpoint fixed, auto-navigation to Understand tab
-Last activity: 2026-03-06 - Completed 25.1-01 (Scenario-to-Problem-Set Wizard Integration)
+Plan: 2 of 2 in current phase — 25.1-02 complete (phase complete)
+Status: Training Packages view with mode-gated sidebar, classification banner, inline document preview
+Last activity: 2026-03-06 - Completed 25.1-02 (Training Packages View & Document Preview)
 
-Progress: █████████████████████████ 238 plans complete
+Progress: █████████████████████████ 239 plans complete
 
 ## Performance Metrics
 
@@ -131,6 +131,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 25.1 Plan 02 (Training Packages View & Document Preview):**
+- Mode-gated sidebar items compute items array inside component body using useMode() spread pattern
+- extractedData.summary and extractedData.rawExtraction used for preview content (ScenarioDocument stores extraction in generic Record)
+- Entity extraction scans rawExtraction for multiple possible keys (entities, keyEntities, actors, countries, organizations)
 
 **Phase 25 Plan 05 (Operational Approach & Design Handoff):**
 - Handoff payload persisted in DB (handoff_payload JSONB column) rather than transient fetch
@@ -1249,7 +1254,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-06
+Last session: 2026-03-06 - Completed 25.1-02 (Training Packages View & Document Preview)
 Stopped at: Completed 25-01-PLAN.md — Backend operational design foundation and frontend Design tab shell
 Resume file: None
 Next action: Continue Phase 25 — execute 25-02-PLAN.md (Problem Framing section)

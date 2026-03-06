@@ -45,7 +45,7 @@ None
 - [ ] **Phase 23: Problem Set Model & Workspace Rename** - Rename workspaces to problem sets throughout the application, add echelon-awareness (strategic/operational/tactical), update data model, UI, routes, and API (INSERTED)
 - [x] **Phase 24: Doctrinal Tab Restructure** - Replace COP/Decide/Design/Campaign/Train/Overview tabs with doctrinal lifecycle flow: Understand/Design/Plan/Direct/COP/Assess — reorganize existing components into doctrinally-aligned tabs (INSERTED)
 - [x] **Phase 25: Operational Design Workspace** - Build the Design tab with problem framing, center of gravity analysis, lines of effort/operation, operational approach development, and AI-assisted design recommendations (INSERTED, completed 2026-03-06)
-- [ ] **Phase 25.1: Training Package Upload & From-Scenario Integration** - Wire ScenarioPackageUpload wizard into Understand tab; add "Create from Scenario" option to CreateProblemSetWizard; integrate multi-file drag-drop upload with tag inference (team/phase/doc type) and async LLM extraction; surface upload status and extracted documents in Understand tab (INSERTED)
+- [x] **Phase 25.1: Training Package Upload & From-Scenario Integration** - Wire ScenarioPackageUpload wizard into Understand tab; add "Create from Scenario" option to CreateProblemSetWizard; integrate multi-file drag-drop upload with tag inference (team/phase/doc type) and async LLM extraction; surface upload status and extracted documents in Understand tab (INSERTED, completed 2026-03-06)
 - [ ] **Phase 25.2: Strategic Document Containers & Actor Categorization** - Organize strategic documents into nation/group containers (e.g., United States, China, NATO) with actor categories (ally, adversary, neutral, partner); persistent container-based organization for building strategic environments over time; feeds into Phase 26 strategic environment inheritance (INSERTED)
 - [ ] **Phase 26: Strategic Environment & Inheritance** - Strategic-level problem set as context provider with inheritance mechanism for directives, policy, and intelligence; update propagation to child problem sets (INSERTED)
 - [ ] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED)
@@ -608,7 +608,7 @@ Plans:
 
 Plans:
 - [x] 25.1-01-PLAN.md -- Backend fixes + Wizard Step 0 (from-scenario endpoint, scenario picker, pre-fill)
-- [ ] 25.1-02-PLAN.md -- Training Packages sidebar in UnderstandTab (mode-gated, doc preview)
+- [x] 25.1-02-PLAN.md -- Training Packages sidebar in UnderstandTab (mode-gated, doc preview)
 
 ### Phase 25.2: Strategic Document Containers & Actor Categorization (INSERTED)
 
