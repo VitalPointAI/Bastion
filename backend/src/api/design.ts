@@ -87,4 +87,42 @@ router.get('/:problemSetId/handoff', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/design/:problemSetId/analyze
+ * AI analysis for a design section. Body = { section: string, context: object }.
+ */
+router.post('/:problemSetId/analyze', async (req: Request, res: Response) => {
+  try {
+    const section = req.body.section as string;
+    const context = req.body.context as Record<string, unknown>;
+
+    if (!section) {
+      res.status(400).json({ error: 'Missing required field: section' });
+      return;
+    }
+
+    if (section === 'problem-framing') {
+      const { generateFramings } = await import('../../agents/problem-framing.js');
+      const output = await generateFramings(
+        (context?.currentState as string) || '',
+        (context?.problemStatement as string) || '',
+        (context?.desiredEndState as string) || '',
+        (context?.assumptions as string[]) || []
+      );
+      // Return default + alternative framings as a flat array
+      const framings = [output.defaultFraming, ...output.alternativeFramings];
+      res.json({ framings });
+    } else if (section === 'cog-analysis' || section === 'lines-of-effort') {
+      // Stub for future plans
+      res.json({ suggestions: [] });
+    } else {
+      res.status(400).json({ error: `Unsupported analysis section: ${section}` });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[design] POST /${req.params.problemSetId}/analyze failed:`, message);
+    res.status(500).json({ error: message });
+  }
+});
+
 export default router;

@@ -135,6 +135,19 @@ export const designService = {
   },
 
   /**
+   * Request AI analysis for a design section.
+   */
+  async analyzeSection(problemSetId: string, section: string, context: object): Promise<any> {
+    const res = await fetch(`${API_BASE}/api/design/${problemSetId}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ section, context }),
+    });
+    if (!res.ok) throw new Error(`Failed to analyze section ${section}: ${res.statusText}`);
+    return res.json();
+  },
+
+  /**
    * Get design-to-plan handoff payload.
    */
   async getHandoff(problemSetId: string): Promise<DesignHandoffPayload> {
