@@ -2,22 +2,21 @@
  * ProblemSetTabContainer
  *
  * Shell component that renders problem set tabs. Horizontal tab bar
- * (COP | Decide | Design | Campaign | Overview) with role-gated
- * visibility, URL-driven tab state, and a collapsible OrgTreeSidebar overlay.
+ * (Understand | Design | Plan | Direct | COP | Assess) with URL-driven
+ * tab state and a collapsible OrgTreeSidebar overlay.
  *
  * Tab content:
+ * - Understand: renders UnderstandTab (JP 5-0 Step 1 — mission analysis, intel, OE)
+ * - Design: renders DesignTab (JP 5-0 Operational Art — approaches, CoGs, objectives)
+ * - Plan: renders PlanTab (JP 5-0 Step 3 — COA development, war-gaming, comparison)
+ * - Direct: renders DirectTab (JP 5-0 execution — orders, directives, governance)
  * - COP: renders unified COPTab (map + AI layers + actor graph + activity feeds)
- * - Decide: renders DecideTab scoped to problem set daoId
- * - Design: renders DesignTab (problem set-scoped strategic docs)
- * - Campaign: renders CampaignTab (problem set-scoped missions)
- * - Overview: renders ProblemSetDashboard (simple dashboard alternative)
+ * - Assess: renders AssessTab (JP 5-0 continuous — MOEs, MOPs, reframing)
  *
- * Role gating: each role sees only its allowed tabs (see DEFAULT_TAB_ACCESS).
- * Unknown roles fall back to ['cop', 'overview'].
+ * All roles see all 6 tabs (Phase 24 decision — can restore per-role gating later).
+ * Unknown roles fall back to ['cop', 'assess'].
  *
- * Phase 21 Plan 12: Monitor tab removed; COP replaces it as the primary/default tab.
- * Phase 22 Plan 03: Train tab removed; training is now a global mode, not a problem set tab.
- *
+ * Phase 24 Plan 02: Doctrinal tab restructure — 6 JP 5-0-aligned tabs replace old structure.
  * Phase 20 Plan 04: Wired all tab panels with problemSetId prop injection
  * Phase 20 Plan 07: Tab notification badges + TabNotificationDropdown + CrossProblemSetLayerToggle
  * Phase 20 Plan 09: Backend-driven panel config with client-side fallback
@@ -28,49 +27,63 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProblemSet } from '../../context/ProblemSetContext';
 import { useUser } from '../../context/UserContext';
 import { problemSetService } from '../../lib/problem-set-service';
-import { ProblemSetDashboard } from './ProblemSetDashboard';
 import { OrgTreeSidebar } from './OrgTreeSidebar';
 import { NotificationBadge } from './NotificationBadge';
 import { TabNotificationDropdown } from './TabNotificationDropdown';
 import { ProblemSetInviteModal } from './ProblemSetInviteModal';
-import { DecideTab } from '../tabs/DecideTab';
+import { UnderstandTab } from '../tabs/UnderstandTab';
 import { DesignTab } from '../tabs/DesignTab';
-import { CampaignTab } from '../tabs/CampaignTab';
+import { PlanTab } from '../tabs/PlanTab';
+import { DirectTab } from '../tabs/DirectTab';
 import { COPTab } from '../cop/COPTab';
+import { AssessTab } from '../tabs/AssessTab';
 import { copService } from '../../lib/cop-service';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
-const PROBLEM_SET_TABS = ['cop', 'decide', 'design', 'campaign', 'overview'] as const;
+const PROBLEM_SET_TABS = ['understand', 'design', 'plan', 'direct', 'cop', 'assess'] as const;
 type ProblemSetTab = typeof PROBLEM_SET_TABS[number];
 
 const TAB_LABELS: Record<ProblemSetTab, string> = {
-  cop: 'COP',
-  decide: 'Decide',
+  understand: 'Understand',
   design: 'Design',
-  campaign: 'Campaign',
-  overview: 'Overview',
+  plan: 'Plan',
+  direct: 'Direct',
+  cop: 'COP',
+  assess: 'Assess',
 };
 
 // ─── Role → tab access map ────────────────────────────────────────────────────
 
+// All roles see all tabs (Phase 24 decision — can restore per-role gating later)
+const ALL_TABS_LIST: ProblemSetTab[] = ['understand', 'design', 'plan', 'direct', 'cop', 'assess'];
 const DEFAULT_TAB_ACCESS: Record<string, ProblemSetTab[]> = {
-  commander: ['cop', 'decide', 'design', 'campaign', 'overview'],
-  xo: ['cop', 'decide', 'design', 'campaign', 'overview'],
-  team_lead: ['cop', 'decide', 'campaign', 'overview'],
-  s2: ['cop', 'decide', 'overview'],
-  s3: ['cop', 'decide', 'campaign', 'overview'],
-  s4: ['cop', 'campaign', 'overview'],
-  s5: ['cop', 'decide', 'design', 'campaign', 'overview'],
-  s6: ['cop', 'overview'],
-  s7: ['cop', 'overview'],
-  s8: ['cop', 'overview'],
-  s9: ['cop', 'overview'],
-  member: ['cop', 'overview'],
-  observer: ['cop', 'overview'],
+  commander: ALL_TABS_LIST,
+  xo: ALL_TABS_LIST,
+  team_lead: ALL_TABS_LIST,
+  s2: ALL_TABS_LIST,
+  s3: ALL_TABS_LIST,
+  s4: ALL_TABS_LIST,
+  s5: ALL_TABS_LIST,
+  s6: ALL_TABS_LIST,
+  s7: ALL_TABS_LIST,
+  s8: ALL_TABS_LIST,
+  s9: ALL_TABS_LIST,
+  member: ALL_TABS_LIST,
+  observer: ALL_TABS_LIST,
 };
 
-const FALLBACK_TABS: ProblemSetTab[] = ['cop', 'overview'];
+const FALLBACK_TABS: ProblemSetTab[] = ['cop', 'assess'];
+
+// ─── Old URL redirects ────────────────────────────────────────────────────────
+
+const OLD_TAB_REDIRECTS: Record<string, ProblemSetTab> = {
+  'decide': 'direct',
+  'campaign': 'plan',
+  'overview': 'cop',
+  'monitor': 'cop',
+  'train': 'cop',
+};
 
 // ─── ProblemSetTabContainer ────────────────────────────────────────────────────
 
@@ -170,10 +183,11 @@ export function ProblemSetTabContainer() {
     setActiveTab(resolvedTab);
   }, [resolvedTab]);
 
-  // Redirect stale/invalid tab URLs (e.g., /problem-set/:id/train) to default tab
+  // Redirect old/invalid tab URLs to appropriate new tabs
   useEffect(() => {
     if (urlTab && !PROBLEM_SET_TABS.includes(urlTab as ProblemSetTab) && problemSetId) {
-      navigate(`/problem-set/${problemSetId}/cop`, { replace: true });
+      const redirect = OLD_TAB_REDIRECTS[urlTab] ?? 'cop';
+      navigate(`/problem-set/${problemSetId}/${redirect}`, { replace: true });
     }
   }, [urlTab, problemSetId, navigate]);
 
@@ -243,22 +257,22 @@ export function ProblemSetTabContainer() {
   // ─── Tab content ──────────────────────────────────────────────────────────
 
   function renderTabContent() {
-    if (activeTab === 'overview') {
-      return <ProblemSetDashboard />;
+    switch (activeTab) {
+      case 'understand':
+        return <UnderstandTab problemSetId={displayId} />;
+      case 'design':
+        return <DesignTab problemSetId={displayId} />;
+      case 'plan':
+        return <PlanTab problemSetId={displayId} daoId={activeProblemSet?.daoId} />;
+      case 'direct':
+        return <DirectTab problemSetId={displayId} daoId={activeProblemSet?.daoId} />;
+      case 'cop':
+        return <COPTab problemSetId={displayId} />;
+      case 'assess':
+        return <AssessTab problemSetId={displayId} />;
+      default:
+        return null;
     }
-    if (activeTab === 'decide') {
-      return <DecideTab problemSetId={displayId} daoId={activeProblemSet?.daoId} />;
-    }
-    if (activeTab === 'design') {
-      return <DesignTab problemSetId={displayId} />;
-    }
-    if (activeTab === 'campaign') {
-      return <CampaignTab problemSetId={displayId} />;
-    }
-    if (activeTab === 'cop') {
-      return <COPTab problemSetId={displayId} />;
-    }
-    return null;
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
