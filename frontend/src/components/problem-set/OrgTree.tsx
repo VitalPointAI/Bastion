@@ -37,12 +37,12 @@ interface OrgTreeProps {
   onNavigate?: (problemSetId: string) => void;
 }
 
-// ─── Color map for problem set type badges ────────────────────────────────────────
+// ─── Echelon symbols (doctrinal military unit size indicators) ───────────────
 
-const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
-  Organization: { bg: '#1e40af', text: '#dbeafe' },  // blue-800 / blue-100
-  Unit:          { bg: '#7c3aed', text: '#ede9fe' },  // violet-700 / violet-100
-  Team:          { bg: '#065f46', text: '#d1fae5' },  // emerald-800 / emerald-100
+const ECHELON_SYMBOLS: Record<string, string> = {
+  strategic: 'XX',    // Division-level indicator
+  operational: 'III', // Regiment-level indicator
+  tactical: 'II',     // Battalion-level indicator
 };
 
 const HIGHLIGHT_COLOR = '#d97706'; // amber-600 — current user's problem set border
@@ -87,10 +87,9 @@ function buildCustomNode(
   return function CustomNode({ nodeDatum, toggleNode }: CustomNodeElementProps) {
     const nd = nodeDatum as OrgTreeNode;
     const isCurrentUser = nd._problemSetId === currentUserProblemSetId;
-    const typeColors = TYPE_COLORS[nd._echelon ?? ''] ?? { bg: '#374151', text: '#f3f4f6' };
 
     const nodeWidth = 160;
-    const nodeHeight = 80;
+    const nodeHeight = 72;
     const rx = 8; // border radius
 
     const bgColor = isCurrentUser ? '#1c1917' : '#111827'; // stone-900 vs gray-900
@@ -112,6 +111,16 @@ function buildCustomNode(
         role="button"
         aria-label={`Problem Set: ${nd.name}`}
       >
+        {/* Echelon symbol above node */}
+        <text
+          x={0}
+          y={-nodeHeight / 2 - 6}
+          textAnchor="middle"
+          style={{ fontSize: '11px', fontWeight: 700, fill: '#94a3b8', fontFamily: 'monospace' }}
+        >
+          {ECHELON_SYMBOLS[nd._echelon ?? ''] ?? ''}
+        </text>
+
         {/* Node background */}
         <rect
           x={-nodeWidth / 2}
@@ -128,7 +137,7 @@ function buildCustomNode(
         {/* Problem Set name */}
         <text
           x={0}
-          y={-nodeHeight / 2 + 18}
+          y={-nodeHeight / 2 + 20}
           textAnchor="middle"
           style={{
             fontSize: '12px',
@@ -137,42 +146,21 @@ function buildCustomNode(
             dominantBaseline: 'middle',
           }}
         >
-          {nd.name.length > 18 ? `${nd.name.slice(0, 16)}…` : nd.name}
-        </text>
-
-        {/* Type badge */}
-        <rect
-          x={-nodeWidth / 2 + 8}
-          y={-nodeHeight / 2 + 30}
-          width={nd._echelon ? nd._echelon.length * 7 + 8 : 50}
-          height={16}
-          rx={4}
-          fill={typeColors.bg}
-        />
-        <text
-          x={-nodeWidth / 2 + 12}
-          y={-nodeHeight / 2 + 38}
-          style={{
-            fontSize: '9px',
-            fill: typeColors.text,
-            dominantBaseline: 'middle',
-          }}
-        >
-          {nd._echelon ?? ''}
+          {nd.name.length > 18 ? `${nd.name.slice(0, 16)}...` : nd.name}
         </text>
 
         {/* Member count */}
         <text
-          x={nodeWidth / 2 - 8}
-          y={-nodeHeight / 2 + 38}
-          textAnchor="end"
+          x={0}
+          y={-nodeHeight / 2 + 40}
+          textAnchor="middle"
           style={{
             fontSize: '10px',
             fill: '#9ca3af',
             dominantBaseline: 'middle',
           }}
         >
-          {nd.attributes?.members ?? '0'} mbr
+          {nd.attributes?.members ?? '0'} members
         </text>
 
         {/* "YOU" indicator for current user's problem set */}
@@ -180,7 +168,7 @@ function buildCustomNode(
           <>
             <rect
               x={-nodeWidth / 2 + 8}
-              y={-nodeHeight / 2 + 52}
+              y={-nodeHeight / 2 + 50}
               width={30}
               height={14}
               rx={3}
@@ -188,7 +176,7 @@ function buildCustomNode(
             />
             <text
               x={-nodeWidth / 2 + 23}
-              y={-nodeHeight / 2 + 59}
+              y={-nodeHeight / 2 + 57}
               textAnchor="middle"
               style={{
                 fontSize: '9px',

@@ -17,9 +17,11 @@
  * Phase 23 Plan 07: Renamed from WorkspaceSelector to ProblemSetSelector.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProblemSet } from '../../context/ProblemSetContext';
+import { useUser } from '../../context/UserContext';
+import { problemSetService, type ProblemSetDetail } from '../../lib/problem-set-service';
 import { OrgTree } from './OrgTree';
 import { CreateProblemSetWizard } from './CreateProblemSetWizard';
 
@@ -42,14 +44,29 @@ function echelonBadge(echelon: string): string {
   }
 }
 
+const ECHELON_SYMBOLS: Record<string, string> = {
+  strategic: 'XX',
+  operational: 'III',
+  tactical: 'II',
+};
+
+const ECHELON_LABELS: Record<string, string> = {
+  strategic: 'Strategic',
+  operational: 'Operational',
+  tactical: 'Tactical',
+};
+
 // --- ProblemSetSelector -------------------------------------------------------
 
 export function ProblemSetSelector() {
   const navigate = useNavigate();
   const { memberships, loading } = useProblemSet();
+  const { userDID } = useUser();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
+  const [detail, setDetail] = useState<ProblemSetDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   // Derive root problem set ID for OrgTree -- prefer strategic echelon, fallback to first
   const rootProblemSetId = useMemo((): string | null => {
@@ -63,6 +80,21 @@ export function ProblemSetSelector() {
     () => (selectedId ? memberships.find((m) => m.problemSetId === selectedId) ?? null : null),
     [selectedId, memberships],
   );
+
+  // Fetch full detail when a node is selected
+  useEffect(() => {
+    if (!selectedId || !userDID) {
+      setDetail(null);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    problemSetService.getProblemSet(selectedId, userDID)
+      .then((d) => { if (!cancelled) setDetail(d); })
+      .catch(() => { if (!cancelled) setDetail(null); })
+      .finally(() => { if (!cancelled) setDetailLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedId, userDID]);
 
   // --- Loading state ---
 
@@ -135,18 +167,24 @@ export function ProblemSetSelector() {
         <main className="lg:col-span-2 p-6 flex flex-col">
           {selectedMembership ? (
             <div className="max-w-lg">
-              {/* Problem set identity */}
               <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+                {/* Header: name + echelon symbol + classification */}
                 <div className="flex items-start gap-4 mb-4">
+                  {/* Echelon military symbol */}
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gray-900 border border-gray-600 flex items-center justify-center">
+                    <span className="text-lg font-bold font-mono text-gray-300">
+                      {ECHELON_SYMBOLS[selectedMembership.echelon] ?? ''}
+                    </span>
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-bold text-white truncate mb-2">
+                    <h3 className="text-xl font-bold text-white truncate mb-1">
                       {selectedMembership.name}
                     </h3>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
                         className={`text-xs px-2 py-0.5 rounded border ${echelonBadge(selectedMembership.echelon)}`}
                       >
-                        {selectedMembership.echelon}
+                        {ECHELON_LABELS[selectedMembership.echelon] ?? selectedMembership.echelon}
                       </span>
                       <span
                         className={`text-xs font-mono px-2 py-0.5 rounded border ${classificationColor(selectedMembership.classification)}`}
@@ -157,31 +195,47 @@ export function ProblemSetSelector() {
                   </div>
                 </div>
 
-                {/* Meta info */}
-                <dl className="grid grid-cols-2 gap-3 text-sm mb-6">
-                  <div>
+                {/* Problem statement */}
+                <div className="mb-4 p-3 bg-gray-900/50 rounded border border-gray-700">
+                  <dt className="text-gray-500 text-xs uppercase tracking-wide mb-1">Problem Statement</dt>
+                  {detailLoading ? (
+                    <dd className="text-gray-500 text-sm italic">Loading...</dd>
+                  ) : detail?.problemStatement ? (
+                    <dd className="text-gray-200 text-sm leading-relaxed">{detail.problemStatement}</dd>
+                  ) : (
+                    <dd className="text-gray-600 text-sm italic">No problem statement defined</dd>
+                  )}
+                </div>
+
+                {/* Meta info grid */}
+                <dl className="grid grid-cols-3 gap-3 text-sm mb-6">
+                  <div className="bg-gray-900/30 rounded p-2 text-center">
                     <dt className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Members</dt>
-                    <dd className="text-gray-200">
-                      {'--'}
+                    <dd className="text-gray-200 font-semibold">
+                      {detail?.memberCount ?? '--'}
                     </dd>
                   </div>
-                  <div>
+                  <div className="bg-gray-900/30 rounded p-2 text-center">
                     <dt className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Your Role</dt>
-                    <dd className="text-gray-200 capitalize">{selectedMembership.role}</dd>
+                    <dd className="text-gray-200 capitalize font-semibold">{selectedMembership.role}</dd>
                   </div>
-                  {selectedMembership.daoRole && (
-                    <div>
-                      <dt className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">DAO Role</dt>
-                      <dd className="text-gray-200 capitalize">{selectedMembership.daoRole}</dd>
-                    </div>
-                  )}
-                  {selectedMembership.isPrimary && (
-                    <div>
-                      <dt className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Status</dt>
-                      <dd className="text-yellow-400 text-xs font-medium">Primary Problem Set</dd>
-                    </div>
-                  )}
+                  <div className="bg-gray-900/30 rounded p-2 text-center">
+                    <dt className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Status</dt>
+                    <dd className="text-gray-200 font-semibold">
+                      {selectedMembership.isPrimary ? (
+                        <span className="text-yellow-400">Primary</span>
+                      ) : (
+                        <span className="capitalize">{selectedMembership.status}</span>
+                      )}
+                    </dd>
+                  </div>
                 </dl>
+
+                {selectedMembership.daoRole && (
+                  <div className="text-xs text-gray-500 mb-4">
+                    DAO Role: <span className="text-gray-300 capitalize">{selectedMembership.daoRole}</span>
+                  </div>
+                )}
 
                 {/* CTA */}
                 <button
