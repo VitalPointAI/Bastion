@@ -648,8 +648,8 @@ Plans:
 ### Phase 25.3: AI Strategic Context & Knowledge Graph Integration (INSERTED)
 **Goal:** Wire subscribed strategic environment data and container-scoped knowledge graphs into AI agent context so agents have access to strategic documents and graph-derived knowledge during exercises
 **Depends on:** Phase 25.2 (containers provide organizational structure for documents and graph scoping)
-**Research:** TBD
-**Plans:** TBD
+**Research:** Complete (25.3-RESEARCH.md)
+**Plans:** 5 plans
 
 **Scope:**
 1. Subscription cache materializer — `materializeCache()` on `ProblemSetSubscriptionStore` to populate `problem_set_data_cache` from approved subscriptions
@@ -659,8 +659,12 @@ Plans:
 5. Strategic context preview — API endpoint + UI panel for users to inspect what AI agents know
 6. Context size management — ~8000 token cap with prioritization (graph summary > extracted_data > text_content)
 
+- [ ] 25.3-01-PLAN.md -- Subscription cache materializer (materializeCache + pg-boss + API)
+- [ ] 25.3-02-PLAN.md -- Container-scoped graph entity tagging and queries
 Plans:
-- [ ] TBD
+- [ ] 25.3-03-PLAN.md -- Graph summary service with centrality analysis and temporal boosting
+- [ ] 25.3-04-PLAN.md -- StrategicContextService and AI pipeline integration
+- [ ] 25.3-05-PLAN.md -- Strategic context preview UI in Understand tab
 
 ### Phase 26: Strategic Environment & Inheritance (INSERTED)
 **Goal:** Enable strategic-level problem sets to serve as context providers, with inheritance mechanisms that propagate directives, policy, intelligence, and strategic guidance to subordinate operational and tactical problem sets
