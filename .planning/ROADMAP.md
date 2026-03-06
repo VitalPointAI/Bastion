@@ -645,6 +645,23 @@ Plans:
 - [ ] 25.2-03-PLAN.md -- Upload integration with container selector & AI recommendations
 - [ ] 25.2-04-PLAN.md -- Drag-and-drop assignment & container-level agent standing orders
 
+### Phase 25.3: AI Strategic Context & Knowledge Graph Integration (INSERTED)
+**Goal:** Wire subscribed strategic environment data and container-scoped knowledge graphs into AI agent context so agents have access to strategic documents and graph-derived knowledge during exercises
+**Depends on:** Phase 25.2 (containers provide organizational structure for documents and graph scoping)
+**Research:** TBD
+**Plans:** TBD
+
+**Scope:**
+1. Subscription cache materializer — `materializeCache()` on `ProblemSetSubscriptionStore` to populate `problem_set_data_cache` from approved subscriptions
+2. Container-scoped RAFT graph construction — auto-trigger extraction when documents added/updated in containers, tag graph entities with `containerId`
+3. Graph summary generation — centrality analysis + key actor profiles per container sub-graph with temporal relevance boosting
+4. AI context assembly integration — `StrategicContextService` injected into `assembleContextNode()` via `StoreContext`, strategic docs + graph summaries bundled into `sharedContext`
+5. Strategic context preview — API endpoint + UI panel for users to inspect what AI agents know
+6. Context size management — ~8000 token cap with prioritization (graph summary > extracted_data > text_content)
+
+Plans:
+- [ ] TBD
+
 ### Phase 26: Strategic Environment & Inheritance (INSERTED)
 **Goal:** Enable strategic-level problem sets to serve as context providers, with inheritance mechanisms that propagate directives, policy, intelligence, and strategic guidance to subordinate operational and tactical problem sets
 **Depends on:** Phase 24, Phase 23
