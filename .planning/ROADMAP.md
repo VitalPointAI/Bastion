@@ -564,7 +564,7 @@ Plans:
 **Depends on:** Phase 24
 **Research:** Required
 **Research topics:** JP 5-0 Chapter III operational design methodology, center of gravity analysis frameworks (Strange's model, CG-CC-CR-CV), lines of effort vs lines of operation, operational approach visualization, decisive points, operational reach, culmination, AI-assisted problem framing patterns
-**Plans:** TBD
+**Plans:** 5 plans
 
 **Context:**
 Operational design is where the creative, iterative work happens before structured planning begins. Currently the Design tab is just document upload. This phase transforms it into the workspace where commanders and planners frame the problem, identify centers of gravity, define their operational approach, and establish lines of effort — all with AI assistance that can suggest frameworks, challenge assumptions, and identify gaps in the design.
@@ -579,7 +579,11 @@ Operational design is where the creative, iterative work happens before structur
 7. **Collaborative Design** — Real-time collaborative editing (Yjs) for design artifacts so multiple staff members can contribute simultaneously
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 25 to create plans)
+- [ ] 25-01-PLAN.md — Backend foundation, types, DesignTab shell with TabLayout sidebar and Overview dashboard
+- [ ] 25-02-PLAN.md — Problem Framing section with JP 5-0 fields and AI panel integration
+- [ ] 25-03-PLAN.md — CoG Analysis with interactive SVG tree diagrams (friendly + adversary)
+- [ ] 25-04-PLAN.md — Lines of Effort timeline with lanes, decisive points, and CoG linkages
+- [ ] 25-05-PLAN.md — Operational Approach synthesis, Design-to-Plan handoff, and end-to-end verification
 
 ### Phase 26: Strategic Environment & Inheritance (INSERTED)
 **Goal:** Enable strategic-level problem sets to serve as context providers, with inheritance mechanisms that propagate directives, policy, intelligence, and strategic guidance to subordinate operational and tactical problem sets
