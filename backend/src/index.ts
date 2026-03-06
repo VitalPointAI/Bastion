@@ -43,6 +43,8 @@ import { closeNeo4jDriver } from './graph/index.js';
 import { stopSharedBoss } from './lib/database.js';
 import { initRAFTSchema } from './graph/raft/schema-init.js';
 import { copRouter, initCOP } from './cop/index.js';
+import { strategicContextRouter } from './api/strategic-context.js';
+import { problemSetSubscriptionStore } from './problem-set/problem-set-subscription-store.js';
 
 dotenv.config();
 
@@ -179,6 +181,7 @@ app.use('/api/user-profile', userProfileRouter);
 app.use('/api/user-mode', userModeRouter);
 app.use('/api/design', designRouter);
 app.use('/api/cop', copRouter);
+app.use('/api/strategic-context', strategicContextRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -274,6 +277,21 @@ server.listen(port, async () => {
     console.log('AI workspace initialized');
   } catch (error) {
     console.error('Failed to initialize AI workspace:', error);
+  }
+
+  // Register strategic cache refresh pg-boss worker (Phase 25.3)
+  try {
+    const { getSharedBoss } = await import('./lib/database.js');
+    const boss = await getSharedBoss();
+    await boss.work('strategic-cache-refresh', async (jobs: unknown[]) => {
+      for (const job of jobs) {
+        const { publisherProblemSetId } = (job as { data: { publisherProblemSetId: string } }).data;
+        await problemSetSubscriptionStore.refreshCacheForPublisher(publisherProblemSetId);
+      }
+    });
+    console.log('Strategic cache refresh worker registered');
+  } catch (error) {
+    console.error('Failed to register strategic cache refresh worker:', error);
   }
 });
 
