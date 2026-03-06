@@ -833,7 +833,7 @@ router.post('/:id/scenario', requireAuth, async (req: Request, res: Response) =>
     const scenario = await scenarioStore.create({
       name: body.name,
       designation: body.designation,
-      exercisePhases: body.exercisePhases,
+      exercisePhases: body.exercisePhases ?? ['Competition', 'Crisis', 'Conflict Day 4', 'Conflict Day 10', 'Conflict Day 22', 'Negotiation'],
       enabledRoles: body.enabledRoles,
       createdBy: userDid,
     });
