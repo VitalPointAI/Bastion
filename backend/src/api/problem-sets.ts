@@ -24,10 +24,12 @@ import { signAndSubmitFunctionCall } from '../near/tx-signer.js';
 import { clearanceSufficient, validateEchelonHierarchy } from '../problem-set/types.js';
 import type { AppMode, Echelon, ProblemSetClassification } from '../problem-set/types.js';
 import { ScenarioStore } from '../exercise/scenario-store.js';
+import { PositionStore } from '../exercise/position-store.js';
 import { modeMiddleware } from '../middleware/mode-context.js';
 
 const DAO_CONTRACT_ID = process.env.DAO_CONTRACT_ID || 'dao-registry.testnet';
 const scenarioStore = new ScenarioStore();
+const positionStore = new PositionStore();
 
 const router = Router();
 
@@ -2036,6 +2038,177 @@ router.post('/:id/escalate', requireAuth, async (req: Request, res: Response) =>
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Escalate decision failed:', message);
+    handleError(res, error);
+  }
+});
+
+// ============================================================================
+// Exercise Position Endpoints (Quick Task 9)
+// ============================================================================
+
+const CreatePositionSchema = z.object({
+  side: z.enum(['blue', 'red', 'neutral', 'green']),
+  title: z.string().min(1).max(200),
+  duties: z.string().optional(),
+  sortOrder: z.number().int().optional(),
+  assignedTo: z.string().max(200).optional(),
+  phaseMappings: z.array(z.object({
+    exercisePhase: z.string().min(1).max(100),
+    title: z.string().min(1).max(200),
+    duties: z.string().optional(),
+  })).optional(),
+});
+
+const UpdatePositionSchema = z.object({
+  side: z.enum(['blue', 'red', 'neutral', 'green']).optional(),
+  title: z.string().min(1).max(200).optional(),
+  duties: z.string().optional(),
+  sortOrder: z.number().int().optional(),
+  assignedTo: z.string().max(200).nullable().optional(),
+});
+
+const PhaseMappingsSchema = z.object({
+  mappings: z.array(z.object({
+    exercisePhase: z.string().min(1).max(100),
+    title: z.string().min(1).max(200),
+    duties: z.string().optional(),
+  })),
+});
+
+const BulkCreatePositionsSchema = z.object({
+  positions: z.array(CreatePositionSchema),
+});
+
+/**
+ * GET /api/problem-sets/:id/positions - List all positions for a problem set
+ */
+router.get('/:id/positions', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.id as string;
+    const positions = await positionStore.findByProblemSet(problemSetId);
+    res.json({ positions });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List positions failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * POST /api/problem-sets/:id/positions - Create a new position
+ */
+router.post('/:id/positions', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.id as string;
+
+    let body: z.infer<typeof CreatePositionSchema>;
+    try {
+      body = CreatePositionSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    const position = await positionStore.create(problemSetId, body);
+    res.status(201).json({ position });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create position failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * PATCH /api/problem-sets/:id/positions/:positionId - Update a position
+ */
+router.patch('/:id/positions/:positionId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const positionId = req.params.positionId as string;
+
+    let body: z.infer<typeof UpdatePositionSchema>;
+    try {
+      body = UpdatePositionSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    const position = await positionStore.update(positionId, body);
+    res.json({ position });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update position failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * DELETE /api/problem-sets/:id/positions/:positionId - Delete a position
+ */
+router.delete('/:id/positions/:positionId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const positionId = req.params.positionId as string;
+    await positionStore.delete(positionId);
+    res.status(204).send();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete position failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * PUT /api/problem-sets/:id/positions/:positionId/phase-mappings - Replace phase mappings
+ */
+router.put('/:id/positions/:positionId/phase-mappings', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const positionId = req.params.positionId as string;
+
+    let body: z.infer<typeof PhaseMappingsSchema>;
+    try {
+      body = PhaseMappingsSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    const mappings = await positionStore.setPhaseMappings(positionId, body.mappings);
+    res.json({ mappings });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Set phase mappings failed:', message);
+    handleError(res, error);
+  }
+});
+
+/**
+ * POST /api/problem-sets/:id/positions/bulk - Bulk create positions (for template loading)
+ */
+router.post('/:id/positions/bulk', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.id as string;
+
+    let body: z.infer<typeof BulkCreatePositionsSchema>;
+    try {
+      body = BulkCreatePositionsSchema.parse(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation failed', details: (validationError as z.ZodError).issues });
+      }
+      throw validationError;
+    }
+
+    const positions = await positionStore.bulkCreate(problemSetId, body.positions);
+    res.status(201).json({ positions });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Bulk create positions failed:', message);
     handleError(res, error);
   }
 });
