@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-06T00:16:52.442Z"
+last_updated: "2026-03-06T00:18:32.815Z"
 progress:
   total_phases: 35
   completed_phases: 22
   total_plans: 207
-  completed_plans: 215
+  completed_plans: 216
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 22 Plan 02 complete — Frontend mode toggle UI with context, banner, and modal
+**Current focus:** Phase 22 Plan 03 complete — Workspace mode integration and Train tab removal
 
 ## Current Position
 
 Phase: 22 of 40 (Training/Operational Global Mode)
-Plan: 2 of 6 in current phase — 22-02 complete
-Status: Phase 22 in progress — frontend mode toggle UI complete
-Last activity: 2026-03-06 - Completed 22-02: ModeContext, ExerciseBanner, ModeConfirmationModal, toggle in UserStatusBar
+Plan: 3 of 6 in current phase — 22-03 complete
+Status: Phase 22 in progress — workspace mode integration complete
+Last activity: 2026-03-06 - Completed 22-03: Mode-aware WorkspaceContext, filtered workspace list, Train tab removed
 
-Progress: █████████████████████████ 214 plans complete
+Progress: █████████████████████████ 215 plans complete
 
 ## Performance Metrics
 
@@ -102,6 +102,7 @@ Progress: ███████████████████████�
 | Phase 21 P10 | 4min | 3 tasks | 6 files |
 | Phase 21 P11 | 5min | 2 tasks | 2 files |
 | Phase 22 P02 | 3 | 2 tasks | 5 files |
+| Phase 22 P03 | 4min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -512,6 +513,7 @@ Recent decisions affecting current work:
 - [Phase 21]: Agent activity polls at 5s interval balancing real-time feel with server load
 - [Phase 22]: ModeProvider renders ExerciseBanner and ModeConfirmationModal internally for encapsulation
 - [Phase 22]: Mode toggle in UserStatusBar with amber (training) and green (operational) visual states
+- [Phase 22]: Active workspace cleared on mode change when not in new mode's workspace list
 
 ### Roadmap Evolution
 
