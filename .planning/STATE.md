@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-06T06:59:34Z"
+last_updated: "2026-03-06T07:12:18Z"
 progress:
   total_phases: 37
   completed_phases: 24
@@ -19,23 +19,23 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 25 — Operational Design Workspace (executing)
+**Current focus:** Phase 25 — Operational Design Workspace (COMPLETE)
 
 ## Current Position
 
-Phase: 25 of 40 (Operational Design Workspace) — IN PROGRESS
-Plan: 4 of N in current phase — 25-04 complete
-Status: LOE timeline with horizontal lanes, phase columns, decisive points, and CoG vulnerability linking
-Last activity: 2026-03-06 - Completed 25-04 (LOE Timeline)
+Phase: 25 of 40 (Operational Design Workspace) — COMPLETE
+Plan: 5 of 5 in current phase — 25-05 complete
+Status: Operational approach synthesis with Design-to-Plan handoff; full Design tab complete
+Last activity: 2026-03-06 - Completed 25-05 (Operational Approach & Design Handoff)
 
-Progress: █████████████████████████ 234 plans complete
+Progress: █████████████████████████ 235 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 136
+- Total plans completed: 137
 - Average duration: 10 min
-- Total execution time: 19.89 hours
+- Total execution time: 19.99 hours
 
 **By Phase:**
 
@@ -56,6 +56,7 @@ Progress: ███████████████████████�
 | 5.1 (MDMP Governance Integration) | 17 | 116 min | 7 min |
 | 5.2 (Escalation & Competition Modeling) | 10 | 135 min | 14 min |
 | 1.4 (Navigation Architecture Restructure) | 2 | 7 min | 4 min |
+| 25 (Operational Design Workspace) | 5 | 20 min | 4 min |
 
 **Recent Trend:**
 - Phase 1.4: tab container layer — fast execution (pure frontend, no new deps)
@@ -112,6 +113,11 @@ Progress: ███████████████████████�
 | Phase 23 P05 | 10 | 2 tasks | 18 files |
 | Phase 23 P07 | 14 | 2 tasks | 24 files |
 | Phase 24 P01 | 3 | 2 tasks | 6 files |
+| Phase 25 P01 | 3 | 2 tasks | 8 files |
+| Phase 25 P02 | 3 | 2 tasks | 6 files |
+| Phase 25 P03 | 4 | 2 tasks | 4 files |
+| Phase 25 P04 | 4 | 2 tasks | 4 files |
+| Phase 25 P05 | 6 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -125,6 +131,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 25 Plan 05 (Operational Approach & Design Handoff):**
+- Handoff payload persisted in DB (handoff_payload JSONB column) rather than transient fetch
+- Phase transitions reference available phases from LOE decisive points or operationalApproach.phases
+- Overview progress bar uses colored segments per section status (gray/yellow/green)
 
 **Phase 24 Plan 02 (Tab container rewiring):**
 - All roles see all 6 tabs with simplified access (can restore per-role gating later)
@@ -570,6 +581,8 @@ Recent decisions affecting current work:
 - Phase 19 added: Workspace membership and invite system
 - Phase 20 added: Workspace Operational Panels & Cross-Workspace Intelligence Sharing
 - Phase 21 added: AI COP Layer Agent Team - Autonomous agent team per workspace section generating MIL-STD-2525 interactive SVG overlays for common operating picture with publish control, entity-data linkages, and dual-perspective rendering
+- Phase 25.1 inserted after Phase 25: Training Package Upload & From-Scenario Integration — Wire existing upload wizard into Understand tab, add Create from Scenario to problem set creation, integrate drag-drop upload with tag inference and LLM extraction
+- Phase 25.2 inserted after Phase 25: Strategic Document Containers & Actor Categorization — Organize strategic docs into nation/group containers with actor categories (ally/adversary/neutral/partner), persistent container-based strategic environment building, feeds Phase 26 inheritance
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller

@@ -44,7 +44,9 @@ None
 - [x] **Phase 22: Training/Operational Global Mode** - Global app toggle switching between training (exercise) and operational modes with visual distinction, data isolation, governance weight adjustment, and reset/checkpoint capability (INSERTED) (completed 2026-03-06)
 - [ ] **Phase 23: Problem Set Model & Workspace Rename** - Rename workspaces to problem sets throughout the application, add echelon-awareness (strategic/operational/tactical), update data model, UI, routes, and API (INSERTED)
 - [x] **Phase 24: Doctrinal Tab Restructure** - Replace COP/Decide/Design/Campaign/Train/Overview tabs with doctrinal lifecycle flow: Understand/Design/Plan/Direct/COP/Assess — reorganize existing components into doctrinally-aligned tabs (INSERTED)
-- [ ] **Phase 25: Operational Design Workspace** - Build the Design tab with problem framing, center of gravity analysis, lines of effort/operation, operational approach development, and AI-assisted design recommendations (INSERTED)
+- [x] **Phase 25: Operational Design Workspace** - Build the Design tab with problem framing, center of gravity analysis, lines of effort/operation, operational approach development, and AI-assisted design recommendations (INSERTED, completed 2026-03-06)
+- [ ] **Phase 25.1: Training Package Upload & From-Scenario Integration** - Wire ScenarioPackageUpload wizard into Understand tab; add "Create from Scenario" option to CreateProblemSetWizard; integrate multi-file drag-drop upload with tag inference (team/phase/doc type) and async LLM extraction; surface upload status and extracted documents in Understand tab (INSERTED)
+- [ ] **Phase 25.2: Strategic Document Containers & Actor Categorization** - Organize strategic documents into nation/group containers (e.g., United States, China, NATO) with actor categories (ally, adversary, neutral, partner); persistent container-based organization for building strategic environments over time; feeds into Phase 26 strategic environment inheritance (INSERTED)
 - [ ] **Phase 26: Strategic Environment & Inheritance** - Strategic-level problem set as context provider with inheritance mechanism for directives, policy, and intelligence; update propagation to child problem sets (INSERTED)
 - [ ] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED)
 - [ ] **Phase 28: Embedded DAO Governance at Decision Gates** - Move DAO governance from dedicated tab into contextual workflow decision gates; proposals trigger at natural planning decision points (objective approval, COA selection, order release) (INSERTED)
@@ -583,7 +585,59 @@ Plans:
 - [x] 25-02-PLAN.md — Problem Framing section with JP 5-0 fields and AI panel integration
 - [x] 25-03-PLAN.md — CoG Analysis with interactive SVG tree diagrams (friendly + adversary)
 - [x] 25-04-PLAN.md — Lines of Effort timeline with lanes, decisive points, and CoG linkages
-- [ ] 25-05-PLAN.md — Operational Approach synthesis, Design-to-Plan handoff, and end-to-end verification
+- [x] 25-05-PLAN.md — Operational Approach synthesis, Design-to-Plan handoff, and end-to-end verification
+
+### Phase 25.1: Training Package Upload & From-Scenario Integration (INSERTED)
+
+**Goal:** Wire existing training package upload infrastructure into the new tab structure and problem set creation flow, so users can create problem sets from scenarios and upload document packages directly from the Understand tab.
+**Depends on:** Phase 24 (tab structure), Phase 23 (problem set model)
+**Research:** Unlikely (components exist, this is integration work)
+**Plans:** TBD
+
+**Scope:**
+1. Add "Create from Scenario" option to CreateProblemSetWizard — list available scenarios, call `/api/problem-sets/from-scenario`, navigate to new problem set
+2. Wire ScenarioPackageUpload component into the Understand tab — multi-file drag-drop with folder upload, client-side tag inference (team/phase/document type), manual override, async LLM extraction with polling
+3. Surface uploaded documents and extraction status in Understand tab document list
+4. Ensure upload pipeline respects problem set mode (training vs operational) and classification
+
+**Existing Infrastructure:**
+- Frontend: `ScenarioPackageUpload.tsx`, `exercise-service.ts` (uploadPackage, getDocuments)
+- Backend: `package-parser.ts` (tag inference), `document-parser.ts` (PDF/DOCX/PPTX/XLSX), `extraction-service.ts` (LLM extraction with vision fallback), `document-store.ts` (scenario_documents table)
+- API: `POST /api/exercise/scenarios/:id/upload`, `POST /api/problem-sets/from-scenario`
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 25.1 to break down)
+
+### Phase 25.2: Strategic Document Containers & Actor Categorization (INSERTED)
+
+**Goal:** Organize strategic documents into persistent nation/group containers with actor categorization, enabling incremental construction of strategic environments that feed into Phase 26 inheritance.
+**Depends on:** Phase 25.1 (upload pipeline), Phase 24 (Understand tab)
+**Research:** Likely (data model design for container hierarchy)
+**Plans:** TBD
+
+**Scope:**
+1. New data model: `strategic_containers` table — name (e.g., "United States", "China", "NATO"), actor_category (ally, adversary, neutral, partner), problem_set_id, parent_container_id (for hierarchy)
+2. Assign strategic documents to containers during upload — add container_id + actor_category to upload form and document metadata
+3. Container management UI in Understand tab — create/rename/delete containers, drag documents between containers, filter by actor category
+4. Container-scoped document views — browse documents by nation/group, see all docs for a given actor
+5. Feeds into Phase 26: strategic environment = collection of containers with their documents, inheritable by child problem sets
+
+**Example Container Structure:**
+```
+Friendly
+├── United States (NSS, NDS, NMS, GEF, JSCP, policy docs)
+├── Japan (NSS, defense guidelines, bilateral agreements)
+└── Australia (defense white paper, AUKUS docs)
+Adversary
+├── China (NSS, military strategy, PLA doctrine)
+└── Russia (national security concept, military doctrine)
+Neutral / Partner
+├── NATO (strategic concept, allied doctrine)
+└── ASEAN (charter, regional security docs)
+```
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 25.2 to break down)
 
 ### Phase 26: Strategic Environment & Inheritance (INSERTED)
 **Goal:** Enable strategic-level problem sets to serve as context providers, with inheritance mechanisms that propagate directives, policy, intelligence, and strategic guidance to subordinate operational and tactical problem sets
