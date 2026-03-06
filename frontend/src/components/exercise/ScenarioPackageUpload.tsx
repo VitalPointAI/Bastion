@@ -125,9 +125,10 @@ const DEFAULT_PHASES = [
 interface ScenarioPackageUploadProps {
   scenario: ExerciseScenario | null;
   onUploadComplete?: () => void;
+  onDocumentClick?: (doc: ScenarioDocument) => void;
 }
 
-export function ScenarioPackageUpload({ scenario, onUploadComplete }: ScenarioPackageUploadProps) {
+export function ScenarioPackageUpload({ scenario, onUploadComplete, onDocumentClick }: ScenarioPackageUploadProps) {
   // ── File selection state ────────────────────────────────────────────────────
   const [fileEntries, setFileEntries] = useState<FileEntry[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -634,7 +635,11 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete }: ScenarioPa
                     : doc.filename;
 
                   return (
-                    <tr key={doc.id}>
+                    <tr
+                      key={doc.id}
+                      onClick={() => onDocumentClick?.(doc)}
+                      style={onDocumentClick ? { cursor: 'pointer' } : undefined}
+                    >
                       <td className="doc-col-filename" title={doc.filename}>{displayName}</td>
                       <td>
                         <select

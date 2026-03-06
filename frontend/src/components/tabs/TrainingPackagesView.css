@@ -1,0 +1,130 @@
+/* ─── Training Packages View ─────────────────────────────────────────────── */
+
+.training-packages-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.training-packages-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--text-muted, #888);
+  font-size: 0.9rem;
+}
+
+/* ─── Classification Banner ──────────────────────────────────────────────── */
+
+.classification-banner {
+  width: 100%;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  padding: 0.35rem 0;
+  color: #fff;
+}
+
+.classification-banner.unclassified {
+  background-color: #2e7d32;
+}
+
+.classification-banner.secret {
+  background-color: #c62828;
+}
+
+.classification-banner.topsecret {
+  background-color: #ff8f00;
+  color: #000;
+}
+
+.classification-warning {
+  text-align: center;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-muted, #888);
+  padding: 0.5rem 1rem;
+}
+
+/* ─── No Scenario Prompt ─────────────────────────────────────────────────── */
+
+.no-scenario-prompt {
+  max-width: 400px;
+  margin: 4rem auto;
+  padding: 2rem;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 8px;
+  text-align: center;
+  background: var(--bg-secondary, #1a1a2e);
+}
+
+.no-scenario-prompt h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.no-scenario-prompt p {
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted, #888);
+  line-height: 1.5;
+}
+
+.no-scenario-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.no-scenario-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: 1px solid var(--border-color, #333);
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.no-scenario-btn--primary {
+  background: var(--accent-color, #4a9eff);
+  color: #fff;
+  border-color: var(--accent-color, #4a9eff);
+}
+
+.no-scenario-btn--primary:hover {
+  opacity: 0.9;
+}
+
+.no-scenario-btn--secondary {
+  background: transparent;
+  color: var(--text-muted, #888);
+}
+
+.no-scenario-btn--secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Content Layout (main + preview) ────────────────────────────────────── */
+
+.training-packages-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.training-packages-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.training-packages-main.with-preview {
+  flex: 1;
+  min-width: 0;
+}
