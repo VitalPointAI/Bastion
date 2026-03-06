@@ -581,7 +581,7 @@ Operational design is where the creative, iterative work happens before structur
 Plans:
 - [x] 25-01-PLAN.md — Backend foundation, types, DesignTab shell with TabLayout sidebar and Overview dashboard
 - [x] 25-02-PLAN.md — Problem Framing section with JP 5-0 fields and AI panel integration
-- [ ] 25-03-PLAN.md — CoG Analysis with interactive SVG tree diagrams (friendly + adversary)
+- [x] 25-03-PLAN.md — CoG Analysis with interactive SVG tree diagrams (friendly + adversary)
 - [ ] 25-04-PLAN.md — Lines of Effort timeline with lanes, decisive points, and CoG linkages
 - [ ] 25-05-PLAN.md — Operational Approach synthesis, Design-to-Plan handoff, and end-to-end verification
 

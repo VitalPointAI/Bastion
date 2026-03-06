@@ -24,9 +24,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 25 of 40 (Operational Design Workspace) — IN PROGRESS
-Plan: 2 of N in current phase — 25-02 complete
-Status: Problem Framing section with JP 5-0 form, auto-save, AI panel with Adopt/Merge/Dismiss
-Last activity: 2026-03-06 - Completed 25-02 (Problem Framing & AI Panel)
+Plan: 3 of N in current phase — 25-03 complete
+Status: CoG Analysis with interactive SVG trees, side-by-side friendly/adversary layout, click-to-edit nodes
+Last activity: 2026-03-06 - Completed 25-03 (CoG Analysis Section)
 
 Progress: █████████████████████████ 233 plans complete
 
