@@ -593,7 +593,7 @@ Plans:
 **Goal:** Wire existing training package upload infrastructure into the new tab structure and problem set creation flow, so users can create problem sets from scenarios and upload document packages directly from the Understand tab.
 **Depends on:** Phase 24 (tab structure), Phase 23 (problem set model)
 **Research:** Unlikely (components exist, this is integration work)
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 **Scope:**
 1. Add "Create from Scenario" option to CreateProblemSetWizard — list available scenarios, call `/api/problem-sets/from-scenario`, navigate to new problem set
