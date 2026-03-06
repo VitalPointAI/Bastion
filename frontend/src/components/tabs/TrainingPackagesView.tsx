@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ScenarioPackageUpload } from '../exercise/ScenarioPackageUpload.js';
 import { TrainingDocPreview } from './TrainingDocPreview.js';
+import { CreateScenarioPanel } from './CreateScenarioPanel.js';
 import { exerciseService } from '../../services/exercise-service.js';
 import { problemSetService } from '../../lib/problem-set-service.js';
 import { useProblemSet } from '../../context/ProblemSetContext.js';
@@ -76,18 +77,11 @@ export function TrainingPackagesView({ problemSetId, onDocCountChange, onPending
   if (!scenario) {
     return (
       <div className="training-packages-container">
-        <div className="no-scenario-prompt">
-          <h3>No Scenario Linked</h3>
-          <p>No scenario is linked to this problem set. Create a problem set from a scenario or link an existing one.</p>
-          <div className="no-scenario-actions">
-            <button className="no-scenario-btn no-scenario-btn--primary">
-              Create from Scenario
-            </button>
-            <button className="no-scenario-btn no-scenario-btn--secondary" disabled title="Coming soon">
-              Link Existing
-            </button>
-          </div>
-        </div>
+        <CreateScenarioPanel
+          problemSetId={problemSetId}
+          problemSetName={activeProblemSet?.name ?? 'Training'}
+          onCreated={(created) => setScenario(created)}
+        />
       </div>
     );
   }

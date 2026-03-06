@@ -688,6 +688,21 @@ class ProblemSetService {
       return null;
     }
   }
+
+  async createLinkedScenario(
+    problemSetId: string,
+    data: {
+      name: string;
+      designation?: 'training/exercise' | 'operational';
+      exercisePhases?: string[];
+      enabledRoles?: string[];
+    }
+  ): Promise<import('../types/exercise').ExerciseScenario> {
+    return this.fetchJSON<import('../types/exercise').ExerciseScenario>(
+      `${this.baseUrl}/${problemSetId}/scenario`,
+      { method: 'POST', body: JSON.stringify(data) },
+    );
+  }
 }
 
 export const problemSetService = new ProblemSetService();

@@ -796,6 +796,78 @@ router.get('/:id/linked-scenario', requireAuth, async (req: Request, res: Respon
 });
 
 /**
+ * POST /api/problem-sets/:id/scenario - Create a scenario and link it to this problem set
+ * Only works for training-mode problem sets with no existing linked scenario.
+ */
+router.post('/:id/scenario', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userDid = buildDID(req.anonUser!.nearAccountId);
+    const problemSetId = req.params.id as string;
+
+    // Verify problem set exists and caller is a member
+    const problemSet = await problemSetStore.getProblemSet(problemSetId);
+    if (!problemSet) {
+      return res.status(404).json({ error: 'Problem set not found' });
+    }
+    const member = await problemSetMemberStore.getMember(problemSetId, userDid);
+    if (!member) {
+      return res.status(403).json({ error: 'Not a member of this problem set' });
+    }
+
+    // Check no scenario already linked
+    const existing = await scenarioStore.findByProblemSetId(problemSetId);
+    if (existing) {
+      return res.status(409).json({ error: 'Problem set already has a linked scenario', scenario: existing });
+    }
+
+    // Parse input
+    const schema = z.object({
+      name: z.string().min(2).max(100),
+      designation: z.enum(['training/exercise', 'operational']).default('training/exercise'),
+      exercisePhases: z.array(z.string()).optional(),
+      enabledRoles: z.array(z.string()).optional(),
+    });
+    const body = schema.parse(req.body);
+
+    // Create scenario
+    const scenario = await scenarioStore.create({
+      name: body.name,
+      designation: body.designation,
+      exercisePhases: body.exercisePhases,
+      enabledRoles: body.enabledRoles,
+      createdBy: userDid,
+    });
+
+    // Link to problem set
+    await scenarioStore.updateProblemSetLink(scenario.id, problemSetId);
+
+    // Log activity
+    await problemSetActivityStore.log(
+      problemSetId,
+      'scenario_loaded',
+      userDid,
+      null,
+      {
+        scenarioId: scenario.id,
+        scenarioName: scenario.name,
+        designation: scenario.designation,
+        action: 'created_and_linked',
+      },
+    );
+
+    console.log(`Scenario created and linked: ${scenario.id} → problem set ${problemSetId}`);
+    res.status(201).json(scenario);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: error.issues });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create linked scenario failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
  * GET /api/problem-sets/:id - Get problem set details
  * Caller must be a member.
  */
