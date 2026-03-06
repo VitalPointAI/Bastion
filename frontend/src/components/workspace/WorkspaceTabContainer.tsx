@@ -2,7 +2,7 @@
  * WorkspaceTabContainer
  *
  * Shell component that renders workspace tabs. Horizontal tab bar
- * (COP | Decide | Design | Campaign | Train | Overview) with role-gated
+ * (COP | Decide | Design | Campaign | Overview) with role-gated
  * visibility, URL-driven tab state, and a collapsible OrgTreeSidebar overlay.
  *
  * Tab content:
@@ -10,13 +10,13 @@
  * - Decide: renders DecideTab scoped to workspace daoId
  * - Design: renders DesignTab (workspace-scoped strategic docs)
  * - Campaign: renders CampaignTab (workspace-scoped missions)
- * - Train: renders TrainTab wrapping ExerciseDashboard
  * - Overview: renders WorkspaceDashboard (simple dashboard alternative)
  *
  * Role gating: each role sees only its allowed tabs (see DEFAULT_TAB_ACCESS).
  * Unknown roles fall back to ['cop', 'overview'].
  *
  * Phase 21 Plan 12: Monitor tab removed; COP replaces it as the primary/default tab.
+ * Phase 22 Plan 03: Train tab removed; training is now a global mode, not a workspace tab.
  *
  * Phase 20 Plan 04: Wired all tab panels with workspaceId prop injection
  * Phase 20 Plan 07: Tab notification badges + TabNotificationDropdown + CrossWorkspaceLayerToggle
@@ -36,13 +36,12 @@ import { WorkspaceInviteModal } from './WorkspaceInviteModal';
 import { DecideTab } from '../tabs/DecideTab';
 import { DesignTab } from '../tabs/DesignTab';
 import { CampaignTab } from '../tabs/CampaignTab';
-import { TrainTab } from '../tabs/TrainTab';
 import { COPTab } from '../cop/COPTab';
 import { copService } from '../../lib/cop-service';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
-const WORKSPACE_TABS = ['cop', 'decide', 'design', 'campaign', 'train', 'overview'] as const;
+const WORKSPACE_TABS = ['cop', 'decide', 'design', 'campaign', 'overview'] as const;
 type WorkspaceTab = typeof WORKSPACE_TABS[number];
 
 const TAB_LABELS: Record<WorkspaceTab, string> = {
@@ -50,16 +49,15 @@ const TAB_LABELS: Record<WorkspaceTab, string> = {
   decide: 'Decide',
   design: 'Design',
   campaign: 'Campaign',
-  train: 'Train',
   overview: 'Overview',
 };
 
 // ─── Role → tab access map ────────────────────────────────────────────────────
 
 const DEFAULT_TAB_ACCESS: Record<string, WorkspaceTab[]> = {
-  commander: ['cop', 'decide', 'design', 'campaign', 'train', 'overview'],
-  xo: ['cop', 'decide', 'design', 'campaign', 'train', 'overview'],
-  team_lead: ['cop', 'decide', 'campaign', 'train', 'overview'],
+  commander: ['cop', 'decide', 'design', 'campaign', 'overview'],
+  xo: ['cop', 'decide', 'design', 'campaign', 'overview'],
+  team_lead: ['cop', 'decide', 'campaign', 'overview'],
   s2: ['cop', 'decide', 'overview'],
   s3: ['cop', 'decide', 'campaign', 'overview'],
   s4: ['cop', 'campaign', 'overview'],
@@ -172,6 +170,13 @@ export function WorkspaceTabContainer() {
     setActiveTab(resolvedTab);
   }, [resolvedTab]);
 
+  // Redirect stale/invalid tab URLs (e.g., /workspace/:id/train) to default tab
+  useEffect(() => {
+    if (urlTab && !WORKSPACE_TABS.includes(urlTab as WorkspaceTab) && workspaceId) {
+      navigate(`/workspace/${workspaceId}/cop`, { replace: true });
+    }
+  }, [urlTab, workspaceId, navigate]);
+
   function handleTabClick(tab: WorkspaceTab) {
     setActiveTab(tab);
     if (workspaceId) {
@@ -234,9 +239,6 @@ export function WorkspaceTabContainer() {
     }
     if (activeTab === 'campaign') {
       return <CampaignTab workspaceId={displayId} />;
-    }
-    if (activeTab === 'train') {
-      return <TrainTab workspaceId={displayId} />;
     }
     if (activeTab === 'cop') {
       return <COPTab workspaceId={displayId} />;
