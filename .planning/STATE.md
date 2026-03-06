@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-05T22:37:14.000Z"
+last_updated: "2026-03-06T00:16:52.442Z"
 progress:
-  total_phases: 42
+  total_phases: 35
   completed_phases: 22
-  total_plans: 198
-  completed_plans: 212
+  total_plans: 207
+  completed_plans: 215
 ---
 
 # Project State
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 21 Plan 13 complete — All COP layer agent team plans complete
+**Current focus:** Phase 22 Plan 02 complete — Frontend mode toggle UI with context, banner, and modal
 
 ## Current Position
 
 Phase: 22 of 40 (Training/Operational Global Mode)
-Plan: 1 of 6 in current phase — 22-01 complete
-Status: Phase 22 in progress — backend mode infrastructure complete
-Last activity: 2026-03-06 - Completed 22-01: Backend mode types, API endpoints, middleware, mode-aware workspace queries
+Plan: 2 of 6 in current phase — 22-02 complete
+Status: Phase 22 in progress — frontend mode toggle UI complete
+Last activity: 2026-03-06 - Completed 22-02: ModeContext, ExerciseBanner, ModeConfirmationModal, toggle in UserStatusBar
 
-Progress: █████████████████████████ 213 plans complete
+Progress: █████████████████████████ 214 plans complete
 
 ## Performance Metrics
 
@@ -101,6 +101,7 @@ Progress: ███████████████████████�
 | Phase 21 P07 | 5 | 2 tasks | 5 files |
 | Phase 21 P10 | 4min | 3 tasks | 6 files |
 | Phase 21 P11 | 5min | 2 tasks | 2 files |
+| Phase 22 P02 | 3 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -509,6 +510,8 @@ Recent decisions affecting current work:
 - [Phase 21]: Phase slider uses setInterval with speed multiplier for discrete phase steps
 - [Phase 21]: Version browser fetches all snapshots and filters client-side for responsive UX
 - [Phase 21]: Agent activity polls at 5s interval balancing real-time feel with server load
+- [Phase 22]: ModeProvider renders ExerciseBanner and ModeConfirmationModal internally for encapsulation
+- [Phase 22]: Mode toggle in UserStatusBar with amber (training) and green (operational) visual states
 
 ### Roadmap Evolution
 
