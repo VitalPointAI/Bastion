@@ -13,7 +13,8 @@ import type { AlternativeFraming } from './AIFramingCard.tsx';
 interface DesignAIPanelProps {
   problemSetId: string;
   activeSection: string;
-  sectionData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sectionData: Record<string, any>;
   isOpen: boolean;
   onToggle: () => void;
   onAdopt?: (framing: AlternativeFraming) => void;
@@ -30,7 +31,8 @@ export function DesignAIPanel({
   onMerge,
 }: DesignAIPanelProps) {
   // Section-keyed cache to prevent stale results on section switch
-  const [resultsCache, setResultsCache] = useState<Map<string, any>>(new Map());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [resultsCache, setResultsCache] = useState<Map<string, Record<string, any>>>(new Map());
   const [dismissedIds, setDismissedIds] = useState<Map<string, Set<number>>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

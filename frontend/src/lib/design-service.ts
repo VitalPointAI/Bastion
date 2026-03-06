@@ -137,7 +137,8 @@ export const designService = {
   /**
    * Request AI analysis for a design section.
    */
-  async analyzeSection(problemSetId: string, section: string, context: object): Promise<any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async analyzeSection(problemSetId: string, section: string, context: object): Promise<Record<string, any>> {
     const res = await fetch(`${API_BASE}/api/design/${problemSetId}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

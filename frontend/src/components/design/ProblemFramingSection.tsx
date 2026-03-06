@@ -212,9 +212,9 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, onUpdate]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateField = useCallback((field: keyof ProblemFramingData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
