@@ -538,7 +538,7 @@ Plans:
 **Goal:** Replace the current tab structure (COP/Decide/Design/Campaign/Train/Overview) with a doctrinal lifecycle flow (Understand/Design/Plan/Direct/COP/Assess) that guides users through the military planning process
 **Depends on:** Phase 23
 **Research:** Unlikely
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 **Context:**
 The current tabs are organized by feature category, not by how commanders and staff actually work through a problem. The doctrinal lifecycle — Understand → Design → Plan → Direct → COP → Assess — mirrors JP 5-0 and MDMP, guiding users through the natural progression from understanding the environment to assessing results. This is primarily a reorganization of existing components into doctrinally-aligned containers.
@@ -1184,7 +1184,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 21. AI COP Layer Agent Team | 13/13 | Complete | 2026-03-05 |
 | 22. Training/Operational Global Mode | 6/6 | Complete   | 2026-03-06 |
 | 23. Problem Set Model & Rename | 9/10 | In Progress|  |
-| 24. Doctrinal Tab Restructure | 0/TBD | Not started | - |
+| 24. Doctrinal Tab Restructure | 2/3 | In Progress|  |
 | 25. Operational Design Workspace | 0/TBD | Not started | - |
 | 26. Strategic Environment & Inheritance | 0/TBD | Not started | - |
 | 27. Resource Registry & DID Plugin | 0/TBD | Not started | - |

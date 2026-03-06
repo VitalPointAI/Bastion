@@ -19,12 +19,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 24 — Doctrinal Tab Restructure (complete)
+**Current focus:** Phase 24 — Doctrinal Tab Restructure (executing)
 
 ## Current Position
 
-Phase: 24 of 40 (Doctrinal Tab Restructure) — COMPLETE
-Plan: 3 of 3 in current phase — complete
+Phase: 24 of 40 (Doctrinal Tab Restructure) — IN PROGRESS
+Plan: 2 of 3 in current phase — plans 01, 03 complete; plan 02 remaining
 Status: Phase 24 plan 01 complete — doctrinal tab components with JP 5-0 content redistribution
 Last activity: 2026-03-06 - Completed 24-01 (DoctrinalPlaceholder, UnderstandTab, PlanTab, DirectTab, AssessTab, DesignTab rewrite)
 
@@ -111,6 +111,7 @@ Progress: ███████████████████████�
 | Phase 23 P06 | 3 | 2 tasks | 2 files |
 | Phase 23 P05 | 10 | 2 tasks | 18 files |
 | Phase 23 P07 | 14 | 2 tasks | 24 files |
+| Phase 24 P01 | 3 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,10 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 24 Plan 01 (Doctrinal tab components):**
+- Used DoctrinalPlaceholder pattern for tabs awaiting future phase content (Design Phase 25, Assess Phase 28+)
+- Redistributed DecideTab content: governance/proposals to DirectTab, MDMP to PlanTab, subscriptions to UnderstandTab
 
 **Phase 24 Plan 03 (Backend panel config & DB migration):**
 - All roles see all 6 doctrinal tabs regardless of echelon (per user decision)
@@ -1226,7 +1231,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-05
-Stopped at: Completed 21-13-PLAN.md — Auto-trigger COP generation and workspace status badge
+Last session: 2026-03-06
+Stopped at: Completed 24-01-PLAN.md — Doctrinal tab components with JP 5-0 content redistribution
 Resume file: None
-Next action: Phase 21 complete — proceed to next phase
+Next action: Phase 24 complete — all 3 plans done, proceed to next phase
