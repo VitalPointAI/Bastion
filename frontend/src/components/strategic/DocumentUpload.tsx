@@ -5,10 +5,11 @@
  * Allows commanders to upload strategic documents (PDF, DOCX).
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { StrategicDocument } from '../../lib/types/strategic.js';
 import { DocumentLevel, Classification } from '../../lib/types/strategic.js';
 import { strategicService, formatFileSize } from '../../lib/strategic-service.js';
+import { ContainerSelector } from './ContainerSelector.js';
 import './DocumentUpload.css';
 
 interface DocumentUploadProps {
@@ -25,7 +26,24 @@ export function DocumentUpload({ onUploadComplete, problemSetId }: DocumentUploa
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [containerIds, setContainerIds] = useState<string[]>([]);
+  const [environmentId, setEnvironmentId] = useState<string | null>(null);
+  const [containerWarning, setContainerWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Resolve environmentId from problemSetId
+  useEffect(() => {
+    if (!problemSetId) return;
+    let cancelled = false;
+    strategicService.getEnvironmentByProblemSet(problemSetId)
+      .then((env) => {
+        if (!cancelled) setEnvironmentId(env.id);
+      })
+      .catch((err) => {
+        console.error('Failed to resolve environment:', err);
+      });
+    return () => { cancelled = true; };
+  }, [problemSetId]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -97,11 +115,24 @@ export function DocumentUpload({ onUploadComplete, problemSetId }: DocumentUploa
 
     try {
       const doc = await strategicService.uploadDocument(file, title, level, classification, problemSetId);
+
+      // Assign containers after upload (non-blocking to upload success)
+      if (containerIds.length > 0) {
+        try {
+          await strategicService.assignDocumentToContainers(doc.id, containerIds);
+        } catch (assignErr) {
+          setContainerWarning(
+            assignErr instanceof Error ? assignErr.message : 'Failed to assign containers'
+          );
+        }
+      }
+
       setSuccess(true);
       setFile(null);
       setTitle('');
       setLevel('OTHER');
       setClassification('UNCLASSIFIED');
+      setContainerIds([]);
       onUploadComplete?.(doc);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
@@ -235,6 +266,18 @@ export function DocumentUpload({ onUploadComplete, problemSetId }: DocumentUploa
           </div>
         </div>
 
+        {environmentId && (
+          <div className="form-group">
+            <label>Containers</label>
+            <ContainerSelector
+              environmentId={environmentId}
+              selectedContainerIds={containerIds}
+              onChange={setContainerIds}
+              disabled={uploading}
+            />
+          </div>
+        )}
+
         <button
           className="upload-button"
           onClick={handleUpload}
@@ -276,6 +319,17 @@ export function DocumentUpload({ onUploadComplete, problemSetId }: DocumentUploa
             <polyline points="22,4 12,14.01 9,11.01" />
           </svg>
           Document uploaded successfully!
+        </div>
+      )}
+
+      {containerWarning && (
+        <div className="upload-warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          Container assignment warning: {containerWarning}
         </div>
       )}
     </div>

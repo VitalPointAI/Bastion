@@ -452,6 +452,15 @@ export interface ContainerAgentAssignment {
   assignedAt: string;
 }
 
+export interface ContainerSuggestion {
+  containerName: string;
+  containerId?: string;
+  confidence: number;
+  reasoning: string;
+  newContainerName?: string;
+  suggestedCategory?: string;
+}
+
 /**
  * Default actor categories matching backend constants.
  * Color-coded for doctrinal intuition.

@@ -19,6 +19,7 @@ import type {
   ActorCategory,
   StrategicContainer,
   ContainerAgentAssignment,
+  ContainerSuggestion,
 } from './types/strategic.js';
 
 // Use environment variable or empty string for relative URLs (Vite proxy)
@@ -499,6 +500,20 @@ class StrategicService {
       `/api/strategic/containers/${encodeURIComponent(containerId)}/agents`
     );
     return response.assignments;
+  }
+
+  /**
+   * Get AI-powered container suggestions for a document.
+   */
+  async suggestContainers(
+    documentId: string,
+    environmentId: string
+  ): Promise<ContainerSuggestion[]> {
+    const response = await this.fetch<{ suggestions: ContainerSuggestion[] }>(
+      `/api/strategic/documents/${encodeURIComponent(documentId)}/suggest-containers`,
+      { method: 'POST', body: JSON.stringify({ environmentId }) }
+    );
+    return response.suggestions;
   }
 
   /**
