@@ -125,7 +125,7 @@ export function ProblemSetInviteModal({
       if (targetType === 'did') options.inviteeDid = targetDid.trim();
       if (targetType === 'email') options.inviteeEmail = targetEmail.trim();
 
-      const { rawToken } = await problemSetService.createInvite(
+      const result = await problemSetService.createInvite(
         problemSetId,
         selectedRole.militaryLabel,
         selectedRole.daoRoleName,
@@ -133,7 +133,15 @@ export function ProblemSetInviteModal({
         options
       );
 
-      const link = `${window.location.origin}/problem-set/invite/${rawToken}`;
+      // Prefer short code link, fall back to token link
+      const r = result as unknown as Record<string, unknown>;
+      const shortCode = (r.shortCode as string | undefined)
+        ?? ((r.invite as Record<string, unknown> | undefined)?.shortCode as string | undefined);
+      const rawToken = (r.rawToken as string | undefined) ?? (r.token as string | undefined);
+
+      const link = shortCode
+        ? `${window.location.origin}/join/${shortCode}`
+        : `${window.location.origin}/problem-set/invite/${rawToken ?? ''}`;
       setCreatedLink(link);
       void loadPendingInvites();
     } catch (err) {

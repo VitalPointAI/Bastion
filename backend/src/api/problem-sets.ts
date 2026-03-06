@@ -561,10 +561,10 @@ router.post('/invite/accept-by-code', requireAuth, async (req: Request, res: Res
       return res.status(404).json({ error: 'Invite not found, expired, or already used' });
     }
 
-    // Reuse the same accept logic — check clearance, check existing membership, etc.
-    // Forward to the accept-by-token flow internally
-    req.body.token = null; // Clear so we use invite directly
-    req.body._resolvedInvite = invite;
+    // Verify invitee matches if targeted
+    if (invite.inviteeDid && invite.inviteeDid !== userDid) {
+      return res.status(403).json({ error: 'This invite is for a different user' });
+    }
 
     // Check if user is already a member
     const existingMember = await problemSetMemberStore.getMember(invite.problemSetId, userDid);
@@ -572,33 +572,48 @@ router.post('/invite/accept-by-code', requireAuth, async (req: Request, res: Res
       return res.status(409).json({ error: 'You are already a member of this problem set' });
     }
 
-    // Clearance check
-    const ps = await problemSetStore.getById(invite.problemSetId);
-    if (!ps) {
+    // Get problem set for clearance and mode checks
+    const problemSet = await problemSetStore.getProblemSet(invite.problemSetId);
+    if (!problemSet) {
       return res.status(404).json({ error: 'Problem set not found' });
     }
-    if (!clearanceSufficient(userDid, ps.classification)) {
-      return res.status(403).json({ error: `Insufficient clearance for ${ps.classification} problem set` });
+
+    // Clearance gate
+    const userClearance = (req.anonUser as unknown as Record<string, unknown>)?.clearance as string | undefined;
+    if (!clearanceSufficient(userClearance ?? 'UNCLASSIFIED', problemSet.classification)) {
+      return res.status(403).json({
+        error: `Insufficient clearance. Problem set requires ${problemSet.classification}`,
+      });
     }
 
-    // Add member on-chain
+    // Gated mode: if not yet approved, return 202
+    if (problemSet.inviteMode === 'gated' && !invite.approvedAt) {
+      return res.status(202).json({
+        status: 'pending_approval',
+        message: 'Your membership request is awaiting approval from a problem set administrator',
+        inviteId: invite.id,
+      });
+    }
+
+    // On-chain: add member to DAO
     const addMemberResult = await signAndSubmitFunctionCall(
+      userSecret,
       DAO_CONTRACT_ID,
       'add_member',
       {
-        dao_id: ps.daoId,
-        member_did: userDid,
+        dao_id: problemSet.daoId,
+        member_id: userDid,
         role: invite.daoRole,
       },
-      userSecret,
     );
 
-    // Add member locally
+    // Off-chain: add member record
     const member = await problemSetMemberStore.addMember(
       invite.problemSetId,
       userDid,
       invite.role,
       invite.daoRole,
+      invite.createdBy,
     );
 
     // Mark invite accepted
@@ -609,8 +624,9 @@ router.post('/invite/accept-by-code', requireAuth, async (req: Request, res: Res
       invite.problemSetId,
       'member_joined',
       userDid,
-      null,
-      { role: invite.role, daoRole: invite.daoRole, viaShortCode: code },
+      userDid,
+      { inviteId: invite.id, role: invite.role, daoRole: invite.daoRole, viaShortCode: code },
+      addMemberResult.txHash,
     );
 
     console.log(`User ${userDid} accepted invite to problem set ${invite.problemSetId} via code ${code}`);

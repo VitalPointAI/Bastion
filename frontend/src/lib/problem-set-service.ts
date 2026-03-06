@@ -75,6 +75,7 @@ export interface ProblemSetInviteDetail {
   problemSetId: string;
   role: string;
   daoRole: string;
+  shortCode: string | null;
   inviteeEmail: string | null;
   inviteeDid: string | null;
   expiresAt: string;
@@ -342,6 +343,34 @@ class ProblemSetService {
     }
 
     return response.json() as Promise<ProblemSetMemberDetail>;
+  }
+
+  async acceptInviteByCode(code: string, userDID: string): Promise<ProblemSetMemberDetail | null> {
+    const response = await fetch(`${this.baseUrl}/invite/accept-by-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-DID': userDID,
+      },
+      body: JSON.stringify({ code }),
+    });
+
+    if (response.status === 202) return null;
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({ error: response.statusText })) as {
+        error?: string;
+      };
+      throw new Error(errBody.error || `HTTP ${response.status}`);
+    }
+
+    return response.json() as Promise<ProblemSetMemberDetail>;
+  }
+
+  async lookupInviteCode(code: string): Promise<{ inviteId: string; problemSetId: string; shortCode: string } | null> {
+    const response = await fetch(`${this.baseUrl}/invite/code/${encodeURIComponent(code)}`);
+    if (!response.ok) return null;
+    return response.json() as Promise<{ inviteId: string; problemSetId: string; shortCode: string }>;
   }
 
   async approveInvite(problemSetId: string, inviteId: string, userDID: string): Promise<void> {

@@ -12,6 +12,20 @@ import { randomBytes, createHash, randomUUID } from 'crypto';
 import { getPool } from '../lib/database.js';
 import type { ProblemSetInvite } from './types.js';
 
+// NATO phonetic words for memorable invite codes
+const NATO_WORDS = [
+  'ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT', 'GOLF', 'HOTEL',
+  'INDIA', 'JULIET', 'KILO', 'LIMA', 'MIKE', 'NOVEMBER', 'OSCAR', 'PAPA',
+  'QUEBEC', 'ROMEO', 'SIERRA', 'TANGO', 'UNIFORM', 'VICTOR', 'WHISKEY',
+  'XRAY', 'YANKEE', 'ZULU',
+];
+
+function generateShortCode(): string {
+  const word = NATO_WORDS[Math.floor(Math.random() * NATO_WORDS.length)];
+  const num = Math.floor(Math.random() * 900) + 100; // 100-999
+  return `${word}-${num}`;
+}
+
 async function initProblemSetInviteTable(): Promise<void> {
   const pool = getPool();
   await pool.query(`
@@ -19,6 +33,7 @@ async function initProblemSetInviteTable(): Promise<void> {
       id TEXT PRIMARY KEY,
       problem_set_id TEXT NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
       token TEXT NOT NULL UNIQUE,
+      short_code TEXT UNIQUE,
       invitee_email TEXT,
       invitee_did TEXT,
       role TEXT NOT NULL,
@@ -32,6 +47,8 @@ async function initProblemSetInviteTable(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_pi_problem_set ON problem_set_invites(problem_set_id);
     CREATE INDEX IF NOT EXISTS idx_pi_token ON problem_set_invites(token);
+    CREATE INDEX IF NOT EXISTS idx_pi_short_code ON problem_set_invites(short_code);
+    ALTER TABLE problem_set_invites ADD COLUMN IF NOT EXISTS short_code TEXT UNIQUE;
   `);
 }
 
@@ -86,17 +103,29 @@ export class ProblemSetInviteStore {
       options?.expiresInHours ?? 72,
     );
 
+    // Generate a unique short code (retry on collision)
+    let shortCode = generateShortCode();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const existing = await pool.query(
+        'SELECT 1 FROM problem_set_invites WHERE short_code = $1',
+        [shortCode],
+      );
+      if (existing.rows.length === 0) break;
+      shortCode = generateShortCode();
+    }
+
     await pool.query(
       `
       INSERT INTO problem_set_invites (
-        id, problem_set_id, token, invitee_email, invitee_did,
+        id, problem_set_id, token, short_code, invitee_email, invitee_did,
         role, dao_role, expires_at, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       `,
       [
         id,
         problemSetId,
         hashedToken,
+        shortCode,
         options?.inviteeEmail ?? null,
         options?.inviteeDid ?? null,
         role,
@@ -111,6 +140,7 @@ export class ProblemSetInviteStore {
       id,
       problemSetId,
       token: hashedToken,
+      shortCode,
       inviteeEmail: options?.inviteeEmail ?? null,
       inviteeDid: options?.inviteeDid ?? null,
       role,
@@ -143,6 +173,24 @@ export class ProblemSetInviteStore {
       [hashedToken],
     );
 
+    if (result.rows.length === 0) return null;
+    return this.mapRow(result.rows[0]);
+  }
+
+  /**
+   * Look up an invite by short code (e.g. "BRAVO-742").
+   * Only returns invites that are not expired and not yet accepted.
+   */
+  async getInviteByShortCode(shortCode: string): Promise<ProblemSetInvite | null> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    const result = await pool.query(
+      `SELECT * FROM problem_set_invites
+       WHERE short_code = $1
+       AND expires_at > NOW()
+       AND accepted_at IS NULL`,
+      [shortCode.toUpperCase()],
+    );
     if (result.rows.length === 0) return null;
     return this.mapRow(result.rows[0]);
   }
@@ -241,6 +289,7 @@ export class ProblemSetInviteStore {
     id: string;
     problem_set_id: string;
     token: string;
+    short_code: string | null;
     invitee_email: string | null;
     invitee_did: string | null;
     role: string;
@@ -256,6 +305,7 @@ export class ProblemSetInviteStore {
       id: row.id,
       problemSetId: row.problem_set_id,
       token: row.token,
+      shortCode: row.short_code,
       inviteeEmail: row.invitee_email,
       inviteeDid: row.invitee_did,
       role: row.role,

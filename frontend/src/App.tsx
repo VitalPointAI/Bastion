@@ -12,6 +12,7 @@ import { ProblemSetSwitcher } from './components/problem-set/ProblemSetSwitcher'
 import { ProblemSetSelector } from './components/problem-set/ProblemSetSelector'
 import { ProblemSetBreadcrumb } from './components/problem-set/ProblemSetBreadcrumb'
 import { InviteAcceptPage } from './components/problem-set/InviteAcceptPage'
+import { JoinByCodePage } from './components/problem-set/JoinByCodePage'
 import { ProblemSetTabContainer } from './components/problem-set/ProblemSetTabContainer'
 import { ProblemSetMemberManager } from './components/problem-set/ProblemSetMemberManager'
 import { MemberDirectory } from './components/problem-set/MemberDirectory'
@@ -94,6 +95,7 @@ function AppContent() {
 
   const isAdmin = location.pathname.startsWith('/admin');
   const isProblemSet = location.pathname.startsWith('/problem-set');
+  const isJoinCode = location.pathname.startsWith('/join/');
 
   return (
     <div className="app">
@@ -115,7 +117,9 @@ function AppContent() {
       </header>
 
       <main className="app-main">
-        {isAdmin ? (
+        {isJoinCode ? (
+          <JoinByCodePage />
+        ) : isAdmin ? (
           <AdminDashboard onBack={() => navigate('/')} />
         ) : isProblemSet ? (
           <Routes>
@@ -189,6 +193,13 @@ function App() {
 
         {/* Problem set routes - protected by AuthWrapper + ProblemSetProvider */}
         <Route path="/problem-set/*" element={
+          <AuthWrapper>
+            <AuthenticatedShell />
+          </AuthWrapper>
+        } />
+
+        {/* Join by short code - protected by AuthWrapper + ProblemSetProvider */}
+        <Route path="/join/:code" element={
           <AuthWrapper>
             <AuthenticatedShell />
           </AuthWrapper>

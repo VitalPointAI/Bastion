@@ -56,6 +56,7 @@ export interface ProblemSetInvite {
   id: string;           // "PI-{uuid}"
   problemSetId: string;
   token: string;        // SHA-256 hashed
+  shortCode: string | null; // Memorable code like "BRAVO-742"
   inviteeEmail: string | null;
   inviteeDid: string | null;
   role: string;         // Military role label
