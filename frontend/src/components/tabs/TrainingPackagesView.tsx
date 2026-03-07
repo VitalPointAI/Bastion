@@ -2,9 +2,8 @@
  * TrainingPackagesView
  *
  * Training-mode sidebar view in UnderstandTab that resolves the linked scenario
- * for the active problem set, displays a classification banner, and renders
- * ScenarioPackageUpload for document management. Shows a prompt when no
- * scenario is linked.
+ * for the active problem set and renders ScenarioPackageUpload for document
+ * management. Shows a prompt when no scenario is linked.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -23,20 +22,11 @@ interface TrainingPackagesViewProps {
   onPendingChange: (pending: boolean) => void;
 }
 
-function classificationClass(classification: string): string {
-  const lower = classification.toLowerCase().replace(/[\s-_]/g, '');
-  if (lower.includes('topsecret')) return 'topsecret';
-  if (lower.includes('secret')) return 'secret';
-  return 'unclassified';
-}
-
 export function TrainingPackagesView({ problemSetId, onDocCountChange, onPendingChange }: TrainingPackagesViewProps) {
   const { activeProblemSet } = useProblemSet();
   const [scenario, setScenario] = useState<ExerciseScenario | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDoc, setSelectedDoc] = useState<ScenarioDocument | null>(null);
-
-  const classification = activeProblemSet?.classification ?? 'UNCLASSIFIED';
 
   // Resolve linked scenario on mount
   useEffect(() => {
@@ -88,13 +78,6 @@ export function TrainingPackagesView({ problemSetId, onDocCountChange, onPending
 
   return (
     <div className="training-packages-container">
-      <div className={`classification-banner ${classificationClass(classification)}`}>
-        {classification}
-      </div>
-      <div className="classification-warning">
-        Classification ceiling: {classification}. Documents tagged above this level may not be appropriate.
-      </div>
-
       <div className="training-packages-content">
         <div className={`training-packages-main ${selectedDoc ? 'with-preview' : ''}`}>
           <ScenarioPackageUpload

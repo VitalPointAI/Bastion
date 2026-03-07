@@ -4,13 +4,13 @@ import { StrategicDashboard } from '../strategic/index.js';
 import { SubscriptionManager } from '../problem-set/SubscriptionManager.js';
 import { TrainingPackagesView } from './TrainingPackagesView.js';
 import { StrategicContextPreview } from '../strategic/StrategicContextPreview.js';
-import { TeamRoster } from '../exercise/TeamRoster.js';
+
 import { InheritedContextSection } from '../inheritance/InheritedContextSection.tsx';
 import { useMode } from '../../context/ModeContext.js';
 import { DecisionGateBanner, GateSubmitButton, DecisionGateTimeline } from '../governance/index.js';
 import type { DecisionGate } from '../../lib/gate-service';
 
-type UnderstandView = 'strategic-docs' | 'subscriptions' | 'ai-context-preview' | 'training-packages' | 'team-roster';
+type UnderstandView = 'strategic-docs' | 'subscriptions' | 'ai-context-preview' | 'training-packages';
 
 interface UnderstandTabProps {
   problemSetId: string;
@@ -28,7 +28,7 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
 
   // Reset to strategic-docs when mode switches away from training while viewing training-only views
   useEffect(() => {
-    if (mode !== 'training' && (selectedView === 'training-packages' || selectedView === 'team-roster')) {
+    if (mode !== 'training' && selectedView === 'training-packages') {
       setSelectedView('strategic-docs');
     }
   }, [mode, selectedView]);
@@ -49,11 +49,6 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
       {
         id: 'training-packages',
         label: `Training Packages${trainingDocCount > 0 ? ` (${trainingDocCount})` : ''}${hasPendingExtraction ? ' *' : ''}`,
-      },
-      {
-        id: 'team-roster',
-        label: 'Team Roster',
-        tooltip: 'Manage exercise positions and phase-transition mappings',
       },
     ] : []),
   ];
@@ -101,9 +96,6 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
           onDocCountChange={setTrainingDocCount}
           onPendingChange={setHasPendingExtraction}
         />
-      )}
-      {selectedView === 'team-roster' && mode === 'training' && (
-        <TeamRoster problemSetId={problemSetId} />
       )}
     </TabLayout>
     </>

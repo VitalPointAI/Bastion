@@ -16,6 +16,7 @@ import { JoinByCodePage } from './components/problem-set/JoinByCodePage'
 import { ProblemSetTabContainer } from './components/problem-set/ProblemSetTabContainer'
 import { ProblemSetMemberManager } from './components/problem-set/ProblemSetMemberManager'
 import { MemberDirectory } from './components/problem-set/MemberDirectory'
+import { ProblemSetSettings } from './components/problem-set/ProblemSetSettings'
 import './App.css'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
@@ -128,7 +129,7 @@ function AppContent() {
             <Route path=":problemSetId/members" element={<ProblemSetMemberManagerPage />} />
             <Route path=":problemSetId/directory" element={<MemberDirectoryPage />} />
             <Route path=":problemSetId/invite" element={<ProblemSetPlaceholder label="Invite" />} />
-            <Route path=":problemSetId/settings" element={<ProblemSetPlaceholder label="Settings" />} />
+            <Route path=":problemSetId/settings" element={<ProblemSetSettings />} />
             {/* Tab-aware routes — ProblemSetTabContainer reads :tab param for URL-driven tab state */}
             <Route path=":problemSetId/:tab" element={<ProblemSetTabContainer />} />
             <Route path=":problemSetId" element={<ProblemSetTabContainer />} />
