@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { DesignStatusBadge } from '../design/DesignStatusBadge.tsx';
 import './TabLayout.css';
 
@@ -14,9 +14,11 @@ export interface TabLayoutProps {
   selectedItem: string;
   onSelectItem: (id: string) => void;
   children: React.ReactNode;
+  /** Optional slot for decision history section below sidebar items */
+  decisionHistory?: ReactNode;
 }
 
-export function TabLayout({ items, selectedItem, onSelectItem, children }: TabLayoutProps) {
+export function TabLayout({ items, selectedItem, onSelectItem, children, decisionHistory }: TabLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const showSidebar = items.length > 1;
 
@@ -32,19 +34,26 @@ export function TabLayout({ items, selectedItem, onSelectItem, children }: TabLa
             {sidebarOpen ? '‹' : '›'}
           </button>
           {sidebarOpen && (
-            <nav className="sidebar-nav">
-              {items.map(item => (
-                <button
-                  key={item.id}
-                  className={`sidebar-item ${selectedItem === item.id ? 'active' : ''}`}
-                  onClick={() => onSelectItem(item.id)}
-                  title={item.tooltip}
-                >
-                  {item.label}
-                  {item.status !== undefined && <DesignStatusBadge status={item.status} />}
-                </button>
-              ))}
-            </nav>
+            <>
+              <nav className="sidebar-nav">
+                {items.map(item => (
+                  <button
+                    key={item.id}
+                    className={`sidebar-item ${selectedItem === item.id ? 'active' : ''}`}
+                    onClick={() => onSelectItem(item.id)}
+                    title={item.tooltip}
+                  >
+                    {item.label}
+                    {item.status !== undefined && <DesignStatusBadge status={item.status} />}
+                  </button>
+                ))}
+              </nav>
+              {decisionHistory && (
+                <div className="sidebar-decision-history">
+                  {decisionHistory}
+                </div>
+              )}
+            </>
           )}
         </aside>
       )}

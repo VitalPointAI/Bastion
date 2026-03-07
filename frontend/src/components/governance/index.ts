@@ -23,3 +23,6 @@ export { MDMPGovernancePanel } from './MDMPGovernancePanel';
 export { DecisionGateBanner } from './DecisionGateBanner';
 export { GateStatusBadge } from './GateStatusBadge';
 export { GateBlockOverlay } from './GateBlockOverlay';
+export { GateProposalModal } from './GateProposalModal';
+export { GateSubmitButton } from './GateSubmitButton';
+export { DecisionGateTimeline } from './DecisionGateTimeline';
