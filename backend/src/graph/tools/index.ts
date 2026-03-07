@@ -34,11 +34,16 @@ export {
   raftToolHandlers,
 } from './raft-tools.js';
 
+export {
+  resourceToolDefinitions,
+} from './resource-tools.js';
+
 import { objectiveToolDefinitions } from './objective-tools.js';
 import { entityToolDefinitions } from './entity-tools.js';
 import { osintToolDefinitions } from './osint-tools.js';
 import { validityToolDefinitions } from './validity-tools.js';
 import { raftToolDefinitions } from './raft-tools.js';
+import { resourceToolDefinitions } from './resource-tools.js';
 
 /**
  * All fusion tool definitions for registration
@@ -49,4 +54,5 @@ export const allFusionToolDefinitions = [
   ...osintToolDefinitions,
   ...validityToolDefinitions,
   ...raftToolDefinitions,
+  ...resourceToolDefinitions,
 ];
