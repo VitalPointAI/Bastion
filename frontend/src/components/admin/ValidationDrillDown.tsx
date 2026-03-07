@@ -242,15 +242,15 @@ export function ValidationDrillDown({ agentId }: ValidationDrillDownProps) {
                       color: '#e5e7eb',
                       fontSize: 12,
                     }}
-                    formatter={(value: number, name: string) => [
-                      value.toFixed(3),
+                    formatter={(value: unknown, name: unknown) => [
+                      Number(value).toFixed(3),
                       name === 'avg_score'
                         ? 'Average'
                         : name === 'min_score'
                           ? 'Min'
                           : 'Max',
                     ]}
-                    labelFormatter={(label: string) => `Date: ${label}`}
+                    labelFormatter={(label: unknown) => `Date: ${String(label)}`}
                   />
                   <ReferenceLine
                     y={thresh.warning}
