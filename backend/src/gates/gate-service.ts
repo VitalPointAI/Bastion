@@ -18,6 +18,20 @@ import type {
   CreateGateParams,
   GateProposalContext,
 } from './gate-types.js';
+import { getPool } from '../lib/database.js';
+import { inheritanceStore } from '../inheritance/inheritance-store.js';
+
+// ---------------------------------------------------------------------------
+// Gate Permissions Type
+// ---------------------------------------------------------------------------
+
+export interface GatePermissions {
+  canApprove: boolean;
+  canReject: boolean;
+  canOverride: boolean;
+  canEscalate: boolean;
+  canConfigure: boolean;
+}
 
 // ---------------------------------------------------------------------------
 // GateService
@@ -54,6 +68,13 @@ export class GateService {
     }
 
     return this.store.create(enrichedParams);
+  }
+
+  /**
+   * Get a single gate by ID.
+   */
+  async getGateById(gateId: string): Promise<DecisionGate | null> {
+    return this.store.findById(gateId);
   }
 
   /**
@@ -197,6 +218,8 @@ export class GateService {
 
   /**
    * Escalate a gate. Transitions to 'escalated'.
+   * Looks up the parent problem set via the problem_sets table and tags
+   * escalation metadata including parent ID and originating tab.
    */
   async escalateGate(
     gateId: string,
@@ -206,12 +229,26 @@ export class GateService {
     const gate = await this.store.findById(gateId);
     if (!gate) throw new Error(`Gate not found: ${gateId}`);
 
+    // Look up parent problem set for escalation target
+    const pool = getPool();
+    const parentResult = await pool.query(
+      `SELECT parent_problem_set_id FROM problem_sets WHERE id = $1`,
+      [gate.problem_set_id],
+    );
+    const parentProblemSetId = parentResult.rows.length > 0
+      ? (parentResult.rows[0] as { parent_problem_set_id: string | null }).parent_problem_set_id
+      : null;
+
     await this.store.update(gateId, {
       decision_context: {
         ...gate.decision_context,
         escalation_reason: reason,
         escalated_by: escalatedBy,
         escalated_at: new Date().toISOString(),
+        ...(parentProblemSetId ? {
+          escalatedToParent: parentProblemSetId,
+          escalatedFromTab: gate.tab,
+        } : {}),
       },
     });
 
@@ -252,15 +289,21 @@ export class GateService {
 
       switch (gate.timeout_behavior) {
         case TimeoutBehavior.auto_escalate: {
+          // Use escalateGate to tag parent escalation metadata
+          const escalated = await this.escalateGate(
+            gate.id,
+            'system:timeout',
+            'Auto-escalated: deadline exceeded',
+          );
+          // Add timeout-specific metadata
           await this.store.update(gate.id, {
             decision_context: {
-              ...gate.decision_context,
+              ...escalated.decision_context,
               timeout_action: 'auto_escalated',
               timeout_at: now.toISOString(),
               ...modeTag,
             },
           });
-          const escalated = await this.store.updateStatus(gate.id, GateStatus.escalated);
           processed.push(escalated);
           break;
         }
@@ -284,6 +327,119 @@ export class GateService {
     }
 
     return processed;
+  }
+
+  // =========================================================================
+  // Escalation Queries
+  // =========================================================================
+
+  /**
+   * Get all gates escalated TO a parent problem set from its children.
+   * Queries decision_gates where status='escalated' and
+   * decision_context->>'escalatedToParent' matches the parent ID.
+   */
+  async getEscalatedGatesForParent(parentProblemSetId: string): Promise<DecisionGate[]> {
+    const pool = getPool();
+    const result = await pool.query(
+      `SELECT * FROM decision_gates
+       WHERE status = 'escalated'
+         AND decision_context->>'escalatedToParent' = $1
+       ORDER BY updated_at DESC`,
+      [parentProblemSetId],
+    );
+    // Re-fetch through store to get properly mapped DecisionGate objects
+    const gates: DecisionGate[] = [];
+    for (const row of result.rows) {
+      const gate = await this.store.findById((row as { id: string }).id);
+      if (gate) gates.push(gate);
+    }
+    return gates;
+  }
+
+  // =========================================================================
+  // Hierarchical Visibility
+  // =========================================================================
+
+  /**
+   * Get own gates plus gates from child problem sets.
+   * Enables parent commanders to see child problem set gates.
+   */
+  async getGatesWithChildVisibility(
+    problemSetId: string,
+  ): Promise<{ ownGates: DecisionGate[]; childGates: DecisionGate[] }> {
+    const ownGates = await this.store.findByProblemSet(problemSetId);
+
+    // Get child problem set IDs via inheritance store
+    let childIds: string[] = [];
+    try {
+      childIds = await inheritanceStore.getDescendantProblemSetIds(problemSetId);
+    } catch {
+      // Graceful degradation: if inheritance not available, return own gates only
+    }
+
+    const childGates: DecisionGate[] = [];
+    for (const childId of childIds) {
+      const gates = await this.store.findByProblemSet(childId);
+      childGates.push(...gates);
+    }
+
+    return { ownGates, childGates };
+  }
+
+  // =========================================================================
+  // Role-Based Permissions
+  // =========================================================================
+
+  /**
+   * Derive gate permissions from a user's DAO membership role.
+   *
+   * - commander/xo: full permissions (approve, reject, override, configure, escalate)
+   * - member/planner/analyst: can escalate rejected or stalled gates
+   * - All roles: canEscalate on rejected or stalled (pending past deadline) gates
+   */
+  canActOnGate(
+    userRole: string,
+    gate: DecisionGate,
+  ): GatePermissions {
+    const normalizedRole = userRole.toLowerCase();
+    const isCommanderRole = normalizedRole === 'commander' || normalizedRole === 'xo';
+
+    // Escalation allowed for all roles on rejected/escalated/stalled gates
+    const isEscalatable = gate.status === GateStatus.rejected
+      || gate.status === GateStatus.escalated
+      || (gate.status === GateStatus.pending && !!gate.deadline_at && new Date(gate.deadline_at) < new Date());
+
+    return {
+      canApprove: isCommanderRole,
+      canReject: isCommanderRole,
+      canOverride: isCommanderRole,
+      canEscalate: isEscalatable,
+      canConfigure: isCommanderRole,
+    };
+  }
+
+  /**
+   * Configure parent authority: whether parent has direct action capability
+   * on child gates or requires formal escalation.
+   * Stores config in problem set metadata via decision_context convention.
+   */
+  async configureParentAuthority(
+    problemSetId: string,
+    config: { directAction: boolean },
+  ): Promise<void> {
+    const pool = getPool();
+    // Store in problem_sets metadata column or a dedicated config
+    // Using a simple approach: store in a gate-config record
+    await pool.query(
+      `INSERT INTO decision_gates (
+        problem_set_id, gate_type, tab, target_item_id, target_item_type,
+        target_item_title, enforcement, status, decision_context, mode
+      ) VALUES ($1, 'parent_authority_config', 'direct', 'config', 'config',
+        'Parent Authority Configuration', 'soft_warning', 'approved',
+        $2, 'operational')
+       ON CONFLICT DO NOTHING`,
+      [problemSetId, JSON.stringify({ parentAuthority: config })],
+    );
   }
 }
 

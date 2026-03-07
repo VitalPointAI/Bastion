@@ -2,6 +2,7 @@
  * Decision Gate REST API Routes
  *
  * Phase 28 Plan 01: Express router for gate CRUD and lifecycle operations.
+ * Phase 28 Plan 07: Escalation, hierarchy, and permission endpoints.
  */
 
 import { Router } from 'express';
@@ -9,6 +10,53 @@ import { gateService } from './gate-service.js';
 import type { CreateGateParams, GateProposalContext } from './gate-types.js';
 
 export const gateRoutes = Router();
+
+// ---------------------------------------------------------------------------
+// GET /api/gates/:problemSetId/escalated — escalated gates for this parent
+// (Must be registered before /:problemSetId/:tab to avoid route conflicts)
+// ---------------------------------------------------------------------------
+gateRoutes.get('/:problemSetId/escalated', async (req, res) => {
+  try {
+    const gates = await gateService.getEscalatedGatesForParent(req.params.problemSetId);
+    res.json(gates);
+  } catch (error) {
+    console.error('[gates] Error fetching escalated gates:', error);
+    res.status(500).json({ error: 'Failed to fetch escalated gates' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/gates/:problemSetId/hierarchy — own gates + child gates
+// (Must be registered before /:problemSetId/:tab to avoid route conflicts)
+// ---------------------------------------------------------------------------
+gateRoutes.get('/:problemSetId/hierarchy', async (req, res) => {
+  try {
+    const result = await gateService.getGatesWithChildVisibility(req.params.problemSetId);
+    res.json(result);
+  } catch (error) {
+    console.error('[gates] Error fetching hierarchy gates:', error);
+    res.status(500).json({ error: 'Failed to fetch hierarchy gates' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/gates/:gateId/permissions/:userRole — permission object for role
+// ---------------------------------------------------------------------------
+gateRoutes.get('/:gateId/permissions/:userRole', async (req, res) => {
+  try {
+    const { gateId, userRole } = req.params;
+    const gate = await gateService.getGateById(gateId);
+    if (!gate) {
+      res.status(404).json({ error: `Gate not found: ${gateId}` });
+      return;
+    }
+    const permissions = gateService.canActOnGate(userRole, gate);
+    res.json(permissions);
+  } catch (error) {
+    console.error('[gates] Error checking permissions:', error);
+    res.status(500).json({ error: 'Failed to check permissions' });
+  }
+});
 
 // ---------------------------------------------------------------------------
 // GET /api/gates/:problemSetId — all gates for a problem set
