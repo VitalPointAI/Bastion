@@ -8,6 +8,10 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { ironclawService } from './ironclaw-service.js';
+import { actionPipeline } from './action-pipeline.js';
+import { ironclawStore } from './ironclaw-store.js';
+import { getMessageBus } from '../messaging/message-bus.js';
+import type { TrustDecision } from './ironclaw-types.js';
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -109,6 +113,201 @@ ironclawRouter.get(
       res.json(history);
     } catch (err) {
       console.error('[ironclaw-router] History endpoint error:', err);
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Internal server error',
+      });
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Confirmation & Trust Endpoints (Plan 04)
+// ---------------------------------------------------------------------------
+
+const VALID_DECISIONS = new Set<TrustDecision>(['yes', 'no', 'always']);
+
+/**
+ * POST /:problemSetId/confirm
+ * Handle user confirmation response for an inline action card.
+ *
+ * Body: { actionId: string, decision: 'yes' | 'no' | 'always' }
+ * Returns: ActionResult
+ */
+ironclawRouter.post(
+  '/:problemSetId/confirm',
+  async (req: Request, res: Response) => {
+    const problemSetId = req.params.problemSetId as string;
+    const { actionId, decision } = req.body as {
+      actionId?: string;
+      decision?: string;
+    };
+
+    if (!actionId || typeof actionId !== 'string') {
+      res.status(400).json({ error: 'actionId is required and must be a string' });
+      return;
+    }
+
+    if (!decision || !VALID_DECISIONS.has(decision as TrustDecision)) {
+      res.status(400).json({
+        error: "decision is required and must be one of: 'yes', 'no', 'always'",
+      });
+      return;
+    }
+
+    const userDid = getUserDid(req);
+
+    try {
+      const result = await actionPipeline.handleConfirmation(
+        actionId,
+        userDid,
+        problemSetId,
+        decision as TrustDecision,
+      );
+
+      // If decision resulted in execution, publish to WebSocket
+      if (result.status === 'executed') {
+        try {
+          const bus = getMessageBus();
+          await bus.publish({
+            sourceDid: 'did:system:ironclaw-service',
+            sourceType: 'system',
+            destinationType: 'channel',
+            destinationTarget: `ironclaw.${problemSetId}`,
+            messageType: 'ironclaw.action-executed',
+            payload: { actionId, decision, result },
+          });
+        } catch (wsErr) {
+          console.error('[ironclaw-router] WebSocket publish error:', wsErr);
+        }
+      }
+
+      res.json(result);
+    } catch (err) {
+      console.error('[ironclaw-router] Confirm endpoint error:', err);
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Internal server error',
+      });
+    }
+  },
+);
+
+/**
+ * GET /trust-preferences
+ * Retrieve a user's trust preferences for a specific problem set.
+ *
+ * Query: problemSetId (required)
+ * Returns: TrustPreference[]
+ */
+ironclawRouter.get('/trust-preferences', async (req: Request, res: Response) => {
+  const userDid = getUserDid(req);
+  const problemSetId = req.query.problemSetId as string | undefined;
+
+  if (!problemSetId) {
+    res.status(400).json({ error: 'problemSetId query parameter is required' });
+    return;
+  }
+
+  try {
+    const preferences = await ironclawStore.getAllTrustPreferences(
+      userDid,
+      problemSetId,
+    );
+    res.json(preferences);
+  } catch (err) {
+    console.error('[ironclaw-router] Trust preferences error:', err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : 'Internal server error',
+    });
+  }
+});
+
+/**
+ * DELETE /trust-preferences/:preferenceId
+ * Revoke a specific trust preference.
+ *
+ * Verifies the preference belongs to the requesting user before revoking.
+ */
+ironclawRouter.delete(
+  '/trust-preferences/:preferenceId',
+  async (req: Request, res: Response) => {
+    const userDid = getUserDid(req);
+    const preferenceId = req.params.preferenceId as string;
+
+    try {
+      // Look up the preference to verify ownership and extract revoke params
+      const allPrefs = await ironclawStore.getAllTrustPreferences(userDid, '%');
+      const pref = allPrefs.find(
+        (p) => p.id === preferenceId && p.user_did === userDid,
+      );
+
+      if (!pref) {
+        res.status(404).json({ error: 'Trust preference not found or does not belong to user' });
+        return;
+      }
+
+      await ironclawStore.revokeTrust(
+        userDid,
+        pref.problem_set_id,
+        pref.action_type,
+      );
+
+      res.status(204).end();
+    } catch (err) {
+      console.error('[ironclaw-router] Revoke trust error:', err);
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Internal server error',
+      });
+    }
+  },
+);
+
+/**
+ * POST /:problemSetId/emergency
+ * Execute an emergency action that bypasses normal confirmation flow.
+ *
+ * Body: { actionId: string, justification: string }
+ * Requires non-empty justification for audit trail.
+ */
+ironclawRouter.post(
+  '/:problemSetId/emergency',
+  async (req: Request, res: Response) => {
+    const problemSetId = req.params.problemSetId as string;
+    const { actionId, justification } = req.body as {
+      actionId?: string;
+      justification?: string;
+    };
+
+    if (!actionId || typeof actionId !== 'string') {
+      res.status(400).json({ error: 'actionId is required and must be a string' });
+      return;
+    }
+
+    if (!justification || typeof justification !== 'string' || !justification.trim()) {
+      res.status(400).json({
+        error: 'justification is required and must be a non-empty string',
+      });
+      return;
+    }
+
+    const userDid = getUserDid(req);
+
+    try {
+      const result = await actionPipeline.handleEmergencyAction(
+        {
+          id: actionId,
+          type: 'emergency',
+          description: `Emergency action: ${actionId}`,
+          payload: {},
+          problem_set_id: problemSetId,
+          requested_by: userDid,
+        },
+        userDid,
+        justification.trim(),
+      );
+
+      res.json(result);
+    } catch (err) {
+      console.error('[ironclaw-router] Emergency endpoint error:', err);
       res.status(500).json({
         error: err instanceof Error ? err.message : 'Internal server error',
       });

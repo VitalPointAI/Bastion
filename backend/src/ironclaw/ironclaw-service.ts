@@ -8,6 +8,7 @@
 
 import { ironclawClient, parseSSEStream } from './ironclaw-client.js';
 import { ironclawStore } from './ironclaw-store.js';
+import { toolBridge } from './tool-bridge.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import type {
   IronclawChatMessage,
@@ -180,6 +181,52 @@ export class IronclawService {
    */
   async isHealthy(): Promise<boolean> {
     return ironclawClient.healthCheck();
+  }
+
+  /**
+   * Initialize BASTION MCP tools with the Ironclaw sidecar.
+   * Should be called after Ironclaw is confirmed healthy.
+   */
+  async initializeTools(): Promise<void> {
+    await toolBridge.registerTools();
+  }
+
+  /**
+   * Startup initialization: wait for Ironclaw sidecar health, then register tools.
+   * Retries up to 3 times with 5-second delays since Ironclaw container may
+   * start slower than the backend.
+   */
+  async startupInit(): Promise<void> {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 5000;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const healthy = await this.isHealthy();
+        if (healthy) {
+          await this.initializeTools();
+          console.log('[ironclaw-service] Startup init complete: tools registered');
+          return;
+        }
+        console.warn(
+          `[ironclaw-service] Health check failed (attempt ${attempt}/${MAX_RETRIES})`,
+        );
+      } catch (err) {
+        console.warn(
+          `[ironclaw-service] Startup init error (attempt ${attempt}/${MAX_RETRIES}):`,
+          err instanceof Error ? err.message : err,
+        );
+      }
+
+      if (attempt < MAX_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      }
+    }
+
+    console.warn(
+      '[ironclaw-service] Startup init failed after retries. Tools not registered. ' +
+        'They can be registered later when Ironclaw becomes available.',
+    );
   }
 
   /**
