@@ -1,0 +1,215 @@
+/**
+ * Ironclaw Orchestration Service
+ *
+ * Phase 30 Plan 02: Bridges frontend users to the Ironclaw sidecar.
+ * Manages session lifecycle, SSE stream parsing, message persistence,
+ * specialist delegation attribution, and WebSocket forwarding.
+ */
+
+import { ironclawClient, parseSSEStream } from './ironclaw-client.js';
+import { ironclawStore } from './ironclaw-store.js';
+import { getMessageBus } from '../messaging/message-bus.js';
+import type {
+  IronclawChatMessage,
+  ActionCardData,
+} from './ironclaw-types.js';
+
+const SERVICE_DID = 'did:system:ironclaw-service';
+
+// ---------------------------------------------------------------------------
+// WebSocket channel helper
+// ---------------------------------------------------------------------------
+
+function wsChannel(problemSetId: string): string {
+  return `ironclaw.${problemSetId}`;
+}
+
+async function publishToChannel(
+  problemSetId: string,
+  messageType: string,
+  payload: unknown,
+): Promise<void> {
+  try {
+    const bus = getMessageBus();
+    await bus.publish({
+      sourceDid: SERVICE_DID,
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: wsChannel(problemSetId),
+      messageType,
+      payload,
+    });
+  } catch (err) {
+    // Non-blocking: log but don't fail the message flow
+    console.error(`[ironclaw] WebSocket publish error (${messageType}):`, err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// IronclawService
+// ---------------------------------------------------------------------------
+
+export class IronclawService {
+  /**
+   * Handle an incoming user message:
+   * 1. Get or create session
+   * 2. Initialize Ironclaw session if needed
+   * 3. Persist user message
+   * 4. Stream response from Ironclaw sidecar
+   * 5. Parse SSE events, detect specialist delegation
+   * 6. Persist and forward each chunk via WebSocket
+   */
+  async handleMessage(
+    problemSetId: string,
+    userDid: string,
+    content: string,
+    mentionedAgent?: string,
+  ): Promise<void> {
+    // 1. Get or create local session
+    const session = await ironclawStore.getOrCreateSession(problemSetId, userDid);
+
+    // 2. If no Ironclaw-side session, create one with system prompt
+    if (!session.ironclaw_session_id) {
+      const systemPrompt = this.buildSystemPrompt(problemSetId);
+      const result = await ironclawClient.createSession(
+        session.id,
+        systemPrompt,
+      );
+      // Update session with Ironclaw's session ID
+      // (Store the mapping so subsequent messages use the same session)
+      session.ironclaw_session_id = result.session_id;
+    }
+
+    // 3. Persist user message
+    const userMsg = await ironclawStore.addMessage({
+      problem_set_id: problemSetId,
+      content,
+      sender: 'user',
+      specialist_id: null,
+      specialist_display_name: null,
+      delegated_by: null,
+      action_card: null,
+      step_progress: null,
+    });
+
+    // Publish user message to WebSocket
+    await publishToChannel(problemSetId, 'ironclaw.user-message', userMsg);
+
+    // 4. Send to Ironclaw sidecar and get SSE stream
+    const stream = await ironclawClient.sendMessage(
+      session.ironclaw_session_id!,
+      content,
+      mentionedAgent,
+    );
+
+    // 5-8. Parse SSE stream and process events
+    for await (const event of parseSSEStream(stream)) {
+      await this.processSSEEvent(problemSetId, event);
+    }
+  }
+
+  /**
+   * Process a single SSE event from the Ironclaw sidecar.
+   * Detects specialist delegation, action cards, and regular messages.
+   */
+  private async processSSEEvent(
+    problemSetId: string,
+    event: { event?: string; data: string },
+  ): Promise<void> {
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(event.data) as Record<string, unknown>;
+    } catch {
+      // Non-JSON data (e.g. keepalive), skip
+      return;
+    }
+
+    // Determine sender and specialist attribution
+    const specialistId = (parsed.specialist_id as string) ?? null;
+    const specialistDisplayName =
+      (parsed.specialist_display_name as string) ?? null;
+    const sender: IronclawChatMessage['sender'] = specialistId
+      ? 'specialist'
+      : 'ironclaw';
+    const delegatedBy = specialistId ? 'ironclaw' : null;
+
+    // Detect action card (tool_call event)
+    let actionCard: ActionCardData | null = null;
+    if (parsed.tool_call || event.event === 'tool_call') {
+      const toolCall = (parsed.tool_call ?? parsed) as Record<string, unknown>;
+      actionCard = {
+        action_id: (toolCall.action_id as string) ?? '',
+        action_type: (toolCall.action_type as string) ?? '',
+        description: (toolCall.description as string) ?? '',
+        risk_level: (toolCall.risk_level as ActionCardData['risk_level']) ?? 'medium',
+        options: (toolCall.options as ActionCardData['options']) ?? ['yes', 'no'],
+      };
+    }
+
+    const messageContent = (parsed.content as string) ?? (parsed.text as string) ?? '';
+    if (!messageContent && !actionCard) return;
+
+    // 6. Persist the message
+    const chatMsg = await ironclawStore.addMessage({
+      problem_set_id: problemSetId,
+      content: messageContent,
+      sender,
+      specialist_id: specialistId,
+      specialist_display_name: specialistDisplayName,
+      delegated_by: delegatedBy,
+      action_card: actionCard,
+      step_progress: null,
+    });
+
+    // 7. Publish to WebSocket for real-time frontend updates
+    await publishToChannel(problemSetId, 'ironclaw.response', chatMsg);
+  }
+
+  /**
+   * Get chat history for a problem set.
+   */
+  async getHistory(
+    problemSetId: string,
+    limit?: number,
+  ): Promise<IronclawChatMessage[]> {
+    return ironclawStore.getHistory(problemSetId, limit);
+  }
+
+  /**
+   * Check if the Ironclaw sidecar is healthy.
+   */
+  async isHealthy(): Promise<boolean> {
+    return ironclawClient.healthCheck();
+  }
+
+  /**
+   * Build the system prompt for an Ironclaw session.
+   * Establishes Ironclaw as the Chief of Staff with delegation rules.
+   */
+  buildSystemPrompt(problemSetId: string): string {
+    return [
+      'You are the Chief of Staff for this problem set.',
+      `Problem Set ID: ${problemSetId}.`,
+      'When a query is domain-specific, delegate to the appropriate specialist agent and attribute their response.',
+      'Always confirm actions before executing.',
+      'For ambiguous scope (this PS vs children), ask to clarify.',
+      'Never assume.',
+      '',
+      'Specialist agents available:',
+      '- J2 Intelligence: threat analysis, IPB, intelligence estimates',
+      '- J3 Operations: COA development, scheme of maneuver, fires integration',
+      '- J4 Logistics: sustainment, force projection, resource allocation',
+      '- J5 Plans: strategic planning, campaign design, phase transitions',
+      '- J6 Communications: C4ISR, network architecture, signal support',
+      '',
+      'When delegating, include the specialist_id and specialist_display_name in your response.',
+      'When proposing actions that modify data, include a tool_call with action_id, action_type, description, risk_level, and options.',
+    ].join('\n');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Singleton
+// ---------------------------------------------------------------------------
+
+export const ironclawService = new IronclawService();
