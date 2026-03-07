@@ -830,8 +830,15 @@ The test suite runs periodically, feeding results into a dedicated Bastion page 
 7. **Agent Circuit Breaker** — Automatic disablement of agents exceeding thresholds, pending human review
 8. **Human Review Workflow** — Notification and assessment interface for reviewing flagged agents
 
+**Plans:** 6 plans
+
 Plans:
-- (not yet planned)
+- [ ] 31-01-PLAN.md — Validation types, DB schema, and store foundation
+- [ ] 31-02-PLAN.md — Scoring modules (determinism, reliability, authority)
+- [ ] 31-03-PLAN.md — Validation runner, circuit breaker, scheduler, and REST API
+- [ ] 31-04-PLAN.md — Golden prompt fixtures for all 31 staff roles
+- [ ] 31-05-PLAN.md — Frontend validation dashboard with Recharts visualizations
+- [ ] 31-06-PLAN.md — AgentHealthDot integration and activation gating
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
