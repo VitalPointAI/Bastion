@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T13:27:56Z"
+last_updated: "2026-03-07T13:31:55.218Z"
 progress:
   total_phases: 46
   completed_phases: 28
-  total_plans: 261
-  completed_plans: 268
+  total_plans: 269
+  completed_plans: 271
 ---
 
 # Project State
@@ -128,6 +128,7 @@ Progress: ███████████████████████�
 | Phase 29 P01 | 3 | 2 tasks | 4 files |
 | Phase 29 P04 | 4 | 2 tasks | 6 files |
 | Phase 29 P03 | 4 | 2 tasks | 11 files |
+| Phase 30 P02 | 5 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -638,6 +639,8 @@ Recent decisions affecting current work:
 - [Phase 29]: RAF batching (5/frame) for WebSocket messages to prevent UI jank
 - [Phase 29]: Optimistic chat send with pending state for immediate feedback
 - [Phase 29]: AI staff panel uses createPortal for floating overlay at z-index 900, docked panel as flex sibling to tab content
+- [Phase 30]: Manual SSE parser instead of eventsource-parser library (no external dep needed)
+- [Phase 30]: Fire-and-forget message endpoint (202 Accepted, streaming via WebSocket)
 
 ### Roadmap Evolution
 
