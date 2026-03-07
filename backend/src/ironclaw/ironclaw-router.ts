@@ -11,6 +11,7 @@ import { ironclawService } from './ironclaw-service.js';
 import { actionPipeline } from './action-pipeline.js';
 import { ironclawStore } from './ironclaw-store.js';
 import { getMessageBus } from '../messaging/message-bus.js';
+import { verifyRequest } from './hmac-auth.js';
 import type { TrustDecision } from './ironclaw-types.js';
 
 // ---------------------------------------------------------------------------

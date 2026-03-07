@@ -213,14 +213,16 @@ This document analyzes attack vectors available to a compromised or rogue Ironcl
 | Runtime Config | `SELF_GOVERNANCE_ACTIONS` detection | IMPLEMENTED |
 | Runtime Config | Action registry locking | IMPLEMENTED |
 | Runtime Config | Risk level downgrade prevention | IMPLEMENTED |
-| Code Path | `PROTECTED_FILE_PATHS` for agent PRs | IMPLEMENTED (incomplete) |
+| Code Path | `PROTECTED_FILE_PATHS` for agent PRs | IMPLEMENTED |
 | Code Path | `ironclaw/` branch prefix enforcement | IMPLEMENTED |
+| Code Path | `CODEOWNERS` requiring human review | IMPLEMENTED |
 | API | Emergency endpoint role check | IMPLEMENTED |
 | API | Two-tier confirmation pipeline | IMPLEMENTED |
 | API | Decision Gates for high-risk actions | IMPLEMENTED |
-| Network | Docker internal network isolation | PARTIAL |
-| Network | Backend-Ironclaw authentication | NOT IMPLEMENTED |
-| Data | DB access control for Ironclaw | NOT IMPLEMENTED |
+| API | Backend-generated action card descriptions | IMPLEMENTED |
+| API | Channel name validation (anti-injection) | IMPLEMENTED |
+| Network | Docker network isolation (Ironclaw =/= DB) | IMPLEMENTED |
+| Network | HMAC-signed backend-Ironclaw requests | IMPLEMENTED |
 | UI | Action card risk level display | IMPLEMENTED |
 | Audit | Action logging | IMPLEMENTED |
 | Audit | Merkle root blockchain anchoring | IMPLEMENTED |
@@ -229,36 +231,27 @@ This document analyzes attack vectors available to a compromised or rogue Ironcl
 
 ## Implementation Plan
 
-### Tier 1: Immediate Fixes (implement now)
+### Tier 1 & 2: Implemented
 
-1. **Extend `PROTECTED_FILE_PATHS`** to cover:
-   - `package.json`, `package-lock.json`
-   - `tsconfig.json`, `tsconfig.*.json`
-   - `backend/src/index.ts` (server entry point)
-   - `backend/src/api/` (API route layer)
-   - `backend/src/messaging/` (message bus)
-   - `scripts/` (deployment/seed scripts)
-   - `.env` (environment defaults)
-   - `frontend/src/context/` (React contexts)
-   - `frontend/src/App.tsx` (app entry point)
+1. **Extend `PROTECTED_FILE_PATHS`** — DONE. Covers package.json, tsconfig, server entry points, API layer, messaging, scripts, .env, frontend context, App.tsx.
 
-2. **Backend-generated action card descriptions** — action cards should use canonical descriptions from the action registry, not agent-supplied text.
+2. **Backend-generated action card descriptions** — DONE. `action-registry.ts` provides canonical descriptions; `ironclaw-service.ts` uses them instead of agent-supplied text.
 
-3. **System prompt governance constraints** — add explicit governance rules to the Ironclaw system prompt in `ironclaw-service.ts` (defense-in-depth, not sole protection).
+3. **System prompt governance constraints** — DONE. Explicit non-negotiable rules in Ironclaw system prompt.
 
-4. **Trust preference TTL** — add expiration to trust grants (30-day default).
+4. **HMAC-signed backend-Ironclaw communication** — DONE. `hmac-auth.ts` provides signing/verification with HMAC-SHA256, timestamp validation (5-min window), timing-safe comparison. Integrated into `ironclaw-client.ts` (outbound) and available for inbound MCP callbacks.
 
-### Tier 2: Short-term Fixes (next phase)
+5. **Database network isolation** — DONE. Ironclaw container moved to separate `ironclaw-network` in both `docker-compose.yml` and `docker-compose.prod.yml`. Only the backend bridges both networks. Ironclaw has NO access to postgres or neo4j.
 
-5. **HMAC-signed backend-Ironclaw communication** — shared secret via Docker secrets, timestamp + nonce validation.
+6. **Channel name validation** — DONE. `ironclaw-service.ts` validates problemSetId against `[a-zA-Z0-9_-]+` pattern before constructing channel names.
 
-6. **Database network isolation** — ensure Ironclaw container cannot reach PostgreSQL directly.
+7. **CODEOWNERS file** — DONE. `.github/CODEOWNERS` requires @vitalpointai review for all governance-critical paths.
 
-7. **GitHub token scope restriction** — fine-grained PAT with minimum permissions.
+### Remaining: Operational & Strategic
 
-8. **WebSocket channel authorization** — enforce problem set membership on subscription.
+8. **Trust preference TTL** — add expiration to trust grants (30-day default).
 
-9. **CODEOWNERS file** — require human review for governance file changes via GitHub branch protection.
+9. **GitHub token scope restriction** — use fine-grained PAT with minimum permissions (operational config change).
 
 ### Tier 3: Strategic Improvements (future phases)
 

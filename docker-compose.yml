@@ -64,16 +64,15 @@ services:
     ports:
       - "3333:3000"   # Local debugging access
     environment:
-      DATABASE_URL: postgresql://ironclaw:${IRONCLAW_DB_PASSWORD:-password}@postgres:5432/ironclaw
       LLM_BACKEND: near-ai
       NEAR_AI_TOKEN: ${NEAR_AI_TOKEN:-}
+      IRONCLAW_SHARED_SECRET: ${IRONCLAW_SHARED_SECRET:-dev-shared-secret-change-me}
     volumes:
       - ironclaw-data:/home/ironclaw/.ironclaw
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
-      - bastion-network
+      # Ironclaw is on a separate network — NO access to postgres or neo4j.
+      # It can only communicate with the backend via the ironclaw-network.
+      - ironclaw-network
 
   # ==========================================
   # Backend API Server
@@ -96,6 +95,7 @@ services:
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password}
       - IRONCLAW_URL=http://ironclaw:3000
+      - IRONCLAW_SHARED_SECRET=${IRONCLAW_SHARED_SECRET:-dev-shared-secret-change-me}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
     depends_on:
       postgres:
@@ -112,6 +112,8 @@ services:
       retries: 3
     networks:
       - bastion-network
+      # Backend bridges both networks: bastion-network (DB access) + ironclaw-network (agent access)
+      - ironclaw-network
     restart: unless-stopped
 
   # ==========================================
@@ -145,6 +147,10 @@ services:
 
 networks:
   bastion-network:
+    driver: bridge
+  # Isolated network for Ironclaw agent — only the backend can reach it.
+  # Ironclaw has NO access to postgres, neo4j, or any other bastion-network service.
+  ironclaw-network:
     driver: bridge
 
 volumes:

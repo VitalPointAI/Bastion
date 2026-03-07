@@ -1,0 +1,37 @@
+# CODEOWNERS — Require human review for governance-critical paths.
+# Agent-authored PRs (ironclaw/* branches) are blocked from modifying these
+# files at the code level, but CODEOWNERS provides a second layer of defense
+# via GitHub's branch protection review requirements.
+
+# Ironclaw governance code
+/backend/src/ironclaw/ironclaw-types.ts    @vitalpointai
+/backend/src/ironclaw/action-registry.ts   @vitalpointai
+/backend/src/ironclaw/action-pipeline.ts   @vitalpointai
+/backend/src/ironclaw/tool-bridge.ts       @vitalpointai
+/backend/src/ironclaw/github-service.ts    @vitalpointai
+/backend/src/ironclaw/hmac-auth.ts         @vitalpointai
+
+# Authentication & authorization
+/backend/src/auth/                         @vitalpointai
+
+# Decision gate enforcement
+/backend/src/gates/                        @vitalpointai
+
+# CI/CD & deployment
+/.github/                                  @vitalpointai
+/docker-compose.yml                        @vitalpointai
+/docker-compose.prod.yml                   @vitalpointai
+/Dockerfile                                @vitalpointai
+
+# Server entry points & API layer
+/backend/src/index.ts                      @vitalpointai
+/backend/src/api/                          @vitalpointai
+/backend/src/messaging/                    @vitalpointai
+
+# Dependency manifests
+/package.json                              @vitalpointai
+/backend/package.json                      @vitalpointai
+/frontend/package.json                     @vitalpointai
+
+# Operational scripts
+/scripts/                                  @vitalpointai

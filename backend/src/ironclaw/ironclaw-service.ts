@@ -22,7 +22,16 @@ const SERVICE_DID = 'did:system:ironclaw-service';
 // WebSocket channel helper
 // ---------------------------------------------------------------------------
 
+/** Strict pattern for channel names — prevents path traversal and injection. */
+const CHANNEL_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
+
 function wsChannel(problemSetId: string): string {
+  if (!CHANNEL_NAME_PATTERN.test(problemSetId)) {
+    throw new Error(
+      `[ironclaw] Invalid problemSetId for channel name: "${problemSetId}". ` +
+      'Must match [a-zA-Z0-9_-]+.',
+    );
+  }
   return `ironclaw.${problemSetId}`;
 }
 

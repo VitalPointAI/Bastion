@@ -3,7 +3,10 @@
  *
  * Phase 30 Plan 02: HTTP client to the Ironclaw sidecar runtime.
  * Uses native fetch (Node 18+). Supports SSE streaming for chat responses.
+ * All requests are HMAC-signed when IRONCLAW_SHARED_SECRET is configured.
  */
+
+import { signRequest } from './hmac-auth.js';
 
 // ---------------------------------------------------------------------------
 // SSE Event interface
@@ -109,14 +112,16 @@ export class IronclawClient {
     content: string,
     mentionedAgent?: string,
   ): Promise<ReadableStream<Uint8Array>> {
-    const response = await fetch(`${this.baseUrl}/api/chat`, {
+    const path = '/api/chat';
+    const body = JSON.stringify({
+      session_id: sessionId,
+      message: content,
+      mentioned_agent: mentionedAgent,
+    });
+    const response = await fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        session_id: sessionId,
-        message: content,
-        mentioned_agent: mentionedAgent,
-      }),
+      headers: { 'Content-Type': 'application/json', ...signRequest('POST', path, body) },
+      body,
     });
 
     if (!response.ok) {
@@ -139,13 +144,15 @@ export class IronclawClient {
     sessionId: string,
     systemPrompt: string,
   ): Promise<{ session_id: string }> {
-    const response = await fetch(`${this.baseUrl}/api/sessions`, {
+    const path = '/api/sessions';
+    const body = JSON.stringify({
+      session_id: sessionId,
+      system_prompt: systemPrompt,
+    });
+    const response = await fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        session_id: sessionId,
-        system_prompt: systemPrompt,
-      }),
+      headers: { 'Content-Type': 'application/json', ...signRequest('POST', path, body) },
+      body,
     });
 
     if (!response.ok) {
@@ -181,10 +188,12 @@ export class IronclawClient {
       inputSchema: Record<string, unknown>;
     }>,
   ): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/api/mcp/register`, {
+    const path = '/api/mcp/register';
+    const body = JSON.stringify({ server_url: serverUrl, tools });
+    const response = await fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ server_url: serverUrl, tools }),
+      headers: { 'Content-Type': 'application/json', ...signRequest('POST', path, body) },
+      body,
     });
 
     if (!response.ok) {
