@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T13:37:51.167Z"
+last_updated: "2026-03-07T13:38:18.473Z"
 progress:
   total_phases: 46
   completed_phases: 28
@@ -645,6 +645,7 @@ Recent decisions affecting current work:
 - [Phase 30]: Singleton GitHubService with lazy Octokit init based on GITHUB_TOKEN presence for graceful degradation
 - [Phase 30]: MCP tool registration is non-blocking: backend starts without Ironclaw sidecar
 - [Phase 30]: Scope validation always clarifies ambiguous PS targets, never assumes
+- [Phase 30]: Added suggestion field to IronclawChatMessage for inline suggestion rendering in drawer
 
 ### Roadmap Evolution
 
