@@ -840,16 +840,16 @@ The test suite runs periodically, feeding results into a dedicated Bastion page 
 7. **Agent Circuit Breaker** — Automatic disablement of agents exceeding thresholds, pending human review
 8. **Human Review Workflow** — Notification and assessment interface for reviewing flagged agents
 
-**Plans:** 7 plans
+**Plans:** 6/7 plans executed
 
 Plans:
-- [ ] 31-01-PLAN.md — Validation types, DB schema, and store foundation
-- [ ] 31-02-PLAN.md — Scoring modules (determinism, reliability, authority)
-- [ ] 31-03-PLAN.md — Validation runner, circuit breaker, scheduler, and REST API
-- [ ] 31-04-PLAN.md — Fixture loader, generator, and 10 high-priority role fixtures
+- [x] 31-01-PLAN.md — Validation types, DB schema, and store foundation
+- [x] 31-02-PLAN.md — Scoring modules (determinism, reliability, authority)
+- [x] 31-03-PLAN.md — Validation runner, circuit breaker, scheduler, and REST API
+- [x] 31-04-PLAN.md — Fixture loader, generator, and 10 high-priority role fixtures
 - [ ] 31-04b-PLAN.md — Generated fixtures for remaining 21 staff roles
 - [ ] 31-05-PLAN.md — Frontend validation dashboard with Recharts visualizations
-- [ ] 31-06-PLAN.md — AgentHealthDot integration and activation gating
+- [x] 31-06-PLAN.md — AgentHealthDot integration and activation gating
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
@@ -1375,4 +1375,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 28. Embedded DAO Governance | 8/9 | In Progress|  |
 | 29. Contextual AI Staff Integration | 4/5 | In Progress|  |
 | 30. Ironclaw Agent Integration | 8/8 | Complete   | 2026-03-07 |
-| 31. AI Agent Validation & Compliance Testing | 0/TBD | Not started | - |
+| 31. AI Agent Validation & Compliance Testing | 7/7 | In Progress|  |
