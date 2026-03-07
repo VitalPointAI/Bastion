@@ -37,6 +37,11 @@ export const ACTION_RISK: Record<string, ActionRiskLevel> = {
   'code.emergency_deploy': ActionRiskLevel.high,
   'system.update_config': ActionRiskLevel.high,
   'gate.create': ActionRiskLevel.medium,
+  // Discovery actions
+  'discovery.scan_network': ActionRiskLevel.medium,
+  'discovery.onboard_device': ActionRiskLevel.medium,
+  'discovery.emergency_disconnect': ActionRiskLevel.high,
+  'discovery.modify_access_list': ActionRiskLevel.high,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -68,6 +73,11 @@ export const PROTECTED_CONFIG_KEYS = new Set([
   'agents.rate_limits',
   'agents.permissions',
   'agents.ironclaw',
+  // Discovery interface restrictions
+  'discovery.interface_restrictions',
+  'discovery.disabled_interfaces',
+  'discovery.scanner_permissions',
+  'discovery.blocklist_global',
 ]) as ReadonlySet<string>;
 
 /**
