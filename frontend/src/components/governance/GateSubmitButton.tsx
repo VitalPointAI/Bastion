@@ -61,7 +61,7 @@ export function GateSubmitButton({
   const [creating, setCreating] = useState(false);
 
   const problemSetId = activeProblemSet?.id || '';
-  const daoId = activeProblemSet?.dao_id || '';
+  const daoId = activeProblemSet?.daoId || '';
 
   // Find existing gate for this item
   const existingGate = useMemo(() => {

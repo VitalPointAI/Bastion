@@ -49,8 +49,8 @@ export function GateBlockOverlay({ gateId, gateLabel, children }: GateBlockOverl
     if (gate.enforcement !== GateEnforcement.hard_block) return false;
 
     // Only pending or submitted status blocks
-    const blockingStatuses = [GateStatus.pending, GateStatus.submitted];
-    return blockingStatuses.includes(gate.status as typeof GateStatus[keyof typeof GateStatus]);
+    const blockingStatuses: string[] = [GateStatus.pending, GateStatus.submitted];
+    return blockingStatuses.includes(gate.status);
   }, [gate]);
 
   // No blocking needed -- render children normally
