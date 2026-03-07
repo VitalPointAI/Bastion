@@ -945,9 +945,8 @@ export function setupOrchestrationWebSocket(server: HTTPServer): void {
         const executionId = match[1];
         handleExecutionSubscription(ws, executionId);
       });
-    } else {
-      socket.destroy();
     }
+    // Non-matching paths are left for other upgrade handlers
   });
 }
 

@@ -22,6 +22,7 @@ import messagingRouter, { setupMessageWebSocket } from './api/messaging.js';
 import orchestrationRouter, { setupOrchestrationWebSocket } from './api/orchestration.js';
 import graphRouter from './api/graph.js';
 import { createSyncServer } from './collaboration/index.js';
+import { setupResourceWebSocket } from './resources/resource-ws.js';
 import commandRouter from './api/command.js';
 import missionRouter from './api/missions.js';
 import problemSetsRouter from './api/problem-sets.js';
@@ -50,6 +51,7 @@ import { gateRoutes } from './gates/gate-routes.js';
 import { gateStore } from './gates/gate-store.js';
 import { runMigrations } from './db/migration-runner.js';
 import { aiStaffRouter, aiStaffStore } from './ai-staff/index.js';
+import { ironclawRouter, ironclawStore } from './ironclaw/index.js';
 import { requireAuth } from './auth/auth-instance.js';
 
 dotenv.config();
@@ -191,6 +193,7 @@ app.use('/api/cop', copRouter);
 app.use('/api/strategic-context', strategicContextRouter);
 app.use('/api/gates', gateRoutes);
 app.use('/api/ai-staff', requireAuth, aiStaffRouter);
+app.use('/api/ironclaw', requireAuth, ironclawRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -204,6 +207,9 @@ setupOrchestrationWebSocket(server);
 // Setup WebSocket for real-time collaboration (Yjs document sync)
 createSyncServer(server, '/ws/collab');
 console.log('Collaboration WebSocket server mounted at /ws/collab');
+
+// Setup WebSocket for resource telemetry position updates
+setupResourceWebSocket(server);
 
 server.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
@@ -285,6 +291,14 @@ server.listen(port, async () => {
     console.log('AI staff tables initialized');
   } catch (error) {
     console.error('Failed to initialize AI staff tables:', error);
+  }
+
+  // Initialize Ironclaw tables (Phase 30)
+  try {
+    await ironclawStore.ensureTable();
+    console.log('Ironclaw tables initialized');
+  } catch (error) {
+    console.error('Failed to initialize Ironclaw tables:', error);
   }
 
   // Initialize COP module (schema, tables, triggers, agent definitions)

@@ -13,7 +13,9 @@ import {
   type CreatePositionInput,
   type PhaseMappingInput,
 } from '../../lib/position-service.js';
-import { problemSetService } from '../../lib/problem-set-service.js';
+import { problemSetService, type ProblemSetMemberDetail } from '../../lib/problem-set-service.js';
+import { adminService } from '../../lib/admin-service.js';
+import type { AgentWithConfig, AgentTeam } from '../../types/admin.js';
 import { useUser } from '../../context/UserContext.js';
 import './TeamRoster.css';
 
@@ -180,6 +182,27 @@ const SIDE_LABELS: Record<PositionSide, string> = {
   green: 'Green (Civilian)',
 };
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatDID(did: string): string {
+  return did.replace(/^did:near:/, '');
+}
+
+function resolveAssigneeName(
+  assignedTo: string,
+  members: ProblemSetMemberDetail[],
+  agents: AgentWithConfig[],
+  teams: AgentTeam[],
+): string {
+  const agent = agents.find((a) => a.agentId === assignedTo || a.agentDID === assignedTo);
+  if (agent) return agent.name;
+  const team = teams.find((t) => t.teamId === assignedTo || t.teamDID === assignedTo);
+  if (team) return team.name;
+  const member = members.find((m) => m.userDid === assignedTo);
+  if (member) return formatDID(member.userDid);
+  return formatDID(assignedTo);
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface TeamRosterProps {
@@ -196,6 +219,9 @@ export function TeamRoster({ problemSetId }: TeamRosterProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [collapsedSides, setCollapsedSides] = useState<Set<PositionSide>>(new Set());
+  const [members, setMembers] = useState<ProblemSetMemberDetail[]>([]);
+  const [agents, setAgents] = useState<AgentWithConfig[]>([]);
+  const [agentTeams, setAgentTeams] = useState<AgentTeam[]>([]);
 
   const did = userDID || '';
 
@@ -204,13 +230,26 @@ export function TeamRoster({ problemSetId }: TeamRosterProps) {
     setLoading(true);
     setError(null);
     try {
-      const [posData, scenario] = await Promise.all([
+      const [posData, scenario, memberData] = await Promise.all([
         positionService.listPositions(problemSetId, did),
         problemSetService.getLinkedScenario(problemSetId),
+        problemSetService.listMembers(problemSetId, did),
       ]);
       setPositions(posData);
+      setMembers(memberData);
       if (scenario?.exercisePhases) {
         setExercisePhases(scenario.exercisePhases);
+      }
+      // Load agents/teams (non-fatal)
+      try {
+        const [agentData, teamData] = await Promise.all([
+          adminService.listAgents(),
+          adminService.listTeams(),
+        ]);
+        setAgents(agentData.filter((a) => a.active));
+        setAgentTeams(teamData.filter((t) => t.isEnabled));
+      } catch {
+        // Agent/team data unavailable — dropdowns will be empty
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load positions');
@@ -282,6 +321,9 @@ export function TeamRoster({ problemSetId }: TeamRosterProps) {
       {showAddForm && (
         <PositionForm
           exercisePhases={exercisePhases}
+          members={members}
+          agents={agents}
+          agentTeams={agentTeams}
           onSave={async (input) => {
             if (!did) return;
             const pos = await positionService.createPosition(problemSetId, input, did);
@@ -329,7 +371,9 @@ export function TeamRoster({ problemSetId }: TeamRosterProps) {
                       </div>
                       <div className="team-roster__position-meta">
                         <span className={`team-roster__position-assigned ${pos.assignedTo ? 'team-roster__position-assigned--active' : ''}`}>
-                          {pos.assignedTo || 'Unassigned'}
+                          {pos.assignedTo
+                            ? resolveAssigneeName(pos.assignedTo, members, agents, agentTeams)
+                            : 'Unassigned'}
                         </span>
                         {(pos.phaseMappings?.length ?? 0) > 0 && (
                           <span className="team-roster__phase-badge">
@@ -344,6 +388,9 @@ export function TeamRoster({ problemSetId }: TeamRosterProps) {
                         <PositionForm
                           position={pos}
                           exercisePhases={exercisePhases}
+                          members={members}
+                          agents={agents}
+                          agentTeams={agentTeams}
                           onSave={async (input) => {
                             if (!did) return;
                             const updated = await positionService.updatePosition(problemSetId, pos.id, input, did);
@@ -392,12 +439,15 @@ export function TeamRoster({ problemSetId }: TeamRosterProps) {
 interface PositionFormProps {
   position?: ExercisePosition;
   exercisePhases: string[];
+  members: ProblemSetMemberDetail[];
+  agents: AgentWithConfig[];
+  agentTeams: AgentTeam[];
   onSave: (input: CreatePositionInput) => Promise<void>;
   onCancel: () => void;
   onSaveMappings?: (mappings: PhaseMappingInput[]) => Promise<void>;
 }
 
-function PositionForm({ position, exercisePhases, onSave, onCancel, onSaveMappings }: PositionFormProps) {
+function PositionForm({ position, exercisePhases, members, agents, agentTeams, onSave, onCancel, onSaveMappings }: PositionFormProps) {
   const [title, setTitle] = useState(position?.title ?? '');
   const [duties, setDuties] = useState(position?.duties ?? '');
   const [side, setSide] = useState<PositionSide>(position?.side ?? 'blue');
@@ -515,14 +565,46 @@ function PositionForm({ position, exercisePhases, onSave, onCancel, onSaveMappin
         />
       </div>
 
-      <div className="team-roster__form-group">
-        <label className="team-roster__form-label">Assigned To (NEAR Account)</label>
-        <input
-          className="team-roster__form-input"
-          value={assignedTo}
-          onChange={(e) => setAssignedTo(e.target.value)}
-          placeholder="e.g. user.near"
-        />
+      <div className="team-roster__form-row">
+        <div className="team-roster__form-group">
+          <label className="team-roster__form-label">Assign to Member</label>
+          <select
+            className="team-roster__form-select"
+            value={assignedTo}
+            onChange={(e) => setAssignedTo(e.target.value)}
+          >
+            <option value="">Unassigned</option>
+            {members.map((m) => (
+              <option key={m.userDid} value={m.userDid}>
+                {formatDID(m.userDid)} ({m.role})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="team-roster__form-group">
+          <label className="team-roster__form-label">Or Assign AI Agent / Team</label>
+          <select
+            className="team-roster__form-select"
+            value={assignedTo}
+            onChange={(e) => setAssignedTo(e.target.value)}
+          >
+            <option value="">— None —</option>
+            {agents.length > 0 && (
+              <optgroup label="AI Agents">
+                {agents.map((a) => (
+                  <option key={a.agentId} value={a.agentId}>{a.name}</option>
+                ))}
+              </optgroup>
+            )}
+            {agentTeams.length > 0 && (
+              <optgroup label="Agent Teams">
+                {agentTeams.map((t) => (
+                  <option key={t.teamId} value={t.teamId}>{t.name}</option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+        </div>
       </div>
 
       {/* Phase Mappings */}

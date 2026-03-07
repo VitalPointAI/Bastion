@@ -92,20 +92,8 @@ export function COPMapView({
   const fetchLayers = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch COP-state layers (top-level promoted) and published (section-level)
-      const [copLayers, publishedLayers] = await Promise.all([
-        copService.queryLayers(problemSetId, { state: 'cop' }),
-        copService.queryLayers(problemSetId, { state: 'published' }),
-      ]);
-
-      // Combine and deduplicate by ID
-      const layerMap = new Map<string, COPLayer>();
-      for (const l of copLayers) layerMap.set(l.id, l);
-      for (const l of publishedLayers) {
-        if (!layerMap.has(l.id)) layerMap.set(l.id, l);
-      }
-
-      const allLayers = Array.from(layerMap.values());
+      // Fetch all layers for this workspace (draft, published, cop, review)
+      const allLayers = await copService.queryLayers(problemSetId);
       setLayers(allLayers);
       onLayersLoaded?.(allLayers);
     } catch (err) {
