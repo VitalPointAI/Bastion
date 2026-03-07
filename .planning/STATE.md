@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T12:32:24.668Z"
+last_updated: "2026-03-07T13:22:44Z"
 progress:
   total_phases: 46
   completed_phases: 28
@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 28 — Embedded DAO Governance at Decision Gates
+**Current focus:** Phase 30 — Ironclaw Agent Integration
 
 ## Current Position
 
-Phase: 29 of 40 (Contextual AI Staff Integration)
-Plan: 4 of 5 in current phase -- 29-03 and 29-04 complete (wave 2)
-Status: AI staff panel UI components with docked sidebar, floating overlay, and feed items
-Last activity: 2026-03-07 - Completed 29-03: AI staff panel UI components
+Phase: 30 of 40 (Ironclaw Agent Integration)
+Plan: 1 of 5 in current phase -- 30-01 complete (wave 1)
+Status: Ironclaw foundation types, PostgreSQL store, and Docker sidecar config
+Last activity: 2026-03-07 - Completed 30-01: Ironclaw foundation (types, store, Docker)
 
-Progress: ██████████████████████████ 265 plans complete
+Progress: ██████████████████████████ 266 plans complete
 
 ## Performance Metrics
 
