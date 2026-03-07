@@ -9,8 +9,8 @@
 // Store
 export { AIStaffStore, aiStaffStore } from './ai-staff-store.js';
 
-// Router (added in Task 2 — uncommented after router is created)
-// export { aiStaffRouter } from './ai-staff-router.js';
+// Router
+export { aiStaffRouter } from './ai-staff-router.js';
 
 // Types
 export type {
