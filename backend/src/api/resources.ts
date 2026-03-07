@@ -2,13 +2,18 @@
  * Resource Management API
  *
  * Phase 4.4 Plan 06: REST API for resource catalog, personnel, and consumables
+ * Phase 27 Plan 04: Extended with registry, DID, group, and telemetry endpoints
  */
 
 import { Router, type Request, type Response } from 'express';
 import { resourceStore } from '../resources/resource-store.js';
 import { personnelStore } from '../resources/personnel-store.js';
 import { consumableStore } from '../resources/consumable-store.js';
-import type { ResourceCategory, ResourceStatus, ConsumableCategory } from '../resources/types.js';
+import { getResourceRegistry } from '../resources/resource-registry.js';
+import { resourceGroupStore } from '../resources/resource-group-store.js';
+import { getResourceTelemetryService } from '../resources/resource-telemetry.js';
+import { getPluginRegistry } from '../resources/plugins/plugin-registry.js';
+import type { ResourceCategory, ResourceStatus, ConsumableCategory, ResourceManifest } from '../resources/types.js';
 
 const router = Router();
 
@@ -19,6 +24,16 @@ function getQueryString(value: unknown): string | undefined {
   if (Array.isArray(value)) return value[0];
   if (typeof value === 'string') return value;
   return undefined;
+}
+
+/**
+ * Helper to parse a query param as a number
+ */
+function getQueryNumber(value: unknown): number | undefined {
+  const str = getQueryString(value);
+  if (str === undefined) return undefined;
+  const num = Number(str);
+  return Number.isFinite(num) ? num : undefined;
 }
 
 // =====================
@@ -43,6 +58,294 @@ router.get('/', async (req: Request, res: Response) => {
     res.status(500).json({ error: String(error) });
   }
 });
+
+// =====================
+// REGISTRY ENDPOINTS (static routes BEFORE parametric /:id)
+// =====================
+
+// Search registry with multiple query modes
+router.get('/registry/search', async (req: Request, res: Response) => {
+  try {
+    const registry = getResourceRegistry();
+    await registry.ensureInitialized();
+
+    const capability = getQueryString(req.query.capability);
+    const category = getQueryString(req.query.category) as ResourceCategory | undefined;
+    const status = getQueryString(req.query.status) as ResourceStatus | undefined;
+    const did = getQueryString(req.query.did);
+    const north = getQueryNumber(req.query.north);
+    const south = getQueryNumber(req.query.south);
+    const east = getQueryNumber(req.query.east);
+    const west = getQueryNumber(req.query.west);
+
+    // DID lookup
+    if (did) {
+      const resource = registry.getByDID(did);
+      return res.json({ resources: resource ? [resource] : [] });
+    }
+
+    // Capability search
+    if (capability) {
+      const resources = registry.findByCapability(capability);
+      return res.json({ resources });
+    }
+
+    // Area search
+    if (north !== undefined && south !== undefined && east !== undefined && west !== undefined) {
+      const resources = registry.findInArea({ north, south, east, west });
+      return res.json({ resources });
+    }
+
+    // Type + status search
+    if (category || status) {
+      const resources = registry.findByTypeAndStatus(category, status);
+      return res.json({ resources });
+    }
+
+    // No filters — return all
+    const resources = registry.getAllResources();
+    return res.json({ resources });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// List all known capabilities across all plugins
+router.get('/registry/capabilities', async (_req: Request, res: Response) => {
+  try {
+    const pluginRegistry = getPluginRegistry();
+    await pluginRegistry.ensureInitialized();
+
+    const allPlugins = pluginRegistry.getAllPlugins();
+    const capSet = new Set<string>();
+    for (const plugin of allPlugins) {
+      for (const cap of plugin.capabilities) {
+        capSet.add(cap);
+      }
+    }
+
+    res.json({ capabilities: Array.from(capSet).sort() });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// Registry statistics
+router.get('/registry/stats', async (_req: Request, res: Response) => {
+  try {
+    const registry = getResourceRegistry();
+    await registry.ensureInitialized();
+
+    const all = registry.getAllResources();
+    const byCategory: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+    let autonomous = 0;
+    let passive = 0;
+
+    for (const r of all) {
+      byCategory[r.category] = (byCategory[r.category] || 0) + 1;
+      byStatus[r.status] = (byStatus[r.status] || 0) + 1;
+      if (r.isAutonomous) {
+        autonomous++;
+      } else {
+        passive++;
+      }
+    }
+
+    res.json({
+      total: all.length,
+      byCategory,
+      byStatus,
+      autonomous,
+      passive,
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// Register resource with full plugin treatment
+router.post('/registry/register', async (req: Request, res: Response) => {
+  try {
+    const { name, category, missionId, specifications, isAutonomous, capabilities } = req.body;
+
+    if (!name || !category || !missionId) {
+      return res.status(400).json({ error: 'name, category, and missionId are required' });
+    }
+
+    const manifest: ResourceManifest = {
+      name,
+      category,
+      missionId,
+      specifications: specifications || {},
+      isAutonomous: isAutonomous ?? false,
+      capabilities: capabilities || [],
+    };
+
+    const registry = getResourceRegistry();
+    const registered = await registry.registerResource(manifest);
+    res.status(201).json(registered);
+  } catch (error) {
+    res.status(400).json({ error: String(error) });
+  }
+});
+
+// =====================
+// DID ENDPOINTS (static routes BEFORE parametric /:id)
+// =====================
+
+// Resolve resource by DID
+router.get('/did/:did', async (req: Request, res: Response) => {
+  try {
+    const did = decodeURIComponent(req.params.did as string);
+    const registry = getResourceRegistry();
+    await registry.ensureInitialized();
+
+    const resource = registry.getByDID(did);
+    if (!resource) {
+      return res.status(404).json({ error: 'Resource not found for DID' });
+    }
+
+    res.json(resource);
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
+// GROUP ENDPOINTS (static routes BEFORE parametric /:id)
+// =====================
+
+// List groups for a mission
+router.get('/groups', async (req: Request, res: Response) => {
+  try {
+    const missionId = getQueryString(req.query.missionId);
+    if (!missionId) {
+      return res.status(400).json({ error: 'missionId query parameter is required' });
+    }
+
+    const groups = await resourceGroupStore.listGroups(missionId);
+    res.json({ groups });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// Create group
+router.post('/groups', async (req: Request, res: Response) => {
+  try {
+    const { missionId, name, groupType, description, parentGroupId } = req.body;
+
+    if (!missionId || !name || !groupType) {
+      return res.status(400).json({ error: 'missionId, name, and groupType are required' });
+    }
+
+    const group = await resourceGroupStore.createGroup(
+      missionId,
+      name,
+      groupType,
+      description,
+      parentGroupId
+    );
+
+    res.status(201).json(group);
+  } catch (error) {
+    res.status(400).json({ error: String(error) });
+  }
+});
+
+// Get group with member count
+router.get('/groups/:groupId', async (req: Request, res: Response) => {
+  try {
+    const group = await resourceGroupStore.getGroupWithMemberCount(req.params.groupId as string);
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    res.json(group);
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// List group members
+router.get('/groups/:groupId/members', async (req: Request, res: Response) => {
+  try {
+    const group = await resourceGroupStore.getGroup(req.params.groupId as string);
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    const members = await resourceGroupStore.getGroupMembers(req.params.groupId as string);
+    res.json({ members });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// Add resource to group
+router.post('/groups/:groupId/members', async (req: Request, res: Response) => {
+  try {
+    const { resourceId } = req.body;
+    if (!resourceId) {
+      return res.status(400).json({ error: 'resourceId is required' });
+    }
+
+    await resourceGroupStore.addToGroup(resourceId, req.params.groupId as string);
+    res.status(201).json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: String(error) });
+  }
+});
+
+// Remove resource from group
+router.delete('/groups/:groupId/members/:resourceId', async (req: Request, res: Response) => {
+  try {
+    await resourceGroupStore.removeFromGroup(req.params.resourceId as string);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// Delete group (unassigns members first)
+router.delete('/groups/:groupId', async (req: Request, res: Response) => {
+  try {
+    const deleted = await resourceGroupStore.deleteGroup(req.params.groupId as string);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
+// TELEMETRY ENDPOINT (static route BEFORE parametric /:id)
+// =====================
+
+// Ingest telemetry data
+router.post('/telemetry', async (req: Request, res: Response) => {
+  try {
+    const { resourceId, lat, lng, heading, speed } = req.body;
+
+    if (!resourceId || lat === undefined || lng === undefined) {
+      return res.status(400).json({ error: 'resourceId, lat, and lng are required' });
+    }
+
+    const telemetryService = getResourceTelemetryService();
+    telemetryService.ingestTelemetry(resourceId, { lat, lng, heading, speed });
+
+    res.status(202).json({ accepted: true });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
+// PARAMETRIC RESOURCE ENDPOINTS (after static routes to prevent shadowing)
+// =====================
 
 // Get single resource
 router.get('/:id', async (req: Request, res: Response) => {
