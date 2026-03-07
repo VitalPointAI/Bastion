@@ -5,7 +5,7 @@
  * the validation runner.
  */
 
-export { scoreDeterminism } from './score-determinism.js';
-export { scoreReliability } from './score-reliability.js';
-export { scoreAuthority } from './score-authority.js';
+export { scoreDeterminism } from './determinism-scorer.js';
+export { scoreReliability } from './reliability-scorer.js';
+export { scoreAuthority } from './authority-scorer.js';
 export { cosineSimilarity } from './cosine-similarity.js';
