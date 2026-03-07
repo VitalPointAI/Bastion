@@ -1,0 +1,263 @@
+/**
+ * DecisionGateBanner Styles
+ *
+ * Amber/yellow attention banner for commanders with pending approvals.
+ * Collapsible with smooth toggle animation.
+ */
+
+.decision-gate-banner {
+  background: #fffbeb;
+  border: 2px solid var(--warning, #f59e0b);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.decision-gate-banner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.decision-gate-banner-header:hover {
+  background: #fef3c7;
+}
+
+.banner-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.banner-pending-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.375rem;
+  background: var(--warning, #f59e0b);
+  color: white;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.banner-message {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.banner-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.banner-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+
+.banner-toggle-btn.expanded {
+  transform: rotate(180deg);
+}
+
+.banner-dismiss-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  color: #92400e;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.banner-dismiss-btn:hover {
+  opacity: 1;
+}
+
+/* Collapsible content */
+.banner-items-list {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.banner-items-list.expanded {
+  max-height: 500px;
+}
+
+.banner-items-inner {
+  padding: 0 1rem 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Individual gate item */
+.banner-gate-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  background: white;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  gap: 0.75rem;
+}
+
+.gate-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.gate-item-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gate-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.gate-item-type {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.gate-item-time {
+  font-style: italic;
+}
+
+/* Action buttons */
+.gate-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.gate-action-btn {
+  padding: 0.375rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gate-action-btn.approve {
+  background: var(--success, #10b981);
+  color: white;
+}
+
+.gate-action-btn.approve:hover {
+  background: #059669;
+}
+
+.gate-action-btn.reject {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.gate-action-btn.reject:hover {
+  background: #fecaca;
+}
+
+.gate-action-btn.details {
+  background: var(--bg-secondary, #f3f4f6);
+  color: var(--accent, #3b82f6);
+}
+
+.gate-action-btn.details:hover {
+  background: #e5e7eb;
+}
+
+/* Reject reason input */
+.reject-reason-row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+}
+
+.reject-reason-input {
+  flex: 1;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #fca5a5;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  outline: none;
+}
+
+.reject-reason-input:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+.reject-confirm-btn {
+  padding: 0.375rem 0.625rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reject-confirm-btn:hover {
+  background: #dc2626;
+}
+
+.reject-cancel-btn {
+  padding: 0.375rem 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-muted, #6b7280);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .banner-gate-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .gate-item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

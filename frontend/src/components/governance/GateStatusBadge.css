@@ -1,0 +1,49 @@
+/**
+ * GateStatusBadge Styles
+ *
+ * Small inline pill/chip badge for gate status display.
+ * Used by non-commander roles next to items they submitted.
+ */
+
+.gate-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.gate-status-badge.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.gate-status-badge.status-submitted {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.gate-status-badge.status-approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.gate-status-badge.status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.gate-status-badge.status-escalated {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.gate-status-badge.status-overridden {
+  background: var(--bg-secondary, #f3f4f6);
+  color: var(--text-muted, #6b7280);
+}

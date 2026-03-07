@@ -19,3 +19,7 @@ export { DecisionBriefView } from './DecisionBriefView';
 export type { DecisionBrief } from './DecisionBriefView';
 
 export { MDMPGovernancePanel } from './MDMPGovernancePanel';
+
+export { DecisionGateBanner } from './DecisionGateBanner';
+export { GateStatusBadge } from './GateStatusBadge';
+export { GateBlockOverlay } from './GateBlockOverlay';

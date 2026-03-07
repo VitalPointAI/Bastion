@@ -1,0 +1,61 @@
+/**
+ * GateBlockOverlay Styles
+ *
+ * Semi-transparent overlay for hard-block gates.
+ * Disables pointer events on children with explanatory message.
+ */
+
+.gate-block-overlay-container {
+  position: relative;
+}
+
+.gate-block-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(2px);
+  border-radius: 8px;
+  pointer-events: all;
+}
+
+.gate-block-overlay-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 2rem;
+  background: white;
+  border: 2px solid var(--warning, #f59e0b);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-width: 320px;
+  text-align: center;
+}
+
+.gate-block-icon {
+  font-size: 1.5rem;
+  color: var(--warning, #f59e0b);
+}
+
+.gate-block-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+.gate-block-subtext {
+  font-size: 0.75rem;
+  color: var(--text-muted, #6b7280);
+}
+
+/* Disabled children wrapper */
+.gate-block-children-disabled {
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.5;
+}
