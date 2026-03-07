@@ -741,7 +741,7 @@ Plans:
 - [x] 28-02-PLAN.md -- Frontend gate service, DecisionGateContext, banner/badge/overlay components (Wave 1) (completed 2026-03-07)
 - [x] 28-03-PLAN.md -- GateProposalModal, GateSubmitButton, DecisionGateTimeline, TabLayout extension (Wave 2) (completed 2026-03-07)
 - [x] 28-04-PLAN.md -- DecisionGateProvider in ProblemSetTabContainer, embed gates in Understand/Design/Plan tabs (Wave 3) (completed 2026-03-07)
-- [ ] 28-05-PLAN.md -- DirectTab gate overview + order release gate, AssessTab implementation with reframing gate (Wave 4)
+- [x] 28-05-PLAN.md -- DirectTab gate overview + order release gate, AssessTab implementation with reframing gate (Wave 4) (completed 2026-03-07)
 - [ ] 28-06-PLAN.md -- Generalize MDMP frontend components (GovernanceGateDashboard, DecisionBriefView, PhaseProgressionBar) (Wave 4)
 - [ ] 28-07-PLAN.md -- Escalation wiring, role-based permissions, hierarchical gate visibility (Wave 5)
 - [ ] 28-08-PLAN.md -- Human verification of complete governance system (Wave 6)
