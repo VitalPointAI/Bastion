@@ -19,14 +19,14 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 30 — Ironclaw Agent Integration
+**Current focus:** Phase 30 — Ironclaw Agent Integration (COMPLETE)
 
 ## Current Position
 
-Phase: 30 of 40 (Ironclaw Agent Integration)
-Plan: 6 of 8 in current phase -- 30-06 complete (wave 4)
-Status: Ironclaw frontend service, hook, and context wired into App.tsx
-Last activity: 2026-03-07 - Completed 30-06: Ironclaw frontend wiring
+Phase: 30 of 40 (Ironclaw Agent Integration) — COMPLETE
+Plan: 8 of 8 in current phase — all plans complete, verification passed
+Status: Phase 30 complete — Ironclaw agent integrated with full backend/frontend stack
+Last activity: 2026-03-07 - Phase 30 verified and complete
 
 Progress: ██████████████████████████ 276 plans complete
 

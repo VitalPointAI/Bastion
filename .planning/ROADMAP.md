@@ -797,14 +797,14 @@ Key safety concerns addressed: agent sandboxing per problem set, immutable audit
 7. **Natural Language Interface** — Commanders/creators direct the agent conversationally to perform administrative tasks
 
 Plans:
-- [ ] 30-01-PLAN.md — Foundation types, PostgreSQL store, Docker sidecar config
-- [ ] 30-02-PLAN.md — Backend Ironclaw client, service, and Express router
-- [ ] 30-03-PLAN.md — Action registry, risk classification, confirmation pipeline
-- [ ] 30-04-PLAN.md — MCP tool bridge, scope validation, confirmation endpoints
-- [ ] 30-05-PLAN.md — Frontend UI components (drawer, button, messages, action cards)
-- [ ] 30-06-PLAN.md — Frontend hooks, context, service client, App.tsx wiring
-- [ ] 30-07-PLAN.md — GitHub service for code change pipeline
-- [ ] 30-08-PLAN.md — Self-update service and audit trail blockchain anchoring
+- [x] 30-01-PLAN.md — Foundation types, PostgreSQL store, Docker sidecar config
+- [x] 30-02-PLAN.md — Backend Ironclaw client, service, and Express router
+- [x] 30-03-PLAN.md — Action registry, risk classification, confirmation pipeline
+- [x] 30-04-PLAN.md — MCP tool bridge, scope validation, confirmation endpoints
+- [x] 30-05-PLAN.md — Frontend UI components (drawer, button, messages, action cards)
+- [x] 30-06-PLAN.md — Frontend hooks, context, service client, App.tsx wiring
+- [x] 30-07-PLAN.md — GitHub service for code change pipeline
+- [x] 30-08-PLAN.md — Self-update service and audit trail blockchain anchoring
 
 ### Phase 31: AI Agent Validation & Compliance Testing
 **Goal:** Build a validation and testing framework to quantitatively assess AI agent integration across three dimensions: determinism (reproducible outputs), reliability (content validity, accuracy, and doctrinal adherence), and authority compliance (agents operating strictly within delegated autonomy levels). Include a periodic test suite, a metrics dashboard page in Bastion showing trends over time, threshold-based alerting that surfaces deviating agents, and automatic disablement of agents operating outside parameters pending human review.
