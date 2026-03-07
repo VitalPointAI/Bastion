@@ -310,7 +310,7 @@ export class SelfUpdateService {
    */
   private async fetchCurrentVersion(): Promise<string | null> {
     try {
-      const baseUrl = process.env.IRONCLAW_URL ?? 'http://ironclaw:3000';
+      const baseUrl = process.env.IRONCLAW_URL ?? 'http://ironclaw:8080';
       const response = await fetch(`${baseUrl}/version`);
       if (response.ok) {
         const data = (await response.json()) as { version?: string };

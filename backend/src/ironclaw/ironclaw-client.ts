@@ -100,7 +100,7 @@ export class IronclawClient {
   private baseUrl: string;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl ?? process.env.IRONCLAW_URL ?? 'http://ironclaw:3000';
+    this.baseUrl = baseUrl ?? process.env.IRONCLAW_URL ?? 'http://ironclaw:8080';
   }
 
   /**
