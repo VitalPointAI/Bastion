@@ -840,13 +840,13 @@ The test suite runs periodically, feeding results into a dedicated Bastion page 
 7. **Agent Circuit Breaker** — Automatic disablement of agents exceeding thresholds, pending human review
 8. **Human Review Workflow** — Notification and assessment interface for reviewing flagged agents
 
-**Plans:** 2/7 plans executed
+**Plans:** 3/7 plans executed
 
 Plans:
 - [x] 31-01-PLAN.md — Validation types, DB schema, and store foundation
 - [x] 31-02-PLAN.md — Scoring modules (determinism, reliability, authority)
 - [ ] 31-03-PLAN.md — Validation runner, circuit breaker, scheduler, and REST API
-- [ ] 31-04-PLAN.md — Fixture loader, generator, and 10 high-priority role fixtures
+- [x] 31-04-PLAN.md — Fixture loader, generator, and 10 high-priority role fixtures
 - [ ] 31-04b-PLAN.md — Generated fixtures for remaining 21 staff roles
 - [ ] 31-05-PLAN.md — Frontend validation dashboard with Recharts visualizations
 - [ ] 31-06-PLAN.md — AgentHealthDot integration and activation gating
