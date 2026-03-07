@@ -714,8 +714,8 @@ Currently resources (vehicles, sensors, weapons, personnel, consumables) are sim
 Plans:
 - [x] 27-01-PLAN.md — Foundation types, plugin interface, resource DID, DB migration
 - [x] 27-02-PLAN.md — 6 built-in resource type plugins and auto-discovery loader
-- [ ] 27-03-PLAN.md — Resource registry with cache and resource group store
-- [ ] 27-04-PLAN.md — AI agent tools, telemetry service, extended REST API
+- [x] 27-03-PLAN.md — Resource registry with cache and resource group store
+- [x] 27-04-PLAN.md — AI agent tools, telemetry service, extended REST API
 - [ ] 27-05-PLAN.md — COP resource layer, detail panel, frontend registry service
 
 ### Phase 28: Embedded DAO Governance at Decision Gates (INSERTED)
