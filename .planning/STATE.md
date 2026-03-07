@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T17:03:28.521Z"
+last_updated: "2026-03-07T17:27:31.864Z"
 progress:
   total_phases: 48
   completed_phases: 30
   total_plans: 285
-  completed_plans: 289
+  completed_plans: 291
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 32 of 40 (Network Device Discovery & Secure Automatic Resource Onboarding) — Executing
-Plan: 7 of 9 in current phase — 32-06 complete
-Status: Phase 32 plan 06 complete (WebSocket, REST API, anomaly detection, barrel export)
-Last activity: 2026-03-07 - Completed 32-06-PLAN.md
+Plan: 9 of 9 in current phase — 32-08 complete
+Status: Phase 32 plan 08 complete (server wiring, discovery module integration, EM endpoints)
+Last activity: 2026-03-07 - Completed 32-08-PLAN.md
 
-Progress: ██████████████████████████ 287 plans complete
+Progress: ██████████████████████████ 289 plans complete
 
 ## Performance Metrics
 
@@ -137,6 +137,7 @@ Progress: ███████████████████████�
 | Phase 32-network-device-discovery-and-secure-automatic-resource-onboarding P03 | 9 | 2 tasks | 7 files |
 | Phase 32 P05 | 5 | 2 tasks | 2 files |
 | Phase 32 P06 | 9 | 2 tasks | 4 files |
+| Phase 32 P08 | 4 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -673,6 +674,7 @@ Recent decisions affecting current work:
 - [Phase 32]: Pipeline errors quarantine devices rather than leaving intermediate state
 - [Phase 32]: Used in-memory Welford cache with lazy DB loading for O(1) per-sample anomaly detection
 - [Phase 32]: Dynamic import for discovery-service in router to break compile-time coupling
+- [Phase 32]: DiscoveryService initialized with ResourceRegistry, MessageBus, GateService deps; scanners paused by default
 
 ### Roadmap Evolution
 
