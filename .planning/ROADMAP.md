@@ -696,7 +696,7 @@ Plans:
 **Depends on:** Phase 24
 **Research:** Required
 **Research topics:** Resource identity patterns in military C2 systems, DID-based asset tracking, plugin architecture patterns (Strategy/Factory), IoT device identity management, MIL-STD-2525D resource symbology, telemetry data ingestion patterns, edge device registration protocols
-**Plans:** TBD
+**Plans:** 5 plans
 
 **Context:**
 Currently resources (vehicles, sensors, weapons, personnel, consumables) are simple data rows with prefixed UUIDs. Agents have full DID support, registries, capabilities, and team membership. Resources deserve the same treatment — especially autonomous vehicles, sensors, and comms equipment that actively participate in operations. A plugin architecture allows new resource types to be added without core changes.
@@ -712,7 +712,11 @@ Currently resources (vehicles, sensors, weapons, personnel, consumables) are sim
 8. **Status Tracking** — Real-time readiness status (FMC/PMC/NMC) with location tracking, capability degradation, and maintenance scheduling
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 27 to create plans)
+- [ ] 27-01-PLAN.md — Foundation types, plugin interface, resource DID, DB migration
+- [ ] 27-02-PLAN.md — 6 built-in resource type plugins and auto-discovery loader
+- [ ] 27-03-PLAN.md — Resource registry with cache and resource group store
+- [ ] 27-04-PLAN.md — AI agent tools, telemetry service, extended REST API
+- [ ] 27-05-PLAN.md — COP resource layer, detail panel, frontend registry service
 
 ### Phase 28: Embedded DAO Governance at Decision Gates (INSERTED)
 **Goal:** Move DAO governance from a dedicated Decide tab into contextual decision gates embedded within each tab of the doctrinal workflow, making governance a natural part of the planning process rather than a separate activity
