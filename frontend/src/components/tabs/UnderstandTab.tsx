@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TabLayout, type SidebarItem } from './TabLayout.js';
 import { StrategicDashboard } from '../strategic/index.js';
 import { SubscriptionManager } from '../problem-set/SubscriptionManager.js';
@@ -7,6 +7,8 @@ import { StrategicContextPreview } from '../strategic/StrategicContextPreview.js
 import { TeamRoster } from '../exercise/TeamRoster.js';
 import { InheritedContextSection } from '../inheritance/InheritedContextSection.tsx';
 import { useMode } from '../../context/ModeContext.js';
+import { DecisionGateBanner, GateSubmitButton, DecisionGateTimeline } from '../governance/index.js';
+import type { DecisionGate } from '../../lib/gate-service';
 
 type UnderstandView = 'strategic-docs' | 'subscriptions' | 'ai-context-preview' | 'training-packages' | 'team-roster';
 
@@ -19,6 +21,13 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
   const [selectedView, setSelectedView] = useState<UnderstandView>('strategic-docs');
   const [trainingDocCount, setTrainingDocCount] = useState(0);
   const [hasPendingExtraction, setHasPendingExtraction] = useState(false);
+  const [selectedGate, setSelectedGate] = useState<DecisionGate | null>(null);
+
+  const handleGateDetailClick = useCallback((gate: DecisionGate) => {
+    setSelectedGate(gate);
+    // Gate detail display — currently logs; full detail modal can be added later
+    console.log('[UnderstandTab] Gate detail:', gate.id, gate.gate_type, gate.status);
+  }, []);
 
   // Reset to strategic-docs when mode switches away from training while viewing training-only views
   useEffect(() => {
@@ -61,9 +70,27 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
       items={items}
       selectedItem={selectedView}
       onSelectItem={(id) => setSelectedView(id as UnderstandView)}
+      decisionHistory={
+        <DecisionGateTimeline tabId="understand" onEntryClick={handleGateDetailClick} />
+      }
     >
+      {/* Decision gate banner for commanders */}
+      <DecisionGateBanner tabId="understand" />
+
       {selectedView === 'strategic-docs' && (
-        <StrategicDashboard problemSetId={problemSetId} />
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+            <span />
+            <GateSubmitButton
+              gateType="objective_approval"
+              itemId={`${problemSetId}-strategic-docs`}
+              itemTitle="Strategic Documents Review"
+              itemDescription="Submit strategic documents for objective approval"
+              tabId="understand"
+            />
+          </div>
+          <StrategicDashboard problemSetId={problemSetId} />
+        </div>
       )}
       {selectedView === 'subscriptions' && (
         <SubscriptionManager problemSetId={problemSetId} />

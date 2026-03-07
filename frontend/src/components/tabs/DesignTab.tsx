@@ -16,6 +16,8 @@ import { CoGAnalysisSection } from '../design/CoGAnalysisSection.tsx';
 import { LOETimelineSection } from '../design/LOETimelineSection.tsx';
 import { OperationalApproachSection } from '../design/OperationalApproachSection.tsx';
 import type { ProblemFramingData, CoGAnalysis, LineOfEffort, OperationalApproach } from '../../lib/design-service.ts';
+import { DecisionGateBanner, GateSubmitButton, DecisionGateTimeline } from '../governance/index.ts';
+import type { DecisionGate } from '../../lib/gate-service';
 
 type DesignView = 'overview' | 'problem-framing' | 'cog-analysis' | 'lines-of-effort' | 'operational-approach';
 
@@ -41,6 +43,12 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
   const [designData, setDesignData] = useState<OperationalDesign | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [_selectedGate, setSelectedGate] = useState<DecisionGate | null>(null);
+
+  const handleGateDetailClick = useCallback((gate: DecisionGate) => {
+    setSelectedGate(gate);
+    console.log('[DesignTab] Gate detail:', gate.id, gate.gate_type, gate.status);
+  }, []);
 
   const loadDesign = useCallback(async () => {
     try {
@@ -98,7 +106,13 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
       items={sidebarItems}
       selectedItem={selectedView}
       onSelectItem={(id) => setSelectedView(id as DesignView)}
+      decisionHistory={
+        <DecisionGateTimeline tabId="design" onEntryClick={handleGateDetailClick} />
+      }
     >
+      {/* Decision gate banner for commanders */}
+      <DecisionGateBanner tabId="design" />
+
       {selectedView === 'overview' && designData && (
         <DesignOverview
           designData={designData}
@@ -132,12 +146,24 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
       )}
 
       {selectedView === 'operational-approach' && designData && (
-        <OperationalApproachSection
-          problemSetId={problemSetId}
-          initialData={designData.operationalApproach}
-          designData={designData}
-          onUpdate={(data: OperationalApproach) => handleSectionUpdate('operational-approach', data)}
-        />
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+            <span />
+            <GateSubmitButton
+              gateType="operational_approach"
+              itemId={`${problemSetId}-operational-approach`}
+              itemTitle="Operational Approach"
+              itemDescription="Submit operational approach for approval"
+              tabId="design"
+            />
+          </div>
+          <OperationalApproachSection
+            problemSetId={problemSetId}
+            initialData={designData.operationalApproach}
+            designData={designData}
+            onUpdate={(data: OperationalApproach) => handleSectionUpdate('operational-approach', data)}
+          />
+        </div>
       )}
     </TabLayout>
   );
