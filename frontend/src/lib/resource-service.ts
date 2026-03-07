@@ -33,6 +33,11 @@ export interface Resource {
   location?: string;
   createdAt: string;
   updatedAt: string;
+  // Registry extensions (Phase 27 - DID identity)
+  did?: string;
+  isAutonomous?: boolean;
+  capabilities?: string[];
+  groupId?: string;
 }
 
 export interface Personnel {

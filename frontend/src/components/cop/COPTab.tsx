@@ -22,9 +22,11 @@ import { COPAgentActivity } from './COPAgentActivity.js';
 import { COPVersionBrowser } from './COPVersionBrowser.js';
 import { COPLayerLifecycle } from './COPLayerLifecycle.js';
 import { COPReviewPanel } from './COPReviewPanel.js';
+import { COPResourceDetail } from './COPResourceDetail.js';
 import { GraphExplorer, type GraphData } from '../graph/GraphExplorer.js';
 import { NodeDetailPanel } from '../graph/NodeDetailPanel.js';
 import { ActivityFeed } from '../problem-set/ActivityFeed.js';
+import type { RegisteredResource } from '../../lib/resource-registry-service.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -123,6 +125,10 @@ export function COPTab({ problemSetId }: COPTabProps) {
 
   // Selected layer for lifecycle/version/review views
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+
+  // Resource layer state
+  const [selectedResource, setSelectedResource] = useState<RegisteredResource | null>(null);
+  const [resourceLayerVisible, setResourceLayerVisible] = useState(true);
 
   // Auto-trigger state
   const [generating, setGenerating] = useState(false);
@@ -388,6 +394,20 @@ export function COPTab({ problemSetId }: COPTabProps) {
             currentPerspective={currentPerspective}
             onPerspectiveChange={setCurrentPerspective}
           />
+          {/* Resource layer toggle */}
+          <button
+            onClick={() => setResourceLayerVisible((v) => !v)}
+            className={[
+              'mt-1 px-2 py-1 text-[10px] font-medium rounded border transition-colors',
+              resourceLayerVisible
+                ? 'bg-blue-600/20 text-blue-400 border-blue-500/40'
+                : 'bg-gray-800/90 text-gray-500 border-gray-600',
+            ].join(' ')}
+            title={resourceLayerVisible ? 'Hide resource layer' : 'Show resource layer'}
+            aria-label="Toggle resource layer"
+          >
+            Resources {resourceLayerVisible ? 'ON' : 'OFF'}
+          </button>
         </div>
 
         {/* Sidebar toggle (when collapsed) — top right */}
@@ -410,6 +430,8 @@ export function COPTab({ problemSetId }: COPTabProps) {
             currentPerspective={currentPerspective}
             currentPhase={currentPhase || undefined}
             onLayersLoaded={handleLayersLoaded}
+            resourceLayerVisible={resourceLayerVisible}
+            onResourceSelect={setSelectedResource}
           />
 
           {/* Empty state: Generate COP Layers button */}
@@ -452,6 +474,14 @@ export function COPTab({ problemSetId }: COPTabProps) {
           </div>
         )}
       </div>
+
+      {/* Resource detail panel (overlays on right side of map) */}
+      {selectedResource && (
+        <COPResourceDetail
+          resource={selectedResource}
+          onClose={() => setSelectedResource(null)}
+        />
+      )}
 
       {/* Sidebar */}
       {sidebarOpen && (

@@ -24,6 +24,8 @@ import type {
 import { copService } from '../../lib/cop-service.js';
 import { createMilSymbolIcon } from '../mission/map/MilSymbolMarker.js';
 import { SandboxedSVG } from './SandboxedSVG.js';
+import { COPResourceLayer } from './COPResourceLayer.js';
+import type { RegisteredResource } from '../../lib/resource-registry-service.js';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -38,6 +40,10 @@ interface COPMapViewProps {
   onLayersLoaded?: (layers: COPLayer[]) => void;
   /** Callback when entity is clicked */
   onEntityClick?: (entityId: string) => void;
+  /** Whether resource layer is visible */
+  resourceLayerVisible?: boolean;
+  /** Callback when a resource marker is selected */
+  onResourceSelect?: (resource: RegisteredResource) => void;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -76,6 +82,8 @@ export function COPMapView({
   currentPhase,
   onLayersLoaded,
   onEntityClick,
+  resourceLayerVisible = true,
+  onResourceSelect,
 }: COPMapViewProps) {
   const [layers, setLayers] = useState<COPLayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -157,6 +165,15 @@ export function COPMapView({
             />
           );
         })}
+
+        {/* Resource registry layer with MIL-STD-2525D symbols */}
+        {onResourceSelect && (
+          <COPResourceLayer
+            missionId={problemSetId}
+            visible={resourceLayerVisible}
+            onResourceSelect={onResourceSelect}
+          />
+        )}
       </MapContainer>
     </div>
   );
