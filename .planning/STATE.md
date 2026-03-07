@@ -8,7 +8,7 @@ progress:
   total_phases: 48
   completed_phases: 29
   total_plans: 276
-  completed_plans: 277
+  completed_plans: 278
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 31 of 40 (AI Agent Validation & Compliance Testing) — Executing
-Plan: 1 of 7 in current phase — 31-01 complete
-Status: Phase 31 plan 01 complete (validation types, store, threshold config)
-Last activity: 2026-03-07 - Completed 31-01-PLAN.md
+Plan: 2 of 7 in current phase — 31-02 complete
+Status: Phase 31 plan 02 complete (scoring modules: determinism, reliability, authority)
+Last activity: 2026-03-07 - Completed 31-02-PLAN.md
 
-Progress: ██████████████████████████ 277 plans complete
+Progress: ██████████████████████████ 278 plans complete
 
 ## Performance Metrics
 
@@ -131,6 +131,7 @@ Progress: ███████████████████████�
 | Phase 30 P02 | 5 | 2 tasks | 5 files |
 | Phase 30 P04 | 3 | 2 tasks | 4 files |
 | Phase 31-ai-agent-validation-compliance-testing P01 | 3 | 2 tasks | 3 files |
+| Phase 31-ai-agent-validation-compliance-testing P02 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -145,6 +146,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 31 Plan 02 (Scoring Modules):**
+- Used ChatOpenAI directly for judge model instead of project LLM factory to avoid async config dependency
+- Combined score weights: 0.4 functional + 0.6 LLM judge (semantic quality weighted higher)
+- Authority scorer uses keyword heuristics for adversarial behavior detection (refuse/escalate/scope_limit)
 
 **Phase 28 Plan 07 (Escalation, Hierarchy, and Permissions):**
 - Escalation metadata stored in decision_context JSONB rather than new DB columns
