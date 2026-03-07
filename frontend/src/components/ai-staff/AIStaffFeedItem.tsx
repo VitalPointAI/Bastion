@@ -9,6 +9,7 @@ import type { AIFeedItem, FeedItemAction } from '../../types/ai-staff.ts';
 import { AIStaffTeamBadge } from './AIStaffTeamBadge.tsx';
 import { AIStaffConfidence } from './AIStaffConfidence.tsx';
 import { AIStaffTeamDetail } from './AIStaffTeamDetail.tsx';
+import { AgentHealthDot } from '../common/AgentHealthDot.tsx';
 import { URGENCY_STYLES } from '../../types/ai-staff.ts';
 import { useState, useCallback } from 'react';
 import './AIStaffFeedItem.css';
@@ -43,9 +44,10 @@ interface AIStaffFeedItemProps {
   item: AIFeedItem;
   onAction: (itemId: string, action: FeedItemAction) => void;
   onMarkRead: (itemId: string) => void;
+  validationStatus?: 'passing' | 'warning' | 'critical' | 'disabled' | 'unknown';
 }
 
-export function AIStaffFeedItem({ item, onAction, onMarkRead }: AIStaffFeedItemProps) {
+export function AIStaffFeedItem({ item, onAction, onMarkRead, validationStatus }: AIStaffFeedItemProps) {
   const [teamExpanded, setTeamExpanded] = useState(false);
   const urgencyStyle = URGENCY_STYLES[item.urgency];
 
@@ -64,6 +66,7 @@ export function AIStaffFeedItem({ item, onAction, onMarkRead }: AIStaffFeedItemP
     >
       {/* Header row: badge + timestamp + urgency */}
       <div className="ai-feed-item-header">
+        <AgentHealthDot status={validationStatus ?? 'unknown'} size="sm" />
         <AIStaffTeamBadge agentDisplayName={item.agentDisplayName} agentRole={item.agentRole} />
         <div className="ai-feed-item-meta">
           <span className={`ai-staff-badge ${urgencyStyle.className}`}>{urgencyStyle.label}</span>
