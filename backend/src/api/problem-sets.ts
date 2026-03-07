@@ -845,7 +845,9 @@ router.post('/:id/scenario', requireAuth, async (req: Request, res: Response) =>
     const scenario = await scenarioStore.create({
       name: body.name,
       designation: body.designation,
-      exercisePhases: body.exercisePhases,
+      exercisePhases: body.exercisePhases ?? [],
+      currentPhaseIndex: 0,
+      status: 'draft',
       enabledRoles: body.enabledRoles,
       createdBy: userDid,
     });
