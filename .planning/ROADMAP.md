@@ -777,7 +777,7 @@ Plans:
 **Goal:** Integrate an Ironclaw agent (NEAR AI) as a chief-of-staff capability that can execute system changes, code modifications (via PR/CI-CD), and problem set configuration on behalf of authorized users with tiered permissions
 **Depends on:** Phase 29, Phase 27
 **Research:** Required
-**Plans:** 7/8 plans executed
+**Plans:** 8/8 plans complete
 **Research topics:** Ironclaw agent architecture and API (nearai/ironclaw), secure agent sandboxing, permission-tiered agent execution (system admin vs problem set creator/admin), CI/CD integration for agent-initiated code changes, audit trail and rollback mechanisms, blast radius containment per problem set, rate limiting and confirmation gates for destructive actions, scope escalation prevention
 
 **Context:**
@@ -805,6 +805,33 @@ Plans:
 - [ ] 30-06-PLAN.md — Frontend hooks, context, service client, App.tsx wiring
 - [ ] 30-07-PLAN.md — GitHub service for code change pipeline
 - [ ] 30-08-PLAN.md — Self-update service and audit trail blockchain anchoring
+
+### Phase 31: AI Agent Validation & Compliance Testing
+**Goal:** Build a validation and testing framework to quantitatively assess AI agent integration across three dimensions: determinism (reproducible outputs), reliability (content validity, accuracy, and doctrinal adherence), and authority compliance (agents operating strictly within delegated autonomy levels). Include a periodic test suite, a metrics dashboard page in Bastion showing trends over time, threshold-based alerting that surfaces deviating agents, and automatic disablement of agents operating outside parameters pending human review.
+**Depends on:** Phase 29, Phase 30
+**Research:** Required
+**Research topics:** AI agent evaluation frameworks, determinism testing for LLM-based agents, doctrinal compliance scoring, authority boundary enforcement, agent autonomy level verification, metrics collection and time-series visualization, threshold-based anomaly detection, automated agent circuit-breaker patterns, human-in-the-loop review workflows
+
+**Context:**
+As BASTION's AI agent ecosystem grows (19 agent roles, contextual staff integration, Ironclaw chief-of-staff), operational trust requires quantitative validation. This phase establishes three pillars of agent assurance:
+- **Determinism:** Given identical inputs, agents produce consistent outputs within acceptable variance
+- **Reliability:** Agent responses are factually valid, accurate, and adhere to military doctrine (JP 3-0, JP 5-0, etc.)
+- **Authority:** Agents operate exclusively within their delegated autonomy levels and never exceed granted permissions
+
+The test suite runs periodically, feeding results into a dedicated Bastion page with time-series metrics. When any agent breaches defined thresholds, it is automatically disabled and flagged for human review.
+
+**Key Capabilities:**
+1. **Determinism Test Suite** — Repeatable test scenarios with variance scoring across agent roles
+2. **Reliability Validation** — Content accuracy checks, doctrinal adherence scoring, structured output validation
+3. **Authority Compliance Tests** — Verify agents respect autonomy boundaries, permission scopes, and escalation rules
+4. **Metrics Collection Pipeline** — Periodic test execution with results stored in PostgreSQL time-series tables
+5. **Validation Dashboard** — Bastion page showing per-agent metrics over time with trend visualization
+6. **Threshold Alerting** — Configurable acceptability thresholds per category with warning/critical levels
+7. **Agent Circuit Breaker** — Automatic disablement of agents exceeding thresholds, pending human review
+8. **Human Review Workflow** — Notification and assessment interface for reviewing flagged agents
+
+Plans:
+- (not yet planned)
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
@@ -1329,4 +1356,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 27. Resource Registry & DID Plugin | 5/5 | Complete    | 2026-03-07 |
 | 28. Embedded DAO Governance | 8/9 | In Progress|  |
 | 29. Contextual AI Staff Integration | 4/5 | In Progress|  |
-| 30. Ironclaw Agent Integration | 7/8 | In Progress|  |
+| 30. Ironclaw Agent Integration | 8/8 | Complete   | 2026-03-07 |
+| 31. AI Agent Validation & Compliance Testing | 0/TBD | Not started | - |

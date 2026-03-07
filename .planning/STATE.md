@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T13:38:18.473Z"
+last_updated: "2026-03-07T13:46:41.145Z"
 progress:
-  total_phases: 46
-  completed_phases: 28
+  total_phases: 47
+  completed_phases: 29
   total_plans: 269
-  completed_plans: 275
+  completed_plans: 276
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 30 of 40 (Ironclaw Agent Integration)
-Plan: 5 of 8 in current phase -- 30-05 complete (wave 3)
-Status: Ironclaw frontend UI components with floating button, drawer, and chat interface
-Last activity: 2026-03-07 - Completed 30-05: Ironclaw frontend UI components
+Plan: 6 of 8 in current phase -- 30-06 complete (wave 4)
+Status: Ironclaw frontend service, hook, and context wired into App.tsx
+Last activity: 2026-03-07 - Completed 30-06: Ironclaw frontend wiring
 
-Progress: ██████████████████████████ 269 plans complete
+Progress: ██████████████████████████ 276 plans complete
 
 ## Performance Metrics
 
@@ -646,6 +646,8 @@ Recent decisions affecting current work:
 - [Phase 30]: MCP tool registration is non-blocking: backend starts without Ironclaw sidecar
 - [Phase 30]: Scope validation always clarifies ambiguous PS targets, never assumes
 - [Phase 30]: Added suggestion field to IronclawChatMessage for inline suggestion rendering in drawer
+- [Phase 30]: IronclawProvider placed inside ProblemSetProvider for activeProblemSetId access
+- [Phase 30]: AIStaffContext preserved for backward compat during Ironclaw transition
 
 ### Roadmap Evolution
 
@@ -669,6 +671,7 @@ Recent decisions affecting current work:
 - Phase 21 added: AI COP Layer Agent Team - Autonomous agent team per workspace section generating MIL-STD-2525 interactive SVG overlays for common operating picture with publish control, entity-data linkages, and dual-perspective rendering
 - Phase 25.1 inserted after Phase 25: Training Package Upload & From-Scenario Integration — Wire existing upload wizard into Understand tab, add Create from Scenario to problem set creation, integrate drag-drop upload with tag inference and LLM extraction
 - Phase 25.2 inserted after Phase 25: Strategic Document Containers & Actor Categorization — Organize strategic docs into nation/group containers with actor categories (ally/adversary/neutral/partner), persistent container-based strategic environment building, feeds Phase 26 inheritance
+- Phase 31 added: AI Agent Validation & Compliance Testing — Quantitative assessment framework for agent determinism, reliability/doctrinal adherence, and authority compliance with periodic test suite, metrics dashboard, threshold alerting, and automatic agent disablement
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
