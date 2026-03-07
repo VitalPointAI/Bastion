@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T11:33:32.009Z"
+last_updated: "2026-03-07T12:22:29.871Z"
 progress:
-  total_phases: 44
+  total_phases: 45
   completed_phases: 28
-  total_plans: 256
-  completed_plans: 264
+  total_plans: 261
+  completed_plans: 265
 ---
 
 # Project State
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 28 of 40 (Embedded DAO Governance at Decision Gates)
-Plan: 9 of 9 in current phase -- 28-07 complete (wave 5)
-Status: Gate escalation, hierarchical visibility, and role-based permissions
-Last activity: 2026-03-07 - Completed 28-07: Escalation, hierarchy, and role-based gate permissions
+Phase: 29 of 40 (Contextual AI Staff Integration)
+Plan: 1 of 5 in current phase -- 29-01 complete (wave 1)
+Status: AI staff types, context, and agent routing config established
+Last activity: 2026-03-07 - Completed 29-01: AI staff type system, split context, agent routing
 
-Progress: ██████████████████████████ 263 plans complete
+Progress: ██████████████████████████ 264 plans complete
 
 ## Performance Metrics
 
@@ -125,6 +125,7 @@ Progress: ███████████████████████�
 | Phase 28 P03 | 3 | 2 tasks | 9 files |
 | Phase 28-embedded-dao-governance-at-decision-gates-inserted P09 | 3 | 2 tasks | 3 files |
 | Phase 28 P07 | 8 | 2 tasks | 6 files |
+| Phase 29 P01 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -630,6 +631,8 @@ Recent decisions affecting current work:
 - [Phase 28]: GateSubmitButton creates gate on first click then opens modal for context editing
 - [Phase 28]: TabLayout extended with optional ReactNode slot for sidebar extensibility
 - [Phase 28]: Dual-read merge with deduplication for MDMP and decision gate unification
+- [Phase 29]: Split state/dispatch context pattern for AI staff panel render optimization
+- [Phase 29]: Doctrinal confidence thresholds: >=0.85 confirmed, >=0.60 probable, >=0.30 possible, else doubtful
 
 ### Roadmap Evolution
 
