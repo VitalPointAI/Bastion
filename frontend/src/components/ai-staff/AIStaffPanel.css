@@ -1,0 +1,250 @@
+/* AIStaffPanel -- Shared styles for the AI staff panel system */
+
+/* Urgency badge colors */
+.urgency-red {
+  color: var(--accent-red, #ef4444);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.urgency-amber {
+  color: var(--accent-yellow, #f59e0b);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.urgency-green {
+  color: var(--accent-green, #22c55e);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+/* Common typography */
+.ai-staff-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.ai-staff-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.ai-staff-timestamp {
+  font-size: 0.675rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* Badge base */
+.ai-staff-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  font-size: 0.675rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Notification count badge */
+.ai-staff-count-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.ai-staff-count-badge.badge-green {
+  background: var(--accent-green, #22c55e);
+}
+
+.ai-staff-count-badge.badge-amber {
+  background: var(--accent-yellow, #f59e0b);
+}
+
+.ai-staff-count-badge.badge-red {
+  background: var(--accent-red, #ef4444);
+}
+
+/* ============================================================================
+   AIStaffDocked -- Right sidebar panel
+   ============================================================================ */
+
+.ai-staff-docked {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 280px;
+  max-width: 600px;
+  background: var(--bg-secondary, #1e293b);
+  border-left: 1px solid var(--border-subtle, #334155);
+  flex-shrink: 0;
+}
+
+/* Left-edge resize handle */
+.ai-staff-docked-resize {
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  z-index: 10;
+}
+
+.ai-staff-docked-resize:hover {
+  background: var(--accent-blue, #3b82f6);
+  opacity: 0.4;
+}
+
+/* Header */
+.ai-staff-docked-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle, #334155);
+  flex-shrink: 0;
+}
+
+.ai-staff-docked-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+}
+
+.ai-staff-docked-close:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.08));
+  color: var(--text-primary, #e2e8f0);
+}
+
+/* Body */
+.ai-staff-docked-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.ai-staff-docked-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+}
+
+/* Other tabs collapsible */
+.ai-staff-docked-other {
+  border-top: 1px solid var(--border-subtle, #334155);
+  margin-top: 4px;
+}
+
+.ai-staff-docked-other-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.ai-staff-docked-other-toggle:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.04));
+}
+
+.ai-staff-docked-other-toggle .chevron {
+  transition: transform 0.15s ease;
+}
+
+.ai-staff-docked-other-toggle .chevron.expanded {
+  transform: rotate(90deg);
+}
+
+/* Footer */
+.ai-staff-docked-footer {
+  border-top: 1px solid var(--border-subtle, #334155);
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+   AIStaffTeamBadge
+   ============================================================================ */
+
+.ai-team-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ai-team-badge-icon {
+  flex-shrink: 0;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.ai-team-badge-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary, #e2e8f0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================================
+   AIStaffTeamDetail
+   ============================================================================ */
+
+.ai-team-detail {
+  padding: 4px 0 4px 8px;
+  border-left: 2px solid var(--border-subtle, #334155);
+  margin-left: 8px;
+}
+
+.ai-team-detail-header {
+  margin-bottom: 4px;
+}
+
+.ai-team-detail-members {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-team-detail-member {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ai-team-detail-member-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-team-lead-star {
+  flex-shrink: 0;
+}
+
+.ai-team-detail-contribution {
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #94a3b8);
+  padding-left: 16px;
+}
