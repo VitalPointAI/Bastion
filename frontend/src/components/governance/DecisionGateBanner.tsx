@@ -60,10 +60,16 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
   const {
     pendingApprovals,
     pendingCount,
+    escalatedGates,
     isCommander,
     approveGate,
     rejectGate,
   } = useDecisionGates(tabId);
+
+  // Merge escalated child gates into the banner items
+  // These are gates escalated from child problem sets that match this tab
+  const allBannerItems = [...pendingApprovals, ...escalatedGates];
+  const totalCount = allBannerItems.length;
 
   const [expanded, setExpanded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -74,8 +80,8 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
   // Non-commander roles see no banner
   if (!isCommander) return null;
 
-  // No pending approvals or dismissed
-  if (pendingCount === 0 || dismissed) return null;
+  // No pending approvals or escalated items, or dismissed
+  if (totalCount === 0 || dismissed) return null;
 
   const handleToggle = useCallback(() => {
     setExpanded((prev) => !prev);
@@ -124,11 +130,14 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
     <div className="decision-gate-banner">
       <div className="decision-gate-banner-header" onClick={handleToggle}>
         <div className="banner-header-left">
-          <span className="banner-pending-count">{pendingCount}</span>
+          <span className="banner-pending-count">{totalCount}</span>
           <span className="banner-message">
-            {pendingCount === 1
+            {totalCount === 1
               ? '1 item pending your approval'
-              : `${pendingCount} items pending your approval`}
+              : `${totalCount} items pending your approval`}
+            {escalatedGates.length > 0 && (
+              <span className="banner-escalated-note"> ({escalatedGates.length} escalated)</span>
+            )}
           </span>
         </div>
         <div className="banner-header-right">
@@ -150,7 +159,7 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
 
       <div className={`banner-items-list ${expanded ? 'expanded' : ''}`}>
         <div className="banner-items-inner">
-          {pendingApprovals.map((gate) => (
+          {allBannerItems.map((gate) => (
             <div key={gate.id}>
               <div className="banner-gate-item">
                 <div className="gate-item-info">
@@ -161,6 +170,11 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
                     <span className="gate-item-type">
                       {formatGateType(gate.gate_type)}
                     </span>
+                    {gate.status === 'escalated' && (
+                      <span className="gate-item-escalated" style={{ color: '#c084fc', fontSize: '0.7rem' }}>
+                        ESCALATED
+                      </span>
+                    )}
                     {gate.submitted_at && (
                       <span className="gate-item-time">
                         {formatRelativeTime(gate.submitted_at)}

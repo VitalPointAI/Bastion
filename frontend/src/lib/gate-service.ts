@@ -84,6 +84,19 @@ export interface GateProposalContext {
   metadata: Record<string, unknown>;
 }
 
+export interface GatePermissions {
+  canApprove: boolean;
+  canReject: boolean;
+  canOverride: boolean;
+  canEscalate: boolean;
+  canConfigure: boolean;
+}
+
+export interface HierarchyGatesResult {
+  ownGates: DecisionGate[];
+  childGates: DecisionGate[];
+}
+
 export interface CreateGateParams {
   problem_set_id: string;
   gate_type: string;
@@ -226,6 +239,27 @@ async function updateGateConfig(
   );
 }
 
+/** Fetch escalated gates for a parent problem set */
+async function fetchEscalatedGates(parentProblemSetId: string): Promise<DecisionGate[]> {
+  return fetchJson<DecisionGate[]>(
+    `${API_BASE}/api/gates/${encodeURIComponent(parentProblemSetId)}/escalated`
+  );
+}
+
+/** Fetch own gates + child gates for hierarchical visibility */
+async function fetchHierarchyGates(problemSetId: string): Promise<HierarchyGatesResult> {
+  return fetchJson<HierarchyGatesResult>(
+    `${API_BASE}/api/gates/${encodeURIComponent(problemSetId)}/hierarchy`
+  );
+}
+
+/** Fetch gate permissions for a specific role */
+async function fetchGatePermissions(gateId: string, userRole: string): Promise<GatePermissions> {
+  return fetchJson<GatePermissions>(
+    `${API_BASE}/api/gates/${encodeURIComponent(gateId)}/permissions/${encodeURIComponent(userRole)}`
+  );
+}
+
 // ============================================================================
 // Singleton Export
 // ============================================================================
@@ -240,4 +274,7 @@ export const gateService = {
   escalateGate,
   createGate,
   updateGateConfig,
+  fetchEscalatedGates,
+  fetchHierarchyGates,
+  fetchGatePermissions,
 };

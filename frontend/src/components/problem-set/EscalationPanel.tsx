@@ -14,6 +14,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { problemSetService, type EscalationRule } from '../../lib/problem-set-service';
 import { useProblemSet } from '../../context/ProblemSetContext';
 import { useUser } from '../../context/UserContext';
+import { useDecisionGates } from '../../context/DecisionGateContext';
+import type { DecisionGate } from '../../lib/gate-service';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -35,9 +37,34 @@ const COMMANDER_ROLES = ['commander', 'xo', 'Commander', 'XO'];
 
 // ─── EscalationPanel ──────────────────────────────────────────────────────────
 
+/** Format gate_type to human-readable label */
+function formatGateType(gateType: string): string {
+  return gateType
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+/** Format relative time from ISO string */
+function formatRelativeTime(isoString: string | null): string {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  const now = Date.now();
+  const diffMs = now - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHrs / 24);
+
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  return `${diffDays}d ago`;
+}
+
 export function EscalationPanel({ problemSetId }: EscalationPanelProps) {
   const { activeProblemSet, userRoleInActive, memberships } = useProblemSet();
   const { userDID } = useUser();
+  const { escalatedGates, approveGate, rejectGate } = useDecisionGates();
 
   const [proposalKind, setProposalKind] = useState<string>('General');
   const [description, setDescription] = useState('');
@@ -180,6 +207,26 @@ export function EscalationPanel({ problemSetId }: EscalationPanelProps) {
         </div>
       )}
 
+      {/* Gate Escalations Section */}
+      {escalatedGates.length > 0 && (
+        <div className="border-t border-gray-700 pt-4">
+          <h3 className="text-sm font-semibold text-gray-200 mb-3">
+            Gate Escalations from Child Problem Sets ({escalatedGates.length})
+          </h3>
+          <div className="space-y-3">
+            {escalatedGates.map((gate: DecisionGate) => (
+              <GateEscalationCard
+                key={gate.id}
+                gate={gate}
+                isCommander={isCommander}
+                onApprove={approveGate}
+                onReject={rejectGate}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {!result && (
         <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-5">
 
@@ -307,6 +354,123 @@ export function EscalationPanel({ problemSetId }: EscalationPanelProps) {
         </form>
       )}
 
+    </div>
+  );
+}
+
+// ─── GateEscalationCard ─────────────────────────────────────────────────────
+
+interface GateEscalationCardProps {
+  gate: DecisionGate;
+  isCommander: boolean;
+  onApprove: (gateId: string) => Promise<void>;
+  onReject: (gateId: string, reason: string) => Promise<void>;
+}
+
+function GateEscalationCard({ gate, isCommander, onApprove, onReject }: GateEscalationCardProps) {
+  const [actionLoading, setActionLoading] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const ctx = gate.decision_context || {};
+  const escalatedFromTab = (ctx.escalatedFromTab as string) || gate.tab;
+  const escalationReason = (ctx.escalation_reason as string) || 'No reason provided';
+  const escalatedAt = (ctx.escalated_at as string) || gate.updated_at;
+
+  const handleApprove = async () => {
+    setActionLoading(true);
+    try {
+      await onApprove(gate.id);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!rejectReason.trim()) return;
+    setActionLoading(true);
+    try {
+      await onReject(gate.id, rejectReason.trim());
+      setRejecting(false);
+      setRejectReason('');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-4 space-y-2">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-100">
+            {gate.target_item_title || `Gate: ${gate.id.slice(0, 8)}`}
+          </p>
+          <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+            <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded">
+              {formatGateType(gate.gate_type)}
+            </span>
+            <span>Source: {gate.problem_set_id.slice(0, 8)}...</span>
+            <span>Tab: {escalatedFromTab}</span>
+            {escalatedAt && <span>{formatRelativeTime(escalatedAt)}</span>}
+          </div>
+        </div>
+        <span className="text-xs bg-purple-800/50 text-purple-300 px-2 py-1 rounded">
+          Escalated
+        </span>
+      </div>
+
+      <p className="text-xs text-gray-400">
+        <span className="text-gray-300 font-medium">Reason:</span> {escalationReason}
+      </p>
+
+      {isCommander && (
+        <div className="flex items-center gap-2 pt-2 border-t border-gray-600">
+          <button
+            className="px-3 py-1.5 text-xs bg-green-700 hover:bg-green-600 text-white rounded disabled:opacity-50"
+            onClick={() => { void handleApprove(); }}
+            disabled={actionLoading}
+          >
+            {actionLoading ? '...' : 'Approve'}
+          </button>
+          {!rejecting ? (
+            <button
+              className="px-3 py-1.5 text-xs bg-red-700 hover:bg-red-600 text-white rounded disabled:opacity-50"
+              onClick={() => setRejecting(true)}
+              disabled={actionLoading}
+            >
+              Reject
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                className="flex-1 bg-gray-600 border border-gray-500 rounded px-2 py-1 text-xs text-gray-100 placeholder-gray-400"
+                type="text"
+                placeholder="Reason for rejection..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void handleRejectConfirm();
+                  if (e.key === 'Escape') { setRejecting(false); setRejectReason(''); }
+                }}
+                autoFocus
+              />
+              <button
+                className="px-2 py-1 text-xs bg-red-600 hover:bg-red-500 text-white rounded disabled:opacity-50"
+                onClick={() => { void handleRejectConfirm(); }}
+                disabled={!rejectReason.trim() || actionLoading}
+              >
+                Confirm
+              </button>
+              <button
+                className="px-2 py-1 text-xs text-gray-400 hover:text-gray-200"
+                onClick={() => { setRejecting(false); setRejectReason(''); }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -25,6 +25,7 @@ import {
   type DecisionGate,
   type GateProposalContext,
   type CreateGateParams,
+  type GatePermissions,
   GateStatus,
 } from '../lib/gate-service';
 import { useProblemSet } from './ProblemSetContext';
@@ -38,6 +39,10 @@ interface DecisionGateContextType {
   gates: DecisionGate[];
   gatesByTab: Record<string, DecisionGate[]>;
   pendingApprovals: DecisionGate[];
+  /** Gates escalated to this problem set from children */
+  escalatedGates: DecisionGate[];
+  /** Gates from child problem sets (for parent commander visibility) */
+  childGates: DecisionGate[];
   loading: boolean;
   error: string | null;
   submitForApproval: (gateId: string, context: GateProposalContext) => Promise<void>;
@@ -47,16 +52,28 @@ interface DecisionGateContextType {
   escalateGate: (gateId: string, reason: string) => Promise<void>;
   refreshGates: () => Promise<void>;
   createGate: (params: CreateGateParams) => Promise<void>;
+  /** Cached permission lookup using user role */
+  gatePermissions: (gateId: string) => GatePermissions;
 }
 
 // ============================================================================
 // Default Context
 // ============================================================================
 
+const DEFAULT_PERMISSIONS: GatePermissions = {
+  canApprove: false,
+  canReject: false,
+  canOverride: false,
+  canEscalate: false,
+  canConfigure: false,
+};
+
 const defaultContext: DecisionGateContextType = {
   gates: [],
   gatesByTab: {},
   pendingApprovals: [],
+  escalatedGates: [],
+  childGates: [],
   loading: false,
   error: null,
   submitForApproval: async () => undefined,
@@ -66,6 +83,7 @@ const defaultContext: DecisionGateContextType = {
   escalateGate: async () => undefined,
   refreshGates: async () => undefined,
   createGate: async () => undefined,
+  gatePermissions: () => DEFAULT_PERMISSIONS,
 };
 
 const DecisionGateContext = createContext<DecisionGateContextType>(defaultContext);
@@ -99,6 +117,8 @@ export function DecisionGateProvider({ children, problemSetId }: DecisionGatePro
   const { mode } = useMode();
 
   const [gates, setGates] = useState<DecisionGate[]>([]);
+  const [escalatedGates, setEscalatedGates] = useState<DecisionGate[]>([]);
+  const [childGates, setChildGates] = useState<DecisionGate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,6 +134,24 @@ export function DecisionGateProvider({ children, problemSetId }: DecisionGatePro
     try {
       const fetched = await gateService.fetchGatesForProblemSet(problemSetId);
       setGates(fetched);
+
+      // Fetch escalated gates (gates escalated to this PS from children)
+      try {
+        const escalated = await gateService.fetchEscalatedGates(problemSetId);
+        setEscalatedGates(escalated);
+      } catch {
+        // Non-fatal: may not have children or escalated gates
+        setEscalatedGates([]);
+      }
+
+      // Fetch child gates for hierarchical visibility
+      try {
+        const hierarchy = await gateService.fetchHierarchyGates(problemSetId);
+        setChildGates(hierarchy.childGates || []);
+      } catch {
+        // Non-fatal: may not have children
+        setChildGates([]);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch gates';
       setError(message);
@@ -190,11 +228,38 @@ export function DecisionGateProvider({ children, problemSetId }: DecisionGatePro
     [mode, refreshGates]
   );
 
+  // Cached permission derivation using user role (client-side, no API call)
+  const gatePermissionsLookup = useCallback(
+    (gateId: string): GatePermissions => {
+      const gate = gates.find(g => g.id === gateId)
+        || escalatedGates.find(g => g.id === gateId)
+        || childGates.find(g => g.id === gateId);
+      if (!gate) return DEFAULT_PERMISSIONS;
+
+      const role = (userRoleInActive || '').toLowerCase();
+      const isCommanderRole = role === 'commander' || role === 'xo';
+      const isEscalatable = gate.status === 'rejected'
+        || gate.status === 'escalated'
+        || (gate.status === 'pending' && gate.deadline_at && new Date(gate.deadline_at) < new Date());
+
+      return {
+        canApprove: isCommanderRole,
+        canReject: isCommanderRole,
+        canOverride: isCommanderRole,
+        canEscalate: !!isEscalatable,
+        canConfigure: isCommanderRole,
+      };
+    },
+    [gates, escalatedGates, childGates, userRoleInActive],
+  );
+
   const value = useMemo<DecisionGateContextType>(
     () => ({
       gates,
       gatesByTab,
       pendingApprovals,
+      escalatedGates,
+      childGates,
       loading,
       error,
       submitForApproval,
@@ -204,11 +269,14 @@ export function DecisionGateProvider({ children, problemSetId }: DecisionGatePro
       escalateGate: escalateGateAction,
       refreshGates,
       createGate: createGateAction,
+      gatePermissions: gatePermissionsLookup,
     }),
     [
       gates,
       gatesByTab,
       pendingApprovals,
+      escalatedGates,
+      childGates,
       loading,
       error,
       submitForApproval,
@@ -218,6 +286,7 @@ export function DecisionGateProvider({ children, problemSetId }: DecisionGatePro
       escalateGateAction,
       refreshGates,
       createGateAction,
+      gatePermissionsLookup,
     ]
   );
 
@@ -239,6 +308,10 @@ interface UseDecisionGatesResult {
   pendingCount: number;
   /** Gates with status 'submitted' for this tab/scope */
   pendingApprovals: DecisionGate[];
+  /** Gates escalated to this problem set from children */
+  escalatedGates: DecisionGate[];
+  /** Gates from child problem sets (for parent commander visibility) */
+  childGates: DecisionGate[];
   /** Whether the current user is commander or XO */
   isCommander: boolean;
   /** Loading state */
@@ -259,6 +332,8 @@ interface UseDecisionGatesResult {
   refreshGates: () => Promise<void>;
   /** Create a new gate */
   createGate: (params: CreateGateParams) => Promise<void>;
+  /** Get permissions for a specific gate */
+  gatePermissions: (gateId: string) => GatePermissions;
 }
 
 /**
@@ -286,10 +361,18 @@ export function useDecisionGates(tabId?: string): UseDecisionGatesResult {
 
   const pendingCount = pendingApprovals.length;
 
+  // Filter escalated gates by tab if tabId provided
+  const escalatedGates = useMemo(() => {
+    if (!tabId) return context.escalatedGates;
+    return context.escalatedGates.filter(g => g.tab === tabId);
+  }, [tabId, context.escalatedGates]);
+
   return {
     gates,
     pendingCount,
     pendingApprovals,
+    escalatedGates,
+    childGates: context.childGates,
     isCommander,
     loading: context.loading,
     error: context.error,
@@ -300,5 +383,6 @@ export function useDecisionGates(tabId?: string): UseDecisionGatesResult {
     escalateGate: context.escalateGate,
     refreshGates: context.refreshGates,
     createGate: context.createGate,
+    gatePermissions: context.gatePermissions,
   };
 }
