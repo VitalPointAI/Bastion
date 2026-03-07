@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-06T23:56:56.239Z"
+last_updated: "2026-03-07T00:37:51Z"
 progress:
   total_phases: 42
   completed_phases: 26
   total_plans: 242
-  completed_plans: 250
+  completed_plans: 251
 ---
 
 # Project State
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 26 of 40 (Strategic Environment Inheritance)
-Plan: 5 of 5 in current phase — 26-05 complete (awaiting human verification)
-Status: End-to-end inheritance integration with propagation hooks and backfill
-Last activity: 2026-03-06 - Completed 26-05: annotation/RFI panel wiring, propagation hooks, backfill endpoint
+Phase: 27 of 40 (Resource Registry, DID, and Plugin Architecture)
+Plan: 1 of 5 in current phase — 27-01 complete
+Status: Foundation types, DID system, and plugin interface established
+Last activity: 2026-03-07 - Completed 27-01: resource types, DID system, plugin interface, resource-store extensions
 
-Progress: █████████████████████████ 250 plans complete
+Progress: ██████████████████████████ 251 plans complete
 
 ## Performance Metrics
 
@@ -120,6 +120,7 @@ Progress: ███████████████████████�
 | Phase 25 P05 | 6 | 3 tasks | 6 files |
 | Phase 25.3 P03 | 3 | 2 tasks | 2 files |
 | Phase 25.3 P04 | 3 | 2 tasks | 4 files |
+| Phase 27 P01 | 6 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -134,6 +135,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 27 Plan 01 (Foundation Types, DID System, Plugin Interface):**
+- Used AnyStateMachine from xstate instead of fully parameterized StateMachine for plugin interface simplicity
+- Defined SafeParseResult locally instead of importing from zod v4 internal path
+- Category migration runs idempotently in initResourceTable() on every server start
 
 **Phase 26 Plan 05 (End-to-End Integration & Propagation):**
 - Slide-out panel layout with flex and 380px side panel for annotations and RFIs
