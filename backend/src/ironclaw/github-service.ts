@@ -79,6 +79,27 @@ export const PROTECTED_FILE_PATHS = [
   'docker-compose.yml',                          // Dev container config
   'Dockerfile',                                  // Build image definition
   '.dockerignore',                               // Build context control
+  // Server entry points & API layer (indirect governance bypass)
+  'backend/src/index.ts',                        // Server entry point, router mounting
+  'backend/src/api/',                            // API route layer above Ironclaw router
+  'backend/src/messaging/',                      // WebSocket message bus
+  // Dependency & build config (malicious dependency injection)
+  'package.json',                                // Root dependencies
+  'package-lock.json',                           // Dependency lock
+  'backend/package.json',                        // Backend dependencies
+  'backend/package-lock.json',                   // Backend dependency lock
+  'frontend/package.json',                       // Frontend dependencies
+  'frontend/package-lock.json',                  // Frontend dependency lock
+  'tsconfig.json',                               // Root TypeScript config
+  'backend/tsconfig.json',                       // Backend TypeScript config
+  'frontend/tsconfig.json',                      // Frontend TypeScript config
+  // Scripts (deployment, seeding, migrations)
+  'scripts/',                                    // All operational scripts
+  // Environment defaults
+  '.env',                                        // Environment variable defaults
+  // Frontend entry & context (UI guardrail bypass)
+  'frontend/src/App.tsx',                        // App entry point
+  'frontend/src/context/',                       // React contexts (auth, permissions)
 ] as const;
 
 /**
