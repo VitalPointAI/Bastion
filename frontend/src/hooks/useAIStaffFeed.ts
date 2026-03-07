@@ -53,7 +53,7 @@ export function useAIStaffFeed(problemSetId: string | null): UseAIStaffFeedResul
   // RAF batching queue
   const messageQueueRef = useRef<Array<{ type: string; data: AIFeedItem | AIAnnotation }>>([]);
   const rafIdRef = useRef<number | null>(null);
-  const processQueueRef = useRef<() => void>();
+  const processQueueRef = useRef<(() => void) | undefined>(undefined);
 
   // ─── RAF batch processor ─────────────────────────────────────────────────
 
