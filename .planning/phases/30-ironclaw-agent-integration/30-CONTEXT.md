@@ -42,6 +42,12 @@ Integrate an Ironclaw agent (NEAR AI) as a chief-of-staff capability that can ex
 - Auto-deploy on merge: merged PRs trigger automatic deployment, agent reports deployment status
 - Emergency mode: system admin can fast-track changes with extra audit trail logging, auto-reverts if CI fails
 
+### Self-Update Capability
+- Ironclaw must keep itself up to date with new releases automatically
+- When a new release is detected and applied, Ironclaw informs the system admin what updated and what new features or changes occurred as a result
+- Update notifications appear in the Ironclaw panel as system-level messages to the system admin
+- Update process should be non-disruptive (graceful restart or hot-reload where possible)
+
 ### Claude's Discretion
 - Failure handling strategy per action type (rollback vs stop-and-report)
 - Rate limiting design (per-action-type limits vs global cooldown)
@@ -49,6 +55,7 @@ Integrate an Ironclaw agent (NEAR AI) as a chief-of-staff capability that can ex
 - Loading/progress visual patterns for streamed actions
 - Blockchain anchoring frequency and batch size
 - Emergency mode guard rails and justification requirements
+- Self-update mechanism details (polling interval, rollback on failed update, changelog parsing)
 
 </decisions>
 
