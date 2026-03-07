@@ -17,6 +17,8 @@ import type { AgentWithConfig, AgentDefinition, LLMProviderType } from '../../ty
 import { FormField } from './common/FormField';
 import { AgentBuilderWizard } from './AgentBuilderWizard';
 import { useUser } from '../../context/UserContext';
+import { AgentHealthDot } from '../common/AgentHealthDot';
+import { useAgentValidationStatus } from '../../hooks/useAgentValidationStatus';
 
 const PROVIDERS: LLMProviderType[] = ['anthropic', 'openai', 'azure-openai', 'near-ai', 'local'];
 const AGENT_TYPES = ['governance', 'strategic', 'custom'] as const;
@@ -70,6 +72,7 @@ interface JsonValidationResult {
 }
 
 export function AgentManagementPanel() {
+  const validationStatus = useAgentValidationStatus();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -779,7 +782,10 @@ export function AgentManagementPanel() {
                 {customAgents.map((agent) => (
                   <tr key={agent.agentId}>
                     <td>
-                      <span className="source-name">{agent.name}</span>
+                      <span className="source-name">
+                        <AgentHealthDot status={validationStatus.get(agent.agentId) ?? 'unknown'} size="sm" />
+                        {' '}{agent.name}
+                      </span>
                     </td>
                     <td>
                       <span className="source-type">{agent.phase || 'Custom'}</span>

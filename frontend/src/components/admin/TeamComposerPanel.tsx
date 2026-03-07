@@ -23,6 +23,8 @@ import type {
   AgentWithConfig,
 } from '../../types/admin';
 import { FormField } from './common/FormField';
+import { AgentHealthDot } from '../common/AgentHealthDot';
+import { useAgentValidationStatus } from '../../hooks/useAgentValidationStatus';
 
 const WORKFLOW_TYPES: WorkflowType[] = ['sequential', 'parallel', 'consensus', 'hierarchical'];
 const MEMBER_ROLES: TeamMemberRole[] = ['coordinator', 'specialist', 'validator', 'executor'];
@@ -50,6 +52,7 @@ const TeamFormSchema = z.object({
 type TeamFormData = z.infer<typeof TeamFormSchema>;
 
 export function TeamComposerPanel() {
+  const validationStatus = useAgentValidationStatus();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -415,6 +418,7 @@ export function TeamComposerPanel() {
                           {team.members.map((member) => (
                             <div key={member.agentId} className="team-member-card">
                               <div className="team-member-info">
+                                <AgentHealthDot status={validationStatus.get(member.agentId) ?? 'unknown'} size="sm" />
                                 <span className="team-member-name">{getAgentName(member.agentId)}</span>
                                 <span className={`badge badge--role badge--${member.role}`}>
                                   {member.role}
