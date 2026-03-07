@@ -339,10 +339,10 @@ Following best practices for production-grade agentic workflows:
 **Plans:** 2/9 plans executed
 
 Plans:
-- [ ] 32-01-PLAN.md -- Foundation types, DB schema, discovery store, lifecycle state machine
+- [x] 32-01-PLAN.md -- Foundation types, DB schema, discovery store, lifecycle state machine
 - [ ] 32-02-PLAN.md -- CommandAdapter plugin facet, hot-load support, Ironclaw protection
 - [ ] 32-03-PLAN.md -- Transport scanner modules (BLE, WiFi, USB, TAK)
-- [ ] 32-04-PLAN.md -- Acceptance gate, fingerprinting, challenge-response auth
+- [x] 32-04-PLAN.md -- Acceptance gate, fingerprinting, challenge-response auth
 - [ ] 32-05-PLAN.md -- Onboarding pipeline, discovery service orchestrator
 - [ ] 32-06-PLAN.md -- WebSocket handler, REST API, behavioral baseline, barrel export
 - [ ] 32-07-PLAN.md -- EM spectrum awareness, network topology with hopping
