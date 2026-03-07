@@ -5,3 +5,4 @@
  */
 
 export * from './ironclaw-types.js';
+export * from './ironclaw-store.js';
