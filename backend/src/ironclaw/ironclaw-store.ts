@@ -16,6 +16,7 @@ import type {
   ActionCardData,
   StepProgressData,
 } from './ironclaw-types.js';
+import { TRUST_TTL_DAYS } from './ironclaw-types.js';
 import type { ActionRiskLevel } from './ironclaw-types.js';
 
 // ---------------------------------------------------------------------------
@@ -55,6 +56,7 @@ function rowToTrustPreference(row: Record<string, unknown>): TrustPreference {
     problem_set_id: row.problem_set_id as string,
     action_type: row.action_type as string,
     granted_at: (row.granted_at as Date).toISOString(),
+    expires_at: (row.expires_at as Date).toISOString(),
   };
 }
 
@@ -144,7 +146,7 @@ export class IronclawStore {
         ON ironclaw_chat (problem_set_id, created_at)
     `);
 
-    // Trust preferences table
+    // Trust preferences table (with TTL expiration)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ironclaw_trust_preferences (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -152,8 +154,15 @@ export class IronclawStore {
         problem_set_id TEXT NOT NULL,
         action_type TEXT NOT NULL,
         granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '30 days'),
         UNIQUE (user_did, problem_set_id, action_type)
       )
+    `);
+
+    // Add expires_at column if table already exists without it (migration)
+    await pool.query(`
+      ALTER TABLE ironclaw_trust_preferences
+        ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '30 days')
     `);
 
     // Action log table
@@ -279,18 +288,15 @@ export class IronclawStore {
     actionType: string,
   ): Promise<TrustPreference> {
     const pool = getPool();
+    const ttlInterval = `${TRUST_TTL_DAYS} days`;
     const result = await pool.query(
-      `INSERT INTO ironclaw_trust_preferences (user_did, problem_set_id, action_type)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_did, problem_set_id, action_type) DO NOTHING
+      `INSERT INTO ironclaw_trust_preferences (user_did, problem_set_id, action_type, expires_at)
+       VALUES ($1, $2, $3, NOW() + $4::interval)
+       ON CONFLICT (user_did, problem_set_id, action_type)
+       DO UPDATE SET granted_at = NOW(), expires_at = NOW() + $4::interval
        RETURNING *`,
-      [userDid, problemSetId, actionType],
+      [userDid, problemSetId, actionType, ttlInterval],
     );
-    // ON CONFLICT DO NOTHING returns no rows if already exists, so fetch it
-    if (result.rows.length === 0) {
-      const existing = await this.getTrustPreference(userDid, problemSetId, actionType);
-      return existing!;
-    }
     return rowToTrustPreference(result.rows[0]);
   }
 
@@ -313,7 +319,7 @@ export class IronclawStore {
   ): Promise<TrustPreference | null> {
     const pool = getPool();
     const result = await pool.query(
-      'SELECT * FROM ironclaw_trust_preferences WHERE user_did = $1 AND problem_set_id = $2 AND action_type = $3',
+      'SELECT * FROM ironclaw_trust_preferences WHERE user_did = $1 AND problem_set_id = $2 AND action_type = $3 AND expires_at > NOW()',
       [userDid, problemSetId, actionType],
     );
     return result.rows.length > 0 ? rowToTrustPreference(result.rows[0]) : null;
@@ -324,8 +330,9 @@ export class IronclawStore {
     problemSetId: string,
   ): Promise<TrustPreference[]> {
     const pool = getPool();
+    // Use LIKE for problemSetId to support '%' wildcard (used by DELETE route)
     const result = await pool.query(
-      'SELECT * FROM ironclaw_trust_preferences WHERE user_did = $1 AND problem_set_id = $2',
+      'SELECT * FROM ironclaw_trust_preferences WHERE user_did = $1 AND problem_set_id LIKE $2 AND expires_at > NOW()',
       [userDid, problemSetId],
     );
     return result.rows.map(rowToTrustPreference);

@@ -149,12 +149,16 @@ export interface IronclawAction {
 
 export type TrustDecision = 'yes' | 'no' | 'always';
 
+/** Default trust preference TTL: 30 days in milliseconds. */
+export const TRUST_TTL_DAYS = 30;
+
 export interface TrustPreference {
   id: string;
   user_did: string;
   problem_set_id: string;
   action_type: string;
   granted_at: string;
+  expires_at: string;
 }
 
 // ---------------------------------------------------------------------------

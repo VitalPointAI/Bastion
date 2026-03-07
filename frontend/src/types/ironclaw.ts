@@ -83,4 +83,5 @@ export interface TrustPreference {
   actionType: string;
   problemSetId: string;
   grantedAt: string;
+  expiresAt: string;
 }
