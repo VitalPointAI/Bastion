@@ -340,6 +340,7 @@ interface UseDecisionGatesResult {
  * Hook to consume decision gate context.
  * If tabId is provided, returns only gates for that tab.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDecisionGates(tabId?: string): UseDecisionGatesResult {
   const context = useContext(DecisionGateContext);
   const { userRoleInActive } = useProblemSet();

@@ -66,7 +66,7 @@ export function ProblemSetSelector() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [detail, setDetail] = useState<ProblemSetDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [_detailLoading, setDetailLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showChildWizard, setShowChildWizard] = useState(false);
