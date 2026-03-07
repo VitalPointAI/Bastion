@@ -5,7 +5,7 @@
  * Wires service layer to presentational components with tab-based navigation.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AssumptionTracker } from './AssumptionTracker';
 import type { AssumptionDisplayData } from './AssumptionTracker';
 import { GovernanceGateDashboard } from './GovernanceGateDashboard';
@@ -14,6 +14,8 @@ import { PhaseProgressionBar } from './PhaseProgressionBar';
 import type { PhaseProgressionData } from './PhaseProgressionBar';
 import { CommanderGuidanceForm } from './CommanderGuidanceForm';
 import * as mdmpService from '../../lib/mdmp-service';
+import { convertDecisionGateToDisplayData } from '../../lib/mdmp-service';
+import { useDecisionGates } from '../../context/DecisionGateContext';
 import type { CommanderGuidanceData } from '../../types/dao';
 import './MDMPGovernancePanel.css';
 
@@ -37,9 +39,20 @@ export function MDMPGovernancePanel({
   // Workflow state
   const [workflowExists, setWorkflowExists] = useState(false);
   const [currentPhase, setCurrentPhase] = useState('phase_0_continuous');
-  const [gates, setGates] = useState<GateDisplayData[]>([]);
+  const [mdmpGates, setMdmpGates] = useState<GateDisplayData[]>([]);
   const [assumptions, setAssumptions] = useState<AssumptionDisplayData[]>([]);
   const [phaseProgression, setPhaseProgression] = useState<PhaseProgressionData[]>([]);
+
+  // Decision gate context — new unified gate system
+  const { gates: decisionGates } = useDecisionGates();
+
+  // Unified gate view: merge MDMP gates with decision gates (deduplicated)
+  const gates = useMemo(() => {
+    const decisionGateDisplay = decisionGates.map(convertDecisionGateToDisplayData);
+    const existingIds = new Set(mdmpGates.map((g) => g.gateId));
+    const newGates = decisionGateDisplay.filter((g) => !existingIds.has(g.gateId));
+    return [...mdmpGates, ...newGates];
+  }, [mdmpGates, decisionGates]);
 
   // Load workflow state
   const loadWorkflow = useCallback(async () => {
@@ -51,7 +64,7 @@ export function MDMPGovernancePanel({
       if (workflow) {
         setWorkflowExists(true);
         setCurrentPhase(workflow.workflow.currentPhase);
-        setGates(workflow.gates);
+        setMdmpGates(workflow.gates);
         setAssumptions(workflow.assumptions);
         setPhaseProgression(workflow.phaseProgression);
       } else {

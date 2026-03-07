@@ -8,6 +8,7 @@
 import type { AssumptionDisplayData } from '../components/governance/AssumptionTracker';
 import type { GateDisplayData } from '../components/governance/GovernanceGateDashboard';
 import type { PhaseProgressionData } from '../components/governance/PhaseProgressionBar';
+import { gateService, type DecisionGate } from './gate-service';
 
 const API_BASE = '/api/mdmp';
 
@@ -113,10 +114,20 @@ export async function getWorkflow(missionId: string): Promise<{
 
     const workflow = response.workflow;
 
-    // Transform phaseGates object to GateDisplayData array
-    const gates: GateDisplayData[] = Object.entries(workflow.phaseGates || {}).map(
+    // Transform phaseGates object to GateDisplayData array (old MDMP system)
+    const mdmpGates: GateDisplayData[] = Object.entries(workflow.phaseGates || {}).map(
       ([gateId, gate]) => transformGate(gateId, gate)
     );
+
+    // Dual-read: also fetch gates from the new decision gate registry
+    // Uses missionId as problemSetId (same identifier in unified system)
+    const decisionGateDisplayData = await fetchDecisionGatesAsDisplayData(missionId);
+
+    // Merge: MDMP gates first (backward compatible), then new decision gates
+    // Deduplicate by gateId to avoid showing the same gate twice
+    const existingIds = new Set(mdmpGates.map((g) => g.gateId));
+    const newGates = decisionGateDisplayData.filter((g) => !existingIds.has(g.gateId));
+    const gates: GateDisplayData[] = [...mdmpGates, ...newGates];
 
     // Transform assumptions to AssumptionDisplayData array
     const assumptions: AssumptionDisplayData[] = (workflow.assumptions || []).map(
@@ -301,6 +312,44 @@ function transformGate(gateId: string, raw: RawGate): GateDisplayData {
     proposalId: raw.proposalId || raw.proposal_id || undefined,
     description: raw.description || '',
   };
+}
+
+// ============================================================================
+// Dual-Read: Convert DecisionGate (new system) → GateDisplayData (MDMP view)
+// ============================================================================
+
+/**
+ * Maps a new-system DecisionGate to the MDMP GateDisplayData format
+ * for unified rendering in MDMPGovernancePanel.
+ */
+export function convertDecisionGateToDisplayData(gate: DecisionGate): GateDisplayData {
+  return {
+    gateId: gate.id,
+    gateType: gate.gate_type,
+    phase: gate.tab, // new system uses tab; map to phase for MDMP view
+    satisfied: gate.status === 'approved' || gate.status === 'overridden',
+    satisfiedBy: gate.decided_by ?? undefined,
+    satisfiedAt: gate.decided_at ?? undefined,
+    proposalId: gate.proposal_id ? Number(gate.proposal_id) : undefined,
+    description: gate.target_item_title ?? `${gate.gate_type} gate`,
+  };
+}
+
+/**
+ * Fetch decision gates from the new gate registry for a given problem set.
+ * Returns them as GateDisplayData[] for unified rendering alongside MDMP gates.
+ */
+export async function fetchDecisionGatesAsDisplayData(
+  problemSetId: string,
+): Promise<GateDisplayData[]> {
+  try {
+    const decisionGates = await gateService.fetchGatesForProblemSet(problemSetId);
+    return decisionGates.map(convertDecisionGateToDisplayData);
+  } catch {
+    // If new gate system unavailable, return empty (graceful degradation)
+    console.warn('Failed to fetch decision gates for dual-read; continuing with MDMP data only');
+    return [];
+  }
 }
 
 function transformWorkflowToPhaseProgression(_workflow: WorkflowState, gates: GateDisplayData[]): PhaseProgressionData[] {
