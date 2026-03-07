@@ -51,6 +51,54 @@ export interface EmergencyMergeResult {
 }
 
 // ---------------------------------------------------------------------------
+// Governance File Protection
+// ---------------------------------------------------------------------------
+
+/**
+ * File paths (glob-like prefixes) that agent-authored PRs are NEVER permitted
+ * to modify. These files define the agent's own authority boundaries.
+ *
+ * This only applies to PRs created through the Ironclaw pipeline (branches
+ * prefixed `ironclaw/`). Human developers can modify any file normally via
+ * direct commits, manual PRs, or CI workflows.
+ */
+export const PROTECTED_FILE_PATHS = [
+  // Ironclaw governance code
+  'backend/src/ironclaw/ironclaw-types.ts',     // Risk levels, protected keys, rate limits
+  'backend/src/ironclaw/action-registry.ts',     // Registry lock, risk classification
+  'backend/src/ironclaw/action-pipeline.ts',     // Confirmation pipeline, gate routing
+  'backend/src/ironclaw/tool-bridge.ts',         // Self-modification detection, scope validation
+  'backend/src/ironclaw/github-service.ts',      // This file — protected file list itself
+  // Auth & middleware
+  'backend/src/auth/',                           // Authentication system
+  // Gate system (approval workflow)
+  'backend/src/gates/',                          // Decision gate enforcement
+  // CI/CD & deployment (could remove governance checks or swap deployment targets)
+  '.github/',                                    // GitHub Actions workflows, PR templates
+  'docker-compose.prod.yml',                     // Production container config
+  'docker-compose.yml',                          // Dev container config
+  'Dockerfile',                                  // Build image definition
+  '.dockerignore',                               // Build context control
+] as const;
+
+/**
+ * Check if a file path matches any protected path.
+ * Supports exact match and directory prefix matching.
+ */
+function isProtectedPath(filePath: string): boolean {
+  for (const protectedPath of PROTECTED_FILE_PATHS) {
+    if (protectedPath.endsWith('/')) {
+      // Directory prefix match
+      if (filePath.startsWith(protectedPath)) return true;
+    } else {
+      // Exact file match
+      if (filePath === protectedPath) return true;
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -108,6 +156,21 @@ export class GitHubService {
     const baseBranch = params.baseBranch || 'master';
     const branchRef = `ironclaw/${params.branchName}`;
     let branchCreated = false;
+
+    // Governance guardrail: block agent PRs that touch protected files.
+    // Only applies to ironclaw/ branches (agent-authored). Human developers
+    // create PRs through normal git workflows, not this service.
+    const blocked = params.files.filter((f) => isProtectedPath(f.path));
+    if (blocked.length > 0) {
+      const paths = blocked.map((f) => f.path).join(', ');
+      console.warn(
+        `[GitHubService] BLOCKED: Agent PR attempted to modify governance files: ${paths}`,
+      );
+      throw new Error(
+        `Agent PRs cannot modify governance files. Blocked paths: ${paths}. ` +
+        `These files control agent authority boundaries and must be modified by human developers directly.`,
+      );
+    }
 
     try {
       // 1. Get base branch SHA
