@@ -53,6 +53,7 @@ export function useAIStaffFeed(problemSetId: string | null): UseAIStaffFeedResul
   // RAF batching queue
   const messageQueueRef = useRef<Array<{ type: string; data: AIFeedItem | AIAnnotation }>>([]);
   const rafIdRef = useRef<number | null>(null);
+  const processQueueRef = useRef<() => void>();
 
   // ─── RAF batch processor ─────────────────────────────────────────────────
 
@@ -82,20 +83,24 @@ export function useAIStaffFeed(problemSetId: string | null): UseAIStaffFeedResul
 
     // If more items remain, schedule next frame
     if (queue.length > 0) {
-      rafIdRef.current = requestAnimationFrame(processQueue);
+      rafIdRef.current = requestAnimationFrame(() => processQueueRef.current?.());
     } else {
       rafIdRef.current = null;
     }
   }, [dispatch]);
 
+  useEffect(() => {
+    processQueueRef.current = processQueue;
+  }, [processQueue]);
+
   const enqueueMessage = useCallback(
     (type: string, data: AIFeedItem | AIAnnotation) => {
       messageQueueRef.current.push({ type, data });
       if (rafIdRef.current === null) {
-        rafIdRef.current = requestAnimationFrame(processQueue);
+        rafIdRef.current = requestAnimationFrame(() => processQueueRef.current?.());
       }
     },
-    [processQueue],
+    [],
   );
 
   // ─── Fetch initial feed from REST endpoint ───────────────────────────────

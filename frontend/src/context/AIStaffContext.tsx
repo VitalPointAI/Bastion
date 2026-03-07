@@ -221,6 +221,7 @@ export function AIStaffProvider({ problemSetId: _problemSetId, activeTab, childr
  * Components using only this hook won't re-render when dispatch is called
  * (unless state actually changes).
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAIStaff(): AIStaffStateValue {
   const context = useContext(AIStaffStateContext);
   if (!context) {
@@ -233,6 +234,7 @@ export function useAIStaff(): AIStaffStateValue {
  * Access to AI staff dispatch actions.
  * Components using only this hook won't re-render when state changes.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAIStaffDispatch(): AIStaffDispatchValue {
   const context = useContext(AIStaffDispatchContext);
   if (!context) {
