@@ -49,3 +49,8 @@ export type { AnomalyCheck, DeviceHealthCheck } from './behavioral-baseline.js';
 
 // Discovery Lifecycle State Machine
 export { discoveryLifecycle } from './discovery-lifecycle.js';
+
+// EM Spectrum Awareness (Phase 32 Plan 07)
+export { EMCollector } from './em-spectrum/em-collector.js';
+export { EMBand } from './em-spectrum/em-types.js';
+export type { EMSignalEntry, EMSnapshot, EMFootprint, EMDataSource } from './em-spectrum/em-types.js';

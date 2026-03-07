@@ -16,6 +16,7 @@ import { requireAuth } from '../auth/auth-instance.js';
 import { discoveryStore } from './discovery-store.js';
 import { AcceptanceGate } from './acceptance-gate.js';
 import { getPool } from '../lib/database.js';
+import { EMCollector } from './em-spectrum/em-collector.js';
 import type {
   DeviceState,
   TransportType,
@@ -504,3 +505,45 @@ discoveryRouter.put(
     }
   },
 );
+
+// ==========================================================================
+// EM Spectrum Awareness (Phase 32 Plan 07)
+// ==========================================================================
+
+/** Shared EM collector instance (lazy singleton) */
+let _emCollector: EMCollector | null = null;
+function getEMCollector(): EMCollector {
+  if (!_emCollector) {
+    _emCollector = new EMCollector();
+    _emCollector.start();
+  }
+  return _emCollector;
+}
+
+/**
+ * GET /em/snapshot
+ * Return current EM picture with per-band summaries.
+ */
+discoveryRouter.get('/em/snapshot', async (_req: Request, res: Response) => {
+  try {
+    const collector = getEMCollector();
+    res.json(collector.getSnapshot());
+  } catch (err) {
+    console.error('[discovery-router] GET /em/snapshot error:', err);
+    res.status(500).json({ error: 'Failed to get EM snapshot' });
+  }
+});
+
+/**
+ * GET /em/own-footprint
+ * Return Bastion's own electromagnetic emissions for OPSEC awareness.
+ */
+discoveryRouter.get('/em/own-footprint', async (_req: Request, res: Response) => {
+  try {
+    const collector = getEMCollector();
+    res.json({ emissions: collector.getOwnFootprint() });
+  } catch (err) {
+    console.error('[discovery-router] GET /em/own-footprint error:', err);
+    res.status(500).json({ error: 'Failed to get own EM footprint' });
+  }
+});
