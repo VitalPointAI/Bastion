@@ -1,0 +1,86 @@
+/**
+ * Ironclaw Frontend Type Definitions
+ *
+ * CamelCase frontend types mirroring backend snake_case.
+ * Duplicated per project convention (no shared package, backend authoritative).
+ */
+
+// ============================================================================
+// Enums / Union Types
+// ============================================================================
+
+export type IronclawSender = 'user' | 'ironclaw' | 'specialist';
+export type ActionRiskLevel = 'low' | 'medium' | 'high';
+export type TrustDecision = 'yes' | 'no' | 'always';
+export type StepStatus = 'pending' | 'running' | 'complete' | 'failed';
+
+// ============================================================================
+// Chat Messages
+// ============================================================================
+
+export interface IronclawChatMessage {
+  id: string;
+  problemSetId: string;
+  content: string;
+  sender: IronclawSender;
+  specialistId?: string;
+  specialistDisplayName?: string;
+  delegatedBy?: string;
+  actionCard?: ActionCardData;
+  stepProgress?: StepProgressData;
+  suggestion?: SuggestionData;
+  createdAt: string;
+}
+
+// ============================================================================
+// Action Cards
+// ============================================================================
+
+export interface ActionCardData {
+  actionId: string;
+  actionType: string;
+  description: string;
+  riskLevel: ActionRiskLevel;
+  options: TrustDecision[];
+}
+
+// ============================================================================
+// Step Progress
+// ============================================================================
+
+export interface StepProgressData {
+  actionId: string;
+  steps: StepInfo[];
+  currentStep: number;
+  startedAt: string;
+}
+
+export interface StepInfo {
+  label: string;
+  status: StepStatus;
+  startedAt?: string;
+  completedAt?: string;
+}
+
+// ============================================================================
+// Suggestions
+// ============================================================================
+
+export interface SuggestionData {
+  id: string;
+  content: string;
+  agentId: string;
+  agentDisplayName: string;
+  actionType?: string;
+}
+
+// ============================================================================
+// Trust Preferences
+// ============================================================================
+
+export interface TrustPreference {
+  id: string;
+  actionType: string;
+  problemSetId: string;
+  grantedAt: string;
+}
