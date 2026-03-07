@@ -722,7 +722,7 @@ Plans:
 **Goal:** Move DAO governance from a dedicated Decide tab into contextual decision gates embedded within each tab of the doctrinal workflow, making governance a natural part of the planning process rather than a separate activity
 **Depends on:** Phase 24, Phase 3
 **Research:** Unlikely
-**Plans:** 3/9 plans executed
+**Plans:** 4/9 plans executed
 
 **Context:**
 Currently governance lives in the Decide tab with a separate governance dashboard, proposal list, and MDMP workflow view. This creates a disconnect — planners must leave their workflow to submit proposals, and commanders must navigate to a separate area to approve them. Moving governance into contextual decision gates means proposals appear naturally at decision points: approving an objective (Understand tab), selecting an operational approach (Design tab), choosing a COA (Plan tab), releasing an order (Direct tab), and reframing based on assessment (Assess tab).
@@ -738,9 +738,9 @@ Currently governance lives in the Decide tab with a separate governance dashboar
 
 Plans:
 - [x] 28-01-PLAN.md -- Backend gate types, PostgreSQL store, gate service, REST API (Wave 1)
-- [ ] 28-02-PLAN.md -- Frontend gate service, DecisionGateContext, banner/badge/overlay components (Wave 1)
-- [ ] 28-03-PLAN.md -- GateProposalModal, GateSubmitButton, DecisionGateTimeline, TabLayout extension (Wave 2)
-- [ ] 28-04-PLAN.md -- DecisionGateProvider in ProblemSetTabContainer, embed gates in Understand/Design/Plan tabs (Wave 3)
+- [x] 28-02-PLAN.md -- Frontend gate service, DecisionGateContext, banner/badge/overlay components (Wave 1) (completed 2026-03-07)
+- [x] 28-03-PLAN.md -- GateProposalModal, GateSubmitButton, DecisionGateTimeline, TabLayout extension (Wave 2) (completed 2026-03-07)
+- [x] 28-04-PLAN.md -- DecisionGateProvider in ProblemSetTabContainer, embed gates in Understand/Design/Plan tabs (Wave 3) (completed 2026-03-07)
 - [ ] 28-05-PLAN.md -- DirectTab gate overview + order release gate, AssessTab implementation with reframing gate (Wave 4)
 - [ ] 28-06-PLAN.md -- Generalize MDMP frontend components (GovernanceGateDashboard, DecisionBriefView, PhaseProgressionBar) (Wave 4)
 - [ ] 28-07-PLAN.md -- Escalation wiring, role-based permissions, hierarchical gate visibility (Wave 5)
