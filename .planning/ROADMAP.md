@@ -49,7 +49,7 @@ None
 - [ ] **Phase 25.2: Strategic Document Containers & Actor Categorization** - Organize strategic documents into nation/group containers (e.g., United States, China, NATO) with actor categories (ally, adversary, neutral, partner); persistent container-based organization for building strategic environments over time; feeds into Phase 26 strategic environment inheritance (INSERTED)
 - [ ] **Phase 25.3: AI Strategic Context & Knowledge Graph Integration** - Wire subscribed strategic environment data and container-scoped knowledge graphs into AI agent context; subscription cache materializer populates problem_set_data_cache; container-scoped RAFT graph construction with auto-trigger on document changes; graph summary injection into assembleContextNode for exercise AI agents; context size management with truncation and prioritization (INSERTED)
 - [ ] **Phase 26: Strategic Environment & Inheritance** - Strategic-level problem set as context provider with inheritance mechanism for directives, policy, and intelligence; update propagation to child problem sets (INSERTED)
-- [ ] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED)
+- [x] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED) (completed 2026-03-07)
 - [ ] **Phase 28: Embedded DAO Governance at Decision Gates** - Move DAO governance from dedicated tab into contextual workflow decision gates; proposals trigger at natural planning decision points (objective approval, COA selection, order release) (INSERTED)
 - [ ] **Phase 29: Contextual AI Staff Integration** - Surface AI agent output contextually per tab; per-tab AI assistant aware of workflow phase; recommendation engine tied to doctrinal workflow position (INSERTED)
 
@@ -696,7 +696,7 @@ Plans:
 **Depends on:** Phase 24
 **Research:** Required
 **Research topics:** Resource identity patterns in military C2 systems, DID-based asset tracking, plugin architecture patterns (Strategy/Factory), IoT device identity management, MIL-STD-2525D resource symbology, telemetry data ingestion patterns, edge device registration protocols
-**Plans:** 3/5 plans executed
+**Plans:** 5/5 plans complete
 
 **Context:**
 Currently resources (vehicles, sensors, weapons, personnel, consumables) are simple data rows with prefixed UUIDs. Agents have full DID support, registries, capabilities, and team membership. Resources deserve the same treatment — especially autonomous vehicles, sensors, and comms equipment that actively participate in operations. A plugin architecture allows new resource types to be added without core changes.
@@ -1288,6 +1288,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 24. Doctrinal Tab Restructure | 3/3 | Complete    | 2026-03-06 |
 | 25. Operational Design Workspace | 6/6 | Complete   | 2026-03-06 |
 | 26. Strategic Environment & Inheritance | 5/5 | Complete   | 2026-03-06 |
-| 27. Resource Registry & DID Plugin | 3/5 | In Progress|  |
+| 27. Resource Registry & DID Plugin | 5/5 | Complete   | 2026-03-07 |
 | 28. Embedded DAO Governance | 0/TBD | Not started | - |
 | 29. Contextual AI Staff Integration | 0/TBD | Not started | - |
