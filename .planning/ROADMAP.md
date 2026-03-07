@@ -777,6 +777,7 @@ Plans:
 **Goal:** Integrate an Ironclaw agent (NEAR AI) as a chief-of-staff capability that can execute system changes, code modifications (via PR/CI-CD), and problem set configuration on behalf of authorized users with tiered permissions
 **Depends on:** Phase 29, Phase 27
 **Research:** Required
+**Plans:** 8 plans
 **Research topics:** Ironclaw agent architecture and API (nearai/ironclaw), secure agent sandboxing, permission-tiered agent execution (system admin vs problem set creator/admin), CI/CD integration for agent-initiated code changes, audit trail and rollback mechanisms, blast radius containment per problem set, rate limiting and confirmation gates for destructive actions, scope escalation prevention
 
 **Context:**
@@ -796,7 +797,14 @@ Key safety concerns addressed: agent sandboxing per problem set, immutable audit
 7. **Natural Language Interface** — Commanders/creators direct the agent conversationally to perform administrative tasks
 
 Plans:
-- [ ] 30-01-PLAN.md — TBD (pending research and planning)
+- [ ] 30-01-PLAN.md — Foundation types, PostgreSQL store, Docker sidecar config
+- [ ] 30-02-PLAN.md — Backend Ironclaw client, service, and Express router
+- [ ] 30-03-PLAN.md — Action registry, risk classification, confirmation pipeline
+- [ ] 30-04-PLAN.md — MCP tool bridge, scope validation, confirmation endpoints
+- [ ] 30-05-PLAN.md — Frontend UI components (drawer, button, messages, action cards)
+- [ ] 30-06-PLAN.md — Frontend hooks, context, service client, App.tsx wiring
+- [ ] 30-07-PLAN.md — GitHub service for code change pipeline
+- [ ] 30-08-PLAN.md — Self-update service and audit trail blockchain anchoring
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
