@@ -722,7 +722,7 @@ Plans:
 **Goal:** Move DAO governance from a dedicated Decide tab into contextual decision gates embedded within each tab of the doctrinal workflow, making governance a natural part of the planning process rather than a separate activity
 **Depends on:** Phase 24, Phase 3
 **Research:** Unlikely
-**Plans:** TBD
+**Plans:** 8 plans
 
 **Context:**
 Currently governance lives in the Decide tab with a separate governance dashboard, proposal list, and MDMP workflow view. This creates a disconnect — planners must leave their workflow to submit proposals, and commanders must navigate to a separate area to approve them. Moving governance into contextual decision gates means proposals appear naturally at decision points: approving an objective (Understand tab), selecting an operational approach (Design tab), choosing a COA (Plan tab), releasing an order (Direct tab), and reframing based on assessment (Assess tab).
@@ -737,7 +737,14 @@ Currently governance lives in the Decide tab with a separate governance dashboar
 7. **Escalation In-Context** — Escalation to parent problem set triggered from within the workflow, not from a separate escalation panel
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 28 to create plans)
+- [ ] 28-01-PLAN.md -- Backend gate types, PostgreSQL store, gate service, REST API (Wave 1)
+- [ ] 28-02-PLAN.md -- Frontend gate service, DecisionGateContext, banner/badge/overlay components (Wave 1)
+- [ ] 28-03-PLAN.md -- GateProposalModal, GateSubmitButton, DecisionGateTimeline, TabLayout extension (Wave 2)
+- [ ] 28-04-PLAN.md -- DecisionGateProvider in ProblemSetTabContainer, embed gates in Understand/Design/Plan tabs (Wave 2)
+- [ ] 28-05-PLAN.md -- DirectTab gate overview + order release gate, AssessTab implementation with reframing gate (Wave 3)
+- [ ] 28-06-PLAN.md -- Generalize MDMP components, MDMP dual-read unification, training mode tagging (Wave 3)
+- [ ] 28-07-PLAN.md -- Escalation wiring, role-based permissions, hierarchical gate visibility (Wave 4)
+- [ ] 28-08-PLAN.md -- Human verification of complete governance system (Wave 5)
 
 ### Phase 29: Contextual AI Staff Integration (INSERTED)
 **Goal:** Surface AI agent output contextually within each tab of the doctrinal workflow, providing per-tab AI assistants that are aware of the current workflow phase and deliver relevant recommendations, analysis, and automation
