@@ -69,7 +69,7 @@ export function NetworkTopologyView({
   deviceCount,
   connectedCount,
 }: NetworkTopologyViewProps) {
-  const [topology, setTopology] = useState<TopologyGraph | null>(null);
+  const [_topology, setTopology] = useState<TopologyGraph | null>(null);
   const [layoutNodes, setLayoutNodes] = useState<LayoutNode[]>([]);
   const [edges, setEdges] = useState<TopologyEdge[]>([]);
   const [selectedPath, setSelectedPath] = useState<string[]>([]);
@@ -81,53 +81,7 @@ export function NetworkTopologyView({
   const animFrameRef = useRef<number>(0);
   const mountedRef = useRef(true);
 
-  // ---- Load topology data ------------------------------------------------
-
-  const loadTopology = useCallback(async () => {
-    try {
-      setLoading(true);
-      const graph = await discoveryService.getTopology();
-      if (mountedRef.current) {
-        setTopology(graph);
-        setEdges(graph.edges);
-        setHoppingEnabled(graph.hoppingEnabled);
-        initializeLayout(graph);
-      }
-    } catch (err) {
-      console.error('[NetworkTopologyView] load failed:', err);
-    } finally {
-      if (mountedRef.current) setLoading(false);
-    }
-  }, []);
-
-  // ---- Initialize force layout --------------------------------------------
-
-  const initializeLayout = useCallback((graph: TopologyGraph) => {
-    const width = containerRef.current?.clientWidth || 600;
-    const height = containerRef.current?.clientHeight || 400;
-    const cx = width / 2;
-    const cy = height / 2;
-
-    const nodes: LayoutNode[] = graph.nodes.map((node, i) => {
-      if (node.type === 'bastion') {
-        return { id: node.id, x: cx, y: cy, vx: 0, vy: 0, data: node };
-      }
-      // Spread initial positions in a circle
-      const angle = (2 * Math.PI * i) / Math.max(graph.nodes.length, 1);
-      const radius = 120 + Math.random() * 60;
-      return {
-        id: node.id,
-        x: cx + radius * Math.cos(angle),
-        y: cy + radius * Math.sin(angle),
-        vx: 0,
-        vy: 0,
-        data: node,
-      };
-    });
-
-    // Run force simulation
-    runForceSimulation(nodes, graph.edges, cx, cy);
-  }, []);
+  // ---- Force simulation ----------------------------------------------------
 
   const runForceSimulation = useCallback(
     (nodes: LayoutNode[], edgeList: TopologyEdge[], cx: number, cy: number) => {
@@ -201,6 +155,53 @@ export function NetworkTopologyView({
     },
     [],
   );
+
+  // ---- Initialize force layout --------------------------------------------
+
+  const initializeLayout = useCallback((graph: TopologyGraph) => {
+    const width = containerRef.current?.clientWidth || 600;
+    const height = containerRef.current?.clientHeight || 400;
+    const cx = width / 2;
+    const cy = height / 2;
+
+    const nodes: LayoutNode[] = graph.nodes.map((node, i) => {
+      if (node.type === 'bastion') {
+        return { id: node.id, x: cx, y: cy, vx: 0, vy: 0, data: node };
+      }
+      // Spread initial positions in a circle
+      const angle = (2 * Math.PI * i) / Math.max(graph.nodes.length, 1);
+      const radius = 120 + Math.random() * 60;
+      return {
+        id: node.id,
+        x: cx + radius * Math.cos(angle),
+        y: cy + radius * Math.sin(angle),
+        vx: 0,
+        vy: 0,
+        data: node,
+      };
+    });
+
+    runForceSimulation(nodes, graph.edges, cx, cy);
+  }, [runForceSimulation]);
+
+  // ---- Load topology data ------------------------------------------------
+
+  const loadTopology = useCallback(async () => {
+    try {
+      setLoading(true);
+      const graph = await discoveryService.getTopology();
+      if (mountedRef.current) {
+        setTopology(graph);
+        setEdges(graph.edges);
+        setHoppingEnabled(graph.hoppingEnabled);
+        initializeLayout(graph);
+      }
+    } catch (err) {
+      console.error('[NetworkTopologyView] load failed:', err);
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
+  }, [initializeLayout]);
 
   // ---- Lifecycle -----------------------------------------------------------
 

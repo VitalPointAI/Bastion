@@ -11,7 +11,7 @@
 import { useState } from 'react';
 import { Marker, Tooltip, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
-import type { DiscoveredDevice, DeviceState, TransportType } from '../../lib/discovery-service.ts';
+import type { DiscoveredDevice, DeviceState } from '../../lib/discovery-service.ts';
 
 // ---- State-based marker styling -------------------------------------------
 

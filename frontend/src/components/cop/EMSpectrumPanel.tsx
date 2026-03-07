@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { EMSnapshot, EMSignalEntry, EMBand } from '../../lib/discovery-service.ts';
+import type { EMSnapshot, EMSignalEntry } from '../../lib/discovery-service.ts';
 import { discoveryService } from '../../lib/discovery-service.ts';
 
 // ---- Constants ------------------------------------------------------------
