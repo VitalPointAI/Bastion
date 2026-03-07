@@ -1,5 +1,8 @@
 /**
  * PhaseProgressionBar Styles
+ *
+ * Supports both legacy MDMP phase progression and
+ * new DecisionGate workflow progression with status coloring.
  */
 
 .phase-progression-bar {
@@ -9,6 +12,40 @@
   margin-bottom: 1.5rem;
 }
 
+/* Overall progress summary (new gate mode) */
+.progression-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.summary-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-tertiary, #e5e7eb);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.summary-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.summary-fill--approved {
+  background: var(--success, #10b981);
+}
+
+.summary-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+  white-space: nowrap;
+}
+
+/* Steps container */
 .progression-steps {
   display: flex;
   align-items: center;
@@ -25,6 +62,7 @@
   min-width: 100px;
 }
 
+/* Connector lines */
 .progression-connector {
   flex: 1;
   height: 2px;
@@ -40,6 +78,23 @@
   background: var(--border, #e5e7eb);
 }
 
+.progression-connector.connector-approved {
+  background: var(--success, #10b981);
+}
+
+.progression-connector.connector-rejected {
+  background: var(--danger, #ef4444);
+}
+
+.progression-connector.connector-escalated {
+  background: #7c3aed;
+}
+
+.progression-connector.connector-overridden {
+  background: #6b7280;
+}
+
+/* Step base */
 .progression-step {
   display: flex;
   flex-direction: column;
@@ -59,6 +114,7 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Legacy MDMP status styles */
 .progression-step.completed {
   border-color: var(--success, #10b981);
   background: #f0fdf4;
@@ -81,6 +137,34 @@
   box-shadow: none;
 }
 
+/* New gate status styles */
+.progression-step.step-approved {
+  border-color: var(--success, #10b981);
+  background: #f0fdf4;
+}
+
+.progression-step.step-pending,
+.progression-step.step-submitted {
+  border-color: var(--warning, #f59e0b);
+  background: #fffbeb;
+}
+
+.progression-step.step-rejected {
+  border-color: var(--danger, #ef4444);
+  background: #fef2f2;
+}
+
+.progression-step.step-escalated {
+  border-color: #7c3aed;
+  background: #f5f3ff;
+}
+
+.progression-step.step-overridden {
+  border-color: #6b7280;
+  background: #f9fafb;
+}
+
+/* Step indicator circle */
 .step-indicator {
   width: 40px;
   height: 40px;
@@ -107,10 +191,38 @@
   color: var(--text-muted, #6b7280);
 }
 
+/* Gate status indicator styles */
+.progression-step.step-approved .step-indicator {
+  background: var(--success, #10b981);
+  color: white;
+}
+
+.progression-step.step-pending .step-indicator,
+.progression-step.step-submitted .step-indicator {
+  background: var(--warning, #f59e0b);
+  color: white;
+}
+
+.progression-step.step-rejected .step-indicator {
+  background: var(--danger, #ef4444);
+  color: white;
+}
+
+.progression-step.step-escalated .step-indicator {
+  background: #7c3aed;
+  color: white;
+}
+
+.progression-step.step-overridden .step-indicator {
+  background: #6b7280;
+  color: white;
+}
+
 .step-icon {
   font-size: 1.25rem;
 }
 
+/* Step content */
 .step-content {
   display: flex;
   flex-direction: column;
@@ -133,6 +245,45 @@
   text-align: center;
 }
 
+.step-status-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.step-status-label.step-approved {
+  color: var(--success, #10b981);
+}
+
+.step-status-label.step-pending,
+.step-status-label.step-submitted {
+  color: var(--warning, #f59e0b);
+}
+
+.step-status-label.step-rejected {
+  color: var(--danger, #ef4444);
+}
+
+.step-status-label.step-escalated {
+  color: #7c3aed;
+}
+
+.step-status-label.step-overridden {
+  color: #6b7280;
+}
+
+.step-training-tag {
+  padding: 0.125rem 0.375rem;
+  background: #7c3aed;
+  color: white;
+  border-radius: 3px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Legacy progress bar within step */
 .step-progress-bar {
   width: 100%;
   height: 4px;
@@ -188,5 +339,14 @@
   .step-label,
   .step-gates {
     text-align: left;
+  }
+
+  .progression-summary {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .summary-text {
+    text-align: center;
   }
 }
