@@ -24,9 +24,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 30 of 40 (Ironclaw Agent Integration)
-Plan: 5 of 8 in current phase -- 30-08 complete (wave 3)
-Status: Self-update and audit anchor services with Merkle tree blockchain anchoring
-Last activity: 2026-03-07 - Completed 30-08: Self-update and audit anchor services
+Plan: 5 of 8 in current phase -- 30-05 complete (wave 3)
+Status: Ironclaw frontend UI components with floating button, drawer, and chat interface
+Last activity: 2026-03-07 - Completed 30-05: Ironclaw frontend UI components
 
 Progress: ██████████████████████████ 269 plans complete
 
