@@ -54,3 +54,7 @@ export { discoveryLifecycle } from './discovery-lifecycle.js';
 export { EMCollector } from './em-spectrum/em-collector.js';
 export { EMBand } from './em-spectrum/em-types.js';
 export type { EMSignalEntry, EMSnapshot, EMFootprint, EMDataSource } from './em-spectrum/em-types.js';
+
+// Network Topology (Phase 32 Plan 07)
+export { NetworkTopology } from './network-topology.js';
+export type { TopologyNode, TopologyEdge, TopologyNetwork, TopologyGraph } from './network-topology.js';

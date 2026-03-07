@@ -17,6 +17,7 @@ import { discoveryStore } from './discovery-store.js';
 import { AcceptanceGate } from './acceptance-gate.js';
 import { getPool } from '../lib/database.js';
 import { EMCollector } from './em-spectrum/em-collector.js';
+import { NetworkTopology } from './network-topology.js';
 import type {
   DeviceState,
   TransportType,
@@ -545,5 +546,69 @@ discoveryRouter.get('/em/own-footprint', async (_req: Request, res: Response) =>
   } catch (err) {
     console.error('[discovery-router] GET /em/own-footprint error:', err);
     res.status(500).json({ error: 'Failed to get own EM footprint' });
+  }
+});
+
+// ==========================================================================
+// Network Topology (Phase 32 Plan 07)
+// ==========================================================================
+
+/** Shared NetworkTopology instance (lazy singleton) */
+let _topology: NetworkTopology | null = null;
+async function getTopology(): Promise<NetworkTopology> {
+  if (!_topology) {
+    _topology = new NetworkTopology();
+    await _topology.load();
+  }
+  return _topology;
+}
+
+/**
+ * GET /topology
+ * Return full network topology graph with stats.
+ */
+discoveryRouter.get('/topology', async (_req: Request, res: Response) => {
+  try {
+    const topo = await getTopology();
+    const graph = topo.getGraph();
+    res.json({
+      nodes: Array.from(graph.nodes.values()),
+      edges: graph.edges,
+      networks: Array.from(graph.networks.values()),
+      stats: topo.getStats(),
+      hoppingEnabled: topo.hoppingEnabled,
+    });
+  } catch (err) {
+    console.error('[discovery-router] GET /topology error:', err);
+    res.status(500).json({ error: 'Failed to get network topology' });
+  }
+});
+
+/**
+ * GET /topology/stats
+ * Return topology statistics only.
+ */
+discoveryRouter.get('/topology/stats', async (_req: Request, res: Response) => {
+  try {
+    const topo = await getTopology();
+    res.json(topo.getStats());
+  } catch (err) {
+    console.error('[discovery-router] GET /topology/stats error:', err);
+    res.status(500).json({ error: 'Failed to get topology stats' });
+  }
+});
+
+/**
+ * GET /topology/path/:from/:to
+ * Find shortest path between two nodes via BFS.
+ */
+discoveryRouter.get('/topology/path/:from/:to', async (req: Request, res: Response) => {
+  try {
+    const topo = await getTopology();
+    const path = topo.getPath(req.params.from, req.params.to);
+    res.json({ path, hops: path.length > 0 ? path.length - 1 : 0 });
+  } catch (err) {
+    console.error('[discovery-router] GET /topology/path error:', err);
+    res.status(500).json({ error: 'Failed to find topology path' });
   }
 });
