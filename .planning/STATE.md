@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 29 of 40 (Contextual AI Staff Integration)
-Plan: 1 of 5 in current phase -- 29-01 complete (wave 1)
-Status: AI staff types, context, and agent routing config established
-Last activity: 2026-03-07 - Completed 29-01: AI staff type system, split context, agent routing
+Plan: 2 of 5 in current phase -- 29-02 complete (wave 1)
+Status: Backend AI staff module with PostgreSQL store, REST API, and WebSocket integration
+Last activity: 2026-03-07 - Completed 29-02: Backend AI staff types, store, REST API, WebSocket
 
-Progress: ██████████████████████████ 264 plans complete
+Progress: ██████████████████████████ 265 plans complete
 
 ## Performance Metrics
 
@@ -647,6 +647,7 @@ Recent decisions affecting current work:
 - Phase 16 added: AI Assigned Staff Workspaces - Human vs AI role assignment per staff position, default AI agent teams per role, agent personality/identity config, ironclaw integration for autonomous staff work, channel interface for agent interaction
 - Phase 1.4 inserted after Phase 1.3: Navigation Architecture Restructure - Restructure navigation to doctrine-aligned Decide/Design/Campaign/Monitor + Admin
 - Phase 14 added: Friendly & Adversary IPB Complete Cycle - Exercise-driven scenario building with dual-perspective IPB, COA development, probability scoring, and commander decision support across concurrent operations
+- Phase 30 added: Ironclaw Agent Integration - Integrate Ironclaw (NEAR AI) agent as chief-of-staff capability with tiered permissions for system admin and problem set creator/admin operations
 - Phase 15 added: JPP Staff Organization Workspaces - Role-based exercise workspaces (Commander, J1–J35) with templated doctrinal products, cross-staff real-time notifications, AI agent team integration, and strategic direction import
 - Phase 17 added: Deployment - CI/CD Pipeline & Hetzner Server - GitHub Actions CI/CD pipeline deploying Bastion to Hetzner, TEE-aware component separation documented for production, single-server dev deployment
 - Phase 18 added: replace current login with @vitalpoint/near-phantom-auth

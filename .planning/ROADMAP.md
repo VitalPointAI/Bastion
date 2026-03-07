@@ -767,11 +767,36 @@ BASTION has 19 AI agent roles organized in teams, but their output is largely be
 7. **Conversational AI Interface** — Optional chat-style interaction with the AI staff for asking questions, requesting analysis, or tasking specific agents
 
 Plans:
-- [ ] 29-01-PLAN.md — AI staff type system, shared context, and agent routing config
-- [ ] 29-02-PLAN.md — Backend AI staff module (store, REST API, WebSocket channel)
+- [x] 29-01-PLAN.md — AI staff type system, shared context, and agent routing config
+- [x] 29-02-PLAN.md — Backend AI staff module (store, REST API, WebSocket channel)
 - [ ] 29-03-PLAN.md — Frontend panel components (docked sidebar, floating overlay, feed items, badges)
 - [ ] 29-04-PLAN.md — Frontend hooks, service client, chat input, inline annotation state
 - [ ] 29-05-PLAN.md — Integration wiring, inline annotation UI, human verification
+
+### Phase 30: Ironclaw Agent Integration
+**Goal:** Integrate an Ironclaw agent (NEAR AI) as a chief-of-staff capability that can execute system changes, code modifications (via PR/CI-CD), and problem set configuration on behalf of authorized users with tiered permissions
+**Depends on:** Phase 29, Phase 27
+**Research:** Required
+**Research topics:** Ironclaw agent architecture and API (nearai/ironclaw), secure agent sandboxing, permission-tiered agent execution (system admin vs problem set creator/admin), CI/CD integration for agent-initiated code changes, audit trail and rollback mechanisms, blast radius containment per problem set, rate limiting and confirmation gates for destructive actions, scope escalation prevention
+
+**Context:**
+This phase gives BASTION a powerful "chief of staff" agent powered by Ironclaw (NEAR AI) that can act on behalf of authorized users. The agent has full access to all aspects of BASTION but operates under strict permission tiers:
+- **System Admin only:** Code changes, PR creation, CI/CD invocation, platform-wide configuration
+- **Problem Set Creators/Admins:** Settings and setup changes scoped to their problem sets (create agents/teams, assign agents to processes, add intelligence sources, register resources/identities)
+
+Key safety concerns addressed: agent sandboxing per problem set, immutable audit trail (NEAR blockchain), versioned state for rollback, confirmation gates for high-impact actions, and scope escalation prevention.
+
+**Key Capabilities:**
+1. **Ironclaw Agent Runtime** — Host and configure the Ironclaw agent within BASTION's infrastructure
+2. **Tiered Permission System** — System admin vs problem set creator/admin authorization boundaries
+3. **Code Change Pipeline** — Agent-initiated PRs with mandatory review, CI/CD integration
+4. **Problem Set Configuration** — Agent can create/modify agents, teams, resources, intelligence sources within scoped problem sets
+5. **Safety & Containment** — Sandboxed execution, confirmation gates, rate limiting, scope escalation prevention
+6. **Audit & Rollback** — Blockchain-backed immutable action log, versioned state snapshots for rollback
+7. **Natural Language Interface** — Commanders/creators direct the agent conversationally to perform administrative tasks
+
+Plans:
+- [ ] 30-01-PLAN.md — TBD (pending research and planning)
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
@@ -1295,4 +1320,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 26. Strategic Environment & Inheritance | 5/5 | Complete   | 2026-03-06 |
 | 27. Resource Registry & DID Plugin | 5/5 | Complete    | 2026-03-07 |
 | 28. Embedded DAO Governance | 8/9 | In Progress|  |
-| 29. Contextual AI Staff Integration | 1/5 | In Progress|  |
+| 29. Contextual AI Staff Integration | 2/5 | In Progress|  |
+| 30. Ironclaw Agent Integration | 0/TBD | Not started | - |
