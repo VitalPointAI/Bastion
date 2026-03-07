@@ -45,7 +45,19 @@ Bastion automatically discovers devices on local networks (Bluetooth, WiFi, USB,
 - Behavioral baseline anomaly detection — Bastion learns normal behavior patterns per device type, deviations trigger alerts and potential auto-quarantine (catches compromised/spoofed devices)
 - Audit trail: detailed logs in PostgreSQL for fast queries, periodic hash anchoring to NEAR blockchain for immutability
 
+### Network Hopping & Topology Mapping
+- Configurable network hopping — when enabled, Bastion uses discovered/onboarded devices as bridges to scan adjacent networks reachable via that device's connections
+- Recursive discovery: initial scan finds Device A on Network 1, Device A has access to Network 2, Bastion scans Network 2 through Device A, and so on
+- Builds a full communications/network topology map as it goes — nodes (devices), edges (connections), network boundaries
+- Configurable hop depth limit (admin setting, e.g., max 3 hops) to prevent unbounded scanning
+- Each hop requires the bridge device to be at participant or autonomous trust tier (observers can't be used as bridges)
+- Network topology visualization layer on COP alongside EM spectrum layers
+- DAO governance applies at each hop — newly discovered networks inherit the global allowlist/blocklist, per-PS overrides can restrict hopping scope
+- Disabled by default — operator explicitly enables per-problem-set or globally
+
 ### Claude's Discretion
+- Network hop traversal strategy and proxy protocol details
+- Topology map data structure and storage approach
 - Specific scan intervals and timing per transport type
 - Fingerprinting probe depth and protocol negotiation details
 - EM spectrum visualization design and data sources
