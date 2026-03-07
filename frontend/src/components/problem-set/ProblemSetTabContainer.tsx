@@ -39,6 +39,9 @@ import { COPTab } from '../cop/COPTab';
 import { AssessTab } from '../tabs/AssessTab';
 import { copService } from '../../lib/cop-service';
 import { DecisionGateProvider } from '../../context/DecisionGateContext';
+import { AIStaffProvider } from '../../context/AIStaffContext';
+import { AIStaffPanel } from '../ai-staff/AIStaffPanel';
+import { useAIStaffFeed } from '../../hooks/useAIStaffFeed';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -477,9 +480,15 @@ export function ProblemSetTabContainer() {
 
       {/* Tab content — wrapped with DecisionGateProvider for gate context */}
       <DecisionGateProvider problemSetId={displayId}>
-        <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-          {renderTabContent()}
-        </div>
+        <AIStaffProvider problemSetId={displayId} activeTab={activeTab}>
+          <AIStaffFeedConnector problemSetId={displayId} />
+          <div className="flex flex-1 overflow-hidden min-h-0">
+            <div className="flex flex-col flex-1 overflow-hidden min-h-0" data-tab-content>
+              {renderTabContent()}
+            </div>
+            <AIStaffPanel />
+          </div>
+        </AIStaffProvider>
       </DecisionGateProvider>
 
       {/* OrgTreeSidebar — rendered outside tab content to avoid overflow clipping */}
@@ -496,6 +505,15 @@ export function ProblemSetTabContainer() {
 
     </div>
   );
+}
+
+/**
+ * Invisible connector that subscribes to the AI staff WebSocket feed.
+ * Must be rendered inside AIStaffProvider so it can dispatch feed items.
+ */
+function AIStaffFeedConnector({ problemSetId }: { problemSetId: string }) {
+  useAIStaffFeed(problemSetId);
+  return null;
 }
 
 export default ProblemSetTabContainer;

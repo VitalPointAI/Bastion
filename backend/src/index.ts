@@ -49,6 +49,8 @@ import inheritanceRouter from './api/inheritance.js';
 import { gateRoutes } from './gates/gate-routes.js';
 import { gateStore } from './gates/gate-store.js';
 import { runMigrations } from './db/migration-runner.js';
+import { aiStaffRouter, aiStaffStore } from './ai-staff/index.js';
+import { requireAuth } from './auth/auth-instance.js';
 
 dotenv.config();
 
@@ -188,6 +190,7 @@ app.use('/api/design', designRouter);
 app.use('/api/cop', copRouter);
 app.use('/api/strategic-context', strategicContextRouter);
 app.use('/api/gates', gateRoutes);
+app.use('/api/ai-staff', requireAuth, aiStaffRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -274,6 +277,14 @@ server.listen(port, async () => {
     console.log('Decision gates table initialized');
   } catch (error) {
     console.error('Failed to initialize decision gates:', error);
+  }
+
+  // Initialize AI staff tables (Phase 29)
+  try {
+    await aiStaffStore.ensureTable();
+    console.log('AI staff tables initialized');
+  } catch (error) {
+    console.error('Failed to initialize AI staff tables:', error);
   }
 
   // Initialize COP module (schema, tables, triggers, agent definitions)

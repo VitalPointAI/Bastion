@@ -1,0 +1,176 @@
+/* ─── InlineAnnotation ─────────────────────────────────────────────────────── */
+
+.inline-annotation-wrapper {
+  position: relative;
+  display: inline;
+}
+
+/* Highlighted span -- subtle left-border accent with light background tint */
+.inline-annotation {
+  border-left: 3px solid var(--accent-blue, #3b82f6);
+  background: rgba(59, 130, 246, 0.08);
+  padding: 1px 4px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.inline-annotation:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.inline-annotation--active {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+/* Auto-applied: subtle green highlight that fades */
+.inline-annotation--auto-applied {
+  border-left-color: var(--accent-green, #22c55e);
+  background: rgba(34, 197, 94, 0.3);
+  cursor: default;
+  animation: inline-annotation-fade 3s ease-out forwards;
+}
+
+@keyframes inline-annotation-fade {
+  from {
+    background: rgba(34, 197, 94, 0.3);
+  }
+  to {
+    background: rgba(34, 197, 94, 0);
+    border-left-color: transparent;
+  }
+}
+
+/* ─── Popover ──────────────────────────────────────────────────────────────── */
+
+.inline-annotation-popover {
+  position: absolute;
+  left: 0;
+  z-index: 800;
+  min-width: 280px;
+  max-width: 400px;
+  background: var(--bg-surface, #1e293b);
+  border: 1px solid var(--border-subtle, #334155);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  font-size: 13px;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.inline-annotation-popover--above {
+  bottom: calc(100% + 8px);
+}
+
+.inline-annotation-popover--below {
+  top: calc(100% + 8px);
+}
+
+/* Header: agent name + confidence */
+.inline-annotation-popover__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle, #334155);
+}
+
+.inline-annotation-popover__agent {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.inline-annotation-popover__confidence {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Content */
+.inline-annotation-popover__content {
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+/* Suggested change */
+.inline-annotation-popover__suggestion {
+  background: rgba(59, 130, 246, 0.06);
+  border-left: 2px solid var(--accent-blue, #3b82f6);
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.inline-annotation-popover__suggestion-label {
+  display: block;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-secondary, #94a3b8);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Action buttons */
+.inline-annotation-popover__actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.inline-annotation-action {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle, #334155);
+  background: transparent;
+  color: var(--text-primary, #e2e8f0);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.inline-annotation-action:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.inline-annotation-action--accept {
+  border-color: var(--accent-green, #22c55e);
+  color: var(--accent-green, #22c55e);
+}
+
+.inline-annotation-action--accept:hover {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.inline-annotation-action--dismiss {
+  border-color: var(--accent-red, #ef4444);
+  color: var(--accent-red, #ef4444);
+}
+
+.inline-annotation-action--dismiss:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.inline-annotation-action--modify {
+  border-color: var(--accent-yellow, #eab308);
+  color: var(--accent-yellow, #eab308);
+}
+
+.inline-annotation-action--modify:hover {
+  background: rgba(234, 179, 8, 0.1);
+}
+
+.inline-annotation-action--escalate {
+  border-color: var(--accent-blue, #3b82f6);
+  color: var(--accent-blue, #3b82f6);
+}
+
+.inline-annotation-action--escalate:hover {
+  background: rgba(59, 130, 246, 0.1);
+}

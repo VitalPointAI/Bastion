@@ -21,3 +21,5 @@ export { AIStaffTeamBadge } from './AIStaffTeamBadge.tsx';
 export { AIStaffConfidence } from './AIStaffConfidence.tsx';
 export { AIStaffTeamDetail } from './AIStaffTeamDetail.tsx';
 export { AIStaffChatInput } from './AIStaffChatInput.tsx';
+export { InlineAnnotation } from './InlineAnnotation.tsx';
+export { AIShowContributions } from './AIShowContributions.tsx';
