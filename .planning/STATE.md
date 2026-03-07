@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T13:37:25.757Z"
+last_updated: "2026-03-07T13:37:51.167Z"
 progress:
   total_phases: 46
   completed_phases: 28
@@ -24,9 +24,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 30 of 40 (Ironclaw Agent Integration)
-Plan: 4 of 8 in current phase -- 30-07 complete (wave 3)
-Status: GitHub integration service with PR creation, CI tracking, emergency merge
-Last activity: 2026-03-07 - Completed 30-07: GitHub integration service
+Plan: 5 of 8 in current phase -- 30-08 complete (wave 3)
+Status: Self-update and audit anchor services with Merkle tree blockchain anchoring
+Last activity: 2026-03-07 - Completed 30-08: Self-update and audit anchor services
 
 Progress: ██████████████████████████ 269 plans complete
 
@@ -129,6 +129,7 @@ Progress: ███████████████████████�
 | Phase 29 P04 | 4 | 2 tasks | 6 files |
 | Phase 29 P03 | 4 | 2 tasks | 11 files |
 | Phase 30 P02 | 5 | 2 tasks | 5 files |
+| Phase 30 P04 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -642,6 +643,8 @@ Recent decisions affecting current work:
 - [Phase 30]: Manual SSE parser instead of eventsource-parser library (no external dep needed)
 - [Phase 30]: Fire-and-forget message endpoint (202 Accepted, streaming via WebSocket)
 - [Phase 30]: Singleton GitHubService with lazy Octokit init based on GITHUB_TOKEN presence for graceful degradation
+- [Phase 30]: MCP tool registration is non-blocking: backend starts without Ironclaw sidecar
+- [Phase 30]: Scope validation always clarifies ambiguous PS targets, never assumes
 
 ### Roadmap Evolution
 
