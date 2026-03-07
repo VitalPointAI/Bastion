@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T03:11:29Z"
+last_updated: "2026-03-07T03:19:17.016Z"
 progress:
   total_phases: 44
   completed_phases: 28
   total_plans: 256
-  completed_plans: 260
+  completed_plans: 261
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 28 of 40 (Embedded DAO Governance at Decision Gates)
-Plan: 4 of 9 in current phase -- 28-04 complete
-Status: Gate UI embedded in Understand, Design, and Plan tabs with DecisionGateProvider at container level
-Last activity: 2026-03-07 - Completed 28-04: Tab gate integration
+Plan: 9 of 9 in current phase -- 28-09 complete
+Status: MDMP dual-read integration with training mode gate logic
+Last activity: 2026-03-07 - Completed 28-09: MDMP dual-read and training mode
 
-Progress: ██████████████████████████ 260 plans complete
+Progress: ██████████████████████████ 261 plans complete
 
 ## Performance Metrics
 
@@ -123,6 +123,7 @@ Progress: ███████████████████████�
 | Phase 27 P01 | 6 | 2 tasks | 5 files |
 | Phase 27 P05 | 5 | 2 tasks | 6 files |
 | Phase 28 P03 | 3 | 2 tasks | 9 files |
+| Phase 28-embedded-dao-governance-at-decision-gates-inserted P09 | 3 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -622,6 +623,7 @@ Recent decisions affecting current work:
 - [Phase 27]: Used zoom-based grid clustering instead of react-leaflet-cluster (incompatible with react-leaflet v5)
 - [Phase 28]: GateSubmitButton creates gate on first click then opens modal for context editing
 - [Phase 28]: TabLayout extended with optional ReactNode slot for sidebar extensibility
+- [Phase 28]: Dual-read merge with deduplication for MDMP and decision gate unification
 
 ### Roadmap Evolution
 
