@@ -29,7 +29,7 @@ export const ACTION_RISK: Record<string, ActionRiskLevel> = {
   'ps.list_children': ActionRiskLevel.low,
   'ps.update_field': ActionRiskLevel.medium,
   'ps.create_child': ActionRiskLevel.medium,
-  'ps.configure_agents': ActionRiskLevel.medium,
+  'ps.configure_agents': ActionRiskLevel.high,
   'resource.create': ActionRiskLevel.medium,
   'resource.update': ActionRiskLevel.medium,
   'resource.delete': ActionRiskLevel.high,
@@ -38,6 +38,47 @@ export const ACTION_RISK: Record<string, ActionRiskLevel> = {
   'system.update_config': ActionRiskLevel.high,
   'gate.create': ActionRiskLevel.medium,
 } as const;
+
+// ---------------------------------------------------------------------------
+// Agent Self-Governance Protection
+// ---------------------------------------------------------------------------
+
+/**
+ * Config keys that Ironclaw is NEVER permitted to modify, regardless of
+ * risk level, gate approval, or emergency mode. These govern the agent's
+ * own authority boundaries and must only be changed by direct human action
+ * outside the Ironclaw pipeline.
+ */
+export const PROTECTED_CONFIG_KEYS = new Set([
+  // Agent authority & autonomy
+  'ironclaw.risk_levels',
+  'ironclaw.rate_limits',
+  'ironclaw.trust_settings',
+  'ironclaw.autonomy_level',
+  'ironclaw.authority_delegation',
+  'ironclaw.allowed_actions',
+  'ironclaw.blocked_actions',
+  'ironclaw.emergency_mode',
+  // Gate & confirmation system
+  'gates.enforcement_policy',
+  'gates.auto_approve',
+  'gates.bypass_rules',
+  // Agent configuration
+  'agents.risk_classification',
+  'agents.rate_limits',
+  'agents.permissions',
+  'agents.ironclaw',
+]) as ReadonlySet<string>;
+
+/**
+ * Action types that constitute self-modification — the agent attempting to
+ * change its own governance parameters. These are unconditionally blocked
+ * in the action pipeline regardless of risk level or trust.
+ */
+export const SELF_GOVERNANCE_ACTIONS = new Set([
+  'bastion.system.update_config',       // Can target protected keys
+  'bastion.problem_set.configure_agents', // Can reconfigure Ironclaw itself
+]) as ReadonlySet<string>;
 
 // ---------------------------------------------------------------------------
 // Step Progress (embedded in chat messages)

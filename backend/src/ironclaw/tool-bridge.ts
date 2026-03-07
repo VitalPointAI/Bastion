@@ -16,6 +16,7 @@ import { actionPipeline } from './action-pipeline.js';
 import { actionRegistry } from './action-registry.js';
 import type { ActionResult } from './action-pipeline.js';
 import type { IronclawAction, ActionRiskLevel } from './ironclaw-types.js';
+import { PROTECTED_CONFIG_KEYS } from './ironclaw-types.js';
 
 // ---------------------------------------------------------------------------
 // MCP Tool Definition
@@ -87,7 +88,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   {
     name: 'bastion.problem_set.configure_agents',
-    description: 'Configure AI agents for a problem set',
+    description: 'Configure AI agents for a problem set (cannot modify Ironclaw own config)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -96,7 +97,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
       },
       required: ['id', 'agent_config'],
     },
-    riskLevel: 'medium',
+    riskLevel: 'high',
   },
   {
     name: 'bastion.resource.create',
@@ -214,10 +215,17 @@ export class ToolBridge {
         actionRegistry.registerAction(tool.name, tool.riskLevel);
       }
 
+      // Lock the registry — no further risk level modifications permitted.
+      // Prevents the agent from downgrading action risk levels at runtime.
+      actionRegistry.lock();
+
       console.log(
         `[tool-bridge] Registered ${BASTION_TOOLS.length} BASTION tools with Ironclaw`,
       );
     } catch (err) {
+      // Lock even on failure so the canonical ACTION_RISK levels are immutable
+      if (!actionRegistry.isLocked()) actionRegistry.lock();
+
       console.warn(
         '[tool-bridge] Failed to register tools with Ironclaw (sidecar may not be running):',
         err instanceof Error ? err.message : err,
@@ -282,9 +290,10 @@ export class ToolBridge {
   /**
    * Handle an MCP tool call from Ironclaw.
    *
-   * 1. Validate scope against user's current problem set.
-   * 2. Create an IronclawAction from the tool call.
-   * 3. Route through the action pipeline for confirmation/execution.
+   * 1. Block self-modification attempts (agent cannot change its own governance).
+   * 2. Validate scope against user's current problem set.
+   * 3. Create an IronclawAction from the tool call.
+   * 4. Route through the action pipeline for confirmation/execution.
    */
   async handleToolCall(
     toolName: string,
@@ -292,7 +301,17 @@ export class ToolBridge {
     userDid: string,
     problemSetId: string,
   ): Promise<ActionResult> {
-    // 1. Validate scope
+    // 1. Block self-modification: agent cannot alter its own governance
+    const selfModCheck = this.checkSelfModification(toolName, args);
+    if (selfModCheck) {
+      console.warn(
+        `[tool-bridge] BLOCKED self-modification attempt: ${toolName}`,
+        { args, userDid, reason: selfModCheck },
+      );
+      return { status: 'denied', error: selfModCheck };
+    }
+
+    // 2. Validate scope
     const scopeResult = this.validateScope(toolName, args, problemSetId);
     if (!scopeResult.valid) {
       return {
@@ -301,7 +320,7 @@ export class ToolBridge {
       };
     }
 
-    // 2. Create action from tool call
+    // 3. Create action from tool call
     const action: IronclawAction = {
       id: `tool_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       type: toolName,
@@ -311,8 +330,52 @@ export class ToolBridge {
       requested_by: userDid,
     };
 
-    // 3. Route through action pipeline
+    // 4. Route through action pipeline
     return actionPipeline.processAction(action, userDid);
+  }
+
+  /**
+   * Detect and block agent self-modification attempts.
+   *
+   * Returns an error message if the action is blocked, or null if allowed.
+   *
+   * Blocked patterns:
+   * - bastion.system.update_config targeting any PROTECTED_CONFIG_KEYS
+   * - bastion.problem_set.configure_agents targeting Ironclaw's own config
+   */
+  private checkSelfModification(
+    toolName: string,
+    args: Record<string, unknown>,
+  ): string | null {
+    if (toolName === 'bastion.system.update_config') {
+      const key = args.key as string | undefined;
+      if (!key) return null;
+
+      // Check exact match
+      if (PROTECTED_CONFIG_KEYS.has(key)) {
+        return `Agent cannot modify protected config key "${key}". This setting governs agent authority and must be changed by a human administrator directly.`;
+      }
+
+      // Check prefix match (e.g., "ironclaw.risk_levels.ps.read" matches "ironclaw.risk_levels")
+      for (const protectedKey of PROTECTED_CONFIG_KEYS) {
+        if (key.startsWith(protectedKey + '.') || key.startsWith(protectedKey + '/')) {
+          return `Agent cannot modify config under protected namespace "${protectedKey}". This setting governs agent authority and must be changed by a human administrator directly.`;
+        }
+      }
+    }
+
+    if (toolName === 'bastion.problem_set.configure_agents') {
+      const agentConfig = args.agent_config as Record<string, unknown> | undefined;
+      if (agentConfig) {
+        // Block if the config references Ironclaw's own settings
+        const configStr = JSON.stringify(agentConfig).toLowerCase();
+        if (configStr.includes('ironclaw') || configStr.includes('chief_of_staff') || configStr.includes('chief-of-staff')) {
+          return 'Agent cannot modify its own configuration. Ironclaw agent settings must be changed by a human administrator directly.';
+        }
+      }
+    }
+
+    return null;
   }
 }
 

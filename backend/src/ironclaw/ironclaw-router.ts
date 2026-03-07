@@ -262,15 +262,36 @@ ironclawRouter.delete(
 );
 
 /**
+ * Extract user role from request attributes (set by zeroTrust middleware).
+ */
+function getUserRole(req: Request): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const anyReq = req as any;
+  return anyReq.zeroTrust?.attributes?.role || anyReq.user?.role || '';
+}
+
+/**
  * POST /:problemSetId/emergency
  * Execute an emergency action that bypasses normal confirmation flow.
  *
  * Body: { actionId: string, justification: string }
- * Requires non-empty justification for audit trail.
+ * Requires: system_admin role + non-empty justification for audit trail.
  */
 ironclawRouter.post(
   '/:problemSetId/emergency',
   async (req: Request, res: Response) => {
+    // Enforce system_admin role — emergency mode is not delegatable to agents
+    const role = getUserRole(req);
+    if (role !== 'system_admin') {
+      console.warn(
+        `[ironclaw-router] Emergency endpoint access denied: role="${role}", did="${getUserDid(req)}"`,
+      );
+      res.status(403).json({
+        error: 'Emergency actions require system_admin role',
+      });
+      return;
+    }
+
     const problemSetId = req.params.problemSetId as string;
     const { actionId, justification } = req.body as {
       actionId?: string;

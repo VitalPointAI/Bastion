@@ -35,11 +35,38 @@ export class ActionRegistry {
   /** Sliding-window timestamps: key = `${userDid}:${riskBucket}`, value = timestamps (ms). */
   private readonly rateLimitMap = new Map<string, number[]>();
 
+  /**
+   * When true, the registry is frozen — no new registrations or risk level
+   * changes are permitted. Set after startup tool registration completes to
+   * prevent the agent from downgrading its own risk classifications at runtime.
+   */
+  private locked = false;
+
   constructor() {
     // Pre-populate from the canonical ACTION_RISK map in ironclaw-types.
     for (const [type, risk] of Object.entries(ACTION_RISK)) {
       this.actions.set(type, risk);
     }
+  }
+
+  // =========================================================================
+  // Registry Lock
+  // =========================================================================
+
+  /**
+   * Freeze the registry. Call once after startup tool registration is complete.
+   * After this, registerAction() rejects all changes.
+   */
+  lock(): void {
+    this.locked = true;
+    console.log(
+      `[action-registry] Registry locked with ${this.actions.size} action types. No further modifications permitted.`,
+    );
+  }
+
+  /** Whether the registry is currently locked. */
+  isLocked(): boolean {
+    return this.locked;
   }
 
   // =========================================================================
@@ -60,10 +87,31 @@ export class ActionRegistry {
   }
 
   /**
-   * Register or override an action type's risk level.
-   * Allows MCP tools to register their risk levels dynamically.
+   * Register an action type's risk level.
+   *
+   * Guardrails:
+   * - Rejected entirely after lock() (post-startup).
+   * - Risk can never be downgraded, only elevated (even before lock).
    */
   registerAction(actionType: string, riskLevel: ActionRiskLevel): void {
+    if (this.locked) {
+      console.warn(
+        `[action-registry] REJECTED: Attempt to modify locked registry (action=${actionType}, risk=${riskLevel})`,
+      );
+      return;
+    }
+
+    const existing = this.actions.get(actionType);
+    if (existing) {
+      const riskOrder: Record<string, number> = { low: 0, medium: 1, high: 2 };
+      if (riskOrder[riskLevel] < riskOrder[existing]) {
+        console.warn(
+          `[action-registry] REJECTED: Risk downgrade attempt for "${actionType}" (${existing} -> ${riskLevel})`,
+        );
+        return;
+      }
+    }
+
     this.actions.set(actionType, riskLevel);
   }
 
