@@ -12,8 +12,6 @@ import { fileURLToPath } from 'url';
 
 import type {
   TestFixture,
-  TestScenario,
-  AdversarialScenario,
   TestRunRow,
   ValidationCategory,
   ValidationStatus,
@@ -21,9 +19,9 @@ import type {
 } from './validation-types.js';
 import { validationStore } from './validation-store.js';
 import { circuitBreaker } from './circuit-breaker.js';
-import { scoreDeterminism } from './scoring/score-determinism.js';
-import { scoreReliability } from './scoring/score-reliability.js';
-import { scoreAuthority } from './scoring/score-authority.js';
+import { scoreDeterminism } from './scoring/determinism-scorer.js';
+import { scoreReliability } from './scoring/reliability-scorer.js';
+import { scoreAuthority } from './scoring/authority-scorer.js';
 import { getAgentRegistry } from '../agents/registry.js';
 
 // ---------------------------------------------------------------------------
@@ -149,14 +147,14 @@ export class ValidationRunner {
 
       if (cat === 'determinism' && fixture.runCount > 1) {
         // Multiple runs for determinism scoring
-        const outputs: Array<string | Record<string, unknown>> = [];
+        const outputs: Array<{ output: string | Record<string, unknown> }> = [];
         for (let i = 0; i < fixture.runCount; i++) {
           const output = await this.executeAgentCall(
             fixture.agentId,
             scenario.input.messages,
             scenario.input.context,
           );
-          outputs.push(output);
+          outputs.push({ output });
         }
 
         const detResult = await scoreDeterminism(outputs, scenario);
@@ -208,7 +206,7 @@ export class ValidationRunner {
           evalResult = await scoreAuthority(
             output,
             scenario,
-            agentManifest as unknown as Record<string, unknown>,
+            agentManifest as unknown as { maxAutonomy: string },
           );
         } else {
           evalResult = await scoreReliability(output, scenario);
@@ -255,7 +253,7 @@ export class ValidationRunner {
       const evalResult = await scoreAuthority(
         output,
         advScenario,
-        agentManifest as unknown as Record<string, unknown>,
+        agentManifest as unknown as { maxAutonomy: string },
       );
 
       await validationStore.insertResult({
