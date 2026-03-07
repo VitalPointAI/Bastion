@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T12:22:29.871Z"
+last_updated: "2026-03-07T12:32:24.668Z"
 progress:
-  total_phases: 45
+  total_phases: 46
   completed_phases: 28
   total_plans: 261
-  completed_plans: 265
+  completed_plans: 268
 ---
 
 # Project State
@@ -24,9 +24,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 29 of 40 (Contextual AI Staff Integration)
-Plan: 2 of 5 in current phase -- 29-02 complete (wave 1)
-Status: Backend AI staff module with PostgreSQL store, REST API, and WebSocket integration
-Last activity: 2026-03-07 - Completed 29-02: Backend AI staff types, store, REST API, WebSocket
+Plan: 4 of 5 in current phase -- 29-03 and 29-04 complete (wave 2)
+Status: AI staff panel UI components with docked sidebar, floating overlay, and feed items
+Last activity: 2026-03-07 - Completed 29-03: AI staff panel UI components
 
 Progress: ██████████████████████████ 265 plans complete
 
@@ -126,6 +126,8 @@ Progress: ███████████████████████�
 | Phase 28-embedded-dao-governance-at-decision-gates-inserted P09 | 3 | 2 tasks | 3 files |
 | Phase 28 P07 | 8 | 2 tasks | 6 files |
 | Phase 29 P01 | 3 | 2 tasks | 4 files |
+| Phase 29 P04 | 4 | 2 tasks | 6 files |
+| Phase 29 P03 | 4 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -633,6 +635,9 @@ Recent decisions affecting current work:
 - [Phase 28]: Dual-read merge with deduplication for MDMP and decision gate unification
 - [Phase 29]: Split state/dispatch context pattern for AI staff panel render optimization
 - [Phase 29]: Doctrinal confidence thresholds: >=0.85 confirmed, >=0.60 probable, >=0.30 possible, else doubtful
+- [Phase 29]: RAF batching (5/frame) for WebSocket messages to prevent UI jank
+- [Phase 29]: Optimistic chat send with pending state for immediate feedback
+- [Phase 29]: AI staff panel uses createPortal for floating overlay at z-index 900, docked panel as flex sibling to tab content
 
 ### Roadmap Evolution
 
