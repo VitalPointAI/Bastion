@@ -742,7 +742,7 @@ Plans:
 - [x] 28-03-PLAN.md -- GateProposalModal, GateSubmitButton, DecisionGateTimeline, TabLayout extension (Wave 2) (completed 2026-03-07)
 - [x] 28-04-PLAN.md -- DecisionGateProvider in ProblemSetTabContainer, embed gates in Understand/Design/Plan tabs (Wave 3) (completed 2026-03-07)
 - [x] 28-05-PLAN.md -- DirectTab gate overview + order release gate, AssessTab implementation with reframing gate (Wave 4) (completed 2026-03-07)
-- [ ] 28-06-PLAN.md -- Generalize MDMP frontend components (GovernanceGateDashboard, DecisionBriefView, PhaseProgressionBar) (Wave 4)
+- [x] 28-06-PLAN.md -- Generalize MDMP frontend components (GovernanceGateDashboard, DecisionBriefView, PhaseProgressionBar) (Wave 4) (completed 2026-03-07)
 - [ ] 28-07-PLAN.md -- Escalation wiring, role-based permissions, hierarchical gate visibility (Wave 5)
 - [ ] 28-08-PLAN.md -- Human verification of complete governance system (Wave 6)
 - [ ] 28-09-PLAN.md -- MDMP dual-read unification, training mode gate tagging (Wave 4)
@@ -1290,5 +1290,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 25. Operational Design Workspace | 6/6 | Complete   | 2026-03-06 |
 | 26. Strategic Environment & Inheritance | 5/5 | Complete   | 2026-03-06 |
 | 27. Resource Registry & DID Plugin | 5/5 | Complete   | 2026-03-07 |
-| 28. Embedded DAO Governance | 5/9 | In Progress|  |
+| 28. Embedded DAO Governance | 7/9 | In Progress|  |
 | 29. Contextual AI Staff Integration | 0/TBD | Not started | - |
