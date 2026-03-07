@@ -932,10 +932,11 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
       return res.status(403).json({ error: msg });
     }
 
-    const { name, description, inviteMode, discoverability } = req.body;
+    const { name, description, problemStatement, inviteMode, discoverability } = req.body;
     const updated = await problemSetStore.updateProblemSet(problemSetId, {
       name,
       description,
+      problemStatement,
       inviteMode,
       discoverability,
     });
@@ -945,7 +946,7 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
       'problem_set_updated',
       userDid,
       null,
-      { changes: { name, description, inviteMode, discoverability } },
+      { changes: { name, description, problemStatement, inviteMode, discoverability } },
     );
 
     res.json(updated);

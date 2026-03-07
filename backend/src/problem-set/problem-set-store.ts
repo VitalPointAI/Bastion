@@ -259,12 +259,12 @@ export class ProblemSetStore {
   }
 
   /**
-   * Update mutable problem set fields (name, description, inviteMode, discoverability).
+   * Update mutable problem set fields (name, description, problemStatement, inviteMode, discoverability).
    * Returns the updated problem set.
    */
   async updateProblemSet(
     id: string,
-    updates: Partial<Pick<ProblemSet, 'name' | 'description' | 'inviteMode' | 'discoverability'>>,
+    updates: Partial<Pick<ProblemSet, 'name' | 'description' | 'problemStatement' | 'inviteMode' | 'discoverability'>>,
   ): Promise<ProblemSet> {
     await this.ensureInitialized();
     const pool = getPool();
@@ -280,6 +280,10 @@ export class ProblemSetStore {
     if (updates.description !== undefined) {
       setClauses.push(`description = $${paramIndex++}`);
       values.push(updates.description);
+    }
+    if (updates.problemStatement !== undefined) {
+      setClauses.push(`problem_statement = $${paramIndex++}`);
+      values.push(updates.problemStatement);
     }
     if (updates.inviteMode !== undefined) {
       setClauses.push(`invite_mode = $${paramIndex++}`);

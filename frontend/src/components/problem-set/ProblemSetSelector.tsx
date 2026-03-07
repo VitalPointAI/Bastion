@@ -70,6 +70,11 @@ export function ProblemSetSelector() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showChildWizard, setShowChildWizard] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editingStatement, setEditingStatement] = useState(false);
+  const [draftName, setDraftName] = useState('');
+  const [draftStatement, setDraftStatement] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Derive root problem set ID for OrgTree -- prefer strategic echelon, fallback to first
   const rootProblemSetId = useMemo((): string | null => {
@@ -96,6 +101,43 @@ export function ProblemSetSelector() {
       .finally(() => { if (!cancelled) setDetailLoading(false); });
     return () => { cancelled = true; };
   }, [selectedId, userDID]);
+
+  // Reset edit state when selection changes
+  useEffect(() => {
+    setEditingName(false);
+    setEditingStatement(false);
+  }, [selectedId]);
+
+  const canEdit = detail && userDID && (detail.createdBy === userDID || selectedMembership?.role === 'commander');
+
+  const saveName = async () => {
+    if (!selectedId || !userDID || !draftName.trim()) return;
+    setSaving(true);
+    try {
+      const updated = await problemSetService.updateProblemSet(selectedId, { name: draftName.trim() }, userDID);
+      setDetail(updated);
+      setEditingName(false);
+      await refreshMemberships();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update name');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveStatement = async () => {
+    if (!selectedId || !userDID) return;
+    setSaving(true);
+    try {
+      const updated = await problemSetService.updateProblemSet(selectedId, { problemStatement: draftStatement.trim() || '' }, userDID);
+      setDetail(updated);
+      setEditingStatement(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update problem statement');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // --- Loading state ---
 
@@ -178,9 +220,30 @@ export function ProblemSetSelector() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-bold text-white truncate mb-1">
-                      {selectedMembership.name}
-                    </h3>
+                    {editingName ? (
+                      <div className="flex items-center gap-2 mb-1">
+                        <input
+                          type="text"
+                          value={draftName}
+                          onChange={(e) => setDraftName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') void saveName(); if (e.key === 'Escape') setEditingName(false); }}
+                          className="flex-1 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white text-lg font-bold focus:outline-none focus:border-blue-500"
+                          maxLength={80}
+                          autoFocus
+                          disabled={saving}
+                        />
+                        <button onClick={() => void saveName()} disabled={saving || !draftName.trim()} className="text-xs px-2 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white disabled:opacity-50">Save</button>
+                        <button onClick={() => setEditingName(false)} disabled={saving} className="text-xs px-2 py-1 rounded border border-gray-600 text-gray-300 hover:bg-gray-700">Cancel</button>
+                      </div>
+                    ) : (
+                      <h3
+                        className={`text-xl font-bold text-white truncate mb-1${canEdit ? ' cursor-pointer hover:text-blue-300' : ''}`}
+                        onClick={() => { if (canEdit) { setDraftName(selectedMembership.name); setEditingName(true); } }}
+                        title={canEdit ? 'Click to edit name' : undefined}
+                      >
+                        {selectedMembership.name}
+                      </h3>
+                    )}
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
                         className={`text-xs px-2 py-0.5 rounded border ${echelonBadge(selectedMembership.echelon)}`}
@@ -201,10 +264,39 @@ export function ProblemSetSelector() {
                   <dt className="text-gray-500 text-xs uppercase tracking-wide mb-1">Problem Statement</dt>
                   {detailLoading ? (
                     <dd className="text-gray-500 text-sm italic">Loading...</dd>
+                  ) : editingStatement ? (
+                    <dd>
+                      <textarea
+                        value={draftStatement}
+                        onChange={(e) => setDraftStatement(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Escape') setEditingStatement(false); }}
+                        className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-gray-200 text-sm leading-relaxed focus:outline-none focus:border-blue-500 resize-y"
+                        rows={3}
+                        maxLength={2000}
+                        autoFocus
+                        disabled={saving}
+                      />
+                      <div className="flex gap-2 mt-1.5">
+                        <button onClick={() => void saveStatement()} disabled={saving} className="text-xs px-2 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white disabled:opacity-50">Save</button>
+                        <button onClick={() => setEditingStatement(false)} disabled={saving} className="text-xs px-2 py-1 rounded border border-gray-600 text-gray-300 hover:bg-gray-700">Cancel</button>
+                      </div>
+                    </dd>
                   ) : detail?.problemStatement ? (
-                    <dd className="text-gray-200 text-sm leading-relaxed">{detail.problemStatement}</dd>
+                    <dd
+                      className={`text-gray-200 text-sm leading-relaxed${canEdit ? ' cursor-pointer hover:text-blue-300' : ''}`}
+                      onClick={() => { if (canEdit) { setDraftStatement(detail.problemStatement ?? ''); setEditingStatement(true); } }}
+                      title={canEdit ? 'Click to edit problem statement' : undefined}
+                    >
+                      {detail.problemStatement}
+                    </dd>
                   ) : (
-                    <dd className="text-gray-600 text-sm italic">No problem statement defined</dd>
+                    <dd
+                      className={`text-gray-600 text-sm italic${canEdit ? ' cursor-pointer hover:text-blue-300' : ''}`}
+                      onClick={() => { if (canEdit) { setDraftStatement(''); setEditingStatement(true); } }}
+                      title={canEdit ? 'Click to add problem statement' : undefined}
+                    >
+                      No problem statement defined
+                    </dd>
                   )}
                 </div>
 
