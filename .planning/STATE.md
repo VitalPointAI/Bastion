@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 32 of 40 (Network Device Discovery & Secure Automatic Resource Onboarding) — Executing
-Plan: 2 of ? in current phase — 32-02 complete
-Status: Phase 32 plan 02 complete (Plugin extension & hot-loading)
-Last activity: 2026-03-07 - Completed 32-02-PLAN.md
+Plan: 2 of 9 in current phase — 32-01 complete
+Status: Phase 32 plan 01 complete (Discovery foundation types, store, lifecycle)
+Last activity: 2026-03-07 - Completed 32-01-PLAN.md
 
-Progress: ██████████████████████████ 284 plans complete
+Progress: ██████████████████████████ 285 plans complete
 
 ## Performance Metrics
 
@@ -133,6 +133,7 @@ Progress: ███████████████████████�
 | Phase 31-ai-agent-validation-compliance-testing P01 | 3 | 2 tasks | 3 files |
 | Phase 31-ai-agent-validation-compliance-testing P02 | 3 | 2 tasks | 4 files |
 | Phase 31 P05 | 6 | 2 tasks | 9 files |
+| Phase 32 P01 | 3 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 32 Plan 01 (Discovery Foundation):**
+- Used const objects for all discovery enumerations per project convention (TransportType, DeviceState, etc.)
+- Access list blocklist takes precedence over allowlist in scope merging (security-first)
+- Discovery store uses ON CONFLICT upsert for access entries and baselines (idempotent writes)
 
 **Phase 31 Plan 02 (Scoring Modules):**
 - Used ChatOpenAI directly for judge model instead of project LLM factory to avoid async config dependency
