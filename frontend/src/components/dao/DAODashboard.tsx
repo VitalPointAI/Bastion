@@ -14,7 +14,38 @@ import { ProposalList } from './ProposalList';
 import { ProposalDetail } from './ProposalDetail';
 import { VotingInterface } from './VotingInterface';
 import { MDMPGovernancePanel } from '../governance/MDMPGovernancePanel';
+import { GateStatusBadge } from '../governance/GateStatusBadge';
+import { useDecisionGates } from '../../context/DecisionGateContext';
 import './DAODashboard.css';
+
+// ============================================================================
+// Helpers for Decision Gates display
+// ============================================================================
+
+const GATE_TYPE_LABELS: Record<string, string> = {
+  objective_approval: 'Objective Approval',
+  operational_approach: 'Operational Approach',
+  coa_selection: 'COA Selection',
+  order_release: 'Order Release',
+  reframing: 'Reframing',
+};
+
+function formatGateTypeLabel(gateType: string): string {
+  return GATE_TYPE_LABELS[gateType] || gateType.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+function formatRelativeTime(isoString: string): string {
+  const d = new Date(isoString);
+  const now = Date.now();
+  const diffMs = now - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHrs / 24);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  return `${diffDays}d ago`;
+}
 
 interface DAODashboardProps {
   daoId?: string; // If not provided, show all user's DAOs
@@ -135,6 +166,9 @@ export function DAODashboard({ daoId: initialDaoId, initialView }: DAODashboardP
     await loadDashboardData();
   };
 
+  // Decision gates cross-tab overview
+  const { gates: allGates, loading: gatesLoading } = useDecisionGates();
+
   const selectedDao = daos.find((d) => d.daoId === selectedDaoId);
 
   if (loading && daos.length === 0) {
@@ -203,6 +237,45 @@ export function DAODashboard({ daoId: initialDaoId, initialView }: DAODashboardP
             <div className="card-label">DAOs</div>
           </div>
         </div>
+
+        {/* Decision Gates Cross-Tab Overview */}
+        {!gatesLoading && allGates.length > 0 && (
+          <div className="decision-gates-section">
+            <h3 className="section-title">Decision Gates</h3>
+            <div className="gates-table-wrapper">
+              <table className="gates-overview-table">
+                <thead>
+                  <tr>
+                    <th>Gate</th>
+                    <th>Tab</th>
+                    <th>Item</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Decided</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...allGates]
+                    .sort((a, b) => {
+                      const order: Record<string, number> = { submitted: 0, pending: 1, rejected: 2, escalated: 3, approved: 4, overridden: 5 };
+                      const diff = (order[a.status] ?? 99) - (order[b.status] ?? 99);
+                      return diff !== 0 ? diff : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+                    })
+                    .map((gate) => (
+                      <tr key={gate.id}>
+                        <td>{formatGateTypeLabel(gate.gate_type)}</td>
+                        <td style={{ textTransform: 'capitalize' }}>{gate.tab}</td>
+                        <td>{gate.target_item_title || '--'}</td>
+                        <td><GateStatusBadge status={gate.status} /></td>
+                        <td>{gate.submitted_at ? formatRelativeTime(gate.submitted_at) : '--'}</td>
+                        <td>{gate.decided_at ? formatRelativeTime(gate.decided_at) : '--'}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         <div className="dashboard-main">
           {/* MDMP Workflow Panel */}

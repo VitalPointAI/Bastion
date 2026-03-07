@@ -745,3 +745,55 @@
   }
 }
 
+/* ============================================================================
+   Decision Gates Cross-Tab Overview
+   ============================================================================ */
+
+.decision-gates-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--surface-primary, #0f172a);
+  border: 1px solid var(--border-color, #1e293b);
+  border-radius: 0.5rem;
+}
+
+.decision-gates-section .section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, #94a3b8);
+  margin-bottom: 0.75rem;
+}
+
+.gates-table-wrapper {
+  overflow-x: auto;
+}
+
+.gates-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.gates-overview-table th {
+  text-align: left;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, #94a3b8);
+  border-bottom: 1px solid var(--border-color, #1e293b);
+}
+
+.gates-overview-table td {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--border-color-subtle, #1e293b20);
+  color: var(--text-primary, #e2e8f0);
+}
+
+.gates-overview-table tr:last-child td {
+  border-bottom: none;
+}
+
