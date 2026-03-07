@@ -1,0 +1,44 @@
+/* ============================================================================
+   GateSubmitButton - Contextual submit button for decision gates
+   ============================================================================ */
+
+.gate-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid var(--accent-blue, #4a9eff);
+  background: transparent;
+  color: var(--accent-blue, #4a9eff);
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast, 150ms);
+}
+
+.gate-submit-btn:hover {
+  background: rgba(74, 158, 255, 0.1);
+}
+
+.gate-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Resubmit variant (after rejection) */
+.gate-submit-btn.resubmit {
+  border-color: var(--accent-amber, #f0a500);
+  color: var(--accent-amber, #f0a500);
+}
+
+.gate-submit-btn.resubmit:hover {
+  background: rgba(240, 165, 0, 0.1);
+}
+
+/* Approved wrapper */
+.gate-submit-approved {
+  display: inline-flex;
+  align-items: center;
+}

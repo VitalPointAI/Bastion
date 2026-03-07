@@ -1,0 +1,239 @@
+/* ============================================================================
+   GateProposalModal - Contextual proposal creation modal
+   Follows MissionWizard overlay pattern
+   ============================================================================ */
+
+.gate-proposal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.gate-proposal-modal {
+  background: linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%);
+  border: 2px solid var(--border-color, rgba(74, 158, 255, 0.3));
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ============================================================================
+   Header
+   ============================================================================ */
+
+.gate-proposal-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color, rgba(74, 158, 255, 0.2));
+}
+
+.gate-proposal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary, #e0e6ed);
+  flex: 1;
+}
+
+.gate-type-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-amber, #f0a500);
+  background: rgba(240, 165, 0, 0.1);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.gate-proposal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #8b95a5);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: color var(--transition-fast, 150ms);
+}
+
+.gate-proposal-close:hover {
+  color: var(--text-primary, #e0e6ed);
+}
+
+/* ============================================================================
+   Body
+   ============================================================================ */
+
+.gate-proposal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gate-proposal-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-red, #ef4444);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.gate-proposal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.gate-proposal-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #8b95a5);
+}
+
+.gate-proposal-field input,
+.gate-proposal-field textarea {
+  background: var(--bg-primary, #0f1419);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 4px;
+  color: var(--text-primary, #e0e6ed);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color var(--transition-fast, 150ms);
+}
+
+.gate-proposal-field input:focus,
+.gate-proposal-field textarea:focus {
+  outline: none;
+  border-color: var(--accent-blue, #4a9eff);
+}
+
+.gate-proposal-field input:disabled,
+.gate-proposal-field textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   Metadata Section (read-only context)
+   ============================================================================ */
+
+.gate-proposal-metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.gate-proposal-metadata > label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #8b95a5);
+}
+
+.metadata-grid {
+  background: var(--bg-primary, #0f1419);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+}
+
+.metadata-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.metadata-row:not(:last-child) {
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.05));
+}
+
+.metadata-key {
+  color: var(--text-secondary, #8b95a5);
+  font-weight: 500;
+}
+
+.metadata-value {
+  color: var(--text-primary, #e0e6ed);
+  text-align: right;
+  max-width: 60%;
+  word-break: break-word;
+}
+
+/* ============================================================================
+   Footer
+   ============================================================================ */
+
+.gate-proposal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color, rgba(74, 158, 255, 0.2));
+}
+
+.gate-proposal-cancel {
+  background: transparent;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.2));
+  color: var(--text-secondary, #8b95a5);
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all var(--transition-fast, 150ms);
+}
+
+.gate-proposal-cancel:hover {
+  color: var(--text-primary, #e0e6ed);
+  border-color: var(--text-secondary, #8b95a5);
+}
+
+.gate-proposal-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gate-proposal-submit {
+  background: var(--accent-blue, #4a9eff);
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all var(--transition-fast, 150ms);
+}
+
+.gate-proposal-submit:hover {
+  background: var(--accent-blue-hover, #3a8eef);
+}
+
+.gate-proposal-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
