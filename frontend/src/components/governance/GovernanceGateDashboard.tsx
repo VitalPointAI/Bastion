@@ -61,7 +61,7 @@ export function GovernanceGateDashboard({
   tabFilter,
   onGateSelect,
 }: GovernanceGateDashboardProps) {
-  const { gates: contextGates, loading, error, submitForApproval } = useDecisionGates(tabFilter);
+  const { gates: contextGates, loading, error } = useDecisionGates(tabFilter);
 
   // Determine rendering mode: legacy MDMP vs new DecisionGate
   const useLegacyMode = legacyGates && legacyGates.length > 0;

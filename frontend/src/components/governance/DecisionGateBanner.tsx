@@ -59,7 +59,6 @@ interface DecisionGateBannerProps {
 export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerProps) {
   const {
     pendingApprovals,
-    pendingCount,
     escalatedGates,
     isCommander,
     approveGate,
@@ -76,12 +75,6 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
   const [rejectingGateId, setRejectingGateId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-
-  // Non-commander roles see no banner
-  if (!isCommander) return null;
-
-  // No pending approvals or escalated items, or dismissed
-  if (totalCount === 0 || dismissed) return null;
 
   const handleToggle = useCallback(() => {
     setExpanded((prev) => !prev);
@@ -125,6 +118,12 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
     setRejectingGateId(null);
     setRejectReason('');
   }, []);
+
+  // Non-commander roles see no banner
+  if (!isCommander) return null;
+
+  // No pending approvals or escalated items, or dismissed
+  if (totalCount === 0 || dismissed) return null;
 
   return (
     <div className="decision-gate-banner">

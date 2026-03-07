@@ -21,10 +21,7 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
   const [selectedView, setSelectedView] = useState<UnderstandView>('strategic-docs');
   const [trainingDocCount, setTrainingDocCount] = useState(0);
   const [hasPendingExtraction, setHasPendingExtraction] = useState(false);
-  const [selectedGate, setSelectedGate] = useState<DecisionGate | null>(null);
-
   const handleGateDetailClick = useCallback((gate: DecisionGate) => {
-    setSelectedGate(gate);
     // Gate detail display — currently logs; full detail modal can be added later
     console.log('[UnderstandTab] Gate detail:', gate.id, gate.gate_type, gate.status);
   }, []);
