@@ -331,6 +331,16 @@ Following best practices for production-grade agentic workflows:
    - Cross-centrality comparison to surface structurally interesting actors (divergence detection)
    - *Tool access*: `query_graph`, `run_graph_algorithm`, `get_actor_profile`
 
+### Phase 32: Network device discovery and secure automatic resource onboarding
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 31
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 32 to break down)
+
 ---
 
 **MCP Tools (deterministic operations - added to MCP server):**
@@ -830,13 +840,14 @@ The test suite runs periodically, feeding results into a dedicated Bastion page 
 7. **Agent Circuit Breaker** — Automatic disablement of agents exceeding thresholds, pending human review
 8. **Human Review Workflow** — Notification and assessment interface for reviewing flagged agents
 
-**Plans:** 6 plans
+**Plans:** 7 plans
 
 Plans:
 - [ ] 31-01-PLAN.md — Validation types, DB schema, and store foundation
 - [ ] 31-02-PLAN.md — Scoring modules (determinism, reliability, authority)
 - [ ] 31-03-PLAN.md — Validation runner, circuit breaker, scheduler, and REST API
-- [ ] 31-04-PLAN.md — Golden prompt fixtures for all 31 staff roles
+- [ ] 31-04-PLAN.md — Fixture loader, generator, and 10 high-priority role fixtures
+- [ ] 31-04b-PLAN.md — Generated fixtures for remaining 21 staff roles
 - [ ] 31-05-PLAN.md — Frontend validation dashboard with Recharts visualizations
 - [ ] 31-06-PLAN.md — AgentHealthDot integration and activation gating
 
