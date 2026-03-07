@@ -17,6 +17,7 @@ import { ProblemSetTabContainer } from './components/problem-set/ProblemSetTabCo
 import { ProblemSetMemberManager } from './components/problem-set/ProblemSetMemberManager'
 import { MemberDirectory } from './components/problem-set/MemberDirectory'
 import { ProblemSetSettings } from './components/problem-set/ProblemSetSettings'
+import { IronclawProvider } from './context/IronclawContext'
 import './App.css'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
@@ -143,12 +144,15 @@ function AppContent() {
 }
 
 // ─── Authenticated shell with ProblemSetProvider ──────────────────────────────
+// AIStaffContext kept for backward compatibility during Ironclaw transition. New features use IronclawContext.
 
 function AuthenticatedShell() {
   return (
     <ModeProvider>
       <ProblemSetProvider>
-        <AppContent />
+        <IronclawProvider>
+          <AppContent />
+        </IronclawProvider>
       </ProblemSetProvider>
     </ModeProvider>
   );
