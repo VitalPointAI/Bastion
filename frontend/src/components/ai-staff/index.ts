@@ -2,7 +2,6 @@
  * AI Staff Panel - Barrel Export
  *
  * Re-exports for the AI staff panel component system.
- * Components will be added in Plan 03.
  */
 
 export {
@@ -13,3 +12,5 @@ export {
   isWatchTab,
   getDefaultTabConfig,
 } from './AgentRoutingConfig.ts';
+
+export { AIStaffChatInput } from './AIStaffChatInput.tsx';
