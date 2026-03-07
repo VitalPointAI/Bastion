@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T03:19:17.016Z"
+last_updated: "2026-03-07T03:31:49.000Z"
 progress:
   total_phases: 44
   completed_phases: 28
   total_plans: 256
-  completed_plans: 262
+  completed_plans: 263
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 28 of 40 (Embedded DAO Governance at Decision Gates)
-Plan: 9 of 9 in current phase -- 28-06 complete (wave 4)
-Status: Generalized governance frontend components for any gate type
-Last activity: 2026-03-07 - Completed 28-06: Generalize MDMP governance frontend components
+Plan: 9 of 9 in current phase -- 28-07 complete (wave 5)
+Status: Gate escalation, hierarchical visibility, and role-based permissions
+Last activity: 2026-03-07 - Completed 28-07: Escalation, hierarchy, and role-based gate permissions
 
-Progress: ██████████████████████████ 262 plans complete
+Progress: ██████████████████████████ 263 plans complete
 
 ## Performance Metrics
 
@@ -124,6 +124,7 @@ Progress: ███████████████████████�
 | Phase 27 P05 | 5 | 2 tasks | 6 files |
 | Phase 28 P03 | 3 | 2 tasks | 9 files |
 | Phase 28-embedded-dao-governance-at-decision-gates-inserted P09 | 3 | 2 tasks | 3 files |
+| Phase 28 P07 | 8 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -138,6 +139,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 28 Plan 07 (Escalation, Hierarchy, and Permissions):**
+- Escalation metadata stored in decision_context JSONB rather than new DB columns
+- Client-side permission derivation mirrors backend canActOnGate to avoid extra API calls
+- Route ordering: new GET routes placed before /:problemSetId/:tab catch-all
 
 **Phase 28 Plan 02 (Frontend Decision Gate Infrastructure):**
 - Duplicated gate types on frontend mirroring backend gate-types.ts (no shared package, backend authoritative)
