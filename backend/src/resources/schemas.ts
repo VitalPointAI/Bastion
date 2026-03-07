@@ -20,7 +20,7 @@ const LocationSchema = z.object({
 export const ResourceInputSchema = z.object({
   name: z.string().min(1).max(200).describe('Resource name'),
   category: z
-    .enum(['weapon_system', 'vehicle', 'equipment', 'communication'])
+    .enum(['vehicles', 'weapons', 'communications', 'sensors', 'medical', 'other'])
     .describe('Resource category'),
   serialNumber: z.string().optional().describe('Optional serial number'),
   sidc: z.string().length(15).optional().describe('Optional MIL-STD-2525D symbol code'),
