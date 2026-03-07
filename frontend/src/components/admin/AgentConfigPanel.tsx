@@ -16,6 +16,8 @@ import { z } from 'zod';
 import { adminService, getAgentDisplayName, getProviderDisplayName } from '../../lib/admin-service';
 import type { AgentConfig, EnabledAgents, AgentWithConfig, LLMProviderType } from '../../types/admin';
 import { FormField } from './common/FormField';
+import { AgentHealthDot } from '../common/AgentHealthDot';
+import { useAgentValidationStatus } from '../../hooks/useAgentValidationStatus';
 
 // Agent descriptions for display
 const AGENT_DESCRIPTIONS: Record<keyof EnabledAgents, string> = {
@@ -65,6 +67,7 @@ interface ModelOption {
 }
 
 export function AgentConfigPanel() {
+  const validationStatus = useAgentValidationStatus();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -415,6 +418,7 @@ export function AgentConfigPanel() {
                             <span className="toggle-switch toggle-switch--sm" />
                           </label>
                         )}
+                        <AgentHealthDot status={validationStatus.get(agent.agentId) ?? 'unknown'} size="sm" />
                         <span className="agent-card-name">{agent.name || getAgentDisplayName(agent.agentId)}</span>
                         <div className="agent-card-badges">
                           {hasCustomConfig && (
