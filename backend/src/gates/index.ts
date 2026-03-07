@@ -24,3 +24,9 @@ export type {
 
 // Store
 export { GateStore, gateStore } from './gate-store.js';
+
+// Service
+export { GateService, gateService } from './gate-service.js';
+
+// Routes
+export { gateRoutes } from './gate-routes.js';

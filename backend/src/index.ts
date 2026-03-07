@@ -46,6 +46,8 @@ import { copRouter, initCOP } from './cop/index.js';
 import { strategicContextRouter } from './api/strategic-context.js';
 import { problemSetSubscriptionStore } from './problem-set/problem-set-subscription-store.js';
 import inheritanceRouter from './api/inheritance.js';
+import { gateRoutes } from './gates/gate-routes.js';
+import { gateStore } from './gates/gate-store.js';
 
 dotenv.config();
 
@@ -184,6 +186,7 @@ app.use('/api/user-mode', userModeRouter);
 app.use('/api/design', designRouter);
 app.use('/api/cop', copRouter);
 app.use('/api/strategic-context', strategicContextRouter);
+app.use('/api/gates', gateRoutes);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -255,6 +258,14 @@ server.listen(port, async () => {
     console.log('LangGraph agents seeded');
   } catch (error) {
     console.error('Failed to seed LangGraph agents:', error);
+  }
+
+  // Initialize decision gates table
+  try {
+    await gateStore.ensureTable();
+    console.log('Decision gates table initialized');
+  } catch (error) {
+    console.error('Failed to initialize decision gates:', error);
   }
 
   // Initialize COP module (schema, tables, triggers, agent definitions)
