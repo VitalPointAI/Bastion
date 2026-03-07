@@ -52,6 +52,8 @@ import { gateStore } from './gates/gate-store.js';
 import { runMigrations } from './db/migration-runner.js';
 import { aiStaffRouter, aiStaffStore } from './ai-staff/index.js';
 import { ironclawRouter, ironclawStore } from './ironclaw/index.js';
+import { validationRouter } from './validation/validation-router.js';
+import { registerValidationJobs } from './validation/validation-scheduler.js';
 import { requireAuth } from './auth/auth-instance.js';
 
 dotenv.config();
@@ -194,6 +196,7 @@ app.use('/api/strategic-context', strategicContextRouter);
 app.use('/api/gates', gateRoutes);
 app.use('/api/ai-staff', requireAuth, aiStaffRouter);
 app.use('/api/ironclaw', requireAuth, ironclawRouter);
+app.use('/api/validation', requireAuth, validationRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -323,6 +326,14 @@ server.listen(port, async () => {
     console.log('AI workspace initialized');
   } catch (error) {
     console.error('Failed to initialize AI workspace:', error);
+  }
+
+  // Register validation scheduler (Phase 31)
+  try {
+    await registerValidationJobs();
+    console.log('Validation scheduler registered');
+  } catch (error) {
+    console.error('Failed to register validation scheduler:', error);
   }
 
   // Register strategic cache refresh pg-boss worker (Phase 25.3)
