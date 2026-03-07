@@ -845,7 +845,7 @@ The test suite runs periodically, feeding results into a dedicated Bastion page 
 Plans:
 - [x] 31-01-PLAN.md — Validation types, DB schema, and store foundation
 - [x] 31-02-PLAN.md — Scoring modules (determinism, reliability, authority)
-- [ ] 31-03-PLAN.md — Validation runner, circuit breaker, scheduler, and REST API
+- [x] 31-03-PLAN.md — Validation runner, circuit breaker, scheduler, and REST API
 - [x] 31-04-PLAN.md — Fixture loader, generator, and 10 high-priority role fixtures
 - [ ] 31-04b-PLAN.md — Generated fixtures for remaining 21 staff roles
 - [ ] 31-05-PLAN.md — Frontend validation dashboard with Recharts visualizations
@@ -1375,4 +1375,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 28. Embedded DAO Governance | 8/9 | In Progress|  |
 | 29. Contextual AI Staff Integration | 4/5 | In Progress|  |
 | 30. Ironclaw Agent Integration | 8/8 | Complete   | 2026-03-07 |
-| 31. AI Agent Validation & Compliance Testing | 1/7 | In Progress|  |
+| 31. AI Agent Validation & Compliance Testing | 3/7 | In Progress|  |
