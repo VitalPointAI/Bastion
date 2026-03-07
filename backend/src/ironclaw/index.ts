@@ -11,3 +11,15 @@ export * from './ironclaw-service.js';
 export { ironclawRouter } from './ironclaw-router.js';
 export * from './action-registry.js';
 export * from './action-pipeline.js';
+export * from './tool-bridge.js';
+export { GitHubService, githubService } from './github-service.js';
+export type {
+  CreatePRParams,
+  CreatePRResult,
+  PRStatus,
+  DeploymentStatus,
+  EmergencyMergeResult,
+} from './github-service.js';
+export * from './self-update-service.js';
+export * from './audit-anchor-service.js';
+// NOTE: tool-bridge.ts should import githubService for 'bastion.code.create_pr' actions
