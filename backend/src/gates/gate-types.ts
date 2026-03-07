@@ -15,6 +15,8 @@ export const GateType = {
   coa_selection: 'coa_selection',
   order_release: 'order_release',
   reframing: 'reframing',
+  device_onboard: 'device_onboard',
+  device_allowlist: 'device_allowlist',
 } as const;
 
 export type GateType = (typeof GateType)[keyof typeof GateType];
@@ -149,4 +151,6 @@ export const GATE_DEFAULTS: Record<GateType, { enforcement: GateEnforcement; tab
   [GateType.coa_selection]: { enforcement: GateEnforcement.hard_block, tab: GateTab.plan },
   [GateType.order_release]: { enforcement: GateEnforcement.hard_block, tab: GateTab.direct },
   [GateType.reframing]: { enforcement: GateEnforcement.soft_warning, tab: GateTab.assess },
+  [GateType.device_onboard]: { enforcement: GateEnforcement.hard_block, tab: GateTab.direct },
+  [GateType.device_allowlist]: { enforcement: GateEnforcement.hard_block, tab: GateTab.direct },
 };
