@@ -128,7 +128,7 @@ export class DiscoveryService {
 
     // Create onboarding pipeline
     const fingerprintService = new FingerprintService();
-    const acceptanceGate = new AcceptanceGate(discoveryStore, this.gateService);
+    const acceptanceGate = new AcceptanceGate(discoveryStore, this.gateService ?? undefined);
 
     this.pipeline = new OnboardingPipeline({
       discoveryStore,

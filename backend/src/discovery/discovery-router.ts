@@ -273,7 +273,7 @@ discoveryRouter.post('/access-list', async (req: Request, res: Response) => {
  */
 discoveryRouter.delete('/access-list/:id', async (req: Request, res: Response) => {
   try {
-    const removed = await discoveryStore.removeAccessEntry(req.params.id);
+    const removed = await discoveryStore.removeAccessEntry(String(req.params.id));
     if (!removed) {
       return res.status(404).json({ error: 'Access entry not found' });
     }
@@ -455,7 +455,7 @@ discoveryRouter.post(
       // Create AcceptanceGate instance for emergency disconnect
       const gate = new AcceptanceGate(discoveryStore);
       await gate.handleEmergencyDisconnect(
-        req.params.id,
+        String(req.params.id),
         adminDid,
         parsed.data.reason,
       );
@@ -605,7 +605,7 @@ discoveryRouter.get('/topology/stats', async (_req: Request, res: Response) => {
 discoveryRouter.get('/topology/path/:from/:to', async (req: Request, res: Response) => {
   try {
     const topo = await getTopology();
-    const path = topo.getPath(req.params.from, req.params.to);
+    const path = topo.getPath(String(req.params.from), String(req.params.to));
     res.json({ path, hops: path.length > 0 ? path.length - 1 : 0 });
   } catch (err) {
     console.error('[discovery-router] GET /topology/path error:', err);
