@@ -696,7 +696,7 @@ Plans:
 **Depends on:** Phase 24
 **Research:** Required
 **Research topics:** Resource identity patterns in military C2 systems, DID-based asset tracking, plugin architecture patterns (Strategy/Factory), IoT device identity management, MIL-STD-2525D resource symbology, telemetry data ingestion patterns, edge device registration protocols
-**Plans:** 5 plans
+**Plans:** 3/5 plans executed
 
 **Context:**
 Currently resources (vehicles, sensors, weapons, personnel, consumables) are simple data rows with prefixed UUIDs. Agents have full DID support, registries, capabilities, and team membership. Resources deserve the same treatment — especially autonomous vehicles, sensors, and comms equipment that actively participate in operations. A plugin architecture allows new resource types to be added without core changes.
@@ -1281,6 +1281,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 24. Doctrinal Tab Restructure | 3/3 | Complete    | 2026-03-06 |
 | 25. Operational Design Workspace | 6/6 | Complete   | 2026-03-06 |
 | 26. Strategic Environment & Inheritance | 5/5 | Complete   | 2026-03-06 |
-| 27. Resource Registry & DID Plugin | 2/5 | In progress | 8 min |
+| 27. Resource Registry & DID Plugin | 3/5 | In Progress|  |
 | 28. Embedded DAO Governance | 0/TBD | Not started | - |
 | 29. Contextual AI Staff Integration | 0/TBD | Not started | - |
