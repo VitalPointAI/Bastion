@@ -6,3 +6,5 @@
 
 export * from './ironclaw-types.js';
 export * from './ironclaw-store.js';
+export * from './action-registry.js';
+export * from './action-pipeline.js';
