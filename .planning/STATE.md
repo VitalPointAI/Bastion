@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T15:56:23.446Z"
+last_updated: "2026-03-07T16:55:44.745Z"
 progress:
   total_phases: 48
   completed_phases: 30
   total_plans: 285
-  completed_plans: 287
+  completed_plans: 288
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 32 of 40 (Network Device Discovery & Secure Automatic Resource Onboarding) — Executing
-Plan: 5 of 9 in current phase — 32-04 complete
-Status: Phase 32 plan 04 complete (Acceptance gate, fingerprinting, challenge-auth)
-Last activity: 2026-03-07 - Completed 32-04-PLAN.md
+Plan: 6 of 9 in current phase — 32-05 complete
+Status: Phase 32 plan 05 complete (Onboarding pipeline & discovery service)
+Last activity: 2026-03-07 - Completed 32-05-PLAN.md
 
-Progress: ██████████████████████████ 285 plans complete
+Progress: ██████████████████████████ 286 plans complete
 
 ## Performance Metrics
 
@@ -135,6 +135,7 @@ Progress: ███████████████████████�
 | Phase 31 P05 | 6 | 2 tasks | 9 files |
 | Phase 32 P01 | 3 | 2 tasks | 3 files |
 | Phase 32-network-device-discovery-and-secure-automatic-resource-onboarding P03 | 9 | 2 tasks | 7 files |
+| Phase 32 P05 | 5 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -667,6 +668,8 @@ Recent decisions affecting current work:
 - [Phase 31]: Used recharts 3.8.0 for validation dashboard sparklines and time-series charts with threshold reference lines
 - [Phase 32]: CommandAdapter uses Buffer|string union for wire format flexibility across protocols
 - [Phase 32]: Used dynamic import with try/catch for DDIL graceful degradation in transport scanners
+- [Phase 32]: Devices auto-onboard as sensors category at observer trust tier
+- [Phase 32]: Pipeline errors quarantine devices rather than leaving intermediate state
 
 ### Roadmap Evolution
 

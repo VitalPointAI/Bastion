@@ -336,7 +336,7 @@ Following best practices for production-grade agentic workflows:
 **Goal:** Bastion automatically discovers devices on local networks (Bluetooth, WiFi, USB, TAK/RF), fingerprints them, and seamlessly onboards them as first-class resources with DID identity, capability mapping, and bidirectional command channels. Includes DAO-governed acceptance gates, EM spectrum awareness, and Ironclaw-driven adapter generation for unknown devices.
 **Requirements:** [DISC-01, DISC-02, DISC-03, DISC-04, DISC-05, DISC-06, DISC-07, DISC-08, DISC-09, DISC-10, DISC-11, DISC-12, DISC-13, DISC-14, DISC-15, DISC-16, DISC-17, DISC-18, DISC-19, DISC-20, DISC-21, DISC-22]
 **Depends on:** Phase 31
-**Plans:** 4/9 plans executed
+**Plans:** 5/9 plans executed
 
 Plans:
 - [x] 32-01-PLAN.md -- Foundation types, DB schema, discovery store, lifecycle state machine
