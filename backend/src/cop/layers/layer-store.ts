@@ -282,6 +282,21 @@ export class LayerStore implements ILayerStore {
     await this.ensureInitialized();
     const { getPool } = await import('../../lib/database.js');
     const pool = getPool();
+
+    // Deduplication: if a draft layer of the same type/workspace/section exists, update it
+    const existing = await pool.query(
+      `SELECT id FROM cop_layers
+       WHERE workspace_id = $1 AND layer_type = $2 AND state = 'draft'
+       ${input.sectionId ? 'AND section_id = $3' : 'AND (section_id IS NULL OR $3 IS NULL)'}
+       ORDER BY created_at DESC LIMIT 1`,
+      [input.workspaceId, input.layerType, input.sectionId],
+    );
+
+    if (existing.rows.length > 0) {
+      const existingId = existing.rows[0].id as string;
+      return this.updateLayerSpec(existingId, input.spec);
+    }
+
     const id = `LYR-${randomUUID().slice(0, 8)}`;
     const now = new Date();
     const auditTrail: AuditEntry[] = [

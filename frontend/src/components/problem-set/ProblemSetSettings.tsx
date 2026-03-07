@@ -2,7 +2,7 @@
  * ProblemSetSettings
  *
  * Settings page for a problem set. Provides editable fields for name,
- * description, problem statement, invite mode, and discoverability.
+ * description, invite mode, and discoverability.
  * Also hosts TeamRoster in training mode.
  */
 
@@ -31,7 +31,6 @@ export function ProblemSetSettings() {
   // Editable fields
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [problemStatement, setProblemStatement] = useState('');
   const [inviteMode, setInviteMode] = useState('gated');
   const [discoverability, setDiscoverability] = useState('private');
 
@@ -55,7 +54,6 @@ export function ProblemSetSettings() {
         setDetail(d);
         setName(d.name);
         setDescription(d.description ?? '');
-        setProblemStatement(d.problemStatement ?? '');
         setInviteMode(d.inviteMode);
         setDiscoverability(d.discoverability);
       })
@@ -71,7 +69,6 @@ export function ProblemSetSettings() {
       const updated = await problemSetService.updateProblemSet(displayId, {
         name: name.trim(),
         description: description.trim() || undefined,
-        problemStatement: problemStatement.trim() || '',
         inviteMode,
         discoverability,
       }, userDID);
@@ -101,7 +98,6 @@ export function ProblemSetSettings() {
   const hasChanges =
     name.trim() !== detail.name ||
     (description.trim() || '') !== (detail.description ?? '') ||
-    (problemStatement.trim() || '') !== (detail.problemStatement ?? '') ||
     inviteMode !== detail.inviteMode ||
     discoverability !== detail.discoverability;
 
@@ -143,7 +139,7 @@ export function ProblemSetSettings() {
         </aside>
 
         {/* Content */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 min-w-0">
           {section === 'general' && (
             <div className="max-w-lg space-y-5">
               <div>
@@ -165,18 +161,6 @@ export function ProblemSetSettings() {
                   className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-y"
                   rows={2}
                   maxLength={500}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">Problem Statement</label>
-                <textarea
-                  value={problemStatement}
-                  onChange={(e) => setProblemStatement(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-y"
-                  rows={4}
-                  maxLength={2000}
-                  placeholder="What operational problem does this set address?"
                 />
               </div>
 

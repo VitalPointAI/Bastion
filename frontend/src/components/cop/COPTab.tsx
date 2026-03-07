@@ -199,16 +199,15 @@ export function COPTab({ problemSetId }: COPTabProps) {
 
   useEffect(() => {
     if (autoTriggeredRef.current) return;
+    autoTriggeredRef.current = true;
 
     async function checkAndTrigger() {
       try {
         const status = await copService.getStatus(problemSetId);
         if (status.status === 'idle' && !status.hasLayers) {
-          autoTriggeredRef.current = true;
           setGenerating(true);
           try {
             await copService.triggerGeneration(problemSetId, 'default');
-            // Refresh layers after auto-generation
             const newLayers = await copService.queryLayers(problemSetId);
             handleLayersLoaded(newLayers);
           } finally {
@@ -433,24 +432,6 @@ export function COPTab({ problemSetId }: COPTabProps) {
             resourceLayerVisible={resourceLayerVisible}
             onResourceSelect={setSelectedResource}
           />
-
-          {/* Empty state: Generate COP Layers button */}
-          {layers.length === 0 && !generating && (
-            <div className="absolute inset-0 flex items-center justify-center z-500 pointer-events-none">
-              <div className="pointer-events-auto bg-gray-800/95 border border-gray-600 rounded-xl p-8 text-center max-w-md">
-                <h3 className="text-lg font-semibold text-white mb-2">No COP Layers</h3>
-                <p className="text-sm text-gray-400 mb-4">
-                  Generate AI-powered Common Operating Picture layers from workspace objectives and intelligence.
-                </p>
-                <button
-                  onClick={handleManualGenerate}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  Generate COP Layers
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Generating spinner overlay */}
           {generating && (

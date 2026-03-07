@@ -21,8 +21,6 @@
   gap: 1rem;
   padding: 1rem;
   color: var(--text-primary, #fff);
-  overflow-y: auto;
-  max-height: 100%;
 }
 
 /* ─── Header ─────────────────────────────────────────────────────────────────── */
@@ -165,7 +163,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 400px;
 }
 
 .team-roster__position-meta {

@@ -32,7 +32,6 @@ interface WizardState {
   description: string;
   echelon: Echelon | '';
   parentProblemSetId: string;
-  problemStatement: string;
   // Step 2
   classification: Classification;
   inviteMode: InviteMode;
@@ -44,7 +43,6 @@ const INITIAL_STATE: WizardState = {
   description: '',
   echelon: '',
   parentProblemSetId: '',
-  problemStatement: '',
   classification: 'UNCLASSIFIED',
   inviteMode: 'gated',
   discoverability: 'private',
@@ -181,7 +179,6 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
       parentProblemSetId: state.parentProblemSetId || undefined,
       inviteMode: state.inviteMode,
       discoverability: state.discoverability,
-      problemStatement: state.problemStatement.trim() || undefined,
       mode,
     };
 
@@ -313,21 +310,6 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
               </div>
             )}
 
-            {/* Problem Statement (optional) */}
-            <div>
-              <label className="wizard-label" htmlFor="ps-statement">
-                Problem Statement
-              </label>
-              <textarea
-                id="ps-statement"
-                className="wizard-textarea"
-                placeholder="What operational problem does this set address? (Optional)"
-                value={state.problemStatement}
-                onChange={(e) => update({ problemStatement: e.target.value })}
-                rows={3}
-                maxLength={2000}
-              />
-            </div>
           </div>
         )}
 
@@ -448,12 +430,6 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
                   <span className="review-val">
                     {memberships.find((m) => m.problemSetId === state.parentProblemSetId)?.name ?? state.parentProblemSetId}
                   </span>
-                </div>
-              )}
-              {state.problemStatement && (
-                <div className="review-row">
-                  <span className="review-key">Problem Statement</span>
-                  <span className="review-val">{state.problemStatement.slice(0, 80)}{state.problemStatement.length > 80 ? '...' : ''}</span>
                 </div>
               )}
               <hr className="review-divider" />
