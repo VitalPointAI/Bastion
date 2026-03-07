@@ -68,6 +68,24 @@ jobs:
             VITE_PINATA_GATEWAY=${{ secrets.VITE_PINATA_GATEWAY }}
             VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL }}
 
+      # Ironclaw agent sidecar image (pre-built release binary)
+      - name: Ironclaw metadata
+        id: meta-ironclaw
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/ironclaw
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push ironclaw
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ironclaw
+          push: true
+          tags: ${{ steps.meta-ironclaw.outputs.tags }}
+          labels: ${{ steps.meta-ironclaw.outputs.labels }}
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
