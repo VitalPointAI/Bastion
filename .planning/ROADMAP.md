@@ -847,8 +847,8 @@ Plans:
 - [x] 31-02-PLAN.md — Scoring modules (determinism, reliability, authority)
 - [x] 31-03-PLAN.md — Validation runner, circuit breaker, scheduler, and REST API
 - [x] 31-04-PLAN.md — Fixture loader, generator, and 10 high-priority role fixtures
-- [ ] 31-04b-PLAN.md — Generated fixtures for remaining 21 staff roles
-- [ ] 31-05-PLAN.md — Frontend validation dashboard with Recharts visualizations
+- [x] 31-04b-PLAN.md — Generated fixtures for remaining 21 staff roles
+- [x] 31-05-PLAN.md — Frontend validation dashboard with Recharts visualizations
 - [x] 31-06-PLAN.md — AgentHealthDot integration and activation gating
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
