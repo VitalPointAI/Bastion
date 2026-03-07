@@ -28,6 +28,7 @@ export class GateService {
 
   /**
    * Create a new decision gate with defaults applied.
+   * In training mode, attaches training_config based on exercise settings.
    */
   async createGate(params: CreateGateParams): Promise<DecisionGate> {
     // Validate gate_type
@@ -43,6 +44,14 @@ export class GateService {
       tab: params.tab ?? defaults?.tab,
       enforcement: params.enforcement ?? defaults?.enforcement,
     };
+
+    // Training mode: set training_config if mode is training and not already provided
+    if (enrichedParams.mode === 'training' && !enrichedParams.training_config) {
+      enrichedParams.training_config = {
+        behavior: 'instructor-approved', // default; can be overridden per exercise
+        tagged: true,
+      };
+    }
 
     return this.store.create(enrichedParams);
   }
@@ -63,6 +72,8 @@ export class GateService {
 
   /**
    * Submit a gate for approval. Transitions status to 'submitted'.
+   * Training mode: auto-approved gates skip to 'approved' immediately.
+   * Training mode: instructor-approved gates proceed normally (instructor acts as commander).
    */
   async submitForApproval(
     gateId: string,
@@ -75,6 +86,29 @@ export class GateService {
       throw new Error(`Cannot submit gate in status '${gate.status}'. Must be 'pending'.`);
     }
 
+    const trainingBehavior = gate.mode === 'training'
+      ? (gate.training_config as Record<string, unknown> | null)?.behavior as string | undefined
+      : undefined;
+
+    // Training mode auto-approval: skip directly to approved
+    if (gate.mode === 'training' && trainingBehavior === 'auto-approved') {
+      return this.store.update(gateId, {
+        status: GateStatus.approved,
+        submitted_by: submittedBy,
+        submitted_at: new Date().toISOString(),
+        decided_by: 'system:training-auto-approve',
+        decided_at: new Date().toISOString(),
+        decision_context: {
+          ...gate.decision_context,
+          proposal: proposalContext,
+          mode: 'training',
+          auto_approved: true,
+          approval_note: 'Auto-approved in training mode',
+        },
+      });
+    }
+
+    // Normal submission (operational mode, instructor-approved, or full-governance)
     return this.store.update(gateId, {
       status: GateStatus.submitted,
       submitted_by: submittedBy,
@@ -82,12 +116,14 @@ export class GateService {
       decision_context: {
         ...gate.decision_context,
         proposal: proposalContext,
+        ...(gate.mode === 'training' ? { mode: 'training' } : {}),
       },
     });
   }
 
   /**
    * Approve a gate. Transitions to 'approved'.
+   * Training mode gates are tagged with mode: 'training' in decision_context.
    */
   async approveGate(gateId: string, decidedBy: string): Promise<DecisionGate> {
     const gate = await this.store.findById(gateId);
@@ -96,11 +132,22 @@ export class GateService {
       throw new Error(`Cannot approve gate in status '${gate.status}'. Must be 'submitted' or 'escalated'.`);
     }
 
+    // Tag training mode in decision_context
+    if (gate.mode === 'training') {
+      await this.store.update(gateId, {
+        decision_context: {
+          ...gate.decision_context,
+          mode: 'training',
+        },
+      });
+    }
+
     return this.store.updateStatus(gateId, GateStatus.approved, decidedBy);
   }
 
   /**
    * Reject a gate. Transitions to 'rejected' with reason stored in decision_context.
+   * Training mode gates are tagged with mode: 'training' in decision_context.
    */
   async rejectGate(gateId: string, decidedBy: string, reason: string): Promise<DecisionGate> {
     const gate = await this.store.findById(gateId);
@@ -115,6 +162,7 @@ export class GateService {
         ...gate.decision_context,
         rejection_reason: reason,
         rejected_by: decidedBy,
+        ...(gate.mode === 'training' ? { mode: 'training' } : {}),
       },
     });
 
@@ -199,6 +247,9 @@ export class GateService {
     const processed: DecisionGate[] = [];
 
     for (const gate of expiredGates) {
+      // Training mode gates follow the same timeout logic; tag mode in decision_context
+      const modeTag = gate.mode === 'training' ? { mode: 'training' } : {};
+
       switch (gate.timeout_behavior) {
         case TimeoutBehavior.auto_escalate: {
           await this.store.update(gate.id, {
@@ -206,6 +257,7 @@ export class GateService {
               ...gate.decision_context,
               timeout_action: 'auto_escalated',
               timeout_at: now.toISOString(),
+              ...modeTag,
             },
           });
           const escalated = await this.store.updateStatus(gate.id, GateStatus.escalated);
@@ -218,6 +270,7 @@ export class GateService {
               ...gate.decision_context,
               timeout_action: 'auto_approved',
               timeout_at: now.toISOString(),
+              ...modeTag,
             },
           });
           const approved = await this.store.updateStatus(gate.id, GateStatus.approved, 'system:timeout');
