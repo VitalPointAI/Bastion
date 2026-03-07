@@ -1,0 +1,79 @@
+/* IronclawDrawer -- Slide-in/out animations and styling */
+
+/* Slide-in animation */
+@keyframes ironclaw-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes ironclaw-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes ironclaw-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ironclaw-drawer {
+  animation: ironclaw-slide-in 300ms ease-out forwards;
+}
+
+.ironclaw-drawer--closing {
+  animation: ironclaw-slide-out 300ms ease-in forwards;
+}
+
+.ironclaw-overlay {
+  animation: ironclaw-fade-in 200ms ease-out forwards;
+}
+
+/* Scrollbar styling for message list */
+.ironclaw-messages {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 transparent;
+}
+
+.ironclaw-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ironclaw-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ironclaw-messages::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 2px;
+}
+
+.ironclaw-messages::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+/* @mention dropdown */
+.ironclaw-mention-dropdown {
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #1e293b;
+}
+
+/* Mobile responsive: full-width drawer below 640px */
+@media (max-width: 639px) {
+  .ironclaw-drawer {
+    width: 100% !important;
+  }
+}
