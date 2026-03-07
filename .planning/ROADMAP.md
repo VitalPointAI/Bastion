@@ -722,7 +722,7 @@ Plans:
 **Goal:** Move DAO governance from a dedicated Decide tab into contextual decision gates embedded within each tab of the doctrinal workflow, making governance a natural part of the planning process rather than a separate activity
 **Depends on:** Phase 24, Phase 3
 **Research:** Unlikely
-**Plans:** 9 plans
+**Plans:** 2/9 plans executed
 
 **Context:**
 Currently governance lives in the Decide tab with a separate governance dashboard, proposal list, and MDMP workflow view. This creates a disconnect — planners must leave their workflow to submit proposals, and commanders must navigate to a separate area to approve them. Moving governance into contextual decision gates means proposals appear naturally at decision points: approving an objective (Understand tab), selecting an operational approach (Design tab), choosing a COA (Plan tab), releasing an order (Direct tab), and reframing based on assessment (Assess tab).
@@ -737,7 +737,7 @@ Currently governance lives in the Decide tab with a separate governance dashboar
 7. **Escalation In-Context** — Escalation to parent problem set triggered from within the workflow, not from a separate escalation panel
 
 Plans:
-- [ ] 28-01-PLAN.md -- Backend gate types, PostgreSQL store, gate service, REST API (Wave 1)
+- [x] 28-01-PLAN.md -- Backend gate types, PostgreSQL store, gate service, REST API (Wave 1)
 - [ ] 28-02-PLAN.md -- Frontend gate service, DecisionGateContext, banner/badge/overlay components (Wave 1)
 - [ ] 28-03-PLAN.md -- GateProposalModal, GateSubmitButton, DecisionGateTimeline, TabLayout extension (Wave 2)
 - [ ] 28-04-PLAN.md -- DecisionGateProvider in ProblemSetTabContainer, embed gates in Understand/Design/Plan tabs (Wave 3)
@@ -1290,5 +1290,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 25. Operational Design Workspace | 6/6 | Complete   | 2026-03-06 |
 | 26. Strategic Environment & Inheritance | 5/5 | Complete   | 2026-03-06 |
 | 27. Resource Registry & DID Plugin | 5/5 | Complete   | 2026-03-07 |
-| 28. Embedded DAO Governance | 0/TBD | Not started | - |
+| 28. Embedded DAO Governance | 2/9 | In Progress|  |
 | 29. Contextual AI Staff Integration | 0/TBD | Not started | - |

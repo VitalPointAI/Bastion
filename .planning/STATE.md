@@ -19,16 +19,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 27 — Resource Registry, DID, and Plugin Architecture
+**Current focus:** Phase 28 — Embedded DAO Governance at Decision Gates
 
 ## Current Position
 
-Phase: 27 of 40 (Resource Registry, DID, and Plugin Architecture) -- COMPLETE
-Plan: 5 of 5 in current phase -- 27-05 complete (awaiting human verification)
-Status: COP resource layer with MIL-STD-2525D symbols, detail panel, and WebSocket updates
-Last activity: 2026-03-07 - Completed 27-05: Frontend COP integration with registry service
+Phase: 28 of 40 (Embedded DAO Governance at Decision Gates)
+Plan: 2 of 9 in current phase -- 28-02 complete
+Status: Frontend decision gate infrastructure with API client, context provider, and shared UI components
+Last activity: 2026-03-07 - Completed 28-02: Frontend decision gate infrastructure
 
-Progress: ██████████████████████████ 255 plans complete
+Progress: ██████████████████████████ 257 plans complete
 
 ## Performance Metrics
 
@@ -136,6 +136,16 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 28 Plan 02 (Frontend Decision Gate Infrastructure):**
+- Duplicated gate types on frontend mirroring backend gate-types.ts (no shared package, backend authoritative)
+- Gate context single-fetch pattern: DecisionGateProvider fetches all gates once, groups by tab
+- Commander/XO role check from useProblemSet().userRoleInActive for gate action authorization
+
+**Phase 28 Plan 01 (Decision Gate Backend Registry):**
+- Used const objects (not enums) per project erasableSyntaxOnly convention
+- Singleton pattern for store and service consistent with COP module
+- Gate table ensured at startup via ensureTable() rather than migration SQL file
 
 **Phase 27 Plan 01 (Foundation Types, DID System, Plugin Interface):**
 - Used AnyStateMachine from xstate instead of fully parameterized StateMachine for plugin interface simplicity
