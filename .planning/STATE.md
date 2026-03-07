@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 26 of 40 (Strategic Environment Inheritance)
-Plan: 4 of 5 in current phase — 26-04 complete
-Status: Annotation and RFI components for inherited context workflows
-Last activity: 2026-03-06 - Completed 26-04: annotation panel and RFI thread components
+Plan: 5 of 5 in current phase — 26-05 complete (awaiting human verification)
+Status: End-to-end inheritance integration with propagation hooks and backfill
+Last activity: 2026-03-06 - Completed 26-05: annotation/RFI panel wiring, propagation hooks, backfill endpoint
 
-Progress: █████████████████████████ 249 plans complete
+Progress: █████████████████████████ 250 plans complete
 
 ## Performance Metrics
 
@@ -134,6 +134,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 26 Plan 05 (End-to-End Integration & Propagation):**
+- Slide-out panel layout with flex and 380px side panel for annotations and RFIs
+- Batch-fetch annotations for PS and distribute by targetItemId (avoids N+1 per card)
+- Propagation hooks are fire-and-forget so document operations never fail due to inheritance
 
 **Phase 26 Plan 01 (Inheritance Data Model & Backend):**
 - Extended existing subscription system with subscription_type column rather than parallel inheritance tables
