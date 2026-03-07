@@ -713,7 +713,7 @@ Currently resources (vehicles, sensors, weapons, personnel, consumables) are sim
 
 Plans:
 - [x] 27-01-PLAN.md — Foundation types, plugin interface, resource DID, DB migration
-- [ ] 27-02-PLAN.md — 6 built-in resource type plugins and auto-discovery loader
+- [x] 27-02-PLAN.md — 6 built-in resource type plugins and auto-discovery loader
 - [ ] 27-03-PLAN.md — Resource registry with cache and resource group store
 - [ ] 27-04-PLAN.md — AI agent tools, telemetry service, extended REST API
 - [ ] 27-05-PLAN.md — COP resource layer, detail panel, frontend registry service
@@ -1281,6 +1281,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 24. Doctrinal Tab Restructure | 3/3 | Complete    | 2026-03-06 |
 | 25. Operational Design Workspace | 6/6 | Complete   | 2026-03-06 |
 | 26. Strategic Environment & Inheritance | 5/5 | Complete   | 2026-03-06 |
-| 27. Resource Registry & DID Plugin | 1/5 | In progress | 6 min |
+| 27. Resource Registry & DID Plugin | 2/5 | In progress | 8 min |
 | 28. Embedded DAO Governance | 0/TBD | Not started | - |
 | 29. Contextual AI Staff Integration | 0/TBD | Not started | - |
