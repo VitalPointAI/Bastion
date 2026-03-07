@@ -19,6 +19,7 @@ import {
 import { CharacterSchema } from './character-schema.js';
 import { Proposal } from '../dao/types.js';
 import { createAgentDID } from './agent-did.js';
+import { canActivateAgent } from '../validation/activation-gate.js';
 
 /**
  * Agent Registry - manages agent lifecycle, delegations, and audit trail.
@@ -77,6 +78,26 @@ export class AgentRegistry {
       manifest.agentPublicKey = didResult.publicKey;
     }
 
+    // Activation gate: check test fixture requirements before allowing active status.
+    // Agents without sufficient test fixtures are registered but kept inactive.
+    if (manifest.active) {
+      try {
+        const gate = await canActivateAgent(manifest.agentId, manifest.agentId);
+        if (!gate.allowed) {
+          console.warn(
+            `[AgentRegistry] Activation gate: agent ${manifest.agentId} set inactive — ${gate.reason}`,
+          );
+          manifest.active = false;
+        }
+      } catch (err) {
+        // Gate check failure should not prevent registration
+        console.warn(
+          `[AgentRegistry] Activation gate check failed for ${manifest.agentId}:`,
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+
     this.agents.set(manifest.agentId, manifest);
     return manifest;
   }
@@ -109,6 +130,28 @@ export class AgentRegistry {
       return agents.filter((a) => a.phase === phase);
     }
     return agents;
+  }
+
+  /**
+   * Activate an agent, subject to activation gate requirements.
+   * Returns the gate result indicating whether activation was allowed.
+   */
+  async activateAgent(
+    agentId: string,
+  ): Promise<{ allowed: boolean; reason?: string }> {
+    const agent = this.agents.get(agentId);
+    if (!agent) {
+      throw new Error(`Agent ${agentId} not found`);
+    }
+
+    const gate = await canActivateAgent(agentId, agentId);
+    if (!gate.allowed) {
+      return gate;
+    }
+
+    agent.active = true;
+    this.agents.set(agentId, agent);
+    return { allowed: true };
   }
 
   /**
