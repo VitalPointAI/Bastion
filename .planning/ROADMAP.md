@@ -849,7 +849,7 @@ Plans:
 - [x] 31-04-PLAN.md — Fixture loader, generator, and 10 high-priority role fixtures
 - [ ] 31-04b-PLAN.md — Generated fixtures for remaining 21 staff roles
 - [ ] 31-05-PLAN.md — Frontend validation dashboard with Recharts visualizations
-- [ ] 31-06-PLAN.md — AgentHealthDot integration and activation gating
+- [x] 31-06-PLAN.md — AgentHealthDot integration and activation gating
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
@@ -1375,4 +1375,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 28. Embedded DAO Governance | 8/9 | In Progress|  |
 | 29. Contextual AI Staff Integration | 4/5 | In Progress|  |
 | 30. Ironclaw Agent Integration | 8/8 | Complete   | 2026-03-07 |
-| 31. AI Agent Validation & Compliance Testing | 6/7 | In Progress|  |
+| 31. AI Agent Validation & Compliance Testing | 7/7 | In Progress|  |
