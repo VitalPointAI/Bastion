@@ -6,6 +6,7 @@
 import express from 'express';
 import multer from 'multer';
 import { requireAuth } from '../auth/auth-instance.js';
+import { inheritanceService } from '../inheritance/inheritance-service.js';
 import { DocumentParser } from '../strategic/ingestion/document-parser.js';
 import {
   DocumentStore,
@@ -243,6 +244,22 @@ router.post('/documents', requireAuth, upload.single('document'), async (req, re
 
     console.log(`✓ Strategic document stored: ${documentId}`);
 
+    // Propagate inheritance change if document belongs to a problem set
+    if (workspaceId) {
+      try {
+        const changeType = 'document_added';
+        await inheritanceService.onParentContextChanged(
+          workspaceId as string,
+          changeType,
+          inheritanceService.classifyChangeSeverity(changeType),
+          documentId,
+          title as string,
+        );
+      } catch (propError) {
+        console.warn('Inheritance propagation failed (non-fatal):', propError instanceof Error ? propError.message : propError);
+      }
+    }
+
     const response: DocumentUploadResponse = {
       documentId,
       title: title as string,
@@ -428,6 +445,22 @@ router.delete('/documents/:id', requireAuth, async (req, res) => {
     }
 
     await store.delete(documentId);
+
+    // Propagate inheritance change if document belonged to a problem set
+    if (document.workspaceId) {
+      try {
+        const changeType = 'document_removed';
+        await inheritanceService.onParentContextChanged(
+          document.workspaceId,
+          changeType,
+          inheritanceService.classifyChangeSeverity(changeType),
+          documentId,
+          document.title,
+        );
+      } catch (propError) {
+        console.warn('Inheritance propagation failed (non-fatal):', propError instanceof Error ? propError.message : propError);
+      }
+    }
 
     res.json({ deleted: true, documentId });
   } catch (error) {

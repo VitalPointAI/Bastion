@@ -1,9 +1,10 @@
 /**
  * InheritedContextSection
  *
- * Phase 26 Plan 03: Top-level orchestrating component for inherited strategic
+ * Phase 26 Plan 05: Top-level orchestrating component for inherited strategic
  * context display. Composes ContextDashboardWidget, AcknowledgmentBanner,
- * InheritedItemCard, and ChangelogView into a collapsible section.
+ * InheritedItemCard, ChangelogView, AnnotationPanel, RFIThread, and RFIList
+ * into a collapsible section with slide-out panels.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -15,12 +16,15 @@ import type {
   InheritedContextResponse,
   InheritedDocument,
   InheritedGraphSummary,
+  InheritanceAnnotation,
   PendingAck,
 } from '../../lib/inheritance-service.ts';
 import { ContextDashboardWidget } from './ContextDashboardWidget.tsx';
 import { AcknowledgmentBanner } from './AcknowledgmentBanner.tsx';
 import { InheritedItemCard } from './InheritedItemCard.tsx';
 import { ChangelogView } from './ChangelogView.tsx';
+import { AnnotationPanel } from './AnnotationPanel.tsx';
+import { RFIThread, RFIList } from './RFIThread.tsx';
 import './InheritedContextSection.css';
 
 type Echelon = 'strategic' | 'operational' | 'tactical';
@@ -67,6 +71,45 @@ function groupByEchelon(
     }));
 }
 
+/**
+ * Look up item metadata by itemId from the inherited context data.
+ * Returns source PS info needed for AnnotationPanel and RFI creation.
+ */
+function findItemMeta(
+  data: InheritedContextResponse,
+  itemId: string,
+): {
+  sourceProblemSetId: string;
+  sourceProblemSetName: string;
+  sourceEchelon: Echelon;
+  itemTitle: string;
+  itemType: 'strategic_document' | 'graph_summary';
+} | null {
+  const doc = data.inheritedDocuments.find((d) => d.id === itemId);
+  if (doc) {
+    return {
+      sourceProblemSetId: doc.sourceProblemSetId,
+      sourceProblemSetName: doc.sourceProblemSetName,
+      sourceEchelon: (doc.sourceEchelon || 'operational') as Echelon,
+      itemTitle: doc.title,
+      itemType: 'strategic_document',
+    };
+  }
+  const gs = data.inheritedGraphSummaries.find(
+    (g) => g.containerName === itemId,
+  );
+  if (gs) {
+    return {
+      sourceProblemSetId: gs.sourceProblemSetId,
+      sourceProblemSetName: gs.sourceProblemSetName,
+      sourceEchelon: (gs.sourceEchelon || 'operational') as Echelon,
+      itemTitle: gs.containerName,
+      itemType: 'graph_summary',
+    };
+  }
+  return null;
+}
+
 export function InheritedContextSection({
   problemSetId,
 }: InheritedContextSectionProps) {
@@ -77,9 +120,24 @@ export function InheritedContextSection({
     getInitialCollapsed(problemSetId),
   );
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'documents' | 'changelog'>(
-    'documents',
-  );
+  const [activeTab, setActiveTab] = useState<
+    'documents' | 'changelog' | 'rfis'
+  >('documents');
+
+  // Annotation panel state
+  const [annotatingItemId, setAnnotatingItemId] = useState<string | null>(null);
+
+  // RFI panel state
+  const [rfiMode, setRfiMode] = useState<{
+    itemId: string;
+    targetPsId: string;
+  } | null>(null);
+  const [viewingRfiId, setViewingRfiId] = useState<string | null>(null);
+
+  // Batch annotations keyed by targetItemId
+  const [annotationsByItem, setAnnotationsByItem] = useState<
+    Record<string, InheritanceAnnotation[]>
+  >({});
 
   const fetchContext = useCallback(async () => {
     try {
@@ -96,15 +154,41 @@ export function InheritedContextSection({
     }
   }, [problemSetId]);
 
+  // Batch-fetch all annotations for this PS
+  const fetchAnnotations = useCallback(async () => {
+    try {
+      const allAnnotations =
+        await inheritanceApi.getAnnotations(problemSetId);
+      const byItem: Record<string, InheritanceAnnotation[]> = {};
+      for (const ann of allAnnotations) {
+        if (!byItem[ann.targetItemId]) byItem[ann.targetItemId] = [];
+        byItem[ann.targetItemId].push(ann);
+      }
+      setAnnotationsByItem(byItem);
+    } catch {
+      // Non-critical: annotations may not be available
+    }
+  }, [problemSetId]);
+
   useEffect(() => {
     fetchContext();
   }, [fetchContext]);
 
-  // Reset collapsed state from localStorage when problemSetId changes
+  useEffect(() => {
+    if (data && data.ancestors.length > 0) {
+      fetchAnnotations();
+    }
+  }, [data, fetchAnnotations]);
+
+  // Reset state when problemSetId changes
   useEffect(() => {
     setIsCollapsed(getInitialCollapsed(problemSetId));
     setExpandedItemId(null);
     setActiveTab('documents');
+    setAnnotatingItemId(null);
+    setRfiMode(null);
+    setViewingRfiId(null);
+    setAnnotationsByItem({});
   }, [problemSetId]);
 
   function toggleCollapsed() {
@@ -128,6 +212,44 @@ export function InheritedContextSection({
     } catch (err) {
       console.error('Failed to acknowledge context:', err);
     }
+  }
+
+  function handleAnnotate(itemId: string) {
+    setAnnotatingItemId(itemId);
+    // Close RFI panel if open
+    setRfiMode(null);
+    setViewingRfiId(null);
+  }
+
+  function handleRequestInfo(itemId: string) {
+    if (!data) return;
+    const meta = findItemMeta(data, itemId);
+    if (meta) {
+      setRfiMode({ itemId, targetPsId: meta.sourceProblemSetId });
+      // Close annotation panel if open
+      setAnnotatingItemId(null);
+      setViewingRfiId(null);
+    }
+  }
+
+  function handleCloseAnnotationPanel() {
+    setAnnotatingItemId(null);
+    // Refresh annotations and context when panel closes
+    fetchAnnotations();
+    fetchContext();
+  }
+
+  function handleCloseRfiPanel() {
+    setRfiMode(null);
+    setViewingRfiId(null);
+    // Refresh context when RFI panel closes
+    fetchContext();
+  }
+
+  function handleSelectRFI(rfiId: string) {
+    setViewingRfiId(rfiId);
+    setRfiMode(null);
+    setAnnotatingItemId(null);
   }
 
   // Don't render anything while loading initially
@@ -161,6 +283,17 @@ export function InheritedContextSection({
       ),
     }));
 
+  // Resolve annotation panel item metadata
+  const annotatingMeta =
+    annotatingItemId ? findItemMeta(data, annotatingItemId) : null;
+
+  // Resolve RFI create mode item metadata
+  const rfiCreateMeta =
+    rfiMode ? findItemMeta(data, rfiMode.itemId) : null;
+
+  // Determine if a side panel is open
+  const sidePanelOpen = !!(annotatingItemId || rfiMode || viewingRfiId);
+
   return (
     <div className="inherited-context-section">
       {/* Collapsible header */}
@@ -183,129 +316,236 @@ export function InheritedContextSection({
 
       {/* Collapsible content */}
       {!isCollapsed && (
-        <div className="ics-content">
-          {/* Dashboard widget */}
-          <ContextDashboardWidget
-            ancestors={data.ancestors}
-            syncStatus={data.syncStatus}
-            pendingAcknowledgments={data.syncStatus.pendingAcknowledgments}
-            onRefresh={fetchContext}
-          />
-
-          {/* Acknowledgment banner */}
-          {data.syncStatus.pendingAcknowledgments > 0 && (
-            <AcknowledgmentBanner
-              pendingAcks={pendingAcks}
-              onAcknowledge={handleAcknowledge}
+        <div className={`ics-content ${sidePanelOpen ? 'ics-with-panel' : ''}`}>
+          <div className="ics-main-area">
+            {/* Dashboard widget */}
+            <ContextDashboardWidget
+              ancestors={data.ancestors}
+              syncStatus={data.syncStatus}
+              pendingAcknowledgments={data.syncStatus.pendingAcknowledgments}
+              onRefresh={fetchContext}
             />
-          )}
 
-          {/* Tab toggle */}
-          <div className="ics-tab-bar">
-            <button
-              className={`ics-tab ${activeTab === 'documents' ? 'active' : ''}`}
-              onClick={() => setActiveTab('documents')}
-            >
-              Documents
-            </button>
-            <button
-              className={`ics-tab ${activeTab === 'changelog' ? 'active' : ''}`}
-              onClick={() => setActiveTab('changelog')}
-            >
-              Changelog
-              {data.changelog.length > 0 && (
-                <span className="ics-tab-count">{data.changelog.length}</span>
-              )}
-            </button>
-          </div>
+            {/* Acknowledgment banner */}
+            {data.syncStatus.pendingAcknowledgments > 0 && (
+              <AcknowledgmentBanner
+                pendingAcks={pendingAcks}
+                onAcknowledge={handleAcknowledge}
+              />
+            )}
 
-          {/* Documents view */}
-          {activeTab === 'documents' && (
-            <div className="ics-documents">
-              {echelonGroups.map((group) => {
-                const colors = ECHELON_COLORS[group.echelon];
-                return (
-                  <div key={group.echelon} className="ics-echelon-group">
+            {/* Tab toggle */}
+            <div className="ics-tab-bar">
+              <button
+                className={`ics-tab ${activeTab === 'documents' ? 'active' : ''}`}
+                onClick={() => setActiveTab('documents')}
+              >
+                Documents
+              </button>
+              <button
+                className={`ics-tab ${activeTab === 'rfis' ? 'active' : ''}`}
+                onClick={() => setActiveTab('rfis')}
+              >
+                RFIs
+              </button>
+              <button
+                className={`ics-tab ${activeTab === 'changelog' ? 'active' : ''}`}
+                onClick={() => setActiveTab('changelog')}
+              >
+                Changelog
+                {data.changelog.length > 0 && (
+                  <span className="ics-tab-count">{data.changelog.length}</span>
+                )}
+              </button>
+            </div>
+
+            {/* Documents view */}
+            {activeTab === 'documents' && (
+              <div className="ics-documents">
+                {echelonGroups.map((group) => {
+                  const colors = ECHELON_COLORS[group.echelon];
+                  return (
+                    <div key={group.echelon} className="ics-echelon-group">
+                      <div
+                        className="ics-echelon-header"
+                        style={{ borderLeftColor: colors.border }}
+                      >
+                        <span
+                          className="ics-echelon-label"
+                          style={{ color: colors.border }}
+                        >
+                          {group.label}
+                        </span>
+                        <span className="ics-echelon-count">
+                          {group.docs.length} document
+                          {group.docs.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="ics-card-list">
+                        {group.docs.map((doc) => (
+                          <InheritedItemCard
+                            key={doc.id}
+                            item={doc}
+                            echelon={group.echelon}
+                            isExpanded={expandedItemId === doc.id}
+                            onToggleExpand={() => handleToggleExpand(doc.id)}
+                            onAnnotate={handleAnnotate}
+                            onRequestInfo={handleRequestInfo}
+                            annotations={annotationsByItem[doc.id]}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Graph summaries */}
+                {data.inheritedGraphSummaries.length > 0 && (
+                  <div className="ics-echelon-group">
                     <div
                       className="ics-echelon-header"
-                      style={{ borderLeftColor: colors.border }}
+                      style={{ borderLeftColor: '#8B5CF6' }}
                     >
                       <span
                         className="ics-echelon-label"
-                        style={{ color: colors.border }}
+                        style={{ color: '#8B5CF6' }}
                       >
-                        {group.label}
+                        Knowledge Graph
                       </span>
                       <span className="ics-echelon-count">
-                        {group.docs.length} document
-                        {group.docs.length !== 1 ? 's' : ''}
+                        {data.inheritedGraphSummaries.length} item
+                        {data.inheritedGraphSummaries.length !== 1 ? 's' : ''}
                       </span>
                     </div>
                     <div className="ics-card-list">
-                      {group.docs.map((doc) => (
-                        <InheritedItemCard
-                          key={doc.id}
-                          item={doc}
-                          echelon={group.echelon}
-                          isExpanded={expandedItemId === doc.id}
-                          onToggleExpand={() => handleToggleExpand(doc.id)}
-                        />
-                      ))}
+                      {data.inheritedGraphSummaries.map(
+                        (gs: InheritedGraphSummary) => {
+                          const echelon = (gs.sourceEchelon || 'operational') as Echelon;
+                          return (
+                            <InheritedItemCard
+                              key={gs.containerName}
+                              item={gs}
+                              echelon={echelon}
+                              isExpanded={expandedItemId === gs.containerName}
+                              onToggleExpand={() =>
+                                handleToggleExpand(gs.containerName)
+                              }
+                              onAnnotate={handleAnnotate}
+                              onRequestInfo={handleRequestInfo}
+                              annotations={
+                                annotationsByItem[gs.containerName]
+                              }
+                            />
+                          );
+                        },
+                      )}
                     </div>
                   </div>
-                );
-              })}
+                )}
 
-              {/* Graph summaries */}
-              {data.inheritedGraphSummaries.length > 0 && (
-                <div className="ics-echelon-group">
-                  <div
-                    className="ics-echelon-header"
-                    style={{ borderLeftColor: '#8B5CF6' }}
-                  >
-                    <span
-                      className="ics-echelon-label"
-                      style={{ color: '#8B5CF6' }}
-                    >
-                      Knowledge Graph
-                    </span>
-                    <span className="ics-echelon-count">
-                      {data.inheritedGraphSummaries.length} item
-                      {data.inheritedGraphSummaries.length !== 1 ? 's' : ''}
-                    </span>
+                {totalItems === 0 && (
+                  <div className="ics-empty">
+                    No inherited documents or graph data available.
                   </div>
-                  <div className="ics-card-list">
-                    {data.inheritedGraphSummaries.map(
-                      (gs: InheritedGraphSummary) => {
-                        const echelon = (gs.sourceEchelon || 'operational') as Echelon;
-                        return (
-                          <InheritedItemCard
-                            key={gs.containerName}
-                            item={gs}
-                            echelon={echelon}
-                            isExpanded={expandedItemId === gs.containerName}
-                            onToggleExpand={() =>
-                              handleToggleExpand(gs.containerName)
-                            }
-                          />
-                        );
-                      },
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
+            )}
 
-              {totalItems === 0 && (
-                <div className="ics-empty">
-                  No inherited documents or graph data available.
+            {/* RFIs view */}
+            {activeTab === 'rfis' && (
+              <div className="ics-rfis">
+                <div className="ics-rfi-section">
+                  <h4 style={{ color: '#e5e7eb', margin: '0 0 8px 0', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Sent RFIs
+                  </h4>
+                  <RFIList
+                    problemSetId={problemSetId}
+                    direction="sent"
+                    onSelectRFI={handleSelectRFI}
+                  />
                 </div>
-              )}
+                <div className="ics-rfi-section" style={{ marginTop: '16px' }}>
+                  <h4 style={{ color: '#e5e7eb', margin: '0 0 8px 0', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Received RFIs
+                  </h4>
+                  <RFIList
+                    problemSetId={problemSetId}
+                    direction="received"
+                    onSelectRFI={handleSelectRFI}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Changelog view */}
+            {activeTab === 'changelog' && (
+              <ChangelogView changelog={data.changelog} />
+            )}
+          </div>
+
+          {/* Slide-out Annotation Panel */}
+          {annotatingItemId && annotatingMeta && (
+            <div className="ics-side-panel">
+              <AnnotationPanel
+                problemSetId={problemSetId}
+                sourceProblemSetId={annotatingMeta.sourceProblemSetId}
+                targetItemId={annotatingItemId}
+                targetItemType={annotatingMeta.itemType}
+                itemTitle={annotatingMeta.itemTitle}
+                sourceEchelon={annotatingMeta.sourceEchelon}
+                onClose={handleCloseAnnotationPanel}
+              />
             </div>
           )}
 
-          {/* Changelog view */}
-          {activeTab === 'changelog' && (
-            <ChangelogView changelog={data.changelog} />
+          {/* Slide-out RFI Panel — create mode */}
+          {rfiMode && rfiCreateMeta && (
+            <div className="ics-side-panel">
+              <div className="ics-side-panel-header">
+                <h4 style={{ color: '#e5e7eb', margin: 0, fontSize: '14px' }}>
+                  Create RFI
+                </h4>
+                <button
+                  className="ics-side-panel-close"
+                  onClick={handleCloseRfiPanel}
+                  aria-label="Close RFI panel"
+                >
+                  X
+                </button>
+              </div>
+              <RFIThread
+                problemSetId={problemSetId}
+                targetProblemSetId={rfiMode.targetPsId}
+                targetItemId={rfiMode.itemId}
+                targetItemType={rfiCreateMeta.itemType}
+                problemSetName=""
+                targetProblemSetName={rfiCreateMeta.sourceProblemSetName}
+                onClose={handleCloseRfiPanel}
+              />
+            </div>
+          )}
+
+          {/* Slide-out RFI Panel — thread view */}
+          {viewingRfiId && (
+            <div className="ics-side-panel">
+              <div className="ics-side-panel-header">
+                <h4 style={{ color: '#e5e7eb', margin: 0, fontSize: '14px' }}>
+                  RFI Thread
+                </h4>
+                <button
+                  className="ics-side-panel-close"
+                  onClick={handleCloseRfiPanel}
+                  aria-label="Close RFI panel"
+                >
+                  X
+                </button>
+              </div>
+              <RFIThread
+                problemSetId={problemSetId}
+                rfiId={viewingRfiId}
+                onClose={handleCloseRfiPanel}
+              />
+            </div>
           )}
         </div>
       )}

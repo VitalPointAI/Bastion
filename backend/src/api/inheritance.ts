@@ -348,4 +348,26 @@ router.put('/:id/rfis/:rfiId/status', requireAuth, async (req: Request, res: Res
   }
 });
 
+// ============================================================================
+// Admin: Backfill
+// ============================================================================
+
+/**
+ * POST /api/inheritance/backfill
+ * One-time admin operation: create inheritance subscriptions for all existing
+ * parent-child problem set relationships that were created before Phase 26.
+ */
+router.post('/backfill', requireAuth, async (_req: Request, res: Response) => {
+  try {
+    console.log('[inheritance] Starting backfill of existing relationships...');
+    const result = await inheritanceService.backfillExistingRelationships();
+    console.log(`[inheritance] Backfill complete: ${result.processed} processed, ${result.created} created`);
+    res.json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Backfill failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
 export default router;

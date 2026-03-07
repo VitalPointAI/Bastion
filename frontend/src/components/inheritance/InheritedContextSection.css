@@ -1,4 +1,4 @@
-/* InheritedContextSection - Phase 26 Plan 03 */
+/* InheritedContextSection - Phase 26 Plans 03 & 05 */
 
 .inherited-context-section {
   margin-bottom: 16px;
@@ -168,4 +168,74 @@
   color: #666;
   font-size: 0.85rem;
   font-style: italic;
+}
+
+/* Layout with side panel */
+.ics-with-panel {
+  display: flex;
+  gap: 16px;
+}
+
+.ics-main-area {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Slide-out side panel */
+.ics-side-panel {
+  width: 380px;
+  min-width: 320px;
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid rgba(100, 100, 100, 0.25);
+  border-radius: 8px;
+  background-color: rgba(22, 22, 28, 0.95);
+  animation: ics-slide-in 0.2s ease-out;
+}
+
+@keyframes ics-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.ics-side-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(100, 100, 100, 0.2);
+}
+
+.ics-side-panel-close {
+  background: transparent;
+  border: 1px solid rgba(100, 100, 100, 0.3);
+  color: #888;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.ics-side-panel-close:hover {
+  color: #ccc;
+  border-color: rgba(100, 100, 100, 0.5);
+}
+
+/* RFIs view */
+.ics-rfis {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ics-rfi-section {
+  padding: 8px 0;
 }
