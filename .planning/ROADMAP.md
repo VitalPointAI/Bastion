@@ -752,7 +752,7 @@ Plans:
 **Depends on:** Phase 24, Phase 25, Phase 4.2
 **Research:** Required
 **Research topics:** Contextual AI assistant UX patterns, workflow-aware agent orchestration, recommendation engine design for multi-phase processes, conversational AI in planning tools, agent output rendering patterns (inline, sidebar, overlay)
-**Plans:** TBD
+**Plans:** 5 plans
 
 **Context:**
 BASTION has 19 AI agent roles organized in teams, but their output is largely behind-the-scenes or in dedicated agent views. This phase makes AI agents visible collaborators within each tab — the right agent surfaces the right insight at the right time in the workflow.
@@ -767,7 +767,11 @@ BASTION has 19 AI agent roles organized in teams, but their output is largely be
 7. **Conversational AI Interface** — Optional chat-style interaction with the AI staff for asking questions, requesting analysis, or tasking specific agents
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 29 to create plans)
+- [ ] 29-01-PLAN.md — AI staff type system, shared context, and agent routing config
+- [ ] 29-02-PLAN.md — Backend AI staff module (store, REST API, WebSocket channel)
+- [ ] 29-03-PLAN.md — Frontend panel components (docked sidebar, floating overlay, feed items, badges)
+- [ ] 29-04-PLAN.md — Frontend hooks, service client, chat input, inline annotation state
+- [ ] 29-05-PLAN.md — Integration wiring, inline annotation UI, human verification
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)
 **Goal:** Enable mission setup with participant invitation, command relationship configuration, resource inventory management, and sensor registration with map overlays
