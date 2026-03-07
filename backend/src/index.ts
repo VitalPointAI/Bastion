@@ -48,6 +48,7 @@ import { problemSetSubscriptionStore } from './problem-set/problem-set-subscript
 import inheritanceRouter from './api/inheritance.js';
 import { gateRoutes } from './gates/gate-routes.js';
 import { gateStore } from './gates/gate-store.js';
+import { runMigrations } from './db/migration-runner.js';
 
 dotenv.config();
 
@@ -204,6 +205,13 @@ console.log('Collaboration WebSocket server mounted at /ws/collab');
 server.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+
+  // Run pending database migrations (must run before ensureTable/initialize calls)
+  try {
+    await runMigrations();
+  } catch (error) {
+    console.error('Failed to run migrations:', error);
+  }
 
   // Drop legacy auth tables (idempotent, must run before auth.initialize())
   try {

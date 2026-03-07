@@ -8,7 +8,7 @@
  *
  *   CREATE TABLE IF NOT EXISTS decision_gates (
  *     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
- *     problem_set_id UUID NOT NULL,
+ *     problem_set_id TEXT NOT NULL,
  *     gate_type TEXT NOT NULL,
  *     tab TEXT NOT NULL,
  *     target_item_id TEXT NOT NULL,
@@ -91,7 +91,7 @@ export class GateStore {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS decision_gates (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        problem_set_id UUID NOT NULL,
+        problem_set_id TEXT NOT NULL,
         gate_type TEXT NOT NULL,
         tab TEXT NOT NULL,
         target_item_id TEXT NOT NULL,
@@ -195,7 +195,6 @@ export class GateStore {
     if (filter.gate_type) {
       conditions.push(`gate_type = $${paramIndex}`);
       values.push(filter.gate_type);
-      paramIndex++;
     }
 
     const sql = `SELECT * FROM decision_gates WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC`;
@@ -265,7 +264,6 @@ export class GateStore {
    * Update gate status with decided_by and decided_at fields.
    */
   async updateStatus(id: string, status: string, decidedBy?: string): Promise<DecisionGate> {
-    const pool = getPool();
     const params: UpdateGateParams = { status: status as DecisionGate['status'] };
     if (decidedBy) {
       params.decided_by = decidedBy;

@@ -58,6 +58,9 @@ COPY --from=builder /app/dist ./dist
 # Copy database schema files (needed for init)
 COPY database/ ./database/
 
+# Copy migration SQL files (migration-runner.ts reads from dist/db/migrations/)
+COPY src/db/migrations/ ./dist/db/migrations/
+
 # Set ownership
 RUN chown -R nodejs:nodejs /app
 
