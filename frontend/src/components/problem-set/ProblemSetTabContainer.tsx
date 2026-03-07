@@ -38,6 +38,7 @@ import { DirectTab } from '../tabs/DirectTab';
 import { COPTab } from '../cop/COPTab';
 import { AssessTab } from '../tabs/AssessTab';
 import { copService } from '../../lib/cop-service';
+import { DecisionGateProvider } from '../../context/DecisionGateContext';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -474,10 +475,12 @@ export function ProblemSetTabContainer() {
         </button>
       </nav>
 
-      {/* Tab content */}
-      <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-        {renderTabContent()}
-      </div>
+      {/* Tab content — wrapped with DecisionGateProvider for gate context */}
+      <DecisionGateProvider problemSetId={displayId}>
+        <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+          {renderTabContent()}
+        </div>
+      </DecisionGateProvider>
 
       {/* OrgTreeSidebar — rendered outside tab content to avoid overflow clipping */}
       {orgTreeOpen && <OrgTreeSidebar onClose={() => setOrgTreeOpen(false)} />}
