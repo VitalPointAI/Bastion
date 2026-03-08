@@ -58,6 +58,7 @@ import { requireAuth } from './auth/auth-instance.js';
 import { discoveryRouter, setupDiscoveryWS, getDiscoveryService } from './discovery/index.js';
 import { osintWebhookRouter } from './api/osint-webhook.js';
 import jppRouter from './api/jpp.js';
+import documentRouter from './planning/routes/document-routes.js';
 
 dotenv.config();
 
@@ -203,6 +204,7 @@ app.use('/api/validation', requireAuth, validationRouter);
 app.use('/api/discovery', discoveryRouter);
 app.use('/api/osint', osintWebhookRouter);
 app.use('/api/jpp', requireAuth, jppRouter);
+app.use('/api/documents/planning', requireAuth, documentRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
