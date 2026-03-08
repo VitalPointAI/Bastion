@@ -13,6 +13,8 @@ import { RoleGatedSection } from './RoleGatedSection.tsx';
 import { jppService, type JPPStepProduct, type StepStatus } from '../../lib/jpp-service.ts';
 import { ewmService, type EWMGap } from '../../lib/ewm-service.ts';
 import { GateSubmitButton } from '../governance/index.ts';
+import { DocumentExport } from './DocumentExport.tsx';
+import { DocumentVersionHistory } from './DocumentVersionHistory.tsx';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -734,6 +736,28 @@ export function PlanOrderDevelopment({ problemSetId, jppInstanceId, currentRole 
           Plan approval gate disabled: resolve E-W-M gaps or waive them first
         </div>
       )}
+
+      {/* Section 6: Document Export (only visible after plan approval) */}
+      {stepStatus === 'approved' && (
+        <div style={{ marginTop: '1rem' }}>
+          <DocumentExport
+            problemSetId={problemSetId}
+            jppInstanceId={jppInstanceId}
+            planId={`${jppInstanceId}-plan`}
+            planType={planType}
+            currentRole={currentRole}
+            availableAnnexes={annexes.map((a) => ({ letter: a.letter, title: a.title }))}
+          />
+        </div>
+      )}
+
+      {/* Section 7: Version History (always visible, collapsible) */}
+      <div style={{ marginTop: '1rem' }}>
+        <DocumentVersionHistory
+          problemSetId={problemSetId}
+          planId={`${jppInstanceId}-plan`}
+        />
+      </div>
     </JPPStepLayout>
   );
 }
