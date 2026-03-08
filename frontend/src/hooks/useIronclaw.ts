@@ -69,10 +69,13 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
   const connectWebSocket = useCallback((channelOverride?: string) => {
     if (!mountedRef.current) return;
 
-    // Problem-set-scoped channel is deterministic; global channel comes from API
+    // Problem-set-scoped channel is deterministic; global channel comes from API.
+    // Once we know the global channel (from history API), it's stored in channelRef
+    // so reconnects can reuse it without another API call.
     const channel = channelOverride
-      ?? (problemSetId ? `ironclaw.${problemSetId}` : null);
-    if (!channel) return; // Global mode: wait for channel from history API
+      ?? (problemSetId ? `ironclaw.${problemSetId}` : null)
+      ?? (channelRef.current || null);
+    if (!channel) return; // Global mode first connect: wait for channel from history API
     channelRef.current = channel;
 
     const ws = new WebSocket(WS_BASE_URL);
@@ -195,9 +198,28 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
       })
       .catch((err) => {
         console.error('[useIronclaw] history fetch failed:', err);
-        // Still try to connect for problem-set mode even if history fails
-        if (problemSetId && mountedRef.current) {
+        if (!mountedRef.current) return;
+
+        if (problemSetId) {
+          // Problem-set mode: channel is deterministic, connect directly
           connectWebSocket();
+        } else {
+          // Global mode: channel comes from API which just failed.
+          // Retry history fetch after a short delay to get the channel name.
+          const retryDelay = 2000;
+          reconnectTimerRef.current = setTimeout(() => {
+            if (!mountedRef.current) return;
+            ironclawApi
+              .getHistory(null)
+              .then(({ messages: history, channel }) => {
+                if (!mountedRef.current) return;
+                setMessages(history);
+                connectWebSocket(channel);
+              })
+              .catch((retryErr) => {
+                console.error('[useIronclaw] global history retry failed:', retryErr);
+              });
+          }, retryDelay);
         }
       });
 
