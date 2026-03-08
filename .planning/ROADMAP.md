@@ -432,7 +432,7 @@ Plans:
 **Goal:** Full context propagation with change notification (not auto-overwrite). Override tracking: child overrides flagged for parent visibility. OPORD update propagation: parent OPORD changes → notification to child missions. Upward reporting: tactical COP/execution status → parent campaign COP and Assess tabs. Extends Phase 26 inheritance to full bidirectional flow.
 **Requirements**: [INH-01, INH-02, INH-03, INH-04, INH-05, INH-06, INH-07, INH-08, INH-09, INH-10, INH-11, INH-12, INH-13, INH-14, INH-15, INH-16, INH-17]
 **Depends on:** Phase 37, Phase 26 (strategic environment inheritance)
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 - [x] 38-01-PLAN.md — Foundation types, DB schema, store extensions for all 4 capabilities
