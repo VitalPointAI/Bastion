@@ -88,8 +88,8 @@ function buildCustomNode(
     const nd = nodeDatum as OrgTreeNode;
     const isCurrentUser = nd._problemSetId === currentUserProblemSetId;
 
-    const nodeWidth = 160;
-    const nodeHeight = 72;
+    const nodeWidth = 200;
+    const nodeHeight = 80;
     const rx = 8; // border radius
 
     const bgColor = isCurrentUser ? '#1c1917' : '#111827'; // stone-900 vs gray-900
@@ -114,9 +114,9 @@ function buildCustomNode(
         {/* Echelon symbol above node */}
         <text
           x={0}
-          y={-nodeHeight / 2 - 6}
+          y={-nodeHeight / 2 - 8}
           textAnchor="middle"
-          style={{ fontSize: '11px', fontWeight: 700, fill: '#94a3b8', fontFamily: 'monospace' }}
+          style={{ fontSize: '13px', fontWeight: 700, fill: '#94a3b8', fontFamily: 'monospace' }}
         >
           {ECHELON_SYMBOLS[nd._echelon ?? ''] ?? ''}
         </text>
@@ -140,7 +140,7 @@ function buildCustomNode(
           y={-nodeHeight / 2 + 20}
           textAnchor="middle"
           style={{
-            fontSize: '12px',
+            fontSize: '14px',
             fontWeight: 700,
             fill: isCurrentUser ? '#fef3c7' : '#f9fafb',
             dominantBaseline: 'middle',
@@ -155,7 +155,7 @@ function buildCustomNode(
           y={-nodeHeight / 2 + 40}
           textAnchor="middle"
           style={{
-            fontSize: '10px',
+            fontSize: '12px',
             fill: '#9ca3af',
             dominantBaseline: 'middle',
           }}
@@ -217,17 +217,22 @@ export function OrgTree({ rootProblemSetId, currentUserProblemSetId, onNavigate 
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Center tree on mount
-  const updateTranslate = useCallback(() => {
-    if (containerRef.current) {
-      const { width } = containerRef.current.getBoundingClientRect();
-      setTranslate({ x: width / 2, y: 40 });
-    }
-  }, []);
-
+  // Center tree using ResizeObserver so translate updates when container is laid out
   useEffect(() => {
-    updateTranslate();
-  }, [updateTranslate]);
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0) {
+          setTranslate({ x: width / 2, y: Math.max(60, height * 0.15) });
+        }
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!rootProblemSetId || !userDID) return;
@@ -317,10 +322,10 @@ export function OrgTree({ rootProblemSetId, currentUserProblemSetId, onNavigate 
         pathFunc="step"
         collapsible={true}
         translate={translate}
-        nodeSize={{ x: 200, y: 120 }}
-        separation={{ siblings: 1, nonSiblings: 1.5 }}
+        nodeSize={{ x: 240, y: 130 }}
+        separation={{ siblings: 1.2, nonSiblings: 1.5 }}
         renderCustomNodeElement={customNode}
-        zoom={0.8}
+        zoom={1}
         scaleExtent={{ min: 0.3, max: 2 }}
         pathClassFunc={() => 'stroke-gray-600 stroke-1 fill-none'}
       />
