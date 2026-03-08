@@ -1584,6 +1584,15 @@ export async function seedLangGraphAgents(): Promise<SeedResult[]> {
   const deescalationManagerResult = await seedDeescalationManagerAgent();
   results.push(deescalationManagerResult);
 
+  // Seed all 108 JPP staff agents from agent-library.ts
+  // These are required for the validation runner (Phase 31) to invoke staff agents
+  try {
+    const { seedStaffAgents } = await import('./staff-agent-seeder.js');
+    await seedStaffAgents();
+  } catch (error) {
+    console.error('[AgentSeeder] Staff agent seeding failed:', error);
+  }
+
   // Log summary
   const successful = results.filter(r => r.registered);
   const failed = results.filter(r => r.error);
