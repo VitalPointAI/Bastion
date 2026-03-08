@@ -12,6 +12,9 @@ import { DecisionGateTimeline } from '../governance/index.ts';
 import { EchelonBadge } from './EchelonBadge.tsx';
 import { PlanEmptyState } from './PlanEmptyState.tsx';
 import { StrategicGuidanceStepLayout } from './StrategicGuidanceStepLayout.tsx';
+import { StrategicAssessment } from './steps/StrategicAssessment.tsx';
+import { OperationalApproach } from './steps/OperationalApproach.tsx';
+import { CommanderDirective } from './steps/CommanderDirective.tsx';
 import {
   SG_STEPS,
   SGStepConfig,
@@ -179,12 +182,15 @@ export function StrategicGuidancePlanView({
             aiAgentId={config.aiAgentId}
             governanceGate={config.governanceGate}
           >
-            <div style={{ padding: '1rem', color: '#9ca3af', fontSize: '0.875rem' }}>
-              <p style={{ margin: '0 0 0.5rem', color: '#d1d5db' }}>{config.description}</p>
-              <p style={{ margin: 0, fontStyle: 'italic' }}>
-                Step content will be implemented in Plan 03/04.
-              </p>
-            </div>
+            {stepId === 'strategic_assessment' && (
+              <StrategicAssessment problemSetId={problemSetId} instanceId={instance.id} />
+            )}
+            {stepId === 'operational_approach' && (
+              <OperationalApproach problemSetId={problemSetId} instanceId={instance.id} />
+            )}
+            {stepId === 'commander_directive' && (
+              <CommanderDirective problemSetId={problemSetId} instanceId={instance.id} />
+            )}
           </StrategicGuidanceStepLayout>
         );
       })}
