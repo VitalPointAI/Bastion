@@ -2,94 +2,24 @@
  * Ironclaw HTTP Client
  *
  * Phase 30 Plan 02: HTTP client to the Ironclaw sidecar runtime.
- * Uses native fetch (Node 18+). Supports SSE streaming for chat responses.
- * All requests are HMAC-signed when IRONCLAW_SHARED_SECRET is configured.
+ * Uses native fetch (Node 18+).
+ *
+ * Ironclaw exposes two HTTP surfaces:
+ * - HTTP webhook channel (port 8080): POST /webhook with {content, secret, thread_id}
+ * - Web gateway (port 3000): OpenAI-compatible /v1/chat/completions + web UI
+ *
+ * This client targets the HTTP webhook channel. Authentication is via the
+ * shared secret passed in the request body (not HMAC headers).
  */
 
-import { signRequest } from './hmac-auth.js';
-
 // ---------------------------------------------------------------------------
-// SSE Event interface
+// Webhook response from Ironclaw
 // ---------------------------------------------------------------------------
 
-export interface SSEEvent {
-  event?: string;
-  data: string;
-}
-
-// ---------------------------------------------------------------------------
-// SSE Stream Parser
-// ---------------------------------------------------------------------------
-
-/**
- * Parse an SSE stream (ReadableStream<Uint8Array>) into an async generator
- * of parsed events. Follows the Server-Sent Events specification:
- * - Events separated by double newlines
- * - Lines prefixed with "event:" and "data:"
- * - Lines starting with ":" are comments (ignored)
- */
-export async function* parseSSEStream(
-  stream: ReadableStream<Uint8Array>,
-): AsyncGenerator<SSEEvent> {
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-
-      // Split on double newlines (SSE event boundary)
-      const parts = buffer.split('\n\n');
-      // Last part may be incomplete — keep in buffer
-      buffer = parts.pop() ?? '';
-
-      for (const part of parts) {
-        if (!part.trim()) continue;
-
-        let event: string | undefined;
-        const dataLines: string[] = [];
-
-        for (const line of part.split('\n')) {
-          if (line.startsWith(':')) {
-            // Comment line, skip
-            continue;
-          }
-          if (line.startsWith('event:')) {
-            event = line.slice(6).trim();
-          } else if (line.startsWith('data:')) {
-            dataLines.push(line.slice(5).trim());
-          }
-        }
-
-        if (dataLines.length > 0) {
-          yield { event, data: dataLines.join('\n') };
-        }
-      }
-    }
-
-    // Flush any remaining data in buffer
-    if (buffer.trim()) {
-      const dataLines: string[] = [];
-      let event: string | undefined;
-      for (const line of buffer.split('\n')) {
-        if (line.startsWith(':')) continue;
-        if (line.startsWith('event:')) {
-          event = line.slice(6).trim();
-        } else if (line.startsWith('data:')) {
-          dataLines.push(line.slice(5).trim());
-        }
-      }
-      if (dataLines.length > 0) {
-        yield { event, data: dataLines.join('\n') };
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
+export interface WebhookResponse {
+  message_id: string;
+  status: string;
+  response: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -98,70 +28,74 @@ export async function* parseSSEStream(
 
 export class IronclawClient {
   private baseUrl: string;
+  private secret: string | null;
 
   constructor(baseUrl?: string) {
     this.baseUrl = baseUrl ?? process.env.IRONCLAW_URL ?? 'http://ironclaw:8080';
+    this.secret = process.env.IRONCLAW_SHARED_SECRET || null;
   }
 
   /**
-   * Send a chat message to the Ironclaw sidecar.
-   * Returns the raw ReadableStream for SSE streaming.
+   * Send a message to the Ironclaw sidecar via the webhook channel.
+   * Uses thread_id for conversation continuity across messages.
+   * With wait_for_response=true, blocks until Ironclaw produces a reply.
    */
   async sendMessage(
-    sessionId: string,
+    threadId: string,
     content: string,
-    mentionedAgent?: string,
-  ): Promise<ReadableStream<Uint8Array>> {
-    const path = '/api/chat';
+  ): Promise<WebhookResponse> {
     const body = JSON.stringify({
-      session_id: sessionId,
-      message: content,
-      mentioned_agent: mentionedAgent,
+      content,
+      thread_id: threadId,
+      secret: this.secret,
+      wait_for_response: true,
     });
-    const response = await fetch(`${this.baseUrl}${path}`, {
+
+    const response = await fetch(`${this.baseUrl}/webhook`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...signRequest('POST', path, body) },
+      headers: { 'Content-Type': 'application/json' },
       body,
     });
 
     if (!response.ok) {
+      const text = await response.text().catch(() => '');
       throw new Error(
-        `Ironclaw sendMessage failed: ${response.status} ${response.statusText}`,
+        `Ironclaw sendMessage failed: ${response.status} ${response.statusText} ${text}`,
       );
     }
 
-    if (!response.body) {
-      throw new Error('Ironclaw sendMessage: response body is null');
-    }
-
-    return response.body;
+    return (await response.json()) as WebhookResponse;
   }
 
   /**
-   * Create a new session on the Ironclaw sidecar with a system prompt.
+   * Fire-and-forget: send a message without waiting for the response.
+   * Returns immediately with the message_id and status "accepted".
    */
-  async createSession(
-    sessionId: string,
-    systemPrompt: string,
-  ): Promise<{ session_id: string }> {
-    const path = '/api/sessions';
+  async sendMessageAsync(
+    threadId: string,
+    content: string,
+  ): Promise<WebhookResponse> {
     const body = JSON.stringify({
-      session_id: sessionId,
-      system_prompt: systemPrompt,
+      content,
+      thread_id: threadId,
+      secret: this.secret,
+      wait_for_response: false,
     });
-    const response = await fetch(`${this.baseUrl}${path}`, {
+
+    const response = await fetch(`${this.baseUrl}/webhook`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...signRequest('POST', path, body) },
+      headers: { 'Content-Type': 'application/json' },
       body,
     });
 
     if (!response.ok) {
+      const text = await response.text().catch(() => '');
       throw new Error(
-        `Ironclaw createSession failed: ${response.status} ${response.statusText}`,
+        `Ironclaw sendMessageAsync failed: ${response.status} ${response.statusText} ${text}`,
       );
     }
 
-    return (await response.json()) as { session_id: string };
+    return (await response.json()) as WebhookResponse;
   }
 
   /**
@@ -174,32 +108,6 @@ export class IronclawClient {
       return response.status === 200;
     } catch {
       return false;
-    }
-  }
-
-  /**
-   * Register BASTION as an MCP server that Ironclaw can connect to.
-   */
-  async registerMCPServer(
-    serverUrl: string,
-    tools: Array<{
-      name: string;
-      description: string;
-      inputSchema: Record<string, unknown>;
-    }>,
-  ): Promise<void> {
-    const path = '/api/mcp/register';
-    const body = JSON.stringify({ server_url: serverUrl, tools });
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...signRequest('POST', path, body) },
-      body,
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Ironclaw registerMCPServer failed: ${response.status} ${response.statusText}`,
-      );
     }
   }
 }

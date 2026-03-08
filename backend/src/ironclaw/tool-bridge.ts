@@ -11,12 +11,12 @@
  * - Registration is non-blocking: logs warning if Ironclaw unreachable
  */
 
-import { ironclawClient } from './ironclaw-client.js';
 import { actionPipeline } from './action-pipeline.js';
 import { actionRegistry } from './action-registry.js';
 import type { ActionResult } from './action-pipeline.js';
 import type { IronclawAction, ActionRiskLevel } from './ironclaw-types.js';
 import { PROTECTED_CONFIG_KEYS } from './ironclaw-types.js';
+import { ironclawClient } from './ironclaw-client.js';
 
 // ---------------------------------------------------------------------------
 // MCP Tool Definition
@@ -198,18 +198,6 @@ export class ToolBridge {
    */
   async registerTools(): Promise<void> {
     try {
-      const serverUrl = process.env.APP_URL || 'http://backend:3001';
-
-      // Register tools with Ironclaw via MCP
-      await ironclawClient.registerMCPServer(
-        serverUrl,
-        BASTION_TOOLS.map(({ name, description, inputSchema }) => ({
-          name,
-          description,
-          inputSchema,
-        })),
-      );
-
       // Register each tool's risk level with the action registry
       for (const tool of BASTION_TOOLS) {
         actionRegistry.registerAction(tool.name, tool.riskLevel);
@@ -220,14 +208,24 @@ export class ToolBridge {
       actionRegistry.lock();
 
       console.log(
-        `[tool-bridge] Registered ${BASTION_TOOLS.length} BASTION tools with Ironclaw`,
+        `[tool-bridge] Registered ${BASTION_TOOLS.length} BASTION tool risk levels in action registry`,
       );
+
+      // Verify Ironclaw sidecar is reachable
+      const healthy = await ironclawClient.healthCheck();
+      if (healthy) {
+        console.log('[tool-bridge] Ironclaw sidecar is reachable');
+      } else {
+        console.warn(
+          '[tool-bridge] Ironclaw sidecar is not reachable (tools will work when sidecar starts)',
+        );
+      }
     } catch (err) {
       // Lock even on failure so the canonical ACTION_RISK levels are immutable
       if (!actionRegistry.isLocked()) actionRegistry.lock();
 
       console.warn(
-        '[tool-bridge] Failed to register tools with Ironclaw (sidecar may not be running):',
+        '[tool-bridge] Failed to register tools (sidecar may not be running):',
         err instanceof Error ? err.message : err,
       );
     }

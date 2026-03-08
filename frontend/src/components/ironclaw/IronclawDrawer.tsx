@@ -238,7 +238,7 @@ export function IronclawDrawer({
                   className="w-full px-3 py-2 text-left text-sm text-gray-200
                     hover:bg-slate-700 flex items-center gap-2 transition-colors"
                 >
-                  <svg className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
@@ -269,7 +269,7 @@ export function IronclawDrawer({
               disabled={!inputValue.trim()}
               className="p-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white
                 disabled:opacity-40 disabled:cursor-not-allowed
-                transition-colors flex-shrink-0"
+                transition-colors shrink-0"
               aria-label="Send message"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
