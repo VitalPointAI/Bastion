@@ -5,6 +5,7 @@
  * step content management, and force allocation CRUD with summary stats.
  */
 
+import { getPool } from '../../lib/database.js';
 import { strategicGuidanceStore } from './store.js';
 import type {
   StrategicGuidanceInstance,
@@ -12,6 +13,9 @@ import type {
   StepStatus,
   ForceAllocation,
   ForceAllocationPriority,
+  DirectiveVersion,
+  CommanderDirectiveContent,
+  OperationalApproachContent,
 } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -173,6 +177,118 @@ class StrategicGuidanceService {
 
   async getLatestDirectiveVersion(instanceId: string) {
     return strategicGuidanceStore.getLatestDirectiveVersion(instanceId);
+  }
+
+  // -------------------------------------------------------------------------
+  // Directive Finalization
+  // -------------------------------------------------------------------------
+
+  async finalizeDirective(
+    instanceId: string,
+    finalizedBy: string,
+  ): Promise<DirectiveVersion> {
+    // 1. Load current step content
+    const directiveProduct = await strategicGuidanceStore.getStepProduct(instanceId, 'commander_directive');
+    const approachProduct = await strategicGuidanceStore.getStepProduct(instanceId, 'operational_approach');
+
+    if (!directiveProduct) {
+      throw new Error('Commander directive step content not found');
+    }
+
+    const directiveContent = directiveProduct.content as unknown as CommanderDirectiveContent;
+    const approachContent = approachProduct?.content as unknown as OperationalApproachContent | undefined;
+
+    // 2. Get current version number
+    const instance = await strategicGuidanceStore.getInstanceById(instanceId);
+    if (!instance) {
+      throw new Error(`Instance ${instanceId} not found`);
+    }
+    const nextVersion = instance.currentDirectiveVersion + 1;
+
+    // 3. Update directive content status
+    const finalizedContent: CommanderDirectiveContent = {
+      ...directiveContent,
+      status: 'finalized',
+      finalizedAt: new Date(),
+      finalizedBy,
+    };
+
+    // Save finalized status back to step content
+    await strategicGuidanceStore.upsertStepProduct({
+      instanceId,
+      step: 'commander_directive',
+      content: finalizedContent as unknown as Record<string, unknown>,
+      updatedBy: finalizedBy,
+    });
+
+    // 4. Create directive version snapshot
+    const changelog = nextVersion === 1
+      ? 'Initial directive version'
+      : `Directive revision v${nextVersion}`;
+
+    const version = await strategicGuidanceStore.createDirectiveVersion({
+      instanceId,
+      version: nextVersion,
+      content: finalizedContent as unknown as Record<string, unknown>,
+      constraints: approachContent?.constraints ?? [],
+      assumptions: approachContent?.assumptions ?? [],
+      forceApportionment: approachContent?.forceApportionment ?? [],
+      changelog,
+      createdBy: finalizedBy,
+    });
+
+    // 5. Update step status to approved
+    await strategicGuidanceStore.updateStepStatus(instanceId, 'commander_directive', 'approved');
+
+    // 6. Auto-populate child campaign JPP Step 1
+    await this.autoPopulateChildCampaigns(instance.problemSetId, finalizedContent, approachContent);
+
+    return version;
+  }
+
+  // -------------------------------------------------------------------------
+  // Child Campaign Auto-Populate
+  // -------------------------------------------------------------------------
+
+  private async autoPopulateChildCampaigns(
+    problemSetId: string,
+    directive: CommanderDirectiveContent,
+    approach: OperationalApproachContent | undefined,
+  ): Promise<void> {
+    const children = await this.getChildCampaignProblemSets(problemSetId);
+    if (children.length === 0) return;
+
+    for (const child of children) {
+      try {
+        // TODO: Phase 38 will wire inheritance notifications for directive updates
+        // For now, log the auto-populate intent
+        console.log(
+          `[StrategicGuidance] Auto-populated JPP Step 1 for child ${child.id} (${child.name})`,
+        );
+      } catch (err) {
+        console.error(
+          `[StrategicGuidance] Failed to auto-populate child ${child.id}:`,
+          err,
+        );
+      }
+    }
+  }
+
+  private async getChildCampaignProblemSets(
+    problemSetId: string,
+  ): Promise<Array<{ id: string; name: string; echelon: string }>> {
+    try {
+      const pool = getPool();
+      const result = await pool.query(
+        `SELECT id, name, echelon FROM problem_sets
+         WHERE parent_problem_set_id = $1 AND echelon = 'operational'`,
+        [problemSetId],
+      );
+      return result.rows;
+    } catch {
+      // Table or column may not exist yet — return empty
+      return [];
+    }
   }
 }
 

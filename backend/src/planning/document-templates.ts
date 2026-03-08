@@ -491,6 +491,8 @@ export const CampaignPlanTemplate: DocumentTemplate = {
 
 // ─── Template Registry ──────────────────────────────────────────────────────
 
+import { StrategicDirectiveTemplate } from '../strategic/guidance/directive-template.js';
+
 const templateRegistry: Record<string, DocumentTemplate> = {
   OPLAN: OPLANTemplate,
   CONPLAN: CONPLANTemplate,
@@ -498,6 +500,7 @@ const templateRegistry: Record<string, DocumentTemplate> = {
   CAMPAIGN_PLAN: CampaignPlanTemplate,
   // FRAGORD uses OPORD template with modifications
   FRAGORD: OPORDTemplate,
+  STRATEGIC_DIRECTIVE: StrategicDirectiveTemplate,
 };
 
 /**
