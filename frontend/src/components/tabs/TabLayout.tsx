@@ -14,11 +14,13 @@ export interface TabLayoutProps {
   selectedItem: string;
   onSelectItem: (id: string) => void;
   children: React.ReactNode;
+  /** Optional header slot rendered above sidebar nav (e.g., echelon badge) */
+  header?: ReactNode;
   /** Optional slot for decision history section below sidebar items */
   decisionHistory?: ReactNode;
 }
 
-export function TabLayout({ items, selectedItem, onSelectItem, children, decisionHistory }: TabLayoutProps) {
+export function TabLayout({ items, selectedItem, onSelectItem, children, header, decisionHistory }: TabLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const showSidebar = items.length > 1;
 
@@ -35,6 +37,11 @@ export function TabLayout({ items, selectedItem, onSelectItem, children, decisio
           </button>
           {sidebarOpen && (
             <>
+              {header && (
+                <div className="sidebar-header">
+                  {header}
+                </div>
+              )}
               <nav className="sidebar-nav">
                 {items.map(item => (
                   <button
