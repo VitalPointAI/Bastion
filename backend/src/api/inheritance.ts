@@ -178,6 +178,239 @@ router.get('/:id/inherited-context/changelog', requireAuth, async (req: Request,
 });
 
 // ============================================================================
+// Phase 38-02: Notification Counts
+// ============================================================================
+
+/**
+ * GET /api/problem-sets/:id/notification-counts
+ * Aggregated notification counts for tab badges and PS selector dot indicators.
+ */
+router.get('/:id/notification-counts', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.id as string;
+    const counts = await inheritanceService.getNotificationCounts(problemSetId);
+    res.json({
+      ...counts,
+      total: counts.pendingAcks + counts.unreadChangelog + counts.openRFIs + counts.pendingFRAGOs,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get notification counts failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// Phase 38-02: Interpretation Acknowledgment Routes
+// ============================================================================
+
+/**
+ * POST /api/problem-sets/:id/annotations/:annotationId/acknowledge
+ * Parent acknowledges/clarifies/corrects a child's interpretation annotation.
+ */
+router.post('/:id/annotations/:annotationId/acknowledge', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const body = interpretationAckSchema.parse(req.body);
+    const problemSetId = req.params.id as string;
+    const annotationId = req.params.annotationId as string;
+    const userDid = (req as unknown as { userDid: string }).userDid;
+
+    const ack = await inheritanceService.acknowledgeInterpretation(
+      annotationId,
+      problemSetId,
+      body.action,
+      body.comment ?? null,
+      userDid,
+    );
+
+    res.status(201).json(ack);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: (error as z.ZodError).issues });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Acknowledge interpretation failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/problem-sets/:id/annotations/:annotationId/acknowledgment
+ * Get existing interpretation acknowledgment for an annotation.
+ */
+router.get('/:id/annotations/:annotationId/acknowledgment', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const annotationId = req.params.annotationId as string;
+    const ack = await inheritanceStore.getInterpretationAckForAnnotation(annotationId);
+    res.json(ack);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get interpretation acknowledgment failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// Phase 38-02: Modification Request Routes
+// ============================================================================
+
+/**
+ * POST /api/problem-sets/:id/modification-requests
+ * Create a modification request RFI for inherited content.
+ */
+router.post('/:id/modification-requests', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const body = modificationRequestSchema.parse(req.body);
+    const problemSetId = req.params.id as string;
+    const userDid = (req as unknown as { userDid: string }).userDid;
+
+    const rfi = await inheritanceService.createModificationRequest(
+      problemSetId,
+      body.targetProblemSetId,
+      body.targetItemId,
+      body.targetItemType,
+      body.subject,
+      body.description,
+      userDid,
+    );
+
+    res.status(201).json(rfi);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: (error as z.ZodError).issues });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create modification request failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * PUT /api/problem-sets/:id/modification-requests/:rfiId/resolve
+ * Resolve a modification request (approve or deny).
+ */
+router.put('/:id/modification-requests/:rfiId/resolve', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const body = resolveModificationRequestSchema.parse(req.body);
+    const rfiId = req.params.rfiId as string;
+    const userDid = (req as unknown as { userDid: string }).userDid;
+
+    await inheritanceService.resolveModificationRequest(
+      rfiId,
+      body.resolution,
+      body.comment,
+      userDid,
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: (error as z.ZodError).issues });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Resolve modification request failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// Phase 38-02: Guidance Request Routes
+// ============================================================================
+
+/**
+ * POST /api/problem-sets/:id/guidance-requests
+ * Create a guidance request RFI to a parent/ancestor PS.
+ */
+router.post('/:id/guidance-requests', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const body = guidanceRequestSchema.parse(req.body);
+    const problemSetId = req.params.id as string;
+    const userDid = (req as unknown as { userDid: string }).userDid;
+
+    const rfi = await inheritanceService.createGuidanceRequest(
+      problemSetId,
+      body.targetProblemSetId,
+      body.subject,
+      body.situationDescription,
+      userDid,
+    );
+
+    res.status(201).json(rfi);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: (error as z.ZodError).issues });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Create guidance request failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// Phase 38-02: RFI by Subtype Route
+// ============================================================================
+
+/**
+ * GET /api/problem-sets/:id/rfis/by-subtype/:subtype
+ * Get RFIs filtered by subtype (clarification, modification_request, guidance_request).
+ */
+router.get('/:id/rfis/by-subtype/:subtype', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.id as string;
+    const subtype = req.params.subtype as string;
+
+    const validSubtypes = ['clarification', 'modification_request', 'guidance_request'];
+    if (!validSubtypes.includes(subtype)) {
+      return res.status(400).json({ error: `Invalid subtype. Must be one of: ${validSubtypes.join(', ')}` });
+    }
+
+    const rfis = await inheritanceStore.getRFIsBySubtype(
+      problemSetId,
+      subtype as 'clarification' | 'modification_request' | 'guidance_request',
+    );
+    res.json(rfis);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get RFIs by subtype failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// Phase 38-02: Read-Only Enforcement Middleware
+// ============================================================================
+
+/**
+ * Middleware guard that blocks mutations on inherited content.
+ * Import this from other route files to protect document/item mutation routes.
+ * Returns 403 if the targeted item is inherited content.
+ */
+export function inheritedContentGuard(
+  req: Request,
+  res: Response,
+  next: () => void,
+): void {
+  const problemSetId = req.params.id as string;
+  const itemId = req.params.itemId || (req.body as { itemId?: string })?.itemId;
+
+  if (!problemSetId || !itemId) {
+    next();
+    return;
+  }
+
+  inheritanceService.enforceReadOnly(problemSetId, itemId as string)
+    .then(() => next())
+    .catch((error: Error & { statusCode?: number }) => {
+      if (error.statusCode === 403) {
+        res.status(403).json({ error: error.message });
+      } else {
+        console.error('Inherited content guard error:', error.message);
+        res.status(500).json({ error: 'Failed to check inherited content status' });
+      }
+    });
+}
+
+// ============================================================================
 // Annotation Routes
 // ============================================================================
 
