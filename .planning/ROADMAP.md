@@ -55,7 +55,7 @@ None
 - [x] **Phase 34: Plan Tab Echelon Routing & MDMP Tactical Wiring** - Plan tab reads echelon from ProblemSetContext and renders appropriate workflow (JPP for operational, MDMP for tactical, placeholder for strategic); wire existing MDMP module into Plan tab with sidebar navigation, role-gated sections, governance gates, AI agent panels
 - [x] **Phase 35: Mission Creation from OPORD & Problem Set Alignment** - Extend Phase 33 Plan 10 document distribution to trigger tactical child problem set creation from OPORD Step 7; auto-populate with inherited context; initialize MDMP at Receipt of Mission; merge existing mission module into problem set framework (completed 2026-03-08)
 - [x] **Phase 36: Strategic Guidance Workflow** - Build strategic level Plan tab workflow for objective setting, force apportionment, constraint definition, directive drafting; strategic directive output becomes initiating directive for child campaign JPP Step 1 (completed 2026-03-08)
-- [ ] **Phase 37: Training Assessment Loop** - AAR capture at tactical training events, METL proficiency tracking (T/P/U per task), upward aggregation from training events through exercises to training strategy readiness updates
+- [x] **Phase 37: Training Assessment Loop** - AAR capture at tactical training events, METL proficiency tracking (T/P/U per task), upward aggregation from training events through exercises to training strategy readiness updates (completed 2026-03-08)
 - [ ] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign
 
 ## Phase Details
@@ -417,15 +417,15 @@ Plans:
 **Goal:** AAR capture at tactical training events. METL proficiency tracking (T/P/U per task). Upward aggregation: training events → exercise trends → training strategy readiness updates. Training Strategy Assess tab shows METL dashboard. Exercise Assess tab shows event-level trends. Assessment flows UP through the hierarchy (distinct from operational Assess which measures campaign objective progress).
 **Requirements:** [TAL-01, TAL-02, TAL-03, TAL-04, TAL-05, TAL-06, TAL-07, TAL-08, TAL-09, TAL-10, TAL-11, TAL-12, TAL-13, TAL-14, TAL-15]
 **Depends on:** Phase 35, Phase 22 (training/operational mode)
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans executed
 
 Plans:
-- [ ] 37-01-PLAN.md — Assessment types, database stores (AAR, METL, MOE, MOP)
-- [ ] 37-02-PLAN.md — Aggregation/decay services and REST API routes
-- [ ] 37-03-PLAN.md — AssessEchelonRouter, operational MOE/MOP views, container wiring
-- [ ] 37-04-PLAN.md — Training tactical assess: AAR form and METL task assessment
-- [ ] 37-05-PLAN.md — Training strategic/exercise assess: METL dashboard and event timeline
-- [ ] 37-06-PLAN.md — AI observation/rating suggestions and reframing auto-trigger
+- [x] 37-01-PLAN.md — Assessment types, database stores (AAR, METL, MOE, MOP)
+- [x] 37-02-PLAN.md — Aggregation/decay services and REST API routes
+- [x] 37-03-PLAN.md — AssessEchelonRouter, operational MOE/MOP views, container wiring
+- [x] 37-04-PLAN.md — Training tactical assess: AAR form and METL task assessment
+- [x] 37-05-PLAN.md — Training strategic/exercise assess: METL dashboard and event timeline
+- [x] 37-06-PLAN.md — AI observation/rating suggestions and reframing auto-trigger
 
 ### Phase 38: Inheritance Deepening
 
