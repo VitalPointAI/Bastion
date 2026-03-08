@@ -88,9 +88,10 @@ services:
     entrypoint: ["/bin/sh", "-c", "sleep infinity | ironclaw run --no-onboard"]
     restart: unless-stopped
     environment:
-      # LLM backend — Anthropic for coding tasks
+      # LLM backend — Anthropic via OAuth (subscription) or API key (fallback)
       LLM_BACKEND: anthropic
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_OAUTH_TOKEN: ${ANTHROPIC_OAUTH_TOKEN:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_MODEL: claude-sonnet-4-6
       # Database (ironclaw's own pgvector instance)
       DATABASE_URL: postgresql://ironclaw:${IRONCLAW_DB_PASSWORD}@ironclaw-postgres:5432/ironclaw

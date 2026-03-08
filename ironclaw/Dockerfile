@@ -1,21 +1,32 @@
 # Ironclaw Agent Sidecar
-# Downloads pre-built release binary from GitHub releases.
-# Pin version via build arg: docker build --build-arg IRONCLAW_VERSION=0.16.1 .
+# Builds from source (main branch) to pick up latest features (Anthropic OAuth).
+# Multi-stage build: Rust builder → slim runtime image.
 
-ARG IRONCLAW_VERSION=0.16.1
+FROM rust:1.87-bookworm AS builder
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config libssl-dev git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Clone and build from main (includes PR #384: Anthropic OAuth support)
+ARG IRONCLAW_COMMIT=main
+RUN git clone --depth 1 https://github.com/nearai/ironclaw.git . \
+    && git checkout ${IRONCLAW_COMMIT}
+
+RUN cargo build --release \
+    && strip target/release/ironclaw
+
+# --- Runtime stage ---
 FROM debian:bookworm-slim
-
-ARG IRONCLAW_VERSION
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates libssl3 curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL \
-    "https://github.com/nearai/ironclaw/releases/download/v${IRONCLAW_VERSION}/ironclaw-x86_64-unknown-linux-gnu.tar.gz" \
-    | tar -xz --strip-components=1 -C /usr/local/bin ironclaw-x86_64-unknown-linux-gnu/ironclaw \
-    && chmod +x /usr/local/bin/ironclaw
+COPY --from=builder /build/target/release/ironclaw /usr/local/bin/ironclaw
+RUN chmod +x /usr/local/bin/ironclaw
 
 RUN useradd -m -u 1000 -s /bin/bash ironclaw
 USER ironclaw

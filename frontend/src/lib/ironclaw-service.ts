@@ -100,37 +100,51 @@ class IronclawApi {
 
   /**
    * Send a chat message to Ironclaw. Response is 202 (streaming via WebSocket).
+   * When problemSetId is null, sends to the global (user-scoped) endpoint.
    */
   async sendMessage(
-    problemSetId: string,
+    problemSetId: string | null,
     content: string,
     mentionedAgent?: string,
   ): Promise<void> {
-    await this.fetch<void>(
-      `/api/ironclaw/${encodeURIComponent(problemSetId)}/message`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ content, mentionedAgent }),
-      },
-    );
+    const path = problemSetId
+      ? `/api/ironclaw/${encodeURIComponent(problemSetId)}/message`
+      : '/api/ironclaw/global/message';
+
+    await this.fetch<void>(path, {
+      method: 'POST',
+      body: JSON.stringify({ content, mentionedAgent }),
+    });
   }
 
   /**
-   * Get chat history for a problem set.
+   * Get chat history. When problemSetId is null, fetches user's global history.
+   * Returns messages and optionally the WebSocket channel (global mode only).
    */
   async getHistory(
-    problemSetId: string,
+    problemSetId: string | null,
     limit?: number,
-  ): Promise<IronclawChatMessage[]> {
+  ): Promise<{ messages: IronclawChatMessage[]; channel?: string }> {
     const params = new URLSearchParams();
     if (limit !== undefined) params.append('limit', String(limit));
     const qs = params.toString();
 
-    const rows = await this.fetch<Record<string, unknown>[]>(
-      `/api/ironclaw/${encodeURIComponent(problemSetId)}/history${qs ? `?${qs}` : ''}`,
+    const basePath = problemSetId
+      ? `/api/ironclaw/${encodeURIComponent(problemSetId)}/history`
+      : '/api/ironclaw/global/history';
+
+    const result = await this.fetch<Record<string, unknown>[] | { messages: Record<string, unknown>[]; channel: string }>(
+      `${basePath}${qs ? `?${qs}` : ''}`,
     );
 
-    return rows.map(snakeToCamelMessage);
+    // Global endpoint returns { messages, channel }, PS endpoint returns array
+    if (Array.isArray(result)) {
+      return { messages: result.map(snakeToCamelMessage) };
+    }
+    return {
+      messages: (result.messages ?? []).map(snakeToCamelMessage),
+      channel: result.channel,
+    };
   }
 
   // ==========================================================================

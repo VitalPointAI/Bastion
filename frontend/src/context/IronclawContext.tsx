@@ -60,7 +60,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         hasUnread={ironclaw.hasUnread}
       />
 
-      {/* Slide-out drawer -- renders globally */}
+      {/* Slide-out drawer -- renders globally, works with or without a problem set */}
       <IronclawDrawer
         isOpen={ironclaw.isOpen}
         onClose={ironclaw.closeDrawer}
@@ -68,7 +68,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         onSendMessage={ironclaw.sendMessage}
         onActionDecision={ironclaw.handleActionDecision}
         isLoading={ironclaw.isLoading}
-        noProblemSet={!activeProblemSetId}
+        isGlobalMode={!activeProblemSetId}
       />
     </IronclawContext.Provider>
   );

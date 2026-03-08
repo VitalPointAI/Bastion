@@ -4,8 +4,11 @@
  * Manages: drawer open/close, chat messages, WebSocket connection,
  * message send with optimistic update, action confirmations, unread state.
  *
+ * Supports two modes:
+ * - Problem-set-scoped: channel ironclaw.{problemSetId}, full specialist + action support
+ * - Global (no problem set): channel ironclaw._global, per-user conversation, no actions
+ *
  * WebSocket pattern follows useStaffNotifications (exponential backoff reconnect).
- * Channel: ironclaw.{problemSetId}
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -63,10 +66,13 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
 
   const connectWebSocketRef = useRef<(() => void) | undefined>(undefined);
 
-  const connectWebSocket = useCallback(() => {
-    if (!problemSetId || !mountedRef.current) return;
+  const connectWebSocket = useCallback((channelOverride?: string) => {
+    if (!mountedRef.current) return;
 
-    const channel = `ironclaw.${problemSetId}`;
+    // Problem-set-scoped channel is deterministic; global channel comes from API
+    const channel = channelOverride
+      ?? (problemSetId ? `ironclaw.${problemSetId}` : null);
+    if (!channel) return; // Global mode: wait for channel from history API
     channelRef.current = channel;
 
     const ws = new WebSocket(WS_BASE_URL);
@@ -118,7 +124,7 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
         // Regular message -- append to list
         const chatMsg: IronclawChatMessage = {
           id: (incoming.id ?? crypto.randomUUID()) as string,
-          problemSetId: (incoming.problem_set_id ?? incoming.problemSetId ?? problemSetId) as string,
+          problemSetId: (incoming.problem_set_id ?? incoming.problemSetId ?? problemSetId ?? '_global') as string,
           content: (incoming.content ?? '') as string,
           sender: (incoming.sender ?? 'ironclaw') as IronclawChatMessage['sender'],
           specialistId: (incoming.specialist_id ?? incoming.specialistId) as string | undefined,
@@ -177,26 +183,23 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
   useEffect(() => {
     mountedRef.current = true;
 
-    if (!problemSetId) {
-      setMessages([]);
-      setIsConnected(false);
-      return;
-    }
-
-    // Fetch history
+    // Fetch history, then connect WebSocket.
+    // Global mode: history response includes the per-user channel name.
     ironclawApi
       .getHistory(problemSetId)
-      .then((history) => {
-        if (mountedRef.current) {
-          setMessages(history);
-        }
+      .then(({ messages: history, channel }) => {
+        if (!mountedRef.current) return;
+        setMessages(history);
+        // Connect with the channel from API (global) or derived (problem set)
+        connectWebSocket(channel);
       })
       .catch((err) => {
         console.error('[useIronclaw] history fetch failed:', err);
+        // Still try to connect for problem-set mode even if history fails
+        if (problemSetId && mountedRef.current) {
+          connectWebSocket();
+        }
       });
-
-    // Connect WebSocket
-    connectWebSocket();
 
     return () => {
       mountedRef.current = false;
@@ -247,12 +250,10 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
 
   const sendMessage = useCallback(
     async (content: string, mentionedAgent?: string): Promise<void> => {
-      if (!problemSetId) return;
-
       // Optimistic user message
       const userMessage: IronclawChatMessage = {
         id: crypto.randomUUID(),
-        problemSetId,
+        problemSetId: problemSetId ?? '_global',
         content,
         sender: 'user',
         createdAt: new Date().toISOString(),

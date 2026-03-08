@@ -21,6 +21,27 @@ import type {
 const SERVICE_DID = 'did:system:ironclaw-service';
 
 // ---------------------------------------------------------------------------
+// Global (non-problem-set) scope helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive a DB-safe scope identifier for a user's global conversation.
+ * Stored in problem_set_id column — keeps existing schema unchanged.
+ */
+function globalScopeId(userDid: string): string {
+  // Replace non-alphanumeric chars to make it safe for channel names too
+  return `_global_${userDid.replace(/[^a-zA-Z0-9]/g, '_')}`;
+}
+
+/**
+ * Derive a WebSocket channel name for a user's global conversation.
+ * Must match CHANNEL_NAME_PATTERN.
+ */
+function globalChannelId(userDid: string): string {
+  return globalScopeId(userDid);
+}
+
+// ---------------------------------------------------------------------------
 // WebSocket channel helper
 // ---------------------------------------------------------------------------
 
@@ -223,6 +244,103 @@ export class IronclawService {
       '[ironclaw-service] Startup init failed after retries. ' +
         'Ironclaw features will be unavailable until the sidecar is reachable.',
     );
+  }
+
+  /**
+   * Handle a global (no problem set) user message.
+   * Scoped per-user with a dedicated thread and simplified system prompt.
+   */
+  async handleGlobalMessage(
+    userDid: string,
+    content: string,
+  ): Promise<void> {
+    const globalScope = globalScopeId(userDid);
+
+    // 1. Get or create per-user global session
+    const session = await ironclawStore.getOrCreateSession(globalScope, userDid);
+
+    // 2. Persist user message
+    const userMsg = await ironclawStore.addMessage({
+      problem_set_id: globalScope,
+      content,
+      sender: 'user',
+      specialist_id: null,
+      specialist_display_name: null,
+      delegated_by: null,
+      action_card: null,
+      step_progress: null,
+    });
+
+    // Publish to user's global WebSocket channel
+    await publishToChannel(globalChannelId(userDid), 'ironclaw.user-message', userMsg);
+
+    // 3. Send to Ironclaw webhook
+    const result = await ironclawClient.sendMessage(session.id, content);
+
+    // 4. Process the response (uses global channel)
+    if (result.response) {
+      await this.processGlobalResponse(userDid, result.response);
+    }
+  }
+
+  /**
+   * Process a response for a global (non-problem-set) conversation.
+   */
+  private async processGlobalResponse(
+    userDid: string,
+    responseText: string,
+  ): Promise<void> {
+    const globalScope = globalScopeId(userDid);
+
+    let parsed: Record<string, unknown> | null = null;
+    try {
+      parsed = JSON.parse(responseText) as Record<string, unknown>;
+    } catch {
+      // Plain text
+    }
+
+    const specialistId = (parsed?.specialist_id as string) ?? null;
+    const specialistDisplayName = (parsed?.specialist_display_name as string) ?? null;
+    const sender: IronclawChatMessage['sender'] = specialistId ? 'specialist' : 'ironclaw';
+    const delegatedBy = specialistId ? 'ironclaw' : null;
+
+    const messageContent = parsed
+      ? (parsed.content as string) ?? (parsed.text as string) ?? responseText
+      : responseText;
+
+    if (!messageContent) return;
+
+    // No action cards in global mode — actions require a problem set context
+    const chatMsg = await ironclawStore.addMessage({
+      problem_set_id: globalScope,
+      content: messageContent,
+      sender,
+      specialist_id: specialistId,
+      specialist_display_name: specialistDisplayName,
+      delegated_by: delegatedBy,
+      action_card: null,
+      step_progress: null,
+    });
+
+    await publishToChannel(globalChannelId(userDid), 'ironclaw.response', chatMsg);
+  }
+
+  /**
+   * Get chat history for a user's global (non-problem-set) conversation.
+   */
+  async getGlobalHistory(
+    userDid: string,
+    limit?: number,
+  ): Promise<IronclawChatMessage[]> {
+    return ironclawStore.getHistory(globalScopeId(userDid), limit);
+  }
+
+  /**
+   * Get the WebSocket channel name for a user's global conversation.
+   * Frontend needs this to subscribe to the correct channel.
+   */
+  getGlobalChannel(userDid: string): string {
+    return `ironclaw.${globalChannelId(userDid)}`;
   }
 
   /**

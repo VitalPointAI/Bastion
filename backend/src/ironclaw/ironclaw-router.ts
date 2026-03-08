@@ -51,6 +51,75 @@ ironclawRouter.get('/health', async (_req: Request, res: Response) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Global (no problem set) endpoints — scoped per user
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /global/message
+ * Send a chat message to Ironclaw without a problem set context.
+ * Conversation is scoped to the authenticated user.
+ *
+ * Body: { content: string }
+ * Returns: 202 Accepted (response delivered via WebSocket channel ironclaw._global_<did>)
+ */
+ironclawRouter.post('/global/message', async (req: Request, res: Response) => {
+  const { content } = req.body as { content?: string };
+
+  if (!content || typeof content !== 'string' || !content.trim()) {
+    res.status(400).json({ error: 'content is required and must be a non-empty string' });
+    return;
+  }
+
+  const userDid = getUserDid(req);
+
+  try {
+    ironclawService
+      .handleGlobalMessage(userDid, content.trim())
+      .catch((err) => {
+        console.error(`[ironclaw-router] handleGlobalMessage error (user=${userDid}):`, err);
+      });
+
+    res.status(202).json({ accepted: true });
+  } catch (err) {
+    console.error('[ironclaw-router] Global message endpoint error:', err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : 'Internal server error',
+    });
+  }
+});
+
+/**
+ * GET /global/history
+ * Retrieve chat history for the authenticated user's global conversation.
+ *
+ * Query: limit (optional, default 100)
+ * Returns: { messages: IronclawChatMessage[], channel: string }
+ * The `channel` field is the user's WebSocket channel for subscribing.
+ */
+ironclawRouter.get('/global/history', async (req: Request, res: Response) => {
+  const userDid = getUserDid(req);
+  const limitParam = req.query.limit;
+  const limit = limitParam ? Number(limitParam as string) : undefined;
+
+  try {
+    const history = await ironclawService.getGlobalHistory(userDid, limit);
+    res.json({
+      messages: history,
+      channel: ironclawService.getGlobalChannel(userDid),
+    });
+  } catch (err) {
+    console.error('[ironclaw-router] Global history endpoint error:', err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : 'Internal server error',
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Problem-set-scoped endpoints
+// ---------------------------------------------------------------------------
+
 /**
  * POST /:problemSetId/message
  * Send a chat message to Ironclaw. Response streamed via WebSocket.
