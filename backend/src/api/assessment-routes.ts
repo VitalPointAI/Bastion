@@ -15,6 +15,8 @@ import { moeStore } from '../assessment/moe-store.js';
 import { mopStore } from '../assessment/mop-store.js';
 import { aggregationService } from '../assessment/aggregation-service.js';
 import { decayService } from '../assessment/decay-service.js';
+import { aiSuggestionService } from '../assessment/ai-suggestion-service.js';
+import { getPool } from '../lib/database.js';
 
 const router = Router();
 
@@ -165,7 +167,7 @@ router.patch('/aars/:id', async (req: Request, res: Response) => {
   }
 });
 
-/** POST /aars/:id/finalize -- finalize AAR, triggers aggregation */
+/** POST /aars/:id/finalize -- finalize AAR, triggers aggregation + reframing check */
 router.post('/aars/:id/finalize', async (req: Request, res: Response) => {
   try {
     const input = FinalizeAARSchema.parse(req.body);
@@ -173,6 +175,20 @@ router.post('/aars/:id/finalize', async (req: Request, res: Response) => {
 
     // Trigger upward aggregation after finalization
     await aggregationService.propagateRatings(aar.id);
+
+    // Check reframing trigger for operational mode problem sets
+    try {
+      const pool = getPool();
+      const psResult = await pool.query(
+        'SELECT mode FROM problem_sets WHERE id = $1',
+        [aar.problemSetId],
+      );
+      if (psResult.rows.length > 0 && psResult.rows[0].mode === 'operational') {
+        await aggregationService.checkReframingTrigger(aar.problemSetId);
+      }
+    } catch (triggerErr) {
+      console.warn('[assessment-routes] Reframing trigger check failed (non-blocking):', triggerErr);
+    }
 
     res.json(aar);
   } catch (error) {
@@ -205,6 +221,79 @@ router.patch('/aars/observations/:id', async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     res.status(error instanceof z.ZodError ? 400 : 500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// AI Suggestion Endpoints
+// ============================================================================
+
+/** POST /aars/:id/ai-suggestions -- generate AI observation suggestions for an AAR */
+router.post('/aars/:id/ai-suggestions', async (req: Request, res: Response) => {
+  try {
+    const aarId = req.params.id as string;
+
+    // Get the AAR
+    const aar = await aarStructuredStore.getById(aarId);
+    if (!aar) {
+      res.status(404).json({ error: 'AAR not found' });
+      return;
+    }
+
+    // Get METL tasks for the problem set
+    const metlTasks = await metlStore.getTasksByProblemSet(aar.problemSetId);
+
+    // Generate AI suggestions
+    const suggestions = await aiSuggestionService.suggestObservations(aar, metlTasks);
+
+    // Persist each suggestion as an observation with suggestedByAi=true
+    const createdObservations = [];
+    for (const suggestion of suggestions) {
+      const observation = await aarStructuredStore.addObservation({
+        aarId,
+        observationType: suggestion.observationType,
+        content: suggestion.content,
+        metlTaskId: suggestion.metlTaskId || undefined,
+        suggestedByAi: true,
+        createdBy: 'ai:assessment-observer',
+      });
+      createdObservations.push(observation);
+    }
+
+    res.status(201).json(createdObservations);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
+  }
+});
+
+/** POST /metl/assessments/ai-suggestions -- generate AI rating suggestions */
+router.post('/metl/assessments/ai-suggestions', async (req: Request, res: Response) => {
+  try {
+    const { aarId } = req.body as { aarId?: string };
+    if (!aarId) {
+      res.status(400).json({ error: 'aarId is required' });
+      return;
+    }
+
+    // Get AAR to find problem set
+    const aar = await aarStructuredStore.getById(aarId);
+    if (!aar) {
+      res.status(404).json({ error: 'AAR not found' });
+      return;
+    }
+
+    // Get METL tasks and observations for the AAR
+    const metlTasks = await metlStore.getTasksByProblemSet(aar.problemSetId);
+    const observations = await aarStructuredStore.listObservations(aarId);
+
+    // Generate AI rating suggestions (NOT auto-created -- O/C reviews)
+    const suggestions = await aiSuggestionService.suggestRatings(metlTasks, observations);
+
+    res.json(suggestions);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
   }
 });
 
@@ -337,11 +426,19 @@ router.get('/moes/problem-set/:problemSetId', async (req: Request, res: Response
   }
 });
 
-/** PATCH /moes/:id/status -- update MOE status/trend */
+/** PATCH /moes/:id/status -- update MOE status/trend, check reframing trigger */
 router.patch('/moes/:id/status', async (req: Request, res: Response) => {
   try {
     const input = UpdateStatusSchema.parse(req.body);
     const moe = await moeStore.updateStatus(req.params.id as string, input.status, input.trend);
+
+    // Check reframing trigger after MOE status change
+    try {
+      await aggregationService.checkReframingTrigger(moe.problemSetId);
+    } catch (triggerErr) {
+      console.warn('[assessment-routes] Reframing trigger check failed (non-blocking):', triggerErr);
+    }
+
     res.json(moe);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -415,11 +512,19 @@ router.get('/mops/problem-set/:problemSetId', async (req: Request, res: Response
   }
 });
 
-/** PATCH /mops/:id/status -- update MOP status/trend */
+/** PATCH /mops/:id/status -- update MOP status/trend, check reframing trigger */
 router.patch('/mops/:id/status', async (req: Request, res: Response) => {
   try {
     const input = UpdateStatusSchema.parse(req.body);
     const mop = await mopStore.updateStatus(req.params.id as string, input.status, input.trend);
+
+    // Check reframing trigger after MOP status change
+    try {
+      await aggregationService.checkReframingTrigger(mop.problemSetId);
+    } catch (triggerErr) {
+      console.warn('[assessment-routes] Reframing trigger check failed (non-blocking):', triggerErr);
+    }
+
     res.json(mop);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

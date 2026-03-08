@@ -15,6 +15,8 @@ import { moeStore } from './moe-store.js';
 import { mopStore } from './mop-store.js';
 import { decayService } from './decay-service.js';
 import { getPool } from '../lib/database.js';
+import { gateStore } from '../gates/gate-store.js';
+import { GateType } from '../gates/gate-types.js';
 
 class AggregationService {
   /**
@@ -88,8 +90,10 @@ class AggregationService {
    * - 2+ declining MOEs, OR
    * - 3+ red MOPs
    *
+   * When triggered, creates a governance gate suggestion of type 'reframing'
+   * with status 'pending' for commander review.
+   *
    * Returns true if reframing suggestion should fire.
-   * Actual gate creation will be wired in Plan 06.
    */
   async checkReframingTrigger(problemSetId: string): Promise<boolean> {
     // Get MOEs and MOPs for the problem set
@@ -109,6 +113,48 @@ class AggregationService {
         `[aggregation] Reframing trigger FIRED for problem set ${problemSetId}: ` +
         `${decliningMOEs} declining MOE(s), ${redMOPs} red MOP(s)`,
       );
+
+      // Build descriptive reason string
+      const reasons: string[] = [];
+      if (decliningMOEs >= 2) {
+        reasons.push(`${decliningMOEs} MOEs showing declining trend`);
+      }
+      if (redMOPs >= 3) {
+        reasons.push(`${redMOPs} MOPs at red status`);
+      }
+      const description =
+        `Assessment-driven reframing recommended: ${reasons.join('; ')}. ` +
+        'Current operational approach may need re-evaluation based on assessment data.';
+
+      // Check if there is already a pending reframing gate for this problem set
+      try {
+        const existingGates = await gateStore.findByFilter({
+          problem_set_id: problemSetId,
+          gate_type: GateType.reframing,
+          status: 'pending' as any,
+        });
+
+        if (existingGates.length > 0) {
+          console.log(
+            `[aggregation] Pending reframing gate already exists for ${problemSetId}, skipping creation`,
+          );
+          return true;
+        }
+
+        // Create a new reframing gate suggestion
+        await gateStore.create({
+          problem_set_id: problemSetId,
+          gate_type: GateType.reframing,
+          tab: 'assess',
+          target_item_id: `reframing-${problemSetId}-${Date.now()}`,
+          target_item_type: 'assessment-reframing',
+          target_item_title: 'Assessment-Driven Reframing Recommendation',
+        });
+
+        console.log(`[aggregation] Reframing gate created for problem set ${problemSetId}`);
+      } catch (gateError) {
+        console.error('[aggregation] Failed to create reframing gate:', gateError);
+      }
     }
 
     return shouldTrigger;
