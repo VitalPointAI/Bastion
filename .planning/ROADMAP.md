@@ -52,7 +52,7 @@ None
 - [x] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED) (completed 2026-03-07)
 - [ ] **Phase 28: Embedded DAO Governance at Decision Gates** - Move DAO governance from dedicated tab into contextual workflow decision gates; proposals trigger at natural planning decision points (objective approval, COA selection, order release) (INSERTED)
 - [ ] **Phase 29: Contextual AI Staff Integration** - Surface AI agent output contextually per tab; per-tab AI assistant aware of workflow phase; recommendation engine tied to doctrinal workflow position (INSERTED)
-- [ ] **Phase 34: Plan Tab Echelon Routing & MDMP Tactical Wiring** - Plan tab reads echelon from ProblemSetContext and renders appropriate workflow (JPP for operational, MDMP for tactical, placeholder for strategic); wire existing MDMP module into Plan tab with sidebar navigation, role-gated sections, governance gates, AI agent panels
+- [x] **Phase 34: Plan Tab Echelon Routing & MDMP Tactical Wiring** - Plan tab reads echelon from ProblemSetContext and renders appropriate workflow (JPP for operational, MDMP for tactical, placeholder for strategic); wire existing MDMP module into Plan tab with sidebar navigation, role-gated sections, governance gates, AI agent panels
 - [x] **Phase 35: Mission Creation from OPORD & Problem Set Alignment** - Extend Phase 33 Plan 10 document distribution to trigger tactical child problem set creation from OPORD Step 7; auto-populate with inherited context; initialize MDMP at Receipt of Mission; merge existing mission module into problem set framework (completed 2026-03-08)
 - [ ] **Phase 36: Strategic Guidance Workflow** - Build strategic level Plan tab workflow for objective setting, force apportionment, constraint definition, directive drafting; strategic directive output becomes initiating directive for child campaign JPP Step 1
 - [ ] **Phase 37: Training Assessment Loop** - AAR capture at tactical training events, METL proficiency tracking (T/P/U per task), upward aggregation from training events through exercises to training strategy readiness updates
@@ -382,7 +382,7 @@ Plans:
 
 Plans:
 - [x] 34-01-PLAN.md — Echelon routing infrastructure (PlanEchelonRouter, EchelonBadge, TabLayout header slot, PlanEmptyState, strategic placeholder)
-- [ ] 34-02-PLAN.md — MDMP tactical plan view (MDMPStepConfig, MDMPPlanView, MDMPStepLayout, governance gates, AI panels)
+- [x] 34-02-PLAN.md — MDMP tactical plan view (MDMPStepConfig, MDMPPlanView, MDMPStepLayout, governance gates, AI panels)
 
 ### Phase 35: Mission Creation from OPORD & Problem Set Alignment
 
