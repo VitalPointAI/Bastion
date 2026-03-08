@@ -733,6 +733,7 @@ export class InheritanceStore {
       id: string; requesting_problem_set_id: string; target_problem_set_id: string;
       target_item_id: string; target_item_type: string; subject: string;
       status: string; created_by: string; created_at: Date; closed_at: Date | null;
+      rfi_subtype?: string; resolution?: string | null;
     };
     return {
       id: r.id,
@@ -742,6 +743,8 @@ export class InheritanceStore {
       targetItemType: r.target_item_type,
       subject: r.subject,
       status: r.status as InheritanceRFI['status'],
+      rfiSubtype: (r.rfi_subtype || 'clarification') as InheritanceRFI['rfiSubtype'],
+      resolution: (r.resolution || null) as InheritanceRFI['resolution'],
       createdBy: r.created_by,
       createdAt: new Date(r.created_at),
       closedAt: r.closed_at ? new Date(r.closed_at) : null,
