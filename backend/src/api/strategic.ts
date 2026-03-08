@@ -2077,6 +2077,18 @@ router.post('/assignments', requireAuth, async (req, res) => {
       });
     }
 
+    // Verify agent exists and is active
+    const { getAgentRegistry } = await import('../agents/registry.js');
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    const agent = registry.getAgent(agentId);
+    if (!agent) {
+      return res.status(404).json({ error: `Agent ${agentId} not found` });
+    }
+    if (!agent.active) {
+      return res.status(400).json({ error: `Agent ${agentId} is not active` });
+    }
+
     // Verify document exists and user owns it
     const document = await store.get(documentId);
     if (!document) {
@@ -2101,6 +2113,10 @@ router.post('/assignments', requireAuth, async (req, res) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Create assignment failed:', message);
+    // Return 409 for duplicate assignment errors
+    if (message.includes('already assigned')) {
+      return res.status(409).json({ error: message });
+    }
     res.status(500).json({ error: message });
   }
 });
@@ -2247,13 +2263,16 @@ router.get('/agents', requireAuth, async (_req, res) => {
     const registry = getAgentRegistry();
     await registry.ensureInitialized();
     const agents = await registry.listAgents();
+    // Only return active agents for assignment
+    const activeAgents = agents.filter(a => a.active);
     res.json({
-      agents: agents.map(a => ({
+      agents: activeAgents.map(a => ({
         agentId: a.agentId,
         displayName: a.name,
         description: a.description,
         phase: a.phase,
         capabilities: a.capabilities,
+        active: a.active,
       })),
     });
   } catch (error) {
