@@ -778,6 +778,136 @@ router.post('/:id/fragos/:fragoId/acknowledge', requireAuth, async (req: Request
 });
 
 // ============================================================================
+// Mission Status Routes (Phase 38)
+// ============================================================================
+
+const missionStatusSchema = z.object({
+  childProblemSetId: z.string().min(1),
+  childProblemSetName: z.string().min(1),
+  parentProblemSetId: z.string().min(1),
+  missionState: z.enum(['planning', 'active', 'complete', 'archived']),
+  mdmpPhase: z.string().min(1),
+  percentComplete: z.number().min(0).max(100),
+  keyEvents: z.array(z.object({
+    timestamp: z.string(),
+    description: z.string(),
+    severity: z.enum(['info', 'warning', 'critical']),
+  })).default([]),
+  resourceStatus: z.object({
+    personnel: z.object({ assigned: z.number(), available: z.number() }),
+    equipment: z.object({ operational: z.number(), total: z.number() }),
+    supplies: z.record(z.string(), z.string()).default({}),
+  }),
+  objectiveProgress: z.array(z.object({
+    objectiveId: z.string(),
+    objectiveName: z.string(),
+    status: z.enum(['not_started', 'in_progress', 'achieved', 'failed']),
+    percentComplete: z.number().min(0).max(100),
+  })).default([]),
+});
+
+/**
+ * GET /api/problem-sets/:id/mission-status
+ * Get aggregated status of all child missions for parent PS :id.
+ * Used by COP tab on initial load before WebSocket connects.
+ */
+router.get('/:id/mission-status', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const parentPsId = req.params.id as string;
+    const statuses = await statusAggregationService.getAggregatedStatusForParent(parentPsId);
+    res.json(statuses);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get mission status failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/problem-sets/:id/mission-status/:childPsId
+ * Get detailed status snapshot for a specific child mission.
+ * Used for drill-down from COP summary card.
+ */
+router.get('/:id/mission-status/:childPsId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const childPsId = req.params.childPsId as string;
+    const status = await statusAggregationService.getDrillDownStatus(childPsId);
+
+    if (!status) {
+      return res.status(404).json({ error: 'No status found for child problem set' });
+    }
+
+    res.json(status);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get drill-down status failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/problem-sets/:id/mission-status
+ * Publish status update via REST (DDIL fallback when WebSocket unavailable).
+ * Persists via store and broadcasts via WS if connected.
+ */
+router.post('/:id/mission-status', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const body = missionStatusSchema.parse(req.body);
+    const parentPsId = req.params.id as string;
+
+    const snapshot: MissionStatusSnapshot = {
+      id: `MSTAT-${crypto.randomUUID()}`,
+      childProblemSetId: body.childProblemSetId,
+      childProblemSetName: body.childProblemSetName,
+      parentProblemSetId: body.parentProblemSetId || parentPsId,
+      missionState: body.missionState,
+      mdmpPhase: body.mdmpPhase,
+      percentComplete: body.percentComplete,
+      keyEvents: body.keyEvents,
+      resourceStatus: body.resourceStatus,
+      objectiveProgress: body.objectiveProgress,
+      lastUpdated: new Date(),
+    };
+
+    await inheritanceStore.upsertMissionStatus(snapshot);
+
+    // Broadcast via WebSocket if parents are connected
+    const update: StatusUpdateMessage = {
+      type: 'mission_status',
+      payload: snapshot,
+      timestamp: new Date().toISOString(),
+    };
+    broadcastStatusUpdate(parentPsId, update);
+
+    res.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: (error as z.ZodError).issues });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Post mission status failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/problem-sets/:id/campaign-assessment
+ * Get campaign-level assessment aggregation across all child missions.
+ * Used by the parent Assess tab.
+ */
+router.get('/:id/campaign-assessment', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const parentPsId = req.params.id as string;
+    const assessment = await statusAggregationService.getAssessAggregation(parentPsId);
+    res.json(assessment);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get campaign assessment failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
 // Admin: Backfill
 // ============================================================================
 

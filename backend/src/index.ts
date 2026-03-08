@@ -56,6 +56,7 @@ import { validationRouter } from './validation/validation-router.js';
 import { registerValidationJobs } from './validation/validation-scheduler.js';
 import { requireAuth } from './auth/auth-instance.js';
 import { discoveryRouter, setupDiscoveryWS, getDiscoveryService } from './discovery/index.js';
+import { setupInheritanceWebSocket } from './inheritance/inheritance-ws.js';
 import { osintWebhookRouter } from './api/osint-webhook.js';
 import jppRouter from './api/jpp.js';
 import documentRouter from './planning/routes/document-routes.js';
@@ -226,6 +227,7 @@ const wsServers = {
   collab: new WebSocketServer({ noServer: true }),
   resources: new WebSocketServer({ noServer: true }),
   discovery: new WebSocketServer({ noServer: true }),
+  inheritance: new WebSocketServer({ noServer: true }),
 };
 
 setupMessageWebSocket(wsServers.messages);
@@ -234,6 +236,7 @@ createSyncServer(wsServers.collab);
 console.log('Collaboration WebSocket server mounted at /ws/collab');
 setupResourceWebSocket(wsServers.resources);
 setupDiscoveryWS(wsServers.discovery);
+setupInheritanceWebSocket(wsServers.inheritance);
 
 server.on('upgrade', (request, socket, head) => {
   const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
@@ -257,6 +260,10 @@ server.on('upgrade', (request, socket, head) => {
   } else if (pathname === '/ws/discovery') {
     wsServers.discovery.handleUpgrade(request, socket, head, (ws) => {
       wsServers.discovery.emit('connection', ws, request);
+    });
+  } else if (pathname === '/ws/inheritance') {
+    wsServers.inheritance.handleUpgrade(request, socket, head, (ws) => {
+      wsServers.inheritance.emit('connection', ws, request);
     });
   } else {
     socket.destroy();
