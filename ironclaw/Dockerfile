@@ -1,8 +1,16 @@
 # Ironclaw Agent Sidecar
-# Builds from source (main branch) to pick up latest features (Anthropic OAuth).
+# Builds from source to pick up latest features (Anthropic OAuth).
 # Multi-stage build: Rust builder → slim runtime image.
+#
+# IRONCLAW_COMMIT pins the upstream SHA. Update this when you want a newer
+# build — the Docker layer cache (and GHA build cache) will skip the Rust
+# compile when the SHA hasn't changed.
 
 FROM rust:1.87-bookworm AS builder
+
+# ironclaw main now requires rust >= 1.92 (edition 2024).
+# Upgrade toolchain since the Docker image ships 1.87.
+RUN rustup update stable && rustup default stable
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config libssl-dev git \
@@ -10,9 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 
-# Clone and build from main (includes PR #384: Anthropic OAuth support)
-ARG IRONCLAW_COMMIT=main
-RUN git clone --depth 1 https://github.com/nearai/ironclaw.git . \
+# Pin to specific commit so Docker/GHA cache is stable across deploys.
+# Bump this SHA to pull in new upstream changes.
+ARG IRONCLAW_COMMIT=56b72188974e042c379f9b74384a82bd0f5e8449
+RUN git clone https://github.com/nearai/ironclaw.git . \
     && git checkout ${IRONCLAW_COMMIT}
 
 RUN cargo build --release \
