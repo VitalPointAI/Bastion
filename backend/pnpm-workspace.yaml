@@ -1,2 +1,1 @@
-patchedDependencies:
-  '@vitalpoint/near-phantom-auth': patches/@vitalpoint__near-phantom-auth.patch
+{}
