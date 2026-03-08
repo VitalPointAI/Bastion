@@ -389,7 +389,7 @@ Plans:
 **Goal:** Extend Phase 33 Plan 10 document distribution to trigger tactical child problem set creation. "Create Mission" action in OPORD Step 7 Para 3 (Execution) per subordinate task assignment. Auto-populate child tactical PS with inherited context (mission statement, commander's intent 2 up, task org, ROE, CCIRs, AO). Initialize child MDMP at "Receipt of Mission". Merge existing `backend/src/mission/` module into problem set framework (missions become tactical problem sets with mission-specific metadata).
 **Requirements**: [MC-01, MC-02, MC-03, MC-04, MC-05, MC-06, MC-07, MC-08, MC-09, MC-10, MC-11, MC-12, MC-13, MC-14, MC-15]
 **Depends on:** Phase 34, Phase 33 (Plan 10 document distribution)
-**Plans:** 1/5 plans executed
+**Plans:** 2/5 plans executed
 
 Plans:
 - [ ] 35-01-PLAN.md — Foundation types, DB schema (mission_assignments, ccir_requests), data stores
@@ -401,12 +401,15 @@ Plans:
 ### Phase 36: Strategic Guidance Workflow
 
 **Goal:** Build strategic level Plan tab workflow — lighter than JPP. Covers objective setting, force apportionment, constraint definition, and directive drafting. Strategic directive output becomes the initiating directive for child campaign JPP (Step 1). Connect to Phase 25.2 strategic document containers as input.
-**Requirements**: TBD
+**Requirements**: [SG-01, SG-02, SG-03, SG-04, SG-05, SG-06, SG-07, SG-08, SG-09, SG-10, SG-11, SG-12]
 **Depends on:** Phase 34, Phase 25.2 (strategic document containers)
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 36 to break down)
+- [ ] 36-01-PLAN.md — Backend types, DB schema, store, service, and REST API routes
+- [ ] 36-02-PLAN.md — Frontend step config, plan view, step layout, service layer, echelon router wiring
+- [ ] 36-03-PLAN.md — Strategic Assessment and Operational Approach step content with force apportionment and constraint manager
+- [ ] 36-04-PLAN.md — Commander's Directive step, directive versioning, child auto-populate, document export template
 
 ### Phase 37: Training Assessment Loop
 
