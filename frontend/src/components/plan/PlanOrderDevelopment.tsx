@@ -28,6 +28,7 @@ import {
   type MissionGroup,
   type CreateMissionInput,
 } from '../../lib/mission-creation-service.ts';
+import { problemSetService } from '../../lib/problem-set-service.ts';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -249,6 +250,8 @@ export function PlanOrderDevelopment({
   const [missionGroups, setMissionGroups] = useState<MissionGroup[]>([]);
   const [confirmGroup, setConfirmGroup] = useState<MissionGroup | null>(null);
   const [showLegacyTasks, setShowLegacyTasks] = useState(false);
+  const [parentMembers, setParentMembers] = useState<Array<{ did: string; displayName: string; role: string }>>([]);
+  const [availableAgents, setAvailableAgents] = useState<Array<{ did: string; displayName: string; role: string }>>([]);
 
   // Load existing plan data + E-W-M gaps
   const loadData = useCallback(async () => {
@@ -286,6 +289,29 @@ export function PlanOrderDevelopment({
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Fetch current PS members and AI agents for mission role assignment
+  useEffect(() => {
+    problemSetService.listMembers(problemSetId, '').then((members) => {
+      setParentMembers(
+        members.map((m) => ({
+          did: m.memberDid,
+          displayName: m.displayName || m.memberDid.slice(0, 12),
+          role: m.role,
+        }))
+      );
+    }).catch(() => { /* non-critical -- modal works with empty list */ });
+
+    problemSetService.listAgents().then((agents) => {
+      setAvailableAgents(
+        agents.filter((a) => a.active).map((a) => ({
+          did: a.agentDID,
+          displayName: a.name,
+          role: a.role || 'member',
+        }))
+      );
+    }).catch(() => { /* non-critical */ });
+  }, [problemSetId]);
 
   // Update order paragraph field
   const updateSituation = (field: keyof FiveParagraphOrder['situation'], value: string) => {
@@ -692,8 +718,8 @@ export function PlanOrderDevelopment({
             );
             setConfirmGroup(null);
           }}
-          parentMembers={[]}
-          availableAgents={[]}
+          parentMembers={parentMembers}
+          availableAgents={availableAgents}
         />
       )}
 
