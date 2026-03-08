@@ -1,5 +1,5 @@
 # Production deployment — run with: docker compose -f docker-compose.prod.yml up -d
-# Requires .env.prod file with POSTGRES_PASSWORD, NEO4J_PASSWORD
+# Requires .env and .env.prod files — see .env.example for required variables.
 # Images pulled from GHCR (built by GitHub Actions)
 # GitHub repository: VitalPointAI/Bastion
 
@@ -83,6 +83,9 @@ services:
   ironclaw:
     image: ghcr.io/vitalpointai/bastion/ironclaw:latest
     container_name: bastion-ironclaw
+    # sleep infinity keeps stdin open so the repl channel doesn't EOF-shutdown.
+    # --no-onboard skips the interactive setup wizard.
+    entrypoint: ["/bin/sh", "-c", "sleep infinity | ironclaw run --no-onboard"]
     restart: unless-stopped
     environment:
       # LLM backend — Anthropic for coding tasks

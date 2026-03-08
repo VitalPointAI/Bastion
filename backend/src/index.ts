@@ -55,6 +55,7 @@ import { ironclawRouter, ironclawStore } from './ironclaw/index.js';
 import { validationRouter } from './validation/validation-router.js';
 import { registerValidationJobs } from './validation/validation-scheduler.js';
 import { requireAuth } from './auth/auth-instance.js';
+import { discoveryRouter, setupDiscoveryWS, getDiscoveryService } from './discovery/index.js';
 
 dotenv.config();
 
@@ -197,6 +198,7 @@ app.use('/api/gates', gateRoutes);
 app.use('/api/ai-staff', requireAuth, aiStaffRouter);
 app.use('/api/ironclaw', requireAuth, ironclawRouter);
 app.use('/api/validation', requireAuth, validationRouter);
+app.use('/api/discovery', discoveryRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -213,6 +215,9 @@ console.log('Collaboration WebSocket server mounted at /ws/collab');
 
 // Setup WebSocket for resource telemetry position updates
 setupResourceWebSocket(server);
+
+// Setup WebSocket for discovery event streaming
+setupDiscoveryWS(server);
 
 server.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
@@ -336,6 +341,21 @@ server.listen(port, async () => {
     console.error('Failed to register validation scheduler:', error);
   }
 
+  // Initialize Discovery Service (Phase 32) — scanners paused until operator starts
+  try {
+    const { getResourceRegistry } = await import('./resources/resource-registry.js');
+    const { gateService } = await import('./gates/gate-service.js');
+    const discoveryService = getDiscoveryService();
+    await discoveryService.initialize({
+      resourceRegistry: getResourceRegistry(),
+      messageBus: getMessageBus(),
+      gateService,
+    });
+    console.log('[Server] Discovery service initialized (scanners paused)');
+  } catch (error) {
+    console.error('Failed to initialize discovery service:', error);
+  }
+
   // Register strategic cache refresh pg-boss worker (Phase 25.3)
   try {
     const { getSharedBoss } = await import('./lib/database.js');
@@ -355,6 +375,15 @@ server.listen(port, async () => {
 // Graceful shutdown handlers
 async function gracefulShutdown(signal: string) {
   console.log(`\nReceived ${signal}, starting graceful shutdown...`);
+
+  // Stop discovery service scanners
+  try {
+    const discoveryService = getDiscoveryService();
+    discoveryService.stop();
+    console.log('Discovery service stopped');
+  } catch (error) {
+    console.error('Error stopping discovery service:', error);
+  }
 
   // Stop shared pg-boss
   try {

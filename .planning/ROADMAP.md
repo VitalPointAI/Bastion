@@ -333,13 +333,21 @@ Following best practices for production-grade agentic workflows:
 
 ### Phase 32: Network device discovery and secure automatic resource onboarding
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Bastion automatically discovers devices on local networks (Bluetooth, WiFi, USB, TAK/RF), fingerprints them, and seamlessly onboards them as first-class resources with DID identity, capability mapping, and bidirectional command channels. Includes DAO-governed acceptance gates, EM spectrum awareness, and Ironclaw-driven adapter generation for unknown devices.
+**Requirements:** [DISC-01, DISC-02, DISC-03, DISC-04, DISC-05, DISC-06, DISC-07, DISC-08, DISC-09, DISC-10, DISC-11, DISC-12, DISC-13, DISC-14, DISC-15, DISC-16, DISC-17, DISC-18, DISC-19, DISC-20, DISC-21, DISC-22]
 **Depends on:** Phase 31
-**Plans:** 0 plans
+**Plans:** 9/9 plans complete
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 32 to break down)
+- [x] 32-01-PLAN.md -- Foundation types, DB schema, discovery store, lifecycle state machine
+- [ ] 32-02-PLAN.md -- CommandAdapter plugin facet, hot-load support, Ironclaw protection
+- [ ] 32-03-PLAN.md -- Transport scanner modules (BLE, WiFi, USB, TAK)
+- [x] 32-04-PLAN.md -- Acceptance gate, fingerprinting, challenge-response auth
+- [ ] 32-05-PLAN.md -- Onboarding pipeline, discovery service orchestrator
+- [ ] 32-06-PLAN.md -- WebSocket handler, REST API, behavioral baseline, barrel export
+- [ ] 32-07-PLAN.md -- EM spectrum awareness, network topology with hopping
+- [ ] 32-08-PLAN.md -- Server wiring and module integration
+- [ ] 32-09-PLAN.md -- Frontend COP layers (discovery, EM, topology)
 
 ---
 
@@ -847,8 +855,8 @@ Plans:
 - [x] 31-02-PLAN.md — Scoring modules (determinism, reliability, authority)
 - [x] 31-03-PLAN.md — Validation runner, circuit breaker, scheduler, and REST API
 - [x] 31-04-PLAN.md — Fixture loader, generator, and 10 high-priority role fixtures
-- [ ] 31-04b-PLAN.md — Generated fixtures for remaining 21 staff roles
-- [ ] 31-05-PLAN.md — Frontend validation dashboard with Recharts visualizations
+- [x] 31-04b-PLAN.md — Generated fixtures for remaining 21 staff roles
+- [x] 31-05-PLAN.md — Frontend validation dashboard with Recharts visualizations
 - [x] 31-06-PLAN.md — AgentHealthDot integration and activation gating
 
 ### Phase 4.4: Mission Context & Force Onboarding (INSERTED)

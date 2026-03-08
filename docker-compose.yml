@@ -78,6 +78,7 @@ services:
 
   # ==========================================
   # Ironclaw Agent Sidecar
+  # Uncomment when ghcr.io/nearai/ironclaw image is published
   # ==========================================
   ironclaw:
     build:
@@ -139,8 +140,6 @@ services:
         condition: service_healthy
       neo4j:
         condition: service_healthy
-      ironclaw:
-        condition: service_started
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
       interval: 30s
