@@ -88,25 +88,18 @@ services:
     entrypoint: ["/bin/sh", "-c", "sleep infinity | ironclaw run --no-onboard"]
     restart: unless-stopped
     environment:
-      # LLM backend
+      # LLM backend — Anthropic for coding tasks
       LLM_BACKEND: anthropic
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       ANTHROPIC_MODEL: claude-sonnet-4-6
       # Database (ironclaw's own pgvector instance)
       DATABASE_URL: postgresql://ironclaw:${IRONCLAW_DB_PASSWORD}@ironclaw-postgres:5432/ironclaw
-      # Gateway — bind to all interfaces so backend can reach it over Docker network.
-      # Env vars from ironclaw source: src/config/channels.rs
-      GATEWAY_HOST: "0.0.0.0"
-      GATEWAY_PORT: "3000"
-      GATEWAY_AUTH_TOKEN: ${IRONCLAW_SHARED_SECRET}
-      # HTTP webhook channel — separate from gateway, provides /api/* routes.
-      # Activated when HTTP_HOST or HTTP_PORT env var is present.
-      HTTP_HOST: "0.0.0.0"
+      # HTTP webhook server
+      HTTP_HOST: 0.0.0.0
       HTTP_PORT: "8080"
       HTTP_WEBHOOK_SECRET: ${IRONCLAW_SHARED_SECRET}
       # Agent settings
       AGENT_NAME: ironclaw
-      IRONCLAW_MASTER_KEY: ${IRONCLAW_MASTER_KEY}
       AGENT_USE_PLANNING: "true"
       RUST_LOG: ironclaw=info
     volumes:
