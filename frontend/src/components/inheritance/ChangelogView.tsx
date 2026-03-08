@@ -3,6 +3,9 @@
  *
  * Phase 26 Plan 03: Chronological timeline of inherited context changes
  * with severity distinction (significant vs minor) and change type icons.
+ *
+ * Phase 38 Plan 05: Enhanced with severity badges (amber/blue pills),
+ * click-to-navigate entries, source PS name display, and relative timestamps.
  */
 
 import { useState } from 'react';
@@ -11,6 +14,7 @@ import type { ChangelogEntry } from '../../lib/inheritance-service.ts';
 interface ChangelogViewProps {
   changelog: ChangelogEntry[];
   maxItems?: number;
+  onNavigateToItem?: (itemId: string, sourceProblemSetId: string) => void;
 }
 
 function relativeTime(iso: string): string {
@@ -80,7 +84,7 @@ function changeTypeLabel(type: string): string {
   }
 }
 
-export function ChangelogView({ changelog, maxItems = 20 }: ChangelogViewProps) {
+export function ChangelogView({ changelog, maxItems = 20, onNavigateToItem }: ChangelogViewProps) {
   const [showAll, setShowAll] = useState(false);
 
   if (changelog.length === 0) {
@@ -106,10 +110,15 @@ export function ChangelogView({ changelog, maxItems = 20 }: ChangelogViewProps) 
       <div className="changelog-timeline">
         {visible.map((entry) => {
           const isSignificant = entry.changeSeverity === 'significant';
+          const isClickable = !!onNavigateToItem;
           return (
             <div
               key={entry.id}
-              className={`changelog-entry ${isSignificant ? 'significant' : 'minor'}`}
+              className={`changelog-entry ${isSignificant ? 'significant' : 'minor'} ${isClickable ? 'clickable' : ''}`}
+              onClick={isClickable ? () => onNavigateToItem(entry.id, (entry as ChangelogEntry & { sourceProblemSetId?: string }).sourceProblemSetId ?? '') : undefined}
+              role={isClickable ? 'button' : undefined}
+              tabIndex={isClickable ? 0 : undefined}
+              onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onNavigateToItem(entry.id, (entry as ChangelogEntry & { sourceProblemSetId?: string }).sourceProblemSetId ?? ''); } : undefined}
             >
               <div className="changelog-indicator">
                 <span
@@ -122,6 +131,10 @@ export function ChangelogView({ changelog, maxItems = 20 }: ChangelogViewProps) 
                 <div className="changelog-meta">
                   <span className="changelog-time">{relativeTime(entry.createdAt)}</span>
                   <span className="changelog-source">{entry.sourceProblemSetName}</span>
+                  {/* Severity badge pill */}
+                  <span className={`changelog-severity-badge ${isSignificant ? 'significant' : 'minor'}`}>
+                    {isSignificant ? 'Significant' : 'Minor'}
+                  </span>
                   <span className={`changelog-type-badge ${isSignificant ? 'significant' : ''}`}>
                     <ChangeTypeIcon type={entry.changeType} />
                     {changeTypeLabel(entry.changeType)}
@@ -176,6 +189,17 @@ const changelogStyles = `
   display: flex;
   gap: 12px;
   padding: 8px 0;
+}
+
+.changelog-entry.clickable {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 8px 4px;
+  transition: background-color 0.15s ease;
+}
+
+.changelog-entry.clickable:hover {
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 .changelog-indicator {
@@ -240,6 +264,28 @@ const changelogStyles = `
   padding: 1px 6px;
   border-radius: 3px;
   background-color: rgba(100, 100, 100, 0.2);
+}
+
+.changelog-severity-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.changelog-severity-badge.significant {
+  background-color: rgba(217, 119, 6, 0.2);
+  color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+.changelog-severity-badge.minor {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .changelog-type-badge {

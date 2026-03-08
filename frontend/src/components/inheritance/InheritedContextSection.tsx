@@ -326,11 +326,13 @@ export function InheritedContextSection({
               onRefresh={fetchContext}
             />
 
-            {/* Acknowledgment banner */}
+            {/* Acknowledgment banner — severity-tiered */}
             {data.syncStatus.pendingAcknowledgments > 0 && (
               <AcknowledgmentBanner
                 pendingAcks={pendingAcks}
+                changelogEntries={data.changelog}
                 onAcknowledge={handleAcknowledge}
+                onViewChanges={() => setActiveTab('changelog')}
               />
             )}
 

@@ -94,6 +94,14 @@ export interface RFIMessage {
   createdAt: string;
 }
 
+export interface NotificationCounts {
+  pendingAcks: number;
+  unreadChangelog: number;
+  openRFIs: number;
+  pendingFRAGOs: number;
+  total: number;
+}
+
 export interface InheritanceRFI {
   id: string;
   fromProblemSetId: string;
@@ -292,6 +300,84 @@ export const inheritanceApi = {
   ): Promise<RFIMessage[]> {
     return request<RFIMessage[]>(
       `${basePath(problemSetId)}/rfis/${rfiId}/messages`,
+    );
+  },
+
+  /** Acknowledge a child interpretation annotation (parent action) */
+  acknowledgeAnnotation(
+    problemSetId: string,
+    annotationId: string,
+    action: 'acknowledge' | 'clarify' | 'correct',
+    comment?: string,
+  ): Promise<{ acknowledged: boolean }> {
+    return request<{ acknowledged: boolean }>(
+      `${basePath(problemSetId)}/annotations/${annotationId}/acknowledge`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ action, comment }),
+      },
+    );
+  },
+
+  /** Fetch notification counts for a problem set */
+  getNotificationCounts(
+    problemSetId: string,
+  ): Promise<NotificationCounts> {
+    return request<NotificationCounts>(
+      `${basePath(problemSetId)}/notification-counts`,
+    );
+  },
+
+  /** Submit a modification request for an inherited item */
+  createModificationRequest(
+    problemSetId: string,
+    data: {
+      targetProblemSetId: string;
+      targetItemId: string;
+      targetItemType: string;
+      subject: string;
+      description: string;
+    },
+  ): Promise<{ id: string }> {
+    return request<{ id: string }>(
+      `${basePath(problemSetId)}/modification-requests`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+    );
+  },
+
+  /** Submit a guidance request */
+  createGuidanceRequest(
+    problemSetId: string,
+    data: {
+      targetProblemSetId: string;
+      subject: string;
+      situationDescription: string;
+    },
+  ): Promise<{ id: string }> {
+    return request<{ id: string }>(
+      `${basePath(problemSetId)}/guidance-requests`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+    );
+  },
+
+  /** Resolve a modification request (parent action) */
+  resolveModificationRequest(
+    problemSetId: string,
+    rfiId: string,
+    resolution: 'approved' | 'denied',
+  ): Promise<{ resolved: boolean }> {
+    return request<{ resolved: boolean }>(
+      `${basePath(problemSetId)}/modification-requests/${rfiId}/resolve`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ resolution }),
+      },
     );
   },
 
