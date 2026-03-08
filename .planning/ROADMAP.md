@@ -417,7 +417,7 @@ Plans:
 **Goal:** AAR capture at tactical training events. METL proficiency tracking (T/P/U per task). Upward aggregation: training events → exercise trends → training strategy readiness updates. Training Strategy Assess tab shows METL dashboard. Exercise Assess tab shows event-level trends. Assessment flows UP through the hierarchy (distinct from operational Assess which measures campaign objective progress).
 **Requirements:** [TAL-01, TAL-02, TAL-03, TAL-04, TAL-05, TAL-06, TAL-07, TAL-08, TAL-09, TAL-10, TAL-11, TAL-12, TAL-13, TAL-14, TAL-15]
 **Depends on:** Phase 35, Phase 22 (training/operational mode)
-**Plans:** 4/6 plans executed
+**Plans:** 5/6 plans executed
 
 Plans:
 - [ ] 37-01-PLAN.md — Assessment types, database stores (AAR, METL, MOE, MOP)
