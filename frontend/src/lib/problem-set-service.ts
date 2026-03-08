@@ -107,6 +107,7 @@ export interface HierarchyNode {
   name: string;
   echelon: string;
   memberCount: number;
+  parentProblemSetId?: string | null;
   children?: HierarchyNode[];
 }
 

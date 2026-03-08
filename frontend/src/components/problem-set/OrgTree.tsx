@@ -25,7 +25,9 @@ interface OrgTreeNode extends RawNodeDatum {
   /** Original problem set ID stored alongside react-d3-tree structure */
   _problemSetId?: string;
   _echelon?: string;
+  _parentId?: string;
 }
+
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
@@ -50,27 +52,41 @@ const HIGHLIGHT_COLOR = '#d97706'; // amber-600 — current user's problem set b
 // ─── Transform helpers ───────────────────────────────────────────────────────────
 
 /**
- * Recursively convert HierarchyNode[] into react-d3-tree RawNodeDatum.
- * The first element is treated as the root node.
+ * Build a tree from a flat array of HierarchyNode records.
+ * The API returns a flat list ordered by depth; each node has a
+ * parentProblemSetId linking it to its parent.  We index by id,
+ * attach children, then return the root.
  */
 function transformHierarchy(nodes: HierarchyNode[]): OrgTreeNode | null {
   if (!nodes || nodes.length === 0) return null;
 
-  function mapNode(node: HierarchyNode): OrgTreeNode {
-    return {
+  // Build OrgTreeNode for each flat record (no children yet)
+  const nodeMap = new Map<string, OrgTreeNode>();
+  for (const node of nodes) {
+    nodeMap.set(node.id, {
       name: node.name,
       _problemSetId: node.id,
       _echelon: node.echelon,
+      _parentId: node.parentProblemSetId ?? undefined,
       attributes: {
         type: node.echelon,
         members: String(node.memberCount),
       },
-      children: node.children?.map(mapNode) ?? [],
-    };
+      children: [],
+    });
   }
 
-  // The API returns a flat array where first element is root; treat it as the root
-  return mapNode(nodes[0]);
+  // Wire children to parents
+  let root: OrgTreeNode | null = null;
+  for (const treeNode of nodeMap.values()) {
+    if (treeNode._parentId && nodeMap.has(treeNode._parentId)) {
+      nodeMap.get(treeNode._parentId)!.children!.push(treeNode);
+    } else if (!root) {
+      root = treeNode; // first node without a parent in this set is root
+    }
+  }
+
+  return root ?? nodeMap.values().next().value ?? null;
 }
 
 // ─── Custom Node Element ────────────────────────────────────────────────────────
@@ -213,11 +229,12 @@ export function OrgTree({ rootProblemSetId, currentUserProblemSetId, onNavigate 
   const [treeData, setTreeData] = useState<OrgTreeNode | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const [translate, setTranslate] = useState<{ x: number; y: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Center tree using ResizeObserver so translate updates when container is laid out
+  // Center tree using ResizeObserver so translate updates when container is laid out.
+  // Re-run when treeData changes because the container isn't mounted during loading.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -232,7 +249,7 @@ export function OrgTree({ rootProblemSetId, currentUserProblemSetId, onNavigate 
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [treeData]);
 
   useEffect(() => {
     if (!rootProblemSetId || !userDID) return;
@@ -316,6 +333,7 @@ export function OrgTree({ rootProblemSetId, currentUserProblemSetId, onNavigate 
       style={{ height: 400, width: '100%' }}
       className="bg-gray-950 rounded-lg border border-gray-800 overflow-hidden"
     >
+      {translate && (
       <Tree
         data={treeData}
         orientation="vertical"
@@ -329,6 +347,7 @@ export function OrgTree({ rootProblemSetId, currentUserProblemSetId, onNavigate 
         scaleExtent={{ min: 0.3, max: 2 }}
         pathClassFunc={() => 'stroke-gray-600 stroke-1 fill-none'}
       />
+      )}
     </div>
   );
 }
