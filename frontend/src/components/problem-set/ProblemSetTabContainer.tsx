@@ -36,7 +36,7 @@ import { DesignTab } from '../tabs/DesignTab';
 import { PlanTab } from '../tabs/PlanTab';
 import { DirectTab } from '../tabs/DirectTab';
 import { COPTab } from '../cop/COPTab';
-import { AssessTab } from '../tabs/AssessTab';
+import { AssessEchelonRouter } from '../assess/AssessEchelonRouter';
 import { copService } from '../../lib/cop-service';
 import { DecisionGateProvider } from '../../context/DecisionGateContext';
 import { AIStaffProvider } from '../../context/AIStaffContext';
@@ -277,7 +277,7 @@ export function ProblemSetTabContainer() {
       case 'cop':
         return <COPTab problemSetId={displayId} />;
       case 'assess':
-        return <AssessTab problemSetId={displayId} />;
+        return <AssessEchelonRouter problemSetId={displayId} />;
       default:
         return null;
     }
