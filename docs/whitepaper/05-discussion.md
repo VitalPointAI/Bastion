@@ -26,7 +26,21 @@ Edge AI model accuracy on tactical platforms like the Jetson Orin Nano involves 
 
 Trusted Execution Environment (TEE) availability in tactical environments presents deployment challenges. BASTION's architecture leverages Phala Network TEEs for confidential computing, but ruggedized hardware with TEE support may not be available for all tactical platforms. Extending confidential computing to edge devices in austere environments requires hardware solutions that are still maturing.
 
-### Operational Realism
+### Resolved Limitations
+
+Several limitations identified in the original assessment (January 2026) have been addressed by subsequent development through March 2026:
+
+**Functional vs. doctrinal interface.** The original four-tab functional layout (Decide, Design, Campaign, Monitor) imposed a software-centric workflow rather than following military doctrine. The doctrinal tab restructure (Section 3.7) replaced this with a six-tab lifecycle (Understand, Design, Plan, Direct, COP, Assess) aligned to JP 5-0, directly addressing the mismatch between interface structure and doctrinal process.
+
+**No operational design capability.** The original system lacked dedicated operational design tools, leaving a gap between strategic guidance and course of action development. The Design tab (Section 3.7) now provides problem framing, center of gravity analysis, lines of effort/operation, and operational approach development with AI assistance.
+
+**No common operating picture generation.** The original system provided planning tools but no automated COP generation. AI COP layer agents (Section 3.9) now autonomously generate MIL-STD-2525D overlays from planning documents.
+
+**No exercise/training separation.** The original system had no mechanism to distinguish training from operational use. The training/operational mode toggle (Section 3.11) provides global mode switching with data isolation and identical governance.
+
+**Limited staff organization.** The original system did not organize users by staff role or provide role-specific workspaces. The JPP staff organization (Section 3.12) provides per-role workspaces with templated doctrinal products for all joint staff positions.
+
+### Remaining Limitations — Operational Realism
 
 The tabletop demonstration necessarily simplifies aspects of military operations that would affect real-world deployment.
 
@@ -68,6 +82,24 @@ Decision fatigue could result if approval gates are too numerous or too frequent
 
 Coalition partner adoption barriers may limit BASTION's effectiveness for multi-national operations. Partners may be reluctant to adopt new governance mechanisms, particularly those involving blockchain technology with which they have limited experience. Integration with existing coalition systems and procedures requires diplomatic and technical work beyond system development. The demonstration validates technical feasibility, but operational adoption requires building consensus among coalition partners with different priorities and capabilities.
 
+### Complexity Growth Risks
+
+The expansion from 23 to 131 AI agents, from 5 to 12 smart contract modules, and from ~100 to ~417 REST endpoints introduces risks associated with system complexity growth.
+
+**AI agent proliferation management.** As the agent count grows, maintaining quality, consistency, and appropriate oversight across all agents becomes increasingly challenging. Each agent requires prompt engineering, testing, and monitoring. Interactions between agents may produce emergent behaviors that are difficult to predict or audit. The JPP staff role agents (102 agents) share a common architecture but each carries role-specific doctrinal knowledge that must be validated against actual military publications.
+
+**Plugin architecture extensibility.** The resource registry's plugin architecture (Section 3.10) demonstrates that new resource types can be added without modifying core code. However, this extensibility introduces a maintenance surface: each plugin's schema, state machine, capabilities, data handler, and COP renderer must be maintained and tested independently. As the plugin library grows, integration testing across plugin combinations becomes increasingly important.
+
+**Doctrinal alignment validation.** The six-tab structure claims alignment with JP 5-0, but validating that alignment requires subject matter expert review beyond what automated testing can provide. How the system maps abstract doctrinal concepts to concrete interface elements involves interpretation that may differ between doctrinal communities. Exercises with military planners would provide the most meaningful validation.
+
+**Training mode governance fidelity.** While the training mode implements identical governance mechanisms, the question of whether exercises conducted with identical governance truly capture the dynamics of operational decision-making remains open. Exercise participants may behave differently when they know consequences are simulated, potentially reducing the training value of governance-parity design.
+
+### Updated Risk Posture
+
+Several technical risks have been reduced by implementation maturity. The blockchain integration layer is now validated across 31 phases of development with consistent transaction patterns. Authentication is stable with passkey-based WebAuthn replacing the earlier Privy dependency. DAO voting has been exercised across multiple governance contexts. The MDMP governance framework has been validated through exercise scenarios.
+
+New risks have emerged from the expanded scope: the larger codebase requires more comprehensive testing; the greater number of AI agents increases the surface area for prompt injection or adversarial manipulation; and the doctrinal claims require validation from military subject matter experts that has not yet been formally conducted.
+
 ## 5.3 Ethical Considerations
 
 ### Autonomous Weapons
@@ -96,15 +128,23 @@ Agent accountability gaps exist in the spaces between AI recommendation and huma
 
 ### Near-Term Extensions
 
-Multi-platform autonomous vehicle integration represents the most immediate extension beyond current demonstration capabilities. Coordinating multiple heterogeneous autonomous systems through DAO governance would validate BASTION's scalability claims and demonstrate more realistic tactical scenarios. This work requires integrating additional vehicle platforms, developing multi-agent coordination protocols, and testing under more complex operational scenarios.
+**Problem set model and echelon awareness.** Renaming workspaces to "problem sets" (JP 5-0 terminology) with echelon-awareness (strategic, operational, tactical) would strengthen the doctrinal alignment of the data model and enable echelon-appropriate defaults for governance thresholds, agent configurations, and product templates.
 
-Coalition health monitoring would extend the governance framework to track coalition partner cohesion, national caveat compliance, and narrative impact in real time. Two additional AI agents—a Coalition Health Agent monitoring partner posture changes and defection risk, and a Narrative Impact Agent modeling information operation effects across audience segments—would complement the MDMP governance gates with continuous coalition situational awareness. National caveat tracking integrated into the DAO linkages contract would enable automatic conflict detection when planned actions may violate partner constraints.
+**Strategic document containers and actor categorization.** Organizing strategic documents into nation/group containers (e.g., United States, China, NATO) with actor categories (ally, adversary, neutral, partner) would provide persistent container-based organization for building strategic environments over time, feeding into inheritance mechanisms for child problem sets.
 
-Real OSINT data integration would replace simulated intelligence inputs with actual open-source intelligence feeds. BASTION's architecture includes OSINT integration capabilities with validity scoring and recency decay, but the demonstration uses simulated events. Connecting to real intelligence sources would demonstrate the platform's utility for actual situational awareness while raising additional security and classification considerations.
+**AI strategic context and knowledge graph integration.** Wiring subscribed strategic environment data and container-scoped knowledge graphs into AI agent context would enable agents to draw on structured strategic knowledge rather than raw document text. Container-scoped RAFT graph construction with auto-trigger on document changes would keep the knowledge graph current.
 
-Enhanced coalition simulation with actual partner participation would test governance mechanisms under realistic multi-stakeholder conditions. Working with partner organizations or allied nations to conduct joint demonstrations would reveal integration challenges and refinement opportunities that simulated coalition operations cannot surface.
+**Strategic environment inheritance.** A strategic-level problem set serving as context provider with inheritance mechanisms for directives, policy, and intelligence would enable child problem sets to inherit strategic context without manual duplication, with update propagation when strategic guidance changes.
 
-Production security hardening would prepare BASTION for deployment in operational environments. This work includes formal security assessment, penetration testing, security accreditation processes, and hardening against the threat categories identified in Section 5.2. The demonstration system prioritizes functionality for validation; operational systems must prioritize security.
+**Embedded DAO governance at decision gates.** Moving DAO governance from a dedicated interface into contextual workflow decision gates would surface proposals at natural planning decision points (objective approval, COA selection, order release) rather than requiring navigation to a separate governance view.
+
+**Contextual AI staff integration.** Surfacing AI agent output contextually per tab with per-tab assistants aware of workflow phase would provide recommendation engines tied to doctrinal workflow position rather than requiring users to seek out agent capabilities.
+
+Multi-platform autonomous vehicle integration represents an immediate extension beyond current demonstration capabilities. Coordinating multiple heterogeneous autonomous systems through DAO governance would validate BASTION's scalability claims and demonstrate more realistic tactical scenarios.
+
+Coalition health monitoring would extend the governance framework to track coalition partner cohesion, national caveat compliance, and narrative impact in real time.
+
+Production deployment through CI/CD pipeline to Hetzner server infrastructure would move BASTION from development to a accessible demonstration environment, with TEE-aware component separation documented for production.
 
 ### Research Directions Opened by MDMP and Escalation Integration
 

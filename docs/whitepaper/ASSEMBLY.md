@@ -197,6 +197,7 @@ Exports are saved to `docs/whitepaper/exports/`:
 | Version | Date | Changes |
 |---------|------|---------|
 | v0.1 | 2026-01-24 | Initial draft - all sections complete |
+| v0.2 | 2026-03-08 | Major update: 131 agents, doctrinal tabs, COP, IPB, resource DIDs, training mode, 8 contributions |
 
 ---
 

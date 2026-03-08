@@ -112,31 +112,78 @@ Upon human approval, the tactical asset executes the authorized engagement withi
 
 This cross-level coordination demonstrates several research question components: effective C2 through automatic escalation, accelerated decision-making through AI-generated proposals, resource optimization through consumption-based triggering, and policy-compliant coordination through DAO voting on replenishment.
 
-## 4.4 Thesis Validation
+## 4.4 Extended Capability Results
 
-The demonstration results directly address the research question by providing evidence that each claimed capability functions as designed. This section maps demonstration outcomes to research question components.
+Beyond the core strategic-to-tactical demonstration, BASTION's implementation validates several additional capabilities that strengthen the research contribution. These results reflect capabilities completed through March 2026 across 31 completed development phases.
+
+### Doctrinal Workflow Validation
+
+The six-tab doctrinal lifecycle (Understand, Design, Plan, Direct, COP, Assess) was validated through the Pacific Strategy AY26 exercise scenario—an Indo-Pacific contingency planning exercise with six phases spanning Competition through Negotiation. The exercise demonstrated a complete planning cycle using the new tab structure.
+
+Staff officers began in the Understand tab by uploading the exercise scenario training package. AI-driven tag inference automatically categorized documents by type, team assignment, and exercise phase. The RAFT graph populated with actors, relationships, and tensions extracted from the uploaded intelligence. Operators then moved to the Design tab where the problem framing canvas identified key tensions in the strategic environment. Center of gravity analysis using Strange's framework identified adversary critical vulnerabilities. Lines of effort were defined with explicit linkages to strategic objectives. The operational approach builder synthesized these elements into a phased approach that exported directly into the Plan tab's mission analysis.
+
+This end-to-end flow through the doctrinal tabs validated that the interface structure reinforces rather than impedes the joint planning process. The iterative nature of the tabs was exercised when assessment findings triggered a return to Design for operational approach adjustment.
+
+### Operational Design Results
+
+The Design tab's operational design workspace validated that AI assistance can accelerate the traditionally time-intensive operational design process without substituting machine judgment for commander creativity. The problem framing canvas with AI-identified tensions provided starting points that commanders refined rather than adopted wholesale. Center of gravity analysis for both friendly and adversary forces produced structured outputs that directly informed course of action development. The design-to-plan handoff eliminated the manual translation of design outputs into planning inputs that conventionally requires staff effort and introduces interpretation errors.
+
+### COP Layer Agent Team Results
+
+The autonomous COP layer generation validated that AI agents can produce operationally relevant MIL-STD-2525D overlays from planning documents without manual symbol placement. In testing with the Pacific Strategy AY26 scenario, agent teams extracted geographic references, unit identities, and temporal phasing from uploaded orders and intelligence to generate multi-layer COP overlays. The publish review cycle ensured that human reviewers approved all AI-generated layers before they appeared on the shared COP, validating the integration of AI automation with governance review. The friendly/adversary perspective toggle produced separate COP views that supported dual-perspective exercise play.
+
+### IPB Complete Cycle Results
+
+The dual-perspective IPB validated that information isolation between Blue and Red teams can be maintained while both teams operate on the same platform. Blue team intelligence assessments remained invisible to Red team participants and vice versa. COA scoring against five doctrinal criteria—with wargame evidence integration from the action-reaction-counteraction framework—produced quantitative decision support that commanders found more structured than traditional staff briefings. Commander decisions anchored on the blockchain provided permanent records of COA selection rationale.
+
+### Resource Registry Results
+
+The resource DID architecture validated that military assets can be managed as blockchain-verified entities with extensible type definitions. The plugin architecture demonstrated that new resource types can be added (autonomous vehicle, sensor, weapon, comms, logistics) without modifying core platform code. COP integration showed resources rendering as standard military symbols alongside AI-generated layers, providing a unified operational picture. Real-time readiness tracking with FMC/PMC/NMC status gave commanders immediate visibility into force capability without manual status reporting.
+
+### Training Mode Results
+
+The training/operational mode toggle validated the "train as you fight" capability. Exercises conducted in training mode used identical DAO governance—same voting thresholds, same authority models, same safety matrix enforcement—as operational mode. The persistent amber EXERCISE banner and automatic document watermarking prevented exercise/operational confusion. Reset and checkpoint capabilities enabled exercise iteration, and after-action review capture provided structured debriefing data.
+
+### Updated Implementation Metrics
+
+| Metric | Previous (Jan 2026) | Current (Mar 2026) |
+|--------|---------------------|---------------------|
+| Completed phases | 15 | 31 |
+| Total phases | 24 | 48 |
+| Completed plans | 117 | 292 |
+| AI agents (specialized) | 23 | 31 |
+| AI agents (JPP staff roles) | — | 102 |
+| AI agents (total) | 23 | 131 |
+| Smart contract modules | 5 | 12 |
+| REST API endpoints | ~100 | ~417 |
+| Doctrinal tabs | 4 (functional) | 6 (doctrinal lifecycle) |
+| Resource types (plugins) | — | 5 |
+
+## 4.5 Thesis Validation
+
+The demonstration and extended capability results directly address the research question by providing evidence that each claimed capability functions as designed. This section maps outcomes to research question components.
 
 ### Research Question Answered
 
 The research question asked: *How can interconnected, AI-augmented Decentralized Autonomous Organizations (DAOs) provide a secure, transparent, and resilient governance framework that enables effective C2, accelerates decision-making, optimizes resource management, and supports autonomous, policy-compliant coordination across diverse national and organizational boundaries?*
 
-The demonstration validates each element of this question through observable outcomes.
+The demonstration and extended implementation validate each element of this question.
 
-**Secure.** Policy constraints encoded in smart contracts govern all execution decisions. National caveats restrict asset employment based on contributor policies. The tactical system verifies constraint compliance before executing effects. Strike authorization requires explicit human approval with 100% voting threshold. Security is enforced through code, not procedure, eliminating the possibility of inadvertent policy violations.
+**Secure.** Policy constraints encoded in smart contracts govern all execution decisions. National caveats restrict asset employment based on contributor policies. The tactical system verifies constraint compliance before executing effects. Strike authorization requires explicit human approval with 100% voting threshold. Security is enforced through code, not procedure, eliminating the possibility of inadvertent policy violations. The resource DID architecture extends security to individual military assets, providing cryptographic verification of resource provenance and assignment history.
 
-**Transparent.** Every decision in the demonstration is recorded on the blockchain with full audit trail. Coalition members can verify proposal content, voting records, and execution outcomes independently. No central authority controls the record; all participants have equal access to governance history. The monitoring dashboards display agent reasoning, enabling observers to understand why AI systems made specific recommendations.
+**Transparent.** Every decision is recorded on the blockchain with full audit trail. Coalition members can verify proposal content, voting records, and execution outcomes independently. No central authority controls the record; all participants have equal access to governance history. The monitoring dashboards display agent reasoning, enabling observers to understand why AI systems made specific recommendations. The COP layer publish review cycle provides transparency into AI-generated operational picture content before it influences command decisions.
 
-**Resilient.** The decentralized architecture eliminates single points of failure. DAO governance does not depend on any single member's participation; the system continues to function as long as quorum requirements are met. Edge computing on the Jetson enables tactical operations without continuous connectivity to central systems. The blockchain maintains state even if individual nodes fail.
+**Resilient.** The decentralized architecture eliminates single points of failure. DAO governance does not depend on any single member's participation; the system continues to function as long as quorum requirements are met. Edge computing on the Jetson enables tactical operations without continuous connectivity to central systems. The blockchain maintains state even if individual nodes fail. The training mode validates resilience procedures through exercises that use identical governance mechanisms.
 
-**Effective C2.** The complete flow from strategic objective through tactical execution demonstrates command and control across echelons. Strategic intent cascades to operational plans to tactical tasks. Upward reporting from tactical to strategic completes the C2 cycle. The cross-DAO replenishment request shows that the C2 structure adapts to operational developments without requiring manual reconfiguration.
+**Effective C2.** The complete flow from strategic objective through tactical execution demonstrates command and control across echelons. Strategic intent cascades through the doctrinal lifecycle tabs—from Understand through Design, Plan, Direct, to COP and Assess—mirroring the JP 5-0 process. The six-tab doctrinal interface ensures that C2 processes follow established doctrine rather than arbitrary software workflows. Upward reporting from tactical to strategic completes the C2 cycle. The cross-DAO replenishment request shows that the C2 structure adapts to operational developments without requiring manual reconfiguration.
 
-**Accelerated Decision-Making.** AI augmentation at each level accelerates coordination. Objective extraction converts documents to structured data in minutes rather than hours. Operational planning agents generate plans continuously. Tactical AI identifies targets in real-time. The replenishment proposal is generated automatically upon threshold detection. Human decision-makers focus on judgment calls rather than administrative coordination.
+**Accelerated Decision-Making.** AI augmentation at each level accelerates coordination. Document analysis extracts objectives in minutes rather than hours. The operational design workspace with AI-assisted problem framing and CoG analysis accelerates the design phase. 131 AI agents across governance, planning, intelligence, and staff functions generate options continuously. COP layer agents produce operational picture updates autonomously from planning documents. The replenishment proposal is generated automatically upon threshold detection. Human decision-makers focus on judgment calls rather than administrative coordination.
 
-**Optimized Resource Management.** Resource tracking through the DAO registry provides visibility into asset availability, allocation, and consumption. Replenishment triggers when inventory reaches defined thresholds rather than on arbitrary schedules. Coalition members can verify resource status at any time through the transparent governance interface. The demonstration shows resources flowing from strategic allocation through tactical employment to replenishment request without manual tracking overhead.
+**Optimized Resource Management.** The resource registry with DID-based identity provides visibility into asset availability, allocation, and consumption across the coalition. Plugin-based resource types enable standardized management of heterogeneous military assets. Replenishment triggers when inventory reaches defined thresholds rather than on arbitrary schedules. Real-time readiness tracking (FMC/PMC/NMC) provides immediate force capability assessment. DAO-governed allocation ensures that resource assignment decisions receive appropriate coalition oversight.
 
-**Policy-Compliant Coordination.** Coalition caveats specified at contribution time bind all subsequent employment decisions. Smart contracts enforce restrictions automatically. The tactical system cannot execute effects that violate contributor policies. Strike authorization requires coalition voting regardless of autonomy configuration. Policy compliance is verified computationally before execution, not audited after the fact.
+**Policy-Compliant Coordination.** Coalition caveats specified at contribution time bind all subsequent employment decisions. Smart contracts enforce restrictions automatically. The tactical system cannot execute effects that violate contributor policies. Strike authorization requires coalition voting regardless of autonomy configuration. Policy compliance is verified computationally before execution, not audited after the fact. The training mode ensures that exercise governance is identical to operational governance, validating policy compliance mechanisms through realistic training.
 
-**Coordination Across Boundaries.** The coalition DAO includes members from multiple notional nations with different weights, caveats, and interests. Governance decisions require multi-party agreement according to configured thresholds. The cross-DAO communication demonstrates coordination across the strategic-tactical boundary. The demonstration could scale to additional DAOs representing additional organizational boundaries without architectural changes.
+**Coordination Across Boundaries.** The coalition DAO includes members from multiple notional nations with different weights, caveats, and interests. Governance decisions require multi-party agreement according to configured thresholds. The cross-DAO communication demonstrates coordination across the strategic-tactical boundary. Per-role staff workspaces with cross-staff notifications demonstrate coordination across functional boundaries. The IPB cycle with information barriers demonstrates coordination across classification and team boundaries. The system scales to additional DAOs representing additional organizational boundaries without architectural changes.
 
 ### Human Authority Preservation
 
