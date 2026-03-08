@@ -36,9 +36,6 @@ export const NetworkTargetsPage: React.FC = () => {
   const [formLabel, setFormLabel] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
 
-  // Edit state
-  const [editingId, setEditingId] = useState<string | null>(null);
-
   const loadTargets = useCallback(async () => {
     try {
       const result = await discoveryService.getScanTargets();
