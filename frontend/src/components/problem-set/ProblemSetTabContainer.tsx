@@ -38,6 +38,7 @@ import { DirectTab } from '../tabs/DirectTab';
 import { COPTab } from '../cop/COPTab';
 import { AssessEchelonRouter } from '../assess/AssessEchelonRouter';
 import { copService } from '../../lib/cop-service';
+import { inheritanceApi } from '../../lib/inheritance-service';
 import { DecisionGateProvider } from '../../context/DecisionGateContext';
 import { AIStaffProvider } from '../../context/AIStaffContext';
 import { AIStaffPanel } from '../ai-staff/AIStaffPanel';
@@ -128,6 +129,9 @@ export function ProblemSetTabContainer() {
     layerCount: number;
   } | null>(null);
 
+  // Inheritance notification count for Understand tab badge
+  const [inheritanceNotificationCount, setInheritanceNotificationCount] = useState(0);
+
   // Sync URL problemSetId → context (same pattern as ProblemSetDashboard)
   useEffect(() => {
     if (problemSetId && problemSetId !== activeProblemSetId) {
@@ -165,6 +169,25 @@ export function ProblemSetTabContainer() {
     const interval = setInterval(fetchCopStatus, 10_000);
     return () => clearInterval(interval);
   }, [displayId, fetchCopStatus]);
+
+  // Poll inheritance notification counts for Understand tab badge (30s interval)
+  const fetchInheritanceCounts = useCallback(async () => {
+    if (!displayId) return;
+    try {
+      const counts = await inheritanceApi.getNotificationCounts(displayId);
+      setInheritanceNotificationCount(counts.total);
+    } catch {
+      // Non-fatal — badge just won't show
+    }
+  }, [displayId]);
+
+  useEffect(() => {
+    if (!displayId) return;
+
+    fetchInheritanceCounts();
+    const interval = setInterval(fetchInheritanceCounts, 30_000);
+    return () => clearInterval(interval);
+  }, [displayId, fetchInheritanceCounts]);
 
   // Derive visible tabs: use backend config if available, fall back to client defaults
   const visibleTabs = useMemo((): ProblemSetTab[] => {
@@ -309,6 +332,11 @@ export function ProblemSetTabContainer() {
               ].join(' ')}
             >
               {TAB_LABELS[tab]}
+              {tab === 'understand' && inheritanceNotificationCount > 0 && (
+                <span className="ml-1 inline-block relative align-middle">
+                  <NotificationBadge count={inheritanceNotificationCount} />
+                </span>
+              )}
               {tab === 'cop' && copStatus && (
                 <span
                   className={[

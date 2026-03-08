@@ -232,6 +232,48 @@ export function InheritedContextSection({
     }
   }
 
+  async function handleRequestModification(itemId: string) {
+    if (!data) return;
+    const meta = findItemMeta(data, itemId);
+    if (!meta) return;
+    const subject = prompt('Modification request subject:');
+    if (!subject) return;
+    const description = prompt('Describe the requested modification:');
+    if (!description) return;
+    try {
+      await inheritanceApi.createModificationRequest(problemSetId, {
+        targetProblemSetId: meta.sourceProblemSetId,
+        targetItemId: itemId,
+        targetItemType: meta.itemType,
+        subject,
+        description,
+      });
+      await fetchContext();
+    } catch (err) {
+      console.error('Failed to create modification request:', err);
+    }
+  }
+
+  async function handleRequestGuidance(itemId: string) {
+    if (!data) return;
+    const meta = findItemMeta(data, itemId);
+    if (!meta) return;
+    const subject = prompt('Guidance request subject:');
+    if (!subject) return;
+    const situationDescription = prompt('Describe the situation requiring guidance:');
+    if (!situationDescription) return;
+    try {
+      await inheritanceApi.createGuidanceRequest(problemSetId, {
+        targetProblemSetId: meta.sourceProblemSetId,
+        subject,
+        situationDescription,
+      });
+      await fetchContext();
+    } catch (err) {
+      console.error('Failed to create guidance request:', err);
+    }
+  }
+
   function handleCloseAnnotationPanel() {
     setAnnotatingItemId(null);
     // Refresh annotations and context when panel closes
@@ -393,6 +435,8 @@ export function InheritedContextSection({
                             onToggleExpand={() => handleToggleExpand(doc.id)}
                             onAnnotate={handleAnnotate}
                             onRequestInfo={handleRequestInfo}
+                            onRequestModification={handleRequestModification}
+                            onRequestGuidance={handleRequestGuidance}
                             annotations={annotationsByItem[doc.id]}
                           />
                         ))}
@@ -434,6 +478,8 @@ export function InheritedContextSection({
                               }
                               onAnnotate={handleAnnotate}
                               onRequestInfo={handleRequestInfo}
+                              onRequestModification={handleRequestModification}
+                              onRequestGuidance={handleRequestGuidance}
                               annotations={
                                 annotationsByItem[gs.containerName]
                               }

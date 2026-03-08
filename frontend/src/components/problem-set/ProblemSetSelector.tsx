@@ -24,6 +24,7 @@ import { useUser } from '../../context/UserContext';
 import { problemSetService, type ProblemSetDetail } from '../../lib/problem-set-service';
 import { OrgTree } from './OrgTree';
 import { CreateProblemSetWizard } from './CreateProblemSetWizard';
+import { inheritanceApi } from '../../lib/inheritance-service';
 
 // --- Badge helpers (inlined from ProblemSetDashboard) -------------------------
 
@@ -74,6 +75,9 @@ export function ProblemSetSelector() {
   const [draftName, setDraftName] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Inheritance pending update indicators per PS
+  const [pendingInheritance, setPendingInheritance] = useState<Record<string, boolean>>({});
+
   // Derive root problem set ID for OrgTree -- prefer strategic echelon, fallback to first
   const rootProblemSetId = useMemo((): string | null => {
     if (memberships.length === 0) return null;
@@ -104,6 +108,30 @@ export function ProblemSetSelector() {
   useEffect(() => {
     setEditingName(false);
   }, [selectedId]);
+
+  // Fetch inheritance notification counts for all memberships (lightweight check)
+  useEffect(() => {
+    if (memberships.length === 0) return;
+    let cancelled = false;
+
+    async function fetchPendingFlags() {
+      const flags: Record<string, boolean> = {};
+      // Fetch counts in parallel but cap to avoid too many requests
+      const fetches = memberships.map(async (m) => {
+        try {
+          const counts = await inheritanceApi.getNotificationCounts(m.problemSetId);
+          flags[m.problemSetId] = counts.total > 0;
+        } catch {
+          flags[m.problemSetId] = false;
+        }
+      });
+      await Promise.all(fetches);
+      if (!cancelled) setPendingInheritance(flags);
+    }
+
+    fetchPendingFlags();
+    return () => { cancelled = true; };
+  }, [memberships]);
 
   const canEdit = detail && userDID && (detail.createdBy === userDID || selectedMembership?.role === 'commander');
 
@@ -226,6 +254,21 @@ export function ProblemSetSelector() {
                         title={canEdit ? 'Click to edit name' : undefined}
                       >
                         {selectedMembership.name}
+                        {pendingInheritance[selectedMembership.problemSetId] && (
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: '#d97706',
+                              marginLeft: '8px',
+                              verticalAlign: 'middle',
+                              boxShadow: '0 0 4px rgba(217, 119, 6, 0.5)',
+                            }}
+                            title="Pending inheritance updates"
+                          />
+                        )}
                       </h3>
                     )}
                     <div className="flex items-center gap-2 flex-wrap">

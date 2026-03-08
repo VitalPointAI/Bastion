@@ -132,6 +132,15 @@ export function RFIThread({
   const sourceColors = ECHELON_COLORS[sourceEchelon];
   const targetColors = ECHELON_COLORS[targetEchelon];
 
+  // Subtype-based rendering helpers
+  const subtype = rfi?.rfiSubtype ?? 'clarification';
+  const subtypeHeader: Record<string, { label: string; color: string; bg: string }> = {
+    clarification: { label: 'RFI', color: '#93c5fd', bg: 'rgba(59, 130, 246, 0.1)' },
+    modification_request: { label: 'Modification Request', color: '#fbbf24', bg: 'rgba(234, 179, 8, 0.1)' },
+    guidance_request: { label: 'Guidance Request', color: '#93c5fd', bg: 'rgba(59, 130, 246, 0.1)' },
+  };
+  const subtypeInfo = subtypeHeader[subtype] ?? subtypeHeader.clarification;
+
   // -------------------------------------------------------------------------
   // Fetch thread data
   // -------------------------------------------------------------------------
@@ -502,6 +511,38 @@ export function RFIThread({
             {rfi?.subject || 'RFI Thread'}
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {/* Subtype badge */}
+            <span
+              style={{
+                padding: '2px 8px',
+                borderRadius: '3px',
+                fontSize: '10px',
+                fontWeight: 600,
+                backgroundColor: subtypeInfo.bg,
+                color: subtypeInfo.color,
+              }}
+            >
+              {subtypeInfo.label}
+            </span>
+            {/* Resolution status for modification requests */}
+            {subtype === 'modification_request' && rfi?.resolutionStatus && (
+              <span
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: '3px',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  backgroundColor: rfi.resolutionStatus === 'approved'
+                    ? 'rgba(34, 197, 94, 0.2)' : rfi.resolutionStatus === 'denied'
+                    ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.2)',
+                  color: rfi.resolutionStatus === 'approved'
+                    ? '#4ade80' : rfi.resolutionStatus === 'denied'
+                    ? '#f87171' : '#fbbf24',
+                }}
+              >
+                {rfi.resolutionStatus.charAt(0).toUpperCase() + rfi.resolutionStatus.slice(1)}
+              </span>
+            )}
             {/* Status badge */}
             <span
               style={{
@@ -775,6 +816,55 @@ export function RFIThread({
               >
                 Close RFI
               </button>
+            )}
+            {/* Approve/Deny for modification requests (parent view) */}
+            {isResponder && subtype === 'modification_request' && (!rfi.resolutionStatus || rfi.resolutionStatus === 'pending') && (
+              <>
+                <button
+                  onClick={async () => {
+                    try {
+                      await inheritanceApi.resolveModificationRequest(problemSetId, rfiId!, 'approved');
+                      await fetchThread();
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to approve');
+                    }
+                  }}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                    border: '1px solid rgba(34, 197, 94, 0.4)',
+                    borderRadius: '3px',
+                    color: '#4ade80',
+                    cursor: 'pointer',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await inheritanceApi.resolveModificationRequest(problemSetId, rfiId!, 'denied');
+                      await fetchThread();
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to deny');
+                    }
+                  }}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    borderRadius: '3px',
+                    color: '#f87171',
+                    cursor: 'pointer',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  Deny
+                </button>
+              </>
             )}
             <button
               onClick={fetchThread}

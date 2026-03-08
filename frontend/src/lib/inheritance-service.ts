@@ -112,6 +112,8 @@ export interface InheritanceRFI {
   content: string;
   status: 'open' | 'in-progress' | 'resolved' | 'closed';
   priority: 'routine' | 'priority' | 'immediate';
+  rfiSubtype?: 'clarification' | 'modification_request' | 'guidance_request';
+  resolutionStatus?: 'pending' | 'approved' | 'denied';
   createdBy: string;
   createdAt: string;
   updatedAt: string;
