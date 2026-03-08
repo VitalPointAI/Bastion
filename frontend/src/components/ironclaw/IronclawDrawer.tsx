@@ -33,7 +33,8 @@ interface IronclawDrawerProps {
   onAcceptSuggestion?: (id: string) => void;
   onDismissSuggestion?: (id: string) => void;
   isLoading?: boolean;
-  noProblemSet?: boolean;
+  /** True when no problem set is selected — chat works but in global/user-scoped mode */
+  isGlobalMode?: boolean;
 }
 
 export function IronclawDrawer({
@@ -45,7 +46,7 @@ export function IronclawDrawer({
   onAcceptSuggestion,
   onDismissSuggestion,
   isLoading,
-  noProblemSet,
+  isGlobalMode,
 }: IronclawDrawerProps) {
   const [inputValue, setInputValue] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -246,67 +247,71 @@ export function IronclawDrawer({
 
         {/* Input area */}
         <div className="relative border-t border-slate-700 px-4 py-4 bg-slate-900/95">
-          {noProblemSet ? (
-            <div className="text-center py-2">
-              <p className="text-sm text-gray-400">Select a problem set to chat with Ironclaw</p>
+          {/* Global mode indicator */}
+          {isGlobalMode && (
+            <div className="text-center pb-2">
+              <span className="text-[10px] text-gray-500 bg-slate-800 px-2 py-0.5 rounded-full">
+                General conversation — select a problem set for specialist access
+              </span>
             </div>
-          ) : (
-            <>
-              {/* @mention dropdown */}
-              {showMentions && filteredSpecialists.length > 0 && (
-                <div className="ironclaw-mention-dropdown absolute bottom-full left-4 right-4 mb-1
-                  bg-slate-800 border border-slate-600 rounded-lg shadow-xl overflow-hidden">
-                  {filteredSpecialists.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => handleMentionSelect(s)}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-200
-                        hover:bg-slate-700 flex items-center gap-2 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      <span>{s.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-end gap-2">
-                <textarea
-                  ref={textareaRef}
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask Ironclaw anything... Use @agent for direct specialist access"
-                  rows={2}
-                  className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2.5
-                    text-sm text-white placeholder-gray-500
-                    focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                    resize-none"
-                  style={{ maxHeight: `${5 * 24}px` }}
-                />
-
-                {/* Send button */}
-                <button
-                  onClick={handleSend}
-                  disabled={!inputValue.trim()}
-                  className="p-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white
-                    disabled:opacity-40 disabled:cursor-not-allowed
-                    transition-colors shrink-0"
-                  aria-label="Send message"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M12 19V5m0 0l-7 7m7-7l7 7"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </>
           )}
+
+          {/* @mention dropdown — only in problem-set mode */}
+          {!isGlobalMode && showMentions && filteredSpecialists.length > 0 && (
+            <div className="ironclaw-mention-dropdown absolute bottom-full left-4 right-4 mb-1
+              bg-slate-800 border border-slate-600 rounded-lg shadow-xl overflow-hidden">
+              {filteredSpecialists.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => handleMentionSelect(s)}
+                  className="w-full px-3 py-2 text-left text-sm text-gray-200
+                    hover:bg-slate-700 flex items-center gap-2 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>{s.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-end gap-2">
+            <textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder={isGlobalMode
+                ? 'Ask Ironclaw anything...'
+                : 'Ask Ironclaw anything... Use @agent for direct specialist access'
+              }
+              rows={2}
+              className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2.5
+                text-sm text-white placeholder-gray-500
+                focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                resize-none"
+              style={{ maxHeight: `${5 * 24}px` }}
+            />
+
+            {/* Send button */}
+            <button
+              onClick={handleSend}
+              disabled={!inputValue.trim()}
+              className="p-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white
+                disabled:opacity-40 disabled:cursor-not-allowed
+                transition-colors shrink-0"
+              aria-label="Send message"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 19V5m0 0l-7 7m7-7l7 7"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </>
