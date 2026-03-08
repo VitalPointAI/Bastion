@@ -354,7 +354,7 @@ Plans:
 **Goal:** Build the full 7-step JPP workflow as a collaborative planning framework within the Plan tab, producing COAs and annex-based campaign plans with Ends-Ways-Means linkage to strategic objectives. Includes entity resolution, OSINT feed integration (Argus), and designated AI agents per step.
 **Requirements:** [JPP-01, JPP-02, JPP-03, JPP-04, JPP-05, JPP-06, JPP-07, JPP-08, JPP-09, JPP-10, JPP-11, JPP-12, JPP-13]
 **Depends on:** Phase 32
-**Plans:** 9 plans
+**Plans:** 10 plans
 
 Plans:
 - [ ] 33-01-PLAN.md -- JPP domain types, DB schema, JPP store, E-W-M store
@@ -366,6 +366,7 @@ Plans:
 - [ ] 33-07-PLAN.md -- Steps 4-7: COA Analysis, Comparison, Approval, Plan/Order Development
 - [ ] 33-08-PLAN.md -- E-W-M Overview: interactive tree + Sankey diagram + gap analysis
 - [ ] 33-09-PLAN.md -- Entity resolution panel, final wiring, human verification
+- [ ] 33-10-PLAN.md -- Document generation, export, versioning, and distribution for campaign plans
 
 ---
 
