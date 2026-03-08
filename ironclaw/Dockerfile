@@ -4,6 +4,10 @@
 
 FROM rust:1.87-bookworm AS builder
 
+# ironclaw main now requires rust >= 1.92 (edition 2024).
+# Upgrade toolchain since the Docker image ships 1.87.
+RUN rustup update stable && rustup default stable
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config libssl-dev git \
     && rm -rf /var/lib/apt/lists/*
