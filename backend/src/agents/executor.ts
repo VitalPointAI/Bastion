@@ -78,6 +78,10 @@ const capabilityToActionType: Record<AgentCapability, AgentActionType> = {
   [AgentCapability.EffectCascading]: AgentActionType.AnalyzeProposal,
   [AgentCapability.EscalationModeling]: AgentActionType.AnalyzeProposal,
   [AgentCapability.DeceptionDetection]: AgentActionType.AnalyzeProposal,
+  // New Agent Capabilities (Deception, Exploitation, De-escalation)
+  [AgentCapability.DeceptionPlanning]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.ExploitationAnalysis]: AgentActionType.AnalyzeProposal,
+  [AgentCapability.DeescalationManagement]: AgentActionType.AnalyzeProposal,
 };
 
 /**

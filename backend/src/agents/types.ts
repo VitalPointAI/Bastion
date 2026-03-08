@@ -73,6 +73,14 @@ export enum AgentCapability {
   EscalationModeling = 'EscalationModeling',
   /** Detect potential deception in adversary actions and intelligence */
   DeceptionDetection = 'DeceptionDetection',
+
+  // ── New Agent Capabilities (Deception, Exploitation, De-escalation) ──
+  /** Plan and recommend military deception operations (MILDEC) */
+  DeceptionPlanning = 'DeceptionPlanning',
+  /** Identify and recommend exploitation of opportunities and vulnerabilities */
+  ExploitationAnalysis = 'ExploitationAnalysis',
+  /** Analyze and recommend de-escalation pathways and tension reduction */
+  DeescalationManagement = 'DeescalationManagement',
 }
 
 /**

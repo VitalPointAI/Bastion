@@ -6,7 +6,7 @@
  * to DB, and triggers circuit breaker evaluation.
  */
 
-import { readdir, readFile } from 'fs/promises';
+import { readdir, readFile, access } from 'fs/promises';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -28,10 +28,14 @@ import { getAgentRegistry } from '../agents/registry.js';
 // Constants
 // ---------------------------------------------------------------------------
 
-// Resolve fixtures dir relative to this file's compiled location
+// Resolve fixtures dir relative to this file's compiled location,
+// with fallback to src/ for dev mode (tsx watch) where dist/ isn't used.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = join(__filename, '..');
-const FIXTURES_DIR = join(__dirname, 'fixtures');
+const FIXTURES_DIR_COMPILED = join(__dirname, 'fixtures');
+// Walk up from dist/validation/ or src/validation/ to backend root, then into src/
+const BACKEND_ROOT = join(__dirname, '..', '..');
+const FIXTURES_DIR_SRC = join(BACKEND_ROOT, 'src', 'validation', 'fixtures');
 const DEFAULT_CONCURRENCY = 2;
 
 // ---------------------------------------------------------------------------
@@ -409,14 +413,26 @@ export class ValidationRunner {
    * Load all test fixtures from the fixtures directory.
    */
   async loadFixtures(): Promise<TestFixture[]> {
+    // Try compiled path first (dist/), then fall back to source (src/)
+    let fixturesDir = FIXTURES_DIR_COMPILED;
     try {
-      const files = await readdir(FIXTURES_DIR);
+      await access(fixturesDir);
+    } catch {
+      fixturesDir = FIXTURES_DIR_SRC;
+    }
+
+    try {
+      const files = await readdir(fixturesDir);
       const jsonFiles = files.filter((f) => f.endsWith('.json'));
       const fixtures: TestFixture[] = [];
 
+      console.log(
+        `[ValidationRunner] Loading ${jsonFiles.length} fixtures from ${fixturesDir}`,
+      );
+
       for (const file of jsonFiles) {
         try {
-          const content = await readFile(join(FIXTURES_DIR, file), 'utf-8');
+          const content = await readFile(join(fixturesDir, file), 'utf-8');
           const parsed = JSON.parse(content) as TestFixture;
 
           // Basic validation
@@ -440,7 +456,7 @@ export class ValidationRunner {
     } catch {
       // Directory doesn't exist yet - return empty
       console.warn(
-        `[ValidationRunner] Fixtures directory not found: ${FIXTURES_DIR}`,
+        `[ValidationRunner] Fixtures directory not found at ${FIXTURES_DIR_COMPILED} or ${FIXTURES_DIR_SRC}`,
       );
       return [];
     }
