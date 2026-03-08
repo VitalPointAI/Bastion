@@ -92,7 +92,9 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
 
         if (msg.type !== 'message' || !msg.data) return;
 
-        const incoming = msg.data as Record<string, unknown>;
+        // msg.data is a MessageEnvelope — the actual chat message is in .payload
+        const envelope = msg.data as Record<string, unknown>;
+        const incoming = (envelope.payload ?? envelope) as Record<string, unknown>;
 
         // Check if this is a step progress update for an existing message
         if (incoming.stepProgress || incoming.step_progress) {
@@ -128,7 +130,12 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
           createdAt: (incoming.created_at ?? incoming.createdAt ?? new Date().toISOString()) as string,
         };
 
-        setMessages((prev) => [...prev, chatMsg]);
+        // Skip user messages (already added optimistically) and deduplicate
+        if (chatMsg.sender === 'user') return;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === chatMsg.id)) return prev;
+          return [...prev, chatMsg];
+        });
 
         // Mark unread if drawer is closed
         if (!isOpenRef.current) {
@@ -136,9 +143,7 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
         }
 
         // Clear loading -- response arrived from Ironclaw
-        if (chatMsg.sender !== 'user') {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       } catch {
         // Non-JSON or unexpected message -- ignore
       }
