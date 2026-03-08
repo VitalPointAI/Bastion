@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-08T21:21:58.147Z"
+last_updated: "2026-03-08T21:24:37.873Z"
 progress:
   total_phases: 54
-  completed_phases: 31
+  completed_phases: 32
   total_plans: 310
-  completed_plans: 308
+  completed_plans: 309
 ---
 
 # Project State
@@ -25,8 +25,8 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 Phase: 35 of 40 (Mission Creation from OPORD & Problem Set Alignment) — IN PROGRESS
 Plan: 5 of 5 in current phase — COMPLETE
-Status: Plan 35-05 complete (legacy mission module deleted)
-Last activity: 2026-03-08 - Completed 35-05-PLAN.md
+Status: Plan 35-04 complete (PlanOrderDevelopment wiring & MissionTracker)
+Last activity: 2026-03-08 - Completed 35-04-PLAN.md
 
 Progress: ██████████████████████████ 308 plans complete
 
@@ -145,6 +145,7 @@ Progress: ███████████████████████�
 | Phase 35 P03 | 3 | 2 tasks | 3 files |
 | Phase 35 P02 | 7 | 2 tasks | 3 files |
 | Phase 35 P05 | 3 | 1 tasks | 7 files |
+| Phase 35 P04 | 5 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -692,6 +693,7 @@ Recent decisions affecting current work:
 - [Phase 35]: Used HTML5 native drag-and-drop for mission task grouping instead of external library
 - [Phase 35]: Wrapped each orchestration step in individual try/catch for partial success with status flags
 - [Phase 35]: Deleted backend/src/api/missions.ts alongside legacy module as sole consumer
+- [Phase 35]: Kept legacy tasksToSubordinates alongside structured subordinateTasks for backward compat
 
 ### Roadmap Evolution
 
