@@ -13,6 +13,7 @@ export {
   AccessListType,
   MatchType,
   BastionCommand,
+  DiscoveryOrigin,
 } from './types.js';
 export type {
   DiscoveryEvent,
@@ -26,6 +27,7 @@ export type {
   CommandResponse,
   ChallengeResult,
   OnboardingResult,
+  ScanTarget,
 } from './types.js';
 
 // Discovery Service (singleton orchestrator)
@@ -54,6 +56,19 @@ export { discoveryLifecycle } from './discovery-lifecycle.js';
 export { EMCollector } from './em-spectrum/em-collector.js';
 export { EMBand } from './em-spectrum/em-types.js';
 export type { EMSignalEntry, EMSnapshot, EMFootprint, EMDataSource } from './em-spectrum/em-types.js';
+
+// Legal Consent (Phase 32 Plan 12)
+export {
+  getRequiredConsent,
+  acceptConsent,
+  validateConsent,
+  getConsentTypeForOrigin,
+  ConsentType,
+} from './legal-consent.js';
+export type { LegalConsentRequirement } from './legal-consent.js';
+
+// Consent Records (from discovery-store)
+export type { ConsentRecord } from './discovery-store.js';
 
 // Network Topology (Phase 32 Plan 07)
 export { NetworkTopology } from './network-topology.js';

@@ -156,6 +156,8 @@ export interface DiscoveredDevice {
   ironclawAnalysis?: Record<string, unknown>;
   gateId?: string;
   quarantineReason?: string;
+  origin?: DiscoveryOrigin;
+  sourceTargetId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -242,4 +244,32 @@ export interface OnboardingResult {
   resourceId?: string;
   deviceDid?: string;
   error?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Discovery Origin (tri-origin model: server, client, remote)
+// ---------------------------------------------------------------------------
+
+export const DiscoveryOrigin = {
+  server: 'server',
+  client: 'client',
+  remote: 'remote',
+} as const;
+export type DiscoveryOrigin = (typeof DiscoveryOrigin)[keyof typeof DiscoveryOrigin];
+
+// ---------------------------------------------------------------------------
+// Scan Target (remote network addresses for remote-origin scanning)
+// ---------------------------------------------------------------------------
+
+export interface ScanTarget {
+  id: string;
+  address: string;
+  portRange?: string;
+  protocol: 'tcp' | 'udp' | 'icmp';
+  label: string;
+  enabled: boolean;
+  legalConsentAt?: Date;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

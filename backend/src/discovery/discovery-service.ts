@@ -17,12 +17,13 @@ import { WiFiScanner } from './scanners/wifi-scanner.js';
 import { USBScanner } from './scanners/usb-scanner.js';
 import { TAKScanner } from './scanners/tak-scanner.js';
 import { DEFAULT_SCAN_INTERVALS } from './scanners/scanner-interface.js';
-import { DeviceState, TransportType } from './types.js';
+import { DeviceState, TransportType, DiscoveryOrigin } from './types.js';
 import type {
   TransportScanner,
   DiscoveryEvent,
   ScannerConfig,
   DeviceState as DeviceStateType,
+  DiscoveryOrigin as DiscoveryOriginType,
 } from './types.js';
 import type { ResourceRegistry } from '../resources/resource-registry.js';
 import type { MessageBus } from '../messaging/message-bus.js';
@@ -45,6 +46,7 @@ export interface DiscoveryStatus {
   scanners: Record<string, ScannerStatus>;
   deviceCounts: Partial<Record<DeviceStateType, number>>;
   scope: string;
+  origin: DiscoveryOriginType;
 }
 
 // ---------------------------------------------------------------------------
@@ -66,6 +68,7 @@ export class DiscoveryService {
   private disabledInterfaces: Set<string> = new Set();
   private persistentConnections: Set<string> = new Set();
   private scope = 'global';
+  private origin: DiscoveryOriginType = DiscoveryOrigin.server;
   private running = false;
   private paused = false;
   private initialized = false;
@@ -223,15 +226,29 @@ export class DiscoveryService {
   /**
    * Start all enabled scanners.
    * Respects admin interface restrictions — disabled scanners are skipped.
+   * Accepts an origin parameter for tri-origin model (server/client/remote).
    */
-  start(scope?: string): void {
+  start(scope?: string, origin?: DiscoveryOriginType): void {
     if (!this.initialized) {
       throw new Error('DiscoveryService not initialized — call initialize() first');
     }
 
     this.scope = scope ?? 'global';
+    this.origin = origin ?? DiscoveryOrigin.server;
     this.running = true;
     this.paused = false;
+
+    // Remote origin scans are handled separately via startRemoteScan()
+    if (this.origin === DiscoveryOrigin.remote) {
+      console.log(`[DiscoveryService] Remote scan mode — use startRemoteScan() for targets`);
+      return;
+    }
+
+    // Client origin doesn't start server scanners — devices come via ingestClientDiscovery()
+    if (this.origin === DiscoveryOrigin.client) {
+      console.log(`[DiscoveryService] Client scan mode — awaiting browser-reported devices`);
+      return;
+    }
 
     for (const [transport, scanner] of this.scanners.entries()) {
       // Skip disabled interfaces
@@ -249,11 +266,12 @@ export class DiscoveryService {
           event: 'started',
           transport,
           scope: this.scope,
+          origin: this.origin,
         });
       }
     }
 
-    console.log(`[DiscoveryService] Started (scope: ${this.scope})`);
+    console.log(`[DiscoveryService] Started (scope: ${this.scope}, origin: ${this.origin})`);
   }
 
   /**
@@ -396,6 +414,7 @@ export class DiscoveryService {
       scanners,
       deviceCounts,
       scope: this.scope,
+      origin: this.origin,
     };
   }
 
@@ -468,6 +487,53 @@ export class DiscoveryService {
         transportType: transport,
         deviceDid: device.deviceDid,
         resourceId: device.resourceId,
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Remote & Client origin scanning
+  // -------------------------------------------------------------------------
+
+  /**
+   * Start a remote scan against configured scan targets.
+   * Iterates enabled targets and probes each address using WiFi scanner.
+   */
+  async startRemoteScan(): Promise<{ targetsScanned: number }> {
+    if (!this.initialized) {
+      throw new Error('DiscoveryService not initialized');
+    }
+
+    const targets = await discoveryStore.listScanTargets();
+    const enabledTargets = targets.filter((t) => t.enabled);
+
+    for (const target of enabledTargets) {
+      this.publishScanEvent('discovery.scan.remote', {
+        event: 'remote_probe',
+        targetId: target.id,
+        address: target.address,
+        portRange: target.portRange,
+      });
+    }
+
+    console.log(`[DiscoveryService] Remote scan started for ${enabledTargets.length} targets`);
+    return { targetsScanned: enabledTargets.length };
+  }
+
+  /**
+   * Ingest a discovery event reported by a client browser.
+   * Routes through the standard onboarding pipeline with origin='client'.
+   */
+  async ingestClientDiscovery(event: DiscoveryEvent): Promise<void> {
+    if (!this.pipeline) return;
+
+    const result = await this.pipeline.processDiscoveryEvent(event, this.scope);
+    if (result.success) {
+      this.publishScanEvent('discovery.device.client_reported', {
+        event: 'client_discovery',
+        transportType: event.transportType,
+        rawIdentifier: event.rawIdentifier,
+        resourceId: result.resourceId,
       });
     }
   }

@@ -20,6 +20,8 @@ import type {
   AccessListType,
   MatchType,
   DeviceFingerprint,
+  ScanTarget,
+  DiscoveryOrigin,
 } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -78,6 +80,46 @@ async function ensureDiscoveryTables(): Promise<void> {
       ON device_access_list(scope, list_type);
   `);
 
+  // Add origin columns to discovered_devices if missing
+  await pool.query(`
+    DO $$ BEGIN
+      ALTER TABLE discovered_devices ADD COLUMN IF NOT EXISTS origin TEXT DEFAULT 'server';
+      ALTER TABLE discovered_devices ADD COLUMN IF NOT EXISTS source_target_id UUID;
+    EXCEPTION WHEN others THEN NULL;
+    END $$;
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS scan_targets (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      address TEXT NOT NULL,
+      port_range TEXT,
+      protocol TEXT NOT NULL DEFAULT 'tcp' CHECK (protocol IN ('tcp', 'udp', 'icmp')),
+      label TEXT NOT NULL,
+      enabled BOOLEAN NOT NULL DEFAULT true,
+      legal_consent_at TIMESTAMPTZ,
+      created_by TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS consent_records (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_did TEXT NOT NULL,
+      consent_type TEXT NOT NULL,
+      target_id UUID,
+      legal_text_hash TEXT NOT NULL,
+      accepted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL,
+      ip_address TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_consent_user_type
+      ON consent_records(user_did, consent_type);
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS device_behavioral_baselines (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -114,6 +156,23 @@ function rowToDevice(row: Record<string, unknown>): DiscoveredDevice {
     ironclawAnalysis: (row.ironclaw_analysis as Record<string, unknown>) ?? undefined,
     gateId: (row.gate_id as string) ?? undefined,
     quarantineReason: (row.quarantine_reason as string) ?? undefined,
+    origin: (row.origin as DiscoveryOrigin) ?? undefined,
+    sourceTargetId: (row.source_target_id as string) ?? undefined,
+    createdAt: new Date(row.created_at as string),
+    updatedAt: new Date(row.updated_at as string),
+  };
+}
+
+function rowToScanTarget(row: Record<string, unknown>): ScanTarget {
+  return {
+    id: row.id as string,
+    address: row.address as string,
+    portRange: (row.port_range as string) ?? undefined,
+    protocol: row.protocol as ScanTarget['protocol'],
+    label: row.label as string,
+    enabled: row.enabled as boolean,
+    legalConsentAt: row.legal_consent_at ? new Date(row.legal_consent_at as string) : undefined,
+    createdBy: row.created_by as string,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
   };
@@ -494,6 +553,177 @@ async function getBaselines(deviceDid: string): Promise<DeviceBehavioralBaseline
 }
 
 // ---------------------------------------------------------------------------
+// Scan Targets CRUD
+// ---------------------------------------------------------------------------
+
+async function addScanTarget(
+  target: Omit<ScanTarget, 'id' | 'createdAt' | 'updatedAt'>,
+): Promise<ScanTarget> {
+  await ensureDiscoveryTables();
+  const pool = getPool();
+
+  const result = await pool.query(
+    `INSERT INTO scan_targets (address, port_range, protocol, label, enabled, legal_consent_at, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING *`,
+    [
+      target.address,
+      target.portRange ?? null,
+      target.protocol,
+      target.label,
+      target.enabled,
+      target.legalConsentAt ?? null,
+      target.createdBy,
+    ],
+  );
+
+  return rowToScanTarget(result.rows[0]);
+}
+
+async function listScanTargets(): Promise<ScanTarget[]> {
+  await ensureDiscoveryTables();
+  const pool = getPool();
+
+  const result = await pool.query(
+    `SELECT * FROM scan_targets ORDER BY created_at DESC`,
+  );
+
+  return result.rows.map(rowToScanTarget);
+}
+
+async function updateScanTarget(
+  id: string,
+  updates: Partial<Omit<ScanTarget, 'id' | 'createdAt' | 'createdBy'>>,
+): Promise<ScanTarget | null> {
+  await ensureDiscoveryTables();
+  const pool = getPool();
+
+  const setClauses = ['updated_at = NOW()'];
+  const params: unknown[] = [id];
+  let paramIdx = 2;
+
+  if (updates.address !== undefined) {
+    setClauses.push(`address = $${paramIdx++}`);
+    params.push(updates.address);
+  }
+  if (updates.portRange !== undefined) {
+    setClauses.push(`port_range = $${paramIdx++}`);
+    params.push(updates.portRange);
+  }
+  if (updates.protocol !== undefined) {
+    setClauses.push(`protocol = $${paramIdx++}`);
+    params.push(updates.protocol);
+  }
+  if (updates.label !== undefined) {
+    setClauses.push(`label = $${paramIdx++}`);
+    params.push(updates.label);
+  }
+  if (updates.enabled !== undefined) {
+    setClauses.push(`enabled = $${paramIdx++}`);
+    params.push(updates.enabled);
+  }
+  if (updates.legalConsentAt !== undefined) {
+    setClauses.push(`legal_consent_at = $${paramIdx++}`);
+    params.push(updates.legalConsentAt);
+  }
+
+  const result = await pool.query(
+    `UPDATE scan_targets SET ${setClauses.join(', ')} WHERE id = $1 RETURNING *`,
+    params,
+  );
+
+  return result.rows.length > 0 ? rowToScanTarget(result.rows[0]) : null;
+}
+
+async function removeScanTarget(id: string): Promise<boolean> {
+  await ensureDiscoveryTables();
+  const pool = getPool();
+
+  const result = await pool.query(
+    `DELETE FROM scan_targets WHERE id = $1`,
+    [id],
+  );
+
+  return (result.rowCount ?? 0) > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Consent Records CRUD
+// ---------------------------------------------------------------------------
+
+export interface ConsentRecord {
+  id: string;
+  userDid: string;
+  consentType: string;
+  targetId?: string;
+  legalTextHash: string;
+  acceptedAt: Date;
+  expiresAt: Date;
+  ipAddress?: string;
+}
+
+function rowToConsentRecord(row: Record<string, unknown>): ConsentRecord {
+  return {
+    id: row.id as string,
+    userDid: row.user_did as string,
+    consentType: row.consent_type as string,
+    targetId: (row.target_id as string) ?? undefined,
+    legalTextHash: row.legal_text_hash as string,
+    acceptedAt: new Date(row.accepted_at as string),
+    expiresAt: new Date(row.expires_at as string),
+    ipAddress: (row.ip_address as string) ?? undefined,
+  };
+}
+
+async function recordConsent(
+  record: Omit<ConsentRecord, 'id'>,
+): Promise<ConsentRecord> {
+  await ensureDiscoveryTables();
+  const pool = getPool();
+
+  const result = await pool.query(
+    `INSERT INTO consent_records (user_did, consent_type, target_id, legal_text_hash, accepted_at, expires_at, ip_address)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING *`,
+    [
+      record.userDid,
+      record.consentType,
+      record.targetId ?? null,
+      record.legalTextHash,
+      record.acceptedAt,
+      record.expiresAt,
+      record.ipAddress ?? null,
+    ],
+  );
+
+  return rowToConsentRecord(result.rows[0]);
+}
+
+async function getValidConsent(
+  userDid: string,
+  consentType: string,
+  targetId?: string,
+): Promise<ConsentRecord | null> {
+  await ensureDiscoveryTables();
+  const pool = getPool();
+
+  const query = targetId
+    ? `SELECT * FROM consent_records
+       WHERE user_did = $1 AND consent_type = $2 AND target_id = $3
+         AND expires_at > NOW()
+       ORDER BY accepted_at DESC LIMIT 1`
+    : `SELECT * FROM consent_records
+       WHERE user_did = $1 AND consent_type = $2 AND target_id IS NULL
+         AND expires_at > NOW()
+       ORDER BY accepted_at DESC LIMIT 1`;
+
+  const params = targetId ? [userDid, consentType, targetId] : [userDid, consentType];
+  const result = await pool.query(query, params);
+
+  return result.rows.length > 0 ? rowToConsentRecord(result.rows[0]) : null;
+}
+
+// ---------------------------------------------------------------------------
 // Singleton export
 // ---------------------------------------------------------------------------
 
@@ -511,4 +741,10 @@ export const discoveryStore = {
   checkAccessList,
   upsertBaseline,
   getBaselines,
+  addScanTarget,
+  listScanTargets,
+  updateScanTarget,
+  removeScanTarget,
+  recordConsent,
+  getValidConsent,
 };

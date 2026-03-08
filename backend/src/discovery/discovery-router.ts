@@ -32,6 +32,30 @@ import type {
 
 const StartScanSchema = z.object({
   scope: z.string().optional(),
+  origin: z.enum(['server', 'client', 'remote']).optional(),
+});
+
+const AddScanTargetSchema = z.object({
+  address: z.string().min(1),
+  portRange: z.string().optional(),
+  protocol: z.enum(['tcp', 'udp', 'icmp']).default('tcp'),
+  label: z.string().min(1),
+  enabled: z.boolean().default(true),
+});
+
+const UpdateScanTargetSchema = z.object({
+  address: z.string().min(1).optional(),
+  portRange: z.string().optional(),
+  protocol: z.enum(['tcp', 'udp', 'icmp']).optional(),
+  label: z.string().min(1).optional(),
+  enabled: z.boolean().optional(),
+});
+
+const ClientDiscoverySchema = z.object({
+  transportType: z.enum(['ble', 'wifi', 'usb', 'tak']),
+  rawIdentifier: z.string().min(1),
+  signalStrength: z.number().optional(),
+  rawData: z.record(z.string(), z.unknown()).default({}),
 });
 
 const ScannerConfigSchema = z.object({
@@ -77,11 +101,12 @@ function getUserDid(req: Request): string {
  */
 interface DiscoveryServiceFacade {
   getStatus: () => Record<string, unknown>;
-  start: (scope?: string) => void;
+  start: (scope?: string, origin?: string) => void;
   stop: () => void;
   pause: () => void;
   resume: () => void;
   setScannerConfig: (transport: string, config: Record<string, unknown>) => void;
+  ingestClientDiscovery: (event: Record<string, unknown>) => Promise<void>;
 }
 
 let _cachedService: DiscoveryServiceFacade | null | undefined;
@@ -152,8 +177,26 @@ discoveryRouter.post('/start', async (req: Request, res: Response) => {
       return res.status(503).json({ error: 'Discovery service not initialized' });
     }
 
-    svc.start(parsed.data.scope);
-    res.json({ ok: true, message: 'Scanning started' });
+    // Validate legal consent before starting scan
+    const userDid = getUserDid(req);
+    const origin = parsed.data.origin ?? 'server';
+    try {
+      const { validateConsent } = await import('./legal-consent.js');
+      const hasConsent = await validateConsent(userDid, origin);
+      if (!hasConsent) {
+        return res.status(451).json({
+          error: 'Legal consent required before scanning',
+          origin,
+          consentEndpoint: `/api/discovery/legal-consent/${origin}`,
+        });
+      }
+    } catch {
+      // If consent module fails, log but don't block (graceful degradation)
+      console.warn('[discovery-router] Legal consent validation failed, proceeding');
+    }
+
+    svc.start(parsed.data.scope, origin);
+    res.json({ ok: true, message: 'Scanning started', origin });
   } catch (err) {
     console.error('[discovery-router] POST /start error:', err);
     res.status(500).json({ error: 'Failed to start scanning' });
@@ -281,6 +324,65 @@ discoveryRouter.delete('/access-list/:id', async (req: Request, res: Response) =
   } catch (err) {
     console.error('[discovery-router] DELETE /access-list/:id error:', err);
     res.status(500).json({ error: 'Failed to remove access entry' });
+  }
+});
+
+// ==========================================================================
+// Legal Consent (Phase 32 Plan 12)
+// ==========================================================================
+
+/**
+ * GET /legal-consent/:origin
+ * Get required legal text and consent status for a scan origin.
+ */
+discoveryRouter.get('/legal-consent/:origin', async (req: Request, res: Response) => {
+  try {
+    const origin = String(req.params.origin);
+    const userDid = getUserDid(req);
+    const targetId = req.query.targetId ? String(req.query.targetId) : undefined;
+    const isMilitary = req.query.military === 'true';
+
+    const { getRequiredConsent } = await import('./legal-consent.js');
+    const requirement = await getRequiredConsent(origin, userDid, targetId, isMilitary);
+    res.json(requirement);
+  } catch (err) {
+    console.error('[discovery-router] GET /legal-consent/:origin error:', err);
+    res.status(500).json({ error: 'Failed to get legal consent requirement' });
+  }
+});
+
+/**
+ * POST /legal-consent
+ * Record user's acceptance of legal consent.
+ */
+discoveryRouter.post('/legal-consent', async (req: Request, res: Response) => {
+  try {
+    const consentSchema = z.object({
+      consentType: z.enum(['server_local', 'client_device', 'remote_network', 'military_network']),
+      legalTextHash: z.string().min(1),
+      targetId: z.string().uuid().optional(),
+    });
+    const parsed = consentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+
+    const userDid = getUserDid(req);
+    const ip = req.ip || req.socket.remoteAddress || undefined;
+
+    const { acceptConsent } = await import('./legal-consent.js');
+    const result = await acceptConsent(
+      userDid,
+      parsed.data.consentType,
+      parsed.data.legalTextHash,
+      parsed.data.targetId,
+      ip,
+    );
+
+    res.json({ ok: true, expiresAt: result.expiresAt });
+  } catch (err) {
+    console.error('[discovery-router] POST /legal-consent error:', err);
+    res.status(500).json({ error: 'Failed to record legal consent' });
   }
 });
 
@@ -506,6 +608,134 @@ discoveryRouter.put(
     }
   },
 );
+
+// ==========================================================================
+// Scan Targets CRUD (Phase 32 Plan 10)
+// ==========================================================================
+
+/**
+ * GET /scan-targets
+ * List configured remote scan targets.
+ */
+discoveryRouter.get('/scan-targets', async (_req: Request, res: Response) => {
+  try {
+    const targets = await discoveryStore.listScanTargets();
+    res.json({ targets, count: targets.length });
+  } catch (err) {
+    console.error('[discovery-router] GET /scan-targets error:', err);
+    res.status(500).json({ error: 'Failed to list scan targets' });
+  }
+});
+
+/**
+ * POST /scan-targets
+ * Add a new remote scan target.
+ */
+discoveryRouter.post('/scan-targets', async (req: Request, res: Response) => {
+  try {
+    const parsed = AddScanTargetSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+
+    const userDid = getUserDid(req);
+    const target = await discoveryStore.addScanTarget({
+      address: parsed.data.address,
+      portRange: parsed.data.portRange,
+      protocol: parsed.data.protocol,
+      label: parsed.data.label,
+      enabled: parsed.data.enabled,
+      createdBy: userDid,
+    });
+
+    res.status(201).json(target);
+  } catch (err) {
+    console.error('[discovery-router] POST /scan-targets error:', err);
+    res.status(500).json({ error: 'Failed to add scan target' });
+  }
+});
+
+/**
+ * PUT /scan-targets/:id
+ * Update a scan target.
+ */
+discoveryRouter.put('/scan-targets/:id', async (req: Request, res: Response) => {
+  try {
+    const parsed = UpdateScanTargetSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+
+    const target = await discoveryStore.updateScanTarget(
+      String(req.params.id),
+      parsed.data,
+    );
+
+    if (!target) {
+      return res.status(404).json({ error: 'Scan target not found' });
+    }
+
+    res.json(target);
+  } catch (err) {
+    console.error('[discovery-router] PUT /scan-targets/:id error:', err);
+    res.status(500).json({ error: 'Failed to update scan target' });
+  }
+});
+
+/**
+ * DELETE /scan-targets/:id
+ * Remove a scan target.
+ */
+discoveryRouter.delete('/scan-targets/:id', async (req: Request, res: Response) => {
+  try {
+    const removed = await discoveryStore.removeScanTarget(String(req.params.id));
+    if (!removed) {
+      return res.status(404).json({ error: 'Scan target not found' });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[discovery-router] DELETE /scan-targets/:id error:', err);
+    res.status(500).json({ error: 'Failed to remove scan target' });
+  }
+});
+
+// ==========================================================================
+// Client Discovery (Phase 32 Plan 10)
+// ==========================================================================
+
+/**
+ * POST /client-discovery
+ * Accept browser-reported device discoveries (origin='client').
+ */
+discoveryRouter.post('/client-discovery', async (req: Request, res: Response) => {
+  try {
+    const parsed = ClientDiscoverySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+
+    const svc = await getDiscoveryServiceSafe();
+    if (!svc) {
+      return res.status(503).json({ error: 'Discovery service not initialized' });
+    }
+
+    const now = Date.now();
+    const event = {
+      transportType: parsed.data.transportType as TransportType,
+      rawIdentifier: parsed.data.rawIdentifier,
+      signalStrength: parsed.data.signalStrength,
+      firstSeen: now,
+      lastSeen: now,
+      rawData: parsed.data.rawData,
+    };
+
+    await svc.ingestClientDiscovery(event);
+    res.json({ ok: true, message: 'Client discovery ingested' });
+  } catch (err) {
+    console.error('[discovery-router] POST /client-discovery error:', err);
+    res.status(500).json({ error: 'Failed to ingest client discovery' });
+  }
+});
 
 // ==========================================================================
 // EM Spectrum Awareness (Phase 32 Plan 07)

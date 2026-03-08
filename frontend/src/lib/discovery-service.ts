@@ -166,6 +166,43 @@ export interface TopologyStats {
 }
 
 // ---------------------------------------------------------------------------
+// Discovery Origin & Scan Target Types (Phase 32 Plan 10)
+// ---------------------------------------------------------------------------
+
+export const DiscoveryOrigin = {
+  server: 'server',
+  client: 'client',
+  remote: 'remote',
+} as const;
+export type DiscoveryOrigin = (typeof DiscoveryOrigin)[keyof typeof DiscoveryOrigin];
+
+export interface ScanTarget {
+  id: string;
+  address: string;
+  portRange?: string;
+  protocol: 'tcp' | 'udp' | 'icmp';
+  label: string;
+  enabled: boolean;
+  legalConsentAt?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Legal Consent Types (Phase 32 Plan 12)
+// ---------------------------------------------------------------------------
+
+export interface LegalConsentRequirement {
+  consentType: string;
+  title: string;
+  legalText: string;
+  textHash: string;
+  hasValidConsent: boolean;
+  consentExpiresAt?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -331,6 +368,93 @@ export class DiscoveryApiService {
     return this.request<{ path: string[]; hops: number }>(
       `/api/discovery/topology/path/${encodeURIComponent(from)}/${encodeURIComponent(to)}`,
     );
+  }
+
+  // ==========================================================================
+  // Scan Targets (Phase 32 Plan 10)
+  // ==========================================================================
+
+  /** List configured remote scan targets. */
+  async getScanTargets(): Promise<ScanTarget[]> {
+    const result = await this.request<{ targets: ScanTarget[] }>('/api/discovery/scan-targets');
+    return result.targets;
+  }
+
+  /** Add a remote scan target. */
+  async addScanTarget(target: {
+    address: string;
+    portRange?: string;
+    protocol: string;
+    label: string;
+    enabled: boolean;
+  }): Promise<ScanTarget> {
+    return this.request<ScanTarget>('/api/discovery/scan-targets', {
+      method: 'POST',
+      body: JSON.stringify(target),
+    });
+  }
+
+  /** Update a scan target. */
+  async updateScanTarget(id: string, updates: Partial<ScanTarget>): Promise<ScanTarget> {
+    return this.request<ScanTarget>(`/api/discovery/scan-targets/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /** Remove a scan target. */
+  async removeScanTarget(id: string): Promise<void> {
+    await this.request(`/api/discovery/scan-targets/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ==========================================================================
+  // Client Discovery (Phase 32 Plan 10)
+  // ==========================================================================
+
+  /** Report a browser-discovered device to the backend. */
+  async reportClientDiscovery(event: {
+    transportType: string;
+    rawIdentifier: string;
+    signalStrength?: number;
+    rawData?: Record<string, unknown>;
+  }): Promise<void> {
+    await this.request('/api/discovery/client-discovery', {
+      method: 'POST',
+      body: JSON.stringify(event),
+    });
+  }
+
+  // ==========================================================================
+  // Legal Consent (Phase 32 Plan 12)
+  // ==========================================================================
+
+  /** Get legal consent requirement for a scan origin. */
+  async getLegalConsent(
+    origin: string,
+    targetId?: string,
+    isMilitary?: boolean,
+  ): Promise<LegalConsentRequirement> {
+    const query = new URLSearchParams();
+    if (targetId) query.set('targetId', targetId);
+    if (isMilitary) query.set('military', 'true');
+    const qs = query.toString();
+    return this.request<LegalConsentRequirement>(
+      `/api/discovery/legal-consent/${encodeURIComponent(origin)}${qs ? `?${qs}` : ''}`,
+    );
+  }
+
+  /** Record user's acceptance of legal consent. */
+  async recordLegalConsent(
+    consentType: string,
+    legalTextHash: string,
+    targetId?: string,
+  ): Promise<{ expiresAt: string }> {
+    return this.request<{ expiresAt: string }>('/api/discovery/legal-consent', {
+      method: 'POST',
+      body: JSON.stringify({ consentType, legalTextHash, targetId }),
+    });
   }
 }
 

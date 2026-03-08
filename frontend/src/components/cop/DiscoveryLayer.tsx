@@ -150,7 +150,7 @@ export function DiscoveryLayer({ devices, visible, onDeviceSelect }: DiscoveryLa
 
       {/* Sidebar for unlocated devices */}
       {unlocatedDevices.length > 0 && (
-        <div className="absolute top-2 right-2 z-[1000]" style={{ pointerEvents: 'auto' }}>
+        <div className="absolute top-2 right-2 z-1000" style={{ pointerEvents: 'auto' }}>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="bg-slate-800 border border-slate-600 text-slate-200 px-3 py-1.5 text-xs font-mono rounded hover:bg-slate-700"
@@ -174,7 +174,7 @@ export function DiscoveryLayer({ devices, visible, onDeviceSelect }: DiscoveryLa
                         className="w-full text-left px-3 py-1.5 hover:bg-slate-700 text-xs font-mono flex items-center gap-2"
                       >
                         <span
-                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          className="w-2 h-2 rounded-full shrink-0"
                           style={{ backgroundColor: s.color }}
                         />
                         <span className="text-slate-200 truncate">

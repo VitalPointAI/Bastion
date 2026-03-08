@@ -98,7 +98,7 @@ export function EMSpectrumPanel({ visible, onClose }: EMSpectrumPanelProps) {
   const opsec = getOpsecLevel(ownEmissions.length);
 
   return (
-    <div className="absolute top-0 right-0 z-[1001] h-full w-80 bg-slate-900 border-l border-slate-700 shadow-xl flex flex-col font-mono text-xs" style={{ pointerEvents: 'auto' }}>
+    <div className="absolute top-0 right-0 z-1001 h-full w-80 bg-slate-900 border-l border-slate-700 shadow-xl flex flex-col font-mono text-xs" style={{ pointerEvents: 'auto' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700 bg-slate-800">
         <span className="text-slate-200 font-bold text-sm tracking-wider">EM SPECTRUM</span>
