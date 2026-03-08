@@ -1,9 +1,13 @@
 /**
  * PlanTab
  *
- * Phase 33 Plan 05: Restructured Plan tab with 8 JPP sidebar items
+ * Phase 33 Plan 05/09: Restructured Plan tab with 8 JPP sidebar items
  * (7 JP 5-0 steps + E-W-M Overview). All items always enabled (free-flow).
  * Status badges update from JPP instance step statuses.
+ *
+ * Plan 09: Replaced all placeholder divs with actual step components,
+ * wired EntityResolutionPanel as floating slide-out, and added currentRole
+ * from ProblemSetContext.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -11,6 +15,20 @@ import { TabLayout, type SidebarItem } from './TabLayout.js';
 import { DecisionGateTimeline } from '../governance/index.js';
 import { jppService, type JPPInstance, type StepStatus } from '../../lib/jpp-service.ts';
 import type { DecisionGate } from '../../lib/gate-service';
+import { useProblemSet } from '../../context/ProblemSetContext.tsx';
+
+// Step components (Plans 06-08)
+import { PlanningInitiation } from '../plan/PlanningInitiation.tsx';
+import { MissionAnalysis } from '../plan/MissionAnalysis.tsx';
+import { COADevelopment } from '../plan/COADevelopment.tsx';
+import { COAAnalysis } from '../plan/COAAnalysis.tsx';
+import { COAComparison } from '../plan/COAComparison.tsx';
+import { COAApproval } from '../plan/COAApproval.tsx';
+import { PlanOrderDevelopment } from '../plan/PlanOrderDevelopment.tsx';
+import { EWMOverview } from '../plan/EWMOverview.tsx';
+
+// Entity resolution panel (Plan 09)
+import { EntityResolutionPanel } from '../plan/EntityResolutionPanel.tsx';
 
 type JPPView =
   | 'planning-initiation'
@@ -98,6 +116,10 @@ export function PlanTab({ problemSetId, daoId: _daoId }: PlanTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [_selectedGate, setSelectedGate] = useState<DecisionGate | null>(null);
 
+  // Get the user's role in the active problem set
+  const { userRoleInActive } = useProblemSet();
+  const currentRole = userRoleInActive ?? 'observer';
+
   const handleGateDetailClick = useCallback((gate: DecisionGate) => {
     setSelectedGate(gate);
     console.log('[PlanTab] Gate detail:', gate.id, gate.gate_type, gate.status);
@@ -146,78 +168,61 @@ export function PlanTab({ problemSetId, daoId: _daoId }: PlanTabProps) {
     );
   }
 
+  const instanceId = jppInstance?.id ?? '';
+
   return (
-    <TabLayout
-      items={sidebarItems}
-      selectedItem={selectedView}
-      onSelectItem={(id) => setSelectedView(id as JPPView)}
-      decisionHistory={
-        <DecisionGateTimeline tabId="plan" onEntryClick={handleGateDetailClick} />
-      }
-    >
-      {/* Step 1: Planning Initiation */}
-      {selectedView === 'planning-initiation' && (
-        <div style={{ padding: '1rem', color: '#9ca3af' }}>
-          <h3 style={{ color: '#e5e7eb', marginTop: 0 }}>1. Planning Initiation</h3>
-          <p>JPP Step 1 component (Plan 06): Receipt of mission, initial guidance, staff estimates, and planning timeline.</p>
-        </div>
-      )}
+    <>
+      <TabLayout
+        items={sidebarItems}
+        selectedItem={selectedView}
+        onSelectItem={(id) => setSelectedView(id as JPPView)}
+        decisionHistory={
+          <DecisionGateTimeline tabId="plan" onEntryClick={handleGateDetailClick} />
+        }
+      >
+        {/* Step 1: Planning Initiation */}
+        {selectedView === 'planning-initiation' && (
+          <PlanningInitiation problemSetId={problemSetId} jppInstanceId={instanceId} currentRole={currentRole} />
+        )}
 
-      {/* Step 2: Mission Analysis */}
-      {selectedView === 'mission-analysis' && (
-        <div style={{ padding: '1rem', color: '#9ca3af' }}>
-          <h3 style={{ color: '#e5e7eb', marginTop: 0 }}>2. Mission Analysis</h3>
-          <p>JPP Step 2 component (Plan 06): Task analysis, specified/implied tasks, facts/assumptions, and restated mission.</p>
-        </div>
-      )}
+        {/* Step 2: Mission Analysis */}
+        {selectedView === 'mission-analysis' && (
+          <MissionAnalysis problemSetId={problemSetId} jppInstanceId={instanceId} currentRole={currentRole} />
+        )}
 
-      {/* Step 3: COA Development */}
-      {selectedView === 'coa-development' && (
-        <div style={{ padding: '1rem', color: '#9ca3af' }}>
-          <h3 style={{ color: '#e5e7eb', marginTop: 0 }}>3. COA Development</h3>
-          <p>JPP Step 3 component (Plan 06): Course of action generation with force allocation and concept of operations.</p>
-        </div>
-      )}
+        {/* Step 3: COA Development */}
+        {selectedView === 'coa-development' && (
+          <COADevelopment problemSetId={problemSetId} jppInstanceId={instanceId} currentRole={currentRole} />
+        )}
 
-      {/* Step 4: COA Analysis (Wargame) */}
-      {selectedView === 'coa-analysis' && (
-        <div style={{ padding: '1rem', color: '#9ca3af' }}>
-          <h3 style={{ color: '#e5e7eb', marginTop: 0 }}>4. COA Analysis (Wargame)</h3>
-          <p>JPP Step 4 component (Plan 07): Wargaming each COA against threat COAs, identifying strengths/weaknesses.</p>
-        </div>
-      )}
+        {/* Step 4: COA Analysis (Wargame) */}
+        {selectedView === 'coa-analysis' && (
+          <COAAnalysis problemSetId={problemSetId} jppInstanceId={instanceId} currentRole={currentRole} />
+        )}
 
-      {/* Step 5: COA Comparison */}
-      {selectedView === 'coa-comparison' && (
-        <div style={{ padding: '1rem', color: '#9ca3af' }}>
-          <h3 style={{ color: '#e5e7eb', marginTop: 0 }}>5. COA Comparison</h3>
-          <p>JPP Step 5 component (Plan 07): Weighted criteria comparison matrix for COA evaluation.</p>
-        </div>
-      )}
+        {/* Step 5: COA Comparison */}
+        {selectedView === 'coa-comparison' && (
+          <COAComparison problemSetId={problemSetId} jppInstanceId={instanceId} currentRole={currentRole} />
+        )}
 
-      {/* Step 6: COA Approval */}
-      {selectedView === 'coa-approval' && (
-        <div style={{ padding: '1rem', color: '#9ca3af' }}>
-          <h3 style={{ color: '#e5e7eb', marginTop: 0 }}>6. COA Approval</h3>
-          <p>JPP Step 6 component (Plan 07): Commander decision briefing and COA selection with governance gate.</p>
-        </div>
-      )}
+        {/* Step 6: COA Approval */}
+        {selectedView === 'coa-approval' && (
+          <COAApproval problemSetId={problemSetId} jppInstanceId={instanceId} currentRole={currentRole} />
+        )}
 
-      {/* Step 7: Plan/Order Development */}
-      {selectedView === 'plan-development' && (
-        <div style={{ padding: '1rem', color: '#9ca3af' }}>
-          <h3 style={{ color: '#e5e7eb', marginTop: 0 }}>7. Plan/Order Development</h3>
-          <p>JPP Step 7 component (Plan 07): OPORD/OPLAN development with annexes and synchronization matrix.</p>
-        </div>
-      )}
+        {/* Step 7: Plan/Order Development */}
+        {selectedView === 'plan-development' && (
+          <PlanOrderDevelopment problemSetId={problemSetId} jppInstanceId={instanceId} currentRole={currentRole} />
+        )}
 
-      {/* E-W-M Overview */}
-      {selectedView === 'ewm-overview' && (
-        <div style={{ padding: '1rem', color: '#9ca3af' }}>
-          <h3 style={{ color: '#e5e7eb', marginTop: 0 }}>Ends-Ways-Means Overview</h3>
-          <p>E-W-M linkage visualization component (Plan 08): Strategic objectives to tactical tasks traceability with gap analysis.</p>
-        </div>
-      )}
-    </TabLayout>
+        {/* E-W-M Overview */}
+        {selectedView === 'ewm-overview' && (
+          <EWMOverview problemSetId={problemSetId} jppInstanceId={instanceId} currentRole={currentRole} />
+        )}
+      </TabLayout>
+
+      {/* Floating entity resolution panel */}
+      <EntityResolutionPanel problemSetId={problemSetId} />
+    </>
   );
 }
