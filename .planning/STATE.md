@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-08T22:41:08.532Z"
+last_updated: "2026-03-08T22:50:52.495Z"
 progress:
   total_phases: 54
   completed_phases: 33
   total_plans: 323
-  completed_plans: 317
+  completed_plans: 318
 ---
 
 # Project State
@@ -24,9 +24,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 37 of 40 (Training Assessment Loop) — IN PROGRESS
-Plan: 3 of ? in current phase — COMPLETE
-Status: Plan 37-03 complete (AssessEchelonRouter + operational MOE/MOP views + assessment frontend service)
-Last activity: 2026-03-08 - Completed 37-03-PLAN.md
+Plan: 4 of 6 in current phase — COMPLETE
+Status: Plan 37-04 complete (TrainingTacticalAssess with AAR form, observations, METL T/P/U assessment)
+Last activity: 2026-03-08 - Completed 37-04-PLAN.md
 
 Progress: ██████████████████████████ 314 plans complete
 
@@ -148,6 +148,7 @@ Progress: ███████████████████████�
 | Phase 35 P04 | 5 | 2 tasks | 2 files |
 | Phase 36 P01 | 4 | 2 tasks | 4 files |
 | Phase 37 P01 | 4 | 2 tasks | 5 files |
+| Phase 37 P04 | 6 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -701,6 +702,8 @@ Recent decisions affecting current work:
 - [Phase 37]: Assessment data model uses const objects (not enums), shared observation table, lazy decay computation
 - [Phase 37-02]: Aggregation does not duplicate records at parent levels; dashboard queries via sourceProblemSetId
 - [Phase 37]: Option B: AssessTab left unchanged, ProblemSetTabContainer imports AssessEchelonRouter directly
+- [Phase 37]: AAR lifecycle: draft -> in_review -> finalized with confirmation dialog
+- [Phase 37]: METL tasks combine inherited parent + local supplemental for tactical assessment
 
 ### Roadmap Evolution
 
