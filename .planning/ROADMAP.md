@@ -54,7 +54,7 @@ None
 - [ ] **Phase 29: Contextual AI Staff Integration** - Surface AI agent output contextually per tab; per-tab AI assistant aware of workflow phase; recommendation engine tied to doctrinal workflow position (INSERTED)
 - [x] **Phase 34: Plan Tab Echelon Routing & MDMP Tactical Wiring** - Plan tab reads echelon from ProblemSetContext and renders appropriate workflow (JPP for operational, MDMP for tactical, placeholder for strategic); wire existing MDMP module into Plan tab with sidebar navigation, role-gated sections, governance gates, AI agent panels
 - [x] **Phase 35: Mission Creation from OPORD & Problem Set Alignment** - Extend Phase 33 Plan 10 document distribution to trigger tactical child problem set creation from OPORD Step 7; auto-populate with inherited context; initialize MDMP at Receipt of Mission; merge existing mission module into problem set framework (completed 2026-03-08)
-- [ ] **Phase 36: Strategic Guidance Workflow** - Build strategic level Plan tab workflow for objective setting, force apportionment, constraint definition, directive drafting; strategic directive output becomes initiating directive for child campaign JPP Step 1
+- [x] **Phase 36: Strategic Guidance Workflow** - Build strategic level Plan tab workflow for objective setting, force apportionment, constraint definition, directive drafting; strategic directive output becomes initiating directive for child campaign JPP Step 1 (completed 2026-03-08)
 - [ ] **Phase 37: Training Assessment Loop** - AAR capture at tactical training events, METL proficiency tracking (T/P/U per task), upward aggregation from training events through exercises to training strategy readiness updates
 - [ ] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign
 
@@ -404,7 +404,7 @@ Plans:
 **Goal:** Build strategic level Plan tab workflow — lighter than JPP. Covers objective setting, force apportionment, constraint definition, and directive drafting. Strategic directive output becomes the initiating directive for child campaign JPP (Step 1). Connect to Phase 25.2 strategic document containers as input.
 **Requirements**: [SG-01, SG-02, SG-03, SG-04, SG-05, SG-06, SG-07, SG-08, SG-09, SG-10, SG-11, SG-12]
 **Depends on:** Phase 34, Phase 25.2 (strategic document containers)
-**Plans:** 2/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 36-01-PLAN.md — Backend types, DB schema, store, service, and REST API routes
