@@ -2,8 +2,11 @@
  * Inheritance API Routes
  *
  * Phase 26: Strategic Environment Inheritance
+ * Phase 38: Inheritance Deepening — FRAGO lifecycle, mission status, and campaign assessment routes
  *
- * Express routes for inherited context, acknowledgments, annotations, and RFIs.
+ * Express routes for inherited context, acknowledgments, annotations, RFIs,
+ * FRAGO trigger/approve/distribute/acknowledge, mission status reporting,
+ * and campaign assessment.
  * All routes are nested under /api/problem-sets/:id/... and use zod validation.
  */
 
@@ -12,6 +15,11 @@ import { z } from 'zod';
 import { requireAuth } from '../auth/auth-instance.js';
 import { inheritanceService } from '../inheritance/inheritance-service.js';
 import { inheritanceStore } from '../inheritance/inheritance-store.js';
+import { fragoService } from '../inheritance/frago-service.js';
+import { statusAggregationService } from '../inheritance/status-aggregation-service.js';
+import { broadcastStatusUpdate } from '../inheritance/inheritance-ws.js';
+import type { MissionStatusSnapshot, StatusUpdateMessage, FRAGOStatus } from '../inheritance/inheritance-types.js';
+import type { OPORDStructure } from '../planning/documents/templates/opord-template.js';
 
 const router = Router();
 
@@ -50,6 +58,42 @@ const addRFIMessageSchema = z.object({
 
 const updateRFIStatusSchema = z.object({
   status: z.enum(['open', 'responded', 'closed']),
+});
+
+// Phase 38-02: Interpretation ack, modification request, guidance request schemas
+const interpretationAckSchema = z.object({
+  action: z.enum(['acknowledge', 'clarify', 'correct']),
+  comment: z.string().nullable().optional(),
+});
+
+const modificationRequestSchema = z.object({
+  targetProblemSetId: z.string().min(1),
+  targetItemId: z.string().min(1),
+  targetItemType: z.string().min(1),
+  subject: z.string().min(1),
+  description: z.string().min(1),
+});
+
+const resolveModificationRequestSchema = z.object({
+  resolution: z.enum(['approved', 'denied']),
+  comment: z.string().min(1),
+});
+
+const guidanceRequestSchema = z.object({
+  targetProblemSetId: z.string().min(1),
+  subject: z.string().min(1),
+  situationDescription: z.string().min(1),
+});
+
+const fragoTriggerSchema = z.object({
+  previousOpord: z.record(z.unknown()),
+  currentOpord: z.record(z.unknown()),
+  opordVersion: z.string().min(1),
+  previousVersion: z.string().min(1),
+});
+
+const fragoApproveSchema = z.object({
+  editedContent: z.string().optional(),
 });
 
 // ============================================================================
@@ -344,6 +388,158 @@ router.put('/:id/rfis/:rfiId/status', requireAuth, async (req: Request, res: Res
     }
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Update RFI status failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
+// FRAGO Routes
+// ============================================================================
+
+/**
+ * POST /api/problem-sets/:id/frago/trigger
+ * Manually trigger FRAGO generation for an OPORD update.
+ * Called by the OPORD save handler when an OPORD is updated.
+ */
+router.post('/:id/frago/trigger', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const body = fragoTriggerSchema.parse(req.body);
+    const parentPsId = req.params.id as string;
+
+    const drafts = await fragoService.onOpordUpdated(
+      parentPsId,
+      body.previousOpord as unknown as OPORDStructure,
+      body.currentOpord as unknown as OPORDStructure,
+      body.opordVersion,
+      body.previousVersion,
+    );
+
+    res.json(drafts);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: (error as z.ZodError).issues });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('FRAGO trigger failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/problem-sets/:id/fragos
+ * List all FRAGO drafts where :id is the parent PS.
+ * Optional ?status=draft|approved|distributed|acknowledged filter.
+ */
+router.get('/:id/fragos', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const parentPsId = req.params.id as string;
+    const statusFilter = req.query.status as FRAGOStatus | undefined;
+
+    let drafts = await inheritanceStore.getFRAGODraftsForParent(parentPsId);
+
+    if (statusFilter) {
+      drafts = drafts.filter((d) => d.status === statusFilter);
+    }
+
+    res.json(drafts);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get FRAGOs failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/problem-sets/:id/fragos/received
+ * List all FRAGOs received by child PS :id.
+ */
+router.get('/:id/fragos/received', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const childPsId = req.params.id as string;
+    const drafts = await inheritanceStore.getFRAGODraftsForChild(childPsId);
+    res.json(drafts);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get received FRAGOs failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/problem-sets/:id/fragos/:fragoId
+ * Get a single FRAGO draft by ID.
+ */
+router.get('/:id/fragos/:fragoId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const fragoId = req.params.fragoId as string;
+    const draft = await inheritanceStore.getFRAGODraft(fragoId);
+
+    if (!draft) {
+      return res.status(404).json({ error: 'FRAGO not found' });
+    }
+
+    res.json(draft);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get FRAGO failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * PUT /api/problem-sets/:id/fragos/:fragoId/approve
+ * Commander approves a FRAGO draft, optionally with edited content.
+ */
+router.put('/:id/fragos/:fragoId/approve', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const body = fragoApproveSchema.parse(req.body);
+    const fragoId = req.params.fragoId as string;
+    const userDid = (req as unknown as { userDid: string }).userDid;
+
+    await fragoService.approveFRAGO(fragoId, userDid, body.editedContent);
+
+    res.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: (error as z.ZodError).issues });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Approve FRAGO failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/problem-sets/:id/fragos/:fragoId/distribute
+ * Distribute an approved FRAGO to the child problem set.
+ */
+router.post('/:id/fragos/:fragoId/distribute', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const fragoId = req.params.fragoId as string;
+    await fragoService.distributeFRAGO(fragoId);
+    res.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Distribute FRAGO failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/problem-sets/:id/fragos/:fragoId/acknowledge
+ * Child commander acknowledges receipt of a distributed FRAGO.
+ */
+router.post('/:id/fragos/:fragoId/acknowledge', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const fragoId = req.params.fragoId as string;
+    const userDid = (req as unknown as { userDid: string }).userDid;
+
+    await fragoService.acknowledgeFRAGO(fragoId, userDid);
+
+    res.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Acknowledge FRAGO failed:', message);
     res.status(500).json({ error: message });
   }
 });
