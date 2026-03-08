@@ -95,6 +95,106 @@ export interface ReframingTriggerResult {
 }
 
 // ============================================================================
+// AAR / METL Types (training assessment)
+// ============================================================================
+
+export type AARStatus = 'draft' | 'in_review' | 'finalized';
+export type AARObservationType = 'sustain' | 'improve';
+export type METLRating = 'T' | 'P' | 'U';
+
+export interface StructuredAAR {
+  id: string;
+  problemSetId: string;
+  trainingEventName: string;
+  initiatedBy: string;
+  status: AARStatus;
+  whatWasPlanned: string;
+  whatHappened: string;
+  why: string;
+  finalizedAt?: string;
+  finalizedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AARObservation {
+  id: string;
+  aarId: string;
+  observationType: AARObservationType;
+  content: string;
+  metlTaskId?: string;
+  suggestedByAi: boolean;
+  aiAccepted?: boolean;
+  createdBy: string;
+  createdAt: string;
+}
+
+export type DecayStatus = 'current' | 'warning' | 'expired';
+
+export interface METLTask {
+  id: string;
+  problemSetId: string;
+  sourceProblemSetId?: string;
+  taskName: string;
+  taskDescription?: string;
+  competencyArea?: string;
+  isSupplemental: boolean;
+  promotedToStrategic: boolean;
+  decayDays: number;
+  createdAt: string;
+}
+
+export interface CreateMETLTaskInput {
+  problemSetId: string;
+  sourceProblemSetId?: string;
+  taskName: string;
+  taskDescription?: string;
+  competencyArea?: string;
+  isSupplemental?: boolean;
+  decayDays?: number;
+}
+
+export interface METLProficiencySummary {
+  metlTaskId: string;
+  taskName: string;
+  competencyArea?: string;
+  decayDays: number;
+  rating?: METLRating;
+  assessedAt?: string;
+  assessedBy?: string;
+  commanderOverride?: boolean;
+  decayStatus: DecayStatus;
+}
+
+export interface DecayReportEntry {
+  metlTaskId: string;
+  taskName: string;
+  rating?: METLRating;
+  decayStatus: DecayStatus;
+  daysRemaining: number;
+}
+
+export interface METLAssessment {
+  id: string;
+  metlTaskId: string;
+  aarId?: string;
+  rating: METLRating;
+  notes?: string;
+  assessedBy: string;
+  commanderOverride: boolean;
+  createdAt: string;
+}
+
+export interface CreateMETLAssessmentInput {
+  metlTaskId: string;
+  aarId?: string;
+  rating: METLRating;
+  notes?: string;
+  assessedBy: string;
+  commanderOverride?: boolean;
+}
+
+// ============================================================================
 // Service Class
 // ============================================================================
 
@@ -238,6 +338,150 @@ class AssessmentService {
   async checkReframingTrigger(problemSetId: string): Promise<ReframingTriggerResult> {
     return this.request<ReframingTriggerResult>(
       `/api/assessment/reframing-trigger?problemSetId=${encodeURIComponent(problemSetId)}`
+    );
+  }
+
+  // ─── AAR Methods ──────────────────────────────────────────────────────────
+
+  async listAARs(problemSetId: string): Promise<StructuredAAR[]> {
+    return this.request<StructuredAAR[]>(
+      `/api/assessment/aars/problem-set/${encodeURIComponent(problemSetId)}`
+    );
+  }
+
+  async createAAR(input: {
+    problemSetId: string;
+    trainingEventName: string;
+    initiatedBy: string;
+  }): Promise<StructuredAAR> {
+    return this.request<StructuredAAR>('/api/assessment/aars', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  async getAAR(id: string): Promise<StructuredAAR> {
+    return this.request<StructuredAAR>(
+      `/api/assessment/aars/${encodeURIComponent(id)}`
+    );
+  }
+
+  async updateAAR(
+    id: string,
+    input: { whatWasPlanned?: string; whatHappened?: string; why?: string; status?: AARStatus }
+  ): Promise<StructuredAAR> {
+    return this.request<StructuredAAR>(
+      `/api/assessment/aars/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }
+    );
+  }
+
+  async finalizeAAR(id: string, finalizedBy: string): Promise<StructuredAAR> {
+    return this.request<StructuredAAR>(
+      `/api/assessment/aars/${encodeURIComponent(id)}/finalize`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ finalizedBy }),
+      }
+    );
+  }
+
+  async listAARObservations(aarId: string): Promise<AARObservation[]> {
+    return this.request<AARObservation[]>(
+      `/api/assessment/aars/${encodeURIComponent(aarId)}/observations`
+    );
+  }
+
+  async addAARObservation(
+    aarId: string,
+    input: {
+      observationType: AARObservationType;
+      content: string;
+      metlTaskId?: string;
+      suggestedByAi?: boolean;
+      createdBy: string;
+    }
+  ): Promise<AARObservation> {
+    return this.request<AARObservation>(
+      `/api/assessment/aars/${encodeURIComponent(aarId)}/observations`,
+      {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }
+    );
+  }
+
+  async updateAARObservation(
+    id: string,
+    input: { aiAccepted?: boolean; content?: string }
+  ): Promise<AARObservation> {
+    return this.request<AARObservation>(
+      `/api/assessment/observations/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }
+    );
+  }
+
+  // ─── METL Methods ─────────────────────────────────────────────────────────
+
+  async listMETLTasks(problemSetId: string): Promise<METLTask[]> {
+    return this.request<METLTask[]>(
+      `/api/assessment/metl/tasks/problem-set/${encodeURIComponent(problemSetId)}`
+    );
+  }
+
+  async createMETLTask(input: CreateMETLTaskInput): Promise<METLTask> {
+    return this.request<METLTask>('/api/assessment/metl/tasks', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  async promoteMETLTask(taskId: string): Promise<METLTask> {
+    return this.request<METLTask>(
+      `/api/assessment/metl/tasks/${encodeURIComponent(taskId)}/promote`,
+      { method: 'POST' }
+    );
+  }
+
+  async getInheritedMETLTasks(
+    problemSetId: string,
+    sourceProblemSetId: string
+  ): Promise<METLTask[]> {
+    return this.request<METLTask[]>(
+      `/api/assessment/metl/tasks/inherited/${encodeURIComponent(problemSetId)}/${encodeURIComponent(sourceProblemSetId)}`
+    );
+  }
+
+  async getLatestProficiency(
+    sourceProblemSetId: string
+  ): Promise<{ proficiency: METLProficiencySummary[]; decayReport: DecayReportEntry[] }> {
+    return this.request<{ proficiency: METLProficiencySummary[]; decayReport: DecayReportEntry[] }>(
+      `/api/assessment/metl/proficiency/${encodeURIComponent(sourceProblemSetId)}`
+    );
+  }
+
+  async getAssessmentHistory(metlTaskId: string): Promise<METLAssessment[]> {
+    return this.request<METLAssessment[]>(
+      `/api/assessment/metl/history/${encodeURIComponent(metlTaskId)}`
+    );
+  }
+
+  async createMETLAssessment(input: CreateMETLAssessmentInput): Promise<METLAssessment> {
+    return this.request<METLAssessment>('/api/assessment/metl/assessments', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  async getAssessmentsByAAR(aarId: string): Promise<METLAssessment[]> {
+    return this.request<METLAssessment[]>(
+      `/api/assessment/metl/assessments/aar/${encodeURIComponent(aarId)}`
     );
   }
 }
