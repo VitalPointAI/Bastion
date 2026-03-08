@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-08T21:42:42.803Z"
+last_updated: "2026-03-08T21:49:16.731Z"
 progress:
   total_phases: 54
   completed_phases: 32
   total_plans: 311
-  completed_plans: 310
+  completed_plans: 311
 ---
 
 # Project State
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 35 of 40 (Mission Creation from OPORD & Problem Set Alignment) — IN PROGRESS
-Plan: 6 of 6 in current phase — COMPLETE
-Status: Plan 35-06 complete (Gap closure: CCIR URLs, classification casing, role assignment data)
-Last activity: 2026-03-08 - Completed 35-06-PLAN.md
+Phase: 36 of 40 (Strategic Guidance Workflow) — IN PROGRESS
+Plan: 1 of 4 in current phase — COMPLETE
+Status: Plan 36-01 complete (Backend module: types, store, service, routes)
+Last activity: 2026-03-08 - Completed 36-01-PLAN.md
 
-Progress: ██████████████████████████ 310 plans complete
+Progress: ██████████████████████████ 311 plans complete
 
 ## Performance Metrics
 
@@ -146,6 +146,7 @@ Progress: ███████████████████████�
 | Phase 35 P02 | 7 | 2 tasks | 3 files |
 | Phase 35 P05 | 3 | 1 tasks | 7 files |
 | Phase 35 P04 | 5 | 2 tasks | 2 files |
+| Phase 36 P01 | 4 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -695,6 +696,7 @@ Recent decisions affecting current work:
 - [Phase 35]: Deleted backend/src/api/missions.ts alongside legacy module as sole consumer
 - [Phase 35]: Kept legacy tasksToSubordinates alongside structured subordinateTasks for backward compat
 - [Phase 35]: Pass empty string for userDID in listMembers -- backend uses session auth, X-DID is legacy
+- [Phase 36]: Used UNIQUE(problem_set_id) on instances table for idempotent creation
 
 ### Roadmap Evolution
 
