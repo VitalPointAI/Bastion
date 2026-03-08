@@ -3,7 +3,7 @@
 **Status:** Design Document (Draft)
 **Date:** 2026-03-08
 **Scope:** End-to-end architecture for hierarchical planning across strategic, operational, and tactical levels
-**Related:** Phase 33 (JPP Campaign Plan Framework) — fully planned in `joint-planning-process` worktree
+**Related:** Phase 33 (JPP Campaign Plan Framework) — fully planned, ready for execution
 
 ## 1. Overview
 
@@ -454,7 +454,7 @@ This is distinct from the operational mode Assess tab, which measures progress t
 
 ### Phase 33 (JPP Campaign Plan Framework) — Already Planned
 
-Phase 33 is fully planned with 10 detailed plans in the `joint-planning-process` worktree. It builds the complete operational-level JPP workflow. **This design document extends Phase 33's scope** by placing it within the broader echelon hierarchy. Phase 33 should be understood as building the **operational level** Plan tab experience.
+Phase 33 is fully planned with 10 detailed plans (see `.planning/phases/33-*/`). It builds the complete operational-level JPP workflow. **This design document extends Phase 33's scope** by placing it within the broader echelon hierarchy. Phase 33 should be understood as building the **operational level** Plan tab experience.
 
 **What Phase 33 covers (no duplication needed):**
 - JPP domain data layer (types, stores, E-W-M)
