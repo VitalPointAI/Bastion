@@ -701,6 +701,7 @@ Recent decisions affecting current work:
 - Phase 25.2 inserted after Phase 25: Strategic Document Containers & Actor Categorization — Organize strategic docs into nation/group containers with actor categories (ally/adversary/neutral/partner), persistent container-based strategic environment building, feeds Phase 26 inheritance
 - Phase 31 added: AI Agent Validation & Compliance Testing — Quantitative assessment framework for agent determinism, reliability/doctrinal adherence, and authority compliance with periodic test suite, metrics dashboard, threshold alerting, and automatic agent disablement
 - Phase 32 added: Network device discovery and secure automatic resource onboarding
+- Phase 33 added: Joint Planning Process (JPP) campaign plan framework with ends-ways-means linkage
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
