@@ -372,8 +372,12 @@ const connections = new Map<string, WSConnection>();
 /**
  * Setup WebSocket server for real-time message delivery
  */
-export function setupMessageWebSocket(server: HTTPServer): void {
-  const wss = new WebSocketServer({ server, path: '/ws/messages' });
+export function setupMessageWebSocket(wss: InstanceType<typeof WebSocketServer>): void;
+export function setupMessageWebSocket(server: HTTPServer): void;
+export function setupMessageWebSocket(serverOrWss: HTTPServer | InstanceType<typeof WebSocketServer>): void {
+  const wss = serverOrWss instanceof WebSocketServer
+    ? serverOrWss
+    : new WebSocketServer({ server: serverOrWss, path: '/ws/messages' });
 
   wss.on('connection', async (ws: WebSocket, req) => {
     const connectionId = randomUUID();

@@ -14,8 +14,12 @@ const messageAwareness = 1;
 /**
  * Create WebSocket server for Yjs document sync
  */
-export function createSyncServer(server: http.Server, path: string = '/ws/collab'): WebSocketServer {
-  const wss = new WebSocketServer({ server, path });
+export function createSyncServer(wss: WebSocketServer): WebSocketServer;
+export function createSyncServer(server: http.Server, path?: string): WebSocketServer;
+export function createSyncServer(serverOrWss: http.Server | WebSocketServer, path: string = '/ws/collab'): WebSocketServer {
+  const wss = serverOrWss instanceof WebSocketServer
+    ? serverOrWss
+    : new WebSocketServer({ server: serverOrWss, path });
 
   // Track connections per document
   const connections = new Map<string, Set<WebSocket>>();

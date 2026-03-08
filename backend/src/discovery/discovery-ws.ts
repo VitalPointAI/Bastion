@@ -74,8 +74,12 @@ function channelToWSType(channel: string): DiscoveryWSMessage['type'] {
 /**
  * Mount a WebSocket server at /ws/discovery for real-time event streaming.
  */
-export function setupDiscoveryWS(server: HTTPServer): void {
-  const wss = new WebSocketServer({ server, path: '/ws/discovery' });
+export function setupDiscoveryWS(wss: WebSocketServer): void;
+export function setupDiscoveryWS(server: HTTPServer): void;
+export function setupDiscoveryWS(serverOrWss: HTTPServer | WebSocketServer): void {
+  const wss = serverOrWss instanceof WebSocketServer
+    ? serverOrWss
+    : new WebSocketServer({ server: serverOrWss, path: '/ws/discovery' });
   const bus = getMessageBus();
 
   // Subscribe to all discovery channels on the MessageBus

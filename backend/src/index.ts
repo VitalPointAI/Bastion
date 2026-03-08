@@ -203,21 +203,57 @@ app.use('/api/discovery', discoveryRouter);
 // Create HTTP server for WebSocket support
 const server = createServer(app);
 
-// Setup WebSocket for real-time message delivery
-setupMessageWebSocket(server);
+// ---------------------------------------------------------------------------
+// WebSocket setup — IMPORTANT: all WS servers use { noServer: true }.
+// When multiple WebSocketServer instances use { server, path }, the ws library
+// sends "HTTP/1.1 400 Bad Request" on the raw socket for non-matching paths,
+// corrupting the WebSocket frame stream of the server that DID match.
+// A single centralized 'upgrade' handler routes to the correct WSS by path.
+// ---------------------------------------------------------------------------
+import { WebSocketServer } from 'ws';
 
-// Setup WebSocket for orchestration execution streaming
-setupOrchestrationWebSocket(server);
+const wsServers = {
+  messages: new WebSocketServer({ noServer: true }),
+  orchestration: new WebSocketServer({ noServer: true }),
+  collab: new WebSocketServer({ noServer: true }),
+  resources: new WebSocketServer({ noServer: true }),
+  discovery: new WebSocketServer({ noServer: true }),
+};
 
-// Setup WebSocket for real-time collaboration (Yjs document sync)
-createSyncServer(server, '/ws/collab');
+setupMessageWebSocket(wsServers.messages);
+setupOrchestrationWebSocket(wsServers.orchestration);
+createSyncServer(wsServers.collab);
 console.log('Collaboration WebSocket server mounted at /ws/collab');
+setupResourceWebSocket(wsServers.resources);
+setupDiscoveryWS(wsServers.discovery);
 
-// Setup WebSocket for resource telemetry position updates
-setupResourceWebSocket(server);
+server.on('upgrade', (request, socket, head) => {
+  const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
 
-// Setup WebSocket for discovery event streaming
-setupDiscoveryWS(server);
+  if (pathname === '/ws/messages') {
+    wsServers.messages.handleUpgrade(request, socket, head, (ws) => {
+      wsServers.messages.emit('connection', ws, request);
+    });
+  } else if (pathname.startsWith('/ws/orchestration/')) {
+    wsServers.orchestration.handleUpgrade(request, socket, head, (ws) => {
+      wsServers.orchestration.emit('connection', ws, request);
+    });
+  } else if (pathname === '/ws/collab') {
+    wsServers.collab.handleUpgrade(request, socket, head, (ws) => {
+      wsServers.collab.emit('connection', ws, request);
+    });
+  } else if (pathname === '/ws/resources') {
+    wsServers.resources.handleUpgrade(request, socket, head, (ws) => {
+      wsServers.resources.emit('connection', ws, request);
+    });
+  } else if (pathname === '/ws/discovery') {
+    wsServers.discovery.handleUpgrade(request, socket, head, (ws) => {
+      wsServers.discovery.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
+});
 
 server.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
