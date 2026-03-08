@@ -12,7 +12,11 @@ import { getPool } from '../lib/database.js';
 import { inheritanceStore } from './inheritance-store.js';
 import { problemSetSubscriptionStore } from '../problem-set/problem-set-subscription-store.js';
 import { problemSetActivityStore } from '../problem-set/problem-set-activity-store.js';
-import type { InheritedContextResponse } from './inheritance-types.js';
+import type {
+  InheritedContextResponse,
+  InterpretationAcknowledgment,
+  InheritanceRFI,
+} from './inheritance-types.js';
 import type { Echelon } from '../problem-set/types.js';
 
 // ============================================================================
@@ -353,6 +357,338 @@ export class InheritanceService {
    */
   classifyChangeSeverity(changeType: string): 'significant' | 'minor' {
     return classifyChangeSeverity(changeType);
+  }
+
+  // ==========================================================================
+  // Phase 38: Read-Only Enforcement
+  // ==========================================================================
+
+  /**
+   * Enforce read-only on inherited content. Throws HTTP 403 if itemId is
+   * inherited content for the given problem set. Doctrinal constraint:
+   * inherited context cannot be modified at child level.
+   */
+  async enforceReadOnly(problemSetId: string, itemId: string): Promise<void> {
+    try {
+      const isInherited = await inheritanceStore.isInheritedContent(problemSetId, itemId);
+      if (isInherited) {
+        const error = new Error('Inherited content is read-only. Submit a modification request instead.');
+        (error as Error & { statusCode: number }).statusCode = 403;
+        throw error;
+      }
+    } catch (error) {
+      if (error instanceof Error && (error as Error & { statusCode?: number }).statusCode === 403) {
+        throw error;
+      }
+      console.error('[inheritance] enforceReadOnly check failed:', error instanceof Error ? error.message : error);
+      throw error;
+    }
+  }
+
+  // ==========================================================================
+  // Phase 38: Notification Count Aggregation
+  // ==========================================================================
+
+  /**
+   * Aggregate notification counts for a problem set. Used by frontend badges
+   * and PS selector dot indicators.
+   */
+  async getNotificationCounts(problemSetId: string): Promise<{
+    pendingAcks: number;
+    unreadChangelog: number;
+    openRFIs: number;
+    pendingFRAGOs: number;
+  }> {
+    try {
+      // Pending acknowledgments (significant changes only)
+      const pendingAcks = await inheritanceStore.getPendingAcknowledgments(problemSetId);
+      const pendingAckCount = pendingAcks.length;
+
+      // Unread changelog entries since last acknowledgment
+      const pool = getPool();
+      const ancestors = await inheritanceStore.getAncestorChain(problemSetId);
+      const ancestorIds = ancestors.map(a => a.problemSetId);
+      let unreadChangelog = 0;
+
+      for (const ancestorId of ancestorIds) {
+        // Get last ack time for this ancestor
+        const lastAckResult = await pool.query(
+          `SELECT MAX(acknowledged_at) as last_ack FROM inheritance_acknowledgments
+           WHERE problem_set_id = $1 AND source_problem_set_id = $2`,
+          [problemSetId, ancestorId],
+        );
+        const lastAck = (lastAckResult.rows[0] as { last_ack: Date | null })?.last_ack;
+
+        // Count changelog entries since last ack (or all if never acked)
+        let changelogQuery = `SELECT COUNT(*) as cnt FROM inheritance_changelog
+          WHERE source_problem_set_id = $1`;
+        const params: unknown[] = [ancestorId];
+
+        if (lastAck) {
+          changelogQuery += ` AND created_at > $2`;
+          params.push(lastAck);
+        }
+
+        const changelogResult = await pool.query(changelogQuery, params);
+        unreadChangelog += parseInt((changelogResult.rows[0] as { cnt: string }).cnt, 10);
+      }
+
+      // Open RFIs where this PS is the target
+      const openRFIResult = await pool.query(
+        `SELECT COUNT(*) as cnt FROM inheritance_rfis
+         WHERE target_problem_set_id = $1 AND status != 'closed'`,
+        [problemSetId],
+      );
+      const openRFIs = parseInt((openRFIResult.rows[0] as { cnt: string }).cnt, 10);
+
+      // Pending FRAGO drafts for child PSes (FRAGOs targeting this PS's children)
+      const pendingFRAGOResult = await pool.query(
+        `SELECT COUNT(*) as cnt FROM frago_drafts
+         WHERE child_problem_set_id = $1 AND status IN ('draft', 'approved', 'distributed')`,
+        [problemSetId],
+      );
+      const pendingFRAGOs = parseInt((pendingFRAGOResult.rows[0] as { cnt: string }).cnt, 10);
+
+      return { pendingAcks: pendingAckCount, unreadChangelog, openRFIs, pendingFRAGOs };
+    } catch (error) {
+      console.error('[inheritance] getNotificationCounts failed:', error instanceof Error ? error.message : error);
+      throw error;
+    }
+  }
+
+  // ==========================================================================
+  // Phase 38: Interpretation Acknowledgment Loop
+  // ==========================================================================
+
+  /**
+   * Parent acknowledges/clarifies/corrects a child's interpretation annotation.
+   * - acknowledge: marks interpretation as correct
+   * - clarify: creates an RFI with subtype 'clarification' linking to annotation
+   * - correct: logs activity for child PS notification
+   */
+  async acknowledgeInterpretation(
+    annotationId: string,
+    parentProblemSetId: string,
+    action: 'acknowledge' | 'clarify' | 'correct',
+    comment: string | null,
+    actedBy: string,
+  ): Promise<InterpretationAcknowledgment> {
+    try {
+      // Validate annotation exists and is an upward-visible interpretation
+      const pool = getPool();
+      const annotationResult = await pool.query(
+        `SELECT * FROM inheritance_annotations WHERE id = $1`,
+        [annotationId],
+      );
+
+      if (annotationResult.rows.length === 0) {
+        throw new Error(`Annotation not found: ${annotationId}`);
+      }
+
+      const annotation = annotationResult.rows[0] as {
+        id: string; problem_set_id: string; source_problem_set_id: string;
+        annotation_type: string; visibility: string; target_item_id: string;
+        target_item_type: string;
+      };
+
+      if (annotation.annotation_type !== 'interpretation') {
+        throw new Error('Only interpretation annotations can be acknowledged by parent');
+      }
+
+      if (annotation.visibility !== 'upward') {
+        throw new Error('Only upward-visible annotations can be acknowledged by parent');
+      }
+
+      // Create linked RFI for 'clarify' action
+      let linkedRfiId: string | null = null;
+      if (action === 'clarify') {
+        const rfi = await inheritanceStore.createRFIWithSubtype({
+          requestingProblemSetId: parentProblemSetId,
+          targetProblemSetId: annotation.problem_set_id,
+          targetItemId: annotation.target_item_id,
+          targetItemType: annotation.target_item_type,
+          subject: `Clarification on interpretation: ${annotationId}`,
+          rfiSubtype: 'clarification',
+          createdBy: actedBy,
+        });
+        linkedRfiId = rfi.id;
+
+        // Add the comment as initial message if provided
+        if (comment) {
+          await inheritanceStore.addRFIMessage(rfi.id, actedBy, parentProblemSetId, comment);
+        }
+      }
+
+      // Create the interpretation ack record
+      const { randomUUID } = await import('crypto');
+      const ackId = `IACK-INTERP-${randomUUID()}`;
+      const ack = await inheritanceStore.createInterpretationAck({
+        id: ackId,
+        annotationId,
+        parentProblemSetId,
+        action,
+        comment,
+        rfiId: linkedRfiId,
+        actedBy,
+      });
+
+      // For 'correct' action, log activity for child PS notification
+      if (action === 'correct') {
+        await problemSetActivityStore.log(
+          annotation.problem_set_id,
+          'interpretation_corrected',
+          actedBy,
+          null,
+          {
+            annotationId,
+            parentProblemSetId,
+            comment,
+          },
+        );
+      }
+
+      return ack;
+    } catch (error) {
+      console.error('[inheritance] acknowledgeInterpretation failed:', error instanceof Error ? error.message : error);
+      throw error;
+    }
+  }
+
+  // ==========================================================================
+  // Phase 38: Modification Request Handling
+  // ==========================================================================
+
+  /**
+   * Create a modification request RFI from a child PS to a parent/ancestor PS.
+   * Creates RFI with subtype 'modification_request' and logs activity for target PS.
+   */
+  async createModificationRequest(
+    requestingPsId: string,
+    targetPsId: string,
+    targetItemId: string,
+    targetItemType: string,
+    subject: string,
+    description: string,
+    createdBy: string,
+  ): Promise<InheritanceRFI> {
+    try {
+      const rfi = await inheritanceStore.createRFIWithSubtype({
+        requestingProblemSetId: requestingPsId,
+        targetProblemSetId: targetPsId,
+        targetItemId,
+        targetItemType,
+        subject,
+        rfiSubtype: 'modification_request',
+        createdBy,
+      });
+
+      // Add description as initial message
+      await inheritanceStore.addRFIMessage(rfi.id, createdBy, requestingPsId, description);
+
+      // Log activity for target PS
+      await problemSetActivityStore.log(
+        targetPsId,
+        'modification_request_received',
+        createdBy,
+        null,
+        {
+          rfiId: rfi.id,
+          requestingProblemSetId: requestingPsId,
+          targetItemId,
+          subject,
+        },
+      );
+
+      return rfi;
+    } catch (error) {
+      console.error('[inheritance] createModificationRequest failed:', error instanceof Error ? error.message : error);
+      throw error;
+    }
+  }
+
+  /**
+   * Resolve a modification request RFI (approve or deny).
+   * Updates RFI resolution, adds resolution message, closes RFI,
+   * and logs activity for the requesting PS.
+   */
+  async resolveModificationRequest(
+    rfiId: string,
+    resolution: 'approved' | 'denied',
+    comment: string,
+    resolvedBy: string,
+  ): Promise<void> {
+    try {
+      // Resolve in store (updates resolution + closes)
+      const rfi = await inheritanceStore.resolveModificationRequest(rfiId, resolution);
+
+      // Add resolution comment as message
+      await inheritanceStore.addRFIMessage(rfi.id, resolvedBy, rfi.targetProblemSetId, comment);
+
+      // Log activity for requesting PS
+      await problemSetActivityStore.log(
+        rfi.requestingProblemSetId,
+        'modification_request_resolved',
+        resolvedBy,
+        null,
+        {
+          rfiId: rfi.id,
+          resolution,
+          comment,
+        },
+      );
+    } catch (error) {
+      console.error('[inheritance] resolveModificationRequest failed:', error instanceof Error ? error.message : error);
+      throw error;
+    }
+  }
+
+  // ==========================================================================
+  // Phase 38: Guidance Request
+  // ==========================================================================
+
+  /**
+   * Create a guidance request RFI from a child PS to a parent/ancestor PS.
+   * Child describes a situation change and requests parent guidance.
+   */
+  async createGuidanceRequest(
+    requestingPsId: string,
+    targetPsId: string,
+    subject: string,
+    situationDescription: string,
+    createdBy: string,
+  ): Promise<InheritanceRFI> {
+    try {
+      const rfi = await inheritanceStore.createRFIWithSubtype({
+        requestingProblemSetId: requestingPsId,
+        targetProblemSetId: targetPsId,
+        targetItemId: 'n/a',
+        targetItemType: 'guidance',
+        subject,
+        rfiSubtype: 'guidance_request',
+        createdBy,
+      });
+
+      // Add situation description as initial message
+      await inheritanceStore.addRFIMessage(rfi.id, createdBy, requestingPsId, situationDescription);
+
+      // Log activity for target PS
+      await problemSetActivityStore.log(
+        targetPsId,
+        'guidance_request_received',
+        createdBy,
+        null,
+        {
+          rfiId: rfi.id,
+          requestingProblemSetId: requestingPsId,
+          subject,
+        },
+      );
+
+      return rfi;
+    } catch (error) {
+      console.error('[inheritance] createGuidanceRequest failed:', error instanceof Error ? error.message : error);
+      throw error;
+    }
   }
 }
 
