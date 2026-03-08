@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-08T21:17:05.446Z"
+last_updated: "2026-03-08T21:21:58.147Z"
 progress:
   total_phases: 54
   completed_phases: 31
   total_plans: 310
-  completed_plans: 307
+  completed_plans: 308
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 35 of 40 (Mission Creation from OPORD & Problem Set Alignment) — IN PROGRESS
-Plan: 3 of 5 in current phase — COMPLETE
-Status: Plan 35-03 complete (frontend mission creation UI)
-Last activity: 2026-03-08 - Completed 35-03-PLAN.md
+Plan: 5 of 5 in current phase — COMPLETE
+Status: Plan 35-05 complete (legacy mission module deleted)
+Last activity: 2026-03-08 - Completed 35-05-PLAN.md
 
-Progress: ██████████████████████████ 300 plans complete
+Progress: ██████████████████████████ 308 plans complete
 
 ## Performance Metrics
 
@@ -144,6 +144,7 @@ Progress: ███████████████████████�
 | Phase 35-mission-creation-from-opord-problem-set-alignment P01 | 2 | 2 tasks | 3 files |
 | Phase 35 P03 | 3 | 2 tasks | 3 files |
 | Phase 35 P02 | 7 | 2 tasks | 3 files |
+| Phase 35 P05 | 3 | 1 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -690,6 +691,7 @@ Recent decisions affecting current work:
 - [Phase 35]: Added derived union types from const objects (MissionState, CcirRequestStatus) for compile-time safety
 - [Phase 35]: Used HTML5 native drag-and-drop for mission task grouping instead of external library
 - [Phase 35]: Wrapped each orchestration step in individual try/catch for partial success with status flags
+- [Phase 35]: Deleted backend/src/api/missions.ts alongside legacy module as sole consumer
 
 ### Roadmap Evolution
 
