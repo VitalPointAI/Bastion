@@ -404,7 +404,7 @@ Plans:
 **Goal:** Build strategic level Plan tab workflow — lighter than JPP. Covers objective setting, force apportionment, constraint definition, and directive drafting. Strategic directive output becomes the initiating directive for child campaign JPP (Step 1). Connect to Phase 25.2 strategic document containers as input.
 **Requirements**: [SG-01, SG-02, SG-03, SG-04, SG-05, SG-06, SG-07, SG-08, SG-09, SG-10, SG-11, SG-12]
 **Depends on:** Phase 34, Phase 25.2 (strategic document containers)
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 - [ ] 36-01-PLAN.md — Backend types, DB schema, store, service, and REST API routes
