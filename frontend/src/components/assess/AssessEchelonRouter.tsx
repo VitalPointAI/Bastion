@@ -14,6 +14,7 @@
 import { useProblemSet } from '../../context/ProblemSetContext.tsx';
 import { useMode } from '../../context/ModeContext.tsx';
 import { OperationalAssess } from './OperationalAssess.tsx';
+import { TrainingTacticalAssess } from './TrainingTacticalAssess.tsx';
 import './AssessEchelonRouter.css';
 
 // ============================================================================
@@ -34,15 +35,6 @@ function TrainingExerciseAssess({ problemSetId: _problemSetId }: { problemSetId:
     <div className="assess-placeholder">
       <h2>Training Exercise Assessment</h2>
       <p>Event Timeline, Exercise METL Aggregate. Coming in Plan 04.</p>
-    </div>
-  );
-}
-
-function TrainingTacticalAssess({ problemSetId: _problemSetId }: { problemSetId: string }) {
-  return (
-    <div className="assess-placeholder">
-      <h2>Training Event Assessment</h2>
-      <p>After-Action Review, Task Assessment. Coming in Plan 04.</p>
     </div>
   );
 }
