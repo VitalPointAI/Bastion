@@ -5,7 +5,7 @@
  * Reads echelon from ProblemSetContext and renders:
  *   - operational: JPPPlanView (existing JPP sidebar workflow)
  *   - tactical: Placeholder (replaced by Plan 02 with MDMPPlanView)
- *   - strategic: DoctrinalPlaceholder (Phase 36)
+ *   - strategic: StrategicGuidancePlanView (Phase 36)
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,10 +14,10 @@ import { DecisionGateTimeline } from '../governance/index.js';
 import { jppService, type JPPInstance, type StepStatus } from '../../lib/jpp-service.ts';
 import type { DecisionGate } from '../../lib/gate-service';
 import { useProblemSet } from '../../context/ProblemSetContext.tsx';
-import { DoctrinalPlaceholder } from '../tabs/DoctrinalPlaceholder.tsx';
 import { EchelonBadge } from './EchelonBadge.tsx';
 import { PlanEmptyState } from './PlanEmptyState.tsx';
 import { MDMPPlanView } from './MDMPPlanView.tsx';
+import { StrategicGuidancePlanView } from './StrategicGuidancePlanView.tsx';
 
 // Step components (Plans 06-08)
 import { PlanningInitiation } from './PlanningInitiation.tsx';
@@ -277,18 +277,7 @@ export function PlanEchelonRouter({ problemSetId, daoId }: PlanEchelonRouterProp
       return <MDMPPlanView problemSetId={problemSetId} daoId={daoId} />;
 
     case 'strategic':
-      return (
-        <>
-          <EchelonBadge echelon="strategic" />
-          <DoctrinalPlaceholder
-            tabId="plan"
-            tabName="Strategic Guidance"
-            description="Strategic-level planning workflow for directive development and force apportionment."
-            futureContent="Objective setting, force apportionment, constraint definition, directive drafting. Strategic directives become initiating directives for child campaign JPP."
-            deliveredBy="Phase 36"
-          />
-        </>
-      );
+      return <StrategicGuidancePlanView problemSetId={problemSetId} daoId={daoId} />;
 
     default:
       return <JPPPlanView problemSetId={problemSetId} />;
