@@ -378,10 +378,11 @@ Plans:
 **Goal:** Plan tab reads `echelon` from ProblemSetContext and renders the appropriate planning workflow — operational (Phase 33 JPP), tactical (existing MDMP module wired into Plan tab), or strategic (placeholder). MDMP steps get same treatment as JPP: sidebar navigation, role-gated sections, governance gates, AI agent panels.
 **Requirements**: TBD
 **Depends on:** Phase 33, Phase 23 (echelon-aware problem sets)
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 34 to break down)
+- [ ] 34-01-PLAN.md — Echelon routing infrastructure (PlanEchelonRouter, EchelonBadge, TabLayout header slot, PlanEmptyState, strategic placeholder)
+- [ ] 34-02-PLAN.md — MDMP tactical plan view (MDMPStepConfig, MDMPPlanView, MDMPStepLayout, governance gates, AI panels)
 
 ### Phase 35: Mission Creation from OPORD & Problem Set Alignment
 
