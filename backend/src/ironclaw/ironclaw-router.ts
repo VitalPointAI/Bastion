@@ -55,16 +55,15 @@ ironclawRouter.get('/health', async (_req: Request, res: Response) => {
  * POST /:problemSetId/message
  * Send a chat message to Ironclaw. Response streamed via WebSocket.
  *
- * Body: { content: string, mentionedAgent?: string }
- * Returns: 202 Accepted (streaming happens via WebSocket channel ironclaw.<psId>)
+ * Body: { content: string }
+ * Returns: 202 Accepted (response delivered via WebSocket channel ironclaw.<psId>)
  */
 ironclawRouter.post(
   '/:problemSetId/message',
   async (req: Request, res: Response) => {
     const problemSetId = req.params.problemSetId as string;
-    const { content, mentionedAgent } = req.body as {
+    const { content } = req.body as {
       content?: string;
-      mentionedAgent?: string;
     };
 
     if (!content || typeof content !== 'string' || !content.trim()) {
@@ -75,9 +74,9 @@ ironclawRouter.post(
     const userDid = getUserDid(req);
 
     try {
-      // Fire-and-forget: response streams via WebSocket
+      // Fire-and-forget: response delivered via WebSocket
       ironclawService
-        .handleMessage(problemSetId, userDid, content.trim(), mentionedAgent)
+        .handleMessage(problemSetId, userDid, content.trim())
         .catch((err) => {
           console.error(
             `[ironclaw-router] handleMessage error (ps=${problemSetId}):`,
