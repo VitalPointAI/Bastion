@@ -17,6 +17,7 @@ import { useProblemSet } from '../../context/ProblemSetContext.tsx';
 import { DoctrinalPlaceholder } from '../tabs/DoctrinalPlaceholder.tsx';
 import { EchelonBadge } from './EchelonBadge.tsx';
 import { PlanEmptyState } from './PlanEmptyState.tsx';
+import { MDMPPlanView } from './MDMPPlanView.tsx';
 
 // Step components (Plans 06-08)
 import { PlanningInitiation } from './PlanningInitiation.tsx';
@@ -264,7 +265,7 @@ interface PlanEchelonRouterProps {
   daoId?: string;
 }
 
-export function PlanEchelonRouter({ problemSetId, daoId: _daoId }: PlanEchelonRouterProps) {
+export function PlanEchelonRouter({ problemSetId, daoId }: PlanEchelonRouterProps) {
   const { activeProblemSet } = useProblemSet();
   const echelon = activeProblemSet?.echelon ?? 'operational';
 
@@ -273,18 +274,7 @@ export function PlanEchelonRouter({ problemSetId, daoId: _daoId }: PlanEchelonRo
       return <JPPPlanView problemSetId={problemSetId} />;
 
     case 'tactical':
-      return (
-        <TabLayout
-          items={[]}
-          selectedItem=""
-          onSelectItem={() => {}}
-          header={<EchelonBadge echelon="tactical" />}
-        >
-          <div className="p-4 text-gray-400">
-            MDMP tactical workflow — Plan 02
-          </div>
-        </TabLayout>
-      );
+      return <MDMPPlanView problemSetId={problemSetId} daoId={daoId} />;
 
     case 'strategic':
       return (
