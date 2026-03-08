@@ -33,6 +33,8 @@ interface IronclawDrawerProps {
   onAcceptSuggestion?: (id: string) => void;
   onDismissSuggestion?: (id: string) => void;
   isLoading?: boolean;
+  /** True when WebSocket is connected */
+  isConnected?: boolean;
   /** True when no problem set is selected — chat works but in global/user-scoped mode */
   isGlobalMode?: boolean;
 }
@@ -46,6 +48,7 @@ export function IronclawDrawer({
   onAcceptSuggestion,
   onDismissSuggestion,
   isLoading,
+  isConnected,
   isGlobalMode,
 }: IronclawDrawerProps) {
   const [inputValue, setInputValue] = useState('');
@@ -178,7 +181,10 @@ export function IronclawDrawer({
               <p className="text-[10px] text-gray-400">Chief of Staff</p>
             </div>
             {/* Connection status */}
-            <span className="w-2 h-2 rounded-full bg-green-500 ml-1" title="Connected" />
+            <span
+              className={`w-2 h-2 rounded-full ml-1 ${isConnected ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}
+              title={isConnected ? 'Connected' : 'Connecting...'}
+            />
           </div>
 
           {/* Close button */}

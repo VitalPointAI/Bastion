@@ -68,6 +68,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         onSendMessage={ironclaw.sendMessage}
         onActionDecision={ironclaw.handleActionDecision}
         isLoading={ironclaw.isLoading}
+        isConnected={ironclaw.isConnected}
         isGlobalMode={!activeProblemSetId}
       />
     </IronclawContext.Provider>
