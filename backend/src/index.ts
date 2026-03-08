@@ -56,6 +56,7 @@ import { validationRouter } from './validation/validation-router.js';
 import { registerValidationJobs } from './validation/validation-scheduler.js';
 import { requireAuth } from './auth/auth-instance.js';
 import { discoveryRouter, setupDiscoveryWS, getDiscoveryService } from './discovery/index.js';
+import { osintWebhookRouter } from './api/osint-webhook.js';
 
 dotenv.config();
 
@@ -199,6 +200,7 @@ app.use('/api/ai-staff', requireAuth, aiStaffRouter);
 app.use('/api/ironclaw', requireAuth, ironclawRouter);
 app.use('/api/validation', requireAuth, validationRouter);
 app.use('/api/discovery', discoveryRouter);
+app.use('/api/osint', osintWebhookRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
