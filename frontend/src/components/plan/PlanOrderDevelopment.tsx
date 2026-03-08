@@ -5,6 +5,10 @@
  * Produces the operational plan with plan type selection (OPLAN/OPORD/CONPLAN/FRAGORD),
  * 5-paragraph order structure with role-gated editing per paragraph,
  * annex sections (A-E plus extensible), E-W-M gap check, and plan approval gate.
+ *
+ * Phase 35 Plan 04: Restructured Para 3 from flat string to structured subordinate
+ * tasks with mission grouping, embedded MissionGroupEditor/MissionConfirmModal,
+ * and MissionTracker panel below Para 5.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -15,6 +19,15 @@ import { ewmService, type EWMGap } from '../../lib/ewm-service.ts';
 import { GateSubmitButton } from '../governance/index.ts';
 import { DocumentExport } from './DocumentExport.tsx';
 import { DocumentVersionHistory } from './DocumentVersionHistory.tsx';
+import { MissionGroupEditor } from './MissionGroupEditor.tsx';
+import { MissionConfirmModal } from './MissionConfirmModal.tsx';
+import { MissionTracker } from './MissionTracker.tsx';
+import {
+  missionCreationService,
+  type OPORDSubordinateTask,
+  type MissionGroup,
+  type CreateMissionInput,
+} from '../../lib/mission-creation-service.ts';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -32,7 +45,9 @@ interface FiveParagraphOrder {
   // Para 3 - Execution
   execution: {
     conceptOfOperations: string;
-    tasksToSubordinates: string;
+    tasksToSubordinates: string; // Legacy flat string (kept for backward compat)
+    subordinateTasks?: OPORDSubordinateTask[]; // Structured tasks (Phase 35)
+    missionGroups?: MissionGroup[]; // Mission group state (Phase 35)
     coordinatingInstructions: string;
   };
   // Para 4 - Sustainment
@@ -59,6 +74,10 @@ interface PlanOrderDevelopmentProps {
   problemSetId: string;
   jppInstanceId: string;
   currentRole: string;
+  /** Parent PS name for mission creation context */
+  problemSetName?: string;
+  /** Parent problem set ID (null if this IS the parent/top-level) */
+  parentProblemSetId?: string | null;
 }
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -95,10 +114,14 @@ function extractPlanData(products: JPPStepProduct[]): {
   planType: PlanType;
   order: FiveParagraphOrder;
   annexes: AnnexData[];
+  subordinateTasks: OPORDSubordinateTask[];
+  missionGroups: MissionGroup[];
 } {
   let planType: PlanType = 'OPLAN';
   let order = defaultOrder();
   let annexes = [...DEFAULT_ANNEXES];
+  let subordinateTasks: OPORDSubordinateTask[] = [];
+  let missionGroups: MissionGroup[] = [];
 
   for (const p of products) {
     const c = p.content;
@@ -111,6 +134,14 @@ function extractPlanData(products: JPPStepProduct[]): {
     if ('fiveParagraphOrder' in c) {
       const fpo = c.fiveParagraphOrder as FiveParagraphOrder;
       order = { ...defaultOrder(), ...fpo };
+
+      // Extract structured tasks if present
+      if (Array.isArray(fpo.execution?.subordinateTasks)) {
+        subordinateTasks = fpo.execution.subordinateTasks;
+      }
+      if (Array.isArray(fpo.execution?.missionGroups)) {
+        missionGroups = fpo.execution.missionGroups;
+      }
     }
 
     if ('annexes' in c && Array.isArray(c.annexes)) {
@@ -118,7 +149,7 @@ function extractPlanData(products: JPPStepProduct[]): {
     }
   }
 
-  return { planType, order, annexes };
+  return { planType, order, annexes, subordinateTasks, missionGroups };
 }
 
 /** Extract mission statement from Step 2 for auto-population */
@@ -196,7 +227,13 @@ const warningStyle: React.CSSProperties = {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function PlanOrderDevelopment({ problemSetId, jppInstanceId, currentRole }: PlanOrderDevelopmentProps) {
+export function PlanOrderDevelopment({
+  problemSetId,
+  jppInstanceId,
+  currentRole,
+  problemSetName = 'Problem Set',
+  parentProblemSetId = null,
+}: PlanOrderDevelopmentProps) {
   const [planType, setPlanType] = useState<PlanType>('OPLAN');
   const [order, setOrder] = useState<FiveParagraphOrder>(defaultOrder());
   const [annexes, setAnnexes] = useState<AnnexData[]>(DEFAULT_ANNEXES);
@@ -206,6 +243,12 @@ export function PlanOrderDevelopment({ problemSetId, jppInstanceId, currentRole 
   const [gapsWaived, setGapsWaived] = useState(false);
   const [stepStatus, setStepStatus] = useState<StepStatus>('not_started');
   const [saving, setSaving] = useState(false);
+
+  // Phase 35: Structured subordinate tasks and mission grouping
+  const [subordinateTasks, setSubordinateTasks] = useState<OPORDSubordinateTask[]>([]);
+  const [missionGroups, setMissionGroups] = useState<MissionGroup[]>([]);
+  const [confirmGroup, setConfirmGroup] = useState<MissionGroup | null>(null);
+  const [showLegacyTasks, setShowLegacyTasks] = useState(false);
 
   // Load existing plan data + E-W-M gaps
   const loadData = useCallback(async () => {
@@ -221,6 +264,8 @@ export function PlanOrderDevelopment({ problemSetId, jppInstanceId, currentRole 
       setPlanType(planData.planType);
       setAnnexes(planData.annexes);
       setStepStatus(instance.stepStatuses.plan_development || 'not_started');
+      setSubordinateTasks(planData.subordinateTasks);
+      setMissionGroups(planData.missionGroups);
 
       // If order has no mission, auto-populate from Step 2
       if (!planData.order.mission) {
@@ -295,11 +340,21 @@ export function PlanOrderDevelopment({ problemSetId, jppInstanceId, currentRole 
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Include structured tasks alongside legacy format for transitional compatibility
+      const orderWithStructuredTasks: FiveParagraphOrder = {
+        ...order,
+        execution: {
+          ...order.execution,
+          subordinateTasks,
+          missionGroups,
+        },
+      };
+
       await jppService.saveStepProduct(jppInstanceId, 'plan_development', {
         roleId: currentRole,
         content: {
           planType,
-          fiveParagraphOrder: order,
+          fiveParagraphOrder: orderWithStructuredTasks,
           annexes,
           gapsWaived,
         },
@@ -444,9 +499,10 @@ export function PlanOrderDevelopment({ problemSetId, jppInstanceId, currentRole 
         allowedRoles={['j3']}
         currentRole={currentRole}
         title="Paragraph 3: Execution"
-        description="Concept of operations, tasks, and coordinating instructions"
+        description="Concept of operations, structured subordinate tasks with mission grouping, and coordinating instructions"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {/* a. Concept of Operations (unchanged) */}
           <div>
             <label style={labelStyle}>a. Concept of Operations</label>
             <textarea
@@ -456,15 +512,153 @@ export function PlanOrderDevelopment({ problemSetId, jppInstanceId, currentRole 
               style={{ ...textareaStyle, minHeight: '4rem' }}
             />
           </div>
+
+          {/* b. Subordinate Tasks -- Structured */}
           <div>
             <label style={labelStyle}>b. Tasks to Subordinate Units</label>
-            <textarea
-              value={order.execution.tasksToSubordinates}
-              onChange={(e) => updateExecution('tasksToSubordinates', e.target.value)}
-              placeholder="Specific tasks assigned to each subordinate unit..."
-              style={textareaStyle}
-            />
+
+            {/* Legacy flat string (read-only, collapsible) */}
+            {order.execution.tasksToSubordinates && (
+              <div style={{ marginBottom: '0.5rem' }}>
+                <button
+                  onClick={() => setShowLegacyTasks(!showLegacyTasks)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#6b7280',
+                    fontSize: '0.7rem',
+                    cursor: 'pointer',
+                    padding: '0.25rem 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                  }}
+                >
+                  <span style={{ transform: showLegacyTasks ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s', display: 'inline-block' }}>&#9654;</span>
+                  Legacy format (read-only) -- add structured tasks below
+                </button>
+                {showLegacyTasks && (
+                  <textarea
+                    value={order.execution.tasksToSubordinates}
+                    readOnly
+                    style={{ ...textareaStyle, opacity: 0.6, pointerEvents: 'none' as const, minHeight: '3rem' }}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Structured task cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '0.5rem' }}>
+              {subordinateTasks.map((task, idx) => (
+                <div key={task.id} style={{ ...cardStyle, display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                  <span style={{ color: '#6b7280', fontSize: '0.7rem', fontWeight: 600, minWidth: '1.5rem', paddingTop: '0.25rem' }}>
+                    {idx + 1}.
+                  </span>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <input
+                      type="text"
+                      value={task.unitName}
+                      onChange={(e) => {
+                        const updated = subordinateTasks.map((t) =>
+                          t.id === task.id ? { ...t, unitName: e.target.value } : t,
+                        );
+                        setSubordinateTasks(updated);
+                      }}
+                      placeholder="Unit name..."
+                      style={{ ...textareaStyle, minHeight: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.75rem', fontWeight: 600 }}
+                    />
+                    <input
+                      type="text"
+                      value={task.task}
+                      onChange={(e) => {
+                        const updated = subordinateTasks.map((t) =>
+                          t.id === task.id ? { ...t, task: e.target.value } : t,
+                        );
+                        setSubordinateTasks(updated);
+                      }}
+                      placeholder="Task description..."
+                      style={{ ...textareaStyle, minHeight: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                    />
+                    <input
+                      type="text"
+                      value={task.purpose}
+                      onChange={(e) => {
+                        const updated = subordinateTasks.map((t) =>
+                          t.id === task.id ? { ...t, purpose: e.target.value } : t,
+                        );
+                        setSubordinateTasks(updated);
+                      }}
+                      placeholder="Purpose (in order to)..."
+                      style={{ ...textareaStyle, minHeight: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: '#9ca3af' }}
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSubordinateTasks(subordinateTasks.filter((t) => t.id !== task.id));
+                      // Also remove from any mission groups
+                      setMissionGroups(missionGroups.map((g) => ({
+                        ...g,
+                        taskIds: g.taskIds.filter((id) => id !== task.id),
+                      })));
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#6b7280',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      padding: '0.25rem',
+                    }}
+                    title="Remove task"
+                  >
+                    &#10005;
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                const newTask: OPORDSubordinateTask = {
+                  id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  unitId: '',
+                  unitName: '',
+                  task: '',
+                  purpose: '',
+                  missionGroupId: null,
+                };
+                setSubordinateTasks([...subordinateTasks, newTask]);
+              }}
+              style={{
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.75rem',
+                backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                borderRadius: '0.25rem',
+                color: '#93c5fd',
+                cursor: 'pointer',
+              }}
+            >
+              + Add Task
+            </button>
           </div>
+
+          {/* Mission Grouping (only shows when structured tasks exist) */}
+          {subordinateTasks.length > 0 && (
+            <div style={{ marginTop: '0.5rem' }}>
+              <div style={sectionDividerStyle}>Mission Task Grouping</div>
+              <MissionGroupEditor
+                tasks={subordinateTasks}
+                groups={missionGroups}
+                onTasksChange={setSubordinateTasks}
+                onGroupsChange={setMissionGroups}
+                onCreateMission={(group) => setConfirmGroup(group)}
+                problemSetId={problemSetId}
+              />
+            </div>
+          )}
+
+          {/* c. Coordinating Instructions (unchanged) */}
           <div>
             <label style={labelStyle}>c. Coordinating Instructions</label>
             <textarea
@@ -476,6 +670,32 @@ export function PlanOrderDevelopment({ problemSetId, jppInstanceId, currentRole 
           </div>
         </div>
       </RoleGatedSection>
+
+      {/* MissionConfirmModal */}
+      {confirmGroup && (
+        <MissionConfirmModal
+          isOpen={confirmGroup !== null}
+          onClose={() => setConfirmGroup(null)}
+          group={confirmGroup}
+          tasks={subordinateTasks.filter((t) => confirmGroup.taskIds.includes(t.id))}
+          parentProblemSetId={problemSetId}
+          parentPsName={problemSetName}
+          onConfirm={async (input: CreateMissionInput) => {
+            const result = await missionCreationService.createMission(problemSetId, input);
+            // Update group status to 'created' and set childProblemSetId
+            setMissionGroups((prev) =>
+              prev.map((g) =>
+                g.id === confirmGroup.id
+                  ? { ...g, status: 'created' as const, childProblemSetId: result.problemSet.id }
+                  : g,
+              ),
+            );
+            setConfirmGroup(null);
+          }}
+          parentMembers={[]}
+          availableAgents={[]}
+        />
+      )}
 
       {/* Para 4 - Sustainment */}
       <RoleGatedSection
@@ -756,6 +976,14 @@ export function PlanOrderDevelopment({ problemSetId, jppInstanceId, currentRole 
         <DocumentVersionHistory
           problemSetId={problemSetId}
           planId={`${jppInstanceId}-plan`}
+        />
+      </div>
+
+      {/* Section 8: Mission Tracker (Phase 35) */}
+      <div style={{ marginTop: '1rem' }}>
+        <MissionTracker
+          problemSetId={problemSetId}
+          parentProblemSetId={parentProblemSetId}
         />
       </div>
     </JPPStepLayout>
