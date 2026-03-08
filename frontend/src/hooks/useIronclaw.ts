@@ -143,9 +143,7 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
         }
 
         // Clear loading -- response arrived from Ironclaw
-        if (chatMsg.sender !== 'user') {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       } catch {
         // Non-JSON or unexpected message -- ignore
       }
