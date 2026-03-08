@@ -38,27 +38,32 @@ done
 
 # Get current date for filename
 DATE=$(date +%Y-%m-%d)
-VERSION="v0.1"
+VERSION="v0.2"
 
 export_pdf() {
   echo "Exporting to PDF..."
   OUTPUT="$OUTPUT_DIR/BASTION-Whitepaper-${VERSION}-${DATE}.pdf"
 
-  # Check for xelatex
-  if ! command -v xelatex &> /dev/null; then
-    echo "Warning: xelatex not found. Install texlive-xetex for PDF export."
-    echo "Trying with default PDF engine..."
-    pandoc $INPUTS \
-      --defaults="$CONFIG" \
-      --pdf-engine=pdflatex \
-      -o "$OUTPUT" 2>/dev/null || {
-        echo "PDF export failed. Install LaTeX or use DOCX export."
-        return 1
-      }
-  else
+  if command -v xelatex &> /dev/null; then
+    echo "Using xelatex..."
     pandoc $INPUTS \
       --defaults="$CONFIG" \
       -o "$OUTPUT"
+  elif command -v weasyprint &> /dev/null; then
+    echo "Using weasyprint (pandoc -> HTML -> PDF)..."
+    HTML_TMP="$OUTPUT_DIR/.whitepaper-tmp.html"
+    pandoc $INPUTS \
+      --defaults="$CONFIG" \
+      --embed-resources --standalone \
+      --css="$SCRIPT_DIR/print.css" \
+      -o "$HTML_TMP"
+    weasyprint "$HTML_TMP" "$OUTPUT"
+    rm -f "$HTML_TMP"
+  else
+    echo "No PDF engine found. Install one of:"
+    echo "  sudo apt install texlive-xetex   (best quality)"
+    echo "  pip install weasyprint            (good alternative)"
+    return 1
   fi
 
   echo "PDF exported: $OUTPUT"

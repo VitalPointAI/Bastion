@@ -21,9 +21,10 @@ This appendix provides a detailed demonstration script for the BASTION platform,
 Before demonstration begins, verify:
 
 - [ ] BASTION platform running (docker-compose up)
+- [ ] Training mode activated (amber EXERCISE banner visible)
 - [ ] Scenario data seeded: `bash scripts/seed-scenario.sh` (seeds graph, mission, plan, COAs, command structure, resources, MDMP workflow)
 - [ ] Mock governance data enabled: `VITE_USE_MOCK_DATA=true` in frontend/.env.local (provides coalition DAO with USA/GBR/CAN and scenario-aligned proposals)
-- [ ] Sample strategic document uploaded and extracted (e.g., fictional coalition directive)
+- [ ] Pacific Strategy AY26 scenario training package available for upload
 - [ ] AI agents initialized and healthy
 - [ ] Sphero RVR+ powered and connected
 - [ ] Jetson Orin Nano running edge AI models
@@ -54,48 +55,50 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 **[0:00-1:30] Introduction and Problem Framing**
 
-*Narrator speaks while showing Strategic Planning Dashboard*
+*Narrator speaks while showing BASTION in training mode with amber EXERCISE banner*
 
-> "Welcome to the BASTION demonstration. Before we begin, I want to frame the problem we're solving."
+> "Welcome to the BASTION demonstration. Notice the amber EXERCISE banner across the top — we're in training mode, which uses identical governance to operational mode. This is 'train as you fight' — every vote, every approval gate, every safety constraint works exactly as it would in operations."
 
 *Pause for emphasis*
 
 > "In conventional coalition operations, a strategic directive might take days to translate into tactical action. Why? The document must be manually analyzed by staff officers. Extracted objectives must be coordinated through national channels. Each partner must staff recommendations through their own approval chains. By the time everyone agrees, the operational window may have closed."
 
-> "BASTION solves this through AI-augmented decentralized autonomous organizations. Over the next twenty minutes, you'll see strategic intent flow to tactical execution in minutes rather than days, with full accountability at every step."
+> "BASTION solves this through AI-augmented decentralized autonomous organizations. Over the next twenty minutes, you'll see strategic intent flow through a doctrine-aligned workflow — Understand, Design, Plan, Direct, COP, Assess — mirroring JP 5-0 rather than imposing arbitrary software categories. You'll see 131 AI agents accelerate coordination while preserving human authority."
 
-*Action:* Display Strategic Planning Dashboard with coalition member badges visible
+*Action:* Display the six doctrinal tabs with the Understand tab active
 
 *Show:*
+- Six tabs: Understand / Design / Plan / Direct / COP / Assess
 - Coalition partners (USA, GBR, CAN) with voting weights
-- Empty objective list (will populate during demo)
+- Training mode banner and EXERCISE watermark
 - Agent status panel showing healthy agents
 
-> "Notice the coalition partners displayed here. In a conventional system, each nation would maintain separate planning tools with limited visibility into partner activities. BASTION provides a shared operational picture while respecting national authorities."
+> "Notice the tab structure follows military doctrine, not software convention. Each tab corresponds to a phase of the joint planning process. And notice the coalition partners — in a conventional system, each nation would maintain separate planning tools. BASTION provides a shared operational picture while respecting national authorities."
 
 ---
 
-**[1:30-2:30] Document Ingestion**
+**[1:30-2:30] Document Ingestion via Understand Tab**
 
-*Narrator explains document processing*
+*Narrator explains the Understand tab and document processing*
 
-> "Strategic planning begins with document ingestion. In conventional operations, this step is a bottleneck. Staff officers manually review documents, extract relevant objectives, and summarize them for commanders. This process can take hours or days."
+> "We begin in the Understand tab — the doctrinal starting point. Strategic planning starts with understanding the operational environment. In conventional operations, this step is a bottleneck. Staff officers manually review documents, extract relevant objectives, and summarize them for commanders. This process can take hours or days."
 
-*Action:* Upload pre-prepared strategic guidance document (PDF)
+*Action:* Upload Pacific Strategy AY26 scenario training package via ScenarioPackageUpload in the Understand tab
 
-> "We're uploading a fictional coalition directive. Watch what happens."
+> "We're uploading a scenario training package — multiple documents at once. Watch the AI categorize them automatically."
 
 *Show:*
-- Upload progress indicator
-- Document processing status
-- Chunk-by-chunk extraction progress (SSE streaming)
+- Multi-file drag-drop upload in Understand tab
+- AI tag inference categorizing documents by type, team, and exercise phase
+- Async LLM extraction processing with status indicators
+- RAFT graph populating with actors and relationships from uploaded intelligence
 
 *System Response:*
-- AI extracts objectives automatically
-- Extraction complete notification appears
-- Objective list populates with 3-4 extracted items
+- AI extracts objectives and entities automatically
+- Documents categorized (intelligence, orders, estimates)
+- RAFT graph shows actor relationships and tensions
 
-> "In seconds, the AI has extracted four strategic objectives. A task that might consume a staff officer's entire morning completed before I finished this sentence."
+> "In seconds, the AI has categorized documents, extracted strategic objectives, and built a knowledge graph of actors and relationships. A task that might consume an entire staff section's morning."
 
 **[INJECT - SPEED vs. CONVENTIONAL C2]**
 
@@ -166,7 +169,48 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 ---
 
-## B.3 Act 2: Operational Level (5 minutes)
+## B.2.5 Operational Design (2 minutes)
+
+### Bridging Strategic Understanding to Operational Planning
+
+---
+
+**[5:00-5:45] Design Tab — Problem Framing and CoG Analysis**
+
+*Narrator transitions to the Design tab*
+
+> "Now we move to the Design tab — operational design. This is where commanders translate understanding into an approach. In conventional operations, this is often the weakest link: strategic guidance gets handed to planners who jump straight to courses of action without systematic problem framing."
+
+*Action:* Navigate to Design tab, show problem framing canvas
+
+*Show:*
+- Problem framing canvas with AI-identified tensions
+- Center of gravity analysis using Strange's CG-CC-CR-CV framework
+- Lines of effort with linkages to strategic objectives
+
+> "The AI has identified key tensions in the strategic environment and suggested initial framings. The commander refines these — the AI provides starting points, not answers."
+
+*Action:* Show CoG analysis for adversary forces
+
+> "Center of gravity analysis follows Strange's framework: Critical Capabilities, Requirements, and Vulnerabilities. This structured analysis feeds directly into course of action development."
+
+**[5:45-6:15] Design-to-Plan Handoff**
+
+*Action:* Click "Export to Plan" button
+
+> "Watch this handoff — operational design outputs flow directly into the Plan tab's mission analysis. No manual translation, no interpretation errors between the design team and the planning staff."
+
+*Show:*
+- Design outputs appearing as Plan tab inputs
+- Objectives, CoG analysis, and LOEs populated in mission analysis
+
+**[INJECT - OPERATIONAL DESIGN GAP]**
+
+> "In conventional staffs, the gap between operational design and detailed planning is where intent gets lost. BASTION eliminates that gap through structured data handoff."
+
+---
+
+## B.3 Act 2: Operational Level (4 minutes)
 
 ### Human Authority Position: ON-THE-LOOP
 
@@ -174,13 +218,13 @@ AI agents operate continuously while humans monitor with override capability. Hu
 
 ---
 
-**[5:00-6:30] AI Agent Activation**
+**[6:15-7:30] AI Agent Activation**
 
 *Narrator transitions to operational coordination*
 
-> "With strategic resources allocated, we move to the operational level. This is where conventional C2 struggles most. The gap between strategic intent and tactical execution, the operational level, is where coalitions historically lose coherence."
+> "With strategic resources allocated and operational design complete, we move to detailed planning. This is where conventional C2 struggles most. The gap between strategic intent and tactical execution is where coalitions historically lose coherence."
 
-*Action:* Navigate to Agent Orchestration Panel
+*Action:* Navigate to Plan tab, show Agent Orchestration Panel
 
 *Show:*
 - Active agents list with status indicators
@@ -410,13 +454,56 @@ Autonomous systems execute within policy constraints without real-time human app
 
 ---
 
-## B.5 Act 4: Cross-Level Coordination (3 minutes)
+## B.4.5 COP and Resource Registry (2 minutes)
+
+### AI-Generated Operational Picture and Resource Tracking
+
+---
+
+**[15:30-16:15] COP Layer Generation**
+
+*Narrator transitions to COP tab*
+
+> "While tactical operations proceed, AI agents have been working autonomously. Let me show you the COP tab."
+
+*Action:* Navigate to COP tab
+
+*Show:*
+- AI-generated MIL-STD-2525D overlays on the map
+- Friendly force symbols (blue) and adversary symbols (red)
+- Phase slider showing force positions over time
+- Resource registry entries as military symbols on the COP
+
+> "These military symbols were not placed manually. AI agents parsed our planning documents, orders, and intelligence reports, then generated standard MIL-STD-2525D symbology automatically. Each symbol links back to its source document."
+
+*Action:* Click on a symbol to show detail panel with source document linkage
+
+> "Every symbol went through a publish review cycle — AI generates, humans approve before it reaches the shared COP. Governance even for the operational picture."
+
+**[16:15-16:45] Resource Registry**
+
+*Action:* Show resource entries on COP with DID identifiers
+
+> "Notice these resource symbols. Each has a blockchain-anchored Decentralized Identifier — a `did:near:resource` DID. The Sphero reconnaissance asset, sensors, weapons systems — all tracked as first-class entities with real-time readiness status."
+
+*Show:*
+- Resource symbols with FMC/PMC/NMC readiness indicators
+- DID identifier displayed in detail panel
+- Plugin-based resource type (autonomous vehicle)
+
+**[INJECT - RESOURCE ACCOUNTABILITY]**
+
+> "In conventional operations, resource tracking lives in spreadsheets and logistics databases that commanders rarely see in real-time. BASTION makes every asset a blockchain-verified entity, visible on the COP, with DAO-governed allocation. You can't lose track of an asset when it has a permanent identity on the blockchain."
+
+---
+
+## B.5 Act 4: Cross-Level Coordination (2 minutes)
 
 ### Demonstrating Interlink Between Tactical and Strategic DAOs
 
 ---
 
-**[15:30-17:00] Automatic Strategic Coordination**
+**[16:45-17:45] Automatic Strategic Coordination**
 
 *Narrator explains cross-DAO automation*
 
@@ -562,15 +649,20 @@ Quick reference for narrative injects and their connection to paper themes:
 
 | Demo Moment | Inject Theme | Paper Reference |
 |-------------|--------------|-----------------|
-| Document ingestion | Speed vs. conventional C2 staffing delays | Section 1.1, 1.3 |
+| Training mode activation | Train as you fight | Section 3.11 |
+| Scenario upload (Understand tab) | Speed vs. conventional C2 staffing delays | Section 1.1, 1.3, 3.7 |
 | Human approval | Transparency/accountability gap | Section 1.1 |
 | Coalition voting | Trust and verification | Section 1.3, 2.6 |
+| Operational design (Design tab) | Operational design gap | Section 3.7 |
+| Design-to-Plan handoff | Doctrine-first workflow | Section 3.7 |
 | Agent orchestration | Siloed decision-making | Section 1.1, 2.6 |
 | On-the-loop monitoring | Decision tempo | Section 1.3 |
 | Risk acknowledgment | Accountability | Section 5.3 |
 | Autonomous patrol | DDIL resilience | Section 1.3, 2.5-2.6 |
 | Edge AI processing | Cloud dependency vulnerability | Section 2.5 |
 | Strike authorization | Autonomous weapons ethics | Section 5.3 |
+| COP layer generation | AI operational picture | Section 3.9 |
+| Resource registry on COP | Resource accountability | Section 3.10 |
 | Cross-level replenishment | Coalition coordination friction | Section 1.1, 2.6 |
 | Audit trail | Coalition trust verification | Section 1.1, 1.5 |
 
