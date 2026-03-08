@@ -13,6 +13,7 @@ import type {
   AARObservationType,
   METLTask,
 } from '../../lib/assessment-service';
+import { assessmentService } from '../../lib/assessment-service';
 import { AARObservationCard } from './AARObservationCard.tsx';
 
 // ============================================================================
@@ -39,6 +40,8 @@ export interface AARFormProps {
     id: string,
     updates: { aiAccepted?: boolean; content?: string }
   ) => void;
+  /** Called after AI suggestions are generated so parent can refresh observations */
+  onObservationsGenerated?: (newObs: AARObservation[]) => void;
 }
 
 // ============================================================================
@@ -75,6 +78,7 @@ export function AARForm({
   onFinalize,
   onAddObservation,
   onUpdateObservation,
+  onObservationsGenerated,
 }: AARFormProps) {
   const isFinalized = aar.status === 'finalized';
   const isInReview = aar.status === 'in_review';
@@ -91,6 +95,10 @@ export function AARForm({
 
   // Finalize confirmation
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+
+  // AI suggestion state
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const sustainObs = observations.filter((o) => o.observationType === 'sustain');
   const improveObs = observations.filter((o) => o.observationType === 'improve');
@@ -118,6 +126,23 @@ export function AARForm({
     setAddingObsType(null);
     setObsContent('');
     setObsMetlTaskId('');
+  }
+
+  const hasAARContent = !!(aar.whatWasPlanned || aar.whatHappened);
+  const canGenerateAI = hasAARContent && !isFinalized;
+
+  async function handleGenerateAISuggestions() {
+    setAiGenerating(true);
+    setAiError(null);
+    try {
+      const newObs = await assessmentService.generateAIObservations(aar.id);
+      onObservationsGenerated?.(newObs);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to generate AI suggestions';
+      setAiError(msg);
+    } finally {
+      setAiGenerating(false);
+    }
   }
 
   function renderObsList(obs: AARObservation[], type: AARObservationType) {
@@ -209,7 +234,33 @@ export function AARForm({
 
       {/* Section 4: Observations */}
       <div className="aar-section">
-        <label className="aar-section-label">4. Observations</label>
+        <div className="aar-obs-header">
+          <label className="aar-section-label">4. Observations</label>
+          {!isFinalized && (
+            <div className="aar-ai-suggestion-controls">
+              <button
+                className="aar-btn aar-btn--ai-suggest"
+                onClick={handleGenerateAISuggestions}
+                disabled={!canGenerateAI || aiGenerating}
+                title={
+                  !hasAARContent
+                    ? 'Add content to at least one AAR section first'
+                    : aiGenerating
+                    ? 'Generating suggestions...'
+                    : 'Generate AI-suggested observations'
+                }
+              >
+                {aiGenerating ? 'Generating...' : 'Generate AI Suggestions'}
+              </button>
+              <span className="aar-ai-info">
+                AI will suggest sustain/improve observations based on your AAR content. Review each suggestion before accepting.
+              </span>
+            </div>
+          )}
+        </div>
+        {aiError && (
+          <div className="aar-ai-error">{aiError}</div>
+        )}
         <div className="aar-obs-columns">
           {renderObsList(sustainObs, 'sustain')}
           {renderObsList(improveObs, 'improve')}

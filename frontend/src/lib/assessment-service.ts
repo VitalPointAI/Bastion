@@ -484,6 +484,42 @@ class AssessmentService {
       `/api/assessment/metl/assessments/aar/${encodeURIComponent(aarId)}`
     );
   }
+
+  // ─── AI Suggestion Methods ───────────────────────────────────────────────
+
+  /**
+   * Generate AI observation suggestions for an AAR.
+   * Creates observations with suggestedByAi=true in the backend.
+   */
+  async generateAIObservations(aarId: string): Promise<AARObservation[]> {
+    return this.request<AARObservation[]>(
+      `/api/assessment/aars/${encodeURIComponent(aarId)}/ai-suggestions`,
+      { method: 'POST' }
+    );
+  }
+
+  /**
+   * Generate AI rating suggestions for METL tasks based on AAR observations.
+   * Returns suggestions for O/C review (NOT auto-created assessments).
+   */
+  async generateAIRatingSuggestions(
+    aarId: string,
+  ): Promise<AIRatingSuggestion[]> {
+    return this.request<AIRatingSuggestion[]>(
+      '/api/assessment/metl/assessments/ai-suggestions',
+      {
+        method: 'POST',
+        body: JSON.stringify({ aarId }),
+      }
+    );
+  }
+}
+
+/** AI rating suggestion from the backend */
+export interface AIRatingSuggestion {
+  metlTaskId: string;
+  suggestedRating: METLRating;
+  rationale: string;
 }
 
 /** Singleton assessment service instance */

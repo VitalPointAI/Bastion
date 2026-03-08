@@ -12,7 +12,9 @@ import type {
   METLAssessment,
   METLRating,
   CreateMETLAssessmentInput,
+  AIRatingSuggestion,
 } from '../../lib/assessment-service';
+import { assessmentService } from '../../lib/assessment-service';
 
 // ============================================================================
 // Props
@@ -68,6 +70,34 @@ export function METLTaskAssessment({
 
   const [submitting, setSubmitting] = useState(false);
 
+  // AI rating suggestion state
+  const [aiSuggestions, setAiSuggestions] = useState<Record<string, AIRatingSuggestion>>({});
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function handleGetAISuggestions() {
+    if (!aarId) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const suggestions = await assessmentService.generateAIRatingSuggestions(aarId);
+      const sugMap: Record<string, AIRatingSuggestion> = {};
+      for (const s of suggestions) {
+        sugMap[s.metlTaskId] = s;
+        // Pre-select the AI-suggested rating if no manual selection yet
+        if (!ratings[s.metlTaskId]?.rating) {
+          updateTaskRating(s.metlTaskId, { rating: s.suggestedRating });
+        }
+      }
+      setAiSuggestions(sugMap);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to get AI suggestions';
+      setAiError(msg);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   function updateTaskRating(taskId: string, partial: Partial<TaskRatingState>) {
     setRatings((prev) => ({
       ...prev,
@@ -100,11 +130,12 @@ export function METLTaskAssessment({
   function renderTaskRow(task: METLTask) {
     const current = getCurrentRating(task.id);
     const state = ratings[task.id];
+    const aiSug = aiSuggestions[task.id];
 
     return (
       <div
         key={task.id}
-        className={`metl-task-row ${task.isSupplemental ? 'metl-task-row--supplemental' : ''}`}
+        className={`metl-task-row ${task.isSupplemental ? 'metl-task-row--supplemental' : ''}${aiSug ? ' metl-task-row--ai-suggested' : ''}`}
       >
         <div className="metl-task-info">
           <span className="metl-task-name">
@@ -115,6 +146,14 @@ export function METLTaskAssessment({
           </span>
           {task.competencyArea && (
             <span className="metl-task-comp-area">{task.competencyArea}</span>
+          )}
+          {aiSug && (
+            <span
+              className={`metl-ai-suggestion-label metl-ai-suggestion-label--${aiSug.suggestedRating}`}
+              title={aiSug.rationale}
+            >
+              AI suggests: {aiSug.suggestedRating}
+            </span>
           )}
         </div>
 
@@ -177,7 +216,24 @@ export function METLTaskAssessment({
       <div className="metl-assessment-header">
         <h2>Task Assessment</h2>
         {aarId && <span className="metl-assessment-aar-ref">Linked to AAR</span>}
+        <button
+          className="metl-ai-suggest-btn"
+          onClick={handleGetAISuggestions}
+          disabled={!aarId || aiLoading}
+          title={
+            !aarId
+              ? 'Link an AAR to get AI rating suggestions'
+              : aiLoading
+              ? 'Generating suggestions...'
+              : 'Get AI-suggested T/P/U ratings based on AAR observations'
+          }
+        >
+          {aiLoading ? 'Generating...' : 'Get AI Rating Suggestions'}
+        </button>
       </div>
+      {aiError && (
+        <div className="metl-ai-error">{aiError}</div>
+      )}
 
       {/* Inherited tasks */}
       <div className="metl-task-list">
