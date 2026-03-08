@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-08T23:20:42.549Z"
+last_updated: "2026-03-08T23:21:36.047Z"
 progress:
   total_phases: 54
   completed_phases: 34
@@ -150,6 +150,7 @@ Progress: ███████████████████████�
 | Phase 37 P01 | 4 | 2 tasks | 5 files |
 | Phase 37 P04 | 6 | 2 tasks | 7 files |
 | Phase 37 P05 | 7 | 2 tasks | 7 files |
+| Phase 38-inheritance-deepening P02 | 7 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -712,6 +713,8 @@ Recent decisions affecting current work:
 - [Phase 37]: METL tasks combine inherited parent + local supplemental for tactical assessment
 - [Phase 37]: Pure CSS Grid heat map for METL dashboard -- no charting library needed
 - [Phase 38-inheritance-deepening]: Hand-rolled per-paragraph OPORD diff instead of external diff library for known 5-paragraph structure
+- [Phase 38-inheritance-deepening]: Guidance requests use targetItemId=n/a since they are not item-specific
+- [Phase 38-inheritance-deepening]: inheritedContentGuard middleware checks both params.itemId and body.itemId for cross-route flexibility
 
 ### Roadmap Evolution
 
