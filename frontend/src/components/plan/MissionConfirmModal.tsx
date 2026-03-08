@@ -303,7 +303,7 @@ export const MissionConfirmModal: React.FC<MissionConfirmModalProps> = ({
         missionName,
         missionStatement: `${taskStatement} in order to ${purpose}`,
         parentProblemSetId,
-        classification: 'unclassified',
+        classification: 'UNCLASSIFIED',
         mode: 'training',
         taskIds: tasks.map((t) => t.id),
         taskStatement,

@@ -206,7 +206,7 @@ export const missionCreationService = {
     input: { targetPsId: string; requestType: 'ccir' | 'pir'; description: string },
   ): Promise<CcirRequest> {
     const res = await fetch(
-      `${API_BASE}/api/problem-sets/${problemSetId}/ccir-requests`,
+      `${API_BASE}/api/problem-sets/${problemSetId}/missions/ccir-requests`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -223,7 +223,7 @@ export const missionCreationService = {
    */
   async listCcirRequests(problemSetId: string): Promise<CcirRequest[]> {
     const res = await fetch(
-      `${API_BASE}/api/problem-sets/${problemSetId}/ccir-requests`,
+      `${API_BASE}/api/problem-sets/${problemSetId}/missions/ccir-requests`,
       { credentials: 'include' },
     );
     if (!res.ok) throw new Error(`Failed to list CCIR requests: ${res.statusText}`);
@@ -235,7 +235,7 @@ export const missionCreationService = {
    */
   async listIncomingCcirRequests(problemSetId: string): Promise<CcirRequest[]> {
     const res = await fetch(
-      `${API_BASE}/api/problem-sets/${problemSetId}/ccir-requests/incoming`,
+      `${API_BASE}/api/problem-sets/${problemSetId}/missions/ccir-requests/incoming`,
       { credentials: 'include' },
     );
     if (!res.ok) throw new Error(`Failed to list incoming CCIR requests: ${res.statusText}`);
@@ -252,7 +252,7 @@ export const missionCreationService = {
     responseData?: Record<string, unknown>,
   ): Promise<void> {
     const res = await fetch(
-      `${API_BASE}/api/problem-sets/${problemSetId}/ccir-requests/${requestId}`,
+      `${API_BASE}/api/problem-sets/${problemSetId}/missions/ccir-requests/${requestId}`,
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
