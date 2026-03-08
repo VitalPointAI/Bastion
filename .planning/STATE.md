@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-08T22:40:35.175Z"
+last_updated: "2026-03-08T22:41:08.532Z"
 progress:
   total_phases: 54
   completed_phases: 33
@@ -700,6 +700,7 @@ Recent decisions affecting current work:
 - [Phase 36]: Used UNIQUE(problem_set_id) on instances table for idempotent creation
 - [Phase 37]: Assessment data model uses const objects (not enums), shared observation table, lazy decay computation
 - [Phase 37-02]: Aggregation does not duplicate records at parent levels; dashboard queries via sourceProblemSetId
+- [Phase 37]: Option B: AssessTab left unchanged, ProblemSetTabContainer imports AssessEchelonRouter directly
 
 ### Roadmap Evolution
 
