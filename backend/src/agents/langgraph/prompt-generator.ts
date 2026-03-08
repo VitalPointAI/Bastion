@@ -267,6 +267,10 @@ function formatCapability(cap: AgentCapability): string {
     [AgentCapability.EffectCascading]: 'Modeling cascading effects across operational domains',
     [AgentCapability.EscalationModeling]: 'Modeling escalation dynamics and thresholds',
     [AgentCapability.DeceptionDetection]: 'Detecting potential deception in adversary actions and intelligence',
+    // New Agent Capabilities (Deception, Exploitation, De-escalation)
+    [AgentCapability.DeceptionPlanning]: 'Planning military deception operations (MILDEC) per JP 3-13.4',
+    [AgentCapability.ExploitationAnalysis]: 'Identifying and recommending exploitation of opportunities and vulnerabilities',
+    [AgentCapability.DeescalationManagement]: 'Analyzing and recommending de-escalation pathways and tension reduction',
   };
   return descriptions[cap] || cap;
 }

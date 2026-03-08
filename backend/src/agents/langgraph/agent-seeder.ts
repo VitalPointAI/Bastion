@@ -82,6 +82,11 @@ import { EFFECT_CASCADER_MANIFEST } from '../effect-cascader.js';
 import { ESCALATION_MODELER_MANIFEST } from '../escalation-modeler.js';
 import { DECEPTION_DETECTOR_MANIFEST } from '../deception-detector.js';
 
+// New agents - Deception, Exploitation, De-escalation
+import { DECEPTION_PLANNER_MANIFEST } from '../deception-planner.js';
+import { EXPLOITATION_ANALYST_MANIFEST } from '../exploitation-analyst.js';
+import { DEESCALATION_MANAGER_MANIFEST } from '../deescalation-manager.js';
+
 /**
  * Status of seeding operation.
  */
@@ -1280,6 +1285,175 @@ async function seedDeceptionDetectorAgent(): Promise<SeedResult> {
   }
 }
 
+// ==========================================================================
+// New Agents - Deception Planner, Exploitation Analyst, De-escalation Manager
+// ==========================================================================
+
+/**
+ * Seed the Deception Planner agent.
+ */
+async function seedDeceptionPlannerAgent(): Promise<SeedResult> {
+  const agentId = DECEPTION_PLANNER_MANIFEST.agentId;
+  const result: SeedResult = {
+    agentId,
+    registered: false,
+    toolsAssigned: [],
+    characterSet: false,
+  };
+
+  try {
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+
+    const existing = registry.getAgent(agentId);
+    if (existing) {
+      console.log(`[AgentSeeder] ${agentId} already registered`);
+      result.registered = true;
+      if (!existing.character && DECEPTION_PLANNER_MANIFEST.character) {
+        registry.updateAgentCharacter(agentId, DECEPTION_PLANNER_MANIFEST.character);
+        result.characterSet = true;
+        console.log(`[AgentSeeder] Updated character for ${agentId}`);
+      }
+      return result;
+    }
+
+    const manifest = {
+      ...DECEPTION_PLANNER_MANIFEST,
+      createdAt: new Date(),
+      createdBy: 'system',
+      agentDID: '',
+      agentBlindedKey: '',
+      agentPublicKey: '',
+    };
+
+    await registry.registerAgent(manifest);
+    result.registered = true;
+    console.log(`[AgentSeeder] Registered ${agentId}`);
+
+    if (DECEPTION_PLANNER_MANIFEST.character) {
+      registry.updateAgentCharacter(agentId, DECEPTION_PLANNER_MANIFEST.character);
+      result.characterSet = true;
+      console.log(`[AgentSeeder] Set character for ${agentId}`);
+    }
+
+    return result;
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[AgentSeeder] Failed to seed ${agentId}:`, error);
+    return result;
+  }
+}
+
+/**
+ * Seed the Exploitation Analyst agent.
+ */
+async function seedExploitationAnalystAgent(): Promise<SeedResult> {
+  const agentId = EXPLOITATION_ANALYST_MANIFEST.agentId;
+  const result: SeedResult = {
+    agentId,
+    registered: false,
+    toolsAssigned: [],
+    characterSet: false,
+  };
+
+  try {
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+
+    const existing = registry.getAgent(agentId);
+    if (existing) {
+      console.log(`[AgentSeeder] ${agentId} already registered`);
+      result.registered = true;
+      if (!existing.character && EXPLOITATION_ANALYST_MANIFEST.character) {
+        registry.updateAgentCharacter(agentId, EXPLOITATION_ANALYST_MANIFEST.character);
+        result.characterSet = true;
+        console.log(`[AgentSeeder] Updated character for ${agentId}`);
+      }
+      return result;
+    }
+
+    const manifest = {
+      ...EXPLOITATION_ANALYST_MANIFEST,
+      createdAt: new Date(),
+      createdBy: 'system',
+      agentDID: '',
+      agentBlindedKey: '',
+      agentPublicKey: '',
+    };
+
+    await registry.registerAgent(manifest);
+    result.registered = true;
+    console.log(`[AgentSeeder] Registered ${agentId}`);
+
+    if (EXPLOITATION_ANALYST_MANIFEST.character) {
+      registry.updateAgentCharacter(agentId, EXPLOITATION_ANALYST_MANIFEST.character);
+      result.characterSet = true;
+      console.log(`[AgentSeeder] Set character for ${agentId}`);
+    }
+
+    return result;
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[AgentSeeder] Failed to seed ${agentId}:`, error);
+    return result;
+  }
+}
+
+/**
+ * Seed the De-escalation Manager agent.
+ */
+async function seedDeescalationManagerAgent(): Promise<SeedResult> {
+  const agentId = DEESCALATION_MANAGER_MANIFEST.agentId;
+  const result: SeedResult = {
+    agentId,
+    registered: false,
+    toolsAssigned: [],
+    characterSet: false,
+  };
+
+  try {
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+
+    const existing = registry.getAgent(agentId);
+    if (existing) {
+      console.log(`[AgentSeeder] ${agentId} already registered`);
+      result.registered = true;
+      if (!existing.character && DEESCALATION_MANAGER_MANIFEST.character) {
+        registry.updateAgentCharacter(agentId, DEESCALATION_MANAGER_MANIFEST.character);
+        result.characterSet = true;
+        console.log(`[AgentSeeder] Updated character for ${agentId}`);
+      }
+      return result;
+    }
+
+    const manifest = {
+      ...DEESCALATION_MANAGER_MANIFEST,
+      createdAt: new Date(),
+      createdBy: 'system',
+      agentDID: '',
+      agentBlindedKey: '',
+      agentPublicKey: '',
+    };
+
+    await registry.registerAgent(manifest);
+    result.registered = true;
+    console.log(`[AgentSeeder] Registered ${agentId}`);
+
+    if (DEESCALATION_MANAGER_MANIFEST.character) {
+      registry.updateAgentCharacter(agentId, DEESCALATION_MANAGER_MANIFEST.character);
+      result.characterSet = true;
+      console.log(`[AgentSeeder] Set character for ${agentId}`);
+    }
+
+    return result;
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[AgentSeeder] Failed to seed ${agentId}:`, error);
+    return result;
+  }
+}
+
 /**
  * Register fusion MCP tools in the tool registry.
  */
@@ -1399,6 +1573,16 @@ export async function seedLangGraphAgents(): Promise<SeedResult[]> {
 
   const deceptionDetectorResult = await seedDeceptionDetectorAgent();
   results.push(deceptionDetectorResult);
+
+  // Seed new agents - Deception Planner, Exploitation Analyst, De-escalation Manager
+  const deceptionPlannerResult = await seedDeceptionPlannerAgent();
+  results.push(deceptionPlannerResult);
+
+  const exploitationAnalystResult = await seedExploitationAnalystAgent();
+  results.push(exploitationAnalystResult);
+
+  const deescalationManagerResult = await seedDeescalationManagerAgent();
+  results.push(deescalationManagerResult);
 
   // Log summary
   const successful = results.filter(r => r.registered);
