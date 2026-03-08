@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T17:47:30.691Z"
+last_updated: "2026-03-08T19:32:30.220Z"
 progress:
-  total_phases: 48
-  completed_phases: 31
-  total_plans: 285
-  completed_plans: 292
+  total_phases: 54
+  completed_phases: 29
+  total_plans: 299
+  completed_plans: 294
 ---
 
 # Project State
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 32 of 40 (Network Device Discovery & Secure Automatic Resource Onboarding) — Complete
-Plan: 9 of 9 in current phase — ALL PLANS COMPLETE
-Status: Phase 32 complete (all 9 plans executed, frontend discovery visualization done)
-Last activity: 2026-03-07 - Completed 32-09-PLAN.md
+Phase: 33 of 40 (JPP Campaign Plan Framework with Ends-Ways-Means Linkage) — In Progress
+Plan: 2 of 10 in current phase — COMPLETE
+Status: Plan 33-02 complete (OSINT ingestion pipeline with Argus webhook)
+Last activity: 2026-03-08 - Completed 33-02-PLAN.md
 
-Progress: ██████████████████████████ 292 plans complete
+Progress: ██████████████████████████ 294 plans complete
 
 ## Performance Metrics
 
@@ -139,6 +139,8 @@ Progress: ███████████████████████�
 | Phase 32 P06 | 9 | 2 tasks | 4 files |
 | Phase 32 P08 | 4 | 2 tasks | 3 files |
 | Phase 32 P09 | 8 | 2 tasks | 5 files |
+| Phase 33 P01 | 3 | 2 tasks | 3 files |
+| Phase 33 P02 | 3 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -676,6 +678,11 @@ Recent decisions affecting current work:
 - [Phase 32]: Dynamic import for discovery-service in router to break compile-time coupling
 - [Phase 32]: DiscoveryService initialized with ResourceRegistry, MessageBus, GateService deps; scanners paused by default
 - [Phase 32]: Used lightweight SVG + requestAnimationFrame for topology graph instead of heavyweight library
+- [Phase 33]: Excluded plan_approval from JPP_STEPS (governance gate, not a planning step)
+- [Phase 33]: EWM gap analysis queries strategic_objectives table for unlinked ends
+- [Phase 33]: JPPStore auto-creates instance when getInstanceByProblemSet finds none
+- [Phase 33]: Used crypto.timingSafeEqual for HMAC comparison to prevent timing attacks
+- [Phase 33]: Created backend/src/jpp/ directory for JPP-specific stores and modules
 
 ### Roadmap Evolution
 
@@ -702,6 +709,11 @@ Recent decisions affecting current work:
 - Phase 31 added: AI Agent Validation & Compliance Testing — Quantitative assessment framework for agent determinism, reliability/doctrinal adherence, and authority compliance with periodic test suite, metrics dashboard, threshold alerting, and automatic agent disablement
 - Phase 32 added: Network device discovery and secure automatic resource onboarding
 - Phase 33 added: Joint Planning Process (JPP) campaign plan framework with ends-ways-means linkage
+- Phase 34 added: Plan Tab Echelon Routing & MDMP Tactical Wiring — Plan tab renders JPP/MDMP/Strategic workflow based on problem set echelon
+- Phase 35 added: Mission Creation from OPORD & Problem Set Alignment — OPORD Step 7 spawns tactical child problem sets with MDMP, merge mission module into PS framework
+- Phase 36 added: Strategic Guidance Workflow — Strategic level Plan tab for objectives, force apportionment, constraints, directive drafting
+- Phase 37 added: Training Assessment Loop — AAR capture, METL tracking (T/P/U), upward aggregation to training strategy readiness
+- Phase 38 added: Inheritance Deepening — Full bidirectional context propagation, override tracking, OPORD update notifications, upward reporting
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller

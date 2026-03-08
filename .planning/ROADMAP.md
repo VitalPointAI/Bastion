@@ -52,6 +52,11 @@ None
 - [x] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED) (completed 2026-03-07)
 - [ ] **Phase 28: Embedded DAO Governance at Decision Gates** - Move DAO governance from dedicated tab into contextual workflow decision gates; proposals trigger at natural planning decision points (objective approval, COA selection, order release) (INSERTED)
 - [ ] **Phase 29: Contextual AI Staff Integration** - Surface AI agent output contextually per tab; per-tab AI assistant aware of workflow phase; recommendation engine tied to doctrinal workflow position (INSERTED)
+- [ ] **Phase 34: Plan Tab Echelon Routing & MDMP Tactical Wiring** - Plan tab reads echelon from ProblemSetContext and renders appropriate workflow (JPP for operational, MDMP for tactical, placeholder for strategic); wire existing MDMP module into Plan tab with sidebar navigation, role-gated sections, governance gates, AI agent panels
+- [ ] **Phase 35: Mission Creation from OPORD & Problem Set Alignment** - Extend Phase 33 Plan 10 document distribution to trigger tactical child problem set creation from OPORD Step 7; auto-populate with inherited context; initialize MDMP at Receipt of Mission; merge existing mission module into problem set framework
+- [ ] **Phase 36: Strategic Guidance Workflow** - Build strategic level Plan tab workflow for objective setting, force apportionment, constraint definition, directive drafting; strategic directive output becomes initiating directive for child campaign JPP Step 1
+- [ ] **Phase 37: Training Assessment Loop** - AAR capture at tactical training events, METL proficiency tracking (T/P/U per task), upward aggregation from training events through exercises to training strategy readiness updates
+- [ ] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign
 
 ## Phase Details
 
@@ -354,7 +359,7 @@ Plans:
 **Goal:** Build the full 7-step JPP workflow as a collaborative planning framework within the Plan tab, producing COAs and annex-based campaign plans with Ends-Ways-Means linkage to strategic objectives. Includes entity resolution, OSINT feed integration (Argus), and designated AI agents per step.
 **Requirements:** [JPP-01, JPP-02, JPP-03, JPP-04, JPP-05, JPP-06, JPP-07, JPP-08, JPP-09, JPP-10, JPP-11, JPP-12, JPP-13]
 **Depends on:** Phase 32
-**Plans:** 10 plans
+**Plans:** 2/10 plans executed
 
 Plans:
 - [ ] 33-01-PLAN.md -- JPP domain types, DB schema, JPP store, E-W-M store
@@ -367,6 +372,56 @@ Plans:
 - [ ] 33-08-PLAN.md -- E-W-M Overview: interactive tree + Sankey diagram + gap analysis
 - [ ] 33-09-PLAN.md -- Entity resolution panel, final wiring, human verification
 - [ ] 33-10-PLAN.md -- Document generation, export, versioning, and distribution for campaign plans
+
+### Phase 34: Plan Tab Echelon Routing & MDMP Tactical Wiring
+
+**Goal:** Plan tab reads `echelon` from ProblemSetContext and renders the appropriate planning workflow — operational (Phase 33 JPP), tactical (existing MDMP module wired into Plan tab), or strategic (placeholder). MDMP steps get same treatment as JPP: sidebar navigation, role-gated sections, governance gates, AI agent panels.
+**Requirements**: TBD
+**Depends on:** Phase 33, Phase 23 (echelon-aware problem sets)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 34 to break down)
+
+### Phase 35: Mission Creation from OPORD & Problem Set Alignment
+
+**Goal:** Extend Phase 33 Plan 10 document distribution to trigger tactical child problem set creation. "Create Mission" action in OPORD Step 7 Para 3 (Execution) per subordinate task assignment. Auto-populate child tactical PS with inherited context (mission statement, commander's intent 2 up, task org, ROE, CCIRs, AO). Initialize child MDMP at "Receipt of Mission". Merge existing `backend/src/mission/` module into problem set framework (missions become tactical problem sets with mission-specific metadata).
+**Requirements**: TBD
+**Depends on:** Phase 34, Phase 33 (Plan 10 document distribution)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 35 to break down)
+
+### Phase 36: Strategic Guidance Workflow
+
+**Goal:** Build strategic level Plan tab workflow — lighter than JPP. Covers objective setting, force apportionment, constraint definition, and directive drafting. Strategic directive output becomes the initiating directive for child campaign JPP (Step 1). Connect to Phase 25.2 strategic document containers as input.
+**Requirements**: TBD
+**Depends on:** Phase 34, Phase 25.2 (strategic document containers)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 36 to break down)
+
+### Phase 37: Training Assessment Loop
+
+**Goal:** AAR capture at tactical training events. METL proficiency tracking (T/P/U per task). Upward aggregation: training events → exercise trends → training strategy readiness updates. Training Strategy Assess tab shows METL dashboard. Exercise Assess tab shows event-level trends. Assessment flows UP through the hierarchy (distinct from operational Assess which measures campaign objective progress).
+**Requirements**: TBD
+**Depends on:** Phase 35, Phase 22 (training/operational mode)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 37 to break down)
+
+### Phase 38: Inheritance Deepening
+
+**Goal:** Full context propagation with change notification (not auto-overwrite). Override tracking: child overrides flagged for parent visibility. OPORD update propagation: parent OPORD changes → notification to child missions. Upward reporting: tactical COP/execution status → parent campaign COP and Assess tabs. Extends Phase 26 inheritance to full bidirectional flow.
+**Requirements**: TBD
+**Depends on:** Phase 37, Phase 26 (strategic environment inheritance)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 38 to break down)
 
 ---
 
