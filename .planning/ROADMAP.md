@@ -389,7 +389,7 @@ Plans:
 **Goal:** Extend Phase 33 Plan 10 document distribution to trigger tactical child problem set creation. "Create Mission" action in OPORD Step 7 Para 3 (Execution) per subordinate task assignment. Auto-populate child tactical PS with inherited context (mission statement, commander's intent 2 up, task org, ROE, CCIRs, AO). Initialize child MDMP at "Receipt of Mission". Merge existing `backend/src/mission/` module into problem set framework (missions become tactical problem sets with mission-specific metadata).
 **Requirements**: [MC-01, MC-02, MC-03, MC-04, MC-05, MC-06, MC-07, MC-08, MC-09, MC-10, MC-11, MC-12, MC-13, MC-14, MC-15]
 **Depends on:** Phase 34, Phase 33 (Plan 10 document distribution)
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 - [ ] 35-01-PLAN.md — Foundation types, DB schema (mission_assignments, ccir_requests), data stores
