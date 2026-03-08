@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-08T21:49:16.731Z"
+last_updated: "2026-03-08T22:33:23.496Z"
 progress:
   total_phases: 54
-  completed_phases: 32
-  total_plans: 311
-  completed_plans: 311
+  completed_phases: 33
+  total_plans: 318
+  completed_plans: 315
 ---
 
 # Project State
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 36 of 40 (Strategic Guidance Workflow) — IN PROGRESS
-Plan: 1 of 4 in current phase — COMPLETE
-Status: Plan 36-01 complete (Backend module: types, store, service, routes)
-Last activity: 2026-03-08 - Completed 36-01-PLAN.md
+Phase: 37 of 40 (Training Assessment Loop) — IN PROGRESS
+Plan: 1 of ? in current phase — COMPLETE
+Status: Plan 37-01 complete (Assessment data model: types + 4 store classes)
+Last activity: 2026-03-08 - Completed 37-01-PLAN.md
 
-Progress: ██████████████████████████ 311 plans complete
+Progress: ██████████████████████████ 312 plans complete
 
 ## Performance Metrics
 
@@ -147,6 +147,7 @@ Progress: ███████████████████████�
 | Phase 35 P05 | 3 | 1 tasks | 7 files |
 | Phase 35 P04 | 5 | 2 tasks | 2 files |
 | Phase 36 P01 | 4 | 2 tasks | 4 files |
+| Phase 37 P01 | 4 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -697,6 +698,7 @@ Recent decisions affecting current work:
 - [Phase 35]: Kept legacy tasksToSubordinates alongside structured subordinateTasks for backward compat
 - [Phase 35]: Pass empty string for userDID in listMembers -- backend uses session auth, X-DID is legacy
 - [Phase 36]: Used UNIQUE(problem_set_id) on instances table for idempotent creation
+- [Phase 37]: Assessment data model uses const objects (not enums), shared observation table, lazy decay computation
 
 ### Roadmap Evolution
 
