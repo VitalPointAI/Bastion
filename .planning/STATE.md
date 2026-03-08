@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-08T21:24:37.873Z"
+last_updated: "2026-03-08T21:38:54.089Z"
 progress:
   total_phases: 54
   completed_phases: 32
-  total_plans: 310
-  completed_plans: 309
+  total_plans: 311
+  completed_plans: 310
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 35 of 40 (Mission Creation from OPORD & Problem Set Alignment) — IN PROGRESS
-Plan: 5 of 5 in current phase — COMPLETE
-Status: Plan 35-04 complete (PlanOrderDevelopment wiring & MissionTracker)
-Last activity: 2026-03-08 - Completed 35-04-PLAN.md
+Plan: 6 of 6 in current phase — COMPLETE
+Status: Plan 35-06 complete (Gap closure: CCIR URLs, classification casing, role assignment data)
+Last activity: 2026-03-08 - Completed 35-06-PLAN.md
 
-Progress: ██████████████████████████ 308 plans complete
+Progress: ██████████████████████████ 310 plans complete
 
 ## Performance Metrics
 
@@ -694,6 +694,7 @@ Recent decisions affecting current work:
 - [Phase 35]: Wrapped each orchestration step in individual try/catch for partial success with status flags
 - [Phase 35]: Deleted backend/src/api/missions.ts alongside legacy module as sole consumer
 - [Phase 35]: Kept legacy tasksToSubordinates alongside structured subordinateTasks for backward compat
+- [Phase 35]: Pass empty string for userDID in listMembers -- backend uses session auth, X-DID is legacy
 
 ### Roadmap Evolution
 
