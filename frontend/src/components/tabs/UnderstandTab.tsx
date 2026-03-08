@@ -70,8 +70,8 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
       <DecisionGateBanner tabId="understand" />
 
       {selectedView === 'strategic-docs' && (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexShrink: 0 }}>
             <span />
             <GateSubmitButton
               gateType="objective_approval"
