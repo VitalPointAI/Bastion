@@ -69,7 +69,8 @@ export function useClientDiscovery() {
 
     setScanning(true);
     try {
-      const device = await navigator.bluetooth.requestDevice({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const device = await (navigator as any).bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: [],
       });
