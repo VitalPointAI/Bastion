@@ -23,6 +23,8 @@ import { scoreDeterminism } from './scoring/determinism-scorer.js';
 import { scoreReliability } from './scoring/reliability-scorer.js';
 import { scoreAuthority } from './scoring/authority-scorer.js';
 import { getAgentRegistry } from '../agents/registry.js';
+import { createInitialState } from '../orchestration/state.js';
+import { HumanMessage, AIMessage } from '@langchain/core/messages';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -377,17 +379,26 @@ export class ValidationRunner {
         );
         const nodeFunc = wrapper.createNode();
 
-        // Build minimal BastionState for the agent call
+        // Convert plain message objects to LangChain BaseMessage instances
+        const langchainMessages = messages.map((m) => {
+          if (m.role === 'assistant' || m.role === 'ai') {
+            return new AIMessage(m.content);
+          }
+          return new HumanMessage(m.content);
+        });
+
+        // Build a complete BastionState with all required fields
+        const threadId = `validation-${agentId}-${Date.now()}`;
+        const initialState = createInitialState({ threadId });
         const state = {
-          messages: messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          threadId: `validation-${agentId}-${Date.now()}`,
-          classification: 'UNCLASSIFIED',
+          ...initialState,
+          messages: langchainMessages,
+          classification: 'UNCLASS' as const,
           currentAgent: agentId,
-          executionTrace: [],
-          context: context ?? {},
+          taskType: 'validation',
+          objectives: context
+            ? Object.values(context).map(String)
+            : [],
         };
 
         const result = await nodeFunc(state as never);
@@ -400,7 +411,12 @@ export class ValidationRunner {
           }
         }
         return typeof result === 'string' ? result : JSON.stringify(result);
-      } catch {
+      } catch (wrapperErr) {
+        // Log the actual error for debugging instead of silently falling back
+        console.error(
+          `[ValidationRunner] Agent wrapper failed for ${agentId}:`,
+          wrapperErr instanceof Error ? wrapperErr.message : wrapperErr,
+        );
         // Fallback: return a simulated response if agent-wrapper isn't available
         return `[Simulated] Agent ${agentId} would process: ${messages.map((m) => m.content).join(' | ')}`;
       }
