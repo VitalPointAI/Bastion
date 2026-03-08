@@ -23,17 +23,17 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 37 of 40 (Training Assessment Loop) — COMPLETE
-Plan: 6 of 6 in current phase — COMPLETE
-Status: Phase 37 complete — all 6 plans finished (AI suggestions, assessment dashboards, governance gate wiring)
-Last activity: 2026-03-08 - Completed 37-06-PLAN.md
+Phase: 38 of 40 (Inheritance Deepening) — IN PROGRESS
+Plan: 1 of 6 in current phase — COMPLETE
+Status: Phase 38 plan 01 complete — data model extension (types, store, 3 new tables, 16 new methods)
+Last activity: 2026-03-08 - Completed 38-01-PLAN.md
 
-Progress: ██████████████████████████ 320 plans complete
+Progress: ██████████████████████████ 321 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 138
+- Total plans completed: 139
 - Average duration: 10 min
 - Total execution time: 20.11 hours
 
@@ -163,6 +163,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 38 Plan 01 (Data Model Extension):**
+- Used const objects for FRAGO_STATUS, RFI_SUBTYPES, INTERPRETATION_ACK_ACTIONS per project convention
+- Mission status snapshots use UPSERT with child_problem_set_id conflict key for idempotent updates
+- JSONB columns for keyEvents, resourceStatus, objectiveProgress to avoid additional tables
 
 **Phase 32 Plan 01 (Discovery Foundation):**
 - Used const objects for all discovery enumerations per project convention (TransportType, DeviceState, etc.)

@@ -435,7 +435,7 @@ Plans:
 **Plans:** 6 plans
 
 Plans:
-- [ ] 38-01-PLAN.md — Foundation types, DB schema, store extensions for all 4 capabilities
+- [x] 38-01-PLAN.md — Foundation types, DB schema, store extensions for all 4 capabilities
 - [ ] 38-02-PLAN.md — Change notification service, read-only enforcement, interpretation ack, override tracking API
 - [ ] 38-03-PLAN.md — FRAGO service: OPORD diff detection, AI drafting, commander review lifecycle
 - [ ] 38-04-PLAN.md — WebSocket status channel, status aggregation service, DDIL fallback
