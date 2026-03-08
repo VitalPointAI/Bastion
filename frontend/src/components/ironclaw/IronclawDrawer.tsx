@@ -137,11 +137,11 @@ export function IronclawDrawer({
         aria-hidden="true"
       />
 
-      {/* Drawer panel */}
+      {/* Drawer panel — top offset clears the app-header */}
       <div
-        className="ironclaw-drawer fixed top-0 right-0 h-full bg-slate-900 border-l border-slate-700
+        className="ironclaw-drawer fixed right-0 bg-slate-900 border-l border-slate-700
           flex flex-col shadow-2xl"
-        style={{ zIndex: 950, width: '420px' }}
+        style={{ zIndex: 950, width: '420px', top: 'var(--header-height, 56px)', height: 'calc(100vh - var(--header-height, 56px))' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-900/95">
@@ -226,7 +226,7 @@ export function IronclawDrawer({
         </div>
 
         {/* Input area */}
-        <div className="relative border-t border-slate-700 px-4 py-3 bg-slate-900/95">
+        <div className="relative border-t border-slate-700 px-4 py-4 bg-slate-900/95">
           {/* @mention dropdown */}
           {showMentions && filteredSpecialists.length > 0 && (
             <div className="ironclaw-mention-dropdown absolute bottom-full left-4 right-4 mb-1
@@ -255,12 +255,12 @@ export function IronclawDrawer({
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="Ask Ironclaw anything... Use @agent for direct specialist access"
-              rows={1}
-              className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2
+              rows={2}
+              className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2.5
                 text-sm text-white placeholder-gray-500
                 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500
                 resize-none"
-              style={{ maxHeight: `${4 * 24}px` }}
+              style={{ maxHeight: `${5 * 24}px` }}
             />
 
             {/* Send button */}
