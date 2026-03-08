@@ -381,7 +381,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 34-01-PLAN.md — Echelon routing infrastructure (PlanEchelonRouter, EchelonBadge, TabLayout header slot, PlanEmptyState, strategic placeholder)
+- [x] 34-01-PLAN.md — Echelon routing infrastructure (PlanEchelonRouter, EchelonBadge, TabLayout header slot, PlanEmptyState, strategic placeholder)
 - [ ] 34-02-PLAN.md — MDMP tactical plan view (MDMPStepConfig, MDMPPlanView, MDMPStepLayout, governance gates, AI panels)
 
 ### Phase 35: Mission Creation from OPORD & Problem Set Alignment
