@@ -787,6 +787,58 @@ router.get('/scenario-usage-counts', requireAuth, async (_req: Request, res: Res
 });
 
 // ============================================================================
+// Agent / Team Listing (read-only, any authenticated user)
+// Used by TeamRoster dropdowns — avoids requiring admin access.
+// MUST be before /:id routes to avoid Express treating "agents" as an id param.
+// ============================================================================
+
+/**
+ * GET /api/problem-sets/agents/list - List active agents (no admin required)
+ */
+router.get('/agents/list', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { getAgentRegistry } = await import('../agents/registry.js');
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    const agents = registry.listAgents().filter((a) => a.active);
+    res.json(agents.map((a) => ({
+      agentId: a.agentId,
+      name: a.name,
+      description: a.description,
+      agentDID: a.agentDID,
+      active: a.active,
+    })));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List agents (public) failed:', message);
+    res.status(500).json({ error: 'Failed to list agents' });
+  }
+});
+
+/**
+ * GET /api/problem-sets/teams/list - List enabled teams (no admin required)
+ */
+router.get('/teams/list', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { getTeamRegistry } = await import('../agents/team-registry.js');
+    const registry = getTeamRegistry();
+    await registry.ensureInitialized();
+    const teams = registry.listTeams().filter((t: { isEnabled: boolean }) => t.isEnabled);
+    res.json(teams.map((t) => ({
+      teamId: t.teamId,
+      name: t.name,
+      description: t.description,
+      teamDID: t.teamDID,
+      isEnabled: t.isEnabled,
+    })));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('List teams (public) failed:', message);
+    res.status(500).json({ error: 'Failed to list teams' });
+  }
+});
+
+// ============================================================================
 // Per-Problem-Set Endpoints (/:id prefix)
 // ============================================================================
 
@@ -1032,7 +1084,31 @@ router.get('/:id/members', requireAuth, async (req: Request, res: Response) => {
 
     const members = await problemSetMemberStore.listMembers(problemSetId);
 
-    res.json({ members, count: members.length });
+    // Enrich with display names from user_profiles
+    const displayNames: Record<string, string> = {};
+    const nearIds = members.map((m) => m.userDid.replace(/^did:near:/, '')).filter(Boolean);
+    if (nearIds.length > 0) {
+      try {
+        const { getPool } = await import('../lib/database.js');
+        const pool = getPool();
+        const result = await pool.query(
+          `SELECT near_account_id, display_name FROM user_profiles WHERE near_account_id = ANY($1::text[])`,
+          [nearIds],
+        );
+        for (const row of result.rows as { near_account_id: string; display_name: string }[]) {
+          displayNames[`did:near:${row.near_account_id}`] = row.display_name;
+        }
+      } catch {
+        // Non-fatal — display names just won't be enriched
+      }
+    }
+
+    const enriched = members.map((m) => ({
+      ...m,
+      displayName: displayNames[m.userDid] || null,
+    }));
+
+    res.json({ members: enriched, count: enriched.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('List members failed:', message);

@@ -70,6 +70,7 @@ async function requireSystemAdmin(req: Request, res: Response, next: NextFunctio
   }
 
   if (!adminDids.includes(did)) {
+    console.warn(`[admin] Access denied for DID: ${did} (allowed: ${adminDids.join(', ')})`);
     res.status(403).json({ error: 'System admin access required' });
     return;
   }

@@ -68,6 +68,7 @@ export interface ProblemSetMemberDetail {
   isPrimary: boolean;
   status: string;
   joinedAt: string;
+  displayName?: string | null;
 }
 
 export interface ProblemSetInviteDetail {
@@ -702,6 +703,18 @@ class ProblemSetService {
       `${this.baseUrl}/${problemSetId}/scenario`,
       { method: 'POST', body: JSON.stringify(data) },
     );
+  }
+
+  // ─── Public Agent / Team Listing ───────────────────────────────────────────
+
+  /** List active agents (no admin required) */
+  async listAgents(): Promise<{ agentId: string; name: string; description: string; agentDID: string; role: string; active: boolean }[]> {
+    return this.fetchJSON(`${this.baseUrl}/agents/list`);
+  }
+
+  /** List enabled teams (no admin required) */
+  async listTeams(): Promise<{ teamId: string; name: string; description: string; teamDID: string; isEnabled: boolean }[]> {
+    return this.fetchJSON(`${this.baseUrl}/teams/list`);
   }
 }
 

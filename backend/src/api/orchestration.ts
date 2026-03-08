@@ -932,21 +932,34 @@ function canAccessClassification(
 /**
  * Setup WebSocket server for execution streaming
  */
-export function setupOrchestrationWebSocket(server: HTTPServer): void {
+export function setupOrchestrationWebSocket(wss: InstanceType<typeof WebSocketServer>): void;
+export function setupOrchestrationWebSocket(server: HTTPServer): void;
+export function setupOrchestrationWebSocket(serverOrWss: HTTPServer | InstanceType<typeof WebSocketServer>): void {
+  if (serverOrWss instanceof WebSocketServer) {
+    // noServer mode: centralized upgrade handler in index.ts already did the upgrade.
+    // Parse executionId from the request URL on each connection.
+    serverOrWss.on('connection', (ws, request) => {
+      const url = new URL(request.url || '', `http://${request.headers.host}`);
+      const match = url.pathname.match(/^\/ws\/orchestration\/([^/]+)$/);
+      if (match) {
+        handleExecutionSubscription(ws, match[1]);
+      } else {
+        ws.close(1008, 'Invalid orchestration path');
+      }
+    });
+    return;
+  }
+
+  // Legacy: server mode with own upgrade handler
   const wss = new WebSocketServer({ noServer: true });
-
-  server.on('upgrade', (request, socket, head) => {
+  serverOrWss.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url || '', `http://${request.headers.host}`);
-
-    // Handle /ws/orchestration/:executionId
     const match = url.pathname.match(/^\/ws\/orchestration\/([^/]+)$/);
     if (match) {
       wss.handleUpgrade(request, socket, head, (ws) => {
-        const executionId = match[1];
-        handleExecutionSubscription(ws, executionId);
+        handleExecutionSubscription(ws, match[1]);
       });
     }
-    // Non-matching paths are left for other upgrade handlers
   });
 }
 

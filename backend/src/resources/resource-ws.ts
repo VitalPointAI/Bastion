@@ -9,8 +9,12 @@ import type { Server as HTTPServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { getResourceTelemetryService } from './resource-telemetry.js';
 
-export function setupResourceWebSocket(server: HTTPServer): void {
-  const wss = new WebSocketServer({ server, path: '/ws/resources' });
+export function setupResourceWebSocket(wss: WebSocketServer): void;
+export function setupResourceWebSocket(server: HTTPServer): void;
+export function setupResourceWebSocket(serverOrWss: HTTPServer | WebSocketServer): void {
+  const wss = serverOrWss instanceof WebSocketServer
+    ? serverOrWss
+    : new WebSocketServer({ server: serverOrWss, path: '/ws/resources' });
 
   const telemetry = getResourceTelemetryService();
   telemetry.start();

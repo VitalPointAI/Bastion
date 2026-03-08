@@ -14,7 +14,6 @@ import {
   type PhaseMappingInput,
 } from '../../lib/position-service.js';
 import { problemSetService, type ProblemSetMemberDetail } from '../../lib/problem-set-service.js';
-import { adminService } from '../../lib/admin-service.js';
 import type { AgentWithConfig, AgentTeam } from '../../types/admin.js';
 import { useUser } from '../../context/UserContext.js';
 import './TeamRoster.css';
@@ -199,7 +198,7 @@ function resolveAssigneeName(
   const team = teams.find((t) => t.teamId === assignedTo || t.teamDID === assignedTo);
   if (team) return team.name;
   const member = members.find((m) => m.userDid === assignedTo);
-  if (member) return formatDID(member.userDid);
+  if (member) return member.displayName || formatDID(member.userDid);
   return formatDID(assignedTo);
 }
 
@@ -240,14 +239,14 @@ export function TeamRoster({ problemSetId }: TeamRosterProps) {
       if (scenario?.exercisePhases) {
         setExercisePhases(scenario.exercisePhases);
       }
-      // Load agents/teams (non-fatal)
+      // Load agents/teams via public endpoints (non-fatal)
       try {
         const [agentData, teamData] = await Promise.all([
-          adminService.listAgents(),
-          adminService.listTeams(),
+          problemSetService.listAgents(),
+          problemSetService.listTeams(),
         ]);
-        setAgents(agentData.filter((a) => a.active));
-        setAgentTeams(teamData.filter((t) => t.isEnabled));
+        setAgents(agentData as unknown as AgentWithConfig[]);
+        setAgentTeams(teamData as unknown as AgentTeam[]);
       } catch {
         // Agent/team data unavailable — dropdowns will be empty
       }
@@ -576,7 +575,7 @@ function PositionForm({ position, exercisePhases, members, agents, agentTeams, o
             <option value="">Unassigned</option>
             {members.map((m) => (
               <option key={m.userDid} value={m.userDid}>
-                {formatDID(m.userDid)} ({m.role})
+                {m.displayName || formatDID(m.userDid)} ({m.role})
               </option>
             ))}
           </select>
