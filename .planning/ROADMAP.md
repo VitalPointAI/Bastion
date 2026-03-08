@@ -430,12 +430,17 @@ Plans:
 ### Phase 38: Inheritance Deepening
 
 **Goal:** Full context propagation with change notification (not auto-overwrite). Override tracking: child overrides flagged for parent visibility. OPORD update propagation: parent OPORD changes → notification to child missions. Upward reporting: tactical COP/execution status → parent campaign COP and Assess tabs. Extends Phase 26 inheritance to full bidirectional flow.
-**Requirements**: TBD
+**Requirements**: [INH-01, INH-02, INH-03, INH-04, INH-05, INH-06, INH-07, INH-08, INH-09, INH-10, INH-11, INH-12, INH-13, INH-14, INH-15, INH-16, INH-17]
 **Depends on:** Phase 37, Phase 26 (strategic environment inheritance)
-**Plans:** 0 plans
+**Plans:** 6 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 38 to break down)
+- [ ] 38-01-PLAN.md — Foundation types, DB schema, store extensions for all 4 capabilities
+- [ ] 38-02-PLAN.md — Change notification service, read-only enforcement, interpretation ack, override tracking API
+- [ ] 38-03-PLAN.md — FRAGO service: OPORD diff detection, AI drafting, commander review lifecycle
+- [ ] 38-04-PLAN.md — WebSocket status channel, status aggregation service, DDIL fallback
+- [ ] 38-05-PLAN.md — Frontend change notification banner, badges, override tracking, interpretation ack UI
+- [ ] 38-06-PLAN.md — Frontend FRAGO review, mission status cards, COP/Assess tab integration
 
 ---
 
