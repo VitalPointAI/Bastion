@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-09T02:58:58.371Z"
+last_updated: "2026-03-09T03:00:23.314Z"
 progress:
   total_phases: 55
-  completed_phases: 35
+  completed_phases: 36
   total_plans: 330
-  completed_plans: 332
+  completed_plans: 333
 ---
 
 # Project State
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 39 of 40 (Operational Demonstration Data Package) — IN PROGRESS
-Plan: 6 of 7 in current phase — COMPLETE
-Status: Plan 39-06 complete — inheritance artifacts (3 FRAGOs, 3 status snapshots, 3 overrides) and finalized master orchestrator
-Last activity: 2026-03-09 - Completed 39-06: Inheritance artifacts and master orchestrator
+Phase: 39 of 40 (Operational Demonstration Data Package) — COMPLETE
+Plan: 7 of 7 in current phase — COMPLETE
+Status: Phase 39 complete — briefing script and demo walkthrough covering 100% BASTION capabilities
+Last activity: 2026-03-09 - Completed 39-07: Briefing script and demo walkthrough
 
-Progress: ██████████████████████████ 330 plans complete
+Progress: ██████████████████████████ 331 plans complete
 
 ## Performance Metrics
 
@@ -160,6 +160,7 @@ Progress: ███████████████████████�
 | Phase 39 P05 | 7 | 2 tasks | 5 files |
 | Phase 39 P04 | 9 | 2 tasks | 8 files |
 | Phase 39 P06 | 6 | 2 tasks | 6 files |
+| Phase 39 P07 | 6 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -741,6 +742,7 @@ Recent decisions affecting current work:
 - [Phase 39]: JPP seeded via direct psql (consistent with 39-01; API requires auth)
 - [Phase 39]: Modeled overrides as inheritance_annotations with interpretation type and upward visibility, matching Phase 38 schema
 - [Phase 39]: run_seed_script() wrapper replaces file-existence guards for consistent timing, error handling, and summary reporting
+- [Phase 39]: 5-act briefing script and 13-station walkthrough covering 100% BASTION capabilities for military and academic audiences
 
 ### Roadmap Evolution
 
