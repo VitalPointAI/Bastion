@@ -58,15 +58,29 @@ function DraggableDocumentCard({
     <div
       ref={setNodeRef}
       className="document-card"
-      style={{ opacity: isDragging ? 0.4 : 1 }}
+      style={{ opacity: isDragging ? 0.4 : 1, cursor: 'pointer' }}
       onClick={() => onSelectDocument(doc)}
       onKeyPress={(e) => e.key === 'Enter' && onSelectDocument(doc)}
       {...attributes}
-      {...listeners}
       role="button"
       tabIndex={0}
       aria-roledescription="draggable document"
     >
+      {/* Drag handle — only this element initiates drag */}
+      <div
+        className="drag-handle"
+        {...listeners}
+        style={{ cursor: 'grab', padding: '4px', position: 'absolute', top: 4, right: 4, opacity: 0.5 }}
+        title="Drag to move"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" style={{ width: 14, height: 14 }}>
+          <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
+          <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+          <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
+        </svg>
+      </div>
+
       {/* Classification badge */}
       <div className={`classification-badge ${getClassificationColor(doc.classification)}`}>
         {doc.classification}
@@ -205,7 +219,9 @@ export function ContainerDocumentList({
   }, [documents, loadAssignments]);
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Unknown date';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Unknown date';
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',

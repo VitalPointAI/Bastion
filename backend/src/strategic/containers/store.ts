@@ -498,10 +498,19 @@ export class ContainerStore {
     const pool = getPool();
 
     const result = await pool.query(`
-      SELECT sd.*, cd.assigned_by, cd.assigned_at as container_assigned_at
+      SELECT sd.id, sd.title, sd.level, sd.original_filename, sd.mime_type,
+             sd.page_count, sd.text_length, sd.classification, sd.ipfs_cid,
+             sd.created_by, sd.workspace_id, sd.created_at,
+             COALESCE(COUNT(so.id), 0)::int as objective_count,
+             cd.assigned_by, cd.assigned_at as container_assigned_at
       FROM container_documents cd
       JOIN strategic_documents sd ON sd.id = cd.document_id
+      LEFT JOIN strategic_objectives so ON so.document_id = sd.id
       WHERE cd.container_id = $1
+      GROUP BY sd.id, sd.title, sd.level, sd.original_filename, sd.mime_type,
+               sd.page_count, sd.text_length, sd.classification, sd.ipfs_cid,
+               sd.created_by, sd.workspace_id, sd.created_at,
+               cd.assigned_by, cd.assigned_at
       ORDER BY cd.assigned_at DESC
     `, [containerId]);
 
