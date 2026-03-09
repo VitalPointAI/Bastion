@@ -469,13 +469,10 @@ router.post('/documents/:documentId/extract', requireAuth, async (req, res) => {
     const documentId = req.params.documentId as string;
     const userDID = buildDID(req.anonUser!.nearAccountId);
 
-    // Verify document exists and user owns it
+    // Verify document exists
     const document = await store.get(documentId);
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
-    }
-    if (document.createdBy !== userDID) {
-      return res.status(403).json({ error: 'Access denied' });
     }
 
     // Get document text
@@ -580,16 +577,10 @@ router.get('/documents/:documentId/extract/stream', requireAuth, async (req, res
     const documentId = req.params.documentId as string;
     const userDID = buildDID(req.anonUser!.nearAccountId);
 
-    // Verify document exists and user owns it
+    // Verify document exists
     const document = await store.get(documentId);
     if (!document) {
       res.status(404).json({ error: 'Document not found' });
-      return;
-    }
-
-    // Check ownership
-    if (document.createdBy !== userDID) {
-      res.status(403).json({ error: 'Access denied' });
       return;
     }
 
@@ -1630,15 +1621,11 @@ router.post('/documents/:documentId/review', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
 
-    // Verify document exists and user owns it
+    // Verify document exists
     const document = await store.get(documentId);
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
-    }
-    if (document.createdBy !== userDID) {
-      return res.status(403).json({ error: 'Access denied' });
     }
 
     const { confidenceThreshold, prioritizationDomain, onlyUncategorized } = req.body;
@@ -1681,16 +1668,11 @@ router.get('/documents/:documentId/review/stream', requireAuth, async (req, res)
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
 
-    // Verify document exists and user owns it
+    // Verify document exists
     const document = await store.get(documentId);
     if (!document) {
       res.status(404).json({ error: 'Document not found' });
-      return;
-    }
-    if (document.createdBy !== userDID) {
-      res.status(403).json({ error: 'Access denied' });
       return;
     }
 
