@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-08T23:36:45.955Z"
+last_updated: "2026-03-09T03:05:00.723Z"
 progress:
-  total_phases: 54
-  completed_phases: 35
-  total_plans: 323
-  completed_plans: 326
+  total_phases: 55
+  completed_phases: 36
+  total_plans: 330
+  completed_plans: 333
 ---
 
 # Project State
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 38 of 40 (Inheritance Deepening) — COMPLETE
-Plan: 6 of 6 in current phase — COMPLETE
-Status: Phase 38 complete — All 6 plans executed (05 completed last, out of order with 06)
-Last activity: 2026-03-09 - Completed quick task 11: Fix training mode tab differentiation and re-enable improved AI agents
+Phase: 39 of 40 (Operational Demonstration Data Package) — COMPLETE
+Plan: 7 of 7 in current phase — COMPLETE
+Status: Phase 39 complete — briefing script and demo walkthrough covering 100% BASTION capabilities
+Last activity: 2026-03-09 - Completed 39-07: Briefing script and demo walkthrough
 
-Progress: ██████████████████████████ 326 plans complete
+Progress: ██████████████████████████ 331 plans complete
 
 ## Performance Metrics
 
@@ -154,6 +154,13 @@ Progress: ███████████████████████�
 | Phase 38-inheritance-deepening P04 | 7 | 2 tasks | 4 files |
 | Phase 38-inheritance-deepening P06 | 6 | 2 tasks | 6 files |
 | Phase 38-inheritance-deepening P05 | 7 | 2 tasks | 10 files |
+| Phase 39 P01 | 8 | 2 tasks | 9 files |
+| Phase 39 P02 | 6 | 2 tasks | 9 files |
+| Phase 39 P03 | 7 | 2 tasks | 5 files |
+| Phase 39 P05 | 7 | 2 tasks | 5 files |
+| Phase 39 P04 | 9 | 2 tasks | 8 files |
+| Phase 39 P06 | 6 | 2 tasks | 6 files |
+| Phase 39 P07 | 6 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -724,6 +731,18 @@ Recent decisions affecting current work:
 - [Phase 38-inheritance-deepening]: Inheritance notification polling at 30s interval on Understand tab
 - [Phase 38-inheritance-deepening]: Mirrored backend types inline in frontend service due to tsconfig scope restriction
 - [Phase 38-inheritance-deepening]: Inline drilldown pattern for COP mission status (expand below card, not modal)
+- [Phase 39]: Direct psql INSERT for auth-protected tables; DEMO- prefix convention for cleanup-safe IDs; units require demo exercise_scenario for FK
+- [Phase 39]: 17 actors with 27 relationships and 8 tensions for comprehensive Indo-Pacific RAFT graph
+- [Phase 39]: 29 OSINT events across 6 exercise phases with DIME domain coverage and coherent escalation narrative
+- [Phase 39]: Used exercise API multipart upload for documents (not psql) to trigger NLP extraction pipeline
+- [Phase 39]: Design fixtures typed to exact TypeScript interfaces with Strange CG-CC-CR-CV COG model
+- [Phase 39]: Used direct psql for governance gates and assessment data (consistent with 39-01, avoids auth)
+- [Phase 39]: Decision gates include blockchain audit trail metadata (tx IDs, NEAR accounts) for value proposition demo
+- [Phase 39]: AI agent outputs stored as staff_products (leverages existing table/UI)
+- [Phase 39]: JPP seeded via direct psql (consistent with 39-01; API requires auth)
+- [Phase 39]: Modeled overrides as inheritance_annotations with interpretation type and upward visibility, matching Phase 38 schema
+- [Phase 39]: run_seed_script() wrapper replaces file-existence guards for consistent timing, error handling, and summary reporting
+- [Phase 39]: 5-act briefing script and 13-station walkthrough covering 100% BASTION capabilities for military and academic audiences
 
 ### Roadmap Evolution
 

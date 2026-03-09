@@ -85,7 +85,7 @@ services:
     container_name: bastion-ironclaw
     # sleep infinity keeps stdin open so the repl channel doesn't EOF-shutdown.
     # --no-onboard skips the interactive setup wizard.
-    entrypoint: ["/bin/sh", "-c", "sleep infinity | ironclaw run --no-onboard"]
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
     restart: unless-stopped
     environment:
       # LLM backend — Anthropic via OAuth (subscription) or API key (fallback)
@@ -105,6 +105,7 @@ services:
       RUST_LOG: ironclaw=info
     volumes:
       - ironclaw-data:/home/ironclaw/.ironclaw
+      - token-sync:/shared/tokens    # OAuth token file from backend
     depends_on:
       ironclaw-postgres:
         condition: service_healthy
@@ -147,6 +148,8 @@ services:
       timeout: 10s
       start_period: 10s
       retries: 3
+    volumes:
+      - token-sync:/shared/tokens    # Write refreshed OAuth tokens for Ironclaw
     networks:
       - bastion-network
       - ironclaw-network
@@ -183,6 +186,7 @@ volumes:
   neo4j_logs:
   ironclaw_postgres_data:
   ironclaw-data:
+  token-sync:       # Shared volume: backend writes OAuth tokens, Ironclaw reads them
 
 # Internal Docker network — databases never exposed to host network
 networks:

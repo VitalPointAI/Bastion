@@ -394,6 +394,14 @@ server.listen(port, async () => {
     console.error('Failed to register validation scheduler:', error);
   }
 
+  // Start OAuth token auto-refresh timer
+  try {
+    const { startTokenRefreshTimer } = await import('./auth/oauth-token-refresh.js');
+    startTokenRefreshTimer();
+  } catch (error) {
+    console.error('Failed to start OAuth token refresh timer:', error);
+  }
+
   // Initialize Discovery Service (Phase 32) — scanners paused until operator starts
   try {
     const { getResourceRegistry } = await import('./resources/resource-registry.js');

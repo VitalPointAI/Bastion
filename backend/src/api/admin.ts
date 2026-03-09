@@ -570,6 +570,181 @@ function getDefaultModelsForProvider(provider: string): { id: string; name: stri
 }
 
 // ============================================================================
+// OAuth Endpoints
+// ============================================================================
+
+/**
+ * GET /api/admin/oauth/authorize - Initiate OAuth flow for a provider.
+ * Returns the authorization URL the frontend should redirect/open.
+ */
+router.get('/oauth/authorize', async (req: Request, res: Response) => {
+  try {
+    const { provider } = req.query;
+    if (provider !== 'anthropic') {
+      res.status(400).json({ error: 'OAuth is currently only supported for Anthropic' });
+      return;
+    }
+
+    const config = await configService.getLLMConfig();
+    const clientId = config.oauth?.clientId;
+    if (!clientId) {
+      res.status(400).json({ error: 'OAuth Client ID not configured. Set it in LLM settings first.' });
+      return;
+    }
+
+    // Build the OAuth state parameter (CSRF protection)
+    const state = `bastion_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    // Anthropic OAuth authorize URL
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: clientId,
+      redirect_uri: `${req.protocol}://${req.get('host')}/api/admin/oauth/callback`,
+      state,
+    });
+
+    const authorizeUrl = `https://console.anthropic.com/oauth/authorize?${params.toString()}`;
+
+    res.json({ authorizeUrl, state });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/admin/oauth/callback - OAuth callback handler.
+ * Exchanges the authorization code for access/refresh tokens.
+ */
+router.get('/oauth/callback', async (req: Request, res: Response) => {
+  try {
+    const { code, error: oauthError } = req.query;
+
+    if (oauthError) {
+      // Redirect to admin panel with error
+      res.redirect(`/admin?oauth_error=${encodeURIComponent(String(oauthError))}`);
+      return;
+    }
+
+    if (!code || typeof code !== 'string') {
+      res.redirect('/admin?oauth_error=missing_code');
+      return;
+    }
+
+    const config = await configService.getLLMConfig();
+    const clientId = config.oauth?.clientId;
+    const clientSecret = config.oauth?.clientSecret;
+
+    if (!clientId || !clientSecret) {
+      res.redirect('/admin?oauth_error=missing_client_credentials');
+      return;
+    }
+
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://console.anthropic.com/v1/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grant_type: 'authorization_code',
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        redirect_uri: `${req.protocol}://${req.get('host')}/api/admin/oauth/callback`,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorBody = await tokenResponse.text();
+      console.error('[OAuth] Token exchange failed:', tokenResponse.status, errorBody);
+      res.redirect(`/admin?oauth_error=token_exchange_failed`);
+      return;
+    }
+
+    const tokens = await tokenResponse.json() as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in?: number;
+      scope?: string;
+    };
+
+    // Store tokens in config (encrypted)
+    const updatedOAuth = {
+      ...config.oauth,
+      clientId,
+      clientSecret,
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token || config.oauth?.refreshToken,
+      tokenExpiresAt: tokens.expires_in
+        ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+        : undefined,
+      scopes: tokens.scope ? tokens.scope.split(' ') : config.oauth?.scopes,
+      connected: true,
+    };
+
+    await configService.updateLLMConfig(
+      { oauth: updatedOAuth },
+      'system',
+      'Anthropic OAuth tokens stored via OAuth callback',
+    );
+
+    res.redirect('/admin?oauth_success=true');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[OAuth] Callback error:', message);
+    res.redirect(`/admin?oauth_error=server_error`);
+  }
+});
+
+/**
+ * POST /api/admin/oauth/disconnect - Revoke OAuth tokens and clear config.
+ */
+router.post('/oauth/disconnect', async (req: Request, res: Response) => {
+  try {
+    await configService.updateLLMConfig(
+      {
+        oauth: {
+          clientId: undefined,
+          clientSecret: undefined,
+          accessToken: undefined,
+          refreshToken: undefined,
+          tokenExpiresAt: undefined,
+          scopes: undefined,
+          connected: false,
+        },
+      },
+      'system',
+      'OAuth disconnected via Admin UI',
+    );
+
+    res.json({ success: true, message: 'OAuth disconnected' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/admin/oauth/status - Get current OAuth connection status.
+ */
+router.get('/oauth/status', async (req: Request, res: Response) => {
+  try {
+    const config = await configService.getLLMConfig();
+    const oauth = config.oauth;
+
+    res.json({
+      connected: oauth?.connected === true && !!oauth?.accessToken,
+      hasClientId: !!oauth?.clientId,
+      hasClientSecret: !!oauth?.clientSecret,
+      tokenExpiresAt: oauth?.tokenExpiresAt || null,
+      scopes: oauth?.scopes || [],
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================================
 // Cache Invalidation Endpoint
 // ============================================================================
 

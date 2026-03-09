@@ -40,6 +40,14 @@ interface ModelOption {
   name: string;
 }
 
+interface OAuthState {
+  connected: boolean;
+  hasClientId: boolean;
+  hasClientSecret: boolean;
+  tokenExpiresAt: string | null;
+  scopes: string[];
+}
+
 export function LLMConfigPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -48,6 +56,10 @@ export function LLMConfigPanel() {
   const [currentMaskedKey, setCurrentMaskedKey] = useState<string>('');
   const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [oauthStatus, setOAuthStatus] = useState<OAuthState | null>(null);
+  const [oauthClientId, setOAuthClientId] = useState('');
+  const [oauthClientSecret, setOAuthClientSecret] = useState('');
+  const [isConnectingOAuth, setIsConnectingOAuth] = useState(false);
 
   const {
     register,
@@ -119,6 +131,27 @@ export function LLMConfigPanel() {
         // Fetch models for the loaded provider
         if (config.provider) {
           fetchModels(config.provider);
+        }
+
+        // Load OAuth status
+        try {
+          const status = await adminService.getOAuthStatus();
+          setOAuthStatus(status);
+          if (config.oauth?.clientId) setOAuthClientId(config.oauth.clientId);
+        } catch {
+          // OAuth status fetch is non-critical
+        }
+
+        // Check URL params for OAuth callback results
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('oauth_success') === 'true') {
+          setSuccessMessage('Anthropic OAuth connected successfully');
+          window.history.replaceState({}, '', window.location.pathname);
+          const status = await adminService.getOAuthStatus();
+          setOAuthStatus(status);
+        } else if (params.get('oauth_error')) {
+          setError(`OAuth error: ${params.get('oauth_error')}`);
+          window.history.replaceState({}, '', window.location.pathname);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load configuration');
@@ -259,6 +292,91 @@ export function LLMConfigPanel() {
             </FormField>
           </div>
         </div>
+
+        {selectedProvider === 'anthropic' && (
+          <div className="config-section">
+            <h3>Anthropic OAuth</h3>
+            <p className="config-section-desc">
+              Connect via OAuth instead of API key. Tokens auto-renew before expiration.
+            </p>
+
+            {oauthStatus?.connected ? (
+              <div className="oauth-connected">
+                <div className="oauth-status-row">
+                  <span className="oauth-status-badge oauth-status-badge--connected">Connected</span>
+                  {oauthStatus.tokenExpiresAt && (
+                    <span className="oauth-token-expiry">
+                      Token expires: {new Date(oauthStatus.tokenExpiresAt).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--danger"
+                  onClick={async () => {
+                    try {
+                      await adminService.disconnectOAuth();
+                      setOAuthStatus({ connected: false, hasClientId: false, hasClientSecret: false, tokenExpiresAt: null, scopes: [] });
+                      setSuccessMessage('OAuth disconnected');
+                      setTimeout(() => setSuccessMessage(null), 3000);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to disconnect');
+                    }
+                  }}
+                >
+                  Disconnect OAuth
+                </button>
+              </div>
+            ) : (
+              <div className="oauth-setup">
+                <div className="form-row">
+                  <FormField label="OAuth Client ID" hint="From Anthropic developer console">
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={oauthClientId}
+                      onChange={(e) => setOAuthClientId(e.target.value)}
+                      placeholder="Enter OAuth client ID"
+                    />
+                  </FormField>
+                  <FormField label="OAuth Client Secret" hint="Required for token exchange">
+                    <input
+                      type="password"
+                      className="form-input"
+                      value={oauthClientSecret}
+                      onChange={(e) => setOAuthClientSecret(e.target.value)}
+                      placeholder="Enter OAuth client secret"
+                      autoComplete="new-password"
+                    />
+                  </FormField>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  disabled={isConnectingOAuth || !oauthClientId}
+                  onClick={async () => {
+                    try {
+                      setIsConnectingOAuth(true);
+                      setError(null);
+                      // Save client credentials first
+                      await adminService.updateLLMConfig({
+                        oauth: { clientId: oauthClientId, clientSecret: oauthClientSecret },
+                      } as Partial<LLMProviderConfig>);
+                      // Get authorize URL and redirect
+                      const { authorizeUrl } = await adminService.getOAuthAuthorizeUrl('anthropic');
+                      window.location.href = authorizeUrl;
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to initiate OAuth');
+                      setIsConnectingOAuth(false);
+                    }
+                  }}
+                >
+                  {isConnectingOAuth ? 'Redirecting...' : 'Connect with Anthropic'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="config-section">
           <div className="config-section-header-row">

@@ -1,0 +1,245 @@
+[
+  {
+    "id": "DEMO-REL-us-japan",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-japan",
+    "type": "ALLIANCE",
+    "strength": 0.95,
+    "description": "Mutual defense treaty (1960) and strategic partnership — cornerstone of Indo-Pacific security architecture",
+    "evidence": ["US-Japan Security Treaty", "2+2 Security Consultative Committee", "Extended Deterrence Dialogue"]
+  },
+  {
+    "id": "DEMO-REL-us-philippines",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-philippines",
+    "type": "ALLIANCE",
+    "strength": 0.7,
+    "description": "Mutual Defense Treaty (1951), EDCA basing access — relationship variable but strengthening under SCS pressure",
+    "evidence": ["1951 Mutual Defense Treaty", "Enhanced Defense Cooperation Agreement (EDCA)", "Balikatan exercises"]
+  },
+  {
+    "id": "DEMO-REL-us-australia",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-australia",
+    "type": "ALLIANCE",
+    "strength": 0.9,
+    "description": "AUKUS defense technology pact, ANZUS treaty, Five Eyes intelligence sharing — deepening integration",
+    "evidence": ["AUKUS Agreement", "ANZUS Treaty", "Force Posture Agreement", "Pine Gap"]
+  },
+  {
+    "id": "DEMO-REL-us-taiwan",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-taiwan",
+    "type": "SUPPORTS",
+    "strength": 0.75,
+    "description": "Taiwan Relations Act (1979) — arms sales, unofficial diplomatic relations, strategic ambiguity on defense commitment",
+    "evidence": ["Taiwan Relations Act", "Six Assurances", "Arms sales packages", "Congressional Taiwan visits"]
+  },
+  {
+    "id": "DEMO-REL-us-south-korea",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-south-korea",
+    "type": "ALLIANCE",
+    "strength": 0.85,
+    "description": "ROK-US Combined Forces Command, mutual defense treaty, extended nuclear deterrence",
+    "evidence": ["1953 Mutual Defense Treaty", "Combined Forces Command", "Washington Declaration (nuclear)"]
+  },
+  {
+    "id": "DEMO-REL-china-russia",
+    "source": "DEMO-ACT-china",
+    "target": "DEMO-ACT-russia",
+    "type": "STRATEGIC_PARTNERSHIP",
+    "strength": 0.7,
+    "description": "No-limits partnership — joint military exercises, energy trade, UN Security Council coordination",
+    "evidence": ["2022 Joint Statement", "Vostok exercises", "Energy pipeline agreements"]
+  },
+  {
+    "id": "DEMO-REL-china-taiwan-sovereignty",
+    "source": "DEMO-ACT-china",
+    "target": "DEMO-ACT-taiwan",
+    "type": "CLAIMS_SOVEREIGNTY",
+    "strength": -0.95,
+    "description": "Core interest — PRC considers Taiwan reunification non-negotiable, reserves right to use force",
+    "evidence": ["Anti-Secession Law (2005)", "White Papers on Taiwan", "One-China principle"]
+  },
+  {
+    "id": "DEMO-REL-china-asean-competes",
+    "source": "DEMO-ACT-china",
+    "target": "DEMO-ACT-asean",
+    "type": "COMPETES_WITH",
+    "strength": -0.4,
+    "description": "South China Sea sovereignty disputes — island building, maritime militia, rejection of UNCLOS arbitration",
+    "evidence": ["Nine-dash line claims", "Artificial island construction", "2016 Hague Tribunal ruling rejection"]
+  },
+  {
+    "id": "DEMO-REL-china-asean-economic",
+    "source": "DEMO-ACT-china",
+    "target": "DEMO-ACT-asean",
+    "type": "ECONOMIC_TIES",
+    "strength": 0.6,
+    "description": "Largest trading partner for most ASEAN nations — RCEP, BRI infrastructure investment, economic leverage",
+    "evidence": ["RCEP Agreement", "China-ASEAN Free Trade Area", "BRI port investments"]
+  },
+  {
+    "id": "DEMO-REL-china-north-korea",
+    "source": "DEMO-ACT-china",
+    "target": "DEMO-ACT-north-korea",
+    "type": "SUPPORTS",
+    "strength": 0.5,
+    "description": "Buffer state relationship — economic lifeline (90% trade), limits enforcement of sanctions, transactional alliance",
+    "evidence": ["1961 Treaty of Friendship", "Energy and food supplies", "Selective sanctions enforcement"]
+  },
+  {
+    "id": "DEMO-REL-japan-taiwan",
+    "source": "DEMO-ACT-japan",
+    "target": "DEMO-ACT-taiwan",
+    "type": "CONCERNED_ABOUT",
+    "strength": 0.6,
+    "description": "Growing security interest — Taiwan contingency directly affects Japan's southwestern islands and sea lanes",
+    "evidence": ["Abe doctrine statements", "Joint planning with US", "Proximity to Okinawa/Yonaguni"]
+  },
+  {
+    "id": "DEMO-REL-pla-etc-taiwan",
+    "source": "DEMO-ACT-pla-etc",
+    "target": "DEMO-ACT-taiwan",
+    "type": "THREATENS",
+    "strength": -0.85,
+    "description": "Primary invasion force — amphibious and airborne assault capability, missile brigades targeting Taiwan infrastructure",
+    "evidence": ["Increasing cross-strait exercises", "Missile brigades in Fujian", "Amphibious ship buildup"]
+  },
+  {
+    "id": "DEMO-REL-7fleet-pla-etc",
+    "source": "DEMO-ACT-us-7fleet",
+    "target": "DEMO-ACT-pla-etc",
+    "type": "DETERS",
+    "strength": -0.7,
+    "description": "Forward-deployed naval deterrence — carrier strike groups, submarine patrols, freedom of navigation operations",
+    "evidence": ["Taiwan Strait transits", "Philippine Sea patrols", "Joint exercises with allies"]
+  },
+  {
+    "id": "DEMO-REL-us-china-competition",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-china",
+    "type": "COMPETES_WITH",
+    "strength": -0.65,
+    "description": "Strategic competition across military, economic, technology, and influence domains — great power rivalry",
+    "evidence": ["National Security Strategy 2022", "Indo-Pacific Strategy", "Semiconductor export controls"]
+  },
+  {
+    "id": "DEMO-REL-india-quad",
+    "source": "DEMO-ACT-india",
+    "target": "DEMO-ACT-quad",
+    "type": "MEMBER_OF",
+    "strength": 0.65,
+    "description": "QUAD member with strategic autonomy — participates in maritime security but maintains independent foreign policy",
+    "evidence": ["Quad Leaders Summits", "Malabar exercises", "Maritime domain awareness cooperation"]
+  },
+  {
+    "id": "DEMO-REL-pla-etc-china",
+    "source": "DEMO-ACT-pla-etc",
+    "target": "DEMO-ACT-china",
+    "type": "SUBORDINATE_TO",
+    "strength": 1.0,
+    "description": "Theater-level military command under Central Military Commission — responsible for Taiwan and East China Sea operations",
+    "evidence": ["PLA Theater Command structure", "CMC authority"]
+  },
+  {
+    "id": "DEMO-REL-7fleet-usa",
+    "source": "DEMO-ACT-us-7fleet",
+    "target": "DEMO-ACT-usa",
+    "type": "SUBORDINATE_TO",
+    "strength": 1.0,
+    "description": "Forward-deployed numbered fleet under PACFLT/INDOPACOM — largest forward-deployed US fleet",
+    "evidence": ["PACFLT command structure", "Yokosuka homeport"]
+  },
+  {
+    "id": "DEMO-REL-bri-china",
+    "source": "DEMO-ACT-bri",
+    "target": "DEMO-ACT-china",
+    "type": "SUBORDINATE_TO",
+    "strength": 1.0,
+    "description": "State-directed economic initiative — key tool of Chinese grand strategy and influence projection",
+    "evidence": ["State Council oversight", "Policy bank financing"]
+  },
+  {
+    "id": "DEMO-REL-tsmc-taiwan",
+    "source": "DEMO-ACT-tsmc",
+    "target": "DEMO-ACT-taiwan",
+    "type": "LOCATED_IN",
+    "strength": 0.9,
+    "description": "Headquartered in Hsinchu Science Park — largest employer, critical national strategic asset (silicon shield)",
+    "evidence": ["Hsinchu fabrication facilities", "60% global advanced chip production"]
+  },
+  {
+    "id": "DEMO-REL-us-india",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-india",
+    "type": "PARTNERS_WITH",
+    "strength": 0.6,
+    "description": "Deepening defense partnership — Major Defense Partner status, iCET technology initiative, intelligence sharing",
+    "evidence": ["Major Defense Partner designation", "iCET initiative", "BECA/LEMOA/COMCASA agreements"]
+  },
+  {
+    "id": "DEMO-REL-russia-north-korea",
+    "source": "DEMO-ACT-russia",
+    "target": "DEMO-ACT-north-korea",
+    "type": "PARTNERS_WITH",
+    "strength": 0.55,
+    "description": "Growing military cooperation — arms transfers, technology sharing, labor exchanges, diplomatic cover",
+    "evidence": ["Kim-Putin summits", "Arms transfer reports", "UN veto coordination"]
+  },
+  {
+    "id": "DEMO-REL-china-philippines-scs",
+    "source": "DEMO-ACT-china",
+    "target": "DEMO-ACT-philippines",
+    "type": "DISPUTES_WITH",
+    "strength": -0.7,
+    "description": "South China Sea territorial disputes — Second Thomas Shoal confrontations, Scarborough Shoal seizure, maritime militia harassment",
+    "evidence": ["Second Thomas Shoal incidents", "Scarborough Shoal standoff", "Coast guard water cannon incidents"]
+  },
+  {
+    "id": "DEMO-REL-australia-aukus",
+    "source": "DEMO-ACT-australia",
+    "target": "DEMO-ACT-aukus",
+    "type": "MEMBER_OF",
+    "strength": 0.85,
+    "description": "Primary beneficiary of AUKUS — nuclear-powered submarine acquisition, technology access, defense industrial integration",
+    "evidence": ["Virginia-class submarine acquisition plan", "Pillar II technology sharing"]
+  },
+  {
+    "id": "DEMO-REL-japan-south-korea",
+    "source": "DEMO-ACT-japan",
+    "target": "DEMO-ACT-south-korea",
+    "type": "PARTNERS_WITH",
+    "strength": 0.5,
+    "description": "Improving trilateral coordination (US-Japan-ROK) despite historical tensions — shared DPRK and China concerns",
+    "evidence": ["Camp David Trilateral Summit", "GSOMIA intelligence sharing", "Joint missile defense exercises"]
+  },
+  {
+    "id": "DEMO-REL-us-north-korea",
+    "source": "DEMO-ACT-usa",
+    "target": "DEMO-ACT-north-korea",
+    "type": "OPPOSES",
+    "strength": -0.8,
+    "description": "Denuclearization standoff — maximum pressure sanctions, extended deterrence to allies, diplomatic stalemate",
+    "evidence": ["UN Security Council sanctions", "Extended deterrence commitment to ROK/Japan"]
+  },
+  {
+    "id": "DEMO-REL-china-japan-ecs",
+    "source": "DEMO-ACT-china",
+    "target": "DEMO-ACT-japan",
+    "type": "DISPUTES_WITH",
+    "strength": -0.5,
+    "description": "East China Sea disputes — Senkaku/Diaoyu Islands sovereignty, ADIZ overlap, coast guard confrontations",
+    "evidence": ["Senkaku Islands dispute", "China ADIZ declaration", "Coast guard intrusions"]
+  },
+  {
+    "id": "DEMO-REL-china-india",
+    "source": "DEMO-ACT-china",
+    "target": "DEMO-ACT-india",
+    "type": "COMPETES_WITH",
+    "strength": -0.45,
+    "description": "Border disputes (LAC), strategic competition in Indian Ocean, BRI vs Indian interests in South Asia",
+    "evidence": ["Galwan Valley clash", "Doklam standoff", "Indian Ocean naval competition", "String of pearls concern"]
+  }
+]

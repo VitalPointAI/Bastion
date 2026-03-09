@@ -1,0 +1,92 @@
+[
+  {
+    "id": "DEMO-EVT-001",
+    "title": "China-Philippines diplomatic incident over Scarborough Shoal",
+    "description": "Chinese Ministry of Foreign Affairs issues formal warning after Philippine naval patrol approaches Scarborough Shoal. Beijing reiterates sovereignty claims and threatens economic consequences for Manila's continued challenges in the South China Sea.",
+    "sourceType": "diplomatic",
+    "sourceName": "PRC Ministry of Foreign Affairs",
+    "publishedAt": "2026-01-15T08:00:00Z",
+    "location": {
+      "name": "Scarborough Shoal",
+      "latitude": 15.15,
+      "longitude": 117.75,
+      "region": "South China Sea",
+      "country": "Philippines"
+    },
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-philippines"],
+    "tags": ["diplomatic", "south-china-sea", "scarborough-shoal", "demo-seed"],
+    "domain": "D"
+  },
+  {
+    "id": "DEMO-EVT-002",
+    "title": "PLA cyber intrusion detected against Taiwan defense networks",
+    "description": "Taiwan's Ministry of National Defense confirms a sophisticated cyber intrusion targeting command and control systems. Attribution points to Unit 61398 (PLA Strategic Support Force). No classified data compromised but incident reveals pre-positioning for potential conflict operations.",
+    "sourceType": "intelligence",
+    "sourceName": "Taiwan MODA Cybersecurity Agency",
+    "publishedAt": "2026-01-22T14:30:00Z",
+    "location": {
+      "name": "Taipei, Taiwan",
+      "latitude": 25.033,
+      "longitude": 121.565,
+      "region": "East Asia",
+      "country": "Taiwan"
+    },
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-taiwan", "DEMO-ACT-pla-etc"],
+    "tags": ["information", "cyber", "taiwan", "pla", "demo-seed"],
+    "domain": "I"
+  },
+  {
+    "id": "DEMO-EVT-003",
+    "title": "PLA Eastern Theater Command amphibious training exercise near Fujian",
+    "description": "Satellite imagery confirms PLA ETC conducting large-scale amphibious assault training at Dongshan Island, Fujian Province. Exercise involves 12,000+ personnel, Type 075 LHDs, and simulated opposed beach landings. Pattern consistent with Taiwan contingency rehearsal.",
+    "sourceType": "intelligence",
+    "sourceName": "National Geospatial-Intelligence Agency",
+    "publishedAt": "2026-01-28T06:00:00Z",
+    "location": {
+      "name": "Dongshan Island, Fujian",
+      "latitude": 23.65,
+      "longitude": 117.5,
+      "region": "East China Sea",
+      "country": "China"
+    },
+    "actors": ["DEMO-ACT-pla-etc", "DEMO-ACT-china"],
+    "tags": ["military", "amphibious", "pla-etc", "fujian", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-004",
+    "title": "US-Japan joint naval exercise in Philippine Sea",
+    "description": "USS Ronald Reagan CSG and JMSDF Izumo-class DDH JS Kaga conduct integrated anti-submarine warfare and air defense exercises in the Philippine Sea. Exercise Keen Sword demonstrates interoperability and signals commitment to regional stability.",
+    "sourceType": "media",
+    "sourceName": "US 7th Fleet Public Affairs",
+    "publishedAt": "2026-02-01T10:00:00Z",
+    "location": {
+      "name": "Philippine Sea",
+      "latitude": 20.0,
+      "longitude": 132.0,
+      "region": "Western Pacific",
+      "country": "International Waters"
+    },
+    "actors": ["DEMO-ACT-usa", "DEMO-ACT-japan", "DEMO-ACT-us-7fleet"],
+    "tags": ["military", "exercise", "us-japan", "naval", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-005",
+    "title": "China restricts rare earth exports to allied nations",
+    "description": "Beijing announces new export controls on gallium, germanium, and refined rare earth elements to nations participating in semiconductor export restrictions. Japan, South Korea, and Netherlands directly affected. Move seen as retaliation for CHIPS Act restrictions.",
+    "sourceType": "economic",
+    "sourceName": "PRC Ministry of Commerce",
+    "publishedAt": "2026-02-05T02:00:00Z",
+    "location": {
+      "name": "Beijing",
+      "latitude": 39.904,
+      "longitude": 116.407,
+      "region": "East Asia",
+      "country": "China"
+    },
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-japan", "DEMO-ACT-south-korea"],
+    "tags": ["economic", "rare-earth", "export-controls", "sanctions", "demo-seed"],
+    "domain": "E"
+  }
+]

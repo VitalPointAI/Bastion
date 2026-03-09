@@ -92,8 +92,13 @@ export async function resolveLLMConfig(
     agentConfig?.maxTokens ??
     4096;
 
-  // Get API key and base URL from global config
-  const apiKey = globalConfig.apiKey;
+  // Get API key — prefer OAuth token over static API key for Anthropic
+  let apiKey = globalConfig.apiKey;
+  if (provider === 'anthropic' && globalConfig.oauth?.connected && globalConfig.oauth?.accessToken) {
+    const { getValidOAuthToken } = await import('../../auth/oauth-token-refresh.js');
+    const oauthToken = await getValidOAuthToken();
+    if (oauthToken) apiKey = oauthToken;
+  }
   const baseUrl = globalConfig.baseUrl;
 
   return {

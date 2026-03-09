@@ -1,0 +1,74 @@
+[
+  {
+    "id": "DEMO-EVT-026",
+    "title": "Ceasefire proposal presented through Swiss intermediaries",
+    "description": "Swiss Foreign Ministry, acting as protecting power, delivers formal ceasefire proposal from PRC to US and Taiwan through diplomatic channels. Proposal includes 72-hour mutual cessation of hostilities, PLA withdrawal from Taiwan beachheads, and framework for status quo ante negotiations.",
+    "sourceType": "diplomatic",
+    "sourceName": "Swiss Federal Department of Foreign Affairs",
+    "publishedAt": "2026-03-25T10:00:00Z",
+    "location": {
+      "name": "Geneva, Switzerland",
+      "latitude": 46.204,
+      "longitude": 6.143,
+      "region": "Europe",
+      "country": "Switzerland"
+    },
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-usa", "DEMO-ACT-taiwan"],
+    "tags": ["diplomatic", "ceasefire", "negotiation", "switzerland", "demo-seed"],
+    "domain": "D"
+  },
+  {
+    "id": "DEMO-EVT-027",
+    "title": "ASEAN foreign ministers issue joint statement on conflict resolution",
+    "description": "ASEAN foreign ministers issue unprecedented joint statement calling for immediate cessation of hostilities in the Taiwan Strait and South China Sea. Statement represents significant departure from ASEAN consensus norm. Indonesia and Singapore lead drafting effort.",
+    "sourceType": "diplomatic",
+    "sourceName": "ASEAN Secretariat",
+    "publishedAt": "2026-03-26T08:00:00Z",
+    "location": {
+      "name": "Jakarta, Indonesia",
+      "latitude": -6.175,
+      "longitude": 106.845,
+      "region": "Southeast Asia",
+      "country": "Indonesia"
+    },
+    "actors": ["DEMO-ACT-asean"],
+    "tags": ["diplomatic", "asean", "conflict-resolution", "joint-statement", "demo-seed"],
+    "domain": "D"
+  },
+  {
+    "id": "DEMO-EVT-028",
+    "title": "Economic damage assessment: $2.3T global trade impact",
+    "description": "IMF emergency report estimates $2.3 trillion in direct global trade disruption from Taiwan Strait conflict. Semiconductor supply chain disruption alone accounts for $890B. Global GDP growth forecast revised from 3.1% to 0.8%. Commodity markets experiencing historic volatility.",
+    "sourceType": "economic",
+    "sourceName": "International Monetary Fund",
+    "publishedAt": "2026-03-27T14:00:00Z",
+    "location": {
+      "name": "Washington, DC",
+      "latitude": 38.899,
+      "longitude": -77.043,
+      "region": "Global",
+      "country": "United States"
+    },
+    "actors": ["DEMO-ACT-usa", "DEMO-ACT-china", "DEMO-ACT-tsmc"],
+    "tags": ["economic", "trade-impact", "imf", "assessment", "demo-seed"],
+    "domain": "E"
+  },
+  {
+    "id": "DEMO-EVT-029",
+    "title": "Taiwan Strait navigation terms under negotiation",
+    "description": "Multilateral working group convenes in Singapore to negotiate post-ceasefire Taiwan Strait navigation terms. Discussions include demilitarized shipping corridors, international monitoring mechanism, and phased resumption of commercial maritime traffic. PRC insists on escort requirements; US and Taiwan demand freedom of navigation.",
+    "sourceType": "diplomatic",
+    "sourceName": "Singapore Ministry of Foreign Affairs",
+    "publishedAt": "2026-03-29T08:00:00Z",
+    "location": {
+      "name": "Singapore",
+      "latitude": 1.352,
+      "longitude": 103.82,
+      "region": "Southeast Asia",
+      "country": "Singapore"
+    },
+    "actors": ["DEMO-ACT-usa", "DEMO-ACT-china", "DEMO-ACT-taiwan", "DEMO-ACT-asean"],
+    "tags": ["diplomatic", "navigation", "negotiation", "singapore", "demo-seed"],
+    "domain": "D"
+  }
+]

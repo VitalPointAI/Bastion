@@ -1,0 +1,328 @@
+[
+  {
+    "id": "DEMO-SP-step1-initiating-directive",
+    "step": "planning_initiation",
+    "role_id": "chief_of_staff",
+    "status": "approved",
+    "ai_drafted_by": "staff-coordinator",
+    "reviewed_by": "did:near:demo-commander.near",
+    "content": {
+      "productType": "initiating_directive",
+      "title": "Initiating Directive — INDOPACOM Theater Campaign Plan",
+      "summary": "CDRUSINDOPACOM directs CJTF-WestPac to develop campaign plan for Western Pacific contingency operations. Tasking originates from INDOPACOM OPLAN 5077 and Global Force Management Allocation Plan FY26.",
+      "higherHqOrder": "USINDOPACOM OPLAN 5077 — Western Pacific Contingency",
+      "timeframe": "FY26-FY28 planning horizon, immediate execution readiness NLT Q3 FY26",
+      "planningGuidance": [
+        "Prioritize maritime domain awareness and sea denial capabilities in Taiwan Strait and South China Sea",
+        "Integrate allied/partner forces (Japan, Australia, Philippines) from outset of planning",
+        "Maintain escalation management options at every phase — graduated response essential",
+        "Plan for contested logistics in the Second Island Chain; pre-positioned stocks key",
+        "Assume degraded C4ISR environment; redundant communications pathways mandatory"
+      ],
+      "constraints": [
+        "No first-use of nuclear weapons",
+        "Minimize civilian casualties in all COA development",
+        "Operations must comply with Law of Armed Conflict and ROE",
+        "Maintain freedom of navigation in international waters"
+      ],
+      "restraints": [
+        "No strikes on mainland China without SECDEF approval",
+        "Cyber operations above Phase 0 require CDRUSINDOPACOM approval",
+        "No unilateral operations in Japanese territorial waters without GOJ coordination"
+      ]
+    }
+  },
+  {
+    "id": "DEMO-SP-step1-mission-statement",
+    "step": "planning_initiation",
+    "role_id": "j5_plans",
+    "status": "approved",
+    "ai_drafted_by": "staff-coordinator",
+    "reviewed_by": "did:near:demo-commander.near",
+    "content": {
+      "productType": "mission_statement",
+      "title": "CJTF-WestPac Mission Statement",
+      "missionStatement": "CJTF-WestPac deters PRC aggression in the Western Pacific; on order, conducts maritime operations to defend Taiwan and maintain freedom of navigation in the Taiwan Strait and South China Sea.",
+      "commanderIntent": {
+        "purpose": "Preserve the rules-based international order in the Western Pacific and defend Taiwan from forcible unification.",
+        "method": "Through integrated deterrence leveraging forward-deployed naval and air forces, allied partnerships, and information operations; if deterrence fails, through decisive maritime operations combining sea denial, air superiority, and distributed lethality across the First and Second Island Chains.",
+        "endstate": "PRC ceases aggressive military action, Taiwan's sovereignty is preserved, freedom of navigation restored, and the alliance network strengthened."
+      },
+      "keyTasks": [
+        "Establish persistent maritime domain awareness across the Taiwan Strait and South China Sea",
+        "Integrate JSDF, ADF, and Philippine forces into combined operational framework",
+        "Develop and maintain 3 viable COAs for graduated response from competition through conflict",
+        "Ensure logistics sustainment for 60-day high-intensity combat operations"
+      ]
+    }
+  },
+  {
+    "id": "DEMO-SP-step2-task-analysis",
+    "step": "mission_analysis",
+    "role_id": "j5_plans",
+    "status": "approved",
+    "ai_drafted_by": "mission-analyst",
+    "reviewed_by": "did:near:demo-j5.near",
+    "content": {
+      "productType": "task_analysis",
+      "title": "Mission Analysis — Specified, Implied & Essential Tasks",
+      "specifiedTasks": [
+        "Defend Taiwan against PRC military aggression (OPLAN 5077 Task 1.1)",
+        "Maintain freedom of navigation in the Taiwan Strait (FONOP directive)",
+        "Integrate allied forces under combined command structure (CDRUSINDOPACOM directive)",
+        "Establish air superiority within 200nm of Taiwan (COMAFFOR tasking)",
+        "Provide maritime logistics support to forward-deployed forces (OPLOG directive)"
+      ],
+      "impliedTasks": [
+        "Conduct ISR operations to establish maritime domain awareness",
+        "Pre-position logistics stocks at Second Island Chain nodes (Guam, Palau, Yap)",
+        "Establish redundant C4ISR pathways for degraded environment operations",
+        "Coordinate ROE synchronization with allied forces (Japan, Australia, Philippines)",
+        "Develop deception operations to mask force disposition and intentions",
+        "Establish cyber defense posture for critical C2 infrastructure",
+        "Plan humanitarian assistance for potential Taiwan civilian displacement"
+      ],
+      "essentialTasks": [
+        "Deny PLA Navy access to waters east of Taiwan (sea denial)",
+        "Maintain air superiority over the Taiwan Strait",
+        "Sustain forward-deployed forces for minimum 60 days of high-intensity operations",
+        "Preserve allied coalition cohesion throughout escalation spectrum"
+      ]
+    }
+  },
+  {
+    "id": "DEMO-SP-step2-facts-assumptions",
+    "step": "mission_analysis",
+    "role_id": "j2_intelligence",
+    "status": "approved",
+    "ai_drafted_by": "mission-analyst",
+    "reviewed_by": "did:near:demo-j2.near",
+    "content": {
+      "productType": "facts_assumptions",
+      "title": "Facts and Assumptions Analysis",
+      "facts": [
+        {"description": "PLA Eastern Theater Command has 3 amphibious brigades and 2 marine brigades positioned within 400km of Taiwan", "source": "DIA Assessment FY26-Q1", "confidence": "HIGH"},
+        {"description": "PLAAF maintains 400+ 4th/5th gen fighters within combat radius of Taiwan", "source": "NASIC Air Order of Battle", "confidence": "HIGH"},
+        {"description": "PLA Rocket Force has 1,200+ SRBMs/MRBMs capable of striking Taiwan and US bases in Japan/Guam", "source": "CSIS Missile Threat Assessment", "confidence": "HIGH"},
+        {"description": "Japan has declared collective self-defense applicable to Taiwan contingency under 2015 legislation", "source": "GOJ Policy Statement 2025", "confidence": "HIGH"},
+        {"description": "US has 11 forward-deployed naval vessels and 2 CSGs within 72-hour response to Western Pacific", "source": "PACFLT SITREP", "confidence": "HIGH"}
+      ],
+      "assumptions": [
+        {"description": "Japan will grant basing access for US combat operations in defense of Taiwan", "confidence": "HIGH", "validationIndicator": "GOJ public statements and bilateral agreement status", "riskIfInvalid": "Loss of critical forward operating locations; 40% reduction in sortie generation rate"},
+        {"description": "PRC will not employ nuclear weapons first in a conventional conflict over Taiwan", "confidence": "MEDIUM", "validationIndicator": "PRC nuclear posture statements, ICBM alert status, underground facility activity", "riskIfInvalid": "Fundamental change to conflict calculus; potential strategic paralysis"},
+        {"description": "Australia will commit naval forces (2 FFH, 1 LHD) to coalition operations", "confidence": "HIGH", "validationIndicator": "ADF force posture, AUKUS readiness metrics, parliamentary authorization", "riskIfInvalid": "Reduced maritime capability in southern approach; 15% gap in ASW coverage"},
+        {"description": "PRC will attempt cyber attacks on US/allied C4ISR within 48 hours of conflict initiation", "confidence": "HIGH", "validationIndicator": "Cyber threat indicators, APT activity monitoring", "riskIfInvalid": "Underestimation leads to inadequate cyber defense posture"},
+        {"description": "Logistics throughput from CONUS to Western Pacific will be contested by PRC submarine and long-range missile forces", "confidence": "HIGH", "validationIndicator": "PLA Navy submarine patrols, ASBM deployment patterns", "riskIfInvalid": "Over-reliance on contested sea lines of communication"}
+      ],
+      "crossReference": "See DEMO-AGENT-OUTPUT-assumption-audit-01 for automated assumption validation analysis"
+    }
+  },
+  {
+    "id": "DEMO-SP-step2-risk-matrix",
+    "step": "mission_analysis",
+    "role_id": "j5_plans",
+    "status": "approved",
+    "ai_drafted_by": "mission-analyst",
+    "reviewed_by": "did:near:demo-j5.near",
+    "content": {
+      "productType": "risk_assessment",
+      "title": "Risk Assessment Matrix",
+      "risks": [
+        {"id": "R-01", "description": "PRC pre-emptive strike on US bases in Japan before declaration of hostilities", "likelihood": "MEDIUM", "impact": "CRITICAL", "mitigation": "Dispersal of forward forces, hardened shelters, integrated air and missile defense", "residualRisk": "HIGH"},
+        {"id": "R-02", "description": "Allied coalition fracture under Chinese economic coercion", "likelihood": "MEDIUM", "impact": "HIGH", "mitigation": "Pre-crisis diplomatic engagement, economic resilience planning, alliance solidarity messaging", "residualRisk": "MEDIUM"},
+        {"id": "R-03", "description": "Logistics sustainment failure beyond Day 30 due to contested SLOCs", "likelihood": "HIGH", "impact": "CRITICAL", "mitigation": "Pre-positioned stocks at Guam/Palau, alternative air bridge, expeditionary logistics concepts", "residualRisk": "HIGH"},
+        {"id": "R-04", "description": "Escalation to nuclear threshold through miscalculation", "likelihood": "LOW", "impact": "CATASTROPHIC", "mitigation": "Clear signaling, crisis communication channels, graduated response options, escalation off-ramps", "residualRisk": "LOW"},
+        {"id": "R-05", "description": "Cyber disruption of C4ISR causing loss of situational awareness", "likelihood": "HIGH", "impact": "HIGH", "mitigation": "Redundant communications, mesh networking, degraded-mode procedures, cyber resilience training", "residualRisk": "MEDIUM"}
+      ],
+      "overallAssessment": "Mission is HIGH RISK. Principal risks are logistics sustainment and contested C4ISR. Mitigation plans reduce residual risk to acceptable levels for COA development. Coalition cohesion requires continuous diplomatic effort."
+    }
+  },
+  {
+    "id": "DEMO-SP-step3-coa1-maritime-blockade",
+    "step": "coa_development",
+    "role_id": "j5_plans",
+    "status": "approved",
+    "ai_drafted_by": "coa-developer",
+    "reviewed_by": "did:near:demo-j5.near",
+    "content": {
+      "productType": "coa_sketch",
+      "title": "COA 1: Maritime Blockade",
+      "coaName": "Maritime Blockade — Isolate and Deny",
+      "concept": "Establish a naval blockade of the Taiwan Strait and key PLA Navy egress points to deny PRC naval access to waters east of Taiwan. Focus on sea denial through a combination of surface action groups, submarine barriers, and offensive mining.",
+      "mainEffort": "7th Fleet Surface Action Groups establish blockade line from Ryukyu Islands to northern Philippines, supported by submarine barriers in the Luzon and Miyako Straits.",
+      "supportingEfforts": [
+        "COMAFFOR establishes air superiority umbrella with F-35 and F-22 from Kadena, Iwakuni, and Andersen AFB",
+        "Allied naval forces (JMSDF, RAN) secure southern approaches through Sulu Sea and Celebes Sea",
+        "3rd MEF establishes expeditionary advance bases on key First Island Chain positions for anti-ship missile coverage",
+        "Cyber operations degrade PLA Navy C2 and satellite reconnaissance capabilities"
+      ],
+      "taskOrganization": {
+        "mainBody": "CTF 70 (3x DDG, 2x CG, 1x CVN), CTF 74 (4x SSN Luzon Strait barrier)",
+        "supporting": "JMSDF Escort Flotilla 2 (4x DD), RAN Task Group (2x FFH, 1x LHD)",
+        "fires": "3rd MEF HIMARS batteries on Miyako-jima and Bashi Channel positions",
+        "logistics": "MSC resupply from Guam and Subic Bay auxiliary facilities"
+      },
+      "phasing": [
+        "Phase 0 (Shape): Forward deploy forces, establish ISR coverage, pre-position logistics",
+        "Phase 1 (Deter): Show of force, establish maritime exclusion zone, diplomatic messaging",
+        "Phase 2 (Seize Initiative): Commence blockade operations, deny PLA Navy egress",
+        "Phase 3 (Dominate): Full blockade enforcement, offensive ASW, mine warfare",
+        "Phase 4 (Stabilize): Maintain blockade until diplomatic resolution"
+      ],
+      "riskAssessment": "MEDIUM-HIGH. Blockade is inherently escalatory and may provoke PRC kinetic response. Requires significant force concentration creating targeting vulnerabilities."
+    }
+  },
+  {
+    "id": "DEMO-SP-step3-coa2-distributed-ops",
+    "step": "coa_development",
+    "role_id": "j5_plans",
+    "status": "approved",
+    "ai_drafted_by": "coa-developer",
+    "reviewed_by": "did:near:demo-j5.near",
+    "content": {
+      "productType": "coa_sketch",
+      "title": "COA 2: Distributed Maritime Operations",
+      "coaName": "Distributed Maritime Operations — Dispersed Lethality",
+      "concept": "Employ distributed maritime operations across the First and Second Island Chains to create multiple dilemmas for PRC forces. Rather than concentrating forces for a blockade, disperse combat power across a wide arc to deny PRC ability to mass fires against any single node.",
+      "mainEffort": "Distributed surface action groups (2-3 ship SAGs) operating independently across 6 operational boxes from Ryukyu to Palawan, each with organic ISR and strike capability.",
+      "supportingEfforts": [
+        "Submarine force conducts independent offensive operations in PLA Navy operating areas",
+        "USMC expeditionary advance bases provide land-based anti-ship fires and forward arming/refueling points",
+        "COMAFFOR conducts distributed air operations from multiple hardened airfields across Japan and Philippines",
+        "SOF teams provide terminal guidance and intelligence from key observation posts"
+      ],
+      "taskOrganization": {
+        "mainBody": "6x independent SAGs (2-3 DDG each) with LRASM, 2x LCS with NSM",
+        "supporting": "3x SSN independent patrols, JMSDF 4x DD in northern arc",
+        "fires": "USMC 3x NMESIS batteries, 2x HIMARS on mobile positions",
+        "logistics": "Expeditionary logistics nodes at 4 forward positions, resupply via small surface combatants"
+      },
+      "phasing": [
+        "Phase 0 (Shape): Pre-position logistics, establish distributed C2 network, forward deploy SAGs",
+        "Phase 1 (Deter): Demonstrate distributed presence, show capability to deny maritime space",
+        "Phase 2 (Seize Initiative): Activate kill webs, engage PLA Navy forces in distributed engagements",
+        "Phase 3 (Dominate): Attrit PLA Navy capability, establish sea control in key areas",
+        "Phase 4 (Stabilize): Consolidate, transition to conventional deterrence posture"
+      ],
+      "riskAssessment": "MEDIUM. Dispersion reduces single-point-of-failure risk but complicates C2 and mutual support. Requires robust distributed C4ISR."
+    }
+  },
+  {
+    "id": "DEMO-SP-step3-coa3-air-maritime-defense",
+    "step": "coa_development",
+    "role_id": "j5_plans",
+    "status": "approved",
+    "ai_drafted_by": "coa-developer",
+    "reviewed_by": "did:near:demo-j5.near",
+    "content": {
+      "productType": "coa_sketch",
+      "title": "COA 3: Integrated Air-Maritime Defense",
+      "coaName": "Integrated Air-Maritime Defense — Air Superiority First",
+      "concept": "Prioritize air superiority over the Taiwan Strait as the decisive operation, enabling follow-on maritime operations. Concentrate air combat power to defeat PLAAF and establish a protective umbrella under which naval forces can operate with reduced threat.",
+      "mainEffort": "COMAFFOR air superiority campaign using F-22, F-35, and B-21 from dispersed locations in Japan, Guam, and Australia to achieve air dominance over the Taiwan Strait within 96 hours.",
+      "supportingEfforts": [
+        "Integrated Air and Missile Defense (IAMD) network protects forward airbases and naval forces",
+        "7th Fleet provides Aegis BMD and fleet air defense for CSG operating areas",
+        "Electronic warfare operations suppress PRC IADS and degrade early warning radar",
+        "Cyber operations target PLAAF C2 nodes and satellite ground stations"
+      ],
+      "taskOrganization": {
+        "mainBody": "COMAFFOR 5x fighter squadrons (F-22/F-35), 1x bomber squadron (B-21), AWACS/tanker support",
+        "supporting": "7th Fleet CSG with E-2D and F-35C for fleet defense, JMSDF AEGIS DDGs",
+        "fires": "THAAD and Patriot batteries protecting airbases, SM-6 from naval platforms",
+        "logistics": "Air bridge from Anderson AFB and Hickam, dispersed fuel and munitions caches"
+      },
+      "phasing": [
+        "Phase 0 (Shape): Deploy air assets to dispersed locations, establish IADS network",
+        "Phase 1 (Deter): Demonstrate air superiority capability, CAPs and DCA over key areas",
+        "Phase 2 (Seize Initiative): Offensive counter-air and SEAD/DEAD to suppress PLAAF",
+        "Phase 3 (Dominate): Establish air superiority, enable naval operations under air umbrella",
+        "Phase 4 (Stabilize): Maintain air presence, transition to no-fly zone enforcement"
+      ],
+      "riskAssessment": "MEDIUM-HIGH. Dependent on rapid attrition of PLAAF; if air campaign stalls, naval forces remain vulnerable. High sortie rate demands robust logistics chain."
+    }
+  },
+  {
+    "id": "DEMO-SP-step4-wargaming-results",
+    "step": "coa_analysis",
+    "role_id": "j5_plans",
+    "status": "draft",
+    "ai_drafted_by": "red-team-analyst",
+    "reviewed_by": null,
+    "content": {
+      "productType": "wargaming_results",
+      "title": "COA Analysis — Wargaming Results (In Progress)",
+      "methodology": "Tabletop wargame with red team (PLA ETC) playing adversary most dangerous COA. Each friendly COA evaluated across 3 turns representing Days 1-7, 7-14, and 14-30.",
+      "coaResults": [
+        {
+          "coaName": "COA 1: Maritime Blockade",
+          "strengths": [
+            "Strongest deterrent signal — clear red line",
+            "Leverages US Navy surface superiority",
+            "Controllable escalation ladder — can tighten or loosen blockade"
+          ],
+          "weaknesses": [
+            "Force concentration creates targeting opportunities for PRC DF-21D/DF-26 ASBMs",
+            "Blockade requires sustained presence — logistics intensive",
+            "Legal/political complications of blockade enforcement on neutral shipping"
+          ],
+          "keyFindings": [
+            "Red team consistently targeted concentrated surface forces with saturation ASBM strikes in Turn 1",
+            "Blockade effectiveness degraded by 40% after Day 14 due to logistics strain",
+            "Most effective when combined with submarine barrier (hybrid approach)"
+          ],
+          "turnResults": "Turn 1: Blockade established, 2 DDG damaged by ASBM. Turn 2: Blockade maintained but resupply contested. Turn 3: Blockade partially effective, coalition strain emerging."
+        },
+        {
+          "coaName": "COA 2: Distributed Maritime Operations",
+          "strengths": [
+            "Resilient to PRC massed fires — no single high-value target",
+            "Creates multiple dilemmas for PRC targeting",
+            "Best survivability profile across all COAs"
+          ],
+          "weaknesses": [
+            "C2 complexity in distributed environment",
+            "Individual SAGs vulnerable to local PRC superiority",
+            "Difficult to achieve decisive effect — war of attrition risk"
+          ],
+          "keyFindings": [
+            "Red team unable to achieve decisive strike against any single node",
+            "Blue force C2 degradation in Turn 2 caused 30% coordination gap",
+            "Most effective at attrition but slowest to achieve campaign objectives"
+          ],
+          "turnResults": "Turn 1: Distributed forces engaged successfully, minimal losses. Turn 2: C2 challenges, 1 SAG isolated. Turn 3: Steady attrition of PLA Navy, but no decisive engagement."
+        },
+        {
+          "coaName": "COA 3: Integrated Air-Maritime Defense",
+          "strengths": [
+            "Fastest path to air superiority — decisive if successful",
+            "Enables all subsequent operations under protective umbrella",
+            "Plays to US technological advantage in 5th gen aircraft"
+          ],
+          "weaknesses": [
+            "High dependency on initial air campaign success",
+            "Airbase vulnerability to PRC ballistic missile strikes",
+            "If PLAAF not suppressed in 96 hours, campaign timeline collapses"
+          ],
+          "keyFindings": [
+            "Red team prioritized airbase attacks with DF-15/DF-16 in Turn 1 — 30% runway damage across 3 bases",
+            "Air superiority achievable by Day 5 IF dispersal and hardening adequate",
+            "Once air superiority established, maritime operations significantly less costly"
+          ],
+          "turnResults": "Turn 1: Airbase strikes cause disruption, but dispersal limits impact. F-22/F-35 achieve 4:1 kill ratio. Turn 2: PLAAF attrited to 60% strength. Turn 3: Air dominance achieved, naval ops commence under air umbrella."
+        }
+      ],
+      "decisionSupportMatrix": {
+        "criteria": ["Feasibility", "Acceptability", "Suitability", "Distinguishability", "Completeness"],
+        "weights": [0.25, 0.20, 0.25, 0.15, 0.15],
+        "scores": {
+          "COA 1": [7, 6, 8, 9, 7],
+          "COA 2": [8, 8, 7, 8, 6],
+          "COA 3": [6, 7, 9, 9, 8]
+        },
+        "note": "Scoring in progress — pending completion of full wargame series"
+      },
+      "status": "IN PROGRESS — Turn 3 analysis pending for all COAs. Decision support matrix preliminary."
+    }
+  }
+]

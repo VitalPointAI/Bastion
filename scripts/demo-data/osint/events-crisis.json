@@ -1,0 +1,92 @@
+[
+  {
+    "id": "DEMO-EVT-006",
+    "title": "US recalls ambassador from Beijing after Taiwan Strait incident",
+    "description": "State Department recalls US Ambassador to China following a dangerous close encounter between PLA Navy destroyer and USS Milius in the Taiwan Strait. Incident involved aggressive maneuvering within 150 yards. Washington demands Beijing establish military-to-military crisis communication hotline.",
+    "sourceType": "diplomatic",
+    "sourceName": "US Department of State",
+    "publishedAt": "2026-02-15T16:00:00Z",
+    "location": {
+      "name": "Washington, DC",
+      "latitude": 38.895,
+      "longitude": -77.036,
+      "region": "North America",
+      "country": "United States"
+    },
+    "actors": ["DEMO-ACT-usa", "DEMO-ACT-china"],
+    "tags": ["diplomatic", "ambassador-recall", "taiwan-strait", "escalation", "demo-seed"],
+    "domain": "D"
+  },
+  {
+    "id": "DEMO-EVT-007",
+    "title": "PLA Eastern Theater Command mobilization detected — units moving to staging areas",
+    "description": "DIA reports significant PLA ETC force movements from garrison locations to forward staging areas in Fujian and Zhejiang provinces. At least 3 Group Armies (78th, 73rd, 71st) showing mobilization indicators. Missile brigades observed preparing TEL vehicles.",
+    "sourceType": "intelligence",
+    "sourceName": "Defense Intelligence Agency",
+    "publishedAt": "2026-02-18T04:00:00Z",
+    "location": {
+      "name": "Fujian Province, China",
+      "latitude": 24.5,
+      "longitude": 118.1,
+      "region": "East China Sea",
+      "country": "China"
+    },
+    "actors": ["DEMO-ACT-pla-etc", "DEMO-ACT-china"],
+    "tags": ["military", "mobilization", "pla-etc", "staging", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-008",
+    "title": "USS Ronald Reagan CSG repositions from Yokosuka to Philippine Sea",
+    "description": "7th Fleet orders USS Ronald Reagan (CVN-76) carrier strike group to reposition from homeport Yokosuka to operating area in the Philippine Sea east of Taiwan. CSG includes 2 Aegis cruisers, 3 destroyers, and submarine escorts. Readiness status elevated to C-1.",
+    "sourceType": "intelligence",
+    "sourceName": "US Indo-Pacific Command",
+    "publishedAt": "2026-02-19T08:00:00Z",
+    "location": {
+      "name": "Philippine Sea",
+      "latitude": 22.0,
+      "longitude": 128.0,
+      "region": "Western Pacific",
+      "country": "International Waters"
+    },
+    "actors": ["DEMO-ACT-usa", "DEMO-ACT-us-7fleet"],
+    "tags": ["military", "carrier", "repositioning", "7th-fleet", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-009",
+    "title": "Social media campaign detected targeting Taiwan civilian morale",
+    "description": "Taiwan's Investigation Bureau identifies coordinated inauthentic behavior campaign across Line, Facebook, and PTT targeting Taiwan civilian population. Over 2,000 bot accounts spreading narratives about US abandonment and inevitability of reunification. Campaign traced to PRC-linked operation.",
+    "sourceType": "intelligence",
+    "sourceName": "Taiwan Investigation Bureau",
+    "publishedAt": "2026-02-20T11:00:00Z",
+    "location": {
+      "name": "Taiwan (nationwide)",
+      "latitude": 23.7,
+      "longitude": 120.96,
+      "region": "East Asia",
+      "country": "Taiwan"
+    },
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-taiwan"],
+    "tags": ["information", "social-media", "disinformation", "cognitive-warfare", "demo-seed"],
+    "domain": "I"
+  },
+  {
+    "id": "DEMO-EVT-010",
+    "title": "TSMC announces emergency production contingency plans",
+    "description": "TSMC activates emergency business continuity plans amid rising cross-strait tensions. Company accelerates critical chip production runs and begins transferring advanced process IP to Arizona and Kumamoto facilities. TSMC stock drops 8% on Taipei exchange.",
+    "sourceType": "economic",
+    "sourceName": "TSMC Investor Relations",
+    "publishedAt": "2026-02-21T03:00:00Z",
+    "location": {
+      "name": "Hsinchu Science Park, Taiwan",
+      "latitude": 24.8,
+      "longitude": 121.0,
+      "region": "East Asia",
+      "country": "Taiwan"
+    },
+    "actors": ["DEMO-ACT-tsmc", "DEMO-ACT-taiwan"],
+    "tags": ["economic", "semiconductor", "tsmc", "contingency", "demo-seed"],
+    "domain": "E"
+  }
+]

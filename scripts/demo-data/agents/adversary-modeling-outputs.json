@@ -1,0 +1,65 @@
+[
+  {
+    "id": "DEMO-AGENT-OUTPUT-adversary-model-01",
+    "agentRole": "adversary-modeling",
+    "agentName": "Adversary Modeling Agent",
+    "problemSetId": "DEMO-PS-cjtf-westpac",
+    "title": "PRC Military Capability Assessment — PLA Eastern Theater Command",
+    "status": "complete",
+    "metadata": {
+      "model": "gpt-4-turbo",
+      "runTimestamp": "2026-03-02T11:00:00Z",
+      "confidence": 0.86,
+      "documentsAnalyzed": 5,
+      "sources": [
+        "DIA PLA Military Power Assessment 2026",
+        "NASIC Ballistic and Cruise Missile Threat 2026",
+        "ONI PLA Navy Modernization Report",
+        "RAND PLA Joint Operations Assessment",
+        "CSIS China Power Project Data"
+      ]
+    },
+    "content": "## PLA Eastern Theater Command — Military Capability Assessment\n\n### Force Structure Overview\n\nPLA Eastern Theater Command (ETC) is the designated lead for Taiwan contingency operations. Current assessed force structure:\n\n**Ground Forces:**\n- 73rd Group Army: 3 combined arms brigades, 1 amphibious mechanized brigade, 1 army aviation brigade\n- 72nd Group Army: 2 combined arms brigades (supporting role)\n- Marine Corps: 2 marine brigades (6th, 8th) assigned ETC\n- Total amphibious lift capacity: ~25,000 troops in first wave (assessed 40,000 with civilian RORO augmentation)\n\n**Naval Forces (East Sea Fleet):**\n- Surface combatants: 2x Type 055 (DDG), 8x Type 052D (DDG), 12x Type 054A (FFG)\n- Submarines: 4x Type 039A/B (SSK), 2x Type 095 (SSN) — assessed\n- Amphibious: 3x Type 075 (LHD), 8x Type 071 (LPD), 12x Type 072 (LST)\n- Mine warfare: 6x mine countermeasure vessels\n\n**Air Forces (Eastern Theater Air Force):**\n- Fighter/attack: ~200x J-16, ~100x J-20, ~80x J-10C, ~60x JH-7A\n- Bomber: 24x H-6K/N (ALCM capable), 6x H-20 (assessed initial operational capability)\n- ISR/EW: 12x KJ-500, 8x Y-8EW\n- UAV: ~100x various (GJ-11 stealth UCAV in limited numbers)\n\n**Rocket Forces (relevant units):**\n- DF-15B/C SRBM: ~400 launchers, range 600-900km\n- DF-16 SRBM: ~150 launchers, range 800-1,000km\n- DF-21D ASBM: ~60 launchers, range 1,500km (anti-carrier)\n- DF-26 IRBM: ~30 launchers, range 4,000km (Guam-capable)\n- CJ-100 GLCM: ~50 launchers, range 2,000km\n\n### Readiness Assessment\n\n| Domain | Readiness | Trend | Key Indicator |\n|--------|-----------|-------|---------------|\n| Ground/Amphibious | 7/10 | Rising | Amphibious exercises up 40% YoY |\n| Naval | 8/10 | Stable | East Sea Fleet at sea rate 35% |\n| Air | 8/10 | Rising | J-20 squadron count doubled since 2024 |\n| Rocket Forces | 9/10 | Stable | DF-21D units at high readiness since 2024 |\n| Cyber/EW | 8/10 | Rising | APT activity against US C2 networks increasing |\n| Space/Counter-space | 7/10 | Rising | Anti-satellite tests, GPS jamming exercises |\n\n### Doctrine Assessment\nPLA ETC operates under \"System Destruction Warfare\" doctrine — targeting the operational system rather than individual platforms. Priority target sets: C4ISR nodes, logistics hubs, airfields, carrier groups. Doctrine emphasizes information dominance in opening hours, followed by joint firepower strike, then amphibious/airborne assault.\n\n### Key Vulnerabilities\n1. **Amphibious gap:** Insufficient organic lift for >1 division simultaneous assault. Civilian augmentation vulnerable to interdiction.\n2. **ASW weakness:** PLA Navy ASW capabilities remain behind Western standards. Submarine barrier could impose significant attrition.\n3. **Logistics sustainment:** Limited at-sea replenishment capability constrains distant operations beyond 1,000nm from mainland.\n4. **Joint C2 immaturity:** Despite reforms, joint theater C2 under combat conditions untested. Seams between services exploitable.\n5. **Pilot quality:** Despite advanced aircraft, combat flying hours per pilot (~150/yr) lag US equivalents (~200-250/yr)."
+  },
+  {
+    "id": "DEMO-AGENT-OUTPUT-adversary-model-02",
+    "agentRole": "adversary-modeling",
+    "agentName": "Adversary Modeling Agent",
+    "problemSetId": "DEMO-PS-cjtf-westpac",
+    "title": "PRC Strategic Calculus Analysis — Decision Factors & Escalation Thresholds",
+    "status": "complete",
+    "metadata": {
+      "model": "gpt-4-turbo",
+      "runTimestamp": "2026-03-02T14:30:00Z",
+      "confidence": 0.79,
+      "documentsAnalyzed": 4,
+      "sources": [
+        "RAND PRC Decision-Making in Crisis",
+        "Brookings Xi Jinping Leadership Analysis",
+        "DIA PRC Strategic Intentions Assessment",
+        "CNA PLA Escalation Management Study"
+      ]
+    },
+    "content": "## PRC Strategic Calculus — Decision Factors & Escalation Thresholds\n\n### Key Decision Factors\n\n**Factor 1: Regime Legitimacy & Nationalism (Weight: HIGH)**\nXi Jinping has explicitly tied Taiwan reunification to \"national rejuvenation\" and the CPC's historical mission. Domestic nationalist sentiment, amplified by state media, creates internal pressure that limits de-escalation options once crisis momentum builds. Assessment: PRC leadership faces asymmetric domestic costs — backing down is politically more dangerous than escalating.\n\n**Factor 2: Military Confidence Window (Weight: HIGH)**\nPRC military leadership assesses a narrowing window of conventional military advantage in the Taiwan Strait before US force modernization (B-21, hypersonics, AUKUS submarines) shifts the balance. The 2025-2030 period is assessed as the \"window of maximum temptation\" for military action. This does not mean action is imminent, but the calculus favors risk acceptance.\n\n**Factor 3: Economic Vulnerability (Weight: MEDIUM-HIGH)**\nPRC economy faces structural headwinds (property sector, demographics, debt). Extended economic disruption from a Taiwan conflict (semiconductor supply chain, trade sanctions, financial isolation) would be severe. However, PRC has been systematically reducing vulnerability: strategic reserves, domestic chip investment, SWIFT alternatives (CIPS). Economic deterrence is degrading.\n\n**Factor 4: Alliance Cohesion Assessment (Weight: MEDIUM)**\nPRC intelligence services actively assess US-allied unity. Perceived fractures in QUAD, AUKUS skepticism, or Philippine hedging reduce PRC's perceived cost of action. Conversely, strong allied solidarity (Japan collective self-defense, Australian commitment) raises the assessed cost. PRC will probe alliance cohesion through gray-zone activities before any major action.\n\n**Factor 5: US Political Will (Weight: HIGH)**\nPRC assesses US domestic political dynamics as a key variable. Perceived US distraction (domestic politics, other crises), war-weariness, or strategic ambiguity about Taiwan commitment could create a permissive environment for coercive action.\n\n### Red Lines & Escalation Thresholds\n\n| Threshold | Trigger | PRC Response | Confidence |\n|-----------|---------|--------------|------------|\n| Political | Formal Taiwan independence declaration | Military action near-certain | HIGH |\n| Political | US recognition of Taiwan sovereignty | Severe military/economic response | HIGH |\n| Military | Foreign military deployment to Taiwan | Blockade or missile strikes | MEDIUM-HIGH |\n| Military | Taiwan acquisition of nuclear capability | Pre-emptive military action | HIGH |\n| Economic | Comprehensive semiconductor export ban to PRC | Accelerated timeline for coercion | MEDIUM |\n| Diplomatic | Taiwan UN membership bid | Aggressive gray-zone escalation | MEDIUM |\n\n### De-escalation Factors\n1. Clear US signaling of limited objectives (defend, not regime change)\n2. Economic off-ramps that preserve PRC face\n3. Third-party mediation (unlikely but possible via ASEAN/Singapore)\n4. Mutual nuclear deterrence (ultimate backstop)\n5. PRC internal stability concerns constraining foreign adventures\n\n### Net Assessment\nPRC decision calculus is trending toward greater risk acceptance due to the convergence of nationalist pressure, assessed military window, and reduced economic vulnerability. Deterrence requires demonstrating both capability (military) and will (political/alliance). Gray-zone probing will precede any major action by 6-18 months."
+  },
+  {
+    "id": "DEMO-AGENT-OUTPUT-adversary-model-03",
+    "agentRole": "adversary-modeling",
+    "agentName": "Adversary Modeling Agent",
+    "problemSetId": "DEMO-PS-cjtf-westpac",
+    "title": "Adversary COA Development — Most Likely, Most Dangerous, Most Unusual",
+    "status": "complete",
+    "metadata": {
+      "model": "gpt-4-turbo",
+      "runTimestamp": "2026-03-03T08:00:00Z",
+      "confidence": 0.82,
+      "documentsAnalyzed": 3,
+      "sources": [
+        "RAND PLA Amphibious Operations Study",
+        "War on the Rocks Taiwan Invasion Analysis",
+        "DIA PLA Campaign Theory Assessment"
+      ]
+    },
+    "content": "## Adversary COA Development — PRC Military Options\n\n### COA 1: Joint Firepower Strike + Blockade (MOST LIKELY)\n\n**Concept:** PRC initiates with massive ballistic missile and cruise missile strikes against Taiwan military targets and US forward bases, followed by air/naval blockade to compel surrender without amphibious invasion.\n\n**Phase 1 (Hours 0-48):** Saturating missile strikes on Taiwan air bases, naval facilities, C2 nodes, and critical infrastructure. Simultaneous strikes on US bases at Kadena, Iwakuni, and Andersen AFB. Cyber attacks against US/allied C4ISR.\n\n**Phase 2 (Days 2-14):** Air/naval blockade of Taiwan. PLA Navy establishes exclusion zone. PLAAF achieves local air superiority over Strait. Information operations demand Taiwan capitulation.\n\n**Phase 3 (Days 14+):** If blockade unsuccessful, transition to amphibious operations or escalate with additional strikes. Diplomatic off-ramps offered through back-channel.\n\n**Indicators:** Increased missile reload activity, naval concentration in East Sea Fleet, civilian maritime mobilization, evacuation of PRC nationals from target areas, diplomatic preparations.\n\n**Probability:** 45% given current conditions\n\n---\n\n### COA 2: Full-Scale Amphibious Invasion (MOST DANGEROUS)\n\n**Concept:** PRC conducts joint campaign to seize Taiwan through combined amphibious and airborne assault, accepting high costs for decisive outcome.\n\n**Phase 1 (D-Day to D+3):** Joint firepower preparation (same as COA 1 Phase 1, but expanded). Airborne/heliborne assault on 2-3 key airfields. Special operations forces (SOF) attacks on critical infrastructure.\n\n**Phase 2 (D+3 to D+14):** Main amphibious landing at 2-3 beachheads on Taiwan's western coast. Establish lodgment and begin breakout operations. PLAN provides sea control in immediate landing area.\n\n**Phase 3 (D+14 to D+45):** Expand control, advance on Taipei. Sustain operations with follow-on echelons. Attempt to compel Taiwan government capitulation.\n\n**Key requirements:** Air superiority over western Taiwan, sea control in Taiwan Strait (temporary), 40,000+ first wave, 200,000+ follow-on within 14 days.\n\n**Probability:** 20% — Highest risk option for PRC; significant probability of failure. Only chosen if political imperative outweighs military risk.\n\n---\n\n### COA 3: Graduated Coercion Campaign (MOST UNUSUAL for high-intensity scenario)\n\n**Concept:** Rather than decisive military action, PRC employs an extended gray-zone/sub-threshold campaign that gradually tightens pressure without crossing clear red lines that trigger US military response.\n\n**Actions:** Selective quarantine (not blockade) of specific ports, escalating air/naval incursions, cyber disruption of financial systems, economic sanctions on Taiwan trade partners, undersea cable interference, information warfare campaign undermining Taiwan government legitimacy.\n\n**Timeline:** 6-18 months of graduated escalation\n\n**Objective:** Compel Taiwan to negotiate on PRC terms without triggering US/allied military response. Exploit ambiguity in US commitment.\n\n**Probability:** 35% — Most likely near-term approach; transitions to COA 1 or 2 if coercion fails.\n\n---\n\n### Recommendation for Friendly Force Planning\nFriendly COA development must account for all three adversary COAs. COA 1 (strike + blockade) should be the primary planning scenario. COA 2 represents the most dangerous case requiring maximum force commitment. COA 3 (graduated coercion) demands early-phase response options that prevent escalation dominance."
+  }
+]
