@@ -444,6 +444,7 @@ export function ContainerBrowser({
           )}
           <ContainerDocumentList
             containerId={browserState.selectedContainerId}
+            problemSetId={problemSetId}
             onSelectDocument={onSelectDocument}
             onBack={handleBack}
             containerName={browserState.selectedContainerName || 'Container'}
