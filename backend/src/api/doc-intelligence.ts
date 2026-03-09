@@ -12,9 +12,13 @@
 import { Router, Request, Response } from 'express';
 import { InterviewService } from '../doc-intelligence/interview/interview-service.js';
 import { getProblemSetContext } from '../doc-intelligence/interview/interview-store.js';
+import { BriefingService } from '../doc-intelligence/briefing/briefing-service.js';
+import { ChangeTracker } from '../doc-intelligence/briefing/change-tracker.js';
 
 const router = Router();
 const interviewService = new InterviewService();
+const briefingService = new BriefingService();
+const changeTracker = new ChangeTracker();
 
 // ==========================================================================
 // Interview Endpoints
@@ -234,6 +238,108 @@ router.get(
       });
     }
   }
+);
+
+// ==========================================================================
+// Briefing Endpoints (Phase 40 Plan 08)
+// ==========================================================================
+
+/**
+ * GET /api/doc-intelligence/briefing/:problemSetId
+ * Generate a strategic environment briefing for the authenticated user.
+ * Returns a narrative briefing with change detection and predictive analytics.
+ */
+router.get(
+  '/briefing/:problemSetId',
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { problemSetId } = req.params;
+      const requestedBy: string = String(req.headers['x-did'] || 'anonymous');
+
+      if (!problemSetId) {
+        res.status(400).json({ success: false, error: 'problemSetId is required' });
+        return;
+      }
+
+      const briefing = await briefingService.generateBriefing(problemSetId as string, requestedBy);
+
+      res.json({
+        success: true,
+        briefing,
+      });
+    } catch (error) {
+      console.error('[DocIntelligence] Generate briefing error:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal error',
+      });
+    }
+  },
+);
+
+/**
+ * GET /api/doc-intelligence/briefing/:problemSetId/changes
+ * Quick check if changes exist since the user's last access.
+ * Lightweight endpoint -- does not generate a full briefing.
+ */
+router.get(
+  '/briefing/:problemSetId/changes',
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { problemSetId } = req.params;
+      const accessedBy: string = String(req.headers['x-did'] || 'anonymous');
+
+      if (!problemSetId) {
+        res.status(400).json({ success: false, error: 'problemSetId is required' });
+        return;
+      }
+
+      const hasChanges = await changeTracker.hasChanges(problemSetId as string, accessedBy);
+
+      res.json({
+        success: true,
+        hasChanges,
+      });
+    } catch (error) {
+      console.error('[DocIntelligence] Check changes error:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal error',
+      });
+    }
+  },
+);
+
+/**
+ * GET /api/doc-intelligence/briefing/:problemSetId/history
+ * Retrieve past briefings for the authenticated user on a problem set.
+ */
+router.get(
+  '/briefing/:problemSetId/history',
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { problemSetId } = req.params;
+      const requestedBy: string = String(req.headers['x-did'] || 'anonymous');
+
+      if (!problemSetId) {
+        res.status(400).json({ success: false, error: 'problemSetId is required' });
+        return;
+      }
+
+      const history = await briefingService.getBriefingHistory(problemSetId as string, requestedBy);
+
+      res.json({
+        success: true,
+        history,
+      });
+    } catch (error) {
+      console.error('[DocIntelligence] Get briefing history error:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal error',
+      });
+    }
+  },
 );
 
 export default router;
