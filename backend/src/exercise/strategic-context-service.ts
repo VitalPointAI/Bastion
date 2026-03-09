@@ -16,6 +16,7 @@ import type { ContainerStore } from '../strategic/containers/store.js';
 import type { GraphSummaryService, GraphSummary } from './graph-summary-service.js';
 import { listDocuments } from '../strategic/ingestion/document-store.js';
 import { ObjectiveStore } from '../strategic/objectives/store.js';
+import { decisionStore } from '../graph/raft/decision-store.js';
 
 // =============================================================================
 // Interfaces
@@ -29,6 +30,16 @@ export interface StrategicEnvironmentContext {
     extractedData?: unknown;
     textContent?: string;
   }>;
+  decisionSummary?: {
+    totalDecisions: number;
+    knowledgeGapCount: number;
+    recentDecisions: Array<{
+      title: string;
+      outcome: string;
+      basis: string;
+      knowledgeGaps: string[];
+    }>;
+  };
   tokensUsed: number;
   tokenBudget: number;
 }
@@ -251,9 +262,42 @@ export class StrategicContextService {
         }
       }
 
+      // -----------------------------------------------------------------------
+      // Step E: Priority 4 -- Decision pathway summaries + knowledge gaps
+      // -----------------------------------------------------------------------
+      let decisionSummary: StrategicEnvironmentContext['decisionSummary'];
+      try {
+        const allDecisions = await decisionStore.listDecisions(problemSetId, { limit: 50 });
+        if (allDecisions.length > 0) {
+          const gapDecisions = allDecisions.filter(
+            d => d.basis === 'intuition_based' || d.knowledgeGaps.length > 0,
+          );
+          const recentDecisions = allDecisions.slice(0, 10).map(d => ({
+            title: d.title,
+            outcome: d.outcome,
+            basis: d.basis,
+            knowledgeGaps: d.knowledgeGaps,
+          }));
+
+          const decStr = JSON.stringify(recentDecisions);
+          const decTokens = estimateTokens(decStr);
+          if (tokensUsed + decTokens <= TOKEN_BUDGET) {
+            decisionSummary = {
+              totalDecisions: allDecisions.length,
+              knowledgeGapCount: gapDecisions.length,
+              recentDecisions,
+            };
+            tokensUsed += decTokens;
+          }
+        }
+      } catch {
+        // Decision store may not be available (Neo4j down)
+      }
+
       return {
         graphSummaries,
         documentSummaries,
+        decisionSummary,
         tokensUsed,
         tokenBudget: TOKEN_BUDGET,
       };

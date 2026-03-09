@@ -48,6 +48,7 @@ import { executeStrategyReview } from '../agents/langgraph/graphs/strategy-revie
 import { getReviewCheckpointManager } from '../agents/langgraph/graphs/strategy-reviewer-checkpoint.js';
 import { getCOPTriggerHandler } from '../cop/index.js';
 import { containerStore, initContainerTables } from '../strategic/containers/index.js';
+import { graphBuilder } from '../graph/construction/graph-builder.js';
 
 const router = express.Router();
 
@@ -532,6 +533,24 @@ router.post('/documents/:documentId/extract', requireAuth, async (req, res) => {
       console.error('Auto-review trigger failed:', err);
     });
 
+    // Auto-trigger knowledge graph building from extracted objectives (non-blocking)
+    // This builds the problem-set-level graph iteratively as documents are processed
+    const workspaceId = document.workspaceId;
+    if (savedIds.length > 0) {
+      graphBuilder.buildFromDocument(
+        documentId,
+        savedIds.map((id, i) => ({ id, description: result.objectives[i].description })),
+        { workspaceId, runEntityResolution: true },
+      ).then((graphResult) => {
+        console.log(
+          `✓ Knowledge graph updated: ${graphResult.actorsCreated} actors, ` +
+          `${graphResult.relationshipsCreated} relationships, ${graphResult.tensionsCreated} tensions`
+        );
+      }).catch((err) => {
+        console.error('[strategic] Auto graph build failed (non-fatal):', err);
+      });
+    }
+
     res.status(201).json({
       objectiveCount: savedIds.length,
       documentSummary: result.documentSummary,
@@ -647,6 +666,22 @@ router.get('/documents/:documentId/extract/stream', requireAuth, async (req, res
     }).catch((err) => {
       console.error('Auto-review trigger failed:', err);
     });
+
+    // Auto-trigger knowledge graph building from extracted objectives (non-blocking)
+    if (savedIds.length > 0) {
+      graphBuilder.buildFromDocument(
+        documentId,
+        savedIds.map((id, i) => ({ id, description: result.objectives[i].description })),
+        { workspaceId: document.workspaceId, runEntityResolution: true },
+      ).then((graphResult) => {
+        console.log(
+          `✓ Knowledge graph updated (streaming): ${graphResult.actorsCreated} actors, ` +
+          `${graphResult.relationshipsCreated} relationships, ${graphResult.tensionsCreated} tensions`
+        );
+      }).catch((err) => {
+        console.error('[strategic] Auto graph build failed (non-fatal):', err);
+      });
+    }
 
     // Send final result
     sendEvent('complete', {
