@@ -61,6 +61,18 @@
   }
 }
 
+/* react-d3-tree: force light text on dark theme org trees */
+.rd3t-label__title {
+  fill: #f9fafb !important;
+  font-weight: 600;
+}
+.rd3t-label__attributes {
+  fill: #9ca3af !important;
+}
+.rd3t-tree-container text {
+  fill: #e2e8f0;
+}
+
 @keyframes badge-pulse {
   0% { transform: scale(1); }
   40% { transform: scale(1.35); }
