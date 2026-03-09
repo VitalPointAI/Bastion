@@ -21,6 +21,7 @@ import type { ProblemSetContext } from '../schemas.js';
 import { getPool } from '../../lib/database.js';
 import { getSharedBoss } from '../../lib/database.js';
 import { createLLMForAgent } from '../../agents/langgraph/llm-factory.js';
+import { performWebSearch } from '../web-search.js';
 
 // ============================================================================
 // Constants & Configuration
@@ -504,15 +505,18 @@ Return ONLY the Markdown brief content.`,
       // Table may not exist yet -- non-critical
     });
 
-    // Return placeholder results; actual web search integration
-    // depends on environment configuration (Tavily, Serper, etc.)
-    // The LLM-based synthesis still produces useful briefs from
-    // its training knowledge when search APIs are unavailable.
+    // Use pluggable web search (Tavily when configured, placeholder fallback)
+    const results = await performWebSearch(query);
+    if (results.length > 0) {
+      return results;
+    }
+    // If search returned nothing, provide a minimal entry so the
+    // LLM synthesis step still has context to work with.
     return [{
       url: `https://search.example.com/q=${encodeURIComponent(query)}`,
       title: `Research query: ${query}`,
       retrievalDate,
-      snippet: `Automated research query for: ${query}`,
+      snippet: `No web search results available for: ${query}`,
     }];
   }
 

@@ -419,6 +419,15 @@ server.listen(port, async () => {
     console.error('Failed to initialize discovery service:', error);
   }
 
+  // Register document intelligence team (Phase 40)
+  try {
+    const { registerDocIntelligenceTeam } = await import('./doc-intelligence/team-setup.js');
+    await registerDocIntelligenceTeam();
+    console.log('Document intelligence team registered');
+  } catch (error) {
+    console.error('Failed to register document intelligence team:', error);
+  }
+
   // Register strategic cache refresh pg-boss worker (Phase 25.3)
   try {
     const { getSharedBoss } = await import('./lib/database.js');
