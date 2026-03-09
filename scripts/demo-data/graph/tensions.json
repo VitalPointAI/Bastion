@@ -1,0 +1,74 @@
+[
+  {
+    "id": "DEMO-TEN-taiwan-strait",
+    "description": "Taiwan Strait Military Buildup — PLA Eastern Theater Command escalating cross-strait military posture with amphibious and missile readiness",
+    "intensity": 8,
+    "domain": "military",
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-taiwan", "DEMO-ACT-pla-etc", "DEMO-ACT-usa"],
+    "triggers": ["PLA amphibious exercises near Fujian", "Arms sales to Taiwan", "Congressional visits to Taipei", "Taiwan independence rhetoric"],
+    "mitigators": ["One-China policy ambiguity", "Economic interdependence", "US carrier presence in Philippine Sea", "International diplomatic pressure"]
+  },
+  {
+    "id": "DEMO-TEN-south-china-sea",
+    "description": "South China Sea Sovereignty Disputes — competing territorial claims between China and ASEAN claimants, maritime militia confrontations",
+    "intensity": 7,
+    "domain": "military",
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-philippines", "DEMO-ACT-asean", "DEMO-ACT-usa"],
+    "triggers": ["Island-building activities", "Maritime militia confrontations at Second Thomas Shoal", "FONOPs near artificial islands", "Fishing fleet incursions"],
+    "mitigators": ["ASEAN Code of Conduct negotiations", "US freedom of navigation operations", "UNCLOS arbitration precedent", "Economic interdependence"]
+  },
+  {
+    "id": "DEMO-TEN-semiconductor-risk",
+    "description": "Semiconductor Supply Chain Risk — TSMC concentration in Taiwan creates global economic vulnerability in a conflict scenario",
+    "intensity": 6,
+    "domain": "economic",
+    "actors": ["DEMO-ACT-usa", "DEMO-ACT-china", "DEMO-ACT-tsmc", "DEMO-ACT-taiwan"],
+    "triggers": ["Export control escalation", "TSMC fab disruption scenarios", "Chinese semiconductor self-sufficiency push", "Rare earth counter-sanctions"],
+    "mitigators": ["TSMC Arizona/Japan fab diversification", "Allied CHIPS Act investments", "Mutual economic destruction deterrence"]
+  },
+  {
+    "id": "DEMO-TEN-aukus-submarine",
+    "description": "AUKUS Nuclear Submarine Program — Chinese opposition to nuclear submarine technology transfer to Australia and regional proliferation concerns",
+    "intensity": 5,
+    "domain": "military",
+    "actors": ["DEMO-ACT-australia", "DEMO-ACT-china", "DEMO-ACT-aukus", "DEMO-ACT-usa"],
+    "triggers": ["Submarine construction milestones", "Forward basing discussions", "IAEA safeguards debates", "Chinese counter-proliferation rhetoric"],
+    "mitigators": ["IAEA safeguards agreements", "Transparent program timelines", "Non-proliferation commitments"]
+  },
+  {
+    "id": "DEMO-TEN-north-korea-nuclear",
+    "description": "North Korean Nuclear Provocation — ICBM and nuclear testing program threatens regional stability and could create diversion during Taiwan contingency",
+    "intensity": 7,
+    "domain": "military",
+    "actors": ["DEMO-ACT-north-korea", "DEMO-ACT-usa", "DEMO-ACT-south-korea", "DEMO-ACT-japan"],
+    "triggers": ["Hwasong-series ICBM tests", "Nuclear test preparations", "Artillery drills near DMZ", "Satellite/space launch provocations"],
+    "mitigators": ["Extended nuclear deterrence (US)", "THAAD and Aegis BMD", "China economic leverage", "Sanctions enforcement"]
+  },
+  {
+    "id": "DEMO-TEN-east-china-sea",
+    "description": "East China Sea Senkaku/Diaoyu Dispute — Chinese coast guard and air force incursions challenging Japanese control of disputed islands",
+    "intensity": 5,
+    "domain": "military",
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-japan", "DEMO-ACT-usa"],
+    "triggers": ["China Coast Guard patrols near Senkaku", "ADIZ incursions", "Nationalist pressure in both countries", "Resource exploration disputes"],
+    "mitigators": ["US-Japan Security Treaty Article 5 coverage", "Diplomatic hotlines", "Coast guard communication protocols"]
+  },
+  {
+    "id": "DEMO-TEN-india-china-border",
+    "description": "India-China Border Tensions — LAC standoff creating potential second front and complicating Chinese strategic calculus",
+    "intensity": 4,
+    "domain": "military",
+    "actors": ["DEMO-ACT-india", "DEMO-ACT-china", "DEMO-ACT-quad"],
+    "triggers": ["LAC patrol confrontations", "Infrastructure buildup near border", "Galwan Valley-type incidents", "Diplomatic escalation"],
+    "mitigators": ["Diplomatic disengagement protocols", "Corps commander talks", "Economic interdependence", "Neither side desires escalation"]
+  },
+  {
+    "id": "DEMO-TEN-information-warfare",
+    "description": "Indo-Pacific Information Warfare — Chinese and Russian disinformation campaigns targeting allied cohesion and partner nation public opinion",
+    "intensity": 6,
+    "domain": "information",
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-russia", "DEMO-ACT-usa", "DEMO-ACT-taiwan"],
+    "triggers": ["Election interference campaigns", "Social media manipulation targeting Taiwan", "Anti-US military presence narratives", "Cognitive warfare operations"],
+    "mitigators": ["Allied counter-messaging coordination", "Media literacy programs", "Platform content moderation", "Five Eyes intelligence sharing"]
+  }
+]

@@ -1,0 +1,214 @@
+[
+  {
+    "id": "DEMO-ACT-usa",
+    "name": "United States",
+    "type": "nation",
+    "aliases": ["US", "USA", "America"],
+    "attributes": {
+      "region": "North America / Indo-Pacific",
+      "gdp_rank": 1,
+      "capabilities": "Full-spectrum military, nuclear triad, global force projection",
+      "alignment": "Western alliance leader",
+      "role": "Pacific commander, INDOPACOM AOR"
+    }
+  },
+  {
+    "id": "DEMO-ACT-china",
+    "name": "People's Republic of China",
+    "type": "nation",
+    "aliases": ["China", "PRC", "CCP"],
+    "attributes": {
+      "region": "East Asia",
+      "gdp_rank": 2,
+      "capabilities": "A2/AD, anti-ship ballistic missiles, cyber, space",
+      "alignment": "Revisionist power, strategic competitor",
+      "role": "Primary adversary, Taiwan reunification objective"
+    }
+  },
+  {
+    "id": "DEMO-ACT-taiwan",
+    "name": "Republic of China (Taiwan)",
+    "type": "nation",
+    "aliases": ["Taiwan", "ROC"],
+    "attributes": {
+      "region": "East Asia",
+      "capabilities": "Layered island defense, anti-ship missiles, cyber",
+      "alignment": "US partner (unofficial), democratic governance",
+      "role": "Key partner, contested sovereignty, semiconductor hub"
+    }
+  },
+  {
+    "id": "DEMO-ACT-japan",
+    "name": "Japan",
+    "type": "nation",
+    "aliases": ["JPN", "Nihon"],
+    "attributes": {
+      "region": "East Asia",
+      "capabilities": "JSDF modernization, Aegis destroyers, F-35, counter-strike",
+      "alignment": "US treaty ally (1960 Security Treaty)",
+      "role": "Forward basing, northern anchor, 7th Fleet homeport"
+    }
+  },
+  {
+    "id": "DEMO-ACT-philippines",
+    "name": "Republic of the Philippines",
+    "type": "nation",
+    "aliases": ["Philippines", "PHL"],
+    "attributes": {
+      "region": "Southeast Asia",
+      "capabilities": "Coastal defense, EDCA basing, coast guard",
+      "alignment": "US treaty ally (1951 MDT), contested relationship",
+      "role": "South China Sea claimant, EDCA access points"
+    }
+  },
+  {
+    "id": "DEMO-ACT-australia",
+    "name": "Commonwealth of Australia",
+    "type": "nation",
+    "aliases": ["Australia", "AUS"],
+    "attributes": {
+      "region": "Oceania / Indo-Pacific",
+      "capabilities": "Collins-class submarines, AUKUS nuclear subs (future), Five Eyes",
+      "alignment": "AUKUS partner, Five Eyes member",
+      "role": "Southern anchor, logistics hub, intelligence sharing"
+    }
+  },
+  {
+    "id": "DEMO-ACT-south-korea",
+    "name": "Republic of Korea",
+    "type": "nation",
+    "aliases": ["South Korea", "ROK"],
+    "attributes": {
+      "region": "Korean Peninsula",
+      "capabilities": "Large standing army, K2 tanks, KF-21, Aegis destroyers",
+      "alignment": "US treaty ally (ROK-US Combined Forces Command)",
+      "role": "Northern flank, deterrence of DPRK"
+    }
+  },
+  {
+    "id": "DEMO-ACT-india",
+    "name": "Republic of India",
+    "type": "nation",
+    "aliases": ["India", "IND", "Bharat"],
+    "attributes": {
+      "region": "South Asia / Indian Ocean",
+      "capabilities": "Blue water navy, nuclear triad, Brahmos missiles",
+      "alignment": "QUAD partner, non-aligned tradition, strategic autonomy",
+      "role": "Indian Ocean security, Malacca Strait approaches"
+    }
+  },
+  {
+    "id": "DEMO-ACT-russia",
+    "name": "Russian Federation",
+    "type": "nation",
+    "aliases": ["Russia", "RF"],
+    "attributes": {
+      "region": "Eurasia",
+      "capabilities": "Nuclear arsenal, Pacific Fleet, submarine force",
+      "alignment": "China strategic partner, anti-Western bloc",
+      "role": "Opportunistic threat, joint exercises with PLA"
+    }
+  },
+  {
+    "id": "DEMO-ACT-north-korea",
+    "name": "Democratic People's Republic of Korea",
+    "type": "nation",
+    "aliases": ["North Korea", "DPRK"],
+    "attributes": {
+      "region": "Korean Peninsula",
+      "capabilities": "Nuclear weapons, ICBMs (Hwasong series), artillery, special operations",
+      "alignment": "China-dependent, Russia arms transfers",
+      "role": "Opportunistic threat, diversion potential during Taiwan contingency"
+    }
+  },
+  {
+    "id": "DEMO-ACT-asean",
+    "name": "Association of Southeast Asian Nations",
+    "type": "organization",
+    "aliases": ["ASEAN"],
+    "attributes": {
+      "region": "Southeast Asia",
+      "members": 10,
+      "capabilities": "Diplomatic forum, consensus-based decision making",
+      "alignment": "Non-aligned, hedging between US and China",
+      "role": "Regional bloc, South China Sea Code of Conduct negotiations"
+    }
+  },
+  {
+    "id": "DEMO-ACT-quad",
+    "name": "Quadrilateral Security Dialogue",
+    "type": "organization",
+    "aliases": ["QUAD", "Quad Alliance"],
+    "attributes": {
+      "region": "Indo-Pacific",
+      "members": ["US", "Japan", "Australia", "India"],
+      "capabilities": "Maritime domain awareness, joint exercises, technology sharing",
+      "alignment": "Democratic alignment, rules-based order",
+      "role": "Security dialogue, counterbalance to Chinese influence"
+    }
+  },
+  {
+    "id": "DEMO-ACT-aukus",
+    "name": "AUKUS",
+    "type": "organization",
+    "aliases": ["AUKUS Pact"],
+    "attributes": {
+      "region": "Indo-Pacific",
+      "members": ["Australia", "UK", "US"],
+      "capabilities": "Nuclear submarine technology transfer, quantum computing, AI, hypersonics",
+      "alignment": "Western defense technology alliance",
+      "role": "Defense technology pact, submarine capability transfer"
+    }
+  },
+  {
+    "id": "DEMO-ACT-pla-etc",
+    "name": "PLA Eastern Theater Command",
+    "type": "military",
+    "aliases": ["PLA ETC", "Eastern Theater", "Dongbu Zhanqu"],
+    "attributes": {
+      "region": "East China Sea / Taiwan Strait",
+      "parent": "DEMO-ACT-china",
+      "capabilities": "Amphibious assault, missile brigades, naval aviation, cyber",
+      "alignment": "Subordinate to CMC",
+      "role": "Primary military command for Taiwan contingency operations"
+    }
+  },
+  {
+    "id": "DEMO-ACT-us-7fleet",
+    "name": "US 7th Fleet",
+    "type": "military",
+    "aliases": ["7th Fleet", "C7F", "COMSEVENTHFLT"],
+    "attributes": {
+      "region": "Western Pacific",
+      "parent": "DEMO-ACT-usa",
+      "capabilities": "Carrier strike groups, submarine force, Aegis BMD, amphibious ready groups",
+      "alignment": "Under PACFLT/INDOPACOM",
+      "role": "Forward-deployed naval force, Taiwan Strait deterrence"
+    }
+  },
+  {
+    "id": "DEMO-ACT-bri",
+    "name": "Belt and Road Initiative",
+    "type": "economic",
+    "aliases": ["BRI", "One Belt One Road", "OBOR"],
+    "attributes": {
+      "region": "Global",
+      "parent": "DEMO-ACT-china",
+      "capabilities": "Infrastructure financing, port development, debt diplomacy",
+      "alignment": "Chinese economic statecraft tool",
+      "role": "Economic influence tool, dual-use port access"
+    }
+  },
+  {
+    "id": "DEMO-ACT-tsmc",
+    "name": "Taiwan Semiconductor Manufacturing Company",
+    "type": "economic",
+    "aliases": ["TSMC"],
+    "attributes": {
+      "region": "Taiwan",
+      "capabilities": "Advanced semiconductor fabrication (3nm, 2nm), 60% global foundry market share",
+      "alignment": "Strategic asset, supply chain vulnerability",
+      "role": "Semiconductor strategic asset, silicon shield theory"
+    }
+  }
+]
