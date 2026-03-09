@@ -1,0 +1,132 @@
+[
+  {
+    "id": "DEMO-UNIT-indopacom-hq",
+    "name": "USINDOPACOM Headquarters",
+    "sidc": "SFGPUCIC---E---",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "echelon": "strategic",
+    "parent_unit_id": null,
+    "location": { "lat": 21.35, "lng": -157.95 },
+    "notes": "Camp H.M. Smith, Hawaii"
+  },
+  {
+    "id": "DEMO-UNIT-pacflt",
+    "name": "U.S. Pacific Fleet (PACFLT)",
+    "sidc": "SFGPUCIN---E---",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "echelon": "strategic",
+    "parent_unit_id": "DEMO-UNIT-indopacom-hq",
+    "location": { "lat": 21.35, "lng": -157.97 },
+    "notes": "Pearl Harbor, Hawaii"
+  },
+  {
+    "id": "DEMO-UNIT-pacaf",
+    "name": "Pacific Air Forces (PACAF)",
+    "sidc": "SFAPMFF----E---",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "echelon": "strategic",
+    "parent_unit_id": "DEMO-UNIT-indopacom-hq",
+    "location": { "lat": 21.34, "lng": -157.94 },
+    "notes": "Joint Base Pearl Harbor-Hickam"
+  },
+  {
+    "id": "DEMO-UNIT-cjtf-westpac",
+    "name": "CJTF-WestPac Staff",
+    "sidc": "SFGPUCIJ---D---",
+    "problem_set_id": "DEMO-PS-cjtf-westpac",
+    "echelon": "operational",
+    "parent_unit_id": "DEMO-UNIT-indopacom-hq",
+    "location": { "lat": 35.45, "lng": 139.35 },
+    "notes": "Camp Zama, Japan"
+  },
+  {
+    "id": "DEMO-UNIT-7fleet",
+    "name": "U.S. 7th Fleet",
+    "sidc": "SFSPNN-----D---",
+    "problem_set_id": "DEMO-PS-7fleet",
+    "echelon": "operational",
+    "parent_unit_id": "DEMO-UNIT-pacflt",
+    "location": { "lat": 35.29, "lng": 139.67 },
+    "notes": "Yokosuka, Japan"
+  },
+  {
+    "id": "DEMO-UNIT-csg5-reagan",
+    "name": "CSG-5 (USS Ronald Reagan)",
+    "sidc": "SFSPNR-----C---",
+    "problem_set_id": "DEMO-PS-7fleet",
+    "echelon": "operational",
+    "parent_unit_id": "DEMO-UNIT-7fleet",
+    "location": { "lat": 35.29, "lng": 139.67 },
+    "notes": "Forward deployed, Yokosuka"
+  },
+  {
+    "id": "DEMO-UNIT-esg7-america",
+    "name": "ESG-7 (USS America)",
+    "sidc": "SFSPNR-----C---",
+    "problem_set_id": "DEMO-PS-7fleet",
+    "echelon": "operational",
+    "parent_unit_id": "DEMO-UNIT-7fleet",
+    "location": { "lat": 32.73, "lng": 129.86 },
+    "notes": "Sasebo, Japan"
+  },
+  {
+    "id": "DEMO-UNIT-5af",
+    "name": "5th Air Force",
+    "sidc": "SFAPMFF----D---",
+    "problem_set_id": "DEMO-PS-5af",
+    "echelon": "operational",
+    "parent_unit_id": "DEMO-UNIT-pacaf",
+    "location": { "lat": 35.75, "lng": 139.35 },
+    "notes": "Yokota AB, Japan"
+  },
+  {
+    "id": "DEMO-UNIT-18wing",
+    "name": "18th Wing",
+    "sidc": "SFAPMFF----C---",
+    "problem_set_id": "DEMO-PS-5af",
+    "echelon": "operational",
+    "parent_unit_id": "DEMO-UNIT-5af",
+    "location": { "lat": 26.35, "lng": 127.77 },
+    "notes": "Kadena AB, Okinawa"
+  },
+  {
+    "id": "DEMO-UNIT-35fw",
+    "name": "35th Fighter Wing",
+    "sidc": "SFAPMFF----C---",
+    "problem_set_id": "DEMO-PS-5af",
+    "echelon": "operational",
+    "parent_unit_id": "DEMO-UNIT-5af",
+    "location": { "lat": 40.70, "lng": 141.38 },
+    "notes": "Misawa AB, Japan"
+  },
+  {
+    "id": "DEMO-UNIT-3mef",
+    "name": "III Marine Expeditionary Force",
+    "sidc": "SFGPUCIM---C---",
+    "problem_set_id": "DEMO-PS-3mef-arg",
+    "echelon": "tactical",
+    "parent_unit_id": "DEMO-UNIT-cjtf-westpac",
+    "location": { "lat": 26.53, "lng": 127.76 },
+    "notes": "Camp Courtney, Okinawa"
+  },
+  {
+    "id": "DEMO-UNIT-vfa102",
+    "name": "VFA-102 Diamondbacks",
+    "sidc": "SFAPMFFA---B---",
+    "problem_set_id": "DEMO-PS-strike-alpha",
+    "echelon": "tactical",
+    "parent_unit_id": "DEMO-UNIT-csg5-reagan",
+    "location": { "lat": 35.29, "lng": 139.67 },
+    "notes": "F/A-18F Super Hornet squadron, CVW-5"
+  },
+  {
+    "id": "DEMO-UNIT-hsc25",
+    "name": "HSC-25 Island Knights",
+    "sidc": "SFAPMFRW---B---",
+    "problem_set_id": "DEMO-PS-logistics-bravo",
+    "echelon": "tactical",
+    "parent_unit_id": "DEMO-UNIT-7fleet",
+    "location": { "lat": 13.58, "lng": 144.93 },
+    "notes": "MH-60S helicopter squadron, Guam"
+  }
+]
