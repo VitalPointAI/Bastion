@@ -2066,13 +2066,10 @@ router.post('/assignments', requireAuth, async (req, res) => {
       return res.status(400).json({ error: `Agent ${agentId} is not active` });
     }
 
-    // Verify document exists and user owns it
+    // Verify document exists (any authenticated user in problem set can assign)
     const document = await store.get(documentId);
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
-    }
-    if (document.createdBy !== userDID) {
-      return res.status(403).json({ error: 'Access denied' });
     }
 
     const input: AssignmentInput = {
