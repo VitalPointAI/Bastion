@@ -45,6 +45,7 @@ import { AIStaffPanel } from '../ai-staff/AIStaffPanel';
 import { useAIStaffFeed } from '../../hooks/useAIStaffFeed';
 import { useAIStaff, useAIStaffDispatch } from '../../context/AIStaffContext';
 import { isProcessTab } from '../ai-staff/AgentRoutingConfig';
+import { useMode } from '../../context/ModeContext';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -110,6 +111,7 @@ export function ProblemSetTabContainer() {
   } = useProblemSet();
 
   const { userDID } = useUser();
+  const { isTraining } = useMode();
 
   // Panel config from backend (null = not loaded yet, use client defaults)
   const [panelConfig, setPanelConfig] = useState<Record<string, string[]> | null>(null);
@@ -311,14 +313,25 @@ export function ProblemSetTabContainer() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-gray-900">
+    <div className={['flex flex-col flex-1 min-h-0 bg-gray-900', isTraining ? 'border-t-2 border-amber-500/40' : ''].join(' ')}>
 
       {/* Horizontal tab bar */}
       <nav
-        className="flex border-b border-gray-700 bg-gray-800 shrink-0"
+        className={[
+          'flex border-b shrink-0',
+          isTraining
+            ? 'bg-amber-900/30 border-amber-700/50'
+            : 'bg-gray-800 border-gray-700',
+        ].join(' ')}
         role="tablist"
         aria-label="Problem Set tabs"
       >
+        {/* Training mode indicator badge */}
+        {isTraining && (
+          <span className="bg-amber-500/20 text-amber-400 text-[10px] font-bold uppercase px-2 py-1 rounded self-center ml-2 tracking-wider">
+            TRAINING
+          </span>
+        )}
         {/* Visible tabs in fixed order */}
         {PROBLEM_SET_TABS.filter((t) => visibleTabs.includes(t)).map((tab) => (
           <div key={tab} className="relative">
@@ -334,6 +347,9 @@ export function ProblemSetTabContainer() {
               ].join(' ')}
             >
               {TAB_LABELS[tab]}
+              {isTraining && (tab === 'understand' || tab === 'assess') && (
+                <span className="ml-1 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" title="Content differs in training mode" />
+              )}
               {tab === 'understand' && inheritanceNotificationCount > 0 && (
                 <span className="ml-1 inline-block relative align-middle">
                   <NotificationBadge count={inheritanceNotificationCount} />
