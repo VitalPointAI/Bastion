@@ -42,8 +42,6 @@ function DraggableDocumentCard({
   formatDate,
   onAssignAgent,
   onExtract,
-  extracting,
-  progress,
 }: {
   doc: StrategicDocument;
   containerId: string | null;
