@@ -445,12 +445,17 @@ Plans:
 ### Phase 39: Operational demonstration data package
 
 **Goal:** Comprehensive, reusable demo data package that populates BASTION end-to-end with Pacific Strategy AY26 content — strategy through tactical missions, all doctrinal tabs, AI agent outputs, RAFT graph, OSINT events, DAO governance artifacts, and documents. Modular seed scripts with master orchestrator, idempotent upsert, demo-seed tagging for cleanup. Demonstrates full platform capability for military stakeholders and academic audiences.
-**Requirements**: TBD
+**Requirements**: [DEMO-01, DEMO-02, DEMO-03, DEMO-04, DEMO-05, DEMO-06, DEMO-07, DEMO-08, DEMO-09, DEMO-10]
 **Depends on:** Phase 38
-**Plans:** 0 plans
+**Plans:** 6 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 39 to break down)
+- [ ] 39-01-PLAN.md — Foundation: problem set hierarchy, cleanup script, orchestrator skeleton, command units
+- [ ] 39-02-PLAN.md — RAFT graph actors/relationships and OSINT events across 6 exercise phases
+- [ ] 39-03-PLAN.md — Document uploads from scenario PDFs and operational design tab content
+- [ ] 39-04-PLAN.md — JPP instance with step products and pre-seeded AI agent analysis outputs
+- [ ] 39-05-PLAN.md — DAO governance decision gates and assessment (AARs, METL tracking)
+- [ ] 39-06-PLAN.md — Inheritance artifacts (FRAGOs, status reports, overrides) and orchestrator finalization
 
 ---
 
