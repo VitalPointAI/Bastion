@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-09T02:38:38.150Z"
+last_updated: "2026-03-09T02:39:09.055Z"
 progress:
   total_phases: 55
   completed_phases: 35
   total_plans: 330
-  completed_plans: 328
+  completed_plans: 329
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 39 of 40 (Operational Demonstration Data Package) — IN PROGRESS
-Plan: 2 of 7 in current phase — COMPLETE
-Status: Plan 39-02 complete — RAFT graph (17 actors, 27 relationships, 8 tensions) and 29 OSINT events
-Last activity: 2026-03-09 - Completed 39-02: RAFT graph and OSINT events across 6 exercise phases
+Plan: 3 of 7 in current phase — COMPLETE
+Status: Plan 39-03 complete — document upload manifest (10 docs) and operational design content (theater + component)
+Last activity: 2026-03-09 - Completed 39-03: Documents and operational design seed scripts
 
-Progress: ██████████████████████████ 328 plans complete
+Progress: ██████████████████████████ 329 plans complete
 
 ## Performance Metrics
 
@@ -156,6 +156,7 @@ Progress: ███████████████████████�
 | Phase 38-inheritance-deepening P05 | 7 | 2 tasks | 10 files |
 | Phase 39 P01 | 8 | 2 tasks | 9 files |
 | Phase 39 P02 | 6 | 2 tasks | 9 files |
+| Phase 39 P03 | 7 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -729,6 +730,8 @@ Recent decisions affecting current work:
 - [Phase 39]: Direct psql INSERT for auth-protected tables; DEMO- prefix convention for cleanup-safe IDs; units require demo exercise_scenario for FK
 - [Phase 39]: 17 actors with 27 relationships and 8 tensions for comprehensive Indo-Pacific RAFT graph
 - [Phase 39]: 29 OSINT events across 6 exercise phases with DIME domain coverage and coherent escalation narrative
+- [Phase 39]: Used exercise API multipart upload for documents (not psql) to trigger NLP extraction pipeline
+- [Phase 39]: Design fixtures typed to exact TypeScript interfaces with Strange CG-CC-CR-CV COG model
 
 ### Roadmap Evolution
 
