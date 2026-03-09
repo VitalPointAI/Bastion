@@ -80,6 +80,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
 /**
  * Access Ironclaw context. Throws if used outside IronclawProvider.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useIronclawContext(): IronclawContextValue {
   const ctx = useContext(IronclawContext);
   if (!ctx) {

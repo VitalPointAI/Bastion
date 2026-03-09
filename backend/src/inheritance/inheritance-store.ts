@@ -2,14 +2,19 @@
  * Inheritance Store
  *
  * Phase 26: Strategic Environment Inheritance
+ * Phase 38: Inheritance Deepening — extended store for FRAGO drafts,
+ *           interpretation acks, mission status snapshots, and RFI subtypes.
  *
  * Database CRUD for inheritance tables: acknowledgments, annotations, RFIs,
- * RFI messages, and changelog. Also handles ancestor/descendant chain traversal
+ * RFI messages, changelog, interpretation acknowledgments, FRAGO drafts,
+ * and mission status snapshots. Also handles ancestor/descendant chain traversal
  * and cache staleness marking.
  *
  * Tables: inheritance_acknowledgments, inheritance_annotations, inheritance_rfis,
- *         inheritance_rfi_messages, inheritance_changelog
- * Also ALTERs: problem_set_subscriptions (adds subscription_type column)
+ *         inheritance_rfi_messages, inheritance_changelog, interpretation_acknowledgments,
+ *         frago_drafts, mission_status_snapshots
+ * Also ALTERs: problem_set_subscriptions (adds subscription_type column),
+ *              inheritance_rfis (adds rfi_subtype, resolution columns)
  */
 
 import { randomUUID } from 'crypto';
@@ -22,6 +27,11 @@ import type {
   InheritanceChangelog,
   AncestorInfo,
   PendingAck,
+  InterpretationAcknowledgment,
+  FRAGODraft,
+  FRAGOStatus,
+  MissionStatusSnapshot,
+  RFISubtype,
 } from './inheritance-types.js';
 import type { Echelon } from '../problem-set/types.js';
 
@@ -109,6 +119,66 @@ async function initInheritanceTables(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_iclog_source ON inheritance_changelog(source_problem_set_id);
     CREATE INDEX IF NOT EXISTS idx_iclog_created ON inheritance_changelog(created_at DESC);
+  `);
+
+  // Phase 38: Add new columns to existing tables
+  await pool.query(`
+    ALTER TABLE inheritance_rfis
+      ADD COLUMN IF NOT EXISTS rfi_subtype TEXT NOT NULL DEFAULT 'clarification';
+    ALTER TABLE inheritance_rfis
+      ADD COLUMN IF NOT EXISTS resolution TEXT;
+  `);
+
+  // Phase 38: Create new tables for interpretation acks, FRAGO drafts, mission status
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS interpretation_acknowledgments (
+      id TEXT PRIMARY KEY,
+      annotation_id TEXT NOT NULL REFERENCES inheritance_annotations(id) ON DELETE CASCADE,
+      parent_problem_set_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      comment TEXT,
+      rfi_id TEXT,
+      acted_by TEXT NOT NULL,
+      acted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_iack_interp_annotation ON interpretation_acknowledgments(annotation_id);
+    CREATE INDEX IF NOT EXISTS idx_iack_interp_parent ON interpretation_acknowledgments(parent_problem_set_id);
+
+    CREATE TABLE IF NOT EXISTS frago_drafts (
+      id TEXT PRIMARY KEY,
+      parent_problem_set_id TEXT NOT NULL,
+      child_problem_set_id TEXT NOT NULL,
+      source_opord_version TEXT NOT NULL,
+      previous_opord_version TEXT NOT NULL,
+      changed_paragraphs INTEGER[] NOT NULL,
+      ai_draft_content TEXT NOT NULL,
+      edited_content TEXT,
+      status TEXT NOT NULL DEFAULT 'draft',
+      approved_by TEXT,
+      distributed_at TIMESTAMPTZ,
+      acknowledged_by TEXT,
+      acknowledged_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_frago_parent ON frago_drafts(parent_problem_set_id);
+    CREATE INDEX IF NOT EXISTS idx_frago_child ON frago_drafts(child_problem_set_id);
+    CREATE INDEX IF NOT EXISTS idx_frago_status ON frago_drafts(status);
+
+    CREATE TABLE IF NOT EXISTS mission_status_snapshots (
+      id TEXT PRIMARY KEY,
+      child_problem_set_id TEXT NOT NULL UNIQUE,
+      child_problem_set_name TEXT NOT NULL,
+      parent_problem_set_id TEXT NOT NULL,
+      mission_state TEXT NOT NULL,
+      mdmp_phase TEXT,
+      percent_complete INTEGER DEFAULT 0,
+      key_events JSONB DEFAULT '[]',
+      resource_status JSONB DEFAULT '{}',
+      objective_progress JSONB DEFAULT '[]',
+      last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_mstat_parent ON mission_status_snapshots(parent_problem_set_id);
+    CREATE INDEX IF NOT EXISTS idx_mstat_child ON mission_status_snapshots(child_problem_set_id);
   `);
 }
 
@@ -733,6 +803,7 @@ export class InheritanceStore {
       id: string; requesting_problem_set_id: string; target_problem_set_id: string;
       target_item_id: string; target_item_type: string; subject: string;
       status: string; created_by: string; created_at: Date; closed_at: Date | null;
+      rfi_subtype?: string; resolution?: string | null;
     };
     return {
       id: r.id,
@@ -742,10 +813,505 @@ export class InheritanceStore {
       targetItemType: r.target_item_type,
       subject: r.subject,
       status: r.status as InheritanceRFI['status'],
+      rfiSubtype: (r.rfi_subtype || 'clarification') as InheritanceRFI['rfiSubtype'],
+      resolution: (r.resolution || null) as InheritanceRFI['resolution'],
       createdBy: r.created_by,
       createdAt: new Date(r.created_at),
       closedAt: r.closed_at ? new Date(r.closed_at) : null,
     };
+  }
+
+  // ==========================================================================
+  // Phase 38: RFI Subtype Methods
+  // ==========================================================================
+
+  /**
+   * Create a new RFI with subtype classification.
+   */
+  async createRFIWithSubtype(input: {
+    requestingProblemSetId: string;
+    targetProblemSetId: string;
+    targetItemId: string;
+    targetItemType: string;
+    subject: string;
+    rfiSubtype: RFISubtype;
+    createdBy: string;
+  }): Promise<InheritanceRFI> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const id = `IRFI-${randomUUID()}`;
+    const result = await pool.query(
+      `
+      INSERT INTO inheritance_rfis (
+        id, requesting_problem_set_id, target_problem_set_id,
+        target_item_id, target_item_type, subject, status,
+        rfi_subtype, created_by, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, NOW())
+      RETURNING *
+      `,
+      [
+        id, input.requestingProblemSetId, input.targetProblemSetId,
+        input.targetItemId, input.targetItemType, input.subject,
+        input.rfiSubtype, input.createdBy,
+      ],
+    );
+
+    return this.mapRFIRow(result.rows[0]);
+  }
+
+  /**
+   * Get RFIs filtered by subtype for a problem set.
+   */
+  async getRFIsBySubtype(problemSetId: string, subtype: RFISubtype): Promise<InheritanceRFI[]> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `
+      SELECT * FROM inheritance_rfis
+      WHERE (requesting_problem_set_id = $1 OR target_problem_set_id = $1)
+        AND rfi_subtype = $2
+      ORDER BY created_at DESC
+      `,
+      [problemSetId, subtype],
+    );
+
+    return result.rows.map((row) => this.mapRFIRow(row));
+  }
+
+  /**
+   * Resolve a modification request RFI with approval or denial.
+   */
+  async resolveModificationRequest(
+    rfiId: string,
+    resolution: 'approved' | 'denied',
+  ): Promise<InheritanceRFI> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `
+      UPDATE inheritance_rfis
+      SET resolution = $1, status = 'closed', closed_at = NOW()
+      WHERE id = $2
+      RETURNING *
+      `,
+      [resolution, rfiId],
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error(`RFI not found: ${rfiId}`);
+    }
+
+    return this.mapRFIRow(result.rows[0]);
+  }
+
+  // ==========================================================================
+  // Phase 38: Interpretation Acknowledgment Methods
+  // ==========================================================================
+
+  /**
+   * Create an interpretation acknowledgment from a parent PS.
+   */
+  async createInterpretationAck(
+    data: Omit<InterpretationAcknowledgment, 'actedAt'>,
+  ): Promise<InterpretationAcknowledgment> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `
+      INSERT INTO interpretation_acknowledgments (
+        id, annotation_id, parent_problem_set_id, action,
+        comment, rfi_id, acted_by, acted_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      RETURNING *
+      `,
+      [
+        data.id, data.annotationId, data.parentProblemSetId,
+        data.action, data.comment, data.rfiId, data.actedBy,
+      ],
+    );
+
+    return this.mapInterpretationAckRow(result.rows[0]);
+  }
+
+  /**
+   * Get all interpretation acks for a parent problem set, joined with annotation details.
+   */
+  async getInterpretationAcksForParent(
+    parentProblemSetId: string,
+  ): Promise<InterpretationAcknowledgment[]> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `
+      SELECT ia.* FROM interpretation_acknowledgments ia
+      WHERE ia.parent_problem_set_id = $1
+      ORDER BY ia.acted_at DESC
+      `,
+      [parentProblemSetId],
+    );
+
+    return result.rows.map((row) => this.mapInterpretationAckRow(row));
+  }
+
+  /**
+   * Get the interpretation ack status for a specific annotation.
+   */
+  async getInterpretationAckForAnnotation(
+    annotationId: string,
+  ): Promise<InterpretationAcknowledgment | null> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `
+      SELECT * FROM interpretation_acknowledgments
+      WHERE annotation_id = $1
+      ORDER BY acted_at DESC
+      LIMIT 1
+      `,
+      [annotationId],
+    );
+
+    if (result.rows.length === 0) return null;
+    return this.mapInterpretationAckRow(result.rows[0]);
+  }
+
+  private mapInterpretationAckRow(row: unknown): InterpretationAcknowledgment {
+    const r = row as {
+      id: string; annotation_id: string; parent_problem_set_id: string;
+      action: string; comment: string | null; rfi_id: string | null;
+      acted_by: string; acted_at: Date;
+    };
+    return {
+      id: r.id,
+      annotationId: r.annotation_id,
+      parentProblemSetId: r.parent_problem_set_id,
+      action: r.action as InterpretationAcknowledgment['action'],
+      comment: r.comment,
+      rfiId: r.rfi_id,
+      actedBy: r.acted_by,
+      actedAt: new Date(r.acted_at),
+    };
+  }
+
+  // ==========================================================================
+  // Phase 38: FRAGO Draft Methods
+  // ==========================================================================
+
+  /**
+   * Create a new FRAGO draft.
+   */
+  async createFRAGODraft(
+    data: Omit<FRAGODraft, 'createdAt'>,
+  ): Promise<FRAGODraft> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `
+      INSERT INTO frago_drafts (
+        id, parent_problem_set_id, child_problem_set_id,
+        source_opord_version, previous_opord_version,
+        changed_paragraphs, ai_draft_content, edited_content,
+        status, approved_by, distributed_at, acknowledged_by,
+        acknowledged_at, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+      RETURNING *
+      `,
+      [
+        data.id, data.parentProblemSetId, data.childProblemSetId,
+        data.sourceOpordVersion, data.previousOpordVersion,
+        data.changedParagraphs, data.aiDraftContent, data.editedContent,
+        data.status, data.approvedBy, data.distributedAt,
+        data.acknowledgedBy, data.acknowledgedAt,
+      ],
+    );
+
+    return this.mapFRAGORow(result.rows[0]);
+  }
+
+  /**
+   * Get a FRAGO draft by ID.
+   */
+  async getFRAGODraft(id: string): Promise<FRAGODraft | null> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      'SELECT * FROM frago_drafts WHERE id = $1',
+      [id],
+    );
+
+    if (result.rows.length === 0) return null;
+    return this.mapFRAGORow(result.rows[0]);
+  }
+
+  /**
+   * Get all FRAGO drafts for a parent problem set.
+   */
+  async getFRAGODraftsForParent(parentProblemSetId: string): Promise<FRAGODraft[]> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      'SELECT * FROM frago_drafts WHERE parent_problem_set_id = $1 ORDER BY created_at DESC',
+      [parentProblemSetId],
+    );
+
+    return result.rows.map((row) => this.mapFRAGORow(row));
+  }
+
+  /**
+   * Get all FRAGO drafts for a child problem set.
+   */
+  async getFRAGODraftsForChild(childProblemSetId: string): Promise<FRAGODraft[]> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      'SELECT * FROM frago_drafts WHERE child_problem_set_id = $1 ORDER BY created_at DESC',
+      [childProblemSetId],
+    );
+
+    return result.rows.map((row) => this.mapFRAGORow(row));
+  }
+
+  /**
+   * Update FRAGO status and associated fields.
+   */
+  async updateFRAGOStatus(
+    id: string,
+    status: FRAGOStatus,
+    updates: {
+      approvedBy?: string;
+      distributedAt?: Date;
+      acknowledgedBy?: string;
+      acknowledgedAt?: Date;
+    } = {},
+  ): Promise<FRAGODraft> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const setClauses: string[] = ['status = $1'];
+    const params: unknown[] = [status, id];
+    let paramIndex = 3;
+
+    if (updates.approvedBy !== undefined) {
+      setClauses.push(`approved_by = $${paramIndex}`);
+      params.push(updates.approvedBy);
+      paramIndex++;
+    }
+    if (updates.distributedAt !== undefined) {
+      setClauses.push(`distributed_at = $${paramIndex}`);
+      params.push(updates.distributedAt);
+      paramIndex++;
+    }
+    if (updates.acknowledgedBy !== undefined) {
+      setClauses.push(`acknowledged_by = $${paramIndex}`);
+      params.push(updates.acknowledgedBy);
+      paramIndex++;
+    }
+    if (updates.acknowledgedAt !== undefined) {
+      setClauses.push(`acknowledged_at = $${paramIndex}`);
+      params.push(updates.acknowledgedAt);
+      paramIndex++;
+    }
+
+    const result = await pool.query(
+      `UPDATE frago_drafts SET ${setClauses.join(', ')} WHERE id = $2 RETURNING *`,
+      params,
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error(`FRAGO draft not found: ${id}`);
+    }
+
+    return this.mapFRAGORow(result.rows[0]);
+  }
+
+  /**
+   * Update FRAGO edited content (commander edits before approval).
+   */
+  async updateFRAGOContent(id: string, editedContent: string): Promise<FRAGODraft> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `UPDATE frago_drafts SET edited_content = $1 WHERE id = $2 RETURNING *`,
+      [editedContent, id],
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error(`FRAGO draft not found: ${id}`);
+    }
+
+    return this.mapFRAGORow(result.rows[0]);
+  }
+
+  private mapFRAGORow(row: unknown): FRAGODraft {
+    const r = row as {
+      id: string; parent_problem_set_id: string; child_problem_set_id: string;
+      source_opord_version: string; previous_opord_version: string;
+      changed_paragraphs: number[]; ai_draft_content: string;
+      edited_content: string | null; status: string; approved_by: string | null;
+      distributed_at: Date | null; acknowledged_by: string | null;
+      acknowledged_at: Date | null; created_at: Date;
+    };
+    return {
+      id: r.id,
+      parentProblemSetId: r.parent_problem_set_id,
+      childProblemSetId: r.child_problem_set_id,
+      sourceOpordVersion: r.source_opord_version,
+      previousOpordVersion: r.previous_opord_version,
+      changedParagraphs: r.changed_paragraphs,
+      aiDraftContent: r.ai_draft_content,
+      editedContent: r.edited_content,
+      status: r.status as FRAGODraft['status'],
+      approvedBy: r.approved_by,
+      distributedAt: r.distributed_at ? new Date(r.distributed_at) : null,
+      acknowledgedBy: r.acknowledged_by,
+      acknowledgedAt: r.acknowledged_at ? new Date(r.acknowledged_at) : null,
+      createdAt: new Date(r.created_at),
+    };
+  }
+
+  // ==========================================================================
+  // Phase 38: Mission Status Snapshot Methods
+  // ==========================================================================
+
+  /**
+   * Upsert a mission status snapshot for a child problem set.
+   * Uses child_problem_set_id as conflict key for idempotent updates.
+   */
+  async upsertMissionStatus(data: MissionStatusSnapshot): Promise<MissionStatusSnapshot> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `
+      INSERT INTO mission_status_snapshots (
+        id, child_problem_set_id, child_problem_set_name,
+        parent_problem_set_id, mission_state, mdmp_phase,
+        percent_complete, key_events, resource_status,
+        objective_progress, last_updated
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+      ON CONFLICT (child_problem_set_id) DO UPDATE SET
+        child_problem_set_name = EXCLUDED.child_problem_set_name,
+        parent_problem_set_id = EXCLUDED.parent_problem_set_id,
+        mission_state = EXCLUDED.mission_state,
+        mdmp_phase = EXCLUDED.mdmp_phase,
+        percent_complete = EXCLUDED.percent_complete,
+        key_events = EXCLUDED.key_events,
+        resource_status = EXCLUDED.resource_status,
+        objective_progress = EXCLUDED.objective_progress,
+        last_updated = NOW()
+      RETURNING *
+      `,
+      [
+        data.id, data.childProblemSetId, data.childProblemSetName,
+        data.parentProblemSetId, data.missionState, data.mdmpPhase,
+        data.percentComplete, JSON.stringify(data.keyEvents),
+        JSON.stringify(data.resourceStatus), JSON.stringify(data.objectiveProgress),
+      ],
+    );
+
+    return this.mapMissionStatusRow(result.rows[0]);
+  }
+
+  /**
+   * Get all child mission statuses for a parent problem set.
+   */
+  async getMissionStatusForParent(parentProblemSetId: string): Promise<MissionStatusSnapshot[]> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `
+      SELECT * FROM mission_status_snapshots
+      WHERE parent_problem_set_id = $1
+      ORDER BY last_updated DESC
+      `,
+      [parentProblemSetId],
+    );
+
+    return result.rows.map((row) => this.mapMissionStatusRow(row));
+  }
+
+  /**
+   * Get the mission status for a specific child problem set.
+   */
+  async getMissionStatusForChild(childProblemSetId: string): Promise<MissionStatusSnapshot | null> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const result = await pool.query(
+      'SELECT * FROM mission_status_snapshots WHERE child_problem_set_id = $1',
+      [childProblemSetId],
+    );
+
+    if (result.rows.length === 0) return null;
+    return this.mapMissionStatusRow(result.rows[0]);
+  }
+
+  private mapMissionStatusRow(row: unknown): MissionStatusSnapshot {
+    const r = row as {
+      id: string; child_problem_set_id: string; child_problem_set_name: string;
+      parent_problem_set_id: string; mission_state: string; mdmp_phase: string;
+      percent_complete: number; key_events: unknown; resource_status: unknown;
+      objective_progress: unknown; last_updated: Date;
+    };
+    return {
+      id: r.id,
+      childProblemSetId: r.child_problem_set_id,
+      childProblemSetName: r.child_problem_set_name,
+      parentProblemSetId: r.parent_problem_set_id,
+      missionState: r.mission_state as MissionStatusSnapshot['missionState'],
+      mdmpPhase: r.mdmp_phase,
+      percentComplete: r.percent_complete,
+      keyEvents: (r.key_events || []) as MissionStatusSnapshot['keyEvents'],
+      resourceStatus: (r.resource_status || {}) as MissionStatusSnapshot['resourceStatus'],
+      objectiveProgress: (r.objective_progress || []) as MissionStatusSnapshot['objectiveProgress'],
+      lastUpdated: new Date(r.last_updated),
+    };
+  }
+
+  // ==========================================================================
+  // Phase 38: Read-Only Enforcement Helper
+  // ==========================================================================
+
+  /**
+   * Check if an item belongs to an ancestor's content (inherited via subscription).
+   * Returns true if the item is inherited and should be read-only.
+   */
+  async isInheritedContent(problemSetId: string, itemId: string): Promise<boolean> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    // Check if itemId exists in any ancestor's content that this PS subscribes to
+    const result = await pool.query(
+      `
+      SELECT EXISTS (
+        SELECT 1 FROM problem_set_subscriptions pss
+        WHERE pss.subscriber_problem_set_id = $1
+          AND pss.subscription_type = 'inheritance'
+          AND pss.approval_status = 'approved'
+          AND EXISTS (
+            SELECT 1 FROM problem_set_data_cache pdc
+            WHERE pdc.consumer_problem_set_id = $1
+              AND pdc.source_problem_set_id = pss.publisher_problem_set_id
+              AND pdc.cached_data::text LIKE '%' || $2 || '%'
+          )
+      ) AS is_inherited
+      `,
+      [problemSetId, itemId],
+    );
+
+    return (result.rows[0] as { is_inherited: boolean }).is_inherited;
   }
 }
 

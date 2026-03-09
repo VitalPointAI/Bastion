@@ -1,0 +1,971 @@
+/* ============================================================================
+   AssessEchelonRouter Styles
+   Phase 37 Plan 03: Assess tab routing + operational MOE/MOP views
+   ============================================================================ */
+
+/* ─── Placeholder (training mode stubs) ────────────────────────────────────── */
+
+.assess-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 16rem;
+  color: var(--text-tertiary, #64748b);
+  text-align: center;
+  padding: 2rem;
+}
+
+.assess-placeholder h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+  margin-bottom: 0.5rem;
+}
+
+.assess-placeholder p {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  max-width: 32rem;
+}
+
+/* ─── MOE/MOP Grid ─────────────────────────────────────────────────────────── */
+
+.moe-grid,
+.mop-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .moe-grid,
+  .mop-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ─── MOE/MOP Card ─────────────────────────────────────────────────────────── */
+
+.moe-card,
+.mop-card {
+  background: var(--surface-secondary, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.moe-card:hover,
+.mop-card:hover {
+  border-color: var(--border-hover, #475569);
+}
+
+.measure-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.measure-card-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  margin: 0;
+}
+
+.measure-card-subheader {
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.4;
+}
+
+.measure-card-no-link {
+  color: var(--text-tertiary, #64748b);
+  font-style: italic;
+}
+
+.measure-card-standard {
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #94a3b8);
+  font-style: italic;
+}
+
+.measure-card-description {
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.measure-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  padding-top: 0.375rem;
+  border-top: 1px solid var(--border-color, #334155);
+}
+
+.measure-card-date {
+  font-size: 0.75rem;
+  color: var(--text-tertiary, #64748b);
+}
+
+.measure-card-obs-badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-secondary, #94a3b8);
+  background: var(--surface-tertiary, #0f172a);
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+
+/* ─── Status Badges ────────────────────────────────────────────────────────── */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.status-green {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.status-yellow {
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+}
+
+.status-red {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+/* ─── Trend Indicators ─────────────────────────────────────────────────────── */
+
+.measure-card-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.trend-improving {
+  color: #4ade80;
+}
+
+.trend-stable {
+  color: var(--text-tertiary, #64748b);
+}
+
+.trend-declining {
+  color: #f87171;
+}
+
+.trend-arrow {
+  font-size: 0.875rem;
+}
+
+.trend-label {
+  font-size: 0.75rem;
+}
+
+/* ─── Add Measure Button ───────────────────────────────────────────────────── */
+
+.add-measure-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--accent-primary, #60a5fa);
+  background: transparent;
+  border: 1px solid var(--accent-primary, #60a5fa);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.add-measure-btn:hover {
+  background: rgba(96, 165, 250, 0.1);
+  color: #93c5fd;
+}
+
+/* ─── Reframing Alert Banner ───────────────────────────────────────────────── */
+
+.reframing-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  color: #fbbf24;
+  line-height: 1.4;
+}
+
+.reframing-alert-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* ─── Add Measure Form ─────────────────────────────────────────────────────── */
+
+.add-measure-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+  background: var(--surface-secondary, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 0.375rem;
+}
+
+.add-measure-form input,
+.add-measure-form textarea {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-primary, #e2e8f0);
+  background: var(--surface-tertiary, #0f172a);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 0.25rem;
+}
+
+.add-measure-form textarea {
+  min-height: 3rem;
+  resize: vertical;
+}
+
+.add-measure-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.add-measure-form-actions button {
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.add-measure-form-actions .btn-save {
+  background: var(--accent-primary, #60a5fa);
+  color: #fff;
+  border: none;
+}
+
+.add-measure-form-actions .btn-save:hover {
+  background: #3b82f6;
+}
+
+.add-measure-form-actions .btn-cancel {
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  border: 1px solid var(--border-color, #334155);
+}
+
+.add-measure-form-actions .btn-cancel:hover {
+  background: var(--surface-tertiary, #0f172a);
+}
+
+/* ─── Operational Assess Sections ──────────────────────────────────────────── */
+
+.ops-assess-section {
+  margin-bottom: 1.5rem;
+}
+
+.ops-assess-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.ops-assess-section-header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  margin: 0;
+}
+
+.ops-assess-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--surface-secondary, #1e293b);
+  border: 1px dashed var(--border-color, #334155);
+  border-radius: 0.375rem;
+  min-height: 4rem;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary, #64748b);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ============================================================================
+   AAR Form Styles (Phase 37 Plan 04)
+   ============================================================================ */
+
+.aar-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.aar-form-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.aar-form-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  margin: 0;
+}
+
+.aar-finalized-ts {
+  font-size: 0.75rem;
+  color: var(--text-tertiary, #64748b);
+}
+
+.aar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.aar-section-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.aar-section-textarea {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8125rem;
+  color: var(--text-primary, #e2e8f0);
+  background: var(--surface-tertiary, #0f172a);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 0.25rem;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.aar-section-textarea:read-only {
+  opacity: 0.7;
+  cursor: default;
+  background: var(--surface-secondary, #1e293b);
+}
+
+/* Observations columns */
+
+.aar-obs-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .aar-obs-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.aar-obs-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.aar-obs-column-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  margin: 0;
+}
+
+.aar-obs-count {
+  font-weight: 400;
+  color: var(--text-tertiary, #64748b);
+  margin-left: 0.25rem;
+}
+
+.aar-obs-empty {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary, #64748b);
+  font-style: italic;
+}
+
+/* AAR Action Bar */
+
+.aar-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color, #334155);
+  flex-wrap: wrap;
+}
+
+.aar-btn {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: none;
+}
+
+.aar-btn--draft {
+  background: var(--surface-secondary, #1e293b);
+  color: var(--text-primary, #e2e8f0);
+  border: 1px solid var(--border-color, #334155);
+}
+
+.aar-btn--draft:hover {
+  background: var(--surface-tertiary, #0f172a);
+}
+
+.aar-btn--review {
+  background: var(--accent-primary, #60a5fa);
+  color: #fff;
+}
+
+.aar-btn--review:hover {
+  background: #3b82f6;
+}
+
+.aar-btn--finalize {
+  background: #22c55e;
+  color: #fff;
+}
+
+.aar-btn--finalize:hover {
+  background: #16a34a;
+}
+
+.aar-finalize-confirm {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* ============================================================================
+   AAR Observation Card Styles
+   ============================================================================ */
+
+.aar-obs-card {
+  background: var(--surface-secondary, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 0.375rem;
+  padding: 0.625rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.aar-obs-card--dimmed {
+  opacity: 0.5;
+}
+
+.aar-obs-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.aar-obs-type-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 9999px;
+}
+
+.aar-obs-type--sustain {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.aar-obs-type--improve {
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+}
+
+.aar-obs-ai-tag {
+  font-size: 0.6875rem;
+  color: var(--accent-primary, #60a5fa);
+  background: rgba(96, 165, 250, 0.1);
+  padding: 0.0625rem 0.375rem;
+  border-radius: 9999px;
+}
+
+.aar-obs-ai-chip {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 9999px;
+}
+
+.aar-obs-ai-chip--accepted {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.aar-obs-ai-chip--rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.aar-obs-card-content {
+  font-size: 0.8125rem;
+  color: var(--text-primary, #e2e8f0);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.aar-obs-card-metl-link {
+  font-size: 0.75rem;
+  color: var(--accent-primary, #60a5fa);
+}
+
+.aar-obs-card-comp-area {
+  color: var(--text-tertiary, #64748b);
+}
+
+.aar-obs-ai-actions {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.aar-obs-ai-actions .btn-accept,
+.aar-obs-ai-actions .btn-reject {
+  padding: 0.1875rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  border: none;
+}
+
+.aar-obs-ai-actions .btn-accept {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.aar-obs-ai-actions .btn-accept:hover {
+  background: rgba(34, 197, 94, 0.35);
+}
+
+.aar-obs-ai-actions .btn-reject {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.aar-obs-ai-actions .btn-reject:hover {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+.aar-obs-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #64748b);
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--border-color, #334155);
+}
+
+.aar-obs-card-author {
+  font-weight: 500;
+}
+
+.aar-obs-card-date {
+  font-style: italic;
+}
+
+/* ============================================================================
+   METL Task Assessment Styles
+   ============================================================================ */
+
+.metl-assessment {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.metl-assessment-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.metl-assessment-header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  margin: 0;
+}
+
+.metl-assessment-aar-ref {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary, #64748b);
+}
+
+.metl-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.metl-task-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  background: var(--surface-secondary, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 0.375rem;
+}
+
+.metl-task-row--supplemental {
+  background: var(--surface-tertiary, #0f172a);
+}
+
+.metl-task-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.metl-task-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.metl-task-supplemental-label {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #64748b);
+  font-style: italic;
+}
+
+.metl-task-comp-area {
+  font-size: 0.75rem;
+  color: var(--text-tertiary, #64748b);
+}
+
+.metl-task-current-rating {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #94a3b8);
+  text-align: center;
+  min-width: 5rem;
+}
+
+.metl-rating-selector {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.metl-rating-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  border: 1px solid var(--border-color, #334155);
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  transition: background 0.15s, color 0.15s;
+}
+
+.metl-rating-btn--T.active {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border-color: #4ade80;
+}
+
+.metl-rating-btn--P.active {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+  border-color: #facc15;
+}
+
+.metl-rating-btn--U.active {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: #f87171;
+}
+
+.metl-rating-btn:hover {
+  border-color: var(--text-secondary, #94a3b8);
+}
+
+.metl-task-notes-input {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-primary, #e2e8f0);
+  background: var(--surface-tertiary, #0f172a);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.metl-override-row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #94a3b8);
+  padding-top: 0.25rem;
+}
+
+.metl-submit-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color, #334155);
+}
+
+.metl-submit-btn {
+  padding: 0.375rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background: var(--accent-primary, #60a5fa);
+  color: #fff;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.metl-submit-btn:hover {
+  background: #3b82f6;
+}
+
+.metl-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   Training Tactical Assess Styles
+   ============================================================================ */
+
+.tac-assess-aar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tac-assess-aar-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-secondary, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.tac-assess-aar-card:hover,
+.tac-assess-aar-card.selected {
+  border-color: var(--accent-primary, #60a5fa);
+}
+
+.tac-assess-aar-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.tac-assess-aar-card-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.tac-assess-aar-card-date {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #64748b);
+}
+
+.tac-assess-create-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tac-assess-create-form input {
+  flex: 1;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-primary, #e2e8f0);
+  background: var(--surface-tertiary, #0f172a);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 0.25rem;
+}
+
+.tac-assess-prompt {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-tertiary, #64748b);
+  font-size: 0.875rem;
+}
+
+/* ─── AI Suggestion Controls (AARForm) ────────────────────────────────────── */
+
+.aar-obs-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.aar-ai-suggestion-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.aar-btn--ai-suggest {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.aar-btn--ai-suggest:hover:not(:disabled) {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+.aar-btn--ai-suggest:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.aar-ai-info {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #64748b);
+  font-style: italic;
+  max-width: 24rem;
+}
+
+.aar-ai-error {
+  padding: 0.375rem 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 0.25rem;
+}
+
+/* ─── AI Suggestion Controls (METLTaskAssessment) ─────────────────────────── */
+
+.metl-ai-suggest-btn {
+  margin-left: auto;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.metl-ai-suggest-btn:hover:not(:disabled) {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+.metl-ai-suggest-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.metl-ai-error {
+  padding: 0.375rem 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 0.25rem;
+}
+
+.metl-task-row--ai-suggested {
+  border-left: 2px solid rgba(96, 165, 250, 0.5);
+}
+
+.metl-ai-suggestion-label {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  margin-top: 0.125rem;
+  cursor: help;
+}
+
+.metl-ai-suggestion-label--T {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.metl-ai-suggestion-label--P {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.metl-ai-suggestion-label--U {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}

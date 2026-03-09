@@ -38,12 +38,24 @@ export {
   resourceToolDefinitions,
 } from './resource-tools.js';
 
+export {
+  jppToolDefinitions,
+  jppToolHandlers,
+} from './jpp-tools.js';
+
+export {
+  ewmToolDefinitions,
+  ewmToolHandlers,
+} from './ewm-tools.js';
+
 import { objectiveToolDefinitions } from './objective-tools.js';
 import { entityToolDefinitions } from './entity-tools.js';
 import { osintToolDefinitions } from './osint-tools.js';
 import { validityToolDefinitions } from './validity-tools.js';
 import { raftToolDefinitions } from './raft-tools.js';
 import { resourceToolDefinitions } from './resource-tools.js';
+import { jppToolDefinitions } from './jpp-tools.js';
+import { ewmToolDefinitions } from './ewm-tools.js';
 
 /**
  * All fusion tool definitions for registration
@@ -55,4 +67,6 @@ export const allFusionToolDefinitions = [
   ...validityToolDefinitions,
   ...raftToolDefinitions,
   ...resourceToolDefinitions,
+  ...jppToolDefinitions,
+  ...ewmToolDefinitions,
 ];

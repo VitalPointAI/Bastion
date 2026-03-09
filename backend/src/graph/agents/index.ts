@@ -59,3 +59,53 @@ export {
   RAFT_REASONING_MANIFEST,
   RAFT_REASONING_CHARACTER,
 } from './raft-reasoning-agent.js';
+
+// JPP Step Agents (Phase 33)
+export {
+  JPP_PLANNING_INIT_AGENT_ID,
+  JPP_PLANNING_INIT_TOOLS,
+  JPP_PLANNING_INIT_MANIFEST,
+  JPP_PLANNING_INIT_CHARACTER,
+} from './jpp-planning-init-agent.js';
+
+export {
+  JPP_MISSION_ANALYSIS_AGENT_ID,
+  JPP_MISSION_ANALYSIS_TOOLS,
+  JPP_MISSION_ANALYSIS_MANIFEST,
+  JPP_MISSION_ANALYSIS_CHARACTER,
+} from './jpp-mission-analysis-agent.js';
+
+export {
+  JPP_COA_DEV_AGENT_ID,
+  JPP_COA_DEV_TOOLS,
+  JPP_COA_DEV_MANIFEST,
+  JPP_COA_DEV_CHARACTER,
+} from './jpp-coa-dev-agent.js';
+
+export {
+  JPP_COA_ANALYSIS_AGENT_ID,
+  JPP_COA_ANALYSIS_TOOLS,
+  JPP_COA_ANALYSIS_MANIFEST,
+  JPP_COA_ANALYSIS_CHARACTER,
+} from './jpp-coa-analysis-agent.js';
+
+export {
+  JPP_COA_COMPARISON_AGENT_ID,
+  JPP_COA_COMPARISON_TOOLS,
+  JPP_COA_COMPARISON_MANIFEST,
+  JPP_COA_COMPARISON_CHARACTER,
+} from './jpp-coa-comparison-agent.js';
+
+export {
+  JPP_BRIEFING_AGENT_ID,
+  JPP_BRIEFING_TOOLS,
+  JPP_BRIEFING_MANIFEST,
+  JPP_BRIEFING_CHARACTER,
+} from './jpp-briefing-agent.js';
+
+export {
+  JPP_PLAN_DEV_AGENT_ID,
+  JPP_PLAN_DEV_TOOLS,
+  JPP_PLAN_DEV_MANIFEST,
+  JPP_PLAN_DEV_CHARACTER,
+} from './jpp-plan-dev-agent.js';

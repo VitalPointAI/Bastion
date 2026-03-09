@@ -26,6 +26,8 @@ interface InheritedItemCardProps {
   echelon: Echelon;
   onAnnotate?: (itemId: string) => void;
   onRequestInfo?: (itemId: string) => void;
+  onRequestModification?: (itemId: string) => void;
+  onRequestGuidance?: (itemId: string) => void;
   annotations?: InheritanceAnnotation[];
   isExpanded?: boolean;
   onToggleExpand?: () => void;
@@ -36,6 +38,8 @@ export function InheritedItemCard({
   echelon,
   onAnnotate,
   onRequestInfo,
+  onRequestModification,
+  onRequestGuidance,
   annotations,
   isExpanded,
   onToggleExpand,
@@ -75,6 +79,15 @@ export function InheritedItemCard({
         if (e.key === 'Enter' || e.key === ' ') onToggleExpand?.();
       }}
     >
+      {/* Read-only indicator */}
+      <div className="inherited-readonly-indicator">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#888" strokeWidth="1.5">
+          <rect x="3" y="8" width="10" height="7" rx="1" />
+          <path d="M5 8V5a3 3 0 016 0v3" />
+        </svg>
+        <span className="inherited-readonly-label">Inherited -- Read Only</span>
+      </div>
+
       {/* Header */}
       <div className="inherited-item-header">
         <span
@@ -166,6 +179,30 @@ export function InheritedItemCard({
             title="Request information"
           >
             Request Info
+          </button>
+        )}
+        {onRequestModification && (
+          <button
+            className="action-btn mod-request-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRequestModification(itemId);
+            }}
+            title="Request modification to this inherited item"
+          >
+            Request Modification
+          </button>
+        )}
+        {onRequestGuidance && (
+          <button
+            className="action-btn guidance-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRequestGuidance(itemId);
+            }}
+            title="Request guidance from parent echelon"
+          >
+            Request Guidance
           </button>
         )}
       </div>

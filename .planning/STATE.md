@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T17:47:30.691Z"
+last_updated: "2026-03-08T23:36:45.955Z"
 progress:
-  total_phases: 48
-  completed_phases: 31
-  total_plans: 285
-  completed_plans: 292
+  total_phases: 54
+  completed_phases: 35
+  total_plans: 323
+  completed_plans: 326
 ---
 
 # Project State
@@ -23,17 +23,17 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 32 of 40 (Network Device Discovery & Secure Automatic Resource Onboarding) — Complete
-Plan: 9 of 9 in current phase — ALL PLANS COMPLETE
-Status: Phase 32 complete (all 9 plans executed, frontend discovery visualization done)
-Last activity: 2026-03-07 - Completed 32-09-PLAN.md
+Phase: 38 of 40 (Inheritance Deepening) — COMPLETE
+Plan: 6 of 6 in current phase — COMPLETE
+Status: Phase 38 complete — All 6 plans executed (05 completed last, out of order with 06)
+Last activity: 2026-03-08 - Completed 38-05-PLAN.md (final remaining plan)
 
-Progress: ██████████████████████████ 292 plans complete
+Progress: ██████████████████████████ 326 plans complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 138
+- Total plans completed: 139
 - Average duration: 10 min
 - Total execution time: 20.11 hours
 
@@ -139,6 +139,21 @@ Progress: ███████████████████████�
 | Phase 32 P06 | 9 | 2 tasks | 4 files |
 | Phase 32 P08 | 4 | 2 tasks | 3 files |
 | Phase 32 P09 | 8 | 2 tasks | 5 files |
+| Phase 33 P01 | 3 | 2 tasks | 3 files |
+| Phase 33 P02 | 3 | 2 tasks | 3 files |
+| Phase 35-mission-creation-from-opord-problem-set-alignment P01 | 2 | 2 tasks | 3 files |
+| Phase 35 P03 | 3 | 2 tasks | 3 files |
+| Phase 35 P02 | 7 | 2 tasks | 3 files |
+| Phase 35 P05 | 3 | 1 tasks | 7 files |
+| Phase 35 P04 | 5 | 2 tasks | 2 files |
+| Phase 36 P01 | 4 | 2 tasks | 4 files |
+| Phase 37 P01 | 4 | 2 tasks | 5 files |
+| Phase 37 P04 | 6 | 2 tasks | 7 files |
+| Phase 37 P05 | 7 | 2 tasks | 7 files |
+| Phase 38-inheritance-deepening P02 | 7 | 2 tasks | 2 files |
+| Phase 38-inheritance-deepening P04 | 7 | 2 tasks | 4 files |
+| Phase 38-inheritance-deepening P06 | 6 | 2 tasks | 6 files |
+| Phase 38-inheritance-deepening P05 | 7 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -152,6 +167,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 38 Plan 01 (Data Model Extension):**
+- Used const objects for FRAGO_STATUS, RFI_SUBTYPES, INTERPRETATION_ACK_ACTIONS per project convention
+- Mission status snapshots use UPSERT with child_problem_set_id conflict key for idempotent updates
+- JSONB columns for keyEvents, resourceStatus, objectiveProgress to avoid additional tables
 
 **Phase 32 Plan 01 (Discovery Foundation):**
 - Used const objects for all discovery enumerations per project convention (TransportType, DeviceState, etc.)
@@ -676,6 +696,34 @@ Recent decisions affecting current work:
 - [Phase 32]: Dynamic import for discovery-service in router to break compile-time coupling
 - [Phase 32]: DiscoveryService initialized with ResourceRegistry, MessageBus, GateService deps; scanners paused by default
 - [Phase 32]: Used lightweight SVG + requestAnimationFrame for topology graph instead of heavyweight library
+- [Phase 33]: Excluded plan_approval from JPP_STEPS (governance gate, not a planning step)
+- [Phase 33]: EWM gap analysis queries strategic_objectives table for unlinked ends
+- [Phase 33]: JPPStore auto-creates instance when getInstanceByProblemSet finds none
+- [Phase 33]: Used crypto.timingSafeEqual for HMAC comparison to prevent timing attacks
+- [Phase 33]: Created backend/src/jpp/ directory for JPP-specific stores and modules
+- [Phase 35]: Used Record<string, unknown> for JSONB fields in MissionAssignment DB type for store-layer flexibility
+- [Phase 35]: Added derived union types from const objects (MissionState, CcirRequestStatus) for compile-time safety
+- [Phase 35]: Used HTML5 native drag-and-drop for mission task grouping instead of external library
+- [Phase 35]: Wrapped each orchestration step in individual try/catch for partial success with status flags
+- [Phase 35]: Deleted backend/src/api/missions.ts alongside legacy module as sole consumer
+- [Phase 35]: Kept legacy tasksToSubordinates alongside structured subordinateTasks for backward compat
+- [Phase 35]: Pass empty string for userDID in listMembers -- backend uses session auth, X-DID is legacy
+- [Phase 36]: Used UNIQUE(problem_set_id) on instances table for idempotent creation
+- [Phase 37]: Assessment data model uses const objects (not enums), shared observation table, lazy decay computation
+- [Phase 37-02]: Aggregation does not duplicate records at parent levels; dashboard queries via sourceProblemSetId
+- [Phase 37]: Option B: AssessTab left unchanged, ProblemSetTabContainer imports AssessEchelonRouter directly
+- [Phase 37]: AAR lifecycle: draft -> in_review -> finalized with confirmation dialog
+- [Phase 37]: METL tasks combine inherited parent + local supplemental for tactical assessment
+- [Phase 37]: Pure CSS Grid heat map for METL dashboard -- no charting library needed
+- [Phase 38-inheritance-deepening]: Hand-rolled per-paragraph OPORD diff instead of external diff library for known 5-paragraph structure
+- [Phase 38-inheritance-deepening]: Guidance requests use targetItemId=n/a since they are not item-specific
+- [Phase 38-inheritance-deepening]: inheritedContentGuard middleware checks both params.itemId and body.itemId for cross-route flexibility
+- [Phase 38-inheritance-deepening]: DDIL queue capped at 1000 messages per parent to prevent memory issues
+- [Phase 38-inheritance-deepening]: Resource health thresholds: red <50%, amber <75%, green >=75%
+- [Phase 38-inheritance-deepening]: Significant changes use amber banner with no dismiss — commander must acknowledge
+- [Phase 38-inheritance-deepening]: Inheritance notification polling at 30s interval on Understand tab
+- [Phase 38-inheritance-deepening]: Mirrored backend types inline in frontend service due to tsconfig scope restriction
+- [Phase 38-inheritance-deepening]: Inline drilldown pattern for COP mission status (expand below card, not modal)
 
 ### Roadmap Evolution
 
@@ -702,6 +750,11 @@ Recent decisions affecting current work:
 - Phase 31 added: AI Agent Validation & Compliance Testing — Quantitative assessment framework for agent determinism, reliability/doctrinal adherence, and authority compliance with periodic test suite, metrics dashboard, threshold alerting, and automatic agent disablement
 - Phase 32 added: Network device discovery and secure automatic resource onboarding
 - Phase 33 added: Joint Planning Process (JPP) campaign plan framework with ends-ways-means linkage
+- Phase 34 added: Plan Tab Echelon Routing & MDMP Tactical Wiring — Plan tab renders JPP/MDMP/Strategic workflow based on problem set echelon
+- Phase 35 added: Mission Creation from OPORD & Problem Set Alignment — OPORD Step 7 spawns tactical child problem sets with MDMP, merge mission module into PS framework
+- Phase 36 added: Strategic Guidance Workflow — Strategic level Plan tab for objectives, force apportionment, constraints, directive drafting
+- Phase 37 added: Training Assessment Loop — AAR capture, METL tracking (T/P/U), upward aggregation to training strategy readiness
+- Phase 38 added: Inheritance Deepening — Full bidirectional context propagation, override tracking, OPORD update notifications, upward reporting
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
@@ -1370,7 +1423,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-06 - Completed 25.3-03 (Graph Summary Service)
-Stopped at: Completed 25.2-03-PLAN.md — ContainerSelector multi-select dropdown with AI container suggestions
+Last session: 2026-03-08 - Completed 34-01 (Echelon Routing Infrastructure)
+Stopped at: Completed 34-01-PLAN.md — PlanEchelonRouter with echelon-based routing for Plan tab
 Resume file: None
-Next action: Continue Phase 25.2 — execute 25.2-04-PLAN.md (Drag-and-Drop)
+Next action: Continue Phase 34 or begin next phase

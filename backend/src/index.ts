@@ -24,8 +24,8 @@ import graphRouter from './api/graph.js';
 import { createSyncServer } from './collaboration/index.js';
 import { setupResourceWebSocket } from './resources/resource-ws.js';
 import commandRouter from './api/command.js';
-import missionRouter from './api/missions.js';
 import problemSetsRouter from './api/problem-sets.js';
+import { missionCreationRouter } from './api/mission-creation-routes.js';
 import resourceRouter from './api/resources.js';
 import sensorRouter from './api/sensors.js';
 import planningRouter from './api/planning.js';
@@ -56,6 +56,11 @@ import { validationRouter } from './validation/validation-router.js';
 import { registerValidationJobs } from './validation/validation-scheduler.js';
 import { requireAuth } from './auth/auth-instance.js';
 import { discoveryRouter, setupDiscoveryWS, getDiscoveryService } from './discovery/index.js';
+import { setupInheritanceWebSocket } from './inheritance/inheritance-ws.js';
+import { osintWebhookRouter } from './api/osint-webhook.js';
+import jppRouter from './api/jpp.js';
+import { documentRouter } from './planning/routes/document-routes.js';
+import assessmentRouter from './api/assessment-routes.js';
 
 dotenv.config();
 
@@ -181,7 +186,7 @@ app.use('/api/messages', messagingRouter);
 app.use('/api/orchestration', orchestrationRouter);
 app.use('/api/graph', graphRouter);
 app.use('/api/command', commandRouter);
-app.use('/api/missions', missionRouter);
+app.use('/api/problem-sets/:problemSetId/missions', missionCreationRouter);
 app.use('/api/problem-sets', problemSetsRouter);
 app.use('/api/problem-sets', inheritanceRouter);
 app.use('/api/resources', resourceRouter);
@@ -199,6 +204,10 @@ app.use('/api/ai-staff', requireAuth, aiStaffRouter);
 app.use('/api/ironclaw', requireAuth, ironclawRouter);
 app.use('/api/validation', requireAuth, validationRouter);
 app.use('/api/discovery', discoveryRouter);
+app.use('/api/osint', osintWebhookRouter);
+app.use('/api/jpp', requireAuth, jppRouter);
+app.use('/api/documents/planning', requireAuth, documentRouter);
+app.use('/api/assessment', assessmentRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -218,6 +227,7 @@ const wsServers = {
   collab: new WebSocketServer({ noServer: true }),
   resources: new WebSocketServer({ noServer: true }),
   discovery: new WebSocketServer({ noServer: true }),
+  inheritance: new WebSocketServer({ noServer: true }),
 };
 
 setupMessageWebSocket(wsServers.messages);
@@ -226,6 +236,7 @@ createSyncServer(wsServers.collab);
 console.log('Collaboration WebSocket server mounted at /ws/collab');
 setupResourceWebSocket(wsServers.resources);
 setupDiscoveryWS(wsServers.discovery);
+setupInheritanceWebSocket(wsServers.inheritance);
 
 server.on('upgrade', (request, socket, head) => {
   const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
@@ -249,6 +260,10 @@ server.on('upgrade', (request, socket, head) => {
   } else if (pathname === '/ws/discovery') {
     wsServers.discovery.handleUpgrade(request, socket, head, (ws) => {
       wsServers.discovery.emit('connection', ws, request);
+    });
+  } else if (pathname === '/ws/inheritance') {
+    wsServers.inheritance.handleUpgrade(request, socket, head, (ws) => {
+      wsServers.inheritance.emit('connection', ws, request);
     });
   } else {
     socket.destroy();

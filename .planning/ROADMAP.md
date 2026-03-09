@@ -52,6 +52,11 @@ None
 - [x] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED) (completed 2026-03-07)
 - [ ] **Phase 28: Embedded DAO Governance at Decision Gates** - Move DAO governance from dedicated tab into contextual workflow decision gates; proposals trigger at natural planning decision points (objective approval, COA selection, order release) (INSERTED)
 - [ ] **Phase 29: Contextual AI Staff Integration** - Surface AI agent output contextually per tab; per-tab AI assistant aware of workflow phase; recommendation engine tied to doctrinal workflow position (INSERTED)
+- [x] **Phase 34: Plan Tab Echelon Routing & MDMP Tactical Wiring** - Plan tab reads echelon from ProblemSetContext and renders appropriate workflow (JPP for operational, MDMP for tactical, placeholder for strategic); wire existing MDMP module into Plan tab with sidebar navigation, role-gated sections, governance gates, AI agent panels
+- [x] **Phase 35: Mission Creation from OPORD & Problem Set Alignment** - Extend Phase 33 Plan 10 document distribution to trigger tactical child problem set creation from OPORD Step 7; auto-populate with inherited context; initialize MDMP at Receipt of Mission; merge existing mission module into problem set framework (completed 2026-03-08)
+- [x] **Phase 36: Strategic Guidance Workflow** - Build strategic level Plan tab workflow for objective setting, force apportionment, constraint definition, directive drafting; strategic directive output becomes initiating directive for child campaign JPP Step 1 (completed 2026-03-08)
+- [x] **Phase 37: Training Assessment Loop** - AAR capture at tactical training events, METL proficiency tracking (T/P/U per task), upward aggregation from training events through exercises to training strategy readiness updates (completed 2026-03-08)
+- [x] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign (completed 2026-03-08)
 
 ## Phase Details
 
@@ -354,7 +359,7 @@ Plans:
 **Goal:** Build the full 7-step JPP workflow as a collaborative planning framework within the Plan tab, producing COAs and annex-based campaign plans with Ends-Ways-Means linkage to strategic objectives. Includes entity resolution, OSINT feed integration (Argus), and designated AI agents per step.
 **Requirements:** [JPP-01, JPP-02, JPP-03, JPP-04, JPP-05, JPP-06, JPP-07, JPP-08, JPP-09, JPP-10, JPP-11, JPP-12, JPP-13]
 **Depends on:** Phase 32
-**Plans:** 10 plans
+**Plans:** 10/10 plans complete
 
 Plans:
 - [ ] 33-01-PLAN.md -- JPP domain types, DB schema, JPP store, E-W-M store
@@ -367,6 +372,75 @@ Plans:
 - [ ] 33-08-PLAN.md -- E-W-M Overview: interactive tree + Sankey diagram + gap analysis
 - [ ] 33-09-PLAN.md -- Entity resolution panel, final wiring, human verification
 - [ ] 33-10-PLAN.md -- Document generation, export, versioning, and distribution for campaign plans
+
+### Phase 34: Plan Tab Echelon Routing & MDMP Tactical Wiring
+
+**Goal:** Plan tab reads `echelon` from ProblemSetContext and renders the appropriate planning workflow — operational (Phase 33 JPP), tactical (existing MDMP module wired into Plan tab), or strategic (placeholder). MDMP steps get same treatment as JPP: sidebar navigation, role-gated sections, governance gates, AI agent panels.
+**Requirements**: TBD
+**Depends on:** Phase 33, Phase 23 (echelon-aware problem sets)
+**Plans:** 2/2 plans complete
+
+Plans:
+- [x] 34-01-PLAN.md — Echelon routing infrastructure (PlanEchelonRouter, EchelonBadge, TabLayout header slot, PlanEmptyState, strategic placeholder)
+- [x] 34-02-PLAN.md — MDMP tactical plan view (MDMPStepConfig, MDMPPlanView, MDMPStepLayout, governance gates, AI panels)
+
+### Phase 35: Mission Creation from OPORD & Problem Set Alignment
+
+**Goal:** Extend Phase 33 Plan 10 document distribution to trigger tactical child problem set creation. "Create Mission" action in OPORD Step 7 Para 3 (Execution) per subordinate task assignment. Auto-populate child tactical PS with inherited context (mission statement, commander's intent 2 up, task org, ROE, CCIRs, AO). Initialize child MDMP at "Receipt of Mission". Merge existing `backend/src/mission/` module into problem set framework (missions become tactical problem sets with mission-specific metadata).
+**Requirements**: [MC-01, MC-02, MC-03, MC-04, MC-05, MC-06, MC-07, MC-08, MC-09, MC-10, MC-11, MC-12, MC-13, MC-14, MC-15]
+**Depends on:** Phase 34, Phase 33 (Plan 10 document distribution)
+**Plans:** 6/6 plans complete
+
+Plans:
+- [ ] 35-01-PLAN.md — Foundation types, DB schema (mission_assignments, ccir_requests), data stores
+- [ ] 35-02-PLAN.md — MissionCreationService orchestrator and REST API routes
+- [ ] 35-03-PLAN.md — Frontend API client, MissionGroupEditor, MissionConfirmModal
+- [ ] 35-04-PLAN.md — PlanOrderDevelopment restructure, MissionTracker, CCIR request UI
+- [ ] 35-05-PLAN.md — Legacy mission module deletion and import cleanup
+- [ ] 35-06-PLAN.md — Gap closure: fix CCIR URLs, classification casing, populate role assignment data
+
+### Phase 36: Strategic Guidance Workflow
+
+**Goal:** Build strategic level Plan tab workflow — lighter than JPP. Covers objective setting, force apportionment, constraint definition, and directive drafting. Strategic directive output becomes the initiating directive for child campaign JPP (Step 1). Connect to Phase 25.2 strategic document containers as input.
+**Requirements**: [SG-01, SG-02, SG-03, SG-04, SG-05, SG-06, SG-07, SG-08, SG-09, SG-10, SG-11, SG-12]
+**Depends on:** Phase 34, Phase 25.2 (strategic document containers)
+**Plans:** 4/4 plans complete
+
+Plans:
+- [ ] 36-01-PLAN.md — Backend types, DB schema, store, service, and REST API routes
+- [ ] 36-02-PLAN.md — Frontend step config, plan view, step layout, service layer, echelon router wiring
+- [ ] 36-03-PLAN.md — Strategic Assessment and Operational Approach step content with force apportionment and constraint manager
+- [ ] 36-04-PLAN.md — Commander's Directive step, directive versioning, child auto-populate, document export template
+
+### Phase 37: Training Assessment Loop
+
+**Goal:** AAR capture at tactical training events. METL proficiency tracking (T/P/U per task). Upward aggregation: training events → exercise trends → training strategy readiness updates. Training Strategy Assess tab shows METL dashboard. Exercise Assess tab shows event-level trends. Assessment flows UP through the hierarchy (distinct from operational Assess which measures campaign objective progress).
+**Requirements:** [TAL-01, TAL-02, TAL-03, TAL-04, TAL-05, TAL-06, TAL-07, TAL-08, TAL-09, TAL-10, TAL-11, TAL-12, TAL-13, TAL-14, TAL-15]
+**Depends on:** Phase 35, Phase 22 (training/operational mode)
+**Plans:** 6/6 plans complete
+
+Plans:
+- [x] 37-01-PLAN.md — Assessment types, database stores (AAR, METL, MOE, MOP)
+- [x] 37-02-PLAN.md — Aggregation/decay services and REST API routes
+- [x] 37-03-PLAN.md — AssessEchelonRouter, operational MOE/MOP views, container wiring
+- [x] 37-04-PLAN.md — Training tactical assess: AAR form and METL task assessment
+- [x] 37-05-PLAN.md — Training strategic/exercise assess: METL dashboard and event timeline
+- [x] 37-06-PLAN.md — AI observation/rating suggestions and reframing auto-trigger
+
+### Phase 38: Inheritance Deepening
+
+**Goal:** Full context propagation with change notification (not auto-overwrite). Override tracking: child overrides flagged for parent visibility. OPORD update propagation: parent OPORD changes → notification to child missions. Upward reporting: tactical COP/execution status → parent campaign COP and Assess tabs. Extends Phase 26 inheritance to full bidirectional flow.
+**Requirements**: [INH-01, INH-02, INH-03, INH-04, INH-05, INH-06, INH-07, INH-08, INH-09, INH-10, INH-11, INH-12, INH-13, INH-14, INH-15, INH-16, INH-17]
+**Depends on:** Phase 37, Phase 26 (strategic environment inheritance)
+**Plans:** 6/6 plans complete
+
+Plans:
+- [x] 38-01-PLAN.md — Foundation types, DB schema, store extensions for all 4 capabilities
+- [ ] 38-02-PLAN.md — Change notification service, read-only enforcement, interpretation ack, override tracking API
+- [ ] 38-03-PLAN.md — FRAGO service: OPORD diff detection, AI drafting, commander review lifecycle
+- [ ] 38-04-PLAN.md — WebSocket status channel, status aggregation service, DDIL fallback
+- [ ] 38-05-PLAN.md — Frontend change notification banner, badges, override tracking, interpretation ack UI
+- [ ] 38-06-PLAN.md — Frontend FRAGO review, mission status cards, COP/Assess tab integration
 
 ---
 

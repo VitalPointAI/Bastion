@@ -27,6 +27,9 @@ import { GraphExplorer, type GraphData } from '../graph/GraphExplorer.js';
 import { NodeDetailPanel } from '../graph/NodeDetailPanel.js';
 import { ActivityFeed } from '../problem-set/ActivityFeed.js';
 import type { RegisteredResource } from '../../lib/resource-registry-service.js';
+import { inheritanceApiService, type AggregatedMissionStatus, type MissionStatusSnapshot } from '../../services/inheritance-service.js';
+import { MissionStatusCard } from '../inheritance/MissionStatusCard.js';
+import { MissionStatusDrilldown } from '../inheritance/MissionStatusDrilldown.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -137,6 +140,12 @@ export function COPTab({ problemSetId }: COPTabProps) {
   // Role from workspace context (for ActivityFeed)
   const { userRoleInActive } = useProblemSet();
 
+  // Subordinate mission status (Phase 38)
+  const [missionStatuses, setMissionStatuses] = useState<AggregatedMissionStatus[]>([]);
+  const [drillDownPsId, setDrillDownPsId] = useState<string | null>(null);
+  const [drillDownSnapshot, setDrillDownSnapshot] = useState<MissionStatusSnapshot | null>(null);
+  const [missionSectionOpen, setMissionSectionOpen] = useState(true);
+
   // Extract temporal phases from loaded layers
   const temporalPhases = useMemo((): COPPhaseSpec[] => {
     for (const layer of layers) {
@@ -222,6 +231,63 @@ export function COPTab({ problemSetId }: COPTabProps) {
 
     checkAndTrigger();
   }, [problemSetId, handleLayersLoaded]);
+
+  // ─── Subordinate mission status (Phase 38) ──────────────────────────────
+
+  useEffect(() => {
+    let wsCleanup: (() => void) | null = null;
+
+    async function loadMissionStatus() {
+      try {
+        const statuses = await inheritanceApiService.getMissionStatus(problemSetId);
+        if (statuses.length > 0) {
+          setMissionStatuses(statuses);
+
+          // Subscribe to real-time updates
+          wsCleanup = inheritanceApiService.connectStatusStream(
+            problemSetId,
+            (updatedStatus) => {
+              setMissionStatuses((prev) => {
+                const idx = prev.findIndex((s) => s.childPsId === updatedStatus.childPsId);
+                if (idx >= 0) {
+                  const next = [...prev];
+                  next[idx] = updatedStatus;
+                  return next;
+                }
+                return [...prev, updatedStatus];
+              });
+            },
+          );
+        }
+      } catch {
+        // No child missions or API not available — silently skip
+      }
+    }
+
+    loadMissionStatus();
+
+    return () => {
+      if (wsCleanup) wsCleanup();
+    };
+  }, [problemSetId]);
+
+  // Drill-down handler
+  const handleMissionDrillDown = useCallback(async (childPsId: string) => {
+    if (drillDownPsId === childPsId) {
+      // Toggle off
+      setDrillDownPsId(null);
+      setDrillDownSnapshot(null);
+      return;
+    }
+
+    try {
+      const snapshot = await inheritanceApiService.getMissionDrilldown(problemSetId, childPsId);
+      setDrillDownPsId(childPsId);
+      setDrillDownSnapshot(snapshot);
+    } catch (err) {
+      console.warn('[COP] Drill-down fetch failed:', err);
+    }
+  }, [problemSetId, drillDownPsId]);
 
   // ─── Manual generation handler ──────────────────────────────────────────
 
@@ -455,6 +521,79 @@ export function COPTab({ problemSetId }: COPTabProps) {
           </div>
         )}
       </div>
+
+      {/* Subordinate Missions (Phase 38) */}
+      {missionStatuses.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          bottom: temporalPhases.length > 0 ? '60px' : '8px',
+          left: '8px',
+          right: sidebarOpen ? '328px' : '8px',
+          zIndex: 900,
+          backgroundColor: 'rgba(17, 24, 39, 0.95)',
+          border: '1px solid #374151',
+          borderRadius: '8px',
+          maxHeight: missionSectionOpen ? '320px' : '36px',
+          overflow: 'hidden',
+          transition: 'max-height 0.2s ease',
+        }}>
+          {/* Collapse header */}
+          <button
+            onClick={() => setMissionSectionOpen((v) => !v)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              padding: '8px 12px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderBottom: missionSectionOpen ? '1px solid #374151' : 'none',
+              color: '#9ca3af',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: 600,
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.5px',
+            }}
+          >
+            <span>Subordinate Missions ({missionStatuses.length})</span>
+            <span style={{ fontSize: '10px' }}>{missionSectionOpen ? '▼' : '▲'}</span>
+          </button>
+
+          {missionSectionOpen && (
+            <div style={{ padding: '8px 12px', overflowY: 'auto', maxHeight: '270px' }}>
+              {/* Card grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                gap: '8px',
+                marginBottom: drillDownSnapshot ? '8px' : '0',
+              }}>
+                {missionStatuses.map((status) => (
+                  <MissionStatusCard
+                    key={status.childPsId}
+                    status={status}
+                    onDrillDown={handleMissionDrillDown}
+                  />
+                ))}
+              </div>
+
+              {/* Inline drill-down */}
+              {drillDownPsId && drillDownSnapshot && (
+                <MissionStatusDrilldown
+                  childPsId={drillDownPsId}
+                  snapshot={drillDownSnapshot}
+                  onClose={() => {
+                    setDrillDownPsId(null);
+                    setDrillDownSnapshot(null);
+                  }}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Resource detail panel (overlays on right side of map) */}
       {selectedResource && (
