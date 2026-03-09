@@ -385,7 +385,8 @@ function analyzeCenterOfGravityFallback(cogAnalysis: CoGAnalysis): CoGAnalysisOu
  * suggestions. Falls back to rule-based analysis on LLM error.
  */
 export async function analyzeCenterOfGravity(
-  cogAnalysis: CoGAnalysis
+  cogAnalysis: CoGAnalysis,
+  strategicContext?: string,
 ): Promise<CoGAnalysisOutput> {
   try {
     const llm = await createLLMForAgent({
@@ -393,7 +394,10 @@ export async function analyzeCenterOfGravity(
       overrides: { temperature: 0.3, maxTokens: 4096 },
     });
 
-    const userPrompt = buildCogUserPrompt(cogAnalysis);
+    let userPrompt = buildCogUserPrompt(cogAnalysis);
+    if (strategicContext) {
+      userPrompt = `${strategicContext}\n\n${userPrompt}`;
+    }
 
     const response = await llm.invoke([
       { role: 'system', content: COG_SYSTEM_PROMPT },

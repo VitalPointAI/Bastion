@@ -11,6 +11,8 @@ import { designService } from '../../lib/design-service.ts';
 import { AIFramingCard } from './AIFramingCard.tsx';
 import type { AlternativeFraming } from './AIFramingCard.tsx';
 import { AgentTeamComposer } from './AgentTeamComposer.tsx';
+import { useAIStaffDispatch } from '../../context/AIStaffContext.tsx';
+import type { AIFeedItem } from '../../types/ai-staff.ts';
 
 // ==========================================================================
 // CoG Analysis Types (mirrors backend CoGAnalysisOutput)
@@ -275,6 +277,13 @@ function LoeGapCard({
 // Main Component
 // ==========================================================================
 
+const SECTION_AGENT_NAMES: Record<string, { id: string; name: string }> = {
+  'problem-framing': { id: 'problem_framing', name: 'Problem Framing Agent' },
+  'cog-analysis': { id: 'cog_analysis', name: 'CoG Analysis Agent' },
+  'lines-of-effort': { id: 'loe_gap_analysis', name: 'LOE Gap Analysis Agent' },
+  'operational-approach': { id: 'narrative_synthesis', name: 'Narrative Synthesis Agent' },
+};
+
 export function DesignAIPanel({
   problemSetId,
   activeSection,
@@ -292,6 +301,9 @@ export function DesignAIPanel({
   const [dismissedIds, setDismissedIds] = useState<Map<string, Set<number>>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // AI Activity feed integration
+  const aiDispatch = useAIStaffDispatch();
 
   // Agent team composition: additional agents per section
   const [sectionAgents, setSectionAgents] = useState<Map<string, string[]>>(new Map());
@@ -313,6 +325,27 @@ export function DesignAIPanel({
   const handleAnalyze = useCallback(async () => {
     setLoading(true);
     setError(null);
+
+    const agentInfo = SECTION_AGENT_NAMES[activeSection] || { id: 'design_agent', name: 'Design Agent' };
+    const sectionLabel = activeSection.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    // Emit "started" activity
+    const startItem: AIFeedItem = {
+      id: `design-${activeSection}-${Date.now()}`,
+      agentId: agentInfo.id,
+      agentDisplayName: agentInfo.name,
+      agentRole: 'analyst',
+      sourceTab: 'design',
+      priority: 'medium',
+      urgency: 'info',
+      content: `Analyzing ${sectionLabel} section${additionalAgents.length > 0 ? ` with ${additionalAgents.length + 1} agents` : ''}...`,
+      contentType: 'status',
+      confidence: 'possible',
+      timestamp: new Date().toISOString(),
+      isRead: false,
+    };
+    aiDispatch.addFeedItem(startItem);
+
     try {
       const result = await designService.analyzeSection(
         problemSetId,
@@ -331,13 +364,47 @@ export function DesignAIPanel({
         next.delete(activeSection);
         return next;
       });
+
+      // Emit "completed" activity
+      const completeItem: AIFeedItem = {
+        id: `design-${activeSection}-done-${Date.now()}`,
+        agentId: agentInfo.id,
+        agentDisplayName: agentInfo.name,
+        agentRole: 'analyst',
+        sourceTab: 'design',
+        priority: 'medium',
+        urgency: 'attention',
+        content: `${sectionLabel} analysis complete. Review results in the AI panel.`,
+        contentType: 'analysis',
+        confidence: 'probable',
+        timestamp: new Date().toISOString(),
+        isRead: false,
+      };
+      aiDispatch.addFeedItem(completeItem);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Analysis failed';
       setError(message);
+
+      // Emit error activity
+      const errorItem: AIFeedItem = {
+        id: `design-${activeSection}-err-${Date.now()}`,
+        agentId: agentInfo.id,
+        agentDisplayName: agentInfo.name,
+        agentRole: 'analyst',
+        sourceTab: 'design',
+        priority: 'high',
+        urgency: 'action_required',
+        content: `${sectionLabel} analysis failed: ${message}`,
+        contentType: 'warning',
+        confidence: 'confirmed',
+        timestamp: new Date().toISOString(),
+        isRead: false,
+      };
+      aiDispatch.addFeedItem(errorItem);
     } finally {
       setLoading(false);
     }
-  }, [problemSetId, activeSection, sectionData, additionalAgents]);
+  }, [problemSetId, activeSection, sectionData, additionalAgents, aiDispatch]);
 
   const handleDismiss = useCallback(
     (index: number) => {

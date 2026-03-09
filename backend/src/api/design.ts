@@ -8,13 +8,134 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { designStore } from '../design/design-store.js';
-import type { CoGAnalysis, LineOfEffort, OperationalApproach } from '../design/types.js';
+import type { CoGAnalysis, LineOfEffort, OperationalApproach, OperationalDesign } from '../design/types.js';
 import { getAgentRegistry } from '../agents/registry.js';
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
+import { listDocuments } from '../strategic/ingestion/document-store.js';
+import { ObjectiveStore } from '../strategic/objectives/store.js';
 
 const router = Router();
 
 const VALID_SECTIONS = ['problem-framing', 'cog-analysis', 'lines-of-effort', 'operational-approach'];
+
+const objectiveStore = new ObjectiveStore();
+
+/**
+ * Fetch strategic context (documents + objectives) for a problem set.
+ * Returns a text summary suitable for inclusion in agent prompts.
+ */
+async function getStrategicContext(problemSetId: string): Promise<string> {
+  try {
+    // Fetch documents for this problem set (workspaceId = problemSetId)
+    const docs = await listDocuments('', 50, 0, problemSetId);
+    if (docs.length === 0) return '';
+
+    const parts: string[] = ['## Strategic Context from Uploaded Documents\n'];
+
+    for (const doc of docs) {
+      parts.push(`### ${doc.title} (${doc.level}, ${doc.classification})`);
+
+      // Fetch objectives for this document
+      try {
+        const objectives = await objectiveStore.getObjectivesForDocument(doc.id);
+        if (objectives.length > 0) {
+          parts.push(`Extracted Objectives (${objectives.length}):`);
+          for (const obj of objectives.slice(0, 20)) {
+            const instrument = obj.primaryInstrument || 'unknown';
+            const priority = obj.priority || 'MEDIUM';
+            parts.push(`- [${instrument}/${priority}] ${obj.description}`);
+            if (obj.assumptions?.length) {
+              parts.push(`  Assumptions: ${obj.assumptions.join('; ')}`);
+            }
+            if (obj.risks?.length) {
+              parts.push(`  Risks: ${obj.risks.join('; ')}`);
+            }
+            if (obj.constraints?.length) {
+              parts.push(`  Constraints: ${obj.constraints.join('; ')}`);
+            }
+          }
+          if (objectives.length > 20) {
+            parts.push(`  ... and ${objectives.length - 20} more objectives`);
+          }
+        } else {
+          parts.push('(No objectives extracted yet)');
+        }
+      } catch {
+        // Objectives table may not exist yet
+      }
+
+      parts.push('');
+    }
+
+    const result = parts.join('\n');
+    // Cap at ~6000 chars to leave room in context window
+    return result.length > 6000 ? result.substring(0, 6000) + '\n...(truncated)' : result;
+  } catch (err) {
+    console.warn('[design] Failed to fetch strategic context:', err);
+    return '';
+  }
+}
+
+/**
+ * Build progressive design context from prior sections.
+ * Each section benefits from completed prior sections:
+ * - cog-analysis receives problem framing
+ * - lines-of-effort receives problem framing + CoG analysis
+ * - operational-approach receives all prior sections
+ */
+function buildPriorDesignContext(section: string, design: OperationalDesign): string {
+  const parts: string[] = [];
+
+  const pf = design.problemFraming;
+  const hasProblemFraming = pf && (pf.currentState || pf.problemStatement || pf.desiredEndState);
+
+  // CoG, LOE, and Operational Approach all benefit from problem framing
+  if (section !== 'problem-framing' && hasProblemFraming) {
+    parts.push('## Prior Design Context: Problem Framing');
+    if (pf.currentState) parts.push(`Current State: ${pf.currentState}`);
+    if (pf.problemStatement) parts.push(`Problem Statement: ${pf.problemStatement}`);
+    if (pf.desiredEndState) parts.push(`Desired End State: ${pf.desiredEndState}`);
+    if (pf.keyTensions?.length) parts.push(`Key Tensions: ${pf.keyTensions.join('; ')}`);
+    if (pf.obstacles?.length) parts.push(`Obstacles: ${pf.obstacles.join('; ')}`);
+    if (pf.opportunities?.length) parts.push(`Opportunities: ${pf.opportunities.join('; ')}`);
+    if (pf.assumptions?.length) parts.push(`Assumptions: ${pf.assumptions.join('; ')}`);
+    if (pf.constraints?.length) parts.push(`Constraints: ${pf.constraints.join('; ')}`);
+    parts.push('');
+  }
+
+  const cog = design.cogAnalysis;
+  const hasCog = cog && (cog.friendly?.root || cog.adversary?.root);
+
+  // LOE and Operational Approach benefit from CoG analysis
+  if ((section === 'lines-of-effort' || section === 'operational-approach') && hasCog) {
+    parts.push('## Prior Design Context: Center of Gravity Analysis');
+    if (cog.friendly?.root) {
+      parts.push(`Friendly CoG: ${cog.friendly.root.label}${cog.friendly.root.description ? ` — ${cog.friendly.root.description}` : ''}`);
+      const fCCs = cog.friendly.root.children?.filter(c => c.type === 'critical-capability') || [];
+      if (fCCs.length) parts.push(`  Critical Capabilities: ${fCCs.map(c => c.label).join(', ')}`);
+    }
+    if (cog.adversary?.root) {
+      parts.push(`Adversary CoG: ${cog.adversary.root.label}${cog.adversary.root.description ? ` — ${cog.adversary.root.description}` : ''}`);
+      const aCCs = cog.adversary.root.children?.filter(c => c.type === 'critical-capability') || [];
+      if (aCCs.length) parts.push(`  Critical Capabilities: ${aCCs.map(c => c.label).join(', ')}`);
+    }
+    parts.push('');
+  }
+
+  const loes = design.linesOfEffort;
+  const hasLOEs = loes && loes.length > 0;
+
+  // Operational Approach benefits from LOE data
+  if (section === 'operational-approach' && hasLOEs) {
+    parts.push('## Prior Design Context: Lines of Effort');
+    for (const loe of loes) {
+      parts.push(`- LOE: ${loe.name}${loe.description ? ` — ${loe.description}` : ''}`);
+    }
+    parts.push('');
+  }
+
+  return parts.join('\n');
+}
 
 /**
  * GET /api/design/:problemSetId
@@ -126,13 +247,30 @@ router.post('/:problemSetId/analyze', async (req: Request, res: Response) => {
       return;
     }
 
+    // ── Fetch strategic context from Understand tab documents ─────────────
+    const problemSetId = req.params.problemSetId as string;
+    const strategicContext = await getStrategicContext(problemSetId);
+    if (strategicContext) {
+      console.log(`[design] Injecting strategic context (${strategicContext.length} chars) into ${section} analysis`);
+    }
+
+    // ── Fetch current design state for progressive context enrichment ────
+    // Each section benefits from prior sections: problem-framing → cog → LOE → narrative
+    const design = await designStore.getByProblemSetId(problemSetId);
+    const priorContext = buildPriorDesignContext(section, design);
+    const fullContext = [strategicContext, priorContext].filter(Boolean).join('\n\n');
+
     // ── Primary section analysis ──────────────────────────────────────────
     let primaryOutput: Record<string, unknown>;
 
     if (section === 'problem-framing') {
       const { generateFramings } = await import('../agents/problem-framing.js');
+      // Prepend strategic context to situation description
+      const situationWithContext = fullContext
+        ? `${fullContext}\n\n## Current Situation Assessment\n${(context?.currentState as string) || ''}`
+        : (context?.currentState as string) || '';
       const output = await generateFramings(
-        (context?.currentState as string) || '',
+        situationWithContext,
         (context?.problemStatement as string) || '',
         (context?.desiredEndState as string) || '',
         (context?.assumptions as string[]) || []
@@ -142,21 +280,20 @@ router.post('/:problemSetId/analyze', async (req: Request, res: Response) => {
     } else if (section === 'cog-analysis') {
       const { analyzeCenterOfGravity } = await import('../agents/cog-analysis.js');
       const cogData = context as unknown as CoGAnalysis;
-      primaryOutput = await analyzeCenterOfGravity(cogData) as unknown as Record<string, unknown>;
+      primaryOutput = await analyzeCenterOfGravity(cogData, fullContext) as unknown as Record<string, unknown>;
     } else if (section === 'lines-of-effort') {
       const { analyzeLOEGaps } = await import('../agents/loe-gap-analysis.js');
       const loeData = ((context as Record<string, unknown>)?.loes as LineOfEffort[]) || [];
       const cogData = ((context as Record<string, unknown>)?.cogAnalysis as CoGAnalysis) || { friendly: { root: null }, adversary: { root: null } };
-      primaryOutput = await analyzeLOEGaps(loeData, cogData) as unknown as Record<string, unknown>;
+      primaryOutput = await analyzeLOEGaps(loeData, cogData, fullContext) as unknown as Record<string, unknown>;
     } else if (section === 'operational-approach') {
       const { synthesizeNarrative } = await import('../agents/narrative-synthesis.js');
-      const design = await designStore.getByProblemSetId(req.params.problemSetId as string);
       primaryOutput = await synthesizeNarrative({
         problemFraming: design.problemFraming,
         cogAnalysis: design.cogAnalysis,
         linesOfEffort: design.linesOfEffort,
         operationalApproach: design.operationalApproach,
-      }) as unknown as Record<string, unknown>;
+      }, fullContext) as unknown as Record<string, unknown>;
     } else {
       res.status(400).json({ error: `Unsupported analysis section: ${section}` });
       return;
@@ -168,7 +305,8 @@ router.post('/:problemSetId/analyze', async (req: Request, res: Response) => {
         additionalAgents,
         section,
         context,
-        req.params.problemSetId as string,
+        problemSetId,
+        strategicContext,
       );
       primaryOutput.agentContributions = contributions;
     }
@@ -208,6 +346,7 @@ async function getAgentContributions(
   section: string,
   context: Record<string, unknown>,
   problemSetId: string,
+  strategicContext?: string,
 ): Promise<AgentContribution[]> {
   const registry = getAgentRegistry();
   await registry.ensureInitialized();
@@ -240,10 +379,14 @@ You have been asked to contribute a supplementary analysis to the "${sectionLabe
 
 CRITICAL: Respond ONLY with a JSON object: { "analysis": "your analysis paragraph", "confidence": 0.0-1.0, "keyPoints": ["point1", "point2", ...] }`;
 
+      const strategicCtxBlock = strategicContext
+        ? `\n\nStrategic Context (from uploaded documents):\n${strategicContext.substring(0, 2000)}\n`
+        : '';
+
       const userPrompt = `Provide your supplementary analysis for this ${sectionLabel} section.
 
 Problem Set ID: ${problemSetId}
-
+${strategicCtxBlock}
 Section Data:
 ${contextSummary}
 

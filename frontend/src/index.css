@@ -62,15 +62,17 @@
 }
 
 /* react-d3-tree: force light text on dark theme org trees */
-.rd3t-label__title {
+.rd3t-label__title,
+.org-tree-node-title {
   fill: #f9fafb !important;
   font-weight: 600;
 }
-.rd3t-label__attributes {
-  fill: #9ca3af !important;
+.rd3t-label__attributes,
+.org-tree-node-meta {
+  fill: #d1d5db !important;
 }
 .rd3t-tree-container text {
-  fill: #e2e8f0;
+  fill: #e2e8f0 !important;
 }
 
 @keyframes badge-pulse {

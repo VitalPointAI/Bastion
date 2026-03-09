@@ -344,7 +344,8 @@ function analyzeLOEGapsFallback(
  */
 export async function analyzeLOEGaps(
   loes: LineOfEffort[],
-  cogAnalysis: CoGAnalysis
+  cogAnalysis: CoGAnalysis,
+  strategicContext?: string,
 ): Promise<LOEGapAnalysisOutput> {
   try {
     const llm = await createLLMForAgent({
@@ -352,7 +353,10 @@ export async function analyzeLOEGaps(
       overrides: { temperature: 0.3, maxTokens: 4096 },
     });
 
-    const userPrompt = buildLoeUserPrompt(loes, cogAnalysis);
+    let userPrompt = buildLoeUserPrompt(loes, cogAnalysis);
+    if (strategicContext) {
+      userPrompt = `${strategicContext}\n\n${userPrompt}`;
+    }
 
     const response = await llm.invoke([
       { role: 'system', content: LOE_SYSTEM_PROMPT },

@@ -120,7 +120,7 @@ export function ContainerAgentPanel({
   // Get agent display name from available agents or fall back to agentId
   const getAgentName = (agentId: string): string => {
     const agent = availableAgents.find((a) => a.agentId === agentId);
-    return agent?.displayName || agentId.substring(0, 20);
+    return agent?.displayName || (agentId ? agentId.substring(0, 20) : 'Agent');
   };
 
   // Filter out already-assigned agents
