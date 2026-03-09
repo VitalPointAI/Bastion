@@ -1,0 +1,102 @@
+[
+  {
+    "id": "DEMO-DOC-001",
+    "filename": "01. Pacific Strategy Experiential Learning Event_Directive_AY26.pdf",
+    "sourcePath": "scenario/01. Pacific Strategy Experiential Learning Event_Directive_AY26.pdf",
+    "problemSetId": "DEMO-PS-indopacom-theater",
+    "team": "scenario",
+    "phase": "competition",
+    "docType": "directive",
+    "description": "INDOPACOM theater-level strategic directive establishing the Pacific Strategy AY26 exercise framework, objectives, and command relationships"
+  },
+  {
+    "id": "DEMO-DOC-002",
+    "filename": "INDOPACOM ALERTORD to CJTF WestPAC_18MAR30_AY26 PS.docx",
+    "sourcePath": "scenario/blue team/Team BLUE/2. Overall (Phase 3-5) - Blue Campaign Plan/01. INDOPACOM ALERTORD to CJTF WestPAC_18MAR30_AY26 PS.docx",
+    "problemSetId": "DEMO-PS-indopacom-theater",
+    "team": "blue",
+    "phase": "crisis",
+    "docType": "plan",
+    "description": "INDOPACOM Alert Order directing CJTF-WestPac activation and initial force deployment posture"
+  },
+  {
+    "id": "DEMO-DOC-003",
+    "filename": "CJTF WestPAC_Campaign Plan_AY26 PS.pptx",
+    "sourcePath": "scenario/blue team/Team BLUE/2. Overall (Phase 3-5) - Blue Campaign Plan/02. CJTF WestPAC_Campaign Plan_AY26 PS.pptx",
+    "problemSetId": "DEMO-PS-cjtf-westpac",
+    "team": "blue",
+    "phase": "conflict",
+    "docType": "plan",
+    "description": "CJTF-WestPac campaign plan covering Phases 3-5 conflict operations including force employment and objectives"
+  },
+  {
+    "id": "DEMO-DOC-004",
+    "filename": "IPC J3 Email to IPC JIACG 24FEB30.docx",
+    "sourcePath": "scenario/blue team/Team BLUE/1. Crisis - (Phase 2) - BLUE Crisis Situation Update/IPC J3 Email to IPC JIACG 24FEB30.docx",
+    "problemSetId": "DEMO-PS-cjtf-westpac",
+    "team": "blue",
+    "phase": "crisis",
+    "docType": "sitrep",
+    "description": "INDOPACOM J3 crisis situation update to Joint Interagency Coordination Group during Phase 2 escalation"
+  },
+  {
+    "id": "DEMO-DOC-005",
+    "filename": "CJTF-WP Day 4 Sitrep_AY26 PS.docx",
+    "sourcePath": "scenario/blue team/Team BLUE/2.1 - Phase 3 (Day 4) - Blue Sitrep/CJTF-WP Day 4 Sitrep_AY26 PS.docx",
+    "problemSetId": "DEMO-PS-cjtf-westpac",
+    "team": "blue",
+    "phase": "conflict",
+    "docType": "sitrep",
+    "description": "CJTF-WestPac Day 4 situation report covering initial conflict operations and force posture"
+  },
+  {
+    "id": "DEMO-DOC-006",
+    "filename": "CMC JSD EMAIL 24FEB30.docx",
+    "sourcePath": "scenario/red team/1. RED CRISIS Situation Update/03. CMC JSD EMAIL 24FEB30.docx",
+    "problemSetId": "DEMO-PS-indopacom-theater",
+    "team": "red",
+    "phase": "crisis",
+    "docType": "intelligence",
+    "description": "PLA Central Military Commission Joint Staff Department communication during crisis escalation phase"
+  },
+  {
+    "id": "DEMO-DOC-007",
+    "filename": "CMC JSD ALERTORD to TWN Campaign Cmd_AY26.docx",
+    "sourcePath": "scenario/red team/2. Phase 3-5 - Red Campaign Plan/01. CMC JSD ALERTORD to TWN Campaign Cmd_AY26.docx",
+    "problemSetId": "DEMO-PS-indopacom-theater",
+    "team": "red",
+    "phase": "conflict",
+    "docType": "intelligence",
+    "description": "PLA alert order directing Taiwan Campaign Command activation — captured intelligence product"
+  },
+  {
+    "id": "DEMO-DOC-008",
+    "filename": "TCC Day 4 Sitrep_AY26 PS.docx",
+    "sourcePath": "scenario/red team/2.1 - Phase 3 (Day 4) - Red Sitrep/TCC Day 4 Sitrep_AY26 PS.docx",
+    "problemSetId": "DEMO-PS-cjtf-westpac",
+    "team": "red",
+    "phase": "conflict",
+    "docType": "intelligence",
+    "description": "PLA Taiwan Campaign Command Day 4 situation report — intercepted intelligence assessment"
+  },
+  {
+    "id": "DEMO-DOC-009",
+    "filename": "RM2 indopacom_posture_statement_2025.pdf",
+    "sourcePath": "scenario/scenario phases/02. Phase 1 - Competition (Fri am)/02. Background Readings/RM2 indopacom_posture_statement_2025.pdf",
+    "problemSetId": "DEMO-PS-indopacom-theater",
+    "team": "scenario",
+    "phase": "competition",
+    "docType": "directive",
+    "description": "USINDOPACOM 2025 posture statement — strategic context and force posture assessment for the Indo-Pacific theater"
+  },
+  {
+    "id": "DEMO-DOC-010",
+    "filename": "Preparation for Phase 1 - Competition.docx",
+    "sourcePath": "scenario/scenario phases/02. Phase 1 - Competition (Fri am)/01. Preparation for the Competition Phase/Preparation for Phase 1 - Competition.docx",
+    "problemSetId": "DEMO-PS-indopacom-theater",
+    "team": "scenario",
+    "phase": "competition",
+    "docType": "plan",
+    "description": "Competition phase preparation guide establishing initial conditions, key dynamics, and planning considerations"
+  }
+]
