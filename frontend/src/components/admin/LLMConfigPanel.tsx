@@ -60,6 +60,9 @@ export function LLMConfigPanel() {
   const [oauthClientId, setOAuthClientId] = useState('');
   const [oauthClientSecret, setOAuthClientSecret] = useState('');
   const [isConnectingOAuth, setIsConnectingOAuth] = useState(false);
+  const [pasteToken, setPasteToken] = useState('');
+  const [isSavingToken, setIsSavingToken] = useState(false);
+  const [showAdvancedOAuth, setShowAdvancedOAuth] = useState(false);
 
   const {
     register,
@@ -329,50 +332,100 @@ export function LLMConfigPanel() {
               </div>
             ) : (
               <div className="oauth-setup">
-                <div className="form-row">
-                  <FormField label="OAuth Client ID" hint="From Anthropic developer console">
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={oauthClientId}
-                      onChange={(e) => setOAuthClientId(e.target.value)}
-                      placeholder="Enter OAuth client ID"
-                    />
-                  </FormField>
-                  <FormField label="OAuth Client Secret" hint="Required for token exchange">
+                <FormField
+                  label="Paste OAuth Token"
+                  hint="From `claude login` or `claude setup-token` (sk-ant-oat01-...)"
+                >
+                  <div className="oauth-paste-row">
                     <input
                       type="password"
                       className="form-input"
-                      value={oauthClientSecret}
-                      onChange={(e) => setOAuthClientSecret(e.target.value)}
-                      placeholder="Enter OAuth client secret"
+                      value={pasteToken}
+                      onChange={(e) => setPasteToken(e.target.value)}
+                      placeholder="sk-ant-oat01-..."
                       autoComplete="new-password"
                     />
-                  </FormField>
+                    <button
+                      type="button"
+                      className="btn btn--primary"
+                      disabled={isSavingToken || !pasteToken.trim()}
+                      onClick={async () => {
+                        try {
+                          setIsSavingToken(true);
+                          setError(null);
+                          await adminService.saveOAuthToken(pasteToken.trim());
+                          setPasteToken('');
+                          setOAuthStatus({ connected: true, hasClientId: false, hasClientSecret: false, tokenExpiresAt: null, scopes: [] });
+                          setSuccessMessage('OAuth token saved successfully');
+                          setTimeout(() => setSuccessMessage(null), 3000);
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : 'Failed to save token');
+                        } finally {
+                          setIsSavingToken(false);
+                        }
+                      }}
+                    >
+                      {isSavingToken ? 'Saving...' : 'Save Token'}
+                    </button>
+                  </div>
+                </FormField>
+
+                <div className="oauth-advanced-toggle">
+                  <button
+                    type="button"
+                    className="btn btn--link btn--sm"
+                    onClick={() => setShowAdvancedOAuth(!showAdvancedOAuth)}
+                  >
+                    {showAdvancedOAuth ? 'Hide' : 'Advanced'}: OAuth Authorization Code Flow
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  disabled={isConnectingOAuth || !oauthClientId}
-                  onClick={async () => {
-                    try {
-                      setIsConnectingOAuth(true);
-                      setError(null);
-                      // Save client credentials first
-                      await adminService.updateLLMConfig({
-                        oauth: { clientId: oauthClientId, clientSecret: oauthClientSecret },
-                      } as Partial<LLMProviderConfig>);
-                      // Get authorize URL and redirect
-                      const { authorizeUrl } = await adminService.getOAuthAuthorizeUrl('anthropic');
-                      window.location.href = authorizeUrl;
-                    } catch (err) {
-                      setError(err instanceof Error ? err.message : 'Failed to initiate OAuth');
-                      setIsConnectingOAuth(false);
-                    }
-                  }}
-                >
-                  {isConnectingOAuth ? 'Redirecting...' : 'Connect with Anthropic'}
-                </button>
+
+                {showAdvancedOAuth && (
+                  <div className="oauth-advanced">
+                    <div className="form-row">
+                      <FormField label="OAuth Client ID" hint="From Anthropic developer console">
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={oauthClientId}
+                          onChange={(e) => setOAuthClientId(e.target.value)}
+                          placeholder="Enter OAuth client ID"
+                        />
+                      </FormField>
+                      <FormField label="OAuth Client Secret" hint="Required for token exchange">
+                        <input
+                          type="password"
+                          className="form-input"
+                          value={oauthClientSecret}
+                          onChange={(e) => setOAuthClientSecret(e.target.value)}
+                          placeholder="Enter OAuth client secret"
+                          autoComplete="new-password"
+                        />
+                      </FormField>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn--primary"
+                      disabled={isConnectingOAuth || !oauthClientId}
+                      onClick={async () => {
+                        try {
+                          setIsConnectingOAuth(true);
+                          setError(null);
+                          await adminService.updateLLMConfig({
+                            oauth: { clientId: oauthClientId, clientSecret: oauthClientSecret },
+                          } as Partial<LLMProviderConfig>);
+                          const { authorizeUrl } = await adminService.getOAuthAuthorizeUrl('anthropic');
+                          window.location.href = authorizeUrl;
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : 'Failed to initiate OAuth');
+                          setIsConnectingOAuth(false);
+                        }
+                      }}
+                    >
+                      {isConnectingOAuth ? 'Redirecting...' : 'Connect with Anthropic'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

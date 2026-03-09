@@ -25,7 +25,7 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null;
  * Write the OAuth token to the shared volume so Ironclaw can pick it up.
  * Fails silently when the shared volume isn't mounted (e.g. local dev).
  */
-async function syncTokenToFile(token: string): Promise<void> {
+export async function syncTokenToFile(token: string): Promise<void> {
   try {
     await mkdir(dirname(TOKEN_SYNC_PATH), { recursive: true });
     await writeFile(TOKEN_SYNC_PATH, token, { mode: 0o600 });

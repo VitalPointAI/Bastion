@@ -218,6 +218,16 @@ class AdminService {
   }
 
   /**
+   * Save a manually pasted OAuth token (from `claude login` or `claude setup-token`).
+   */
+  async saveOAuthToken(token: string): Promise<void> {
+    await this.fetch('/api/admin/oauth/token', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  /**
    * Disconnect OAuth — revoke tokens and clear config.
    */
   async disconnectOAuth(): Promise<void> {

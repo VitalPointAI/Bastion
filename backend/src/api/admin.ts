@@ -744,6 +744,46 @@ router.get('/oauth/status', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/admin/oauth/token - Save a manually pasted OAuth token.
+ * Use this when you don't have OAuth client credentials (client_id/secret)
+ * but have a token from `claude login` or `claude setup-token`.
+ */
+router.post('/oauth/token', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body as { token?: string };
+
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      res.status(400).json({ error: 'Token is required' });
+      return;
+    }
+
+    await configService.updateLLMConfig(
+      {
+        oauth: {
+          accessToken: token.trim(),
+          connected: true,
+          // No refresh token or expiry — manual tokens don't auto-renew.
+          // User will be notified when it stops working.
+        },
+      },
+      'system',
+      'OAuth token saved manually via Admin UI',
+    );
+
+    // Also sync to shared volume for Ironclaw
+    try {
+      const { syncTokenToFile } = await import('../auth/oauth-token-refresh.js');
+      await syncTokenToFile(token.trim());
+    } catch { /* shared volume not mounted */ }
+
+    res.json({ success: true, message: 'OAuth token saved' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: message });
+  }
+});
+
 // ============================================================================
 // Cache Invalidation Endpoint
 // ============================================================================
