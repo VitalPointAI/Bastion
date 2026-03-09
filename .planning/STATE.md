@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-08T23:36:45.955Z"
+last_updated: "2026-03-09T02:30:07.342Z"
 progress:
-  total_phases: 54
+  total_phases: 55
   completed_phases: 35
-  total_plans: 323
-  completed_plans: 326
+  total_plans: 330
+  completed_plans: 327
 ---
 
 # Project State
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 38 of 40 (Inheritance Deepening) — COMPLETE
-Plan: 6 of 6 in current phase — COMPLETE
-Status: Phase 38 complete — All 6 plans executed (05 completed last, out of order with 06)
-Last activity: 2026-03-09 - Completed quick task 11: Fix training mode tab differentiation and re-enable improved AI agents
+Phase: 39 of 40 (Operational Demonstration Data Package) — IN PROGRESS
+Plan: 1 of 7 in current phase — COMPLETE
+Status: Plan 39-01 complete — foundation seed scripts (problem sets, units, cleanup, orchestrator)
+Last activity: 2026-03-09 - Completed 39-01: Foundation seed scripts for demo data package
 
-Progress: ██████████████████████████ 326 plans complete
+Progress: ██████████████████████████ 327 plans complete
 
 ## Performance Metrics
 
@@ -154,6 +154,7 @@ Progress: ███████████████████████�
 | Phase 38-inheritance-deepening P04 | 7 | 2 tasks | 4 files |
 | Phase 38-inheritance-deepening P06 | 6 | 2 tasks | 6 files |
 | Phase 38-inheritance-deepening P05 | 7 | 2 tasks | 10 files |
+| Phase 39 P01 | 8 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -724,6 +725,7 @@ Recent decisions affecting current work:
 - [Phase 38-inheritance-deepening]: Inheritance notification polling at 30s interval on Understand tab
 - [Phase 38-inheritance-deepening]: Mirrored backend types inline in frontend service due to tsconfig scope restriction
 - [Phase 38-inheritance-deepening]: Inline drilldown pattern for COP mission status (expand below card, not modal)
+- [Phase 39]: Direct psql INSERT for auth-protected tables; DEMO- prefix convention for cleanup-safe IDs; units require demo exercise_scenario for FK
 
 ### Roadmap Evolution
 
