@@ -1,0 +1,72 @@
+[
+  {
+    "id": "DEMO-PS-strike-alpha",
+    "dao_id": "ps-tactical-demo-strike-alpha",
+    "name": "Strike Package Alpha",
+    "description": "Taiwan Strait carrier strike group operations — coordinated air and naval strike package for sea control and power projection",
+    "problem_statement": "Execute precision strike operations in the Taiwan Strait to deny PRC naval freedom of action",
+    "echelon": "tactical",
+    "classification": "SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-7fleet",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-logistics-bravo",
+    "dao_id": "ps-tactical-demo-logistics-bravo",
+    "name": "Logistics Convoy Bravo",
+    "description": "Guam-Philippines resupply convoy — sustainment operations supporting forward-deployed forces along the Second Island Chain",
+    "problem_statement": "Sustain forward-deployed joint forces via secure logistics corridor from Guam to Philippines",
+    "echelon": "tactical",
+    "classification": "SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-cjtf-westpac",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-3mef-arg",
+    "dao_id": "ps-tactical-demo-3mef-arg",
+    "name": "3rd MEF Amphibious Ready Group",
+    "description": "Marine expeditionary force amphibious operations — III MEF ARG supporting littoral operations in the First Island Chain",
+    "problem_statement": "Project and sustain Marine expeditionary forces in contested littoral environments",
+    "echelon": "tactical",
+    "classification": "SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-cjtf-westpac",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-cap-delta",
+    "dao_id": "ps-tactical-demo-cap-delta",
+    "name": "CAP Station Delta",
+    "description": "Combat air patrol — continuous air superiority station over the Taiwan Strait and approaches",
+    "problem_statement": "Maintain continuous combat air patrol to establish air superiority over key terrain",
+    "echelon": "tactical",
+    "classification": "SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-5af",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-isr-echo",
+    "dao_id": "ps-tactical-demo-isr-echo",
+    "name": "ISR Collection Echo",
+    "description": "Intelligence, surveillance, and reconnaissance collection mission — persistent ISR coverage of PRC military installations and naval movements",
+    "problem_statement": "Provide continuous ISR coverage to support targeting and battlespace awareness",
+    "echelon": "tactical",
+    "classification": "TOP SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-5af",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  }
+]
