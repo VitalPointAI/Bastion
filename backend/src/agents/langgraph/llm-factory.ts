@@ -7,6 +7,7 @@
 
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOpenAI } from '@langchain/openai';
+import Anthropic from '@anthropic-ai/sdk';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { configService } from '../../strategic/config/service.js';
 import type { LLMProvider } from '../../strategic/config/types.js';
@@ -34,6 +35,8 @@ export interface ResolvedLLMConfig {
   maxTokens: number;
   apiKey: string;
   baseUrl?: string;
+  /** When true, apiKey is an OAuth token requiring Bearer auth + beta header */
+  isOAuthToken?: boolean;
 }
 
 /**
@@ -49,7 +52,8 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
  * Generate a cache key from resolved config.
  */
 function getCacheKey(config: ResolvedLLMConfig): string {
-  return `${config.provider}:${config.model}:${config.temperature}:${config.maxTokens}`;
+  const authType = config.isOAuthToken ? 'oauth' : 'apikey';
+  return `${config.provider}:${config.model}:${config.temperature}:${config.maxTokens}:${authType}`;
 }
 
 /**
@@ -94,10 +98,14 @@ export async function resolveLLMConfig(
 
   // Get API key — prefer OAuth token over static API key for Anthropic
   let apiKey = globalConfig.apiKey;
+  let isOAuthToken = false;
   if (provider === 'anthropic' && globalConfig.oauth?.connected && globalConfig.oauth?.accessToken) {
     const { getValidOAuthToken } = await import('../../auth/oauth-token-refresh.js');
     const oauthToken = await getValidOAuthToken();
-    if (oauthToken) apiKey = oauthToken;
+    if (oauthToken) {
+      apiKey = oauthToken;
+      isOAuthToken = true;
+    }
   }
   const baseUrl = globalConfig.baseUrl;
 
@@ -108,6 +116,7 @@ export async function resolveLLMConfig(
     maxTokens,
     apiKey,
     baseUrl,
+    isOAuthToken,
   };
 }
 
@@ -119,6 +128,19 @@ function createChatModel(config: ResolvedLLMConfig): BaseChatModel {
 
   switch (provider) {
     case 'anthropic':
+      if (config.isOAuthToken) {
+        // OAuth tokens require Bearer auth + beta header (not x-api-key).
+        // Use createClient to bypass LangChain's apiKey handling entirely.
+        return new ChatAnthropic({
+          model,
+          temperature,
+          maxTokens,
+          createClient: () => new Anthropic({
+            authToken: apiKey,
+            defaultHeaders: { 'anthropic-beta': 'oauth-2025-04-20' },
+          }),
+        });
+      }
       return new ChatAnthropic({
         model,
         temperature,

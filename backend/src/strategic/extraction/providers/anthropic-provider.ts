@@ -18,12 +18,22 @@ export class AnthropicProvider implements LLMProvider {
   private model: string;
 
   constructor(config: ProviderConfig) {
-    if (!config.apiKey && !process.env.ANTHROPIC_API_KEY) {
+    const key = config.apiKey || process.env.ANTHROPIC_API_KEY;
+    const isOAuth = key?.startsWith('sk-ant-oat');
+
+    if (!key) {
       throw new Error('Anthropic API key required: set apiKey in config or ANTHROPIC_API_KEY env var');
     }
-    this.client = new Anthropic({
-      apiKey: config.apiKey || process.env.ANTHROPIC_API_KEY,
-    });
+
+    if (isOAuth) {
+      // OAuth tokens use Authorization: Bearer + beta header
+      this.client = new Anthropic({
+        authToken: key,
+        defaultHeaders: { 'anthropic-beta': 'oauth-2025-04-20' },
+      });
+    } else {
+      this.client = new Anthropic({ apiKey: key });
+    }
     this.model = config.model || 'claude-sonnet-4-20250514';
   }
 

@@ -481,7 +481,13 @@ router.get('/llm-models', async (req: Request, res: Response) => {
     const key = apiKey as string | undefined;
     if (key) {
       if (provider === 'anthropic') {
-        headers['x-api-key'] = key;
+        const isOAuth = key.startsWith('sk-ant-oat');
+        if (isOAuth) {
+          headers['Authorization'] = `Bearer ${key}`;
+          headers['anthropic-beta'] = 'oauth-2025-04-20';
+        } else {
+          headers['x-api-key'] = key;
+        }
         headers['anthropic-version'] = '2023-06-01';
       } else {
         headers['Authorization'] = `Bearer ${key}`;
