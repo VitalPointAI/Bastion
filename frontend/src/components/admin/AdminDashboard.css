@@ -2536,3 +2536,39 @@ body:has(.admin-dashboard),
   flex-direction: column;
   gap: 1rem;
 }
+
+.oauth-paste-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.oauth-paste-row .form-input {
+  flex: 1;
+}
+
+.oauth-advanced-toggle {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 0.75rem;
+}
+
+.oauth-advanced-toggle .btn--link {
+  background: none;
+  border: none;
+  color: var(--accent-secondary, #64b5f6);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  text-decoration: none;
+}
+
+.oauth-advanced-toggle .btn--link:hover {
+  text-decoration: underline;
+}
+
+.oauth-advanced {
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
