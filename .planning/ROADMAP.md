@@ -442,6 +442,16 @@ Plans:
 - [ ] 38-05-PLAN.md — Frontend change notification banner, badges, override tracking, interpretation ack UI
 - [ ] 38-06-PLAN.md — Frontend FRAGO review, mission status cards, COP/Assess tab integration
 
+### Phase 39: Operational demonstration data package
+
+**Goal:** Comprehensive, reusable demo data package that populates BASTION end-to-end with Pacific Strategy AY26 content — strategy through tactical missions, all doctrinal tabs, AI agent outputs, RAFT graph, OSINT events, DAO governance artifacts, and documents. Modular seed scripts with master orchestrator, idempotent upsert, demo-seed tagging for cleanup. Demonstrates full platform capability for military stakeholders and academic audiences.
+**Requirements**: TBD
+**Depends on:** Phase 38
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 39 to break down)
+
 ---
 
 **MCP Tools (deterministic operations - added to MCP server):**

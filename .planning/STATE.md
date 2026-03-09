@@ -755,6 +755,7 @@ Recent decisions affecting current work:
 - Phase 36 added: Strategic Guidance Workflow — Strategic level Plan tab for objectives, force apportionment, constraints, directive drafting
 - Phase 37 added: Training Assessment Loop — AAR capture, METL tracking (T/P/U), upward aggregation to training strategy readiness
 - Phase 38 added: Inheritance Deepening — Full bidirectional context propagation, override tracking, OPORD update notifications, upward reporting
+- Phase 39 added: Operational Demonstration Data Package — Comprehensive reusable demo data package populating BASTION end-to-end with Pacific Strategy AY26 content for military/academic demonstrations
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
