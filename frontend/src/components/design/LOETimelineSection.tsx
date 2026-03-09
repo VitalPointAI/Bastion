@@ -203,9 +203,9 @@ export function LOETimelineSection({
   const svgHeight = HEADER_HEIGHT + loes.length * LANE_HEIGHT + PADDING;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden gap-4">
       {/* Section Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-gray-100">
             Lines of Effort / Operation
@@ -214,9 +214,9 @@ export function LOETimelineSection({
         </div>
       </div>
 
-      <div className="flex gap-0">
+      <div className="flex gap-0 flex-1 min-h-0">
         {/* Main timeline area */}
-        <div className="flex-1 min-w-0 flex flex-col gap-3">
+        <div className="flex-1 min-w-0 flex flex-col gap-3 overflow-y-auto">
           {/* Phase management bar */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-gray-500 font-medium">Phases:</span>
