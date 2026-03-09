@@ -1,0 +1,19 @@
+{
+  "id": "DEMO-JPP-cjtf-westpac",
+  "problem_set_id": "DEMO-PS-cjtf-westpac",
+  "parent_jpp_id": null,
+  "echelon": "operational",
+  "current_step": "coa_analysis",
+  "step_statuses": {
+    "planning_initiation": "complete",
+    "mission_analysis": "complete",
+    "coa_development": "complete",
+    "coa_analysis": "in_progress",
+    "coa_comparison": "not_started",
+    "coa_approval": "not_started",
+    "plan_development": "not_started"
+  },
+  "status": "active",
+  "created_by": "did:near:demo-seed.near",
+  "name": "CJTF-WestPac Campaign Plan — JPP"
+}
