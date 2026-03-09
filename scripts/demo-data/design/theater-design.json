@@ -1,0 +1,440 @@
+{
+  "problemFraming": {
+    "currentState": "The People's Republic of China has intensified military, economic, and diplomatic coercion against Taiwan, conducting unprecedented military exercises in the Taiwan Strait, increasing gray-zone operations in the South China Sea, and leveraging economic dependencies to fracture alliance cohesion across the Indo-Pacific. USINDOPACOM maintains forward-deployed forces across the first and second island chains but faces sustainment challenges, basing access constraints, and competing global requirements. Regional allies are increasingly pressured by PRC economic leverage while simultaneously seeking stronger US security guarantees.",
+    "desiredEndState": "PRC deterred from forceful reunification of Taiwan; Taiwan maintains de facto independence and ability to self-govern; US-led alliance network strengthened with enhanced interoperability and burden sharing; rules-based international order preserved in the Western Pacific; freedom of navigation and overflight maintained throughout the Indo-Pacific theater; escalation managed below the nuclear threshold.",
+    "problemStatement": "How does USINDOPACOM deter PRC military coercion against Taiwan while maintaining regional stability, alliance cohesion, and freedom of navigation in the Indo-Pacific?",
+    "keyTensions": [
+      "Deterrence posture risks provoking the escalation it seeks to prevent",
+      "Alliance cohesion requires burden sharing that not all partners can sustain",
+      "Forward presence depends on host-nation basing access subject to political shifts",
+      "Economic interdependence with PRC constrains partner willingness to impose costs",
+      "Information environment allows PRC narrative operations to undermine resolve"
+    ],
+    "obstacles": [
+      "PRC anti-access/area-denial (A2/AD) capabilities threaten freedom of maneuver within the first island chain",
+      "Logistics sustainment across vast Pacific distances limits operational endurance",
+      "Coalition national caveats restrict employment of partner forces",
+      "PRC escalation management doctrine differs from Western assumptions",
+      "Limited munitions stockpiles for high-intensity conflict"
+    ],
+    "opportunities": [
+      "Strengthened AUKUS partnership provides submarine and technology advantages",
+      "Enhanced bilateral defense agreements with Japan and Philippines expand basing options",
+      "PRC internal economic pressures constrain risk tolerance for military adventurism",
+      "Allied integrated air and missile defense networks create layered deterrence",
+      "Maritime domain awareness improvements enable persistent surveillance"
+    ],
+    "assumptions": [
+      "Japan provides basing access and logistical support under the US-Japan Security Treaty",
+      "Australia commits naval and air forces to South China Sea operations per AUKUS obligations",
+      "PRC leadership operates as a rational actor weighing costs against strategic objectives",
+      "No first-use nuclear policy holds for all parties through the conflict spectrum",
+      "Taiwan maintains will to resist and sustains critical infrastructure during crisis",
+      "Commercial shipping and air routes remain viable through the second island chain"
+    ],
+    "constraints": [
+      "Rules of engagement limit preemptive action to proportional response after hostile act/intent",
+      "Coalition partner national caveats restrict offensive operations in certain areas",
+      "Logistics sustainment requires 30-day operational stockpile at forward bases",
+      "Escalation management requires graduated response options at each phase",
+      "Cyber operations must avoid collateral effects on civilian critical infrastructure"
+    ]
+  },
+  "cogAnalysis": {
+    "friendly": {
+      "root": {
+        "id": "cog-friendly-root",
+        "type": "cog",
+        "label": "Alliance Cohesion and Forward Basing Network",
+        "description": "The integrated alliance network and forward-deployed force posture that enables power projection, deterrence credibility, and rapid response across the Indo-Pacific theater",
+        "children": [
+          {
+            "id": "cc-f-1",
+            "type": "critical-capability",
+            "label": "Integrated Joint Force Projection",
+            "description": "Ability to rapidly deploy, sustain, and employ joint forces across the Western Pacific from distributed basing locations",
+            "children": [
+              {
+                "id": "cr-f-1",
+                "type": "critical-requirement",
+                "label": "Forward Basing Access",
+                "description": "Continued host-nation access to bases in Japan, Guam, Philippines, and Australia for force staging and sustainment",
+                "children": [
+                  {
+                    "id": "cv-f-1",
+                    "type": "critical-vulnerability",
+                    "label": "Host-Nation Political Will",
+                    "description": "Political shifts in allied nations could restrict or revoke basing access under PRC diplomatic or economic pressure",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "cr-f-2",
+                "type": "critical-requirement",
+                "label": "Theater Logistics Sustainment",
+                "description": "Capacity to sustain high-intensity operations across 5,000+ nm supply lines from CONUS to the Western Pacific",
+                "children": [
+                  {
+                    "id": "cv-f-2",
+                    "type": "critical-vulnerability",
+                    "label": "Long Supply Lines",
+                    "description": "Extended logistics chains across the Pacific are vulnerable to PRC submarine interdiction and anti-ship missile targeting",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "cc-f-2",
+            "type": "critical-capability",
+            "label": "Allied Interoperability",
+            "description": "Ability to seamlessly integrate command, control, and fires across US, Japanese, Australian, and partner nation forces",
+            "children": [
+              {
+                "id": "cr-f-3",
+                "type": "critical-requirement",
+                "label": "Shared C2 Architecture",
+                "description": "Common communication and data-sharing systems enabling multi-national force coordination",
+                "children": [
+                  {
+                    "id": "cv-f-3",
+                    "type": "critical-vulnerability",
+                    "label": "Classification Barriers",
+                    "description": "National classification systems and information sharing restrictions impede real-time coalition situational awareness",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "adversary": {
+      "root": {
+        "id": "cog-adversary-root",
+        "type": "cog",
+        "label": "PRC Integrated Joint Force Projection Capability",
+        "description": "The PLA's ability to project decisive military force across the Taiwan Strait through integrated joint operations combining naval, air, missile, cyber, and information warfare capabilities",
+        "children": [
+          {
+            "id": "cc-a-1",
+            "type": "critical-capability",
+            "label": "Cross-Strait Amphibious Assault",
+            "description": "Ability to transport, land, and sustain ground forces on Taiwan through amphibious and airborne operations",
+            "children": [
+              {
+                "id": "cr-a-1",
+                "type": "critical-requirement",
+                "label": "Air and Maritime Superiority over Taiwan Strait",
+                "description": "PLA must achieve air and sea control over the 100nm Taiwan Strait corridor to protect amphibious forces",
+                "children": [
+                  {
+                    "id": "cv-a-1",
+                    "type": "critical-vulnerability",
+                    "label": "Concentrated Embarkation Points",
+                    "description": "Limited PLA Navy amphibious shipping must concentrate at predictable embarkation ports along the Fujian coast, creating targeting opportunities",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "cr-a-2",
+                "type": "critical-requirement",
+                "label": "Sealift Capacity",
+                "description": "Sufficient military and requisitioned civilian sealift to transport 400,000+ troops and heavy equipment",
+                "children": [
+                  {
+                    "id": "cv-a-2",
+                    "type": "critical-vulnerability",
+                    "label": "Civilian Fleet Dependency",
+                    "description": "PLA relies on requisitioned civilian ro-ro ferries and container ships that are unarmored and vulnerable to attrition",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "cc-a-2",
+            "type": "critical-capability",
+            "label": "A2/AD Denial Umbrella",
+            "description": "Layered anti-access/area-denial capability using DF-21D/DF-26 anti-ship ballistic missiles, submarines, and integrated air defense to prevent US intervention",
+            "children": [
+              {
+                "id": "cr-a-3",
+                "type": "critical-requirement",
+                "label": "ISR and Targeting Chain",
+                "description": "Persistent surveillance and real-time targeting data from satellites, over-the-horizon radar, and maritime patrol aircraft",
+                "children": [
+                  {
+                    "id": "cv-a-3",
+                    "type": "critical-vulnerability",
+                    "label": "Space-Based ISR Dependency",
+                    "description": "PLA kill chain depends on Yaogan satellite constellation for maritime targeting data — degradable through counterspace operations",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "linesOfEffort": [
+    {
+      "id": "loe-1",
+      "name": "Deter PRC Military Aggression",
+      "description": "Demonstrate credible combat power and resolve to convince PRC leadership that the costs of military action against Taiwan outweigh any potential gains",
+      "objectiveId": null,
+      "order": 1,
+      "decisivePoints": [
+        {
+          "id": "dp-1-1",
+          "label": "Forward Force Posture Established",
+          "description": "CSG and ESG positioned in Philippine Sea; THAAD and Patriot batteries active on Okinawa and Guam",
+          "phase": "Shape",
+          "position": 1,
+          "cogLinks": [
+            {
+              "loeId": "loe-1",
+              "decisivePointId": "dp-1-1",
+              "cogNodeId": "cv-a-1",
+              "cogNodeType": "critical-vulnerability"
+            }
+          ]
+        },
+        {
+          "id": "dp-1-2",
+          "label": "Maritime Domain Awareness Achieved",
+          "description": "Persistent ISR coverage of Taiwan Strait and PLA embarkation ports; submarine barrier patrols established",
+          "phase": "Deter",
+          "position": 2,
+          "cogLinks": [
+            {
+              "loeId": "loe-1",
+              "decisivePointId": "dp-1-2",
+              "cogNodeId": "cv-a-3",
+              "cogNodeType": "critical-vulnerability"
+            }
+          ]
+        },
+        {
+          "id": "dp-1-3",
+          "label": "PLA Amphibious Capability Denied",
+          "description": "Anti-ship fires neutralize PLA sealift concentration; cross-strait transit rendered untenable",
+          "phase": "Seize Initiative",
+          "position": 3,
+          "cogLinks": [
+            {
+              "loeId": "loe-1",
+              "decisivePointId": "dp-1-3",
+              "cogNodeId": "cv-a-2",
+              "cogNodeType": "critical-vulnerability"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loe-2",
+      "name": "Strengthen Alliance Network",
+      "description": "Deepen bilateral and multilateral defense cooperation to present a unified coalition response and distribute the burden of Indo-Pacific security",
+      "objectiveId": null,
+      "order": 2,
+      "decisivePoints": [
+        {
+          "id": "dp-2-1",
+          "label": "Coalition Command Structure Activated",
+          "description": "CJTF-WestPac operational with allied liaison officers; shared C2 systems verified",
+          "phase": "Shape",
+          "position": 1,
+          "cogLinks": []
+        },
+        {
+          "id": "dp-2-2",
+          "label": "Partner Force Integration Complete",
+          "description": "Japanese MSDF, Australian Navy, Philippine Navy integrated into theater maritime operations",
+          "phase": "Deter",
+          "position": 2,
+          "cogLinks": []
+        },
+        {
+          "id": "dp-2-3",
+          "label": "Burden Sharing Agreements Executed",
+          "description": "Allied nations sustaining agreed force contributions; logistics burden distributed across theater",
+          "phase": "Dominate",
+          "position": 3,
+          "cogLinks": []
+        }
+      ]
+    },
+    {
+      "id": "loe-3",
+      "name": "Maintain Regional Stability",
+      "description": "Prevent conflict spillover, maintain ASEAN engagement, and preserve economic alternatives to PRC dependency through targeted diplomatic and economic measures",
+      "objectiveId": null,
+      "order": 3,
+      "decisivePoints": [
+        {
+          "id": "dp-3-1",
+          "label": "ASEAN Neutral Nations Engaged",
+          "description": "Diplomatic assurances and economic incentives prevent ASEAN neutrals from supporting PRC position",
+          "phase": "Shape",
+          "position": 1,
+          "cogLinks": []
+        },
+        {
+          "id": "dp-3-2",
+          "label": "Economic Alternatives Established",
+          "description": "Supply chain diversification and economic partnerships reduce regional PRC dependency",
+          "phase": "Stabilize",
+          "position": 2,
+          "cogLinks": []
+        }
+      ]
+    },
+    {
+      "id": "loe-4",
+      "name": "Information Operations",
+      "description": "Counter PRC information warfare, support Taiwan societal resilience, and maintain international narrative supporting rules-based order",
+      "objectiveId": null,
+      "order": 4,
+      "decisivePoints": [
+        {
+          "id": "dp-4-1",
+          "label": "Counter-Narrative Operations Active",
+          "description": "Coordinated strategic communications expose PRC disinformation and maintain allied domestic support",
+          "phase": "Shape",
+          "position": 1,
+          "cogLinks": []
+        },
+        {
+          "id": "dp-4-2",
+          "label": "Taiwan Societal Resilience Supported",
+          "description": "Civil defense coordination and information resilience programs sustain Taiwan population resolve",
+          "phase": "Deter",
+          "position": 2,
+          "cogLinks": []
+        }
+      ]
+    }
+  ],
+  "operationalApproach": {
+    "phases": [
+      {
+        "id": "phase-shape",
+        "name": "Shape",
+        "description": "Establish conditions for deterrence through forward positioning, alliance engagement, and intelligence preparation. Build coalition readiness while avoiding premature escalation.",
+        "order": 1
+      },
+      {
+        "id": "phase-deter",
+        "name": "Deter",
+        "description": "Demonstrate credible combat power and alliance resolve to convince PRC leadership that costs of aggression exceed gains. Signal through exercises, force movements, and diplomatic messaging.",
+        "order": 2
+      },
+      {
+        "id": "phase-seize",
+        "name": "Seize Initiative",
+        "description": "If deterrence fails, rapidly transition to offensive operations to deny PRC fait accompli. Establish air and maritime superiority in the Philippine Sea and degrade PLA power projection.",
+        "order": 3
+      },
+      {
+        "id": "phase-dominate",
+        "name": "Dominate",
+        "description": "Achieve decisive conditions through sustained joint fires, interdiction of PLA logistics, and degradation of A2/AD capability. Enable conditions for conflict termination on favorable terms.",
+        "order": 4
+      },
+      {
+        "id": "phase-stabilize",
+        "name": "Stabilize",
+        "description": "Transition to post-conflict stability operations. Restore freedom of navigation, reconstitute alliance posture, and support diplomatic resolution preserving Taiwan status quo.",
+        "order": 5
+      }
+    ],
+    "transitions": [
+      {
+        "fromPhaseId": "phase-shape",
+        "toPhaseId": "phase-deter",
+        "conditions": [
+          "PRC military activity exceeds normal exercise levels",
+          "Intelligence indicates increased PLA readiness posture",
+          "Diplomatic channels report hardening of PRC positions on Taiwan"
+        ]
+      },
+      {
+        "fromPhaseId": "phase-deter",
+        "toPhaseId": "phase-seize",
+        "conditions": [
+          "PRC initiates kinetic action against Taiwan or allied forces",
+          "PLA crosses established red lines (blockade, missile strikes, airspace violation)",
+          "National command authority authorizes transition to combat operations"
+        ]
+      },
+      {
+        "fromPhaseId": "phase-seize",
+        "toPhaseId": "phase-dominate",
+        "conditions": [
+          "Initial PLA assault repelled or degraded below decisive threshold",
+          "Coalition forces achieve local air and maritime superiority",
+          "Allied force flow complete and sustaining operations"
+        ]
+      },
+      {
+        "fromPhaseId": "phase-dominate",
+        "toPhaseId": "phase-stabilize",
+        "conditions": [
+          "PRC accepts ceasefire or halts offensive operations",
+          "PLA force projection capability degraded below effective threshold",
+          "Diplomatic conditions for conflict termination established"
+        ]
+      }
+    ],
+    "decisionPoints": [
+      {
+        "id": "dec-1",
+        "label": "Transition to Active Deterrence",
+        "phaseId": "phase-shape",
+        "criteria": [
+          "PRC military activity assessed as preparation for Taiwan contingency",
+          "Alliance consultation complete and partner commitments confirmed"
+        ]
+      },
+      {
+        "id": "dec-2",
+        "label": "Authorization for Combat Operations",
+        "phaseId": "phase-deter",
+        "criteria": [
+          "PRC hostile act or demonstrated hostile intent confirmed",
+          "National command authority authorizes use of force",
+          "Coalition partners notified and coordination complete"
+        ]
+      },
+      {
+        "id": "dec-3",
+        "label": "Transition to Decisive Operations",
+        "phaseId": "phase-seize",
+        "criteria": [
+          "Initial defensive phase stabilized",
+          "Sufficient force flow to sustain extended operations",
+          "Intelligence confirms PLA commitment of reserve forces"
+        ]
+      },
+      {
+        "id": "dec-4",
+        "label": "Accept Ceasefire Terms",
+        "phaseId": "phase-dominate",
+        "criteria": [
+          "PRC signals willingness to negotiate",
+          "Military conditions favorable for war termination",
+          "Alliance consensus on acceptable terms"
+        ]
+      }
+    ],
+    "narrative": "USINDOPACOM executes a phased operational approach progressing from Shape through Stabilize to deter PRC military coercion against Taiwan. During the Shape phase, forward-deployed forces establish credible combat power across the first and second island chains while alliance integration deepens through bilateral exercises and shared C2 systems. As PRC provocations escalate, the Deter phase demonstrates resolve through visible force movements, expanded ISR coverage, and coordinated diplomatic messaging. If deterrence fails and PRC initiates military action, Seize Initiative rapidly transitions to offensive operations — prioritizing denial of PLA amphibious assault capability, degradation of the A2/AD umbrella through counterspace and anti-ship operations, and establishment of air superiority over the Philippine Sea. The Dominate phase sustains joint fires to attrit PLA force projection below decisive threshold while interdicting logistics flow across the Taiwan Strait. Throughout, Lines of Effort 2-4 (alliance strengthening, regional stability, information operations) reinforce the military line of effort by maintaining coalition unity, preventing conflict spillover to ASEAN neutrals, and countering PRC narrative operations. The Stabilize phase transitions to post-conflict posture reconstitution and diplomatic resolution preserving Taiwan's status quo and the rules-based international order."
+  }
+}

@@ -1,0 +1,362 @@
+{
+  "problemFraming": {
+    "currentState": "CJTF-WestPac has been activated with operational control of naval, air, ground, and special operations component forces in the Western Pacific. PLA Eastern Theater Command has initiated military operations including naval blockade of Taiwan's eastern ports, air incursions into Taiwan's ADIZ, and ballistic missile strikes against military installations. Allied forces are dispersed across forward bases in Japan, Guam, and the Philippines but face A2/AD threats during force concentration. Coalition partners have committed forces but integration and interoperability gaps remain.",
+    "desiredEndState": "PLA force projection across the Taiwan Strait denied; CJTF-WestPac maintains air and maritime superiority in the Philippine Sea and Western Pacific approaches; Taiwan's ability to sustain defense operations preserved through sea and air lines of communication; coalition forces integrated under unified C2 with demonstrated interoperability; conditions set for conflict termination on terms favorable to the alliance.",
+    "problemStatement": "How does CJTF-WestPac integrate joint and combined forces to deny PLA cross-strait power projection, maintain air and maritime superiority, and preserve Taiwan's defense capability within acceptable risk to coalition forces?",
+    "keyTensions": [
+      "Force concentration for decisive operations vs dispersal for survivability against A2/AD",
+      "Aggressive offensive action vs risk management for high-value platforms (carriers, amphibs)",
+      "Speed of coalition integration vs thoroughness of interoperability verification",
+      "Offensive counter-A2/AD operations vs defensive protection of sea lines of communication",
+      "Munitions conservation for sustained operations vs mass employment for rapid effect"
+    ],
+    "obstacles": [
+      "PLA DF-21D and DF-26 anti-ship ballistic missiles threaten carrier strike group operations within 1,500nm",
+      "PLA submarine force (60+ boats) complicates sea control in the Philippine Sea",
+      "Limited joint munitions stockpiles — estimated 7-14 day supply of precision-guided munitions",
+      "Electromagnetic spectrum congestion degrades coalition C2 in contested environment",
+      "Taiwan Strait geography constrains maneuver options for surface forces"
+    ],
+    "opportunities": [
+      "PLA amphibious forces must concentrate at predictable embarkation points along Fujian coast",
+      "Japanese MSDF expertise in ASW provides critical submarine defense capability",
+      "Distributed maritime operations (DMO) can complicate PLA targeting across wide areas",
+      "PLA logistics chain across Taiwan Strait is vulnerable to interdiction",
+      "Allied undersea advantage (Virginia-class, Astute-class) enables offensive ASW deep in PLA waters"
+    ],
+    "assumptions": [
+      "Carrier strike groups can operate effectively from standoff ranges of 500-1000nm",
+      "Japanese MSDF provides ASW screen in the Ryukyu Island chain and Philippine Sea",
+      "Air refueling capacity sufficient to sustain combat air patrols from Guam and mainland Japan",
+      "Submarine-launched cruise missiles available for initial strikes against PLA C2 nodes",
+      "Taiwan military maintains coherent defense for minimum 14 days without external resupply"
+    ],
+    "constraints": [
+      "Carrier operations restricted to east of Ryukyu Island chain until A2/AD degraded",
+      "Coalition ROE requires positive identification before engagement of maritime contacts",
+      "No strikes on PRC mainland without explicit national command authority authorization",
+      "Nuclear facilities, civilian population centers, and Three Gorges Dam are restricted targets",
+      "Submarine operations zones must deconflict with allied submarine water space management"
+    ]
+  },
+  "cogAnalysis": {
+    "friendly": {
+      "root": {
+        "id": "cog-cjtf-friendly",
+        "type": "cog",
+        "label": "Joint Force Maritime and Air Superiority",
+        "description": "CJTF-WestPac's ability to achieve and maintain local air and maritime superiority enabling power projection and sea control in the Western Pacific",
+        "children": [
+          {
+            "id": "cc-cf-1",
+            "type": "critical-capability",
+            "label": "Carrier Strike Group Power Projection",
+            "description": "Ability to generate 150+ combat sorties per day from 2 CSGs operating in the Philippine Sea",
+            "children": [
+              {
+                "id": "cr-cf-1",
+                "type": "critical-requirement",
+                "label": "CSG Survivability",
+                "description": "Sufficient escort and defense-in-depth to protect carriers from PLA anti-ship missiles and submarine threats",
+                "children": [
+                  {
+                    "id": "cv-cf-1",
+                    "type": "critical-vulnerability",
+                    "label": "Missile Defense Saturation",
+                    "description": "PLA salvo attacks with DF-21D/DF-26 and YJ-18 cruise missiles could saturate Aegis BMD capacity",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "cc-cf-2",
+            "type": "critical-capability",
+            "label": "Undersea Warfare Dominance",
+            "description": "Ability to conduct offensive and defensive submarine operations throughout the Western Pacific including PLA operating areas",
+            "children": [
+              {
+                "id": "cr-cf-2",
+                "type": "critical-requirement",
+                "label": "Submarine Force Availability",
+                "description": "Minimum 8 SSNs on station for barrier patrols, ASW, and offensive strike missions",
+                "children": [
+                  {
+                    "id": "cv-cf-2",
+                    "type": "critical-vulnerability",
+                    "label": "SSN Maintenance Backlog",
+                    "description": "Submarine maintenance delays limit available boats; loss of even 1-2 SSNs significantly degrades coverage",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "adversary": {
+      "root": {
+        "id": "cog-cjtf-adversary",
+        "type": "cog",
+        "label": "PLA Cross-Strait Assault Capability",
+        "description": "Eastern Theater Command's ability to project ground forces across the Taiwan Strait through coordinated amphibious, airborne, and fires operations",
+        "children": [
+          {
+            "id": "cc-ca-1",
+            "type": "critical-capability",
+            "label": "Amphibious Lift and Landing",
+            "description": "Capacity to transport and land 1st echelon forces (80,000+ troops) on Taiwan's western beaches within 48 hours",
+            "children": [
+              {
+                "id": "cr-ca-1",
+                "type": "critical-requirement",
+                "label": "Protected Sealift Corridors",
+                "description": "Cleared sea lanes from Fujian embarkation ports to Taiwan landing beaches, defended against allied submarine and surface threats",
+                "children": [
+                  {
+                    "id": "cv-ca-1",
+                    "type": "critical-vulnerability",
+                    "label": "Chokepoint Vulnerability",
+                    "description": "Amphibious forces must transit narrow corridors predictable from beach gradient analysis — targetable by submarines and land-based anti-ship missiles",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "cc-ca-2",
+            "type": "critical-capability",
+            "label": "Fires Suppression of Taiwan Defenses",
+            "description": "Short-range ballistic missile (DF-11/DF-15) and cruise missile strikes to suppress Taiwan air defenses, C2 nodes, and port facilities",
+            "children": [
+              {
+                "id": "cr-ca-2",
+                "type": "critical-requirement",
+                "label": "Real-Time Battle Damage Assessment",
+                "description": "Rapid BDA to confirm suppression effects and retarget surviving Taiwan defense assets",
+                "children": [
+                  {
+                    "id": "cv-ca-2",
+                    "type": "critical-vulnerability",
+                    "label": "BDA Latency",
+                    "description": "Cloud cover and Taiwan denial/deception degrade satellite BDA; PLA may waste follow-on strikes on already-destroyed or decoy targets",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "linesOfEffort": [
+    {
+      "id": "loe-c-1",
+      "name": "Deny Cross-Strait Power Projection",
+      "description": "Degrade and deny PLA ability to project forces across the Taiwan Strait through anti-surface warfare, mine warfare, and submarine interdiction of amphibious shipping",
+      "objectiveId": null,
+      "order": 1,
+      "decisivePoints": [
+        {
+          "id": "dp-c-1-1",
+          "label": "Submarine Barrier Established",
+          "description": "SSN barrier patrols in Luzon Strait and east Taiwan approaches deny PLA submarine freedom of maneuver",
+          "phase": "Seize Initiative",
+          "position": 1,
+          "cogLinks": [
+            {
+              "loeId": "loe-c-1",
+              "decisivePointId": "dp-c-1-1",
+              "cogNodeId": "cv-ca-1",
+              "cogNodeType": "critical-vulnerability"
+            }
+          ]
+        },
+        {
+          "id": "dp-c-1-2",
+          "label": "PLA Sealift Attrited Below Assault Threshold",
+          "description": "Combined submarine, surface, and air attacks reduce PLA amphibious lift capacity below viable assault levels",
+          "phase": "Dominate",
+          "position": 2,
+          "cogLinks": [
+            {
+              "loeId": "loe-c-1",
+              "decisivePointId": "dp-c-1-2",
+              "cogNodeId": "cv-ca-1",
+              "cogNodeType": "critical-vulnerability"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loe-c-2",
+      "name": "Achieve Air and Maritime Superiority",
+      "description": "Establish local air superiority over the Philippine Sea and maritime superiority along sea lines of communication through offensive counter-air and surface warfare operations",
+      "objectiveId": null,
+      "order": 2,
+      "decisivePoints": [
+        {
+          "id": "dp-c-2-1",
+          "label": "A2/AD Envelope Degraded",
+          "description": "Counterspace, electronic warfare, and standoff strikes degrade PLA IADS and ASBM targeting chain",
+          "phase": "Seize Initiative",
+          "position": 1,
+          "cogLinks": []
+        },
+        {
+          "id": "dp-c-2-2",
+          "label": "Air Superiority East of Taiwan",
+          "description": "CAP and BARCAP operations establish air superiority bubble east of Taiwan for logistics and force flow",
+          "phase": "Dominate",
+          "position": 2,
+          "cogLinks": []
+        }
+      ]
+    },
+    {
+      "id": "loe-c-3",
+      "name": "Sustain Taiwan Defense Capability",
+      "description": "Maintain sea and air lines of communication to Taiwan to enable resupply of critical military materials, munitions, and humanitarian supplies",
+      "objectiveId": null,
+      "order": 3,
+      "decisivePoints": [
+        {
+          "id": "dp-c-3-1",
+          "label": "Eastern SLOC Secured",
+          "description": "Protected corridor from Philippine Sea to Taiwan east coast ports established and defended",
+          "phase": "Dominate",
+          "position": 1,
+          "cogLinks": []
+        },
+        {
+          "id": "dp-c-3-2",
+          "label": "Critical Resupply Delivered",
+          "description": "Minimum 3 resupply convoys deliver air defense munitions, anti-ship missiles, and medical supplies",
+          "phase": "Dominate",
+          "position": 2,
+          "cogLinks": []
+        }
+      ]
+    },
+    {
+      "id": "loe-c-4",
+      "name": "Integrate Coalition Forces",
+      "description": "Achieve seamless C2 integration across US, Japanese, Australian, and Philippine naval and air forces for unified theater operations",
+      "objectiveId": null,
+      "order": 4,
+      "decisivePoints": [
+        {
+          "id": "dp-c-4-1",
+          "label": "Coalition C2 Operational",
+          "description": "Shared COP, deconflicted water space management, and allied liaison officers integrated at CJTF-WP HQ",
+          "phase": "Seize Initiative",
+          "position": 1,
+          "cogLinks": []
+        },
+        {
+          "id": "dp-c-4-2",
+          "label": "Allied ASW Screen Active",
+          "description": "Japanese MSDF and Australian Navy ASW assets integrated into barrier defense with shared underwater picture",
+          "phase": "Dominate",
+          "position": 2,
+          "cogLinks": []
+        }
+      ]
+    }
+  ],
+  "operationalApproach": {
+    "phases": [
+      {
+        "id": "phase-c-alert",
+        "name": "Alert & Deploy",
+        "description": "CJTF-WestPac activates, disperses forces to distributed basing locations, establishes coalition C2, and begins ISR surge coverage of PLA military preparations.",
+        "order": 1
+      },
+      {
+        "id": "phase-c-seize",
+        "name": "Seize Initiative",
+        "description": "Upon PLA hostile action, immediately execute counter-A2/AD strikes, establish submarine barriers, and begin degrading PLA ISR and targeting chain through counterspace and electronic warfare.",
+        "order": 2
+      },
+      {
+        "id": "phase-c-dominate",
+        "name": "Dominate",
+        "description": "Sustain high-tempo joint fires to attrit PLA amphibious capability below viable threshold. Establish air superiority east of Taiwan. Open and defend SLOC for Taiwan resupply operations.",
+        "order": 3
+      },
+      {
+        "id": "phase-c-terminate",
+        "name": "Conflict Termination",
+        "description": "Create conditions for ceasefire through demonstrated military superiority and PLA inability to sustain cross-strait operations. Support diplomatic resolution while maintaining combat posture.",
+        "order": 4
+      }
+    ],
+    "transitions": [
+      {
+        "fromPhaseId": "phase-c-alert",
+        "toPhaseId": "phase-c-seize",
+        "conditions": [
+          "PLA initiates kinetic operations against Taiwan or allied forces",
+          "CJTF-WP forces at minimum operational readiness at dispersed locations",
+          "Coalition C2 links verified and ROE disseminated"
+        ]
+      },
+      {
+        "fromPhaseId": "phase-c-seize",
+        "toPhaseId": "phase-c-dominate",
+        "conditions": [
+          "PLA A2/AD targeting chain degraded significantly",
+          "Submarine barriers established in key chokepoints",
+          "Initial PLA amphibious assault disrupted or delayed"
+        ]
+      },
+      {
+        "fromPhaseId": "phase-c-dominate",
+        "toPhaseId": "phase-c-terminate",
+        "conditions": [
+          "PLA amphibious lift capacity reduced below 40% of requirement",
+          "PLA signals willingness to negotiate cessation of hostilities",
+          "Taiwan defense capability preserved above minimum viability threshold"
+        ]
+      }
+    ],
+    "decisionPoints": [
+      {
+        "id": "dec-c-1",
+        "label": "Commit Carrier Strike Groups",
+        "phaseId": "phase-c-seize",
+        "criteria": [
+          "PLA ASBM targeting chain assessed as degraded",
+          "CSG escort screen at full strength with BMD Aegis assets",
+          "Commander accepts risk of operating within DF-26 range"
+        ]
+      },
+      {
+        "id": "dec-c-2",
+        "label": "Open Taiwan SLOC",
+        "phaseId": "phase-c-dominate",
+        "criteria": [
+          "Air superiority established east of Taiwan",
+          "PLA submarine threat in eastern approaches reduced to acceptable level",
+          "Escort forces available for convoy protection"
+        ]
+      },
+      {
+        "id": "dec-c-3",
+        "label": "Recommend Conflict Termination",
+        "phaseId": "phase-c-dominate",
+        "criteria": [
+          "PLA cross-strait assault capability decisively degraded",
+          "Coalition forces can sustain operations without unacceptable attrition",
+          "Diplomatic conditions enable favorable ceasefire terms"
+        ]
+      }
+    ],
+    "narrative": "CJTF-WestPac executes a four-phase operational approach focused on denying PLA cross-strait power projection while preserving Taiwan's defense capability. Upon activation, the joint force disperses to distributed basing locations across Japan, Guam, and the Philippines to complicate PLA targeting. Coalition C2 integration and ISR surge provide early warning and shared situational awareness. When PLA initiates hostilities, CJTF-WP seizes the initiative through simultaneous counter-A2/AD operations — counterspace degradation of PLA ISR satellites, electronic warfare against over-the-horizon radars, and submarine-launched cruise missile strikes against key C2 nodes. Submarine barrier patrols in the Luzon Strait and eastern Taiwan approaches immediately threaten PLA amphibious shipping. As the A2/AD umbrella degrades, carrier strike groups commit from standoff positions in the Philippine Sea, generating sustained air sorties for offensive counter-air and anti-surface warfare. The Dominate phase concentrates joint fires on PLA sealift — targeting embarkation ports, convoy routes, and landing craft to attrit amphibious capacity below viable assault threshold. Simultaneously, coalition ASW forces (MSDF and Australian Navy) maintain the underwater barrier while surface forces secure eastern SLOCs for Taiwan resupply convoys. The operational approach converges on conflict termination conditions when PLA leadership recognizes that cross-strait assault is no longer feasible, creating diplomatic space for ceasefire negotiations that preserve Taiwan's de facto independence."
+  }
+}
