@@ -328,9 +328,16 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete, onDocumentCl
       setUploadedDocs((prev) => [...docs, ...prev]);
       setFileEntries([]);
       setUploadProgress(null);
-      setUploadSuccess(
-        `${docs.length} document${docs.length !== 1 ? 's' : ''} uploaded. LLM extraction running in background.`
-      );
+      const failed = files.length - docs.length;
+      if (failed > 0) {
+        setUploadSuccess(
+          `${docs.length} of ${files.length} uploaded. ${failed} file(s) failed (check console). LLM extraction running in background.`
+        );
+      } else {
+        setUploadSuccess(
+          `${docs.length} document${docs.length !== 1 ? 's' : ''} uploaded. LLM extraction running in background.`
+        );
+      }
       onUploadComplete?.();
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed');

@@ -97,13 +97,16 @@ function mapObservationRow(row: Record<string, unknown>): AARObservation {
 // ============================================================================
 
 class StructuredAARStore {
-  private initialized = false;
+  private initPromise: Promise<void> | null = null;
 
   async init(): Promise<void> {
-    if (!this.initialized) {
-      await initAARTables();
-      this.initialized = true;
+    if (!this.initPromise) {
+      this.initPromise = initAARTables().catch((err) => {
+        this.initPromise = null;
+        throw err;
+      });
     }
+    return this.initPromise;
   }
 
   /** Create a new structured AAR in draft status */
