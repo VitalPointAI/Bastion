@@ -28,6 +28,11 @@ export function ValidationDashboard() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [runningValidation, setRunningValidation] = useState(false);
+  const [showBulkOverride, setShowBulkOverride] = useState(false);
+  const [bulkJustification, setBulkJustification] = useState('');
+  const [bulkOverriding, setBulkOverriding] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [overrideActive, setOverrideActive] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Set DID on service
@@ -39,12 +44,14 @@ export function ValidationDashboard() {
 
   const fetchDashboard = useCallback(async () => {
     try {
-      const [dashData, runsData] = await Promise.all([
+      const [dashData, runsData, overrideData] = await Promise.all([
         validationService.getDashboard(),
         validationService.getRecentRuns(20),
+        validationService.getOverrideStatus(),
       ]);
       setSummaries(dashData);
       setRecentRuns(runsData);
+      setOverrideActive(overrideData.overrideActive);
     } catch (err) {
       console.error('[ValidationDashboard] Failed to load dashboard:', err);
     } finally {
@@ -65,12 +72,57 @@ export function ValidationDashboard() {
     setRunningValidation(true);
     try {
       await validationService.triggerRun();
-      // Refresh after a short delay to pick up the new run
       setTimeout(fetchDashboard, 2000);
     } catch (err) {
       console.error('[ValidationDashboard] Failed to trigger run:', err);
     } finally {
       setRunningValidation(false);
+    }
+  };
+
+  const handleBulkOverride = async () => {
+    if (!bulkJustification.trim()) {
+      setBulkResult({ success: false, message: 'Justification is required' });
+      return;
+    }
+    setBulkOverriding(true);
+    setBulkResult(null);
+    try {
+      const result = await validationService.overrideAll(bulkJustification.trim());
+      setBulkResult({
+        success: true,
+        message: `Override enabled. Reinstated ${result.reinstatedCount} agent(s).`,
+      });
+      setShowBulkOverride(false);
+      setBulkJustification('');
+      setTimeout(fetchDashboard, 1000);
+    } catch (err) {
+      setBulkResult({
+        success: false,
+        message: err instanceof Error ? err.message : 'Override failed',
+      });
+    } finally {
+      setBulkOverriding(false);
+    }
+  };
+
+  const handleDisableOverride = async () => {
+    setBulkOverriding(true);
+    setBulkResult(null);
+    try {
+      await validationService.disableOverride();
+      setBulkResult({
+        success: true,
+        message: 'Override disabled. Validation re-evaluation started.',
+      });
+      setTimeout(fetchDashboard, 2000);
+    } catch (err) {
+      setBulkResult({
+        success: false,
+        message: err instanceof Error ? err.message : 'Failed to disable override',
+      });
+    } finally {
+      setBulkOverriding(false);
     }
   };
 
@@ -130,11 +182,37 @@ export function ValidationDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium text-gray-100">
-          Agent Validation & Compliance
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-medium text-gray-100">
+            Agent Validation & Compliance
+          </h2>
+          {overrideActive && (
+            <span className="text-xs px-2 py-1 rounded bg-yellow-600/30 border border-yellow-600/50 text-yellow-400 font-medium">
+              OVERRIDE ACTIVE
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <ValidationExportButton />
+          {overrideActive ? (
+            <button
+              onClick={handleDisableOverride}
+              disabled={bulkOverriding}
+              className="px-4 py-2 text-sm bg-yellow-600 hover:bg-yellow-500 disabled:bg-yellow-800 disabled:cursor-not-allowed text-white rounded transition-colors flex items-center gap-2"
+            >
+              {bulkOverriding && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              )}
+              Disable Override
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowBulkOverride(!showBulkOverride)}
+              className="px-4 py-2 text-sm bg-yellow-600 hover:bg-yellow-500 text-white rounded transition-colors"
+            >
+              Override Validation
+            </button>
+          )}
           <button
             onClick={handleRunValidation}
             disabled={runningValidation}
@@ -147,6 +225,59 @@ export function ValidationDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Bulk override form */}
+      {showBulkOverride && !overrideActive && (
+        <div className="border border-yellow-700/30 bg-yellow-900/10 rounded-lg p-4 space-y-3">
+          <div className="text-sm text-yellow-400 font-medium">
+            Validation Override
+          </div>
+          <div className="text-xs text-gray-400">
+            This will temporarily disable validation enforcement and reinstate ALL
+            disabled agents. Agents will not be auto-disabled while override is
+            active. When you disable the override, a validation run will
+            automatically execute and agents that fail will be disabled again.
+          </div>
+          <textarea
+            value={bulkJustification}
+            onChange={(e) => setBulkJustification(e.target.value)}
+            placeholder="Provide justification for overriding validation (required for audit trail)..."
+            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-xs text-gray-200 h-16 resize-none"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBulkOverride}
+              disabled={bulkOverriding || !bulkJustification.trim()}
+              className="text-xs px-4 py-1.5 bg-yellow-600 hover:bg-yellow-500 disabled:bg-yellow-800 disabled:cursor-not-allowed text-white rounded transition-colors"
+            >
+              {bulkOverriding ? 'Processing...' : 'Enable Override & Reinstate All'}
+            </button>
+            <button
+              onClick={() => {
+                setShowBulkOverride(false);
+                setBulkJustification('');
+                setBulkResult(null);
+              }}
+              className="text-xs px-4 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk action result */}
+      {bulkResult && (
+        <div
+          className={`text-xs px-3 py-2 rounded border ${
+            bulkResult.success
+              ? 'bg-green-900/20 border-green-700/30 text-green-400'
+              : 'bg-red-900/20 border-red-700/30 text-red-400'
+          }`}
+        >
+          {bulkResult.message}
+        </div>
+      )}
 
       {/* Summary stats bar */}
       <div className="grid grid-cols-5 gap-3">

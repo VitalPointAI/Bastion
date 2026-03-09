@@ -136,13 +136,18 @@ export const designService = {
 
   /**
    * Request AI analysis for a design section.
+   * Optionally pass additional agent IDs to augment the default agent's analysis.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async analyzeSection(problemSetId: string, section: string, context: object): Promise<Record<string, any>> {
+  async analyzeSection(problemSetId: string, section: string, context: object, additionalAgents?: string[]): Promise<Record<string, any>> {
+    const body: Record<string, unknown> = { section, context };
+    if (additionalAgents && additionalAgents.length > 0) {
+      body.additionalAgents = additionalAgents;
+    }
     const res = await fetch(`${API_BASE}/api/design/${problemSetId}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ section, context }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`Failed to analyze section ${section}: ${res.statusText}`);
     return res.json();

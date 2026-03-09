@@ -21,6 +21,7 @@
 import type { AgentManifest } from './types.js';
 import { AgentPhase, AgentCapability, AutonomyLevel } from './types.js';
 import { ProposalKind } from '../dao/types.js';
+import { createLLMForAgent } from './langgraph/llm-factory.js';
 
 // ==========================================================================
 // Output Interfaces
@@ -203,22 +204,180 @@ export const PROBLEM_FRAMING_AGENT: AgentManifest = {
 };
 
 // ==========================================================================
-// Core Function (Stub for v1)
+// LLM Prompts
+// ==========================================================================
+
+const SYSTEM_PROMPT = `You are the Problem Framing Agent — a multi-perspective problem framing specialist for military operational planning (MDMP Phase 2 - Mission Analysis).
+
+Your expertise:
+${PROBLEM_FRAMING_AGENT.character!.bio.map((b) => `- ${b}`).join('\n')}
+
+Your knowledge base:
+${PROBLEM_FRAMING_AGENT.character!.knowledge.map((k) => `- ${k}`).join('\n')}
+
+Style guidelines:
+${PROBLEM_FRAMING_AGENT.character!.style.all.map((s) => `- ${s}`).join('\n')}
+
+CRITICAL: You are HYBRID_HUMAN_LED. You offer alternative framings — the human selects and owns the framing. Never advocate for a single framing.`;
+
+function buildUserPrompt(
+  situationDescription: string,
+  missionStatement: string,
+  commanderIntent: string,
+  existingAssumptions: string[]
+): string {
+  return `Analyze this operational situation and generate alternative problem framings from multiple perspectives.
+
+## Situation
+${situationDescription || '(not provided)'}
+
+## Mission Statement
+${missionStatement || '(not provided)'}
+
+## Commander's Intent / Desired End State
+${commanderIntent || '(not provided)'}
+
+## Existing Assumptions
+${existingAssumptions.length > 0 ? existingAssumptions.map((a) => `- ${a}`).join('\n') : '(none identified)'}
+
+## Instructions
+Generate a comprehensive problem framing analysis with:
+1. A "defaultFraming" from the military perspective based on the inputs
+2. 3-5 "alternativeFramings" from different perspectives (diplomatic, economic, adversary, informational, social, coalition_partner, local_population, or historical_analogy)
+3. 2-3 "framingComparisons" comparing pairs of framings
+4. "hiddenAssumptions" in the default framing
+5. A recommendation (or null if no single framing is clearly superior)
+
+Each framing must include: perspectiveType, framingStatement, rootCauses[], keyStakeholders[] (with name, interest, influence: high|medium|low), interventionPoints[], assumptions[], blindSpots[], framingConfidence (0-1), confidenceBounds ({lower, upper}).
+
+Respond ONLY with a JSON object matching this exact structure:
+{
+  "defaultFraming": { ... },
+  "alternativeFramings": [ ... ],
+  "framingComparisons": [ { "framingA": "label", "framingB": "label", "sharedElements": [], "contradictions": [], "complementaryInsights": [] } ],
+  "hiddenAssumptions": [ "..." ],
+  "recommendedFramingPerspective": null,
+  "recommendationReasoning": "...",
+  "completenessConfidence": 0.7,
+  "confidenceBounds": { "lower": 0.5, "upper": 0.85 },
+  "knownBlindSpots": [ "..." ]
+}`;
+}
+
+// ==========================================================================
+// JSON Parsing Helper
+// ==========================================================================
+
+function parseJSONResponse<T>(text: string): T | null {
+  let cleaned = text.trim();
+  const codeBlockMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    cleaned = codeBlockMatch[1].trim();
+  }
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    console.error('[problem-framing] Failed to parse LLM JSON response:', cleaned.substring(0, 200));
+    return null;
+  }
+}
+
+// ==========================================================================
+// Fallback Stub
+// ==========================================================================
+
+function generateFallbackFramings(
+  missionStatement: string,
+  existingAssumptions: string[]
+): ProblemFramingOutput {
+  return {
+    defaultFraming: {
+      perspectiveType: 'military',
+      framingStatement: missionStatement || 'Default military framing from mission statement',
+      rootCauses: ['Adversary action', 'Regional instability'],
+      keyStakeholders: [
+        { name: 'Friendly forces', interest: 'Mission success', influence: 'high' },
+        { name: 'Adversary', interest: 'Resist friendly objectives', influence: 'high' },
+        { name: 'Local population', interest: 'Security and stability', influence: 'medium' },
+      ],
+      interventionPoints: ['Apply military force', 'Secure key terrain'],
+      assumptions: existingAssumptions,
+      blindSpots: ['May overlook non-military solutions', 'Assumes military force is primary tool'],
+      framingConfidence: 0.6,
+      confidenceBounds: { lower: 0.4, upper: 0.8 },
+    },
+    alternativeFramings: [
+      {
+        perspectiveType: 'diplomatic',
+        framingStatement: 'Problem is fundamentally a failure of negotiation and diplomatic engagement',
+        rootCauses: ['Breakdown in dialogue', 'Competing national interests', 'Trust deficit'],
+        keyStakeholders: [
+          { name: 'National government', interest: 'Sovereignty', influence: 'high' },
+          { name: 'Regional powers', interest: 'Sphere of influence', influence: 'high' },
+          { name: 'International organizations', interest: 'Stability', influence: 'medium' },
+        ],
+        interventionPoints: ['Facilitate negotiations', 'Build confidence measures', 'Engage regional mediators'],
+        assumptions: ['Parties are willing to negotiate', 'Diplomatic solution exists'],
+        blindSpots: ['May underestimate adversary resolve', 'Overlooks military realities'],
+        framingConfidence: 0.5,
+        confidenceBounds: { lower: 0.3, upper: 0.7 },
+      },
+      {
+        perspectiveType: 'adversary',
+        framingStatement: 'From adversary perspective: defending against external intervention and protecting interests',
+        rootCauses: ['External threat perception', 'Sovereignty concerns', 'Historical grievances'],
+        keyStakeholders: [
+          { name: 'Adversary leadership', interest: 'Regime survival', influence: 'high' },
+          { name: 'Adversary population', interest: 'National pride', influence: 'medium' },
+          { name: 'Regional allies', interest: 'Counter-balance', influence: 'medium' },
+        ],
+        interventionPoints: ['Reduce threat perception', 'Offer face-saving options', 'Engage regional allies'],
+        assumptions: ['Adversary acts rationally from their perspective', 'De-escalation possible'],
+        blindSpots: ['May legitimize adversary actions', 'Overlooks moral accountability'],
+        framingConfidence: 0.4,
+        confidenceBounds: { lower: 0.2, upper: 0.6 },
+      },
+    ],
+    framingComparisons: [
+      {
+        framingA: 'Military',
+        framingB: 'Diplomatic',
+        sharedElements: ['Both recognize adversary as key stakeholder', 'Both seek stability'],
+        contradictions: ['Military emphasizes force; diplomatic emphasizes dialogue'],
+        complementaryInsights: ['Military creates conditions for diplomacy'],
+      },
+    ],
+    hiddenAssumptions: [
+      'Military force is the primary instrument',
+      'Adversary is irrational or malicious',
+      'Non-military solutions are secondary',
+    ],
+    recommendedFramingPerspective: null,
+    recommendationReasoning: 'No single framing is recommended. Human decision-maker should consider multiple perspectives.',
+    completenessConfidence: 0.4,
+    confidenceBounds: { lower: 0.2, upper: 0.6 },
+    knownBlindSpots: [
+      'LLM analysis unavailable — using generic fallback framings',
+      'Framings are not tailored to the specific scenario context',
+    ],
+  };
+}
+
+// ==========================================================================
+// Core Function (LLM-powered with fallback)
 // ==========================================================================
 
 /**
  * Generate alternative problem framings from multiple perspectives.
+ *
+ * Uses LLM with the Problem Framing Agent's character definition to generate
+ * context-aware framings. Falls back to generic stub on LLM error.
  *
  * @param situationDescription - Current situation from mission analysis
  * @param missionStatement - Proposed mission statement
  * @param commanderIntent - Commander's stated intent
  * @param existingAssumptions - Assumptions already identified
  * @returns ProblemFramingOutput with default framing + alternatives
- *
- * For v1, this is a stub. Real implementation will use LLM with:
- * - System prompt from PROBLEM_FRAMING_AGENT.character
- * - Structured output matching ProblemFramingOutput interface
- * - Confidence calibration per INVARIANT 5
  */
 export async function generateFramings(
   situationDescription: string,
@@ -226,139 +385,33 @@ export async function generateFramings(
   commanderIntent: string,
   existingAssumptions: string[]
 ): Promise<ProblemFramingOutput> {
-  // v1 stub: Rule-based framing analysis
-  // Future: LLM-powered multi-perspective generation
+  try {
+    const llm = await createLLMForAgent({
+      agentId: 'problem-framing',
+      overrides: { temperature: 0.4, maxTokens: 4096 },
+    });
 
-  // Identify default framing from inputs
-  const defaultFraming: AlternativeFraming = {
-    perspectiveType: 'military',
-    framingStatement: missionStatement || 'Default military framing from mission statement',
-    rootCauses: ['Adversary action', 'Regional instability'],
-    keyStakeholders: [
-      { name: 'Friendly forces', interest: 'Mission success', influence: 'high' },
-      { name: 'Adversary', interest: 'Resist friendly objectives', influence: 'high' },
-      { name: 'Local population', interest: 'Security and stability', influence: 'medium' },
-    ],
-    interventionPoints: ['Apply military force', 'Secure key terrain'],
-    assumptions: existingAssumptions,
-    blindSpots: ['May overlook non-military solutions', 'Assumes military force is primary tool'],
-    framingConfidence: 0.6,
-    confidenceBounds: { lower: 0.4, upper: 0.8 },
-  };
+    const userPrompt = buildUserPrompt(situationDescription, missionStatement, commanderIntent, existingAssumptions);
 
-  // Generate alternative framings
-  const alternativeFramings: AlternativeFraming[] = [
-    {
-      perspectiveType: 'diplomatic',
-      framingStatement: 'Problem is fundamentally a failure of negotiation and diplomatic engagement',
-      rootCauses: ['Breakdown in dialogue', 'Competing national interests', 'Trust deficit'],
-      keyStakeholders: [
-        { name: 'National government', interest: 'Sovereignty', influence: 'high' },
-        { name: 'Regional powers', interest: 'Sphere of influence', influence: 'high' },
-        { name: 'International organizations', interest: 'Stability', influence: 'medium' },
-      ],
-      interventionPoints: [
-        'Facilitate negotiations',
-        'Build confidence measures',
-        'Engage regional mediators',
-      ],
-      assumptions: ['Parties are willing to negotiate', 'Diplomatic solution exists'],
-      blindSpots: ['May underestimate adversary resolve', 'Overlooks military realities'],
-      framingConfidence: 0.5,
-      confidenceBounds: { lower: 0.3, upper: 0.7 },
-    },
-    {
-      perspectiveType: 'economic',
-      framingStatement: 'Problem stems from resource competition and economic grievances',
-      rootCauses: ['Economic inequality', 'Resource scarcity', 'Trade disruption'],
-      keyStakeholders: [
-        { name: 'Economic actors', interest: 'Market access', influence: 'high' },
-        { name: 'Local population', interest: 'Economic opportunity', influence: 'medium' },
-        { name: 'Regional trade partners', interest: 'Supply chain stability', influence: 'medium' },
-      ],
-      interventionPoints: [
-        'Economic aid and development',
-        'Trade agreements',
-        'Resource sharing frameworks',
-      ],
-      assumptions: ['Economic incentives drive behavior', 'Development reduces conflict'],
-      blindSpots: ['May miss ideological motivations', 'Underestimates security requirements'],
-      framingConfidence: 0.5,
-      confidenceBounds: { lower: 0.3, upper: 0.7 },
-    },
-    {
-      perspectiveType: 'adversary',
-      framingStatement: 'From adversary perspective: defending against external intervention and protecting interests',
-      rootCauses: ['External threat perception', 'Sovereignty concerns', 'Historical grievances'],
-      keyStakeholders: [
-        { name: 'Adversary leadership', interest: 'Regime survival', influence: 'high' },
-        { name: 'Adversary population', interest: 'National pride', influence: 'medium' },
-        { name: 'Regional allies', interest: 'Counter-balance', influence: 'medium' },
-      ],
-      interventionPoints: [
-        'Reduce threat perception',
-        'Offer face-saving options',
-        'Engage regional allies',
-      ],
-      assumptions: ['Adversary acts rationally from their perspective', 'De-escalation possible'],
-      blindSpots: ['May legitimize adversary actions', 'Overlooks moral accountability'],
-      framingConfidence: 0.4,
-      confidenceBounds: { lower: 0.2, upper: 0.6 },
-    },
-  ];
+    const response = await llm.invoke([
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: userPrompt },
+    ]);
 
-  // Compare framings
-  const framingComparisons: FramingComparison[] = [
-    {
-      framingA: 'Military',
-      framingB: 'Diplomatic',
-      sharedElements: ['Both recognize adversary as key stakeholder', 'Both seek stability'],
-      contradictions: [
-        'Military emphasizes force; diplomatic emphasizes dialogue',
-        'Different primary intervention points',
-      ],
-      complementaryInsights: [
-        'Military creates conditions for diplomacy',
-        'Diplomatic reduces need for military force',
-      ],
-    },
-    {
-      framingA: 'Military',
-      framingB: 'Adversary',
-      sharedElements: ['Both recognize security concerns'],
-      contradictions: [
-        'Opposite threat assessments',
-        'Conflicting intervention points',
-      ],
-      complementaryInsights: [
-        'Understanding adversary framing reveals de-escalation paths',
-        'Military planning must account for adversary perspective',
-      ],
-    },
-  ];
+    const text = typeof response.content === 'string'
+      ? response.content
+      : JSON.stringify(response.content);
 
-  // Identify hidden assumptions in default framing
-  const hiddenAssumptions = [
-    'Military force is the primary instrument',
-    'Adversary is irrational or malicious',
-    'Non-military solutions are secondary',
-    'Coalition partners share our framing',
-  ];
+    const parsed = parseJSONResponse<ProblemFramingOutput>(text);
+    if (!parsed || !parsed.defaultFraming || !Array.isArray(parsed.alternativeFramings)) {
+      console.warn('[problem-framing] LLM response did not match expected structure, using fallback');
+      return generateFallbackFramings(missionStatement, existingAssumptions);
+    }
 
-  return {
-    defaultFraming,
-    alternativeFramings,
-    framingComparisons,
-    hiddenAssumptions,
-    recommendedFramingPerspective: null, // Human must choose
-    recommendationReasoning:
-      'No single framing is recommended. Human decision-maker should consider multiple perspectives and select the framing that best aligns with strategic objectives and commander intent.',
-    completenessConfidence: 0.6,
-    confidenceBounds: { lower: 0.4, upper: 0.8 },
-    knownBlindSpots: [
-      'Limited to pre-defined perspective types',
-      'Cannot account for unique cultural or historical context without specific training',
-      'May miss emergent framings that require deep domain expertise',
-    ],
-  };
+    console.log(`[problem-framing] LLM generated ${parsed.alternativeFramings.length} alternative framings`);
+    return parsed;
+  } catch (error) {
+    console.error('[problem-framing] LLM analysis failed, using fallback:', error);
+    return generateFallbackFramings(missionStatement, existingAssumptions);
+  }
 }

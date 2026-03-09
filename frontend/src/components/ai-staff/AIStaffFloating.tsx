@@ -1,9 +1,9 @@
 /**
- * AIStaffFloating -- Floating overlay panel for watch tabs
+ * AIStaffFloating -- Global floating, draggable, resizable AI activity panel
  *
- * Collapsed: circular button with notification badge (color-coded urgency).
- * Expanded: draggable floating panel via createPortal to document.body.
+ * Rendered via createPortal to document.body so it floats above all content.
  * z-index 900 (above map ~400-600, below modals 1000+).
+ * Position and size are persisted to localStorage.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -14,30 +14,40 @@ import type { FeedItemAction } from '../../types/ai-staff.ts';
 import './AIStaffFloating.css';
 
 const POS_STORAGE_KEY = 'bastion-ai-floating-pos';
+const SIZE_STORAGE_KEY = 'bastion-ai-floating-size';
 
-interface FloatingPos {
-  x: number;
-  y: number;
-}
+interface FloatingPos { x: number; y: number; }
+interface FloatingSize { width: number; height: number; }
+
+const DEFAULT_WIDTH = 360;
+const DEFAULT_HEIGHT = 500;
+const MIN_WIDTH = 280;
+const MIN_HEIGHT = 250;
 
 function getStoredPos(): FloatingPos | null {
   try {
     const stored = localStorage.getItem(POS_STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
-        return parsed as FloatingPos;
-      }
+      if (typeof parsed.x === 'number' && typeof parsed.y === 'number') return parsed as FloatingPos;
     }
   } catch { /* ignore */ }
   return null;
 }
 
 function getDefaultPos(): FloatingPos {
-  return {
-    x: window.innerWidth - 380,
-    y: window.innerHeight - 520,
-  };
+  return { x: window.innerWidth - DEFAULT_WIDTH - 20, y: window.innerHeight - DEFAULT_HEIGHT - 20 };
+}
+
+function getStoredSize(): FloatingSize | null {
+  try {
+    const stored = localStorage.getItem(SIZE_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (typeof parsed.width === 'number' && typeof parsed.height === 'number') return parsed as FloatingSize;
+    }
+  } catch { /* ignore */ }
+  return null;
 }
 
 function getBadgeColor(feedItems: { urgency: string }[]): 'badge-green' | 'badge-amber' | 'badge-red' {
@@ -48,45 +58,32 @@ function getBadgeColor(feedItems: { urgency: string }[]): 'badge-green' | 'badge
   return 'badge-green';
 }
 
-function getBorderColor(feedItems: { urgency: string }[]): string {
-  const badge = getBadgeColor(feedItems);
-  if (badge === 'badge-red') return 'var(--accent-red, #ef4444)';
-  if (badge === 'badge-amber') return 'var(--accent-yellow, #f59e0b)';
-  return 'var(--accent-green, #22c55e)';
-}
-
 export function AIStaffFloating() {
   const { feedItems, unreadCount, activeTab } = useAIStaff();
   const dispatch = useAIStaffDispatch();
-  const [expanded, setExpanded] = useState(false);
   const [pos, setPos] = useState<FloatingPos>(() => getStoredPos() ?? getDefaultPos());
+  const [size, setSize] = useState<FloatingSize>(() => getStoredSize() ?? { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT });
   const isDragging = useRef(false);
   const dragOffset = useRef<FloatingPos>({ x: 0, y: 0 });
 
-  // Persist position
+  // Persist position + size
   useEffect(() => {
-    try {
-      localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(pos));
-    } catch { /* ignore */ }
+    try { localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(pos)); } catch { /* ignore */ }
   }, [pos]);
+  useEffect(() => {
+    try { localStorage.setItem(SIZE_STORAGE_KEY, JSON.stringify(size)); } catch { /* ignore */ }
+  }, [size]);
 
   // Drag handling on header bar
   const handleDragStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     isDragging.current = true;
-    dragOffset.current = {
-      x: e.clientX - pos.x,
-      y: e.clientY - pos.y,
-    };
+    dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       if (!isDragging.current) return;
-      setPos({
-        x: moveEvent.clientX - dragOffset.current.x,
-        y: moveEvent.clientY - dragOffset.current.y,
-      });
+      setPos({ x: moveEvent.clientX - dragOffset.current.x, y: moveEvent.clientY - dragOffset.current.y });
     };
-
     const onMouseUp = () => {
       isDragging.current = false;
       document.removeEventListener('mousemove', onMouseMove);
@@ -94,12 +91,37 @@ export function AIStaffFloating() {
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
-
     document.body.style.cursor = 'grabbing';
     document.body.style.userSelect = 'none';
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
   }, [pos]);
+
+  // Resize from bottom-right corner
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = size.width;
+    const startH = size.height;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const newW = Math.max(MIN_WIDTH, startW + (moveEvent.clientX - startX));
+      const newH = Math.max(MIN_HEIGHT, startH + (moveEvent.clientY - startY));
+      setSize({ width: newW, height: newH });
+    };
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.body.style.cursor = 'nwse-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [size]);
 
   const handleAction = useCallback((_itemId: string, _action: FeedItemAction) => {
     // Action handling will be wired in Plan 04/05
@@ -109,46 +131,13 @@ export function AIStaffFloating() {
     dispatch.markRead(itemId);
   }, [dispatch]);
 
-  // Split items
+  // Split items by tab
   const activeTabItems = feedItems.filter((item) => item.sourceTab === activeTab);
   const otherTabItems = feedItems.filter((item) => item.sourceTab !== activeTab);
   const [otherExpanded, setOtherExpanded] = useState(false);
 
   const badgeColor = getBadgeColor(feedItems);
-  const borderColor = getBorderColor(feedItems);
 
-  // Collapsed: floating button
-  if (!expanded) {
-    return createPortal(
-      <button
-        className="ai-staff-floating-button"
-        style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          borderColor: borderColor,
-          zIndex: 900,
-        }}
-        onClick={() => setExpanded(true)}
-        aria-label={`AI Staff: ${unreadCount} unread items`}
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-2h-2v2zm0-4h2V7h-2v6z"
-            fill="currentColor"
-          />
-        </svg>
-        {unreadCount > 0 && (
-          <span className={`ai-staff-count-badge ${badgeColor}`}>
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </button>,
-      document.body,
-    );
-  }
-
-  // Expanded: floating panel
   return createPortal(
     <div
       className="ai-staff-floating-panel"
@@ -156,15 +145,14 @@ export function AIStaffFloating() {
         position: 'fixed',
         left: `${pos.x}px`,
         top: `${pos.y}px`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
         zIndex: 900,
       }}
     >
       {/* Draggable header */}
-      <div
-        className="ai-staff-floating-header"
-        onMouseDown={handleDragStart}
-      >
-        <span className="ai-staff-title">AI Staff</span>
+      <div className="ai-staff-floating-header" onMouseDown={handleDragStart}>
+        <span className="ai-staff-title">AI Activity</span>
         <div className="ai-staff-floating-header-actions">
           {unreadCount > 0 && (
             <span className={`ai-staff-count-badge ${badgeColor}`}>
@@ -173,11 +161,11 @@ export function AIStaffFloating() {
           )}
           <button
             className="ai-staff-floating-minimize"
-            onClick={() => setExpanded(false)}
-            aria-label="Minimize AI Staff panel"
+            onClick={() => dispatch.setOpen(false)}
+            aria-label="Close AI Activity panel"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
         </div>
@@ -187,7 +175,7 @@ export function AIStaffFloating() {
       <div className="ai-staff-floating-body">
         {activeTabItems.length === 0 && otherTabItems.length === 0 && (
           <div className="ai-staff-floating-empty">
-            <span className="ai-staff-subtitle">No AI staff activity yet</span>
+            <span className="ai-staff-subtitle">No AI activity yet</span>
           </div>
         )}
 
@@ -207,9 +195,7 @@ export function AIStaffFloating() {
               onClick={() => setOtherExpanded(!otherExpanded)}
             >
               <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
+                width="12" height="12" viewBox="0 0 12 12"
                 className={`chevron ${otherExpanded ? 'expanded' : ''}`}
               >
                 <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -229,6 +215,9 @@ export function AIStaffFloating() {
           </div>
         )}
       </div>
+
+      {/* Resize handle (bottom-right corner) */}
+      <div className="ai-staff-floating-resize" onMouseDown={handleResizeStart} />
     </div>,
     document.body,
   );

@@ -224,6 +224,70 @@ validationRouter.post(
 );
 
 // ---------------------------------------------------------------------------
+// GET /override-status — check if validation override is active
+// ---------------------------------------------------------------------------
+
+validationRouter.get('/override-status', (_req: Request, res: Response) => {
+  res.json({ overrideActive: circuitBreaker.overrideActive });
+});
+
+// ---------------------------------------------------------------------------
+// POST /override-all — enable override: reinstate ALL disabled agents
+// ---------------------------------------------------------------------------
+
+validationRouter.post('/override-all', async (req: Request, res: Response) => {
+  try {
+    const { justification } = req.body as { justification?: string };
+    const userId = String(
+      (req as unknown as Record<string, unknown>).userDID ?? 'admin',
+    );
+
+    if (!justification || !justification.trim()) {
+      res.status(400).json({
+        error: 'Justification is required for bulk validation override',
+      });
+      return;
+    }
+
+    const result = await circuitBreaker.overrideAll(userId, justification.trim());
+
+    res.json({
+      reinstatedCount: result.reinstatedCount,
+      agentIds: result.agentIds,
+    });
+  } catch (err) {
+    console.error('[ValidationRouter] POST /override-all error:', err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : 'Internal server error',
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /override-disable — disable override: re-enable validation enforcement
+// ---------------------------------------------------------------------------
+
+validationRouter.post('/override-disable', async (req: Request, res: Response) => {
+  try {
+    const userId = String(
+      (req as unknown as Record<string, unknown>).userDID ?? 'admin',
+    );
+
+    await circuitBreaker.disableOverride(userId);
+
+    res.json({
+      overrideActive: false,
+      message: 'Validation override disabled. Re-evaluation started.',
+    });
+  } catch (err) {
+    console.error('[ValidationRouter] POST /override-disable error:', err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : 'Internal server error',
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // GET /export/:format — export validation data as CSV or PDF
 // ---------------------------------------------------------------------------
 

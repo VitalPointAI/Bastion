@@ -587,6 +587,7 @@
 .doc-agents {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
@@ -596,15 +597,15 @@
 .assign-agent-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
   background: transparent;
   border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.2));
   border-radius: 4px;
   cursor: pointer;
   color: var(--text-muted, #666678);
+  font-size: 0.75rem;
+  font-weight: 500;
   transition: all 0.2s;
 }
 
@@ -617,4 +618,9 @@
 .assign-agent-btn svg {
   width: 0.875rem;
   height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.assign-agent-btn span {
+  white-space: nowrap;
 }

@@ -39,7 +39,7 @@ function AgentHealthDot({ status }: { status: string }) {
   const color = STATUS_COLORS[status] || STATUS_COLORS.unknown;
   return (
     <span
-      className="inline-block w-3 h-3 rounded-full flex-shrink-0"
+      className="inline-block w-3 h-3 rounded-full shrink-0"
       style={{ backgroundColor: color }}
       title={status}
     />
@@ -115,7 +115,7 @@ export function ValidationAgentCard({ summary, onClick }: ValidationAgentCardPro
         <span className="text-sm font-medium text-gray-100 truncate flex-1">
           {summary.agentName || summary.agentId}
         </span>
-        <span className="text-xs px-2 py-0.5 rounded bg-gray-700/50 text-gray-300 truncate max-w-[100px]">
+        <span className="text-xs px-2 py-0.5 rounded bg-gray-700/50 text-gray-300 truncate max-w-25">
           {summary.agentRole}
         </span>
       </div>

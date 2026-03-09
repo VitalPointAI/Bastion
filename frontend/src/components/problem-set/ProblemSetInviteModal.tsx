@@ -410,7 +410,7 @@ export function ProblemSetInviteModal({
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex gap-2 shrink-0">
                       {invite.rawToken && (
                         <button
                           className="px-2 py-1 text-xs text-green-300 hover:text-green-200 bg-green-900/30 hover:bg-green-900/50 border border-green-700 rounded transition-colors disabled:opacity-50"

@@ -346,19 +346,24 @@ export function DocumentList({
 
               {/* Agent assignments */}
               <div className="doc-agents">
-                <AgentBadges assignments={assignments[doc.id] || []} compact />
+                {(assignments[doc.id] || []).length > 0 ? (
+                  <AgentBadges assignments={assignments[doc.id] || []} />
+                ) : null}
                 <button
                   className="assign-agent-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     setAssigningDocId(doc.id);
                   }}
-                  title="Assign agent or team"
+                  title="Assign agent or team to analyze this document"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M12 1v6m0 6v10M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M1 12h6m6 0h10M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24" />
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="8.5" cy="7" r="4" />
+                    <line x1="20" y1="8" x2="20" y2="14" />
+                    <line x1="23" y1="11" x2="17" y2="11" />
                   </svg>
+                  <span>Assign Agent</span>
                 </button>
               </div>
             </div>

@@ -1,35 +1,7 @@
 /* AIStaffFloating -- Floating panel styles */
 
-.ai-staff-floating-button {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 2px solid;
-  background: var(--bg-secondary, #1e293b);
-  color: var(--text-primary, #e2e8f0);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.ai-staff-floating-button:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-}
-
-.ai-staff-floating-button .ai-staff-count-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-}
-
-/* Floating panel */
+/* Floating panel — size set inline via style prop */
 .ai-staff-floating-panel {
-  width: 360px;
-  height: 500px;
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary, #1e293b);
@@ -123,4 +95,31 @@
 
 .ai-staff-floating-other-toggle .chevron.expanded {
   transform: rotate(90deg);
+}
+
+/* Resize handle (bottom-right corner) */
+.ai-staff-floating-resize {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  background: transparent;
+}
+
+.ai-staff-floating-resize::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-secondary, #94a3b8);
+  border-bottom: 2px solid var(--text-secondary, #94a3b8);
+  opacity: 0.4;
+}
+
+.ai-staff-floating-resize:hover::after {
+  opacity: 0.8;
 }

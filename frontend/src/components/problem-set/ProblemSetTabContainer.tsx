@@ -44,7 +44,6 @@ import { AIStaffProvider } from '../../context/AIStaffContext';
 import { AIStaffPanel } from '../ai-staff/AIStaffPanel';
 import { useAIStaffFeed } from '../../hooks/useAIStaffFeed';
 import { useAIStaff, useAIStaffDispatch } from '../../context/AIStaffContext';
-import { isProcessTab } from '../ai-staff/AgentRoutingConfig';
 import { useMode } from '../../context/ModeContext';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
@@ -313,6 +312,8 @@ export function ProblemSetTabContainer() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
+    <AIStaffProvider problemSetId={displayId} activeTab={activeTab}>
+    <AIStaffFeedConnector problemSetId={displayId} />
     <div className={['flex flex-col flex-1 min-h-0 bg-gray-900', isTraining ? 'border-t-2 border-amber-500/40' : ''].join(' ')}>
 
       {/* Horizontal tab bar */}
@@ -470,6 +471,7 @@ export function ProblemSetTabContainer() {
           >
             Invite
           </button>
+          <AIActivityButton />
           <Link
             to={`/problem-set/${displayId}/directory`}
             className="px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors whitespace-nowrap"
@@ -524,19 +526,17 @@ export function ProblemSetTabContainer() {
         </button>
       </nav>
 
-      {/* Tab content — wrapped with DecisionGateProvider for gate context */}
+      {/* Tab content */}
       <DecisionGateProvider problemSetId={displayId}>
-        <AIStaffProvider problemSetId={displayId} activeTab={activeTab}>
-          <AIStaffFeedConnector problemSetId={displayId} />
-          <div className="flex flex-1 overflow-hidden min-h-0">
-            <div className="flex flex-col flex-1 overflow-hidden min-h-0" data-tab-content>
-              {renderTabContent()}
-            </div>
-            <AIStaffToggle activeTab={activeTab} />
-            <AIStaffPanel />
+        <div className="flex flex-1 overflow-hidden min-h-0">
+          <div className="flex flex-col flex-1 overflow-hidden min-h-0" data-tab-content>
+            {renderTabContent()}
           </div>
-        </AIStaffProvider>
+        </div>
       </DecisionGateProvider>
+
+      {/* Floating AI Activity panel — rendered via portal, position independent */}
+      <AIStaffPanel />
 
       {/* OrgTreeSidebar — rendered outside tab content to avoid overflow clipping */}
       {orgTreeOpen && <OrgTreeSidebar onClose={() => setOrgTreeOpen(false)} />}
@@ -551,38 +551,36 @@ export function ProblemSetTabContainer() {
       )}
 
     </div>
+    </AIStaffProvider>
   );
 }
 
 /**
- * Small toggle button that appears on the right edge when the AI panel is
- * closed on process tabs, giving the user a way to reopen it.
+ * Top-bar button to toggle the floating AI Activity panel.
  * Must be rendered inside AIStaffProvider so it can access context.
  */
-function AIStaffToggle({ activeTab }: { activeTab: string }) {
-  const { isOpen } = useAIStaff();
+function AIActivityButton() {
+  const { isOpen, unreadCount } = useAIStaff();
   const dispatch = useAIStaffDispatch();
-
-  if (isOpen || !isProcessTab(activeTab)) return null;
 
   return (
     <button
-      onClick={() => dispatch.setOpen(true)}
-      className="w-6 bg-gray-800 border-l border-gray-700 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700 text-gray-400 hover:text-gray-200 text-xs shrink-0"
-      aria-label="Open AI staff panel"
-      title="Open AI staff panel"
+      onClick={() => dispatch.setOpen(!isOpen)}
+      className={`px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
+        isOpen ? 'text-green-400 hover:text-green-300' : 'text-gray-400 hover:text-gray-200'
+      }`}
+      title={isOpen ? 'Close AI Activity panel' : 'Open AI Activity panel'}
+      aria-label="Toggle AI Activity panel"
     >
-      <span style={{ writingMode: 'vertical-rl' }}>AI</span>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-3 w-3 mt-1"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 7h10v10H7z" />
       </svg>
+      AI
+      {unreadCount > 0 && (
+        <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-red-500 rounded-full">
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </span>
+      )}
     </button>
   );
 }
