@@ -281,8 +281,8 @@ export function OperationalApproachSection({
   const cvLinkCount = countCVLinks(designData.linesOfEffort ?? []);
 
   return (
-    <div className="flex gap-0">
-      <div className="flex-1 min-w-0 space-y-6">
+    <div className="flex gap-0 flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-w-0 space-y-6 overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -139,9 +139,9 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden gap-4">
       {/* Section Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-gray-100">Center of Gravity Analysis</h2>
           <p className="text-sm text-gray-400">Strange's CG-CC-CR-CV Framework</p>
@@ -149,9 +149,9 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
       </div>
 
       {/* Content + AI Panel */}
-      <div className="flex">
+      <div className="flex flex-1 min-h-0">
         {/* Main Content */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
+        <div className="flex-1 min-w-0 flex flex-col gap-4 overflow-y-auto">
           {/* Side-by-side Trees */}
           <div className="flex flex-col lg:flex-row gap-0">
             {/* Friendly Forces */}
