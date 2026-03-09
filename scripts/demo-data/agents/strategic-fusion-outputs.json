@@ -1,0 +1,46 @@
+[
+  {
+    "id": "DEMO-AGENT-OUTPUT-strategic-fusion-01",
+    "agentRole": "strategic-fusion",
+    "agentName": "Strategic Fusion Agent",
+    "problemSetId": "DEMO-PS-indopacom-theater",
+    "title": "Cross-Document Strategic Objective Synthesis — Indo-Pacific Theater",
+    "status": "complete",
+    "metadata": {
+      "model": "gpt-4-turbo",
+      "runTimestamp": "2026-03-01T14:30:00Z",
+      "confidence": 0.89,
+      "documentsAnalyzed": 6,
+      "sources": [
+        "National Security Strategy 2025",
+        "Indo-Pacific Strategy 2024",
+        "USINDOPACOM Theater Campaign Plan",
+        "National Defense Strategy 2025",
+        "Taiwan Relations Act (as amended)",
+        "AUKUS Framework Agreement"
+      ]
+    },
+    "content": "## Strategic Objective Synthesis — Indo-Pacific Theater\n\n### Fused Strategic Objectives\n\n**Objective 1: Maintain Rules-Based International Order (DIME: Diplomatic, Information)**\n- *Source convergence:* NSS 2025 (Ch.3), IPS 2024 (Pillar 1), NDS 2025 (Obj.1)\n- *Assessment:* All three strategy documents establish preservation of the rules-based order as the foundational objective. The Indo-Pacific Strategy explicitly ties this to freedom of navigation and overflight in the Taiwan Strait and South China Sea.\n- *Confidence:* HIGH (0.95) — Universal alignment across all documents\n\n**Objective 2: Strengthen Allied & Partner Network (DIME: Diplomatic, Military)**\n- *Source convergence:* NSS 2025 (Ch.5), IPS 2024 (Pillar 2), AUKUS Framework (Art.1-3)\n- *Assessment:* Alliance strengthening is a means-objective that enables all other objectives. AUKUS provides the most specific framework — nuclear submarine technology transfer and advanced capabilities pillar. Japanese collective self-defense expansion and Philippine basing agreements represent critical enablers.\n- *Confidence:* HIGH (0.92) — Strong cross-document alignment with concrete action plans\n\n**Objective 3: Deter PRC Aggression Against Taiwan (DIME: Military, Information, Economic)**\n- *Source convergence:* TRA (Sec.2), NDS 2025 (Obj.2), INDOPACOM TCP (LOE 2)\n- *Assessment:* Deterrence of forcible Taiwan unification is the central operational objective. The Taiwan Relations Act provides the legal foundation while NDS establishes the capability requirements. Theater Campaign Plan operationalizes deterrence through forward presence, exercises, and rapid deployment capability.\n- *Confidence:* HIGH (0.91) — Clear alignment though ambiguity in TRA commitment level noted\n\n**Objective 4: Maintain Credible Combat Power in Western Pacific (DIME: Military)**\n- *Source convergence:* NDS 2025 (Obj.3), INDOPACOM TCP (LOE 1), IPS 2024 (Pillar 3)\n- *Assessment:* Force posture modernization is identified as essential for deterrence credibility. NDS identifies need for distributed force posture to reduce vulnerability. INDOPACOM TCP specifies minimum force requirements: 2 CSGs within 72-hour response, forward-deployed air assets at 3+ locations.\n- *Confidence:* MEDIUM-HIGH (0.85) — Implementation details vary across documents\n\n**Objective 5: Preserve Economic Stability in Indo-Pacific (DIME: Economic)**\n- *Source convergence:* NSS 2025 (Ch.4), IPS 2024 (Pillar 4), AUKUS Framework (Pillar 2)\n- *Assessment:* Economic resilience is both an end and a means. Supply chain security (especially semiconductors), trade route protection, and countering economic coercion support military objectives while being independently valuable. TSMC production continuity is a critical national security interest.\n- *Confidence:* MEDIUM (0.78) — Economic objectives less precisely defined than military ones\n\n### MIDLIFE Theme Classification\n\n| Objective | M | I | D | L | I | F | E |\n|-----------|---|---|---|---|---|---|---|\n| Rules-Based Order | . | X | X | . | X | . | . |\n| Allied Network | X | . | X | . | . | . | . |\n| Deter PRC | X | X | . | . | . | . | X |\n| Combat Power | X | . | . | X | . | . | . |\n| Economic Stability | . | . | . | . | . | X | X |\n\n*M=Military, I=Information, D=Diplomatic, L=Law Enforcement, I=Intelligence, F=Financial, E=Economic*\n\n### Gaps and Tensions Identified\n1. **Deterrence-Engagement tension:** NSS promotes engagement with PRC while NDS prioritizes deterrence — potential policy friction during crisis transition\n2. **Alliance burden-sharing gap:** AUKUS well-defined but broader allied contribution requirements (Japan, Philippines) lack specificity\n3. **Economic-security tradeoff:** Economic stability objective may conflict with sanctions/decoupling measures during crisis escalation"
+  },
+  {
+    "id": "DEMO-AGENT-OUTPUT-strategic-fusion-02",
+    "agentRole": "strategic-fusion",
+    "agentName": "Strategic Fusion Agent",
+    "problemSetId": "DEMO-PS-indopacom-theater",
+    "title": "Strategic Environment Change Detection — Q1 FY26 Update",
+    "status": "complete",
+    "metadata": {
+      "model": "gpt-4-turbo",
+      "runTimestamp": "2026-03-05T09:15:00Z",
+      "confidence": 0.84,
+      "documentsAnalyzed": 4,
+      "sources": [
+        "DIA Worldwide Threat Assessment FY26",
+        "PACOM J2 Weekly Intelligence Summary W09",
+        "CSIS Indo-Pacific Maritime Monitor Feb 2026",
+        "ONI PLA Navy Assessment 2026"
+      ]
+    },
+    "content": "## Strategic Environment Change Detection — Q1 FY26\n\n### Significant Changes from Baseline\n\n**CHANGE 1: PLA ETC Force Posture Escalation (HIGH significance)**\n- *Baseline (Sep 2025):* 2 amphibious brigades in readiness posture\n- *Current (Mar 2026):* 3 amphibious brigades + 2 marine brigades at elevated readiness; amphibious vessel concentration at Zhanjiang and Ningbo exceeds exercise patterns\n- *Impact:* Increases viability of cross-strait amphibious operation. Shortens PRC decision-to-action timeline by estimated 72 hours.\n- *Affected objectives:* Obj.3 (Deter PRC), Obj.4 (Combat Power)\n- *Recommendation:* Increase ISR coverage of Fujian coast embarkation points; consider repositioning 1x SSN to Luzon Strait\n\n**CHANGE 2: Japan Collective Self-Defense Policy Expansion (MEDIUM significance)**\n- *Baseline:* Collective self-defense limited to situations threatening Japan's survival\n- *Current:* Japanese Diet approved expanded interpretation allowing participation in Taiwan contingency if judged existential threat to Japan\n- *Impact:* Strengthens Obj.2 (Allied Network). JSDF integration into OPLAN 5077 now legally feasible. Kadena and Iwakuni basing assured.\n- *Affected objectives:* Obj.2 (Allied Network), Obj.3 (Deter PRC)\n- *Recommendation:* Accelerate bilateral planning with JSDF; update ROE synchronization framework\n\n**CHANGE 3: PRC Economic Coercion Campaign Against Philippines (MEDIUM significance)**\n- *Baseline:* Standard gray-zone activities in South China Sea\n- *Current:* PRC imposed unofficial trade restrictions on Philippine agricultural exports; fishing exclusion zone expanded around Scarborough Shoal\n- *Impact:* Tests alliance cohesion. Philippine domestic pressure may constrain Manila's willingness to support forward basing.\n- *Affected objectives:* Obj.1 (Rules-Based Order), Obj.2 (Allied Network)\n- *Recommendation:* Increase economic engagement with Philippines; consider accelerating EDCA site development\n\n**CHANGE 4: TSMC Production Shift to Arizona Fab (LOW-MEDIUM significance)**\n- *Baseline:* 92% advanced chip production in Taiwan\n- *Current:* Arizona Fab 2 operational, reducing Taiwan concentration to 85%. Fab 3 construction ahead of schedule.\n- *Impact:* Marginally reduces economic vulnerability of Taiwan scenario but semiconductor disruption remains critical concern.\n- *Affected objectives:* Obj.5 (Economic Stability)\n- *Recommendation:* Monitor production ramp timeline; update economic impact models\n\n### Net Assessment\nStrategic environment has shifted toward increased PRC readiness and regional tension since baseline. Allied posture has strengthened through Japan policy change. Overall threat level: ELEVATED from SUBSTANTIAL. Recommend updating Obj.3 deterrence measures to account for shortened PRC decision timeline."
+  }
+]
