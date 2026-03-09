@@ -36,8 +36,7 @@ import type { StrategicObjective } from '../strategic/schemas/strategic-objectiv
 import type { DIMEInstrument } from '../strategic/schemas/dime.js';
 import { dimeToMidlife } from '../strategic/schemas/dime.js';
 import { intentStore } from '../strategic/intent/index.js';
-import { configService } from '../strategic/config/service.js';
-import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
+import { resolveProviderConfig } from '../strategic/config/resolve-api-key.js';
 import type { IntentInput, IntentUpdate } from '../strategic/intent/index.js';
 import { getStrategyReviewerExecutor } from '../strategic/agents/strategy-reviewer-executor.js';
 import { reviewStore } from '../strategic/reviews/store.js';
@@ -483,18 +482,8 @@ router.post('/documents/:documentId/extract', requireAuth, async (req, res) => {
 
     console.log(`Extracting objectives from document ${documentId}...`);
 
-    // Get admin-configured LLM provider
-    const llmConfig = await configService.getLLMConfig();
-
-    // Map admin config to provider config format
-    // Note: 'local' in admin config maps to 'ollama' in provider types
-    const providerType = llmConfig.provider === 'local' ? 'ollama' : llmConfig.provider;
-    const providerConfig: ProviderConfig = {
-      type: providerType as ProviderConfig['type'],
-      model: llmConfig.models.extraction,
-      apiKey: llmConfig.apiKey || undefined,
-      baseUrl: llmConfig.baseUrl,
-    };
+    // Get admin-configured LLM provider (OAuth-aware)
+    const providerConfig = await resolveProviderConfig('extraction');
 
     // Extract objectives using configured LLM provider
     const extractor = new ExtractionService({ provider: providerConfig });
@@ -606,17 +595,8 @@ router.get('/documents/:documentId/extract/stream', requireAuth, async (req, res
 
     console.log(`Extracting objectives (streaming) from document ${documentId}...`);
 
-    // Get admin-configured LLM provider
-    const llmConfig = await configService.getLLMConfig();
-
-    // Map admin config to provider config format
-    const providerType = llmConfig.provider === 'local' ? 'ollama' : llmConfig.provider;
-    const providerConfig: ProviderConfig = {
-      type: providerType as ProviderConfig['type'],
-      model: llmConfig.models.extraction,
-      apiKey: llmConfig.apiKey || undefined,
-      baseUrl: llmConfig.baseUrl,
-    };
+    // Get admin-configured LLM provider (OAuth-aware)
+    const providerConfig = await resolveProviderConfig('extraction');
 
     // Extract objectives with progress callback
     const extractor = new ExtractionService({ provider: providerConfig });
