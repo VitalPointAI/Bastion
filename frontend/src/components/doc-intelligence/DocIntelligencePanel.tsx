@@ -25,13 +25,6 @@ interface DocIntelligencePanelProps {
   problemSetId: string;
 }
 
-interface ProblemSetContext {
-  problemSetId: string;
-  coreProblem: string;
-  updatedAt: string;
-  version: number;
-  [key: string]: unknown;
-}
 
 // ============================================================================
 // DocIntelligencePanel Component
@@ -140,7 +133,7 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
   }, []);
 
   // ── Scoping interview completion ─────────────────────────────────────────
-  const handleInterviewComplete = useCallback((_context: ProblemSetContext) => {
+  const handleInterviewComplete = useCallback(() => {
     setHasContext(true);
     setShowInterview(false);
   }, []);

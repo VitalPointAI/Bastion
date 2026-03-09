@@ -7,7 +7,17 @@
  */
 
 import { useState, useEffect } from 'react';
-import type { DocProcessingState, SpecialistAgentStatus } from '../../hooks/useDocProcessing';
+import type { SpecialistAgentStatus, SpecialistStatus, FlaggedState } from '../../hooks/useDocProcessing';
+
+/** Subset of DocProcessingState that MissionControl actually uses */
+interface MissionControlState {
+  specialists: Map<string, SpecialistStatus>;
+  isProcessing: boolean;
+  flagged: FlaggedState | null;
+  error: string | null;
+  documentName: string | null;
+  startTime: string | null;
+}
 
 // ============================================================================
 // Specialist Icons (emoji-based for simplicity, upgradeable to SVG)
@@ -98,7 +108,7 @@ function ElapsedTimer({ startTime }: { startTime: string }) {
 
 interface MissionControlProps {
   problemSetId: string;
-  processingState: DocProcessingState;
+  processingState: MissionControlState;
   onApproveFlag?: () => void;
   onRejectFlag?: () => void;
 }
