@@ -29,7 +29,7 @@ interface EntityResolutionPanelProps {
 
 // ---- Component --------------------------------------------------------------
 
-export function EntityResolutionPanel({ problemSetId }: EntityResolutionPanelProps) {
+export function EntityResolutionPanel({ problemSetId: _problemSetId }: EntityResolutionPanelProps) {
   const [open, setOpen] = useState(false);
   const [pendingMatches, setPendingMatches] = useState<PendingMatch[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,7 +67,7 @@ export function EntityResolutionPanel({ problemSetId }: EntityResolutionPanelPro
     } finally {
       setLoading(false);
     }
-  }, [problemSetId]);
+  }, []);
 
   useEffect(() => {
     if (open) {

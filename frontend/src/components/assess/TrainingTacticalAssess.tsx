@@ -88,13 +88,13 @@ export function TrainingTacticalAssess({ problemSetId }: TrainingTacticalAssessP
     }
   }, []);
 
+  const parentPsId = activeProblemSet?.parentProblemSetId;
   const loadMETLTasks = useCallback(async () => {
     try {
       // Load local tasks
       const localTasks = await assessmentService.listMETLTasks(problemSetId);
 
       // Load inherited tasks from parent if available
-      const parentPsId = activeProblemSet?.parentProblemSetId;
       let inheritedTasks: METLTask[] = [];
       if (parentPsId) {
         try {
@@ -117,7 +117,7 @@ export function TrainingTacticalAssess({ problemSetId }: TrainingTacticalAssessP
     } catch (err) {
       console.error('Failed to load METL tasks:', err);
     }
-  }, [problemSetId, activeProblemSet?.parentProblemSetId]);
+  }, [problemSetId, parentPsId]);
 
   useEffect(() => {
     setLoading(true);

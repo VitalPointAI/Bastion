@@ -89,12 +89,12 @@ router.post('/entities/alias', async (req: Request, res: Response) => {
 router.get('/entities/:entityId/references', async (req: Request, res: Response) => {
   try {
     const result = await entityToolHandlers.get_entity_references({
-      entityId: req.params.entityId,
+      entityId: req.params.entityId as string,
     });
     res.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] GET /entities/${req.params.entityId}/references failed:`, message);
+    console.error(`[jpp] GET /entities/${req.params.entityId as string}/references failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -109,11 +109,11 @@ router.get('/entities/:entityId/references', async (req: Request, res: Response)
  */
 router.get('/:problemSetId', async (req: Request, res: Response) => {
   try {
-    const instance = await jppStore.getInstanceByProblemSet(req.params.problemSetId);
+    const instance = await jppStore.getInstanceByProblemSet(req.params.problemSetId as string);
     res.json(instance);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] GET /${req.params.problemSetId} failed:`, message);
+    console.error(`[jpp] GET /${req.params.problemSetId as string} failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -129,7 +129,7 @@ router.put('/:instanceId/step-status', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Missing required fields: step, status' });
       return;
     }
-    const updated = await jppStore.updateStepStatus(req.params.instanceId, step, status);
+    const updated = await jppStore.updateStepStatus(req.params.instanceId as string, step, status);
     if (!updated) {
       res.status(404).json({ error: 'JPP instance not found' });
       return;
@@ -137,7 +137,7 @@ router.put('/:instanceId/step-status', async (req: Request, res: Response) => {
     res.json(updated);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] PUT /${req.params.instanceId}/step-status failed:`, message);
+    console.error(`[jpp] PUT /${req.params.instanceId as string}/step-status failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -152,13 +152,13 @@ router.put('/:instanceId/step-status', async (req: Request, res: Response) => {
 router.get('/:instanceId/steps/:step/products', async (req: Request, res: Response) => {
   try {
     const products = await jppStore.getStepProducts(
-      req.params.instanceId,
-      req.params.step as JPPStepId,
+      req.params.instanceId as string,
+      (req.params.step as string) as JPPStepId,
     );
     res.json(products);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] GET /${req.params.instanceId}/steps/${req.params.step}/products failed:`, message);
+    console.error(`[jpp] GET /${req.params.instanceId as string}/steps/${(req.params.step as string)}/products failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -171,8 +171,8 @@ router.post('/:instanceId/steps/:step/products', async (req: Request, res: Respo
   try {
     const product = await jppStore.saveStepProduct({
       id: req.body.id,
-      jppInstanceId: req.params.instanceId,
-      step: req.params.step as JPPStepId,
+      jppInstanceId: req.params.instanceId as string,
+      step: (req.params.step as string) as JPPStepId,
       roleId: req.body.roleId ?? 'unknown',
       content: req.body.content ?? {},
       aiDraftedBy: req.body.aiDraftedBy,
@@ -182,7 +182,7 @@ router.post('/:instanceId/steps/:step/products', async (req: Request, res: Respo
     res.json(product);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] POST /${req.params.instanceId}/steps/${req.params.step}/products failed:`, message);
+    console.error(`[jpp] POST /${req.params.instanceId as string}/steps/${(req.params.step as string)}/products failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -193,7 +193,7 @@ router.post('/:instanceId/steps/:step/products', async (req: Request, res: Respo
  */
 router.get('/:instanceId/parent-products', async (req: Request, res: Response) => {
   try {
-    const instance = await jppStore.getInstance(req.params.instanceId);
+    const instance = await jppStore.getInstance(req.params.instanceId as string);
     if (!instance) {
       res.status(404).json({ error: 'JPP instance not found' });
       return;
@@ -217,7 +217,7 @@ router.get('/:instanceId/parent-products', async (req: Request, res: Response) =
     res.json({ products, parentJppId: instance.parentJppId });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] GET /${req.params.instanceId}/parent-products failed:`, message);
+    console.error(`[jpp] GET /${req.params.instanceId as string}/parent-products failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -231,11 +231,11 @@ router.get('/:instanceId/parent-products', async (req: Request, res: Response) =
  */
 router.get('/:instanceId/ewm', async (req: Request, res: Response) => {
   try {
-    const linkages = await ewmStore.getLinkagesByInstance(req.params.instanceId);
+    const linkages = await ewmStore.getLinkagesByInstance(req.params.instanceId as string);
     res.json(linkages);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] GET /${req.params.instanceId}/ewm failed:`, message);
+    console.error(`[jpp] GET /${req.params.instanceId as string}/ewm failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -246,7 +246,7 @@ router.get('/:instanceId/ewm', async (req: Request, res: Response) => {
 router.post('/:instanceId/ewm', async (req: Request, res: Response) => {
   try {
     const linkage = await ewmStore.createLinkage({
-      jppInstanceId: req.params.instanceId,
+      jppInstanceId: req.params.instanceId as string,
       endObjectiveId: req.body.endObjectiveId,
       wayId: req.body.wayId,
       wayType: req.body.wayType,
@@ -257,7 +257,7 @@ router.post('/:instanceId/ewm', async (req: Request, res: Response) => {
     res.status(201).json(linkage);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] POST /${req.params.instanceId}/ewm failed:`, message);
+    console.error(`[jpp] POST /${req.params.instanceId as string}/ewm failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -267,11 +267,11 @@ router.post('/:instanceId/ewm', async (req: Request, res: Response) => {
  */
 router.delete('/:instanceId/ewm/:linkageId', async (req: Request, res: Response) => {
   try {
-    await ewmStore.deleteLinkage(req.params.linkageId);
+    await ewmStore.deleteLinkage(req.params.linkageId as string);
     res.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] DELETE /${req.params.instanceId}/ewm/${req.params.linkageId} failed:`, message);
+    console.error(`[jpp] DELETE /${req.params.instanceId as string}/ewm/${req.params.linkageId as string} failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -287,11 +287,11 @@ router.put('/:instanceId/ewm/:linkageId/allocation', async (req: Request, res: R
       res.status(400).json({ error: 'Missing or invalid field: allocationPct (number)' });
       return;
     }
-    await ewmStore.updateAllocation(req.params.linkageId, allocationPct);
+    await ewmStore.updateAllocation(req.params.linkageId as string, allocationPct);
     res.json({ success: true, allocationPct });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] PUT /${req.params.instanceId}/ewm/${req.params.linkageId}/allocation failed:`, message);
+    console.error(`[jpp] PUT /${req.params.instanceId as string}/ewm/${req.params.linkageId as string}/allocation failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -301,11 +301,11 @@ router.put('/:instanceId/ewm/:linkageId/allocation', async (req: Request, res: R
  */
 router.get('/:instanceId/ewm/gaps', async (req: Request, res: Response) => {
   try {
-    const gaps = await ewmStore.findGaps(req.params.instanceId);
+    const gaps = await ewmStore.findGaps(req.params.instanceId as string);
     res.json(gaps);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] GET /${req.params.instanceId}/ewm/gaps failed:`, message);
+    console.error(`[jpp] GET /${req.params.instanceId as string}/ewm/gaps failed:`, message);
     res.status(500).json({ error: message });
   }
 });
@@ -317,9 +317,9 @@ router.get('/:instanceId/ewm/gaps', async (req: Request, res: Response) => {
 router.get('/:instanceId/ewm/summary', async (req: Request, res: Response) => {
   try {
     const [ends, ways, means] = await Promise.all([
-      ewmStore.getEnds(req.params.instanceId),
-      ewmStore.getWays(req.params.instanceId),
-      ewmStore.getMeans(req.params.instanceId),
+      ewmStore.getEnds(req.params.instanceId as string),
+      ewmStore.getWays(req.params.instanceId as string),
+      ewmStore.getMeans(req.params.instanceId as string),
     ]);
     res.json({
       ends: { count: ends.length, items: ends },
@@ -328,7 +328,7 @@ router.get('/:instanceId/ewm/summary', async (req: Request, res: Response) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[jpp] GET /${req.params.instanceId}/ewm/summary failed:`, message);
+    console.error(`[jpp] GET /${req.params.instanceId as string}/ewm/summary failed:`, message);
     res.status(500).json({ error: message });
   }
 });

@@ -338,13 +338,6 @@ class InheritanceApiService {
     const MAX_DELAY = 30000;
     const queue: StatusUpdateMessage[] = [];
 
-    const flushQueue = () => {
-      while (queue.length > 0 && connected && ws?.readyState === WebSocket.OPEN) {
-        const msg = queue.shift()!;
-        ws!.send(JSON.stringify(msg));
-      }
-    };
-
     const connect = () => {
       if (stopped) return;
 

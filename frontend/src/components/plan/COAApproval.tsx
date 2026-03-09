@@ -168,17 +168,6 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 500,
 };
 
-const saveButtonStyle: React.CSSProperties = {
-  padding: '0.5rem 1rem',
-  fontSize: '0.8rem',
-  backgroundColor: 'rgba(16, 185, 129, 0.15)',
-  border: '1px solid rgba(16, 185, 129, 0.3)',
-  borderRadius: '0.25rem',
-  color: '#6ee7b7',
-  cursor: 'pointer',
-  fontWeight: 500,
-};
-
 const affirmButtonStyle: React.CSSProperties = {
   padding: '0.5rem 1.5rem',
   fontSize: '0.85rem',

@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { JPPStepLayout } from './JPPStepLayout.tsx';
 import { RoleGatedSection } from './RoleGatedSection.tsx';
-import { jppService, type JPPStepProduct, type StepStatus } from '../../lib/jpp-service.ts';
+import { jppService, type StepStatus } from '../../lib/jpp-service.ts';
 import { designService, type LineOfEffort } from '../../lib/design-service.ts';
 import { ewmService, type EWMLinkage, type EWMGap } from '../../lib/ewm-service.ts';
 

@@ -5,8 +5,6 @@
  * Groups entries by JP 5-0 doctrinal type with color coding.
  */
 
-import { useState } from 'react';
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -138,8 +136,6 @@ export function ConstraintManager({
   onChange,
   readOnlyInherited = true,
 }: ConstraintManagerProps) {
-  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
-
   const updateEntry = (id: string, patch: Partial<ConstraintEntry>) => {
     onChange(
       constraints.map((c) => (c.id === id ? { ...c, ...patch } : c)),
@@ -254,10 +250,6 @@ export function ConstraintManager({
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginTop: '0.25rem' }}>
                         {PHASES.map((phase) => {
                           const isSelected = entry.applicablePhases?.includes(phase) ?? false;
-                          const phaseId = `${entry.id}-${phase}`;
-                          const isExpanded = expandedPhases[phaseId];
-                          void isExpanded; // suppress unused
-
                           return (
                             <label
                               key={phase}

@@ -29,15 +29,6 @@ function groupByCompetency(data: METLProficiencySummary[]): Map<string, METLProf
   return groups;
 }
 
-function ratingLabel(rating?: string): string {
-  switch (rating) {
-    case 'T': return 'Trained';
-    case 'P': return 'Practiced';
-    case 'U': return 'Untrained';
-    default: return 'Not Assessed';
-  }
-}
-
 function formatDate(dateStr?: string): string {
   if (!dateStr) return 'Never';
   const d = new Date(dateStr);

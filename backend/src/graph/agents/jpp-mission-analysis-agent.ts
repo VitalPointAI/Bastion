@@ -11,6 +11,7 @@
 
 import { AutonomyLevel } from '../../agents/types.js';
 import type { AgentManifest, AgentCharacter, AgentPhase, AgentCapability } from '../../agents/types.js';
+import { ProposalKind } from '../../dao/types.js';
 
 /**
  * Agent ID for consistent reference
@@ -48,7 +49,7 @@ export const JPP_MISSION_ANALYSIS_MANIFEST: Omit<
   ],
   maxAutonomy: AutonomyLevel.SemiAutonomous,
   allowedProposalKinds: [],
-  requiresHumanApproval: ['ProductApproval'],
+  requiresHumanApproval: [ProposalKind.ProductApproval],
   active: true,
 };
 

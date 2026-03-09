@@ -83,12 +83,12 @@ export function AcknowledgmentBanner({
   const handleAcknowledge = useCallback((sourceProblemSetId: string) => {
     onAcknowledge(sourceProblemSetId);
     setAcknowledgedIds((prev) => new Set([...prev, sourceProblemSetId]));
-  }, [onAcknowledge]);
+  }, [onAcknowledge, setAcknowledgedIds]);
 
   const handleDismissMinor = useCallback((sourceProblemSetId: string) => {
     setDismissed(sourceProblemSetId);
     setDismissedMinorIds((prev) => new Set([...prev, sourceProblemSetId]));
-  }, []);
+  }, [setDismissedMinorIds]);
 
   if (significantAcks.length === 0 && minorAcks.length === 0 && remaining.length === 0) {
     return null;

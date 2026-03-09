@@ -86,8 +86,8 @@ const guidanceRequestSchema = z.object({
 });
 
 const fragoTriggerSchema = z.object({
-  previousOpord: z.record(z.unknown()),
-  currentOpord: z.record(z.unknown()),
+  previousOpord: z.record(z.string(), z.unknown()),
+  currentOpord: z.record(z.string(), z.unknown()),
   opordVersion: z.string().min(1),
   previousVersion: z.string().min(1),
 });

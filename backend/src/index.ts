@@ -59,7 +59,7 @@ import { discoveryRouter, setupDiscoveryWS, getDiscoveryService } from './discov
 import { setupInheritanceWebSocket } from './inheritance/inheritance-ws.js';
 import { osintWebhookRouter } from './api/osint-webhook.js';
 import jppRouter from './api/jpp.js';
-import documentRouter from './planning/routes/document-routes.js';
+import { documentRouter } from './planning/routes/document-routes.js';
 import assessmentRouter from './api/assessment-routes.js';
 
 dotenv.config();
