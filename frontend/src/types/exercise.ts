@@ -744,6 +744,8 @@ export interface ScenarioDocument {
   textContent: string;
   extractedData: Record<string, unknown>;
   extractionConfidence: number;
+  extractionStatus: 'pending' | 'extracting' | 'complete' | 'failed';
+  extractionError: string | null;
   createdAt: string;
   updatedAt: string;
 }

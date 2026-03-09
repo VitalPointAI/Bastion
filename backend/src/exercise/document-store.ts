@@ -12,7 +12,8 @@ import type { ScenarioDocument, CreateScenarioDocument } from './types.js';
 // ─── Column list (excludes file_data blob to avoid loading large buffers) ────
 
 const DOC_COLUMNS = `id, scenario_id, team, exercise_phase, document_type, filename,
-  mime_type, text_content, extracted_data, extraction_confidence, created_at, updated_at`;
+  mime_type, text_content, extracted_data, extraction_confidence,
+  extraction_status, extraction_error, created_at, updated_at`;
 
 // ─── Row Mapper ───────────────────────────────────────────────────────────────
 
@@ -28,6 +29,8 @@ function rowToDocument(row: Record<string, unknown>): ScenarioDocument {
     textContent: row.text_content as string,
     extractedData: (row.extracted_data as Record<string, unknown>) ?? {},
     extractionConfidence: parseFloat(String(row.extraction_confidence ?? 0)),
+    extractionStatus: (row.extraction_status as ScenarioDocument['extractionStatus']) ?? 'pending',
+    extractionError: (row.extraction_error as string) ?? null,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
   };
@@ -135,9 +138,34 @@ export class ScenarioDocumentStore {
   ): Promise<void> {
     await this.pool.query(
       `UPDATE scenario_documents
-       SET extracted_data = $1, extraction_confidence = $2, updated_at = NOW()
+       SET extracted_data = $1, extraction_confidence = $2,
+           extraction_status = 'complete', extraction_error = NULL, updated_at = NOW()
        WHERE id = $3`,
       [JSON.stringify(extractedData), confidence, id]
+    );
+  }
+
+  /**
+   * Mark a document as currently extracting
+   */
+  async markExtracting(id: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE scenario_documents
+       SET extraction_status = 'extracting', extraction_error = NULL, updated_at = NOW()
+       WHERE id = $1`,
+      [id]
+    );
+  }
+
+  /**
+   * Mark a document extraction as failed with an error message
+   */
+  async markExtractionFailed(id: string, error: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE scenario_documents
+       SET extraction_status = 'failed', extraction_error = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [error.slice(0, 1000), id]
     );
   }
 
