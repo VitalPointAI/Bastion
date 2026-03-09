@@ -11,6 +11,8 @@ import { OSINTEventInputSchema } from '../graph/osint/types.js';
 import { validityService } from '../graph/osint/validity-service.js';
 import { entityResolutionService } from '../graph/resolution/resolution-service.js';
 import { graphBuilder } from '../graph/construction/graph-builder.js';
+import { decisionStore } from '../graph/raft/decision-store.js';
+import type { DecisionBasis } from '../graph/raft/types.js';
 import {
   fetchAdjacencyList,
   computeEigenvectorCentrality,
@@ -623,6 +625,70 @@ router.get('/centrality-comparison', async (req: Request, res: Response) => {
         algorithmNote: 'Power iteration without Neo4j GDS',
       },
     });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =============================================================================
+// Decision Graph Endpoints
+// =============================================================================
+
+/**
+ * GET /decisions/:problemSetId - List decisions in the knowledge graph
+ * Optional query params: ?type=operational_approach&basis=intuition_based&limit=50
+ */
+router.get('/decisions/:problemSetId', async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.problemSetId as string;
+    const decisionType = getQueryString(req.query.type);
+    const basis = getQueryString(req.query.basis) as DecisionBasis | undefined;
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+
+    const decisions = await decisionStore.listDecisions(problemSetId, {
+      decisionType,
+      basis,
+      limit,
+    });
+
+    res.json({ decisions });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+/**
+ * GET /decisions/:problemSetId/knowledge-gaps - Surface decisions made without evidence
+ * Returns decisions marked as intuition_based or with explicit knowledge gaps.
+ * These highlight where the team is relying on judgment rather than documented knowledge.
+ */
+router.get('/decisions/:problemSetId/knowledge-gaps', async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.problemSetId as string;
+    const decisions = await decisionStore.findKnowledgeGaps(problemSetId);
+
+    res.json({
+      knowledgeGapCount: decisions.length,
+      decisions,
+      summary: decisions.length > 0
+        ? `${decisions.length} decision(s) made without full document evidence. These may indicate areas where intuition is filling knowledge gaps.`
+        : 'All decisions have document-based evidence trails.',
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+/**
+ * GET /decisions/:decisionId/chain - Get the decision chain leading to a decision
+ * Returns predecessor decisions in chronological order.
+ */
+router.get('/decisions/:decisionId/chain', async (req: Request, res: Response) => {
+  try {
+    const decisionId = req.params.decisionId as string;
+    const chain = await decisionStore.getDecisionChain(decisionId);
+
+    res.json({ chain });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }

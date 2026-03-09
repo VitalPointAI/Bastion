@@ -43,6 +43,24 @@ export interface GraphBuildResult {
   errors: string[];
 }
 
+/** Entity created during graph construction — emitted via onEntityCreated callback */
+export interface GraphEntityEvent {
+  type: 'actor' | 'relationship' | 'tension';
+  data: {
+    id: string;
+    name?: string;
+    actorType?: string;
+    source?: string;
+    target?: string;
+    relationshipType?: string;
+    strength?: number;
+    description?: string;
+    intensity?: string;
+    domain?: string;
+    actors?: string[];
+  };
+}
+
 export interface GraphBuildOptions {
   /** Workspace ID for multi-tenant isolation */
   workspaceId?: string;
@@ -52,6 +70,10 @@ export interface GraphBuildOptions {
   sourceDocumentId: string;
   /** Container IDs for container-scoped graph tagging */
   containerIds?: string[];
+  /** Called when an individual entity is created (for live streaming) */
+  onEntityCreated?: (entity: GraphEntityEvent) => void;
+  /** Called with running totals after each objective is processed */
+  onProgress?: (progress: GraphBuildResult) => void;
 }
 
 // ============================================================================
@@ -256,6 +278,10 @@ export class GraphBuilder {
             }
 
             result.actorsCreated++;
+            options.onEntityCreated?.({
+              type: 'actor',
+              data: { id: newActor.id, name: actor.name, actorType: actor.type },
+            });
           }
         } catch (error) {
           result.errors.push(`Failed to create actor ${actor.name}: ${error}`);
@@ -281,6 +307,16 @@ export class GraphBuilder {
               containerIds: options.containerIds || [],
             });
             result.relationshipsCreated++;
+            options.onEntityCreated?.({
+              type: 'relationship',
+              data: {
+                id: `${sourceId}-${targetId}`,
+                source: rel.sourceActor,
+                target: rel.targetActor,
+                relationshipType: rel.type,
+                strength: rel.strength ?? 0,
+              },
+            });
           } else {
             result.errors.push(
               `Could not resolve actors for relationship: ${rel.sourceActor} -> ${rel.targetActor}`
@@ -299,7 +335,7 @@ export class GraphBuilder {
             .filter((id): id is string => id !== undefined);
 
           if (actorIds.length >= 2) {
-            await tensionStore.createTension({
+            const newTension = await tensionStore.createTension({
               actorIds,
               description: tension.description,
               intensity: tension.intensity,
@@ -312,6 +348,16 @@ export class GraphBuilder {
               containerIds: options.containerIds || [],
             });
             result.tensionsCreated++;
+            options.onEntityCreated?.({
+              type: 'tension',
+              data: {
+                id: newTension.id,
+                description: tension.description,
+                intensity: tension.intensity,
+                domain: tension.domain,
+                actors: tension.actors,
+              },
+            });
           } else {
             result.errors.push(
               `Could not resolve enough actors for tension: ${tension.actors.join(', ')}`
@@ -368,6 +414,9 @@ export class GraphBuilder {
       combined.relationshipsCreated += result.relationshipsCreated;
       combined.tensionsCreated += result.tensionsCreated;
       combined.errors.push(...result.errors);
+
+      // Emit running totals after each objective
+      options.onProgress?.(combined);
     }
 
     // Run entity resolution once at the end

@@ -48,6 +48,7 @@ import { executeStrategyReview } from '../agents/langgraph/graphs/strategy-revie
 import { getReviewCheckpointManager } from '../agents/langgraph/graphs/strategy-reviewer-checkpoint.js';
 import { getCOPTriggerHandler } from '../cop/index.js';
 import { containerStore, initContainerTables } from '../strategic/containers/index.js';
+import { graphBuilder } from '../graph/construction/graph-builder.js';
 
 const router = express.Router();
 
@@ -532,6 +533,24 @@ router.post('/documents/:documentId/extract', requireAuth, async (req, res) => {
       console.error('Auto-review trigger failed:', err);
     });
 
+    // Auto-trigger knowledge graph building from extracted objectives (non-blocking)
+    // This builds the problem-set-level graph iteratively as documents are processed
+    const workspaceId = document.workspaceId;
+    if (savedIds.length > 0) {
+      graphBuilder.buildFromDocument(
+        documentId,
+        savedIds.map((id, i) => ({ id, description: result.objectives[i].description })),
+        { workspaceId, runEntityResolution: true },
+      ).then((graphResult) => {
+        console.log(
+          `✓ Knowledge graph updated: ${graphResult.actorsCreated} actors, ` +
+          `${graphResult.relationshipsCreated} relationships, ${graphResult.tensionsCreated} tensions`
+        );
+      }).catch((err) => {
+        console.error('[strategic] Auto graph build failed (non-fatal):', err);
+      });
+    }
+
     res.status(201).json({
       objectiveCount: savedIds.length,
       documentSummary: result.documentSummary,
@@ -648,8 +667,8 @@ router.get('/documents/:documentId/extract/stream', requireAuth, async (req, res
       console.error('Auto-review trigger failed:', err);
     });
 
-    // Send final result
-    sendEvent('complete', {
+    // Send extraction_complete event — objectives are saved, graph build starting
+    sendEvent('extraction_complete', {
       objectiveCount: savedIds.length,
       documentSummary: result.documentSummary,
       extractionConfidence: result.extractionConfidence,
@@ -662,6 +681,43 @@ router.get('/documents/:documentId/extract/stream', requireAuth, async (req, res
         midlifeConfidence: inputs[i].midlifeConfidence,
         priority: result.objectives[i].priority,
       })),
+    });
+
+    // Build knowledge graph inline (synchronous within stream) so we can emit live entity events
+    let graphResult = null;
+    if (savedIds.length > 0) {
+      try {
+        graphResult = await graphBuilder.buildFromDocument(
+          documentId,
+          savedIds.map((id, i) => ({ id, description: result.objectives[i].description })),
+          {
+            workspaceId: document.workspaceId,
+            runEntityResolution: true,
+            onEntityCreated: (entity) => {
+              sendEvent('graph_entity', entity);
+            },
+            onProgress: (progress) => {
+              sendEvent('graph_progress', progress);
+            },
+          },
+        );
+        console.log(
+          `✓ Knowledge graph updated (streaming): ${graphResult.actorsCreated} actors, ` +
+          `${graphResult.relationshipsCreated} relationships, ${graphResult.tensionsCreated} tensions`
+        );
+      } catch (err) {
+        console.error('[strategic] Graph build failed (non-fatal):', err);
+      }
+    }
+
+    // Send final complete event with everything
+    sendEvent('complete', {
+      percentComplete: 100,
+      objectiveCount: savedIds.length,
+      documentSummary: result.documentSummary,
+      extractionConfidence: result.extractionConfidence,
+      chunkCount: result.chunkCount,
+      graphResult,
     });
 
     // Close the stream

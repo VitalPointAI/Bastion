@@ -20,6 +20,8 @@ import type {
 } from './gate-types.js';
 import { getPool } from '../lib/database.js';
 import { inheritanceStore } from '../inheritance/inheritance-store.js';
+import { decisionStore } from '../graph/raft/decision-store.js';
+import type { DecisionBasis } from '../graph/raft/types.js';
 
 // ---------------------------------------------------------------------------
 // Gate Permissions Type
@@ -163,7 +165,12 @@ export class GateService {
       });
     }
 
-    return this.store.updateStatus(gateId, GateStatus.approved, decidedBy);
+    const approved = await this.store.updateStatus(gateId, GateStatus.approved, decidedBy);
+
+    // Capture in knowledge graph
+    this.captureDecisionInGraph(approved, 'approved', decidedBy, 'Approved by commander');
+
+    return approved;
   }
 
   /**
@@ -187,7 +194,12 @@ export class GateService {
       },
     });
 
-    return this.store.updateStatus(gateId, GateStatus.rejected, decidedBy);
+    const rejected = await this.store.updateStatus(gateId, GateStatus.rejected, decidedBy);
+
+    // Capture in knowledge graph
+    this.captureDecisionInGraph(rejected, 'rejected', decidedBy, reason);
+
+    return rejected;
   }
 
   /**
@@ -213,7 +225,12 @@ export class GateService {
       },
     });
 
-    return this.store.updateStatus(gateId, GateStatus.overridden, overriddenBy);
+    const overridden = await this.store.updateStatus(gateId, GateStatus.overridden, overriddenBy);
+
+    // Capture in knowledge graph — overrides are explicitly intuition-based
+    this.captureDecisionInGraph(overridden, 'overridden', overriddenBy, justification);
+
+    return overridden;
   }
 
   /**
@@ -440,6 +457,57 @@ export class GateService {
        ON CONFLICT DO NOTHING`,
       [problemSetId, JSON.stringify({ parentAuthority: config })],
     );
+  }
+
+  // =========================================================================
+  // Decision Graph Capture
+  // =========================================================================
+
+  /**
+   * Record a gate decision in the knowledge graph.
+   * Non-blocking: errors are logged but never propagated.
+   */
+  private captureDecisionInGraph(
+    gate: DecisionGate,
+    outcome: string,
+    decidedBy: string,
+    rationale: string,
+  ): void {
+    // Determine decision basis from the evidence available
+    const context = gate.decision_context as Record<string, unknown>;
+    const proposal = context.proposal as Record<string, unknown> | undefined;
+    const hasDocEvidence = !!proposal?.metadata;
+    const basis: DecisionBasis = context.auto_approved
+      ? 'analysis_based'
+      : hasDocEvidence ? 'document_based' : 'intuition_based';
+
+    // Identify knowledge gaps for intuition-based decisions
+    const knowledgeGaps: string[] = [];
+    if (basis === 'intuition_based') {
+      knowledgeGaps.push(
+        `Decision on "${gate.target_item_title}" (${gate.gate_type}) made without linked document evidence`,
+      );
+    }
+
+    decisionStore.createDecision({
+      gateId: gate.id,
+      decisionType: gate.gate_type,
+      title: `${gate.gate_type}: ${gate.target_item_title}`,
+      description: (proposal?.description as string) || gate.target_item_title,
+      outcome,
+      rationale,
+      basis,
+      supportingDocumentIds: [],
+      linkedObjectiveIds: [],
+      predecessorDecisionIds: [],
+      knowledgeGaps,
+      decidedBy,
+      problemSetId: gate.problem_set_id,
+    }).then((decision) => {
+      console.log(`[GateService] Decision captured in graph: ${decision.id} (${outcome})`);
+    }).catch((err) => {
+      console.error('[GateService] Failed to capture decision in graph (non-fatal):', err);
+    });
   }
 }
 

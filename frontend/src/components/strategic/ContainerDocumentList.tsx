@@ -17,18 +17,11 @@ import {
 } from '../../lib/strategic-service.js';
 import { AgentBadges } from './AgentBadges.js';
 import { AgentAssignmentModal } from './AgentAssignmentModal.js';
-
-interface ExtractionProgress {
-  phase: 'chunking' | 'extracting' | 'consolidating' | 'complete';
-  currentChunk: number;
-  totalChunks: number;
-  percentComplete: number;
-  objectivesFound: number;
-  latestObjectivePreview?: string;
-}
+import { ExtractionTheater } from './ExtractionTheater.js';
 
 interface ContainerDocumentListProps {
   containerId: string;
+  problemSetId?: string;
   onSelectDocument: (doc: StrategicDocument) => void;
   onBack: () => void;
   containerName: string;
@@ -49,8 +42,6 @@ function DraggableDocumentCard({
   formatDate,
   onAssignAgent,
   onExtract,
-  extracting,
-  progress,
 }: {
   doc: StrategicDocument;
   containerId: string | null;
@@ -59,8 +50,6 @@ function DraggableDocumentCard({
   formatDate: (d: string) => string;
   onAssignAgent: (docId: string) => void;
   onExtract: (doc: StrategicDocument, e: React.MouseEvent) => void;
-  extracting: string | null;
-  progress: ExtractionProgress | null;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `doc-${doc.id}`,
@@ -71,16 +60,6 @@ function DraggableDocumentCard({
       sourceContainerId: containerId,
     },
   });
-
-  const getPhaseDescription = (phase: ExtractionProgress['phase']): string => {
-    switch (phase) {
-      case 'chunking': return 'Analyzing document structure...';
-      case 'extracting': return 'Extracting objectives with AI...';
-      case 'consolidating': return 'Consolidating results...';
-      case 'complete': return 'Complete!';
-      default: return 'Processing...';
-    }
-  };
 
   return (
     <div
@@ -184,36 +163,7 @@ function DraggableDocumentCard({
 
       {/* Objectives status */}
       <div className="doc-objectives">
-        {extracting === doc.id && progress ? (
-          <div className="extraction-progress">
-            <div className="progress-header">
-              <span className="progress-phase">{getPhaseDescription(progress.phase)}</span>
-              <span className="progress-percent">{progress.percentComplete}%</span>
-            </div>
-            <div className="progress-bar-container">
-              <div
-                className="progress-bar-fill"
-                style={{ width: `${progress.percentComplete}%` }}
-              />
-            </div>
-            <div className="progress-details">
-              {progress.totalChunks > 0 && (
-                <span className="progress-chunks">
-                  Chunk {progress.currentChunk} of {progress.totalChunks}
-                </span>
-              )}
-              <span className="progress-found">
-                {progress.objectivesFound} objective{progress.objectivesFound !== 1 ? 's' : ''} found
-              </span>
-            </div>
-            {progress.latestObjectivePreview && (
-              <div className="progress-preview">
-                <span className="preview-label">Latest:</span>
-                <span className="preview-text">{progress.latestObjectivePreview}</span>
-              </div>
-            )}
-          </div>
-        ) : doc.objectiveCount !== undefined && doc.objectiveCount > 0 ? (
+        {doc.objectiveCount !== undefined && doc.objectiveCount > 0 ? (
           <div className="objectives-status">
             <div className="objectives-count">
               <span className="count-value">{doc.objectiveCount}</span>
@@ -222,7 +172,6 @@ function DraggableDocumentCard({
             <button
               className="re-extract-button"
               onClick={(e) => onExtract(doc, e)}
-              disabled={extracting === doc.id}
               title="Re-extract objectives (will replace existing)"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -236,24 +185,14 @@ function DraggableDocumentCard({
           <button
             className="extract-button"
             onClick={(e) => onExtract(doc, e)}
-            disabled={extracting === doc.id}
           >
-            {extracting === doc.id ? (
-              <>
-                <span className="extract-spinner" />
-                Starting...
-              </>
-            ) : (
-              <>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  <line x1="11" y1="8" x2="11" y2="14" />
-                  <line x1="8" y1="11" x2="14" y2="11" />
-                </svg>
-                Extract Objectives
-              </>
-            )}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="11" y1="8" x2="11" y2="14" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+            Extract Objectives
           </button>
         )}
       </div>
@@ -263,6 +202,7 @@ function DraggableDocumentCard({
 
 export function ContainerDocumentList({
   containerId,
+  problemSetId,
   onSelectDocument,
   onBack,
   containerName,
@@ -276,8 +216,7 @@ export function ContainerDocumentList({
   const [error, setError] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<Record<string, DocumentAgentAssignment[]>>({});
   const [assigningDocId, setAssigningDocId] = useState<string | null>(null);
-  const [extracting, setExtracting] = useState<string | null>(null);
-  const [progress, setProgress] = useState<ExtractionProgress | null>(null);
+  const [theaterDoc, setTheaterDoc] = useState<StrategicDocument | null>(null);
 
   const loadDocuments = useCallback(async () => {
     setLoading(true);
@@ -331,85 +270,13 @@ export function ContainerDocumentList({
     }
   }, [documents, loadAssignments]);
 
-  const handleExtract = async (doc: StrategicDocument, e: React.MouseEvent) => {
+  const handleExtract = (doc: StrategicDocument, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (extracting) return;
-
-    setExtracting(doc.id);
-    setProgress(null);
-    setError(null);
-
-    try {
-      if (!userDID) {
-        throw new Error('Please log in to extract objectives');
-      }
-
-      const url = `${API_BASE}/api/strategic/documents/${doc.id}/extract/stream?did=${encodeURIComponent(userDID)}`;
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'text/event-stream',
-          'X-DID': userDID,
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Extraction failed');
-        } else {
-          const errorText = await response.text();
-          throw new Error(errorText || `Extraction failed (${response.status})`);
-        }
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response body');
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        let currentEvent = '';
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            currentEvent = line.slice(7);
-          } else if (line.startsWith('data: ') && currentEvent) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              if (currentEvent === 'progress') {
-                setProgress(data as ExtractionProgress);
-              } else if (currentEvent === 'complete') {
-                setProgress(null);
-                await loadDocuments();
-              } else if (currentEvent === 'error') {
-                throw new Error(data.error || 'Extraction failed');
-              }
-            } catch (parseErr) {
-              console.error('Failed to parse SSE data:', parseErr);
-            }
-            currentEvent = '';
-          }
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Extraction failed');
-      setProgress(null);
-    } finally {
-      setExtracting(null);
+    if (!userDID) {
+      setError('Please log in to extract objectives');
+      return;
     }
+    setTheaterDoc(doc);
   };
 
   const formatDate = (dateString: string) => {
@@ -507,8 +374,6 @@ export function ContainerDocumentList({
               formatDate={formatDate}
               onAssignAgent={(docId) => setAssigningDocId(docId)}
               onExtract={handleExtract}
-              extracting={extracting}
-              progress={progress}
             />
           ))}
         </div>
@@ -524,6 +389,18 @@ export function ContainerDocumentList({
             setAssigningDocId(null);
             loadAssignments([assigningDocId]);
           }}
+        />
+      )}
+
+      {/* Extraction Theater — full-screen extraction + live graph */}
+      {theaterDoc && userDID && (
+        <ExtractionTheater
+          documentId={theaterDoc.id}
+          documentTitle={theaterDoc.title}
+          problemSetId={problemSetId || containerId}
+          userDID={userDID}
+          onClose={() => setTheaterDoc(null)}
+          onComplete={() => loadDocuments()}
         />
       )}
     </div>

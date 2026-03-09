@@ -191,6 +191,65 @@ export interface Tension {
 }
 
 // ============================================================================
+// Decision Types — captures decision pathways in the knowledge graph
+// ============================================================================
+
+/**
+ * Decision basis — how the decision was informed
+ * - document_based: Decision directly supported by document evidence
+ * - analysis_based: Decision informed by AI or staff analysis
+ * - intuition_based: Decision made without clear evidence trail (knowledge gap)
+ * - mixed: Combination of evidence and judgment
+ */
+export type DecisionBasis = 'document_based' | 'analysis_based' | 'intuition_based' | 'mixed';
+
+/**
+ * Decision — A recorded decision point in the planning process.
+ * Captures the what, why, and evidence basis for decisions made,
+ * enabling traceability and surfacing where intuition fills knowledge gaps.
+ */
+export interface Decision {
+  /** Unique identifier (DEC-{uuid}) */
+  id: string;
+  /** Gate ID from decision_gates table (if from a formal gate) */
+  gateId?: string;
+  /** Type of decision (mirrors GateType or free-form for informal decisions) */
+  decisionType: string;
+  /** Human-readable title */
+  title: string;
+  /** What was decided */
+  description: string;
+  /** The outcome chosen */
+  outcome: string;
+  /** Rationale provided by the decision maker */
+  rationale: string;
+  /** How was this decision informed? */
+  basis: DecisionBasis;
+  /** Actor IDs (from graph) affected by or involved in this decision */
+  affectedActorIds: string[];
+  /** Document IDs that informed this decision */
+  supportingDocumentIds: string[];
+  /** Objective IDs this decision relates to */
+  linkedObjectiveIds: string[];
+  /** IDs of prior decisions that led to this one (decision chain) */
+  predecessorDecisionIds: string[];
+  /** Knowledge gaps identified — where evidence was missing */
+  knowledgeGaps: string[];
+  /** Who made the decision (DID) */
+  decidedBy: string;
+  /** Problem set scope */
+  problemSetId: string;
+  /** Workspace isolation */
+  workspaceId?: string;
+  /** Container IDs for graph scoping */
+  containerIds: string[];
+  /** When the decision was made */
+  createdAt: Date;
+  /** When this record was last updated */
+  updatedAt: Date;
+}
+
+// ============================================================================
 // Input Types (for creation/updates - no id/timestamps)
 // ============================================================================
 
@@ -242,5 +301,25 @@ export interface TensionInput {
   linkedObjectiveIds?: string[];
   workspaceId?: string;
   sourceDocumentIds?: string[];
+  containerIds?: string[];
+}
+
+/** Input for recording a new Decision */
+export interface DecisionInput {
+  gateId?: string;
+  decisionType: string;
+  title: string;
+  description: string;
+  outcome: string;
+  rationale: string;
+  basis: DecisionBasis;
+  affectedActorIds?: string[];
+  supportingDocumentIds?: string[];
+  linkedObjectiveIds?: string[];
+  predecessorDecisionIds?: string[];
+  knowledgeGaps?: string[];
+  decidedBy: string;
+  problemSetId: string;
+  workspaceId?: string;
   containerIds?: string[];
 }

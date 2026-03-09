@@ -420,7 +420,7 @@ export function DesignAIPanel({
     } finally {
       setLoading(false);
     }
-  }, [problemSetId, activeSection, sectionData, additionalAgents, aiDispatch]);
+  }, [problemSetId, activeSection, sectionData, additionalAgents, aiDispatch, updateCache]);
 
   const handleDismiss = useCallback(
     (index: number) => {
