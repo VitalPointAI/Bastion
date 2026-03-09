@@ -72,6 +72,22 @@ log_verbose "  jpp_steps: ${JPP_DEL} deleted"
 ASSESS_DEL=$(psql_exec "DELETE FROM assessments WHERE id LIKE 'DEMO-%' RETURNING id;" 2>/dev/null | wc -l || echo "0")
 log_verbose "  assessments: ${ASSESS_DEL} deleted"
 
+# Inheritance: changelog
+ICLOG_DEL=$(psql_exec "DELETE FROM inheritance_changelog WHERE id LIKE 'DEMO-%' RETURNING id;" 2>/dev/null | wc -l || echo "0")
+log_verbose "  inheritance_changelog: ${ICLOG_DEL} deleted"
+
+# Inheritance: override annotations
+IANN_DEL=$(psql_exec "DELETE FROM inheritance_annotations WHERE id LIKE 'DEMO-%' RETURNING id;" 2>/dev/null | wc -l || echo "0")
+log_verbose "  inheritance_annotations: ${IANN_DEL} deleted"
+
+# Inheritance: mission status snapshots
+MSTAT_DEL=$(psql_exec "DELETE FROM mission_status_snapshots WHERE id LIKE 'DEMO-%' RETURNING id;" 2>/dev/null | wc -l || echo "0")
+log_verbose "  mission_status_snapshots: ${MSTAT_DEL} deleted"
+
+# Inheritance: FRAGO drafts
+FRAGO_DEL=$(psql_exec "DELETE FROM frago_drafts WHERE id LIKE 'DEMO-%' RETURNING id;" 2>/dev/null | wc -l || echo "0")
+log_verbose "  frago_drafts: ${FRAGO_DEL} deleted"
+
 # Problem sets (cascade handles members, activities, roles, compartments, etc.)
 # Delete tactical first, then operational, then strategic (child before parent)
 PS_TACTICAL_DEL=$(psql_exec "DELETE FROM problem_sets WHERE id LIKE 'DEMO-PS-%' AND echelon = 'tactical' RETURNING id;" 2>/dev/null | wc -l || echo "0")
@@ -83,7 +99,7 @@ log_verbose "  problem_sets: ${PS_TOTAL_DEL} deleted (${PS_STRATEGIC_DEL} strate
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
-PG_TOTAL=$((UNITS_DEL + CMD_REL_DEL + GATES_DEL + SCENARIOS_DEL + DESIGN_DEL + DOCS_DEL + JPP_DEL + ASSESS_DEL + PS_TOTAL_DEL))
+PG_TOTAL=$((UNITS_DEL + CMD_REL_DEL + GATES_DEL + SCENARIOS_DEL + DESIGN_DEL + DOCS_DEL + JPP_DEL + ASSESS_DEL + ICLOG_DEL + IANN_DEL + MSTAT_DEL + FRAGO_DEL + PS_TOTAL_DEL))
 
 echo ""
 echo "  ── Cleanup Summary ──"
@@ -98,6 +114,10 @@ echo "    - Design:          ${DESIGN_DEL}"
 echo "    - Documents:       ${DOCS_DEL}"
 echo "    - JPP:             ${JPP_DEL}"
 echo "    - Assessments:     ${ASSESS_DEL}"
+echo "    - FRAGOs:          ${FRAGO_DEL}"
+echo "    - Status Snapshots:${MSTAT_DEL}"
+echo "    - Annotations:     ${IANN_DEL}"
+echo "    - Changelog:       ${ICLOG_DEL}"
 echo ""
 
 record_count "Cleanup (Neo4j)" "${NEO4J_COUNT}"

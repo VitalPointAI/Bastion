@@ -88,15 +88,72 @@ echo ""
 
 START_EPOCH=$(date +%s)
 
-# ── Health checks ─────────────────────────────────────────────────────────────
+# ── Script timing tracker ────────────────────────────────────────────────────
+
+SCRIPT_TIMINGS=()
+SCRIPT_RESULTS=()
+FAILED_SCRIPTS=()
+
+run_seed_script() {
+  local name="$1"
+  local script_path="${SCRIPT_DIR}/seed-${name}.sh"
+
+  if ! should_run "$name"; then
+    log_info "Skipping ${name} (--only=${ONLY})"
+    return 0
+  fi
+
+  if [ ! -f "$script_path" ]; then
+    log_warn "Skipping ${name} — script not found: ${script_path}"
+    return 0
+  fi
+
+  local t_start
+  t_start=$(date +%s)
+
+  log_info "Running seed-${name}.sh..."
+
+  if source "$script_path"; then
+    local t_end
+    t_end=$(date +%s)
+    local duration=$(( t_end - t_start ))
+    SCRIPT_TIMINGS+=("${name}:${duration}s")
+    SCRIPT_RESULTS+=("${name}:OK")
+    log_success "seed-${name}.sh completed in ${duration}s"
+  else
+    local t_end
+    t_end=$(date +%s)
+    local duration=$(( t_end - t_start ))
+    SCRIPT_TIMINGS+=("${name}:${duration}s")
+    SCRIPT_RESULTS+=("${name}:FAILED")
+    FAILED_SCRIPTS+=("$name")
+    log_error "seed-${name}.sh FAILED after ${duration}s"
+    return 1
+  fi
+}
+
+# ── Health checks with retry ─────────────────────────────────────────────────
 
 check_postgres || { log_error "PostgreSQL required. Aborting."; exit 1; }
 
 # Neo4j is optional for Level 1 (psql-only), but warn if missing
 check_neo4j || log_warn "Neo4j not available — graph seeding will be skipped"
 
-# Backend API is optional for psql-based seeding
-check_backend || log_warn "Backend API not available — using direct database access"
+# Backend API with retry logic (up to 30 seconds, 5-second intervals)
+BACKEND_READY=false
+for attempt in 1 2 3 4 5 6; do
+  if check_backend; then
+    BACKEND_READY=true
+    break
+  fi
+  if [ "$attempt" -lt 6 ]; then
+    log_info "Backend not ready, retrying in 5s (attempt ${attempt}/6)..."
+    sleep 5
+  fi
+done
+if [ "$BACKEND_READY" = "false" ]; then
+  log_warn "Backend API not available after 30s — using direct database access"
+fi
 
 # ── Clean mode ────────────────────────────────────────────────────────────────
 
@@ -123,119 +180,32 @@ should_run() {
 echo ""
 echo "── Level 1: Foundation ──"
 
-if should_run "problem-sets"; then
-  source "${SCRIPT_DIR}/seed-problem-sets.sh"
-else
-  log_info "Skipping problem-sets (--only=${ONLY})"
-fi
-
-if should_run "command-units"; then
-  source "${SCRIPT_DIR}/seed-command-units.sh"
-else
-  log_info "Skipping command-units (--only=${ONLY})"
-fi
+run_seed_script "problem-sets" || { log_error "Foundation failed — cannot continue."; exit 1; }
+run_seed_script "command-units" || { log_error "Foundation failed — cannot continue."; exit 1; }
 
 # ── Level 2: Data Layer (graph, OSINT, documents) ────────────────────────────
 echo ""
 echo "── Level 2: Data Layer ──"
 
-if should_run "graph"; then
-  if [ -f "${SCRIPT_DIR}/seed-graph.sh" ]; then
-    source "${SCRIPT_DIR}/seed-graph.sh"
-  else
-    log_info "Skipping graph — not yet implemented"
-  fi
-else
-  log_info "Skipping graph (--only=${ONLY})"
-fi
-
-if should_run "osint"; then
-  if [ -f "${SCRIPT_DIR}/seed-osint.sh" ]; then
-    source "${SCRIPT_DIR}/seed-osint.sh"
-  else
-    log_info "Skipping osint — not yet implemented"
-  fi
-else
-  log_info "Skipping osint (--only=${ONLY})"
-fi
-
-if should_run "documents"; then
-  if [ -f "${SCRIPT_DIR}/seed-documents.sh" ]; then
-    source "${SCRIPT_DIR}/seed-documents.sh"
-  else
-    log_info "Skipping documents — not yet implemented"
-  fi
-else
-  log_info "Skipping documents (--only=${ONLY})"
-fi
+run_seed_script "graph" || true
+run_seed_script "osint" || true
+run_seed_script "documents" || true
 
 # ── Level 3: Workflows (design, JPP, agents, governance, assessment) ─────────
 echo ""
 echo "── Level 3: Workflows ──"
 
-if should_run "design"; then
-  if [ -f "${SCRIPT_DIR}/seed-design.sh" ]; then
-    source "${SCRIPT_DIR}/seed-design.sh"
-  else
-    log_info "Skipping design — not yet implemented"
-  fi
-else
-  log_info "Skipping design (--only=${ONLY})"
-fi
-
-if should_run "jpp"; then
-  if [ -f "${SCRIPT_DIR}/seed-jpp.sh" ]; then
-    source "${SCRIPT_DIR}/seed-jpp.sh"
-  else
-    log_info "Skipping jpp — not yet implemented"
-  fi
-else
-  log_info "Skipping jpp (--only=${ONLY})"
-fi
-
-if should_run "agents"; then
-  if [ -f "${SCRIPT_DIR}/seed-agents.sh" ]; then
-    source "${SCRIPT_DIR}/seed-agents.sh"
-  else
-    log_info "Skipping agents — not yet implemented"
-  fi
-else
-  log_info "Skipping agents (--only=${ONLY})"
-fi
-
-if should_run "governance"; then
-  if [ -f "${SCRIPT_DIR}/seed-governance.sh" ]; then
-    source "${SCRIPT_DIR}/seed-governance.sh"
-  else
-    log_info "Skipping governance — not yet implemented"
-  fi
-else
-  log_info "Skipping governance (--only=${ONLY})"
-fi
-
-if should_run "assessment"; then
-  if [ -f "${SCRIPT_DIR}/seed-assessment.sh" ]; then
-    source "${SCRIPT_DIR}/seed-assessment.sh"
-  else
-    log_info "Skipping assessment — not yet implemented"
-  fi
-else
-  log_info "Skipping assessment (--only=${ONLY})"
-fi
+run_seed_script "design" || true
+run_seed_script "jpp" || true
+run_seed_script "agents" || true
+run_seed_script "governance" || true
+run_seed_script "assessment" || true
 
 # ── Level 4: Cross-cutting (inheritance) ─────────────────────────────────────
 echo ""
 echo "── Level 4: Cross-cutting ──"
 
-if should_run "inheritance"; then
-  if [ -f "${SCRIPT_DIR}/seed-inheritance.sh" ]; then
-    source "${SCRIPT_DIR}/seed-inheritance.sh"
-  else
-    log_info "Skipping inheritance — not yet implemented"
-  fi
-else
-  log_info "Skipping inheritance (--only=${ONLY})"
-fi
+run_seed_script "inheritance" || true
 
 # ── Final Summary ─────────────────────────────────────────────────────────────
 
@@ -246,8 +216,35 @@ echo ""
 echo "=============================================="
 echo "  BASTION Demo Seed Complete"
 echo "=============================================="
+echo ""
 
+# Per-script timing table
+echo "  ── Script Execution Summary ──"
+echo ""
+printf "  %-20s %-10s %-8s\n" "Script" "Status" "Duration"
+printf "  %-20s %-10s %-8s\n" "--------------------" "----------" "--------"
+for i in "${!SCRIPT_TIMINGS[@]}"; do
+  timing="${SCRIPT_TIMINGS[$i]}"
+  result="${SCRIPT_RESULTS[$i]}"
+  name="${timing%%:*}"
+  duration="${timing#*:}"
+  status="${result#*:}"
+  printf "  %-20s %-10s %-8s\n" "$name" "$status" "$duration"
+done
+echo ""
+
+# Data counts from seed scripts
 print_summary
 
-echo "  Elapsed: ${ELAPSED}s"
+echo "  Total elapsed: ${ELAPSED}s"
 echo ""
+
+# Report failures
+if [ ${#FAILED_SCRIPTS[@]} -gt 0 ]; then
+  echo "  WARNING: ${#FAILED_SCRIPTS[@]} script(s) failed:"
+  for script in "${FAILED_SCRIPTS[@]}"; do
+    echo "    - seed-${script}.sh"
+  done
+  echo ""
+  exit 1
+fi
