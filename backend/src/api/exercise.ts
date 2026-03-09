@@ -428,14 +428,16 @@ exerciseRouter.post(
         createdDocs.push(doc);
 
         // Queue extraction asynchronously — do not block the response
-        setImmediate(() => {
-          getExtractionService()
-            .then((extractionService) =>
-              extractionService.extractDocument(doc.id, textContent, tags, file.mimetype)
-            )
-            .catch((err) => {
-              console.error(`[exercise-upload] Extraction failed for ${doc.id}:`, err);
-            });
+        setImmediate(async () => {
+          try {
+            await documentStore.markExtracting(doc.id);
+            const extractionService = await getExtractionService();
+            await extractionService.extractDocument(doc.id, textContent, tags, file.mimetype);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error(`[exercise-upload] Extraction failed for ${doc.id}:`, msg);
+            await documentStore.markExtractionFailed(doc.id, msg).catch(() => {});
+          }
         });
       }
 
@@ -618,11 +620,14 @@ exerciseRouter.post('/documents/:docId/retry-extraction', async (req: Request, r
       if ((!textContent || textContent.trim().length === 0) && doc.mimeType === 'application/pdf') {
         setImmediate(async () => {
           try {
+            await documentStore.markExtracting(doc.id);
             const extractionService = await getExtractionService();
             await extractionService.extractWithVision(doc.id, fileData, tags);
             console.log(`[exercise] Vision extraction complete for ${doc.id}`);
           } catch (err) {
-            console.error(`[exercise] Vision extraction failed for ${doc.id}:`, err);
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error(`[exercise] Vision extraction failed for ${doc.id}:`, msg);
+            await documentStore.markExtractionFailed(doc.id, msg).catch(() => {});
           }
         });
 
@@ -632,14 +637,16 @@ exerciseRouter.post('/documents/:docId/retry-extraction', async (req: Request, r
     }
 
     // ── Standard text extraction path ────────────────────────────────────────
-    setImmediate(() => {
-      getExtractionService()
-        .then((extractionService) =>
-          extractionService.extractDocument(doc.id, textContent, tags, doc.mimeType)
-        )
-        .catch((err) => {
-          console.error(`[exercise] Retry extraction failed for ${doc.id}:`, err);
-        });
+    setImmediate(async () => {
+      try {
+        await documentStore.markExtracting(doc.id);
+        const extractionService = await getExtractionService();
+        await extractionService.extractDocument(doc.id, textContent, tags, doc.mimeType);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[exercise] Retry extraction failed for ${doc.id}:`, msg);
+        await documentStore.markExtractionFailed(doc.id, msg).catch(() => {});
+      }
     });
 
     res.json({ message: 'Extraction re-triggered', docId: doc.id });

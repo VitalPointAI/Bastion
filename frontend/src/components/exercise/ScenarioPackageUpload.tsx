@@ -628,15 +628,18 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete, onDocumentCl
               <tbody>
                 {uploadedDocs.map((doc) => {
                   const conf = doc.extractionConfidence;
-                  const dataKeys = Object.keys(doc.extractedData ?? {});
-                  const hasData = dataKeys.length > 0;
-                  const isEmpty = hasData && (doc.extractedData as Record<string, unknown>)?.summary === 'Document was empty or could not be parsed.';
-                  const statusClass = isEmpty ? 'failed' : hasData ? 'extracted' : 'pending';
-                  const statusLabel = isEmpty
-                    ? 'Parse failed'
-                    : hasData
-                      ? `Extracted (${Math.round(conf * 100)}%)`
-                      : 'Pending';
+                  const status = doc.extractionStatus ?? (conf > 0 ? 'complete' : 'pending');
+                  const statusClass = status === 'complete' ? 'extracted'
+                    : status === 'failed' ? 'failed'
+                    : status === 'extracting' ? 'extracting'
+                    : 'pending';
+                  const statusLabel = status === 'complete'
+                    ? `Extracted (${Math.round(conf * 100)}%)`
+                    : status === 'failed'
+                      ? `Failed${doc.extractionError ? `: ${doc.extractionError.slice(0, 60)}` : ''}`
+                      : status === 'extracting'
+                        ? 'Extracting...'
+                        : 'Pending';
                   const displayName = doc.filename.length > 50
                     ? `...${doc.filename.slice(-47)}`
                     : doc.filename;
@@ -693,8 +696,8 @@ export function ScenarioPackageUpload({ scenario, onUploadComplete, onDocumentCl
                         <button
                           className="retry-btn"
                           onClick={() => handleRetryExtraction(doc.id)}
-                          disabled={retryingIds.has(doc.id) || statusClass === 'pending'}
-                          title={statusClass === 'pending' ? 'Extraction in progress' : 'Retry extraction'}
+                          disabled={retryingIds.has(doc.id) || statusClass === 'extracting'}
+                          title={statusClass === 'extracting' ? 'Extraction in progress' : 'Retry extraction'}
                           aria-label={`Retry extraction for ${doc.filename}`}
                         >
                           {retryingIds.has(doc.id) ? '...' : '\u21BB'}

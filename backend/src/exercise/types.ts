@@ -198,11 +198,15 @@ export interface ScenarioDocument {
   extractedData: Record<string, unknown>;
   /** Confidence of the extraction result, 0–1 */
   extractionConfidence: number;
+  /** Extraction pipeline status */
+  extractionStatus: 'pending' | 'extracting' | 'complete' | 'failed';
+  /** Error message if extraction failed */
+  extractionError: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type CreateScenarioDocument = Omit<ScenarioDocument, 'id' | 'createdAt' | 'updatedAt'>;
+export type CreateScenarioDocument = Omit<ScenarioDocument, 'id' | 'createdAt' | 'updatedAt' | 'extractionStatus' | 'extractionError'>;
 
 // ─── IPB Layer ────────────────────────────────────────────────────────────────
 
