@@ -487,17 +487,19 @@ Plans:
 9. **Quality Assessor** — NATO source reliability (A-F) and information credibility (1-6) rating, recency assessment, internal consistency check, fact verification against known graph entities
 10. **Problem Set Researcher** — Autonomous web search, OSINT monitoring, open-source intelligence gathering; triggered by knowledge gaps; produces research briefs that re-enter the pipeline
 
-**Plans:** 8 plans
+**Plans:** 10 plans
 
 Plans:
-- [ ] 40-01-PLAN.md — Problem Set Scoping Interview: conversational UI that captures geographic scope, temporal bounds, key actors of interest, classification ceiling, echelon level, standing intelligence requirements; persists as problem_set_context schema consumed by all agents
-- [ ] 40-02-PLAN.md — Document Orchestrator agent: triage logic (document type detection, relevance scoring, specialist selection matrix), LangGraph workflow graph, parallel specialist dispatch, result aggregation, ExtractionTheater SSE integration
-- [ ] 40-03-PLAN.md — Format Converter + Document Classifier agents: OCR pipeline (Tesseract/pdf.js), language detection + translation hooks, document type taxonomy, container auto-assignment, classification level inference
-- [ ] 40-04-PLAN.md — Fact Extractor + Objective Extractor refactor: structured fact registry (entity/date/location/claim with source attribution), conditional objective extraction based on document type, fact-to-graph-node pipeline, NATO credibility ratings on extracted facts
-- [ ] 40-05-PLAN.md — Perspective Analysts: per-perspective agent instantiation (friendly/adversary/neutral/partner), perspective-specific prompts and analytical frameworks, implications extraction, perspective comparison synthesis
-- [ ] 40-06-PLAN.md — Cross-Document Linker + Bias Identifier: inter-document reference detection, corroboration/contradiction scoring, temporal sequencing, graph edge creation; source bias taxonomy, framing analysis, missing perspective detection, propaganda/IO indicators
-- [ ] 40-07-PLAN.md — Quality Assessor + NATO source reliability: A-F source reliability / 1-6 information credibility rating system, recency decay model, internal consistency validation, cross-reference verification against existing graph entities
-- [ ] 40-08-PLAN.md — Autonomous Problem Set Researcher: standing intelligence requirement monitoring, web search + OSINT feed integration, knowledge gap detection from graph analysis, research brief generation, auto-ingest of research products back through the pipeline; research cadence and resource budgeting
+- [ ] 40-01-PLAN.md — Foundation types, Zod schemas, DB migration, specialist base class, NATO rating definitions
+- [ ] 40-02-PLAN.md — Scoping interview: LangGraph conversational service, interview store, chat UI with audio input
+- [ ] 40-03-PLAN.md — Document Orchestrator StateGraph, team registration, Format Converter + Document Classifier
+- [ ] 40-04-PLAN.md — Fact Extractor + Objective Extractor specialists with graph integration and provenance
+- [ ] 40-05-PLAN.md — Perspective Analysts (per-container instantiation) + Bias Identifier specialist
+- [ ] 40-06-PLAN.md — Cross-Document Linker, Quality Assessor, Trust Agent, and source registry store
+- [ ] 40-07-PLAN.md — Provenance tracking, source revert service, and Autonomous Researcher with pg-boss scheduling
+- [ ] 40-08-PLAN.md — Strategic environment briefing: narrative generation, change tracking, predictive analytics
+- [ ] 40-09-PLAN.md — Orchestrator wiring: all specialist nodes connected, document upload API with SSE streaming
+- [ ] 40-10-PLAN.md — Mission Control UI: processing dashboard, SSE feed, NATO rating panel, intelligence report
 
 ---
 
