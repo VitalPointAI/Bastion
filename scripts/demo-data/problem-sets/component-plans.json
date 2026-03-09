@@ -1,0 +1,58 @@
+[
+  {
+    "id": "DEMO-PS-cjtf-westpac",
+    "dao_id": "ps-operational-demo-cjtf-westpac",
+    "name": "CJTF-WestPac Campaign Plan",
+    "description": "Combined Joint Task Force Western Pacific — operational-level campaign plan for joint force integration in the Western Pacific AOR",
+    "problem_statement": "Integrate joint and combined forces to execute theater campaign objectives in the Western Pacific area of responsibility",
+    "echelon": "operational",
+    "classification": "SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-indopacom-theater",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-7fleet",
+    "dao_id": "ps-operational-demo-7fleet",
+    "name": "7th Fleet Maritime Operations",
+    "description": "Naval component campaign — 7th Fleet maritime operations supporting INDOPACOM theater objectives in the Western Pacific and South China Sea",
+    "problem_statement": "Establish and maintain maritime superiority in the Western Pacific to enable joint force freedom of action",
+    "echelon": "operational",
+    "classification": "SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-indopacom-theater",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-5af",
+    "dao_id": "ps-operational-demo-5af",
+    "name": "5th Air Force Air Operations",
+    "description": "Air component campaign — 5th Air Force air operations for theater air superiority and strike operations across the Indo-Pacific",
+    "problem_statement": "Achieve and maintain air superiority over the Taiwan Strait and Western Pacific to enable joint force operations",
+    "echelon": "operational",
+    "classification": "SECRET",
+    "mode": "training",
+    "parent_problem_set_id": "DEMO-PS-indopacom-theater",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-cjtf-westpac-ops",
+    "dao_id": "ps-operational-demo-cjtf-westpac-ops",
+    "name": "CJTF-WestPac Campaign Plan (OPERATIONAL)",
+    "description": "Combined Joint Task Force Western Pacific — OPERATIONAL MODE campaign plan",
+    "problem_statement": "Integrate joint and combined forces to execute theater campaign objectives in the Western Pacific area of responsibility",
+    "echelon": "operational",
+    "classification": "SECRET",
+    "mode": "operational",
+    "parent_problem_set_id": "DEMO-PS-indopacom-theater-ops",
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  }
+]

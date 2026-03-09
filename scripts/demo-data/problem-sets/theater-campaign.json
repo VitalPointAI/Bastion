@@ -1,0 +1,30 @@
+[
+  {
+    "id": "DEMO-PS-indopacom-theater",
+    "dao_id": "ps-strategic-demo-indopacom",
+    "name": "INDOPACOM Theater Campaign",
+    "description": "Pacific Strategy AY26: Indo-Pacific theater-level campaign plan addressing PRC aggression toward Taiwan",
+    "problem_statement": "Deter PRC military action against Taiwan while maintaining regional stability and alliance cohesion across the Indo-Pacific theater",
+    "echelon": "strategic",
+    "classification": "SECRET",
+    "mode": "training",
+    "parent_problem_set_id": null,
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  },
+  {
+    "id": "DEMO-PS-indopacom-theater-ops",
+    "dao_id": "ps-strategic-demo-indopacom-ops",
+    "name": "INDOPACOM Theater Campaign (OPERATIONAL)",
+    "description": "Pacific Strategy AY26: Indo-Pacific theater-level campaign plan — OPERATIONAL MODE",
+    "problem_statement": "Deter PRC military action against Taiwan while maintaining regional stability and alliance cohesion across the Indo-Pacific theater",
+    "echelon": "strategic",
+    "classification": "SECRET",
+    "mode": "operational",
+    "parent_problem_set_id": null,
+    "invite_mode": "gated",
+    "discoverability": "private",
+    "created_by": "did:near:demo-seed.near"
+  }
+]
