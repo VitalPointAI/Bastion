@@ -82,7 +82,7 @@ export class FactExtractor extends SpecialistBase {
         'entities and writes provenance records.',
       systemPrompt: '', // Overridden by getSystemPrompt()
       tools: [],
-      clearance: 'UNCLASSIFIED',
+      clearance: 'UNCLASS',
     };
 
     super(config);
