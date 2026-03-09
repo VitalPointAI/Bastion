@@ -110,7 +110,9 @@ export function DocumentList({
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Unknown date';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Unknown date';
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
