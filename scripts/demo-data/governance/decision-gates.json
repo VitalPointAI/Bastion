@@ -1,0 +1,300 @@
+[
+  {
+    "id": "DEMO-GATE-mission-analysis",
+    "problem_set_id": "DEMO-PS-cjtf-westpac",
+    "gate_type": "objective_approval",
+    "tab": "plan",
+    "target_item_id": "DEMO-OBJ-deny-sea-control",
+    "target_item_type": "objective",
+    "target_item_title": "Mission Analysis Approval",
+    "enforcement": "hard_block",
+    "status": "approved",
+    "timeout_behavior": "auto_escalate",
+    "mode": "training",
+    "submitted_by": "did:near:cjtf-j5-planner.near",
+    "decided_by": "did:near:cjtf-commander.near",
+    "decision_context": {
+      "approvedBy": "VADM Richardson, CJTF-WestPac Commander",
+      "rationale": "Mission analysis products complete. IPB validated, specified/implied tasks confirmed, revised mission statement approved. Proceed to COA development.",
+      "timestamp": "2026-02-15T09:30:00Z",
+      "votes": [
+        { "voter": "VADM Richardson (CDR)", "role": "Commander", "vote": "approve", "timestamp": "2026-02-15T09:30:00Z" },
+        { "voter": "RADM Chen (DCOS)", "role": "Deputy Chief of Staff", "vote": "approve", "timestamp": "2026-02-15T09:15:00Z" }
+      ],
+      "auditTrail": {
+        "blockchainTx": "demo-tx-001",
+        "nearAccount": "cjtf-westpac.bastion.near",
+        "recordedAt": "2026-02-15T09:30:05Z"
+      }
+    }
+  },
+  {
+    "id": "DEMO-GATE-coa-selection",
+    "problem_set_id": "DEMO-PS-cjtf-westpac",
+    "gate_type": "coa_selection",
+    "tab": "plan",
+    "target_item_id": "DEMO-COA-maritime-blockade",
+    "target_item_type": "coa",
+    "target_item_title": "COA 2 Selection: Maritime Blockade",
+    "enforcement": "hard_block",
+    "status": "approved",
+    "timeout_behavior": "auto_escalate",
+    "mode": "training",
+    "submitted_by": "did:near:cjtf-j5-planner.near",
+    "decided_by": "did:near:cjtf-commander.near",
+    "decision_context": {
+      "selectedCOA": "COA 2: Maritime Blockade with Air Superiority Shield",
+      "alternativesConsidered": [
+        "COA 1: Direct Maritime Strike — rejected (high risk, limited sustainability)",
+        "COA 3: Combined Arms Maneuver — rejected (insufficient amphibious lift)"
+      ],
+      "rationale": "COA 2 balances deterrence with escalation control. Maritime blockade achieves sea denial while preserving options for de-escalation. Air superiority shield protects fleet operations.",
+      "votes": [
+        { "voter": "VADM Richardson (CDR)", "role": "Commander", "vote": "approve", "timestamp": "2026-02-17T14:00:00Z" },
+        { "voter": "RADM Chen (DCOS)", "role": "Deputy Chief of Staff", "vote": "approve", "timestamp": "2026-02-17T13:45:00Z" },
+        { "voter": "CAPT Nakamura (J3)", "role": "Operations Director", "vote": "approve", "timestamp": "2026-02-17T13:30:00Z" }
+      ],
+      "auditTrail": {
+        "blockchainTx": "demo-tx-002",
+        "nearAccount": "cjtf-westpac.bastion.near",
+        "recordedAt": "2026-02-17T14:00:08Z"
+      }
+    }
+  },
+  {
+    "id": "DEMO-GATE-opord-release",
+    "problem_set_id": "DEMO-PS-cjtf-westpac",
+    "gate_type": "order_release",
+    "tab": "plan",
+    "target_item_id": "DEMO-OPORD-pacific-trident",
+    "target_item_type": "opord",
+    "target_item_title": "OPORD Release Authorization",
+    "enforcement": "hard_block",
+    "status": "pending",
+    "timeout_behavior": "block",
+    "mode": "training",
+    "submitted_by": "did:near:cjtf-j5-planner.near",
+    "decided_by": null,
+    "decision_context": {
+      "status": "Awaiting commander signature",
+      "blockedWorkflow": "OPORD cannot be disseminated to component commands until gate is approved",
+      "prerequisitesMet": ["Mission analysis approved", "COA 2 selected", "Staff estimates complete", "Legal review cleared"],
+      "pendingSince": "2026-02-19T10:00:00Z",
+      "urgency": "high"
+    }
+  },
+  {
+    "id": "DEMO-GATE-frago-release",
+    "problem_set_id": "DEMO-PS-cjtf-westpac",
+    "gate_type": "order_release",
+    "tab": "direct",
+    "target_item_id": "DEMO-FRAGO-001",
+    "target_item_type": "frago",
+    "target_item_title": "FRAGO 001 Release: Maritime Interdiction Shift",
+    "enforcement": "hard_block",
+    "status": "approved",
+    "timeout_behavior": "auto_escalate",
+    "mode": "training",
+    "submitted_by": "did:near:cjtf-j3-ops.near",
+    "decided_by": "did:near:cjtf-commander.near",
+    "decision_context": {
+      "fragoNumber": "FRAGO 001 to OPORD PACIFIC TRIDENT",
+      "purpose": "Shift from sea denial posture to active maritime interdiction in response to adversary convoy movement detected by ISR",
+      "approvedBy": "VADM Richardson, CJTF-WestPac Commander",
+      "rationale": "ISR confirms adversary maritime logistics convoy departing Xiamen. Window of opportunity requires immediate shift to interdiction operations.",
+      "votes": [
+        { "voter": "VADM Richardson (CDR)", "role": "Commander", "vote": "approve", "timestamp": "2026-02-22T06:15:00Z" }
+      ],
+      "legalReview": "JAG confirmed ROE authorization for maritime interdiction under UNSCR 1874 framework",
+      "auditTrail": {
+        "blockchainTx": "demo-tx-003",
+        "nearAccount": "cjtf-westpac.bastion.near",
+        "recordedAt": "2026-02-22T06:15:12Z"
+      }
+    }
+  },
+  {
+    "id": "DEMO-GATE-fire-authority",
+    "problem_set_id": "DEMO-PS-strike-alpha",
+    "gate_type": "order_release",
+    "tab": "direct",
+    "target_item_id": "DEMO-FA-strike-alpha",
+    "target_item_type": "fire_authority",
+    "target_item_title": "Fire Authority Delegation: Strike Package Alpha",
+    "enforcement": "hard_block",
+    "status": "approved",
+    "timeout_behavior": "block",
+    "mode": "training",
+    "submitted_by": "did:near:strike-alpha-co.near",
+    "decided_by": "did:near:cjtf-commander.near",
+    "decision_context": {
+      "delegatedTo": "CAPT Torres, Strike Package Alpha Commander",
+      "authorityLevel": "Weapons release authority for anti-ship cruise missiles within designated engagement zone",
+      "roeConstraints": [
+        "Positive identification (PID) required before engagement",
+        "No engagement within 12nm of neutral-flagged vessels",
+        "Collateral damage estimate (CDE) level III or below",
+        "Report all engagements to CJTF J3 within 15 minutes"
+      ],
+      "validFrom": "2026-02-22T00:00:00Z",
+      "validUntil": "2026-02-25T23:59:59Z",
+      "approvedBy": "VADM Richardson, CJTF-WestPac Commander",
+      "rationale": "Tactical commander requires delegated authority for time-sensitive maritime targets within engagement zone. ROE constraints ensure proportional response.",
+      "votes": [
+        { "voter": "VADM Richardson (CDR)", "role": "Commander", "vote": "approve", "timestamp": "2026-02-21T22:00:00Z" },
+        { "voter": "CAPT Wong (JAG)", "role": "Staff Judge Advocate", "vote": "approve", "timestamp": "2026-02-21T21:30:00Z" }
+      ],
+      "auditTrail": {
+        "blockchainTx": "demo-tx-004",
+        "nearAccount": "strike-alpha.bastion.near",
+        "recordedAt": "2026-02-21T22:00:15Z",
+        "note": "Immutable record of lethal authority delegation — BASTION blockchain value proposition"
+      }
+    }
+  },
+  {
+    "id": "DEMO-GATE-design-approval",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "gate_type": "operational_approach",
+    "tab": "design",
+    "target_item_id": "DEMO-DESIGN-theater-approach",
+    "target_item_type": "operational_design",
+    "target_item_title": "Operational Design Approval: Theater Campaign",
+    "enforcement": "hard_block",
+    "status": "approved",
+    "timeout_behavior": "auto_escalate",
+    "mode": "training",
+    "submitted_by": "did:near:indopacom-j5.near",
+    "decided_by": "did:near:indopacom-commander.near",
+    "decision_context": {
+      "approvedBy": "ADM Hawkins, INDOPACOM Commander",
+      "rationale": "Operational design establishes coherent framework linking strategic end state to component operations. LOEs validated, COG analysis complete, phasing approved.",
+      "approvedElements": [
+        "Problem framing and end state definition",
+        "Friendly/adversary COG analysis (Strange model)",
+        "4 lines of effort with decisive points",
+        "5-phase operational approach (Shape/Deter/Seize/Dominate/Stabilize)"
+      ],
+      "votes": [
+        { "voter": "ADM Hawkins (CDR)", "role": "Combatant Commander", "vote": "approve", "timestamp": "2026-02-10T16:00:00Z" },
+        { "voter": "VADM Patel (DCOS)", "role": "Deputy Chief of Staff", "vote": "approve", "timestamp": "2026-02-10T15:45:00Z" }
+      ],
+      "auditTrail": {
+        "blockchainTx": "demo-tx-005",
+        "nearAccount": "indopacom.bastion.near",
+        "recordedAt": "2026-02-10T16:00:10Z"
+      }
+    }
+  },
+  {
+    "id": "DEMO-GATE-aar-publish",
+    "problem_set_id": "DEMO-PS-strike-alpha",
+    "gate_type": "reframing",
+    "tab": "assess",
+    "target_item_id": "DEMO-AAR-strike-alpha",
+    "target_item_type": "aar",
+    "target_item_title": "AAR Publication: Strike Package Alpha",
+    "enforcement": "soft_warning",
+    "status": "approved",
+    "timeout_behavior": "auto_approve",
+    "mode": "training",
+    "submitted_by": "did:near:strike-alpha-xo.near",
+    "decided_by": "did:near:strike-alpha-co.near",
+    "decision_context": {
+      "approvedBy": "CAPT Torres, Strike Package Alpha Commander",
+      "rationale": "AAR captures critical lessons from Day 4 strike operations. Observations validated by participants. Approved for distribution to CJTF and component commands.",
+      "distributionList": ["CJTF-WestPac J7", "7th Fleet N7", "PACFLT Training Command"],
+      "votes": [
+        { "voter": "CAPT Torres (CO)", "role": "Unit Commander", "vote": "approve", "timestamp": "2026-02-24T11:00:00Z" }
+      ],
+      "auditTrail": {
+        "blockchainTx": "demo-tx-006",
+        "nearAccount": "strike-alpha.bastion.near",
+        "recordedAt": "2026-02-24T11:00:07Z"
+      }
+    }
+  },
+  {
+    "id": "DEMO-GATE-readiness-cert",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "gate_type": "reframing",
+    "tab": "assess",
+    "target_item_id": "DEMO-READINESS-theater",
+    "target_item_type": "readiness_assessment",
+    "target_item_title": "Unit Readiness Certification: Theater Assessment",
+    "enforcement": "hard_block",
+    "status": "pending",
+    "timeout_behavior": "auto_escalate",
+    "mode": "training",
+    "submitted_by": "did:near:indopacom-j7.near",
+    "decided_by": null,
+    "decision_context": {
+      "status": "Awaiting theater commander review",
+      "scope": "Aggregate METL proficiency across all component and tactical commands",
+      "summary": {
+        "tasksEvaluated": 12,
+        "trained": 4,
+        "practiced": 6,
+        "untrained": 2,
+        "overallReadiness": "PARTIALLY TRAINED"
+      },
+      "pendingSince": "2026-03-01T08:00:00Z",
+      "blockedAction": "Theater readiness report cannot be submitted to SECDEF until gate approved"
+    }
+  },
+  {
+    "id": "DEMO-GATE-understand-approval",
+    "problem_set_id": "DEMO-PS-cjtf-westpac",
+    "gate_type": "objective_approval",
+    "tab": "understand",
+    "target_item_id": "DEMO-IPB-cjtf",
+    "target_item_type": "ipb_assessment",
+    "target_item_title": "IPB Assessment Validation",
+    "enforcement": "hard_block",
+    "status": "approved",
+    "timeout_behavior": "auto_escalate",
+    "mode": "training",
+    "submitted_by": "did:near:cjtf-j2-intel.near",
+    "decided_by": "did:near:cjtf-commander.near",
+    "decision_context": {
+      "approvedBy": "VADM Richardson, CJTF-WestPac Commander",
+      "rationale": "Intelligence preparation of the battlespace complete. Threat assessment, terrain analysis, and civil considerations validated. Named Areas of Interest confirmed.",
+      "votes": [
+        { "voter": "VADM Richardson (CDR)", "role": "Commander", "vote": "approve", "timestamp": "2026-02-12T10:00:00Z" },
+        { "voter": "CAPT Park (J2)", "role": "Intelligence Director", "vote": "approve", "timestamp": "2026-02-12T09:45:00Z" }
+      ],
+      "auditTrail": {
+        "blockchainTx": "demo-tx-007",
+        "nearAccount": "cjtf-westpac.bastion.near",
+        "recordedAt": "2026-02-12T10:00:11Z"
+      }
+    }
+  },
+  {
+    "id": "DEMO-GATE-component-design",
+    "problem_set_id": "DEMO-PS-cjtf-westpac",
+    "gate_type": "operational_approach",
+    "tab": "design",
+    "target_item_id": "DEMO-DESIGN-cjtf-approach",
+    "target_item_type": "operational_design",
+    "target_item_title": "Component Operational Design Approval",
+    "enforcement": "hard_block",
+    "status": "approved",
+    "timeout_behavior": "auto_escalate",
+    "mode": "training",
+    "submitted_by": "did:near:cjtf-j5-planner.near",
+    "decided_by": "did:near:cjtf-commander.near",
+    "decision_context": {
+      "approvedBy": "VADM Richardson, CJTF-WestPac Commander",
+      "rationale": "Component operational design nests within theater campaign design. LOEs aligned with INDOPACOM directives. Phase transitions linked to theater decision points.",
+      "votes": [
+        { "voter": "VADM Richardson (CDR)", "role": "Commander", "vote": "approve", "timestamp": "2026-02-14T15:00:00Z" }
+      ],
+      "auditTrail": {
+        "blockchainTx": "demo-tx-008",
+        "nearAccount": "cjtf-westpac.bastion.near",
+        "recordedAt": "2026-02-14T15:00:06Z"
+      }
+    }
+  }
+]
