@@ -18,7 +18,6 @@ import { COPMapView } from './COPMapView.js';
 import { COPLayerControls } from './COPLayerControls.js';
 import { COPPerspectiveToggle } from './COPPerspectiveToggle.js';
 import { COPPhaseSlider } from './COPPhaseSlider.js';
-import { COPAgentActivity } from './COPAgentActivity.js';
 import { COPVersionBrowser } from './COPVersionBrowser.js';
 import { COPLayerLifecycle } from './COPLayerLifecycle.js';
 import { COPReviewPanel } from './COPReviewPanel.js';
@@ -38,7 +37,6 @@ type SidebarView =
   | 'actor-graph'
   | 'actor-detail'
   | 'activity'
-  | 'agent-status'
   | 'versions'
   | 'lifecycle'
   | 'review';
@@ -79,12 +77,6 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     label: 'Activity Feed',
     // activity/pulse icon
     icon: 'M22 12h-4l-3 9L9 3l-3 9H2',
-  },
-  {
-    id: 'agent-status',
-    label: 'Agent Activity',
-    // cpu/bot icon
-    icon: 'M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 7h10v10H7z',
   },
   {
     id: 'versions',
@@ -376,9 +368,6 @@ export function COPTab({ problemSetId }: COPTabProps) {
             userRole={userRoleInActive}
           />
         );
-
-      case 'agent-status':
-        return <COPAgentActivity problemSetId={problemSetId} />;
 
       case 'versions':
         if (!selectedLayer) {

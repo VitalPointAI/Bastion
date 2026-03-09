@@ -1,28 +1,18 @@
 /**
- * AIStaffPanel -- Mode-switching shell
+ * AIStaffPanel -- Global floating overlay
  *
- * Renders the appropriate AI staff panel variant based on the active tab:
- * - Process tabs (Understand, Design, Plan): docked right sidebar
- * - Watch tabs (COP, Assess, Direct): floating draggable overlay
+ * Always renders as a floating draggable/resizable panel regardless of tab.
+ * Opened via top-bar "AI Activity" button in ProblemSetTabContainer.
  */
 
 import { useAIStaff } from '../../context/AIStaffContext.tsx';
-import { isProcessTab, isWatchTab } from './AgentRoutingConfig.ts';
-import { AIStaffDocked } from './AIStaffDocked.tsx';
 import { AIStaffFloating } from './AIStaffFloating.tsx';
 import './AIStaffPanel.css';
 
 export function AIStaffPanel() {
-  const { activeTab, isOpen } = useAIStaff();
+  const { isOpen } = useAIStaff();
 
-  if (isProcessTab(activeTab)) {
-    if (!isOpen) return null;
-    return <AIStaffDocked />;
-  }
+  if (!isOpen) return null;
 
-  if (isWatchTab(activeTab)) {
-    return <AIStaffFloating />;
-  }
-
-  return null;
+  return <AIStaffFloating />;
 }
