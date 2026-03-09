@@ -1,0 +1,272 @@
+[
+  {
+    "id": "DEMO-EVT-011",
+    "title": "PLA launches missile strikes on Taiwan air bases",
+    "description": "PLA Rocket Force initiates precision strikes on 4 Taiwan Air Force bases (Hualien, Chiayi, Tainan, Pingtung) using DF-15 and DF-16 short-range ballistic missiles. Runway denial munitions and cluster weapons damage infrastructure. Taiwan Air Force disperses surviving aircraft to highway strips.",
+    "sourceType": "intelligence",
+    "sourceName": "INDOPACOM J2 Flash Report",
+    "publishedAt": "2026-03-01T02:00:00Z",
+    "location": {
+      "name": "Hualien Air Base, Taiwan",
+      "latitude": 24.023,
+      "longitude": 121.616,
+      "region": "East Asia",
+      "country": "Taiwan"
+    },
+    "actors": ["DEMO-ACT-pla-etc", "DEMO-ACT-taiwan", "DEMO-ACT-china"],
+    "tags": ["military", "missile-strike", "air-bases", "conflict", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-012",
+    "title": "7th Fleet engages PLA Navy surface action group in Taiwan Strait",
+    "description": "USS Ronald Reagan CSG engages PLA Navy Type 055 destroyer-led surface action group attempting to establish naval blockade east of Taiwan. Exchange of anti-ship missiles results in damage to 2 PLA Navy vessels. USS Milius sustains minor damage from ASCM near-miss.",
+    "sourceType": "intelligence",
+    "sourceName": "7th Fleet SITREP",
+    "publishedAt": "2026-03-02T06:00:00Z",
+    "location": {
+      "name": "Taiwan Strait (eastern approach)",
+      "latitude": 24.5,
+      "longitude": 122.5,
+      "region": "Western Pacific",
+      "country": "International Waters"
+    },
+    "actors": ["DEMO-ACT-us-7fleet", "DEMO-ACT-pla-etc", "DEMO-ACT-usa"],
+    "tags": ["military", "naval-engagement", "taiwan-strait", "conflict", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-013",
+    "title": "3rd Marine Expeditionary Force activates amphibious ready group",
+    "description": "III MEF activates the 31st Marine Expeditionary Unit aboard USS America (LHA-6) and supporting amphibious ships from White Beach, Okinawa. MEU directed to establish Expeditionary Advanced Base Operations (EABO) positions in Ryukyu Islands chain to support anti-ship missile coverage of Taiwan approaches.",
+    "sourceType": "intelligence",
+    "sourceName": "III MEF Operations",
+    "publishedAt": "2026-03-02T12:00:00Z",
+    "location": {
+      "name": "White Beach, Okinawa",
+      "latitude": 26.33,
+      "longitude": 127.82,
+      "region": "East Asia",
+      "country": "Japan"
+    },
+    "actors": ["DEMO-ACT-usa", "DEMO-ACT-japan"],
+    "tags": ["military", "marines", "amphibious", "eabo", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-014",
+    "title": "UN Security Council emergency session called on Taiwan crisis",
+    "description": "France and UK request emergency UN Security Council session on Taiwan Strait hostilities. China and Russia exercise double veto on resolution calling for immediate ceasefire. General Assembly emergency special session convened under Uniting for Peace resolution.",
+    "sourceType": "diplomatic",
+    "sourceName": "United Nations News",
+    "publishedAt": "2026-03-02T18:00:00Z",
+    "location": {
+      "name": "UN Headquarters, New York",
+      "latitude": 40.749,
+      "longitude": -73.968,
+      "region": "North America",
+      "country": "United States"
+    },
+    "actors": ["DEMO-ACT-usa", "DEMO-ACT-china", "DEMO-ACT-russia"],
+    "tags": ["diplomatic", "un-security-council", "ceasefire", "demo-seed"],
+    "domain": "D"
+  },
+  {
+    "id": "DEMO-EVT-015",
+    "title": "GPS jamming detected across Western Pacific",
+    "description": "GPS and GLONASS jamming/spoofing detected across 500nm radius centered on Taiwan. Commercial aviation rerouting around affected zones. PLA electronic warfare units confirmed operating from sites in Fujian and Zhejiang. Allied forces switching to alternative PNT systems.",
+    "sourceType": "intelligence",
+    "sourceName": "US Space Command",
+    "publishedAt": "2026-03-03T00:00:00Z",
+    "location": {
+      "name": "Western Pacific (wide area)",
+      "latitude": 25.0,
+      "longitude": 125.0,
+      "region": "Western Pacific",
+      "country": "International Waters"
+    },
+    "actors": ["DEMO-ACT-pla-etc", "DEMO-ACT-china"],
+    "tags": ["information", "electronic-warfare", "gps-jamming", "space", "demo-seed"],
+    "domain": "I"
+  },
+  {
+    "id": "DEMO-EVT-016",
+    "title": "PLA amphibious assault force detected departing Fujian ports",
+    "description": "NGA confirms major PLA Navy amphibious force departing from multiple Fujian ports including Xiamen, Fuzhou, and Ningde. Force includes 6 Type 075 LHDs, 8 Type 071 LPDs, and approximately 40 landing ships carrying estimated 25,000 troops. Departure vector consistent with Taiwan western coast approach.",
+    "sourceType": "intelligence",
+    "sourceName": "National Geospatial-Intelligence Agency",
+    "publishedAt": "2026-03-07T04:00:00Z",
+    "location": {
+      "name": "Xiamen, Fujian Province",
+      "latitude": 24.48,
+      "longitude": 118.08,
+      "region": "East China Sea",
+      "country": "China"
+    },
+    "actors": ["DEMO-ACT-pla-etc", "DEMO-ACT-china"],
+    "tags": ["military", "amphibious-assault", "invasion-force", "conflict", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-017",
+    "title": "US submarine sinks PLA destroyer in Luzon Strait",
+    "description": "USS Virginia-class submarine engages and sinks PLA Navy Type 052D destroyer conducting anti-submarine patrol in the Luzon Strait, severing PLA's southern maritime approach to Taiwan. Action disrupts PLA's ability to interdict allied reinforcement from the south.",
+    "sourceType": "intelligence",
+    "sourceName": "SUBPAC Operations",
+    "publishedAt": "2026-03-08T08:00:00Z",
+    "location": {
+      "name": "Luzon Strait",
+      "latitude": 20.5,
+      "longitude": 121.5,
+      "region": "Western Pacific",
+      "country": "International Waters"
+    },
+    "actors": ["DEMO-ACT-usa", "DEMO-ACT-pla-etc"],
+    "tags": ["military", "submarine", "naval-engagement", "luzon-strait", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-018",
+    "title": "Japan activates JSDF under Article 5 consultation",
+    "description": "Japanese Prime Minister invokes Article 5 consultation with Washington after PLA missiles impact Japanese EEZ near Yonaguni Island. JSDF elevates to highest alert status. JASDF scrambles F-35A/B fighters from Nyutabaru and Misawa. Ground Self-Defense Force deploys Type 12 SSMs to Nansei Islands.",
+    "sourceType": "diplomatic",
+    "sourceName": "Japan Ministry of Defense",
+    "publishedAt": "2026-03-08T14:00:00Z",
+    "location": {
+      "name": "Tokyo, Japan",
+      "latitude": 35.682,
+      "longitude": 139.692,
+      "region": "East Asia",
+      "country": "Japan"
+    },
+    "actors": ["DEMO-ACT-japan", "DEMO-ACT-usa"],
+    "tags": ["military", "jsdf", "article-5", "japan", "escalation", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-019",
+    "title": "Global shipping insurance rates spike 400% for South China Sea routes",
+    "description": "Lloyd's of London war risk insurance premiums for South China Sea and Taiwan Strait routes increase 400%. Major shipping lines CMA CGM, Maersk, and COSCO suspend container service through the Taiwan Strait. Estimated $380B annual trade flow disrupted. Oil prices surge 35%.",
+    "sourceType": "economic",
+    "sourceName": "Lloyd's of London / Bloomberg",
+    "publishedAt": "2026-03-09T10:00:00Z",
+    "location": {
+      "name": "London (global markets)",
+      "latitude": 51.508,
+      "longitude": -0.076,
+      "region": "Global",
+      "country": "United Kingdom"
+    },
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-usa"],
+    "tags": ["economic", "shipping", "insurance", "trade-disruption", "demo-seed"],
+    "domain": "E"
+  },
+  {
+    "id": "DEMO-EVT-020",
+    "title": "Australian naval task force transits Lombok Strait en route to Western Pacific",
+    "description": "Royal Australian Navy Task Group 627.1 (HMAS Canberra LHD, 2 Hobart-class AWDs, 1 Collins-class submarine) transits Lombok Strait heading north to reinforce allied naval presence. Australia's first major combat deployment since Afghanistan. Transit avoids South China Sea chokepoints.",
+    "sourceType": "intelligence",
+    "sourceName": "Australian Defence Force",
+    "publishedAt": "2026-03-10T06:00:00Z",
+    "location": {
+      "name": "Lombok Strait, Indonesia",
+      "latitude": -8.4,
+      "longitude": 115.7,
+      "region": "Southeast Asia",
+      "country": "Indonesia"
+    },
+    "actors": ["DEMO-ACT-australia"],
+    "tags": ["military", "naval", "australia", "deployment", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-021",
+    "title": "PLA offensive stalls — logistics overextended across Taiwan Strait",
+    "description": "Intelligence assessment indicates PLA amphibious forces unable to sustain offensive tempo. Allied submarine and air interdiction has sunk or damaged 30% of PLA transport shipping. Beachhead forces on Taiwan's western coast report ammunition and fuel shortages. PLA ETC requesting operational pause.",
+    "sourceType": "intelligence",
+    "sourceName": "INDOPACOM J2 Assessment",
+    "publishedAt": "2026-03-19T04:00:00Z",
+    "location": {
+      "name": "Taiwan Strait",
+      "latitude": 24.3,
+      "longitude": 119.8,
+      "region": "Western Pacific",
+      "country": "International Waters"
+    },
+    "actors": ["DEMO-ACT-pla-etc", "DEMO-ACT-china", "DEMO-ACT-taiwan"],
+    "tags": ["military", "logistics", "stall", "assessment", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-022",
+    "title": "US FRAGO orders shift to maritime interdiction strategy",
+    "description": "INDOPACOM issues Fragmentary Order directing shift from direct confrontation to maritime interdiction and distant blockade strategy. Allied forces to establish chokepoint control at Luzon Strait, Miyako Strait, and Bashi Channel. Strategy aims to attrit PLA logistics sustainment across the strait.",
+    "sourceType": "intelligence",
+    "sourceName": "INDOPACOM Operations",
+    "publishedAt": "2026-03-19T12:00:00Z",
+    "location": {
+      "name": "Camp Smith, Hawaii",
+      "latitude": 21.39,
+      "longitude": -157.92,
+      "region": "Pacific",
+      "country": "United States"
+    },
+    "actors": ["DEMO-ACT-usa", "DEMO-ACT-us-7fleet"],
+    "tags": ["military", "strategy", "interdiction", "frago", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-023",
+    "title": "India offers diplomatic mediation through QUAD channels",
+    "description": "Indian Prime Minister proposes QUAD-mediated diplomatic framework for de-escalation during emergency virtual summit. India offers neutral diplomatic venue in New Delhi and suggests phased ceasefire timeline. Proposal backed by Japan and Australia, cautiously received by Washington.",
+    "sourceType": "diplomatic",
+    "sourceName": "Indian Ministry of External Affairs",
+    "publishedAt": "2026-03-20T08:00:00Z",
+    "location": {
+      "name": "New Delhi, India",
+      "latitude": 28.614,
+      "longitude": 77.209,
+      "region": "South Asia",
+      "country": "India"
+    },
+    "actors": ["DEMO-ACT-india", "DEMO-ACT-quad", "DEMO-ACT-usa"],
+    "tags": ["diplomatic", "mediation", "quad", "de-escalation", "demo-seed"],
+    "domain": "D"
+  },
+  {
+    "id": "DEMO-EVT-024",
+    "title": "PLAAF suffering unsustainable aircraft attrition rates",
+    "description": "NASIC assessment reports PLAAF has lost 180+ combat aircraft (estimated 15% of tactical fighter fleet) in 22 days of operations. Losses disproportionately affect experienced pilots. J-20 stealth fighters performing below expectations against F-35 and allied electronic warfare. PLA air superiority objective unachieved.",
+    "sourceType": "intelligence",
+    "sourceName": "National Air & Space Intelligence Center",
+    "publishedAt": "2026-03-21T06:00:00Z",
+    "location": {
+      "name": "Taiwan AOR (air domain)",
+      "latitude": 24.0,
+      "longitude": 121.0,
+      "region": "Western Pacific",
+      "country": "International Waters"
+    },
+    "actors": ["DEMO-ACT-china", "DEMO-ACT-pla-etc"],
+    "tags": ["military", "air-campaign", "attrition", "assessment", "demo-seed"],
+    "domain": "M"
+  },
+  {
+    "id": "DEMO-EVT-025",
+    "title": "Intercepted PRC internal communications suggest willingness to negotiate",
+    "description": "NSA SIGINT product indicates PRC Politburo Standing Committee emergency session discussed conditions for negotiated cessation of hostilities. Key indicators: Xi Jinping authorized diplomatic back-channel through Singapore, military leadership expressing concern over campaign sustainability.",
+    "sourceType": "intelligence",
+    "sourceName": "NSA SIGINT Report (TS/SCI)",
+    "publishedAt": "2026-03-22T02:00:00Z",
+    "location": {
+      "name": "Beijing (Zhongnanhai)",
+      "latitude": 39.913,
+      "longitude": 116.383,
+      "region": "East Asia",
+      "country": "China"
+    },
+    "actors": ["DEMO-ACT-china"],
+    "tags": ["information", "sigint", "negotiation", "ceasefire", "demo-seed"],
+    "domain": "I"
+  }
+]
