@@ -109,7 +109,7 @@ export function useAIStaffFeed(problemSetId: string | null): UseAIStaffFeedResul
     if (!problemSetId) return;
     try {
       const response = await aiStaffService.getFeed(problemSetId);
-      const items = Array.isArray(response) ? response : (response as any).items ?? [];
+      const items = Array.isArray(response) ? response : (response as Record<string, unknown>).items as AIFeedItem[] ?? [];
       if (mountedRef.current) {
         for (const item of items) {
           dispatch.addFeedItem(item);
@@ -203,7 +203,7 @@ export function useAIStaffFeed(problemSetId: string | null): UseAIStaffFeedResul
     aiStaffService
       .getFeed(problemSetId)
       .then((response) => {
-        const items = Array.isArray(response) ? response : (response as any).items ?? [];
+        const items = Array.isArray(response) ? response : (response as Record<string, unknown>).items as AIFeedItem[] ?? [];
         if (mountedRef.current) {
           for (const item of items) {
             dispatch.addFeedItem(item);
