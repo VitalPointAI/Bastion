@@ -410,7 +410,8 @@ function synthesizeNarrativeFallback(
  * operational prose. Falls back to rule-based template on LLM error.
  */
 export async function synthesizeNarrative(
-  context: NarrativeSynthesisContext
+  context: NarrativeSynthesisContext,
+  strategicContext?: string,
 ): Promise<NarrativeSynthesisOutput> {
   try {
     const llm = await createLLMForAgent({
@@ -418,7 +419,10 @@ export async function synthesizeNarrative(
       overrides: { temperature: 0.5, maxTokens: 4096 },
     });
 
-    const userPrompt = buildNarrativeUserPrompt(context);
+    let userPrompt = buildNarrativeUserPrompt(context);
+    if (strategicContext) {
+      userPrompt = `${strategicContext}\n\n${userPrompt}`;
+    }
 
     const response = await llm.invoke([
       { role: 'system', content: NARRATIVE_SYSTEM_PROMPT },

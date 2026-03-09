@@ -132,7 +132,8 @@ function buildCustomNode(
           x={0}
           y={-nodeHeight / 2 - 8}
           textAnchor="middle"
-          style={{ fontSize: '13px', fontWeight: 700, fill: '#94a3b8', fontFamily: 'monospace' }}
+          className="org-tree-node-meta"
+          style={{ fontSize: '13px', fontWeight: 700, fill: '#d1d5db', fontFamily: 'monospace' }}
         >
           {ECHELON_SYMBOLS[nd._echelon ?? ''] ?? ''}
         </text>
@@ -155,6 +156,7 @@ function buildCustomNode(
           x={0}
           y={-nodeHeight / 2 + 20}
           textAnchor="middle"
+          className="org-tree-node-title"
           style={{
             fontSize: '14px',
             fontWeight: 700,
@@ -170,9 +172,10 @@ function buildCustomNode(
           x={0}
           y={-nodeHeight / 2 + 40}
           textAnchor="middle"
+          className="org-tree-node-meta"
           style={{
             fontSize: '12px',
-            fill: '#9ca3af',
+            fill: '#d1d5db',
             dominantBaseline: 'middle',
           }}
         >
