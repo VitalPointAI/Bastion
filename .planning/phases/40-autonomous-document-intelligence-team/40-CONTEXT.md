@@ -36,6 +36,12 @@ Replace manual per-document extraction with an autonomous multi-agent team that 
 - Revert capability — must be able to extract and revert any changes from a source later found to be false or misleading
 - Research products re-enter the same processing pipeline, auto-tagged with source, retrieval date, and trust rating
 
+### Strategic Environment Briefing
+- On-demand narrative briefing — any user or agent can retrieve a concise, up-to-date narrative summary of the strategic environment as detailed by the knowledge graph
+- Change detection — briefing highlights what is new or changed since the last time it was retrieved by that user/agent, keeping them fully aware of evolving context
+- Predictive analytics — where sufficient data exists, the briefing surfaces potential outcomes that are forming, with accurate confidence scoring indicating probabilities
+- Builds on existing `StrategicContextService.assembleContext()` which already aggregates graph summaries, documents, and decisions with token budgeting — the narrative layer transforms this structured data into human-readable prose with change annotations
+
 ### Processing Visibility & Ratings
 - NATO source reliability (A-F) and information credibility (1-6) displayed as detailed rating panels with full breakdown showing both dimensions separately with explanatory text (e.g., "Source: B - Usually Reliable | Info: 3 - Possibly True")
 - User-overridable ratings with audit trail — original agent rating preserved, override logged with reason and user identity
@@ -83,7 +89,7 @@ Replace manual per-document extraction with an autonomous multi-agent team that 
 
 ### Integration Points
 - **Understand tab** (Phase 24): Document intelligence UI lives here
-- **Strategic context service** (`backend/src/exercise/strategic-context-service.ts`): Scoping interview results feed into this
+- **Strategic context service** (`backend/src/exercise/strategic-context-service.ts`): Already assembles token-budgeted context bundles (graph summaries, documents, decisions) — narrative briefing layer builds on top of `assembleContext()`. Needs: change tracking (last-retrieved timestamps per user/agent), narrative generation (LLM transforms structured context into prose), and predictive analytics overlay
 - **Knowledge graph** (`backend/src/graph/`): All specialists contribute extracted entities/relationships
 - **Container assignments**: Document Classifier suggests container placement
 - **AI Staff routing** (`frontend/src/hooks/useAgentRouting.ts`): Specialist agents route through existing tab-aware system
