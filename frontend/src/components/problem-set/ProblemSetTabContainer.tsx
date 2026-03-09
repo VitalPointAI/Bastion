@@ -43,6 +43,8 @@ import { DecisionGateProvider } from '../../context/DecisionGateContext';
 import { AIStaffProvider } from '../../context/AIStaffContext';
 import { AIStaffPanel } from '../ai-staff/AIStaffPanel';
 import { useAIStaffFeed } from '../../hooks/useAIStaffFeed';
+import { useAIStaff, useAIStaffDispatch } from '../../context/AIStaffContext';
+import { isProcessTab } from '../ai-staff/AgentRoutingConfig';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -514,6 +516,7 @@ export function ProblemSetTabContainer() {
             <div className="flex flex-col flex-1 overflow-hidden min-h-0" data-tab-content>
               {renderTabContent()}
             </div>
+            <AIStaffToggle activeTab={activeTab} />
             <AIStaffPanel />
           </div>
         </AIStaffProvider>
@@ -532,6 +535,39 @@ export function ProblemSetTabContainer() {
       )}
 
     </div>
+  );
+}
+
+/**
+ * Small toggle button that appears on the right edge when the AI panel is
+ * closed on process tabs, giving the user a way to reopen it.
+ * Must be rendered inside AIStaffProvider so it can access context.
+ */
+function AIStaffToggle({ activeTab }: { activeTab: string }) {
+  const { isOpen } = useAIStaff();
+  const dispatch = useAIStaffDispatch();
+
+  if (isOpen || !isProcessTab(activeTab)) return null;
+
+  return (
+    <button
+      onClick={() => dispatch.setOpen(true)}
+      className="w-6 bg-gray-800 border-l border-gray-700 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700 text-gray-400 hover:text-gray-200 text-xs shrink-0"
+      aria-label="Open AI staff panel"
+      title="Open AI staff panel"
+    >
+      <span style={{ writingMode: 'vertical-rl' }}>AI</span>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-3 w-3 mt-1"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
   );
 }
 

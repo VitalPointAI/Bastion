@@ -108,7 +108,8 @@ export function useAIStaffFeed(problemSetId: string | null): UseAIStaffFeedResul
   const refresh = useCallback(async (): Promise<void> => {
     if (!problemSetId) return;
     try {
-      const items = await aiStaffService.getFeed(problemSetId);
+      const response = await aiStaffService.getFeed(problemSetId);
+      const items = Array.isArray(response) ? response : (response as any).items ?? [];
       if (mountedRef.current) {
         for (const item of items) {
           dispatch.addFeedItem(item);
@@ -201,7 +202,8 @@ export function useAIStaffFeed(problemSetId: string | null): UseAIStaffFeedResul
     setLoading(true);
     aiStaffService
       .getFeed(problemSetId)
-      .then((items) => {
+      .then((response) => {
+        const items = Array.isArray(response) ? response : (response as any).items ?? [];
         if (mountedRef.current) {
           for (const item of items) {
             dispatch.addFeedItem(item);
