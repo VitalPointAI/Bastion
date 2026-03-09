@@ -188,7 +188,7 @@ function JPPPlanView({ problemSetId }: JPPPlanViewProps) {
         <PlanEmptyState
           workflowName="JPP"
           onStartPlanning={() => {
-            jppService.createInstance(problemSetId).then(loadJPPInstance);
+            jppService.getInstance(problemSetId).then(loadJPPInstance);
           }}
         />
       </>

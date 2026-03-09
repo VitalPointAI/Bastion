@@ -200,7 +200,7 @@ export function PlanningInitiation({
 
           // Staff estimate products (keyed by roleId)
           if (content.assessment !== undefined) {
-            setStaffEstimates((prev) => ({ ...prev, [product.roleId]: (content as StaffEstimateContent).assessment }));
+            setStaffEstimates((prev) => ({ ...prev, [product.roleId]: (content as unknown as StaffEstimateContent).assessment }));
             setStaffProductIds((prev) => ({ ...prev, [product.roleId]: product.id }));
           }
 

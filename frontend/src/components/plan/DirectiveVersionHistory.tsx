@@ -219,7 +219,7 @@ export function DirectiveVersionHistory({
                     </button>
 
                     {/* Changelog */}
-                    {version.changelog && (
+                    {(version.changelog as string | undefined) && (
                       <div
                         style={{
                           padding: '0.25rem 0.625rem',
@@ -228,12 +228,12 @@ export function DirectiveVersionHistory({
                           fontStyle: 'italic',
                         }}
                       >
-                        {version.changelog}
+                        {String(version.changelog)}
                       </div>
                     )}
 
                     {/* Expanded content view */}
-                    {isExpanded && version.content && (
+                    {isExpanded && !!version.content && (
                       <div
                         style={{
                           padding: '0.625rem',

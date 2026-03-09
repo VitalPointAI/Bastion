@@ -8,7 +8,7 @@
 
 import { useMemo, useState, useCallback } from 'react';
 import { Sankey, Tooltip } from 'recharts';
-import type { NodeProps, LinkProps } from 'recharts';
+import type { NodeProps, LinkProps } from 'recharts/types/chart/Sankey';
 import type { EWMLinkage } from '../../lib/ewm-service.ts';
 import type { EWMEnd, EWMWay, EWMMean } from './EWMTree.tsx';
 
@@ -30,9 +30,9 @@ export interface EWMSankeyProps {
 function CustomSankeyNode(props: NodeProps) {
   const { x, y, width, height, payload } = props;
   // Determine color from the node's depth (0=ends, 1=ways, 2=means)
-  const depth = (payload as Record<string, unknown>).depth as number;
+  const depth = (payload as unknown as Record<string, unknown>).depth as number;
   const color = LEVEL_COLORS[depth] ?? '#6b7280';
-  const name = (payload as Record<string, unknown>).name as string;
+  const name = (payload as unknown as Record<string, unknown>).name as string;
 
   return (
     <g>
@@ -70,8 +70,8 @@ function CustomSankeyLink(props: LinkProps) {
 
   const gradientId = `ewm-link-gradient-${index}`;
   // Source and target depths for color
-  const sourceDepth = ((props.payload?.source as Record<string, unknown>)?.depth as number) ?? 0;
-  const targetDepth = ((props.payload?.target as Record<string, unknown>)?.depth as number) ?? 1;
+  const sourceDepth = ((props.payload?.source as unknown as Record<string, unknown>)?.depth as number | undefined) ?? 0;
+  const targetDepth = ((props.payload?.target as unknown as Record<string, unknown>)?.depth as number | undefined) ?? 1;
   const sourceColor = LEVEL_COLORS[sourceDepth] ?? '#6b7280';
   const targetColor = LEVEL_COLORS[targetDepth] ?? '#6b7280';
 
@@ -205,17 +205,20 @@ export function EWMSankey({ ends, ways, means, linkages }: EWMSankeyProps) {
   }, [ends, ways, means, linkages]);
 
   const handleMouseEnter = useCallback(
-    (_item: NodeProps | LinkProps, _type: string) => {
-      if ('index' in _item) {
+    (_item: NodeProps | LinkProps, _type: string, _e: React.MouseEvent) => {
+      if ('index' in _item && typeof _item.index === 'number') {
         setHoveredIndex(_item.index);
       }
     },
     [],
   );
 
-  const handleMouseLeave = useCallback(() => {
-    setHoveredIndex(null);
-  }, []);
+  const handleMouseLeave = useCallback(
+    (_item: NodeProps | LinkProps, _type: string, _e: React.MouseEvent) => {
+      setHoveredIndex(null);
+    },
+    [],
+  );
 
   // Empty state
   if (sankeyData.nodes.length === 0 || sankeyData.links.length === 0) {
@@ -252,10 +255,10 @@ export function EWMSankey({ ends, ways, means, linkages }: EWMSankeyProps) {
         nodeWidth={12}
         nodePadding={24}
         margin={{ top: 20, right: 160, bottom: 20, left: 20 }}
-        node={CustomSankeyNode as unknown as (props: NodeProps) => React.ReactNode}
-        link={CustomSankeyLink as unknown as (props: LinkProps) => React.ReactElement}
-        onMouseEnter={handleMouseEnter as (item: NodeProps | LinkProps, type: 'node' | 'link', e: React.MouseEvent<SVGGraphicsElement>) => void}
-        onMouseLeave={handleMouseLeave as unknown as (item: NodeProps | LinkProps, type: 'node' | 'link', e: React.MouseEvent<SVGGraphicsElement>) => void}
+        node={CustomSankeyNode}
+        link={CustomSankeyLink}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <Tooltip content={<EWMTooltip />} />
       </Sankey>

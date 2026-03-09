@@ -233,12 +233,12 @@ export function ForceApportionmentPanel({
       const mapped: ForceAllocation[] = (data as unknown as ForceAllocation[]).map((a) => ({
         id: a.id,
         forceId: a.forceId ?? a.id,
-        forceName: a.forceName ?? (a as Record<string, unknown>).unitName as string ?? '',
-        forceType: a.forceType ?? (a as Record<string, unknown>).unitType as string ?? '',
+        forceName: a.forceName ?? (a as unknown as Record<string, unknown>).unitName as string ?? '',
+        forceType: a.forceType ?? (a as unknown as Record<string, unknown>).unitType as string ?? '',
         isRegistered: a.isRegistered ?? false,
-        lineOfEffortId: a.lineOfEffortId ?? (a as Record<string, unknown>).lineOfEffort as string ?? '',
+        lineOfEffortId: a.lineOfEffortId ?? (a as unknown as Record<string, unknown>).lineOfEffort as string ?? '',
         priority: a.priority ?? 'supporting_effort',
-        allocationPct: a.allocationPct ?? (a as Record<string, unknown>).allocation as number ?? 0,
+        allocationPct: a.allocationPct ?? (a as unknown as Record<string, unknown>).allocation as number ?? 0,
         notes: a.notes ?? '',
       }));
       setAllocations(mapped);

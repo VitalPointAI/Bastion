@@ -337,6 +337,9 @@ class InheritanceApiService {
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     const MAX_DELAY = 30000;
     const queue: StatusUpdateMessage[] = [];
+    // Capture `this` for use inside returned object methods
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
 
     const connect = () => {
       if (stopped) return;
@@ -397,7 +400,7 @@ class InheritanceApiService {
           // If WS never connects, fall back to REST
           if (!ws || ws.readyState === WebSocket.CLOSED) {
             const restSnapshot = msg.payload as MissionStatusSnapshot;
-            this.publishViaRest(restSnapshot.parentProblemSetId, restSnapshot).catch((err) => {
+            self.publishViaRest(restSnapshot.parentProblemSetId, restSnapshot).catch((err: unknown) => {
               console.warn('[inheritance-ws] REST fallback failed:', err);
             });
           }

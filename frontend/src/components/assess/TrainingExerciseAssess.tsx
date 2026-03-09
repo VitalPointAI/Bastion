@@ -161,7 +161,7 @@ function EventCard({ aar }: EventCardProps) {
           assessmentService.getAAR(aar.id),
         ]);
         setAssessments(metlAssessments);
-        setAarDetail(detail);
+        setAarDetail({ ...detail, observations: [] });
       } catch {
         // Silently handle -- will show empty
       } finally {

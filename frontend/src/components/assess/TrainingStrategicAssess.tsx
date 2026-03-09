@@ -249,7 +249,7 @@ function TrendsView({ proficiencyData }: TrendsViewProps) {
             taskId: task.metlTaskId,
             taskName: task.taskName,
             history: history.sort((a, b) =>
-              new Date(b.assessedAt).getTime() - new Date(a.assessedAt).getTime()
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             ),
             loading: false,
           });
@@ -306,7 +306,7 @@ function TrendsView({ proficiencyData }: TrendsViewProps) {
                     {assessment.rating}
                   </span>
                   <span className="trend-date">
-                    {new Date(assessment.assessedAt).toLocaleDateString('en-US', {
+                    {new Date(assessment.createdAt).toLocaleDateString('en-US', {
                       month: 'short', day: 'numeric', year: 'numeric',
                     })}
                   </span>

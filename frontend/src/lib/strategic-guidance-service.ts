@@ -69,6 +69,8 @@ export interface DirectiveVersion {
   content: unknown;
   createdAt: string;
   finalized: boolean;
+  createdBy?: string;
+  changelog?: string;
 }
 
 // ============================================================================

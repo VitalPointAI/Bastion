@@ -295,8 +295,8 @@ export function PlanOrderDevelopment({
     problemSetService.listMembers(problemSetId, '').then((members) => {
       setParentMembers(
         members.map((m) => ({
-          did: m.memberDid,
-          displayName: m.displayName || m.memberDid.slice(0, 12),
+          did: m.userDid,
+          displayName: m.displayName || m.userDid.slice(0, 12),
           role: m.role,
         }))
       );
