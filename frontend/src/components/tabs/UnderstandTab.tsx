@@ -5,12 +5,13 @@ import { SubscriptionManager } from '../problem-set/SubscriptionManager.js';
 import { TrainingPackagesView } from './TrainingPackagesView.js';
 import { StrategicContextPreview } from '../strategic/StrategicContextPreview.js';
 
+import { DocIntelligencePanel } from '../doc-intelligence/DocIntelligencePanel.js';
 import { InheritedContextSection } from '../inheritance/InheritedContextSection.tsx';
 import { useMode } from '../../context/ModeContext.js';
 import { DecisionGateBanner, GateSubmitButton, DecisionGateTimeline } from '../governance/index.js';
 import type { DecisionGate } from '../../lib/gate-service';
 
-type UnderstandView = 'strategic-docs' | 'subscriptions' | 'ai-context-preview' | 'training-packages';
+type UnderstandView = 'strategic-docs' | 'doc-intelligence' | 'subscriptions' | 'ai-context-preview' | 'training-packages';
 
 interface UnderstandTabProps {
   problemSetId: string;
@@ -35,6 +36,11 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
 
   const items: SidebarItem[] = [
     { id: 'strategic-docs', label: 'Strategic Documents' },
+    {
+      id: 'doc-intelligence',
+      label: 'Document Intelligence',
+      tooltip: 'Autonomous document processing, analysis, and intelligence reports',
+    },
     {
       id: 'subscriptions',
       label: 'Data Sharing',
@@ -83,6 +89,9 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
           </div>
           <StrategicDashboard problemSetId={problemSetId} />
         </div>
+      )}
+      {selectedView === 'doc-intelligence' && (
+        <DocIntelligencePanel problemSetId={problemSetId} />
       )}
       {selectedView === 'subscriptions' && (
         <SubscriptionManager problemSetId={problemSetId} />

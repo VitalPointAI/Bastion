@@ -57,7 +57,7 @@ None
 - [x] **Phase 36: Strategic Guidance Workflow** - Build strategic level Plan tab workflow for objective setting, force apportionment, constraint definition, directive drafting; strategic directive output becomes initiating directive for child campaign JPP Step 1 (completed 2026-03-08)
 - [x] **Phase 37: Training Assessment Loop** - AAR capture at tactical training events, METL proficiency tracking (T/P/U per task), upward aggregation from training events through exercises to training strategy readiness updates (completed 2026-03-08)
 - [x] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign (completed 2026-03-08)
-- [ ] **Phase 40: Autonomous Document Intelligence Team** - Multi-agent document processing team that autonomously ingests, classifies, extracts, cross-links, and validates documents with minimal user involvement; problem set scoping interview captures context boundaries and standing intelligence requirements; specialist agents (orchestrator, converter, classifier, perspective analysts, fact/objective extractors, linker, bias identifier, quality assessor) process each document adaptively; autonomous problem set researcher uses web search and OSINT to fill knowledge gaps and build strategic understanding; ExtractionTheater visualization shows full pipeline live (INSERTED)
+- [x] **Phase 40: Autonomous Document Intelligence Team** - Multi-agent document processing team that autonomously ingests, classifies, extracts, cross-links, and validates documents with minimal user involvement; problem set scoping interview captures context boundaries and standing intelligence requirements; specialist agents (orchestrator, converter, classifier, perspective analysts, fact/objective extractors, linker, bias identifier, quality assessor) process each document adaptively; autonomous problem set researcher uses web search and OSINT to fill knowledge gaps and build strategic understanding; ExtractionTheater visualization shows full pipeline live (INSERTED) (completed 2026-03-09)
 
 ## Phase Details
 
@@ -360,7 +360,7 @@ Plans:
 **Goal:** Build the full 7-step JPP workflow as a collaborative planning framework within the Plan tab, producing COAs and annex-based campaign plans with Ends-Ways-Means linkage to strategic objectives. Includes entity resolution, OSINT feed integration (Argus), and designated AI agents per step.
 **Requirements:** [JPP-01, JPP-02, JPP-03, JPP-04, JPP-05, JPP-06, JPP-07, JPP-08, JPP-09, JPP-10, JPP-11, JPP-12, JPP-13]
 **Depends on:** Phase 32
-**Plans:** 10/10 plans complete
+**Plans:** 12 plans (10 complete, 2 gap closure)
 
 Plans:
 - [ ] 33-01-PLAN.md -- JPP domain types, DB schema, JPP store, E-W-M store
@@ -487,17 +487,21 @@ Plans:
 9. **Quality Assessor** — NATO source reliability (A-F) and information credibility (1-6) rating, recency assessment, internal consistency check, fact verification against known graph entities
 10. **Problem Set Researcher** — Autonomous web search, OSINT monitoring, open-source intelligence gathering; triggered by knowledge gaps; produces research briefs that re-enter the pipeline
 
-**Plans:** 8 plans
+**Plans:** 12/12 plans complete
 
 Plans:
-- [ ] 40-01-PLAN.md — Problem Set Scoping Interview: conversational UI that captures geographic scope, temporal bounds, key actors of interest, classification ceiling, echelon level, standing intelligence requirements; persists as problem_set_context schema consumed by all agents
-- [ ] 40-02-PLAN.md — Document Orchestrator agent: triage logic (document type detection, relevance scoring, specialist selection matrix), LangGraph workflow graph, parallel specialist dispatch, result aggregation, ExtractionTheater SSE integration
-- [ ] 40-03-PLAN.md — Format Converter + Document Classifier agents: OCR pipeline (Tesseract/pdf.js), language detection + translation hooks, document type taxonomy, container auto-assignment, classification level inference
-- [ ] 40-04-PLAN.md — Fact Extractor + Objective Extractor refactor: structured fact registry (entity/date/location/claim with source attribution), conditional objective extraction based on document type, fact-to-graph-node pipeline, NATO credibility ratings on extracted facts
-- [ ] 40-05-PLAN.md — Perspective Analysts: per-perspective agent instantiation (friendly/adversary/neutral/partner), perspective-specific prompts and analytical frameworks, implications extraction, perspective comparison synthesis
-- [ ] 40-06-PLAN.md — Cross-Document Linker + Bias Identifier: inter-document reference detection, corroboration/contradiction scoring, temporal sequencing, graph edge creation; source bias taxonomy, framing analysis, missing perspective detection, propaganda/IO indicators
-- [ ] 40-07-PLAN.md — Quality Assessor + NATO source reliability: A-F source reliability / 1-6 information credibility rating system, recency decay model, internal consistency validation, cross-reference verification against existing graph entities
-- [ ] 40-08-PLAN.md — Autonomous Problem Set Researcher: standing intelligence requirement monitoring, web search + OSINT feed integration, knowledge gap detection from graph analysis, research brief generation, auto-ingest of research products back through the pipeline; research cadence and resource budgeting
+- [ ] 40-01-PLAN.md — Foundation types, Zod schemas, DB migration, specialist base class, NATO rating definitions
+- [ ] 40-02-PLAN.md — Scoping interview: LangGraph conversational service, interview store, chat UI with audio input
+- [ ] 40-03-PLAN.md — Document Orchestrator StateGraph, team registration, Format Converter + Document Classifier
+- [ ] 40-04-PLAN.md — Fact Extractor + Objective Extractor specialists with graph integration and provenance
+- [ ] 40-05-PLAN.md — Perspective Analysts (per-container instantiation) + Bias Identifier specialist
+- [ ] 40-06-PLAN.md — Cross-Document Linker, Quality Assessor, Trust Agent, and source registry store
+- [ ] 40-07-PLAN.md — Provenance tracking, source revert service, and Autonomous Researcher with pg-boss scheduling
+- [ ] 40-08-PLAN.md — Strategic environment briefing: narrative generation, change tracking, predictive analytics
+- [ ] 40-09-PLAN.md — Orchestrator wiring: all specialist nodes connected, document upload API with SSE streaming
+- [ ] 40-10-PLAN.md — Mission Control UI: processing dashboard, SSE feed, NATO rating panel, intelligence report
+- [ ] 40-11-PLAN.md — Gap closure: team registration at startup + pluggable web search (Tavily)
+- [ ] 40-12-PLAN.md — Gap closure: wire doc-intelligence components into Understand tab
 
 ---
 
@@ -1534,3 +1538,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 29. Contextual AI Staff Integration | 4/5 | In Progress|  |
 | 30. Ironclaw Agent Integration | 8/8 | Complete   | 2026-03-07 |
 | 31. AI Agent Validation & Compliance Testing | 7/7 | In Progress|  |
+| 40. Autonomous Document Intelligence Team | 12/12 | Complete   | 2026-03-09 |

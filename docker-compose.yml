@@ -115,6 +115,23 @@ services:
       - ironclaw-network
 
   # ==========================================
+  # SearXNG — Self-hosted meta-search engine for doc-intelligence researcher
+  # ==========================================
+  searxng:
+    image: searxng/searxng:latest
+    container_name: bastion-searxng
+    restart: unless-stopped
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+      - ./searxng/limiter.toml:/etc/searxng/limiter.toml:ro
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8888/
+    ports:
+      - "8888:8888"
+    networks:
+      - bastion-network
+
+  # ==========================================
   # Backend API Server
   # ==========================================
   backend:
@@ -137,6 +154,7 @@ services:
       - IRONCLAW_URL=http://ironclaw:8080
       - IRONCLAW_SHARED_SECRET=${IRONCLAW_SHARED_SECRET:-dev-shared-secret-change-me}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - SEARXNG_URL=http://searxng:8888
     depends_on:
       postgres:
         condition: service_healthy

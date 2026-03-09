@@ -62,6 +62,7 @@ import jppRouter from './api/jpp.js';
 import { documentRouter } from './planning/routes/document-routes.js';
 import assessmentRouter from './api/assessment-routes.js';
 import { strategicGuidanceRouter } from './strategic/guidance/routes.js';
+import docIntelligenceRouter from './api/doc-intelligence.js';
 
 dotenv.config();
 
@@ -210,6 +211,7 @@ app.use('/api/jpp', requireAuth, jppRouter);
 app.use('/api/documents/planning', requireAuth, documentRouter);
 app.use('/api/assessment', assessmentRouter);
 app.use('/api/strategic-guidance', strategicGuidanceRouter);
+app.use('/api/doc-intelligence', docIntelligenceRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -415,6 +417,15 @@ server.listen(port, async () => {
     console.log('[Server] Discovery service initialized (scanners paused)');
   } catch (error) {
     console.error('Failed to initialize discovery service:', error);
+  }
+
+  // Register document intelligence team (Phase 40)
+  try {
+    const { registerDocIntelligenceTeam } = await import('./doc-intelligence/team-setup.js');
+    await registerDocIntelligenceTeam();
+    console.log('Document intelligence team registered');
+  } catch (error) {
+    console.error('Failed to register document intelligence team:', error);
   }
 
   // Register strategic cache refresh pg-boss worker (Phase 25.3)

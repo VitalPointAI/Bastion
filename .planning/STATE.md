@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-09T03:05:00.723Z"
+last_updated: "2026-03-09T22:28:11.174Z"
 progress:
   total_phases: 56
-  completed_phases: 36
-  total_plans: 330
-  completed_plans: 333
+  completed_phases: 37
+  total_plans: 342
+  completed_plans: 345
 ---
 
 # Project State
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 39 of 40 (Operational Demonstration Data Package) — COMPLETE
-Plan: 7 of 7 in current phase — COMPLETE
-Status: Phase 39 complete — briefing script and demo walkthrough covering 100% BASTION capabilities
-Last activity: 2026-03-09 - Completed 39-07: Briefing script and demo walkthrough
+Phase: 40 of 40 (Autonomous Document Intelligence Team) — COMPLETE
+Plan: 12 of 12 in current phase — COMPLETE
+Status: Plan 40-12 complete — DocIntelligencePanel composite wiring 5 orphaned components into Understand tab
+Last activity: 2026-03-09 - Completed 40-12: UI Gap Closure - Doc Intelligence Panel Wiring
 
-Progress: ██████████████████████████ 331 plans complete
+Progress: ██████████████████████████ 343 plans complete
 
 ## Performance Metrics
 
@@ -161,6 +161,15 @@ Progress: ███████████████████████�
 | Phase 39 P04 | 9 | 2 tasks | 8 files |
 | Phase 39 P06 | 6 | 2 tasks | 6 files |
 | Phase 39 P07 | 6 | 2 tasks | 2 files |
+| Phase 40 P04 | 5 | 2 tasks | 2 files |
+| Phase 40 P03 | 6 | 2 tasks | 4 files |
+| Phase 40 P02 | 9 | 2 tasks | 6 files |
+| Phase 40 P06 | 6 | 2 tasks | 4 files |
+| Phase 40 P08 | 8 | 2 tasks | 4 files |
+| Phase 40 P09 | 5 | 2 tasks | 2 files |
+| Phase 40 P10 | 6 | 2 tasks | 5 files |
+| Phase 40 P11 | 2 | 1 tasks | 3 files |
+| Phase 40 P12 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -743,6 +752,25 @@ Recent decisions affecting current work:
 - [Phase 39]: Modeled overrides as inheritance_annotations with interpretation type and upward visibility, matching Phase 38 schema
 - [Phase 39]: run_seed_script() wrapper replaces file-existence guards for consistent timing, error handling, and summary reporting
 - [Phase 39]: 5-act briefing script and 13-station walkthrough covering 100% BASTION capabilities for military and academic audiences
+- [Phase 40]: PerspectiveAnalyst uses nodeId getter for unique LangGraph node registration while sharing specialistId
+- [Phase 40]: BiasIdentifier adapts system prompt based on document type: propaganda focus for news/OSINT, assumption focus for military orders
+- [Phase 40]: FactExtractor uses GraphBuilder.buildFromObjective() with composite facts text for efficiency
+- [Phase 40]: Used graph-as-any cast for LangGraph edge methods matching supervisor.ts pattern
+- [Phase 40]: FormatConverter uses dynamic import for tesseract.js graceful degradation
+- [Phase 40]: DocumentClassifier includes LLM output coercion before Zod validation failure
+- [Phase 40]: Used phase-based routing pattern for LangGraph interview StateGraph (start vs continue flows)
+- [Phase 40]: Soft-delete approach for entity revocation to allow recovery
+- [Phase 40]: Preview-before-execute source revocation pattern
+- [Phase 40]: MAX_RESEARCH_DEPTH=2 with cooldown to prevent infinite loops
+- [Phase 40]: Trust evaluation at source level not per-entity (RESEARCH.md Pitfall 4)
+- [Phase 40]: QualityAssessor uses deterministic scoring rather than LLM for reproducibility
+- [Phase 40]: Lightweight graph hashing using entity count + last-modified + sorted IDs for change detection
+- [Phase 40]: Trust gate routes flagged documents straight to report-assembly, skipping all extraction specialists
+- [Phase 40]: SSE events buffered in-memory per session with late-client catch-up replay
+- [Phase 40]: Frontend-only type duplication for NATORating and report types (project convention)
+- [Phase 40]: SSE EventSource hook pattern with specialist state map for real-time mission control UI
+- [Phase 40]: Used raw fetch for Tavily API instead of npm dependency
+- [Phase 40]: Used useDocProcessing hook built-in uploadDocument for file upload in DocIntelligencePanel
 
 ### Roadmap Evolution
 
@@ -1445,7 +1473,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08 - Completed 34-01 (Echelon Routing Infrastructure)
-Stopped at: Completed 34-01-PLAN.md — PlanEchelonRouter with echelon-based routing for Plan tab
+Last session: 2026-03-09 - Completed 40-01 (Foundation Types, Schemas, and Database)
+Stopped at: Completed 40-01-PLAN.md — shared types, Zod schemas, NATO ratings, specialist base class, database tables
 Resume file: None
-Next action: Continue Phase 34 or begin next phase
+Next action: Continue Phase 40 plan 02
