@@ -92,17 +92,17 @@ export function AgentBadges({ assignments, compact = false }: AgentBadgesProps) 
 
   return (
     <div className="agent-badges">
-      {assignments.slice(0, 3).map((assignment) => (
+      {assignments.slice(0, 3).map((assignment, idx) => (
         <div
-          key={assignment.id}
+          key={assignment.id || `assignment-${idx}`}
           className={`agent-badge ${getStatusClass(assignment.status)}`}
-          title={`${assignment.agentDisplayName || assignment.agentId} (${assignment.assignmentType})`}
+          title={`${assignment.agentDisplayName || assignment.agentId || 'Agent'} (${assignment.assignmentType || 'review'})`}
         >
           <span className="badge-icon">
             {getTypeIcon(assignment.assignmentType)}
           </span>
           <span className="badge-name">
-            {assignment.agentDisplayName || assignment.agentId.substring(0, 12)}
+            {assignment.agentDisplayName || (assignment.agentId ? assignment.agentId.substring(0, 12) : 'Agent')}
           </span>
           {assignment.teamName && (
             <span className="badge-team" title={`Team: ${assignment.teamName}`}>

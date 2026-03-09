@@ -10,6 +10,7 @@ import { useState, useCallback } from 'react';
 import { designService } from '../../lib/design-service.ts';
 import { AIFramingCard } from './AIFramingCard.tsx';
 import type { AlternativeFraming } from './AIFramingCard.tsx';
+import { AgentTeamComposer } from './AgentTeamComposer.tsx';
 
 // ==========================================================================
 // CoG Analysis Types (mirrors backend CoGAnalysisOutput)
@@ -292,6 +293,20 @@ export function DesignAIPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Agent team composition: additional agents per section
+  const [sectionAgents, setSectionAgents] = useState<Map<string, string[]>>(new Map());
+  const additionalAgents = sectionAgents.get(activeSection) ?? [];
+  const handleAgentsChange = useCallback(
+    (agentIds: string[]) => {
+      setSectionAgents((prev) => {
+        const next = new Map(prev);
+        next.set(activeSection, agentIds);
+        return next;
+      });
+    },
+    [activeSection],
+  );
+
   const cachedResults = resultsCache.get(activeSection);
   const dismissed = dismissedIds.get(activeSection) ?? new Set<number>();
 
@@ -299,7 +314,12 @@ export function DesignAIPanel({
     setLoading(true);
     setError(null);
     try {
-      const result = await designService.analyzeSection(problemSetId, activeSection, sectionData);
+      const result = await designService.analyzeSection(
+        problemSetId,
+        activeSection,
+        sectionData,
+        additionalAgents.length > 0 ? additionalAgents : undefined,
+      );
       setResultsCache((prev) => {
         const next = new Map(prev);
         next.set(activeSection, result);
@@ -317,7 +337,7 @@ export function DesignAIPanel({
     } finally {
       setLoading(false);
     }
-  }, [problemSetId, activeSection, sectionData]);
+  }, [problemSetId, activeSection, sectionData, additionalAgents]);
 
   const handleDismiss = useCallback(
     (index: number) => {
@@ -571,6 +591,15 @@ export function DesignAIPanel({
         <p className="text-xs text-gray-500 mt-0.5">{sectionLabel}</p>
       </div>
 
+      {/* Agent Team Composer */}
+      <div className="p-3 border-b border-gray-700">
+        <AgentTeamComposer
+          section={activeSection}
+          additionalAgents={additionalAgents}
+          onAgentsChange={handleAgentsChange}
+        />
+      </div>
+
       {/* Analyze Button */}
       <div className="p-3 border-b border-gray-700">
         <button
@@ -578,7 +607,7 @@ export function DesignAIPanel({
           disabled={loading}
           className="w-full px-3 py-2 text-sm font-medium rounded bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white transition-colors"
         >
-          {loading ? 'Analyzing...' : 'Analyze'}
+          {loading ? 'Analyzing...' : `Analyze${additionalAgents.length > 0 ? ` (${additionalAgents.length + 1} agents)` : ''}`}
         </button>
       </div>
 
@@ -637,7 +666,79 @@ export function DesignAIPanel({
               Analysis results available for {sectionLabel}.
             </div>
           )}
+
+        {/* Additional Agent Contributions */}
+        {cachedResults?.agentContributions &&
+          (cachedResults.agentContributions as AgentContributionResult[]).length > 0 && (
+            <div className="mt-4 pt-3 border-t border-gray-700">
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-2">
+                Supplementary Agent Analysis ({(cachedResults.agentContributions as AgentContributionResult[]).length})
+              </p>
+              {(cachedResults.agentContributions as AgentContributionResult[]).map((contrib) => (
+                <AgentContributionCard key={contrib.agentId} contribution={contrib} />
+              ))}
+            </div>
+          )}
       </div>
+    </div>
+  );
+}
+
+// ==========================================================================
+// Agent Contribution Types & Card
+// ==========================================================================
+
+interface AgentContributionResult {
+  agentId: string;
+  agentName: string;
+  analysis: string;
+  confidence: number;
+  keyPoints: string[];
+}
+
+function AgentContributionCard({ contribution }: { contribution: AgentContributionResult }) {
+  const [expanded, setExpanded] = useState(false);
+  const confidence = confidenceLabel(contribution.confidence);
+
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+        <span className="text-xs font-medium text-gray-200">{contribution.agentName}</span>
+        <span className={`text-xs font-medium ml-auto ${confidence.color}`}>
+          {confidence.text} ({Math.round(contribution.confidence * 100)}%)
+        </span>
+      </div>
+
+      {/* Key Points */}
+      {contribution.keyPoints.length > 0 && (
+        <div className="space-y-1 mb-2">
+          {contribution.keyPoints.map((point, i) => (
+            <div key={i} className="flex items-start gap-1.5 text-xs text-gray-300">
+              <span className="text-blue-400 mt-0.5 shrink-0">&#8226;</span>
+              <span>{point}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Analysis (collapsible) */}
+      {contribution.analysis && (
+        <div>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-[10px] text-gray-500 hover:text-gray-400 transition-colors"
+          >
+            {expanded ? 'Hide full analysis' : 'Show full analysis'}
+          </button>
+          {expanded && (
+            <p className="text-xs text-gray-400 leading-relaxed mt-1 whitespace-pre-wrap">
+              {contribution.analysis}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
