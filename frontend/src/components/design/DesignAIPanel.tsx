@@ -307,7 +307,13 @@ export function DesignAIPanel({
   const [localCache, setLocalCache] = useState<Map<string, Record<string, any>>>(new Map());
   const resultsCache = externalCache ?? localCache;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const setResultsCache = onCacheUpdate ?? setLocalCache;
+  const updateCache = (updater: (prev: Map<string, Record<string, any>>) => Map<string, Record<string, any>>) => {
+    if (onCacheUpdate) {
+      onCacheUpdate(updater(resultsCache));
+    } else {
+      setLocalCache(updater);
+    }
+  };
   const [dismissedIds, setDismissedIds] = useState<Map<string, Set<number>>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -363,7 +369,7 @@ export function DesignAIPanel({
         sectionData,
         additionalAgents.length > 0 ? additionalAgents : undefined,
       );
-      setResultsCache((prev) => {
+      updateCache((prev) => {
         const next = new Map(prev);
         next.set(activeSection, result);
         return next;
