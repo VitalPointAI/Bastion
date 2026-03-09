@@ -206,7 +206,7 @@ export interface ScenarioDocument {
   updatedAt: Date;
 }
 
-export type CreateScenarioDocument = Omit<ScenarioDocument, 'id' | 'createdAt' | 'updatedAt'>;
+export type CreateScenarioDocument = Omit<ScenarioDocument, 'id' | 'createdAt' | 'updatedAt' | 'extractionStatus' | 'extractionError'>;
 
 // ─── IPB Layer ────────────────────────────────────────────────────────────────
 
