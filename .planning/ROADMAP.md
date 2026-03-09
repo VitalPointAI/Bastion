@@ -360,7 +360,7 @@ Plans:
 **Goal:** Build the full 7-step JPP workflow as a collaborative planning framework within the Plan tab, producing COAs and annex-based campaign plans with Ends-Ways-Means linkage to strategic objectives. Includes entity resolution, OSINT feed integration (Argus), and designated AI agents per step.
 **Requirements:** [JPP-01, JPP-02, JPP-03, JPP-04, JPP-05, JPP-06, JPP-07, JPP-08, JPP-09, JPP-10, JPP-11, JPP-12, JPP-13]
 **Depends on:** Phase 32
-**Plans:** 10/10 plans complete
+**Plans:** 12 plans (10 complete, 2 gap closure)
 
 Plans:
 - [ ] 33-01-PLAN.md -- JPP domain types, DB schema, JPP store, E-W-M store
@@ -487,7 +487,7 @@ Plans:
 9. **Quality Assessor** — NATO source reliability (A-F) and information credibility (1-6) rating, recency assessment, internal consistency check, fact verification against known graph entities
 10. **Problem Set Researcher** — Autonomous web search, OSINT monitoring, open-source intelligence gathering; triggered by knowledge gaps; produces research briefs that re-enter the pipeline
 
-**Plans:** 10/10 plans complete
+**Plans:** 12 plans (10 complete, 2 gap closure)
 
 Plans:
 - [ ] 40-01-PLAN.md — Foundation types, Zod schemas, DB migration, specialist base class, NATO rating definitions
@@ -500,6 +500,8 @@ Plans:
 - [ ] 40-08-PLAN.md — Strategic environment briefing: narrative generation, change tracking, predictive analytics
 - [ ] 40-09-PLAN.md — Orchestrator wiring: all specialist nodes connected, document upload API with SSE streaming
 - [ ] 40-10-PLAN.md — Mission Control UI: processing dashboard, SSE feed, NATO rating panel, intelligence report
+- [ ] 40-11-PLAN.md — Gap closure: team registration at startup + pluggable web search (Tavily)
+- [ ] 40-12-PLAN.md — Gap closure: wire doc-intelligence components into Understand tab
 
 ---
 
