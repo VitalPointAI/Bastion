@@ -317,18 +317,10 @@ router.get('/documents/:id', requireAuth, async (req, res) => {
 
     const documentId = req.params.id as string;
 
-    // Get user DID from authenticated session
-    const userDID = buildDID(req.anonUser!.nearAccountId);
-
     const document = await store.get(documentId);
 
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
-    }
-
-    // Check ownership (or admin role in future)
-    if (document.createdBy !== userDID) {
-      return res.status(403).json({ error: 'Access denied' });
     }
 
     // Return document without full text content (use /text endpoint for that)
@@ -359,18 +351,11 @@ router.get('/documents/:id/text', requireAuth, async (req, res) => {
 
     const documentId = req.params.id as string;
 
-    // Get user DID from authenticated session
-    const userDID = buildDID(req.anonUser!.nearAccountId);
-
-    // First verify ownership
+    // Verify document exists
     const document = await store.get(documentId);
 
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
-    }
-
-    if (document.createdBy !== userDID) {
-      return res.status(403).json({ error: 'Access denied' });
     }
 
     // Get text content
@@ -734,15 +719,11 @@ router.get('/documents/:documentId/objectives', requireAuth, async (req, res) =>
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
 
-    // Verify document ownership
+    // Verify document exists (any authenticated user in the problem set can view)
     const document = await store.get(documentId);
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
-    }
-    if (document.createdBy !== userDID) {
-      return res.status(403).json({ error: 'Access denied' });
     }
 
     const documentObjectives = await objectives.getObjectivesForDocument(documentId);
@@ -1841,15 +1822,11 @@ router.get('/documents/:documentId/reviews', requireAuth, async (req, res) => {
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Verify document exists
     const document = await store.get(documentId);
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
-    }
-    if (document.createdBy !== userDID) {
-      return res.status(403).json({ error: 'Access denied' });
     }
 
     const reviews = await reviewStore.getReviewsForDocument(documentId);
@@ -2165,15 +2142,11 @@ router.get('/documents/:documentId/assignments', requireAuth, async (req, res) =
     await ensureTableExists();
 
     const documentId = req.params.documentId as string;
-    const userDID = buildDID(req.anonUser!.nearAccountId);
 
     // Verify document exists
     const document = await store.get(documentId);
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
-    }
-    if (document.createdBy !== userDID) {
-      return res.status(403).json({ error: 'Access denied' });
     }
 
     const assignments = await assignmentStore.getAssignmentsForDocument(documentId);
