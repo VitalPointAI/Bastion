@@ -98,13 +98,16 @@ function mapObservationRow(row: Record<string, unknown>): AssessmentObservation 
 // ============================================================================
 
 class MOEStore {
-  private initialized = false;
+  private initPromise: Promise<void> | null = null;
 
   async init(): Promise<void> {
-    if (!this.initialized) {
-      await initMOETables();
-      this.initialized = true;
+    if (!this.initPromise) {
+      this.initPromise = initMOETables().catch((err) => {
+        this.initPromise = null;
+        throw err;
+      });
     }
+    return this.initPromise;
   }
 
   /** Create a new MOE linked to an operational objective */

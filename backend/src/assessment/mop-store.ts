@@ -101,13 +101,16 @@ function mapObservationRow(row: Record<string, unknown>): AssessmentObservation 
 // ============================================================================
 
 class MOPStore {
-  private initialized = false;
+  private initPromise: Promise<void> | null = null;
 
   async init(): Promise<void> {
-    if (!this.initialized) {
-      await initMOPTables();
-      this.initialized = true;
+    if (!this.initPromise) {
+      this.initPromise = initMOPTables().catch((err) => {
+        this.initPromise = null;
+        throw err;
+      });
     }
+    return this.initPromise;
   }
 
   /** Create a new MOP linked to an OPORD task */

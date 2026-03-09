@@ -98,13 +98,17 @@ function mapAssessmentRow(row: Record<string, unknown>): METLAssessment {
 // ============================================================================
 
 class METLStore {
-  private initialized = false;
+  private initPromise: Promise<void> | null = null;
 
   async init(): Promise<void> {
-    if (!this.initialized) {
-      await initMETLTables();
-      this.initialized = true;
+    if (!this.initPromise) {
+      this.initPromise = initMETLTables().catch((err) => {
+        // Reset on failure so next call retries
+        this.initPromise = null;
+        throw err;
+      });
     }
+    return this.initPromise;
   }
 
   /** Create a new METL task */
