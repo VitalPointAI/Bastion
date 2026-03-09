@@ -250,21 +250,17 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
 
   // ------- Format Converter Node -------
   graph.addNode('format-converter', wrapNode(SpecialistId.FORMAT_CONVERTER, onProgress, async (state) => {
-    const startTime = Date.now();
-    const output = await formatConverter.process(
+    const result = await formatConverter.process(
       state.documentText,
       state.metadata,
     );
 
-    const result: SpecialistResult = {
-      specialistId: SpecialistId.FORMAT_CONVERTER,
-      status: 'success',
-      output,
-      duration: Date.now() - startTime,
-    };
+    // Extract converted text from specialist result output
+    const outputData = result.output as { convertedText?: string } | null;
+    const convertedText = outputData?.convertedText ?? state.documentText;
 
     return {
-      convertedText: output.convertedText,
+      convertedText,
       specialistResults: { [SpecialistId.FORMAT_CONVERTER]: result },
     };
   }));

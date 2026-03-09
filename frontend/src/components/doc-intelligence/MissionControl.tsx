@@ -135,7 +135,7 @@ export function MissionControl({
             Mission Control
           </span>
           {documentName && (
-            <span className="text-xs text-gray-400 truncate max-w-[200px]">
+            <span className="text-xs text-gray-400 truncate max-w-50">
               {documentName}
             </span>
           )}
@@ -157,7 +157,7 @@ export function MissionControl({
       {isProcessing && (
         <div className="h-1 bg-gray-800">
           <div
-            className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-500 ease-out"
+            className="h-full bg-linear-to-r from-blue-600 to-cyan-500 transition-all duration-500 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>

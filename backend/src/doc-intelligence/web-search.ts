@@ -1,11 +1,12 @@
 /**
  * Pluggable Web Search Provider
  *
- * Provides web search capability for the researcher specialist.
- * Uses Tavily Search API when TAVILY_API_KEY is set in environment,
- * falls back to placeholder results otherwise.
+ * Priority chain:
+ * 1. SearXNG (self-hosted, set SEARXNG_URL — default http://localhost:8888)
+ * 2. Tavily (paid API, set TAVILY_API_KEY)
+ * 3. Placeholder fallback
  *
- * No external dependencies -- uses Node 18+ built-in fetch.
+ * No external dependencies — uses Node 18+ built-in fetch.
  */
 
 export interface WebSearchResult {
@@ -15,6 +16,66 @@ export interface WebSearchResult {
   retrievalDate: string;
 }
 
+// ---------------------------------------------------------------------------
+// SearXNG provider
+// ---------------------------------------------------------------------------
+
+interface SearXNGResult {
+  url: string;
+  title: string;
+  content: string;
+}
+
+interface SearXNGResponse {
+  results: SearXNGResult[];
+}
+
+async function searchSearXNG(
+  query: string,
+  maxResults: number,
+): Promise<WebSearchResult[] | null> {
+  const baseUrl = process.env.SEARXNG_URL;
+  if (!baseUrl) return null;
+
+  const retrievalDate = new Date().toISOString();
+  const params = new URLSearchParams({
+    q: query,
+    format: 'json',
+    categories: 'general',
+    language: 'en',
+    pageno: '1',
+  });
+
+  try {
+    const response = await fetch(`${baseUrl}/search?${params}`, {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      console.error(
+        `[web-search] SearXNG returned ${response.status}: ${response.statusText}`,
+      );
+      return null; // Fall through to next provider
+    }
+
+    const data = (await response.json()) as SearXNGResponse;
+
+    return (data.results || []).slice(0, maxResults).map((r) => ({
+      url: r.url,
+      title: r.title,
+      snippet: r.content,
+      retrievalDate,
+    }));
+  } catch (error) {
+    console.error('[web-search] SearXNG call failed:', error);
+    return null; // Fall through to next provider
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tavily provider (fallback)
+// ---------------------------------------------------------------------------
+
 interface TavilySearchResponse {
   results: Array<{
     url: string;
@@ -23,34 +84,14 @@ interface TavilySearchResponse {
   }>;
 }
 
-let warnedNoApiKey = false;
-
-/**
- * Perform a web search using Tavily API (if configured) or return
- * placeholder results for graceful degradation.
- */
-export async function performWebSearch(
+async function searchTavily(
   query: string,
-  maxResults: number = 5,
-): Promise<WebSearchResult[]> {
+  maxResults: number,
+): Promise<WebSearchResult[] | null> {
   const apiKey = process.env.TAVILY_API_KEY;
-  const retrievalDate = new Date().toISOString();
+  if (!apiKey) return null;
 
-  if (!apiKey) {
-    if (!warnedNoApiKey) {
-      console.warn(
-        '[web-search] TAVILY_API_KEY not set -- returning placeholder results. ' +
-        'Set the environment variable to enable real web search.',
-      );
-      warnedNoApiKey = true;
-    }
-    return [{
-      url: `https://search.example.com/q=${encodeURIComponent(query)}`,
-      title: `Research query: ${query}`,
-      snippet: `Automated research query for: ${query}`,
-      retrievalDate,
-    }];
-  }
+  const retrievalDate = new Date().toISOString();
 
   try {
     const response = await fetch('https://api.tavily.com/search', {
@@ -65,8 +106,10 @@ export async function performWebSearch(
     });
 
     if (!response.ok) {
-      console.error(`[web-search] Tavily API returned ${response.status}: ${response.statusText}`);
-      return [];
+      console.error(
+        `[web-search] Tavily API returned ${response.status}: ${response.statusText}`,
+      );
+      return null;
     }
 
     const data = (await response.json()) as TavilySearchResponse;
@@ -79,6 +122,58 @@ export async function performWebSearch(
     }));
   } catch (error) {
     console.error('[web-search] Tavily API call failed:', error);
-    return [];
+    return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Main entry point — provider chain
+// ---------------------------------------------------------------------------
+
+let loggedProvider = false;
+
+/**
+ * Perform a web search using the first available provider:
+ * SearXNG → Tavily → placeholder.
+ */
+export async function performWebSearch(
+  query: string,
+  maxResults: number = 5,
+): Promise<WebSearchResult[]> {
+  // 1. Try SearXNG (self-hosted, free)
+  const searxResults = await searchSearXNG(query, maxResults);
+  if (searxResults !== null) {
+    if (!loggedProvider) {
+      console.log('[web-search] Using SearXNG provider');
+      loggedProvider = true;
+    }
+    return searxResults;
+  }
+
+  // 2. Try Tavily (paid API)
+  const tavilyResults = await searchTavily(query, maxResults);
+  if (tavilyResults !== null) {
+    if (!loggedProvider) {
+      console.log('[web-search] Using Tavily provider');
+      loggedProvider = true;
+    }
+    return tavilyResults;
+  }
+
+  // 3. Placeholder fallback
+  if (!loggedProvider) {
+    console.warn(
+      '[web-search] No search provider configured. ' +
+      'Set SEARXNG_URL (recommended) or TAVILY_API_KEY.',
+    );
+    loggedProvider = true;
+  }
+
+  const retrievalDate = new Date().toISOString();
+  return [{
+    url: `https://search.example.com/q=${encodeURIComponent(query)}`,
+    title: `Research query: ${query}`,
+    snippet: `No web search provider configured. Set SEARXNG_URL or TAVILY_API_KEY.`,
+    retrievalDate,
+  }];
 }
