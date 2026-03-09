@@ -41,6 +41,10 @@ interface LOETimelineSectionProps {
   initialLOEs: LineOfEffort[];
   cogAnalysis: CoGAnalysis;
   onUpdate: (loes: LineOfEffort[]) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  aiCache?: Map<string, Record<string, any>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onAiCacheUpdate?: (cache: Map<string, Record<string, any>>) => void;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -71,6 +75,8 @@ export function LOETimelineSection({
   initialLOEs,
   cogAnalysis,
   onUpdate,
+  aiCache,
+  onAiCacheUpdate,
 }: LOETimelineSectionProps) {
   const [loes, setLoes] = useState<LineOfEffort[]>(initialLOEs);
   const [phases, setPhases] = useState<Phase[]>(DEFAULT_PHASES);
@@ -483,6 +489,8 @@ export function LOETimelineSection({
           sectionData={{ loes, cogAnalysis }}
           isOpen={aiPanelOpen}
           onToggle={() => setAiPanelOpen(!aiPanelOpen)}
+          externalCache={aiCache}
+          onCacheUpdate={onAiCacheUpdate}
         />
       </div>
     </div>

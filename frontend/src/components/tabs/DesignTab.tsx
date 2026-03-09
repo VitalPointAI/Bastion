@@ -44,6 +44,9 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [_selectedGate, setSelectedGate] = useState<DecisionGate | null>(null);
+  // Lifted AI analysis cache so results persist across section navigation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [aiCache, setAiCache] = useState<Map<string, Record<string, any>>>(new Map());
 
   const handleGateDetailClick = useCallback((gate: DecisionGate) => {
     setSelectedGate(gate);
@@ -125,6 +128,8 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
           problemSetId={problemSetId}
           initialData={designData.problemFraming}
           onUpdate={(data: ProblemFramingData) => handleSectionUpdate('problem-framing', data)}
+          aiCache={aiCache}
+          onAiCacheUpdate={setAiCache}
         />
       )}
 
@@ -133,6 +138,8 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
           problemSetId={problemSetId}
           initialData={designData.cogAnalysis}
           onUpdate={(data: CoGAnalysis) => handleSectionUpdate('cog-analysis', data)}
+          aiCache={aiCache}
+          onAiCacheUpdate={setAiCache}
         />
       )}
 
@@ -142,6 +149,8 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
           initialLOEs={designData.linesOfEffort}
           cogAnalysis={designData.cogAnalysis}
           onUpdate={(loes: LineOfEffort[]) => handleSectionUpdate('lines-of-effort', loes)}
+          aiCache={aiCache}
+          onAiCacheUpdate={setAiCache}
         />
       )}
 
@@ -162,6 +171,8 @@ export function DesignTab({ problemSetId }: DesignTabProps) {
             initialData={designData.operationalApproach}
             designData={designData}
             onUpdate={(data: OperationalApproach) => handleSectionUpdate('operational-approach', data)}
+            aiCache={aiCache}
+            onAiCacheUpdate={setAiCache}
           />
         </div>
       )}

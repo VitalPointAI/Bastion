@@ -14,6 +14,10 @@ interface ProblemFramingSectionProps {
   problemSetId: string;
   initialData: ProblemFramingData;
   onUpdate: (data: ProblemFramingData) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  aiCache?: Map<string, Record<string, any>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onAiCacheUpdate?: (cache: Map<string, Record<string, any>>) => void;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -171,7 +175,7 @@ function MergeModal({
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: ProblemFramingSectionProps) {
+export function ProblemFramingSection({ problemSetId, initialData, onUpdate, aiCache, onAiCacheUpdate }: ProblemFramingSectionProps) {
   const [formData, setFormData] = useState<ProblemFramingData>(() => ({
     ...initialData,
     problemStatement: initialData.problemStatement || generateProblemStatement(initialData),
@@ -222,16 +226,16 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
   // ─── AI Adopt/Merge Handlers ────────────────────────────────────────
 
   const handleAdopt = useCallback((framing: AlternativeFraming) => {
-    setFormData({
-      currentState: '',
-      desiredEndState: '',
+    setFormData((prev) => ({
+      currentState: prev.currentState,
+      desiredEndState: prev.desiredEndState,
       problemStatement: framing.framingStatement,
-      keyTensions: framing.rootCauses.length > 0 ? [...framing.rootCauses] : [''],
-      obstacles: framing.blindSpots.length > 0 ? [...framing.blindSpots] : [''],
-      opportunities: framing.interventionPoints.length > 0 ? [...framing.interventionPoints] : [''],
-      assumptions: framing.assumptions.length > 0 ? [...framing.assumptions] : [''],
-      constraints: [],
-    });
+      keyTensions: framing.rootCauses.length > 0 ? [...framing.rootCauses] : prev.keyTensions,
+      obstacles: framing.blindSpots.length > 0 ? [...framing.blindSpots] : prev.obstacles,
+      opportunities: framing.interventionPoints.length > 0 ? [...framing.interventionPoints] : prev.opportunities,
+      assumptions: framing.assumptions.length > 0 ? [...framing.assumptions] : prev.assumptions,
+      constraints: prev.constraints,
+    }));
   }, []);
 
   const handleMerge = useCallback((framing: AlternativeFraming) => {
@@ -377,6 +381,8 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
         onToggle={() => setAiPanelOpen(!aiPanelOpen)}
         onAdopt={handleAdopt}
         onMerge={handleMerge}
+        externalCache={aiCache}
+        onCacheUpdate={onAiCacheUpdate}
       />
 
       {/* Merge Modal */}

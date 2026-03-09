@@ -34,6 +34,7 @@ import { inferTagsFromPath } from '../exercise/package-parser.js';
 import type { AgentTeamConfig } from '../exercise/types.js';
 import { STAFF_ROLE_CONFIG, PRODUCT_TYPE_REGISTRY } from '../exercise/types.js';
 import { configService } from '../strategic/config/service.js';
+import { resolveProviderConfig } from '../strategic/config/resolve-api-key.js';
 import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
 import { OpenAICompatibleProvider } from '../strategic/extraction/providers/openai-provider.js';
 import { AIRunStore } from '../exercise/ai-run-store.js';
@@ -163,17 +164,10 @@ async function getAIWorkspace(): Promise<{
 
 /**
  * Build an LLM ProviderConfig from the admin-configured settings.
- * Reads from the same config store that the Admin Dashboard LLM panel writes to.
+ * Uses resolveProviderConfig which prefers OAuth tokens over static API keys.
  */
 async function getLLMConfig(): Promise<ProviderConfig> {
-  const llmConfig = await configService.getLLMConfig();
-  const providerType = llmConfig.provider === 'local' ? 'ollama' : llmConfig.provider;
-  return {
-    type: providerType as ProviderConfig['type'],
-    model: llmConfig.models.extraction,
-    apiKey: llmConfig.apiKey || undefined,
-    baseUrl: llmConfig.baseUrl,
-  };
+  return resolveProviderConfig('extraction');
 }
 
 async function getExtractionService(): Promise<ExerciseExtractionService> {

@@ -78,6 +78,11 @@ interface DesignAIPanelProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onApplyCogSuggestion?: (suggestion: any) => void;
   onApplyNarrative?: (narrative: string) => void;
+  /** Lifted cache from DesignTab so results persist across navigation */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  externalCache?: Map<string, Record<string, any>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onCacheUpdate?: (cache: Map<string, Record<string, any>>) => void;
 }
 
 // ==========================================================================
@@ -294,10 +299,21 @@ export function DesignAIPanel({
   onMerge,
   onApplyCogSuggestion,
   onApplyNarrative,
+  externalCache,
+  onCacheUpdate,
 }: DesignAIPanelProps) {
-  // Section-keyed cache to prevent stale results on section switch
+  // Use external cache if provided (lifted to DesignTab), else local fallback
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [resultsCache, setResultsCache] = useState<Map<string, Record<string, any>>>(new Map());
+  const [localCache, setLocalCache] = useState<Map<string, Record<string, any>>>(new Map());
+  const resultsCache = externalCache ?? localCache;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateCache = (updater: (prev: Map<string, Record<string, any>>) => Map<string, Record<string, any>>) => {
+    if (onCacheUpdate) {
+      onCacheUpdate(updater(resultsCache));
+    } else {
+      setLocalCache(updater);
+    }
+  };
   const [dismissedIds, setDismissedIds] = useState<Map<string, Set<number>>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -353,7 +369,7 @@ export function DesignAIPanel({
         sectionData,
         additionalAgents.length > 0 ? additionalAgents : undefined,
       );
-      setResultsCache((prev) => {
+      updateCache((prev) => {
         const next = new Map(prev);
         next.set(activeSection, result);
         return next;
