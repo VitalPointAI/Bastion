@@ -264,6 +264,33 @@ class ValidationService {
   }
 
   // --------------------------------------------------------------------------
+  // Bulk Override
+  // --------------------------------------------------------------------------
+
+  async getOverrideStatus(): Promise<{ overrideActive: boolean }> {
+    return this.fetch<{ overrideActive: boolean }>('/api/validation/override-status');
+  }
+
+  async overrideAll(
+    justification: string,
+  ): Promise<{ reinstatedCount: number; agentIds: string[] }> {
+    return this.fetch<{ reinstatedCount: number; agentIds: string[] }>(
+      '/api/validation/override-all',
+      {
+        method: 'POST',
+        body: JSON.stringify({ justification }),
+      },
+    );
+  }
+
+  async disableOverride(): Promise<{ overrideActive: boolean; message: string }> {
+    return this.fetch<{ overrideActive: boolean; message: string }>(
+      '/api/validation/override-disable',
+      { method: 'POST' },
+    );
+  }
+
+  // --------------------------------------------------------------------------
   // Export
   // --------------------------------------------------------------------------
 

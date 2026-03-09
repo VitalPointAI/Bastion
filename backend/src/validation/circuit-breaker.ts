@@ -37,15 +37,29 @@ export interface ReinstateResult {
 // ---------------------------------------------------------------------------
 
 export class CircuitBreaker {
+  /** When true, validation is bypassed — agents won't be disabled. */
+  private _overrideActive = false;
+
+  /** Check if validation override is currently active. */
+  get overrideActive(): boolean {
+    return this._overrideActive;
+  }
+
   /**
    * Evaluate an agent's score against thresholds for a category.
    * Returns the resulting circuit state and required action.
+   * When override is active, never returns 'disable' action.
    */
   async evaluate(
     agentId: string,
     category: ValidationCategory,
     score: number,
   ): Promise<EvaluateResult> {
+    // When override is active, skip disabling — only report state
+    if (this._overrideActive) {
+      return { state: 'closed' as CircuitState, action: 'none' };
+    }
+
     const threshold = await getThresholdForAgent(agentId, category);
 
     // Above warning threshold => closed / passing
@@ -454,6 +468,79 @@ export class CircuitBreaker {
       }
     }
     return count;
+  }
+
+  /**
+   * Enable validation override: reinstate ALL disabled agents and
+   * prevent the circuit breaker from disabling agents until override is lifted.
+   */
+  async overrideAll(
+    triggeredBy: string,
+    justification: string,
+  ): Promise<{ reinstatedCount: number; agentIds: string[] }> {
+    this._overrideActive = true;
+
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+
+    const allAgents = registry.listAgents();
+    const disabledAgents = allAgents.filter((a) => !a.active);
+    const reinstatedIds: string[] = [];
+
+    for (const agent of disabledAgents) {
+      agent.active = true;
+      reinstatedIds.push(agent.agentId);
+
+      await validationStore.insertCircuitEvent({
+        agent_id: agent.agentId,
+        category: 'all',
+        event_type: 'override' as CircuitEventType,
+        previous_state: 'open',
+        new_state: 'closed',
+        triggered_by: triggeredBy,
+        justification,
+        run_id: null,
+        details: { method: 'bulk_admin_override', justification },
+      });
+    }
+
+    if (reinstatedIds.length > 0) {
+      console.log(
+        `[CircuitBreaker] Bulk override ON: reinstated ${reinstatedIds.length} agents by ${triggeredBy}`,
+      );
+    }
+
+    return { reinstatedCount: reinstatedIds.length, agentIds: reinstatedIds };
+  }
+
+  /**
+   * Disable validation override: re-enable normal validation enforcement.
+   * Triggers a validation run so agent statuses update accordingly.
+   */
+  async disableOverride(triggeredBy: string): Promise<void> {
+    this._overrideActive = false;
+
+    await validationStore.insertCircuitEvent({
+      agent_id: 'system',
+      category: 'all',
+      event_type: 'override' as CircuitEventType,
+      previous_state: 'closed',
+      new_state: 'closed',
+      triggered_by: triggeredBy,
+      justification: 'Validation override disabled — normal enforcement resumed',
+      run_id: null,
+      details: { method: 'override_disabled' },
+    });
+
+    console.log(`[CircuitBreaker] Validation override disabled by ${triggeredBy}`);
+
+    // Trigger a validation run so agents get re-evaluated
+    const { validationRunner } = await import('./validation-runner.js');
+    setImmediate(() => {
+      validationRunner.executeFullRun(`override_off:${triggeredBy}`).catch((err) => {
+        console.error('[CircuitBreaker] Post-override validation run failed:', err);
+      });
+    });
   }
 }
 
