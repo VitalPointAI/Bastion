@@ -16,6 +16,16 @@ import {
   API_BASE,
 } from '../../lib/strategic-service.js';
 import { AgentBadges } from './AgentBadges.js';
+import { AgentAssignmentModal } from './AgentAssignmentModal.js';
+
+interface ExtractionProgress {
+  phase: 'chunking' | 'extracting' | 'consolidating' | 'complete';
+  currentChunk: number;
+  totalChunks: number;
+  percentComplete: number;
+  objectivesFound: number;
+  latestObjectivePreview?: string;
+}
 
 interface ContainerDocumentListProps {
   containerId: string;
@@ -37,12 +47,20 @@ function DraggableDocumentCard({
   onSelectDocument,
   assignments,
   formatDate,
+  onAssignAgent,
+  onExtract,
+  extracting,
+  progress,
 }: {
   doc: StrategicDocument;
   containerId: string | null;
   onSelectDocument: (doc: StrategicDocument) => void;
   assignments: DocumentAgentAssignment[];
   formatDate: (d: string) => string;
+  onAssignAgent: (docId: string) => void;
+  onExtract: (doc: StrategicDocument, e: React.MouseEvent) => void;
+  extracting: string | null;
+  progress: ExtractionProgress | null;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `doc-${doc.id}`,
@@ -53,6 +71,16 @@ function DraggableDocumentCard({
       sourceContainerId: containerId,
     },
   });
+
+  const getPhaseDescription = (phase: ExtractionProgress['phase']): string => {
+    switch (phase) {
+      case 'chunking': return 'Analyzing document structure...';
+      case 'extracting': return 'Extracting objectives with AI...';
+      case 'consolidating': return 'Consolidating results...';
+      case 'complete': return 'Complete!';
+      default: return 'Processing...';
+    }
+  };
 
   return (
     <div
@@ -132,21 +160,103 @@ function DraggableDocumentCard({
 
         {/* Agent assignments */}
         <div className="doc-agents">
-          <AgentBadges assignments={assignments} compact />
+          {assignments.length > 0 && (
+            <AgentBadges assignments={assignments} compact />
+          )}
+          <button
+            className="assign-agent-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAssignAgent(doc.id);
+            }}
+            title="Assign agent or team to analyze this document"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <line x1="20" y1="8" x2="20" y2="14" />
+              <line x1="23" y1="11" x2="17" y2="11" />
+            </svg>
+            <span>Assign Agent</span>
+          </button>
         </div>
       </div>
 
-      {/* Objectives count */}
-      {doc.objectiveCount !== undefined && doc.objectiveCount > 0 && (
-        <div className="doc-objectives">
+      {/* Objectives status */}
+      <div className="doc-objectives">
+        {extracting === doc.id && progress ? (
+          <div className="extraction-progress">
+            <div className="progress-header">
+              <span className="progress-phase">{getPhaseDescription(progress.phase)}</span>
+              <span className="progress-percent">{progress.percentComplete}%</span>
+            </div>
+            <div className="progress-bar-container">
+              <div
+                className="progress-bar-fill"
+                style={{ width: `${progress.percentComplete}%` }}
+              />
+            </div>
+            <div className="progress-details">
+              {progress.totalChunks > 0 && (
+                <span className="progress-chunks">
+                  Chunk {progress.currentChunk} of {progress.totalChunks}
+                </span>
+              )}
+              <span className="progress-found">
+                {progress.objectivesFound} objective{progress.objectivesFound !== 1 ? 's' : ''} found
+              </span>
+            </div>
+            {progress.latestObjectivePreview && (
+              <div className="progress-preview">
+                <span className="preview-label">Latest:</span>
+                <span className="preview-text">{progress.latestObjectivePreview}</span>
+              </div>
+            )}
+          </div>
+        ) : doc.objectiveCount !== undefined && doc.objectiveCount > 0 ? (
           <div className="objectives-status">
             <div className="objectives-count">
               <span className="count-value">{doc.objectiveCount}</span>
               <span className="count-label">Objectives</span>
             </div>
+            <button
+              className="re-extract-button"
+              onClick={(e) => onExtract(doc, e)}
+              disabled={extracting === doc.id}
+              title="Re-extract objectives (will replace existing)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="23,4 23,10 17,10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+              Re-extract
+            </button>
           </div>
-        </div>
-      )}
+        ) : (
+          <button
+            className="extract-button"
+            onClick={(e) => onExtract(doc, e)}
+            disabled={extracting === doc.id}
+          >
+            {extracting === doc.id ? (
+              <>
+                <span className="extract-spinner" />
+                Starting...
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  <line x1="11" y1="8" x2="11" y2="14" />
+                  <line x1="8" y1="11" x2="14" y2="11" />
+                </svg>
+                Extract Objectives
+              </>
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -165,6 +275,9 @@ export function ContainerDocumentList({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<Record<string, DocumentAgentAssignment[]>>({});
+  const [assigningDocId, setAssigningDocId] = useState<string | null>(null);
+  const [extracting, setExtracting] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ExtractionProgress | null>(null);
 
   const loadDocuments = useCallback(async () => {
     setLoading(true);
@@ -217,6 +330,87 @@ export function ContainerDocumentList({
       loadAssignments(documents.map((d) => d.id));
     }
   }, [documents, loadAssignments]);
+
+  const handleExtract = async (doc: StrategicDocument, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (extracting) return;
+
+    setExtracting(doc.id);
+    setProgress(null);
+    setError(null);
+
+    try {
+      if (!userDID) {
+        throw new Error('Please log in to extract objectives');
+      }
+
+      const url = `${API_BASE}/api/strategic/documents/${doc.id}/extract/stream?did=${encodeURIComponent(userDID)}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/event-stream',
+          'X-DID': userDID,
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Extraction failed');
+        } else {
+          const errorText = await response.text();
+          throw new Error(errorText || `Extraction failed (${response.status})`);
+        }
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let currentEvent = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7);
+          } else if (line.startsWith('data: ') && currentEvent) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (currentEvent === 'progress') {
+                setProgress(data as ExtractionProgress);
+              } else if (currentEvent === 'complete') {
+                setProgress(null);
+                await loadDocuments();
+              } else if (currentEvent === 'error') {
+                throw new Error(data.error || 'Extraction failed');
+              }
+            } catch (parseErr) {
+              console.error('Failed to parse SSE data:', parseErr);
+            }
+            currentEvent = '';
+          }
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Extraction failed');
+      setProgress(null);
+    } finally {
+      setExtracting(null);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Unknown date';
@@ -311,9 +505,26 @@ export function ContainerDocumentList({
               onSelectDocument={onSelectDocument}
               assignments={assignments[doc.id] || []}
               formatDate={formatDate}
+              onAssignAgent={(docId) => setAssigningDocId(docId)}
+              onExtract={handleExtract}
+              extracting={extracting}
+              progress={progress}
             />
           ))}
         </div>
+      )}
+
+      {/* Agent Assignment Modal */}
+      {assigningDocId && userDID && (
+        <AgentAssignmentModal
+          documentId={assigningDocId}
+          userDID={userDID}
+          onClose={() => setAssigningDocId(null)}
+          onAssigned={() => {
+            setAssigningDocId(null);
+            loadAssignments([assigningDocId]);
+          }}
+        />
       )}
     </div>
   );
