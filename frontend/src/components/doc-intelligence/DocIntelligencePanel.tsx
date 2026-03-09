@@ -38,7 +38,7 @@ interface ProblemSetContext {
 // ============================================================================
 
 export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps) {
-  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [processingId] = useState<string | null>(null);
   const [reports, setReports] = useState<DocumentIntelligenceReport[]>([]);
   const [hasContext, setHasContext] = useState(false);
   const [showInterview, setShowInterview] = useState(false);

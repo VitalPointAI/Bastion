@@ -79,7 +79,7 @@ export interface DocProcessingState {
   specialists: Map<string, SpecialistStatus>;
   events: ProcessingEvent[];
   isProcessing: boolean;
-  report: any | null;
+  report: Record<string, unknown> | null;
   flagged: FlaggedState | null;
   error: string | null;
   documentName: string | null;
@@ -102,7 +102,7 @@ export function useDocProcessing(
   );
   const [events, setEvents] = useState<ProcessingEvent[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [report, setReport] = useState<any | null>(null);
+  const [report, setReport] = useState<Record<string, unknown> | null>(null);
   const [flagged, setFlagged] = useState<FlaggedState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState<string | null>(null);
