@@ -26,7 +26,7 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 Phase: 38 of 40 (Inheritance Deepening) — COMPLETE
 Plan: 6 of 6 in current phase — COMPLETE
 Status: Phase 38 complete — All 6 plans executed (05 completed last, out of order with 06)
-Last activity: 2026-03-09 - Completed quick task 10: Fix AI panel reopen, assessment 500 errors, useAIStaffFeed TypeError, strategic-guidance 404s
+Last activity: 2026-03-09 - Completed quick task 11: Fix training mode tab differentiation and re-enable improved AI agents
 
 Progress: ██████████████████████████ 326 plans complete
 
@@ -800,6 +800,7 @@ None.
 | 8 | AI agent for operational narrative drafting | 2026-03-06 | 41b35ea | [8-ai-agent-operational-narrative](./quick/8-ai-agent-operational-narrative/) |
 | 9 | Custom exercise positions with phase-transition mapping | 2026-03-06 | 91a7758 | [9-custom-exercise-positions-with-phase-tra](./quick/9-custom-exercise-positions-with-phase-tra/) |
 | 10 | Fix AI panel reopen, assessment 500 errors, useAIStaffFeed TypeError, strategic-guidance 404s | 2026-03-09 | 1d41a48 | [10-fix-ai-panel-reopen-assessment-500-error](./quick/10-fix-ai-panel-reopen-assessment-500-error/) |
+| 11 | Fix training mode tab differentiation and re-enable improved AI agents | 2026-03-09 | ee2c4e0 | [11-fix-training-mode-tab-differentiation-an](./quick/11-fix-training-mode-tab-differentiation-an/) |
 
 **Phase 4 Plan 6-FIX (Strategic API Table Init Fix):**
 - Unified lazy init: all strategic API tables initialized from single ensureTableExists()
