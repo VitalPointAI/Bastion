@@ -57,7 +57,7 @@ None
 - [x] **Phase 36: Strategic Guidance Workflow** - Build strategic level Plan tab workflow for objective setting, force apportionment, constraint definition, directive drafting; strategic directive output becomes initiating directive for child campaign JPP Step 1 (completed 2026-03-08)
 - [x] **Phase 37: Training Assessment Loop** - AAR capture at tactical training events, METL proficiency tracking (T/P/U per task), upward aggregation from training events through exercises to training strategy readiness updates (completed 2026-03-08)
 - [x] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign (completed 2026-03-08)
-- [ ] **Phase 40: Autonomous Document Intelligence Team** - Multi-agent document processing team that autonomously ingests, classifies, extracts, cross-links, and validates documents with minimal user involvement; problem set scoping interview captures context boundaries and standing intelligence requirements; specialist agents (orchestrator, converter, classifier, perspective analysts, fact/objective extractors, linker, bias identifier, quality assessor) process each document adaptively; autonomous problem set researcher uses web search and OSINT to fill knowledge gaps and build strategic understanding; ExtractionTheater visualization shows full pipeline live (INSERTED)
+- [x] **Phase 40: Autonomous Document Intelligence Team** - Multi-agent document processing team that autonomously ingests, classifies, extracts, cross-links, and validates documents with minimal user involvement; problem set scoping interview captures context boundaries and standing intelligence requirements; specialist agents (orchestrator, converter, classifier, perspective analysts, fact/objective extractors, linker, bias identifier, quality assessor) process each document adaptively; autonomous problem set researcher uses web search and OSINT to fill knowledge gaps and build strategic understanding; ExtractionTheater visualization shows full pipeline live (INSERTED) (completed 2026-03-09)
 
 ## Phase Details
 
@@ -487,7 +487,7 @@ Plans:
 9. **Quality Assessor** — NATO source reliability (A-F) and information credibility (1-6) rating, recency assessment, internal consistency check, fact verification against known graph entities
 10. **Problem Set Researcher** — Autonomous web search, OSINT monitoring, open-source intelligence gathering; triggered by knowledge gaps; produces research briefs that re-enter the pipeline
 
-**Plans:** 9/10 plans executed
+**Plans:** 10/10 plans complete
 
 Plans:
 - [ ] 40-01-PLAN.md — Foundation types, Zod schemas, DB migration, specialist base class, NATO rating definitions
@@ -1536,4 +1536,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 29. Contextual AI Staff Integration | 4/5 | In Progress|  |
 | 30. Ironclaw Agent Integration | 8/8 | Complete   | 2026-03-07 |
 | 31. AI Agent Validation & Compliance Testing | 7/7 | In Progress|  |
-| 40. Autonomous Document Intelligence Team | 9/10 | In Progress|  |
+| 40. Autonomous Document Intelligence Team | 10/10 | Complete   | 2026-03-09 |
