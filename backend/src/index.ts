@@ -62,6 +62,7 @@ import jppRouter from './api/jpp.js';
 import { documentRouter } from './planning/routes/document-routes.js';
 import assessmentRouter from './api/assessment-routes.js';
 import { strategicGuidanceRouter } from './strategic/guidance/routes.js';
+import docIntelligenceRouter from './api/doc-intelligence.js';
 
 dotenv.config();
 
@@ -210,6 +211,7 @@ app.use('/api/jpp', requireAuth, jppRouter);
 app.use('/api/documents/planning', requireAuth, documentRouter);
 app.use('/api/assessment', assessmentRouter);
 app.use('/api/strategic-guidance', strategicGuidanceRouter);
+app.use('/api/doc-intelligence', docIntelligenceRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
