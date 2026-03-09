@@ -57,6 +57,7 @@ None
 - [x] **Phase 36: Strategic Guidance Workflow** - Build strategic level Plan tab workflow for objective setting, force apportionment, constraint definition, directive drafting; strategic directive output becomes initiating directive for child campaign JPP Step 1 (completed 2026-03-08)
 - [x] **Phase 37: Training Assessment Loop** - AAR capture at tactical training events, METL proficiency tracking (T/P/U per task), upward aggregation from training events through exercises to training strategy readiness updates (completed 2026-03-08)
 - [x] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign (completed 2026-03-08)
+- [ ] **Phase 40: Autonomous Document Intelligence Team** - Multi-agent document processing team that autonomously ingests, classifies, extracts, cross-links, and validates documents with minimal user involvement; problem set scoping interview captures context boundaries and standing intelligence requirements; specialist agents (orchestrator, converter, classifier, perspective analysts, fact/objective extractors, linker, bias identifier, quality assessor) process each document adaptively; autonomous problem set researcher uses web search and OSINT to fill knowledge gaps and build strategic understanding; ExtractionTheater visualization shows full pipeline live (INSERTED)
 
 ## Phase Details
 
@@ -456,6 +457,47 @@ Plans:
 - [ ] 39-04-PLAN.md — JPP instance with step products and pre-seeded AI agent analysis outputs
 - [ ] 39-05-PLAN.md — DAO governance decision gates and assessment (AARs, METL tracking)
 - [ ] 39-06-PLAN.md — Inheritance artifacts (FRAGOs, status reports, overrides) and orchestrator finalization
+
+### Phase 40: Autonomous Document Intelligence Team
+
+**Goal:** Replace manual per-document extraction with an autonomous multi-agent team that adaptively processes documents based on type, relevance, and problem set context. Eliminate user involvement beyond supplying documents. Enable autonomous strategic environment research. Provide a scoping interview to capture problem set context boundaries that guide all subsequent agent behavior.
+
+**Depends on:** Phase 25.3 (AI strategic context), Phase 4.2 (AI agent teams), Phase 25.2 (containers/categorization)
+
+**Research:** Required — multi-agent orchestration patterns, NATO source reliability rating (A-F / 1-6), document triage heuristics, OSINT feed integration architecture, interview-to-schema conversion patterns
+
+**Requirements**: [DOCTEAM-01 through DOCTEAM-12]
+
+**Key Design Decisions:**
+- Documents should NOT all receive identical treatment. A classified intelligence estimate, a policy white paper, and a news article require fundamentally different processing.
+- The orchestrator triages each document and assembles a bespoke agent team from the specialist pool.
+- The problem set scoping interview establishes boundaries (geographic, temporal, actor focus, classification ceiling, echelon) that constrain and guide all agent behavior.
+- Autonomous research fills knowledge gaps proactively — research products re-enter the same pipeline as user-supplied documents.
+- NATO-standard source reliability and information credibility ratings (A-F / 1-6) replace ad-hoc confidence scores.
+
+**Specialist Agents:**
+1. **Document Orchestrator** — Triages incoming documents, determines which specialists to invoke, manages workflow, assembles findings into unified report
+2. **Format Converter** — OCR for scanned PDFs, translation for non-English, encoding normalization, table/chart extraction
+3. **Document Classifier** — Type identification (intel estimate, CONOP, policy paper, news article, academic research, etc.), classification level, relevance scoring against problem set scope, suggested container placement
+4. **Perspective Analysts** (instantiated per-perspective) — Analyze document from friendly/adversary/neutral/partner lenses; extract implications per perspective
+5. **Fact Extractor** — Named entities, dates, quantities, geographic references, claims with source attribution; builds structured fact registry
+6. **Objective Extractor** — Strategic objectives extraction (existing pipeline, invoked conditionally when document type warrants it)
+7. **Cross-Document Linker** — Identifies references to other documents, corroboration/contradiction detection, temporal sequencing, builds inter-document edges in knowledge graph
+8. **Bias Identifier** — Source bias analysis, framing detection, missing perspectives, propaganda indicators, information warfare markers
+9. **Quality Assessor** — NATO source reliability (A-F) and information credibility (1-6) rating, recency assessment, internal consistency check, fact verification against known graph entities
+10. **Problem Set Researcher** — Autonomous web search, OSINT monitoring, open-source intelligence gathering; triggered by knowledge gaps; produces research briefs that re-enter the pipeline
+
+**Plans:** 8 plans
+
+Plans:
+- [ ] 40-01-PLAN.md — Problem Set Scoping Interview: conversational UI that captures geographic scope, temporal bounds, key actors of interest, classification ceiling, echelon level, standing intelligence requirements; persists as problem_set_context schema consumed by all agents
+- [ ] 40-02-PLAN.md — Document Orchestrator agent: triage logic (document type detection, relevance scoring, specialist selection matrix), LangGraph workflow graph, parallel specialist dispatch, result aggregation, ExtractionTheater SSE integration
+- [ ] 40-03-PLAN.md — Format Converter + Document Classifier agents: OCR pipeline (Tesseract/pdf.js), language detection + translation hooks, document type taxonomy, container auto-assignment, classification level inference
+- [ ] 40-04-PLAN.md — Fact Extractor + Objective Extractor refactor: structured fact registry (entity/date/location/claim with source attribution), conditional objective extraction based on document type, fact-to-graph-node pipeline, NATO credibility ratings on extracted facts
+- [ ] 40-05-PLAN.md — Perspective Analysts: per-perspective agent instantiation (friendly/adversary/neutral/partner), perspective-specific prompts and analytical frameworks, implications extraction, perspective comparison synthesis
+- [ ] 40-06-PLAN.md — Cross-Document Linker + Bias Identifier: inter-document reference detection, corroboration/contradiction scoring, temporal sequencing, graph edge creation; source bias taxonomy, framing analysis, missing perspective detection, propaganda/IO indicators
+- [ ] 40-07-PLAN.md — Quality Assessor + NATO source reliability: A-F source reliability / 1-6 information credibility rating system, recency decay model, internal consistency validation, cross-reference verification against existing graph entities
+- [ ] 40-08-PLAN.md — Autonomous Problem Set Researcher: standing intelligence requirement monitoring, web search + OSINT feed integration, knowledge gap detection from graph analysis, research brief generation, auto-ingest of research products back through the pipeline; research cadence and resource budgeting
 
 ---
 
