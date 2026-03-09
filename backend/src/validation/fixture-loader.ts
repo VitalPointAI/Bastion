@@ -105,11 +105,31 @@ export async function loadAllFixtures(): Promise<TestFixture[]> {
 }
 
 /**
- * Load a single fixture by role key (filename without extension).
+ * Cached index mapping agentId → fixture, built on first use.
+ * Allows lookup by either filename (role key) or agentId field.
+ */
+let fixtureIndex: Map<string, TestFixture> | null = null;
+
+async function getFixtureIndex(): Promise<Map<string, TestFixture>> {
+  if (fixtureIndex) return fixtureIndex;
+  fixtureIndex = new Map();
+  const all = await loadAllFixtures();
+  for (const fixture of all) {
+    // Index by agentId (e.g., "cmd-001") and agentRole (e.g., "commander")
+    fixtureIndex.set(fixture.agentId, fixture);
+    fixtureIndex.set(fixture.agentRole, fixture);
+  }
+  return fixtureIndex;
+}
+
+/**
+ * Load a single fixture by role key (filename without extension) or agentId.
+ * Tries filename match first, then falls back to agentId/agentRole index.
  */
 export async function loadFixture(
   roleKey: string,
 ): Promise<TestFixture | null> {
+  // Try direct filename match first
   const filePath = join(FIXTURES_DIR, `${roleKey}.json`);
   try {
     const raw = await readFile(filePath, 'utf-8');
@@ -117,8 +137,12 @@ export async function loadFixture(
     const parsed = FixtureSchema.parse(data);
     return parsed as TestFixture;
   } catch {
-    return null;
+    // Fall through to index lookup
   }
+
+  // Try agentId or agentRole index (e.g., "cmd-001" → commander.json)
+  const index = await getFixtureIndex();
+  return index.get(roleKey) ?? null;
 }
 
 /**
