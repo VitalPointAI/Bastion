@@ -1,0 +1,171 @@
+[
+  {
+    "id": "DEMO-AAR-strike-alpha",
+    "problem_set_id": "DEMO-PS-strike-alpha",
+    "training_event_name": "Strike Package Alpha After Action Review",
+    "initiated_by": "did:near:strike-alpha-co.near",
+    "status": "finalized",
+    "what_was_planned": "Execute coordinated anti-surface warfare (ASuW) strike against adversary surface action group (SAG) transiting Luzon Strait. CSG-5 strike aircraft to conduct sequential ASCM attacks from multiple axes while EW assets suppress adversary IADS. Timeline: H-hour to H+4 hours.",
+    "what_happened": "Strike Package Alpha launched on schedule with 12 F/A-18E/F and 4 EA-18G. Initial target acquisition achieved despite heavy electromagnetic interference. First wave achieved 3 of 4 planned hits on HVTs. Second wave delayed 45 minutes due to ROE confirmation requirements at division level. EA-18G EW support effective but ISR feed latency exceeded 5-minute threshold during critical engagement window. Third wave cancelled after adversary SAG altered course into neutral waters.",
+    "why": "ROE confirmation delays stemmed from unclear delegation authority at CJTF level — fire authority delegation gate was not yet approved at time of initial planning. ISR latency caused by bandwidth contention with SIGINT collection priorities. Course alteration response was doctrinally correct (ROE compliance). Overall mission achieved 75% of planned effects despite friction.",
+    "finalized_by": "did:near:strike-alpha-co.near",
+    "exercise_phase": "conflict-day-4",
+    "observations": [
+      {
+        "id": "DEMO-OBS-sa-s1",
+        "observation_type": "sustain",
+        "content": "Effective coordination between CSG-5 elements during multi-axis strike approach. All aircraft achieved assigned stations within planned timeline.",
+        "metl_task_id": "DEMO-METL-maritime-strike",
+        "created_by": "did:near:strike-alpha-tac.near"
+      },
+      {
+        "id": "DEMO-OBS-sa-s2",
+        "observation_type": "sustain",
+        "content": "Rapid target acquisition under heavy jamming conditions. Crews demonstrated proficiency with degraded-mode targeting procedures.",
+        "metl_task_id": "DEMO-METL-ew-counter-ew",
+        "created_by": "did:near:strike-alpha-tac.near"
+      },
+      {
+        "id": "DEMO-OBS-sa-s3",
+        "observation_type": "sustain",
+        "content": "Immediate compliance with ROE when adversary SAG entered neutral waters. No unauthorized engagements despite target-rich environment.",
+        "metl_task_id": "DEMO-METL-force-protection",
+        "created_by": "did:near:strike-alpha-co.near"
+      },
+      {
+        "id": "DEMO-OBS-sa-i1",
+        "observation_type": "improve",
+        "content": "ROE confirmation delays at division level caused 45-minute gap between first and second wave. Recommend pre-delegated fire authority for time-sensitive maritime targets within designated engagement zones.",
+        "metl_task_id": "DEMO-METL-joint-fire",
+        "created_by": "did:near:strike-alpha-co.near"
+      },
+      {
+        "id": "DEMO-OBS-sa-i2",
+        "observation_type": "improve",
+        "content": "ISR feed latency exceeded 5-minute threshold during critical engagement window due to bandwidth contention with SIGINT collection. Recommend dedicated ISR bandwidth allocation during active strike operations.",
+        "metl_task_id": "DEMO-METL-intel-collection",
+        "created_by": "did:near:strike-alpha-tac.near"
+      },
+      {
+        "id": "DEMO-OBS-sa-i3",
+        "observation_type": "improve",
+        "content": "Post-strike battle damage assessment (BDA) delayed by 2 hours due to ISR asset re-tasking priorities. Recommend pre-planned BDA collection windows in strike planning.",
+        "metl_task_id": "DEMO-METL-intel-collection",
+        "created_by": "did:near:strike-alpha-tac.near"
+      }
+    ],
+    "recommendations": [
+      "Establish pre-delegated fire authority gates for time-sensitive maritime targets (implemented via DEMO-GATE-fire-authority)",
+      "Allocate dedicated ISR bandwidth during active strike windows — coordinate with J6 for PACE plan",
+      "Integrate BDA collection windows into standard strike planning templates"
+    ]
+  },
+  {
+    "id": "DEMO-AAR-logistics-bravo",
+    "problem_set_id": "DEMO-PS-logistics-bravo",
+    "training_event_name": "Logistics Convoy Bravo After Action Review",
+    "initiated_by": "did:near:log-bravo-co.near",
+    "status": "finalized",
+    "what_was_planned": "Execute underway replenishment (UNREP) operation to sustain CSG-5 forward-deployed forces. Three logistics ships to transit contested waters from Guam to operating area, conducting sequential UNREP with combatants. Route planned to minimize exposure to adversary ISR while maintaining supply schedule.",
+    "what_happened": "Convoy departed Guam on schedule. Day 1-3 transit uneventful. Day 4: Adversary maritime patrol aircraft (MPA) detected convoy at 0340Z. Force protection posture elevated. UNREP with DDG-89 completed successfully under heightened threat. Day 5: Submarine contact classified as possible threat forced convoy to deviate 120nm south, delaying arrival by 18 hours. Fuel reserves dropped to 65% before completing UNREP cycle. All combatants ultimately replenished but ammunition transfer for VLS cells deferred due to sea state.",
+    "why": "Route selection balanced speed vs survivability but did not account for adversary MPA patrol patterns identified in latest J2 update (update received after route planning). Submarine contact response was textbook but highlighted vulnerability of logistics forces in contested waters. Fuel consumption exceeded planning factors due to higher sustained speeds during threat avoidance.",
+    "finalized_by": "did:near:log-bravo-co.near",
+    "exercise_phase": "conflict-day-10",
+    "observations": [
+      {
+        "id": "DEMO-OBS-lb-s1",
+        "observation_type": "sustain",
+        "content": "UNREP operations conducted safely and efficiently despite elevated threat posture. All fuel and stores transfers completed within planned timelines when alongside.",
+        "metl_task_id": "DEMO-METL-logistics",
+        "created_by": "did:near:log-bravo-xo.near"
+      },
+      {
+        "id": "DEMO-OBS-lb-s2",
+        "observation_type": "sustain",
+        "content": "Force protection measures during MPA detection were immediate and effective. EMCON procedures properly executed, defensive systems activated within 2 minutes.",
+        "metl_task_id": "DEMO-METL-force-protection",
+        "created_by": "did:near:log-bravo-co.near"
+      },
+      {
+        "id": "DEMO-OBS-lb-i1",
+        "observation_type": "improve",
+        "content": "Route planning did not incorporate latest J2 adversary MPA patrol pattern update. Intelligence dissemination lag of 36 hours between J2 assessment and logistics planning cell. Recommend direct J2 liaison to logistics planning.",
+        "metl_task_id": "DEMO-METL-intel-collection",
+        "created_by": "did:near:log-bravo-co.near"
+      },
+      {
+        "id": "DEMO-OBS-lb-i2",
+        "observation_type": "improve",
+        "content": "Fuel consumption planning factors underestimated by 15% for contested environment operations. High-speed evasion maneuvers and extended EMCON periods not captured in standard planning tables.",
+        "metl_task_id": "DEMO-METL-logistics",
+        "created_by": "did:near:log-bravo-xo.near"
+      },
+      {
+        "id": "DEMO-OBS-lb-i3",
+        "observation_type": "improve",
+        "content": "VLS ammunition transfer deferred due to Sea State 4 conditions. Alternative transfer methods for heavy munitions in degraded sea states should be exercised.",
+        "metl_task_id": "DEMO-METL-logistics",
+        "created_by": "did:near:log-bravo-xo.near"
+      }
+    ],
+    "recommendations": [
+      "Establish direct J2 liaison to logistics planning cell for real-time threat updates",
+      "Update fuel consumption planning factors for contested environment operations (+20% buffer)",
+      "Exercise alternative heavy munitions transfer methods in Sea State 3-5 conditions"
+    ]
+  },
+  {
+    "id": "DEMO-AAR-cap-delta",
+    "problem_set_id": "DEMO-PS-cap-delta",
+    "training_event_name": "Combat Air Patrol Delta After Action Review",
+    "initiated_by": "did:near:cap-delta-co.near",
+    "status": "finalized",
+    "what_was_planned": "Maintain continuous combat air patrol (CAP) over CSG operating area for 72-hour period during Phase III (Conflict Day 22). 4-ship rotations of F/A-18E/F with E-2D Hawkeye AEW support. CAP to provide early warning and intercept capability against adversary air threats while supporting maritime interdiction operations below.",
+    "what_happened": "CAP maintained continuously for 68 of 72 planned hours (94.4% availability). 4-hour gap caused by simultaneous aircraft maintenance requirements and tanker scheduling conflict. During operations: 12 adversary air contacts detected, 8 identified as fighters, 4 as ISR/EW aircraft. 3 intercepts conducted successfully. Adversary employed sophisticated electronic warfare including GPS spoofing and communications jamming. Coalition F-35B integration (JASDF) successful for 2 of 3 planned combined patrols — third cancelled due to communications interoperability issues with JASDF Link-16 configuration.",
+    "why": "High CAP availability reflects strong maintenance planning and crew readiness. Tanker scheduling gap was avoidable with better fleet-level coordination. Adversary EW capabilities exceeded pre-exercise intelligence estimates, validating need for enhanced counter-EW training. Coalition interoperability challenges with JASDF stem from different Link-16 message standard implementations (US vs Japanese configuration).",
+    "finalized_by": "did:near:cap-delta-co.near",
+    "exercise_phase": "conflict-day-22",
+    "observations": [
+      {
+        "id": "DEMO-OBS-cd-s1",
+        "observation_type": "sustain",
+        "content": "94.4% CAP availability over 72-hour period demonstrates strong sortie generation and maintenance planning. Crew swap procedures executed efficiently.",
+        "metl_task_id": "DEMO-METL-integrated-air-def",
+        "created_by": "did:near:cap-delta-co.near"
+      },
+      {
+        "id": "DEMO-OBS-cd-s2",
+        "observation_type": "sustain",
+        "content": "All 3 intercepts conducted within ROE. Positive identification maintained throughout. De-escalation procedures properly executed when adversary aircraft departed engagement zone.",
+        "metl_task_id": "DEMO-METL-integrated-air-def",
+        "created_by": "did:near:cap-delta-tac.near"
+      },
+      {
+        "id": "DEMO-OBS-cd-i1",
+        "observation_type": "improve",
+        "content": "Adversary GPS spoofing and communications jamming exceeded pre-exercise intelligence estimates. Counter-EW procedures were improvised rather than pre-planned. Recommend dedicated counter-EW TTPs for CAP operations in contested electromagnetic environment.",
+        "metl_task_id": "DEMO-METL-ew-counter-ew",
+        "created_by": "did:near:cap-delta-co.near"
+      },
+      {
+        "id": "DEMO-OBS-cd-i2",
+        "observation_type": "improve",
+        "content": "Coalition interoperability with JASDF F-35B limited by Link-16 message standard differences. 1 of 3 combined patrols cancelled. Recommend pre-exercise Link-16 interoperability testing and fallback voice procedures.",
+        "metl_task_id": "DEMO-METL-coalition-interop",
+        "created_by": "did:near:cap-delta-co.near"
+      },
+      {
+        "id": "DEMO-OBS-cd-i3",
+        "observation_type": "improve",
+        "content": "4-hour CAP gap caused by tanker scheduling conflict at fleet level. Recommend dedicated tanker allocation for CAP sustainment separate from strike tanker pool.",
+        "metl_task_id": "DEMO-METL-integrated-air-def",
+        "created_by": "did:near:cap-delta-tac.near"
+      }
+    ],
+    "recommendations": [
+      "Develop dedicated counter-EW TTPs for CAP operations in contested electromagnetic environments",
+      "Conduct pre-exercise Link-16 interoperability testing with coalition partners (JASDF, RAAF)",
+      "Allocate dedicated tanker support for CAP sustainment independent of strike tanker pool"
+    ]
+  }
+]

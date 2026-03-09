@@ -1,0 +1,134 @@
+[
+  {
+    "id": "DEMO-METL-maritime-strike",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Maritime Strike Operations",
+    "task_description": "Conduct anti-surface warfare operations including coordinated air, surface, and subsurface attacks against adversary naval forces.",
+    "competency_area": "Offensive Operations",
+    "proficiency": "T",
+    "evaluation_notes": "Demonstrated during Day 4 strike operations. Strike Package Alpha achieved 75% of planned effects against adversary SAG. Multi-axis coordination effective.",
+    "linked_aar_ids": ["DEMO-AAR-strike-alpha"],
+    "last_evaluated": "2026-02-22"
+  },
+  {
+    "id": "DEMO-METL-asw",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Anti-Submarine Warfare",
+    "task_description": "Detect, track, classify, and engage adversary submarine threats. Includes ASW barrier operations, prosecution, and area sanitization.",
+    "competency_area": "Defensive Operations",
+    "proficiency": "P",
+    "evaluation_notes": "Partially practiced during convoy operations. Submarine contact on Day 5 handled correctly (avoidance) but no prosecution attempted. Limited ASW exercise opportunities due to scenario focus on surface warfare.",
+    "linked_aar_ids": ["DEMO-AAR-logistics-bravo"],
+    "last_evaluated": "2026-02-26"
+  },
+  {
+    "id": "DEMO-METL-amphibious-ops",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Amphibious Operations",
+    "task_description": "Plan and execute amphibious assault and sustainment operations including ship-to-shore movement and naval surface fire support.",
+    "competency_area": "Power Projection",
+    "proficiency": "U",
+    "evaluation_notes": "Not exercised during Pacific Strategy AY26 due to scenario constraints. 3rd MEF ARG capabilities not tested in amphibious role. Last evaluated during Talisman Sabre 2025.",
+    "linked_aar_ids": [],
+    "last_evaluated": "2025-07-15"
+  },
+  {
+    "id": "DEMO-METL-integrated-air-def",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Integrated Air and Missile Defense",
+    "task_description": "Provide layered air and missile defense across the operational area. Includes early warning, threat identification, engagement authority, and BDA.",
+    "competency_area": "Defensive Operations",
+    "proficiency": "T",
+    "evaluation_notes": "Demonstrated throughout exercise. CAP Delta maintained 94.4% availability over 72 hours. 12 adversary contacts detected, 3 successful intercepts. E-2D integration effective.",
+    "linked_aar_ids": ["DEMO-AAR-cap-delta"],
+    "last_evaluated": "2026-03-01"
+  },
+  {
+    "id": "DEMO-METL-ew-counter-ew",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Electronic Warfare / Counter-EW",
+    "task_description": "Conduct electronic attack, electronic protection, and electronic warfare support operations in contested electromagnetic environment.",
+    "competency_area": "Information Warfare",
+    "proficiency": "P",
+    "evaluation_notes": "Improving but gaps remain. EA-18G EW support effective during strike operations but adversary GPS spoofing and comms jamming exceeded pre-exercise estimates. Counter-EW TTPs improvised rather than pre-planned.",
+    "linked_aar_ids": ["DEMO-AAR-strike-alpha", "DEMO-AAR-cap-delta"],
+    "last_evaluated": "2026-03-01"
+  },
+  {
+    "id": "DEMO-METL-maritime-interdiction",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Maritime Interdiction Operations",
+    "task_description": "Conduct maritime interdiction including visit, board, search, and seizure (VBSS) and enforcement of maritime exclusion zones.",
+    "competency_area": "Maritime Security",
+    "proficiency": "T",
+    "evaluation_notes": "Demonstrated during Day 22 operations following FRAGO 001 shift to maritime interdiction. Exclusion zone enforcement effective. VBSS teams conducted 4 compliant boardings.",
+    "linked_aar_ids": [],
+    "last_evaluated": "2026-03-01"
+  },
+  {
+    "id": "DEMO-METL-joint-fire",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Joint Fire Support",
+    "task_description": "Coordinate and execute joint fires including air-to-surface, surface-to-surface, and naval surface fire support across component boundaries.",
+    "competency_area": "Offensive Operations",
+    "proficiency": "P",
+    "evaluation_notes": "Coordination challenges noted during Day 4 strike. ROE confirmation delays at division level caused 45-minute gap. Fire authority delegation resolved issue but highlighted systemic coordination friction.",
+    "linked_aar_ids": ["DEMO-AAR-strike-alpha"],
+    "last_evaluated": "2026-02-22"
+  },
+  {
+    "id": "DEMO-METL-force-protection",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Force Protection",
+    "task_description": "Protect personnel, equipment, and facilities from threats including physical security, CBRN defense, and operational security.",
+    "competency_area": "Force Sustainment",
+    "proficiency": "T",
+    "evaluation_notes": "Sustained performance throughout exercise. Immediate ROE compliance when adversary entered neutral waters. Force protection posture transitions executed within 2 minutes of threat detection during convoy operations.",
+    "linked_aar_ids": ["DEMO-AAR-strike-alpha", "DEMO-AAR-logistics-bravo"],
+    "last_evaluated": "2026-02-26"
+  },
+  {
+    "id": "DEMO-METL-intel-collection",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Intelligence Collection and Dissemination",
+    "task_description": "Collect, process, analyze, and disseminate intelligence across the joint force. Includes ISR management, targeting support, and intelligence sharing.",
+    "competency_area": "Intelligence",
+    "proficiency": "P",
+    "evaluation_notes": "ISR feed latency exceeded 5-minute threshold during critical engagement windows. Intelligence dissemination lag of 36 hours between J2 assessment and logistics planning cell. BDA delayed by 2 hours post-strike.",
+    "linked_aar_ids": ["DEMO-AAR-strike-alpha", "DEMO-AAR-logistics-bravo"],
+    "last_evaluated": "2026-02-26"
+  },
+  {
+    "id": "DEMO-METL-logistics",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Logistics and Sustainment Operations",
+    "task_description": "Plan and execute sustainment operations including supply, maintenance, transportation, and health services across the operational area.",
+    "competency_area": "Force Sustainment",
+    "proficiency": "P",
+    "evaluation_notes": "UNREP operations executed effectively when alongside but fuel consumption planning factors underestimated by 15% for contested environment. VLS ammunition transfer deferred due to sea state. Supply chain stress visible by Day 10.",
+    "linked_aar_ids": ["DEMO-AAR-logistics-bravo"],
+    "last_evaluated": "2026-02-26"
+  },
+  {
+    "id": "DEMO-METL-coalition-interop",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Coalition Interoperability",
+    "task_description": "Conduct combined operations with allied and partner forces including communications interoperability, information sharing, and combined tactical procedures.",
+    "competency_area": "Multinational Operations",
+    "proficiency": "P",
+    "evaluation_notes": "JASDF F-35B integration partially successful (2 of 3 combined patrols). Link-16 message standard differences caused cancellation of third patrol. Communications interoperability challenges with partner nations remain persistent issue.",
+    "linked_aar_ids": ["DEMO-AAR-cap-delta"],
+    "last_evaluated": "2026-03-01"
+  },
+  {
+    "id": "DEMO-METL-strategic-comms",
+    "problem_set_id": "DEMO-PS-indopacom-theater",
+    "task_name": "Strategic Communications",
+    "task_description": "Plan and execute strategic communications and information operations to shape the operational environment and support campaign objectives.",
+    "competency_area": "Information Warfare",
+    "proficiency": "U",
+    "evaluation_notes": "Not exercised during Pacific Strategy AY26. Strategic communications component not included in exercise design. Recommend inclusion in future exercises.",
+    "linked_aar_ids": [],
+    "last_evaluated": "2025-09-01"
+  }
+]
