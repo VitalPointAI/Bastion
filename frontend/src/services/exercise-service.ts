@@ -187,23 +187,47 @@ export const exerciseService = {
     fileTags?: Array<{ team: string; exercisePhase: string; documentType: string }>,
     onProgress?: (loaded: number, total: number) => void,
   ): Promise<ScenarioDocument[]> {
-    const form = new FormData();
-    for (const file of files) {
-      // Use relative path if available (folder upload via webkitdirectory),
-      // fall back to filename for standard multi-file input
+    // Upload files individually to avoid exceeding request size limits.
+    // Continue to next file on error instead of aborting the entire batch.
+    const allDocs: ScenarioDocument[] = [];
+    const errors: Array<{ filename: string; error: string }> = [];
+    const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+    let uploadedSize = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const form = new FormData();
       const path = file.webkitRelativePath || file.name;
       form.append('files', file, path);
+      if (fileTags?.[i]) {
+        form.append('tags', JSON.stringify([fileTags[i]]));
+      }
+
+      try {
+        const prevUploaded = uploadedSize;
+        const data = await fetchFormDataWithProgress<{ uploaded: number; documents: ScenarioDocument[] }>(
+          `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/upload`,
+          form,
+          onProgress
+            ? (loaded, _total) => onProgress(prevUploaded + loaded, totalSize)
+            : undefined,
+        );
+        allDocs.push(...data.documents);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Upload failed';
+        errors.push({ filename: file.name, error: msg });
+        console.warn(`[uploadPackage] Skipping ${file.name}: ${msg}`);
+      }
+      uploadedSize += file.size;
     }
-    // Send client-side tags so the server uses them instead of re-inferring
-    if (fileTags) {
-      form.append('tags', JSON.stringify(fileTags));
+
+    if (errors.length > 0 && allDocs.length === 0) {
+      throw new Error(`All ${errors.length} file(s) failed to upload: ${errors.map(e => e.filename).join(', ')}`);
     }
-    const data = await fetchFormDataWithProgress<{ uploaded: number; documents: ScenarioDocument[] }>(
-      `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/upload`,
-      form,
-      onProgress,
-    );
-    return data.documents;
+    if (errors.length > 0) {
+      console.warn(`[uploadPackage] ${errors.length} file(s) failed:`, errors);
+    }
+    return allDocs;
   },
 
   /**
