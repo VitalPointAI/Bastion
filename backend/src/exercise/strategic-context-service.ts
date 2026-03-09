@@ -14,6 +14,8 @@ import { getPool } from '../lib/database.js';
 import type { ProblemSetSubscriptionStore, CachedDoc } from '../problem-set/problem-set-subscription-store.js';
 import type { ContainerStore } from '../strategic/containers/store.js';
 import type { GraphSummaryService, GraphSummary } from './graph-summary-service.js';
+import { listDocuments } from '../strategic/ingestion/document-store.js';
+import { ObjectiveStore } from '../strategic/objectives/store.js';
 
 // =============================================================================
 // Interfaces
@@ -123,7 +125,70 @@ export class StrategicContextService {
       }
 
       // -----------------------------------------------------------------------
-      // Step C: Priority 2 -- Cached document summaries
+      // Step C: Priority 2 -- Own strategic documents + extracted objectives
+      // -----------------------------------------------------------------------
+      // Query documents uploaded directly to this problem set (workspaceId = problemSetId)
+      const objectiveStore = new ObjectiveStore();
+      try {
+        const ownDocs = await listDocuments('', 50, 0, problemSetId);
+        for (const doc of ownDocs) {
+          if (tokensUsed >= TOKEN_BUDGET) break;
+
+          const entry: {
+            title: string;
+            docType: string;
+            extractedData?: unknown;
+            textContent?: string;
+          } = {
+            title: doc.title,
+            docType: doc.level,
+          };
+
+          // Include extracted objectives as structured data
+          try {
+            const objectives = await objectiveStore.getObjectivesForDocument(doc.id);
+            if (objectives.length > 0) {
+              const objectiveSummary = objectives.slice(0, 20).map(obj => ({
+                description: obj.description,
+                instrument: obj.primaryInstrument || 'unknown',
+                priority: obj.priority || 'MEDIUM',
+                assumptions: obj.assumptions || [],
+                risks: obj.risks || [],
+                constraints: obj.constraints || [],
+              }));
+              const objStr = JSON.stringify(objectiveSummary);
+              const objTokens = estimateTokens(objStr);
+              if (tokensUsed + objTokens <= TOKEN_BUDGET) {
+                entry.extractedData = {
+                  classification: doc.classification,
+                  objectiveCount: objectives.length,
+                  objectives: objectiveSummary,
+                };
+                tokensUsed += objTokens;
+              }
+            }
+          } catch {
+            // Objectives table may not exist yet
+          }
+
+          // Include truncated text summary if budget permits and no extracted data
+          if (!entry.extractedData) {
+            const summaryText = `${doc.title} (${doc.level}, ${doc.classification}) - ${doc.pageCount || '?'} pages, ${doc.objectiveCount || 0} objectives extracted`;
+            const summaryTokens = estimateTokens(summaryText);
+            if (tokensUsed + summaryTokens <= TOKEN_BUDGET) {
+              entry.textContent = summaryText;
+              tokensUsed += summaryTokens;
+            }
+          }
+
+          documentSummaries.push(entry);
+        }
+      } catch (docErr) {
+        console.error('[StrategicContextService] Own documents query failed (degraded):', docErr);
+      }
+
+      // -----------------------------------------------------------------------
+      // Step D: Priority 3 -- Cached subscription documents
       // -----------------------------------------------------------------------
       const cachedDocs = await this.subscriptionStore.getCachedDocs(problemSetId);
 
@@ -156,7 +221,7 @@ export class StrategicContextService {
             docType: doc.dataType,
           };
 
-          // Priority 2a: extracted_data first
+          // Priority 3a: extracted_data first
           const extractedData = (docEntry as Record<string, unknown>)?.extracted_data;
           if (extractedData) {
             const extractedStr = JSON.stringify(extractedData);
@@ -167,7 +232,7 @@ export class StrategicContextService {
             }
           }
 
-          // Priority 2b: truncated text_content if budget permits
+          // Priority 3b: truncated text_content if budget permits
           const textContent = (docEntry as Record<string, unknown>)?.text_content as string | undefined;
           if (textContent && tokensUsed < TOKEN_BUDGET) {
             const remainingTokens = TOKEN_BUDGET - tokensUsed;

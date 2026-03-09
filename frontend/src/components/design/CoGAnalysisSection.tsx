@@ -15,6 +15,10 @@ interface CoGAnalysisSectionProps {
   problemSetId: string;
   initialData: CoGAnalysis;
   onUpdate: (data: CoGAnalysis) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  aiCache?: Map<string, Record<string, any>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onAiCacheUpdate?: (cache: Map<string, Record<string, any>>) => void;
 }
 
 /**
@@ -62,7 +66,7 @@ function addNodeToTree(tree: CoGTreeType, newNode: CoGNode, parentType: string |
   return { root: clonedRoot };
 }
 
-export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGAnalysisSectionProps) {
+export function CoGAnalysisSection({ problemSetId, initialData, onUpdate, aiCache, onAiCacheUpdate }: CoGAnalysisSectionProps) {
   const [cogAnalysis, setCogAnalysis] = useState<CoGAnalysis>(initialData);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -218,6 +222,8 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
           isOpen={aiPanelOpen}
           onToggle={() => setAiPanelOpen(!aiPanelOpen)}
           onApplyCogSuggestion={handleApplyCogSuggestion}
+          externalCache={aiCache}
+          onCacheUpdate={onAiCacheUpdate}
         />
       </div>
     </div>

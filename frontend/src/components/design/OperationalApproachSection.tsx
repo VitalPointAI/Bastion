@@ -20,6 +20,10 @@ interface OperationalApproachSectionProps {
   initialData: OperationalApproach;
   designData: OperationalDesign;
   onUpdate: (data: OperationalApproach) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  aiCache?: Map<string, Record<string, any>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onAiCacheUpdate?: (cache: Map<string, Record<string, any>>) => void;
 }
 
 type HandoffState = 'idle' | 'packaging' | 'ready' | 'pushed';
@@ -52,6 +56,8 @@ export function OperationalApproachSection({
   initialData,
   designData,
   onUpdate,
+  aiCache,
+  onAiCacheUpdate,
 }: OperationalApproachSectionProps) {
   const [approach, setApproach] = useState<OperationalApproach>(() => ({
     phases: initialData.phases ?? [],
@@ -577,6 +583,8 @@ export function OperationalApproachSection({
         isOpen={aiPanelOpen}
         onToggle={() => setAiPanelOpen(!aiPanelOpen)}
         onApplyNarrative={handleApplyNarrative}
+        externalCache={aiCache}
+        onCacheUpdate={onAiCacheUpdate}
       />
     </div>
   );
