@@ -2467,7 +2467,22 @@ router.get('/containers/:containerId/documents', requireAuth, async (req, res) =
   try {
     await ensureTableExists();
     const containerId = req.params.containerId as string;
-    const documents = await containerStore.getContainerDocuments(containerId);
+    const rawDocs = await containerStore.getContainerDocuments(containerId);
+
+    // Map snake_case DB rows to camelCase StrategicDocument format
+    const documents = rawDocs.map((row: Record<string, unknown>) => ({
+      id: row.id as string,
+      title: row.title as string,
+      level: row.level as string,
+      originalFilename: row.original_filename as string,
+      mimeType: row.mime_type as string,
+      pageCount: row.page_count as number | null,
+      textLength: row.text_length as number,
+      classification: row.classification as string,
+      createdBy: row.created_by as string,
+      createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : new Date().toISOString(),
+      objectiveCount: row.objective_count as number | undefined,
+    }));
     res.json({ documents });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

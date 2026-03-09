@@ -12,6 +12,9 @@ import {
   DndContext,
   DragOverlay,
   closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
@@ -101,6 +104,12 @@ export function ContainerBrowser({
   userDID,
   refreshTrigger,
 }: ContainerBrowserProps) {
+  // Require 8px of movement before activating drag — allows clicks to pass through
+  const pointerSensor = useSensor(PointerSensor, {
+    activationConstraint: { distance: 8 },
+  });
+  const sensors = useSensors(pointerSensor);
+
   const [environmentId, setEnvironmentId] = useState<string | null>(null);
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [unorganizedDocs, setUnorganizedDocs] = useState<StrategicDocument[]>([]);
@@ -423,6 +432,7 @@ export function ContainerBrowser({
   ) {
     return (
       <DndContext
+        sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
@@ -480,6 +490,7 @@ export function ContainerBrowser({
   if (browserState.level === 'unorganized') {
     return (
       <DndContext
+        sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
@@ -549,6 +560,7 @@ export function ContainerBrowser({
 
   return (
     <DndContext
+      sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
