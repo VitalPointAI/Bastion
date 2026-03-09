@@ -198,6 +198,35 @@ class AdminService {
   }
 
   // ============================================================================
+  // OAuth
+  // ============================================================================
+
+  /**
+   * Get OAuth connection status for the current LLM provider.
+   */
+  async getOAuthStatus(): Promise<import('../types/admin').OAuthStatus> {
+    return this.fetch<import('../types/admin').OAuthStatus>('/api/admin/oauth/status');
+  }
+
+  /**
+   * Initiate OAuth flow — returns the authorization URL to open.
+   */
+  async getOAuthAuthorizeUrl(provider: string): Promise<{ authorizeUrl: string; state: string }> {
+    return this.fetch<{ authorizeUrl: string; state: string }>(
+      `/api/admin/oauth/authorize?provider=${encodeURIComponent(provider)}`
+    );
+  }
+
+  /**
+   * Disconnect OAuth — revoke tokens and clear config.
+   */
+  async disconnectOAuth(): Promise<void> {
+    await this.fetch('/api/admin/oauth/disconnect', {
+      method: 'POST',
+    });
+  }
+
+  // ============================================================================
   // Agent Configuration
   // ============================================================================
 

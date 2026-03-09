@@ -38,6 +38,14 @@ export interface LLMModels {
  * LLM provider configuration.
  * Note: apiKey is masked by backend (last 4 chars only).
  */
+export interface OAuthStatus {
+  connected: boolean;
+  hasClientId: boolean;
+  hasClientSecret: boolean;
+  tokenExpiresAt: string | null;
+  scopes: string[];
+}
+
 export interface LLMProviderConfig {
   provider: LLMProvider;
   models: LLMModels;
@@ -47,6 +55,13 @@ export interface LLMProviderConfig {
   maxTokensPerDay: number;
   maxCostPerDocument: number;
   alertThreshold: number;
+  oauth?: {
+    clientId?: string;
+    clientSecret?: string;
+    connected?: boolean;
+    tokenExpiresAt?: string;
+    scopes?: string[];
+  };
 }
 
 /**

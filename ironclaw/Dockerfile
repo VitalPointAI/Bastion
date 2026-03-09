@@ -37,6 +37,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /build/target/release/ironclaw /usr/local/bin/ironclaw
 RUN chmod +x /usr/local/bin/ironclaw
 
+# Token-sync entrypoint: reads refreshed OAuth tokens from shared volume
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 RUN useradd -m -u 1000 -s /bin/bash ironclaw
 USER ironclaw
 WORKDIR /home/ironclaw
@@ -45,4 +49,4 @@ EXPOSE 8080
 
 ENV RUST_LOG=ironclaw=info
 
-ENTRYPOINT ["ironclaw"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

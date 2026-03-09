@@ -1,0 +1,175 @@
+[
+  {
+    "id": "DEMO-MSTAT-strike-alpha",
+    "child_problem_set_id": "DEMO-PS-strike-alpha",
+    "child_problem_set_name": "Strike Package Alpha — Maritime Strike",
+    "parent_problem_set_id": "DEMO-PS-7fleet",
+    "mission_state": "active",
+    "mdmp_phase": "COA Execution",
+    "percent_complete": 60,
+    "key_events": [
+      {
+        "timestamp": "2026-03-09T08:00:00Z",
+        "description": "2x F/A-18E launched for maritime interdiction patrol sector 7A",
+        "severity": "info"
+      },
+      {
+        "timestamp": "2026-03-09T10:30:00Z",
+        "description": "ASCM loadout complete on VFA-102 aircraft — 8x LRASM ready",
+        "severity": "info"
+      },
+      {
+        "timestamp": "2026-03-09T14:15:00Z",
+        "description": "PLA destroyer detected 45nm south of patrol sector — monitoring",
+        "severity": "warning"
+      }
+    ],
+    "resource_status": {
+      "personnel": { "assigned": 350, "available": 322 },
+      "equipment": { "operational": 22, "total": 26 },
+      "supplies": {
+        "JP-5 fuel": "87% capacity",
+        "LRASM": "8 ready / 12 total",
+        "JDAM": "24 ready / 30 total",
+        "AIM-120D": "16 ready / 20 total"
+      }
+    },
+    "objective_progress": [
+      {
+        "objectiveId": "OBJ-SA-01",
+        "objectiveName": "Establish maritime strike readiness in Taiwan Strait",
+        "status": "achieved",
+        "percentComplete": 100
+      },
+      {
+        "objectiveId": "OBJ-SA-02",
+        "objectiveName": "Complete 5 tasked maritime interdiction sorties",
+        "status": "in_progress",
+        "percentComplete": 60
+      },
+      {
+        "objectiveId": "OBJ-SA-03",
+        "objectiveName": "Maintain 2-hour alert status for precision strike",
+        "status": "achieved",
+        "percentComplete": 100
+      }
+    ]
+  },
+  {
+    "id": "DEMO-MSTAT-logistics-bravo",
+    "child_problem_set_id": "DEMO-PS-logistics-bravo",
+    "child_problem_set_name": "Logistics Convoy Bravo — Sustainment Ops",
+    "parent_problem_set_id": "DEMO-PS-cjtf-westpac",
+    "mission_state": "active",
+    "mdmp_phase": "COA Execution",
+    "percent_complete": 65,
+    "key_events": [
+      {
+        "timestamp": "2026-03-08T22:00:00Z",
+        "description": "Convoy departed Yokosuka with 3 supply ships and 1 oiler",
+        "severity": "info"
+      },
+      {
+        "timestamp": "2026-03-09T06:00:00Z",
+        "description": "USNS Rappahannock diverted to emergency fuel resupply for USS Ronald Reagan",
+        "severity": "warning"
+      },
+      {
+        "timestamp": "2026-03-09T11:00:00Z",
+        "description": "MV Cape Decision diverted due to PLA submarine contact in convoy lane",
+        "severity": "critical"
+      }
+    ],
+    "resource_status": {
+      "personnel": { "assigned": 180, "available": 175 },
+      "equipment": { "operational": 3, "total": 4 },
+      "supplies": {
+        "JP-5 fuel": "40% reserves remaining",
+        "Ammunition pallets": "85 of 120 delivered",
+        "Rations (days)": "14 days supply aboard",
+        "Medical stores": "Full complement"
+      }
+    },
+    "objective_progress": [
+      {
+        "objectiveId": "OBJ-LB-01",
+        "objectiveName": "Deliver fuel resupply to 7th Fleet combatants",
+        "status": "in_progress",
+        "percentComplete": 40
+      },
+      {
+        "objectiveId": "OBJ-LB-02",
+        "objectiveName": "Complete ammunition resupply to forward-deployed units",
+        "status": "in_progress",
+        "percentComplete": 71
+      },
+      {
+        "objectiveId": "OBJ-LB-03",
+        "objectiveName": "Maintain convoy security through transit corridor",
+        "status": "in_progress",
+        "percentComplete": 65
+      }
+    ]
+  },
+  {
+    "id": "DEMO-MSTAT-7fleet",
+    "child_problem_set_id": "DEMO-PS-7fleet",
+    "child_problem_set_name": "7th Fleet — Maritime Operations",
+    "parent_problem_set_id": "DEMO-PS-indopacom-theater",
+    "mission_state": "active",
+    "mdmp_phase": "COA Execution",
+    "percent_complete": 55,
+    "key_events": [
+      {
+        "timestamp": "2026-03-09T06:00:00Z",
+        "description": "CSG-5 (USS Ronald Reagan) repositioned to northern Taiwan Strait",
+        "severity": "info"
+      },
+      {
+        "timestamp": "2026-03-09T09:00:00Z",
+        "description": "Surface picket line established — 4 DDGs on station",
+        "severity": "info"
+      },
+      {
+        "timestamp": "2026-03-09T13:00:00Z",
+        "description": "Submarine contact in Miyako Strait — ASW assets vectored",
+        "severity": "warning"
+      },
+      {
+        "timestamp": "2026-03-09T15:00:00Z",
+        "description": "PLA SIGINT indicates possible Type 055 cruiser approaching from south",
+        "severity": "critical"
+      }
+    ],
+    "resource_status": {
+      "personnel": { "assigned": 8500, "available": 8200 },
+      "equipment": { "operational": 18, "total": 22 },
+      "supplies": {
+        "JP-5 fuel": "62% fleet aggregate",
+        "Tomahawk TLAM": "156 ready",
+        "SM-6": "72 ready / 96 total",
+        "Mk 48 torpedoes": "24 ready"
+      }
+    },
+    "objective_progress": [
+      {
+        "objectiveId": "OBJ-7F-01",
+        "objectiveName": "Establish maritime superiority in Taiwan Strait",
+        "status": "in_progress",
+        "percentComplete": 50
+      },
+      {
+        "objectiveId": "OBJ-7F-02",
+        "objectiveName": "Maintain sea lines of communication",
+        "status": "in_progress",
+        "percentComplete": 70
+      },
+      {
+        "objectiveId": "OBJ-7F-03",
+        "objectiveName": "Deny PLA naval freedom of movement east of Taiwan",
+        "status": "in_progress",
+        "percentComplete": 45
+      }
+    ]
+  }
+]

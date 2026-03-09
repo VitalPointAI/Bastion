@@ -1,0 +1,44 @@
+[
+  {
+    "id": "DEMO-OVERRIDE-001",
+    "problem_set_id": "DEMO-PS-cjtf-westpac",
+    "source_problem_set_id": "DEMO-PS-indopacom-theater",
+    "target_item_id": "DEMO-FRAGO-002",
+    "target_item_type": "frago_roe",
+    "annotation_type": "interpretation",
+    "content": "OVERRIDE: CJTF-WESTPAC delegates time-critical target authority to component commanders for maritime targets of opportunity within the MIZ. While theater ROE mandates weapons hold in Luzon Strait (per FRAGO 002), CJTF retains delegated authority for targets demonstrating hostile intent within the Maritime Interdiction Zone per standing ROE Article 5.3. This override is necessitated by the time-critical nature of maritime engagements where C2 latency to theater HQ exceeds engagement windows.",
+    "based_on_version": "v2.1",
+    "is_stale": false,
+    "visibility": "upward",
+    "justification": "Time-critical nature of maritime targets — C2 latency to theater HQ (est. 45min) exceeds typical engagement window (est. 8-12min) for fast-moving surface combatants",
+    "parent_notified": true
+  },
+  {
+    "id": "DEMO-OVERRIDE-002",
+    "problem_set_id": "DEMO-PS-7fleet",
+    "source_problem_set_id": "DEMO-PS-cjtf-westpac",
+    "target_item_id": "DEMO-FRAGO-003",
+    "target_item_type": "frago_logistics",
+    "annotation_type": "interpretation",
+    "content": "OVERRIDE: 7th Fleet adjusts CJTF logistics priority allocation for emergency fuel resupply to USS Ronald Reagan CSG. CJTF FRAGO 003 directs 60% fuel reallocation to surface combatants, but CSG-5 fuel state is critical (below 40%). USNS Rappahannock diverted from convoy to conduct emergency UNREP with Ronald Reagan. This temporarily reduces convoy throughput but prevents CSG becoming mission-incapable.",
+    "based_on_version": "v1.2",
+    "is_stale": false,
+    "visibility": "upward",
+    "justification": "Operational necessity — USS Ronald Reagan CSG fuel state below 40% threshold. Carrier becoming mission-incapable would degrade entire MIZ coverage. Emergency UNREP restores operational capability within 8 hours.",
+    "parent_notified": true
+  },
+  {
+    "id": "DEMO-OVERRIDE-003",
+    "problem_set_id": "DEMO-PS-strike-alpha",
+    "source_problem_set_id": "DEMO-PS-7fleet",
+    "target_item_id": "DEMO-FRAGO-001",
+    "target_item_type": "frago_tasking",
+    "annotation_type": "interpretation",
+    "content": "OVERRIDE: Strike Package Alpha adjusts sortie allocation from tasked 5 maritime interdiction sorties to 3 interdiction + 2 defensive counter-air (DCA) sorties. PLA air activity detected in patrol sector requires DCA coverage to protect MIZ assets. Commander assesses DCA requirement as higher priority than completing all 5 interdiction sorties as originally tasked.",
+    "based_on_version": "v2.1",
+    "is_stale": false,
+    "visibility": "upward",
+    "justification": "Emerging PLA air threat in patrol sector — 4x J-16 detected on radar approaching from mainland. DCA coverage essential to protect strike and surface assets conducting maritime interdiction.",
+    "parent_notified": true
+  }
+]

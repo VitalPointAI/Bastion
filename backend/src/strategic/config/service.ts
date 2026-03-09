@@ -119,6 +119,7 @@ export class ConfigService {
       ...current,
       ...updates,
       models: updates.models ? { ...current.models, ...updates.models } : current.models,
+      oauth: updates.oauth ? { ...current.oauth, ...updates.oauth } : current.oauth,
     };
 
     // Validate

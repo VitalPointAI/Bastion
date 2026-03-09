@@ -20,6 +20,17 @@ export const LLMModelsSchema = z.object({
 });
 export type LLMModels = z.infer<typeof LLMModelsSchema>;
 
+export const OAuthConfigSchema = z.object({
+  clientId: z.string().optional(),
+  clientSecret: z.string().optional(),    // Encrypted in database
+  accessToken: z.string().optional(),     // Encrypted in database
+  refreshToken: z.string().optional(),    // Encrypted in database
+  tokenExpiresAt: z.string().optional(),  // ISO 8601 timestamp
+  scopes: z.array(z.string()).optional(),
+  connected: z.boolean().optional(),
+});
+export type OAuthConfig = z.infer<typeof OAuthConfigSchema>;
+
 export const LLMProviderConfigSchema = z.object({
   provider: LLMProviderSchema,
   models: LLMModelsSchema,
@@ -30,6 +41,7 @@ export const LLMProviderConfigSchema = z.object({
   maxCostPerDocument: z.number().positive(),
   alertThreshold: z.number().min(0).max(1),
   useLangGraphReview: z.boolean().optional(), // Use LLM-powered LangGraph for document review
+  oauth: OAuthConfigSchema.optional(),       // OAuth credentials for providers that support it
 });
 export type LLMProviderConfig = z.infer<typeof LLMProviderConfigSchema>;
 
