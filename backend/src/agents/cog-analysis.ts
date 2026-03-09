@@ -18,6 +18,7 @@ import type { AgentManifest } from './types.js';
 import { AgentPhase, AgentCapability, AutonomyLevel } from './types.js';
 import { ProposalKind } from '../dao/types.js';
 import type { CoGAnalysis, CoGNode, CoGTree } from '../design/types.js';
+import { createLLMForAgent } from './langgraph/llm-factory.js';
 
 // ==========================================================================
 // Output Interfaces
@@ -183,21 +184,89 @@ function countTreeDepth(tree: CoGTree): number {
 }
 
 // ==========================================================================
-// Core Function (v1 Rule-Based)
+// LLM Prompts
 // ==========================================================================
 
-/**
- * Analyze a CoG analysis and suggest improvements.
- *
- * v1: Rule-based stub that checks tree structure and suggests missing levels.
- * Future: LLM-powered analysis using scenario context and doctrinal knowledge.
- *
- * @param cogAnalysis - Current CoG analysis with friendly and adversary trees
- * @returns CoGAnalysisOutput with suggestions, validation issues, and completeness score
- */
-export async function analyzeCenterOfGravity(
-  cogAnalysis: CoGAnalysis
-): Promise<CoGAnalysisOutput> {
+const COG_SYSTEM_PROMPT = `You are the Center of Gravity Analysis Agent — a specialist in Strange's CG-CC-CR-CV framework for military operational design.
+
+Your expertise:
+${COG_ANALYSIS_AGENT.character!.bio.map((b) => `- ${b}`).join('\n')}
+
+Your knowledge base:
+${COG_ANALYSIS_AGENT.character!.knowledge.map((k) => `- ${k}`).join('\n')}
+
+Style guidelines:
+${COG_ANALYSIS_AGENT.character!.style.all.map((s) => `- ${s}`).join('\n')}
+
+CRITICAL: You are HYBRID_HUMAN_LED. You suggest improvements — the human owns the analysis.`;
+
+function serializeTree(tree: CoGTree, side: string): string {
+  if (!tree.root) return `${side} tree: (empty — no CG defined)`;
+  const lines: string[] = [];
+  function walk(node: CoGNode, depth: number) {
+    const indent = '  '.repeat(depth);
+    const desc = node.description ? ` — ${node.description}` : '';
+    lines.push(`${indent}- [${formatType(node.type)}] "${node.label}"${desc} (id: ${node.id})`);
+    for (const child of node.children) walk(child, depth + 1);
+  }
+  walk(tree.root, 0);
+  return `${side} CoG Tree:\n${lines.join('\n')}`;
+}
+
+function buildCogUserPrompt(cogAnalysis: CoGAnalysis): string {
+  const friendlyTree = serializeTree(cogAnalysis.friendly, 'Friendly');
+  const adversaryTree = serializeTree(cogAnalysis.adversary, 'Adversary');
+
+  return `Analyze these Center of Gravity trees and provide suggestions for improvement.
+
+## Current CoG Analysis
+
+${friendlyTree}
+
+${adversaryTree}
+
+## Instructions
+Analyze the trees using Strange's CG-CC-CR-CV framework and provide:
+
+1. "suggestions" — specific nodes to add (type: cog|critical-capability|critical-requirement|critical-vulnerability, label, description, parentType, side: friendly|adversary, rationale, confidence 0-1, confidenceBounds {lower, upper})
+2. "validationIssues" — problems with existing nodes (nodeId, issue description, severity: warning|error)
+3. "completenessScore" — how complete the analysis is (0-1)
+4. "confidenceBounds" — overall confidence {lower, upper}
+
+Focus on:
+- Missing tree levels (every CG should have CCs, every CC should have CRs, every CR should have CVs)
+- Empty descriptions that need filling
+- Incorrect hierarchy nesting
+- Specific, actionable suggestions with doctrinal reasoning (not generic advice)
+
+Respond ONLY with a JSON object:
+{
+  "suggestions": [ { "type": "...", "label": "...", "description": "...", "parentType": "cog"|"critical-capability"|"critical-requirement"|null, "side": "friendly"|"adversary", "rationale": "...", "confidence": 0.6, "confidenceBounds": { "lower": 0.4, "upper": 0.8 } } ],
+  "validationIssues": [ { "nodeId": "...", "issue": "...", "severity": "warning"|"error" } ],
+  "completenessScore": 0.5,
+  "confidenceBounds": { "lower": 0.3, "upper": 0.7 }
+}`;
+}
+
+function parseJSONResponse<T>(text: string): T | null {
+  let cleaned = text.trim();
+  const codeBlockMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    cleaned = codeBlockMatch[1].trim();
+  }
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    console.error('[cog-analysis] Failed to parse LLM JSON response:', cleaned.substring(0, 200));
+    return null;
+  }
+}
+
+// ==========================================================================
+// Rule-Based Fallback
+// ==========================================================================
+
+function analyzeCenterOfGravityFallback(cogAnalysis: CoGAnalysis): CoGAnalysisOutput {
   const suggestions: CoGSuggestion[] = [];
   const validationIssues: CoGValidationIssue[] = [];
 
@@ -209,7 +278,6 @@ export async function analyzeCenterOfGravity(
   for (const { key, tree } of sides) {
     const sideLabel = key.charAt(0).toUpperCase() + key.slice(1);
 
-    // Check if tree has a root CG node
     if (!tree.root) {
       suggestions.push({
         type: 'cog',
@@ -224,16 +292,14 @@ export async function analyzeCenterOfGravity(
       continue;
     }
 
-    // Validate root node
     if (!tree.root.description || tree.root.description.trim() === '') {
       validationIssues.push({
         nodeId: tree.root.id,
-        issue: `${sideLabel} CG node is missing a description. Describe why this is the center of gravity.`,
+        issue: `${sideLabel} CG node is missing a description.`,
         severity: 'warning',
       });
     }
 
-    // Check for CCs under CG
     const ccs = tree.root.children.filter((c) => c.type === 'critical-capability');
     if (ccs.length === 0) {
       suggestions.push({
@@ -242,84 +308,53 @@ export async function analyzeCenterOfGravity(
         description: `Identify a primary ability that makes "${tree.root.label}" a center of gravity.`,
         parentType: 'cog',
         side: key,
-        rationale: 'Each CG should have at least one Critical Capability -- the primary abilities that merit identification as a CG.',
+        rationale: 'Each CG should have at least one Critical Capability.',
         confidence: 0.5,
         confidenceBounds: { lower: 0.3, upper: 0.7 },
       });
     } else {
-      // Validate each CC and check for CRs
       for (const cc of ccs) {
-        if (!cc.description || cc.description.trim() === '') {
-          validationIssues.push({
-            nodeId: cc.id,
-            issue: `Critical Capability "${cc.label}" is missing a description.`,
-            severity: 'warning',
-          });
-        }
-
         const crs = cc.children.filter((c) => c.type === 'critical-requirement');
         if (crs.length === 0) {
           suggestions.push({
             type: 'critical-requirement',
             label: `Requirement for "${cc.label}"`,
-            description: `Identify an essential condition, resource, or means needed for "${cc.label}" to be fully operative.`,
+            description: `Identify an essential condition for "${cc.label}" to be operative.`,
             parentType: 'critical-capability',
             side: key,
-            rationale: 'Each CC should have at least one CR -- the essential conditions and resources for the capability to function.',
+            rationale: 'Each CC should have at least one CR.',
             confidence: 0.45,
             confidenceBounds: { lower: 0.3, upper: 0.65 },
           });
         } else {
-          // Check each CR for CVs
           for (const cr of crs) {
-            if (!cr.description || cr.description.trim() === '') {
-              validationIssues.push({
-                nodeId: cr.id,
-                issue: `Critical Requirement "${cr.label}" is missing a description.`,
-                severity: 'warning',
-              });
-            }
-
             const cvs = cr.children.filter((c) => c.type === 'critical-vulnerability');
             if (cvs.length === 0) {
               suggestions.push({
                 type: 'critical-vulnerability',
                 label: `Vulnerability in "${cr.label}"`,
-                description: `Identify a deficiency or vulnerability in "${cr.label}" that could be neutralized or exploited.`,
+                description: `Identify a deficiency in "${cr.label}" that could be exploited.`,
                 parentType: 'critical-requirement',
                 side: key,
-                rationale: 'Each CR should have at least one CV -- the exploitable weaknesses that enable operational targeting.',
+                rationale: 'Each CR should have at least one CV.',
                 confidence: 0.4,
                 confidenceBounds: { lower: 0.25, upper: 0.6 },
               });
-            } else {
-              // Validate CVs
-              for (const cv of cvs) {
-                if (!cv.description || cv.description.trim() === '') {
-                  validationIssues.push({
-                    nodeId: cv.id,
-                    issue: `Critical Vulnerability "${cv.label}" is missing a description. CVs should describe actionable weaknesses.`,
-                    severity: 'warning',
-                  });
-                }
-              }
             }
           }
         }
       }
     }
 
-    // Check for orphaned nodes (nodes that don't fit CG -> CC -> CR -> CV hierarchy)
     const allNodes = collectNodes(tree.root);
     for (const node of allNodes) {
       if (node === tree.root) continue;
-      // Check for unexpected type nesting
       for (const child of node.children) {
         const expectedChildType = getExpectedChildType(node.type);
         if (expectedChildType && child.type !== expectedChildType) {
           validationIssues.push({
             nodeId: child.id,
-            issue: `Node "${child.label}" (${formatType(child.type)}) is nested under "${node.label}" (${formatType(node.type)}). Expected child type: ${formatType(expectedChildType)}.`,
+            issue: `Node "${child.label}" (${formatType(child.type)}) is nested under "${node.label}" (${formatType(node.type)}). Expected: ${formatType(expectedChildType)}.`,
             severity: 'error',
           });
         }
@@ -327,10 +362,8 @@ export async function analyzeCenterOfGravity(
     }
   }
 
-  // Calculate completeness score based on tree depth coverage
   const friendlyDepth = countTreeDepth(cogAnalysis.friendly);
   const adversaryDepth = countTreeDepth(cogAnalysis.adversary);
-  // Average of both trees, normalized to 4 levels
   const completenessScore = (friendlyDepth + adversaryDepth) / 8;
 
   return {
@@ -339,6 +372,50 @@ export async function analyzeCenterOfGravity(
     completenessScore: Math.round(completenessScore * 100) / 100,
     confidenceBounds: { lower: 0.3, upper: 0.7 },
   };
+}
+
+// ==========================================================================
+// Core Function (LLM-powered with fallback)
+// ==========================================================================
+
+/**
+ * Analyze a CoG analysis and suggest improvements.
+ *
+ * Uses LLM with the CoG Analysis Agent's character to generate context-aware
+ * suggestions. Falls back to rule-based analysis on LLM error.
+ */
+export async function analyzeCenterOfGravity(
+  cogAnalysis: CoGAnalysis
+): Promise<CoGAnalysisOutput> {
+  try {
+    const llm = await createLLMForAgent({
+      agentId: 'cog-analysis',
+      overrides: { temperature: 0.3, maxTokens: 4096 },
+    });
+
+    const userPrompt = buildCogUserPrompt(cogAnalysis);
+
+    const response = await llm.invoke([
+      { role: 'system', content: COG_SYSTEM_PROMPT },
+      { role: 'user', content: userPrompt },
+    ]);
+
+    const text = typeof response.content === 'string'
+      ? response.content
+      : JSON.stringify(response.content);
+
+    const parsed = parseJSONResponse<CoGAnalysisOutput>(text);
+    if (!parsed || !Array.isArray(parsed.suggestions)) {
+      console.warn('[cog-analysis] LLM response did not match expected structure, using fallback');
+      return analyzeCenterOfGravityFallback(cogAnalysis);
+    }
+
+    console.log(`[cog-analysis] LLM generated ${parsed.suggestions.length} suggestions, ${parsed.validationIssues?.length ?? 0} issues`);
+    return parsed;
+  } catch (error) {
+    console.error('[cog-analysis] LLM analysis failed, using fallback:', error);
+    return analyzeCenterOfGravityFallback(cogAnalysis);
+  }
 }
 
 /**

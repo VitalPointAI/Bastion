@@ -25,6 +25,7 @@ import type {
   LineOfEffort,
   OperationalApproach,
 } from '../design/types.js';
+import { createLLMForAgent } from './langgraph/llm-factory.js';
 
 // ==========================================================================
 // Output Interfaces
@@ -189,271 +190,255 @@ function hasContent(s: string | undefined | null): boolean {
 }
 
 // ==========================================================================
-// Core Function (v1 Rule-Based)
+// LLM Prompts
 // ==========================================================================
 
-/**
- * Synthesize operational design data into a narrative draft.
- *
- * v1: Rule-based stub that constructs narrative from available data.
- * Future: LLM-powered synthesis for more natural prose.
- *
- * @param context - All operational design data
- * @returns NarrativeSynthesisOutput with 1-2 narrative drafts
- */
-export function synthesizeNarrative(
+const NARRATIVE_SYSTEM_PROMPT = `You are the Operational Narrative Synthesis Agent — a specialist in synthesizing operational design elements into coherent narrative drafts.
+
+Your expertise:
+${NARRATIVE_SYNTHESIS_AGENT.character!.bio.map((b) => `- ${b}`).join('\n')}
+
+Your knowledge base:
+${NARRATIVE_SYNTHESIS_AGENT.character!.knowledge.map((k) => `- ${k}`).join('\n')}
+
+Style guidelines:
+${NARRATIVE_SYNTHESIS_AGENT.character!.style.all.map((s) => `- ${s}`).join('\n')}
+
+CRITICAL: You are HYBRID_HUMAN_LED. You draft narrative text — the human owns and adopts the final narrative.`;
+
+function buildNarrativeUserPrompt(context: NarrativeSynthesisContext): string {
+  const { problemFraming, cogAnalysis, linesOfEffort, operationalApproach } = context;
+
+  // Serialize problem framing
+  const pfText = [
+    `Problem Statement: ${problemFraming.problemStatement || '(not provided)'}`,
+    `Current State: ${problemFraming.currentState || '(not provided)'}`,
+    `Desired End State: ${problemFraming.desiredEndState || '(not provided)'}`,
+    `Assumptions: ${problemFraming.assumptions?.filter(hasContent).join('; ') || '(none)'}`,
+  ].join('\n');
+
+  // Serialize CoG trees
+  function serializeTree(node: CoGNode | null, label: string): string {
+    if (!node) return `${label}: (empty)`;
+    const lines: string[] = [];
+    function walk(n: CoGNode, depth: number) {
+      lines.push(`${'  '.repeat(depth)}- [${n.type}] "${n.label}"`);
+      for (const child of n.children) walk(child, depth + 1);
+    }
+    walk(node, 0);
+    return `${label}:\n${lines.join('\n')}`;
+  }
+  const cogText = `${serializeTree(cogAnalysis.friendly?.root, 'Friendly CoG')}\n\n${serializeTree(cogAnalysis.adversary?.root, 'Adversary CoG')}`;
+
+  // Serialize LOEs
+  const loeText = linesOfEffort.length === 0
+    ? '(no LOEs defined)'
+    : linesOfEffort.map((loe) => {
+        const dps = loe.decisivePoints?.map((dp) => `  - DP: "${dp.label}" (phase: ${dp.phase || 'unassigned'})`).join('\n') || '  (no decisive points)';
+        return `LOE: "${loe.name}"${loe.description ? ` — ${loe.description}` : ''}\n${dps}`;
+      }).join('\n\n');
+
+  // Serialize phases
+  const phases = operationalApproach.phases ?? [];
+  const transitions = operationalApproach.transitions ?? [];
+  const decisionPoints = operationalApproach.decisionPoints ?? [];
+  const phaseText = phases.length === 0
+    ? '(no phases defined)'
+    : [...phases].sort((a, b) => a.order - b.order)
+        .map((p) => `Phase ${p.order + 1}: "${p.name}"${p.description ? ` — ${p.description}` : ''}`)
+        .join('\n');
+  const transitionText = transitions.length === 0
+    ? '(no transitions defined)'
+    : transitions.map((t) => {
+        const from = phases.find((p) => p.id === t.fromPhaseId)?.name || t.fromPhaseId;
+        const to = phases.find((p) => p.id === t.toPhaseId)?.name || t.toPhaseId;
+        return `"${from}" → "${to}": ${t.conditions.filter(hasContent).join('; ') || '(no conditions)'}`;
+      }).join('\n');
+  const dpText = decisionPoints.length === 0
+    ? '(no decision points defined)'
+    : decisionPoints.map((dp) => {
+        const phase = phases.find((p) => p.id === dp.phaseId)?.name;
+        return `"${dp.label}"${phase ? ` (${phase})` : ''}${dp.criteria?.length ? `: ${dp.criteria.filter(hasContent).join('; ')}` : ''}`;
+      }).join('\n');
+
+  return `Synthesize all operational design data into a coherent operational narrative.
+
+## Problem Framing
+${pfText}
+
+## Center of Gravity Analysis
+${cogText}
+
+## Lines of Effort
+${loeText}
+
+## Operational Phases
+${phaseText}
+
+## Phase Transitions
+${transitionText}
+
+## Decision Points
+${dpText}
+
+## Instructions
+Generate 2 narrative drafts:
+1. Primary draft (objective-focused): Lead with the problem and end state, then CoG, LOEs, phasing, decision points
+2. Alternative draft (phasing-focused): Lead with temporal flow, integrate LOE activities per phase
+
+Each draft should have:
+- "narrative": full text (clear operational prose, 3-8 paragraphs)
+- "sections": array of { "heading": "...", "content": "..." }
+- "confidence": 0-1
+- "confidenceBounds": { "lower", "upper" }
+- "synthesisNotes": what data was used or missing
+
+Respond ONLY with a JSON object:
+{
+  "drafts": [ { "narrative": "...", "sections": [...], "confidence": 0.7, "confidenceBounds": {...}, "synthesisNotes": [...] } ],
+  "completenessScore": 0.6
+}`;
+}
+
+function parseJSONResponse<T>(text: string): T | null {
+  let cleaned = text.trim();
+  const codeBlockMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    cleaned = codeBlockMatch[1].trim();
+  }
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    console.error('[narrative-synthesis] Failed to parse LLM JSON response:', cleaned.substring(0, 200));
+    return null;
+  }
+}
+
+// ==========================================================================
+// Rule-Based Fallback
+// ==========================================================================
+
+function synthesizeNarrativeFallback(
   context: NarrativeSynthesisContext
 ): NarrativeSynthesisOutput {
   const { problemFraming, cogAnalysis, linesOfEffort, operationalApproach } = context;
   const synthesisNotes: string[] = [];
-
-  // Track what data is available for completeness scoring
   let sectionsWithData = 0;
-  const totalSections = 5; // problem, CoG, LOEs, phases, decision points
-
-  // ─── Build sections for primary draft (objective-focused) ─────────────
-
+  const totalSections = 5;
   const primarySections: NarrativeSection[] = [];
 
-  // 1. Opening paragraph: problem statement and desired end state
   if (hasContent(problemFraming.problemStatement) || hasContent(problemFraming.desiredEndState)) {
     sectionsWithData++;
     let content = '';
-    if (hasContent(problemFraming.problemStatement)) {
-      content += problemFraming.problemStatement.trim();
-    }
+    if (hasContent(problemFraming.problemStatement)) content += problemFraming.problemStatement!.trim();
     if (hasContent(problemFraming.desiredEndState)) {
       content += content ? ' ' : '';
-      content += `The desired end state is: ${problemFraming.desiredEndState.trim()}.`;
-    }
-    if (hasContent(problemFraming.currentState)) {
-      content += ` The current situation is characterized by: ${problemFraming.currentState.trim()}.`;
-    }
-    if (problemFraming.assumptions?.length > 0) {
-      const nonEmpty = problemFraming.assumptions.filter(hasContent);
-      if (nonEmpty.length > 0) {
-        content += ` Key assumptions include: ${nonEmpty.join('; ')}.`;
-      }
+      content += `The desired end state is: ${problemFraming.desiredEndState!.trim()}.`;
     }
     primarySections.push({ heading: 'Situation and Objectives', content });
-    synthesisNotes.push('Problem framing data used: problem statement, desired end state');
+    synthesisNotes.push('Problem framing data used');
   } else {
-    synthesisNotes.push('Missing: problem statement and desired end state (problem framing incomplete)');
+    synthesisNotes.push('Missing: problem framing');
   }
 
-  // 2. CoG paragraph
   const friendlyRoot = cogAnalysis.friendly?.root;
   const adversaryRoot = cogAnalysis.adversary?.root;
   if (friendlyRoot || adversaryRoot) {
     sectionsWithData++;
     let content = '';
-    if (friendlyRoot) {
-      content += `The friendly center of gravity is "${friendlyRoot.label}"`;
-      const friendlyCCs = collectCCs(friendlyRoot);
-      if (friendlyCCs.length > 0) {
-        content += `, with critical capabilities including ${friendlyCCs.map((c) => c.label).join(', ')}`;
-      }
-      content += '. ';
-    }
+    if (friendlyRoot) content += `The friendly center of gravity is "${friendlyRoot.label}". `;
     if (adversaryRoot) {
       content += `The adversary center of gravity is "${adversaryRoot.label}"`;
       const adversaryCVs = collectCVs(adversaryRoot);
       if (adversaryCVs.length > 0) {
-        content += `. Key adversary critical vulnerabilities to exploit include: ${adversaryCVs.map((v) => v.label).join(', ')}`;
+        content += `. Key vulnerabilities: ${adversaryCVs.map((v) => v.label).join(', ')}`;
       }
       content += '. ';
-    }
-    const friendlyCVs = collectCVs(friendlyRoot);
-    if (friendlyCVs.length > 0) {
-      content += `Friendly critical vulnerabilities to protect include: ${friendlyCVs.map((v) => v.label).join(', ')}.`;
     }
     primarySections.push({ heading: 'Centers of Gravity', content: content.trim() });
-    synthesisNotes.push('CoG analysis data used: friendly and adversary trees');
-  } else {
-    synthesisNotes.push('Missing: CoG analysis (no friendly or adversary trees defined)');
+    synthesisNotes.push('CoG data used');
   }
 
-  // 3. Lines of Effort paragraph
   if (linesOfEffort.length > 0) {
     sectionsWithData++;
-    let content = `The operational approach is organized along ${linesOfEffort.length} line${linesOfEffort.length !== 1 ? 's' : ''} of effort. `;
-    for (const loe of linesOfEffort) {
-      content += `LOE "${loe.name}"`;
-      if (hasContent(loe.description)) {
-        content += ` ${loe.description.trim()}`;
-      }
-      if (loe.decisivePoints?.length > 0) {
-        content += `, with ${loe.decisivePoints.length} decisive point${loe.decisivePoints.length !== 1 ? 's' : ''}`;
-        const linkedDPs = loe.decisivePoints.filter((dp) => dp.cogLinks?.length > 0);
-        if (linkedDPs.length > 0) {
-          content += ` (${linkedDPs.length} linked to CoG vulnerabilities)`;
-        }
-      }
-      content += '. ';
-    }
-    primarySections.push({ heading: 'Lines of Effort', content: content.trim() });
-    synthesisNotes.push(`LOE data used: ${linesOfEffort.length} lines of effort`);
-  } else {
-    synthesisNotes.push('Missing: lines of effort (none defined)');
+    let content = `${linesOfEffort.length} lines of effort: `;
+    content += linesOfEffort.map((loe) => `"${loe.name}"`).join(', ') + '.';
+    primarySections.push({ heading: 'Lines of Effort', content });
+    synthesisNotes.push(`${linesOfEffort.length} LOEs`);
   }
 
-  // 4. Phasing paragraph
   const phases = operationalApproach.phases ?? [];
-  const transitions = operationalApproach.transitions ?? [];
   if (phases.length > 0) {
     sectionsWithData++;
     const sorted = [...phases].sort((a, b) => a.order - b.order);
-    let content = `The operation is organized into ${phases.length} phase${phases.length !== 1 ? 's' : ''}: `;
-    content += sorted.map((p) => {
-      let desc = `Phase ${p.order + 1} "${p.name}"`;
-      if (hasContent(p.description)) {
-        desc += ` -- ${p.description.trim()}`;
-      }
-      return desc;
-    }).join('; ');
-    content += '. ';
-
-    if (transitions.length > 0) {
-      content += 'Phase transitions are governed by the following conditions: ';
-      for (const t of transitions) {
-        const fromPhase = phases.find((p) => p.id === t.fromPhaseId);
-        const toPhase = phases.find((p) => p.id === t.toPhaseId);
-        if (fromPhase && toPhase) {
-          const condText = t.conditions.filter(hasContent).join('; ');
-          content += `From "${fromPhase.name}" to "${toPhase.name}"${condText ? `: ${condText}` : ''}. `;
-        }
-      }
-    }
-    primarySections.push({ heading: 'Operational Phasing', content: content.trim() });
-    synthesisNotes.push(`Phasing data used: ${phases.length} phases, ${transitions.length} transitions`);
-  } else {
-    synthesisNotes.push('Missing: operational phases (none defined)');
+    const content = `${phases.length} phases: ${sorted.map((p) => `"${p.name}"`).join(', ')}.`;
+    primarySections.push({ heading: 'Operational Phasing', content });
+    synthesisNotes.push(`${phases.length} phases`);
   }
 
-  // 5. Decision points paragraph
   const decisionPoints = operationalApproach.decisionPoints ?? [];
   if (decisionPoints.length > 0) {
     sectionsWithData++;
-    let content = `${decisionPoints.length} key decision point${decisionPoints.length !== 1 ? 's' : ''} ${decisionPoints.length !== 1 ? 'are' : 'is'} identified: `;
-    for (const dp of decisionPoints) {
-      const phase = phases.find((p) => p.id === dp.phaseId);
-      content += `"${dp.label}"`;
-      if (phase) {
-        content += ` (during "${phase.name}")`;
-      }
-      if (dp.criteria?.length > 0) {
-        const nonEmpty = dp.criteria.filter(hasContent);
-        if (nonEmpty.length > 0) {
-          content += ` with criteria: ${nonEmpty.join('; ')}`;
-        }
-      }
-      content += '. ';
-    }
-    primarySections.push({ heading: 'Decision Points', content: content.trim() });
-    synthesisNotes.push(`Decision point data used: ${decisionPoints.length} decision points`);
-  } else {
-    synthesisNotes.push('Missing: decision points (none defined)');
+    const content = `${decisionPoints.length} decision points: ${decisionPoints.map((dp) => `"${dp.label}"`).join(', ')}.`;
+    primarySections.push({ heading: 'Decision Points', content });
+    synthesisNotes.push(`${decisionPoints.length} decision points`);
   }
 
-  // Combine primary sections into full narrative
   const primaryNarrative = primarySections.map((s) => s.content).join('\n\n');
-
   const completenessScore = Math.round((sectionsWithData / totalSections) * 100) / 100;
 
-  const primaryDraft: NarrativeDraft = {
-    narrative: primaryNarrative,
-    sections: primarySections,
-    confidence: 0.5,
-    confidenceBounds: { lower: 0.3, upper: 0.7 },
-    synthesisNotes: [...synthesisNotes],
-  };
-
-  // ─── Build alternative draft (phasing-focused) ─────────────────────────
-
-  const altSections: NarrativeSection[] = [];
-  const altNotes: string[] = ['Alternative draft emphasizes phasing and temporal flow'];
-
-  // Alternative: lead with phasing if available
-  if (phases.length > 0) {
-    const sorted = [...phases].sort((a, b) => a.order - b.order);
-    let content = `This operational approach unfolds across ${phases.length} phase${phases.length !== 1 ? 's' : ''}. `;
-    for (const phase of sorted) {
-      content += `In Phase ${phase.order + 1} ("${phase.name}")`;
-      if (hasContent(phase.description)) {
-        content += `, ${phase.description.trim()}`;
-      }
-      // Find LOE decisive points in this phase
-      const phaseActivities: string[] = [];
-      for (const loe of linesOfEffort) {
-        const phaseDPs = (loe.decisivePoints ?? []).filter((dp) => dp.phase === phase.name);
-        if (phaseDPs.length > 0) {
-          phaseActivities.push(`${loe.name} pursues ${phaseDPs.map((dp) => dp.label).join(', ')}`);
-        }
-      }
-      if (phaseActivities.length > 0) {
-        content += `: ${phaseActivities.join('; ')}`;
-      }
-      content += '. ';
-    }
-    altSections.push({ heading: 'Phased Approach', content: content.trim() });
-  }
-
-  // Alternative: operational context (brief problem + CoG)
-  if (hasContent(problemFraming.problemStatement) || friendlyRoot || adversaryRoot) {
-    let content = '';
-    if (hasContent(problemFraming.problemStatement)) {
-      content += `The operational challenge: ${problemFraming.problemStatement.trim()} `;
-    }
-    if (adversaryRoot) {
-      content += `The approach targets the adversary center of gravity ("${adversaryRoot.label}")`;
-      const adversaryCVs = collectCVs(adversaryRoot);
-      if (adversaryCVs.length > 0) {
-        content += ` through identified vulnerabilities: ${adversaryCVs.map((v) => v.label).join(', ')}`;
-      }
-      content += '. ';
-    }
-    if (hasContent(problemFraming.desiredEndState)) {
-      content += `The desired end state: ${problemFraming.desiredEndState.trim()}.`;
-    }
-    altSections.push({ heading: 'Operational Context', content: content.trim() });
-  }
-
-  // Alternative: LOE integration summary
-  if (linesOfEffort.length > 0) {
-    let content = `${linesOfEffort.length} lines of effort converge to achieve the operational objectives: `;
-    content += linesOfEffort.map((loe) => {
-      let desc = `"${loe.name}"`;
-      if (hasContent(loe.description)) desc += ` (${loe.description.trim()})`;
-      return desc;
-    }).join(', ');
-    content += '.';
-
-    if (decisionPoints.length > 0) {
-      content += ` Commanders will face ${decisionPoints.length} key decision${decisionPoints.length !== 1 ? 's' : ''}: `;
-      content += decisionPoints.map((dp) => `"${dp.label}"`).join(', ');
-      content += '.';
-    }
-    altSections.push({ heading: 'Lines of Effort and Decision Points', content: content.trim() });
-  }
-
-  const altNarrative = altSections.map((s) => s.content).join('\n\n');
-
-  const altDraft: NarrativeDraft = {
-    narrative: altNarrative,
-    sections: altSections,
-    confidence: 0.45,
-    confidenceBounds: { lower: 0.3, upper: 0.65 },
-    synthesisNotes: altNotes,
-  };
-
-  // Only include alternative if it has content
-  const drafts: NarrativeDraft[] = [primaryDraft];
-  if (altSections.length > 0) {
-    drafts.push(altDraft);
-  }
-
   return {
-    drafts,
+    drafts: [{
+      narrative: primaryNarrative,
+      sections: primarySections,
+      confidence: 0.4,
+      confidenceBounds: { lower: 0.2, upper: 0.6 },
+      synthesisNotes: [...synthesisNotes, 'LLM unavailable — using template-based fallback'],
+    }],
     completenessScore,
   };
+}
+
+// ==========================================================================
+// Core Function (LLM-powered with fallback)
+// ==========================================================================
+
+/**
+ * Synthesize operational design data into a narrative draft.
+ *
+ * Uses LLM with the Narrative Synthesis Agent's character to generate natural
+ * operational prose. Falls back to rule-based template on LLM error.
+ */
+export async function synthesizeNarrative(
+  context: NarrativeSynthesisContext
+): Promise<NarrativeSynthesisOutput> {
+  try {
+    const llm = await createLLMForAgent({
+      agentId: 'narrative-synthesis',
+      overrides: { temperature: 0.5, maxTokens: 4096 },
+    });
+
+    const userPrompt = buildNarrativeUserPrompt(context);
+
+    const response = await llm.invoke([
+      { role: 'system', content: NARRATIVE_SYSTEM_PROMPT },
+      { role: 'user', content: userPrompt },
+    ]);
+
+    const text = typeof response.content === 'string'
+      ? response.content
+      : JSON.stringify(response.content);
+
+    const parsed = parseJSONResponse<NarrativeSynthesisOutput>(text);
+    if (!parsed || !Array.isArray(parsed.drafts) || parsed.drafts.length === 0) {
+      console.warn('[narrative-synthesis] LLM response did not match expected structure, using fallback');
+      return synthesizeNarrativeFallback(context);
+    }
+
+    console.log(`[narrative-synthesis] LLM generated ${parsed.drafts.length} narrative drafts`);
+    return parsed;
+  } catch (error) {
+    console.error('[narrative-synthesis] LLM synthesis failed, using fallback:', error);
+    return synthesizeNarrativeFallback(context);
+  }
 }

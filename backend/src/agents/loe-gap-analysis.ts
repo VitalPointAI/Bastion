@@ -18,6 +18,7 @@ import type { AgentManifest } from './types.js';
 import { AgentPhase, AgentCapability, AutonomyLevel } from './types.js';
 import { ProposalKind } from '../dao/types.js';
 import type { LineOfEffort, CoGAnalysis, CoGNode } from '../design/types.js';
+import { createLLMForAgent } from './langgraph/llm-factory.js';
 
 // ==========================================================================
 // Output Interfaces
@@ -163,31 +164,110 @@ function getReferencedPhases(loes: LineOfEffort[]): Set<string> {
 }
 
 // ==========================================================================
-// Core Function (v1 Rule-Based)
+// LLM Prompts
 // ==========================================================================
 
-/**
- * Analyze LOE-CoG relationships and identify gaps.
- *
- * v1: Rule-based stub that checks structural relationships.
- * Future: LLM-powered analysis using scenario context and doctrinal knowledge.
- *
- * @param loes - Current Lines of Effort
- * @param cogAnalysis - Current CoG analysis with friendly and adversary trees
- * @returns LOEGapAnalysisOutput with gap suggestions and coverage score
- */
-export async function analyzeLOEGaps(
+const LOE_SYSTEM_PROMPT = `You are the Lines of Effort Gap Analysis Agent — a specialist in linking operational Lines of Effort to Center of Gravity vulnerabilities.
+
+Your expertise:
+${LOE_GAP_ANALYSIS_AGENT.character!.bio.map((b) => `- ${b}`).join('\n')}
+
+Your knowledge base:
+${LOE_GAP_ANALYSIS_AGENT.character!.knowledge.map((k) => `- ${k}`).join('\n')}
+
+Style guidelines:
+${LOE_GAP_ANALYSIS_AGENT.character!.style.all.map((s) => `- ${s}`).join('\n')}
+
+CRITICAL: You are HYBRID_HUMAN_LED. You identify gaps — the human owns the design.`;
+
+function serializeCogForLOE(node: CoGNode | null, side: string): string {
+  if (!node) return `${side}: (empty)`;
+  const lines: string[] = [];
+  function walk(n: CoGNode, depth: number) {
+    const indent = '  '.repeat(depth);
+    lines.push(`${indent}- [${n.type}] "${n.label}" (id: ${n.id})`);
+    for (const child of n.children) walk(child, depth + 1);
+  }
+  walk(node, 0);
+  return `${side} CoG:\n${lines.join('\n')}`;
+}
+
+function buildLoeUserPrompt(loes: LineOfEffort[], cogAnalysis: CoGAnalysis): string {
+  const friendlyCog = serializeCogForLOE(cogAnalysis.friendly?.root, 'Friendly');
+  const adversaryCog = serializeCogForLOE(cogAnalysis.adversary?.root, 'Adversary');
+
+  const loeText = loes.length === 0
+    ? '(no LOEs defined)'
+    : loes.map((loe) => {
+        const dps = loe.decisivePoints.map((dp) => {
+          const links = dp.cogLinks?.map((l) => l.cogNodeId).join(', ') || 'none';
+          return `    - DP: "${dp.label}" (phase: ${dp.phase || 'unassigned'}, cogLinks: [${links}])`;
+        }).join('\n');
+        return `  LOE: "${loe.name}" (id: ${loe.id})${loe.description ? ` — ${loe.description}` : ''}\n${dps || '    (no decisive points)'}`;
+      }).join('\n\n');
+
+  return `Analyze the relationship between Lines of Effort and CoG analysis to identify gaps.
+
+## CoG Analysis
+
+${friendlyCog}
+
+${adversaryCog}
+
+## Lines of Effort
+
+${loeText}
+
+## Instructions
+Identify gaps in the LOE-CoG relationship:
+
+1. "suggestions" — gaps found (type: unaddressed-vulnerability|missing-linkage|phase-gap|loe-suggestion, description, affectedLoeId or null, affectedCogNodeId or null, recommendation, priority: high|medium|low, confidence 0-1, confidenceBounds {lower, upper})
+2. "coverageScore" — percentage of CVs addressed by LOE decisive points (0-1)
+3. "confidenceBounds" — overall confidence {lower, upper}
+
+Focus on:
+- CVs not addressed by any LOE decisive point
+- LOEs with no decisive points or no CoG links
+- Phase coverage gaps (phases where an LOE has no activity)
+- Missing LOEs that should exist to address identified vulnerabilities
+- Specific actionable recommendations
+
+Respond ONLY with a JSON object:
+{
+  "suggestions": [ ... ],
+  "coverageScore": 0.5,
+  "confidenceBounds": { "lower": 0.3, "upper": 0.7 }
+}`;
+}
+
+function parseJSONResponse<T>(text: string): T | null {
+  let cleaned = text.trim();
+  const codeBlockMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    cleaned = codeBlockMatch[1].trim();
+  }
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    console.error('[loe-gap-analysis] Failed to parse LLM JSON response:', cleaned.substring(0, 200));
+    return null;
+  }
+}
+
+// ==========================================================================
+// Rule-Based Fallback
+// ==========================================================================
+
+function analyzeLOEGapsFallback(
   loes: LineOfEffort[],
   cogAnalysis: CoGAnalysis
-): Promise<LOEGapAnalysisOutput> {
+): LOEGapAnalysisOutput {
   const suggestions: LOEGapSuggestion[] = [];
 
-  // Collect all CVs from both trees
-  const friendlyCVs = collectCVs(cogAnalysis.friendly.root);
-  const adversaryCVs = collectCVs(cogAnalysis.adversary.root);
+  const friendlyCVs = collectCVs(cogAnalysis.friendly?.root);
+  const adversaryCVs = collectCVs(cogAnalysis.adversary?.root);
   const allCVs = [...friendlyCVs, ...adversaryCVs];
 
-  // Collect all cogLinks from all decisive points
   const linkedCogNodeIds = new Set<string>();
   for (const loe of loes) {
     for (const dp of loe.decisivePoints) {
@@ -197,7 +277,6 @@ export async function analyzeLOEGaps(
     }
   }
 
-  // Check which CVs are unaddressed
   for (const cv of allCVs) {
     if (!linkedCogNodeIds.has(cv.id)) {
       const side = friendlyCVs.includes(cv) ? 'friendly' : 'adversary';
@@ -206,7 +285,7 @@ export async function analyzeLOEGaps(
         description: `${side.charAt(0).toUpperCase() + side.slice(1)} CV "${cv.label}" is not addressed by any LOE decisive point.`,
         affectedLoeId: null,
         affectedCogNodeId: cv.id,
-        recommendation: `Create or link a decisive point in an appropriate LOE to address the vulnerability "${cv.label}".`,
+        recommendation: `Create or link a decisive point to address "${cv.label}".`,
         priority: 'high',
         confidence: 0.6,
         confidenceBounds: { lower: 0.4, upper: 0.8 },
@@ -214,7 +293,6 @@ export async function analyzeLOEGaps(
     }
   }
 
-  // Check for LOEs with no decisive points
   for (const loe of loes) {
     if (loe.decisivePoints.length === 0) {
       suggestions.push({
@@ -222,7 +300,7 @@ export async function analyzeLOEGaps(
         description: `LOE "${loe.name}" has no decisive points defined.`,
         affectedLoeId: loe.id,
         affectedCogNodeId: null,
-        recommendation: `Add decisive points to LOE "${loe.name}" to define key actions and milestones along this line of effort.`,
+        recommendation: `Add decisive points to LOE "${loe.name}".`,
         priority: 'high',
         confidence: 0.7,
         confidenceBounds: { lower: 0.5, upper: 0.85 },
@@ -230,67 +308,19 @@ export async function analyzeLOEGaps(
     }
   }
 
-  // Check for phase gaps -- phases where no LOE has decisive points
-  const referencedPhases = getReferencedPhases(loes);
-  if (referencedPhases.size > 0) {
-    // Check each LOE for phase coverage
-    for (const loe of loes) {
-      if (loe.decisivePoints.length === 0) continue;
-
-      const loePhaseCoverage = new Set<string>();
-      for (const dp of loe.decisivePoints) {
-        if (dp.phase) loePhaseCoverage.add(dp.phase);
-      }
-
-      for (const phase of referencedPhases) {
-        if (!loePhaseCoverage.has(phase)) {
-          suggestions.push({
-            type: 'phase-gap',
-            description: `LOE "${loe.name}" has no decisive points in phase "${phase}".`,
-            affectedLoeId: loe.id,
-            affectedCogNodeId: null,
-            recommendation: `Consider whether LOE "${loe.name}" requires actions during phase "${phase}". If so, add decisive points.`,
-            priority: 'medium',
-            confidence: 0.4,
-            confidenceBounds: { lower: 0.25, upper: 0.6 },
-          });
-        }
-      }
-    }
-  }
-
-  // Check for LOEs with decisive points but no CoG links
-  for (const loe of loes) {
-    const dpsWithLinks = loe.decisivePoints.filter((dp) => dp.cogLinks.length > 0);
-    if (loe.decisivePoints.length > 0 && dpsWithLinks.length === 0) {
-      suggestions.push({
-        type: 'missing-linkage',
-        description: `LOE "${loe.name}" has decisive points but none are linked to CoG nodes.`,
-        affectedLoeId: loe.id,
-        affectedCogNodeId: null,
-        recommendation: `Link decisive points in "${loe.name}" to relevant CoG vulnerabilities to ensure operational actions target identified weaknesses.`,
-        priority: 'medium',
-        confidence: 0.55,
-        confidenceBounds: { lower: 0.35, upper: 0.75 },
-      });
-    }
-  }
-
-  // Suggest creating LOEs if none exist but CVs do
   if (loes.length === 0 && allCVs.length > 0) {
     suggestions.push({
       type: 'loe-suggestion',
-      description: 'No Lines of Effort defined but Critical Vulnerabilities exist in CoG analysis.',
+      description: 'No Lines of Effort defined but Critical Vulnerabilities exist.',
       affectedLoeId: null,
       affectedCogNodeId: null,
-      recommendation: 'Create Lines of Effort to address the identified Critical Vulnerabilities. Each LOE should target specific CVs through decisive points.',
+      recommendation: 'Create Lines of Effort to address identified CVs.',
       priority: 'high',
       confidence: 0.7,
       confidenceBounds: { lower: 0.5, upper: 0.85 },
     });
   }
 
-  // Calculate coverage score
   const totalCVs = allCVs.length;
   const linkedCVs = allCVs.filter((cv) => linkedCogNodeIds.has(cv.id)).length;
   const coverageScore = totalCVs > 0 ? Math.round((linkedCVs / totalCVs) * 100) / 100 : 0;
@@ -300,4 +330,49 @@ export async function analyzeLOEGaps(
     coverageScore,
     confidenceBounds: { lower: 0.3, upper: 0.7 },
   };
+}
+
+// ==========================================================================
+// Core Function (LLM-powered with fallback)
+// ==========================================================================
+
+/**
+ * Analyze LOE-CoG relationships and identify gaps.
+ *
+ * Uses LLM with the LOE Gap Analysis Agent's character to generate context-aware
+ * gap analysis. Falls back to rule-based analysis on LLM error.
+ */
+export async function analyzeLOEGaps(
+  loes: LineOfEffort[],
+  cogAnalysis: CoGAnalysis
+): Promise<LOEGapAnalysisOutput> {
+  try {
+    const llm = await createLLMForAgent({
+      agentId: 'loe-gap-analysis',
+      overrides: { temperature: 0.3, maxTokens: 4096 },
+    });
+
+    const userPrompt = buildLoeUserPrompt(loes, cogAnalysis);
+
+    const response = await llm.invoke([
+      { role: 'system', content: LOE_SYSTEM_PROMPT },
+      { role: 'user', content: userPrompt },
+    ]);
+
+    const text = typeof response.content === 'string'
+      ? response.content
+      : JSON.stringify(response.content);
+
+    const parsed = parseJSONResponse<LOEGapAnalysisOutput>(text);
+    if (!parsed || !Array.isArray(parsed.suggestions)) {
+      console.warn('[loe-gap-analysis] LLM response did not match expected structure, using fallback');
+      return analyzeLOEGapsFallback(loes, cogAnalysis);
+    }
+
+    console.log(`[loe-gap-analysis] LLM generated ${parsed.suggestions.length} gap suggestions`);
+    return parsed;
+  } catch (error) {
+    console.error('[loe-gap-analysis] LLM analysis failed, using fallback:', error);
+    return analyzeLOEGapsFallback(loes, cogAnalysis);
+  }
 }

@@ -144,7 +144,7 @@ router.post('/:problemSetId/analyze', async (req: Request, res: Response) => {
       const { synthesizeNarrative } = await import('../agents/narrative-synthesis.js');
       // Need full design data for synthesis -- fetch from store
       const design = await designStore.getByProblemSetId(req.params.problemSetId as string);
-      const output = synthesizeNarrative({
+      const output = await synthesizeNarrative({
         problemFraming: design.problemFraming,
         cogAnalysis: design.cogAnalysis,
         linesOfEffort: design.linesOfEffort,
