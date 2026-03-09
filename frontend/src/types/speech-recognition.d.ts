@@ -36,6 +36,7 @@ interface SpeechRecognition extends EventTarget {
   abort(): void;
 }
 
+// eslint-disable-next-line no-var
 declare var SpeechRecognition: {
   new (): SpeechRecognition;
   prototype: SpeechRecognition;

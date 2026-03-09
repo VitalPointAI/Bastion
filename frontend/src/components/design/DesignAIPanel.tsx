@@ -6,7 +6,7 @@
  * Renders section-specific cards for problem-framing, cog-analysis, and lines-of-effort.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { designService } from '../../lib/design-service.ts';
 import { AIFramingCard } from './AIFramingCard.tsx';
 import type { AlternativeFraming } from './AIFramingCard.tsx';
@@ -307,13 +307,13 @@ export function DesignAIPanel({
   const [localCache, setLocalCache] = useState<Map<string, Record<string, any>>>(new Map());
   const resultsCache = externalCache ?? localCache;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateCache = (updater: (prev: Map<string, Record<string, any>>) => Map<string, Record<string, any>>) => {
+  const updateCache = useCallback((updater: (prev: Map<string, Record<string, any>>) => Map<string, Record<string, any>>) => {
     if (onCacheUpdate) {
       onCacheUpdate(updater(resultsCache));
     } else {
       setLocalCache(updater);
     }
-  };
+  }, [onCacheUpdate, resultsCache]);
   const [dismissedIds, setDismissedIds] = useState<Map<string, Set<number>>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -323,7 +323,7 @@ export function DesignAIPanel({
 
   // Agent team composition: additional agents per section
   const [sectionAgents, setSectionAgents] = useState<Map<string, string[]>>(new Map());
-  const additionalAgents = sectionAgents.get(activeSection) ?? [];
+  const additionalAgents = useMemo(() => sectionAgents.get(activeSection) ?? [], [sectionAgents, activeSection]);
   const handleAgentsChange = useCallback(
     (agentIds: string[]) => {
       setSectionAgents((prev) => {

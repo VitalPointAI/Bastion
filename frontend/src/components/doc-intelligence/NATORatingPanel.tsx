@@ -31,7 +31,7 @@ export interface NATORating {
   };
 }
 
-export const RELIABILITY_LABELS: Record<SourceReliability, string> = {
+const RELIABILITY_LABELS: Record<SourceReliability, string> = {
   A: 'Completely Reliable',
   B: 'Usually Reliable',
   C: 'Fairly Reliable',
@@ -40,7 +40,7 @@ export const RELIABILITY_LABELS: Record<SourceReliability, string> = {
   F: 'Reliability Cannot Be Judged',
 };
 
-export const CREDIBILITY_LABELS: Record<InformationCredibility, string> = {
+const CREDIBILITY_LABELS: Record<InformationCredibility, string> = {
   1: 'Confirmed by Other Sources',
   2: 'Probably True',
   3: 'Possibly True',
