@@ -59,6 +59,9 @@ Replace manual per-document extraction with an autonomous multi-agent team that 
 <specifics>
 ## Specific Ideas
 
+- **Knowledge graph is the centerpiece** — when navigating to the Understand tab, the knowledge graph is the focused, centered element on screen. Document upload, analysis panels, reports, legends, and controls surround it peripherally. The graph is the star, everything else supports it.
+- **Animated knowledge flow** — when documents are processed, users see animated movement of knowledge entering the graph, entities finding their place, and the graph growing and morphing in real time. Builds on existing ExtractionTheater animated flow particles and live graph building patterns.
+- **Graph growth replay** — capture periodic snapshots of the knowledge graph state and enable time-lapse replay of how the graph grew and evolved. Lets users see the history of their strategic environment taking shape.
 - **Mission control dashboard aesthetic** for the live agent activity feed — dark theme, real-time status cards per agent with animated states (analyzing, extracting, linking), entity counts ticking up, specialist icons. Think NASA mission control or Bloomberg terminal energy. "Need some wow factor in this app."
 - **Human-in-the-loop controls during processing** — mission control style: user can pause/stop individual specialists, flag items for re-analysis, add guidance notes mid-processing. Leverages existing LangGraph human-in-the-loop checkpoints.
 - **Both force graph and structured table views** for knowledge graph, toggle-able by the user
@@ -78,6 +81,8 @@ Replace manual per-document extraction with an autonomous multi-agent team that 
 - **TeamRegistry** (`backend/src/agents/team-registry.ts`): Singleton team management with roles, workflows, escalation — manages the specialist agent team
 - **MidlifeCategorizer** (`backend/src/strategic/tools/midlife-categorizer.ts`): Keyword-based categorization with confidence scoring — input to Document Classifier
 - **LangGraph orchestration** (`backend/src/orchestration/`): Supervisor pattern, task executor (sequential/parallel/hierarchical), PostgreSQL checkpointing, ABAC filtering, human-in-the-loop — orchestrator foundation
+- **ExtractionTheater** (`frontend/src/components/strategic/ExtractionTheater.tsx`): Full-screen modal with document extraction progress feed + animated flow particles + live knowledge graph visualization. Already demonstrates the animated knowledge-entering-graph pattern — evolve this into the Understand tab centerpiece.
+- **GraphExplorer** (`frontend/src/components/graph/GraphExplorer.tsx`): `react-force-graph-2d` force graph with node/edge filtering, type-based coloring, search, hover details. Core graph visualization component — extend with snapshot/replay capability and peripheral layout.
 - **AI Staff feed** (`frontend/src/lib/ai-staff-service.ts`, `frontend/src/hooks/useAIStaffFeed.ts`): Feed items, annotations, chat — pattern for mission control activity feed
 - **Container system** (`backend/src/strategic/containers/`): Friendly/Adversary/Neutral/Partner categories — maps to Perspective Analyst instantiation
 
