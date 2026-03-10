@@ -10,9 +10,9 @@
  */
 
 import { z } from 'zod';
-import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { createLLMForAgent } from '../../agents/langgraph/llm-factory.js';
 
 import { SpecialistBase, type SpecialistConfig } from '../specialist-base.js';
 import { SpecialistId, DocumentType } from '../types.js';
@@ -86,7 +86,7 @@ Return your classification as JSON.`;
  * placement for perspective analysis routing.
  */
 export class DocumentClassifier extends SpecialistBase {
-  private model: BaseChatModel;
+  private _model: BaseChatModel | null;
 
   constructor(config?: { model?: BaseChatModel }) {
     const specialistConfig: SpecialistConfig = {
@@ -100,11 +100,17 @@ export class DocumentClassifier extends SpecialistBase {
 
     super(specialistConfig);
 
-    this.model = config?.model ?? new ChatAnthropic({
-      model: 'claude-sonnet-4-20250514',
-      temperature: 0,
-      maxTokens: 2048,
-    });
+    this._model = config?.model ?? null;
+  }
+
+  private async getModel(): Promise<BaseChatModel> {
+    if (!this._model) {
+      this._model = await createLLMForAgent({
+        agentId: 'doc-classifier',
+        overrides: { temperature: 0, maxTokens: 2048 },
+      });
+    }
+    return this._model;
   }
 
   // --------------------------------------------------------------------------
@@ -147,7 +153,8 @@ export class DocumentClassifier extends SpecialistBase {
         ),
       ];
 
-      const response = await this.model.invoke(messages);
+      const model = await this.getModel();
+      const response = await model.invoke(messages);
       const content = typeof response.content === 'string'
         ? response.content
         : JSON.stringify(response.content);

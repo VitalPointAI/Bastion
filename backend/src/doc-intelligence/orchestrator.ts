@@ -14,7 +14,7 @@
  */
 
 import { Annotation, StateGraph, END, START } from '@langchain/langgraph';
-import { ChatAnthropic } from '@langchain/anthropic';
+import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import type { BaseMessage } from '@langchain/core/messages';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
@@ -181,7 +181,7 @@ export class DocumentOrchestrator {
   private problemSetId: string;
   private problemSetContext: ProblemSetContext | null = null;
   private onProgress: ProgressCallback | null = null;
-  private model: BaseChatModel;
+  private _model: BaseChatModel | null;
 
   constructor(config: {
     problemSetId: string;
@@ -192,13 +192,17 @@ export class DocumentOrchestrator {
     this.problemSetId = config.problemSetId;
     this.problemSetContext = config.problemSetContext ?? null;
     this.onProgress = config.onProgress ?? null;
+    this._model = config.model ?? null;
+  }
 
-    // Default to Claude for triage LLM
-    this.model = config.model ?? new ChatAnthropic({
-      model: 'claude-sonnet-4-20250514',
-      temperature: 0,
-      maxTokens: 2048,
-    });
+  private async getModel(): Promise<BaseChatModel> {
+    if (!this._model) {
+      this._model = await createLLMForAgent({
+        agentId: 'doc-triage',
+        overrides: { temperature: 0, maxTokens: 2048 },
+      });
+    }
+    return this._model;
   }
 
   /**
@@ -268,7 +272,8 @@ export class DocumentOrchestrator {
         ),
       ];
 
-      const response = await orchestrator.model.invoke(messages);
+      const model = await orchestrator.getModel();
+      const response = await model.invoke(messages);
       const content = typeof response.content === 'string'
         ? response.content
         : JSON.stringify(response.content);
