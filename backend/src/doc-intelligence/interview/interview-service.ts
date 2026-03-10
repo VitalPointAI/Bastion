@@ -158,10 +158,9 @@ Only include keys where you have extracted information. For example:
 
 Current partial context: ${JSON.stringify(state.derivedContext)}`;
 
-  // Filter out any SystemMessages from conversation history — Anthropic requires
-  // system messages to be first only
+  // Filter out system messages — use .type property (safe after checkpoint deserialization)
   const conversationMessages = state.messages.filter(
-    (m) => !(m instanceof SystemMessage)
+    (m) => m.type !== 'system' && !(m instanceof SystemMessage)
   );
   const response = await llm.invoke([
     new SystemMessage(extractionPrompt),
@@ -170,23 +169,19 @@ Current partial context: ${JSON.stringify(state.derivedContext)}`;
 
   let updatedContext = { ...state.derivedContext };
   try {
-    // Extract text content — handle both string and Anthropic content block array
-    let content: string;
-    if (typeof response.content === 'string') {
-      content = response.content;
-    } else if (Array.isArray(response.content)) {
-      content = response.content
-        .filter((block: Record<string, unknown>) => block.type === 'text')
-        .map((block: Record<string, unknown>) => block.text)
-        .join('');
-    } else {
-      content = String(response.content);
+    const content = extractTextContent(response.content);
+    // Try direct parse first, then regex extraction
+    let extracted: Record<string, unknown> | null = null;
+    try {
+      extracted = JSON.parse(content.trim());
+    } catch {
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) ||
+        content.match(/(\{[\s\S]*\})/);
+      if (jsonMatch) {
+        extracted = JSON.parse(jsonMatch[1]);
+      }
     }
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) ||
-      content.match(/(\{[\s\S]*\})/);
-    if (jsonMatch) {
-      const extracted = JSON.parse(jsonMatch[1]);
+    if (extracted) {
       // Deep merge: new information overlays existing
       updatedContext = deepMerge(updatedContext, extracted);
     }
@@ -437,48 +432,62 @@ export class InterviewService {
     }
     const values = state.values as InterviewState;
 
-    // Use LLM to extract structured ProblemSetContext
-    // Filter out SystemMessages from conversation — Anthropic requires system first only
+    // Filter out system messages from conversation — Anthropic requires system first only.
+    // Use .type property instead of instanceof — checkpoint deserialization may not
+    // preserve class identity.
     const conversationOnly = values.messages.filter(
-      (m: BaseMessage) => !(m instanceof SystemMessage)
+      (m: BaseMessage) => m.type !== 'system' && !(m instanceof SystemMessage)
     );
+
+    console.log(
+      '[InterviewService] completeInterview: total messages=%d, after filter=%d, types=%s',
+      values.messages.length,
+      conversationOnly.length,
+      values.messages.map((m: BaseMessage) => m.type ?? m.constructor?.name).join(',')
+    );
+
+    if (conversationOnly.length === 0) {
+      throw new Error('No conversation messages found for extraction');
+    }
+
+    // Build a single HumanMessage summarizing the conversation for extraction,
+    // as a fallback-friendly approach that avoids multi-system-message issues
     const extractionMessages: BaseMessage[] = [
       new SystemMessage(INTERVIEW_SUMMARY_PROMPT),
       ...conversationOnly,
+      new HumanMessage(
+        'Now extract the structured ProblemSetContext JSON from the conversation above. Output ONLY valid JSON, no markdown code fences, no explanation.'
+      ),
     ];
 
     const response = await llm.invoke(extractionMessages);
 
     // Extract text content — handle both string and Anthropic content block array
-    let content: string;
-    if (typeof response.content === 'string') {
-      content = response.content;
-    } else if (Array.isArray(response.content)) {
-      content = response.content
-        .filter((block: Record<string, unknown>) => block.type === 'text')
-        .map((block: Record<string, unknown>) => block.text)
-        .join('');
-    } else {
-      content = String(response.content);
-    }
+    const content = extractTextContent(response.content);
 
-    console.log('[InterviewService] Extraction response length:', content.length);
+    console.log('[InterviewService] Extraction response (%d chars): %s',
+      content.length, content.substring(0, 300));
 
-    // Parse JSON from response (handle markdown code blocks or raw JSON)
-    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) ||
-      content.match(/(\{[\s\S]*\})/);
-
-    if (!jsonMatch) {
-      console.error('[InterviewService] No JSON found in extraction response:', content.substring(0, 500));
-      throw new Error('Failed to extract ProblemSetContext from interview conversation');
-    }
-
-    let rawContext: Record<string, unknown>;
+    // Try direct JSON.parse first (in case LLM returned clean JSON)
+    let rawContext: Record<string, unknown> | null = null;
     try {
-      rawContext = JSON.parse(jsonMatch[1]);
-    } catch (parseErr) {
-      console.error('[InterviewService] JSON parse failed:', parseErr, 'Raw:', jsonMatch[1].substring(0, 500));
-      throw new Error('Failed to parse ProblemSetContext JSON from interview');
+      rawContext = JSON.parse(content.trim());
+    } catch {
+      // Fall back to regex extraction
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) ||
+        content.match(/(\{[\s\S]*\})/);
+
+      if (!jsonMatch) {
+        console.error('[InterviewService] No JSON found in extraction response:', content.substring(0, 500));
+        throw new Error('Failed to extract ProblemSetContext from interview conversation');
+      }
+
+      try {
+        rawContext = JSON.parse(jsonMatch[1]);
+      } catch (parseErr) {
+        console.error('[InterviewService] JSON parse failed:', parseErr, 'Raw:', jsonMatch[1].substring(0, 500));
+        throw new Error('Failed to parse ProblemSetContext JSON from interview');
+      }
     }
 
     // Get current version for increment
@@ -491,13 +500,14 @@ export class InterviewService {
       updatedAt: new Date().toISOString(),
       version: currentVersion + 1,
       // Ensure defaults
-      classificationCeiling: rawContext.classificationCeiling || 'UNCLASSIFIED',
-      echelon: rawContext.echelon || 'strategic',
+      classificationCeiling: rawContext!.classificationCeiling || 'UNCLASSIFIED',
+      echelon: rawContext!.echelon || 'strategic',
     };
 
     // Validate via Zod
     const validated = ProblemSetContextSchema.safeParse(contextData);
     if (!validated.success) {
+      console.error('[InterviewService] Zod validation failed:', JSON.stringify(validated.error));
       throw new Error(
         `ProblemSetContext validation failed: ${JSON.stringify(validated.error)}`
       );
@@ -508,6 +518,25 @@ export class InterviewService {
 
     return validated.data;
   }
+}
+
+// ============================================================================
+// Utility: Extract text from LLM response content
+// ============================================================================
+
+/**
+ * Safely extract text from an LLM response content field.
+ * Handles plain strings, Anthropic content block arrays [{type,text}], and fallback.
+ */
+function extractTextContent(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter((block: Record<string, unknown>) => block.type === 'text')
+      .map((block: Record<string, unknown>) => block.text)
+      .join('');
+  }
+  return String(content);
 }
 
 // ============================================================================
