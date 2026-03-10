@@ -13,8 +13,6 @@
  */
 
 import { randomUUID } from 'crypto';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { ChatOpenAI } from '@langchain/openai';
 import { SystemMessage, AIMessage } from '@langchain/core/messages';
 import type { BaseMessage } from '@langchain/core/messages';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
@@ -134,11 +132,11 @@ export class LangGraphAgentWrapper {
   }
 
   /**
-   * Get the LangChain model instance
+   * Get the LangChain model instance (uses centralized LLM factory with OAuth support)
    */
-  getModel(): BaseChatModel {
+  async getModel(): Promise<BaseChatModel> {
     if (!this.langchainModel) {
-      this.langchainModel = this.createLangChainModel();
+      this.langchainModel = await this.createLangChainModel();
     }
     return this.langchainModel;
   }
@@ -174,7 +172,7 @@ export class LangGraphAgentWrapper {
       });
 
       // Get model and invoke
-      const model = this.getModel();
+      const model = await this.getModel();
 
       let response: BaseMessage;
       let inputTokens = 0;
@@ -451,46 +449,18 @@ ${state.objectives.map((o, i) => `${i + 1}. ${o}`).join('\n')}
   }
 
   /**
-   * Create LangChain model from provider config
+   * Create LangChain model using the centralized LLM factory.
+   * Respects OAuth tokens, global LLM settings, and agent-specific overrides.
    */
-  private createLangChainModel(): BaseChatModel {
-    const config = this.providerConfig;
-
-    switch (config.type) {
-      case 'anthropic':
-        return new ChatAnthropic({
-          model: config.model,
-          apiKey: config.apiKey || process.env.ANTHROPIC_API_KEY,
-          temperature: this.manifest.modelConfig?.temperature,
-          maxTokens: this.manifest.modelConfig?.maxTokens,
-        });
-
-      case 'openai':
-      case 'azure-openai':
-        return new ChatOpenAI({
-          model: config.model,
-          apiKey: config.apiKey || process.env.OPENAI_API_KEY,
-          temperature: this.manifest.modelConfig?.temperature,
-          maxTokens: this.manifest.modelConfig?.maxTokens,
-          configuration: config.baseUrl ? { baseURL: config.baseUrl } : undefined,
-        });
-
-      case 'ollama':
-      case 'localai':
-      case 'vllm':
-        // Use OpenAI-compatible for local models
-        return new ChatOpenAI({
-          model: config.model,
-          apiKey: 'not-needed', // Local models often don't need API key
-          configuration: { baseURL: config.baseUrl },
-        });
-
-      default:
-        // Fallback to Anthropic
-        return new ChatAnthropic({
-          model: 'claude-sonnet-4-20250514',
-        });
-    }
+  private async createLangChainModel(): Promise<BaseChatModel> {
+    const { createLLMForAgent } = await import('../agents/langgraph/llm-factory.js');
+    return createLLMForAgent({
+      agentId: this.agentId,
+      overrides: {
+        temperature: this.manifest.modelConfig?.temperature,
+        maxTokens: this.manifest.modelConfig?.maxTokens,
+      },
+    });
   }
 }
 

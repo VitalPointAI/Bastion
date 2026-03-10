@@ -39,11 +39,11 @@ import { TrustAgent } from './specialists/trust-agent.js';
 // Re-use the triage node from the original orchestrator via the
 // DocumentOrchestrator class. We import only the state annotation and
 // types, then build our own graph from scratch with real specialist nodes.
-import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import type { BaseMessage } from '@langchain/core/messages';
 import { TriageDecisionSchema } from './schemas.js';
 import type { NATORating, SourceReliability } from './source-registry/nato-ratings.js';
+import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 
 // ============================================================================
 // Triage System Prompt (same as orchestrator.ts)
@@ -206,11 +206,10 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
     trustAgent.setProblemSetContext(problemSetContext);
   }
 
-  // LLM for triage
-  const triageModel: BaseChatModel = model ?? new ChatAnthropic({
-    model: 'claude-sonnet-4-20250514',
-    temperature: 0,
-    maxTokens: 2048,
+  // LLM for triage — use the centralized LLM factory (respects OAuth settings)
+  const triageModel: BaseChatModel = model ?? await createLLMForAgent({
+    agentId: 'doc-triage',
+    overrides: { temperature: 0, maxTokens: 2048 },
   });
 
   const checkpointer = await getCheckpointer();
