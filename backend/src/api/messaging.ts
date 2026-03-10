@@ -379,7 +379,7 @@ export function setupMessageWebSocket(serverOrWss: HTTPServer | InstanceType<typ
     ? serverOrWss
     : new WebSocketServer({ server: serverOrWss, path: '/ws/messages' });
 
-  wss.on('connection', async (ws: WebSocket, req) => {
+  wss.on('connection', (ws: WebSocket, req) => {
     const connectionId = randomUUID();
 
     // Extract auth info from query params or headers
@@ -399,8 +399,18 @@ export function setupMessageWebSocket(serverOrWss: HTTPServer | InstanceType<typ
     connections.set(connectionId, connection);
 
     // Subscribe to messages for this user
-    const bus = getMessageBus();
-    const filter = getMessageABACFilter();
+    let bus: ReturnType<typeof getMessageBus>;
+    let filter: ReturnType<typeof getMessageABACFilter>;
+    try {
+      bus = getMessageBus();
+      filter = getMessageABACFilter();
+    } catch (err) {
+      console.error('[WS] Failed to initialize bus/filter:', err);
+      ws.send(JSON.stringify({ type: 'error', error: 'Server initialization error' }));
+      ws.close();
+      connections.delete(connectionId);
+      return;
+    }
 
     const subscriptionId = bus.subscribe(userDid, {
       callback: async (message: MessageEnvelope) => {
