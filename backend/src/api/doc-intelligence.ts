@@ -18,6 +18,7 @@
 
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
+import multer from 'multer';
 import { InterviewService } from '../doc-intelligence/interview/interview-service.js';
 import { getProblemSetContext } from '../doc-intelligence/interview/interview-store.js';
 import { BriefingService } from '../doc-intelligence/briefing/briefing-service.js';
@@ -27,11 +28,38 @@ import type { ProgressCallback } from '../doc-intelligence/orchestrator.js';
 import type { DocumentIntelligenceReport } from '../doc-intelligence/types.js';
 import { sourceStore } from '../doc-intelligence/source-registry/source-store.js';
 import { getPool } from '../lib/database.js';
+import { DocumentParser } from '../strategic/ingestion/document-parser.js';
 
 const router = Router();
 const interviewService = new InterviewService();
 const briefingService = new BriefingService();
 const changeTracker = new ChangeTracker();
+const docParser = new DocumentParser();
+
+// Multer for file uploads — accept common document formats
+const docUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'text/plain',
+      'text/markdown',
+      'text/html',
+      'text/csv',
+      'application/json',
+      'application/xml',
+      'text/xml',
+    ];
+    if (allowed.includes(file.mimetype) || file.mimetype === 'application/octet-stream') {
+      cb(null, true);
+    } else {
+      cb(new Error(`Unsupported file type: ${file.mimetype}`));
+    }
+  },
+});
 
 // ==========================================================================
 // Processing State Management (in-memory, scoped to server lifetime)
@@ -402,27 +430,48 @@ router.get(
  * POST /api/doc-intelligence/process/:problemSetId
  * Upload a document for immediate processing through the full orchestrator pipeline.
  *
- * Accepts JSON body with: { documentId, documentText, metadata }
- * Per user decision: "Immediate processing on document upload -- no batch queue"
+ * Accepts multipart file upload (field name: "document") OR JSON body with
+ * { documentId, documentText, metadata }.
  *
  * Returns 202 Accepted with { processingId, documentId, sseUrl }
  */
 router.post(
   '/process/:problemSetId',
+  docUpload.single('document'),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const { problemSetId } = req.params;
-      const { documentId, documentText, metadata } = req.body;
 
       if (!problemSetId) {
         res.status(400).json({ success: false, error: 'problemSetId is required' });
         return;
       }
 
-      if (!documentId || !documentText) {
+      // Resolve document content from file upload or JSON body
+      let documentId: string;
+      let documentText: string;
+      let metadata: Record<string, unknown>;
+
+      if (req.file) {
+        // Multipart file upload path
+        documentId = randomUUID();
+        const parsed = await docParser.parse(req.file.buffer, req.file.mimetype);
+        documentText = parsed.text;
+        metadata = {
+          originalName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          fileSize: req.file.size,
+          pageCount: parsed.pageCount,
+        };
+      } else if (req.body?.documentId && req.body?.documentText) {
+        // JSON body path (programmatic API usage)
+        documentId = req.body.documentId;
+        documentText = req.body.documentText;
+        metadata = req.body.metadata ?? {};
+      } else {
         res.status(400).json({
           success: false,
-          error: 'documentId and documentText are required',
+          error: 'Upload a document file or provide { documentId, documentText } in JSON body',
         });
         return;
       }
@@ -471,7 +520,7 @@ router.post(
         const report = await graph.processDocument(
           documentId,
           documentText,
-          metadata ?? {},
+          metadata,
         );
 
         session.report = report;
