@@ -17,7 +17,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import multer from 'multer';
 import { InterviewService } from '../doc-intelligence/interview/interview-service.js';
 import { getProblemSetContext } from '../doc-intelligence/interview/interview-store.js';
@@ -78,6 +78,90 @@ interface ProcessingSession {
 
 /** Active processing sessions keyed by processingId */
 const processingSessions = new Map<string, ProcessingSession>();
+
+// ==========================================================================
+// Document Hashing & Similarity Utilities
+// ==========================================================================
+
+/** Compute SHA-256 hash of normalized text content for duplicate detection. */
+function computeContentHash(text: string): string {
+  const normalized = text.replace(/\s+/g, ' ').trim().toLowerCase();
+  return createHash('sha256').update(normalized).digest('hex');
+}
+
+/**
+ * Compute Jaccard similarity between two texts using word-level shingles.
+ * Returns a value between 0 and 1.
+ */
+function computeTextSimilarity(textA: string, textB: string): number {
+  const toWords = (t: string) => new Set(
+    t.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 2)
+  );
+  const setA = toWords(textA);
+  const setB = toWords(textB);
+  if (setA.size === 0 && setB.size === 0) return 1;
+  if (setA.size === 0 || setB.size === 0) return 0;
+  let intersection = 0;
+  for (const w of setA) {
+    if (setB.has(w)) intersection++;
+  }
+  return intersection / (setA.size + setB.size - intersection);
+}
+
+/** Check for duplicate or near-duplicate documents in a problem set. */
+async function checkForDuplicates(
+  problemSetId: string,
+  contentHash: string,
+  documentText: string,
+  similarityThreshold = 0.95,
+): Promise<{ exact: boolean; similar: Array<{ documentId: string; title: string; similarity: number }> }> {
+  const pool = getPool();
+
+  // 1. Exact hash match
+  const exactResult = await pool.query(
+    `SELECT id, title FROM strategic_documents
+     WHERE workspace_id = $1 AND content_hash = $2
+     LIMIT 5`,
+    [problemSetId, contentHash],
+  );
+  if (exactResult.rows.length > 0) {
+    return {
+      exact: true,
+      similar: exactResult.rows.map((r: Record<string, unknown>) => ({
+        documentId: r.id as string,
+        title: r.title as string,
+        similarity: 1.0,
+      })),
+    };
+  }
+
+  // 2. Fuzzy similarity — compare against recent documents in the same problem set.
+  //    Fetch text previews (first 5000 chars) to avoid loading full texts for many docs.
+  const candidates = await pool.query(
+    `SELECT id, title, LEFT(text_content, 5000) as preview
+     FROM strategic_documents
+     WHERE workspace_id = $1 AND processing_status IN ('complete', 'processing')
+     ORDER BY created_at DESC
+     LIMIT 50`,
+    [problemSetId],
+  );
+
+  const similar: Array<{ documentId: string; title: string; similarity: number }> = [];
+  const docPreview = documentText.slice(0, 5000);
+
+  for (const row of candidates.rows as Array<Record<string, unknown>>) {
+    const sim = computeTextSimilarity(docPreview, row.preview as string);
+    if (sim >= similarityThreshold) {
+      similar.push({
+        documentId: row.id as string,
+        title: row.title as string,
+        similarity: Math.round(sim * 1000) / 1000,
+      });
+    }
+  }
+
+  return { exact: false, similar };
+}
 
 /**
  * Create an SSE progress callback that broadcasts to all connected clients.
@@ -488,6 +572,64 @@ router.post(
         return;
       }
 
+      // --- Duplicate detection ---
+      const contentHash = computeContentHash(documentText);
+      const forceUpload = req.body?.forceUpload === true || req.query.force === 'true';
+
+      if (!forceUpload) {
+        const dupeCheck = await checkForDuplicates(
+          problemSetId as string,
+          contentHash,
+          documentText,
+        );
+
+        if (dupeCheck.exact) {
+          res.status(409).json({
+            success: false,
+            error: 'This document has already been uploaded to this problem set.',
+            code: 'DUPLICATE_EXACT',
+            duplicates: dupeCheck.similar,
+          });
+          return;
+        }
+
+        if (dupeCheck.similar.length > 0) {
+          res.status(409).json({
+            success: false,
+            error: `Document is ${Math.round(dupeCheck.similar[0].similarity * 100)}% similar to an existing document. Add forceUpload=true to proceed anyway.`,
+            code: 'DUPLICATE_SIMILAR',
+            duplicates: dupeCheck.similar,
+          });
+          return;
+        }
+      }
+
+      const pool = getPool();
+
+      // --- Persist document to strategic_documents with processing status ---
+      const title = (metadata.originalName as string) ?? `Document ${documentId.slice(0, 8)}`;
+      try {
+        await pool.query(
+          `INSERT INTO strategic_documents (
+            id, title, original_filename, mime_type, text_content, text_length,
+            created_by, workspace_id, content_hash, processing_status, processing_started_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'processing', NOW())
+          ON CONFLICT (id) DO UPDATE SET
+            processing_status = 'processing',
+            processing_started_at = NOW(),
+            processing_error = NULL`,
+          [
+            documentId, title,
+            (metadata.originalName as string) ?? 'upload',
+            (metadata.mimeType as string) ?? 'application/octet-stream',
+            documentText, documentText.length,
+            'system', problemSetId, contentHash,
+          ],
+        );
+      } catch (dbErr) {
+        console.warn('[DocIntelligence] Failed to persist document row:', dbErr);
+      }
+
       // Create processing session
       const processingId = randomUUID();
       const session: ProcessingSession = {
@@ -530,7 +672,6 @@ router.post(
 
         // Store report in database
         try {
-          const pool = getPool();
           await pool.query(
             `INSERT INTO doc_intelligence_reports (document_id, problem_set_id, report, created_at)
              VALUES ($1, $2, $3, NOW())
@@ -539,8 +680,19 @@ router.post(
             [documentId, problemSetId, JSON.stringify(report)],
           );
         } catch (dbError) {
-          // Log but don't fail -- report is still in memory
           console.warn('[DocIntelligence] Failed to persist report:', dbError);
+        }
+
+        // Update document processing status
+        try {
+          await pool.query(
+            `UPDATE strategic_documents
+             SET processing_status = 'complete', processing_completed_at = NOW(), processing_error = NULL
+             WHERE id = $1`,
+            [documentId],
+          );
+        } catch (dbError) {
+          console.warn('[DocIntelligence] Failed to update processing status:', dbError);
         }
 
         // Notify SSE clients of completion
@@ -553,6 +705,18 @@ router.post(
       } catch (error) {
         session.status = 'error';
         session.error = error instanceof Error ? error.message : String(error);
+
+        // Update document processing status to failed
+        try {
+          await pool.query(
+            `UPDATE strategic_documents
+             SET processing_status = 'failed', processing_error = $2, processing_completed_at = NOW()
+             WHERE id = $1`,
+            [documentId, session.error],
+          );
+        } catch (dbError) {
+          console.warn('[DocIntelligence] Failed to update failed status:', dbError);
+        }
 
         onProgress('processing:error', {
           processingId,
@@ -631,6 +795,197 @@ router.get(
     req.on('close', () => {
       session.sseClients.delete(res);
     });
+  },
+);
+
+// ==========================================================================
+// Document Status & Recovery Endpoints
+// ==========================================================================
+
+/**
+ * GET /api/doc-intelligence/documents/:problemSetId
+ * List all documents for a problem set with their processing status.
+ * Includes interrupted/failed documents that can be retried.
+ */
+router.get(
+  '/documents/:problemSetId',
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { problemSetId } = req.params;
+      const statusFilter = req.query.status as string | undefined;
+
+      const pool = getPool();
+      let query = `SELECT id, title, original_filename, mime_type, text_length,
+                          processing_status, processing_error, processing_started_at,
+                          processing_completed_at, content_hash, trust_status, created_at
+                   FROM strategic_documents
+                   WHERE workspace_id = $1`;
+      const params: unknown[] = [problemSetId];
+
+      if (statusFilter) {
+        query += ` AND processing_status = $2`;
+        params.push(statusFilter);
+      }
+
+      query += ` ORDER BY created_at DESC`;
+
+      const result = await pool.query(query, params);
+
+      const documents = result.rows.map((row: Record<string, unknown>) => ({
+        documentId: row.id,
+        title: row.title,
+        originalFilename: row.original_filename,
+        mimeType: row.mime_type,
+        textLength: row.text_length,
+        processingStatus: row.processing_status ?? 'pending',
+        processingError: row.processing_error,
+        processingStartedAt: row.processing_started_at,
+        processingCompletedAt: row.processing_completed_at,
+        trustStatus: row.trust_status,
+        createdAt: row.created_at,
+      }));
+
+      res.json({ success: true, documents });
+    } catch (error) {
+      console.error('[DocIntelligence] List documents error:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal error',
+      });
+    }
+  },
+);
+
+/**
+ * POST /api/doc-intelligence/documents/:problemSetId/:documentId/retry
+ * Retry processing for a failed or interrupted document.
+ */
+router.post(
+  '/documents/:problemSetId/:documentId/retry',
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { problemSetId, documentId } = req.params;
+      const pool = getPool();
+
+      // Fetch the document — must be in a retryable state
+      const docResult = await pool.query(
+        `SELECT id, text_content, original_filename, mime_type, processing_status
+         FROM strategic_documents
+         WHERE id = $1 AND workspace_id = $2`,
+        [documentId, problemSetId],
+      );
+
+      if (docResult.rows.length === 0) {
+        res.status(404).json({ success: false, error: 'Document not found' });
+        return;
+      }
+
+      const doc = docResult.rows[0] as Record<string, unknown>;
+      const status = doc.processing_status as string;
+
+      if (status !== 'failed' && status !== 'interrupted') {
+        res.status(400).json({
+          success: false,
+          error: `Cannot retry document with status '${status}'. Only failed or interrupted documents can be retried.`,
+        });
+        return;
+      }
+
+      // Load ProblemSetContext
+      const problemSetContext = await getProblemSetContext(problemSetId as string);
+      if (!problemSetContext) {
+        res.status(400).json({
+          success: false,
+          error: 'No problem set context found. Complete the scoping interview first.',
+          code: 'INTERVIEW_REQUIRED',
+        });
+        return;
+      }
+
+      // Mark as processing
+      await pool.query(
+        `UPDATE strategic_documents
+         SET processing_status = 'processing', processing_started_at = NOW(), processing_error = NULL
+         WHERE id = $1`,
+        [documentId],
+      );
+
+      // Create session
+      const processingId = randomUUID();
+      const session: ProcessingSession = {
+        processingId,
+        documentId: documentId as string,
+        problemSetId: problemSetId as string,
+        status: 'processing',
+        events: [],
+        sseClients: new Set(),
+      };
+      processingSessions.set(processingId, session);
+
+      const sseUrl = `/api/doc-intelligence/process/${problemSetId}/stream/${processingId}`;
+      res.status(202).json({ success: true, processingId, documentId, sseUrl });
+
+      // Fire-and-forget async processing
+      const onProgress = createSSEProgressCallback(session);
+      try {
+        const graph = await createWiredDocIntelligenceGraph({
+          problemSetId: problemSetId as string,
+          problemSetContext,
+          onProgress,
+        });
+
+        const report = await graph.processDocument(
+          documentId as string,
+          doc.text_content as string,
+          { originalName: doc.original_filename, mimeType: doc.mime_type, retried: true },
+        );
+
+        session.report = report;
+        session.status = 'complete';
+
+        await pool.query(
+          `INSERT INTO doc_intelligence_reports (document_id, problem_set_id, report, created_at)
+           VALUES ($1, $2, $3, NOW())
+           ON CONFLICT (document_id, problem_set_id)
+           DO UPDATE SET report = $3, updated_at = NOW()`,
+          [documentId, problemSetId, JSON.stringify(report)],
+        );
+
+        await pool.query(
+          `UPDATE strategic_documents
+           SET processing_status = 'complete', processing_completed_at = NOW(), processing_error = NULL
+           WHERE id = $1`,
+          [documentId],
+        );
+
+        onProgress('processing:complete', {
+          processingId, documentId, reportId: documentId, timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        session.status = 'error';
+        session.error = error instanceof Error ? error.message : String(error);
+
+        await pool.query(
+          `UPDATE strategic_documents
+           SET processing_status = 'failed', processing_error = $2, processing_completed_at = NOW()
+           WHERE id = $1`,
+          [documentId, session.error],
+        ).catch(() => {});
+
+        onProgress('processing:error', {
+          processingId, error: session.error, timestamp: new Date().toISOString(),
+        });
+        console.error('[DocIntelligence] Retry processing error:', error);
+      }
+
+      setTimeout(() => processingSessions.delete(processingId), 5 * 60 * 1000);
+    } catch (error) {
+      console.error('[DocIntelligence] Retry document error:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal error',
+      });
+    }
   },
 );
 

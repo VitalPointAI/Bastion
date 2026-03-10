@@ -41,7 +41,7 @@ import { getTracer } from './orchestration/observability.js';
 import { getCheckpointManager } from './orchestration/human-checkpoints.js';
 import { seedLangGraphAgents } from './agents/langgraph/agent-seeder.js';
 import { closeNeo4jDriver } from './graph/index.js';
-import { stopSharedBoss } from './lib/database.js';
+import { stopSharedBoss, getPool } from './lib/database.js';
 import { initRAFTSchema } from './graph/raft/schema-init.js';
 import { copRouter, initCOP } from './cop/index.js';
 import { strategicContextRouter } from './api/strategic-context.js';
@@ -283,6 +283,23 @@ server.listen(port, async () => {
     await runMigrations();
   } catch (error) {
     console.error('Failed to run migrations:', error);
+  }
+
+  // Recover interrupted document processing (mark stuck 'processing' as 'interrupted')
+  try {
+    const pool = getPool();
+    const result = await pool.query(
+      `UPDATE strategic_documents
+       SET processing_status = 'interrupted'
+       WHERE processing_status = 'processing'
+       RETURNING id`,
+    );
+    if (result.rowCount && result.rowCount > 0) {
+      console.log(`Recovered ${result.rowCount} interrupted document(s)`);
+    }
+  } catch (error) {
+    // Table may not exist yet on first run — that's fine
+    console.warn('Could not recover interrupted documents:', (error as Error).message);
   }
 
   // Drop legacy auth tables (idempotent, must run before auth.initialize())
