@@ -236,7 +236,8 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', gap: '1rem',
-      flex: 1, minHeight: 0, padding: '0.5rem 0',
+      flex: 1, minHeight: 0, padding: '0.5rem 1rem 1rem',
+      overflowY: 'auto',
     }}>
 
       {/* ── 1. Scoping Interview ── */}
