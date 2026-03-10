@@ -75,6 +75,12 @@ const DEFAULT_SPECIALISTS = [
   'quality-assessor',
 ];
 
+export interface DuplicateWarning {
+  file: File;
+  message: string;
+  duplicates: Array<{ documentId: string; title: string; similarity: number }>;
+}
+
 export interface DocProcessingState {
   specialists: Map<string, SpecialistStatus>;
   events: ProcessingEvent[];
@@ -84,7 +90,10 @@ export interface DocProcessingState {
   error: string | null;
   documentName: string | null;
   startTime: string | null;
-  uploadDocument: (file: File) => Promise<void>;
+  uploadDocument: (file: File, force?: boolean) => Promise<void>;
+  pendingDuplicate: DuplicateWarning | null;
+  forceUpload: () => Promise<void>;
+  dismissDuplicate: () => void;
 }
 
 /**
@@ -107,6 +116,7 @@ export function useDocProcessing(
   const [error, setError] = useState<string | null>(null);
   const [documentName, setDocumentName] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<string | null>(null);
+  const [pendingDuplicate, setPendingDuplicate] = useState<DuplicateWarning | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const [activeProcessingId, setActiveProcessingId] = useState<string | null>(processingId);
@@ -266,7 +276,7 @@ export function useDocProcessing(
 
   // Upload a document and start processing
   const uploadDocument = useCallback(
-    async (file: File) => {
+    async (file: File, force = false) => {
       setError(null);
       setReport(null);
       setFlagged(null);
@@ -277,19 +287,22 @@ export function useDocProcessing(
       formData.append('document', file);
 
       try {
-        const res = await fetch(
-          `${API_BASE}/api/doc-intelligence/process/${encodeURIComponent(problemSetId)}`,
-          {
-            method: 'POST',
-            body: formData,
-          }
-        );
+        const url = `${API_BASE}/api/doc-intelligence/process/${encodeURIComponent(problemSetId)}${force ? '?force=true' : ''}`;
+        const res = await fetch(url, { method: 'POST', body: formData });
+
+        if (res.status === 409) {
+          const body = await res.json().catch(() => ({ error: 'Duplicate document' }));
+          // Store the file ref so the UI can offer a force-upload
+          setPendingDuplicate({ file, message: body.error, duplicates: body.duplicates ?? [] });
+          return;
+        }
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({ error: res.statusText }));
           throw new Error(body.error || `Upload failed: ${res.status}`);
         }
 
+        setPendingDuplicate(null);
         const { processingId: newPid } = await res.json();
         setActiveProcessingId(newPid);
       } catch (err) {
@@ -298,6 +311,16 @@ export function useDocProcessing(
     },
     [problemSetId]
   );
+
+  // Force upload after duplicate warning
+  const forceUpload = useCallback(async () => {
+    if (!pendingDuplicate) return;
+    await uploadDocument(pendingDuplicate.file, true);
+  }, [pendingDuplicate, uploadDocument]);
+
+  const dismissDuplicate = useCallback(() => {
+    setPendingDuplicate(null);
+  }, []);
 
   return {
     specialists,
@@ -309,5 +332,8 @@ export function useDocProcessing(
     documentName,
     startTime,
     uploadDocument,
+    pendingDuplicate,
+    forceUpload,
+    dismissDuplicate,
   };
 }
