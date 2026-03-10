@@ -479,9 +479,11 @@ router.post(
       // Load ProblemSetContext -- required for scoped processing
       const problemSetContext = await getProblemSetContext(problemSetId as string);
       if (!problemSetContext) {
+        console.warn(`[DocIntelligence] Process rejected: no ProblemSetContext for ${problemSetId}`);
         res.status(400).json({
           success: false,
-          error: 'Complete scoping interview first',
+          error: 'No problem set context found. Complete the scoping interview before uploading documents.',
+          code: 'INTERVIEW_REQUIRED',
         });
         return;
       }
