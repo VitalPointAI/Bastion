@@ -270,6 +270,18 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
         </p>
       </div>
 
+      {/* Processing Error Banner */}
+      {error && (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: '0.5rem',
+          padding: '0.75rem 1rem',
+        }}>
+          <p style={{ fontSize: '0.875rem', color: '#f87171', fontWeight: 500 }}>{error}</p>
+        </div>
+      )}
+
       {/* ── 3. Mission Control Section ── */}
       {(isProcessing || flagged || events.length > 0) && (
         <MissionControl
@@ -301,17 +313,6 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
         />
       </div>
 
-      {/* Processing Error Banner */}
-      {error && (
-        <div style={{
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: '0.5rem',
-          padding: '0.75rem 1rem',
-        }}>
-          <p style={{ fontSize: '0.875rem', color: '#f87171' }}>{error}</p>
-        </div>
-      )}
     </div>
   );
 }
