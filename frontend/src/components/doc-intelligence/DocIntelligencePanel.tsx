@@ -212,11 +212,13 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          paddingTop: '3.5rem',
           background: 'rgba(0, 0, 0, 0.7)',
         }}>
           <div style={{
             width: '100%',
             maxWidth: '48rem',
+            maxHeight: 'calc(100vh - 5rem)',
             height: '80vh',
             background: 'var(--color-background, #0a0a0a)',
             borderRadius: '0.75rem',

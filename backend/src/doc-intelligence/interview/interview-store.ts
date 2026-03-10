@@ -2,6 +2,7 @@
  * Interview Store - PostgreSQL persistence for ProblemSetContext
  *
  * Handles UPSERT of scoping interview results to the problem_set_context table.
+ * Uses the context_data JSONB column for flexible schema storage.
  * Supports versioning for re-run detection and incremental updates.
  */
 
@@ -11,6 +12,7 @@ import { ProblemSetContextSchema, type ProblemSetContext } from '../schemas.js';
 /**
  * Save a ProblemSetContext to the database.
  * Uses UPSERT on problem_set_id, incrementing the version number.
+ * Stores the full context as JSONB in the context_data column.
  */
 export async function saveProblemSetContext(
   context: ProblemSetContext
@@ -29,39 +31,19 @@ export async function saveProblemSetContext(
 
   await pool.query(
     `INSERT INTO problem_set_context (
+      id,
       problem_set_id,
-      geographic_scope,
-      temporal_range,
-      actor_focus,
-      core_problem,
-      additional_nuance,
-      classification_ceiling,
-      echelon,
-      standing_requirements,
+      context_data,
       version,
       updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    ) VALUES (gen_random_uuid()::text, $1, $2, $3, $4)
     ON CONFLICT (problem_set_id) DO UPDATE SET
-      geographic_scope = EXCLUDED.geographic_scope,
-      temporal_range = EXCLUDED.temporal_range,
-      actor_focus = EXCLUDED.actor_focus,
-      core_problem = EXCLUDED.core_problem,
-      additional_nuance = EXCLUDED.additional_nuance,
-      classification_ceiling = EXCLUDED.classification_ceiling,
-      echelon = EXCLUDED.echelon,
-      standing_requirements = EXCLUDED.standing_requirements,
+      context_data = EXCLUDED.context_data,
       version = problem_set_context.version + 1,
       updated_at = EXCLUDED.updated_at`,
     [
       validContext.problemSetId,
-      JSON.stringify(validContext.geographicScope),
-      JSON.stringify(validContext.temporalRange),
-      JSON.stringify(validContext.actorFocus),
-      validContext.coreProblem,
-      validContext.additionalNuance ?? null,
-      validContext.classificationCeiling,
-      validContext.echelon,
-      JSON.stringify(validContext.standingRequirements ?? []),
+      JSON.stringify(validContext),
       validContext.version,
       validContext.updatedAt,
     ]
@@ -78,18 +60,7 @@ export async function getProblemSetContext(
   const pool = getPool();
 
   const result = await pool.query(
-    `SELECT
-      problem_set_id,
-      geographic_scope,
-      temporal_range,
-      actor_focus,
-      core_problem,
-      additional_nuance,
-      classification_ceiling,
-      echelon,
-      standing_requirements,
-      version,
-      updated_at
+    `SELECT context_data, version, updated_at
     FROM problem_set_context
     WHERE problem_set_id = $1`,
     [problemSetId]
@@ -99,28 +70,19 @@ export async function getProblemSetContext(
 
   const row = result.rows[0];
 
+  // context_data is JSONB — PostgreSQL driver returns it as a parsed object
+  const contextData = typeof row.context_data === 'string'
+    ? JSON.parse(row.context_data)
+    : row.context_data;
+
+  // Merge stored version/updatedAt from columns (source of truth) with JSONB data
   return {
-    problemSetId: row.problem_set_id,
-    geographicScope: typeof row.geographic_scope === 'string'
-      ? JSON.parse(row.geographic_scope)
-      : row.geographic_scope,
-    temporalRange: typeof row.temporal_range === 'string'
-      ? JSON.parse(row.temporal_range)
-      : row.temporal_range,
-    actorFocus: typeof row.actor_focus === 'string'
-      ? JSON.parse(row.actor_focus)
-      : row.actor_focus,
-    coreProblem: row.core_problem,
-    additionalNuance: row.additional_nuance ?? undefined,
-    classificationCeiling: row.classification_ceiling,
-    echelon: row.echelon,
-    standingRequirements: typeof row.standing_requirements === 'string'
-      ? JSON.parse(row.standing_requirements)
-      : row.standing_requirements ?? [],
+    ...contextData,
+    problemSetId,
+    version: row.version,
     updatedAt: row.updated_at instanceof Date
       ? row.updated_at.toISOString()
       : row.updated_at,
-    version: row.version,
   };
 }
 
