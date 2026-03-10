@@ -130,9 +130,8 @@ async function askQuestion(state: InterviewState): Promise<Partial<InterviewStat
     .replace('{uncoveredCategories}', uncovered.join(', '));
 
   const messagesForLLM: BaseMessage[] = [
-    new SystemMessage(INTERVIEW_SYSTEM_PROMPT),
+    new SystemMessage(INTERVIEW_SYSTEM_PROMPT + '\n\n' + followUpPrompt),
     ...state.messages,
-    new SystemMessage(followUpPrompt),
   ];
 
   const response = await llm.invoke(messagesForLLM);
@@ -159,9 +158,14 @@ Only include keys where you have extracted information. For example:
 
 Current partial context: ${JSON.stringify(state.derivedContext)}`;
 
+  // Filter out any SystemMessages from conversation history — Anthropic requires
+  // system messages to be first only
+  const conversationMessages = state.messages.filter(
+    (m) => !(m instanceof SystemMessage)
+  );
   const response = await llm.invoke([
     new SystemMessage(extractionPrompt),
-    ...state.messages,
+    ...conversationMessages,
   ]);
 
   let updatedContext = { ...state.derivedContext };
@@ -215,11 +219,11 @@ async function summarize(state: InterviewState): Promise<Partial<InterviewState>
   const llm = await getInterviewLLM();
 
   const summaryMessages: BaseMessage[] = [
-    new SystemMessage(INTERVIEW_SYSTEM_PROMPT),
-    ...state.messages,
     new SystemMessage(
+      INTERVIEW_SYSTEM_PROMPT + '\n\n' +
       'The interview is now complete. Provide a clear, organized summary of everything captured across all categories. Ask the user to confirm or make corrections.'
     ),
+    ...state.messages,
   ];
 
   const response = await llm.invoke(summaryMessages);
@@ -425,9 +429,13 @@ export class InterviewService {
     const values = state.values as InterviewState;
 
     // Use LLM to extract structured ProblemSetContext
+    // Filter out SystemMessages from conversation — Anthropic requires system first only
+    const conversationOnly = values.messages.filter(
+      (m: BaseMessage) => !(m instanceof SystemMessage)
+    );
     const extractionMessages: BaseMessage[] = [
       new SystemMessage(INTERVIEW_SUMMARY_PROMPT),
-      ...values.messages,
+      ...conversationOnly,
     ];
 
     const response = await llm.invoke(extractionMessages);
