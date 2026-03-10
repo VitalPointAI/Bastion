@@ -17,6 +17,7 @@ import type { ProblemSetContext } from '../schemas.js';
 import type { DocumentType } from '../types.js';
 import { ExtractionService } from '../../strategic/extraction/extractor.js';
 import type { ExtractionResult, ExtractedObjective } from '../../strategic/extraction/types.js';
+import { resolveProviderConfig } from '../../strategic/config/resolve-api-key.js';
 import { graphBuilder } from '../../graph/construction/graph-builder.js';
 import type { GraphBuildOptions, GraphEntityEvent } from '../../graph/construction/graph-builder.js';
 import { getPool } from '../../lib/database.js';
@@ -104,7 +105,7 @@ export interface ObjectiveExtractorOutput {
 // ============================================================================
 
 export class ObjectiveExtractor extends SpecialistBase {
-  private extractionService: ExtractionService;
+  private _extractionService: ExtractionService | null = null;
 
   constructor() {
     const config: SpecialistConfig = {
@@ -120,7 +121,15 @@ export class ObjectiveExtractor extends SpecialistBase {
     };
 
     super(config);
-    this.extractionService = new ExtractionService();
+  }
+
+  /** Lazy-init ExtractionService with OAuth-aware provider config */
+  private async getExtractionService(): Promise<ExtractionService> {
+    if (!this._extractionService) {
+      const providerConfig = await resolveProviderConfig('extraction');
+      this._extractionService = new ExtractionService({ provider: providerConfig });
+    }
+    return this._extractionService;
   }
 
   // --------------------------------------------------------------------------
@@ -194,7 +203,8 @@ For each extracted objective, provide a relevance score (0-1) indicating how clo
       onProgress ? (evt) => onProgress(evt.data.stage as string, evt.data.detail as string) : undefined,
     );
 
-    const extractionResult = await this.extractionService.extractFromDocument(documentText);
+    const extractionService = await this.getExtractionService();
+    const extractionResult = await extractionService.extractFromDocument(documentText);
 
     // Step 2: Score objectives for relevance against problem set
     this.reportProgress(
