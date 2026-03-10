@@ -170,9 +170,18 @@ Current partial context: ${JSON.stringify(state.derivedContext)}`;
 
   let updatedContext = { ...state.derivedContext };
   try {
-    const content = typeof response.content === 'string'
-      ? response.content
-      : JSON.stringify(response.content);
+    // Extract text content — handle both string and Anthropic content block array
+    let content: string;
+    if (typeof response.content === 'string') {
+      content = response.content;
+    } else if (Array.isArray(response.content)) {
+      content = response.content
+        .filter((block: Record<string, unknown>) => block.type === 'text')
+        .map((block: Record<string, unknown>) => block.text)
+        .join('');
+    } else {
+      content = String(response.content);
+    }
     // Extract JSON from response (handle markdown code blocks)
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) ||
       content.match(/(\{[\s\S]*\})/);
@@ -439,19 +448,38 @@ export class InterviewService {
     ];
 
     const response = await llm.invoke(extractionMessages);
-    const content = typeof response.content === 'string'
-      ? response.content
-      : JSON.stringify(response.content);
 
-    // Parse JSON from response
+    // Extract text content — handle both string and Anthropic content block array
+    let content: string;
+    if (typeof response.content === 'string') {
+      content = response.content;
+    } else if (Array.isArray(response.content)) {
+      content = response.content
+        .filter((block: Record<string, unknown>) => block.type === 'text')
+        .map((block: Record<string, unknown>) => block.text)
+        .join('');
+    } else {
+      content = String(response.content);
+    }
+
+    console.log('[InterviewService] Extraction response length:', content.length);
+
+    // Parse JSON from response (handle markdown code blocks or raw JSON)
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) ||
       content.match(/(\{[\s\S]*\})/);
 
     if (!jsonMatch) {
+      console.error('[InterviewService] No JSON found in extraction response:', content.substring(0, 500));
       throw new Error('Failed to extract ProblemSetContext from interview conversation');
     }
 
-    const rawContext = JSON.parse(jsonMatch[1]);
+    let rawContext: Record<string, unknown>;
+    try {
+      rawContext = JSON.parse(jsonMatch[1]);
+    } catch (parseErr) {
+      console.error('[InterviewService] JSON parse failed:', parseErr, 'Raw:', jsonMatch[1].substring(0, 500));
+      throw new Error('Failed to parse ProblemSetContext JSON from interview');
+    }
 
     // Get current version for increment
     const currentVersion = await getContextVersion(problemSetId);
