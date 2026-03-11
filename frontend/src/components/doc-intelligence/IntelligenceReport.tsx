@@ -203,7 +203,8 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
     [onRatingOverride]
   );
 
-  const relevancePercent = Math.round(report.triage.relevanceScore * 100);
+  const triage = report.triage ?? { relevanceScore: 0, documentType: 'other' as DocumentType, specialists: [], reasoning: 'Triage data unavailable' };
+  const relevancePercent = Math.round(triage.relevanceScore * 100);
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
@@ -218,7 +219,7 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
               {report.documentId}
             </span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-800/50 text-purple-300 border border-purple-700/50">
-              {DOC_TYPE_LABELS[report.triage.documentType] || report.triage.documentType}
+              {DOC_TYPE_LABELS[triage.documentType] || triage.documentType}
             </span>
           </div>
         </div>
@@ -425,18 +426,18 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-gray-500">Document Type:</span>
                 <span className="text-xs text-gray-300">
-                  {DOC_TYPE_LABELS[report.triage.documentType] || report.triage.documentType}
+                  {DOC_TYPE_LABELS[triage.documentType] || triage.documentType}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-gray-500">Relevance Score:</span>
                 <div className="flex-1 max-w-[200px]">
-                  <ConfidenceBar value={report.triage.relevanceScore} />
+                  <ConfidenceBar value={triage.relevanceScore} />
                 </div>
               </div>
               <div>
                 <span className="text-[10px] text-gray-500">Triage Reasoning:</span>
-                <p className="text-xs text-gray-400 mt-1">{report.triage.reasoning}</p>
+                <p className="text-xs text-gray-400 mt-1">{triage.reasoning}</p>
               </div>
             </div>
           </ExpandableSection>
