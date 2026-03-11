@@ -25,6 +25,7 @@ import { copService } from '../../lib/cop-service.js';
 import { createMilSymbolIcon } from '../mission/map/MilSymbolMarker.js';
 import { SandboxedSVG } from './SandboxedSVG.js';
 import { COPResourceLayer } from './COPResourceLayer.js';
+import { COPRobotLayer } from './COPRobotLayer.js';
 import type { RegisteredResource } from '../../lib/resource-registry-service.js';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
@@ -44,6 +45,10 @@ interface COPMapViewProps {
   resourceLayerVisible?: boolean;
   /** Callback when a resource marker is selected */
   onResourceSelect?: (resource: RegisteredResource) => void;
+  /** Whether robot layer is visible (Phase 06) */
+  robotLayerVisible?: boolean;
+  /** Callback when a robot marker is clicked (Phase 06) */
+  onRobotClick?: (robotId: string) => void;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -84,6 +89,8 @@ export function COPMapView({
   onEntityClick,
   resourceLayerVisible = true,
   onResourceSelect,
+  robotLayerVisible = true,
+  onRobotClick,
 }: COPMapViewProps) {
   const [layers, setLayers] = useState<COPLayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,6 +169,13 @@ export function COPMapView({
             onResourceSelect={onResourceSelect}
           />
         )}
+
+        {/* Robot layer (Phase 06) */}
+        <COPRobotLayer
+          problemSetId={problemSetId}
+          visible={robotLayerVisible}
+          onRobotClick={onRobotClick}
+        />
       </MapContainer>
     </div>
   );

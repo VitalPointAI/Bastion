@@ -57,6 +57,8 @@ import { registerValidationJobs } from './validation/validation-scheduler.js';
 import { requireAuth } from './auth/auth-instance.js';
 import { discoveryRouter, setupDiscoveryWS, getDiscoveryService } from './discovery/index.js';
 import { setupInheritanceWebSocket } from './inheritance/inheritance-ws.js';
+import { setupRobotWebSocket } from './robot/index.js';
+import { robotRouter } from './api/robot-routes.js';
 import { osintWebhookRouter } from './api/osint-webhook.js';
 import jppRouter from './api/jpp.js';
 import { documentRouter } from './planning/routes/document-routes.js';
@@ -212,6 +214,7 @@ app.use('/api/documents/planning', requireAuth, documentRouter);
 app.use('/api/assessment', assessmentRouter);
 app.use('/api/strategic-guidance', strategicGuidanceRouter);
 app.use('/api/doc-intelligence', docIntelligenceRouter);
+app.use('/api/robot', robotRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -232,6 +235,7 @@ const wsServers = {
   resources: new WebSocketServer({ noServer: true }),
   discovery: new WebSocketServer({ noServer: true }),
   inheritance: new WebSocketServer({ noServer: true }),
+  robot: new WebSocketServer({ noServer: true }),
 };
 
 setupMessageWebSocket(wsServers.messages);
@@ -241,6 +245,7 @@ console.log('Collaboration WebSocket server mounted at /ws/collab');
 setupResourceWebSocket(wsServers.resources);
 setupDiscoveryWS(wsServers.discovery);
 setupInheritanceWebSocket(wsServers.inheritance);
+setupRobotWebSocket(wsServers.robot);
 
 server.on('upgrade', (request, socket, head) => {
   const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
@@ -268,6 +273,10 @@ server.on('upgrade', (request, socket, head) => {
   } else if (pathname === '/ws/inheritance') {
     wsServers.inheritance.handleUpgrade(request, socket, head, (ws) => {
       wsServers.inheritance.emit('connection', ws, request);
+    });
+  } else if (pathname === '/ws/robot') {
+    wsServers.robot.handleUpgrade(request, socket, head, (ws) => {
+      wsServers.robot.emit('connection', ws, request);
     });
   } else {
     socket.destroy();

@@ -1,0 +1,231 @@
+/**
+ * Robot Type Definitions
+ *
+ * Phase 06 Plan 01: Core type system for autonomous vehicle integration.
+ * Uses const objects (not enums) per project convention (erasableSyntaxOnly).
+ *
+ * Covers mission JSON schema (zod-validated), WS message types, and
+ * in-memory robot connection state.
+ */
+
+import { z } from 'zod';
+import type { WebSocket } from 'ws';
+
+// ---------------------------------------------------------------------------
+// Robot Mission State — lifecycle of a dispatched mission
+// ---------------------------------------------------------------------------
+
+export const RobotMissionState = {
+  pending: 'pending',
+  accepted: 'accepted',
+  executing: 'executing',
+  awaiting_auth: 'awaiting_auth',
+  complete: 'complete',
+  failed: 'failed',
+  rejected: 'rejected',
+} as const;
+
+export type RobotMissionState = (typeof RobotMissionState)[keyof typeof RobotMissionState];
+
+// ---------------------------------------------------------------------------
+// Robot Connection State — is the robot currently connected?
+// ---------------------------------------------------------------------------
+
+export const RobotConnectionState = {
+  connected: 'connected',
+  disconnected: 'disconnected',
+} as const;
+
+export type RobotConnectionState = (typeof RobotConnectionState)[keyof typeof RobotConnectionState];
+
+// ---------------------------------------------------------------------------
+// WebSocket Message Types
+// ---------------------------------------------------------------------------
+
+export const RobotWsMessageType = {
+  register: 'register',
+  state_update: 'state_update',
+  telemetry: 'telemetry',
+  mission_assign: 'mission_assign',
+  mission_rejected: 'mission_rejected',
+  auth_request: 'auth_request',
+  auth_response: 'auth_response',
+  ack: 'ack',
+  error: 'error',
+} as const;
+
+export type RobotWsMessageType = (typeof RobotWsMessageType)[keyof typeof RobotWsMessageType];
+
+// ---------------------------------------------------------------------------
+// Mission JSON Schema (zod-validated)
+// ---------------------------------------------------------------------------
+
+export const AutonomyPolicySchema = z.object({
+  /** Actions the robot can execute without human authorization */
+  autonomous_actions: z.array(z.string()).default([]),
+  /** Actions that require human authorization via governance DAO */
+  restricted_actions: z.array(z.string()).default([]),
+  /** Maximum speed limit (0-255). Missions exceeding this are rejected. */
+  max_speed: z.number().int().min(0).max(255).default(255),
+  /** Whether lethal effects are permitted at all under this policy */
+  lethal_effects_permitted: z.boolean().default(false),
+});
+
+export type AutonomyPolicy = z.infer<typeof AutonomyPolicySchema>;
+
+export const MissionJSONSchema = z.object({
+  /** Unique mission identifier */
+  mission_id: z.string().uuid(),
+  /** Target robot identifier */
+  robot_id: z.string().min(1),
+  /** Mission type */
+  command: z.enum(['patrol_route', 'find_engage']),
+  /** Mission-specific parameters */
+  params: z.object({
+    /** Target location for find_engage missions (room-relative coordinates) */
+    target_location: z.object({ x: z.number(), y: z.number() }).optional(),
+    /** Waypoint sequence for patrol_route missions */
+    waypoints: z.array(z.object({ x: z.number(), y: z.number() })).optional(),
+    /** Speed setting 0-255 */
+    speed: z.number().int().min(0).max(255),
+    /** Optional duration cap in seconds */
+    duration_sec: z.number().positive().optional(),
+    /** Autonomy policy scoping what the robot can do without authorization */
+    autonomy_policy: AutonomyPolicySchema,
+  }),
+  /** DID of the entity issuing the mission (e.g. DAO account) */
+  issued_by: z.string().min(1),
+  /** ISO timestamp of mission creation */
+  timestamp: z.string().datetime(),
+  /** Optional auth token for gate-checked missions */
+  auth_token: z.string().optional(),
+  /** Problem set context for traceability */
+  problem_set_id: z.string().optional(),
+});
+
+export type MissionJSON = z.infer<typeof MissionJSONSchema>;
+
+// ---------------------------------------------------------------------------
+// WebSocket Message Interfaces (Inbound — Robot → Bastion)
+// ---------------------------------------------------------------------------
+
+/** Robot → Bastion: announce connection and capabilities */
+export interface RobotRegisterMsg {
+  type: typeof RobotWsMessageType.register;
+  robot_id: string;
+  /** DID assigned by the resource registry (Phase 32) */
+  did: string;
+  /** Human-readable label for this robot */
+  name?: string;
+  /** Capability strings advertised by the robot (e.g. 'patrol', 'led_effects') */
+  capabilities: string[];
+  /** Firmware/model info */
+  hardware_info?: Record<string, unknown>;
+}
+
+/** Robot → Bastion: report a mission state transition */
+export interface RobotStateUpdateMsg {
+  type: typeof RobotWsMessageType.state_update;
+  robot_id: string;
+  mission_id: string;
+  state: RobotMissionState;
+  /** Reason for rejection or failure (optional) */
+  reason?: string;
+  /** Current room-relative position at time of state change */
+  position?: { x: number; y: number };
+  timestamp: string;
+}
+
+/** Robot → Bastion: periodic telemetry heartbeat (~2 sec cadence) */
+export interface RobotTelemetryMsg {
+  type: typeof RobotWsMessageType.telemetry;
+  robot_id: string;
+  /** Current room-relative position */
+  position: { x: number; y: number };
+  /** Heading in degrees (0=North, clockwise) */
+  heading: number;
+  /** Battery level 0-100 */
+  battery: number;
+  /** Active mission if any */
+  mission_id?: string;
+  timestamp: string;
+}
+
+/** Robot → Bastion: robot requests human auth before executing restricted action */
+export interface AuthRequestMsg {
+  type: typeof RobotWsMessageType.auth_request;
+  robot_id: string;
+  mission_id: string;
+  /** The restricted action that needs authorization */
+  action: string;
+  /** Contextual information for the authorization prompt */
+  context?: Record<string, unknown>;
+  timestamp: string;
+}
+
+// ---------------------------------------------------------------------------
+// WebSocket Message Interfaces (Outbound — Bastion → Robot)
+// ---------------------------------------------------------------------------
+
+/** Bastion → Robot: dispatch a mission */
+export interface MissionAssignMsg {
+  type: typeof RobotWsMessageType.mission_assign;
+  mission: MissionJSON;
+}
+
+/** Bastion → Robot: authorization decision for a pending auth request */
+export interface AuthResponseMsg {
+  type: typeof RobotWsMessageType.auth_response;
+  robot_id: string;
+  mission_id: string;
+  action: string;
+  /** true = approved, false = denied */
+  approved: boolean;
+  decided_by: string;
+  timestamp: string;
+}
+
+/** Bastion → Robot: general acknowledgment */
+export interface RobotAckMsg {
+  type: typeof RobotWsMessageType.ack;
+  ref_type: RobotWsMessageType;
+  status: 'ok' | 'error';
+  message?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Union type for all inbound robot messages
+// ---------------------------------------------------------------------------
+
+export type RobotWsMessage =
+  | RobotRegisterMsg
+  | RobotStateUpdateMsg
+  | RobotTelemetryMsg
+  | AuthRequestMsg;
+
+// ---------------------------------------------------------------------------
+// Connected Robot — in-memory state for a live WS connection
+// ---------------------------------------------------------------------------
+
+/** Tracks a robot that is currently connected via WebSocket */
+export interface ConnectedRobot {
+  robot_id: string;
+  /** Live WebSocket reference */
+  ws: WebSocket;
+  /** Current connection state */
+  state: RobotConnectionState;
+  /** Active mission ID if one is in progress */
+  current_mission_id?: string;
+  /** DID assigned by resource registry */
+  did: string;
+  /** Capability strings */
+  capabilities: string[];
+  /** Epoch ms of last telemetry/heartbeat */
+  last_heartbeat: number;
+  /** Latest telemetry snapshot */
+  latest_telemetry?: {
+    position: { x: number; y: number };
+    heading: number;
+    battery: number;
+  };
+}

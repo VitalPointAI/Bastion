@@ -29,6 +29,7 @@ import type { RegisteredResource } from '../../lib/resource-registry-service.js'
 import { inheritanceApiService, type AggregatedMissionStatus, type MissionStatusSnapshot } from '../../services/inheritance-service.js';
 import { MissionStatusCard } from '../inheritance/MissionStatusCard.js';
 import { MissionStatusDrilldown } from '../inheritance/MissionStatusDrilldown.js';
+import { COPRobotStatusCard } from './COPRobotStatusCard.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -124,6 +125,10 @@ export function COPTab({ problemSetId }: COPTabProps) {
   // Resource layer state
   const [selectedResource, setSelectedResource] = useState<RegisteredResource | null>(null);
   const [resourceLayerVisible, setResourceLayerVisible] = useState(true);
+
+  // Robot layer state (Phase 06)
+  const [robotLayerVisible, setRobotLayerVisible] = useState(true);
+  const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
 
   // Auto-trigger state
   const [generating, setGenerating] = useState(false);
@@ -462,6 +467,20 @@ export function COPTab({ problemSetId }: COPTabProps) {
           >
             Resources {resourceLayerVisible ? 'ON' : 'OFF'}
           </button>
+          {/* Robot layer toggle (Phase 06) */}
+          <button
+            onClick={() => setRobotLayerVisible((v) => !v)}
+            className={[
+              'mt-1 px-2 py-1 text-[10px] font-medium rounded border transition-colors',
+              robotLayerVisible
+                ? 'bg-green-600/20 text-green-400 border-green-500/40'
+                : 'bg-gray-800/90 text-gray-500 border-gray-600',
+            ].join(' ')}
+            title={robotLayerVisible ? 'Hide robot layer' : 'Show robot layer'}
+            aria-label="Toggle robot layer"
+          >
+            Robots {robotLayerVisible ? 'ON' : 'OFF'}
+          </button>
         </div>
 
         {/* Sidebar toggle (when collapsed) — top right */}
@@ -486,6 +505,8 @@ export function COPTab({ problemSetId }: COPTabProps) {
             onLayersLoaded={handleLayersLoaded}
             resourceLayerVisible={resourceLayerVisible}
             onResourceSelect={setSelectedResource}
+            robotLayerVisible={robotLayerVisible}
+            onRobotClick={(id) => setSelectedRobotId(id)}
           />
 
           {/* Generating spinner overlay */}
@@ -589,6 +610,14 @@ export function COPTab({ problemSetId }: COPTabProps) {
         <COPResourceDetail
           resource={selectedResource}
           onClose={() => setSelectedResource(null)}
+        />
+      )}
+
+      {/* Robot status card (Phase 06) */}
+      {selectedRobotId && (
+        <COPRobotStatusCard
+          robotId={selectedRobotId}
+          onClose={() => setSelectedRobotId(null)}
         />
       )}
 

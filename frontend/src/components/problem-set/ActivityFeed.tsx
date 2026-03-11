@@ -16,6 +16,14 @@ import { useUser } from '../../context/UserContext';
 
 // ─── Role-based visibility ────────────────────────────────────────────────────
 
+const ROBOT_EVENT_TYPES = [
+  'robot_mission_accepted',
+  'robot_mission_executing',
+  'robot_mission_awaiting_auth',
+  'robot_mission_complete',
+  'robot_mission_failed',
+];
+
 const COMMANDER_VISIBLE = [
   'workspace_created',
   'member_joined',
@@ -29,6 +37,7 @@ const COMMANDER_VISIBLE = [
   'mission_created',
   'exercise_created',
   'workspace_updated',
+  ...ROBOT_EVENT_TYPES,
 ];
 
 const STAFF_VISIBLE = [
@@ -37,6 +46,7 @@ const STAFF_VISIBLE = [
   'mission_created',
   'exercise_created',
   'workspace_updated',
+  ...ROBOT_EVENT_TYPES,
 ];
 
 const OBSERVER_VISIBLE = ['workspace_updated', 'mission_created'];
@@ -96,6 +106,16 @@ function buildDescription(item: ProblemSetActivityItem, displayNames: Record<str
       return `${actor} created mission${meta.missionName ? `: ${String(meta.missionName)}` : ''}`;
     case 'exercise_created':
       return `${actor} created exercise${meta.exerciseName ? `: ${String(meta.exerciseName)}` : ''}`;
+    case 'robot_mission_accepted':
+      return `Robot ${String(meta.robot_id ?? actor)} accepted mission ${String(meta.mission_command ?? '')}`;
+    case 'robot_mission_executing':
+      return `Robot ${String(meta.robot_id ?? actor)} executing ${String(meta.mission_command ?? 'mission')}`;
+    case 'robot_mission_awaiting_auth':
+      return `Robot ${String(meta.robot_id ?? actor)} requesting authorization`;
+    case 'robot_mission_complete':
+      return `Robot ${String(meta.robot_id ?? actor)} completed ${String(meta.mission_command ?? 'mission')}`;
+    case 'robot_mission_failed':
+      return `Robot ${String(meta.robot_id ?? actor)} mission failed${meta.reason ? `: ${String(meta.reason)}` : ''}`;
     default:
       return `${actor} performed ${item.activityType.replace(/_/g, ' ')}`;
   }
@@ -198,6 +218,18 @@ function ActivityIcon({ type }: { type: string }) {
               d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
               clipRule="evenodd"
             />
+          </svg>
+        </div>
+      );
+    case 'robot_mission_accepted':
+    case 'robot_mission_executing':
+    case 'robot_mission_complete':
+    case 'robot_mission_awaiting_auth':
+    case 'robot_mission_failed':
+      return (
+        <div className={`${base} ${type.includes('failed') ? 'bg-red-900 text-red-300' : type.includes('awaiting') ? 'bg-yellow-900 text-yellow-300' : 'bg-cyan-900 text-cyan-300'}`}>
+          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+            <path d="M10 2a1.5 1.5 0 011.5 1.5c0 .56-.31 1.04-.76 1.3V6h.76a5.5 5.5 0 015.5 5.5V12H3v-.5A5.5 5.5 0 018.5 6h.76V4.8c-.45-.26-.76-.74-.76-1.3A1.5 1.5 0 0110 2zM6 13.5a1 1 0 100 2 1 1 0 000-2zm8 0a1 1 0 100 2 1 1 0 000-2zM4 16.5v.5a1 1 0 001 1h10a1 1 0 001-1v-.5H4z" />
           </svg>
         </div>
       );
