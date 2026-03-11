@@ -550,7 +550,7 @@ Plans:
 - [ ] 41-04-PLAN.md — IngestionSidebar: unified feed, SSE particle events, particle renderer
 - [x] 41-05-PLAN.md — Clustering modes (container/DIME/organic), search/filter, BrainToolbar
 - [ ] 41-06-PLAN.md — BrainDetailPanel: right panel, node detail, multi-select comparison, annotations UI
-- [ ] 41-07-PLAN.md — BrainTimeline: scrubber, historical state, recency cues, future prediction zone
+- [x] 41-07-PLAN.md — BrainTimeline: scrubber, historical state, recency cues, future prediction zone
 - [ ] 41-08-PLAN.md — AI Context Snapshot modal, useBrainSnapshots, categorization agent
 - [ ] 41-09-PLAN.md — Gap detection UI, pattern alert badge/dropdown
 - [ ] 41-10-PLAN.md — Integration: BrainController wiring, UnderstandTab rewrite
