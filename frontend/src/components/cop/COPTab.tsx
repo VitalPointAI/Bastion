@@ -29,7 +29,6 @@ import type { RegisteredResource } from '../../lib/resource-registry-service.js'
 import { inheritanceApiService, type AggregatedMissionStatus, type MissionStatusSnapshot } from '../../services/inheritance-service.js';
 import { MissionStatusCard } from '../inheritance/MissionStatusCard.js';
 import { MissionStatusDrilldown } from '../inheritance/MissionStatusDrilldown.js';
-import { COPRobotLayer } from './COPRobotLayer.js';
 import { COPRobotStatusCard } from './COPRobotStatusCard.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────

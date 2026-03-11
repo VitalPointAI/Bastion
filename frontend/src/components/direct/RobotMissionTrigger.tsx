@@ -169,7 +169,7 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to dispatch mission' });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Network error' });
     } finally {
       setDispatching(false);
