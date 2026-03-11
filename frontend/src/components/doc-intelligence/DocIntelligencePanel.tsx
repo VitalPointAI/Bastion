@@ -23,6 +23,31 @@ interface DocumentStatus {
   createdAt: string;
 }
 
+/** Tracks a retry that's currently in-flight with SSE progress */
+interface RetryProgress {
+  documentId: string;
+  processingId: string;
+  /** 0-1 fraction based on specialist completion */
+  progress: number;
+  currentSpecialist: string | null;
+  status: 'processing' | 'complete' | 'error';
+  error?: string;
+}
+
+const SPECIALIST_NAMES: Record<string, string> = {
+  'format-converter': 'Format Converter',
+  'document-classifier': 'Document Classifier',
+  'fact-extractor': 'Fact Extractor',
+  'objective-extractor': 'Objective Extractor',
+  'perspective-analyst': 'Perspective Analyst',
+  'cross-doc-linker': 'Cross-Doc Linker',
+  'bias-identifier': 'Bias Identifier',
+  'quality-assessor': 'Quality Assessor',
+  'trust-agent': 'Trust Agent',
+};
+
+const SPECIALIST_COUNT = Object.keys(SPECIALIST_NAMES).length;
+
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // ============================================================================
@@ -106,7 +131,7 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
   const [showInterview, setShowInterview] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [interruptedDocs, setInterruptedDocs] = useState<DocumentStatus[]>([]);
-  const [retrying, setRetrying] = useState<string | null>(null);
+  const [retryProgress, setRetryProgress] = useState<Map<string, RetryProgress>>(new Map());
   const [dragOver, setDragOver] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -153,21 +178,6 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
     } catch { /* best-effort */ }
   }, [problemSetId]);
 
-  useEffect(() => { fetchInterruptedDocs(); }, [fetchInterruptedDocs]);
-  useEffect(() => { if (report) fetchInterruptedDocs(); }, [report, fetchInterruptedDocs]);
-
-  const handleRetry = useCallback(async (documentId: string) => {
-    setRetrying(documentId);
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/doc-intelligence/documents/${encodeURIComponent(problemSetId)}/${encodeURIComponent(documentId)}/retry`,
-        { method: 'POST' },
-      );
-      if (res.ok) fetchInterruptedDocs();
-    } catch { /* best-effort */ }
-    finally { setRetrying(null); }
-  }, [problemSetId, fetchInterruptedDocs]);
-
   // ── Fetch reports ───────────────────────────────────────────────────────
   const fetchReports = useCallback(async () => {
     try {
@@ -180,6 +190,132 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
 
   useEffect(() => { fetchReports(); }, [fetchReports]);
   useEffect(() => { if (report) fetchReports(); }, [report, fetchReports]);
+
+  useEffect(() => { fetchInterruptedDocs(); }, [fetchInterruptedDocs]);
+  useEffect(() => { if (report) fetchInterruptedDocs(); }, [report, fetchInterruptedDocs]);
+
+  // ── Retry with SSE progress tracking ────────────────────────────────────
+  const handleRetry = useCallback(async (documentId: string) => {
+    // Immediately show processing state for this doc
+    setRetryProgress((prev) => {
+      const next = new Map(prev);
+      next.set(documentId, {
+        documentId, processingId: '', progress: 0,
+        currentSpecialist: null, status: 'processing',
+      });
+      return next;
+    });
+
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/doc-intelligence/documents/${encodeURIComponent(problemSetId)}/${encodeURIComponent(documentId)}/retry`,
+        { method: 'POST' },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Retry failed' }));
+        setRetryProgress((prev) => {
+          const next = new Map(prev);
+          next.set(documentId, {
+            documentId, processingId: '', progress: 0,
+            currentSpecialist: null, status: 'error', error: body.error,
+          });
+          return next;
+        });
+        return;
+      }
+
+      const { processingId: pid } = await res.json();
+
+      setRetryProgress((prev) => {
+        const next = new Map(prev);
+        next.set(documentId, {
+          documentId, processingId: pid, progress: 0,
+          currentSpecialist: null, status: 'processing',
+        });
+        return next;
+      });
+
+      // Connect to SSE stream for this retry
+      const sseUrl = `${API_BASE}/api/doc-intelligence/process/${encodeURIComponent(problemSetId)}/stream/${encodeURIComponent(pid)}`;
+      const es = new EventSource(sseUrl);
+      let completed = 0;
+
+      es.addEventListener('specialist:start', (e: MessageEvent) => {
+        const data = JSON.parse(e.data);
+        setRetryProgress((prev) => {
+          const next = new Map(prev);
+          const existing = next.get(documentId);
+          if (existing) {
+            const name = SPECIALIST_NAMES[data.agentId] || data.agentId;
+            next.set(documentId, { ...existing, currentSpecialist: name });
+          }
+          return next;
+        });
+      });
+
+      es.addEventListener('specialist:complete', () => {
+        completed++;
+        setRetryProgress((prev) => {
+          const next = new Map(prev);
+          const existing = next.get(documentId);
+          if (existing) next.set(documentId, { ...existing, progress: completed / SPECIALIST_COUNT });
+          return next;
+        });
+      });
+
+      es.addEventListener('report:assembled', () => {
+        setRetryProgress((prev) => {
+          const next = new Map(prev);
+          next.set(documentId, {
+            documentId, processingId: pid, progress: 1,
+            currentSpecialist: null, status: 'complete',
+          });
+          return next;
+        });
+        es.close();
+        // Refresh lists after a brief pause so the user sees 100%
+        setTimeout(() => {
+          fetchInterruptedDocs();
+          fetchReports();
+          setRetryProgress((prev) => { const next = new Map(prev); next.delete(documentId); return next; });
+        }, 1500);
+      });
+
+      es.addEventListener('processing:error', (e: MessageEvent) => {
+        const data = JSON.parse(e.data);
+        setRetryProgress((prev) => {
+          const next = new Map(prev);
+          next.set(documentId, {
+            documentId, processingId: pid, progress: completed / SPECIALIST_COUNT,
+            currentSpecialist: null, status: 'error', error: data.error,
+          });
+          return next;
+        });
+        es.close();
+        setTimeout(() => {
+          fetchInterruptedDocs();
+          setRetryProgress((prev) => { const next = new Map(prev); next.delete(documentId); return next; });
+        }, 5000);
+      });
+
+      es.onerror = () => {
+        if (es.readyState === EventSource.CLOSED) {
+          setRetryProgress((prev) => { const next = new Map(prev); next.delete(documentId); return next; });
+          fetchInterruptedDocs();
+        }
+      };
+
+    } catch {
+      setRetryProgress((prev) => {
+        const next = new Map(prev);
+        next.set(documentId, {
+          documentId, processingId: '', progress: 0,
+          currentSpecialist: null, status: 'error', error: 'Network error',
+        });
+        return next;
+      });
+    }
+  }, [problemSetId, fetchInterruptedDocs, fetchReports]);
 
   // ── Document upload handlers ─────────────────────────────────────────────
   const handleFileUpload = useCallback(async (file: File) => {
@@ -409,8 +545,8 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
         </div>
       )}
 
-      {/* ── Interrupted / Failed Documents ── */}
-      {interruptedDocs.length > 0 && (
+      {/* ── Interrupted / Failed / Retrying Documents ── */}
+      {(interruptedDocs.length > 0 || retryProgress.size > 0) && (
         <div style={{ ...card, borderColor: 'rgba(210, 153, 34, 0.3)', padding: '1rem 1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <h4 style={sectionLabel}>Needs Attention</h4>
@@ -419,39 +555,83 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            {interruptedDocs.map((doc) => (
-              <div key={doc.documentId} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '0.5rem 0.625rem',
-                background: 'rgba(0,0,0,0.25)', borderRadius: '0.5rem',
-                border: '1px solid #21262d',
-              }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    fontSize: '0.8125rem', color: '#c9d1d9', fontWeight: 500,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    marginBottom: '0.125rem',
-                  }}>
-                    {doc.title}
-                  </p>
-                  <p style={{ fontSize: '0.6875rem', color: doc.processingStatus === 'failed' ? '#f85149' : '#d29922' }}>
-                    {doc.processingStatus === 'failed'
-                      ? `Failed: ${doc.processingError || 'Unknown error'}`
-                      : 'Processing interrupted \u2014 retry to resume'}
-                  </p>
+            {interruptedDocs.map((doc) => {
+              const rp = retryProgress.get(doc.documentId);
+              const isRetrying = rp && rp.status === 'processing';
+              const retryFailed = rp && rp.status === 'error';
+              const retryDone = rp && rp.status === 'complete';
+
+              return (
+                <div key={doc.documentId} style={{
+                  padding: '0.5rem 0.625rem',
+                  background: 'rgba(0,0,0,0.25)', borderRadius: '0.5rem',
+                  border: `1px solid ${isRetrying ? 'rgba(88, 166, 255, 0.3)' : retryDone ? 'rgba(63, 185, 80, 0.3)' : '#21262d'}`,
+                  transition: 'border-color 0.3s ease',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        fontSize: '0.8125rem', color: '#c9d1d9', fontWeight: 500,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        marginBottom: '0.125rem',
+                      }}>
+                        {doc.title}
+                      </p>
+                      <p style={{
+                        fontSize: '0.6875rem',
+                        color: isRetrying ? '#58a6ff' : retryDone ? '#3fb950' : retryFailed ? '#f85149' : doc.processingStatus === 'failed' ? '#f85149' : '#d29922',
+                      }}>
+                        {isRetrying
+                          ? `Processing${rp.currentSpecialist ? ` \u2014 ${rp.currentSpecialist}` : '...'}`
+                          : retryDone
+                            ? 'Complete!'
+                            : retryFailed
+                              ? `Retry failed: ${rp.error || 'Unknown error'}`
+                              : doc.processingStatus === 'failed'
+                                ? `Failed: ${doc.processingError || 'Unknown error'}`
+                                : 'Processing interrupted \u2014 retry to resume'}
+                      </p>
+                    </div>
+                    {!isRetrying && !retryDone && (
+                      <button
+                        onClick={() => handleRetry(doc.documentId)}
+                        style={{
+                          ...btnPrimary(false),
+                          padding: '0.3125rem 0.75rem', fontSize: '0.6875rem', marginLeft: '0.5rem',
+                        }}
+                      >
+                        {retryFailed ? 'Retry Again' : 'Retry'}
+                      </button>
+                    )}
+                    {retryDone && (
+                      <span style={badge('#3fb950', 'rgba(63, 185, 80, 0.15)', 'rgba(63, 185, 80, 0.3)')}>
+                        DONE
+                      </span>
+                    )}
+                  </div>
+                  {/* Progress bar for active retries */}
+                  {(isRetrying || retryDone) && rp && (
+                    <div style={{
+                      marginTop: '0.5rem',
+                      height: '0.25rem',
+                      background: '#21262d',
+                      borderRadius: '9999px',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${Math.round(rp.progress * 100)}%`,
+                        background: retryDone
+                          ? 'linear-gradient(90deg, #3fb950, #2ea043)'
+                          : 'linear-gradient(90deg, #2563eb, #58a6ff)',
+                        borderRadius: '9999px',
+                        transition: 'width 0.5s ease',
+                      }} />
+                    </div>
+                  )}
                 </div>
-                <button
-                  onClick={() => handleRetry(doc.documentId)}
-                  disabled={retrying === doc.documentId}
-                  style={{
-                    ...btnPrimary(retrying === doc.documentId),
-                    padding: '0.3125rem 0.75rem', fontSize: '0.6875rem', marginLeft: '0.5rem',
-                  }}
-                >
-                  {retrying === doc.documentId ? 'Retrying...' : 'Retry'}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
