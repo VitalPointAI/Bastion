@@ -281,6 +281,12 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
         }, 1500);
       });
 
+      // Non-fatal per-specialist error — pipeline continues, don't close SSE
+      es.addEventListener('specialist:error', (e: MessageEvent) => {
+        const data = JSON.parse(e.data);
+        console.warn(`[DocIntelligence] Specialist ${data.agentId ?? 'unknown'} error (non-fatal):`, data.error);
+      });
+
       es.addEventListener('processing:error', (e: MessageEvent) => {
         const data = JSON.parse(e.data);
         setRetryProgress((prev) => {
@@ -294,6 +300,7 @@ export function DocIntelligencePanel({ problemSetId }: DocIntelligencePanelProps
         es.close();
         setTimeout(() => {
           fetchInterruptedDocs();
+          fetchReports();
           setRetryProgress((prev) => { const next = new Map(prev); next.delete(documentId); return next; });
         }, 5000);
       });

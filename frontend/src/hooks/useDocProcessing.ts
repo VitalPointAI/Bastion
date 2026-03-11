@@ -231,7 +231,9 @@ export function useDocProcessing(
       es.close();
     });
 
-    es.addEventListener('processing:error', (e: MessageEvent) => {
+    // Non-fatal per-specialist error — mark specialist as errored but
+    // do NOT set global error or close SSE; pipeline continues.
+    es.addEventListener('specialist:error', (e: MessageEvent) => {
       const data = JSON.parse(e.data);
       if (data.agentId) {
         setSpecialists((prev) => {
@@ -246,6 +248,12 @@ export function useDocProcessing(
           return next;
         });
       }
+      addEvent('specialist:error', data);
+    });
+
+    // Fatal pipeline-level error
+    es.addEventListener('processing:error', (e: MessageEvent) => {
+      const data = JSON.parse(e.data);
       setError(data.error || 'Processing error occurred');
       addEvent('processing:error', data);
     });

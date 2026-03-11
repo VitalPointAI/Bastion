@@ -80,13 +80,14 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
 
     const ws = new WebSocket(WS_BASE_URL);
     wsRef.current = ws;
+    let openedAt = 0;
 
     ws.onopen = () => {
       if (!mountedRef.current) {
         ws.close();
         return;
       }
-      reconnectDelayRef.current = RECONNECT_BASE_MS;
+      openedAt = Date.now();
       setIsConnected(true);
       // Subscribe to the Ironclaw channel
       ws.send(JSON.stringify({ type: 'subscribe', channel }));
@@ -161,7 +162,10 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
     ws.onclose = () => {
       if (!mountedRef.current) return;
       setIsConnected(false);
-      // Attempt reconnect with exponential backoff
+      // Only reset backoff if connection was stable (open > 5s)
+      if (openedAt && Date.now() - openedAt > 5000) {
+        reconnectDelayRef.current = RECONNECT_BASE_MS;
+      }
       const delay = reconnectDelayRef.current;
       reconnectDelayRef.current = Math.min(delay * 2, RECONNECT_MAX_MS);
       reconnectTimerRef.current = setTimeout(() => {
@@ -171,9 +175,10 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
       }, delay);
     };
 
-    ws.onerror = (err) => {
-      console.error('[useIronclaw] WebSocket error:', err);
-      // onclose fires after onerror -- reconnect logic is in onclose
+    ws.onerror = () => {
+      if (reconnectDelayRef.current <= RECONNECT_BASE_MS * 4) {
+        console.warn('[useIronclaw] WebSocket connection failed, will retry');
+      }
     };
   }, [problemSetId]);
 

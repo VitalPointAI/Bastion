@@ -132,14 +132,14 @@ export function useAIStaffFeed(problemSetId: string | null): UseAIStaffFeedResul
 
     const ws = new WebSocket(WS_BASE_URL);
     wsRef.current = ws;
+    let openedAt = 0;
 
     ws.onopen = () => {
       if (!mountedRef.current) {
         ws.close();
         return;
       }
-      // Reset backoff on successful connection
-      reconnectDelayRef.current = RECONNECT_BASE_MS;
+      openedAt = Date.now();
       // Subscribe to the AI staff channel
       ws.send(JSON.stringify({ type: 'subscribe', channel }));
     };
@@ -170,7 +170,10 @@ export function useAIStaffFeed(problemSetId: string | null): UseAIStaffFeedResul
 
     ws.onclose = () => {
       if (!mountedRef.current) return;
-      // Attempt reconnect with exponential backoff
+      // Only reset backoff if connection was stable (open > 5s)
+      if (openedAt && Date.now() - openedAt > 5000) {
+        reconnectDelayRef.current = RECONNECT_BASE_MS;
+      }
       const delay = reconnectDelayRef.current;
       reconnectDelayRef.current = Math.min(delay * 2, RECONNECT_MAX_MS);
       reconnectTimerRef.current = setTimeout(() => {
@@ -180,8 +183,11 @@ export function useAIStaffFeed(problemSetId: string | null): UseAIStaffFeedResul
       }, delay);
     };
 
-    ws.onerror = (err) => {
-      console.error('[useAIStaffFeed] WebSocket error:', err);
+    ws.onerror = () => {
+      // Only log at low backoff (first few attempts); suppress spam at high backoff
+      if (reconnectDelayRef.current <= RECONNECT_BASE_MS * 4) {
+        console.warn('[useAIStaffFeed] WebSocket connection failed, will retry');
+      }
       // onclose fires after onerror -- reconnect logic is in onclose
     };
   }, [problemSetId, enqueueMessage]);

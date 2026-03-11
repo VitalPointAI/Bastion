@@ -17,6 +17,11 @@ export default defineConfig({
         target: process.env.VITE_BACKEND_URL || 'http://localhost:3001',
         changeOrigin: true,
       },
+      '/ws': {
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:3001',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
   optimizeDeps: {
