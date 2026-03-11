@@ -1,0 +1,238 @@
+/* BrainTimeline — temporal scrubber for the adaptive brain visualization */
+
+/* ── Container ─────────────────────────────────────────────────────────────── */
+
+.brain-timeline-container {
+  padding: 0.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  user-select: none;
+}
+
+/* ── Header row (time display + live button) ───────────────────────────────── */
+
+.brain-timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brain-timeline-time-display {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: monospace;
+  letter-spacing: 0.03em;
+}
+
+/* ── Track ─────────────────────────────────────────────────────────────────── */
+
+.brain-timeline-track {
+  position: relative;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* ── Past zone ─────────────────────────────────────────────────────────────── */
+
+.brain-timeline-past {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.03));
+  pointer-events: none;
+}
+
+/* ── Future zone (diagonal stripes = prediction area) ─────────────────────── */
+
+.brain-timeline-future {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(100, 140, 255, 0.03) 0px,
+    rgba(100, 140, 255, 0.03) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+  pointer-events: none;
+}
+
+/* ── NOW marker ────────────────────────────────────────────────────────────── */
+
+.brain-timeline-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #4a9eff;
+  box-shadow: 0 0 6px rgba(74, 158, 255, 0.5);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.brain-timeline-now-label {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.6rem;
+  color: #4a9eff;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+/* ── Activity density dots ─────────────────────────────────────────────────── */
+
+.brain-timeline-density-dot {
+  position: absolute;
+  bottom: 4px;
+  width: 2px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 1px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* ── Range input (transparent — custom styled via ::-webkit-slider-thumb) ──── */
+
+.brain-timeline-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  /* Raise above zone divs so it receives pointer events */
+  z-index: 10;
+}
+
+/* Visible thumb — WebKit/Blink */
+.brain-timeline-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #4a9eff;
+  box-shadow: 0 0 8px rgba(74, 158, 255, 0.6);
+  cursor: grab;
+  /* Reveal just the thumb even though the track is transparent */
+  opacity: 1;
+}
+
+/* Visible thumb — Firefox */
+.brain-timeline-input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #4a9eff;
+  box-shadow: 0 0 8px rgba(74, 158, 255, 0.6);
+  cursor: grab;
+  border: none;
+}
+
+/* Remove default track styling so the custom zones show through */
+.brain-timeline-input::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.brain-timeline-input::-moz-range-track {
+  background: transparent;
+}
+
+/* ── Loading bar ───────────────────────────────────────────────────────────── */
+
+@keyframes brain-timeline-scan {
+  from { left: -30%; }
+  to   { left: 110%; }
+}
+
+.brain-timeline-loading-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(74, 158, 255, 0.15),
+    transparent
+  );
+  animation: brain-timeline-scan 1.4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ── Label row ─────────────────────────────────────────────────────────────── */
+
+.brain-timeline-labels {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.3);
+  padding: 0 2px;
+}
+
+/* ── Live button ───────────────────────────────────────────────────────────── */
+
+.brain-timeline-live-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.brain-timeline-live-btn:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.brain-timeline-live-btn--active {
+  border-color: #44cc66;
+  color: #44cc66;
+}
+
+/* Live indicator dot */
+
+.brain-timeline-live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background 0.15s;
+}
+
+.brain-timeline-live-dot--active {
+  background: #44cc66;
+  box-shadow: 0 0 4px rgba(68, 204, 102, 0.7);
+  animation: brain-timeline-pulse 2s ease-in-out infinite;
+}
+
+@keyframes brain-timeline-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(68, 204, 102, 0.7); }
+  50%       { box-shadow: 0 0 8px rgba(68, 204, 102, 0.9); }
+}
