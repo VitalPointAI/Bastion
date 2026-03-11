@@ -84,6 +84,8 @@ export interface DocumentIntelligenceReport {
   qualityRating: NATORating;
   crossDocLinks: CrossDocLink[];
   summary: string;
+  requiresHumanReview?: boolean;
+  graphIngestionBlocked?: boolean;
 }
 
 // ============================================================================
@@ -246,6 +248,11 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 font-mono">
             {qualityRating.sourceReliability}{qualityRating.informationCredibility}
           </span>
+          {report.requiresHumanReview && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-400 border border-amber-700/50">
+              {'\u26A0'} Review
+            </span>
+          )}
           <span className="text-gray-600 text-xs">{expanded ? '\u25B2' : '\u25BC'}</span>
         </div>
       </button>
@@ -256,6 +263,19 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           <div className="px-4 pb-3">
             <p className="text-sm text-gray-300 leading-relaxed">{report.summary}</p>
           </div>
+
+          {/* Flagged source banner */}
+          {report.requiresHumanReview && (
+            <div className="mx-4 mb-3 px-3 py-2 rounded bg-amber-950/30 border border-amber-700/50">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-400 text-sm">{'\u26A0'}</span>
+                <span className="text-xs text-amber-300 font-medium">Source flagged — human review required</span>
+              </div>
+              <p className="text-[10px] text-amber-400/70 mt-1">
+                Facts and analysis shown below but not ingested to knowledge graph until approved.
+              </p>
+            </div>
+          )}
 
           {/* Facts Section */}
           <ExpandableSection title="Facts" count={facts.length}>

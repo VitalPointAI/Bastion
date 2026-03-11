@@ -221,4 +221,8 @@ export interface DocumentIntelligenceReport {
   qualityRating: NATORating;
   crossDocLinks: CrossDocLink[];
   summary: string;
+  /** True when trust agent flagged the source — facts shown but not auto-ingested to graph */
+  requiresHumanReview?: boolean;
+  /** True when graph ingestion was blocked due to flagged source */
+  graphIngestionBlocked?: boolean;
 }

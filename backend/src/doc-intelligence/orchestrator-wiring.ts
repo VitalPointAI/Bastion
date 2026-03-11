@@ -415,11 +415,17 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
       return { specialistResults: { [SpecialistId.FACT_EXTRACTOR]: result } };
     }
 
+    // Check if trust agent flagged the source — still extract facts but skip graph ingestion
+    const trustResult = state.specialistResults[SpecialistId.TRUST_AGENT];
+    const trustOutput = trustResult?.output as { trustStatus?: string } | null;
+    const isFlagged = trustOutput?.trustStatus === 'flagged';
+
     const extractOutput = await factExtractor.extract({
       documentText: textToExtract,
       problemSetContext: state.problemSetContext,
       documentId: state.documentId,
       workspaceId: state.problemSetId,
+      skipGraphIngestion: isFlagged,
       onProgress: (stage: string, detail: string) => {
         if (onProgress) {
           onProgress('specialist:progress', {
@@ -614,7 +620,7 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
       documentId: state.documentId,
       problemSetId: state.problemSetId,
       triage,
-      facts: isFlagged ? [] : state.facts, // Do not include facts from flagged sources
+      facts: state.facts, // Always include extracted facts — graph ingestion is the gatekeeper, not the report
       perspectives: state.perspectives,
       biasFindings: state.biasFindings,
       qualityRating: state.qualityRating ?? {
@@ -624,10 +630,12 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
         assessedAt: new Date().toISOString(),
         reasoning: 'Quality assessment not yet completed',
       },
-      crossDocLinks: isFlagged ? [] : state.crossDocLinks,
+      crossDocLinks: state.crossDocLinks,
       summary: isFlagged
-        ? `Document ${state.documentId} FLAGGED by Trust Agent - requires human review before graph ingestion. Source: ${trustOutput?.trustStatus}.`
+        ? `Document ${state.documentId} FLAGGED by Trust Agent - ${state.facts.length} facts extracted but graph ingestion blocked pending human review.`
         : `Document ${state.documentId} classified as ${triage.documentType} with relevance ${triage.relevanceScore}. ${Object.keys(state.specialistResults).length} specialists executed. ${state.facts.length} facts extracted.`,
+      requiresHumanReview: isFlagged,
+      graphIngestionBlocked: isFlagged,
     };
 
     if (onProgress) {
@@ -718,19 +726,10 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
   // Classifier -> Trust Agent (always, for trust evaluation before extraction)
   g.addEdge('classifier', 'trust-agent');
 
-  // Trust Agent: conditional routing based on trust status
-  // If flagged -> report-assembly (skip extraction, human review needed)
-  // If not flagged -> fan out to extraction specialists
+  // Trust Agent: always fan out to extraction specialists (even for flagged sources).
+  // Flagged sources still get full extraction so analysts can review findings,
+  // but graph ingestion is blocked until human approval.
   g.addConditionalEdges('trust-agent', (state: DocIntelligenceState) => {
-    const trustResult = state.specialistResults[SpecialistId.TRUST_AGENT];
-    const trustOutput = trustResult?.output as { trustStatus?: string } | null;
-
-    if (trustOutput?.trustStatus === 'flagged') {
-      // Flagged: skip extraction, go straight to report assembly
-      return ['report-assembly'];
-    }
-
-    // Not flagged: fan out to extraction and analysis specialists
     const specialists = state.triageDecision?.specialists ?? [];
     const targets: string[] = ['fact-extractor']; // Always run fact extractor
 
