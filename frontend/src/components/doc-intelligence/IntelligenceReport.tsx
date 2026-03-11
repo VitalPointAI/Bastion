@@ -204,6 +204,11 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
   );
 
   const triage = report.triage ?? { relevanceScore: 0, documentType: 'other' as DocumentType, specialists: [], reasoning: 'Triage data unavailable' };
+  const qualityRating = report.qualityRating ?? { sourceReliability: 'F' as never, informationCredibility: 6 as never, assessedBy: 'system', assessedAt: new Date().toISOString() };
+  const facts = report.facts ?? [];
+  const perspectives = report.perspectives ?? [];
+  const biasFindings = report.biasFindings ?? [];
+  const crossDocLinks = report.crossDocLinks ?? [];
   const relevancePercent = Math.round(triage.relevanceScore * 100);
 
   return (
@@ -239,7 +244,7 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           </div>
           {/* NATO rating badge */}
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 font-mono">
-            {report.qualityRating.sourceReliability}{report.qualityRating.informationCredibility}
+            {qualityRating.sourceReliability}{qualityRating.informationCredibility}
           </span>
           <span className="text-gray-600 text-xs">{expanded ? '\u25B2' : '\u25BC'}</span>
         </div>
@@ -253,9 +258,9 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           </div>
 
           {/* Facts Section */}
-          <ExpandableSection title="Facts" count={report.facts.length}>
+          <ExpandableSection title="Facts" count={facts.length}>
             <div className="space-y-2">
-              {report.facts.map((fact, idx) => (
+              {facts.map((fact, idx) => (
                 <div
                   key={idx}
                   className="bg-gray-800/30 border border-gray-700/50 rounded p-3"
@@ -295,9 +300,9 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           </ExpandableSection>
 
           {/* Perspectives Section */}
-          <ExpandableSection title="Perspectives" count={report.perspectives.length}>
+          <ExpandableSection title="Perspectives" count={perspectives.length}>
             <div className="space-y-3">
-              {report.perspectives.map((perspective, idx) => {
+              {perspectives.map((perspective, idx) => {
                 const colors = PERSPECTIVE_COLORS[perspective.perspective];
                 return (
                   <div
@@ -356,9 +361,9 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           </ExpandableSection>
 
           {/* Bias Assessment Section */}
-          <ExpandableSection title="Bias Assessment" count={report.biasFindings.length}>
+          <ExpandableSection title="Bias Assessment" count={biasFindings.length}>
             <div className="space-y-2">
-              {report.biasFindings.map((bias, idx) => {
+              {biasFindings.map((bias, idx) => {
                 const colors = SEVERITY_COLORS[bias.severity];
                 return (
                   <div
@@ -382,9 +387,9 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           </ExpandableSection>
 
           {/* Cross-Document Links Section */}
-          <ExpandableSection title="Cross-Document Links" count={report.crossDocLinks.length}>
+          <ExpandableSection title="Cross-Document Links" count={crossDocLinks.length}>
             <div className="space-y-2">
-              {report.crossDocLinks.map((link, idx) => {
+              {crossDocLinks.map((link, idx) => {
                 const linkStyle = LINK_TYPE_LABELS[link.linkType];
                 return (
                   <div
@@ -414,7 +419,7 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           {/* Quality Assessment (NATO Rating Panel) */}
           <ExpandableSection title="Quality Assessment" count={1}>
             <NATORatingPanel
-              rating={report.qualityRating}
+              rating={qualityRating}
               documentId={report.documentId}
               onOverride={handleRatingOverride}
             />
