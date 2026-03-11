@@ -52,6 +52,8 @@ export interface FactExtractorInput {
   onEntityCreated?: (event: GraphEntityEvent) => void;
   /** Optional: progress callback */
   onProgress?: (stage: string, detail: string) => void;
+  /** Skip graph entity creation and provenance writes (for flagged sources) */
+  skipGraphIngestion?: boolean;
 }
 
 export interface FactExtractorOutput {
@@ -133,7 +135,7 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
    * and write provenance records.
    */
   async extract(input: FactExtractorInput): Promise<FactExtractorOutput> {
-    const { documentText, problemSetContext, documentId, workspaceId, onEntityCreated, onProgress } = input;
+    const { documentText, problemSetContext, documentId, workspaceId, onEntityCreated, onProgress, skipGraphIngestion } = input;
 
     this.setProblemSetContext(problemSetContext);
 
@@ -158,29 +160,41 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
     // Step 3: Deduplicate facts across chunks
     const deduplicatedFacts = this.deduplicateFacts(allFacts);
 
-    // Step 4: Create graph entities via GraphBuilder
-    this.reportProgress(
-      'graph-building',
-      `Creating graph entities from ${deduplicatedFacts.length} facts`,
-      onProgress ? (evt) => onProgress(evt.data.stage as string, evt.data.detail as string) : undefined,
-    );
+    // Steps 4-5: Graph ingestion — skip for flagged sources (human review required)
+    let graphResult = { actorsCreated: 0, relationshipsCreated: 0, tensionsCreated: 0, errors: [] as string[], entityIds: [] as string[] };
+    let provenanceCount = 0;
 
-    const graphResult = await this.buildGraphEntities(deduplicatedFacts, {
-      sourceDocumentId: documentId,
-      workspaceId,
-      onEntityCreated,
-    });
+    if (skipGraphIngestion) {
+      this.reportProgress(
+        'graph-skipped',
+        `Skipping graph ingestion for flagged source — ${deduplicatedFacts.length} facts extracted but require human review`,
+        onProgress ? (evt) => onProgress(evt.data.stage as string, evt.data.detail as string) : undefined,
+      );
+    } else {
+      // Step 4: Create graph entities via GraphBuilder
+      this.reportProgress(
+        'graph-building',
+        `Creating graph entities from ${deduplicatedFacts.length} facts`,
+        onProgress ? (evt) => onProgress(evt.data.stage as string, evt.data.detail as string) : undefined,
+      );
 
-    // Step 5: Write entity_provenance records
-    const provenanceCount = await this.writeProvenanceRecords(
-      deduplicatedFacts,
-      documentId,
-      graphResult.entityIds,
-    );
+      graphResult = await this.buildGraphEntities(deduplicatedFacts, {
+        sourceDocumentId: documentId,
+        workspaceId,
+        onEntityCreated,
+      });
+
+      // Step 5: Write entity_provenance records
+      provenanceCount = await this.writeProvenanceRecords(
+        deduplicatedFacts,
+        documentId,
+        graphResult.entityIds,
+      );
+    }
 
     this.reportProgress(
       'complete',
-      `Extracted ${deduplicatedFacts.length} facts, created ${graphResult.actorsCreated} actors, wrote ${provenanceCount} provenance records`,
+      `Extracted ${deduplicatedFacts.length} facts, created ${graphResult.actorsCreated} actors, wrote ${provenanceCount} provenance records${skipGraphIngestion ? ' (graph ingestion skipped — flagged source)' : ''}`,
       onProgress ? (evt) => onProgress(evt.data.stage as string, evt.data.detail as string) : undefined,
     );
 
