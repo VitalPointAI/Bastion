@@ -30,6 +30,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   'specialist:start': 'Started',
   'specialist:progress': 'Progress',
   'specialist:complete': 'Complete',
+  'specialist:error': 'Specialist Error',
   'report:assembled': 'Report Ready',
   'processing:error': 'Error',
   'processing:flagged': 'Flagged',
@@ -93,7 +94,7 @@ export function ProcessingFeed({ events, maxHeight = '300px' }: ProcessingFeedPr
           const agentColor = evt.agentId
             ? AGENT_COLORS[evt.agentId] || 'text-gray-400'
             : 'text-gray-400';
-          const isError = evt.eventType === 'processing:error';
+          const isError = evt.eventType === 'processing:error' || evt.eventType === 'specialist:error';
           const isFlagged = evt.eventType === 'processing:flagged';
           const isComplete = evt.eventType === 'specialist:complete' || evt.eventType === 'report:assembled';
 

@@ -749,8 +749,9 @@ router.post(
  * - specialist:start     { agentId, documentId, timestamp }
  * - specialist:progress  { agentId, stage, detail, entitiesFound }
  * - specialist:complete  { agentId, result, duration }
+ * - specialist:error     { agentId, error, duration } (non-fatal, pipeline continues)
  * - report:assembled     { reportId, entityCount, ratingsSummary }
- * - processing:error     { error, agentId? }
+ * - processing:error     { error } (fatal pipeline error)
  * - processing:flagged   { reason, trustStatus }
  * - processing:complete  { processingId, documentId, reportId }
  */

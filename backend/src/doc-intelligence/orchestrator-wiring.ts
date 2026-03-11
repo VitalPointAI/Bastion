@@ -187,7 +187,9 @@ function wrapNode(
     } catch (error) {
       const duration = Date.now() - startTime;
       if (onProgress) {
-        onProgress('processing:error', {
+        // Emit specialist:error (not processing:error) so frontend knows
+        // this is a non-fatal per-specialist failure — pipeline continues.
+        onProgress('specialist:error', {
           specialistId,
           agentId: specialistId,
           error: error instanceof Error ? error.message : String(error),
