@@ -29,6 +29,8 @@ export interface BrainVisualizationProps {
   height?: number;
   clusterMode?: ClusterMode;
   onLassoSelect?: (nodeIds: string[]) => void;
+  /** External ForceGraph ref — allows parent (e.g. BrainController) to drive zoom/pan and clustering forces */
+  fgRef?: MutableRefObject<ForceGraphMethods | undefined>;
 }
 
 // ─── Internal types ────────────────────────────────────────────────────────────
@@ -82,10 +84,13 @@ export function BrainVisualization({
   height,
   clusterMode: _clusterMode = 'container',
   onLassoSelect,
+  fgRef: externalFgRef,
 }: BrainVisualizationProps) {
   void _clusterMode; // Future: drive force grouping
 
-  const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
+  const internalFgRef = useRef<ForceGraphMethods | undefined>(undefined);
+  // Use external ref if provided, otherwise fall back to internal ref
+  const fgRef = externalFgRef ?? internalFgRef;
   const containerRef = useRef<HTMLDivElement>(null);
   const lassoCanvasRef = useRef<HTMLCanvasElement>(null);
 

@@ -1,6 +1,7 @@
 // Barrel export for the brain visualization module
 export * from './types.js';
 export * from './BrainLayout.js';
+export * from './BrainController.js';
 export * from './BrainVisualization.js';
 export * from './BrainDetailPanel.js';
 export * from './NodeAnnotationPanel.js';

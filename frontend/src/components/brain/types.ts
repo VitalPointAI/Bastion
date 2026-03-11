@@ -102,6 +102,10 @@ export interface BrainNode {
   // ── Force-graph positioning (set/mutated by layout engine) ───────────────
   x?: number;
   y?: number;
+
+  // ── Search / filter UI state (ephemeral — not persisted) ─────────────────
+  /** When true, node is dimmed because it doesn't match the current search query */
+  isSearchDimmed?: boolean;
 }
 
 // ─── Brain Edge ───────────────────────────────────────────────────────────────
