@@ -548,7 +548,7 @@ Plans:
 - [ ] 41-02-PLAN.md — Backend brain API: annotations, snapshots, graph-snapshot, gaps, pattern-alerts
 - [ ] 41-03-PLAN.md — BrainVisualization: Canvas 2D renderers (shape-coded nodes, glow, edges), useBrainData
 - [ ] 41-04-PLAN.md — IngestionSidebar: unified feed, SSE particle events, particle renderer
-- [ ] 41-05-PLAN.md — Clustering modes (container/DIME/organic), search/filter, BrainToolbar
+- [x] 41-05-PLAN.md — Clustering modes (container/DIME/organic), search/filter, BrainToolbar
 - [ ] 41-06-PLAN.md — BrainDetailPanel: right panel, node detail, multi-select comparison, annotations UI
 - [ ] 41-07-PLAN.md — BrainTimeline: scrubber, historical state, recency cues, future prediction zone
 - [ ] 41-08-PLAN.md — AI Context Snapshot modal, useBrainSnapshots, categorization agent

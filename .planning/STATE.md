@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-11T21:50:09.068Z"
+last_updated: "2026-03-11T22:33:15Z"
 progress:
   total_phases: 57
   completed_phases: 38
   total_plans: 358
-  completed_plans: 351
+  completed_plans: 352
 ---
 
 # Project State
@@ -24,11 +24,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 41 of 57 (Redesign Understanding Tab - Adaptive Brain Visualization) — IN PROGRESS
-Plan: 3 of 11 in current phase — COMPLETE
-Status: Plan 41-03 complete — Brain Canvas 2D renderers, BrainVisualization component, useBrainData hook
-Last activity: 2026-03-11 - Completed 41-03: Brain Canvas renderers, BrainVisualization, and useBrainData
+Plan: 5 of 11 in current phase — COMPLETE
+Status: Plan 41-05 complete — Clustering hook, BrainSearch, BrainToolbar, NL search endpoint
+Last activity: 2026-03-11 - Completed 41-05: useBrainClustering, BrainSearch, BrainToolbar, POST /api/brain/nl-search
 
-Progress: ██████████████████████████ 345 plans complete
+Progress: ██████████████████████████ 352 plans complete
 
 ## Performance Metrics
 
@@ -173,6 +173,7 @@ Progress: ███████████████████████�
 | Phase 06-autonomous-vehicle-integration P01 | 5 | 2 tasks | 6 files |
 | Phase 41-redesign-understanding-tab-adaptive-brain-visualization P01 | 2 | 2 tasks | 4 files |
 | Phase 41-redesign-understanding-tab-adaptive-brain-visualization P03 | 35 | 2 tasks | 6 files |
+| Phase 41-redesign-understanding-tab-adaptive-brain-visualization P05 | 25 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -186,6 +187,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 41 Plan 05 (Clustering, Search, Toolbar, NL Search):**
+- Inline createForceX/createForceY factories (not d3-force import) — d3-force-3d only in pnpm virtual store, not hoisted, direct import would fail at runtime
+- d3Force('x', null) removes group forces for organic mode — typed overload accepts null, no cast needed
+- Ironclaw /v1/chat/completions for NL search (not webhook channel) — one-shot stateless query, no thread continuity needed
+- LLM returned IDs validated against actual Neo4j node list to prevent hallucination surfacing in visualization
 
 **Phase 41 Plan 03 (Brain Canvas Renderers and BrainVisualization):**
 - Canvas state (shadowBlur, globalAlpha, setLineDash) always fully reset at end of each draw function to prevent bleed between nodes
