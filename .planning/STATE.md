@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-11T10:59:25.316Z"
+last_updated: "2026-03-11T21:50:09.068Z"
 progress:
-  total_phases: 56
-  completed_phases: 37
-  total_plans: 347
-  completed_plans: 347
+  total_phases: 57
+  completed_phases: 38
+  total_plans: 358
+  completed_plans: 351
 ---
 
 # Project State
@@ -171,6 +171,7 @@ Progress: ███████████████████████�
 | Phase 40 P11 | 2 | 1 tasks | 3 files |
 | Phase 40 P12 | 8 | 2 tasks | 2 files |
 | Phase 06-autonomous-vehicle-integration P01 | 5 | 2 tasks | 6 files |
+| Phase 41-redesign-understanding-tab-adaptive-brain-visualization P01 | 2 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -774,6 +775,8 @@ Recent decisions affecting current work:
 - [Phase 40]: Used useDocProcessing hook built-in uploadDocument for file upload in DocIntelligencePanel
 - [Phase 06-autonomous-vehicle-integration]: Robot robotId stamped onto WS socket during register for disconnect routing
 - [Phase 06-autonomous-vehicle-integration]: Authority enforcement at dispatch: speed > max_speed triggers immediate rejection
+- [Phase 41-redesign-understanding-tab-adaptive-brain-visualization]: Right panel slide-in uses width 0->380px CSS transition, not translateX, to take zero grid space when collapsed
+- [Phase 41-redesign-understanding-tab-adaptive-brain-visualization]: BrainNode.confidence (0-1) is required field that drives all visual intensity decisions for glow and brightness
 
 ### Roadmap Evolution
 

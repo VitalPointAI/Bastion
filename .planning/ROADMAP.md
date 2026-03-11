@@ -503,6 +503,59 @@ Plans:
 - [ ] 40-11-PLAN.md — Gap closure: team registration at startup + pluggable web search (Tavily)
 - [ ] 40-12-PLAN.md — Gap closure: wire doc-intelligence components into Understand tab
 
+### Phase 41: Redesign Understanding Tab - Adaptive Brain Visualization
+
+**Goal:** Replace the Understanding tab's sidebar-driven view list with a neural network brain visualization centerpiece — a living, adaptive graph fed by a unified ingestion pipeline. The brain visualizes the strategic environment with shape-coded nodes (entities, objectives, documents, concepts), confidence-based glow, intelligence gap indicators, clustering modes (container/DIME/organic), temporal navigation, and proactive pattern detection. Three-column layout: ingestion sidebar (left), brain canvas (center), detail panel (right).
+
+**Depends on:** Phase 40 (doc intelligence pipeline), Phase 25.3 (knowledge graph), Phase 25.2 (containers/categorization)
+
+**Requirements:** [BRAIN-01 through BRAIN-30]
+- BRAIN-01: Three-column layout (left ingestion sidebar, center brain, right detail panel) with dark COP-style background
+- BRAIN-02: Right panel slides in on node click, slides out on close
+- BRAIN-03: Brain annotations CRUD (flag, note, questionable) with user-scoped ownership and problem-set sharing
+- BRAIN-04: AI context snapshots saved and retrievable per problem set
+- BRAIN-05: Historical graph state queryable by timestamp
+- BRAIN-06: Intelligence gap detection and pattern alert backend endpoints
+- BRAIN-07: Shape-coded nodes: circles=entities, diamonds=objectives, squares=documents, hexagons=concepts
+- BRAIN-08: Nodes colored by actor category: ally=blue, adversary=red, neutral=gray, partner=green
+- BRAIN-09: Confidence-based glow (bright=high confidence, dim=low, none=gap)
+- BRAIN-10: Weighted edges with pulse animation reflecting relationship strength
+- BRAIN-11: Unified ingestion feed in left sidebar showing all data sources as one pipeline
+- BRAIN-12: SSE-driven particle animation from sidebar into brain on real ingestion events
+- BRAIN-13: Source type filter tags on ingestion feed
+- BRAIN-14: Three clustering modes: container (default), DIME/MIDLIFE, organic force-directed
+- BRAIN-15: Semantic zoom: clusters at low zoom, labels at medium, details at high
+- BRAIN-16: Search bar with text and filter criteria (node type, actor category, DIME theme)
+- BRAIN-17: Node click opens right panel with detail view (identity, confidence, connections, sources)
+- BRAIN-18: Multi-select (shift-click) shows comparison view with shared connections and differences
+- BRAIN-19: Annotation system with flag/note/questionable, share toggle, audit trail
+- BRAIN-20: Timeline scrubber navigates historical brain state
+- BRAIN-21: Recency-based visual cues (vibrant=recent, faded=stale)
+- BRAIN-22: Future prediction zone with ghosted/translucent predicted nodes
+- BRAIN-23: AI Context Preview as modal with save-as-snapshot
+- BRAIN-24: Saved snapshots accessible to all BASTION AI agents
+- BRAIN-25: Categorization agent assigns DIME/MIDLIFE themes to objectives
+- BRAIN-26: Intelligence gap indicators (hollow/dashed nodes for missing connections)
+- BRAIN-27: Gap summary report accessible from brain UI
+- BRAIN-28: Proactive pattern alerts as notification badges with trend details
+- BRAIN-29: Data Sharing/Subscriptions relocated OUT of Understanding tab
+- BRAIN-30: Training packages fold into unified ingestion in training mode
+
+**Plans:** 1/11 plans executed
+
+Plans:
+- [ ] 41-01-PLAN.md — Foundation: BrainNode types, BrainLayout three-column shell, CSS
+- [ ] 41-02-PLAN.md — Backend brain API: annotations, snapshots, graph-snapshot, gaps, pattern-alerts
+- [ ] 41-03-PLAN.md — BrainVisualization: Canvas 2D renderers (shape-coded nodes, glow, edges), useBrainData
+- [ ] 41-04-PLAN.md — IngestionSidebar: unified feed, SSE particle events, particle renderer
+- [ ] 41-05-PLAN.md — Clustering modes (container/DIME/organic), search/filter, BrainToolbar
+- [ ] 41-06-PLAN.md — BrainDetailPanel: right panel, node detail, multi-select comparison, annotations UI
+- [ ] 41-07-PLAN.md — BrainTimeline: scrubber, historical state, recency cues, future prediction zone
+- [ ] 41-08-PLAN.md — AI Context Snapshot modal, useBrainSnapshots, categorization agent
+- [ ] 41-09-PLAN.md — Gap detection UI, pattern alert badge/dropdown
+- [ ] 41-10-PLAN.md — Integration: BrainController wiring, UnderstandTab rewrite
+- [ ] 41-11-PLAN.md — Visual verification checkpoint
+
 ---
 
 **MCP Tools (deterministic operations - added to MCP server):**
