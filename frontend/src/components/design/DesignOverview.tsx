@@ -239,7 +239,7 @@ export function DesignOverview({ designData, onNavigate }: DesignOverviewProps) 
       <DesignProgressBar status={designData.status} />
 
       {/* Section Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {SECTION_CARDS.map((card) => {
           const status = designData.status[card.statusKey];
           const summary = getSectionSummary(designData, card.id);
