@@ -1,0 +1,138 @@
+/* ─── Gap Summary Panel ─────────────────────────────────────────────────────── */
+
+.gap-summary {
+  padding: 0.75rem;
+}
+
+.gap-summary-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.gap-summary-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.02em;
+}
+
+.gap-summary-count-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(255, 200, 0, 0.2);
+  color: rgba(255, 200, 0, 0.9);
+  border: 1px solid rgba(255, 200, 0, 0.3);
+  border-radius: 10px;
+  padding: 1px 7px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.gap-summary-stats {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.5rem;
+}
+
+/* ─── Gap List ───────────────────────────────────────────────────────────────── */
+
+.gap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.gap-item {
+  padding: 0.5rem;
+  background: rgba(255, 200, 0, 0.04);
+  border-left: 3px solid rgba(255, 200, 0, 0.3);
+  border-radius: 0 4px 4px 0;
+  margin-bottom: 0.35rem;
+}
+
+.gap-item-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.2rem;
+}
+
+.gap-item-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ─── Progress Bar ───────────────────────────────────────────────────────────── */
+
+.gap-progress {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 1.5px;
+  margin: 0.25rem 0;
+  overflow: hidden;
+}
+
+.gap-progress-fill {
+  height: 100%;
+  background: rgba(255, 200, 0, 0.5);
+  border-radius: 1.5px;
+  transition: width 0.3s ease;
+}
+
+/* ─── Missing Tags ───────────────────────────────────────────────────────────── */
+
+.gap-missing-tags {
+  display: flex;
+  flex-direction: row;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+  margin-top: 0.2rem;
+}
+
+.gap-missing-tag {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  background: rgba(255, 200, 0, 0.08);
+  border-radius: 3px;
+  color: rgba(255, 200, 0, 0.7);
+}
+
+/* ─── Investigate Button ─────────────────────────────────────────────────────── */
+
+.gap-investigate-btn {
+  font-size: 0.7rem;
+  color: #4a9eff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.gap-investigate-btn:hover {
+  color: #7ab8ff;
+}
+
+/* ─── Empty State ────────────────────────────────────────────────────────────── */
+
+.gap-empty-state {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.gap-empty-icon {
+  color: #44cc66;
+  font-size: 1rem;
+  font-weight: 700;
+}

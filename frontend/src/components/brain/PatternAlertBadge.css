@@ -1,0 +1,194 @@
+/* ─── Pattern Alert Badge ─────────────────────────────────────────────────────── */
+
+.pattern-badge-container {
+  position: relative;
+}
+
+.pattern-badge-btn {
+  position: relative;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.4rem;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.pattern-badge-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ─── Unread count badge ─────────────────────────────────────────────────────── */
+
+.pattern-badge-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ff4444;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+/* ─── Dropdown ───────────────────────────────────────────────────────────────── */
+
+.pattern-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 360px;
+  max-height: 400px;
+  background: #0a1020;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 50;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.pattern-dropdown-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.pattern-dropdown-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pattern-mark-all-btn {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.pattern-mark-all-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ─── Alert list ─────────────────────────────────────────────────────────────── */
+
+.pattern-alert-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ─── Individual alert item ──────────────────────────────────────────────────── */
+
+.pattern-alert-item {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+
+.pattern-alert-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pattern-alert-item.unread {
+  border-left: 3px solid #4a9eff;
+  background: rgba(74, 158, 255, 0.04);
+}
+
+/* ─── Alert top row ──────────────────────────────────────────────────────────── */
+
+.pattern-alert-top-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+/* ─── Severity dot ───────────────────────────────────────────────────────────── */
+
+.pattern-severity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── Type badge ─────────────────────────────────────────────────────────────── */
+
+.pattern-alert-type {
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Alert message ──────────────────────────────────────────────────────────── */
+
+.pattern-alert-message {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0.2rem 0;
+  line-height: 1.4;
+}
+
+/* ─── Timestamp ──────────────────────────────────────────────────────────────── */
+
+.pattern-alert-time {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-left: auto;
+}
+
+/* ─── View in Brain button ───────────────────────────────────────────────────── */
+
+.pattern-view-btn {
+  font-size: 0.7rem;
+  color: #4a9eff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  margin-top: 0.2rem;
+}
+
+.pattern-view-btn:hover {
+  color: #7ab8ff;
+}
+
+/* ─── Empty state ────────────────────────────────────────────────────────────── */
+
+.pattern-empty-state {
+  padding: 1.5rem 0.75rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+}
