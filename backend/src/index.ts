@@ -65,6 +65,7 @@ import { documentRouter } from './planning/routes/document-routes.js';
 import assessmentRouter from './api/assessment-routes.js';
 import { strategicGuidanceRouter } from './strategic/guidance/routes.js';
 import docIntelligenceRouter from './api/doc-intelligence.js';
+import brainRouter from './api/brain.js';
 
 dotenv.config();
 
@@ -215,6 +216,7 @@ app.use('/api/assessment', assessmentRouter);
 app.use('/api/strategic-guidance', strategicGuidanceRouter);
 app.use('/api/doc-intelligence', docIntelligenceRouter);
 app.use('/api/robot', robotRouter);
+app.use('/api/brain', brainRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
