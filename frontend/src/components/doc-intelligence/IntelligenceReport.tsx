@@ -205,10 +205,10 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
 
   const triage = report.triage ?? { relevanceScore: 0, documentType: 'other' as DocumentType, specialists: [], reasoning: 'Triage data unavailable' };
   const qualityRating = report.qualityRating ?? { sourceReliability: 'F' as never, informationCredibility: 6 as never, assessedBy: 'system', assessedAt: new Date().toISOString() };
-  const facts = facts ?? [];
-  const perspectives = perspectives ?? [];
-  const biasFindings = biasFindings ?? [];
-  const crossDocLinks = crossDocLinks ?? [];
+  const facts = report.facts ?? [];
+  const perspectives = report.perspectives ?? [];
+  const biasFindings = report.biasFindings ?? [];
+  const crossDocLinks = report.crossDocLinks ?? [];
   const relevancePercent = Math.round(triage.relevanceScore * 100);
 
   return (
