@@ -204,8 +204,12 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
   );
 
   const triage = report.triage ?? { relevanceScore: 0, documentType: 'other' as DocumentType, specialists: [], reasoning: 'Triage data unavailable' };
-  const relevancePercent = Math.round(triage.relevanceScore * 100);
   const qualityRating = report.qualityRating ?? { sourceReliability: 'F' as never, informationCredibility: 6 as never, assessedBy: 'system', assessedAt: new Date().toISOString() };
+  const facts = facts ?? [];
+  const perspectives = perspectives ?? [];
+  const biasFindings = biasFindings ?? [];
+  const crossDocLinks = crossDocLinks ?? [];
+  const relevancePercent = Math.round(triage.relevanceScore * 100);
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
@@ -254,9 +258,9 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           </div>
 
           {/* Facts Section */}
-          <ExpandableSection title="Facts" count={report.facts.length}>
+          <ExpandableSection title="Facts" count={facts.length}>
             <div className="space-y-2">
-              {report.facts.map((fact, idx) => (
+              {facts.map((fact, idx) => (
                 <div
                   key={idx}
                   className="bg-gray-800/30 border border-gray-700/50 rounded p-3"
@@ -296,9 +300,9 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           </ExpandableSection>
 
           {/* Perspectives Section */}
-          <ExpandableSection title="Perspectives" count={report.perspectives.length}>
+          <ExpandableSection title="Perspectives" count={perspectives.length}>
             <div className="space-y-3">
-              {report.perspectives.map((perspective, idx) => {
+              {perspectives.map((perspective, idx) => {
                 const colors = PERSPECTIVE_COLORS[perspective.perspective];
                 return (
                   <div
@@ -357,9 +361,9 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           </ExpandableSection>
 
           {/* Bias Assessment Section */}
-          <ExpandableSection title="Bias Assessment" count={report.biasFindings.length}>
+          <ExpandableSection title="Bias Assessment" count={biasFindings.length}>
             <div className="space-y-2">
-              {report.biasFindings.map((bias, idx) => {
+              {biasFindings.map((bias, idx) => {
                 const colors = SEVERITY_COLORS[bias.severity];
                 return (
                   <div
@@ -383,9 +387,9 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           </ExpandableSection>
 
           {/* Cross-Document Links Section */}
-          <ExpandableSection title="Cross-Document Links" count={report.crossDocLinks.length}>
+          <ExpandableSection title="Cross-Document Links" count={crossDocLinks.length}>
             <div className="space-y-2">
-              {report.crossDocLinks.map((link, idx) => {
+              {crossDocLinks.map((link, idx) => {
                 const linkStyle = LINK_TYPE_LABELS[link.linkType];
                 return (
                   <div
