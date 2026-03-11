@@ -10,7 +10,7 @@
  * - useAIStaff() returns read-only state (feedItems, annotations, isOpen, etc.)
  * - useAIStaffDispatch() returns action functions (addFeedItem, markRead, etc.)
  * - Feed items sorted by priority then timestamp descending
- * - Panel auto-opens for process tabs, auto-closes for watch tabs
+ * - Panel starts closed; user must manually open it
  */
 
 import {
@@ -28,7 +28,6 @@ import type {
   ChatMessage,
 } from '../types/ai-staff.ts';
 
-import { isProcessTab } from '../components/ai-staff/AgentRoutingConfig.ts';
 
 // ============================================================================
 // State Shape
@@ -136,8 +135,7 @@ function reducer(state: AIStaffStateValue, action: Action): AIStaffStateValue {
     case 'CLEAR_FEED':
       return { ...state, feedItems: [], unreadCount: 0 };
     case 'SET_ACTIVE_TAB': {
-      const isOpen = isProcessTab(action.tab);
-      return { ...state, activeTab: action.tab, isOpen };
+      return { ...state, activeTab: action.tab };
     }
     default:
       return state;
@@ -158,7 +156,7 @@ export function AIStaffProvider({ problemSetId: _problemSetId, activeTab, childr
   const initialState: AIStaffStateValue = {
     feedItems: [],
     annotations: [],
-    isOpen: isProcessTab(activeTab),
+    isOpen: false,
     activeTab,
     unreadCount: 0,
     chatHistory: [],
