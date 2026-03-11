@@ -357,7 +357,7 @@ export function BrainVisualization({
     if (matchingIds.length > 0) {
       onLassoSelect?.(matchingIds);
     }
-  }, [isLassoing, data.nodes, onLassoSelect]);
+  }, [isLassoing, data.nodes, onLassoSelect, fgRef]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

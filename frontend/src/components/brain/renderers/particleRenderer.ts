@@ -106,7 +106,6 @@ export function ParticleOverlay({ particlesRef, width, height, sidebarWidth }: P
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [particlesRef, width, height, sidebarWidth]);
 
   // Sync canvas backing-store size to logical size for crisp rendering on HiDPI displays

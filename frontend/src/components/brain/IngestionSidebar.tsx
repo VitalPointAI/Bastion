@@ -141,8 +141,8 @@ function EventItem({ event }: EventItemProps) {
 export function IngestionSidebar({ problemSetId, onUploadClick, mode = 'operational' }: IngestionSidebarProps) {
   const [activeFilter, setActiveFilter] = useState<SourceFilter>('All');
   const [docIntelOpen, setDocIntelOpen] = useState(false);
-  const [trainingDocCount, setTrainingDocCount] = useState(0);
-  const [trainingPending, setTrainingPending] = useState(false);
+  const [_trainingDocCount, _setTrainingDocCount] = useState(0);
+  const [_trainingPending, _setTrainingPending] = useState(false);
 
   const { events, activeProcesses } = useBrainIngestion(
     problemSetId,

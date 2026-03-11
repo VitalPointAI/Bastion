@@ -97,6 +97,8 @@ export function useBrainIngestion(
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // EventSource ref — closed on unmount
   const esRef = useRef<EventSource | null>(null);
+  // Ref to hold connect fn for use in onerror without forward-reference
+  const connectRef = useRef<() => void>(() => {});
 
   const addEvent = useCallback((evt: IngestionEvent) => {
     setEvents((prev) => {
@@ -275,10 +277,12 @@ export function useBrainIngestion(
       if (es.readyState === EventSource.CLOSED) {
         setIsConnected(false);
         esRef.current = null;
-        reconnectTimer.current = setTimeout(() => connect(), 3000);
+        reconnectTimer.current = setTimeout(() => connectRef.current(), 3000);
       }
     };
   }, [problemSetId, enabled, addEvent, emitParticle]);
+
+  connectRef.current = connect;
 
   // Connect on mount / when problemSetId changes
   useEffect(() => {

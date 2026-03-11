@@ -203,15 +203,18 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     setSearchMatchIds(matchingIds.length === 0 ? null : matchingIds);
   }, []);
 
+  const processedNodesRef = useRef(processedData.nodes);
+  processedNodesRef.current = processedData.nodes;
+
   const handleNodeFocus = useCallback(
     (nodeId: string) => {
-      const node = processedData.nodes.find((n) => n.id === nodeId);
+      const node = processedNodesRef.current.find((n) => n.id === nodeId);
       if (!node || node.x == null || node.y == null) return;
       if (!fgRef.current) return;
       fgRef.current.centerAt(node.x, node.y, 500);
       fgRef.current.zoom(3, 500);
     },
-    [processedData.nodes],
+    [],
   );
 
   const handleAlertClick = useCallback((alert: PatternAlert) => {
