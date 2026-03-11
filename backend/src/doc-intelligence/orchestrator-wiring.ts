@@ -67,18 +67,68 @@ Document Type Taxonomy:
 - OSINT_REPORT: Open source intelligence reports
 - OTHER: Documents not fitting above categories
 
-Specialist Selection Rules:
-- Format Converter: ALWAYS if document appears scanned or non-English
-- Document Classifier: ALWAYS
-- Fact Extractor: ALWAYS
-- Objective Extractor: ONLY for INTEL_ESTIMATE, CONOP, POLICY_PAPER, MILITARY_ORDER
-- Perspective Analysts: ALWAYS (instantiated per relevant perspective)
-- Bias Identifier: ALWAYS for NEWS_ARTICLE, ACADEMIC_RESEARCH, OSINT_REPORT; OPTIONAL for others
-- Cross-Document Linker: ALWAYS (runs after Fact Extractor)
-- Quality Assessor: ALWAYS
-- Trust Agent: ALWAYS for OSINT_REPORT, NEWS_ARTICLE; when source is unknown
+Valid specialist IDs (use EXACTLY these strings in the "specialists" array):
+  "format-converter", "document-classifier", "fact-extractor",
+  "objective-extractor", "perspective-analyst", "cross-doc-linker",
+  "bias-identifier", "quality-assessor", "trust-agent", "researcher"
 
-Return JSON with your triage decision.`;
+Specialist Selection Rules:
+- "format-converter": ALWAYS if document appears scanned or non-English
+- "document-classifier": ALWAYS
+- "fact-extractor": ALWAYS
+- "objective-extractor": ONLY for INTEL_ESTIMATE, CONOP, POLICY_PAPER, MILITARY_ORDER
+- "perspective-analyst": ALWAYS (instantiated per relevant perspective)
+- "bias-identifier": ALWAYS for NEWS_ARTICLE, ACADEMIC_RESEARCH, OSINT_REPORT; OPTIONAL for others
+- "cross-doc-linker": ALWAYS (runs after Fact Extractor)
+- "quality-assessor": ALWAYS
+- "trust-agent": ALWAYS for OSINT_REPORT, NEWS_ARTICLE; when source is unknown
+
+Return JSON with your triage decision. The "specialists" array must contain only the exact specialist IDs listed above.`;
+
+// ============================================================================
+// Specialist ID Normalization (safety net for LLM output variance)
+// ============================================================================
+
+const SPECIALIST_ALIASES: Record<string, string> = {
+  'format converter': 'format-converter',
+  'formatconverter': 'format-converter',
+  'format_converter': 'format-converter',
+  'document classifier': 'document-classifier',
+  'documentclassifier': 'document-classifier',
+  'document_classifier': 'document-classifier',
+  'fact extractor': 'fact-extractor',
+  'factextractor': 'fact-extractor',
+  'fact_extractor': 'fact-extractor',
+  'objective extractor': 'objective-extractor',
+  'objectiveextractor': 'objective-extractor',
+  'objective_extractor': 'objective-extractor',
+  'perspective analyst': 'perspective-analyst',
+  'perspectiveanalyst': 'perspective-analyst',
+  'perspective_analyst': 'perspective-analyst',
+  'cross doc linker': 'cross-doc-linker',
+  'crossdoclinker': 'cross-doc-linker',
+  'cross_doc_linker': 'cross-doc-linker',
+  'bias identifier': 'bias-identifier',
+  'biasidentifier': 'bias-identifier',
+  'bias_identifier': 'bias-identifier',
+  'quality assessor': 'quality-assessor',
+  'qualityassessor': 'quality-assessor',
+  'quality_assessor': 'quality-assessor',
+  'trust agent': 'trust-agent',
+  'trustagent': 'trust-agent',
+  'trust_agent': 'trust-agent',
+};
+
+/**
+ * Normalize specialist IDs from LLM output to match the SpecialistIdSchema enum.
+ * Handles common variants: spaces, underscores, camelCase, etc.
+ */
+function normalizeSpecialistIds(specialists: string[]): string[] {
+  return specialists.map((s) => {
+    const lower = s.toLowerCase().trim();
+    return SPECIALIST_ALIASES[lower] ?? lower;
+  });
+}
 
 // ============================================================================
 // Config
@@ -242,6 +292,10 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
+    // Normalize specialist IDs before validation (LLM may return variant names)
+    if (Array.isArray(parsed.specialists)) {
+      parsed.specialists = normalizeSpecialistIds(parsed.specialists);
+    }
     const validated = TriageDecisionSchema.parse(parsed);
 
     return { triageDecision: validated };
