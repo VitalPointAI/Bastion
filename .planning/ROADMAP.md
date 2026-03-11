@@ -1292,14 +1292,17 @@ Plans:
 - [x] Plan 5.3-04: Gap Documentation & Demo Script Update — Functionality matrix, demo script update, roadmap (completed 2026-02-23)
 
 ### Phase 6: Autonomous Vehicle Integration
-**Goal**: Set up edge AI platform and autonomous vehicle control
-**Depends on**: Phase 1
-**Research**: Likely (edge AI and robotics)
-**Research topics**: Jetson Orin Nano development environment, NVIDIA edge AI models, Sphero RVR+ SDK and control protocols, object detection models for edge deployment, autonomous navigation algorithms, ROS vs custom control architecture
-**Plans**: TBD
+**Goal**: End-to-end DAO-governed autonomous vehicle control chain: mock DAO mission intent -> Bastion gateway -> Jetson Orin Nano mission client -> Sphero RVR+ executes deterministic behavior -> status reporting back to Bastion COP with human-in-the-loop authorization for restricted actions
+**Depends on**: Phase 1, Phase 27 (Resource Registry), Phase 28 (Decision Gates), Phase 32 (Discovery)
+**Research**: Complete (06-RESEARCH.md)
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD during phase planning
+- [x] 06-01-PLAN.md — Backend robot types, WS endpoint, mission service, and DB store
+- [x] 06-02-PLAN.md — Jetson Python mission client, executor, and RVR+ driver
+- [ ] 06-03-PLAN.md — Mock DAO trigger API, policy validation, and gate integration
+- [ ] 06-04-PLAN.md — COP robot layer, status card, and activity feed integration
+- [ ] 06-05-PLAN.md — Demo mission trigger UI, calibration API, and end-to-end verification
 
 ### Phase 7: Tactical Execution System
 **Goal**: Build commander interface and mission execution workflows
@@ -1373,7 +1376,7 @@ Plans:
 **Depends on:** Phase 3, Phase 5.1, Phase 12
 **Research:** Complete (12.1-RESEARCH.md, .planning/mdmp-governance/)
 **Research topics:** JP 3-16 Multinational Operations, coalition partner force posture monitoring, national caveat management, multi-party approval gates, coalition cohesion metrics, narrative/info op impact modeling
-**Plans:** 6 plans
+**Plans:** 2/5 plans executed
 
 **Context:**
 This phase addresses coalition-specific capabilities identified during MDMP governance analysis. Two new AI agents provide continuous assessment of coalition partner health and narrative impact, while smart contract extensions to the existing linkages contract enable national caveat tracking and coalition gate enforcement.
@@ -1511,7 +1514,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5.1 MDMP Governance Integration | 17/17 | Complete | 2026-02-11 |
 | 5.2 Escalation & Competition Modeling | 10/10 | Complete | 2026-02-13 |
 | 5.3 Scenario Validation & UX Cleanup | 4/4 | Complete | 2026-02-23 |
-| 6. Autonomous Vehicle Integration | 0/TBD | Not started | - |
+| 6. Autonomous Vehicle Integration | 2/5 | In Progress|  |
 | 7. Tactical Execution System | 0/TBD | Not started | - |
 | 8. Sensor Fusion & Intelligence | 0/TBD | Not started | - |
 | 9. Assessment & Dashboard | 0/TBD | Not started | - |

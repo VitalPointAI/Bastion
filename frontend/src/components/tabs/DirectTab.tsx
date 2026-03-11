@@ -10,8 +10,9 @@ import {
 } from '../governance/index.js';
 import { useDecisionGates } from '../../context/DecisionGateContext.js';
 import type { DecisionGate } from '../../lib/gate-service';
+import { RobotMissionTrigger } from '../direct/RobotMissionTrigger.js';
 
-type DirectView = 'governance' | 'proposals' | 'escalation' | 'all-gates';
+type DirectView = 'governance' | 'proposals' | 'escalation' | 'all-gates' | 'robot-missions';
 
 const DIRECT_ITEMS: SidebarItem[] = [
   { id: 'governance', label: 'Governance Overview' },
@@ -29,6 +30,11 @@ const DIRECT_ITEMS: SidebarItem[] = [
     id: 'all-gates',
     label: 'All Decision Gates',
     tooltip: 'Cross-tab overview of all decision gates',
+  },
+  {
+    id: 'robot-missions',
+    label: 'Robot Missions',
+    tooltip: 'Trigger and monitor autonomous vehicle missions',
   },
 ];
 
@@ -234,6 +240,10 @@ export function DirectTab({ problemSetId, daoId }: DirectTabProps) {
 
       {selectedView === 'all-gates' && (
         <AllGatesOverview />
+      )}
+
+      {selectedView === 'robot-missions' && (
+        <RobotMissionTrigger problemSetId={problemSetId} />
       )}
     </TabLayout>
   );
