@@ -481,6 +481,93 @@ export class DocumentOrchestrator {
       return { specialistResults: { [SpecialistIds.TRUST_AGENT]: result } };
     });
 
+    // ------- Categorization Agent Node (runs after fact+objective extraction) -------
+    // Enriches extracted objectives with DIME/MIDLIFE categories. Non-blocking.
+    graph.addNode('categorization-agent', async (state: DocIntelligenceState) => {
+      orchestrator.emitProgress('specialist:start', {
+        agentId: SpecialistIds.CATEGORIZATION_AGENT,
+        documentId: state.documentId,
+        timestamp: new Date().toISOString(),
+      });
+      const startTime = Date.now();
+
+      let categorizationOutput: unknown = null;
+      try {
+        // Lazy import to keep the orchestrator from failing if categorization-agent isn't available
+        const { CategorizationAgent } = await import('./specialists/categorization-agent.js');
+        const agent = new CategorizationAgent();
+
+        // Extract objective data from the objective-extractor specialist result
+        const objectiveResult = state.specialistResults[SpecialistIds.OBJECTIVE_EXTRACTOR];
+        const extractedObjectives: Array<{ id: string; description: string; dimeCategory?: string; midlifeCategory?: string }> = [];
+
+        if (objectiveResult?.output && typeof objectiveResult.output === 'object') {
+          const output = objectiveResult.output as Record<string, unknown>;
+          if (Array.isArray(output.objectives)) {
+            for (const obj of output.objectives) {
+              if (obj && typeof obj === 'object' && 'id' in obj && 'description' in obj) {
+                extractedObjectives.push(obj as { id: string; description: string });
+              }
+            }
+          }
+        }
+
+        // Extract entity names from fact-extractor output
+        const factResult = state.specialistResults[SpecialistIds.FACT_EXTRACTOR];
+        const extractedEntityNames: string[] = [];
+        if (factResult?.output && typeof factResult.output === 'object') {
+          const output = factResult.output as Record<string, unknown>;
+          if (Array.isArray(output.facts)) {
+            for (const fact of output.facts) {
+              if (fact && typeof fact === 'object' && 'entities' in fact && Array.isArray(fact.entities)) {
+                extractedEntityNames.push(...(fact.entities as string[]));
+              }
+            }
+          }
+        }
+
+        if (state.problemSetContext) {
+          const result = await agent.categorize({
+            documentId: state.documentId,
+            documentText: state.documentText.slice(0, 3000),
+            problemSetContext: state.problemSetContext,
+            extractedObjectives,
+            extractedEntityNames: [...new Set(extractedEntityNames)],
+            onProgress: (stage, detail) => {
+              orchestrator.emitProgress('specialist:progress', {
+                agentId: SpecialistIds.CATEGORIZATION_AGENT,
+                stage,
+                detail,
+                timestamp: new Date().toISOString(),
+              });
+            },
+          });
+          categorizationOutput = result;
+        }
+      } catch (err) {
+        // Non-blocking — categorization failure should not abort pipeline
+        console.warn(
+          `[orchestrator] Categorization agent failed (non-blocking): ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+
+      const result: SpecialistResult = {
+        specialistId: SpecialistIds.CATEGORIZATION_AGENT,
+        status: categorizationOutput ? 'success' : 'skipped',
+        output: categorizationOutput,
+        duration: Date.now() - startTime,
+      };
+
+      orchestrator.emitProgress('specialist:complete', {
+        agentId: SpecialistIds.CATEGORIZATION_AGENT,
+        documentId: state.documentId,
+        duration: result.duration,
+        timestamp: new Date().toISOString(),
+      });
+
+      return { specialistResults: { [SpecialistIds.CATEGORIZATION_AGENT]: result } };
+    });
+
     // ------- Report Assembly Node -------
     graph.addNode('report-assembly', async (state: DocIntelligenceState) => {
       orchestrator.emitProgress('specialist:start', {
@@ -579,8 +666,13 @@ export class DocumentOrchestrator {
     // Cross-Document Linker depends on Fact Extractor
     g.addEdge('fact-extractor', 'cross-doc-linker');
 
+    // Categorization agent runs after cross-doc-linker (which follows fact-extractor).
+    // It reads objective results from state if available but doesn't require
+    // objective-extractor to have run — reads from specialistResults directly.
+    g.addEdge('cross-doc-linker', 'categorization-agent');
+
     // All specialist outputs fan-in to report assembly
-    g.addEdge('cross-doc-linker', 'report-assembly');
+    g.addEdge('categorization-agent', 'report-assembly');
     g.addEdge('perspective-analyst', 'report-assembly');
     g.addEdge('bias-identifier', 'report-assembly');
     g.addEdge('objective-extractor', 'report-assembly');

@@ -17,6 +17,7 @@ import type { GraphSummaryService, GraphSummary } from './graph-summary-service.
 import { listDocuments } from '../strategic/ingestion/document-store.js';
 import { ObjectiveStore } from '../strategic/objectives/store.js';
 import { decisionStore } from '../graph/raft/decision-store.js';
+import { brainStore } from '../brain/brain-store.js';
 
 // =============================================================================
 // Interfaces
@@ -133,6 +134,54 @@ export class StrategicContextService {
 
         graphSummaries[container.name] = summary;
         tokensUsed += summaryTokens;
+      }
+
+      // -----------------------------------------------------------------------
+      // Step B2: Priority 1.5 -- Brain snapshot summary (curated "source of truth")
+      // Injected AFTER graph summaries but BEFORE document summaries. Saves
+      // represent human-curated understanding — higher signal than raw docs.
+      // -----------------------------------------------------------------------
+      try {
+        const latestSnapshot = await brainStore.getLatestSnapshot(problemSetId);
+        if (latestSnapshot) {
+          const snapshotTokens = estimateTokens(latestSnapshot.summary);
+          if (tokensUsed + snapshotTokens <= TOKEN_BUDGET) {
+            graphSummaries['__brain_snapshot'] = {
+              summary: latestSnapshot.summary,
+              title: latestSnapshot.title,
+              createdAt: latestSnapshot.createdAt,
+              nodeCount: latestSnapshot.nodeCount,
+              edgeCount: latestSnapshot.edgeCount,
+            } as unknown as GraphSummary;
+            tokensUsed += snapshotTokens;
+          }
+        }
+      } catch {
+        // Brain store may not be available — degrade gracefully
+      }
+
+      // -----------------------------------------------------------------------
+      // Step B3: Priority 1.5 -- Shared annotations from brain
+      // Human-curated node-level insights (flags, notes, questionable markers)
+      // visible to all problem set members. Included after snapshot for context.
+      // -----------------------------------------------------------------------
+      try {
+        const sharedAnnotations = await brainStore.getSharedAnnotationsForContext(problemSetId);
+        if (sharedAnnotations.length > 0) {
+          const annotationSummary = sharedAnnotations
+            .map((a) => `[${a.annotationType.toUpperCase()}] Node ${a.nodeId}: ${a.content ?? a.annotationType}`)
+            .join('\n');
+          const annotationTokens = estimateTokens(annotationSummary);
+          if (tokensUsed + annotationTokens <= TOKEN_BUDGET) {
+            graphSummaries['__brain_annotations'] = {
+              summary: annotationSummary,
+              annotationCount: sharedAnnotations.length,
+            } as unknown as GraphSummary;
+            tokensUsed += annotationTokens;
+          }
+        }
+      } catch {
+        // Brain store may not be available — degrade gracefully
       }
 
       // -----------------------------------------------------------------------

@@ -385,6 +385,46 @@ async function getPatternAlerts(problemSetId: string): Promise<PatternAlert[]> {
 }
 
 // =====================
+// Context query methods (for StrategicContextService)
+// =====================
+
+/**
+ * Get the most recently saved snapshot for a problem set.
+ * Used by StrategicContextService to inject "source of truth" summaries
+ * into AI agent context bundles.
+ */
+async function getLatestSnapshot(problemSetId: string): Promise<BrainSnapshotRow | null> {
+  const pool = getPool();
+  const result = await pool.query(
+    `SELECT * FROM brain_snapshots
+     WHERE problem_set_id = $1
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [problemSetId],
+  );
+  if (result.rows.length === 0) return null;
+  return rowToSnapshot(result.rows[0]);
+}
+
+/**
+ * Get recent shared annotations for a problem set (up to 50).
+ * Used by StrategicContextService to include human-curated node insights
+ * in the AI agent context bundle.
+ */
+async function getSharedAnnotationsForContext(problemSetId: string): Promise<BrainAnnotationRow[]> {
+  const pool = getPool();
+  const result = await pool.query(
+    `SELECT * FROM brain_annotations
+     WHERE problem_set_id = $1
+       AND is_shared = true
+     ORDER BY created_at DESC
+     LIMIT 50`,
+    [problemSetId],
+  );
+  return result.rows.map(rowToAnnotation);
+}
+
+// =====================
 // Exported BrainStore
 // =====================
 
@@ -400,6 +440,8 @@ export const brainStore = {
   getGraphAtTime,
   getIntelligenceGaps,
   getPatternAlerts,
+  getLatestSnapshot,
+  getSharedAnnotationsForContext,
 };
 
 export type BrainStore = typeof brainStore;
