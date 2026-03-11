@@ -23,10 +23,10 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 06 of 56 (Autonomous Vehicle Integration) — IN PROGRESS
-Plan: 2 of 8 in current phase — COMPLETE
-Status: Plan 06-02 complete — Jetson Python mission client, MissionExecutor, RVRDriver with SIMULATE mode
-Last activity: 2026-03-11 - Completed 06-02: Jetson Mission Client, Executor, and RVR Driver
+Phase: 41 of 57 (Redesign Understanding Tab - Adaptive Brain Visualization) — IN PROGRESS
+Plan: 3 of 11 in current phase — COMPLETE
+Status: Plan 41-03 complete — Brain Canvas 2D renderers, BrainVisualization component, useBrainData hook
+Last activity: 2026-03-11 - Completed 41-03: Brain Canvas renderers, BrainVisualization, and useBrainData
 
 Progress: ██████████████████████████ 345 plans complete
 
@@ -172,6 +172,7 @@ Progress: ███████████████████████�
 | Phase 40 P12 | 8 | 2 tasks | 2 files |
 | Phase 06-autonomous-vehicle-integration P01 | 5 | 2 tasks | 6 files |
 | Phase 41-redesign-understanding-tab-adaptive-brain-visualization P01 | 2 | 2 tasks | 4 files |
+| Phase 41-redesign-understanding-tab-adaptive-brain-visualization P03 | 35 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -185,6 +186,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 41 Plan 03 (Brain Canvas Renderers and BrainVisualization):**
+- Canvas state (shadowBlur, globalAlpha, setLineDash) always fully reset at end of each draw function to prevent bleed between nodes
+- RAF animation counter in useRef not useState — 60fps loop without React re-renders
+- Actor confidence proxy: min(1, sourceDocs*0.3 + rels*0.2 + validity*0.5) since actors lack a first-class confidence field
+- Lasso O(n) ray-casting for hit test per research recommendation; quadtree deferred until >500 nodes shows perf issues
 
 **Phase 38 Plan 01 (Data Model Extension):**
 - Used const objects for FRAGO_STATUS, RFI_SUBTYPES, INTERPRETATION_ACK_ACTIONS per project convention

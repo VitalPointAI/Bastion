@@ -541,7 +541,7 @@ Plans:
 - BRAIN-29: Data Sharing/Subscriptions relocated OUT of Understanding tab
 - BRAIN-30: Training packages fold into unified ingestion in training mode
 
-**Plans:** 2/11 plans executed
+**Plans:** 3/11 plans executed
 
 Plans:
 - [ ] 41-01-PLAN.md — Foundation: BrainNode types, BrainLayout three-column shell, CSS
