@@ -1,0 +1,114 @@
+/* NodeAnnotationPanel styles */
+
+.annotation-panel {
+  padding: 0.5rem 0;
+}
+
+.annotation-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.annotation-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  gap: 0.2rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.annotation-action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.annotation-action-btn:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Annotation list items */
+
+.annotation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.annotation-item {
+  padding: 0.5rem;
+  margin-bottom: 0;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+}
+
+/* Left-border color by type */
+.annotation-item--flag {
+  border-left-color: #ffd700;
+}
+
+.annotation-item--note {
+  border-left-color: #4a9eff;
+}
+
+.annotation-item--questionable {
+  border-left-color: #ff8c00;
+}
+
+/* Audit trail */
+.annotation-meta {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 0.25rem;
+  user-select: none;
+}
+
+/* Share toggle */
+.annotation-share-toggle {
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.35rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.annotation-share-toggle:hover {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Note / questionable textarea */
+.annotation-note-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0.35rem;
+  color: white;
+  font-size: 0.8rem;
+  resize: vertical;
+  min-height: 60px;
+  box-sizing: border-box;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.annotation-note-input:focus {
+  border-color: rgba(74, 158, 255, 0.4);
+}
+
+.annotation-note-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}

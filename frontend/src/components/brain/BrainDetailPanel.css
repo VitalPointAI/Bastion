@@ -1,0 +1,348 @@
+/* BrainDetailPanel styles */
+
+.brain-detail-panel {
+  padding: 1rem;
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Header */
+
+.brain-detail-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.brain-detail-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 2rem);
+}
+
+.brain-detail-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0.1rem 0.25rem;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.brain-detail-close:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Scrollable content area */
+
+.brain-detail-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Sections */
+
+.brain-detail-section {
+  margin-top: 0.75rem;
+}
+
+.brain-detail-section-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.35);
+  margin-bottom: 0.4rem;
+  user-select: none;
+}
+
+/* Type badge */
+
+.brain-detail-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+}
+
+.brain-detail-type-shape {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.brain-detail-type-shape[data-shape="diamond"] {
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+
+.brain-detail-type-shape[data-shape="square"] {
+  border-radius: 1px;
+}
+
+.brain-detail-type-shape[data-shape="hexagon"] {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+/* Category badge */
+
+.brain-detail-category-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+/* Gap / prediction badges */
+
+.brain-detail-gap-badge {
+  font-size: 0.62rem;
+  background: rgba(255, 200, 0, 0.1);
+  border: 1px solid rgba(255, 200, 0, 0.3);
+  color: #ffc800;
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  letter-spacing: 0.04em;
+}
+
+.brain-detail-prediction-badge {
+  font-size: 0.62rem;
+  background: rgba(180, 100, 255, 0.1);
+  border: 1px solid rgba(180, 100, 255, 0.3);
+  color: #b464ff;
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  letter-spacing: 0.04em;
+}
+
+/* Confidence meter */
+
+.confidence-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Connections list */
+
+.brain-detail-connections {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.connection-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.8rem;
+}
+
+.connection-item:last-child {
+  border-bottom: none;
+}
+
+.connection-type {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  padding: 0.05rem 0.3rem;
+}
+
+.connection-strength {
+  width: 40px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 1.5px;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+/* Source documents */
+
+.brain-detail-source-doc {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0;
+}
+
+/* Metadata grid */
+
+.brain-detail-meta-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.75rem;
+  align-items: baseline;
+}
+
+.brain-detail-meta-key {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.brain-detail-meta-val {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Comparison view — node badges */
+
+.comparison-badges {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.comparison-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  border: 1px solid;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Comparison table */
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.comparison-table th {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: left;
+  padding: 0.2rem 0.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+.comparison-table td {
+  padding: 0.2rem 0.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.comparison-table td:first-child {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.comparison-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Bulk annotation */
+
+.brain-detail-annotate-all-btn {
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  background: rgba(74, 158, 255, 0.1);
+  border: 1px solid rgba(74, 158, 255, 0.25);
+  border-radius: 5px;
+  color: rgba(74, 158, 255, 0.85);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.brain-detail-annotate-all-btn:hover {
+  background: rgba(74, 158, 255, 0.18);
+}
+
+.brain-detail-cancel-btn {
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.brain-detail-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.bulk-note-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0.35rem;
+  color: white;
+  font-size: 0.8rem;
+  resize: vertical;
+  min-height: 60px;
+  box-sizing: border-box;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.bulk-note-input:focus {
+  border-color: rgba(74, 158, 255, 0.4);
+}
+
+.bulk-note-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
