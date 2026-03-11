@@ -81,7 +81,8 @@ interface NATORatingPanelProps {
   onOverride?: (newRating: Partial<NATORating>, reason: string) => void;
 }
 
-export function NATORatingPanel({ rating, documentId, onOverride }: NATORatingPanelProps) {
+export function NATORatingPanel({ rating: rawRating, documentId, onOverride }: NATORatingPanelProps) {
+  const rating = rawRating ?? { sourceReliability: 'F' as SourceReliability, informationCredibility: 6 as InformationCredibility, assessedBy: 'system', assessedAt: new Date().toISOString() };
   const [showOverride, setShowOverride] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
   const [overrideReliability, setOverrideReliability] = useState<SourceReliability>(rating.sourceReliability);
@@ -91,8 +92,8 @@ export function NATORatingPanel({ rating, documentId, onOverride }: NATORatingPa
   // Avoid unused variable warning for documentId
   void documentId;
 
-  const relColors = RELIABILITY_COLORS[rating.sourceReliability];
-  const credColors = CREDIBILITY_COLORS[rating.informationCredibility];
+  const relColors = RELIABILITY_COLORS[rating.sourceReliability] ?? RELIABILITY_COLORS['F'];
+  const credColors = CREDIBILITY_COLORS[rating.informationCredibility] ?? CREDIBILITY_COLORS[6];
 
   const handleOverrideSubmit = () => {
     if (!onOverride || !overrideReason.trim()) return;
@@ -166,7 +167,7 @@ export function NATORatingPanel({ rating, documentId, onOverride }: NATORatingPa
           </p>
           <p className="text-xs text-amber-300/80 mt-1">{rating.overrideReason}</p>
           <p className="text-[10px] text-gray-500 mt-1">
-            Original: {rating.originalRating.sourceReliability}{rating.originalRating.informationCredibility}
+            Original: {rating.originalRating?.sourceReliability}{rating.originalRating?.informationCredibility}
           </p>
         </div>
       )}

@@ -205,6 +205,7 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
 
   const triage = report.triage ?? { relevanceScore: 0, documentType: 'other' as DocumentType, specialists: [], reasoning: 'Triage data unavailable' };
   const relevancePercent = Math.round(triage.relevanceScore * 100);
+  const qualityRating = report.qualityRating ?? { sourceReliability: 'F' as never, informationCredibility: 6 as never, assessedBy: 'system', assessedAt: new Date().toISOString() };
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
@@ -239,7 +240,7 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           </div>
           {/* NATO rating badge */}
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 font-mono">
-            {report.qualityRating.sourceReliability}{report.qualityRating.informationCredibility}
+            {qualityRating.sourceReliability}{qualityRating.informationCredibility}
           </span>
           <span className="text-gray-600 text-xs">{expanded ? '\u25B2' : '\u25BC'}</span>
         </div>
@@ -414,7 +415,7 @@ export function IntelligenceReport({ report, onRatingOverride }: IntelligenceRep
           {/* Quality Assessment (NATO Rating Panel) */}
           <ExpandableSection title="Quality Assessment" count={1}>
             <NATORatingPanel
-              rating={report.qualityRating}
+              rating={qualityRating}
               documentId={report.documentId}
               onOverride={handleRatingOverride}
             />
