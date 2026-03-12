@@ -77,13 +77,26 @@ export function AIContextSnapshotModal({
     if (!isOpen || currentSummary) return;
 
     setSummaryLoading(true);
-    fetch(`${BACKEND_URL}/api/ai/context-preview?problemSetId=${encodeURIComponent(problemSetId)}`)
+    fetch(`${BACKEND_URL}/api/strategic-context/preview/${encodeURIComponent(problemSetId)}`)
       .then((res) => {
         if (!res.ok) throw new Error(`Failed to load context: ${res.status}`);
-        return res.json() as Promise<{ summary?: string; context?: string }>;
+        return res.json() as Promise<{ context?: Record<string, unknown> | string | null }>;
       })
       .then((data) => {
-        setFetchedSummary(data.summary ?? data.context ?? 'No context summary available.');
+        if (!data.context) {
+          setFetchedSummary('No context available — add strategic documents or subscribe to a parent problem set.');
+        } else if (typeof data.context === 'string') {
+          setFetchedSummary(data.context);
+        } else {
+          // Summarize the structured context object
+          const ctx = data.context as Record<string, unknown>;
+          const parts: string[] = [];
+          const docs = ctx.documentSummaries as unknown[];
+          if (Array.isArray(docs) && docs.length > 0) parts.push(`${docs.length} strategic document(s)`);
+          const graphs = ctx.graphSummaries as Record<string, unknown>;
+          if (graphs && Object.keys(graphs).length > 0) parts.push(`${Object.keys(graphs).length} graph summary(ies)`);
+          setFetchedSummary(parts.length > 0 ? `Strategic context includes: ${parts.join(', ')}.` : JSON.stringify(ctx, null, 2));
+        }
       })
       .catch(() => {
         setFetchedSummary('Unable to load context summary. The strategic context service may not be available.');

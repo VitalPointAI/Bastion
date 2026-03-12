@@ -370,102 +370,6 @@ router.post('/telemetry', async (req: Request, res: Response) => {
   }
 });
 
-// =====================
-// PARAMETRIC RESOURCE ENDPOINTS (after static routes to prevent shadowing)
-// =====================
-
-// Get single resource
-router.get('/:id', async (req: Request, res: Response) => {
-  try {
-    const resource = await resourceStore.getResource(req.params.id as string);
-    if (!resource) {
-      return res.status(404).json({ error: 'Resource not found' });
-    }
-    res.json(resource);
-  } catch (error) {
-    res.status(500).json({ error: String(error) });
-  }
-});
-
-// Create resource
-router.post('/', async (req: Request, res: Response) => {
-  try {
-    const {
-      missionId,
-      name,
-      category,
-      status,
-      specifications,
-      serialNumber,
-      sidc,
-      location,
-    } = req.body;
-
-    const resource = await resourceStore.createResource(
-      missionId,
-      name,
-      category,
-      status,
-      specifications || {},
-      serialNumber,
-      sidc,
-      location
-    );
-
-    res.status(201).json(resource);
-  } catch (error) {
-    res.status(400).json({ error: String(error) });
-  }
-});
-
-// Update resource
-router.patch('/:id', async (req: Request, res: Response) => {
-  try {
-    const resource = await resourceStore.getResource(req.params.id as string);
-    if (!resource) {
-      return res.status(404).json({ error: 'Resource not found' });
-    }
-
-    // For now, this is a placeholder - full update would require additional store method
-    // The status update endpoint below handles the primary use case
-    res.json({ success: true, message: 'Use /api/resources/:id/status for status updates' });
-  } catch (error) {
-    res.status(400).json({ error: String(error) });
-  }
-});
-
-// Update resource status
-router.patch('/:id/status', async (req: Request, res: Response) => {
-  try {
-    const { status } = req.body;
-    if (!status) {
-      return res.status(400).json({ error: 'Status is required' });
-    }
-
-    const resource = await resourceStore.updateStatus(req.params.id as string, status);
-    if (!resource) {
-      return res.status(404).json({ error: 'Resource not found' });
-    }
-
-    res.json(resource);
-  } catch (error) {
-    res.status(400).json({ error: String(error) });
-  }
-});
-
-// Delete resource
-router.delete('/:id', async (req: Request, res: Response) => {
-  try {
-    const deleted = await resourceStore.deleteResource(req.params.id as string);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Resource not found' });
-    }
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: String(error) });
-  }
-});
-
 // Bulk import resources
 router.post('/bulk-import', async (req: Request, res: Response) => {
   try {
@@ -784,6 +688,102 @@ router.get('/consumables/low-stock', async (req: Request, res: Response) => {
 
     const lowStock = await consumableStore.getLowStock(missionId);
     res.json({ lowStock });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
+// PARAMETRIC RESOURCE ENDPOINTS (must be last to prevent /:id shadowing /personnel, /consumables, etc.)
+// =====================
+
+// Get single resource
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const resource = await resourceStore.getResource(req.params.id as string);
+    if (!resource) {
+      return res.status(404).json({ error: 'Resource not found' });
+    }
+    res.json(resource);
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// Create resource
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const {
+      missionId,
+      name,
+      category,
+      status,
+      specifications,
+      serialNumber,
+      sidc,
+      location,
+    } = req.body;
+
+    const resource = await resourceStore.createResource(
+      missionId,
+      name,
+      category,
+      status,
+      specifications || {},
+      serialNumber,
+      sidc,
+      location
+    );
+
+    res.status(201).json(resource);
+  } catch (error) {
+    res.status(400).json({ error: String(error) });
+  }
+});
+
+// Update resource
+router.patch('/:id', async (req: Request, res: Response) => {
+  try {
+    const resource = await resourceStore.getResource(req.params.id as string);
+    if (!resource) {
+      return res.status(404).json({ error: 'Resource not found' });
+    }
+
+    // For now, this is a placeholder - full update would require additional store method
+    // The status update endpoint below handles the primary use case
+    res.json({ success: true, message: 'Use /api/resources/:id/status for status updates' });
+  } catch (error) {
+    res.status(400).json({ error: String(error) });
+  }
+});
+
+// Update resource status
+router.patch('/:id/status', async (req: Request, res: Response) => {
+  try {
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+
+    const resource = await resourceStore.updateStatus(req.params.id as string, status);
+    if (!resource) {
+      return res.status(404).json({ error: 'Resource not found' });
+    }
+
+    res.json(resource);
+  } catch (error) {
+    res.status(400).json({ error: String(error) });
+  }
+});
+
+// Delete resource
+router.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    const deleted = await resourceStore.deleteResource(req.params.id as string);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Resource not found' });
+    }
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
