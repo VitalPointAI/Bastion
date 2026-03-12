@@ -601,7 +601,7 @@ Plans:
 **Plans:** 6 plans
 
 Plans:
-- [ ] 43-01-PLAN.md — Shared Python package (robot/common/) with models, ws_protocol, mDNS utilities
+- [x] 43-01-PLAN.md — Shared Python package (robot/common/) with models, ws_protocol, mDNS utilities
 - [ ] 43-02-PLAN.md — Backend bridge support: bridge-ws, token store, message dedup, bridge-router
 - [ ] 43-03-PLAN.md — Robot agent enhancement: mDNS discovery, DID auth, bridge fallback
 - [ ] 43-04-PLAN.md — Bridge core: cloud uplink, LAN scanner, robot relay, command queue
