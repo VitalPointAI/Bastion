@@ -95,8 +95,10 @@ export function useBrainPatterns(problemSetId: string): UseBrainPatternsReturn {
         `${API_BASE}/api/brain/pattern-alerts?problemSetId=${encodeURIComponent(problemSetId)}`,
       );
       if (!res.ok) throw new Error(`pattern-alerts ${res.status}`);
-      const data: PatternAlert[] = await res.json();
-      setAlerts(data ?? []);
+      const data = await res.json();
+      // API returns { alerts: [...] } wrapper
+      const list = Array.isArray(data) ? data : Array.isArray(data?.alerts) ? data.alerts : [];
+      setAlerts(list);
     } catch (err) {
       console.error('[useBrainPatterns] failed to fetch pattern alerts:', err);
       // Retain existing alerts on error to avoid flickering
