@@ -2,10 +2,14 @@
 Bastion robot mission client — main entry point for the Jetson Orin Nano.
 
 Connects to Bastion as a WebSocket client, handles the full mission lifecycle:
+  - mDNS bridge discovery with fallback to BRIDGE_HOST/BRIDGE_PORT
+  - DID-based authentication (one-time token → persisted DID)
+  - Backward-compatible AUTH_TOKEN for legacy deployments
   - Registration on connect
   - Telemetry heartbeat every 2 seconds
   - Mission assignment dispatch
   - State transition reporting
+  - Dual-path connectivity: direct cloud → bridge relay on disconnect
   - Graceful shutdown on SIGINT/SIGTERM
   - Exponential-backoff reconnection
 
@@ -29,6 +33,8 @@ from websockets.exceptions import ConnectionClosed
 
 import config as cfg
 from calibration import load_profile
+from common.mdns import advertise_service, browse_service
+from common.ws_protocol import send_stamped, stamp
 from mission_executor import MissionExecutor
 from models import MissionJSON, RegisterMsg, StateUpdateMsg, TelemetryMsg
 from rvr_driver import RVRDriver
@@ -45,6 +51,97 @@ _driver: Optional[RVRDriver] = None
 _shutdown_event: asyncio.Event = asyncio.Event()
 
 # ---------------------------------------------------------------------------
+# Registration helpers
+# ---------------------------------------------------------------------------
+
+
+def _build_register_msg() -> dict:
+    """Build the registration message dict for the current auth configuration.
+
+    Auth priority:
+    1. Persisted DID (from DID_FILE or ROBOT_DID env var)
+    2. One-time REGISTRATION_TOKEN (first-time registration)
+    3. Legacy AUTH_TOKEN (backward-compatible shared secret)
+
+    Returns:
+        A plain dict ready for stamping and JSON serialisation.
+    """
+    robot_id = cfg.ROBOT_ID
+    capabilities = ["patrol_route", "find_engage"]
+
+    # Priority 1: persisted DID
+    did = cfg.load_persisted_did() or cfg.ROBOT_DID
+    if did:
+        return {
+            "type": "robot:register",
+            "robot_id": robot_id,
+            "did": did,
+            "capabilities": capabilities,
+        }
+
+    # Priority 2: one-time registration token
+    if cfg.REGISTRATION_TOKEN:
+        return {
+            "type": "robot:register",
+            "robot_id": robot_id,
+            "token": cfg.REGISTRATION_TOKEN,
+            "capabilities": capabilities,
+        }
+
+    # Priority 3: legacy shared AUTH_TOKEN
+    return {
+        "type": "robot:register",
+        "robot_id": robot_id,
+        "auth_token": cfg.AUTH_TOKEN,
+        "capabilities": capabilities,
+    }
+
+
+# ---------------------------------------------------------------------------
+# mDNS bridge discovery
+# ---------------------------------------------------------------------------
+
+
+async def discover_bridge() -> Optional[str]:
+    """Discover a local Bastion bridge via mDNS.
+
+    Browses for ``_bastion._tcp.local.`` services. On success, extracts the
+    relay_port TXT record and constructs a WebSocket URL.
+
+    Falls back to ``BRIDGE_HOST``/``BRIDGE_PORT`` env vars if mDNS times out
+    and no services are found.
+
+    Returns:
+        WebSocket URL string (``ws://{host}:{port}/ws/robot``) or ``None``
+        if no bridge is available.
+    """
+    log.info("mission_client.bridge_discovery.start", timeout=cfg.MDNS_BROWSE_TIMEOUT_SEC)
+    try:
+        results = await browse_service("_bastion._tcp.local.", timeout=cfg.MDNS_BROWSE_TIMEOUT_SEC)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("mission_client.bridge_discovery.browse_error", error=str(exc))
+        results = []
+
+    if results:
+        svc = results[0]
+        address = svc.addresses[0] if svc.addresses else cfg.BRIDGE_HOST
+        # Prefer relay_port from TXT record; fall back to service port
+        relay_port = svc.properties.get("relay_port", str(svc.port)) or str(svc.port)
+        url = f"ws://{address}:{relay_port}/ws/robot"
+        log.info("mission_client.bridge_discovery.found", url=url, service=svc.name)
+        return url
+
+    # mDNS timed out — fall back to manual config
+    if cfg.BRIDGE_HOST:
+        url = f"ws://{cfg.BRIDGE_HOST}:{cfg.BRIDGE_PORT}/ws/robot"
+        log.info("mission_client.bridge_discovery.fallback", url=url)
+        return url
+
+    log.info("mission_client.bridge_discovery.none_found")
+    return None
+
+
+# ---------------------------------------------------------------------------
 # WebSocket send helpers
 # ---------------------------------------------------------------------------
 
@@ -58,11 +155,11 @@ async def _ws_send(ws: websockets.WebSocketClientProtocol, msg: dict) -> None:
 
 
 async def _send_state(ws: websockets.WebSocketClientProtocol, msg: StateUpdateMsg) -> None:
-    await _ws_send(ws, msg.model_dump(mode="json"))
+    await send_stamped(ws, msg.model_dump(mode="json"))
 
 
 async def _send_telemetry(ws: websockets.WebSocketClientProtocol, msg: TelemetryMsg) -> None:
-    await _ws_send(ws, msg.model_dump(mode="json"))
+    await send_stamped(ws, msg.model_dump(mode="json"))
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +216,7 @@ async def receive_loop(
     """
     Main receive loop — parse incoming messages and dispatch by type.
 
+    Handles ``robot:registered`` to persist the DID on first-time registration.
     Exits when the connection closes or shutdown is requested.
     """
     log.info("mission_client.receive_loop.start")
@@ -135,7 +233,16 @@ async def receive_loop(
 
             msg_type = msg.get("type", "")
 
-            if msg_type == "mission:assign":
+            if msg_type == "robot:registered":
+                # Server confirmed registration and may return a DID
+                did = msg.get("did")
+                if did:
+                    cfg.persist_did(did)
+                    log.info("mission_client.registered.did_persisted", did=did)
+                else:
+                    log.info("mission_client.registered", robot_id=cfg.ROBOT_ID)
+
+            elif msg_type == "mission:assign":
                 log.info("mission_client.received.mission_assign", payload_keys=list(msg.keys()))
                 try:
                     mission = MissionJSON.model_validate(msg.get("payload", msg))
@@ -172,25 +279,24 @@ async def receive_loop(
 # ---------------------------------------------------------------------------
 
 
-async def connect_and_run(driver: RVRDriver) -> None:
+async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
     """
-    Open a WS connection to Bastion, register, start loops, await disconnect.
+    Open a WS connection to *ws_url*, register, start loops, await disconnect.
 
     Raises websockets exceptions on connection failure; caller handles backoff.
+
+    Args:
+        driver: Initialised RVRDriver instance.
+        ws_url: WebSocket URL to connect to (direct cloud or bridge relay).
     """
-    ws_url = f"{cfg.BASTION_WS_URL}/ws/robot"
     log.info("mission_client.connecting", url=ws_url)
 
     async with websockets.connect(ws_url) as ws:
         log.info("mission_client.connected", url=ws_url)
 
-        # Register with Bastion
-        reg = RegisterMsg(
-            robot_id=cfg.ROBOT_ID,
-            auth_token=cfg.AUTH_TOKEN,
-            capabilities=["patrol_route", "find_engage"],
-        )
-        await _ws_send(ws, reg.model_dump(mode="json"))
+        # Build and send registration message (stamped with message_id)
+        reg_msg = _build_register_msg()
+        await send_stamped(ws, reg_msg)
         log.info("mission_client.registered", robot_id=cfg.ROBOT_ID)
 
         # Build executor with bound WS callbacks
@@ -231,7 +337,7 @@ async def connect_and_run(driver: RVRDriver) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Main run loop with reconnection
+# Main run loop with reconnection and dual-path failover
 # ---------------------------------------------------------------------------
 
 
@@ -239,8 +345,15 @@ async def run() -> None:
     """
     Main execution loop.
 
-    Initialises hardware, then enters a reconnection loop with exponential
-    backoff until shutdown is requested.
+    Initialises hardware, discovers the bridge via mDNS, then enters a
+    reconnection loop with exponential backoff and dual-path failover:
+
+    - Primary path: direct cloud WebSocket (BASTION_WS_URL)
+    - Fallback path: bridge relay WebSocket (mDNS-discovered or BRIDGE_HOST)
+
+    On disconnect from the primary path, the robot switches to the bridge
+    relay. On bridge disconnect, it attempts direct again. Only one active
+    connection at a time.
     """
     log.info(
         "mission_client.starting",
@@ -258,20 +371,61 @@ async def run() -> None:
     except Exception as exc:  # noqa: BLE001
         log.warning("mission_client.wake_error", error=str(exc))
 
+    # Discover bridge via mDNS before entering the connection loop
+    bridge_url: Optional[str] = await discover_bridge()
+
+    # Start mDNS advertisement so other peers can discover this robot
+    advert_task: Optional[asyncio.Task] = None
+    if not _shutdown_event.is_set():
+        advert_task = asyncio.create_task(
+            advertise_service(
+                service_type="_bastion-robot._tcp.local.",
+                name=f"robot-{cfg.ROBOT_ID}",
+                port=0,  # Not listening; port is informational
+                properties={
+                    "robot_id": cfg.ROBOT_ID,
+                    "capabilities": "patrol_route,find_engage",
+                },
+                shutdown_event=_shutdown_event,
+            ),
+            name="mdns-advertise",
+        )
+
     delay = cfg.RECONNECT_INITIAL_DELAY
+    # Track current path: start on direct, fail over to bridge, then back
+    active_path: str = "direct"
 
     while not _shutdown_event.is_set():
+        if active_path == "direct":
+            ws_url = f"{cfg.BASTION_WS_URL}/ws/robot"
+        else:
+            ws_url = bridge_url or f"{cfg.BASTION_WS_URL}/ws/robot"
+
         try:
-            await connect_and_run(driver)
+            await connect_and_run(driver, ws_url)
+            # Clean disconnect — stay on same path, apply backoff
         except (OSError, ConnectionRefusedError, websockets.InvalidURI) as exc:
-            log.warning("mission_client.connection_error", error=str(exc), retry_in=delay)
+            log.warning(
+                "mission_client.connection_error",
+                path=active_path,
+                url=ws_url,
+                error=str(exc),
+                retry_in=delay,
+            )
+            # Failover to the other path if available
+            if active_path == "direct" and bridge_url:
+                log.info("mission_client.failover.direct_to_bridge")
+                active_path = "bridge"
+            elif active_path == "bridge":
+                log.info("mission_client.failover.bridge_to_direct")
+                active_path = "direct"
         except Exception as exc:  # noqa: BLE001
             log.error("mission_client.unexpected_error", error=str(exc), retry_in=delay)
 
         if _shutdown_event.is_set():
             break
 
-        log.info("mission_client.reconnecting_in", delay_sec=delay)
+        log.info("mission_client.reconnecting_in", delay_sec=delay, path=active_path)
         try:
             await asyncio.wait_for(_shutdown_event.wait(), timeout=delay)
         except asyncio.TimeoutError:
@@ -282,6 +436,12 @@ async def run() -> None:
 
     # Graceful shutdown
     log.info("mission_client.shutdown")
+    if advert_task is not None:
+        advert_task.cancel()
+        try:
+            await advert_task
+        except (asyncio.CancelledError, Exception):
+            pass
     if _executor is not None:
         await _executor.abort()
     await driver.safe_stop()
