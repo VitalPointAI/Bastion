@@ -254,23 +254,20 @@ export function BrainVisualization({
     [],
   );
 
-  const handleNodeClick = useCallback(
-    (node: NodeObject) => {
-      onNodeClick?.(node as BrainNode);
-      // Aim camera at clicked node
-      const fg = fgRef.current;
-      if (fg && node.x != null && node.y != null) {
-        const n = node as FGNode;
-        const distance = 120;
-        fg.cameraPosition(
-          { x: (n.x ?? 0) + distance, y: (n.y ?? 0) + distance, z: (n.z ?? 0) + distance },
-          { x: n.x ?? 0, y: n.y ?? 0, z: n.z ?? 0 },
-          1000,
-        );
-      }
-    },
-    [onNodeClick, fgRef],
-  );
+  const handleNodeClick = (node: NodeObject) => {
+    onNodeClick?.(node as BrainNode);
+    // Aim camera at clicked node
+    const fg = fgRef.current;
+    if (fg && node.x != null && node.y != null) {
+      const n = node as FGNode;
+      const distance = 120;
+      fg.cameraPosition(
+        { x: (n.x ?? 0) + distance, y: (n.y ?? 0) + distance, z: (n.z ?? 0) + distance },
+        { x: n.x ?? 0, y: n.y ?? 0, z: n.z ?? 0 },
+        1000,
+      );
+    }
+  };
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

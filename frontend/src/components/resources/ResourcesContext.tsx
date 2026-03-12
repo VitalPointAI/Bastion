@@ -8,9 +8,8 @@
  * Phase 42 Plan 01: Initial shell — selectedResourceId only.
  */
 
-import { useContext, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ResourcesContext } from './resourcesContextValue.js';
-import type { ResourcesContextValue } from './resourcesContextValue.js';
 
 interface ResourcesProviderProps {
   children: ReactNode;
@@ -24,12 +23,4 @@ export function ResourcesProvider({ children }: ResourcesProviderProps) {
       {children}
     </ResourcesContext.Provider>
   );
-}
-
-export function useResourcesContext(): ResourcesContextValue {
-  const ctx = useContext(ResourcesContext);
-  if (!ctx) {
-    throw new Error('useResourcesContext must be used inside <ResourcesProvider>');
-  }
-  return ctx;
 }

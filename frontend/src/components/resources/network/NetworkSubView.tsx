@@ -11,7 +11,7 @@
 import { useState, useCallback, useRef } from 'react';
 import type { DiscoveredDevice, DiscoveryStatus, LegalConsentRequirement } from '../../../lib/discovery-service';
 import { discoveryService } from '../../../lib/discovery-service';
-import { useResourcesContext } from '../ResourcesContext';
+import { useResourcesContext } from '../resourcesContextValue.js';
 import { ResourceDetailPanel } from '../ResourceDetailPanel';
 import { NetworkTopologyView } from './NetworkTopologyView';
 import type { TopologyOrigin } from './NetworkTopologyView';

@@ -16,7 +16,7 @@
 import { useState } from 'react';
 import { ResourceCatalog } from '../../mission/resources/ResourceCatalog';
 import { ResourceDetailPanel } from '../ResourceDetailPanel';
-import { useResourcesContext } from '../ResourcesContext';
+import { useResourcesContext } from '../resourcesContextValue.js';
 
 interface InventorySubViewProps {
   problemSetId: string;
