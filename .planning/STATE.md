@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed 43-03-PLAN.md
-last_updated: "2026-03-12T21:39:00Z"
-last_activity: "2026-03-12 - Completed 43-03: robot agent mDNS discovery, DID auth chain, send_stamped on all outbound messages, dual-path bridge failover; 53 tests green"
+stopped_at: Completed 43-04-PLAN.md
+last_updated: "2026-03-12T21:42:53Z"
+last_activity: "2026-03-12 - Completed 43-04: complete bridge service — LAN scanner (mDNS+SSDP), cloud WebSocket uplink, robot relay with TTL command queue, mDNS advertisement; 32 tests green"
 progress:
   total_phases: 59
   completed_phases: 40
   total_plans: 370
-  completed_plans: 370
+  completed_plans: 371
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 43 of 59 (Robot Agent & Local Discovery Bridge) — IN PROGRESS
-Plan: 3 of 6 in current phase — COMPLETE
-Status: Plan 43-03 complete — robot agent mDNS bridge discovery, DID auth (token>did>legacy), send_stamped all outbound messages, dual-path direct/bridge failover; 53 tests green
-Last activity: 2026-03-12 - Completed 43-03: robot agent mDNS discovery, DID auth chain, send_stamped on all outbound messages, dual-path bridge failover; 53 tests green
+Plan: 4 of 6 in current phase — COMPLETE
+Status: Plan 43-04 complete — complete bridge service: LAN scanner (mDNS+SSDP normalized), cloud WebSocket uplink (token/DID registration, scan reports, command routing), local robot relay (TTL command queue drain-on-connect), mDNS advertisement of _bastion._tcp.local; 32 tests green
+Last activity: 2026-03-12 - Completed 43-04: complete bridge service — LAN scanner (mDNS+SSDP), cloud WebSocket uplink, robot relay with TTL command queue, mDNS advertisement; 32 tests green
 
 Progress: ██████████████████████████ 353 plans complete
 
@@ -178,6 +178,7 @@ Progress: ███████████████████████�
 | Phase 41-redesign-understanding-tab-adaptive-brain-visualization P05 | 25 | 2 tasks | 7 files |
 | Phase 42-resources-tab-inventory-discovery P01 | 2 | 2 tasks | 3 files |
 | Phase 43-robot-agent-local-discovery-bridge P02 | 7 | 2 tasks | 7 files |
+| Phase 43-robot-agent-local-discovery-bridge P04 | 7 | 2 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -191,6 +192,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 43 Plan 04 (Bridge Service):**
+- _relay_robot_message preserves original message_id (may be None) — never re-stamps — so cloud dedup receives the robot's own UUID rather than a bridge-generated one
+- shutdown_event_wait extracted as thin coroutine wrapper in mdns_advertise.py for patch-based test isolation
+- _AsyncIterWS class required for test mock WebSocket — MagicMock.__aiter__ with sync iter() does not satisfy async for protocol
 
 **Phase 41 Plan 05 (Clustering, Search, Toolbar, NL Search):**
 - Inline createForceX/createForceY factories (not d3-force import) — d3-force-3d only in pnpm virtual store, not hoisted, direct import would fail at runtime
