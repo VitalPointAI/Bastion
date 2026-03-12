@@ -256,7 +256,6 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
         leftSidebar={
           <IngestionSidebar
             problemSetId={problemSetId}
-            mode={mode}
           />
         }
         center={
