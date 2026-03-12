@@ -59,10 +59,12 @@ export function useBrainAnnotations(problemSetId: string): UseBrainAnnotationsRe
     fetch(`${BACKEND_URL}/api/brain/annotations?problemSetId=${encodeURIComponent(problemSetId)}`)
       .then((res) => {
         if (!res.ok) throw new Error(`Failed to load annotations: ${res.status}`);
-        return res.json() as Promise<BrainAnnotation[]>;
+        return res.json();
       })
       .then((data) => {
-        if (!cancelled) setAnnotations(data);
+        // API returns { annotations: [...] } wrapper
+        const list = Array.isArray(data) ? data : Array.isArray(data?.annotations) ? data.annotations : [];
+        if (!cancelled) setAnnotations(list);
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
