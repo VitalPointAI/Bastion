@@ -147,7 +147,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     const base = effectiveData;
 
     // Apply gap marking — marks gap nodes with isGap=true and adds ghost nodes
-    const nodesWithGaps = markGapNodes(base.nodes);
+    const nodesWithGaps = markGapNodes(base.nodes ?? []);
 
     // Apply search dimming — set isSearchDimmed flag on non-matching nodes
     const nodesWithSearch =
@@ -160,7 +160,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
 
     return {
       nodes: nodesWithSearch,
-      edges: base.edges,
+      edges: base.edges ?? [],
     };
   })();
 

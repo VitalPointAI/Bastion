@@ -208,7 +208,12 @@ export function useBrainTimeline(
         const url = `/api/brain/graph-snapshot?problemSetId=${encodeURIComponent(problemSetId)}&at=${encodeURIComponent(selectedTime.toISOString())}`;
         const res = await fetch(url);
         if (!res.ok) throw new Error(`graph-snapshot ${res.status}`);
-        const data: BrainGraphData = await res.json();
+        const raw = await res.json();
+        // Ensure the snapshot always has arrays — the API may omit edges/nodes
+        const data: BrainGraphData = {
+          nodes: Array.isArray(raw.nodes) ? raw.nodes : [],
+          edges: Array.isArray(raw.edges) ? raw.edges : [],
+        };
         setHistoricalData(data);
       } catch (err) {
         console.error('[useBrainTimeline] failed to fetch graph snapshot:', err);

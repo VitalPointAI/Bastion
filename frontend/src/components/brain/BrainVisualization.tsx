@@ -142,7 +142,7 @@ export function BrainVisualization({
       return;
     }
     const neighbors = new Set<string>([selectedNodeId]);
-    for (const edge of data.edges) {
+    for (const edge of (data.edges ?? [])) {
       const src = typeof edge.source === 'object' ? (edge.source as FGNode).id : edge.source;
       const tgt = typeof edge.target === 'object' ? (edge.target as FGNode).id : edge.target;
       if (src === selectedNodeId) neighbors.add(tgt);
@@ -153,12 +153,22 @@ export function BrainVisualization({
 
   // ── ForceGraph2D data (nodes → nodes, edges → links) ──────────────────────
   const graphPayload = useMemo<GraphPayload>(() => {
+    const nodes = Array.isArray(data.nodes) ? data.nodes : [];
+    const edges = Array.isArray(data.edges) ? data.edges : [];
+    const nodeIdSet = new Set(nodes.map((n) => n.id));
     return {
-      nodes: data.nodes as FGNode[],
+      nodes: nodes as FGNode[],
       // ForceGraph2D will mutate source/target from string IDs to node objects;
       // the cast makes TypeScript accept both the initial string form and the
       // post-simulation object form.
-      links: data.edges.map((e) => ({ ...e })) as FGLink[],
+      // Filter out orphan edges whose source/target isn't in the node set.
+      links: edges
+        .filter((e) => {
+          const src = typeof e.source === 'object' ? (e.source as FGNode).id : e.source;
+          const tgt = typeof e.target === 'object' ? (e.target as FGNode).id : e.target;
+          return nodeIdSet.has(src) && nodeIdSet.has(tgt);
+        })
+        .map((e) => ({ ...e })) as FGLink[],
     };
   }, [data]);
 
