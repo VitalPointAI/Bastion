@@ -11,6 +11,10 @@
 import type { Server as HTTPServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { getRobotMissionService } from './robot-mission-service.js';
+import { bridgeTokenStore } from './bridge-token-store.js';
+import { getResourceRegistry } from '../resources/resource-registry.js';
+import { RobotWsMessageType } from './robot-types.js';
+import type { RobotAckMsg } from './robot-types.js';
 
 // ---------------------------------------------------------------------------
 // Extended WebSocket type — tracks which robot owns this connection
@@ -18,6 +22,73 @@ import { getRobotMissionService } from './robot-mission-service.js';
 
 interface RobotWS extends WebSocket {
   robotId?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Token-based first-time registration helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle first-time robot registration via one-time token.
+ * On success: consume the token, register robot as resource, assign DID,
+ * and send back ack with the assigned DID so the robot can persist it.
+ */
+async function handleTokenRegistration(
+  ws: RobotWS,
+  msg: Record<string, unknown>,
+  service: ReturnType<typeof import('./robot-mission-service.js').getRobotMissionService>,
+): Promise<void> {
+  const robotId = msg.robot_id as string;
+  const token = msg.token as string;
+  const capabilities = (msg.capabilities as string[]) ?? [];
+
+  const result = await bridgeTokenStore.consume(token);
+  if (!result.valid) {
+    const errMsg: RobotAckMsg = {
+      type: RobotWsMessageType.ack,
+      ref_type: RobotWsMessageType.register,
+      status: 'error',
+      message: 'Token invalid or expired — contact administrator for a new token',
+    };
+    try {
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(errMsg));
+    } catch { /* ignore */ }
+    console.warn(`[RobotWS] Rejected robot ${robotId} — invalid registration token`);
+    return;
+  }
+
+  // Register robot as a resource to get its DID
+  const registry = getResourceRegistry();
+  await registry.ensureInitialized();
+
+  const resource = await registry.registerResource({
+    name: (msg.name as string) || `Robot ${robotId}`,
+    category: 'vehicles',
+    missionId: 'system',
+    specifications: {
+      robot_id: robotId,
+      type: 'autonomous_ground_vehicle',
+      connection: 'websocket',
+      hardware_info: msg.hardware_info ?? {},
+    },
+    isAutonomous: true,
+    capabilities: capabilities.length > 0 ? capabilities : ['patrol', 'ISR'],
+  });
+
+  // Track on socket and register in service
+  ws.robotId = robotId;
+
+  // Re-call handleRobotMessage with a complete register message now that we have a DID
+  service.handleRobotMessage(ws, {
+    type: RobotWsMessageType.register,
+    robot_id: robotId,
+    did: resource.did,
+    name: msg.name as string | undefined,
+    capabilities,
+    hardware_info: msg.hardware_info as Record<string, unknown> | undefined,
+  });
+
+  console.log(`[RobotWS] Robot ${robotId} registered via token (DID: ${resource.did})`);
 }
 
 // ---------------------------------------------------------------------------
@@ -46,15 +117,33 @@ export function setupRobotWebSocket(serverOrWss: HTTPServer | WebSocketServer): 
         return;
       }
 
+      if (!parsed || typeof parsed !== 'object') {
+        return;
+      }
+
+      const msg = parsed as Record<string, unknown>;
+
+      // Handle first-time token-based registration (robot has token but no DID yet)
+      if (
+        'type' in msg &&
+        msg.type === 'register' &&
+        'robot_id' in msg &&
+        'token' in msg &&
+        !('did' in msg && msg.did)
+      ) {
+        handleTokenRegistration(ws, msg, service).catch((err) =>
+          console.error('[RobotWS] Token registration error:', err),
+        );
+        return;
+      }
+
       // Extract robot_id from register messages so we can track it on the socket
       if (
-        parsed &&
-        typeof parsed === 'object' &&
-        'type' in parsed &&
-        (parsed as { type: string }).type === 'register' &&
-        'robot_id' in parsed
+        'type' in msg &&
+        msg.type === 'register' &&
+        'robot_id' in msg
       ) {
-        ws.robotId = (parsed as { robot_id: string }).robot_id;
+        ws.robotId = msg.robot_id as string;
       }
 
       service.handleRobotMessage(ws, parsed);
