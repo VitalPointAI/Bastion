@@ -19,7 +19,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ForceGraphMethods } from 'react-force-graph-3d';
 
-import { useMode } from '../../context/ModeContext.js';
 
 import { BrainLayout } from './BrainLayout.js';
 import { BrainVisualization } from './BrainVisualization.js';
@@ -51,9 +50,6 @@ export interface BrainControllerProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function BrainController({ problemSetId }: BrainControllerProps) {
-  // ── Mode ────────────────────────────────────────────────────────────────────
-  const { mode } = useMode();
-
   // ── ForceGraph ref (shared between BrainVisualization and useBrainClustering)
   const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
 
