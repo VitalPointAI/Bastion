@@ -52,6 +52,11 @@ export const RobotWsMessageType = {
   auth_response: 'auth_response',
   ack: 'ack',
   error: 'error',
+  // Bridge message types (Phase 43)
+  bridge_register: 'bridge:register',
+  bridge_registered: 'bridge:registered',
+  bridge_discovery_report: 'bridge:discovery_report',
+  bridge_robot_relay: 'bridge:robot_relay',
 } as const;
 
 export type RobotWsMessageType = (typeof RobotWsMessageType)[keyof typeof RobotWsMessageType];
@@ -121,6 +126,10 @@ export interface RobotRegisterMsg {
   capabilities: string[];
   /** Firmware/model info */
   hardware_info?: Record<string, unknown>;
+  /** One-time registration token (used for first-time DID assignment) */
+  token?: string;
+  /** Deduplication ID for this message */
+  message_id?: string;
 }
 
 /** Robot → Bastion: report a mission state transition */
@@ -134,6 +143,8 @@ export interface RobotStateUpdateMsg {
   /** Current room-relative position at time of state change */
   position?: { x: number; y: number };
   timestamp: string;
+  /** Deduplication ID for this message */
+  message_id?: string;
 }
 
 /** Robot → Bastion: periodic telemetry heartbeat (~2 sec cadence) */
@@ -149,6 +160,8 @@ export interface RobotTelemetryMsg {
   /** Active mission if any */
   mission_id?: string;
   timestamp: string;
+  /** Deduplication ID for this message */
+  message_id?: string;
 }
 
 /** Robot → Bastion: robot requests human auth before executing restricted action */
@@ -161,6 +174,8 @@ export interface AuthRequestMsg {
   /** Contextual information for the authorization prompt */
   context?: Record<string, unknown>;
   timestamp: string;
+  /** Deduplication ID for this message */
+  message_id?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -194,6 +209,56 @@ export interface RobotAckMsg {
 }
 
 // ---------------------------------------------------------------------------
+// WebSocket Message Interfaces (Bridge — Bridge → Bastion)
+// ---------------------------------------------------------------------------
+
+/** Bridge → Bastion: register bridge device, token-based or DID-based */
+export interface BridgeRegisterMsg {
+  type: typeof RobotWsMessageType.bridge_register;
+  bridge_id: string;
+  /** One-time registration token (used for first-time DID assignment) */
+  token?: string;
+  /** DID for re-authentication on subsequent connects */
+  did?: string;
+  /** Capability strings (e.g. 'scanning', 'relay', 'queueing') */
+  capabilities: string[];
+  /** Deduplication ID for this message */
+  message_id?: string;
+}
+
+/** Bastion → Bridge: registration confirmation with assigned DID */
+export interface BridgeRegisteredMsg {
+  type: typeof RobotWsMessageType.bridge_registered;
+  did: string;
+  bridge_id: string;
+}
+
+/** Bridge → Bastion: report of discovered devices from a scan */
+export interface BridgeDiscoveryReportMsg {
+  type: typeof RobotWsMessageType.bridge_discovery_report;
+  bridge_id: string;
+  devices: Array<{
+    transport_type: string;
+    raw_identifier: string;
+    raw_data: Record<string, unknown>;
+    signal_strength?: number;
+  }>;
+  /** ISO timestamp of when the scan was taken */
+  scanned_at: string;
+  /** Deduplication ID for this message */
+  message_id?: string;
+}
+
+/** Bridge → Bastion: relay a robot message through the bridge */
+export interface BridgeRobotRelayMsg {
+  type: typeof RobotWsMessageType.bridge_robot_relay;
+  bridge_id: string;
+  robot_message: Record<string, unknown>;
+  /** Deduplication ID for this message */
+  message_id?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Union type for all inbound robot messages
 // ---------------------------------------------------------------------------
 
@@ -201,7 +266,10 @@ export type RobotWsMessage =
   | RobotRegisterMsg
   | RobotStateUpdateMsg
   | RobotTelemetryMsg
-  | AuthRequestMsg;
+  | AuthRequestMsg
+  | BridgeRegisterMsg
+  | BridgeDiscoveryReportMsg
+  | BridgeRobotRelayMsg;
 
 // ---------------------------------------------------------------------------
 // Connected Robot — in-memory state for a live WS connection
@@ -228,4 +296,23 @@ export interface ConnectedRobot {
     heading: number;
     battery: number;
   };
+}
+
+// ---------------------------------------------------------------------------
+// Connected Bridge — in-memory state for a live bridge WS connection
+// ---------------------------------------------------------------------------
+
+/** Tracks a bridge that is currently connected via WebSocket */
+export interface ConnectedBridge {
+  bridge_id: string;
+  /** Live WebSocket reference */
+  ws: WebSocket;
+  /** DID assigned by resource registry */
+  did: string;
+  /** Capability strings (e.g. 'scanning', 'relay', 'queueing') */
+  capabilities: string[];
+  /** Epoch ms of last message/heartbeat */
+  last_heartbeat: number;
+  /** Robot IDs currently proxied through this bridge */
+  connected_robots: string[];
 }

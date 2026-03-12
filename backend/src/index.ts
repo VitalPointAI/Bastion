@@ -57,7 +57,7 @@ import { registerValidationJobs } from './validation/validation-scheduler.js';
 import { requireAuth } from './auth/auth-instance.js';
 import { discoveryRouter, setupDiscoveryWS, getDiscoveryService } from './discovery/index.js';
 import { setupInheritanceWebSocket } from './inheritance/inheritance-ws.js';
-import { setupRobotWebSocket } from './robot/index.js';
+import { setupRobotWebSocket, setupBridgeWebSocket, bridgeRouter } from './robot/index.js';
 import { robotRouter } from './api/robot-routes.js';
 import { osintWebhookRouter } from './api/osint-webhook.js';
 import jppRouter from './api/jpp.js';
@@ -217,6 +217,9 @@ app.use('/api/strategic-guidance', strategicGuidanceRouter);
 app.use('/api/doc-intelligence', docIntelligenceRouter);
 app.use('/api/robot', robotRouter);
 app.use('/api/brain', brainRouter);
+// Bridge REST routes (Phase 43): /api/admin/bridge-tokens and /api/bridge/status
+// Routes in bridgeRouter include full path prefixes, so mount at root
+app.use('/', bridgeRouter);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -238,6 +241,7 @@ const wsServers = {
   discovery: new WebSocketServer({ noServer: true }),
   inheritance: new WebSocketServer({ noServer: true }),
   robot: new WebSocketServer({ noServer: true }),
+  bridge: new WebSocketServer({ noServer: true }),
 };
 
 setupMessageWebSocket(wsServers.messages);
@@ -248,6 +252,7 @@ setupResourceWebSocket(wsServers.resources);
 setupDiscoveryWS(wsServers.discovery);
 setupInheritanceWebSocket(wsServers.inheritance);
 setupRobotWebSocket(wsServers.robot);
+setupBridgeWebSocket(wsServers.bridge);
 
 server.on('upgrade', (request, socket, head) => {
   const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
@@ -279,6 +284,10 @@ server.on('upgrade', (request, socket, head) => {
   } else if (pathname === '/ws/robot') {
     wsServers.robot.handleUpgrade(request, socket, head, (ws) => {
       wsServers.robot.emit('connection', ws, request);
+    });
+  } else if (pathname === '/ws/bridge') {
+    wsServers.bridge.handleUpgrade(request, socket, head, (ws) => {
+      wsServers.bridge.emit('connection', ws, request);
     });
   } else {
     socket.destroy();

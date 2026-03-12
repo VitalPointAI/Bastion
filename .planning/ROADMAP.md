@@ -59,6 +59,7 @@ None
 - [x] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign (completed 2026-03-08)
 - [x] **Phase 40: Autonomous Document Intelligence Team** - Multi-agent document processing team that autonomously ingests, classifies, extracts, cross-links, and validates documents with minimal user involvement; problem set scoping interview captures context boundaries and standing intelligence requirements; specialist agents (orchestrator, converter, classifier, perspective analysts, fact/objective extractors, linker, bias identifier, quality assessor) process each document adaptively; autonomous problem set researcher uses web search and OSINT to fill knowledge gaps and build strategic understanding; ExtractionTheater visualization shows full pipeline live (INSERTED) (completed 2026-03-09)
 - [x] **Phase 42: Resources Tab — Inventory, Discovery & Onboarding** - Add a dedicated Resources tab to the problem set tab bar; consolidate orphaned discovery components (ClientDiscoveryPanel, DiscoveryLayer, NetworkTopologyView, EMSpectrumPanel) and existing ResourceCatalog into a unified inventory and onboarding view; sub-views for equipment/personnel/consumable inventory, network device discovery and onboarding pipeline, resource group management, capability search, and registry statistics; wires existing Phase 27 (Resource Registry) and Phase 32 (Discovery) backend services into a reachable UI (INSERTED) (completed 2026-03-12)
+- [x] **Phase 43: Robot Agent & Local Discovery Bridge** - Lightweight Python robot agent for outbound self-registration/command/telemetry via WebSocket; Docker-based local network bridge for mDNS/SSDP WiFi scanning and device relay to Bastion cloud; bridge acts as command proxy; mDNS auto-discovery between robot and bridge; dual-path connectivity for resilience (INSERTED) (completed 2026-03-12)
 
 ## Phase Details
 
@@ -588,6 +589,24 @@ Plans:
 - [ ] 42-04-PLAN.md — Network sub-view: wire NetworkTopologyView and EMSpectrumPanel into sub-view
 - [ ] 42-05-PLAN.md — Groups sub-view: group CRUD UI, member assignment, aggregate capabilities display
 - [ ] 42-06-PLAN.md — Registry search + statistics dashboard, real-time WebSocket integration
+
+### Phase 43: Robot Agent & Local Discovery Bridge
+
+**Goal:** Enable autonomous robots and local network devices to connect to cloud-hosted Bastion through two complementary mechanisms: (1) a lightweight Python robot agent that self-registers with Bastion via outbound WebSocket for command/telemetry, and (2) a Docker-based local network bridge that runs mDNS/SSDP scanning on the user's WiFi and relays discovered devices to Bastion cloud. The bridge also acts as a command proxy and low-latency relay for local devices. Robots advertise via mDNS (`_bastion._tcp.local`) for bridge auto-discovery. Dual-path connectivity (direct outbound + bridge relay) provides resilience.
+
+**Design note:** The preferred architecture would use a Raspberry Pi edge node as a dedicated hardware controller (always-on, low-power, full network access). This was deferred due to hardware procurement/policy constraints. The Docker bridge + robot agent approach achieves equivalent functionality using existing infrastructure. The Pi edge node remains the recommended production deployment for operational environments. (See whitepaper for full analysis.)
+
+**Requirements:** [BRIDGE-01, BRIDGE-02, BRIDGE-03, BRIDGE-04, BRIDGE-05, BRIDGE-06, BRIDGE-07]
+**Depends on:** Phase 32, Phase 42
+**Plans:** 6/6 plans complete
+
+Plans:
+- [x] 43-01-PLAN.md — Shared Python package (robot/common/) with models, ws_protocol, mDNS utilities
+- [x] 43-02-PLAN.md — Backend bridge support: bridge-ws, token store, message dedup, bridge-router
+- [x] 43-03-PLAN.md — Robot agent enhancement: mDNS discovery, DID auth, bridge fallback
+- [ ] 43-04-PLAN.md — Bridge core: cloud uplink, LAN scanner, robot relay, command queue
+- [ ] 43-05-PLAN.md — Bridge FastAPI web UI and Docker packaging
+- [ ] 43-06-PLAN.md — Integration wiring and end-to-end verification
 
 ---
 

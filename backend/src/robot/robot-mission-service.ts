@@ -18,6 +18,7 @@ import {
 } from './robot-types.js';
 import type {
   ConnectedRobot,
+  ConnectedBridge,
   RobotWsMessage,
   RobotRegisterMsg,
   RobotStateUpdateMsg,
@@ -79,6 +80,71 @@ export class RobotMissionService {
   /** In-memory map of currently connected robots, keyed by robot_id */
   private connectedRobots = new Map<string, ConnectedRobot>();
 
+  /** In-memory map of currently connected bridges, keyed by bridge_id */
+  connectedBridges = new Map<string, ConnectedBridge>();
+
+  /** Message IDs seen in the dedup window, value is receipt timestamp (epoch ms) */
+  private seenMessageIds = new Map<string, number>();
+
+  /** Dedup window: messages seen within this interval are considered duplicates */
+  private readonly DEDUP_WINDOW_MS = 30_000;
+
+  constructor() {
+    // Periodically evict expired entries from the dedup map (every 60 seconds)
+    setInterval(() => {
+      const cutoff = Date.now() - this.DEDUP_WINDOW_MS;
+      for (const [id, ts] of this.seenMessageIds) {
+        if (ts < cutoff) this.seenMessageIds.delete(id);
+      }
+    }, 60_000);
+  }
+
+  // -------------------------------------------------------------------------
+  // Message deduplication
+  // -------------------------------------------------------------------------
+
+  /**
+   * Check if a message with this ID has already been processed.
+   * If messageId is undefined or null, always returns false (no dedup).
+   * Otherwise records the message_id and returns false on first seen,
+   * true on subsequent sightings within the dedup window.
+   */
+  isDuplicate(messageId: string | undefined): boolean {
+    if (!messageId) return false;
+    if (this.seenMessageIds.has(messageId)) return true;
+    this.seenMessageIds.set(messageId, Date.now());
+    return false;
+  }
+
+  // -------------------------------------------------------------------------
+  // Bridge connection management
+  // -------------------------------------------------------------------------
+
+  /** Register a newly connected bridge. Called from bridge-ws.ts after token/DID validation. */
+  registerBridge(bridge_id: string, ws: WebSocket, did: string, capabilities: string[]): void {
+    const bridge: ConnectedBridge = {
+      bridge_id,
+      ws,
+      did,
+      capabilities,
+      last_heartbeat: Date.now(),
+      connected_robots: [],
+    };
+    this.connectedBridges.set(bridge_id, bridge);
+    console.log(`[RobotMissionService] Bridge registered: ${bridge_id} (DID: ${did})`);
+  }
+
+  /** Handle bridge WebSocket close — remove from connected bridges map. */
+  handleBridgeDisconnect(bridge_id: string): void {
+    this.connectedBridges.delete(bridge_id);
+    console.log(`[RobotMissionService] Bridge disconnected: ${bridge_id}`);
+  }
+
+  /** Return all currently connected bridges for status reporting. */
+  getConnectedBridges(): ConnectedBridge[] {
+    return Array.from(this.connectedBridges.values());
+  }
+
   // -------------------------------------------------------------------------
   // Main message router
   // -------------------------------------------------------------------------
@@ -96,6 +162,13 @@ export class RobotMissionService {
 
     if (!msg || typeof msg !== 'object' || !('type' in msg)) {
       this.sendError(ws, 'Missing message type');
+      return;
+    }
+
+    // Deduplication check — drop messages we've already processed
+    const msgWithId = msg as { message_id?: string };
+    if (this.isDuplicate(msgWithId.message_id)) {
+      console.debug(`[RobotMissionService] Dropped duplicate message (id: ${msgWithId.message_id})`);
       return;
     }
 
@@ -321,12 +394,24 @@ export class RobotMissionService {
 
     const mission: MissionJSON = parseResult.data;
 
-    // Find connected robot
+    // Find connected robot — direct connection or via bridge
     const robot = this.connectedRobots.get(mission.robot_id);
+
+    // Check if any bridge has this robot in its connected_robots list
+    let bridgeForRobot: ConnectedBridge | undefined;
     if (!robot) {
+      for (const bridge of this.connectedBridges.values()) {
+        if (bridge.connected_robots.includes(mission.robot_id)) {
+          bridgeForRobot = bridge;
+          break;
+        }
+      }
+    }
+
+    if (!robot && !bridgeForRobot) {
       return {
         success: false,
-        error: `Robot ${mission.robot_id} is not connected`,
+        error: `Robot ${mission.robot_id} is not connected (direct or via bridge)`,
       };
     }
 
@@ -367,19 +452,30 @@ export class RobotMissionService {
       return { success: false, error: 'DB error saving mission' };
     }
 
-    // Track in-memory
-    robot.current_mission_id = mission.mission_id;
-
-    // Send to robot over WS
     const assignMsg: MissionAssignMsg = {
       type: RobotWsMessageType.mission_assign,
       mission,
     };
-    this.safeSend(robot.ws, assignMsg);
 
-    console.log(
-      `[RobotMissionService] Dispatched mission ${mission.mission_id} to robot ${mission.robot_id}`,
-    );
+    if (robot) {
+      // Direct connection — send to robot over WS
+      robot.current_mission_id = mission.mission_id;
+      this.safeSend(robot.ws, assignMsg);
+      console.log(
+        `[RobotMissionService] Dispatched mission ${mission.mission_id} to robot ${mission.robot_id} (direct)`,
+      );
+    } else if (bridgeForRobot) {
+      // Relay via bridge
+      this.safeSend(bridgeForRobot.ws, {
+        type: 'bridge:mission_relay',
+        robot_id: mission.robot_id,
+        mission_assign: assignMsg,
+      });
+      console.log(
+        `[RobotMissionService] Dispatched mission ${mission.mission_id} to robot ${mission.robot_id} via bridge ${bridgeForRobot.bridge_id}`,
+      );
+    }
+
     return { success: true };
   }
 

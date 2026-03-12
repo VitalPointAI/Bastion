@@ -68,6 +68,7 @@ class StateUpdateMsg(BaseModel):
     state: MissionState
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    message_id: Optional[str] = None
 
 
 class TelemetryMsg(BaseModel):
@@ -79,12 +80,27 @@ class TelemetryMsg(BaseModel):
     heading: float  # degrees, 0=north
     battery_pct: int
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    message_id: Optional[str] = None
 
 
 class RegisterMsg(BaseModel):
-    """Registration message sent by robot on WS connect."""
+    """Registration message sent by robot on WS connect.
+
+    Supports three authentication modes:
+    - Legacy: ``auth_token`` (shared secret, backward-compatible)
+    - First-time: ``token`` (one-time registration token; server returns a DID)
+    - Subsequent: ``did`` (persisted DID from prior registration)
+
+    All auth fields are optional — the client populates whichever is applicable.
+    """
 
     type: str = "robot:register"
     robot_id: str
-    auth_token: str
+    auth_token: Optional[str] = None
+    """Legacy shared-secret auth token (backward-compatible)."""
+    token: Optional[str] = None
+    """One-time registration token for first-time DID acquisition."""
+    did: Optional[str] = None
+    """Persisted DID for subsequent connections after first registration."""
     capabilities: List[str] = Field(default_factory=list)
+    message_id: Optional[str] = None

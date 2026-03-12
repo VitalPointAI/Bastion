@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-stopped_at: Completed 42-02-PLAN.md
-last_updated: "2026-03-12T13:14:00Z"
-last_activity: "2026-03-11 - Completed 41-07: useBrainTimeline (debounced fetch, recency scoring, future predictions), BrainTimeline (past/now/future zones, LIVE button)"
+status: verifying
+stopped_at: Completed 43-05-PLAN.md
+last_updated: "2026-03-12T21:51:43.645Z"
+last_activity: "2026-03-12 - Completed 43-06 Task 1: wired bridge WebSocket (/ws/bridge) and REST routes into backend server; zero TS errors, 85 Python tests green; pending human-verify checkpoint"
 progress:
-  total_phases: 58
-  completed_phases: 39
-  total_plans: 364
-  completed_plans: 363
+  total_phases: 59
+  completed_phases: 41
+  total_plans: 370
+  completed_plans: 373
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 42 of 58 (Resources Tab Inventory Discovery) — IN PROGRESS
-Plan: 2 of 6 in current phase — COMPLETE
-Status: Plan 42-02 complete — InventorySubView, ResourceActionMenu, ResourceDetailPanel, missionId→problemSetId refactor
-Last activity: 2026-03-12 - Completed 42-02: ResourceCatalog refactored to problemSetId, InventorySubView with Show Disposed toggle, ResourceActionMenu with distribution constraints, ResourceDetailPanel slide-over
+Phase: 43 of 59 (Robot Agent & Local Discovery Bridge) — IN PROGRESS
+Plan: 6 of 6 in current phase — CHECKPOINT (human-verify pending)
+Status: Plan 43-06 Task 1 complete — bridge WebSocket (/ws/bridge) and REST routes (/api/admin/bridge-tokens, /api/bridge/status) wired into backend server; zero TypeScript errors; robot tests 53 passed, bridge tests 32 passed; awaiting human-verify checkpoint for full Phase 43 sign-off
+Last activity: 2026-03-12 - Completed 43-06 Task 1: wired bridge WebSocket (/ws/bridge) and REST routes into backend server; zero TS errors, 85 Python tests green; pending human-verify checkpoint
 
-Progress: ██████████████████████████ 352 plans complete
+Progress: ██████████████████████████ 353 plans complete
 
 ## Performance Metrics
 
@@ -177,6 +177,9 @@ Progress: ███████████████████████�
 | Phase 41-redesign-understanding-tab-adaptive-brain-visualization P03 | 35 | 2 tasks | 6 files |
 | Phase 41-redesign-understanding-tab-adaptive-brain-visualization P05 | 25 | 2 tasks | 7 files |
 | Phase 42-resources-tab-inventory-discovery P01 | 2 | 2 tasks | 3 files |
+| Phase 43-robot-agent-local-discovery-bridge P02 | 7 | 2 tasks | 7 files |
+| Phase 43-robot-agent-local-discovery-bridge P04 | 7 | 2 tasks | 18 files |
+| Phase 43 P05 | 5 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -190,6 +193,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 43 Plan 04 (Bridge Service):**
+- _relay_robot_message preserves original message_id (may be None) — never re-stamps — so cloud dedup receives the robot's own UUID rather than a bridge-generated one
+- shutdown_event_wait extracted as thin coroutine wrapper in mdns_advertise.py for patch-based test isolation
+- _AsyncIterWS class required for test mock WebSocket — MagicMock.__aiter__ with sync iter() does not satisfy async for protocol
 
 **Phase 41 Plan 05 (Clustering, Search, Toolbar, NL Search):**
 - Inline createForceX/createForceY factories (not d3-force import) — d3-force-3d only in pnpm virtual store, not hoisted, direct import would fail at runtime
@@ -796,6 +804,9 @@ Recent decisions affecting current work:
 - [Phase 41-redesign-understanding-tab-adaptive-brain-visualization]: BrainNode.confidence (0-1) is required field that drives all visual intensity decisions for glow and brightness
 - [Phase 42-resources-tab-inventory-discovery]: Resources tab default sub-view locked to Inventory — no remember-last behavior
 - [Phase 42-resources-tab-inventory-discovery]: All roles see Resources tab, consistent with Phase 24 all-tabs-visible decision
+- [Phase 43-robot-agent-local-discovery-bridge]: Raw device data from bridge stored in ironclawAnalysis JSONB field (tagged with origin=bridge) since DiscoveredDevice has no rawData field
+- [Phase 43-robot-agent-local-discovery-bridge]: isDuplicate() is public on RobotMissionService so bridge-ws.ts shares the same dedup Map for relay envelope dedup
+- [Phase 43]: bridge/ui_app.py adapter created to bridge bridge_main.py's create_app(relay,queue) pattern with ui.py's set_state() module-level state approach
 
 ### Roadmap Evolution
 
@@ -829,6 +840,8 @@ Recent decisions affecting current work:
 - Phase 38 added: Inheritance Deepening — Full bidirectional context propagation, override tracking, OPORD update notifications, upward reporting
 - Phase 39 added: Operational Demonstration Data Package — Comprehensive reusable demo data package populating BASTION end-to-end with Pacific Strategy AY26 content for military/academic demonstrations
 - Phase 41 added: Redesign Understanding Tab - Adaptive Brain Visualization
+- Phase 42 added: Resources Tab — Inventory, Discovery & Onboarding
+- Phase 43 added: Robot Agent & Local Discovery Bridge — Python robot agent (outbound WebSocket self-registration/command/telemetry) + Docker network bridge (mDNS/SSDP WiFi scanning, device relay, command proxy). Design note: Raspberry Pi edge node is preferred production architecture but deferred due to procurement/policy constraints.
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
@@ -1499,7 +1512,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T13:07:03.463Z
-Stopped at: Completed 42-01-PLAN.md
+Last session: 2026-03-12T21:51:43.635Z
+Stopped at: Completed 43-05-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
