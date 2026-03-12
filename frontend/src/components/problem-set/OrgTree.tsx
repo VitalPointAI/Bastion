@@ -160,8 +160,12 @@ function buildCustomNode(
           style={{
             fontSize: '14px',
             fontWeight: 700,
-            fill: isCurrentUser ? '#fef3c7' : '#f9fafb',
+            fill: isCurrentUser ? '#fbbf24' : '#e5e7eb',
             dominantBaseline: 'middle',
+            paintOrder: 'stroke',
+            stroke: '#000',
+            strokeWidth: '3px',
+            strokeLinejoin: 'round',
           }}
         >
           {nd.name.length > 18 ? `${nd.name.slice(0, 16)}...` : nd.name}
@@ -175,8 +179,12 @@ function buildCustomNode(
           className="org-tree-node-meta"
           style={{
             fontSize: '12px',
-            fill: '#d1d5db',
+            fill: '#93c5fd',
             dominantBaseline: 'middle',
+            paintOrder: 'stroke',
+            stroke: '#000',
+            strokeWidth: '2px',
+            strokeLinejoin: 'round',
           }}
         >
           {nd.attributes?.members ?? '0'} members

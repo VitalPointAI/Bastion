@@ -1,9 +1,35 @@
 /**
  * IronclawButton -- Floating trigger button
  *
- * Fixed position bottom-right, z-index 950 (above AI staff 900, below modals 1000+).
- * Circular 56px button with notification dot for unread messages.
+ * Fixed position, draggable to reposition. Position persisted in localStorage.
+ * z-index 950 (above AI staff 900, below modals 1000+).
  */
+
+import { useState, useRef, useCallback, useEffect } from 'react';
+
+const STORAGE_KEY = 'ironclaw-button-position';
+const DEFAULT_BOTTOM = 20;
+const DEFAULT_RIGHT = 20;
+const BUTTON_SIZE = 56;
+
+interface Position { bottom: number; right: number }
+
+function loadPosition(): Position {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const pos = JSON.parse(raw);
+      if (typeof pos.bottom === 'number' && typeof pos.right === 'number') {
+        return pos;
+      }
+    }
+  } catch { /* use default */ }
+  return { bottom: DEFAULT_BOTTOM, right: DEFAULT_RIGHT };
+}
+
+function savePosition(pos: Position): void {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(pos)); } catch { /* ignore */ }
+}
 
 interface IronclawButtonProps {
   onClick: () => void;
@@ -11,25 +37,87 @@ interface IronclawButtonProps {
 }
 
 export function IronclawButton({ onClick, hasUnread }: IronclawButtonProps) {
+  const [position, setPosition] = useState<Position>(loadPosition);
+  const dragging = useRef(false);
+  const dragMoved = useRef(false);
+  const startMouse = useRef({ x: 0, y: 0 });
+  const startPos = useRef({ bottom: 0, right: 0 });
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    dragging.current = true;
+    dragMoved.current = false;
+    startMouse.current = { x: e.clientX, y: e.clientY };
+    startPos.current = { ...position };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }, [position]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - startMouse.current.x;
+    const dy = e.clientY - startMouse.current.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved.current = true;
+    if (!dragMoved.current) return;
+
+    const newRight = Math.max(0, Math.min(window.innerWidth - BUTTON_SIZE, startPos.current.right - dx));
+    const newBottom = Math.max(0, Math.min(window.innerHeight - BUTTON_SIZE, startPos.current.bottom + dy));
+    setPosition({ bottom: newBottom, right: newRight });
+  }, []);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+
+    if (dragMoved.current) {
+      // Save new position — don't fire onClick
+      savePosition(position);
+    } else {
+      onClick();
+    }
+  }, [onClick, position]);
+
+  // Clamp on window resize
+  useEffect(() => {
+    const onResize = () => {
+      setPosition((prev) => {
+        const clamped = {
+          right: Math.min(prev.right, window.innerWidth - BUTTON_SIZE),
+          bottom: Math.min(prev.bottom, window.innerHeight - BUTTON_SIZE),
+        };
+        if (clamped.right !== prev.right || clamped.bottom !== prev.bottom) {
+          savePosition(clamped);
+          return clamped;
+        }
+        return prev;
+      });
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   return (
     <button
-      onClick={onClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
       className="group bg-slate-800 hover:bg-slate-700
         text-white rounded-full w-14 h-14 flex items-center justify-center
         shadow-lg shadow-black/30 hover:shadow-xl
-        transition-all duration-200 hover:scale-105 hover:brightness-110"
+        transition-shadow duration-200 hover:brightness-110 touch-none select-none"
       style={{
         position: 'fixed',
-        bottom: '20px',
-        right: '20px',
+        bottom: `${position.bottom}px`,
+        right: `${position.right}px`,
         zIndex: 950,
+        cursor: dragging.current ? 'grabbing' : 'grab',
       }}
-      title="Open Ironclaw - Chief of Staff"
+      title="Open Ironclaw - Chief of Staff (drag to reposition)"
       aria-label="Open Ironclaw panel"
     >
       {/* Shield icon */}
       <svg
-        className="w-7 h-7 text-amber-400 group-hover:text-amber-300 transition-colors"
+        className="w-7 h-7 text-amber-400 group-hover:text-amber-300 transition-colors pointer-events-none"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -46,7 +134,7 @@ export function IronclawButton({ onClick, hasUnread }: IronclawButtonProps) {
       {hasUnread && (
         <span
           className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full
-            border-2 border-slate-800 animate-pulse"
+            border-2 border-slate-800 animate-pulse pointer-events-none"
           aria-label="Unread messages"
         />
       )}

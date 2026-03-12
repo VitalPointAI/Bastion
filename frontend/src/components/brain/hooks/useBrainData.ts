@@ -51,6 +51,8 @@ interface RawActor {
   name?: string;
   actor_category?: string;
   actor_type?: string;
+  aliases?: string[];
+  attributes?: Record<string, unknown>;
   sourceDocumentIds?: string[];
   relationships?: unknown[];
   validity_score?: number;
@@ -128,6 +130,76 @@ function actorConfidence(actor: RawActor): number {
   return Math.min(1, sourceDocCount * 0.3 + relationshipCount * 0.2 + validityScore * 0.5);
 }
 
+/**
+ * Compute eigenvalue centrality via power iteration on the adjacency matrix.
+ *
+ * For each node, centrality is proportional to the sum of centralities of its
+ * neighbors — high-centrality nodes are connected to other high-centrality nodes.
+ * This surfaces outlier actors who bridge distinct clusters or dominate connectivity.
+ *
+ * Returns a Map<nodeId, normalizedCentrality> with values in [0, 1].
+ */
+function computeEigenvalueCentrality(
+  nodes: { id: string }[],
+  edges: { source: string; target: string; strength?: number }[],
+  maxIterations = 50,
+  tolerance = 1e-6,
+): Map<string, number> {
+  const n = nodes.length;
+  if (n === 0) return new Map();
+
+  // Build index lookup
+  const idToIdx = new Map<string, number>();
+  for (let i = 0; i < n; i++) idToIdx.set(nodes[i].id, i);
+
+  // Build adjacency list with weights
+  const adj: Array<Array<{ idx: number; weight: number }>> = Array.from({ length: n }, () => []);
+  for (const e of edges) {
+    const si = idToIdx.get(e.source);
+    const ti = idToIdx.get(e.target);
+    if (si == null || ti == null) continue;
+    const w = e.strength ?? 0.3;
+    adj[si].push({ idx: ti, weight: w });
+    adj[ti].push({ idx: si, weight: w }); // undirected
+  }
+
+  // Power iteration
+  let vec = new Float64Array(n).fill(1 / n);
+  let next = new Float64Array(n);
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    next.fill(0);
+    for (let i = 0; i < n; i++) {
+      for (const { idx, weight } of adj[i]) {
+        next[i] += weight * vec[idx];
+      }
+    }
+
+    // Normalize by L2 norm
+    let norm = 0;
+    for (let i = 0; i < n; i++) norm += next[i] * next[i];
+    norm = Math.sqrt(norm);
+    if (norm === 0) break;
+    for (let i = 0; i < n; i++) next[i] /= norm;
+
+    // Check convergence
+    let diff = 0;
+    for (let i = 0; i < n; i++) diff += Math.abs(next[i] - vec[i]);
+    [vec, next] = [next, vec];
+    if (diff < tolerance) break;
+  }
+
+  // Normalize to [0, 1] range
+  let maxVal = 0;
+  for (let i = 0; i < n; i++) if (vec[i] > maxVal) maxVal = vec[i];
+
+  const result = new Map<string, number>();
+  for (let i = 0; i < n; i++) {
+    result.set(nodes[i].id, maxVal > 0 ? vec[i] / maxVal : 0);
+  }
+  return result;
+}
+
 /** Safe JSON fetch — returns null on non-OK or network error */
 async function safeFetch<T>(url: string): Promise<T | null> {
   try {
@@ -196,6 +268,11 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
             confidence: detail ? actorConfidence(detail) : 0.3,
             sourceDocumentIds: detail?.sourceDocumentIds,
             validityScore: detail?.validity_score,
+            aliases: detail?.aliases,
+            role: detail?.attributes?.role as string | undefined,
+            description: detail?.actor_type
+              ? `${detail.actor_type}${detail.attributes?.role ? ` — ${detail.attributes.role}` : ''}`
+              : undefined,
             createdAt: new Date().toISOString(),
           });
           nodeIds.add(rawNode.id);
@@ -212,6 +289,11 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
             confidence: actorConfidence(actor),
             sourceDocumentIds: actor.sourceDocumentIds,
             validityScore: actor.validity_score,
+            aliases: actor.aliases,
+            role: actor.attributes?.role as string | undefined,
+            description: actor.actor_type
+              ? `${actor.actor_type}${actor.attributes?.role ? ` — ${actor.attributes.role}` : ''}`
+              : undefined,
             createdAt: new Date().toISOString(),
           });
           nodeIds.add(actor.id);
@@ -225,6 +307,8 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
               id: obj.id,
               label: obj.objective_text?.slice(0, 60) ?? obj.id,
               type: 'objective',
+              description: obj.objective_text,
+              dimeCategory: obj.midlife_category,
               confidence: obj.extraction_confidence ?? 0.5,
               createdAt: obj.created_at ?? new Date().toISOString(),
             });
@@ -280,6 +364,14 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
             strength: e.strength ?? 0.3,
             isConflict: e.type === 'conflict' || e.type === 'opposes',
           }));
+
+        // ── Eigenvalue centrality ────────────────────────────────────────────
+        // Assign centrality scores so the visualization can highlight outlier
+        // actors and use semantic zoom to prioritise important labels.
+        const centrality = computeEigenvalueCentrality(nodes, edges);
+        for (const node of nodes) {
+          node.centrality = centrality.get(node.id) ?? 0;
+        }
 
         setData({ nodes, edges });
       })

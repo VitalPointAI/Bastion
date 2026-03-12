@@ -66,6 +66,8 @@ interface NetworkTopologyViewProps {
   connectedCount: number;
   /** Discovery origin perspective filter */
   origin?: TopologyOrigin;
+  /** Called when Start Scan is clicked — parent handles consent flow */
+  onStartScan?: () => void;
   /** Called when a device node is clicked — used to set selectedResourceId */
   onNodeClick?: (deviceId: string) => void;
 }
@@ -78,6 +80,7 @@ export function NetworkTopologyView({
   deviceCount,
   connectedCount,
   origin = 'all',
+  onStartScan,
   onNodeClick,
 }: NetworkTopologyViewProps) {
   const [_topology, setTopology] = useState<TopologyGraph | null>(null);
@@ -251,8 +254,12 @@ export function NetworkTopologyView({
   // ---- Scanner controls ---------------------------------------------------
 
   const handleStart = useCallback(async () => {
+    if (onStartScan) {
+      onStartScan();
+      return;
+    }
     try { await discoveryService.startScanning(); } catch (e) { console.error(e); }
-  }, []);
+  }, [onStartScan]);
 
   const handleStop = useCallback(async () => {
     try { await discoveryService.stopScanning(); } catch (e) { console.error(e); }

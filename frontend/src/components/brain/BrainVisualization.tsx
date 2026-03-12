@@ -1,21 +1,19 @@
 /**
- * BrainVisualization — core ForceGraph2D wrapper with custom Canvas 2D renderers.
+ * BrainVisualization — 3D ForceGraph wrapper with Three.js rendering.
  *
- * Renders shape-coded nodes (entity=circle, objective=diamond, document=square,
- * concept=hexagon), confidence glow, weighted edges, pulse animation, semantic zoom,
- * and neighborhood dimming. Lasso multi-select via Alt-drag.
+ * Renders shape-coded nodes (entity=sphere, objective=octahedron, document=box,
+ * concept=dodecahedron), colored by actor category, with confidence-based opacity.
+ * Nodes are draggable in 3D space. Orbit controls for rotation/zoom/pan.
  *
  * Usage:
  *   <BrainVisualization data={brainData} onNodeClick={handleNodeClick} />
  */
 
 import { useRef, useMemo, useCallback, useEffect, useState, type MutableRefObject } from 'react';
-import type { MouseEvent as ReactMouseEvent } from 'react';
-import ForceGraph2D, { type ForceGraphMethods, type NodeObject, type LinkObject } from 'react-force-graph-2d';
+import ForceGraph3D, { type ForceGraphMethods, type NodeObject } from 'react-force-graph-3d';
+import * as THREE from 'three';
 import type { BrainNode, BrainEdge, BrainGraphData, ClusterMode } from './types.js';
-import { BRAIN_BG_COLOR } from './types.js';
-import { drawBrainNode } from './renderers/nodeRenderer.js';
-import { drawBrainEdge } from './renderers/edgeRenderer.js';
+import { CATEGORY_COLORS, BRAIN_BG_COLOR } from './types.js';
 import './BrainVisualization.css';
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
@@ -29,16 +27,14 @@ export interface BrainVisualizationProps {
   height?: number;
   clusterMode?: ClusterMode;
   onLassoSelect?: (nodeIds: string[]) => void;
-  /** External ForceGraph ref — allows parent (e.g. BrainController) to drive zoom/pan and clustering forces */
+  /** External ForceGraph ref — allows parent to drive zoom/pan and clustering forces */
   fgRef?: MutableRefObject<ForceGraphMethods | undefined>;
 }
 
 // ─── Internal types ────────────────────────────────────────────────────────────
 
-/** ForceGraph2D injects x/y onto every node during simulation */
-type FGNode = BrainNode & { x?: number; y?: number };
+type FGNode = BrainNode & { x?: number; y?: number; z?: number };
 
-/** ForceGraph2D mutates source/target from string IDs to node objects during simulation */
 interface FGLink {
   source: string | FGNode;
   target: string | FGNode;
@@ -53,24 +49,41 @@ interface GraphPayload {
   links: FGLink[];
 }
 
-// ─── Lasso point-in-polygon (ray casting) ─────────────────────────────────────
+// ─── 3D geometry helpers ────────────────────────────────────────────────────────
 
-function pointInPolygon(
-  px: number,
-  py: number,
-  polygon: Array<{ x: number; y: number }>,
-): boolean {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i].x;
-    const yi = polygon[i].y;
-    const xj = polygon[j].x;
-    const yj = polygon[j].y;
-    const intersect =
-      yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi;
-    if (intersect) inside = !inside;
+const NODE_SIZE = 5;
+
+const TYPE_GEOMETRY: Record<string, THREE.BufferGeometry> = {};
+function getGeometry(type: string): THREE.BufferGeometry {
+  if (!TYPE_GEOMETRY[type]) {
+    switch (type) {
+      case 'objective':
+        TYPE_GEOMETRY[type] = new THREE.OctahedronGeometry(NODE_SIZE);
+        break;
+      case 'document':
+        TYPE_GEOMETRY[type] = new THREE.BoxGeometry(NODE_SIZE * 1.4, NODE_SIZE * 1.4, NODE_SIZE * 1.4);
+        break;
+      case 'concept':
+        TYPE_GEOMETRY[type] = new THREE.DodecahedronGeometry(NODE_SIZE);
+        break;
+      default: // entity
+        TYPE_GEOMETRY[type] = new THREE.SphereGeometry(NODE_SIZE, 16, 12);
+        break;
+    }
   }
-  return inside;
+  return TYPE_GEOMETRY[type];
+}
+
+function getNodeColor(node: BrainNode): string {
+  if (node.isGap) return '#ffaa00';
+  if (node.isFuturePrediction) return '#aa66ff';
+  if (node.actorCategory) return CATEGORY_COLORS[node.actorCategory] ?? '#888888';
+  switch (node.type) {
+    case 'objective': return '#f59e0b';
+    case 'document': return '#06b6d4';
+    case 'concept': return '#a78bfa';
+    default: return '#888888';
+  }
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -83,46 +96,25 @@ export function BrainVisualization({
   width,
   height,
   clusterMode: _clusterMode = 'container',
-  onLassoSelect,
+  onLassoSelect: _onLassoSelect,
   fgRef: externalFgRef,
 }: BrainVisualizationProps) {
-  void _clusterMode; // Future: drive force grouping
+  void _clusterMode;
+  void _onLassoSelect; // Lasso not applicable in 3D — use click selection
 
   const internalFgRef = useRef<ForceGraphMethods | undefined>(undefined);
-  // Use external ref if provided, otherwise fall back to internal ref
   const fgRef = externalFgRef ?? internalFgRef;
   const containerRef = useRef<HTMLDivElement>(null);
-  const lassoCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Animation frame counter — lives in a ref (not state) to avoid re-renders
-  const animFrameRef = useRef(0);
-  const rafRef = useRef<number>(0);
-
-  // Responsive dimensions
   const [containerSize, setContainerSize] = useState<{ w: number; h: number }>({
     w: width ?? 800,
     h: height ?? 600,
   });
 
-  // Lasso state
-  const [isLassoing, setIsLassoing] = useState(false);
-  const [isAltDown, setIsAltDown] = useState(false);
-  const lassoPathRef = useRef<Array<{ x: number; y: number }>>([]);
-
-  // Neighborhood set for dimming — recomputed when selection changes
+  // Neighborhood set for dimming
   const neighborhoodRef = useRef<Set<string>>(new Set());
 
-  // ── Animation loop ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    function loop() {
-      animFrameRef.current += 1;
-      rafRef.current = requestAnimationFrame(loop);
-    }
-    rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, []);
-
-  // ── ResizeObserver for responsive width ────────────────────────────────────
+  // ── ResizeObserver ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!containerRef.current) return;
     const ro = new ResizeObserver((entries) => {
@@ -151,17 +143,13 @@ export function BrainVisualization({
     neighborhoodRef.current = neighbors;
   }, [selectedNodeId, data.edges]);
 
-  // ── ForceGraph2D data (nodes → nodes, edges → links) ──────────────────────
+  // ── ForceGraph data ────────────────────────────────────────────────────────
   const graphPayload = useMemo<GraphPayload>(() => {
     const nodes = Array.isArray(data.nodes) ? data.nodes : [];
     const edges = Array.isArray(data.edges) ? data.edges : [];
     const nodeIdSet = new Set(nodes.map((n) => n.id));
     return {
       nodes: nodes as FGNode[],
-      // ForceGraph2D will mutate source/target from string IDs to node objects;
-      // the cast makes TypeScript accept both the initial string form and the
-      // post-simulation object form.
-      // Filter out orphan edges whose source/target isn't in the node set.
       links: edges
         .filter((e) => {
           const src = typeof e.source === 'object' ? (e.source as FGNode).id : e.source;
@@ -172,202 +160,116 @@ export function BrainVisualization({
     };
   }, [data]);
 
-  // ── Canvas renderers ───────────────────────────────────────────────────────
-
-  const nodeCanvasObject = useCallback(
-    (node: NodeObject, ctx: CanvasRenderingContext2D, globalScale: number) => {
+  // ── 3D node rendering ─────────────────────────────────────────────────────
+  const nodeThreeObject = useCallback(
+    (node: NodeObject) => {
       const brainNode = node as FGNode;
       const isSelected =
         brainNode.id === selectedNodeId || (selectedNodeIds?.includes(brainNode.id) ?? false);
-      // Dim nodes that are not in the neighborhood of the selected node
       const isDimmed =
         !!selectedNodeId &&
         !isSelected &&
         neighborhoodRef.current.size > 0 &&
         !neighborhoodRef.current.has(brainNode.id);
 
-      drawBrainNode(brainNode, ctx, globalScale, isSelected, isDimmed, animFrameRef.current);
+      const color = getNodeColor(brainNode);
+      const geometry = getGeometry(brainNode.type);
+
+      const material = new THREE.MeshLambertMaterial({
+        color,
+        transparent: true,
+        opacity: isDimmed ? 0.15 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85,
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+
+      // Scale by confidence + centrality boost for outlier actors
+      const centralityBoost = (brainNode.centrality ?? 0) * 0.4;
+      const scale = 0.6 + brainNode.confidence * 0.6 + centralityBoost;
+      mesh.scale.set(scale, scale, scale);
+
+      // Selection ring
+      if (isSelected) {
+        const ringGeo = new THREE.RingGeometry(NODE_SIZE * scale * 1.3, NODE_SIZE * scale * 1.5, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: '#38bdf8',
+          transparent: true,
+          opacity: 0.8,
+          side: THREE.DoubleSide,
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        mesh.add(ring);
+      }
+
+      // Gap nodes: wireframe overlay
+      if (brainNode.isGap) {
+        const wireGeo = getGeometry(brainNode.type);
+        const wireMat = new THREE.MeshBasicMaterial({
+          color: '#ffaa00',
+          wireframe: true,
+          transparent: true,
+          opacity: 0.6,
+        });
+        const wire = new THREE.Mesh(wireGeo, wireMat);
+        wire.scale.set(1.2, 1.2, 1.2);
+        mesh.add(wire);
+      }
+
+      return mesh;
     },
     [selectedNodeId, selectedNodeIds],
   );
 
-  const nodeCanvasObjectMode = useCallback(() => 'replace' as const, []);
-
-  const linkCanvasObject = useCallback(
-    (link: LinkObject, ctx: CanvasRenderingContext2D, globalScale: number) => {
-      const brainEdge = link as FGLink;
-
-      const sourceNode = typeof brainEdge.source === 'object'
-        ? brainEdge.source as FGNode
-        : { x: 0, y: 0 };
-      const targetNode = typeof brainEdge.target === 'object'
-        ? brainEdge.target as FGNode
-        : { x: 0, y: 0 };
-
-      if (sourceNode.x == null || targetNode.x == null) return;
-
-      // Dim edges where neither endpoint is in the selection neighborhood
-      const srcId = typeof brainEdge.source === 'object'
-        ? (brainEdge.source as FGNode).id
-        : brainEdge.source;
-      const tgtId = typeof brainEdge.target === 'object'
-        ? (brainEdge.target as FGNode).id
-        : brainEdge.target;
-
-      const isDimmed =
-        !!selectedNodeId &&
-        neighborhoodRef.current.size > 0 &&
-        !neighborhoodRef.current.has(srcId) &&
-        !neighborhoodRef.current.has(tgtId);
-
-      // Build a plain BrainEdge with string source/target for the renderer
-      const edgeForRenderer: BrainEdge = {
-        source: srcId,
-        target: tgtId,
-        type: brainEdge.type,
-        strength: brainEdge.strength,
-        isConflict: brainEdge.isConflict,
-        createdAt: brainEdge.createdAt,
-      };
-
-      drawBrainEdge(
-        edgeForRenderer,
-        ctx,
-        globalScale,
-        sourceNode,
-        targetNode,
-        isDimmed,
-        animFrameRef.current,
-      );
+  // ── Link styling ──────────────────────────────────────────────────────────
+  const linkColor = useCallback(
+    (link: object) => {
+      const fgLink = link as FGLink;
+      if (fgLink.isConflict) return 'rgba(255, 68, 68, 0.6)';
+      const strength = fgLink.strength ?? 0.3;
+      const alpha = 0.1 + strength * 0.4;
+      return `rgba(100, 160, 255, ${alpha})`;
     },
-    [selectedNodeId],
+    [],
   );
 
-  const linkCanvasObjectMode = useCallback(() => 'replace' as const, []);
+  const linkWidth = useCallback(
+    (link: object) => {
+      const fgLink = link as FGLink;
+      return fgLink.isConflict ? 2 : 0.5 + (fgLink.strength ?? 0.3) * 2;
+    },
+    [],
+  );
 
-  /** Circular hit area covering the node's bounding box */
-  const nodePointerAreaPaint = useCallback(
-    (node: NodeObject, color: string, ctx: CanvasRenderingContext2D, _globalScale: number) => {
-      void _globalScale;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(node.x ?? 0, node.y ?? 0, 8, 0, Math.PI * 2);
-      ctx.fill();
+  // ── Node label ────────────────────────────────────────────────────────────
+  const nodeLabel = useCallback(
+    (node: object) => {
+      const n = node as BrainNode;
+      const parts = [n.label];
+      if (n.type) parts.push(`[${n.type}]`);
+      if (n.actorCategory) parts.push(`(${n.actorCategory})`);
+      if (n.centrality != null && n.centrality > 0) parts.push(`centrality: ${(n.centrality * 100).toFixed(0)}%`);
+      if (n.description) parts.push(`\n${n.description}`);
+      return parts.join(' ');
     },
     [],
   );
 
   const handleNodeClick = useCallback(
-    (node: NodeObject, _event: MouseEvent) => {
-      void _event;
+    (node: NodeObject) => {
       onNodeClick?.(node as BrainNode);
-    },
-    [onNodeClick],
-  );
-
-  // ── Alt key listener (lasso mode toggle) ──────────────────────────────────
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === 'Alt') setIsAltDown(true);
-    };
-    const up = (e: KeyboardEvent) => {
-      if (e.key === 'Alt') {
-        setIsAltDown(false);
-        setIsLassoing(false);
-        lassoPathRef.current = [];
-        // Clear lasso canvas
-        const lc = lassoCanvasRef.current;
-        if (lc) {
-          const c = lc.getContext('2d');
-          c?.clearRect(0, 0, lc.width, lc.height);
-        }
+      // Aim camera at clicked node
+      if (fgRef.current && node.x != null && node.y != null) {
+        const n = node as FGNode;
+        const distance = 120;
+        fgRef.current.cameraPosition(
+          { x: (n.x ?? 0) + distance, y: (n.y ?? 0) + distance, z: (n.z ?? 0) + distance },
+          { x: n.x ?? 0, y: n.y ?? 0, z: n.z ?? 0 },
+          1000,
+        );
       }
-    };
-    window.addEventListener('keydown', down);
-    window.addEventListener('keyup', up);
-    return () => {
-      window.removeEventListener('keydown', down);
-      window.removeEventListener('keyup', up);
-    };
-  }, []);
-
-  // ── Lasso mouse handlers ───────────────────────────────────────────────────
-
-  const handleLassoMouseDown = useCallback(
-    (e: ReactMouseEvent<HTMLDivElement>) => {
-      if (!isAltDown) return;
-      setIsLassoing(true);
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      lassoPathRef.current = [pt];
     },
-    [isAltDown],
+    [onNodeClick, fgRef],
   );
-
-  const handleLassoMouseMove = useCallback(
-    (e: ReactMouseEvent<HTMLDivElement>) => {
-      if (!isLassoing) return;
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      lassoPathRef.current.push(pt);
-
-      // Redraw lasso polygon on the overlay canvas
-      const lc = lassoCanvasRef.current;
-      if (!lc) return;
-      lc.width = lc.offsetWidth;
-      lc.height = lc.offsetHeight;
-      const ctx = lc.getContext('2d');
-      if (!ctx) return;
-      ctx.clearRect(0, 0, lc.width, lc.height);
-      ctx.beginPath();
-      const path = lassoPathRef.current;
-      ctx.moveTo(path[0].x, path[0].y);
-      for (let i = 1; i < path.length; i++) {
-        ctx.lineTo(path[i].x, path[i].y);
-      }
-      ctx.strokeStyle = 'rgba(100, 180, 255, 0.8)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(100, 180, 255, 0.08)';
-      ctx.fill();
-    },
-    [isLassoing],
-  );
-
-  const handleLassoMouseUp = useCallback(() => {
-    if (!isLassoing) return;
-    setIsLassoing(false);
-
-    const polygon = lassoPathRef.current;
-    lassoPathRef.current = [];
-
-    // Clear overlay canvas
-    const lc = lassoCanvasRef.current;
-    if (lc) {
-      const c = lc.getContext('2d');
-      c?.clearRect(0, 0, lc.width, lc.height);
-    }
-
-    if (polygon.length < 3 || !fgRef.current) {
-      return;
-    }
-
-    // Hit-test all visible nodes in screen space
-    const matchingIds: string[] = [];
-    for (const node of data.nodes) {
-      if (node.x == null || node.y == null) continue;
-      const screenCoords = fgRef.current.graph2ScreenCoords(node.x, node.y);
-      if (pointInPolygon(screenCoords.x, screenCoords.y, polygon)) {
-        matchingIds.push(node.id);
-      }
-    }
-
-    if (matchingIds.length > 0) {
-      onLassoSelect?.(matchingIds);
-    }
-  }, [isLassoing, data.nodes, onLassoSelect, fgRef]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -380,7 +282,7 @@ export function BrainVisualization({
       className="brain-visualization"
       style={{ width: '100%', height: '100%' }}
     >
-      <ForceGraph2D
+      <ForceGraph3D
         ref={fgRef as MutableRefObject<ForceGraphMethods | undefined>}
         graphData={graphPayload}
         width={w}
@@ -389,30 +291,19 @@ export function BrainVisualization({
         nodeId="id"
         linkSource="source"
         linkTarget="target"
-        nodeCanvasObject={nodeCanvasObject}
-        nodeCanvasObjectMode={nodeCanvasObjectMode}
-        linkCanvasObject={linkCanvasObject}
-        linkCanvasObjectMode={linkCanvasObjectMode}
-        nodePointerAreaPaint={nodePointerAreaPaint}
+        nodeThreeObject={nodeThreeObject}
+        nodeLabel={nodeLabel}
+        linkColor={linkColor}
+        linkWidth={linkWidth}
+        linkOpacity={0.6}
         onNodeClick={handleNodeClick}
-        enableZoomInteraction={true}
-        enablePanInteraction={!isLassoing}
-        enableNodeDrag={false}
-        warmupTicks={200}
+        enableNodeDrag={true}
+        enableNavigationControls={true}
+        warmupTicks={100}
         cooldownTicks={50}
         d3AlphaDecay={0.05}
         d3VelocityDecay={0.4}
       />
-
-      {/* Lasso overlay */}
-      <div
-        className={`brain-lasso-overlay${isAltDown ? ' active' : ''}`}
-        onMouseDown={handleLassoMouseDown}
-        onMouseMove={handleLassoMouseMove}
-        onMouseUp={handleLassoMouseUp}
-      >
-        <canvas ref={lassoCanvasRef} />
-      </div>
     </div>
   );
 }

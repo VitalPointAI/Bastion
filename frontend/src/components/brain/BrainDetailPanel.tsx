@@ -173,6 +173,46 @@ function SingleNodeView({
         </div>
       </div>
 
+      {/* Description / content */}
+      {(node.description || node.role) && (
+        <div className="brain-detail-section">
+          <div className="brain-detail-section-title">Description</div>
+          {node.description && (
+            <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, margin: 0 }}>
+              {node.description}
+            </p>
+          )}
+          {node.role && (
+            <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', marginTop: '0.3rem' }}>
+              Role: {node.role}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Aliases */}
+      {node.aliases && node.aliases.length > 0 && (
+        <div className="brain-detail-section">
+          <div className="brain-detail-section-title">Also Known As</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+            {node.aliases.map((alias, i) => (
+              <span
+                key={i}
+                style={{
+                  fontSize: '0.75rem',
+                  color: 'rgba(255,255,255,0.6)',
+                  background: 'rgba(255,255,255,0.08)',
+                  padding: '0.15rem 0.5rem',
+                  borderRadius: '3px',
+                }}
+              >
+                {alias}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Confidence */}
       <div className="brain-detail-section">
         <div className="brain-detail-section-title">Confidence</div>
@@ -270,6 +310,16 @@ function SingleNodeView({
               <span className="brain-detail-meta-val">{Math.round(node.validityScore * 100)}%</span>
             </>
           )}
+
+          {node.centrality !== undefined && (
+            <>
+              <span className="brain-detail-meta-key">Centrality</span>
+              <span className="brain-detail-meta-val">{Math.round(node.centrality * 100)}%</span>
+            </>
+          )}
+
+          <span className="brain-detail-meta-key">Connections</span>
+          <span className="brain-detail-meta-val">{nodeEdges.length}</span>
         </div>
       </div>
 
