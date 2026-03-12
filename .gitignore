@@ -20,6 +20,10 @@ near-contracts/target/
 near-contracts/*/target/
 near-contracts/node_modules/
 
+# Python
+__pycache__/
+*.pyc
+
 # Common
 node_modules/
 .DS_Store
