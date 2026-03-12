@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-stopped_at: Completed 42-02-PLAN.md
-last_updated: "2026-03-12T13:14:00Z"
-last_activity: "2026-03-11 - Completed 41-07: useBrainTimeline (debounced fetch, recency scoring, future predictions), BrainTimeline (past/now/future zones, LIVE button)"
+status: completed
+stopped_at: Phase 43 context gathered
+last_updated: "2026-03-12T20:38:25.684Z"
+last_activity: "2026-03-12 - Completed 42-02: ResourceCatalog refactored to problemSetId, InventorySubView with Show Disposed toggle, ResourceActionMenu with distribution constraints, ResourceDetailPanel slide-over"
 progress:
-  total_phases: 58
-  completed_phases: 39
+  total_phases: 59
+  completed_phases: 40
   total_plans: 364
-  completed_plans: 363
+  completed_plans: 367
 ---
 
 # Project State
@@ -829,6 +829,8 @@ Recent decisions affecting current work:
 - Phase 38 added: Inheritance Deepening — Full bidirectional context propagation, override tracking, OPORD update notifications, upward reporting
 - Phase 39 added: Operational Demonstration Data Package — Comprehensive reusable demo data package populating BASTION end-to-end with Pacific Strategy AY26 content for military/academic demonstrations
 - Phase 41 added: Redesign Understanding Tab - Adaptive Brain Visualization
+- Phase 42 added: Resources Tab — Inventory, Discovery & Onboarding
+- Phase 43 added: Robot Agent & Local Discovery Bridge — Python robot agent (outbound WebSocket self-registration/command/telemetry) + Docker network bridge (mDNS/SSDP WiFi scanning, device relay, command proxy). Design note: Raspberry Pi edge node is preferred production architecture but deferred due to procurement/policy constraints.
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
@@ -1499,7 +1501,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T13:07:03.463Z
-Stopped at: Completed 42-01-PLAN.md
-Resume file: None
+Last session: 2026-03-12T20:38:25.674Z
+Stopped at: Phase 43 context gathered
+Resume file: .planning/phases/43-robot-agent-local-discovery-bridge/43-CONTEXT.md
 Next action: Continue Phase 40 plan 02
