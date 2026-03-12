@@ -598,7 +598,7 @@ Plans:
 
 **Requirements:** [BRIDGE-01, BRIDGE-02, BRIDGE-03, BRIDGE-04, BRIDGE-05, BRIDGE-06, BRIDGE-07]
 **Depends on:** Phase 32, Phase 42
-**Plans:** 6 plans
+**Plans:** 2/6 plans executed
 
 Plans:
 - [x] 43-01-PLAN.md — Shared Python package (robot/common/) with models, ws_protocol, mDNS utilities
