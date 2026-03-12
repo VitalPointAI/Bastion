@@ -191,7 +191,7 @@ export function DevicePipelineKanban({ devices, onSelectDevice }: DevicePipeline
       {grouped.map((col) => (
         <div
           key={col.id}
-          className={`flex flex-col flex-shrink-0 w-52 bg-gray-900 rounded-lg border-t-4 ${col.borderColor} border-x border-b border-gray-700`}
+          className={`flex flex-col shrink-0 w-52 bg-gray-900 rounded-lg border-t-4 ${col.borderColor} border-x border-b border-gray-700`}
         >
           {/* Column header */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">

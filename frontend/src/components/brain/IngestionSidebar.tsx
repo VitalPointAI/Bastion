@@ -12,7 +12,6 @@
 import { type ReactNode, useState, useCallback } from 'react';
 import { useBrainIngestion } from './hooks/useBrainIngestion.js';
 import { DocIntelligencePanel } from '../doc-intelligence/DocIntelligencePanel.js';
-import { TrainingPackagesView } from '../tabs/TrainingPackagesView.js';
 import type { IngestionEvent, ProcessStatus } from './hooks/useBrainIngestion.js';
 import './IngestionSidebar.css';
 
@@ -22,8 +21,6 @@ export interface IngestionSidebarProps {
   problemSetId: string;
   /** Called when user wants to open the upload dialog (for external consumers) */
   onUploadClick?: () => void;
-  /** Operational vs training mode — controls TrainingPackagesView visibility */
-  mode?: 'operational' | 'training';
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -138,11 +135,9 @@ function EventItem({ event }: EventItemProps) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function IngestionSidebar({ problemSetId, onUploadClick, mode = 'operational' }: IngestionSidebarProps) {
+export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSidebarProps) {
   const [activeFilter, setActiveFilter] = useState<SourceFilter>('All');
   const [docIntelOpen, setDocIntelOpen] = useState(false);
-  const [, setTrainingDocCount] = useState(0);
-  const [, setTrainingPending] = useState(false);
 
   const { events, activeProcesses } = useBrainIngestion(
     problemSetId,
@@ -174,19 +169,6 @@ export function IngestionSidebar({ problemSetId, onUploadClick, mode = 'operatio
           &#x2B06; Ingest
         </button>
       </div>
-
-      {/* ── Training Packages section (only in training mode) ── */}
-      {mode === 'training' && (
-        <CollapsibleSection title="Training Packages" defaultOpen={true}>
-          <div className="ingestion-training-wrapper">
-            <TrainingPackagesView
-              problemSetId={problemSetId}
-              onDocCountChange={setTrainingDocCount}
-              onPendingChange={setTrainingPending}
-            />
-          </div>
-        </CollapsibleSection>
-      )}
 
       {/* ── DocIntelligencePanel section (collapsible) ── */}
       {docIntelOpen && (
