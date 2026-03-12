@@ -66,10 +66,12 @@ async function handleTokenRegistration(
     category: 'vehicles',
     missionId: 'system',
     specifications: {
-      robot_id: robotId,
-      type: 'autonomous_ground_vehicle',
-      connection: 'websocket',
-      hardware_info: msg.hardware_info ?? {},
+      type: 'ground',
+      maxSpeed: 1.5,
+      maxRange: 100,
+      payload: 0,
+      fuelType: 'electric',
+      autonomyLevel: 3,
     },
     isAutonomous: true,
     capabilities: capabilities.length > 0 ? capabilities : ['patrol', 'ISR'],
@@ -87,6 +89,16 @@ async function handleTokenRegistration(
     capabilities,
     hardware_info: msg.hardware_info as Record<string, unknown> | undefined,
   });
+
+  // Send robot:registered with DID so the Python client can persist it
+  const registeredMsg = {
+    type: RobotWsMessageType.registered,
+    did: resource.did,
+    robot_id: robotId,
+  };
+  try {
+    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(registeredMsg));
+  } catch { /* ignore */ }
 
   console.log(`[RobotWS] Robot ${robotId} registered via token (DID: ${resource.did})`);
 }
@@ -126,7 +138,7 @@ export function setupRobotWebSocket(serverOrWss: HTTPServer | WebSocketServer): 
       // Handle first-time token-based registration (robot has token but no DID yet)
       if (
         'type' in msg &&
-        msg.type === 'register' &&
+        msg.type === RobotWsMessageType.register &&
         'robot_id' in msg &&
         'token' in msg &&
         !('did' in msg && msg.did)
@@ -140,7 +152,7 @@ export function setupRobotWebSocket(serverOrWss: HTTPServer | WebSocketServer): 
       // Extract robot_id from register messages so we can track it on the socket
       if (
         'type' in msg &&
-        msg.type === 'register' &&
+        msg.type === RobotWsMessageType.register &&
         'robot_id' in msg
       ) {
         ws.robotId = msg.robot_id as string;
