@@ -57,11 +57,15 @@ interface LayoutNode {
 
 // ---- Props ----------------------------------------------------------------
 
+export type TopologyOrigin = 'all' | 'server' | 'client' | 'remote';
+
 interface NetworkTopologyViewProps {
   visible: boolean;
   scannerStatus: DiscoveryStatus | null;
   deviceCount: number;
   connectedCount: number;
+  /** Discovery origin perspective filter */
+  origin?: TopologyOrigin;
   /** Called when a device node is clicked — used to set selectedResourceId */
   onNodeClick?: (deviceId: string) => void;
 }
@@ -73,6 +77,7 @@ export function NetworkTopologyView({
   scannerStatus,
   deviceCount,
   connectedCount,
+  origin = 'all',
   onNodeClick,
 }: NetworkTopologyViewProps) {
   const [_topology, setTopology] = useState<TopologyGraph | null>(null);
@@ -195,7 +200,8 @@ export function NetworkTopologyView({
   const loadTopology = useCallback(async () => {
     try {
       setLoading(true);
-      const graph = await discoveryService.getTopology();
+      const originParam = origin === 'all' ? undefined : origin;
+      const graph = await discoveryService.getTopology(originParam);
       if (mountedRef.current) {
         setTopology(graph);
         setEdges(graph.edges);
@@ -207,7 +213,7 @@ export function NetworkTopologyView({
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [initializeLayout]);
+  }, [initializeLayout, origin]);
 
   // ---- Lifecycle -----------------------------------------------------------
 

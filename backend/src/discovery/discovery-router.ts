@@ -796,14 +796,38 @@ async function getTopology(): Promise<NetworkTopology> {
 /**
  * GET /topology
  * Return full network topology graph with stats.
+ * Optional ?origin=server|client|remote to filter by discovery origin.
  */
-discoveryRouter.get('/topology', async (_req: Request, res: Response) => {
+discoveryRouter.get('/topology', async (req: Request, res: Response) => {
   try {
     const topo = await getTopology();
     const graph = topo.getGraph();
+    const originFilter = req.query.origin as string | undefined;
+
+    let nodes = Array.from(graph.nodes.values());
+    let filteredEdges = graph.edges;
+
+    if (originFilter && ['server', 'client', 'remote'].includes(originFilter)) {
+      // Always include the bastion node; filter device nodes by origin
+      const filteredNodeIds = new Set<string>();
+      nodes = nodes.filter((n) => {
+        if (n.type === 'bastion' || n.type === 'network') {
+          filteredNodeIds.add(n.id);
+          return true;
+        }
+        const match = (n.metadata as Record<string, unknown>)?.origin === originFilter;
+        if (match) filteredNodeIds.add(n.id);
+        return match;
+      });
+      // Only include edges where both endpoints are in the filtered set
+      filteredEdges = graph.edges.filter(
+        (e) => filteredNodeIds.has(e.sourceId) && filteredNodeIds.has(e.targetId),
+      );
+    }
+
     res.json({
-      nodes: Array.from(graph.nodes.values()),
-      edges: graph.edges,
+      nodes,
+      edges: filteredEdges,
       networks: Array.from(graph.networks.values()),
       stats: topo.getStats(),
       hoppingEnabled: topo.hoppingEnabled,

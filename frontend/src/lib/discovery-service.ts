@@ -356,9 +356,10 @@ export class DiscoveryApiService {
   // Network Topology
   // ==========================================================================
 
-  /** Get full network topology graph. */
-  async getTopology(): Promise<TopologyGraph> {
-    return this.request<TopologyGraph>('/api/discovery/topology');
+  /** Get full network topology graph, optionally filtered by discovery origin. */
+  async getTopology(origin?: 'server' | 'client' | 'remote'): Promise<TopologyGraph> {
+    const qs = origin ? `?origin=${origin}` : '';
+    return this.request<TopologyGraph>(`/api/discovery/topology${qs}`);
   }
 
   /** Get topology statistics only. */

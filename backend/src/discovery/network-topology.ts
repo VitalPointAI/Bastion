@@ -138,6 +138,8 @@ export class NetworkTopology {
         lastSeen: device.lastSeen,
         signalStrength: device.signalStrength,
         hopCount: 1,
+        origin: device.origin ?? 'server',
+        sourceTargetId: device.sourceTargetId,
       },
     });
 

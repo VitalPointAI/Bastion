@@ -267,7 +267,7 @@ export const ClientDiscoveryPanel: React.FC = () => {
 
   const handleRemoveTarget = useCallback(async (id: string) => {
     try {
-      await discoveryService.deleteScanTarget(id);
+      await discoveryService.removeScanTarget(id);
       setScanTargets((prev) => prev.filter(t => t.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove target');
