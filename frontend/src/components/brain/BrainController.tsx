@@ -215,8 +215,13 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     const node = processedNodesRef.current.find((n) => n.id === nodeId);
     if (!node || node.x == null || node.y == null) return;
     if (!fgRef.current) return;
-    fgRef.current.centerAt(node.x, node.y, 500);
-    fgRef.current.zoom(3, 500);
+    const z = (node as unknown as { z?: number }).z ?? 0;
+    const distance = 120;
+    fgRef.current.cameraPosition(
+      { x: node.x + distance, y: node.y + distance, z: z + distance },
+      { x: node.x, y: node.y, z },
+      500,
+    );
   };
 
   const handleAlertClick = useCallback((alert: PatternAlert) => {
