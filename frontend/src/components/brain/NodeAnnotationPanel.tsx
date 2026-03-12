@@ -17,7 +17,7 @@ interface NodeAnnotationPanelProps {
   nodeId: string;
   nodeType: BrainNodeType;
   annotations: BrainAnnotation[];
-  onCreate: (input: { annotationType: string; content?: string; isShared?: boolean }) => void;
+  onCreate: (input: { annotationType: 'flag' | 'note' | 'questionable'; content?: string; isShared?: boolean }) => void;
   onUpdate: (id: string, input: { content?: string; isShared?: boolean }) => void;
   onDelete: (id: string) => void;
 }
