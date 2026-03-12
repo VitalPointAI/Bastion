@@ -134,14 +134,14 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
 
-  const rightPanelOpen = selectedNodeId !== null || selectedNodeIds.length > 0 || gapPanelOpen;
-
   // ── Search state ────────────────────────────────────────────────────────────
   const [searchMatchIds, setSearchMatchIds] = useState<string[] | null>(null);
 
   // ── Modal / panel state ─────────────────────────────────────────────────────
   const [snapshotModalOpen, setSnapshotModalOpen] = useState(false);
   const [gapPanelOpen, setGapPanelOpen] = useState(false);
+
+  const rightPanelOpen = selectedNodeId !== null || selectedNodeIds.length > 0 || gapPanelOpen;
 
   // ── Processed graph data ────────────────────────────────────────────────────
   const processedData: BrainGraphData = (() => {
