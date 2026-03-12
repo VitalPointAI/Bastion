@@ -268,14 +268,18 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
         }
 
         // ── Edges from graph endpoint ──────────────────────────────────────────
+        // Filter out edges referencing nodes not in the graph to prevent
+        // d3-force "node not found" errors at runtime.
         const rawEdges = graphResp?.edges ?? graphResp?.links ?? [];
-        const edges: BrainEdge[] = rawEdges.map((e) => ({
-          source: e.source,
-          target: e.target,
-          type: e.type ?? 'related',
-          strength: e.strength ?? 0.3,
-          isConflict: e.type === 'conflict' || e.type === 'opposes',
-        }));
+        const edges: BrainEdge[] = rawEdges
+          .filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
+          .map((e) => ({
+            source: e.source,
+            target: e.target,
+            type: e.type ?? 'related',
+            strength: e.strength ?? 0.3,
+            isConflict: e.type === 'conflict' || e.type === 'opposes',
+          }));
 
         setData({ nodes, edges });
       })
