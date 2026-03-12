@@ -104,6 +104,9 @@ importers:
       three:
         specifier: ^0.183.2
         version: 0.183.2
+      three-spritetext:
+        specifier: ^1.10.0
+        version: 1.10.0(three@0.183.2)
       y-websocket:
         specifier: ^3.0.0
         version: 3.0.0(yjs@13.6.29)
@@ -2315,6 +2318,12 @@ packages:
     engines: {node: '>=12'}
     peerDependencies:
       three: '>=0.168'
+
+  three-spritetext@1.10.0:
+    resolution: {integrity: sha512-t08iP1FCU1lQh8T5MmCpdijKgas8GDHJE0LqMGBuVu3xqMMpFnEZhTlih7FlxLPQizHIGoumUSpfOlY1GO/Tgg==}
+    engines: {node: '>=12'}
+    peerDependencies:
+      three: '>=0.86.0'
 
   three@0.183.2:
     resolution: {integrity: sha512-di3BsL2FEQ1PA7Hcvn4fyJOlxRRgFYBpMTcyOgkwJIaDOdJMebEFPA+t98EvjuljDx4hNulAGwF6KIjtwI5jgQ==}
@@ -4629,6 +4638,10 @@ snapshots:
       float-tooltip: 1.7.5
       kapsule: 1.16.3
       polished: 4.3.1
+      three: 0.183.2
+
+  three-spritetext@1.10.0(three@0.183.2):
+    dependencies:
       three: 0.183.2
 
   three@0.183.2: {}

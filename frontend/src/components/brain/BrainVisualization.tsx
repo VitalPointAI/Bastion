@@ -5,6 +5,11 @@
  * concept=dodecahedron), colored by actor category, with confidence-based opacity.
  * Nodes are draggable in 3D space. Orbit controls for rotation/zoom/pan.
  *
+ * Each node displays a persistent text sprite label and a rich HTML tooltip on hover.
+ *
+ * Performance: geometries and materials are cached to avoid Three.js GC pressure.
+ * The force simulation halts after cooldown to prevent ongoing CPU drain.
+ *
  * Usage:
  *   <BrainVisualization data={brainData} onNodeClick={handleNodeClick} />
  */
@@ -12,6 +17,7 @@
 import { useRef, useMemo, useCallback, useEffect, useState, type MutableRefObject } from 'react';
 import ForceGraph3D, { type ForceGraphMethods, type NodeObject } from 'react-force-graph-3d';
 import * as THREE from 'three';
+import SpriteText from 'three-spritetext';
 import type { BrainNode, BrainGraphData, ClusterMode } from './types.js';
 import { CATEGORY_COLORS, BRAIN_BG_COLOR } from './types.js';
 import './BrainVisualization.css';
@@ -33,7 +39,7 @@ export interface BrainVisualizationProps {
 
 // ─── Internal types ────────────────────────────────────────────────────────────
 
-type FGNode = BrainNode & { x?: number; y?: number; z?: number };
+type FGNode = BrainNode & { x?: number; y?: number; z?: number; __threeObj?: THREE.Object3D };
 
 interface FGLink {
   source: string | FGNode;
@@ -49,29 +55,63 @@ interface GraphPayload {
   links: FGLink[];
 }
 
-// ─── 3D geometry helpers ────────────────────────────────────────────────────────
+// ─── 3D geometry + material cache ──────────────────────────────────────────────
 
 const NODE_SIZE = 5;
 
-const TYPE_GEOMETRY: Record<string, THREE.BufferGeometry> = {};
+const geometryCache: Record<string, THREE.BufferGeometry> = {};
 function getGeometry(type: string): THREE.BufferGeometry {
-  if (!TYPE_GEOMETRY[type]) {
+  if (!geometryCache[type]) {
     switch (type) {
       case 'objective':
-        TYPE_GEOMETRY[type] = new THREE.OctahedronGeometry(NODE_SIZE);
+        geometryCache[type] = new THREE.OctahedronGeometry(NODE_SIZE);
         break;
       case 'document':
-        TYPE_GEOMETRY[type] = new THREE.BoxGeometry(NODE_SIZE * 1.4, NODE_SIZE * 1.4, NODE_SIZE * 1.4);
+        geometryCache[type] = new THREE.BoxGeometry(NODE_SIZE * 1.4, NODE_SIZE * 1.4, NODE_SIZE * 1.4);
         break;
       case 'concept':
-        TYPE_GEOMETRY[type] = new THREE.DodecahedronGeometry(NODE_SIZE);
+        geometryCache[type] = new THREE.DodecahedronGeometry(NODE_SIZE);
         break;
       default: // entity
-        TYPE_GEOMETRY[type] = new THREE.SphereGeometry(NODE_SIZE, 16, 12);
+        geometryCache[type] = new THREE.SphereGeometry(NODE_SIZE, 16, 12);
         break;
     }
   }
-  return TYPE_GEOMETRY[type];
+  return geometryCache[type];
+}
+
+/** Cache materials by "color|opacity" key to avoid GC pressure */
+const materialCache = new Map<string, THREE.MeshLambertMaterial>();
+function getMaterial(color: string, opacity: number): THREE.MeshLambertMaterial {
+  const key = `${color}|${opacity.toFixed(2)}`;
+  let mat = materialCache.get(key);
+  if (!mat) {
+    mat = new THREE.MeshLambertMaterial({ color, transparent: true, opacity });
+    materialCache.set(key, mat);
+  }
+  return mat;
+}
+
+const ringMaterialCache = new Map<string, THREE.MeshBasicMaterial>();
+function getRingMaterial(color: string, opacity: number): THREE.MeshBasicMaterial {
+  const key = `ring|${color}|${opacity}`;
+  let mat = ringMaterialCache.get(key);
+  if (!mat) {
+    mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity, side: THREE.DoubleSide });
+    ringMaterialCache.set(key, mat);
+  }
+  return mat;
+}
+
+const wireMaterialCache = new Map<string, THREE.MeshBasicMaterial>();
+function getWireMaterial(color: string, opacity: number): THREE.MeshBasicMaterial {
+  const key = `wire|${color}|${opacity}`;
+  let mat = wireMaterialCache.get(key);
+  if (!mat) {
+    mat = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity });
+    wireMaterialCache.set(key, mat);
+  }
+  return mat;
 }
 
 function getNodeColor(node: BrainNode): string {
@@ -84,6 +124,110 @@ function getNodeColor(node: BrainNode): string {
     case 'concept': return '#a78bfa';
     default: return '#888888';
   }
+}
+
+// ─── Node type display names ──────────────────────────────────────────────────
+
+const TYPE_ICONS: Record<string, string> = {
+  entity: '\u25CF',     // ● filled circle
+  objective: '\u25C6',  // ◆ diamond
+  document: '\u25A0',   // ■ square
+  concept: '\u2B22',    // ⬢ hexagon
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  entity: 'Actor',
+  objective: 'Objective',
+  document: 'Document',
+  concept: 'Theme',
+};
+
+const CATEGORY_DISPLAY: Record<string, string> = {
+  ally: 'Ally',
+  adversary: 'Adversary',
+  neutral: 'Neutral',
+  partner: 'Partner',
+};
+
+// ─── Label helpers ────────────────────────────────────────────────────────────
+
+/** Build a concise, human-readable display label for the 3D text sprite */
+function getDisplayLabel(node: BrainNode): string {
+  const name = node.label || node.id;
+
+  switch (node.type) {
+    case 'entity': {
+      // Show name, and category prefix if it's adversary or ally
+      const cat = node.actorCategory;
+      if (cat === 'adversary') return `⚠ ${name}`;
+      if (cat === 'ally') return `★ ${name}`;
+      return name;
+    }
+    case 'objective':
+      // Truncate long objective text
+      return name.length > 40 ? name.slice(0, 38) + '…' : name;
+    case 'document':
+      // Strip common extensions
+      return name.replace(/\.(pdf|docx?|xlsx?|pptx?|txt|csv)$/i, '');
+    case 'concept':
+      return `◈ ${name}`;
+    default:
+      return name;
+  }
+}
+
+/** Build rich HTML tooltip for hover */
+function buildTooltipHtml(node: BrainNode): string {
+  const typeLabel = TYPE_LABELS[node.type] ?? node.type;
+  const typeIcon = TYPE_ICONS[node.type] ?? '';
+  const color = getNodeColor(node);
+  const confidence = Math.round(node.confidence * 100);
+  const centrality = node.centrality != null ? Math.round(node.centrality * 100) : null;
+
+  const lines: string[] = [];
+
+  // Header with name and type
+  lines.push(`<div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:4px">${node.label || node.id}</div>`);
+  lines.push(`<div style="font-size:11px;color:${color};margin-bottom:6px">${typeIcon} ${typeLabel}`);
+  if (node.actorCategory) {
+    const catDisplay = CATEGORY_DISPLAY[node.actorCategory] ?? node.actorCategory;
+    lines.push(` — <span style="color:${CATEGORY_COLORS[node.actorCategory] ?? '#888'}">${catDisplay}</span>`);
+  }
+  lines.push(`</div>`);
+
+  // Description
+  if (node.description) {
+    const desc = node.description.length > 120 ? node.description.slice(0, 118) + '…' : node.description;
+    lines.push(`<div style="font-size:11px;color:#ccc;margin-bottom:4px;line-height:1.4">${desc}</div>`);
+  }
+
+  // Role
+  if (node.role) {
+    lines.push(`<div style="font-size:10px;color:#9ca3af;margin-bottom:4px">Role: ${node.role}</div>`);
+  }
+
+  // Aliases
+  if (node.aliases && node.aliases.length > 0) {
+    const aliasText = node.aliases.slice(0, 3).join(', ');
+    lines.push(`<div style="font-size:10px;color:#9ca3af;margin-bottom:4px">Also: ${aliasText}</div>`);
+  }
+
+  // Stats bar
+  const stats: string[] = [];
+  stats.push(`<span>Confidence: ${confidence}%</span>`);
+  if (centrality != null) stats.push(`<span>Centrality: ${centrality}%</span>`);
+  if (node.dimeCategory) stats.push(`<span>DIME: ${node.dimeCategory}</span>`);
+  lines.push(`<div style="font-size:10px;color:#6b7280;display:flex;gap:8px;margin-top:2px">${stats.join('')}</div>`);
+
+  // Badges
+  if (node.isGap) {
+    lines.push(`<div style="font-size:10px;color:#ffaa00;margin-top:4px">⚠ Intelligence Gap</div>`);
+  }
+  if (node.isFuturePrediction) {
+    lines.push(`<div style="font-size:10px;color:#aa66ff;margin-top:4px">🔮 Future Prediction (${Math.round((node.predictionConfidence ?? 0) * 100)}%)</div>`);
+  }
+
+  return `<div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:8px 10px;max-width:280px;font-family:system-ui,sans-serif">${lines.join('')}</div>`;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -160,7 +304,7 @@ export function BrainVisualization({
     };
   }, [data]);
 
-  // ── 3D node rendering ─────────────────────────────────────────────────────
+  // ── 3D node rendering (cached materials) ────────────────────────────────────
   const nodeThreeObject = useCallback(
     (node: NodeObject) => {
       const brainNode = node as FGNode;
@@ -174,48 +318,44 @@ export function BrainVisualization({
 
       const color = getNodeColor(brainNode);
       const geometry = getGeometry(brainNode.type);
+      const opacity = isDimmed ? 0.15 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
+      const material = getMaterial(color, opacity);
 
-      const material = new THREE.MeshLambertMaterial({
-        color,
-        transparent: true,
-        opacity: isDimmed ? 0.15 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85,
-      });
-
+      const group = new THREE.Group();
       const mesh = new THREE.Mesh(geometry, material);
 
       // Scale by confidence + centrality boost for outlier actors
       const centralityBoost = (brainNode.centrality ?? 0) * 0.4;
       const scale = 0.6 + brainNode.confidence * 0.6 + centralityBoost;
       mesh.scale.set(scale, scale, scale);
+      group.add(mesh);
 
       // Selection ring
       if (isSelected) {
         const ringGeo = new THREE.RingGeometry(NODE_SIZE * scale * 1.3, NODE_SIZE * scale * 1.5, 32);
-        const ringMat = new THREE.MeshBasicMaterial({
-          color: '#38bdf8',
-          transparent: true,
-          opacity: 0.8,
-          side: THREE.DoubleSide,
-        });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        mesh.add(ring);
+        const ring = new THREE.Mesh(ringGeo, getRingMaterial('#38bdf8', 0.8));
+        group.add(ring);
       }
 
       // Gap nodes: wireframe overlay
       if (brainNode.isGap) {
-        const wireGeo = getGeometry(brainNode.type);
-        const wireMat = new THREE.MeshBasicMaterial({
-          color: '#ffaa00',
-          wireframe: true,
-          transparent: true,
-          opacity: 0.6,
-        });
-        const wire = new THREE.Mesh(wireGeo, wireMat);
-        wire.scale.set(1.2, 1.2, 1.2);
-        mesh.add(wire);
+        const wire = new THREE.Mesh(getGeometry(brainNode.type), getWireMaterial('#ffaa00', 0.6));
+        wire.scale.set(scale * 1.2, scale * 1.2, scale * 1.2);
+        group.add(wire);
       }
 
-      return mesh;
+      // Persistent text label sprite above the node
+      const displayLabel = getDisplayLabel(brainNode);
+      const sprite = new SpriteText(displayLabel);
+      sprite.color = isDimmed ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.9)';
+      sprite.textHeight = 2.5;
+      sprite.backgroundColor = isDimmed ? 'transparent' : 'rgba(0,0,0,0.5)';
+      sprite.padding = 1;
+      sprite.borderRadius = 1;
+      sprite.position.set(0, NODE_SIZE * scale + 4, 0);
+      group.add(sprite);
+
+      return group;
     },
     [selectedNodeId, selectedNodeIds],
   );
@@ -240,17 +380,36 @@ export function BrainVisualization({
     [],
   );
 
-  // ── Node label ────────────────────────────────────────────────────────────
-  const nodeLabel = useCallback(
-    (node: object) => {
-      const n = node as BrainNode;
-      const parts = [n.label];
-      if (n.type) parts.push(`[${n.type}]`);
-      if (n.actorCategory) parts.push(`(${n.actorCategory})`);
-      if (n.centrality != null && n.centrality > 0) parts.push(`centrality: ${(n.centrality * 100).toFixed(0)}%`);
-      if (n.description) parts.push(`\n${n.description}`);
-      return parts.join(' ');
+  // ── Link label (relationship type) ──────────────────────────────────────────
+  const linkThreeObject = useCallback(
+    (link: object) => {
+      const fgLink = link as FGLink;
+      const label = fgLink.type === 'related' ? '' : fgLink.type;
+      if (!label) return new THREE.Group(); // no label for generic "related"
+      const sprite = new SpriteText(label);
+      sprite.color = fgLink.isConflict ? 'rgba(255,100,100,0.7)' : 'rgba(180,200,255,0.5)';
+      sprite.textHeight = 1.5;
+      sprite.backgroundColor = 'transparent';
+      return sprite;
     },
+    [],
+  );
+
+  const linkPositionUpdate = useCallback(
+    (sprite: THREE.Object3D, _coords: { start: { x: number; y: number; z: number }; end: { x: number; y: number; z: number } }) => {
+      // Position link label at midpoint
+      sprite.position.set(
+        (_coords.start.x + _coords.end.x) / 2,
+        (_coords.start.y + _coords.end.y) / 2,
+        (_coords.start.z + _coords.end.z) / 2,
+      );
+    },
+    [],
+  );
+
+  // ── Node tooltip (HTML) ────────────────────────────────────────────────────
+  const nodeLabel = useCallback(
+    (node: object) => buildTooltipHtml(node as BrainNode),
     [],
   );
 
@@ -294,12 +453,15 @@ export function BrainVisualization({
         linkColor={linkColor}
         linkWidth={linkWidth}
         linkOpacity={0.6}
+        linkThreeObject={linkThreeObject}
+        linkPositionUpdate={linkPositionUpdate as unknown as (obj: object, coords: object, link: object) => void}
         onNodeClick={handleNodeClick}
         enableNodeDrag={true}
         enableNavigationControls={true}
-        warmupTicks={100}
-        cooldownTicks={50}
-        d3AlphaDecay={0.05}
+        warmupTicks={80}
+        cooldownTicks={100}
+        cooldownTime={8000}
+        d3AlphaDecay={0.06}
         d3VelocityDecay={0.4}
       />
     </div>
