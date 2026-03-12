@@ -36,8 +36,37 @@ def _optional(name: str, default: str) -> str:
 BASTION_WS_URL: str = _require("BASTION_WS_URL")
 """WebSocket URL of the Bastion server, e.g. ws://192.168.1.100:3001"""
 
-AUTH_TOKEN: str = _require("AUTH_TOKEN")
-"""Shared secret token for robot authentication."""
+AUTH_TOKEN: str = _optional("AUTH_TOKEN", "")
+"""Shared secret token for robot authentication (optional — legacy auth mode)."""
+
+# ---------------------------------------------------------------------------
+# DID-based authentication (replaces shared AUTH_TOKEN)
+# ---------------------------------------------------------------------------
+
+REGISTRATION_TOKEN: str = _optional("REGISTRATION_TOKEN", "")
+"""One-time token for first registration. Server exchanges it for a persistent DID."""
+
+ROBOT_DID: str = _optional("ROBOT_DID", "")
+"""Persisted DID from a prior registration. Used for subsequent connections."""
+
+DID_FILE: str = _optional("DID_FILE", ".robot_did")
+"""File path where the persisted DID is stored after successful registration."""
+
+# ---------------------------------------------------------------------------
+# Bridge connectivity (mDNS discovery + manual fallback)
+# ---------------------------------------------------------------------------
+
+BRIDGE_HOST: str = _optional("BRIDGE_HOST", "")
+"""Manual fallback bridge IP or hostname. Used if mDNS discovery times out."""
+
+BRIDGE_PORT: int = int(_optional("BRIDGE_PORT", "8765"))
+"""Bridge relay WebSocket port (default 8765)."""
+
+BRIDGE_WS_URL: str = _optional("BRIDGE_WS_URL", "")
+"""Pre-computed bridge WebSocket URL (overrides mDNS + BRIDGE_HOST/BRIDGE_PORT)."""
+
+MDNS_BROWSE_TIMEOUT_SEC: float = float(_optional("MDNS_BROWSE_TIMEOUT_SEC", "10.0"))
+"""How long (seconds) to wait for mDNS bridge discovery before falling back."""
 
 # ---------------------------------------------------------------------------
 # Optional settings (have sensible defaults)
@@ -63,3 +92,32 @@ RECONNECT_INITIAL_DELAY: float = float(_optional("RECONNECT_INITIAL_DELAY", "5.0
 
 RECONNECT_MAX_DELAY: float = float(_optional("RECONNECT_MAX_DELAY", "60.0"))
 """Maximum reconnect backoff delay in seconds."""
+
+
+# ---------------------------------------------------------------------------
+# DID persistence helpers
+# ---------------------------------------------------------------------------
+
+
+def load_persisted_did() -> str:
+    """Read the persisted DID from DID_FILE.
+
+    Returns an empty string if the file does not exist or is empty.
+    """
+    did_path = os.environ.get("DID_FILE", DID_FILE)
+    try:
+        with open(did_path, "r", encoding="utf-8") as fh:
+            return fh.read().strip()
+    except (OSError, FileNotFoundError):
+        return ""
+
+
+def persist_did(did: str) -> None:
+    """Write *did* to DID_FILE for use on subsequent connections.
+
+    Args:
+        did: The DID string to persist (e.g. ``"did:bastion:robot-abc"``).
+    """
+    did_path = os.environ.get("DID_FILE", DID_FILE)
+    with open(did_path, "w", encoding="utf-8") as fh:
+        fh.write(did)
