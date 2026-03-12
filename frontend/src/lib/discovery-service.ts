@@ -243,11 +243,14 @@ export class DiscoveryApiService {
     return this.request<DiscoveryStatus>('/api/discovery/status');
   }
 
-  /** Start scanning. */
-  async startScanning(scope?: string): Promise<void> {
+  /** Start scanning. Origin: 'server' (local network), 'client' (browser), 'remote' (target IP). */
+  async startScanning(scope?: string, origin?: string): Promise<void> {
+    const body: Record<string, string> = {};
+    if (scope) body.scope = scope;
+    if (origin) body.origin = origin;
     await this.request('/api/discovery/start', {
       method: 'POST',
-      body: JSON.stringify(scope ? { scope } : {}),
+      body: JSON.stringify(body),
     });
   }
 
