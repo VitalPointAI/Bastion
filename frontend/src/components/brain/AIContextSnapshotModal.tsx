@@ -88,14 +88,45 @@ export function AIContextSnapshotModal({
         } else if (typeof data.context === 'string') {
           setFetchedSummary(data.context);
         } else {
-          // Summarize the structured context object
+          // Build a concise narrative from the structured context
           const ctx = data.context as Record<string, unknown>;
-          const parts: string[] = [];
-          const docs = ctx.documentSummaries as unknown[];
-          if (Array.isArray(docs) && docs.length > 0) parts.push(`${docs.length} strategic document(s)`);
-          const graphs = ctx.graphSummaries as Record<string, unknown>;
-          if (graphs && Object.keys(graphs).length > 0) parts.push(`${Object.keys(graphs).length} graph summary(ies)`);
-          setFetchedSummary(parts.length > 0 ? `Strategic context includes: ${parts.join(', ')}.` : JSON.stringify(ctx, null, 2));
+          const narrativeParts: string[] = [];
+
+          // Extract graph summaries (contain actual strategic analysis)
+          const graphs = ctx.graphSummaries as Record<string, { summary?: string; topActors?: Array<{ name: string; category?: string }>; activeTensions?: Array<{ description: string; intensity?: string }> }> | undefined;
+          if (graphs) {
+            for (const [, gs] of Object.entries(graphs)) {
+              if (gs.summary) narrativeParts.push(gs.summary);
+              if (gs.topActors && gs.topActors.length > 0) {
+                const actorList = gs.topActors.slice(0, 5).map(a => `${a.name}${a.category ? ` (${a.category})` : ''}`).join(', ');
+                narrativeParts.push(`Key actors: ${actorList}.`);
+              }
+              if (gs.activeTensions && gs.activeTensions.length > 0) {
+                const tensionList = gs.activeTensions.slice(0, 3).map(t => `${t.description}${t.intensity ? ` [${t.intensity}]` : ''}`).join('; ');
+                narrativeParts.push(`Active tensions: ${tensionList}.`);
+              }
+            }
+          }
+
+          // Extract document summaries
+          const docs = ctx.documentSummaries as Array<{ title?: string; extractedData?: { summary?: string }; textContent?: string }> | undefined;
+          if (Array.isArray(docs) && docs.length > 0) {
+            const docNames = docs.slice(0, 5).map(d => d.title || 'Untitled').join(', ');
+            narrativeParts.push(`Based on ${docs.length} strategic document(s): ${docNames}.`);
+            // Include first document summary if available
+            for (const doc of docs.slice(0, 2)) {
+              const docSummary = doc.extractedData?.summary || doc.textContent;
+              if (docSummary) {
+                narrativeParts.push(docSummary.length > 200 ? docSummary.slice(0, 200) + '...' : docSummary);
+              }
+            }
+          }
+
+          if (narrativeParts.length > 0) {
+            setFetchedSummary(narrativeParts.join('\n\n'));
+          } else {
+            setFetchedSummary('Strategic context data is available but contains no narrative summaries yet. Run graph analysis to generate insights.');
+          }
         }
       })
       .catch(() => {
@@ -217,7 +248,7 @@ export function AIContextSnapshotModal({
 
           {/* Current context summary */}
           <div className="snapshot-section-label">Current AI Context Summary</div>
-          <div className="snapshot-summary">
+          <div className="snapshot-summary" style={{ whiteSpace: 'pre-wrap' }}>
             {summaryLoading
               ? 'Loading context...'
               : displaySummary ?? 'No context available.'}

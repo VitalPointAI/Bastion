@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import type { DiscoveredDevice, DiscoveryStatus } from '../../../lib/discovery-service';
-import { useResourcesContext } from '../ResourcesContext';
+import { useResourcesContext } from '../resourcesContextValue.js';
 import { ClientDiscoveryPanel } from './ClientDiscoveryPanel';
 import { DevicePipelineKanban } from './DevicePipelineKanban';
 

@@ -90,6 +90,14 @@ export interface BrainNode {
   /** Validity score from source quality assessment (0-1) */
   validityScore?: number;
 
+  // ── Content / description ──────────────────────────────────────────────
+  /** Description or summary of what this node represents */
+  description?: string;
+  /** Alternative names (for actors) */
+  aliases?: string[];
+  /** Role this actor plays in the context */
+  role?: string;
+
   // ── Layout/rendering hints ────────────────────────────────────────────────
   /**
    * Normalized centrality score (0-1) used to prioritise which labels
