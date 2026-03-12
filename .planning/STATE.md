@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 43-02-PLAN.md
-last_updated: "2026-03-12T21:33:33.833Z"
-last_activity: "2026-03-12 - Completed 43-01: robot.common shared package with Pydantic models (message_id dedup), UUID v4 stamp helpers, AsyncZeroconf mDNS browse/advertise"
+status: in_progress
+stopped_at: Completed 43-03-PLAN.md
+last_updated: "2026-03-12T21:39:00Z"
+last_activity: "2026-03-12 - Completed 43-03: robot agent mDNS discovery, DID auth chain, send_stamped on all outbound messages, dual-path bridge failover; 53 tests green"
 progress:
   total_phases: 59
   completed_phases: 40
   total_plans: 370
-  completed_plans: 369
+  completed_plans: 370
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 43 of 59 (Robot Agent & Local Discovery Bridge) — IN PROGRESS
-Plan: 1 of 6 in current phase — COMPLETE
-Status: Plan 43-01 complete — robot.common shared package with models, ws_protocol (stamp/send_stamped), mDNS browse/advertise; 20 tests green
-Last activity: 2026-03-12 - Completed 43-01: robot.common shared package with Pydantic models (message_id dedup), UUID v4 stamp helpers, AsyncZeroconf mDNS browse/advertise
+Plan: 3 of 6 in current phase — COMPLETE
+Status: Plan 43-03 complete — robot agent mDNS bridge discovery, DID auth (token>did>legacy), send_stamped all outbound messages, dual-path direct/bridge failover; 53 tests green
+Last activity: 2026-03-12 - Completed 43-03: robot agent mDNS discovery, DID auth chain, send_stamped on all outbound messages, dual-path bridge failover; 53 tests green
 
 Progress: ██████████████████████████ 353 plans complete
 

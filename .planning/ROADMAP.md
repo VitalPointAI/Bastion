@@ -598,12 +598,12 @@ Plans:
 
 **Requirements:** [BRIDGE-01, BRIDGE-02, BRIDGE-03, BRIDGE-04, BRIDGE-05, BRIDGE-06, BRIDGE-07]
 **Depends on:** Phase 32, Phase 42
-**Plans:** 2/6 plans executed
+**Plans:** 3/6 plans executed
 
 Plans:
 - [x] 43-01-PLAN.md — Shared Python package (robot/common/) with models, ws_protocol, mDNS utilities
-- [ ] 43-02-PLAN.md — Backend bridge support: bridge-ws, token store, message dedup, bridge-router
-- [ ] 43-03-PLAN.md — Robot agent enhancement: mDNS discovery, DID auth, bridge fallback
+- [x] 43-02-PLAN.md — Backend bridge support: bridge-ws, token store, message dedup, bridge-router
+- [x] 43-03-PLAN.md — Robot agent enhancement: mDNS discovery, DID auth, bridge fallback
 - [ ] 43-04-PLAN.md — Bridge core: cloud uplink, LAN scanner, robot relay, command queue
 - [ ] 43-05-PLAN.md — Bridge FastAPI web UI and Docker packaging
 - [ ] 43-06-PLAN.md — Integration wiring and end-to-end verification
