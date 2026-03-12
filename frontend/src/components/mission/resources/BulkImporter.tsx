@@ -11,12 +11,12 @@ import 'react-csv-importer/dist/index.css';
 import { resourceService, type BulkImportRow } from '../../../lib/resource-service.js';
 
 interface BulkImporterProps {
-  missionId: string;
+  problemSetId: string;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function BulkImporter({ missionId, onClose, onSuccess }: BulkImporterProps) {
+export function BulkImporter({ problemSetId, onClose, onSuccess }: BulkImporterProps) {
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ created: number; failed: number; errors: Array<{ row: number; error: string }> } | null>(null);
 
@@ -57,7 +57,7 @@ export function BulkImporter({ missionId, onClose, onSuccess }: BulkImporterProp
       });
 
       // Import valid rows
-      const importResult = await resourceService.bulkImport(missionId, validRows);
+      const importResult = await resourceService.bulkImport(problemSetId, validRows);
 
       // Combine validation errors with import errors
       const allErrors = [...errors, ...importResult.errors];

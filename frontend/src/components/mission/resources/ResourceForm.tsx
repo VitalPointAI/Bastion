@@ -30,13 +30,13 @@ const resourceSchema = z.object({
 type ResourceFormData = z.infer<typeof resourceSchema>;
 
 interface ResourceFormProps {
-  missionId: string;
+  problemSetId: string;
   resource?: Resource | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function ResourceForm({ missionId, resource, onClose, onSuccess }: ResourceFormProps) {
+export function ResourceForm({ problemSetId, resource, onClose, onSuccess }: ResourceFormProps) {
   const isEditing = !!resource;
 
   const {
@@ -82,7 +82,7 @@ export function ResourceForm({ missionId, resource, onClose, onSuccess }: Resour
       }
 
       const payload = {
-        missionId,
+        missionId: problemSetId,
         name: data.name,
         category: data.category,
         serialNumber: data.serialNumber || undefined,

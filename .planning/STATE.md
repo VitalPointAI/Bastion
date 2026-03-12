@@ -2,13 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-03-11T23:00:00Z"
+status: in_progress
+stopped_at: Completed 42-02-PLAN.md
+last_updated: "2026-03-12T13:14:00Z"
+last_activity: "2026-03-11 - Completed 41-07: useBrainTimeline (debounced fetch, recency scoring, future predictions), BrainTimeline (past/now/future zones, LIVE button)"
 progress:
-  total_phases: 57
-  completed_phases: 38
-  total_plans: 358
-  completed_plans: 353
+  total_phases: 58
+  completed_phases: 39
+  total_plans: 364
+  completed_plans: 363
 ---
 
 # Project State
@@ -23,10 +25,10 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 41 of 57 (Redesign Understanding Tab - Adaptive Brain Visualization) — IN PROGRESS
-Plan: 7 of 11 in current phase — COMPLETE
-Status: Plan 41-07 complete — BrainTimeline scrubber, useBrainTimeline hook, temporal navigation
-Last activity: 2026-03-11 - Completed 41-07: useBrainTimeline (debounced fetch, recency scoring, future predictions), BrainTimeline (past/now/future zones, LIVE button)
+Phase: 42 of 58 (Resources Tab Inventory Discovery) — IN PROGRESS
+Plan: 2 of 6 in current phase — COMPLETE
+Status: Plan 42-02 complete — InventorySubView, ResourceActionMenu, ResourceDetailPanel, missionId→problemSetId refactor
+Last activity: 2026-03-12 - Completed 42-02: ResourceCatalog refactored to problemSetId, InventorySubView with Show Disposed toggle, ResourceActionMenu with distribution constraints, ResourceDetailPanel slide-over
 
 Progress: ██████████████████████████ 352 plans complete
 
@@ -174,6 +176,7 @@ Progress: ███████████████████████�
 | Phase 41-redesign-understanding-tab-adaptive-brain-visualization P01 | 2 | 2 tasks | 4 files |
 | Phase 41-redesign-understanding-tab-adaptive-brain-visualization P03 | 35 | 2 tasks | 6 files |
 | Phase 41-redesign-understanding-tab-adaptive-brain-visualization P05 | 25 | 2 tasks | 7 files |
+| Phase 42-resources-tab-inventory-discovery P01 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -791,6 +794,8 @@ Recent decisions affecting current work:
 - [Phase 06-autonomous-vehicle-integration]: Authority enforcement at dispatch: speed > max_speed triggers immediate rejection
 - [Phase 41-redesign-understanding-tab-adaptive-brain-visualization]: Right panel slide-in uses width 0->380px CSS transition, not translateX, to take zero grid space when collapsed
 - [Phase 41-redesign-understanding-tab-adaptive-brain-visualization]: BrainNode.confidence (0-1) is required field that drives all visual intensity decisions for glow and brightness
+- [Phase 42-resources-tab-inventory-discovery]: Resources tab default sub-view locked to Inventory — no remember-last behavior
+- [Phase 42-resources-tab-inventory-discovery]: All roles see Resources tab, consistent with Phase 24 all-tabs-visible decision
 
 ### Roadmap Evolution
 
@@ -1494,7 +1499,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09 - Completed 40-01 (Foundation Types, Schemas, and Database)
-Stopped at: Completed 40-01-PLAN.md — shared types, Zod schemas, NATO ratings, specialist base class, database tables
+Last session: 2026-03-12T13:07:03.463Z
+Stopped at: Completed 42-01-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02

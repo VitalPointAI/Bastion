@@ -45,6 +45,7 @@ export interface ResourceGroup {
   id: string;
   missionId: string;
   name: string;
+  description?: string;
   groupType: 'task_force' | 'support' | 'reserve' | 'custom';
   aggregateCapabilities: string[];
   memberCount: number;
@@ -153,9 +154,27 @@ class ResourceRegistryService {
 
   /**
    * Get registry statistics.
+   * Backend returns { total, byCategory, byStatus, autonomous, passive, withDID, groupCount }.
+   * Maps total -> totalResources for the frontend RegistryStats interface.
    */
   async getRegistryStats(): Promise<RegistryStats> {
-    return this.fetch<RegistryStats>('/api/resources/registry/stats');
+    const raw = await this.fetch<{
+      total: number;
+      byCategory: Record<string, number>;
+      byStatus: Record<string, number>;
+      autonomous: number;
+      passive?: number;
+      withDID?: number;
+      groupCount?: number;
+    }>('/api/resources/registry/stats');
+    return {
+      totalResources: raw.total,
+      byCategory: raw.byCategory,
+      byStatus: raw.byStatus,
+      autonomous: raw.autonomous,
+      withDID: raw.withDID ?? 0,
+      groupCount: raw.groupCount ?? 0,
+    };
   }
 
   /**
@@ -238,6 +257,35 @@ class ResourceRegistryService {
       `/api/resources/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(resourceId)}`,
       { method: 'DELETE' }
     );
+  }
+
+  /**
+   * Update a group's name and/or description.
+   */
+  async updateGroup(groupId: string, data: { name?: string; description?: string }): Promise<ResourceGroup> {
+    return this.fetch<ResourceGroup>(`/api/resources/groups/${encodeURIComponent(groupId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Delete a resource group.
+   */
+  async deleteGroup(groupId: string): Promise<void> {
+    await this.fetch<void>(`/api/resources/groups/${encodeURIComponent(groupId)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Get all members of a resource group.
+   */
+  async getGroupMembers(groupId: string): Promise<RegisteredResource[]> {
+    const response = await this.fetch<{ members: RegisteredResource[] }>(
+      `/api/resources/groups/${encodeURIComponent(groupId)}/members`
+    );
+    return response.members || [];
   }
 
   // ============================================================================

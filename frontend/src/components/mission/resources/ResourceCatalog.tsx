@@ -31,10 +31,11 @@ import './ResourceCatalog.css';
 type TabType = 'equipment' | 'personnel' | 'consumables';
 
 interface ResourceCatalogProps {
-  missionId: string;
+  problemSetId: string;
+  showDisposed?: boolean;
 }
 
-export function ResourceCatalog({ missionId }: ResourceCatalogProps) {
+export function ResourceCatalog({ problemSetId, showDisposed = false }: ResourceCatalogProps) {
   const [activeTab, setActiveTab] = useState<TabType>('equipment');
   const [resources, setResources] = useState<Resource[]>([]);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
@@ -50,7 +51,7 @@ export function ResourceCatalog({ missionId }: ResourceCatalogProps) {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [missionId]);
+  }, [problemSetId]);
 
   const loadData = async () => {
     try {
@@ -58,9 +59,9 @@ export function ResourceCatalog({ missionId }: ResourceCatalogProps) {
       setError(null);
 
       const [resourcesData, personnelData, consumablesData] = await Promise.all([
-        resourceService.getResources(missionId),
-        resourceService.getPersonnel(missionId),
-        resourceService.getConsumables(missionId),
+        resourceService.getResources(problemSetId),
+        resourceService.getPersonnel(problemSetId),
+        resourceService.getConsumables(problemSetId),
       ]);
 
       setResources(resourcesData);
@@ -74,11 +75,18 @@ export function ResourceCatalog({ missionId }: ResourceCatalogProps) {
     }
   };
 
-  // Filter resources by category
+  // Filter resources by category and disposed status
   const filteredResources = useMemo(() => {
-    if (selectedCategory === 'all') return resources;
-    return resources.filter((r) => r.category === selectedCategory);
-  }, [resources, selectedCategory]);
+    let result = resources;
+    // Hide disposed resources unless showDisposed is true
+    if (!showDisposed) {
+      result = result.filter((r) => (r.status as string) !== 'disposed');
+    }
+    if (selectedCategory !== 'all') {
+      result = result.filter((r) => r.category === selectedCategory);
+    }
+    return result;
+  }, [resources, selectedCategory, showDisposed]);
 
   // Category counts
   const categoryCounts = useMemo(() => {
@@ -427,7 +435,7 @@ export function ResourceCatalog({ missionId }: ResourceCatalogProps) {
         {/* Consumables Tab */}
         {activeTab === 'consumables' && (
           <ConsumableTracker
-            missionId={missionId}
+            problemSetId={problemSetId}
             consumables={consumables}
             onUpdate={loadData}
           />
@@ -437,7 +445,7 @@ export function ResourceCatalog({ missionId }: ResourceCatalogProps) {
       {/* Modals */}
       {showForm && (
         <ResourceForm
-          missionId={missionId}
+          problemSetId={problemSetId}
           resource={editingItem}
           onClose={handleFormClose}
           onSuccess={handleFormSuccess}
@@ -446,7 +454,7 @@ export function ResourceCatalog({ missionId }: ResourceCatalogProps) {
 
       {showImporter && (
         <BulkImporter
-          missionId={missionId}
+          problemSetId={problemSetId}
           onClose={() => setShowImporter(false)}
           onSuccess={handleImportSuccess}
         />
