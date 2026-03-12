@@ -80,7 +80,7 @@ export function ResourceCatalog({ problemSetId, showDisposed = false }: Resource
     let result = resources;
     // Hide disposed resources unless showDisposed is true
     if (!showDisposed) {
-      result = result.filter((r) => (r as Resource & { status?: string }).status !== 'disposed');
+      result = result.filter((r) => (r.status as string) !== 'disposed');
     }
     if (selectedCategory !== 'all') {
       result = result.filter((r) => r.category === selectedCategory);
