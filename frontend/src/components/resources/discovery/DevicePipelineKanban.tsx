@@ -28,7 +28,7 @@ interface PipelineColumn {
   badgeColor: string;
 }
 
-export const PIPELINE_COLUMNS: PipelineColumn[] = [
+const PIPELINE_COLUMNS: PipelineColumn[] = [
   {
     id: 'discovered',
     label: 'Discovered',
