@@ -26,7 +26,7 @@ import { getPool } from '../lib/database.js';
  * The 6 doctrinal lifecycle tabs (JP 5-0 aligned).
  * Phase 24: All roles see all tabs — no per-role restrictions.
  */
-const ALL_DOCTRINAL_TABS = ['understand', 'design', 'plan', 'direct', 'cop', 'assess'];
+const ALL_DOCTRINAL_TABS = ['understand', 'design', 'plan', 'direct', 'cop', 'assess', 'resources'];
 
 const DEFAULT_VISIBILITY_BY_ECHELON: Record<string, Record<string, string[]>> = {
   strategic: {
@@ -180,7 +180,23 @@ export class ProblemSetPanelConfigStore {
    */
   async getOrCreateDefault(problemSetId: string, echelon: string): Promise<PanelConfig> {
     const existing = await this.getConfig(problemSetId);
-    if (existing) return existing;
+    if (existing) {
+      // Backfill: ensure all doctrinal tabs are present in each role's visibility list.
+      // Handles configs created before new tabs (e.g. 'resources') were added.
+      let patched = false;
+      const vis = { ...existing.panelVisibility };
+      for (const [role, tabs] of Object.entries(vis)) {
+        const missing = ALL_DOCTRINAL_TABS.filter(t => !tabs.includes(t));
+        if (missing.length > 0) {
+          vis[role] = [...tabs, ...missing];
+          patched = true;
+        }
+      }
+      if (patched) {
+        return this.upsertConfig(problemSetId, vis, existing.defaultTab);
+      }
+      return existing;
+    }
 
     const visibility =
       DEFAULT_VISIBILITY_BY_ECHELON[echelon] ?? DEFAULT_VISIBILITY_BY_ECHELON['tactical'];
