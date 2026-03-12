@@ -1,0 +1,39 @@
+version: "3.8"
+
+# Bastion Local Discovery Bridge — Docker Compose
+#
+# IMPORTANT: network_mode: host is REQUIRED for mDNS multicast discovery.
+# mDNS uses 224.0.0.251:5353 multicast packets that do not cross Docker's
+# virtual network bridge. Host networking gives the bridge container direct
+# access to the physical LAN interface, enabling mDNS browsing and
+# advertisement (_bastion._tcp.local.) to work correctly.
+#
+# Usage:
+#   1. Copy bridge/.env.example to bridge/.env and fill in credentials.
+#   2. docker compose -f bridge/docker-compose.yml up --build
+#   3. Access dashboard at http://localhost:8766  (when ENABLE_UI=true)
+
+services:
+  bastion-bridge:
+    build:
+      # Build context is the project root so Dockerfile can COPY robot/common/
+      context: ..
+      dockerfile: bridge/Dockerfile
+    # Host networking — required for mDNS multicast (see note above).
+    # Port mappings are ignored when network_mode is host; the container
+    # shares the host's network stack directly.
+    network_mode: host
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Cloud WebSocket endpoint (required)
+      - CLOUD_WS_URL=${CLOUD_WS_URL}
+      # Bridge identity (defaults to 'bridge-01' if not set)
+      - BRIDGE_ID=${BRIDGE_ID:-bridge-01}
+      # One-time registration token for first-time DID provisioning (optional)
+      - REGISTRATION_TOKEN=${REGISTRATION_TOKEN:-}
+      # Enable web UI — set to 'true' or leave empty to rely on --ui flag
+      - ENABLE_UI=${ENABLE_UI:-true}
+    # Enable web UI by default when running via compose
+    command: ["--ui"]
