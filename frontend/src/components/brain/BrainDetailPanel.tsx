@@ -31,7 +31,7 @@ export interface BrainDetailPanelProps {
   onCreateAnnotation: (input: {
     nodeId: string;
     nodeType: BrainNode['type'];
-    annotationType: string;
+    annotationType: 'flag' | 'note' | 'questionable';
     content?: string;
     isShared?: boolean;
   }) => void;
