@@ -98,7 +98,7 @@ async def advertise_bridge(cfg: Any, shutdown: asyncio.Event) -> None:
 
         # Browse for robots
         robot_listener = _RobotListener()
-        _robot_browser = AsyncServiceBrowser(azc, robot_service_type, robot_listener)  # noqa: F841
+        _robot_browser = AsyncServiceBrowser(azc.zeroconf, robot_service_type, robot_listener)  # noqa: F841
         logger.info("mdns_advertise: browsing for %s", robot_service_type)
 
         try:
