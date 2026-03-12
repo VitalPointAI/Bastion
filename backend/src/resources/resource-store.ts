@@ -14,7 +14,7 @@ export async function initResourceTable(): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS resources (
       id TEXT PRIMARY KEY,
-      mission_id TEXT NOT NULL REFERENCES missions(id) ON DELETE CASCADE,
+      mission_id TEXT REFERENCES missions(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       category TEXT NOT NULL,
       serial_number TEXT,
@@ -29,6 +29,11 @@ export async function initResourceTable(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_resource_category ON resources(category);
     CREATE INDEX IF NOT EXISTS idx_resource_status ON resources(status);
   `);
+
+  // Phase 43: Allow null mission_id for system-level resources (robots, bridges)
+  await pool.query(`
+    ALTER TABLE resources ALTER COLUMN mission_id DROP NOT NULL;
+  `).catch(() => { /* already nullable */ });
 
   // Phase 27: Add new columns idempotently
   await pool.query(`
@@ -104,7 +109,7 @@ export class ResourceStore {
    * Create a new resource
    */
   async createResource(
-    missionId: string,
+    missionId: string | undefined,
     name: string,
     category: ResourceCategory,
     status: ResourceStatus,

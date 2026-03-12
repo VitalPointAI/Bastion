@@ -155,7 +155,6 @@ async function handleBridgeRegister(
     const resource = await registry.registerResource({
       name: `Bridge ${bridge_id}`,
       category: 'other',
-      missionId: 'system',
       specifications: {
         otherType: 'engineering',
         description: `Local discovery bridge: ${bridge_id}`,

@@ -64,7 +64,6 @@ async function handleTokenRegistration(
   const resource = await registry.registerResource({
     name: (msg.name as string) || `Robot ${robotId}`,
     category: 'vehicles',
-    missionId: 'system',
     specifications: {
       type: 'ground',
       maxSpeed: 1.5,

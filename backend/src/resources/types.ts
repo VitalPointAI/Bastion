@@ -30,7 +30,7 @@ export type ResourceTrustTier = 'observer' | 'participant' | 'autonomous';
  */
 export interface Resource {
   id: string; // Format: RES-{uuid}
-  missionId: string;
+  missionId?: string;
   name: string;
   category: ResourceCategory;
   serialNumber?: string;
@@ -67,7 +67,7 @@ export interface RegisteredResource extends Resource {
 export interface ResourceManifest {
   name: string;
   category: ResourceCategory;
-  missionId: string;
+  missionId?: string;
   specifications: Record<string, unknown>;
   isAutonomous: boolean;
   capabilities: string[];
