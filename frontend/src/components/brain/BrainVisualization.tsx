@@ -153,12 +153,20 @@ export function BrainVisualization({
 
   // ── ForceGraph2D data (nodes → nodes, edges → links) ──────────────────────
   const graphPayload = useMemo<GraphPayload>(() => {
+    const nodeIdSet = new Set(data.nodes.map((n) => n.id));
     return {
       nodes: data.nodes as FGNode[],
       // ForceGraph2D will mutate source/target from string IDs to node objects;
       // the cast makes TypeScript accept both the initial string form and the
       // post-simulation object form.
-      links: data.edges.map((e) => ({ ...e })) as FGLink[],
+      // Filter out links referencing missing nodes to prevent d3-force crashes.
+      links: (data.edges ?? [])
+        .filter((e) => {
+          const src = typeof e.source === 'object' ? (e.source as FGNode).id : e.source;
+          const tgt = typeof e.target === 'object' ? (e.target as FGNode).id : e.target;
+          return nodeIdSet.has(src) && nodeIdSet.has(tgt);
+        })
+        .map((e) => ({ ...e })) as FGLink[],
     };
   }, [data]);
 
