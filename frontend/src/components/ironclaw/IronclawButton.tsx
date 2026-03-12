@@ -110,7 +110,7 @@ export function IronclawButton({ onClick, hasUnread }: IronclawButtonProps) {
         bottom: `${position.bottom}px`,
         right: `${position.right}px`,
         zIndex: 950,
-        cursor: dragging.current ? 'grabbing' : 'grab',
+        cursor: 'grab',
       }}
       title="Open Ironclaw - Chief of Staff (drag to reposition)"
       aria-label="Open Ironclaw panel"

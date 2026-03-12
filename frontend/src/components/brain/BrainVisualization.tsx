@@ -12,7 +12,7 @@
 import { useRef, useMemo, useCallback, useEffect, useState, type MutableRefObject } from 'react';
 import ForceGraph3D, { type ForceGraphMethods, type NodeObject } from 'react-force-graph-3d';
 import * as THREE from 'three';
-import type { BrainNode, BrainEdge, BrainGraphData, ClusterMode } from './types.js';
+import type { BrainNode, BrainGraphData, ClusterMode } from './types.js';
 import { CATEGORY_COLORS, BRAIN_BG_COLOR } from './types.js';
 import './BrainVisualization.css';
 
@@ -258,10 +258,11 @@ export function BrainVisualization({
     (node: NodeObject) => {
       onNodeClick?.(node as BrainNode);
       // Aim camera at clicked node
-      if (fgRef.current && node.x != null && node.y != null) {
+      const fg = fgRef.current;
+      if (fg && node.x != null && node.y != null) {
         const n = node as FGNode;
         const distance = 120;
-        fgRef.current.cameraPosition(
+        fg.cameraPosition(
           { x: (n.x ?? 0) + distance, y: (n.y ?? 0) + distance, z: (n.z ?? 0) + distance },
           { x: n.x ?? 0, y: n.y ?? 0, z: n.z ?? 0 },
           1000,
