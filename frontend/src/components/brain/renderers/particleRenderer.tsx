@@ -11,7 +11,7 @@
  *    not block user interaction with elements below it.
  */
 
-import React, { useEffect, useRef, type MutableRefObject } from 'react';
+import { useEffect, useRef, type MutableRefObject } from 'react';
 import type { Particle } from '../types.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export interface ParticleOverlayProps {
  *     <ParticleOverlay particlesRef={particlesRef} width={width} height={height} sidebarWidth={280} />
  *   </div>
  */
-export function ParticleOverlay({ particlesRef, width, height, sidebarWidth }: ParticleOverlayProps): React.ReactElement {
+export function ParticleOverlay({ particlesRef, width, height, sidebarWidth }: ParticleOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
 
@@ -114,18 +114,20 @@ export function ParticleOverlay({ particlesRef, width, height, sidebarWidth }: P
   // Sync canvas backing-store size to logical size for crisp rendering on HiDPI displays
   const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
 
-  return React.createElement('canvas', {
-    ref: canvasRef,
-    width: width * dpr,
-    height: height * dpr,
-    style: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width,
-      height,
-      pointerEvents: 'none',
-      zIndex: 5,
-    },
-  });
+  return (
+    <canvas
+      ref={canvasRef}
+      width={width * dpr}
+      height={height * dpr}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width,
+        height,
+        pointerEvents: 'none',
+        zIndex: 5,
+      }}
+    />
+  );
 }

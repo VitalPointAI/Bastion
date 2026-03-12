@@ -208,16 +208,13 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     processedNodesRef.current = processedData.nodes;
   }, [processedData.nodes]);
 
-  const handleNodeFocus = useCallback(
-    (nodeId: string) => {
-      const node = processedNodesRef.current.find((n) => n.id === nodeId);
-      if (!node || node.x == null || node.y == null) return;
-      if (!fgRef.current) return;
-      fgRef.current.centerAt(node.x, node.y, 500);
-      fgRef.current.zoom(3, 500);
-    },
-    [],
-  );
+  const handleNodeFocus = (nodeId: string) => {
+    const node = processedNodesRef.current.find((n) => n.id === nodeId);
+    if (!node || node.x == null || node.y == null) return;
+    if (!fgRef.current) return;
+    fgRef.current.centerAt(node.x, node.y, 500);
+    fgRef.current.zoom(3, 500);
+  };
 
   const handleAlertClick = useCallback((alert: PatternAlert) => {
     // Highlight alert's related nodes by setting them as the active search match
