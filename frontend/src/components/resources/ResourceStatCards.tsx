@@ -181,7 +181,7 @@ export function ResourceStatCards({ problemSetId: _problemSetId, onQuickFilter }
             }}
             disabled={!isClickable}
             className={[
-              'bg-gray-800 border rounded px-3 py-2 text-center transition-colors min-w-[4.5rem]',
+              'bg-gray-800 border rounded px-3 py-2 text-center transition-colors min-w-18',
               isClickable ? 'cursor-pointer hover:border-gray-500' : 'cursor-default',
               isActive ? 'border-blue-500 bg-gray-700' : 'border-gray-600',
               isFlashing ? 'animate-pulse' : '',
