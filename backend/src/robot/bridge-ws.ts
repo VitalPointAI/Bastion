@@ -157,8 +157,8 @@ async function handleBridgeRegister(
       category: 'other',
       missionId: 'system',
       specifications: {
-        bridge_id,
-        type: 'bridge',
+        otherType: 'engineering',
+        description: `Local discovery bridge: ${bridge_id}`,
       },
       isAutonomous: false,
       capabilities: capabilities?.length ? capabilities : ['scanning', 'relay', 'queueing'],

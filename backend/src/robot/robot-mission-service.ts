@@ -661,9 +661,12 @@ export class RobotMissionService {
       category: 'vehicles',
       missionId: 'system', // robots span across missions
       specifications: {
-        robot_id: robotId,
-        type: 'autonomous_ground_vehicle',
-        connection: 'websocket',
+        type: 'ground',
+        maxSpeed: 1.5,
+        maxRange: 100,
+        payload: 0,
+        fuelType: 'electric',
+        autonomyLevel: 3,
       },
       isAutonomous: true,
       capabilities: capabilities.length > 0 ? capabilities : ['patrol', 'ISR'],
