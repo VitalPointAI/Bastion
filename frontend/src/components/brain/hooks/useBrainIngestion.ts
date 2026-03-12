@@ -99,6 +99,9 @@ export function useBrainIngestion(
   const esRef = useRef<EventSource | null>(null);
   // Ref to hold connect fn for use in onerror without forward-reference
   const connectRef = useRef<() => void>(() => {});
+  // Reconnect attempt count — exponential backoff, stop after max retries
+  const reconnectAttemptsRef = useRef(0);
+  const MAX_RECONNECT_ATTEMPTS = 5;
 
   const addEvent = useCallback((evt: IngestionEvent) => {
     setEvents((prev) => {
@@ -127,7 +130,10 @@ export function useBrainIngestion(
     const es = new EventSource(url);
     esRef.current = es;
 
-    es.onopen = () => setIsConnected(true);
+    es.onopen = () => {
+      setIsConnected(true);
+      reconnectAttemptsRef.current = 0; // Reset on successful connection
+    };
 
     // ── specialist:start ────────────────────────────────────────────────────
     es.addEventListener('specialist:start', (e: MessageEvent) => {
@@ -277,7 +283,12 @@ export function useBrainIngestion(
       if (es.readyState === EventSource.CLOSED) {
         setIsConnected(false);
         esRef.current = null;
-        reconnectTimer.current = setTimeout(() => connectRef.current(), 3000);
+        // Exponential backoff: 3s, 6s, 12s, 24s, 48s — then stop
+        if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+          const delay = 3000 * Math.pow(2, reconnectAttemptsRef.current);
+          reconnectAttemptsRef.current += 1;
+          reconnectTimer.current = setTimeout(() => connectRef.current(), delay);
+        }
       }
     };
   }, [problemSetId, enabled, addEvent, emitParticle]);
