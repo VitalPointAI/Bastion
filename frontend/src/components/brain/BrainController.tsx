@@ -204,7 +204,9 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   }, []);
 
   const processedNodesRef = useRef(processedData.nodes);
-  processedNodesRef.current = processedData.nodes;
+  useEffect(() => {
+    processedNodesRef.current = processedData.nodes;
+  }, [processedData.nodes]);
 
   const handleNodeFocus = useCallback(
     (nodeId: string) => {

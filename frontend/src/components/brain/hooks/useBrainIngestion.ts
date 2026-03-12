@@ -282,7 +282,9 @@ export function useBrainIngestion(
     };
   }, [problemSetId, enabled, addEvent, emitParticle]);
 
-  connectRef.current = connect;
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   // Connect on mount / when problemSetId changes
   useEffect(() => {

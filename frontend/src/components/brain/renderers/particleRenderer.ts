@@ -97,8 +97,11 @@ export function ParticleOverlay({ particlesRef, width, height, sidebarWidth }: P
     }
 
     // Ensure any pre-existing particles start at the sidebar exit point
-    for (const p of particlesRef.current) {
-      if (p.x < sidebarWidth) p.x = sidebarWidth;
+    const particles = particlesRef.current;
+    for (let i = 0; i < particles.length; i++) {
+      if (particles[i].x < sidebarWidth) {
+        particles[i] = { ...particles[i], x: sidebarWidth };
+      }
     }
 
     rafRef.current = requestAnimationFrame(loop);
