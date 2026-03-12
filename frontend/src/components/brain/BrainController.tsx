@@ -28,6 +28,7 @@ import { BrainDetailPanel } from './BrainDetailPanel.js';
 import { BrainTimeline } from './BrainTimeline.js';
 import { IngestionSidebar } from './IngestionSidebar.js';
 import { AIContextSnapshotModal } from './AIContextSnapshotModal.js';
+import { GapSummaryPanel } from './GapSummaryPanel.js';
 import { ParticleOverlay } from './renderers/particleRenderer.js';
 
 import { useBrainData } from './hooks/useBrainData.js';
@@ -105,7 +106,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     effectiveData,
   } = useBrainTimeline(problemSetId, data);
 
-  const { gaps: _gaps, gapCount, markGapNodes } = useBrainGaps(problemSetId);
+  const { gaps, gapCount, loading: gapsLoading, markGapNodes } = useBrainGaps(problemSetId);
 
   const { alerts, unreadCount: _unreadCount, markAsRead: _markAsRead, markAllAsRead: _markAllAsRead } =
     useBrainPatterns(problemSetId);
@@ -133,13 +134,14 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
 
-  const rightPanelOpen = selectedNodeId !== null || selectedNodeIds.length > 0;
-
   // ── Search state ────────────────────────────────────────────────────────────
   const [searchMatchIds, setSearchMatchIds] = useState<string[] | null>(null);
 
-  // ── Modal state ─────────────────────────────────────────────────────────────
+  // ── Modal / panel state ─────────────────────────────────────────────────────
   const [snapshotModalOpen, setSnapshotModalOpen] = useState(false);
+  const [gapPanelOpen, setGapPanelOpen] = useState(false);
+
+  const rightPanelOpen = selectedNodeId !== null || selectedNodeIds.length > 0 || gapPanelOpen;
 
   // ── Processed graph data ────────────────────────────────────────────────────
   const processedData: BrainGraphData = (() => {
@@ -197,6 +199,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   const handleClosePanel = useCallback(() => {
     setSelectedNodeId(null);
     setSelectedNodeIds([]);
+    setGapPanelOpen(false);
   }, []);
 
   const handleSearchResults = useCallback((matchingIds: string[]) => {
@@ -242,6 +245,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
             onNodeFocus={handleNodeFocus}
             onSnapshotClick={() => setSnapshotModalOpen(true)}
             gapCount={gapCount}
+            onGapClick={() => { setGapPanelOpen((prev) => !prev); setSelectedNodeId(null); setSelectedNodeIds([]); }}
           />
         }
         leftSidebar={
@@ -270,7 +274,18 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
           </div>
         }
         rightPanel={
-          rightPanelOpen ? (
+          gapPanelOpen ? (
+            <GapSummaryPanel
+              gaps={gaps}
+              loading={gapsLoading}
+              onNodeClick={(nodeId) => {
+                setGapPanelOpen(false);
+                setSelectedNodeId(nodeId);
+                setSelectedNodeIds([]);
+                handleNodeFocus(nodeId);
+              }}
+            />
+          ) : rightPanelOpen ? (
             <BrainDetailPanel
               selectedNode={selectedNode}
               selectedNodes={selectedNodes}

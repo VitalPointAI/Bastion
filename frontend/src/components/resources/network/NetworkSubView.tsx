@@ -13,6 +13,7 @@ import type { DiscoveredDevice, DiscoveryStatus } from '../../../lib/discovery-s
 import { useResourcesContext } from '../ResourcesContext';
 import { ResourceDetailPanel } from '../ResourceDetailPanel';
 import { NetworkTopologyView } from './NetworkTopologyView';
+import type { TopologyOrigin } from './NetworkTopologyView';
 import { EMSpectrumPanel } from './EMSpectrumPanel';
 
 interface NetworkSubViewProps {
@@ -21,8 +22,16 @@ interface NetworkSubViewProps {
   connected: number;
 }
 
+const ORIGIN_OPTIONS: { value: TopologyOrigin; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'server', label: 'Server' },
+  { value: 'client', label: 'Client' },
+  { value: 'remote', label: 'Remote' },
+];
+
 export function NetworkSubView({ devices, scannerStatus, connected }: NetworkSubViewProps) {
   const [showEM, setShowEM] = useState(false);
+  const [topologyOrigin, setTopologyOrigin] = useState<TopologyOrigin>('all');
   const { selectedResourceId, setSelectedResourceId } = useResourcesContext();
 
   const connectedCount = connected;
@@ -32,6 +41,24 @@ export function NetworkSubView({ devices, scannerStatus, connected }: NetworkSub
       {/* Toolbar */}
       <div className="shrink-0 flex items-center gap-3 px-4 py-2 border-b border-gray-700">
         <span className="text-sm font-medium text-gray-300">Network Topology</span>
+
+        {/* Origin perspective toggle */}
+        <div className="flex items-center bg-gray-800 rounded overflow-hidden border border-gray-600">
+          {ORIGIN_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setTopologyOrigin(opt.value)}
+              className={`text-xs px-2.5 py-1 transition-colors ${
+                topologyOrigin === opt.value
+                  ? 'bg-sky-600 text-white'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={() => setShowEM((prev) => !prev)}
           className={`text-xs px-3 py-1 rounded transition-colors ${
@@ -53,6 +80,7 @@ export function NetworkSubView({ devices, scannerStatus, connected }: NetworkSub
             scannerStatus={scannerStatus}
             deviceCount={devices.length}
             connectedCount={connectedCount}
+            origin={topologyOrigin}
             onNodeClick={(deviceId) => setSelectedResourceId(deviceId)}
           />
         </div>

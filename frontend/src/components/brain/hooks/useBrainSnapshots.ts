@@ -64,10 +64,12 @@ export function useBrainSnapshots(problemSetId: string): UseBrainSnapshotsReturn
     fetch(`${BACKEND_URL}/api/brain/snapshots?problemSetId=${encodeURIComponent(problemSetId)}`)
       .then((res) => {
         if (!res.ok) throw new Error(`Failed to load snapshots: ${res.status}`);
-        return res.json() as Promise<BrainSnapshot[]>;
+        return res.json();
       })
       .then((data) => {
-        if (!cancelled) setSnapshots(data);
+        // API returns { snapshots: [...] } wrapper
+        const list = Array.isArray(data) ? data : Array.isArray(data?.snapshots) ? data.snapshots : [];
+        if (!cancelled) setSnapshots(list);
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
