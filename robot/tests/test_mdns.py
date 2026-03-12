@@ -1,7 +1,7 @@
 """Tests for mDNS browse/advertise helpers in robot.common.mdns."""
 import asyncio
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 from robot.common.mdns import browse_service, advertise_service, ServiceResult
 
 
@@ -22,21 +22,20 @@ class TestBrowseService:
         mock_zeroconf.__aenter__ = AsyncMock(return_value=mock_zeroconf)
         mock_zeroconf.__aexit__ = AsyncMock(return_value=False)
 
-        mock_browser = MagicMock()
-
-        async def fake_browse_factory(zc, service_type, listener):
-            # Immediately notify listener of a discovered service
+        def fake_browser_constructor(zc, service_type, listener):
+            # Immediately notify listener of a discovered service synchronously
             listener.add_service(zc, service_type, mock_info.name)
-            return mock_browser
+            return MagicMock()
 
         with patch("robot.common.mdns.AsyncZeroconf", return_value=mock_zeroconf):
             with patch(
                 "robot.common.mdns.AsyncServiceBrowser",
-                side_effect=fake_browse_factory,
+                side_effect=fake_browser_constructor,
             ):
-                results = await browse_service(
-                    "_bastion._tcp.local.", timeout=0.5
-                )
+                with patch("robot.common.mdns.asyncio.sleep", new_callable=AsyncMock):
+                    results = await browse_service(
+                        "_bastion._tcp.local.", timeout=0.01
+                    )
 
         assert isinstance(results, list)
         assert len(results) >= 1
@@ -49,23 +48,23 @@ class TestBrowseService:
     async def test_mdns_browse_timeout_returns_empty(self):
         """browse_service with no services found returns empty list after timeout."""
         mock_zeroconf = AsyncMock()
+        mock_zeroconf.async_get_service_info = AsyncMock(return_value=None)
         mock_zeroconf.__aenter__ = AsyncMock(return_value=mock_zeroconf)
         mock_zeroconf.__aexit__ = AsyncMock(return_value=False)
 
-        mock_browser = MagicMock()
-
-        async def fake_browse_factory(zc, service_type, listener):
+        def fake_browser_constructor(zc, service_type, listener):
             # Do not notify — simulate no services found
-            return mock_browser
+            return MagicMock()
 
         with patch("robot.common.mdns.AsyncZeroconf", return_value=mock_zeroconf):
             with patch(
                 "robot.common.mdns.AsyncServiceBrowser",
-                side_effect=fake_browse_factory,
+                side_effect=fake_browser_constructor,
             ):
-                results = await browse_service(
-                    "_bastion._tcp.local.", timeout=0.1
-                )
+                with patch("robot.common.mdns.asyncio.sleep", new_callable=AsyncMock):
+                    results = await browse_service(
+                        "_bastion._tcp.local.", timeout=0.01
+                    )
 
         assert results == []
 
