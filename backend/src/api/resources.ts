@@ -141,6 +141,7 @@ router.get('/registry/stats', async (_req: Request, res: Response) => {
     const byStatus: Record<string, number> = {};
     let autonomous = 0;
     let passive = 0;
+    let withDID = 0;
 
     for (const r of all) {
       byCategory[r.category] = (byCategory[r.category] || 0) + 1;
@@ -150,7 +151,13 @@ router.get('/registry/stats', async (_req: Request, res: Response) => {
       } else {
         passive++;
       }
+      if (r.did) {
+        withDID++;
+      }
     }
+
+    // Count total groups across all missions
+    const allGroups = await resourceGroupStore.countAllGroups();
 
     res.json({
       total: all.length,
@@ -158,6 +165,8 @@ router.get('/registry/stats', async (_req: Request, res: Response) => {
       byStatus,
       autonomous,
       passive,
+      withDID,
+      groupCount: allGroups,
     });
   } catch (error) {
     res.status(500).json({ error: String(error) });
@@ -303,6 +312,24 @@ router.delete('/groups/:groupId/members/:resourceId', async (req: Request, res: 
   try {
     await resourceGroupStore.removeFromGroup(req.params.resourceId as string);
     res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// Update group name/description
+router.patch('/groups/:groupId', async (req: Request, res: Response) => {
+  try {
+    const { groupId } = req.params;
+    const { name, description } = req.body;
+    if (!name && !description) {
+      return res.status(400).json({ error: 'Provide name or description to update' });
+    }
+    const updated = await resourceGroupStore.updateGroup(groupId as string, { name, description });
+    if (!updated) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }

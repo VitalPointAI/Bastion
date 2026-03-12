@@ -347,7 +347,7 @@ export function MissionDetail({ missionId, onBack }: MissionDetailProps) {
         {/* Resources Tab */}
         <TabPanel>
           <div className="tab-content resources-tab">
-            <ResourceCatalog missionId={missionId} />
+            <ResourceCatalog problemSetId={missionId} />
           </div>
         </TabPanel>
 

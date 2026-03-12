@@ -58,6 +58,7 @@ None
 - [x] **Phase 37: Training Assessment Loop** - AAR capture at tactical training events, METL proficiency tracking (T/P/U per task), upward aggregation from training events through exercises to training strategy readiness updates (completed 2026-03-08)
 - [x] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign (completed 2026-03-08)
 - [x] **Phase 40: Autonomous Document Intelligence Team** - Multi-agent document processing team that autonomously ingests, classifies, extracts, cross-links, and validates documents with minimal user involvement; problem set scoping interview captures context boundaries and standing intelligence requirements; specialist agents (orchestrator, converter, classifier, perspective analysts, fact/objective extractors, linker, bias identifier, quality assessor) process each document adaptively; autonomous problem set researcher uses web search and OSINT to fill knowledge gaps and build strategic understanding; ExtractionTheater visualization shows full pipeline live (INSERTED) (completed 2026-03-09)
+- [x] **Phase 42: Resources Tab — Inventory, Discovery & Onboarding** - Add a dedicated Resources tab to the problem set tab bar; consolidate orphaned discovery components (ClientDiscoveryPanel, DiscoveryLayer, NetworkTopologyView, EMSpectrumPanel) and existing ResourceCatalog into a unified inventory and onboarding view; sub-views for equipment/personnel/consumable inventory, network device discovery and onboarding pipeline, resource group management, capability search, and registry statistics; wires existing Phase 27 (Resource Registry) and Phase 32 (Discovery) backend services into a reachable UI (INSERTED) (completed 2026-03-12)
 
 ## Phase Details
 
@@ -555,6 +556,38 @@ Plans:
 - [ ] 41-09-PLAN.md — Gap detection UI, pattern alert badge/dropdown
 - [ ] 41-10-PLAN.md — Integration: BrainController wiring, UnderstandTab rewrite
 - [ ] 41-11-PLAN.md — Visual verification checkpoint
+
+### Phase 42: Resources Tab — Inventory, Discovery & Onboarding
+
+**Goal:** Add a dedicated "Resources" tab to the problem set tab bar that consolidates resource inventory management, network device discovery/onboarding, group management, and capability search into a single, reachable view. Most backend infrastructure exists from Phase 27 (Resource Registry) and Phase 32 (Discovery) — this phase is primarily frontend integration and layout.
+
+**Depends on:** Phase 27 (Resource Registry & DID Plugin), Phase 24 (Tab Restructure)
+
+**Research:** Not required — all backend services exist; this is a UI consolidation phase
+
+**Requirements:** [RES-01 through RES-12]
+- RES-01: New "Resources" tab added to ProblemSetTabContainer tab bar (7th tab)
+- RES-02: ResourcesTab top-level component with sub-navigation (Inventory | Discovery | Network | Groups)
+- RES-03: Inventory sub-view: resurface ResourceCatalog (equipment/personnel/consumables) scoped to problem set
+- RES-04: Discovery sub-view: wire ClientDiscoveryPanel (BLE/Serial scanning) + device onboarding pipeline status
+- RES-05: Discovery sub-view: show device state machine progression (discovered → fingerprinting → authenticating → gate_check → connected/rejected)
+- RES-06: Network sub-view: wire NetworkTopologyView (force-directed graph of connected devices)
+- RES-07: Network sub-view: wire EMSpectrumPanel for EM spectrum awareness
+- RES-08: Groups sub-view: CRUD for resource groups (task_force/support/reserve/custom) using existing backend API
+- RES-09: Groups sub-view: drag-and-drop or select-to-assign resources to groups
+- RES-10: Registry search bar with capability, category, status, and geographic filters
+- RES-11: Registry statistics dashboard (total resources, by category, by status, with DID, autonomous, group count)
+- RES-12: Real-time updates via existing WebSocket streams (resource telemetry, discovery state changes)
+
+**Plans:** 6/6 plans complete
+
+Plans:
+- [x] 42-01-PLAN.md — Tab registration: add Resources to ProblemSetTabContainer, ResourcesTab shell with sub-nav routing
+- [x] 42-02-PLAN.md — Inventory sub-view: adapt ResourceCatalog to problem-set scope, wire resource-service
+- [ ] 42-03-PLAN.md — Discovery sub-view: wire ClientDiscoveryPanel, DiscoveryLayer, device pipeline status UI
+- [ ] 42-04-PLAN.md — Network sub-view: wire NetworkTopologyView and EMSpectrumPanel into sub-view
+- [ ] 42-05-PLAN.md — Groups sub-view: group CRUD UI, member assignment, aggregate capabilities display
+- [ ] 42-06-PLAN.md — Registry search + statistics dashboard, real-time WebSocket integration
 
 ---
 
@@ -1595,3 +1628,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 30. Ironclaw Agent Integration | 8/8 | Complete   | 2026-03-07 |
 | 31. AI Agent Validation & Compliance Testing | 7/7 | In Progress|  |
 | 40. Autonomous Document Intelligence Team | 12/12 | Complete   | 2026-03-09 |
+| 42. Resources Tab — Inventory, Discovery & Onboarding | 6/6 | Complete   | 2026-03-12 |

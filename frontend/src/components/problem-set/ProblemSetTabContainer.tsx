@@ -45,10 +45,11 @@ import { AIStaffPanel } from '../ai-staff/AIStaffPanel';
 import { useAIStaffFeed } from '../../hooks/useAIStaffFeed';
 import { useAIStaff, useAIStaffDispatch } from '../../context/AIStaffContext';
 import { useMode } from '../../context/ModeContext';
+import { ResourcesTab } from '../resources/ResourcesTab';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
-const PROBLEM_SET_TABS = ['understand', 'design', 'plan', 'direct', 'cop', 'assess'] as const;
+const PROBLEM_SET_TABS = ['understand', 'design', 'plan', 'direct', 'cop', 'assess', 'resources'] as const;
 type ProblemSetTab = typeof PROBLEM_SET_TABS[number];
 
 const TAB_LABELS: Record<ProblemSetTab, string> = {
@@ -58,12 +59,13 @@ const TAB_LABELS: Record<ProblemSetTab, string> = {
   direct: 'Direct',
   cop: 'COP',
   assess: 'Assess',
+  resources: 'Resources',
 };
 
 // ─── Role → tab access map ────────────────────────────────────────────────────
 
 // All roles see all tabs (Phase 24 decision — can restore per-role gating later)
-const ALL_TABS_LIST: ProblemSetTab[] = ['understand', 'design', 'plan', 'direct', 'cop', 'assess'];
+const ALL_TABS_LIST: ProblemSetTab[] = ['understand', 'design', 'plan', 'direct', 'cop', 'assess', 'resources'];
 const DEFAULT_TAB_ACCESS: Record<string, ProblemSetTab[]> = {
   commander: ALL_TABS_LIST,
   xo: ALL_TABS_LIST,
@@ -304,6 +306,8 @@ export function ProblemSetTabContainer() {
         return <COPTab problemSetId={displayId} />;
       case 'assess':
         return <AssessEchelonRouter problemSetId={displayId} />;
+      case 'resources':
+        return <ResourcesTab problemSetId={displayId} />;
       default:
         return null;
     }

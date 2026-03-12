@@ -178,6 +178,38 @@ export class ResourceGroupStore {
   }
 
   /**
+   * Update a group's name and/or description.
+   */
+  async updateGroup(
+    id: string,
+    updates: { name?: string; description?: string }
+  ): Promise<ResourceGroup | null> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    const result = await pool.query(
+      `UPDATE resource_groups
+       SET name = COALESCE($1, name),
+           description = COALESCE($2, description),
+           updated_at = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [updates.name ?? null, updates.description ?? null, id]
+    );
+    if (result.rows.length === 0) return null;
+    return this.rowToGroup(result.rows[0]);
+  }
+
+  /**
+   * Count total groups across all missions (used by /registry/stats endpoint).
+   */
+  async countAllGroups(): Promise<number> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    const result = await pool.query('SELECT COUNT(*)::int AS cnt FROM resource_groups');
+    return result.rows[0]?.cnt ?? 0;
+  }
+
+  /**
    * Delete a group. Unassigns all members first.
    */
   async deleteGroup(id: string): Promise<boolean> {

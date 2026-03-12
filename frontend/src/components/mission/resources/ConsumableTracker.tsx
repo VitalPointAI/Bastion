@@ -9,12 +9,12 @@ import { useState } from 'react';
 import { resourceService, type Consumable } from '../../../lib/resource-service.js';
 
 interface ConsumableTrackerProps {
-  missionId: string;
+  problemSetId: string;
   consumables: Consumable[];
   onUpdate: () => void;
 }
 
-export function ConsumableTracker({ missionId: _missionId, consumables, onUpdate }: ConsumableTrackerProps) {
+export function ConsumableTracker({ problemSetId: _problemSetId, consumables, onUpdate }: ConsumableTrackerProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
 
