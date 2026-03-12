@@ -153,7 +153,7 @@ const CATEGORY_DISPLAY: Record<string, string> = {
 
 /** Build a concise, human-readable display label for the 3D text sprite */
 function getDisplayLabel(node: BrainNode): string {
-  const name = node.label || node.id;
+  const name = node.label || node.id || '?';
 
   switch (node.type) {
     case 'entity': {
@@ -187,7 +187,7 @@ function buildTooltipHtml(node: BrainNode): string {
   const lines: string[] = [];
 
   // Header with name and type
-  lines.push(`<div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:4px">${node.label || node.id}</div>`);
+  lines.push(`<div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:4px">${node.label || node.id || '?'}</div>`);
   lines.push(`<div style="font-size:11px;color:${color};margin-bottom:6px">${typeIcon} ${typeLabel}`);
   if (node.actorCategory) {
     const catDisplay = CATEGORY_DISPLAY[node.actorCategory] ?? node.actorCategory;
