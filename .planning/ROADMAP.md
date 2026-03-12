@@ -59,7 +59,7 @@ None
 - [x] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign (completed 2026-03-08)
 - [x] **Phase 40: Autonomous Document Intelligence Team** - Multi-agent document processing team that autonomously ingests, classifies, extracts, cross-links, and validates documents with minimal user involvement; problem set scoping interview captures context boundaries and standing intelligence requirements; specialist agents (orchestrator, converter, classifier, perspective analysts, fact/objective extractors, linker, bias identifier, quality assessor) process each document adaptively; autonomous problem set researcher uses web search and OSINT to fill knowledge gaps and build strategic understanding; ExtractionTheater visualization shows full pipeline live (INSERTED) (completed 2026-03-09)
 - [x] **Phase 42: Resources Tab — Inventory, Discovery & Onboarding** - Add a dedicated Resources tab to the problem set tab bar; consolidate orphaned discovery components (ClientDiscoveryPanel, DiscoveryLayer, NetworkTopologyView, EMSpectrumPanel) and existing ResourceCatalog into a unified inventory and onboarding view; sub-views for equipment/personnel/consumable inventory, network device discovery and onboarding pipeline, resource group management, capability search, and registry statistics; wires existing Phase 27 (Resource Registry) and Phase 32 (Discovery) backend services into a reachable UI (INSERTED) (completed 2026-03-12)
-- [ ] **Phase 43: Robot Agent & Local Discovery Bridge** - Lightweight Python robot agent for outbound self-registration/command/telemetry via WebSocket; Docker-based local network bridge for mDNS/SSDP WiFi scanning and device relay to Bastion cloud; bridge acts as command proxy; mDNS auto-discovery between robot and bridge; dual-path connectivity for resilience (INSERTED)
+- [x] **Phase 43: Robot Agent & Local Discovery Bridge** - Lightweight Python robot agent for outbound self-registration/command/telemetry via WebSocket; Docker-based local network bridge for mDNS/SSDP WiFi scanning and device relay to Bastion cloud; bridge acts as command proxy; mDNS auto-discovery between robot and bridge; dual-path connectivity for resilience (INSERTED) (completed 2026-03-12)
 
 ## Phase Details
 
@@ -598,7 +598,7 @@ Plans:
 
 **Requirements:** [BRIDGE-01, BRIDGE-02, BRIDGE-03, BRIDGE-04, BRIDGE-05, BRIDGE-06, BRIDGE-07]
 **Depends on:** Phase 32, Phase 42
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 - [x] 43-01-PLAN.md — Shared Python package (robot/common/) with models, ws_protocol, mDNS utilities
