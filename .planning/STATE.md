@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed 43-04-PLAN.md
-last_updated: "2026-03-12T21:42:53Z"
-last_activity: "2026-03-12 - Completed 43-04: complete bridge service — LAN scanner (mDNS+SSDP), cloud WebSocket uplink, robot relay with TTL command queue, mDNS advertisement; 32 tests green"
+stopped_at: Completed 43-06-PLAN.md (checkpoint:human-verify Task 2 pending)
+last_updated: "2026-03-12T21:50:00Z"
+last_activity: "2026-03-12 - Completed 43-06 Task 1: wired bridge WebSocket (/ws/bridge) and REST routes into backend server; zero TS errors, 85 Python tests green; pending human-verify checkpoint"
 progress:
   total_phases: 59
   completed_phases: 40
   total_plans: 370
-  completed_plans: 371
+  completed_plans: 372
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 43 of 59 (Robot Agent & Local Discovery Bridge) — IN PROGRESS
-Plan: 4 of 6 in current phase — COMPLETE
-Status: Plan 43-04 complete — complete bridge service: LAN scanner (mDNS+SSDP normalized), cloud WebSocket uplink (token/DID registration, scan reports, command routing), local robot relay (TTL command queue drain-on-connect), mDNS advertisement of _bastion._tcp.local; 32 tests green
-Last activity: 2026-03-12 - Completed 43-04: complete bridge service — LAN scanner (mDNS+SSDP), cloud WebSocket uplink, robot relay with TTL command queue, mDNS advertisement; 32 tests green
+Plan: 6 of 6 in current phase — CHECKPOINT (human-verify pending)
+Status: Plan 43-06 Task 1 complete — bridge WebSocket (/ws/bridge) and REST routes (/api/admin/bridge-tokens, /api/bridge/status) wired into backend server; zero TypeScript errors; robot tests 53 passed, bridge tests 32 passed; awaiting human-verify checkpoint for full Phase 43 sign-off
+Last activity: 2026-03-12 - Completed 43-06 Task 1: wired bridge WebSocket (/ws/bridge) and REST routes into backend server; zero TS errors, 85 Python tests green; pending human-verify checkpoint
 
 Progress: ██████████████████████████ 353 plans complete
 
