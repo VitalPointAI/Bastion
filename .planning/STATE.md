@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-11T10:59:25.316Z"
+last_updated: "2026-03-11T23:00:00Z"
 progress:
-  total_phases: 56
-  completed_phases: 37
-  total_plans: 347
-  completed_plans: 347
+  total_phases: 57
+  completed_phases: 38
+  total_plans: 358
+  completed_plans: 353
 ---
 
 # Project State
@@ -23,12 +23,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 06 of 56 (Autonomous Vehicle Integration) — IN PROGRESS
-Plan: 2 of 8 in current phase — COMPLETE
-Status: Plan 06-02 complete — Jetson Python mission client, MissionExecutor, RVRDriver with SIMULATE mode
-Last activity: 2026-03-11 - Completed 06-02: Jetson Mission Client, Executor, and RVR Driver
+Phase: 41 of 57 (Redesign Understanding Tab - Adaptive Brain Visualization) — IN PROGRESS
+Plan: 7 of 11 in current phase — COMPLETE
+Status: Plan 41-07 complete — BrainTimeline scrubber, useBrainTimeline hook, temporal navigation
+Last activity: 2026-03-11 - Completed 41-07: useBrainTimeline (debounced fetch, recency scoring, future predictions), BrainTimeline (past/now/future zones, LIVE button)
 
-Progress: ██████████████████████████ 345 plans complete
+Progress: ██████████████████████████ 352 plans complete
 
 ## Performance Metrics
 
@@ -171,6 +171,9 @@ Progress: ███████████████████████�
 | Phase 40 P11 | 2 | 1 tasks | 3 files |
 | Phase 40 P12 | 8 | 2 tasks | 2 files |
 | Phase 06-autonomous-vehicle-integration P01 | 5 | 2 tasks | 6 files |
+| Phase 41-redesign-understanding-tab-adaptive-brain-visualization P01 | 2 | 2 tasks | 4 files |
+| Phase 41-redesign-understanding-tab-adaptive-brain-visualization P03 | 35 | 2 tasks | 6 files |
+| Phase 41-redesign-understanding-tab-adaptive-brain-visualization P05 | 25 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -184,6 +187,18 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 41 Plan 05 (Clustering, Search, Toolbar, NL Search):**
+- Inline createForceX/createForceY factories (not d3-force import) — d3-force-3d only in pnpm virtual store, not hoisted, direct import would fail at runtime
+- d3Force('x', null) removes group forces for organic mode — typed overload accepts null, no cast needed
+- Ironclaw /v1/chat/completions for NL search (not webhook channel) — one-shot stateless query, no thread continuity needed
+- LLM returned IDs validated against actual Neo4j node list to prevent hallucination surfacing in visualization
+
+**Phase 41 Plan 03 (Brain Canvas Renderers and BrainVisualization):**
+- Canvas state (shadowBlur, globalAlpha, setLineDash) always fully reset at end of each draw function to prevent bleed between nodes
+- RAF animation counter in useRef not useState — 60fps loop without React re-renders
+- Actor confidence proxy: min(1, sourceDocs*0.3 + rels*0.2 + validity*0.5) since actors lack a first-class confidence field
+- Lasso O(n) ray-casting for hit test per research recommendation; quadtree deferred until >500 nodes shows perf issues
 
 **Phase 38 Plan 01 (Data Model Extension):**
 - Used const objects for FRAGO_STATUS, RFI_SUBTYPES, INTERPRETATION_ACK_ACTIONS per project convention
@@ -774,6 +789,8 @@ Recent decisions affecting current work:
 - [Phase 40]: Used useDocProcessing hook built-in uploadDocument for file upload in DocIntelligencePanel
 - [Phase 06-autonomous-vehicle-integration]: Robot robotId stamped onto WS socket during register for disconnect routing
 - [Phase 06-autonomous-vehicle-integration]: Authority enforcement at dispatch: speed > max_speed triggers immediate rejection
+- [Phase 41-redesign-understanding-tab-adaptive-brain-visualization]: Right panel slide-in uses width 0->380px CSS transition, not translateX, to take zero grid space when collapsed
+- [Phase 41-redesign-understanding-tab-adaptive-brain-visualization]: BrainNode.confidence (0-1) is required field that drives all visual intensity decisions for glow and brightness
 
 ### Roadmap Evolution
 
@@ -806,6 +823,7 @@ Recent decisions affecting current work:
 - Phase 37 added: Training Assessment Loop — AAR capture, METL tracking (T/P/U), upward aggregation to training strategy readiness
 - Phase 38 added: Inheritance Deepening — Full bidirectional context propagation, override tracking, OPORD update notifications, upward reporting
 - Phase 39 added: Operational Demonstration Data Package — Comprehensive reusable demo data package populating BASTION end-to-end with Pacific Strategy AY26 content for military/academic demonstrations
+- Phase 41 added: Redesign Understanding Tab - Adaptive Brain Visualization
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller

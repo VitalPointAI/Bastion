@@ -1,0 +1,170 @@
+/* BrainSearch — search bar with mode toggle and filter dropdowns */
+
+.brain-search {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Mode toggle (Filter | Ask) */
+.brain-search-mode-toggle {
+  display: flex;
+  flex-direction: row;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 5px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.brain-search-mode-btn {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.72rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.brain-search-mode-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.brain-search-mode-btn.active {
+  background: rgba(74, 158, 255, 0.2);
+  color: #4a9eff;
+}
+
+/* Text input */
+.brain-search-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: white;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  min-width: 200px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.brain-search-input:focus {
+  border-color: rgba(74, 158, 255, 0.4);
+}
+
+.brain-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.brain-search-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Ask mode row */
+.brain-search-ask-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.brain-search-ask-input {
+  flex: 1;
+}
+
+.brain-search-ask-btn {
+  background: rgba(74, 158, 255, 0.15);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  border-radius: 6px;
+  color: #4a9eff;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+.brain-search-ask-btn:hover:not(:disabled) {
+  background: rgba(74, 158, 255, 0.25);
+}
+
+.brain-search-ask-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Filter dropdowns */
+.brain-search-filters {
+  display: flex;
+  flex-direction: row;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.brain-search-select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.3rem 0.5rem;
+  font-size: 0.75rem;
+  min-width: 0;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.brain-search-select:focus {
+  border-color: rgba(74, 158, 255, 0.4);
+}
+
+.brain-search-select option {
+  background: #1a2233;
+  color: white;
+}
+
+/* Interpretation / error text */
+.brain-search-interpretation {
+  font-size: 0.7rem;
+  color: rgba(74, 158, 255, 0.8);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.brain-search-error {
+  font-size: 0.7rem;
+  color: rgba(255, 80, 80, 0.9);
+  white-space: nowrap;
+}
+
+/* Result count */
+.brain-search-count {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Clear button */
+.brain-search-clear {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.brain-search-clear:hover {
+  color: rgba(255, 255, 255, 0.8);
+}

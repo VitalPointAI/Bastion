@@ -49,6 +49,7 @@ export const SpecialistId = {
   QUALITY_ASSESSOR: 'quality-assessor',
   TRUST_AGENT: 'trust-agent',
   RESEARCHER: 'researcher',
+  CATEGORIZATION_AGENT: 'categorization-agent',
 } as const;
 
 export type SpecialistId = (typeof SpecialistId)[keyof typeof SpecialistId];

@@ -1,0 +1,120 @@
+/* BrainToolbar — top control bar for the brain visualization */
+
+.brain-toolbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.4rem 0.75rem;
+  background: rgba(2, 8, 16, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  box-sizing: border-box;
+  min-height: 44px;
+  flex-wrap: wrap;
+}
+
+/* Cluster mode toggle */
+.cluster-toggle {
+  display: flex;
+  flex-direction: row;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.cluster-toggle-btn {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.cluster-toggle-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cluster-toggle-btn.active {
+  background: rgba(74, 158, 255, 0.2);
+  color: #4a9eff;
+}
+
+/* Action buttons section */
+.brain-toolbar-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Generic toolbar button */
+.brain-toolbar-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.brain-toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.brain-toolbar-btn-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.brain-toolbar-btn-label {
+  font-size: 0.75rem;
+}
+
+/* Gap button wrapper (relative for badge positioning) */
+.brain-toolbar-gap-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.brain-toolbar-gap-btn {
+  padding: 0.35rem 0.6rem;
+}
+
+/* Gap count badge */
+.gap-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  background: #ff4444;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+  box-sizing: border-box;
+}

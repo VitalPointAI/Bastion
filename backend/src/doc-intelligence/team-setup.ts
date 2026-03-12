@@ -183,6 +183,20 @@ const SPECIALIST_DEFINITIONS: Array<{
     canInitiate: true,
     canEscalate: true,
   },
+  {
+    agentId: 'doc-categorization-agent',
+    role: 'specialist',
+    name: 'Categorization Agent',
+    description: 'Assigns DIME/MIDLIFE theme categories to extracted objectives and tags documents with actor/container associations',
+    responsibilities: [
+      'Classify objectives into DIME framework categories (Diplomatic, Information, Military, Economic)',
+      'Assign MIDLIFE subcategories for fine-grained clustering',
+      'Tag documents with associated actor/container names',
+      'Persist category metadata to strategic_objectives table',
+    ],
+    canInitiate: false,
+    canEscalate: false,
+  },
 ];
 
 // ============================================================================
@@ -260,6 +274,13 @@ export async function registerDocIntelligenceTeam(): Promise<string> {
           stageId: 'linking',
           name: 'Cross-Document Linking',
           assignedAgents: ['doc-cross-doc-linker'],
+          nextStages: ['assessment'],
+          timeout: 60,
+        },
+        {
+          stageId: 'categorization',
+          name: 'DIME/MIDLIFE Categorization',
+          assignedAgents: ['doc-categorization-agent'],
           nextStages: ['assessment'],
           timeout: 60,
         },
