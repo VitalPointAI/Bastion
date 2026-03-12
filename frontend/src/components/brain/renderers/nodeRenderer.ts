@@ -159,7 +159,8 @@ export function drawBrainNode(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    const truncated = node.label.length > 20 ? `${node.label.slice(0, 20)}…` : node.label;
+    const lbl = node.label ?? node.id ?? '';
+    const truncated = lbl.length > 20 ? `${lbl.slice(0, 20)}…` : lbl;
     ctx.fillText(truncated, x, y + r + 2 / globalScale);
   }
 
@@ -191,11 +192,8 @@ function _drawShape(
     case 'concept':
       drawHexagon(ctx, x, y, r);
       break;
-    default: {
-      // Exhaustive guard — fall back to circle
-      const _exhaustive: never = type;
-      void _exhaustive;
+    default:
+      // Fall back to circle for any unexpected type
       ctx.arc(x, y, r, 0, Math.PI * 2);
-    }
   }
 }
