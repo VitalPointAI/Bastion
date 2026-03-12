@@ -654,12 +654,10 @@ export class RobotMissionService {
       return;
     }
 
-    // Register new resource — requires a missionId; use a system-level placeholder
-    // since robots aren't scoped to a single mission
+    // Register new resource — no missionId since robots span across missions
     const registered = await registry.registerResource({
       name: `Robot ${robotId}`,
       category: 'vehicles',
-      missionId: 'system', // robots span across missions
       specifications: {
         type: 'ground',
         maxSpeed: 1.5,
