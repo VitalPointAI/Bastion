@@ -79,6 +79,12 @@ interface ProcessingSession {
 /** Active processing sessions keyed by processingId */
 const processingSessions = new Map<string, ProcessingSession>();
 
+/**
+ * Problem-set-wide SSE clients — receives multiplexed events from ALL
+ * processing sessions belonging to a given problemSetId.
+ */
+const problemSetSSEClients = new Map<string, Set<Response>>();
+
 // ==========================================================================
 // Document Hashing & Similarity Utilities
 // ==========================================================================
@@ -171,14 +177,28 @@ function createSSEProgressCallback(session: ProcessingSession): ProgressCallback
     const entry = { event, data, timestamp: new Date().toISOString() };
     session.events.push(entry);
 
-    // Broadcast to all connected SSE clients
+    const enrichedData = { ...data, processId: session.processingId, documentId: session.documentId };
+
+    // Broadcast to per-session SSE clients
     for (const client of session.sseClients) {
       try {
         client.write(`event: ${event}\n`);
         client.write(`data: ${JSON.stringify(data)}\n\n`);
       } catch {
-        // Client disconnected, will be cleaned up
         session.sseClients.delete(client);
+      }
+    }
+
+    // Broadcast to problem-set-wide SSE clients
+    const psClients = problemSetSSEClients.get(session.problemSetId);
+    if (psClients) {
+      for (const client of psClients) {
+        try {
+          client.write(`event: ${event}\n`);
+          client.write(`data: ${JSON.stringify(enrichedData)}\n\n`);
+        } catch {
+          psClients.delete(client);
+        }
       }
     }
   };
@@ -795,6 +815,70 @@ router.get(
     // Clean up on client disconnect
     req.on('close', () => {
       session.sseClients.delete(res);
+    });
+  },
+);
+
+// ==========================================================================
+// Problem-Set-Wide SSE Stream
+// ==========================================================================
+
+/**
+ * GET /api/doc-intelligence/stream/:problemSetId
+ * SSE stream that multiplexes events from ALL active processing sessions
+ * for the given problem set. Used by the brain IngestionSidebar for a
+ * unified real-time feed without needing to know individual processingIds.
+ *
+ * On connect, sends catch-up events from all active sessions. Then
+ * receives live events as they occur via createSSEProgressCallback.
+ */
+router.get(
+  '/stream/:problemSetId',
+  async (req: Request, res: Response): Promise<void> => {
+    const problemSetId = req.params.problemSetId as string;
+
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    // Send catch-up events from all active sessions for this problem set
+    for (const session of processingSessions.values()) {
+      if (session.problemSetId !== problemSetId) continue;
+      for (const entry of session.events) {
+        const enrichedData = { ...entry.data, processId: session.processingId, documentId: session.documentId };
+        res.write(`event: ${entry.event}\n`);
+        res.write(`data: ${JSON.stringify(enrichedData)}\n\n`);
+      }
+    }
+
+    // Register this client for future problem-set-wide events
+    if (!problemSetSSEClients.has(problemSetId)) {
+      problemSetSSEClients.set(problemSetId, new Set());
+    }
+    problemSetSSEClients.get(problemSetId)!.add(res);
+
+    // Send a heartbeat every 30s to keep the connection alive
+    const heartbeat = setInterval(() => {
+      try {
+        res.write(': heartbeat\n\n');
+      } catch {
+        clearInterval(heartbeat);
+      }
+    }, 30_000);
+
+    // Clean up on client disconnect
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      const clients = problemSetSSEClients.get(problemSetId);
+      if (clients) {
+        clients.delete(res);
+        if (clients.size === 0) {
+          problemSetSSEClients.delete(problemSetId);
+        }
+      }
     });
   },
 );
