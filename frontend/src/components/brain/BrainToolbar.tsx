@@ -21,6 +21,7 @@ export interface BrainToolbarProps {
   onNodeFocus?: (nodeId: string) => void;
   onSnapshotClick?: () => void;
   gapCount?: number;
+  onGapClick?: () => void;
 }
 
 // ─── Cluster mode options ─────────────────────────────────────────────────────
@@ -42,6 +43,7 @@ export function BrainToolbar({
   onNodeFocus,
   onSnapshotClick,
   gapCount,
+  onGapClick,
 }: BrainToolbarProps) {
   return (
     <div className="brain-toolbar">
@@ -88,6 +90,7 @@ export function BrainToolbar({
             <button
               type="button"
               className="brain-toolbar-btn brain-toolbar-gap-btn"
+              onClick={onGapClick}
             >
               {/* Brain icon (unicode) */}
               <span className="brain-toolbar-btn-icon">&#x1F9E0;</span>
