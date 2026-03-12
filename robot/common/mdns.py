@@ -123,7 +123,7 @@ async def browse_service(
 
     async with AsyncZeroconf() as azc:
         listener = _Listener()
-        _browser = AsyncServiceBrowser(azc, service_type, listener)  # noqa: F841
+        _browser = AsyncServiceBrowser(azc.zeroconf, service_type, listener)  # noqa: F841
         # Wait up to timeout for services to show up
         await asyncio.sleep(timeout)
         # Now fetch info for all discovered service names
