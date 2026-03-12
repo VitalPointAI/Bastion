@@ -43,11 +43,12 @@ export type RobotConnectionState = (typeof RobotConnectionState)[keyof typeof Ro
 // ---------------------------------------------------------------------------
 
 export const RobotWsMessageType = {
-  register: 'register',
-  state_update: 'state_update',
-  telemetry: 'telemetry',
-  mission_assign: 'mission_assign',
-  mission_rejected: 'mission_rejected',
+  register: 'robot:register',
+  registered: 'robot:registered',
+  state_update: 'robot:state_update',
+  telemetry: 'robot:telemetry',
+  mission_assign: 'mission:assign',
+  mission_rejected: 'mission:rejected',
   auth_request: 'auth_request',
   auth_response: 'auth_response',
   ack: 'ack',
