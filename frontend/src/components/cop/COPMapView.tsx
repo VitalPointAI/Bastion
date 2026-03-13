@@ -72,10 +72,10 @@ function toLatLng(pos: { lat: number; lng: number }): [number, number] {
   return [pos.lat, pos.lng];
 }
 
-// ─── Default map center (roughly CONUS) ─────────────────────────────────────
+// ─── Default map center (Indo-Pacific — aligned with Pacific Strategy scenario) ──
 
-const DEFAULT_CENTER: [number, number] = [38.9, -77.0];
-const DEFAULT_ZOOM = 5;
+const DEFAULT_CENTER: [number, number] = [25.0, 121.5];
+const DEFAULT_ZOOM = 6;
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
