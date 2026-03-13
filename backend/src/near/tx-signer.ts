@@ -31,8 +31,17 @@ const NEAR_RPC_URL = process.env.NEAR_RPC_URL || 'https://rpc.testnet.fastnear.c
 const DID_CONTRACT_ID = process.env.DID_CONTRACT_ID || 'did-registry.testnet';
 const CREDENTIAL_CONTRACT_ID = process.env.CREDENTIAL_CONTRACT_ID || 'credential-registry.testnet';
 
+// Funder account for auto-funding new signing accounts
+const FUNDER_ACCOUNT_ID = process.env.NEAR_FUNDER_ACCOUNT_ID || '';
+const FUNDER_PRIVATE_KEY = process.env.NEAR_FUNDER_PRIVATE_KEY || '';
+
 // Gas limit for contract calls (30 TGas)
 const DEFAULT_GAS = BigInt('30000000000000');
+// Amount to seed new signing accounts (0.1 NEAR — enough for ~hundreds of DID ops)
+const FUNDING_AMOUNT = BigInt('100000000000000000000000'); // 0.1 NEAR in yoctoNEAR
+
+// Track accounts already funded this process lifetime (prevents double-funding on concurrent calls)
+const fundedAccounts = new Set<string>();
 
 // ============================================================================
 // Key Derivation
@@ -78,6 +87,34 @@ export function getSigningAccountId(userSecret: Uint8Array): string {
 }
 
 // ============================================================================
+// Account Auto-Funding
+// ============================================================================
+
+/**
+ * Fund a new signing account by transferring NEAR from the funder account.
+ * Creates the implicit account on-chain so it can sign transactions.
+ */
+async function fundSigningAccount(
+  signingAccountId: string,
+): Promise<{ success: boolean; error?: string }> {
+  if (!FUNDER_ACCOUNT_ID || !FUNDER_PRIVATE_KEY) {
+    return { success: false, error: 'NEAR_FUNDER_ACCOUNT_ID / NEAR_FUNDER_PRIVATE_KEY not configured' };
+  }
+  try {
+    const signer = KeyPairSigner.fromSecretKey(FUNDER_PRIVATE_KEY as KeyPairString);
+    const provider = new JsonRpcProvider({ url: NEAR_RPC_URL });
+    const funderAccount = new Account(FUNDER_ACCOUNT_ID, provider, signer);
+
+    await funderAccount.sendMoney(signingAccountId, FUNDING_AMOUNT);
+    return { success: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`[tx-signer] Failed to fund ${signingAccountId}:`, msg);
+    return { success: false, error: msg };
+  }
+}
+
+// ============================================================================
 // Transaction Signing & Submission
 // ============================================================================
 
@@ -102,6 +139,19 @@ export async function signAndSubmitFunctionCall(
 ): Promise<{ success: boolean; txHash?: string; error?: string }> {
   try {
     const { signingAccountId, keyPairString } = deriveSigningKeyPair(userSecret);
+
+    // Auto-fund the signing account if it doesn't exist yet (skip if already funded this session)
+    if (!fundedAccounts.has(signingAccountId)) {
+      const funded = await isSigningAccountFunded(userSecret);
+      if (!funded) {
+        const fundResult = await fundSigningAccount(signingAccountId);
+        if (!fundResult.success) {
+          return { success: false, error: `Failed to fund signing account: ${fundResult.error}` };
+        }
+        console.log(`[tx-signer] Auto-funded signing account ${signingAccountId}`);
+      }
+      fundedAccounts.add(signingAccountId);
+    }
 
     const signer = KeyPairSigner.fromSecretKey(keyPairString);
     const provider = new JsonRpcProvider({ url: NEAR_RPC_URL });
