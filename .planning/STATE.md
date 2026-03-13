@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 43-05-PLAN.md
-last_updated: "2026-03-12T21:51:43.645Z"
-last_activity: "2026-03-12 - Completed 43-06 Task 1: wired bridge WebSocket (/ws/bridge) and REST routes into backend server; zero TS errors, 85 Python tests green; pending human-verify checkpoint"
+status: completed
+stopped_at: "Completed 44-08: Mission client wiring — robot/mission_client.py, robot/.env.example"
+last_updated: "2026-03-13T22:45:45.473Z"
+last_activity: "2026-03-13 - Completed 44-06: pre-flight validator with DID capability/speed/autonomy/national caveat checks; mission profile registry with resolve/getDefaultProfileForCommand; requirements PRE-01, PRE-02 met"
 progress:
-  total_phases: 59
-  completed_phases: 41
-  total_plans: 370
-  completed_plans: 373
+  total_phases: 60
+  completed_phases: 42
+  total_plans: 378
+  completed_plans: 381
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 43 of 59 (Robot Agent & Local Discovery Bridge) — IN PROGRESS
-Plan: 6 of 6 in current phase — CHECKPOINT (human-verify pending)
-Status: Plan 43-06 Task 1 complete — bridge WebSocket (/ws/bridge) and REST routes (/api/admin/bridge-tokens, /api/bridge/status) wired into backend server; zero TypeScript errors; robot tests 53 passed, bridge tests 32 passed; awaiting human-verify checkpoint for full Phase 43 sign-off
-Last activity: 2026-03-12 - Completed 43-06 Task 1: wired bridge WebSocket (/ws/bridge) and REST routes into backend server; zero TS errors, 85 Python tests green; pending human-verify checkpoint
+Phase: 44 of 59 (Robot Vision Capabilities and Mission Intent Translation) — IN PROGRESS
+Plan: 6 of 8 in current phase — COMPLETE
+Status: Plan 44-06 complete — DID-constrained pre-flight validator (robot/pre_flight.py, 18 tests) and mission behavior profile registry (backend/src/robot/mission-profile-service.ts, 4 default profiles: stealth_recon, direct_resupply, patrol, nato_recon)
+Last activity: 2026-03-13 - Completed 44-06: pre-flight validator with DID capability/speed/autonomy/national caveat checks; mission profile registry with resolve/getDefaultProfileForCommand; requirements PRE-01, PRE-02 met
 
-Progress: ██████████████████████████ 353 plans complete
+Progress: ██████████████████████████ 376 plans complete
 
 ## Performance Metrics
 
@@ -180,6 +180,9 @@ Progress: ███████████████████████�
 | Phase 43-robot-agent-local-discovery-bridge P02 | 7 | 2 tasks | 7 files |
 | Phase 43-robot-agent-local-discovery-bridge P04 | 7 | 2 tasks | 18 files |
 | Phase 43 P05 | 5 | 2 tasks | 4 files |
+| Phase 44-robot-vision-capabilities-and-mission-intent-translation P01 | 12 | 2 tasks | 8 files |
+| Phase 44-robot-vision-capabilities-and-mission-intent-translation P02 | 3 | 2 tasks | 3 files |
+| Phase 44 P08 | 7 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -807,6 +810,14 @@ Recent decisions affecting current work:
 - [Phase 43-robot-agent-local-discovery-bridge]: Raw device data from bridge stored in ironclawAnalysis JSONB field (tagged with origin=bridge) since DiscoveredDevice has no rawData field
 - [Phase 43-robot-agent-local-discovery-bridge]: isDuplicate() is public on RobotMissionService so bridge-ws.ts shares the same dedup Map for relay envelope dedup
 - [Phase 43]: bridge/ui_app.py adapter created to bridge bridge_main.py's create_app(relay,queue) pattern with ui.py's set_state() module-level state approach
+- [Phase 44]: VisionConfig is a standalone Pydantic model (not derived from config.py) — allows per-mission override via MissionParams
+- [Phase 44]: MissionParams.autonomy_policy stays as str='default' — backend resolves full policy, keeping robot client simple
+- [Phase 44]: robot/intent/ and robot/sweep/ created as empty stubs — subsequent plans populate them without structural refactoring
+- [Phase 44-02]: asyncio.to_thread used in VisionEngine.detect_once to keep event loop non-blocking during GPU inference
+- [Phase 44-02]: MockVisionEngine returns every-5th-frame DetectionResult (deterministic) for reproducible simulate-mode tests
+- [Phase 44-02]: All jetson hardware imports guarded with try/except ImportError — Camera/VisionEngine fall back to Mock* on non-Jetson machines
+- [Phase 44]: Vision components stored as module-level globals in mission_client, initialized once in run() to persist across reconnections
+- [Phase 44]: Capabilities_list extracted from register message and passed to receive_loop so pre-flight validation uses same capability set advertised to Bastion
 
 ### Roadmap Evolution
 
@@ -842,6 +853,7 @@ Recent decisions affecting current work:
 - Phase 41 added: Redesign Understanding Tab - Adaptive Brain Visualization
 - Phase 42 added: Resources Tab — Inventory, Discovery & Onboarding
 - Phase 43 added: Robot Agent & Local Discovery Bridge — Python robot agent (outbound WebSocket self-registration/command/telemetry) + Docker network bridge (mDNS/SSDP WiFi scanning, device relay, command proxy). Design note: Raspberry Pi edge node is preferred production architecture but deferred due to procurement/policy constraints.
+- Phase 44 added: Robot vision capabilities and mission intent translation — Camera integration on Jetson Orin Nano for robot vision, plus translating plain text mission intents from Bastion cloud into Sphero RVR+ motor/sensor commands to execute assigned missions within constraints
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
@@ -1512,7 +1524,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-12T21:51:43.635Z
-Stopped at: Completed 43-05-PLAN.md
+Last session: 2026-03-13T22:25:07.974Z
+Stopped at: Completed 44-08: Mission client wiring — robot/mission_client.py, robot/.env.example
 Resume file: None
 Next action: Continue Phase 40 plan 02

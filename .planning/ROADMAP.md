@@ -608,6 +608,23 @@ Plans:
 - [ ] 43-05-PLAN.md — Bridge FastAPI web UI and Docker packaging
 - [ ] 43-06-PLAN.md — Integration wiring and end-to-end verification
 
+### Phase 44: Robot vision capabilities and mission intent translation
+
+**Goal:** Add vision capabilities (CSI camera, detectNet, ORB feature matching) to the Sphero RVR+/Jetson Orin Nano robot, implement mission intent translation (LLM + template fallback), mission behavior profiles, pre-flight DID constraint validation, four new vision-enabled mission types (recon_area, visual_search, overwatch, resupply_route), and sweep path planning
+**Requirements**: [VIS-01, VIS-02, VIS-03, VIS-04, VIS-05, EXEC-01, EXEC-02, EXEC-03, SWEEP-01, SWEEP-02, INT-01, INT-02, PRE-01, PRE-02, MODEL-01, MODEL-02]
+**Depends on:** Phase 43
+**Plans:** 8/8 plans complete
+
+Plans:
+- [ ] 44-01-PLAN.md — Foundation models, config, and package structure
+- [ ] 44-02-PLAN.md — Vision engine (camera, detectNet, simulate mode)
+- [ ] 44-03-PLAN.md — Feature matcher and sweep path planner
+- [ ] 44-04-PLAN.md — Intent translation (template fallback + cloud translator)
+- [ ] 44-05-PLAN.md — Mission executor extension (4 new mission types)
+- [x] 44-06-PLAN.md — Pre-flight validation and mission behavior profiles
+- [ ] 44-07-PLAN.md — Backend TypeScript types, profile service, vision handling
+- [ ] 44-08-PLAN.md — Integration wiring and end-to-end verification
+
 ---
 
 **MCP Tools (deterministic operations - added to MCP server):**

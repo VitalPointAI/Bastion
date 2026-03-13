@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 # Re-export base types from the existing robot/models.py so callers can import
 # everything from robot.common without needing to know the split location.
-from robot.models import (  # noqa: F401 — intentional re-export
+from models import (  # noqa: F401 — intentional re-export
     MissionState,
     TargetLocation,
     Waypoint,

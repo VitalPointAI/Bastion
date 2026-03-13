@@ -35,9 +35,14 @@ import config as cfg
 from calibration import load_profile
 from common.mdns import advertise_service, browse_service
 from common.ws_protocol import send_stamped, stamp
+from intent.fallback import template_translate
 from mission_executor import MissionExecutor
 from models import MissionJSON, RegisterMsg, StateUpdateMsg, TelemetryMsg
+from pre_flight import validate_mission
 from rvr_driver import RVRDriver
+from vision.camera import Camera
+from vision.models import VisionConfig, VisionMsg
+from vision.vision_engine import VisionEngine
 
 log = structlog.get_logger(__name__)
 
@@ -49,6 +54,11 @@ log = structlog.get_logger(__name__)
 _executor: Optional[MissionExecutor] = None
 _driver: Optional[RVRDriver] = None
 _shutdown_event: asyncio.Event = asyncio.Event()
+
+# Vision components initialized in run() and passed to MissionExecutor
+_camera: Optional[Camera] = None
+_vision_engine: Optional[VisionEngine] = None
+_vision_config: Optional[VisionConfig] = None
 
 # ---------------------------------------------------------------------------
 # Registration helpers
@@ -67,7 +77,12 @@ def _build_register_msg() -> dict:
         A plain dict ready for stamping and JSON serialisation.
     """
     robot_id = cfg.ROBOT_ID
-    capabilities = ["patrol_route", "find_engage"]
+    capabilities = [
+        "patrol_route", "find_engage",
+        "recon_area", "visual_search", "overwatch", "resupply_route",
+    ]
+    if cfg.VISION_ENABLED:
+        capabilities.append("vision")
 
     # Priority 1: persisted DID
     did = cfg.load_persisted_did() or cfg.ROBOT_DID
@@ -162,6 +177,10 @@ async def _send_telemetry(ws: websockets.WebSocketClientProtocol, msg: Telemetry
     await send_stamped(ws, msg.model_dump(mode="json"))
 
 
+async def _send_vision(ws: websockets.WebSocketClientProtocol, msg: VisionMsg) -> None:
+    await send_stamped(ws, msg.model_dump(mode="json"))
+
+
 # ---------------------------------------------------------------------------
 # Telemetry heartbeat
 # ---------------------------------------------------------------------------
@@ -212,14 +231,22 @@ async def telemetry_loop(
 async def receive_loop(
     ws: websockets.WebSocketClientProtocol,
     executor: MissionExecutor,
+    capabilities_list: Optional[list] = None,
 ) -> None:
     """
     Main receive loop — parse incoming messages and dispatch by type.
 
     Handles ``robot:registered`` to persist the DID on first-time registration.
     Exits when the connection closes or shutdown is requested.
+
+    Args:
+        ws: Active WebSocket connection.
+        executor: MissionExecutor instance for dispatching missions.
+        capabilities_list: Robot capability strings for pre-flight validation.
     """
     log.info("mission_client.receive_loop.start")
+    if capabilities_list is None:
+        capabilities_list = []
     try:
         async for raw in ws:
             if _shutdown_event.is_set():
@@ -246,6 +273,16 @@ async def receive_loop(
                 log.info("mission_client.received.mission_assign", payload_keys=list(msg.keys()))
                 try:
                     mission = MissionJSON.model_validate(msg.get("payload", msg))
+                    # Pre-flight validation before dispatching to hardware
+                    rejection = validate_mission(
+                        mission,
+                        robot_capabilities=capabilities_list,
+                        autonomy_level=cfg.ROBOT_AUTONOMY_LEVEL,
+                    )
+                    if rejection:
+                        log.warning("mission_client.pre_flight_rejected", reason=rejection)
+                        await executor._transition(mission.mission_id, "rejected", {"reason": rejection})
+                        continue
                     # Run mission in a background task so receive loop stays responsive
                     asyncio.create_task(
                         executor.execute_mission(mission),
@@ -262,6 +299,10 @@ async def receive_loop(
                 approved = bool(msg.get("approved", False))
                 log.info("mission_client.received.auth_response", approved=approved)
                 await executor.handle_auth_response(approved)
+
+            elif msg_type == "robot:profile_response":
+                log.info("mission_client.profile_response", profile=msg.get("profile"))
+                # Profile stored for next mission execution (future enhancement)
 
             else:
                 log.debug("mission_client.received.unknown_type", msg_type=msg_type)
@@ -296,15 +337,21 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
 
         # Build and send registration message (stamped with message_id)
         reg_msg = _build_register_msg()
+        # Extract capabilities list for pre-flight validation in receive loop
+        capabilities_list = reg_msg.get("capabilities", [])
         await send_stamped(ws, reg_msg)
         log.info("mission_client.registered", robot_id=cfg.ROBOT_ID)
 
-        # Build executor with bound WS callbacks
+        # Build executor with bound WS callbacks and vision components
         executor = MissionExecutor(
             driver=driver,
             send_state_fn=lambda msg: _send_state(ws, msg),
             send_telemetry_fn=lambda msg: _send_telemetry(ws, msg),
             robot_id=cfg.ROBOT_ID,
+            vision_engine=_vision_engine,
+            send_vision_fn=(lambda msg: _send_vision(ws, msg)) if _vision_engine else None,
+            vision_config=_vision_config,
+            camera=_camera,
         )
 
         # Store global reference so shutdown can abort active missions
@@ -317,7 +364,7 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
             name="telemetry-loop",
         )
         receive_task = asyncio.create_task(
-            receive_loop(ws, executor),
+            receive_loop(ws, executor, capabilities_list=capabilities_list),
             name="receive-loop",
         )
 
@@ -371,8 +418,38 @@ async def run() -> None:
     except Exception as exc:  # noqa: BLE001
         log.warning("mission_client.wake_error", error=str(exc))
 
+    # Initialize vision engine and camera from config
+    global _camera, _vision_engine, _vision_config
+    if cfg.VISION_ENABLED:
+        _camera = Camera(sensor_id=cfg.CAMERA_SENSOR_ID, simulate=cfg.SIMULATE)
+        _vision_engine = VisionEngine(
+            model=cfg.VISION_MODEL,
+            threshold=cfg.VISION_THRESHOLD,
+            simulate=cfg.SIMULATE,
+        )
+        _vision_config = VisionConfig(
+            enabled=True,
+            model=cfg.VISION_MODEL,
+            threshold=cfg.VISION_THRESHOLD,
+            keyframe_enabled=cfg.KEYFRAME_ENABLED,
+            keyframe_quality=cfg.KEYFRAME_JPEG_QUALITY,
+            vlm_enabled=cfg.VISION_VLM_ENABLED,
+            vision_cadence_ms=cfg.VISION_CADENCE_MS,
+        )
+        log.info(
+            "mission_client.vision_initialized",
+            model=cfg.VISION_MODEL,
+            simulate=cfg.SIMULATE,
+            mock=_vision_engine.is_mock,
+        )
+
     # Discover bridge via mDNS before entering the connection loop
     bridge_url: Optional[str] = await discover_bridge()
+
+    # Build full capabilities string for mDNS advertisement
+    all_caps = "patrol_route,find_engage,recon_area,visual_search,overwatch,resupply_route"
+    if cfg.VISION_ENABLED:
+        all_caps += ",vision"
 
     # Start mDNS advertisement so other peers can discover this robot
     advert_task: Optional[asyncio.Task] = None
@@ -384,7 +461,7 @@ async def run() -> None:
                 port=0,  # Not listening; port is informational
                 properties={
                     "robot_id": cfg.ROBOT_ID,
-                    "capabilities": "patrol_route,find_engage",
+                    "capabilities": all_caps,
                 },
                 shutdown_event=_shutdown_event,
             ),
