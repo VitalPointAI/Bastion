@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: "Completed 44-06: Pre-flight validator and mission profile registry — robot/pre_flight.py, tests/test_pre_flight.py (18 tests), backend/src/robot/mission-profile-service.ts"
-last_updated: "2026-03-13T21:54:00Z"
-last_activity: "2026-03-13 - Completed 44-06: DID-constrained pre-flight validator (Python, 18 tests TDD) and mission behavior profile registry (TypeScript, 4 default profiles)"
+status: completed
+stopped_at: "Completed 44-08: Mission client wiring — robot/mission_client.py, robot/.env.example"
+last_updated: "2026-03-13T22:25:07.992Z"
+last_activity: "2026-03-13 - Completed 44-06: pre-flight validator with DID capability/speed/autonomy/national caveat checks; mission profile registry with resolve/getDefaultProfileForCommand; requirements PRE-01, PRE-02 met"
 progress:
   total_phases: 60
-  completed_phases: 41
+  completed_phases: 42
   total_plans: 378
-  completed_plans: 376
+  completed_plans: 381
 ---
 
 # Project State
@@ -182,6 +182,7 @@ Progress: ███████████████████████�
 | Phase 43 P05 | 5 | 2 tasks | 4 files |
 | Phase 44-robot-vision-capabilities-and-mission-intent-translation P01 | 12 | 2 tasks | 8 files |
 | Phase 44-robot-vision-capabilities-and-mission-intent-translation P02 | 3 | 2 tasks | 3 files |
+| Phase 44 P08 | 7 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -815,6 +816,8 @@ Recent decisions affecting current work:
 - [Phase 44-02]: asyncio.to_thread used in VisionEngine.detect_once to keep event loop non-blocking during GPU inference
 - [Phase 44-02]: MockVisionEngine returns every-5th-frame DetectionResult (deterministic) for reproducible simulate-mode tests
 - [Phase 44-02]: All jetson hardware imports guarded with try/except ImportError — Camera/VisionEngine fall back to Mock* on non-Jetson machines
+- [Phase 44]: Vision components stored as module-level globals in mission_client, initialized once in run() to persist across reconnections
+- [Phase 44]: Capabilities_list extracted from register message and passed to receive_loop so pre-flight validation uses same capability set advertised to Bastion
 
 ### Roadmap Evolution
 
@@ -1521,7 +1524,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-13T21:45:44.890Z
-Stopped at: Completed 44-02: VisionEngine and Camera module — camera.py, vision_engine.py, 6 passing simulate-mode tests
+Last session: 2026-03-13T22:25:07.974Z
+Stopped at: Completed 44-08: Mission client wiring — robot/mission_client.py, robot/.env.example
 Resume file: None
 Next action: Continue Phase 40 plan 02
