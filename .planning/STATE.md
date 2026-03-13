@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: "Completed 44-01: data models and package structure — vision/models.py, extended MissionParams, config vars, package stubs"
-last_updated: "2026-03-13T21:41:39.277Z"
+stopped_at: "Completed 44-02: VisionEngine and Camera module — camera.py, vision_engine.py, 6 passing simulate-mode tests"
+last_updated: "2026-03-13T21:45:44.908Z"
 last_activity: "2026-03-12 - Completed 43-06 Task 1: wired bridge WebSocket (/ws/bridge) and REST routes into backend server; zero TS errors, 85 Python tests green; pending human-verify checkpoint"
 progress:
   total_phases: 60
   completed_phases: 41
   total_plans: 378
-  completed_plans: 374
+  completed_plans: 375
 ---
 
 # Project State
@@ -181,6 +181,7 @@ Progress: ███████████████████████�
 | Phase 43-robot-agent-local-discovery-bridge P04 | 7 | 2 tasks | 18 files |
 | Phase 43 P05 | 5 | 2 tasks | 4 files |
 | Phase 44-robot-vision-capabilities-and-mission-intent-translation P01 | 12 | 2 tasks | 8 files |
+| Phase 44-robot-vision-capabilities-and-mission-intent-translation P02 | 3 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -811,6 +812,9 @@ Recent decisions affecting current work:
 - [Phase 44]: VisionConfig is a standalone Pydantic model (not derived from config.py) — allows per-mission override via MissionParams
 - [Phase 44]: MissionParams.autonomy_policy stays as str='default' — backend resolves full policy, keeping robot client simple
 - [Phase 44]: robot/intent/ and robot/sweep/ created as empty stubs — subsequent plans populate them without structural refactoring
+- [Phase 44-02]: asyncio.to_thread used in VisionEngine.detect_once to keep event loop non-blocking during GPU inference
+- [Phase 44-02]: MockVisionEngine returns every-5th-frame DetectionResult (deterministic) for reproducible simulate-mode tests
+- [Phase 44-02]: All jetson hardware imports guarded with try/except ImportError — Camera/VisionEngine fall back to Mock* on non-Jetson machines
 
 ### Roadmap Evolution
 
@@ -1517,7 +1521,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-13T21:41:39.259Z
-Stopped at: Completed 44-01: data models and package structure — vision/models.py, extended MissionParams, config vars, package stubs
+Last session: 2026-03-13T21:45:44.890Z
+Stopped at: Completed 44-02: VisionEngine and Camera module — camera.py, vision_engine.py, 6 passing simulate-mode tests
 Resume file: None
 Next action: Continue Phase 40 plan 02
