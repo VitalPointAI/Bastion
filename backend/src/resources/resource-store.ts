@@ -205,7 +205,7 @@ export class ResourceStore {
     let idx = 1;
 
     if (filters.missionId) {
-      conditions.push(`mission_id = $${idx++}`);
+      conditions.push(`(mission_id = $${idx++} OR mission_id IS NULL)`);
       params.push(filters.missionId);
     }
     if (filters.category) {

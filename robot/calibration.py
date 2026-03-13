@@ -65,18 +65,17 @@ class CalibrationProfile:
 # Built-in profiles
 # ---------------------------------------------------------------------------
 
-# Demo location: roughly Fort Leavenworth, KS (~39.35°N, 94.92°W)
-# 5m x 8m room maps to ~0.005° lat span (~550m real-world, scaled for visible demo)
-_DEMO_CENTER_LAT = 39.3530
-_DEMO_CENTER_LNG = -94.9200
-_LAT_SPAN = 0.0050  # ~550m at this latitude
-_LNG_SPAN = 0.0065  # ~550m adjusted for longitude scaling
+# Demo location: Taipei, Taiwan (Songshan District) — aligns with Pacific Strategy scenario
+_DEMO_CENTER_LAT = 25.0335
+_DEMO_CENTER_LNG = 121.5645
+_LAT_SPAN = 0.0010  # ~110m at this latitude
+_LNG_SPAN = 0.0010  # ~90m adjusted for longitude scaling
 
 DEFAULT_PROFILES: Dict[str, CalibrationProfile] = {
     "default": CalibrationProfile(
         name="default",
         room_width=5.0,
-        room_height=8.0,
+        room_height=5.0,
         map_bounds=MapBounds(
             minLat=_DEMO_CENTER_LAT - _LAT_SPAN / 2,
             maxLat=_DEMO_CENTER_LAT + _LAT_SPAN / 2,

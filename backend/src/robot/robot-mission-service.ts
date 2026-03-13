@@ -58,7 +58,7 @@ function loadDefaultCalibration(): { room_width: number; room_height: number; ma
   return {
     room_width: 5,
     room_height: 5,
-    map_bounds: { north: 25.001, south: 25.0, east: 121.501, west: 121.5 },
+    map_bounds: { north: 25.0340, south: 25.0330, east: 121.5650, west: 121.5640 },
   };
 }
 
