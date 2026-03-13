@@ -6,25 +6,32 @@ Sphero RVR+ driver. Reports state transitions back to Bastion via callback
 functions supplied at construction time.
 
 Supported commands:
-  - find_engage  : Navigate to target, pause for human authorization, engage
-  - patrol_route : Follow a sequence of waypoints
+  - find_engage     : Navigate to target, pause for human authorization, engage
+  - patrol_route    : Follow a sequence of waypoints
+  - recon_area      : Boustrophedon sweep of an area with vision detection
+  - visual_search   : Sweep area searching for a reference image target
+  - overwatch       : Drive to position, hold, and monitor with continuous vision
+  - resupply_route  : Navigate waypoints with obstacle-aware vision
 """
 from __future__ import annotations
 
 import asyncio
+import base64
 from datetime import datetime
-from typing import Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, List, Optional
 
 import structlog
 
 from models import MissionJSON, MissionParams, MissionState, StateUpdateMsg, TelemetryMsg
 from rvr_driver import RVRDriver
+from vision.models import VisionMsg
 
 log = structlog.get_logger(__name__)
 
 # Type aliases for the callback functions injected by the mission client
 SendStateFn = Callable[[StateUpdateMsg], Awaitable[None]]
 SendTelemetryFn = Callable[[TelemetryMsg], Awaitable[None]]
+SendVisionFn = Callable[[VisionMsg], Awaitable[None]]
 
 
 class MissionExecutor:
@@ -36,6 +43,10 @@ class MissionExecutor:
         send_state_fn: Async callback to send a StateUpdateMsg to Bastion.
         send_telemetry_fn: Async callback to send a TelemetryMsg to Bastion.
         robot_id: Robot identifier (used in telemetry messages).
+        vision_engine: Optional VisionEngine or MockVisionEngine instance.
+        send_vision_fn: Optional async callback to send a VisionMsg to Bastion.
+        vision_config: Optional VisionConfig controlling cadence and keyframe settings.
+        camera: Optional Camera or MockCamera instance for vision capture.
     """
 
     def __init__(
@@ -44,11 +55,19 @@ class MissionExecutor:
         send_state_fn: SendStateFn,
         send_telemetry_fn: SendTelemetryFn,
         robot_id: str,
+        vision_engine: Optional[Any] = None,
+        send_vision_fn: Optional[SendVisionFn] = None,
+        vision_config: Optional[Any] = None,
+        camera: Optional[Any] = None,
     ) -> None:
         self._driver = driver
         self._send_state = send_state_fn
         self._send_telemetry = send_telemetry_fn
         self._robot_id = robot_id
+        self._vision_engine = vision_engine
+        self._send_vision_fn = send_vision_fn
+        self._vision_config = vision_config
+        self._camera = camera
 
         self.current_mission: Optional[MissionJSON] = None
         self.current_state: Optional[MissionState] = None
@@ -71,7 +90,14 @@ class MissionExecutor:
         log_ctx = log.bind(mission_id=mission.mission_id, command=mission.command)
 
         # Validate command
-        supported_commands = {"find_engage", "patrol_route"}
+        supported_commands = {
+            "find_engage",
+            "patrol_route",
+            "recon_area",
+            "visual_search",
+            "overwatch",
+            "resupply_route",
+        }
         if mission.command not in supported_commands:
             log_ctx.warning("mission_executor.unsupported_command")
             await self._transition(
@@ -100,6 +126,42 @@ class MissionExecutor:
             )
             return
 
+        if mission.command == "recon_area" and not mission.params.area:
+            log_ctx.warning("mission_executor.missing_area")
+            await self._transition(
+                mission.mission_id,
+                MissionState.rejected,
+                {"reason": "recon_area requires params.area (x_min, y_min, x_max, y_max)"},
+            )
+            return
+
+        if mission.command == "visual_search" and not mission.params.reference_image_b64:
+            log_ctx.warning("mission_executor.missing_reference_image")
+            await self._transition(
+                mission.mission_id,
+                MissionState.rejected,
+                {"reason": "visual_search requires params.reference_image_b64"},
+            )
+            return
+
+        if mission.command == "overwatch" and mission.params.target_location is None:
+            log_ctx.warning("mission_executor.missing_target_location")
+            await self._transition(
+                mission.mission_id,
+                MissionState.rejected,
+                {"reason": "overwatch requires params.target_location"},
+            )
+            return
+
+        if mission.command == "resupply_route" and not mission.params.waypoints:
+            log_ctx.warning("mission_executor.missing_waypoints")
+            await self._transition(
+                mission.mission_id,
+                MissionState.rejected,
+                {"reason": "resupply_route requires params.waypoints (non-empty list)"},
+            )
+            return
+
         # Accept the mission
         self.current_mission = mission
         self.current_state = MissionState.accepted
@@ -112,6 +174,14 @@ class MissionExecutor:
                 await self._execute_find_engage(mission)
             elif mission.command == "patrol_route":
                 await self._execute_patrol_route(mission)
+            elif mission.command == "recon_area":
+                await self._execute_recon_area(mission)
+            elif mission.command == "visual_search":
+                await self._execute_visual_search(mission)
+            elif mission.command == "overwatch":
+                await self._execute_overwatch(mission)
+            elif mission.command == "resupply_route":
+                await self._execute_resupply_route(mission)
         except asyncio.CancelledError:
             log_ctx.warning("mission_executor.cancelled")
             await self._transition(
@@ -151,6 +221,36 @@ class MissionExecutor:
                 {"reason": "Mission aborted"},
             )
         log.info("mission_executor.aborted")
+
+    # ------------------------------------------------------------------
+    # Vision loop helper
+    # ------------------------------------------------------------------
+
+    async def _vision_loop(self, mission_id: str, stop_event: asyncio.Event) -> None:
+        """Run detection loop at profile-determined cadence. Sends VisionMsg on detections."""
+        cadence_sec = (self._vision_config.vision_cadence_ms / 1000.0) if self._vision_config else 0.5
+        while not stop_event.is_set():
+            try:
+                detections = await self._vision_engine.detect_once(self._camera)
+                if detections and self._send_vision_fn:
+                    keyframe = None
+                    if self._vision_config and self._vision_config.keyframe_enabled:
+                        jpeg = await self._vision_engine.get_keyframe_jpeg(
+                            self._camera, self._vision_config.keyframe_quality
+                        )
+                        if jpeg:
+                            keyframe = base64.b64encode(jpeg).decode()
+                    vision_msg = VisionMsg(
+                        robot_id=self._robot_id,
+                        mission_id=mission_id,
+                        timestamp=datetime.utcnow(),
+                        detections=detections,
+                        keyframe_jpeg_b64=keyframe,
+                    )
+                    await self._send_vision_fn(vision_msg)
+            except Exception as exc:
+                log.warning("mission_executor.vision_loop.error", error=str(exc))
+            await asyncio.sleep(cadence_sec)
 
     # ------------------------------------------------------------------
     # Behaviors
@@ -237,6 +337,252 @@ class MissionExecutor:
 
         await self._transition(mission.mission_id, MissionState.complete)
         log_ctx.info("mission_executor.patrol_route.complete")
+
+    async def _execute_recon_area(self, mission: MissionJSON) -> None:
+        """
+        Recon-area behavior.
+
+        Generates a boustrophedon sweep path over the specified area and drives
+        each waypoint while running a concurrent vision detection loop.
+        """
+        from sweep.path_planner import generate_sweep_path
+
+        log_ctx = log.bind(mission_id=mission.mission_id)
+        area = mission.params.area
+        speed = mission.params.speed
+
+        waypoints = generate_sweep_path(area)
+
+        await self._transition(mission.mission_id, MissionState.executing)
+        await self._driver.set_leds(0, 0, 200)  # blue: recon
+
+        stop_event = asyncio.Event()
+        vision_task = None
+        if self._vision_engine:
+            vision_task = asyncio.ensure_future(
+                self._vision_loop(mission.mission_id, stop_event)
+            )
+
+        try:
+            for idx, wp in enumerate(waypoints):
+                log_ctx.info(
+                    "mission_executor.recon_area.waypoint",
+                    index=idx,
+                    total=len(waypoints),
+                    x=wp.x,
+                    y=wp.y,
+                )
+                await self._driver.drive_to_point(wp.x, wp.y, speed)
+                await self._emit_telemetry(mission.mission_id)
+        finally:
+            stop_event.set()
+            if vision_task:
+                vision_task.cancel()
+                try:
+                    await vision_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+
+        await self._transition(mission.mission_id, MissionState.complete)
+        log_ctx.info("mission_executor.recon_area.complete")
+
+    async def _execute_visual_search(self, mission: MissionJSON) -> None:
+        """
+        Visual-search behavior.
+
+        Sweeps an area using the boustrophedon path while matching each frame
+        against a reference image using ORB feature matching.
+        """
+        from sweep.path_planner import generate_sweep_path
+
+        log_ctx = log.bind(mission_id=mission.mission_id)
+        speed = mission.params.speed
+
+        # Decode and load reference image
+        try:
+            ref_bytes = base64.b64decode(mission.params.reference_image_b64)
+        except Exception as exc:
+            log_ctx.error("mission_executor.visual_search.invalid_reference", error=str(exc))
+            await self._transition(
+                mission.mission_id,
+                MissionState.failed,
+                {"reason": f"Invalid reference_image_b64: {exc}"},
+            )
+            return
+
+        # Attempt feature matcher setup if vision engine available
+        feature_matcher = None
+        if self._vision_engine:
+            try:
+                from vision.feature_matcher import FeatureMatcher
+                feature_matcher = FeatureMatcher()
+                if not feature_matcher.set_reference(ref_bytes):
+                    log_ctx.warning("mission_executor.visual_search.reference_load_failed")
+                    feature_matcher = None
+            except Exception as exc:
+                log_ctx.warning("mission_executor.visual_search.feature_matcher_error", error=str(exc))
+                feature_matcher = None
+
+        # Generate sweep path (use area if provided, else default small area)
+        area = mission.params.area or {"x_min": 0.0, "y_min": 0.0, "x_max": 1.0, "y_max": 1.0}
+        waypoints = generate_sweep_path(area)
+
+        await self._transition(mission.mission_id, MissionState.executing)
+        await self._driver.set_leds(128, 0, 128)  # purple: searching
+
+        stop_event = asyncio.Event()
+        vision_task = None
+        if self._vision_engine:
+            vision_task = asyncio.ensure_future(
+                self._vision_loop(mission.mission_id, stop_event)
+            )
+
+        target_found = False
+        try:
+            for idx, wp in enumerate(waypoints):
+                if target_found:
+                    break
+                log_ctx.info(
+                    "mission_executor.visual_search.waypoint",
+                    index=idx,
+                    total=len(waypoints),
+                    x=wp.x,
+                    y=wp.y,
+                )
+                await self._driver.drive_to_point(wp.x, wp.y, speed)
+                await self._emit_telemetry(mission.mission_id)
+
+                # Run feature matching on current frame if matcher is available
+                if feature_matcher and self._vision_engine:
+                    try:
+                        import numpy as np
+                        import cv2
+                        # Capture a frame via keyframe if possible, else skip match
+                        jpeg = await self._vision_engine.get_keyframe_jpeg(
+                            self._camera, 80
+                        )
+                        if jpeg:
+                            arr = np.frombuffer(jpeg, dtype=np.uint8)
+                            frame_bgr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+                            if frame_bgr is not None:
+                                frame_gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+                                match_result = feature_matcher.match(frame_gray)
+                                if match_result.found:
+                                    target_found = True
+                                    log_ctx.info("mission_executor.visual_search.target_found")
+                                    if self._send_vision_fn:
+                                        vision_msg = VisionMsg(
+                                            robot_id=self._robot_id,
+                                            mission_id=mission.mission_id,
+                                            timestamp=datetime.utcnow(),
+                                            target_match=match_result,
+                                        )
+                                        await self._send_vision_fn(vision_msg)
+                    except Exception as exc:
+                        log_ctx.warning("mission_executor.visual_search.match_error", error=str(exc))
+        finally:
+            stop_event.set()
+            if vision_task:
+                vision_task.cancel()
+                try:
+                    await vision_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+
+        result = "target_found" if target_found else "target_not_found"
+        await self._transition(
+            mission.mission_id,
+            MissionState.complete,
+            {"result": result},
+        )
+        log_ctx.info("mission_executor.visual_search.complete", result=result)
+
+    async def _execute_overwatch(self, mission: MissionJSON) -> None:
+        """
+        Overwatch behavior.
+
+        Drives to target position, holds, and continuously monitors with vision.
+        Completes on duration_sec timeout or external abort.
+        """
+        log_ctx = log.bind(mission_id=mission.mission_id)
+        target = mission.params.target_location
+        speed = mission.params.speed
+        duration_sec = mission.params.duration_sec
+
+        await self._driver.drive_to_point(target.x, target.y, speed)
+        await self._emit_telemetry(mission.mission_id)
+
+        await self._transition(mission.mission_id, MissionState.executing)
+        await self._driver.set_leds(0, 200, 200)  # cyan: overwatch
+
+        stop_event = asyncio.Event()
+        vision_task = None
+        if self._vision_engine:
+            vision_task = asyncio.ensure_future(
+                self._vision_loop(mission.mission_id, stop_event)
+            )
+
+        try:
+            if duration_sec is not None:
+                await asyncio.sleep(duration_sec)
+            else:
+                # Hold indefinitely until cancelled
+                await asyncio.Event().wait()
+        finally:
+            stop_event.set()
+            if vision_task:
+                vision_task.cancel()
+                try:
+                    await vision_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+
+        await self._transition(mission.mission_id, MissionState.complete)
+        log_ctx.info("mission_executor.overwatch.complete")
+
+    async def _execute_resupply_route(self, mission: MissionJSON) -> None:
+        """
+        Resupply-route behavior.
+
+        Navigates a sequence of waypoints with obstacle-aware vision monitoring.
+        Vision detections are logged/sent but do not alter the route.
+        """
+        log_ctx = log.bind(mission_id=mission.mission_id)
+        waypoints = mission.params.waypoints
+        speed = mission.params.speed
+
+        await self._transition(mission.mission_id, MissionState.executing)
+        await self._driver.set_leds(0, 200, 0)  # green: navigating
+
+        stop_event = asyncio.Event()
+        vision_task = None
+        if self._vision_engine:
+            vision_task = asyncio.ensure_future(
+                self._vision_loop(mission.mission_id, stop_event)
+            )
+
+        try:
+            for idx, wp in enumerate(waypoints):
+                log_ctx.info(
+                    "mission_executor.resupply_route.waypoint",
+                    index=idx,
+                    total=len(waypoints),
+                    x=wp.x,
+                    y=wp.y,
+                )
+                await self._driver.drive_to_point(wp.x, wp.y, speed)
+                await self._emit_telemetry(mission.mission_id)
+        finally:
+            stop_event.set()
+            if vision_task:
+                vision_task.cancel()
+                try:
+                    await vision_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+
+        await self._transition(mission.mission_id, MissionState.complete)
+        log_ctx.info("mission_executor.resupply_route.complete")
 
     # ------------------------------------------------------------------
     # Helpers
