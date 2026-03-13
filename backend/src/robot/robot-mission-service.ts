@@ -27,6 +27,7 @@ import type {
   MissionAssignMsg,
   RobotAckMsg,
   MissionJSON,
+  RobotVisionMsg,
 } from './robot-types.js';
 import { robotStore } from './robot-store.js';
 import { gateService } from '../gates/gate-service.js';
@@ -35,6 +36,10 @@ import type { AuthResponseMsg } from './robot-types.js';
 import { problemSetActivityStore } from '../problem-set/problem-set-activity-store.js';
 import { getResourceRegistry } from '../resources/resource-registry.js';
 import { getResourceTelemetryService } from '../resources/resource-telemetry.js';
+import { getMissionProfileService } from './mission-profile-service.js';
+import type { MissionProfile } from './mission-profile-service.js';
+import { getMessageBus } from '../messaging/message-bus.js';
+import Anthropic from '@anthropic-ai/sdk';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -193,6 +198,19 @@ export class RobotMissionService {
           console.error('[RobotMissionService] handleAuthRequest error:', err),
         );
         break;
+      case RobotWsMessageType.vision:
+        this.handleVisionMsg(msg as RobotVisionMsg);
+        break;
+      case RobotWsMessageType.profile_request: {
+        const profileReq = msg as { profile_name?: string; command?: string; message_id?: string };
+        const resolvedProfile = this.resolveProfile(profileReq.profile_name, profileReq.command);
+        this.safeSend(ws, {
+          type: RobotWsMessageType.profile_response,
+          profile: resolvedProfile,
+          ref_message_id: profileReq.message_id,
+        });
+        break;
+      }
       default:
         console.warn('[RobotMissionService] Unknown message type:', (msg as { type: string }).type);
         this.sendError(ws, `Unknown message type: ${(msg as { type: string }).type}`);
@@ -413,6 +431,35 @@ export class RobotMissionService {
         success: false,
         error: `Robot ${mission.robot_id} is not connected (direct or via bridge)`,
       };
+    }
+
+    // Resolve behavior profile before dispatch
+    const profile = this.resolveProfile(mission.params.profile_name, mission.command);
+    console.log(
+      `[RobotMissionService] Mission ${mission.mission_id} using profile '${profile.name}'`,
+    );
+
+    // Pre-flight validation (DID, capabilities, speed, autonomy level)
+    const robotDid = robot?.did ?? '';
+    if (robotDid) {
+      const preflight = await this.runPreFlightValidation(mission, robotDid);
+      if (!preflight.valid) {
+        const reason = preflight.reason ?? 'pre-flight validation failed';
+        console.warn(`[RobotMissionService] Mission ${mission.mission_id} rejected — ${reason}`);
+        await robotStore.saveMission({
+          mission_id: mission.mission_id,
+          robot_id: mission.robot_id,
+          problem_set_id: mission.problem_set_id,
+          command: mission.command,
+          params: mission.params,
+          issued_by: mission.issued_by,
+          state: RobotMissionState.rejected,
+        });
+        await robotStore.updateMissionState(mission.mission_id, RobotMissionState.rejected, {
+          rejectionReason: reason,
+        });
+        return { success: false, error: reason };
+      }
     }
 
     // Authority check: speed limit from autonomy policy
@@ -712,6 +759,231 @@ export class RobotMissionService {
       await registry.updateResourceStatus(resourceId, 'NMC');
       this.robotResourceIds.delete(did);
       console.log(`[RobotMissionService] Resource bridge: marked resource ${resourceId} as NMC (disconnected)`);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Vision message handling (Phase 44)
+  // -------------------------------------------------------------------------
+
+  /** Handle an inbound robot:vision message from the robot. */
+  handleVisionMsg(msg: RobotVisionMsg): void {
+    const robot = this.connectedRobots.get(msg.robot_id);
+    if (robot) {
+      robot.latest_vision = msg;
+    }
+
+    if (msg.mission_id) {
+      console.log(
+        `[RobotMissionService] Vision event from ${msg.robot_id}, mission=${msg.mission_id}, detections=${msg.detections.length}`,
+      );
+    } else {
+      console.log(
+        `[RobotMissionService] Vision event from ${msg.robot_id} (idle), detections=${msg.detections.length}`,
+      );
+    }
+
+    // Publish to message bus for UI and downstream consumers
+    const messageBus = getMessageBus();
+    messageBus.publish({
+      sourceDid: robot?.did ?? msg.robot_id,
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: 'robot:vision',
+      messageType: 'robot.vision.detection',
+      payload: msg as unknown as Record<string, unknown>,
+    }).catch((err) => {
+      console.warn('[RobotMissionService] Failed to publish vision event to message bus:', err);
+    });
+
+    // Log keyframe size for bandwidth monitoring
+    if (msg.keyframe_jpeg_b64) {
+      const sizeKb = Math.round((msg.keyframe_jpeg_b64.length * 3) / 4 / 1024);
+      console.log(`[RobotMissionService] Vision keyframe from ${msg.robot_id}: ~${sizeKb} KB`);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Profile resolution (Phase 44)
+  // -------------------------------------------------------------------------
+
+  /** Resolve a mission behavior profile by name, falling back to command-based default. */
+  resolveProfile(profileName?: string, command?: string): MissionProfile {
+    const profileService = getMissionProfileService();
+
+    if (profileName) {
+      const resolved = profileService.resolveProfile(profileName);
+      if (resolved) {
+        console.log(`[RobotMissionService] Resolved profile '${profileName}' for command '${command ?? 'unspecified'}'`);
+        return resolved;
+      }
+      console.warn(`[RobotMissionService] Profile '${profileName}' not found, falling back to command default`);
+    }
+
+    const defaultProfile = profileService.getDefaultProfileForCommand(command ?? '');
+    console.log(
+      `[RobotMissionService] Using default profile '${defaultProfile.name}' for command '${command ?? 'unspecified'}'`,
+    );
+    return defaultProfile;
+  }
+
+  // -------------------------------------------------------------------------
+  // Pre-flight validation (Phase 44)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Run pre-flight validation before dispatching a mission.
+   * Checks DID registration, capabilities, autonomy level, speed, and issuer DID format.
+   */
+  async runPreFlightValidation(
+    mission: MissionJSON,
+    robotDid: string,
+  ): Promise<{ valid: boolean; reason?: string }> {
+    // Validate issuer DID format — must start with "did:"
+    if (!mission.issued_by.startsWith('did:')) {
+      return { valid: false, reason: `issued_by must be a valid DID (got: ${mission.issued_by})` };
+    }
+
+    // Look up robot in the resource registry
+    const registry = getResourceRegistry();
+    await registry.ensureInitialized();
+
+    const resource = registry.getByDID(robotDid);
+    if (!resource) {
+      return { valid: false, reason: `Robot not registered (DID: ${robotDid})` };
+    }
+
+    // Map command to required capability
+    const commandCapabilityMap: Record<string, string> = {
+      patrol_route: 'patrol',
+      find_engage: 'find_engage',
+      recon_area: 'ISR',
+      visual_search: 'ISR',
+      overwatch: 'patrol',
+      resupply_route: 'resupply',
+    };
+
+    const requiredCapability = commandCapabilityMap[mission.command];
+    if (requiredCapability) {
+      const hasCapability = resource.capabilities.includes(requiredCapability) ||
+        resource.capabilities.includes('ISR') ||
+        resource.capabilities.includes('patrol');
+
+      if (!hasCapability && !['patrol_route', 'overwatch'].includes(mission.command)) {
+        return {
+          valid: false,
+          reason: `Robot lacks required capability '${requiredCapability}' for command '${mission.command}'`,
+        };
+      }
+    }
+
+    // Check autonomy level — find_engage requires autonomyLevel >= 3
+    const autonomyLevel = resource.specifications?.autonomyLevel as number | undefined;
+    if (mission.command === 'find_engage' && autonomyLevel !== undefined && autonomyLevel < 3) {
+      return {
+        valid: false,
+        reason: `Command 'find_engage' requires autonomy level >= 3 (robot has: ${autonomyLevel})`,
+      };
+    }
+
+    // Resolve the profile to check speed limit
+    const profile = this.resolveProfile(mission.params.profile_name, mission.command);
+    if (mission.params.speed > profile.max_speed) {
+      return {
+        valid: false,
+        reason: `Mission speed (${mission.params.speed}) exceeds profile '${profile.name}' max_speed (${profile.max_speed})`,
+      };
+    }
+
+    return { valid: true };
+  }
+
+  // -------------------------------------------------------------------------
+  // Intent translation (Phase 44)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Translate natural language intent into a MissionJSON array using Anthropic Claude.
+   * This is the cloud path of the dual intent translation architecture.
+   */
+  async translateIntent(text: string, robotId: string, issuedBy: string): Promise<MissionJSON[]> {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      console.error('[RobotMissionService] translateIntent: ANTHROPIC_API_KEY not set');
+      return [];
+    }
+
+    const client = new Anthropic({ apiKey });
+
+    const systemPrompt = `You are a military mission planner. Convert natural language intent into structured mission JSON.
+
+Available commands:
+- patrol_route: Navigate a series of waypoints (params: waypoints array with x,y coords)
+- find_engage: Search and engage a target (params: target_location with x,y, requires autonomy)
+- recon_area: Reconnaissance of an area (params: area bounding box x_min,y_min,x_max,y_max)
+- visual_search: Visual search for a target using camera (params: area, optionally reference_image_b64)
+- overwatch: Hold position and monitor (params: target_location or area)
+- resupply_route: Navigate a resupply corridor (params: waypoints)
+
+Output a JSON array of mission objects. Each mission must have:
+- mission_id: a UUID v4
+- robot_id: the robot ID provided
+- command: one of the commands above
+- params: object with speed (0-255), autonomy_policy (autonomous_actions:[], restricted_actions:[], max_speed:255, lethal_effects_permitted:false), and command-specific params
+- issued_by: the issuer DID provided
+- timestamp: current ISO timestamp
+
+Return ONLY valid JSON, no markdown.`;
+
+    try {
+      const response = await client.messages.create({
+        model: 'claude-haiku-4-20250514',
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: `Robot ID: ${robotId}\nIssued by: ${issuedBy}\nIntent: ${text}`,
+          },
+        ],
+      });
+
+      const content = response.content[0];
+      if (content.type !== 'text') {
+        console.error('[RobotMissionService] translateIntent: unexpected response type');
+        return [];
+      }
+
+      let parsed: unknown;
+      try {
+        // Strip markdown code fences if present
+        const cleaned = content.text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+        parsed = JSON.parse(cleaned);
+      } catch (parseErr) {
+        console.error('[RobotMissionService] translateIntent: failed to parse LLM response as JSON', parseErr);
+        return [];
+      }
+
+      if (!Array.isArray(parsed)) {
+        console.error('[RobotMissionService] translateIntent: LLM response is not an array');
+        return [];
+      }
+
+      const missions: MissionJSON[] = [];
+      for (const item of parsed) {
+        const result = MissionJSONSchema.safeParse(item);
+        if (result.success) {
+          missions.push(result.data);
+        } else {
+          console.warn('[RobotMissionService] translateIntent: skipped invalid mission item:', result.error.flatten());
+        }
+      }
+
+      console.log(`[RobotMissionService] translateIntent: generated ${missions.length} mission(s) from intent`);
+      return missions;
+    } catch (err) {
+      console.error('[RobotMissionService] translateIntent: LLM call failed:', err);
+      return [];
     }
   }
 

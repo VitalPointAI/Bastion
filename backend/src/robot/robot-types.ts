@@ -58,6 +58,10 @@ export const RobotWsMessageType = {
   bridge_registered: 'bridge:registered',
   bridge_discovery_report: 'bridge:discovery_report',
   bridge_robot_relay: 'bridge:robot_relay',
+  // Vision message types (Phase 44)
+  vision: 'robot:vision',
+  profile_request: 'robot:profile_request',
+  profile_response: 'robot:profile_response',
 } as const;
 
 export type RobotWsMessageType = (typeof RobotWsMessageType)[keyof typeof RobotWsMessageType];
@@ -85,7 +89,7 @@ export const MissionJSONSchema = z.object({
   /** Target robot identifier */
   robot_id: z.string().min(1),
   /** Mission type */
-  command: z.enum(['patrol_route', 'find_engage']),
+  command: z.enum(['patrol_route', 'find_engage', 'recon_area', 'visual_search', 'overwatch', 'resupply_route']),
   /** Mission-specific parameters */
   params: z.object({
     /** Target location for find_engage missions (room-relative coordinates) */
@@ -98,6 +102,17 @@ export const MissionJSONSchema = z.object({
     duration_sec: z.number().positive().optional(),
     /** Autonomy policy scoping what the robot can do without authorization */
     autonomy_policy: AutonomyPolicySchema,
+    /** Behavior profile name to apply for this mission */
+    profile_name: z.string().optional(),
+    /** Operational area bounding box (room-relative coordinates) */
+    area: z.object({
+      x_min: z.number(),
+      y_min: z.number(),
+      x_max: z.number(),
+      y_max: z.number(),
+    }).optional(),
+    /** Base64-encoded reference image for target matching (ORB feature matching) */
+    reference_image_b64: z.string().optional(),
   }),
   /** DID of the entity issuing the mission (e.g. DAO account) */
   issued_by: z.string().min(1),
@@ -260,6 +275,39 @@ export interface BridgeRobotRelayMsg {
 }
 
 // ---------------------------------------------------------------------------
+// Vision message types (Phase 44)
+// ---------------------------------------------------------------------------
+
+/** Detection result from robot vision engine */
+export interface VisionDetection {
+  class_desc: string;
+  confidence: number;
+  bbox: { left: number; top: number; right: number; bottom: number };
+  center_x?: number;
+  center_y?: number;
+}
+
+/** Target match result from ORB feature matching */
+export interface VisionTargetMatch {
+  found: boolean;
+  confidence: number;
+  match_count: number;
+}
+
+/** Robot -> Bastion: vision detection event (asynchronous, on-detection) */
+export interface RobotVisionMsg {
+  type: typeof RobotWsMessageType.vision;
+  robot_id: string;
+  mission_id?: string;
+  timestamp: string;
+  detections: VisionDetection[];
+  scene_description?: string;
+  target_match?: VisionTargetMatch;
+  keyframe_jpeg_b64?: string;
+  message_id?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Union type for all inbound robot messages
 // ---------------------------------------------------------------------------
 
@@ -270,7 +318,8 @@ export type RobotWsMessage =
   | AuthRequestMsg
   | BridgeRegisterMsg
   | BridgeDiscoveryReportMsg
-  | BridgeRobotRelayMsg;
+  | BridgeRobotRelayMsg
+  | RobotVisionMsg;
 
 // ---------------------------------------------------------------------------
 // Connected Robot — in-memory state for a live WS connection
@@ -297,6 +346,8 @@ export interface ConnectedRobot {
     heading: number;
     battery: number;
   };
+  /** Latest vision event received from this robot */
+  latest_vision?: RobotVisionMsg;
 }
 
 // ---------------------------------------------------------------------------
