@@ -32,7 +32,7 @@ function loadProfiles(): Record<string, CalibrationProfile> {
       default: {
         room_width: 5,
         room_height: 5,
-        map_bounds: { north: 25.001, south: 25.0, east: 121.501, west: 121.5 },
+        map_bounds: { north: 25.0340, south: 25.0330, east: 121.5650, west: 121.5640 },
       },
     };
     if (!existsSync(CALIBRATION_DIR)) mkdirSync(CALIBRATION_DIR, { recursive: true });

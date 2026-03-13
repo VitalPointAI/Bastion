@@ -88,12 +88,15 @@ function createRobotIcon(state: string): L.DivIcon {
 // ─── Room-to-map coordinate transform (MVP linear mapping) ──────────────────
 
 function roomToLatLng(x: number, y: number): [number, number] {
-  // MVP: simple linear mapping from room coords (0-10m range) to map coords
-  // centered around a default position. Real calibration in Plan 05.
-  const baseLat = 25.0;
-  const baseLng = 121.5;
-  const scale = 0.0001; // ~11m per 0.0001 degree
-  return [baseLat + y * scale, baseLng + x * scale];
+  // Linear mapping from room coords (0-5m range) to geo bounds in Taipei, Taiwan.
+  // Must match backend calibration in robot-mission-service.ts.
+  const south = 25.0330, north = 25.0340;
+  const west = 121.5640, east = 121.5650;
+  const roomWidth = 5, roomHeight = 5;
+  return [
+    south + (y / roomHeight) * (north - south),
+    west + (x / roomWidth) * (east - west),
+  ];
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
