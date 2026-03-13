@@ -135,12 +135,15 @@ jobs:
             cd /home/deploy/bastion
 
             # Pull latest code (for docker-compose.prod.yml, database files)
+            # Use HTTPS + token instead of SSH (org policy blocks deploy keys)
             # Preserve env files (not tracked in git) across reset
             for f in .env .env.prod backend/.env; do
               [ -f "$f" ] && cp "$f" "$f.bak"
             done
+            git remote set-url origin https://x-access-token:${{ secrets.DEPLOY_TOKEN }}@github.com/VitalPointAI/Bastion.git
             git fetch origin master
             git reset --hard origin/master
+            git remote set-url origin git@github.com:VitalPointAI/Bastion.git
             for f in .env .env.prod backend/.env; do
               [ -f "$f.bak" ] && mv "$f.bak" "$f"
             done
