@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: "Completed 44-02: VisionEngine and Camera module — camera.py, vision_engine.py, 6 passing simulate-mode tests"
-last_updated: "2026-03-13T21:45:44.908Z"
-last_activity: "2026-03-12 - Completed 43-06 Task 1: wired bridge WebSocket (/ws/bridge) and REST routes into backend server; zero TS errors, 85 Python tests green; pending human-verify checkpoint"
+stopped_at: "Completed 44-06: Pre-flight validator and mission profile registry — robot/pre_flight.py, tests/test_pre_flight.py (18 tests), backend/src/robot/mission-profile-service.ts"
+last_updated: "2026-03-13T21:54:00Z"
+last_activity: "2026-03-13 - Completed 44-06: DID-constrained pre-flight validator (Python, 18 tests TDD) and mission behavior profile registry (TypeScript, 4 default profiles)"
 progress:
   total_phases: 60
   completed_phases: 41
   total_plans: 378
-  completed_plans: 375
+  completed_plans: 376
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 43 of 59 (Robot Agent & Local Discovery Bridge) — IN PROGRESS
-Plan: 6 of 6 in current phase — CHECKPOINT (human-verify pending)
-Status: Plan 43-06 Task 1 complete — bridge WebSocket (/ws/bridge) and REST routes (/api/admin/bridge-tokens, /api/bridge/status) wired into backend server; zero TypeScript errors; robot tests 53 passed, bridge tests 32 passed; awaiting human-verify checkpoint for full Phase 43 sign-off
-Last activity: 2026-03-12 - Completed 43-06 Task 1: wired bridge WebSocket (/ws/bridge) and REST routes into backend server; zero TS errors, 85 Python tests green; pending human-verify checkpoint
+Phase: 44 of 59 (Robot Vision Capabilities and Mission Intent Translation) — IN PROGRESS
+Plan: 6 of 8 in current phase — COMPLETE
+Status: Plan 44-06 complete — DID-constrained pre-flight validator (robot/pre_flight.py, 18 tests) and mission behavior profile registry (backend/src/robot/mission-profile-service.ts, 4 default profiles: stealth_recon, direct_resupply, patrol, nato_recon)
+Last activity: 2026-03-13 - Completed 44-06: pre-flight validator with DID capability/speed/autonomy/national caveat checks; mission profile registry with resolve/getDefaultProfileForCommand; requirements PRE-01, PRE-02 met
 
-Progress: ██████████████████████████ 353 plans complete
+Progress: ██████████████████████████ 376 plans complete
 
 ## Performance Metrics
 

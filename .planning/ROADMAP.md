@@ -621,7 +621,7 @@ Plans:
 - [ ] 44-03-PLAN.md — Feature matcher and sweep path planner
 - [ ] 44-04-PLAN.md — Intent translation (template fallback + cloud translator)
 - [ ] 44-05-PLAN.md — Mission executor extension (4 new mission types)
-- [ ] 44-06-PLAN.md — Pre-flight validation and mission behavior profiles
+- [x] 44-06-PLAN.md — Pre-flight validation and mission behavior profiles
 - [ ] 44-07-PLAN.md — Backend TypeScript types, profile service, vision handling
 - [ ] 44-08-PLAN.md — Integration wiring and end-to-end verification
 
