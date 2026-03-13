@@ -1,8 +1,8 @@
 """
 Vision engine module for Bastion robot vision subsystem.
 
-Wraps jetson-inference ``detectNet`` for object detection with a full simulate
-mode (``MockVisionEngine``) for development and CI environments.
+Uses ultralytics YOLOv8 for object detection with a full simulate mode
+(``MockVisionEngine``) for development and CI environments.
 
 Architecture note
 -----------------
@@ -77,17 +77,17 @@ class MockVisionEngine:
 
 
 # ---------------------------------------------------------------------------
-# Real implementation (Jetson hardware with jetson-inference)
+# Real implementation (YOLOv8 via ultralytics)
 # ---------------------------------------------------------------------------
 
 
 class VisionEngine:
     """
-    detectNet-based vision engine for Jetson hardware.
+    YOLOv8-based vision engine for object detection.
 
     Falls back to :class:`MockVisionEngine` when:
     - ``simulate=True`` is passed, or
-    - ``jetson.inference`` cannot be imported (non-Jetson machine).
+    - ``ultralytics`` cannot be imported.
 
     The ``detect_once`` coroutine offloads synchronous inference to a thread
     pool via ``asyncio.to_thread`` so it never blocks the event loop.
@@ -101,30 +101,32 @@ class VisionEngine:
 
     def __init__(
         self,
-        model: str = "ssd-mobilenet-v2",
+        model: str = "yolov8n.pt",
         threshold: float = 0.5,
         simulate: bool = False,
     ) -> None:
         self._mock: Optional[MockVisionEngine] = None
-        self._net = None  # jetson.inference.detectNet, if available
+        self._model = None
+        self._threshold = threshold
 
         if simulate:
             self._mock = MockVisionEngine()
             return
 
         try:
-            import jetson.inference  # noqa: F401  — Jetson hardware only
+            from ultralytics import YOLO
 
-            self._net = jetson.inference.detectNet(model, threshold=threshold)
+            self._model = YOLO(model)
+            log.info("vision_engine.yolo_loaded", model=model)
         except (ImportError, ModuleNotFoundError):
             log.warning(
-                "jetson.inference not available — falling back to MockVisionEngine",
+                "ultralytics not available — falling back to MockVisionEngine",
                 model=model,
             )
             self._mock = MockVisionEngine()
-        except Exception as exc:  # pragma: no cover — hardware-only path
+        except Exception as exc:
             log.warning(
-                "Failed to load detectNet — falling back to MockVisionEngine",
+                "Failed to load YOLO model — falling back to MockVisionEngine",
                 model=model,
                 error=str(exc),
             )
@@ -136,7 +138,7 @@ class VisionEngine:
 
     def _capture_and_detect(self, camera) -> List[DetectionResult]:
         """
-        Synchronous: capture a frame from *camera* and run detectNet inference.
+        Synchronous: capture a frame from *camera* and run YOLO inference.
 
         This method is designed to be called via ``asyncio.to_thread`` so that
         blocking GPU inference does not stall the event loop.
@@ -145,23 +147,34 @@ class VisionEngine:
         if img is None:
             return []
 
-        raw_detections = self._net.Detect(img)  # type: ignore[union-attr]
+        # Convert CUDA image to numpy if needed
+        try:
+            import jetson.utils
+            img_np = jetson.utils.cudaToNumpy(img)
+        except (ImportError, Exception):
+            img_np = img  # Already numpy (e.g. from OpenCV capture)
+
+        raw_results = self._model(img_np, conf=self._threshold, verbose=False)
         results: List[DetectionResult] = []
-        for det in raw_detections:
-            results.append(
-                DetectionResult(
-                    class_desc=self._net.GetClassDesc(det.ClassID),  # type: ignore[union-attr]
-                    confidence=float(det.Confidence),
-                    bbox={
-                        "left": float(det.Left),
-                        "top": float(det.Top),
-                        "right": float(det.Right),
-                        "bottom": float(det.Bottom),
-                    },
-                    center_x=float(det.Center[0]),
-                    center_y=float(det.Center[1]),
+
+        for r in raw_results:
+            for box in r.boxes:
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
+                cls_id = int(box.cls[0])
+                results.append(
+                    DetectionResult(
+                        class_desc=self._model.names[cls_id],
+                        confidence=float(box.conf[0]),
+                        bbox={
+                            "left": x1,
+                            "top": y1,
+                            "right": x2,
+                            "bottom": y2,
+                        },
+                        center_x=(x1 + x2) / 2.0,
+                        center_y=(y1 + y2) / 2.0,
+                    )
                 )
-            )
         return results
 
     # ------------------------------------------------------------------

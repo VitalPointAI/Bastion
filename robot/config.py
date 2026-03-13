@@ -100,8 +100,8 @@ RECONNECT_MAX_DELAY: float = float(_optional("RECONNECT_MAX_DELAY", "60.0"))
 VISION_ENABLED: bool = _optional("VISION_ENABLED", "true").lower() in ("true", "1", "yes")
 """When True, initialize camera and vision engine at startup."""
 
-VISION_MODEL: str = _optional("VISION_MODEL", "ssd-mobilenet-v2")
-"""detectNet model name (e.g. ssd-mobilenet-v2, ssd-inception-v2)."""
+VISION_MODEL: str = _optional("VISION_MODEL", "yolov8n.pt")
+"""YOLO model name (e.g. yolov8n.pt, yolov8s.pt, yolov8m.pt)."""
 
 VISION_THRESHOLD: float = float(_optional("VISION_THRESHOLD", "0.5"))
 """Minimum detection confidence threshold (0.0 - 1.0)."""
