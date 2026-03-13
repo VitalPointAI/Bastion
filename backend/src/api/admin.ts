@@ -2189,12 +2189,12 @@ function generateSystemPromptFromCharacter(
 }
 
 // ============================================================================
-// Funding Contract Management (Phase 1.3)
+// Funder Account Management
 // ============================================================================
 
 /**
  * GET /api/admin/funding/status
- * Get funding contract status (balance, total funded, etc.)
+ * Get funder account balance and stats
  */
 router.get('/funding/status', async (req: Request, res: Response) => {
   try {
@@ -2203,15 +2203,15 @@ router.get('/funding/status', async (req: Request, res: Response) => {
     if (!fundingService.isEnabled()) {
       res.json({
         enabled: false,
-        message: 'Funding contract not configured'
+        message: 'Funder account not configured. Set NEAR_FUNDER_ACCOUNT_ID and NEAR_FUNDER_PRIVATE_KEY.',
       });
       return;
     }
 
-    const status = await fundingService.getContractStatus();
+    const status = await fundingService.getFunderStatus();
 
     if (!status) {
-      res.status(500).json({ error: 'Failed to fetch contract status' });
+      res.status(500).json({ error: 'Failed to query funder account' });
       return;
     }
 
@@ -2221,17 +2221,20 @@ router.get('/funding/status', async (req: Request, res: Response) => {
       return (Number(value) / 1e24).toFixed(4);
     };
 
+    const fundingAmount = BigInt(status.fundingAmountPerAccount);
+    const available = BigInt(status.availableBalance);
+    const accountsRemaining = fundingAmount > 0n
+      ? Number(available / fundingAmount)
+      : 0;
+
     res.json({
       enabled: true,
-      contractId: process.env.NEAR_FUNDING_CONTRACT_ID,
+      funderAccountId: fundingService.getFunderAccountId(),
       balance: yoctoToNear(status.balance),
       availableBalance: yoctoToNear(status.availableBalance),
-      fundingAmountPerAccount: yoctoToNear(status.fundingAmount),
-      totalAccountsFunded: status.totalFunded,
-      // Estimate accounts remaining
-      accountsRemaining: status.fundingAmount !== '0'
-        ? Math.floor(Number(BigInt(status.availableBalance)) / Number(BigInt(status.fundingAmount)))
-        : 0
+      fundingAmountPerAccount: yoctoToNear(status.fundingAmountPerAccount),
+      totalFundedThisSession: status.totalFundedThisSession,
+      accountsRemaining,
     });
   } catch (error) {
     console.error('[admin] Funding status error:', error);
@@ -2241,36 +2244,30 @@ router.get('/funding/status', async (req: Request, res: Response) => {
 
 /**
  * GET /api/admin/funding/history
- * Get recent funding activity
+ * Get recent funding activity (in-memory log from this server process)
  */
 router.get('/funding/history', async (req: Request, res: Response) => {
   try {
     const fundingService = getFundingService();
 
     if (!fundingService.isEnabled()) {
-      res.json({
-        enabled: false,
-        history: []
-      });
+      res.json({ enabled: false, history: [] });
       return;
     }
 
-    const fromIndex = parseInt(req.query.from as string) || 0;
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const activity = fundingService.getRecentActivity(limit);
 
-    const history = await fundingService.getFundingHistory(fromIndex, limit);
-
-    // Format history items
-    const formattedHistory = history.map(item => ({
-      accountId: item.account_id,
-      amount: (Number(BigInt(item.amount)) / 1e24).toFixed(4) + ' NEAR',
-      timestamp: new Date(item.timestamp / 1_000_000).toISOString(), // Convert nanoseconds
-      blockHeight: item.block_height
-    }));
+    const yoctoToNear = (yocto: string) => (Number(BigInt(yocto)) / 1e24).toFixed(4);
+    const fundingAmount = '100000000000000000000000'; // 0.1 NEAR
 
     res.json({
       enabled: true,
-      history: formattedHistory
+      history: activity.map(item => ({
+        accountId: item.accountId,
+        amount: yoctoToNear(fundingAmount) + ' NEAR',
+        timestamp: new Date(item.timestamp).toISOString(),
+      })),
     });
   } catch (error) {
     console.error('[admin] Funding history error:', error);
@@ -2280,7 +2277,7 @@ router.get('/funding/history', async (req: Request, res: Response) => {
 
 /**
  * GET /api/admin/funding/check/:accountId
- * Check if a specific account has been funded
+ * Check if a specific implicit account exists on-chain
  */
 router.get('/funding/check/:accountId', async (req: Request, res: Response) => {
   try {
@@ -2294,19 +2291,16 @@ router.get('/funding/check/:accountId', async (req: Request, res: Response) => {
     const fundingService = getFundingService();
 
     if (!fundingService.isEnabled()) {
-      res.json({
-        enabled: false,
-        funded: false
-      });
+      res.json({ enabled: false, funded: false });
       return;
     }
 
-    const isFunded = await fundingService.isAccountFunded(accountId);
+    const exists = await fundingService.checkAccountExists(accountId);
 
     res.json({
       enabled: true,
       accountId,
-      funded: isFunded
+      funded: exists,
     });
   } catch (error) {
     console.error('[admin] Funding check error:', error);
