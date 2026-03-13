@@ -11,7 +11,7 @@ import numpy as np
 import cv2
 from typing import Optional
 
-from robot.vision.models import TargetMatchResult
+from vision.models import TargetMatchResult
 
 
 class FeatureMatcher:

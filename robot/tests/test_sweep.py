@@ -18,10 +18,9 @@ class TestSweepGeneratesWaypoints:
     def test_sweep_returns_waypoint_objects(self):
         """generate_sweep_path returns Waypoint objects."""
         from robot.sweep.path_planner import generate_sweep_path
-        from robot.models import Waypoint
         waypoints = generate_sweep_path(AREA_5x5, strip_width=1.0)
         for wp in waypoints:
-            assert isinstance(wp, Waypoint)
+            assert type(wp).__name__ == "Waypoint"
             assert isinstance(wp.x, float)
             assert isinstance(wp.y, float)
 

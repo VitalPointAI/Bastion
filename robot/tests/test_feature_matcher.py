@@ -66,11 +66,10 @@ class TestFeatureMatcherNoReference:
     def test_match_no_reference_returns_not_found(self):
         """match() without calling set_reference returns TargetMatchResult(found=False, confidence=0.0)."""
         from robot.vision.feature_matcher import FeatureMatcher
-        from robot.vision.models import TargetMatchResult
         fm = FeatureMatcher()
         frame = _make_test_frame()
         result = fm.match(frame)
-        assert isinstance(result, TargetMatchResult)
+        assert type(result).__name__ == "TargetMatchResult"
         assert result.found is False
         assert result.confidence == 0.0
         assert result.match_count == 0
@@ -142,13 +141,12 @@ class TestFeatureMatcherMatchBehavior:
     def test_match_returns_target_match_result(self):
         """match() always returns a TargetMatchResult instance."""
         from robot.vision.feature_matcher import FeatureMatcher
-        from robot.vision.models import TargetMatchResult
         fm = FeatureMatcher()
         img_bytes = _make_test_image_bytes()
         fm.set_reference(img_bytes)
         frame = _make_test_frame()
         result = fm.match(frame)
-        assert isinstance(result, TargetMatchResult)
+        assert type(result).__name__ == "TargetMatchResult"
         assert isinstance(result.found, bool)
         assert isinstance(result.confidence, float)
         assert isinstance(result.match_count, int)

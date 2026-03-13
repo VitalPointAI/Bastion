@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 from typing import Dict, List
 
-from robot.models import Waypoint
+from models import Waypoint
 
 
 def generate_sweep_path(
