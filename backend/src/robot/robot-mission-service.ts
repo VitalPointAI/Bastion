@@ -28,6 +28,7 @@ import type {
   RobotAckMsg,
   MissionJSON,
   RobotVisionMsg,
+  RobotProfileRequestMsg,
 } from './robot-types.js';
 import { robotStore } from './robot-store.js';
 import { gateService } from '../gates/gate-service.js';
@@ -202,7 +203,7 @@ export class RobotMissionService {
         this.handleVisionMsg(msg as RobotVisionMsg);
         break;
       case RobotWsMessageType.profile_request: {
-        const profileReq = msg as { profile_name?: string; command?: string; message_id?: string };
+        const profileReq = msg as RobotProfileRequestMsg;
         const resolvedProfile = this.resolveProfile(profileReq.profile_name, profileReq.command);
         this.safeSend(ws, {
           type: RobotWsMessageType.profile_response,

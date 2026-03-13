@@ -307,6 +307,14 @@ export interface RobotVisionMsg {
   message_id?: string;
 }
 
+/** Robot -> Bastion: request mission behavior profile */
+export interface RobotProfileRequestMsg {
+  type: typeof RobotWsMessageType.profile_request;
+  profile_name?: string;
+  command?: string;
+  message_id?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Union type for all inbound robot messages
 // ---------------------------------------------------------------------------
@@ -319,7 +327,8 @@ export type RobotWsMessage =
   | BridgeRegisterMsg
   | BridgeDiscoveryReportMsg
   | BridgeRobotRelayMsg
-  | RobotVisionMsg;
+  | RobotVisionMsg
+  | RobotProfileRequestMsg;
 
 // ---------------------------------------------------------------------------
 // Connected Robot — in-memory state for a live WS connection
