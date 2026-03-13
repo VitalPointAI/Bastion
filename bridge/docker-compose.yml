@@ -35,5 +35,12 @@ services:
       - REGISTRATION_TOKEN=${REGISTRATION_TOKEN:-}
       # Enable web UI — set to 'true' or leave empty to rely on --ui flag
       - ENABLE_UI=${ENABLE_UI:-true}
+      # Persist DID file to mounted volume so it survives container restarts
+      - DID_FILE=/data/.bridge_did
+    volumes:
+      - bridge-data:/data
     # Enable web UI by default when running via compose
     command: ["--ui"]
+
+volumes:
+  bridge-data:
