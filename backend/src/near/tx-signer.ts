@@ -40,6 +40,9 @@ const DEFAULT_GAS = BigInt('30000000000000');
 // Amount to seed new signing accounts (0.1 NEAR — enough for ~hundreds of DID ops)
 const FUNDING_AMOUNT = BigInt('100000000000000000000000'); // 0.1 NEAR in yoctoNEAR
 
+// Track accounts already funded this process lifetime (prevents double-funding on concurrent calls)
+const fundedAccounts = new Set<string>();
+
 // ============================================================================
 // Key Derivation
 // ============================================================================
@@ -137,14 +140,17 @@ export async function signAndSubmitFunctionCall(
   try {
     const { signingAccountId, keyPairString } = deriveSigningKeyPair(userSecret);
 
-    // Auto-fund the signing account if it doesn't exist yet
-    const funded = await isSigningAccountFunded(userSecret);
-    if (!funded) {
-      const fundResult = await fundSigningAccount(signingAccountId);
-      if (!fundResult.success) {
-        return { success: false, error: `Failed to fund signing account: ${fundResult.error}` };
+    // Auto-fund the signing account if it doesn't exist yet (skip if already funded this session)
+    if (!fundedAccounts.has(signingAccountId)) {
+      const funded = await isSigningAccountFunded(userSecret);
+      if (!funded) {
+        const fundResult = await fundSigningAccount(signingAccountId);
+        if (!fundResult.success) {
+          return { success: false, error: `Failed to fund signing account: ${fundResult.error}` };
+        }
+        console.log(`[tx-signer] Auto-funded signing account ${signingAccountId}`);
       }
-      console.log(`[tx-signer] Auto-funded signing account ${signingAccountId}`);
+      fundedAccounts.add(signingAccountId);
     }
 
     const signer = KeyPairSigner.fromSecretKey(keyPairString);
