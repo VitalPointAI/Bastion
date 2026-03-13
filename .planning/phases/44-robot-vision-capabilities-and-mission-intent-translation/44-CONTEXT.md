@@ -123,6 +123,23 @@ Add vision capabilities to the Sphero RVR+ / Jetson Orin Nano robot and implemen
 
 </code_context>
 
+<additional_context>
+## Additional User Context (2026-03-13)
+
+### Resource Discovery & Capability Registration
+- Other resources (robots, drones, sensors, etc.) will connect to Bastion dynamically — Bastion must discover and catalog their capabilities
+- Each resource's DID document must accurately reflect: capabilities, security classifications, national policy caveats, restrictions, constraints, and authority levels
+- Bastion uses this DID-based capability profile to select the right resources for DAO-authorized missions
+- Resource must operate strictly within the authority and autonomy levels authorized for the duration it's tasked
+- This is not just about this one robot — the architecture must support heterogeneous resource registration and tasking
+
+### Movement Control (Sphero RVR+ via Jetson Orin Nano)
+- The Jetson Orin Nano is physically mounted on a Sphero RVR+
+- Phase must include how the robot controls its movement — the Orin Nano commands the RVR+ for navigation, obstacle avoidance, and mission waypoint traversal
+- Movement behavior is mission-profile-dependent (stealth vs direct vs patrol speed/approach)
+
+</additional_context>
+
 <deferred>
 ## Deferred Ideas
 

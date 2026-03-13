@@ -43,3 +43,5 @@ docs/whitepaper/exports/
 *.docx
 *.pptx
 *.xlsx
+robot/.robot_did
+*.pt
