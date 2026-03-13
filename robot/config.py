@@ -93,6 +93,57 @@ RECONNECT_INITIAL_DELAY: float = float(_optional("RECONNECT_INITIAL_DELAY", "5.0
 RECONNECT_MAX_DELAY: float = float(_optional("RECONNECT_MAX_DELAY", "60.0"))
 """Maximum reconnect backoff delay in seconds."""
 
+# ---------------------------------------------------------------------------
+# Vision settings
+# ---------------------------------------------------------------------------
+
+VISION_ENABLED: bool = _optional("VISION_ENABLED", "true").lower() in ("true", "1", "yes")
+"""When True, initialize camera and vision engine at startup."""
+
+VISION_MODEL: str = _optional("VISION_MODEL", "ssd-mobilenet-v2")
+"""detectNet model name (e.g. ssd-mobilenet-v2, ssd-inception-v2)."""
+
+VISION_THRESHOLD: float = float(_optional("VISION_THRESHOLD", "0.5"))
+"""Minimum detection confidence threshold (0.0 - 1.0)."""
+
+CAMERA_SENSOR_ID: int = int(_optional("CAMERA_SENSOR_ID", "0"))
+"""CSI camera sensor ID (0 = first camera)."""
+
+KEYFRAME_ENABLED: bool = _optional("KEYFRAME_ENABLED", "false").lower() in ("true", "1", "yes")
+"""When True, send JPEG key frames on detection events over WebSocket."""
+
+KEYFRAME_JPEG_QUALITY: int = int(_optional("KEYFRAME_JPEG_QUALITY", "50"))
+"""JPEG compression quality for key frames (0-100)."""
+
+KEYFRAME_RESOLUTION: str = _optional("KEYFRAME_RESOLUTION", "640x480")
+"""Downsampled resolution for key frames (WxH)."""
+
+VISION_VLM_ENABLED: bool = _optional("VISION_VLM_ENABLED", "false").lower() in ("true", "1", "yes")
+"""When True, enable VLM scene description (heavy — disable by default due to memory pressure)."""
+
+VISION_CADENCE_MS: int = int(_optional("VISION_CADENCE_MS", "500"))
+"""Default vision detection loop interval in milliseconds (profile can override)."""
+
+# ---------------------------------------------------------------------------
+# Intent translation settings
+# ---------------------------------------------------------------------------
+
+INTENT_LLM_ENABLED: bool = _optional("INTENT_LLM_ENABLED", "false").lower() in ("true", "1", "yes")
+"""When True, use cloud LLM for intent translation. When False, template fallback only."""
+
+OPENAI_API_KEY: str = _optional("OPENAI_API_KEY", "")
+"""OpenAI API key for cloud intent translation via instructor library."""
+
+ANTHROPIC_API_KEY: str = _optional("ANTHROPIC_API_KEY", "")
+"""Anthropic API key for cloud intent translation (alternative to OpenAI)."""
+
+# ---------------------------------------------------------------------------
+# Robot authority settings (from DID document / operator config)
+# ---------------------------------------------------------------------------
+
+ROBOT_AUTONOMY_LEVEL: int = int(_optional("ROBOT_AUTONOMY_LEVEL", "1"))
+"""Robot's authorized autonomy level (1-5). Default 1 (safest). Set from DID document or operator config."""
+
 
 # ---------------------------------------------------------------------------
 # DID persistence helpers
