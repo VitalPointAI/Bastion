@@ -28,8 +28,8 @@ import { JsonRpcProvider } from '@near-js/providers';
 import { KeyPairSigner } from '@near-js/signers';
 
 const NEAR_RPC_URL = process.env.NEAR_RPC_URL || 'https://rpc.testnet.fastnear.com';
-const DID_CONTRACT_ID = process.env.DID_CONTRACT_ID || 'did-registry.testnet';
-const CREDENTIAL_CONTRACT_ID = process.env.CREDENTIAL_CONTRACT_ID || 'credential-registry.testnet';
+const DID_CONTRACT_ID = process.env.DID_CONTRACT_ID || 'did.bastion.testnet';
+const CREDENTIAL_CONTRACT_ID = process.env.CREDENTIAL_CONTRACT_ID || 'credentials.bastion.testnet';
 
 // Funder account for auto-funding new signing accounts
 const FUNDER_ACCOUNT_ID = process.env.NEAR_FUNDER_ACCOUNT_ID || '';
@@ -198,7 +198,10 @@ export async function storeDIDOnChain(
   encryptedDocument: Uint8Array,
   encryptedEntityType: Uint8Array,
   nonce: Uint8Array,
+  entityTypeNonce?: Uint8Array,
 ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  // Attach storage deposit (0.01 NEAR covers ~1KB on-chain)
+  const STORAGE_DEPOSIT = BigInt('10000000000000000000000'); // 0.01 NEAR
   return signAndSubmitFunctionCall(
     userSecret,
     DID_CONTRACT_ID,
@@ -208,7 +211,10 @@ export async function storeDIDOnChain(
       encrypted_document: Array.from(encryptedDocument),
       encrypted_entity_type: Array.from(encryptedEntityType),
       nonce: Array.from(nonce),
+      entity_type_nonce: entityTypeNonce ? Array.from(entityTypeNonce) : null,
     },
+    DEFAULT_GAS,
+    STORAGE_DEPOSIT,
   );
 }
 
@@ -248,6 +254,8 @@ export async function anchorCredentialOnChain(
     32,
   );
 
+  // Attach storage deposit (0.01 NEAR covers credential entry)
+  const STORAGE_DEPOSIT = BigInt('10000000000000000000000'); // 0.01 NEAR
   return signAndSubmitFunctionCall(
     userSecret,
     CREDENTIAL_CONTRACT_ID,
@@ -260,6 +268,8 @@ export async function anchorCredentialOnChain(
       nonce: Array.from(nonce),
       expiration_date: expirationDate ?? null,
     },
+    DEFAULT_GAS,
+    STORAGE_DEPOSIT,
   );
 }
 

@@ -4,7 +4,7 @@ import { encryptDIDDocument, decryptDIDDocument, deriveEncryptionKey } from './d
 import { storeDIDOnChain } from '../near/tx-signer.js';
 
 const NEAR_RPC_URL = process.env.NEAR_RPC_URL || 'https://rpc.testnet.fastnear.com';
-const DID_CONTRACT_ID = process.env.DID_CONTRACT_ID || 'did-registry.testnet';
+const DID_CONTRACT_ID = process.env.DID_CONTRACT_ID || 'did.bastion.testnet';
 
 /**
  * DID Service - handles encrypted DID operations
@@ -57,20 +57,20 @@ export class DIDService {
     const encryptionKey = deriveEncryptionKey(userSecret);
 
     // Encrypt document
-    const { encryptedDocument, encryptedEntityType, nonce, entityTypeNonce: _entityTypeNonce } = encryptDIDDocument(
+    const { encryptedDocument, encryptedEntityType, nonce, entityTypeNonce } = encryptDIDDocument(
       document,
       entityType,
       encryptionKey
     );
 
-    // Store on-chain via user-signed transaction
-    // The nonce field sent to the contract is the document nonce (entityTypeNonce is kept for local decryption)
+    // Store on-chain via user-signed transaction (both nonces for full decryption support)
     const chainResult = await storeDIDOnChain(
       userSecret,
       blindedKey,
       encryptedDocument,
       encryptedEntityType,
       nonce,
+      entityTypeNonce,
     );
 
     if (!chainResult.success) {
