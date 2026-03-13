@@ -1,6 +1,6 @@
 """Tests for robot/models.py: DID auth modes and message_id on all outbound types."""
 import pytest
-from robot.models import RegisterMsg, StateUpdateMsg, TelemetryMsg, MissionState
+from robot.models import RegisterMsg, StateUpdateMsg, TelemetryMsg, MissionState, MissionParams
 
 
 class TestRegisterMsgAuthModes:
@@ -69,3 +69,42 @@ class TestModelsAllHaveMessageId:
     def test_models_all_have_message_id_register(self):
         msg = RegisterMsg(robot_id="r1")
         assert hasattr(msg, "message_id")
+
+
+class TestMissionParamsExtended:
+    """MissionParams accepts new optional fields without breaking existing usage."""
+
+    def test_mission_params_backward_compat(self):
+        """MissionParams with no new fields still validates (backward compat)."""
+        params = MissionParams()
+        assert params.profile_name is None
+        assert params.area is None
+        assert params.reference_image_b64 is None
+
+    def test_mission_params_profile_name(self):
+        """MissionParams accepts profile_name for behavior profile reference."""
+        params = MissionParams(profile_name="stealth_recon")
+        assert params.profile_name == "stealth_recon"
+
+    def test_mission_params_area(self):
+        """MissionParams accepts area bounding box dict."""
+        params = MissionParams(area={"x_min": 0.0, "y_min": 0.0, "x_max": 5.0, "y_max": 5.0})
+        assert params.area == {"x_min": 0.0, "y_min": 0.0, "x_max": 5.0, "y_max": 5.0}
+
+    def test_mission_params_reference_image(self):
+        """MissionParams accepts reference_image_b64 for visual_search missions."""
+        params = MissionParams(reference_image_b64="base64data")
+        assert params.reference_image_b64 == "base64data"
+
+    def test_mission_params_all_fields(self):
+        """MissionParams accepts all new optional fields together."""
+        params = MissionParams(
+            profile_name="patrol",
+            area={"x_min": 1.0, "y_min": 1.0, "x_max": 10.0, "y_max": 10.0},
+            reference_image_b64="abc123==",
+            speed=150,
+        )
+        assert params.profile_name == "patrol"
+        assert params.area["x_max"] == 10.0
+        assert params.reference_image_b64 == "abc123=="
+        assert params.speed == 150

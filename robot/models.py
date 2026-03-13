@@ -46,6 +46,12 @@ class MissionParams(BaseModel):
     speed: int = Field(default=100, ge=0, le=255)
     duration_sec: Optional[float] = None
     autonomy_policy: str = "default"
+    profile_name: Optional[str] = None
+    """Behavior profile reference (e.g. 'stealth_recon', 'patrol'). Resolved by backend."""
+    area: Optional[Dict[str, float]] = None
+    """Bounding box for sweep missions: {x_min, y_min, x_max, y_max} in room-relative meters."""
+    reference_image_b64: Optional[str] = None
+    """Base64-encoded reference image for visual_search missions."""
 
 
 class MissionJSON(BaseModel):
