@@ -37,15 +37,15 @@ import type {
 // ============================================================================
 
 /**
- * Funding contract status response from backend.
+ * Funder account status response from backend.
  */
 export interface FundingStatus {
   enabled: boolean;
-  contractId?: string;
+  funderAccountId?: string;
   balance?: string;
   availableBalance?: string;
   fundingAmountPerAccount?: string;
-  totalAccountsFunded?: number;
+  totalFundedThisSession?: number;
   accountsRemaining?: number;
   message?: string;
 }
@@ -57,7 +57,6 @@ export interface FundingHistoryItem {
   accountId: string;
   amount: string;
   timestamp: string;
-  blockHeight: number;
 }
 
 /**
