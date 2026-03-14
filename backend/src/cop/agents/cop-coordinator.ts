@@ -2,11 +2,8 @@
  * COP Coordinator - LangGraph StateGraph Orchestrator
  *
  * Orchestrates COP layer generation by routing to domain sub-agents,
- * collecting results, assembling layers, validating CCO compliance,
- * and persisting draft layers.
- *
- * Follows the existing StrategyReviewerState LangGraph pattern from
- * backend/src/agents/langgraph/state.ts.
+ * collecting results, validating CCO compliance, and persisting
+ * individual draft layers per warfighting function.
  */
 
 import { Annotation, StateGraph, END } from '@langchain/langgraph';
@@ -16,7 +13,6 @@ import { HumanMessage } from '@langchain/core/messages';
 import type { COPLayerSpec } from '../layers/layer-types.js';
 import type { COPLayer } from '../layers/layer-store.js';
 import { layerStore } from '../layers/layer-store.js';
-import { LayerAssembler } from '../layers/layer-assembler.js';
 import { validateCCOClass, suggestCCOClass } from '../cco/cco-validator.js';
 import { copEventBus } from '../messaging/event-bus.js';
 import { EntityLinker } from '../linkage/entity-linker.js';
@@ -50,9 +46,6 @@ const ALL_AGENT_KEYS = Object.keys(SUB_AGENT_MAP);
 // State Definition
 // ---------------------------------------------------------------------------
 
-/**
- * COP Coordinator State using LangGraph Annotation.Root pattern.
- */
 export const COPCoordinatorState = Annotation.Root({
   workspaceId: Annotation<string>,
   sectionId: Annotation<string>,
@@ -69,9 +62,9 @@ export const COPCoordinatorState = Annotation.Root({
     reducer: (prev, next) => [...prev, ...next],
     default: () => [],
   }),
-  assembledLayer: Annotation<COPLayer | null>({
+  assembledLayers: Annotation<COPLayer[]>({
     reducer: (_prev, next) => next,
-    default: () => null,
+    default: () => [],
   }),
   status: Annotation<'routing' | 'generating' | 'assembling' | 'validating' | 'complete' | 'error'>({
     reducer: (_prev, next) => next,
@@ -81,17 +74,14 @@ export const COPCoordinatorState = Annotation.Root({
     reducer: (prev, next) => [...prev, ...next],
     default: () => [],
   }),
-  /** Internal: which sub-agents to invoke (set by route node) */
   targetAgents: Annotation<string[]>({
     reducer: (_prev, next) => next,
     default: () => ALL_AGENT_KEYS,
   }),
-  /** Internal: documents to pass to sub-agents */
   documents: Annotation<SubAgentInput['documents']>({
     reducer: (_prev, next) => next,
     default: () => [],
   }),
-  /** Internal: graph entities to pass to sub-agents */
   graphEntities: Annotation<SubAgentInput['graphEntities']>({
     reducer: (_prev, next) => next,
     default: () => [],
@@ -119,7 +109,6 @@ async function routeNode(
     timestamp: new Date().toISOString(),
   });
 
-  // Determine target agents from trigger context
   const contextTargets = state.triggerContext.targetAgents as string[] | undefined;
   const targetAgents = contextTargets && contextTargets.length > 0
     ? contextTargets.filter(a => ALL_AGENT_KEYS.includes(a))
@@ -154,7 +143,6 @@ async function generateLayersNode(
     graphEntities: state.graphEntities,
   };
 
-  // Invoke selected sub-agents in parallel with 30s timeout each
   const promises = state.targetAgents.map(async (agentKey) => {
     const agentFn = SUB_AGENT_MAP[agentKey];
     if (!agentFn) {
@@ -217,39 +205,7 @@ async function generateLayersNode(
 }
 
 /**
- * Node 3: Assemble - Merge sub-agent outputs into a single spec.
- */
-async function assembleNode(
-  state: COPCoordinatorStateType,
-): Promise<Partial<COPCoordinatorStateType>> {
-  if (state.layerSpecs.length === 0) {
-    return {
-      status: 'error',
-      errors: ['No layer specs produced by any sub-agent'],
-      messages: [new HumanMessage('Assembly skipped: no specs to assemble')],
-    };
-  }
-
-  copEventBus.emit('agent:activity', {
-    agentId: 'cop-coordinator-001',
-    action: 'assembling',
-    detail: `Assembling ${state.layerSpecs.length} sub-agent specs`,
-    workspaceId: state.workspaceId,
-    sectionId: state.sectionId,
-    timestamp: new Date().toISOString(),
-  });
-
-  const assembler = new LayerAssembler();
-  const _assembled = assembler.assemble(state.layerSpecs);
-
-  return {
-    status: 'assembling',
-    messages: [new HumanMessage(`Assembled ${_assembled.symbols.length} symbols, ${_assembled.controlMeasures.length} control measures`)],
-  };
-}
-
-/**
- * Node 4: Validate CCO - Validate all symbols have valid CCO classes.
+ * Node 3: Validate CCO - Validate all symbols in each spec have valid CCO classes.
  */
 async function validateCCONode(
   state: COPCoordinatorStateType,
@@ -261,30 +217,27 @@ async function validateCCONode(
   copEventBus.emit('agent:activity', {
     agentId: 'cop-coordinator-001',
     action: 'validating',
-    detail: 'Validating CCO classes for all symbols',
+    detail: 'Validating CCO classes for all symbols across layer specs',
     workspaceId: state.workspaceId,
     sectionId: state.sectionId,
     timestamp: new Date().toISOString(),
   });
 
-  // Re-assemble to get final spec
-  const assembler = new LayerAssembler();
-  const assembled = assembler.assemble(state.layerSpecs);
-
   const validationErrors: string[] = [];
 
-  for (const symbol of assembled.symbols) {
-    const result = validateCCOClass(symbol.ccoClass);
-    if (!result.valid) {
-      // Attempt to fix by suggesting a class
-      const suggested = suggestCCOClass(symbol.designation, {
-        entityId: symbol.entityId,
-        affiliation: symbol.affiliation,
-      });
-      symbol.ccoClass = suggested;
-      validationErrors.push(
-        `Symbol ${symbol.entityId} had invalid CCO class, replaced with ${suggested}`,
-      );
+  for (const spec of state.layerSpecs) {
+    for (const symbol of spec.symbols) {
+      const result = validateCCOClass(symbol.ccoClass);
+      if (!result.valid) {
+        const suggested = suggestCCOClass(symbol.designation, {
+          entityId: symbol.entityId,
+          affiliation: symbol.affiliation,
+        });
+        symbol.ccoClass = suggested;
+        validationErrors.push(
+          `Symbol ${symbol.entityId} had invalid CCO class, replaced with ${suggested}`,
+        );
+      }
     }
   }
 
@@ -300,13 +253,15 @@ async function validateCCONode(
 }
 
 /**
- * Node 5: Persist - Create draft layer and run entity linkage.
+ * Node 4: Persist - Create one draft layer per sub-agent spec.
+ *
+ * Each warfighting function gets its own layer so users can independently
+ * toggle visibility and tailor their COP view.
  */
 async function persistNode(
   state: COPCoordinatorStateType,
 ): Promise<Partial<COPCoordinatorStateType>> {
   if (state.layerSpecs.length === 0) {
-    // Persist with error status
     copEventBus.emit('layer:generation:complete', {
       layerId: 'none',
       status: 'error',
@@ -315,7 +270,7 @@ async function persistNode(
 
     return {
       status: 'error',
-      assembledLayer: null,
+      assembledLayers: [],
       messages: [new HumanMessage('Persist skipped: no specs available')],
     };
   }
@@ -323,49 +278,70 @@ async function persistNode(
   copEventBus.emit('agent:activity', {
     agentId: 'cop-coordinator-001',
     action: 'persisting',
-    detail: 'Creating draft layer and running entity linkage',
+    detail: `Creating ${state.layerSpecs.length} individual draft layers`,
     workspaceId: state.workspaceId,
     sectionId: state.sectionId,
     timestamp: new Date().toISOString(),
   });
 
-  // Final assembly
-  const assembler = new LayerAssembler();
-  const assembled = assembler.assemble(state.layerSpecs);
+  const createdLayers: COPLayer[] = [];
 
-  // Determine primary layer type from the first targeted agent
-  const primaryType = (state.targetAgents[0] ?? 'force_disposition') as
-    'force_disposition' | 'objectives' | 'control_measures' | 'intel' | 'logistics' | 'c2';
+  for (const spec of state.layerSpecs) {
+    // Skip empty specs (no symbols, no control measures, no annotations)
+    const hasContent = spec.symbols.length > 0 ||
+      spec.controlMeasures.length > 0 ||
+      (spec.customAnnotations?.length ?? 0) > 0;
 
-  // Create draft layer
-  const layer = await layerStore.createLayer({
-    workspaceId: state.workspaceId,
-    sectionId: state.sectionId,
-    layerType: primaryType,
-    spec: assembled,
-  });
+    if (!hasContent) continue;
 
-  // Run entity linkage (best-effort, don't fail on linkage errors)
+    try {
+      const layer = await layerStore.createLayer({
+        workspaceId: state.workspaceId,
+        sectionId: state.sectionId,
+        layerType: spec.layerType,
+        spec,
+      });
+      createdLayers.push(layer);
+
+      copEventBus.emit('agent:activity', {
+        agentId: 'cop-coordinator-001',
+        action: 'layer_created',
+        detail: `Layer ${layer.id} (${spec.layerType}) created with ${spec.symbols.length} symbols`,
+        workspaceId: state.workspaceId,
+        sectionId: state.sectionId,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      console.error(`[COP] Failed to persist ${spec.layerType} layer:`, msg);
+    }
+  }
+
+  // Run entity linkage across all created layers (best-effort)
   try {
-    // EntityLinker requires Neo4j driver and embeddings -- will be initialized
-    // by the caller or skipped if not available
     if (state.triggerContext._entityLinker) {
       const linker = state.triggerContext._entityLinker as EntityLinker;
-      await linker.discoverLinkages(state.workspaceId, assembled.symbols);
+      for (const layer of createdLayers) {
+        if (layer.spec?.symbols?.length) {
+          await linker.discoverLinkages(state.workspaceId, layer.spec.symbols);
+        }
+      }
     }
   } catch {
     // Non-fatal: linkage discovery failed
   }
 
-  copEventBus.emit('layer:generation:complete', {
-    layerId: layer.id,
-    status: 'success',
-  });
+  for (const layer of createdLayers) {
+    copEventBus.emit('layer:generation:complete', {
+      layerId: layer.id,
+      status: 'success',
+    });
+  }
 
   return {
     status: 'complete',
-    assembledLayer: layer,
-    messages: [new HumanMessage(`Layer ${layer.id} created as draft`)],
+    assembledLayers: createdLayers,
+    messages: [new HumanMessage(`${createdLayers.length} layers created as drafts`)],
   };
 }
 
@@ -377,7 +353,7 @@ function shouldSkipToError(state: COPCoordinatorStateType): string {
   if (state.layerSpecs.length === 0 && state.errors.length > 0) {
     return 'persist';
   }
-  return 'assemble';
+  return 'validate_cco';
 }
 
 // ---------------------------------------------------------------------------
@@ -387,16 +363,14 @@ function shouldSkipToError(state: COPCoordinatorStateType): string {
 const workflow = new StateGraph(COPCoordinatorState)
   .addNode('route', routeNode)
   .addNode('generate_layers', generateLayersNode)
-  .addNode('assemble', assembleNode)
   .addNode('validate_cco', validateCCONode)
   .addNode('persist', persistNode)
   .addEdge('__start__', 'route')
   .addEdge('route', 'generate_layers')
   .addConditionalEdges('generate_layers', shouldSkipToError, {
-    assemble: 'assemble',
+    validate_cco: 'validate_cco',
     persist: 'persist',
   })
-  .addEdge('assemble', 'validate_cco')
   .addEdge('validate_cco', 'persist')
   .addEdge('persist', END);
 
@@ -411,19 +385,16 @@ export const copCoordinatorGraph = workflow.compile();
 
 /**
  * Run COP layer generation for a workspace section.
+ * Creates one draft layer per warfighting function that has content.
  *
- * @param workspaceId - Workspace to generate for
- * @param sectionId - Section scope
- * @param triggeredBy - What triggered this generation
- * @param context - Optional trigger context (targetAgents, documents, etc.)
- * @returns The assembled COPLayer or null on error
+ * @returns Array of created COPLayers (one per warfighting function)
  */
 export async function runCOPGeneration(
   workspaceId: string,
   sectionId: string,
   triggeredBy: TriggerType,
   context?: Record<string, unknown>,
-): Promise<COPLayer | null> {
+): Promise<COPLayer[]> {
   const result = await copCoordinatorGraph.invoke({
     workspaceId,
     sectionId,
@@ -433,5 +404,5 @@ export async function runCOPGeneration(
     graphEntities: (context?.graphEntities as SubAgentInput['graphEntities']) || [],
   });
 
-  return result.assembledLayer;
+  return result.assembledLayers;
 }

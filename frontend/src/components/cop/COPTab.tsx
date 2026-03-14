@@ -16,7 +16,7 @@ import { copService } from '../../lib/cop-service.js';
 import { useProblemSet } from '../../context/ProblemSetContext.js';
 import { COPMapView } from './COPMapView.js';
 import { COPLayerControls } from './COPLayerControls.js';
-import { COPPerspectiveToggle } from './COPPerspectiveToggle.js';
+// COPPerspectiveToggle moved into COPLayerControls sidebar
 import { COPPhaseSlider } from './COPPhaseSlider.js';
 import { COPVersionBrowser } from './COPVersionBrowser.js';
 import { COPLayerLifecycle } from './COPLayerLifecycle.js';
@@ -101,12 +101,40 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
+// ─── Persistence helpers ─────────────────────────────────────────────────
+
+function loadCopPrefs(psId: string): {
+  visibility: Record<string, boolean>;
+  opacity: Record<string, number>;
+  perspective: Perspective;
+} {
+  try {
+    const raw = localStorage.getItem(`cop-prefs-${psId}`);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { visibility: {}, opacity: {}, perspective: 'combined' };
+}
+
+function saveCopPrefs(
+  psId: string,
+  visibility: Record<string, boolean>,
+  opacity: Record<string, number>,
+  perspective: Perspective,
+) {
+  try {
+    localStorage.setItem(`cop-prefs-${psId}`, JSON.stringify({ visibility, opacity, perspective }));
+  } catch { /* ignore */ }
+}
+
 export function COPTab({ problemSetId }: COPTabProps) {
+  // Load persisted user preferences
+  const savedPrefs = loadCopPrefs(problemSetId);
+
   // Existing COP state
   const [layers, setLayers] = useState<COPLayer[]>([]);
-  const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>({});
-  const [layerOpacity, setLayerOpacity] = useState<Record<string, number>>({});
-  const [currentPerspective, setCurrentPerspective] = useState<Perspective>('combined');
+  const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>(savedPrefs.visibility);
+  const [layerOpacity, setLayerOpacity] = useState<Record<string, number>>(savedPrefs.opacity);
+  const [currentPerspective, setCurrentPerspective] = useState<Perspective>(savedPrefs.perspective);
 
   // Sidebar state
   const [sidebarView, setSidebarView] = useState<SidebarView>('layers');
@@ -310,11 +338,24 @@ export function COPTab({ problemSetId }: COPTabProps) {
   }
 
   function handleVisibilityChange(layerId: string, visible: boolean) {
-    setLayerVisibility((prev) => ({ ...prev, [layerId]: visible }));
+    setLayerVisibility((prev) => {
+      const next = { ...prev, [layerId]: visible };
+      saveCopPrefs(problemSetId, next, layerOpacity, currentPerspective);
+      return next;
+    });
   }
 
   function handleOpacityChange(layerId: string, opacity: number) {
-    setLayerOpacity((prev) => ({ ...prev, [layerId]: opacity }));
+    setLayerOpacity((prev) => {
+      const next = { ...prev, [layerId]: opacity };
+      saveCopPrefs(problemSetId, layerVisibility, next, currentPerspective);
+      return next;
+    });
+  }
+
+  function handlePerspectiveChange(perspective: Perspective) {
+    setCurrentPerspective(perspective);
+    saveCopPrefs(problemSetId, layerVisibility, layerOpacity, perspective);
   }
 
   // ─── Actor graph handlers ─────────────────────────────────────────────────
@@ -343,6 +384,17 @@ export function COPTab({ problemSetId }: COPTabProps) {
             layerOpacity={layerOpacity}
             onVisibilityChange={handleVisibilityChange}
             onOpacityChange={handleOpacityChange}
+            onLayerDeleted={(layerId) => {
+              setLayers((prev) => prev.filter((l) => l.id !== layerId));
+              setLayerVisibility((prev) => { const next = { ...prev }; delete next[layerId]; return next; });
+              setLayerOpacity((prev) => { const next = { ...prev }; delete next[layerId]; return next; });
+            }}
+            currentPerspective={currentPerspective}
+            onPerspectiveChange={handlePerspectiveChange}
+            resourceLayerVisible={resourceLayerVisible}
+            onResourceLayerToggle={() => setResourceLayerVisible((v) => !v)}
+            robotLayerVisible={robotLayerVisible}
+            onRobotLayerToggle={() => setRobotLayerVisible((v) => !v)}
           />
         );
 
@@ -454,41 +506,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
     <div className="flex flex-1 min-h-0 relative" style={{ height: '100%' }}>
       {/* Main map area */}
       <div className="flex-1 min-w-0 relative flex flex-col">
-        {/* Perspective toggle — top left, below Leaflet zoom controls */}
-        <div className="absolute top-20 left-3 z-1000">
-          <COPPerspectiveToggle
-            currentPerspective={currentPerspective}
-            onPerspectiveChange={setCurrentPerspective}
-          />
-          {/* Resource layer toggle */}
-          <button
-            onClick={() => setResourceLayerVisible((v) => !v)}
-            className={[
-              'mt-1 px-2 py-1 text-[10px] font-medium rounded border transition-colors',
-              resourceLayerVisible
-                ? 'bg-blue-600/20 text-blue-400 border-blue-500/40'
-                : 'bg-gray-800/90 text-gray-500 border-gray-600',
-            ].join(' ')}
-            title={resourceLayerVisible ? 'Hide resource layer' : 'Show resource layer'}
-            aria-label="Toggle resource layer"
-          >
-            Resources {resourceLayerVisible ? 'ON' : 'OFF'}
-          </button>
-          {/* Robot layer toggle (Phase 06) */}
-          <button
-            onClick={() => setRobotLayerVisible((v) => !v)}
-            className={[
-              'mt-1 px-2 py-1 text-[10px] font-medium rounded border transition-colors',
-              robotLayerVisible
-                ? 'bg-green-600/20 text-green-400 border-green-500/40'
-                : 'bg-gray-800/90 text-gray-500 border-gray-600',
-            ].join(' ')}
-            title={robotLayerVisible ? 'Hide robot layer' : 'Show robot layer'}
-            aria-label="Toggle robot layer"
-          >
-            Robots {robotLayerVisible ? 'ON' : 'OFF'}
-          </button>
-        </div>
+        {/* Perspective, resource, and robot toggles moved to sidebar COPLayerControls */}
 
         {/* Sidebar toggle (when collapsed) — top right */}
         {!sidebarOpen && (

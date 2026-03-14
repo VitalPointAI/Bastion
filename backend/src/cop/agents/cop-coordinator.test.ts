@@ -225,10 +225,10 @@ describe('COP Coordinator Graph Routing', () => {
 
     // Should complete successfully with partial results
     expect(result.status).toBe('complete');
-    expect(result.assembledLayer).not.toBeNull();
+    expect(result.assembledLayers).not.toBeNull();
 
-    // Layer store should have been called to persist
-    expect(layerStore.createLayer).toHaveBeenCalledTimes(1);
+    // Layer store should have been called once per successful sub-agent (3 of 6 succeeded)
+    expect(layerStore.createLayer).toHaveBeenCalledTimes(3);
 
     // Some errors should be recorded
     expect(result.errors.length).toBeGreaterThan(0);
@@ -247,8 +247,9 @@ describe('COP Coordinator Graph Routing', () => {
     });
 
     expect(result.status).toBe('complete');
-    expect(result.assembledLayer).not.toBeNull();
-    expect(layerStore.createLayer).toHaveBeenCalledTimes(1);
+    expect(result.assembledLayers).not.toBeNull();
+    // One layer per successful sub-agent (all 6 succeeded)
+    expect(layerStore.createLayer).toHaveBeenCalledTimes(6);
     expect(layerStore.createLayer).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceId: 'ws-1',

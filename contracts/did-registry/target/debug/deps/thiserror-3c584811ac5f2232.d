@@ -1,0 +1,14 @@
+/home/vitalpointai/projects/ssr/contracts/did-registry/target/debug/deps/libthiserror-3c584811ac5f2232.rmeta: /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /home/vitalpointai/projects/ssr/contracts/did-registry/target/debug/build/thiserror-f8858458073ab21c/out/private.rs
+
+/home/vitalpointai/projects/ssr/contracts/did-registry/target/debug/deps/libthiserror-3c584811ac5f2232.rlib: /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /home/vitalpointai/projects/ssr/contracts/did-registry/target/debug/build/thiserror-f8858458073ab21c/out/private.rs
+
+/home/vitalpointai/projects/ssr/contracts/did-registry/target/debug/deps/thiserror-3c584811ac5f2232.d: /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /home/vitalpointai/projects/ssr/contracts/did-registry/target/debug/build/thiserror-f8858458073ab21c/out/private.rs
+
+/home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs:
+/home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs:
+/home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs:
+/home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs:
+/home/vitalpointai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs:
+/home/vitalpointai/projects/ssr/contracts/did-registry/target/debug/build/thiserror-f8858458073ab21c/out/private.rs:
+
+# env-dep:OUT_DIR=/home/vitalpointai/projects/ssr/contracts/did-registry/target/debug/build/thiserror-f8858458073ab21c/out

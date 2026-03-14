@@ -3,6 +3,7 @@ import { unitStore } from '../command/unit-store.js';
 import { relationshipStore } from '../command/relationship-store.js';
 import type { Unit, CommandRelationship, RelationshipType } from '../command/types.js';
 import { getPool } from '../lib/database.js';
+import { notifyCOPChange } from '../cop/index.js';
 
 const router = Router();
 
@@ -58,6 +59,7 @@ router.post('/units', async (req: Request, res: Response) => {
       location
     );
 
+    notifyCOPChange(missionId, 'command-unit-created');
     res.status(201).json(unit);
   } catch (error) {
     res.status(400).json({ error: String(error) });

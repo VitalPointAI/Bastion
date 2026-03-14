@@ -135,16 +135,16 @@ function wireGenerationTrigger(_triggerHandler: TriggerHandler): void {
         console.warn('[COP] Failed to fetch graph entities:', err instanceof Error ? err.message : err);
       }
 
-      const layer = await runCOPGeneration(
+      const layers = await runCOPGeneration(
         data.workspaceId,
         data.sectionId,
         data.triggeredBy,
         { documents, graphEntities },
       );
-      if (layer) {
-        console.log(`[COP] Layer ${layer.id} generated successfully`);
+      if (layers.length > 0) {
+        console.log(`[COP] ${layers.length} layers generated for workspace=${data.workspaceId}`);
       } else {
-        console.warn(`[COP] Layer generation returned null for workspace=${data.workspaceId}`);
+        console.warn(`[COP] No layers produced for workspace=${data.workspaceId}`);
       }
     } catch (error) {
       console.error('[COP] Layer generation failed:', error instanceof Error ? error.message : error);
@@ -231,4 +231,18 @@ export async function initCOP(): Promise<void> {
  */
 export function getCOPTriggerHandler(): TriggerHandler | null {
   return _triggerHandler ?? null;
+}
+
+/**
+ * Notify COP that a relevant change has occurred in the system.
+ * This triggers layer regeneration for the affected workspace.
+ * Safe to call even if COP module is not initialized (no-op).
+ *
+ * @param workspaceId - Problem set ID
+ * @param source - What triggered the change (for logging)
+ */
+export function notifyCOPChange(workspaceId: string, source: string): void {
+  if (!_triggerHandler) return;
+  console.log(`[COP] Change notification from ${source} for workspace=${workspaceId}`);
+  _triggerHandler.handleManualTrigger(workspaceId, 'default');
 }

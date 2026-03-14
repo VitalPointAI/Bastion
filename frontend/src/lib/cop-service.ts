@@ -169,6 +169,15 @@ class COPService {
   }
 
   /**
+   * Delete a COP layer.
+   */
+  async deleteLayer(layerId: string): Promise<void> {
+    await this.fetch<{ success: boolean }>(`/api/cop/layers/${encodeURIComponent(layerId)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
    * Transition a layer to a new lifecycle state.
    */
   async transitionLayer(layerId: string, targetState: LayerState, reason?: string): Promise<COPLayer> {
@@ -237,14 +246,14 @@ class COPService {
 
   /**
    * Trigger COP layer generation for a workspace section.
-   * Returns the generated layer (generation runs synchronously on the backend).
+   * Creates one layer per warfighting function that has content.
    */
-  async triggerGeneration(problemSetId: string, sectionId: string): Promise<COPLayer | null> {
-    const result = await this.fetch<{ status: string; layer: COPLayer | null }>('/api/cop/agents/trigger', {
+  async triggerGeneration(problemSetId: string, sectionId: string): Promise<COPLayer[]> {
+    const result = await this.fetch<{ status: string; layers: COPLayer[]; layerCount: number }>('/api/cop/agents/trigger', {
       method: 'POST',
       body: JSON.stringify({ workspaceId: problemSetId, sectionId, triggeredBy: 'manual' }),
     });
-    return result.layer;
+    return result.layers ?? [];
   }
 
   /**

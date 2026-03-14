@@ -29,6 +29,7 @@ import type { DocumentIntelligenceReport } from '../doc-intelligence/types.js';
 import { sourceStore } from '../doc-intelligence/source-registry/source-store.js';
 import { getPool } from '../lib/database.js';
 import { DocumentParser } from '../strategic/ingestion/document-parser.js';
+import { notifyCOPChange } from '../cop/index.js';
 
 const router = Router();
 const interviewService = new InterviewService();
@@ -722,6 +723,9 @@ router.post(
           reportId: documentId,
           timestamp: new Date().toISOString(),
         });
+
+        // Notify COP that new intelligence has been ingested
+        notifyCOPChange(problemSetId as string, 'doc-intelligence');
       } catch (error) {
         session.status = 'error';
         session.error = error instanceof Error ? error.message : String(error);

@@ -1,0 +1,326 @@
+{
+  "schema_version": "0.4.0",
+  "metadata": {
+    "name": "did-registry",
+    "version": "0.1.0",
+    "build": {
+      "compiler": "rustc 1.86.0",
+      "builder": "cargo-near cargo-near-build 0.10.0"
+    },
+    "wasm_hash": "66Rx5wS7VuHaHEVe9uG2Jhk2PjffuMcut38iX44XVV3a"
+  },
+  "body": {
+    "functions": [
+      {
+        "name": "admin_deactivate_did",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "blinded_key",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "contract_source_metadata",
+        "kind": "view"
+      },
+      {
+        "name": "deactivate_did",
+        "doc": " Deactivate a DID. Only callable by the DID owner or admin.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "blinded_key",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "get_admin",
+        "kind": "view",
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"ƒelicia.near\".parse::<AccountId>().is_err()); // (ƒ is not f) ```",
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "get_did",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "blinded_key",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/DIDEntry"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "is_did_active",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "blinded_key",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "boolean"
+          }
+        }
+      },
+      {
+        "name": "is_paused",
+        "kind": "view",
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "boolean"
+          }
+        }
+      },
+      {
+        "name": "new",
+        "kind": "call",
+        "modifiers": [
+          "init"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "admin",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"ƒelicia.near\".parse::<AccountId>().is_err()); // (ƒ is not f) ```",
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "pause",
+        "kind": "call"
+      },
+      {
+        "name": "set_admin",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "new_admin",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"ƒelicia.near\".parse::<AccountId>().is_err()); // (ƒ is not f) ```",
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "store_did",
+        "doc": " Store a new encrypted DID document. Only callable by the DID owner.",
+        "kind": "call",
+        "modifiers": [
+          "payable"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "blinded_key",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            },
+            {
+              "name": "encrypted_document",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            },
+            {
+              "name": "encrypted_entity_type",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            },
+            {
+              "name": "nonce",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            },
+            {
+              "name": "entity_type_nonce",
+              "type_schema": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "unpause",
+        "kind": "call"
+      }
+    ],
+    "root_schema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "String",
+      "type": "string",
+      "definitions": {
+        "DIDEntry": {
+          "description": "On-chain encrypted DID entry",
+          "type": "object",
+          "required": [
+            "active",
+            "created_at",
+            "encrypted_document",
+            "encrypted_entity_type",
+            "entity_type_nonce",
+            "nonce",
+            "owner",
+            "updated_at"
+          ],
+          "properties": {
+            "active": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "encrypted_document": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            },
+            "encrypted_entity_type": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            },
+            "entity_type_nonce": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            },
+            "nonce": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            },
+            "owner": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
+    }
+  }
+}
