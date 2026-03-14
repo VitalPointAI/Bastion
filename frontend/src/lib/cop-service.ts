@@ -237,12 +237,14 @@ class COPService {
 
   /**
    * Trigger COP layer generation for a workspace section.
+   * Returns the generated layer (generation runs synchronously on the backend).
    */
-  async triggerGeneration(problemSetId: string, sectionId: string): Promise<COPLayer> {
-    return this.fetch<COPLayer>('/api/cop/agents/trigger', {
+  async triggerGeneration(problemSetId: string, sectionId: string): Promise<COPLayer | null> {
+    const result = await this.fetch<{ status: string; layer: COPLayer | null }>('/api/cop/agents/trigger', {
       method: 'POST',
       body: JSON.stringify({ workspaceId: problemSetId, sectionId, triggeredBy: 'manual' }),
     });
+    return result.layer;
   }
 
   /**

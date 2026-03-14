@@ -237,25 +237,37 @@ function AddOSINTSourceModal({ problemSetId, onClose, onCreated }: AddOSINTModal
 
       await osintService.createFeed(input);
 
-      // If COP layer creation is requested, create a COP layer for this feed
+      // If COP layer creation is requested, create a COP layer for this OSINT feed
       if (createCopLayer) {
         try {
+          const layerSpec = {
+            layerId: `osint-intel-${Date.now()}`,
+            layerType: 'intel',
+            workspaceId: problemSetId,
+            sectionId: 'default',
+            symbols: [],
+            controlMeasures: [],
+            customAnnotations: [],
+            temporalPhases: [],
+            metadata: {
+              generatedBy: 'osint-feed-creation',
+              generatedAt: new Date().toISOString(),
+              sourceDocumentIds: [],
+              ccoValidated: false,
+              osintSourceName: sourceName.trim(),
+              osintSourceType: sourceType,
+              osintFeedEndpoint: endpointUrl.trim(),
+            },
+          };
           await fetch(`${API_BASE}/api/cop/layers`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
               workspaceId: problemSetId,
-              sectionId: 'osint',
-              layerType: 'osint',
-              spec: {
-                name: `OSINT: ${sourceName.trim()}`,
-                description: `Geo-referenced feed from ${osintService.sourceTypeLabel(sourceType)} source: ${sourceName.trim()}`,
-                sourceType,
-                feedEndpoint: endpointUrl.trim(),
-                symbols: [],
-                controlMeasures: [],
-              },
+              sectionId: 'default',
+              layerType: 'intel',
+              spec: layerSpec,
             }),
           });
         } catch {
