@@ -380,73 +380,97 @@ export function BrainVisualization({
     };
   }, [data]);
 
-  // ── 3D node rendering (optimized with caching) ────────────────────────────
+  // Clear object caches when graph data changes
+  useEffect(() => {
+    nodeObjCacheRef.current.clear();
+    linkSpriteCacheRef.current.clear();
+  }, [data]);
+
+  // ── 3D node rendering (with per-node object caching) ────────────────────────
+  //
+  // react-force-graph-3d calls nodeThreeObject for every node on every render
+  // cycle. To avoid GC pressure and GPU thrashing, we cache the THREE.Group
+  // per node ID and only rebuild when selection/dimming state actually changes.
+  const nodeObjCacheRef = useRef(new Map<string, { group: THREE.Group; key: string }>());
+  const selectedIdRef = useRef(selectedNodeId);
+  const selectedIdsRef = useRef(selectedNodeIds);
+
+  // Sync selection refs in effect (not during render) per react-hooks/refs rule
+  useEffect(() => {
+    selectedIdRef.current = selectedNodeId;
+    selectedIdsRef.current = selectedNodeIds;
+  }, [selectedNodeId, selectedNodeIds]);
+
   const nodeThreeObject = useCallback(
     (node: NodeObject) => {
       const brainNode = node as FGNode;
+      const cache = nodeObjCacheRef.current;
 
-      // ── Ghost stub rendering (Phase 45 — cross-boundary nodes at subspace boundary)
+      // ── Ghost stub rendering (Phase 45)
       if ((brainNode as { isGhostStub?: boolean }).isGhostStub) {
-        const ghostColor = 'rgba(100, 160, 255, 0.15)';
-        const ghostGeometry = getGeometry(brainNode.type ?? 'entity');
-        const ghostMaterial = getMaterial('#6490ff', 0.15);
+        const cached = cache.get(brainNode.id);
+        if (cached && cached.key === 'ghost') return cached.group;
         const group = new THREE.Group();
-        const mesh = new THREE.Mesh(ghostGeometry, ghostMaterial);
-        // Ghost stubs render at 40% the scale of a normal node
-        const ghostScale = 0.4;
-        mesh.scale.set(ghostScale, ghostScale, ghostScale);
+        const mesh = new THREE.Mesh(getGeometry(brainNode.type ?? 'entity'), getMaterial('#6490ff', 0.15));
+        mesh.scale.set(0.4, 0.4, 0.4);
         group.add(mesh);
-        // No label for ghost stubs — they are boundary hints only
-        void ghostColor;
+        cache.set(brainNode.id, { group, key: 'ghost' });
         return group;
       }
 
-      const isSelected =
-        brainNode.id === selectedNodeId || (selectedNodeIds?.includes(brainNode.id) ?? false);
+      const selId = selectedIdRef.current;
+      const selIds = selectedIdsRef.current;
+      const isSelected = brainNode.id === selId || (selIds?.includes(brainNode.id) ?? false);
       const isDimmed =
-        !!selectedNodeId &&
-        !isSelected &&
+        !!selId && !isSelected &&
         neighborhoodRef.current.size > 0 &&
         !neighborhoodRef.current.has(brainNode.id);
 
       const color = getNodeColor(brainNode);
-      const geometry = getGeometry(brainNode.type);
       const opacity = isDimmed ? 0.15 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
-      const material = getMaterial(color, opacity);
 
+      // Build a cache key from the visual state to detect actual changes
+      const cacheKey = `${color}|${opacity}|${isSelected ? 1 : 0}|${brainNode.isGap ? 1 : 0}|${brainNode.confidence}|${brainNode.centrality ?? 0}`;
+      const cached = cache.get(brainNode.id);
+      if (cached && cached.key === cacheKey) return cached.group;
+
+      // Rebuild the THREE.Group only when visual state changes
+      const geometry = getGeometry(brainNode.type);
+      const material = getMaterial(color, opacity);
       const group = new THREE.Group();
       const mesh = new THREE.Mesh(geometry, material);
 
-      // Scale by confidence + centrality boost for outlier actors
       const centralityBoost = (brainNode.centrality ?? 0) * 0.4;
       const scale = 0.6 + brainNode.confidence * 0.6 + centralityBoost;
       mesh.scale.set(scale, scale, scale);
       group.add(mesh);
 
-      // Selection ring — use pooled geometry
       if (isSelected) {
-        const ringGeo = getRingGeometry(scale);
-        const ring = new THREE.Mesh(ringGeo, getRingMaterial('#38bdf8', 0.8));
+        const ring = new THREE.Mesh(getRingGeometry(scale), getRingMaterial('#38bdf8', 0.8));
         group.add(ring);
       }
 
-      // Gap nodes: wireframe overlay
       if (brainNode.isGap) {
         const wire = new THREE.Mesh(getGeometry(brainNode.type), getWireMaterial('#ffaa00', 0.6));
         wire.scale.set(scale * 1.2, scale * 1.2, scale * 1.2);
         group.add(wire);
       }
 
-      // Persistent text label sprite — cached per node ID
       const displayLabel = getDisplayLabel(brainNode);
       const sprite = getCachedSprite(brainNode.id, displayLabel, isDimmed);
       sprite.position.set(0, NODE_SIZE * scale + 4, 0);
       group.add(sprite);
 
+      cache.set(brainNode.id, { group, key: cacheKey });
       return group;
     },
-    [selectedNodeId, selectedNodeIds],
+    [], // Stable callback — uses refs for selection state
   );
+
+  // Invalidate node object cache when selection changes
+  useEffect(() => {
+    nodeObjCacheRef.current.clear();
+  }, [selectedNodeId, selectedNodeIds]);
 
   // ── Link styling ──────────────────────────────────────────────────────────
   const linkColor = useCallback(
@@ -482,19 +506,28 @@ export function BrainVisualization({
   const linkCount = graphPayload.links.length;
   const showLinkLabels = linkCount < 100; // Only show link labels for small graphs
 
+  const linkSpriteCacheRef = useRef(new Map<string, THREE.Object3D>());
+  const emptyGroup = useMemo(() => new THREE.Group(), []);
+
   const linkThreeObject = useCallback(
     (link: object) => {
-      if (!showLinkLabels) return new THREE.Group();
+      if (!showLinkLabels) return emptyGroup;
       const fgLink = link as FGLink;
       const label = fgLink.type === 'related' ? '' : fgLink.type;
-      if (!label) return new THREE.Group();
+      if (!label) return emptyGroup;
+
+      const linkKey = `${fgLink.source}-${fgLink.target}-${fgLink.type}`;
+      const cached = linkSpriteCacheRef.current.get(linkKey);
+      if (cached) return cached;
+
       const sprite = new SpriteText(label);
       sprite.color = fgLink.isConflict ? 'rgba(255,100,100,0.7)' : 'rgba(180,200,255,0.5)';
       sprite.textHeight = 1.5;
       sprite.backgroundColor = 'transparent';
+      linkSpriteCacheRef.current.set(linkKey, sprite);
       return sprite;
     },
-    [showLinkLabels],
+    [showLinkLabels, emptyGroup],
   );
 
   const linkPositionUpdate = useCallback(

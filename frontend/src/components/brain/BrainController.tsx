@@ -17,7 +17,7 @@
  * and passes it down to the layout and sub-components via props.
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import type { ForceGraphMethods } from 'react-force-graph-3d';
 
 
@@ -218,7 +218,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
 
   const rightPanelOpen = selectedNodeId !== null || selectedNodeIds.length > 0 || gapPanelOpen;
 
-  // ── Processed graph data ────────────────────────────────────────────────────
+  // ── Processed graph data (memoized to avoid full graph rebuild per render) ──
   //
   // Pipeline:
   //   1. Start from drill-level data (subspace/node/document filtered by drill-down)
@@ -227,7 +227,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   //   4. Apply gap marking (marks gap nodes + adds ghost stubs for missing intelligence)
   //   5. Apply search dimming (set isSearchDimmed on non-matching nodes)
   //   6. Filter edges to visible nodes
-  const processedData: BrainGraphData = (() => {
+  const processedData: BrainGraphData = useMemo(() => {
     // Step 1: Start from drill-level data
     let baseNodes = drillLevel === 'full' ? effectiveData.nodes : drillData.nodes;
     let baseEdges = drillLevel === 'full' ? effectiveData.edges : drillData.edges;
@@ -245,11 +245,12 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     const withGaps = markGapNodes(lensFiltered);
 
     // Step 5: Apply search dimming
+    const searchSet = searchMatchIds ? new Set(searchMatchIds) : null;
     const withSearch =
-      searchMatchIds !== null
+      searchSet !== null
         ? withGaps.map((n) => ({
             ...n,
-            isSearchDimmed: !searchMatchIds.includes(n.id),
+            isSearchDimmed: !searchSet.has(n.id),
           }))
         : withGaps;
 
@@ -262,7 +263,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     });
 
     return { nodes: withSearch, edges: filteredEdges };
-  })();
+  }, [effectiveData, drillLevel, drillData, expandedData, applyLensFilters, markGapNodes, searchMatchIds]);
 
   // Derive selected node objects from the processed data
   const selectedNode = selectedNodeId
