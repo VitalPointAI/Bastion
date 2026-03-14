@@ -66,6 +66,7 @@ import assessmentRouter from './api/assessment-routes.js';
 import { strategicGuidanceRouter } from './strategic/guidance/routes.js';
 import docIntelligenceRouter from './api/doc-intelligence.js';
 import brainRouter from './api/brain.js';
+import brainSubspacesRouter from './api/brain-subspaces.js';
 
 dotenv.config();
 
@@ -217,6 +218,7 @@ app.use('/api/strategic-guidance', strategicGuidanceRouter);
 app.use('/api/doc-intelligence', docIntelligenceRouter);
 app.use('/api/robot', robotRouter);
 app.use('/api/brain', brainRouter);
+app.use('/api/brain', brainSubspacesRouter);
 // Bridge REST routes (Phase 43): /api/admin/bridge-tokens and /api/bridge/status
 // Routes in bridgeRouter include full path prefixes, so mount at root
 app.use('/', bridgeRouter);
