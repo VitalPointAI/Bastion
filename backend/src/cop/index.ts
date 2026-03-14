@@ -138,7 +138,7 @@ function wireGenerationTrigger(_triggerHandler: TriggerHandler): void {
 
       // Fetch OSINT events as additional documents for sub-agents
       try {
-        const osintEvents = await osintEventStore.listEvents({
+        const { events: osintEvents } = await osintEventStore.listEvents({
           workspaceId: data.workspaceId,
           limit: 100,
         });

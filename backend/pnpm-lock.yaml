@@ -89,6 +89,9 @@ importers:
       axios:
         specifier: ^1.13.2
         version: 1.13.6
+      bonjour-service:
+        specifier: ^1.3.0
+        version: 1.3.0
       casbin:
         specifier: ^5.48.0
         version: 5.49.0
@@ -158,6 +161,9 @@ importers:
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
+      rss-parser:
+        specifier: ^3.13.0
+        version: 3.13.0
       serialport:
         specifier: ^12.0.0
         version: 12.0.0
@@ -3190,6 +3196,9 @@ packages:
     resolution: {integrity: sha512-oP5VkATKlNwcgvxi0vM0p/D3n2C3EReYVX+DNYs5TjZFn/oQt2j+4sVJtSMr18pdRr8wjTcBl6LoV+FUwzPmNA==}
     engines: {node: '>=18'}
 
+  bonjour-service@1.3.0:
+    resolution: {integrity: sha512-3YuAUiSkWykd+2Azjgyxei8OWf8thdn8AITIog2M4UICzoqfjlqr64WIjEXZllf/W6vK1goqleSR6brGomxQqA==}
+
   borsh@1.0.0:
     resolution: {integrity: sha512-fSVWzzemnyfF89EPwlUNsrS5swF5CrtiN4e+h0/lLf4dz2he4L3ndM20PS9wj7ICSkXJe/TQUHdaPTq15b1mNQ==}
 
@@ -3664,6 +3673,9 @@ packages:
   encodeurl@2.0.0:
     resolution: {integrity: sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==}
     engines: {node: '>= 0.8'}
+
+  entities@2.2.0:
+    resolution: {integrity: sha512-p92if5Nz619I0w+akJrLZH0MX0Pb5DX39XOwQTtXSdQQOaYH03S1uIQp4mhOZtAXrxq4ViO67YTiLBo2638o9A==}
 
   entities@6.0.1:
     resolution: {integrity: sha512-aN97NXWF6AWBTahfVOIrB/NShkzi5H7F9r1s9mD3cDj4Ko5f2qhhVoYMibXF7GlLveb/D2ioWay8lxI97Ven3g==}
@@ -5628,6 +5640,9 @@ packages:
     resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
     engines: {node: '>= 18'}
 
+  rss-parser@3.13.0:
+    resolution: {integrity: sha512-7jWUBV5yGN3rqMMj7CZufl/291QAhvrrGpDNE4k/02ZchL0npisiYYqULF71jCEKoIiHvK/Q2e6IkDwPziT7+w==}
+
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
 
@@ -6436,6 +6451,10 @@ packages:
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
+
+  xml2js@0.5.0:
+    resolution: {integrity: sha512-drPFnkQJik/O+uPKpqSgr22mpuFHqKdbS835iAQrUC73L2F5WkboIRd63ai/2Yg6I1jzifPFKH2NTK+cfglkIA==}
+    engines: {node: '>=4.0.0'}
 
   xml2js@0.6.0:
     resolution: {integrity: sha512-eLTh0kA8uHceqesPqSE+VvO1CDDJWMwlQfB6LuN6T8w6MaDJ8Txm8P7s5cHD0miF0V+GGTZrDQfxPZQVsur33w==}
@@ -10902,6 +10921,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  bonjour-service@1.3.0:
+    dependencies:
+      fast-deep-equal: 3.1.3
+      multicast-dns: 7.2.5
+
   borsh@1.0.0: {}
 
   bowser@2.14.1: {}
@@ -11435,6 +11459,8 @@ snapshots:
     optional: true
 
   encodeurl@2.0.0: {}
+
+  entities@2.2.0: {}
 
   entities@6.0.1: {}
 
@@ -13992,6 +14018,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  rss-parser@3.13.0:
+    dependencies:
+      entities: 2.2.0
+      xml2js: 0.5.0
+
   run-parallel@1.2.0:
     dependencies:
       queue-microtask: 1.2.3
@@ -14842,6 +14873,11 @@ snapshots:
 
   xml-name-validator@5.0.0: {}
 
+  xml2js@0.5.0:
+    dependencies:
+      sax: 1.5.0
+      xmlbuilder: 11.0.1
+
   xml2js@0.6.0:
     dependencies:
       sax: 1.5.0
@@ -14850,8 +14886,7 @@ snapshots:
 
   xml@1.0.1: {}
 
-  xmlbuilder@11.0.1:
-    optional: true
+  xmlbuilder@11.0.1: {}
 
   xmlbuilder@15.1.1:
     optional: true

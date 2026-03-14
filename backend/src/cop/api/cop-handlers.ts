@@ -553,7 +553,7 @@ export const agentHandlers = {
       // Fetch OSINT events as additional documents
       try {
         const { osintEventStore } = await import('../../graph/osint/event-store.js');
-        const osintEvents = await osintEventStore.listEvents({
+        const { events: osintEvents } = await osintEventStore.listEvents({
           workspaceId: body.workspaceId,
           limit: 100,
         });
