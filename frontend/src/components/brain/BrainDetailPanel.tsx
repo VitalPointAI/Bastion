@@ -173,14 +173,49 @@ function SingleNodeView({
         </div>
       </div>
 
-      {/* Description / content */}
+      {/* Description / content — enhanced for gap nodes */}
       {(node.description || node.role) && (
         <div className="brain-detail-section">
-          <div className="brain-detail-section-title">Description</div>
+          <div className="brain-detail-section-title">
+            {node.isGap ? 'Gap Analysis' : 'Description'}
+          </div>
           {node.description && (
-            <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, margin: 0 }}>
-              {node.description}
-            </p>
+            <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.6, margin: 0 }}>
+              {node.description.split('\n').map((line, i) => {
+                // Highlight key question and recommended action lines
+                if (line.startsWith('Key question:')) {
+                  return (
+                    <p key={i} style={{ margin: '0.4rem 0', color: '#fbbf24' }}>
+                      {line}
+                    </p>
+                  );
+                }
+                if (line.startsWith('Recommended action:')) {
+                  return (
+                    <p key={i} style={{ margin: '0.4rem 0', color: '#34d399' }}>
+                      {line}
+                    </p>
+                  );
+                }
+                if (line.startsWith('Priority:')) {
+                  return (
+                    <p key={i} style={{ margin: '0.4rem 0', color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontStyle: 'italic' }}>
+                      {line}
+                    </p>
+                  );
+                }
+                if (line.startsWith('Assumptions:') || line.startsWith('Risks:') || line.startsWith('Constraints:')) {
+                  const [heading, ...rest] = line.split(': ');
+                  return (
+                    <p key={i} style={{ margin: '0.4rem 0' }}>
+                      <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>{heading}:</span>{' '}
+                      <span style={{ fontSize: '0.8rem' }}>{rest.join(': ')}</span>
+                    </p>
+                  );
+                }
+                return line ? <p key={i} style={{ margin: '0.2rem 0' }}>{line}</p> : null;
+              })}
+            </div>
           )}
           {node.role && (
             <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', marginTop: '0.3rem' }}>

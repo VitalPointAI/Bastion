@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import ms from 'milsymbol';
 import 'leaflet/dist/leaflet.css';
+import { DARK_TILE_URL, DARK_TILE_ATTRIBUTION, DARK_TILE_SUBDOMAINS } from '../../lib/map-tiles';
 import './COASketchMap.css';
 
 // ==========================================================================
@@ -322,8 +323,10 @@ export function COASketchMap({
         ]}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution={DARK_TILE_ATTRIBUTION}
+          url={DARK_TILE_URL}
+          subdomains={DARK_TILE_SUBDOMAINS}
+          maxZoom={18}
         />
         <SVGOverlay
           sketch={sketch}

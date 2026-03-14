@@ -378,17 +378,35 @@ router.get('/validity/objectives', async (req: Request, res: Response) => {
           const trendResult = await validityService.calculateTrend(obj.id);
           return {
             id: obj.id,
+            objective_text: obj.description,
+            midlife_category: obj.midlifeCategory,
+            extraction_confidence: obj.extractionConfidence,
+            created_at: obj.createdAt?.toISOString(),
+            primary_instrument: obj.primaryInstrument,
+            priority: obj.priority,
+            assumptions: obj.assumptions,
+            risks: obj.risks,
+            constraints: obj.constraints,
             objectiveTitle: obj.description.slice(0, 100),
             validityScore: validity.score,
             trend: mapTrend(trendResult.trend),
             lastUpdated: validity.calculatedAt,
-            classification: 'UNCLASSIFIED', // Default for now
+            classification: 'UNCLASSIFIED',
           };
         } catch {
           return {
             id: obj.id,
+            objective_text: obj.description,
+            midlife_category: obj.midlifeCategory,
+            extraction_confidence: obj.extractionConfidence,
+            created_at: obj.createdAt?.toISOString(),
+            primary_instrument: obj.primaryInstrument,
+            priority: obj.priority,
+            assumptions: obj.assumptions,
+            risks: obj.risks,
+            constraints: obj.constraints,
             objectiveTitle: obj.description.slice(0, 100),
-            validityScore: 70, // Default baseline
+            validityScore: 70,
             trend: 'stable' as const,
             lastUpdated: new Date().toISOString(),
             classification: 'UNCLASSIFIED',

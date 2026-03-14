@@ -13,6 +13,7 @@ import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { DARK_TILE_URL, DARK_TILE_ATTRIBUTION, DARK_TILE_SUBDOMAINS } from '../../../../lib/map-tiles';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import type { MissionFormData } from '../MissionWizard.js';
 import type { GeoJSONPolygon } from '../../../../lib/mission-service.js';
@@ -108,9 +109,9 @@ export function AreaStep({ formData, updateFormData }: AreaStepProps) {
           style={{ height: '500px', width: '100%' }}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            subdomains="abcd"
+            attribution={DARK_TILE_ATTRIBUTION}
+            url={DARK_TILE_URL}
+            subdomains={DARK_TILE_SUBDOMAINS}
             maxZoom={18}
             noWrap={true}
           />

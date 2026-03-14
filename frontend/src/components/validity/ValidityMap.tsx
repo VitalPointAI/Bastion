@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon, Polyline, Laye
 import L from 'leaflet';
 import ms from 'milsymbol';
 import 'leaflet/dist/leaflet.css';
+import { DARK_TILE_URL, DARK_TILE_ATTRIBUTION, DARK_TILE_SUBDOMAINS } from '../../lib/map-tiles';
 import './ValidityMap.css';
 import type { IPBLayer } from '../../types/exercise';
 
@@ -495,7 +496,7 @@ function IPBLayerRenderer({ ipbLayers, layerVisibility, perspective }: IPBLayerR
 
 // ─── Dark Tile Config ─────────────────────────────────────────────────────────
 
-const DARK_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+// Tile URL imported from shared map-tiles config
 
 // ─── ValidityMap ───────────────────────────────────────────────────────────────
 
@@ -554,11 +555,11 @@ export function ValidityMap({
         maxBoundsViscosity={1.0}
         className="map-container"
       >
-        {/* Dark theme tiles from CARTO */}
+        {/* Dark theme tiles with English labels */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          attribution={DARK_TILE_ATTRIBUTION}
           url={DARK_TILE_URL}
-          subdomains="abcd"
+          subdomains={DARK_TILE_SUBDOMAINS}
           maxZoom={18}
           noWrap={true}
           bounds={[[-85, -180], [85, 180]]}
