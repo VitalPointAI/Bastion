@@ -507,14 +507,15 @@ export function BrainVisualization({
   const showLinkLabels = linkCount < 100; // Only show link labels for small graphs
 
   const linkSpriteCacheRef = useRef(new Map<string, THREE.Object3D>());
-  const emptyGroup = useMemo(() => new THREE.Group(), []);
 
   const linkThreeObject = useCallback(
     (link: object) => {
-      if (!showLinkLabels) return emptyGroup;
+      // Must return a unique THREE.Object3D per link — shared instances cause
+      // Three.js reparenting which corrupts the force graph scene graph
+      if (!showLinkLabels) return new THREE.Group();
       const fgLink = link as FGLink;
       const label = fgLink.type === 'related' ? '' : fgLink.type;
-      if (!label) return emptyGroup;
+      if (!label) return new THREE.Group();
 
       const linkKey = `${fgLink.source}-${fgLink.target}-${fgLink.type}`;
       const cached = linkSpriteCacheRef.current.get(linkKey);
@@ -527,7 +528,7 @@ export function BrainVisualization({
       linkSpriteCacheRef.current.set(linkKey, sprite);
       return sprite;
     },
-    [showLinkLabels, emptyGroup],
+    [showLinkLabels],
   );
 
   const linkPositionUpdate = useCallback(
