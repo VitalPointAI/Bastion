@@ -299,6 +299,78 @@
   overflow-y: auto;
 }
 
+/* ─── Document list with delete ──────────────────────────────────────────────── */
+
+.ingestion-doc-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ingestion-doc-loading {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.3);
+  padding: 0.4rem 0.5rem;
+}
+
+.ingestion-doc-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.ingestion-doc-item:last-child {
+  border-bottom: none;
+}
+
+.ingestion-doc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ingestion-doc-title {
+  font-size: 0.73rem;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ingestion-doc-meta {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 1px;
+}
+
+.ingestion-doc-delete-btn {
+  background: none;
+  border: 1px solid rgba(255, 100, 100, 0.15);
+  color: rgba(255, 100, 100, 0.5);
+  font-size: 0.65rem;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.ingestion-doc-delete-btn:hover:not(:disabled) {
+  background: rgba(255, 100, 100, 0.15);
+  color: rgba(255, 100, 100, 0.9);
+  border-color: rgba(255, 100, 100, 0.4);
+}
+
+.ingestion-doc-delete-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ─── Doc intelligence embed ─────────────────────────────────────────────────── */
 
 .ingestion-doc-intel-wrapper {
