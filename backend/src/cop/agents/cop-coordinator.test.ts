@@ -225,7 +225,7 @@ describe('COP Coordinator Graph Routing', () => {
 
     // Should complete successfully with partial results
     expect(result.status).toBe('complete');
-    expect(result.assembledLayer).not.toBeNull();
+    expect(result.assembledLayers).not.toBeNull();
 
     // Layer store should have been called to persist
     expect(layerStore.createLayer).toHaveBeenCalledTimes(1);
@@ -247,7 +247,7 @@ describe('COP Coordinator Graph Routing', () => {
     });
 
     expect(result.status).toBe('complete');
-    expect(result.assembledLayer).not.toBeNull();
+    expect(result.assembledLayers).not.toBeNull();
     expect(layerStore.createLayer).toHaveBeenCalledTimes(1);
     expect(layerStore.createLayer).toHaveBeenCalledWith(
       expect.objectContaining({
