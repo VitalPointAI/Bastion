@@ -9,11 +9,13 @@
  * DocIntelligencePanel in a collapsible section for document upload.
  */
 
-import { type ReactNode, useState, useCallback } from 'react';
+import { type ReactNode, useState, useCallback, useEffect } from 'react';
 import { useBrainIngestion } from './hooks/useBrainIngestion.js';
 import { DocIntelligencePanel } from '../doc-intelligence/DocIntelligencePanel.js';
 import type { IngestionEvent, ProcessStatus } from './hooks/useBrainIngestion.js';
 import './IngestionSidebar.css';
+
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -133,16 +135,69 @@ function EventItem({ event }: EventItemProps) {
   );
 }
 
+// ─── Document types ──────────────────────────────────────────────────────────
+
+interface IngestionDocument {
+  id: string;
+  title: string;
+  classification?: string;
+  objectiveCount?: number;
+  createdAt?: string;
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSidebarProps) {
   const [activeFilter, setActiveFilter] = useState<SourceFilter>('All');
   const [docIntelOpen, setDocIntelOpen] = useState(false);
+  const [documents, setDocuments] = useState<IngestionDocument[]>([]);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [docsLoading, setDocsLoading] = useState(false);
 
   const { events, activeProcesses } = useBrainIngestion(
     problemSetId,
     !!problemSetId,
   );
+
+  // ── Fetch documents ──────────────────────────────────────────────────────
+  const fetchDocuments = useCallback(async () => {
+    if (!problemSetId) return;
+    setDocsLoading(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/strategic/documents?workspaceId=${encodeURIComponent(problemSetId)}`,
+        { credentials: 'include' },
+      );
+      if (!res.ok) return;
+      const data = await res.json() as { documents?: IngestionDocument[] };
+      setDocuments(data.documents ?? []);
+    } catch {
+      // Non-fatal
+    } finally {
+      setDocsLoading(false);
+    }
+  }, [problemSetId]);
+
+  useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
+
+  // ── Delete document with cascade ────────────────────────────────────────
+  const handleDeleteDocument = useCallback(async (docId: string, docTitle: string) => {
+    if (!confirm(`Delete "${docTitle}" and all related objectives, actors, and graph nodes?`)) return;
+    setDeletingDocId(docId);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/strategic/documents/${encodeURIComponent(docId)}`,
+        { method: 'DELETE', credentials: 'include' },
+      );
+      if (res.ok) {
+        setDocuments((prev) => prev.filter((d) => d.id !== docId));
+      }
+    } catch {
+      // Non-fatal
+    } finally {
+      setDeletingDocId(null);
+    }
+  }, []);
 
   const handleUploadClick = useCallback(() => {
     setDocIntelOpen(true);
@@ -175,6 +230,39 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
         <CollapsibleSection title="Document Upload" defaultOpen={true}>
           <div className="ingestion-doc-intel-wrapper">
             <DocIntelligencePanel problemSetId={problemSetId} />
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* ── Documents list with delete ── */}
+      {documents.length > 0 && (
+        <CollapsibleSection title={`Documents (${documents.length})`} defaultOpen={true}>
+          <div className="ingestion-doc-list">
+            {docsLoading && <div className="ingestion-doc-loading">Loading...</div>}
+            {documents.map((doc) => (
+              <div key={doc.id} className="ingestion-doc-item">
+                <div className="ingestion-doc-info">
+                  <div className="ingestion-doc-title" title={doc.title}>
+                    {doc.title}
+                  </div>
+                  <div className="ingestion-doc-meta">
+                    {doc.classification ?? 'UNCLASSIFIED'}
+                    {doc.objectiveCount != null && doc.objectiveCount > 0
+                      ? ` · ${doc.objectiveCount} objectives`
+                      : ''}
+                  </div>
+                </div>
+                <button
+                  className="ingestion-doc-delete-btn"
+                  onClick={() => handleDeleteDocument(doc.id, doc.title)}
+                  disabled={deletingDocId === doc.id}
+                  title="Delete document and related graph data"
+                  aria-label={`Delete ${doc.title}`}
+                >
+                  {deletingDocId === doc.id ? '...' : '\u2715'}
+                </button>
+              </div>
+            ))}
           </div>
         </CollapsibleSection>
       )}

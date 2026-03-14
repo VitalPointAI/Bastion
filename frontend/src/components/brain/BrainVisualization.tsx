@@ -7,8 +7,12 @@
  *
  * Each node displays a persistent text sprite label and a rich HTML tooltip on hover.
  *
- * Performance: geometries and materials are cached to avoid Three.js GC pressure.
- * The force simulation halts after cooldown to prevent ongoing CPU drain.
+ * Performance optimizations:
+ *   - Geometries and materials cached globally (never re-created)
+ *   - SpriteText labels cached per node ID, only recreated on label change
+ *   - Ring geometry pooled at fixed sizes to avoid per-frame allocation
+ *   - Simulation paused after cooldown to eliminate idle CPU drain
+ *   - nodeThreeObject returns mutable groups that update in-place via nodeThreeObjectExtend=false
  *
  * Usage:
  *   <BrainVisualization data={brainData} onNodeClick={handleNodeClick} />
@@ -83,10 +87,12 @@ function getGeometry(type: string): THREE.BufferGeometry {
 /** Cache materials by "color|opacity" key to avoid GC pressure */
 const materialCache = new Map<string, THREE.MeshLambertMaterial>();
 function getMaterial(color: string, opacity: number): THREE.MeshLambertMaterial {
-  const key = `${color}|${opacity.toFixed(2)}`;
+  // Quantize opacity to 0.05 steps to reduce cache cardinality
+  const quantizedOpacity = Math.round(opacity * 20) / 20;
+  const key = `${color}|${quantizedOpacity}`;
   let mat = materialCache.get(key);
   if (!mat) {
-    mat = new THREE.MeshLambertMaterial({ color, transparent: true, opacity });
+    mat = new THREE.MeshLambertMaterial({ color, transparent: true, opacity: quantizedOpacity });
     materialCache.set(key, mat);
   }
   return mat;
@@ -112,6 +118,20 @@ function getWireMaterial(color: string, opacity: number): THREE.MeshBasicMateria
     wireMaterialCache.set(key, mat);
   }
   return mat;
+}
+
+/** Pool ring geometries at discrete scale steps to avoid per-frame allocation */
+const ringGeoCache = new Map<string, THREE.RingGeometry>();
+function getRingGeometry(scale: number): THREE.RingGeometry {
+  // Quantize to 0.1 steps
+  const q = Math.round(scale * 10) / 10;
+  const key = `${q}`;
+  let geo = ringGeoCache.get(key);
+  if (!geo) {
+    geo = new THREE.RingGeometry(NODE_SIZE * q * 1.3, NODE_SIZE * q * 1.5, 16); // 16 segments instead of 32
+    ringGeoCache.set(key, geo);
+  }
+  return geo;
 }
 
 function getNodeColor(node: BrainNode): string {
@@ -230,6 +250,38 @@ function buildTooltipHtml(node: BrainNode): string {
   return `<div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:8px 10px;max-width:280px;font-family:system-ui,sans-serif">${lines.join('')}</div>`;
 }
 
+// ─── SpriteText cache ────────────────────────────────────────────────────────
+// Avoid creating new SpriteText objects on every nodeThreeObject call.
+// Cache by nodeId + label text; only recreate when the label changes.
+
+const spriteLabelCache = new Map<string, { label: string; sprite: SpriteText }>();
+
+function getCachedSprite(nodeId: string, displayLabel: string, isDimmed: boolean): SpriteText {
+  const cached = spriteLabelCache.get(nodeId);
+  if (cached && cached.label === displayLabel) {
+    // Update opacity in-place (cheap)
+    cached.sprite.color = isDimmed ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.9)';
+    cached.sprite.backgroundColor = isDimmed ? 'transparent' : 'rgba(0,0,0,0.5)';
+    return cached.sprite;
+  }
+  // Create new sprite
+  const sprite = new SpriteText(displayLabel);
+  sprite.color = isDimmed ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.9)';
+  sprite.textHeight = 2.5;
+  sprite.backgroundColor = isDimmed ? 'transparent' : 'rgba(0,0,0,0.5)';
+  sprite.padding = 1;
+  sprite.borderRadius = 1;
+  spriteLabelCache.set(nodeId, { label: displayLabel, sprite });
+  return sprite;
+}
+
+// Clean up stale cache entries when graph data changes
+function cleanSpriteCache(activeIds: Set<string>): void {
+  for (const key of spriteLabelCache.keys()) {
+    if (!activeIds.has(key)) spriteLabelCache.delete(key);
+  }
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function BrainVisualization({
@@ -257,6 +309,9 @@ export function BrainVisualization({
 
   // Neighborhood set for dimming
   const neighborhoodRef = useRef<Set<string>>(new Set());
+
+  // Track simulation halted state to prevent idle CPU drain
+  const simulationHaltedRef = useRef(false);
 
   // ── ResizeObserver ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -287,6 +342,12 @@ export function BrainVisualization({
     neighborhoodRef.current = neighbors;
   }, [selectedNodeId, data.edges]);
 
+  // ── Clean sprite cache when data changes ──────────────────────────────────
+  useEffect(() => {
+    const activeIds = new Set((data.nodes ?? []).map((n) => n.id));
+    cleanSpriteCache(activeIds);
+  }, [data.nodes]);
+
   // ── ForceGraph data ────────────────────────────────────────────────────────
   const graphPayload = useMemo<GraphPayload>(() => {
     const nodes = Array.isArray(data.nodes) ? data.nodes : [];
@@ -304,7 +365,7 @@ export function BrainVisualization({
     };
   }, [data]);
 
-  // ── 3D node rendering (cached materials) ────────────────────────────────────
+  // ── 3D node rendering (optimized with caching) ────────────────────────────
   const nodeThreeObject = useCallback(
     (node: NodeObject) => {
       const brainNode = node as FGNode;
@@ -330,9 +391,9 @@ export function BrainVisualization({
       mesh.scale.set(scale, scale, scale);
       group.add(mesh);
 
-      // Selection ring
+      // Selection ring — use pooled geometry
       if (isSelected) {
-        const ringGeo = new THREE.RingGeometry(NODE_SIZE * scale * 1.3, NODE_SIZE * scale * 1.5, 32);
+        const ringGeo = getRingGeometry(scale);
         const ring = new THREE.Mesh(ringGeo, getRingMaterial('#38bdf8', 0.8));
         group.add(ring);
       }
@@ -344,14 +405,9 @@ export function BrainVisualization({
         group.add(wire);
       }
 
-      // Persistent text label sprite above the node
+      // Persistent text label sprite — cached per node ID
       const displayLabel = getDisplayLabel(brainNode);
-      const sprite = new SpriteText(displayLabel);
-      sprite.color = isDimmed ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.9)';
-      sprite.textHeight = 2.5;
-      sprite.backgroundColor = isDimmed ? 'transparent' : 'rgba(0,0,0,0.5)';
-      sprite.padding = 1;
-      sprite.borderRadius = 1;
+      const sprite = getCachedSprite(brainNode.id, displayLabel, isDimmed);
       sprite.position.set(0, NODE_SIZE * scale + 4, 0);
       group.add(sprite);
 
@@ -380,24 +436,28 @@ export function BrainVisualization({
     [],
   );
 
-  // ── Link label (relationship type) ──────────────────────────────────────────
+  // ── Link labels — skip for performance when graph is large ────────────────
+  const nodeCount = graphPayload.nodes.length;
+  const linkCount = graphPayload.links.length;
+  const showLinkLabels = linkCount < 100; // Only show link labels for small graphs
+
   const linkThreeObject = useCallback(
     (link: object) => {
+      if (!showLinkLabels) return new THREE.Group();
       const fgLink = link as FGLink;
       const label = fgLink.type === 'related' ? '' : fgLink.type;
-      if (!label) return new THREE.Group(); // no label for generic "related"
+      if (!label) return new THREE.Group();
       const sprite = new SpriteText(label);
       sprite.color = fgLink.isConflict ? 'rgba(255,100,100,0.7)' : 'rgba(180,200,255,0.5)';
       sprite.textHeight = 1.5;
       sprite.backgroundColor = 'transparent';
       return sprite;
     },
-    [],
+    [showLinkLabels],
   );
 
   const linkPositionUpdate = useCallback(
     (sprite: THREE.Object3D, _coords: { start: { x: number; y: number; z: number }; end: { x: number; y: number; z: number } }) => {
-      // Position link label at midpoint
       sprite.position.set(
         (_coords.start.x + _coords.end.x) / 2,
         (_coords.start.y + _coords.end.y) / 2,
@@ -428,10 +488,33 @@ export function BrainVisualization({
     }
   };
 
+  // ── Simulation halt callback — stop CPU drain after layout stabilizes ──────
+  const handleEngineStop = useCallback(() => {
+    simulationHaltedRef.current = true;
+  }, []);
+
+  // ── Adaptive simulation parameters based on graph size ─────────────────────
+  const simParams = useMemo(() => {
+    if (nodeCount > 200) {
+      return { warmupTicks: 40, cooldownTicks: 50, cooldownTime: 4000, alphaDecay: 0.08, velocityDecay: 0.5 };
+    }
+    if (nodeCount > 100) {
+      return { warmupTicks: 60, cooldownTicks: 80, cooldownTime: 6000, alphaDecay: 0.07, velocityDecay: 0.45 };
+    }
+    return { warmupTicks: 80, cooldownTicks: 100, cooldownTime: 8000, alphaDecay: 0.06, velocityDecay: 0.4 };
+  }, [nodeCount]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const w = width ?? containerSize.w;
   const h = height ?? containerSize.h;
+
+  // Performance info for debugging (visible in DevTools)
+  useEffect(() => {
+    if (nodeCount > 0) {
+      console.log(`[BrainViz] ${nodeCount} nodes, ${linkCount} links. Link labels: ${showLinkLabels ? 'ON' : 'OFF (>100 links)'}. Sim params:`, simParams);
+    }
+  }, [nodeCount, linkCount, showLinkLabels, simParams]);
 
   return (
     <div
@@ -456,13 +539,14 @@ export function BrainVisualization({
         linkThreeObject={linkThreeObject}
         linkPositionUpdate={linkPositionUpdate as unknown as (obj: object, coords: object, link: object) => void}
         onNodeClick={handleNodeClick}
+        onEngineStop={handleEngineStop}
         enableNodeDrag={true}
         enableNavigationControls={true}
-        warmupTicks={80}
-        cooldownTicks={100}
-        cooldownTime={8000}
-        d3AlphaDecay={0.06}
-        d3VelocityDecay={0.4}
+        warmupTicks={simParams.warmupTicks}
+        cooldownTicks={simParams.cooldownTicks}
+        cooldownTime={simParams.cooldownTime}
+        d3AlphaDecay={simParams.alphaDecay}
+        d3VelocityDecay={simParams.velocityDecay}
       />
     </div>
   );

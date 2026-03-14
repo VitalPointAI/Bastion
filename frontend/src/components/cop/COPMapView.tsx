@@ -12,7 +12,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Polygon, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { DARK_TILE_URL, DARK_TILE_ATTRIBUTION, DARK_TILE_SUBDOMAINS } from '../../lib/map-tiles';
+import { LIGHT_TILE_URL, LIGHT_TILE_ATTRIBUTION, LIGHT_TILE_SUBDOMAINS } from '../../lib/map-tiles';
 import './COPMapView.css';
 
 import type {
@@ -140,9 +140,9 @@ export function COPMapView({
         scrollWheelZoom={true}
       >
         <TileLayer
-          attribution={DARK_TILE_ATTRIBUTION}
-          url={DARK_TILE_URL}
-          subdomains={DARK_TILE_SUBDOMAINS}
+          attribution={LIGHT_TILE_ATTRIBUTION}
+          url={LIGHT_TILE_URL}
+          subdomains={LIGHT_TILE_SUBDOMAINS}
           maxZoom={18}
         />
 
