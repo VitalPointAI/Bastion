@@ -115,9 +115,14 @@ export function setupRobotWebSocket(serverOrWss: HTTPServer | WebSocketServer): 
 
   const service = getRobotMissionService();
 
-  wss.on('connection', (rawWs: WebSocket) => {
+  wss.on('connection', (rawWs: WebSocket, request: import('http').IncomingMessage) => {
     const ws = rawWs as RobotWS;
-    console.log('[RobotWS] New robot connection');
+    const remoteAddress = request.socket.remoteAddress ?? 'unknown';
+    const remotePort = request.socket.remotePort ?? 0;
+    console.log(`[RobotWS] New robot connection from ${remoteAddress}:${remotePort}`);
+    // Stash network info on the socket for use during registration
+    (ws as unknown as Record<string, unknown>)._remoteAddress = remoteAddress;
+    (ws as unknown as Record<string, unknown>)._remotePort = remotePort;
 
     ws.on('message', (data) => {
       let parsed: unknown;

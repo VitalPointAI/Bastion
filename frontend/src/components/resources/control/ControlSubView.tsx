@@ -66,6 +66,11 @@ interface RobotInfo {
     heading: number;
     battery: number;
   };
+  network?: {
+    remoteAddress: string;
+    remotePort: number;
+    connectedAt: string;
+  };
 }
 
 interface Waypoint {
@@ -423,6 +428,51 @@ export function ControlSubView({ problemSetId }: ControlSubViewProps) {
                   </div>
                 )}
               </div>
+
+              {/* Network info + SSH */}
+              {robot?.network && (
+                <div style={{
+                  padding: '0.75rem',
+                  background: 'var(--surface-secondary, #1e293b)',
+                  borderRadius: '0.5rem',
+                  border: '1px solid var(--border-color, #334155)',
+                }}>
+                  <div style={{ fontSize: '0.6875rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.375rem' }}>
+                    Network
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.125rem 0.75rem', fontSize: '0.75rem' }}>
+                    <span style={{ color: '#64748b' }}>IP Address</span>
+                    <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>{robot.network.remoteAddress}</span>
+                    <span style={{ color: '#64748b' }}>Port</span>
+                    <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>{robot.network.remotePort}</span>
+                    <span style={{ color: '#64748b' }}>Connected</span>
+                    <span style={{ color: '#e2e8f0' }}>{new Date(robot.network.connectedAt).toLocaleString()}</span>
+                  </div>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.625rem', color: '#64748b', marginBottom: '0.125rem' }}>SSH</div>
+                    <code
+                      style={{
+                        display: 'block',
+                        fontSize: '0.6875rem',
+                        color: '#93c5fd',
+                        background: '#0f172a',
+                        padding: '0.375rem 0.5rem',
+                        borderRadius: '0.25rem',
+                        fontFamily: 'monospace',
+                        cursor: 'pointer',
+                        border: '1px solid #1e3a5f',
+                      }}
+                      title="Click to copy"
+                      onClick={() => {
+                        const cmd = `ssh bastion@${robot.network!.remoteAddress}`;
+                        navigator.clipboard.writeText(cmd);
+                      }}
+                    >
+                      ssh bastion@{robot.network.remoteAddress}
+                    </code>
+                  </div>
+                </div>
+              )}
 
               {/* Available commands grouped */}
               <div>

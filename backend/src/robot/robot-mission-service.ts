@@ -238,6 +238,11 @@ export class RobotMissionService {
       return;
     }
 
+    // Extract network info stashed on the socket by robot-ws.ts connection handler
+    const wsAny = ws as unknown as Record<string, unknown>;
+    const remoteAddress = (wsAny._remoteAddress as string) ?? 'unknown';
+    const remotePort = (wsAny._remotePort as number) ?? 0;
+
     const connected: ConnectedRobot = {
       robot_id,
       ws,
@@ -245,6 +250,11 @@ export class RobotMissionService {
       did,
       capabilities: capabilities ?? [],
       last_heartbeat: Date.now(),
+      network: {
+        remoteAddress,
+        remotePort,
+        connectedAt: new Date().toISOString(),
+      },
     };
 
     this.connectedRobots.set(robot_id, connected);

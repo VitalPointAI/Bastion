@@ -151,6 +151,7 @@ robotRouter.get('/robots', (_req, res) => {
       current_mission_id: r.current_mission_id,
       last_heartbeat: r.last_heartbeat,
       latest_telemetry: r.latest_telemetry,
+      network: r.network,
       latest_vision: r.latest_vision ? {
         timestamp: r.latest_vision.timestamp,
         mission_id: r.latest_vision.mission_id,

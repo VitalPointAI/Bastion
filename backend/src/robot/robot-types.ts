@@ -440,6 +440,12 @@ export interface ConnectedRobot {
   };
   /** Latest vision event received from this robot */
   latest_vision?: RobotVisionMsg;
+  /** Network metadata captured from WebSocket connection */
+  network?: {
+    remoteAddress: string;
+    remotePort: number;
+    connectedAt: string;
+  };
 }
 
 // ---------------------------------------------------------------------------
