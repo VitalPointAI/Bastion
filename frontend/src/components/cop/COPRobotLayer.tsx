@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Tooltip, useMap } from 'react-leaflet';
+import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -23,6 +23,9 @@ interface RobotInfo {
     position: { x: number; y: number };
     heading: number;
     battery: number;
+  };
+  latest_vision?: {
+    detections: { class_desc: string; confidence: number }[];
   };
 }
 
@@ -93,11 +96,29 @@ function roomToLatLng(x: number, y: number): [number, number] {
 // ─── Smooth marker component ──────────────────────────────────────────────
 
 const POLL_INTERVAL = 3000;
-const LERP_STEP_MS = 50; // 20fps interpolation
 
 interface SmoothTarget {
   lat: number;
   lng: number;
+}
+
+function buildTooltip(robot: RobotInfo): string {
+  const stateColor = STATE_COLORS[robot.state] || DEFAULT_COLOR;
+  const stateLabel = robot.current_mission_id ? robot.state || 'active' : 'idle';
+  const battery = robot.latest_telemetry ? `Battery: ${robot.latest_telemetry.battery ?? '?'}%` : '';
+  const detections = robot.latest_vision?.detections;
+  const visionLine = detections && detections.length > 0
+    ? `Detected: ${detections.map(d => `${d.class_desc} (${(d.confidence * 100).toFixed(0)}%)`).join(', ')}`
+    : '';
+
+  return `
+    <div style="font-size: 11px; font-family: 'Fira Code', monospace; text-align: center;">
+      <strong>${robot.robot_id}</strong><br/>
+      <span style="color: ${stateColor}">${stateLabel}</span>
+      ${battery ? `<br/><span style="color: #888">${battery}</span>` : ''}
+      ${visionLine ? `<br/><span style="color: #22c55e">${visionLine}</span>` : ''}
+    </div>
+  `;
 }
 
 function SmoothRobotMarker({
@@ -125,17 +146,7 @@ function SmoothRobotMarker({
     const marker = L.marker([lat, lng], { icon }).addTo(map);
     marker.on('click', () => onRobotClick?.(robot.robot_id));
 
-    // Add tooltip
-    const tooltipContent = `
-      <div style="font-size: 11px; font-family: 'Fira Code', monospace; text-align: center;">
-        <strong>${robot.robot_id}</strong><br/>
-        <span style="color: ${STATE_COLORS[robot.state] || DEFAULT_COLOR}">
-          ${robot.current_mission_id ? robot.state || 'active' : 'idle'}
-        </span>
-        ${robot.latest_telemetry ? `<br/><span style="color: #888">Battery: ${robot.latest_telemetry.battery ?? '?'}%</span>` : ''}
-      </div>
-    `;
-    marker.bindTooltip(tooltipContent, { direction: 'bottom', offset: [0, 14] });
+    marker.bindTooltip(buildTooltip(robot), { direction: 'bottom', offset: [0, 14] });
 
     markerRef.current = marker;
     prevPos.current = { lat, lng };
@@ -157,16 +168,7 @@ function SmoothRobotMarker({
     marker.setIcon(createRobotIcon(iconState));
 
     // Update tooltip
-    const tooltipContent = `
-      <div style="font-size: 11px; font-family: 'Fira Code', monospace; text-align: center;">
-        <strong>${robot.robot_id}</strong><br/>
-        <span style="color: ${STATE_COLORS[robot.state] || DEFAULT_COLOR}">
-          ${robot.current_mission_id ? robot.state || 'active' : 'idle'}
-        </span>
-        ${robot.latest_telemetry ? `<br/><span style="color: #888">Battery: ${robot.latest_telemetry.battery ?? '?'}%</span>` : ''}
-      </div>
-    `;
-    marker.setTooltipContent(tooltipContent);
+    marker.setTooltipContent(buildTooltip(robot));
 
     // Set up interpolation from current position to new target
     const currentLatLng = marker.getLatLng();

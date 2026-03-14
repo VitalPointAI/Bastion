@@ -151,6 +151,13 @@ robotRouter.get('/robots', (_req, res) => {
       current_mission_id: r.current_mission_id,
       last_heartbeat: r.last_heartbeat,
       latest_telemetry: r.latest_telemetry,
+      latest_vision: r.latest_vision ? {
+        timestamp: r.latest_vision.timestamp,
+        mission_id: r.latest_vision.mission_id,
+        detections: r.latest_vision.detections,
+        scene_description: r.latest_vision.scene_description,
+        keyframe_jpeg_b64: r.latest_vision.keyframe_jpeg_b64,
+      } : undefined,
     })),
   );
 });
