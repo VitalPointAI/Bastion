@@ -20,7 +20,7 @@ const MAPTILER_ATTRIBUTION =
 /** Dark base-map tile URL */
 export const DARK_TILE_URL = MAPTILER_KEY
   ? `https://api.maptiler.com/maps/dataviz-dark/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`
-  : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  : 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png';
 
 export const DARK_TILE_ATTRIBUTION = MAPTILER_KEY ? MAPTILER_ATTRIBUTION : CARTO_ATTRIBUTION;
 export const DARK_TILE_SUBDOMAINS = MAPTILER_KEY ? undefined : 'abcd';
@@ -28,7 +28,7 @@ export const DARK_TILE_SUBDOMAINS = MAPTILER_KEY ? undefined : 'abcd';
 /** Light base-map tile URL — lighter theme for better readability */
 export const LIGHT_TILE_URL = MAPTILER_KEY
   ? `https://api.maptiler.com/maps/dataviz/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`
-  : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+  : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 
 export const LIGHT_TILE_ATTRIBUTION = MAPTILER_KEY ? MAPTILER_ATTRIBUTION : CARTO_ATTRIBUTION;
 export const LIGHT_TILE_SUBDOMAINS = MAPTILER_KEY ? undefined : 'abcd';
