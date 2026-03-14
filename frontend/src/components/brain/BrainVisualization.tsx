@@ -364,17 +364,21 @@ export function BrainVisualization({
   }, [data.nodes]);
 
   // ── ForceGraph data ────────────────────────────────────────────────────────
-  // IMPORTANT: Use a single stable object as the graphData prop and update
-  // via the imperative ref.graphData() setter. Passing new objects as the
-  // graphData prop triggers internal graph rebuilds that race with the
-  // requestAnimationFrame loop, causing "Cannot read properties of undefined
-  // (reading 'tick')" crashes.
-  const INITIAL_PAYLOAD: GraphPayload = useMemo(() => ({ nodes: [], links: [] }), []);
+  // ForceGraph3D MUST NOT be mounted with empty data — the d3 force simulation
+  // is only created when nodes exist, but the animation loop (requestAnimationFrame)
+  // starts immediately in init(). This causes "Cannot read properties of undefined
+  // (reading 'tick')" when _animationCycle fires before the simulation exists.
+  //
+  // Solution: track whether we've ever received data. Once true, keep ForceGraph3D
+  // mounted forever (even if data temporarily empties during filter/drill changes).
+  // This prevents the mount-with-empty-data crash and avoids unmount/remount cycles
+  // that leave orphaned animation frames.
+  const [graphReady, setGraphReady] = useState(false);
 
   const graphPayload = useMemo<GraphPayload>(() => {
     const nodes = Array.isArray(data.nodes) ? data.nodes : [];
     const edges = Array.isArray(data.edges) ? data.edges : [];
-    if (nodes.length === 0) return INITIAL_PAYLOAD;
+    if (nodes.length === 0) return { nodes: [], links: [] };
     const nodeIdSet = new Set(nodes.map((n) => n.id));
     return {
       nodes: nodes as FGNode[],
@@ -386,21 +390,15 @@ export function BrainVisualization({
         })
         .map((e) => ({ ...e })) as FGLink[],
     };
-  }, [data, INITIAL_PAYLOAD]);
+  }, [data]);
 
-  // Use the imperative graphData() setter to update data after initial mount.
-  // This avoids the prop-driven rebuild that causes tick crashes.
-  const mountedRef = useRef(false);
+  // Once data arrives, mark graph as ready. Never goes back to false —
+  // ForceGraph3D stays mounted even if data temporarily empties.
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return; // Skip first render — initial data passed via prop
+    if (!graphReady && graphPayload.nodes.length > 0) {
+      setGraphReady(true);
     }
-    const fg = fgRef.current;
-    if (fg && graphPayload.nodes.length > 0) {
-      (fg as unknown as { graphData: (data: GraphPayload) => void }).graphData(graphPayload);
-    }
-  }, [graphPayload]);
+  }, [graphReady, graphPayload.nodes.length]);
 
   // Clear object caches when graph data changes
   useEffect(() => {
@@ -656,33 +654,39 @@ export function BrainVisualization({
       className="brain-visualization"
       style={{ width: '100%', height: '100%', position: 'relative' }}
     >
-      <ForceGraph3D
-        ref={fgRef as MutableRefObject<ForceGraphMethods | undefined>}
-        graphData={graphPayload}
-        width={w}
-        height={h}
-        backgroundColor={BRAIN_BG_COLOR}
-        nodeId="id"
-        linkSource="source"
-        linkTarget="target"
-        nodeThreeObject={nodeThreeObject}
-        nodeLabel={nodeLabel}
-        linkColor={linkColor}
-        linkWidth={linkWidth}
-        linkOpacity={LINK_OPACITY}
-        linkThreeObject={linkThreeObject}
-        linkThreeObjectExtend={true}
-        linkPositionUpdate={linkPositionUpdate as unknown as (obj: object, coords: object, link: object) => void}
-        onNodeClick={handleNodeClickWithDoubleDetect}
-        onEngineStop={handleEngineStop}
-        enableNodeDrag={true}
-        enableNavigationControls={true}
-        warmupTicks={simParams.warmupTicks}
-        cooldownTicks={simParams.cooldownTicks}
-        cooldownTime={simParams.cooldownTime}
-        d3AlphaDecay={simParams.alphaDecay}
-        d3VelocityDecay={simParams.velocityDecay}
-      />
+      {graphReady ? (
+        <ForceGraph3D
+          ref={fgRef as MutableRefObject<ForceGraphMethods | undefined>}
+          graphData={graphPayload}
+          width={w}
+          height={h}
+          backgroundColor={BRAIN_BG_COLOR}
+          nodeId="id"
+          linkSource="source"
+          linkTarget="target"
+          nodeThreeObject={nodeThreeObject}
+          nodeLabel={nodeLabel}
+          linkColor={linkColor}
+          linkWidth={linkWidth}
+          linkOpacity={LINK_OPACITY}
+          linkThreeObject={linkThreeObject}
+          linkThreeObjectExtend={true}
+          linkPositionUpdate={linkPositionUpdate as unknown as (obj: object, coords: object, link: object) => void}
+          onNodeClick={handleNodeClickWithDoubleDetect}
+          onEngineStop={handleEngineStop}
+          enableNodeDrag={true}
+          enableNavigationControls={true}
+          warmupTicks={simParams.warmupTicks}
+          cooldownTicks={simParams.cooldownTicks}
+          cooldownTime={simParams.cooldownTime}
+          d3AlphaDecay={simParams.alphaDecay}
+          d3VelocityDecay={simParams.velocityDecay}
+        />
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
+          Loading graph...
+        </div>
+      )}
 
       {/* Phase 45 — N-hop expand button at Level 3 (node detail) */}
       {showExpandButton && (
