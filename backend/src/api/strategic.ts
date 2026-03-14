@@ -429,6 +429,64 @@ router.delete('/documents/:id', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // ── Cascade deletion ─────────────────────────────────────────────────
+    const { getPool } = await import('../lib/database.js');
+    const pool = getPool();
+    const cascadeResults: Record<string, number> = {};
+
+    // 1. Delete strategic objectives linked to this document
+    try {
+      const objResult = await pool.query(
+        'DELETE FROM strategic_objectives WHERE document_id = $1',
+        [documentId],
+      );
+      cascadeResults.objectives = objResult.rowCount ?? 0;
+    } catch {
+      // Table may not exist yet — non-fatal
+    }
+
+    // 2. Delete container-document assignments
+    try {
+      const cdResult = await pool.query(
+        'DELETE FROM container_documents WHERE document_id = $1',
+        [documentId],
+      );
+      cascadeResults.containerAssignments = cdResult.rowCount ?? 0;
+    } catch {
+      // Table may not exist yet — non-fatal
+    }
+
+    // 3. Clean graph nodes — remove document from sourceDocumentIds arrays,
+    //    and delete actors that only came from this document
+    try {
+      const { executeWriteQuery } = await import('../graph/neo4j-client.js');
+      // Remove document ID from sourceDocumentIds arrays
+      const graphResult = await executeWriteQuery(
+        `MATCH (a:Actor)
+         WHERE $documentId IN a.sourceDocumentIds
+         SET a.sourceDocumentIds = [x IN a.sourceDocumentIds WHERE x <> $documentId]
+         RETURN a.id AS id, size(a.sourceDocumentIds) AS remaining`,
+        { documentId },
+      );
+      cascadeResults.graphNodesUpdated = graphResult.records.length;
+
+      // Delete actors that now have empty sourceDocumentIds (orphaned)
+      const orphanResult = await executeWriteQuery(
+        `MATCH (a:Actor)
+         WHERE a.sourceDocumentIds = [] AND a.workspaceId = $workspaceId
+         DETACH DELETE a
+         RETURN count(a) AS deleted`,
+        { workspaceId: document.workspaceId ?? '' },
+      );
+      const deletedCount = orphanResult.records[0]?.get('deleted');
+      cascadeResults.graphNodesDeleted = typeof deletedCount === 'object'
+        ? (deletedCount as { toNumber: () => number }).toNumber()
+        : (deletedCount as number) ?? 0;
+    } catch (graphErr) {
+      console.warn('Graph cleanup failed (non-fatal):', graphErr instanceof Error ? graphErr.message : graphErr);
+    }
+
+    // 4. Delete the document itself
     await store.delete(documentId);
 
     // Propagate inheritance change if document belonged to a problem set
@@ -447,7 +505,8 @@ router.delete('/documents/:id', requireAuth, async (req, res) => {
       }
     }
 
-    res.json({ deleted: true, documentId });
+    console.log(`[strategic] Document ${documentId} deleted with cascade:`, cascadeResults);
+    res.json({ deleted: true, documentId, cascade: cascadeResults });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Delete document failed:', message);
