@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 45-05-PLAN.md
-last_updated: "2026-03-14T10:42:00.459Z"
+stopped_at: Completed 45-04-PLAN.md
+last_updated: "2026-03-14T10:42:09.805Z"
 last_activity: "2026-03-14 - Completed 45-05: useBrainDrillDown hook (4-level drill stack, filtered drillData, camera targets) and BrainBreadcrumb component (clickable breadcrumb trail with icons and counts)"
 progress:
   total_phases: 61
@@ -833,6 +833,8 @@ Recent decisions affecting current work:
 - [Phase 45-knowledge-graph-subspaces]: drillData derived synchronously from drill stack top level — avoids sync issues vs separate useState
 - [Phase 45-knowledge-graph-subspaces]: drillIntoNode provides 1-hop neighbourhood only; N-hop expansion delegated to useBrainNHop (Plan 06)
 - [Phase 45-knowledge-graph-subspaces]: Stale stack validation truncates to last valid crumb rather than full reset — preserves navigation context
+- [Phase 45]: Container subspace IDs prefixed with 'container:' to distinguish from DB-persisted IDs
+- [Phase 45]: Ghost stubs pinned at centroid of connected subspace nodes offset 50 units outward
 
 ### Roadmap Evolution
 
@@ -1540,7 +1542,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-14T10:41:46.818Z
-Stopped at: Completed 45-05-PLAN.md
+Last session: 2026-03-14T10:42:09.795Z
+Stopped at: Completed 45-04-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
