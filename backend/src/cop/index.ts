@@ -116,7 +116,7 @@ function wireGenerationTrigger(_triggerHandler: TriggerHandler): void {
         documents = objectives.map(obj => ({
           id: obj.id,
           content: [obj.description, obj.sourceReference || ''].filter(Boolean).join('\n'),
-          type: 'objective',
+          type: 'general',  // 'general' passes through all sub-agent doc filters
         }));
       } catch (err) {
         console.warn('[COP] Failed to fetch objectives:', err instanceof Error ? err.message : err);

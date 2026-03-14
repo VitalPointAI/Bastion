@@ -333,11 +333,15 @@ async function persistNode(
   const assembler = new LayerAssembler();
   const assembled = assembler.assemble(state.layerSpecs);
 
+  // Determine primary layer type from the first targeted agent
+  const primaryType = (state.targetAgents[0] ?? 'force_disposition') as
+    'force_disposition' | 'objectives' | 'control_measures' | 'intel' | 'logistics' | 'c2';
+
   // Create draft layer
   const layer = await layerStore.createLayer({
     workspaceId: state.workspaceId,
     sectionId: state.sectionId,
-    layerType: 'force_disposition', // Primary layer type
+    layerType: primaryType,
     spec: assembled,
   });
 

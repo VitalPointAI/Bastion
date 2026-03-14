@@ -495,14 +495,55 @@ export const versionHandlers = {
 export const agentHandlers = {
   /**
    * POST /cop/agents/trigger - Manual trigger for COP layer generation.
+   * Runs generation synchronously and returns the created layer.
    */
   async manualTrigger(req: Request, res: Response): Promise<void> {
     try {
       const body = validateBody(manualTriggerSchema, req.body, res);
       if (!body) return;
 
-      triggerHandler.handleManualTrigger(body.workspaceId, body.sectionId);
-      res.json({ status: 'triggered', workspaceId: body.workspaceId, sectionId: body.sectionId });
+      // Fetch documents and graph entities for the sub-agents
+      let documents: Array<{ id: string; content: string; type: string }> = [];
+      let graphEntities: Array<{ id: string; name: string; type: string; properties: Record<string, unknown> }> = [];
+
+      try {
+        const { objectiveStore } = await import('../../strategic/objectives/index.js');
+        const { objectives } = await objectiveStore.listObjectives({ status: 'APPROVED' });
+        documents = objectives.map(obj => ({
+          id: obj.id,
+          content: [obj.description, obj.sourceReference || ''].filter(Boolean).join('\n'),
+          type: 'general',  // 'general' passes through all sub-agent doc filters
+        }));
+      } catch {
+        // Non-fatal
+      }
+
+      try {
+        const { actorStore } = await import('../../graph/raft/actor-store.js');
+        const actors = await actorStore.listActors(body.workspaceId);
+        graphEntities = actors.map(actor => ({
+          id: actor.id,
+          name: actor.name,
+          type: actor.type,
+          properties: actor.attributes || {},
+        }));
+      } catch {
+        // Non-fatal
+      }
+
+      // Run generation synchronously
+      const layer = await runCOPGeneration(
+        body.workspaceId,
+        body.sectionId,
+        'manual',
+        { documents, graphEntities },
+      );
+
+      if (layer) {
+        res.json({ status: 'complete', layer });
+      } else {
+        res.json({ status: 'complete', layer: null, message: 'No layer produced (no documents or entities available)' });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('[COP] manualTrigger error:', message);

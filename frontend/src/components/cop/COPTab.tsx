@@ -213,12 +213,18 @@ export function COPTab({ problemSetId }: COPTabProps) {
         if (status.status === 'idle' && !status.hasLayers) {
           setGenerating(true);
           try {
+            // Generation is synchronous — backend runs sub-agents and returns
             await copService.triggerGeneration(problemSetId, 'default');
+            // Fetch all layers (including the one just created)
             const newLayers = await copService.queryLayers(problemSetId);
             handleLayersLoaded(newLayers);
           } finally {
             setGenerating(false);
           }
+        } else if (status.hasLayers) {
+          // Already have layers — just fetch them
+          const existingLayers = await copService.queryLayers(problemSetId);
+          handleLayersLoaded(existingLayers);
         }
       } catch (err) {
         console.warn('[COP] Auto-trigger check failed:', err);
@@ -291,8 +297,9 @@ export function COPTab({ problemSetId }: COPTabProps) {
   async function handleManualGenerate() {
     setGenerating(true);
     try {
+      // Generation is synchronous — backend runs sub-agents and returns layer
       await copService.triggerGeneration(problemSetId, 'default');
-      // Refresh layers after generation
+      // Refresh all layers after generation completes
       const newLayers = await copService.queryLayers(problemSetId);
       handleLayersLoaded(newLayers);
     } catch (err) {
