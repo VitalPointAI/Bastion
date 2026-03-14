@@ -391,7 +391,10 @@ export function ControlSubView({ problemSetId }: ControlSubViewProps) {
       </div>
 
       {/* Right panel — command & control */}
-      {selectedResourceId && (
+      {selectedResourceId && (() => {
+        const selectedResource = resources.find((r) => r.id === selectedResourceId);
+        const selectedRobot = selectedResource?.did ? robots.find((r) => r.did === selectedResource.did) : undefined;
+        return (
         <div style={{
           width: '55%',
           overflowY: 'auto',
@@ -430,7 +433,7 @@ export function ControlSubView({ problemSetId }: ControlSubViewProps) {
               </div>
 
               {/* Network info + SSH */}
-              {robot?.network && (
+              {selectedRobot?.network && (
                 <div style={{
                   padding: '0.75rem',
                   background: 'var(--surface-secondary, #1e293b)',
@@ -442,11 +445,11 @@ export function ControlSubView({ problemSetId }: ControlSubViewProps) {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.125rem 0.75rem', fontSize: '0.75rem' }}>
                     <span style={{ color: '#64748b' }}>IP Address</span>
-                    <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>{robot.network.remoteAddress}</span>
+                    <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>{selectedRobot.network.remoteAddress}</span>
                     <span style={{ color: '#64748b' }}>Port</span>
-                    <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>{robot.network.remotePort}</span>
+                    <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>{selectedRobot.network.remotePort}</span>
                     <span style={{ color: '#64748b' }}>Connected</span>
-                    <span style={{ color: '#e2e8f0' }}>{new Date(robot.network.connectedAt).toLocaleString()}</span>
+                    <span style={{ color: '#e2e8f0' }}>{new Date(selectedRobot.network.connectedAt).toLocaleString()}</span>
                   </div>
                   <div style={{ marginTop: '0.5rem' }}>
                     <div style={{ fontSize: '0.625rem', color: '#64748b', marginBottom: '0.125rem' }}>SSH</div>
@@ -464,11 +467,11 @@ export function ControlSubView({ problemSetId }: ControlSubViewProps) {
                       }}
                       title="Click to copy"
                       onClick={() => {
-                        const cmd = `ssh bastion@${robot.network!.remoteAddress}`;
+                        const cmd = `ssh bastion@${selectedRobot.network!.remoteAddress}`;
                         navigator.clipboard.writeText(cmd);
                       }}
                     >
-                      ssh bastion@{robot.network.remoteAddress}
+                      ssh bastion@{selectedRobot.network.remoteAddress}
                     </code>
                   </div>
                 </div>
@@ -616,7 +619,8 @@ export function ControlSubView({ problemSetId }: ControlSubViewProps) {
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
