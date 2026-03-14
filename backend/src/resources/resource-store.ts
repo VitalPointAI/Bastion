@@ -125,6 +125,33 @@ export class ResourceStore {
   ): Promise<Resource> {
     await this.ensureInitialized();
     const pool = getPool();
+
+    // Duplicate check: same name + category + mission must not already exist
+    const dupCheck = await pool.query(
+      `SELECT id FROM resources
+       WHERE name = $1 AND category = $2
+         AND (mission_id = $3 OR ($3 IS NULL AND mission_id IS NULL))
+       LIMIT 1`,
+      [name, category, missionId ?? null]
+    );
+    if (dupCheck.rows.length > 0) {
+      throw new Error(`Duplicate resource: "${name}" (${category}) already exists in this mission`);
+    }
+
+    // Also check serial_number uniqueness within the mission when provided
+    if (serialNumber) {
+      const serialCheck = await pool.query(
+        `SELECT id FROM resources
+         WHERE serial_number = $1
+           AND (mission_id = $2 OR ($2 IS NULL AND mission_id IS NULL))
+         LIMIT 1`,
+        [serialNumber, missionId ?? null]
+      );
+      if (serialCheck.rows.length > 0) {
+        throw new Error(`Duplicate serial number: "${serialNumber}" already exists in this mission`);
+      }
+    }
+
     const id = `RES-${randomUUID()}`;
     const now = new Date();
 

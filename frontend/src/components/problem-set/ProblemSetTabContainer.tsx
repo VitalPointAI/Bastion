@@ -112,7 +112,7 @@ export function ProblemSetTabContainer() {
   } = useProblemSet();
 
   const { userDID } = useUser();
-  const { isTraining } = useMode();
+  const { isTraining, requestModeSwitch } = useMode();
 
   // Panel config from backend (null = not loaded yet, use client defaults)
   const [panelConfig, setPanelConfig] = useState<Record<string, string[]> | null>(null);
@@ -331,12 +331,6 @@ export function ProblemSetTabContainer() {
         role="tablist"
         aria-label="Problem Set tabs"
       >
-        {/* Training mode indicator badge */}
-        {isTraining && (
-          <span className="bg-amber-500/20 text-amber-400 text-[10px] font-bold uppercase px-2 py-1 rounded self-center ml-2 tracking-wider">
-            TRAINING
-          </span>
-        )}
         {/* Visible tabs in fixed order */}
         {PROBLEM_SET_TABS.filter((t) => visibleTabs.includes(t)).map((tab) => (
           <div key={tab} className="relative">
@@ -488,6 +482,18 @@ export function ProblemSetTabContainer() {
           >
             Settings
           </Link>
+          <button
+            onClick={() => requestModeSwitch(isTraining ? 'operational' : 'training')}
+            title={`Switch to ${isTraining ? 'Operational' : 'Training'} mode`}
+            className={[
+              'px-2 py-1 text-[11px] font-bold uppercase tracking-wider rounded transition-colors whitespace-nowrap',
+              isTraining
+                ? 'bg-amber-600 text-black hover:bg-amber-500'
+                : 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30',
+            ].join(' ')}
+          >
+            {isTraining ? 'TRAINING' : 'OPERATIONAL'}
+          </button>
 
           <span className="w-px h-5 bg-gray-700 mx-1" />
 
