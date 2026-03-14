@@ -1,0 +1,431 @@
+/* ─── Subspace Sidebar ──────────────────────────────────────────────────────── */
+
+.subspace-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0.75rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  background: transparent; /* inherits dark panel background */
+}
+
+.subspace-sidebar--collapsed {
+  padding: 0.5rem 0.25rem;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────────── */
+
+.subspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.subspace-header-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.02em;
+}
+
+.subspace-sidebar-toggle {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subspace-sidebar-toggle:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Full Graph home item ───────────────────────────────────────────────────── */
+
+.subspace-item--home {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.375rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s;
+  margin-bottom: 0.25rem;
+  user-select: none;
+}
+
+.subspace-item--home:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.subspace-item--home.subspace-item--active {
+  background: rgba(74, 158, 255, 0.1);
+  border-left: 2px solid rgba(74, 158, 255, 0.7);
+  padding-left: calc(0.375rem - 2px);
+}
+
+.subspace-item-icon {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+/* ─── Collapsible section ────────────────────────────────────────────────────── */
+
+.subspace-section {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  margin-bottom: 0.375rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.subspace-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+  border: none;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.subspace-section-header:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.subspace-section-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.65rem;
+}
+
+.subspace-section-right {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.subspace-section-count {
+  font-size: 0.625rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.4);
+  border-radius: 10px;
+  padding: 0 5px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.subspace-section-chevron {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.35);
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+.subspace-section-chevron.open {
+  transform: rotate(0deg);
+}
+
+.subspace-section-chevron:not(.open) {
+  transform: rotate(-90deg);
+}
+
+.subspace-section-body {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.25s ease;
+}
+
+.subspace-section-body.open {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+/* ─── Subspace item (inside section) ────────────────────────────────────────── */
+
+.subspace-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  padding: 0 0.5rem 0 0.75rem;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  user-select: none;
+  outline: none;
+}
+
+.subspace-item:last-child {
+  border-bottom: none;
+}
+
+.subspace-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.subspace-item:focus-visible {
+  background: rgba(74, 158, 255, 0.08);
+  outline: 1px solid rgba(74, 158, 255, 0.4);
+}
+
+.subspace-item--active {
+  background: rgba(74, 158, 255, 0.1) !important;
+  border-left: 2px solid rgba(74, 158, 255, 0.7);
+  padding-left: calc(0.75rem - 2px);
+}
+
+.subspace-item-name {
+  font-size: 0.73rem;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  padding-right: 0.25rem;
+}
+
+.subspace-item--active .subspace-item-name {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.subspace-item-right {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.subspace-item-count {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.3);
+  min-width: 12px;
+  text-align: right;
+}
+
+/* ─── Type badges ────────────────────────────────────────────────────────────── */
+
+.subspace-badge {
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.subspace-badge--container {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.subspace-badge--manual {
+  background: rgba(74, 158, 255, 0.12);
+  color: rgba(74, 158, 255, 0.8);
+  border: 1px solid rgba(74, 158, 255, 0.2);
+}
+
+.subspace-badge--smart {
+  background: rgba(68, 204, 102, 0.12);
+  color: rgba(68, 204, 102, 0.85);
+  border: 1px solid rgba(68, 204, 102, 0.2);
+}
+
+/* ─── Delete button ──────────────────────────────────────────────────────────── */
+
+.subspace-item-delete {
+  background: none;
+  border: 1px solid rgba(255, 100, 100, 0.15);
+  color: rgba(255, 100, 100, 0.4);
+  font-size: 0.75rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.subspace-item:hover .subspace-item-delete {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.subspace-item-delete:hover {
+  background: rgba(255, 100, 100, 0.15);
+  color: rgba(255, 100, 100, 0.9);
+  border-color: rgba(255, 100, 100, 0.4);
+}
+
+/* ─── Empty state ────────────────────────────────────────────────────────────── */
+
+.subspace-empty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.25);
+  padding: 1.5rem 0.75rem;
+  font-size: 0.73rem;
+  line-height: 1.6;
+  flex: 1;
+}
+
+/* ─── Footer actions ─────────────────────────────────────────────────────────── */
+
+.subspace-footer {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.subspace-footer-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: rgba(74, 158, 255, 0.08);
+  color: rgba(74, 158, 255, 0.8);
+  border: 1px solid rgba(74, 158, 255, 0.15);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subspace-footer-btn:hover:not(:disabled) {
+  background: rgba(74, 158, 255, 0.15);
+  border-color: rgba(74, 158, 255, 0.3);
+}
+
+.subspace-footer-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.subspace-footer-btn--smart {
+  background: rgba(68, 204, 102, 0.08);
+  color: rgba(68, 204, 102, 0.8);
+  border-color: rgba(68, 204, 102, 0.15);
+}
+
+.subspace-footer-btn--smart:hover {
+  background: rgba(68, 204, 102, 0.15);
+  border-color: rgba(68, 204, 102, 0.3);
+}
+
+/* ─── Create dialog (inline, in footer area) ─────────────────────────────────── */
+
+.subspace-create-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.subspace-create-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.73rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 5px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.subspace-create-input:focus {
+  border-color: rgba(74, 158, 255, 0.5);
+}
+
+.subspace-create-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.subspace-create-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.subspace-create-confirm {
+  flex: 1;
+  padding: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: rgba(74, 158, 255, 0.15);
+  color: rgba(74, 158, 255, 0.9);
+  border: 1px solid rgba(74, 158, 255, 0.25);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.subspace-create-confirm:hover:not(:disabled) {
+  background: rgba(74, 158, 255, 0.25);
+}
+
+.subspace-create-confirm:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.subspace-create-cancel {
+  flex: 1;
+  padding: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.subspace-create-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
+}

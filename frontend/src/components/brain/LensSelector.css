@@ -1,0 +1,293 @@
+/* LensSelector — dropdown lens picker for brain visualization toolbar */
+/* Matches BrainToolbar.css dark theme conventions */
+
+/* ─── Trigger Button ──────────────────────────────────────────────────────── */
+
+.lens-selector {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.lens-selector-trigger {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.lens-selector-trigger:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.lens-selector-trigger.open {
+  background: rgba(74, 158, 255, 0.15);
+  color: #4a9eff;
+  border-color: rgba(74, 158, 255, 0.35);
+}
+
+.lens-selector-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.lens-selector-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.lens-selector-caret {
+  font-size: 0.55rem;
+  opacity: 0.6;
+  margin-left: 0.15rem;
+}
+
+/* ─── Role Badges ─────────────────────────────────────────────────────────── */
+
+.lens-role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* Overview — neutral gray */
+.lens-role-badge--all {
+  background: rgba(136, 136, 136, 0.25);
+  color: #aaaaaa;
+  border: 1px solid rgba(136, 136, 136, 0.3);
+}
+
+/* J2 Intelligence — red (adversary focus) */
+.lens-role-badge--j2 {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff6666;
+  border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+/* J3 Operations — blue (allied force focus) */
+.lens-role-badge--j3 {
+  background: rgba(74, 158, 255, 0.2);
+  color: #4a9eff;
+  border: 1px solid rgba(74, 158, 255, 0.3);
+}
+
+/* J5 Plans — green (planning/objective focus) */
+.lens-role-badge--j5 {
+  background: rgba(68, 204, 102, 0.2);
+  color: #44cc66;
+  border: 1px solid rgba(68, 204, 102, 0.3);
+}
+
+/* ─── Dropdown Panel ──────────────────────────────────────────────────────── */
+
+.lens-selector-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 200;
+  min-width: 200px;
+  background: rgba(4, 12, 24, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.6),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+/* ─── Section ─────────────────────────────────────────────────────────────── */
+
+.lens-section {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.lens-section:last-child {
+  border-bottom: none;
+}
+
+.lens-section-header {
+  padding: 0.3rem 0.75rem 0.2rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  user-select: none;
+}
+
+/* ─── Lens Items ──────────────────────────────────────────────────────────── */
+
+.lens-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.lens-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.lens-item.active {
+  background: rgba(74, 158, 255, 0.12);
+  color: #4a9eff;
+}
+
+.lens-item.active:hover {
+  background: rgba(74, 158, 255, 0.18);
+}
+
+/* Custom lens item wraps a select button + action buttons in a row */
+.lens-item--custom {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+}
+
+.lens-item-select-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  text-align: left;
+}
+
+.lens-item-select-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.lens-item--custom.active .lens-item-select-btn {
+  color: #4a9eff;
+}
+
+.lens-item-user-icon {
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
+.lens-item-name {
+  flex: 1;
+}
+
+.lens-item-check {
+  color: #4a9eff;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* ─── Item Action Buttons (clone, delete) ─────────────────────────────────── */
+
+.lens-item-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.15rem;
+  padding-right: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.lens-item--custom:hover .lens-item-actions {
+  opacity: 1;
+}
+
+.lens-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+
+.lens-action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.lens-action-btn--delete:hover {
+  background: rgba(255, 68, 68, 0.15);
+  border-color: rgba(255, 68, 68, 0.25);
+  color: #ff6666;
+}
+
+/* ─── Panel Footer ────────────────────────────────────────────────────────── */
+
+.lens-panel-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.lens-footer-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  text-align: left;
+}
+
+.lens-footer-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.75);
+}

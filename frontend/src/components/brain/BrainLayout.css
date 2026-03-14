@@ -5,7 +5,7 @@
 .brain-layout {
   display: grid;
   grid-template-columns: 280px 1fr auto;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto 1fr auto;
   height: 100%;
   background: #020810;
   color: #e0e0e0;
@@ -13,7 +13,7 @@
   position: relative;
 }
 
-/* ─── Top bar (search, cluster toggle, snapshot button) ─────────────────── */
+/* ─── Top bar (search, lens selector, snapshot button) ──────────────────── */
 
 .brain-top-bar {
   grid-column: 1 / -1;
@@ -27,11 +27,25 @@
   z-index: 10;
 }
 
-/* ─── Left sidebar (unified ingestion feed) ─────────────────────────────── */
+/* ─── Breadcrumb bar (Phase 45 drill-down navigation) ───────────────────── */
+
+.brain-breadcrumb-bar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 1rem;
+  background: rgba(10, 20, 40, 0.95);
+  border-bottom: 1px solid rgba(100, 160, 255, 0.12);
+  z-index: 9;
+  min-height: 32px;
+}
+
+/* ─── Left sidebar (unified ingestion feed + subspace navigation) ───────── */
 
 .brain-left-sidebar {
   grid-column: 1;
-  grid-row: 2;
+  grid-row: 3;
   overflow-y: auto;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(2, 8, 16, 0.95);
@@ -41,7 +55,7 @@
 
 .brain-center {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 3;
   position: relative;
   overflow: hidden;
   min-width: 0;
@@ -51,7 +65,7 @@
 
 .brain-right-panel {
   grid-column: 3;
-  grid-row: 2;
+  grid-row: 3;
   width: 0;
   overflow: hidden;
   transition: width 0.25s ease;
@@ -67,6 +81,6 @@
 
 .brain-timeline {
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 4;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Phase 45 context gathered
-last_updated: "2026-03-14T03:12:43.478Z"
-last_activity: "2026-03-13 - Completed 44-06: pre-flight validator with DID capability/speed/autonomy/national caveat checks; mission profile registry with resolve/getDefaultProfileForCommand; requirements PRE-01, PRE-02 met"
+stopped_at: Checkpoint 45-07-PLAN.md Task 3 (human-verify)
+last_updated: "2026-03-14T10:50:00.000Z"
+last_activity: "2026-03-14 - Completed 45-07 Tasks 1+2: BrainController wired with all Phase 45 hooks; LensSelector replaces cluster toggle; ghost node/edge rendering; N-hop expand button; awaiting Task 3 browser verification"
 progress:
   total_phases: 61
   completed_phases: 42
-  total_plans: 378
-  completed_plans: 381
+  total_plans: 385
+  completed_plans: 388
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 44 of 59 (Robot Vision Capabilities and Mission Intent Translation) — IN PROGRESS
-Plan: 6 of 8 in current phase — COMPLETE
-Status: Plan 44-06 complete — DID-constrained pre-flight validator (robot/pre_flight.py, 18 tests) and mission behavior profile registry (backend/src/robot/mission-profile-service.ts, 4 default profiles: stealth_recon, direct_resupply, patrol, nato_recon)
-Last activity: 2026-03-13 - Completed 44-06: pre-flight validator with DID capability/speed/autonomy/national caveat checks; mission profile registry with resolve/getDefaultProfileForCommand; requirements PRE-01, PRE-02 met
+Phase: 45 of 61 (Knowledge Graph Subspaces, Lenses, Drill-Down) — IN PROGRESS
+Plan: 7 of 7 in current phase — CHECKPOINT (awaiting Task 3 browser verification)
+Status: Plan 45-07 Tasks 1+2 complete — BrainController wired with useBrainLens, useBrainSubspaces, useBrainDrillDown, useBrainNHop; BrainToolbar replaced cluster toggle with LensSelector; BrainVisualization has ghost rendering + expand button; awaiting human browser verify
+Last activity: 2026-03-14 - Completed 45-07 Tasks 1+2: Phase 45 integration wiring complete, checkpoint reached
 
-Progress: ██████████████████████████ 376 plans complete
+Progress: ██████████████████████████ 388 plans complete
 
 ## Performance Metrics
 
@@ -183,6 +183,12 @@ Progress: ███████████████████████�
 | Phase 44-robot-vision-capabilities-and-mission-intent-translation P01 | 12 | 2 tasks | 8 files |
 | Phase 44-robot-vision-capabilities-and-mission-intent-translation P02 | 3 | 2 tasks | 3 files |
 | Phase 44 P08 | 7 | 2 tasks | 2 files |
+| Phase 45 P01 | 69 | 2 tasks | 2 files |
+| Phase 45-knowledge-graph-subspaces P03 | 138 | 2 tasks | 3 files |
+| Phase 45-knowledge-graph-subspaces P02 | 180 | 2 tasks | 4 files |
+| Phase 45-knowledge-graph-subspaces P06 | 99 | 1 tasks | 1 files |
+| Phase 45-knowledge-graph-subspaces P05 | 133 | 2 tasks | 3 files |
+| Phase 45 P04 | 167 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -818,6 +824,17 @@ Recent decisions affecting current work:
 - [Phase 44-02]: All jetson hardware imports guarded with try/except ImportError — Camera/VisionEngine fall back to Mock* on non-Jetson machines
 - [Phase 44]: Vision components stored as module-level globals in mission_client, initialized once in run() to persist across reconnections
 - [Phase 44]: Capabilities_list extracted from register message and passed to receive_loop so pre-flight validation uses same capability set advertised to Bastion
+- [Phase 45]: BrainSubspace includes 'container' subspaceType (runtime-computed) alongside 'manual' and 'smart' (DB-persisted) so downstream code uses a single type regardless of origin
+- [Phase 45-03]: useBrainLens does NOT call useBrainClustering internally — exposes activeLens.clusterMode for controller to avoid hook-in-hook dependency
+- [Phase 45-03]: clusterModeChanged boolean flag on hook return — controller calls d3ReheatSimulation only on actual mode change, not on pure filter switches
+- [Phase 45-knowledge-graph-subspaces]: Mounted brainSubspacesRouter at /api/brain alongside existing brainRouter — routes use different paths (/subspaces, /lenses, /nhop vs /annotations, /snapshots)
+- [Phase 45-knowledge-graph-subspaces]: N-hop LIMIT: 200 nodes for hops<=2, 100 for hops>2 — caps Neo4j result set size
+- [Phase 45-knowledge-graph-subspaces]: showWarning threshold at 3 hops; error path rolls back expandedHops to committedHopsRef.current; setFocusNode does not auto-fetch
+- [Phase 45-knowledge-graph-subspaces]: drillData derived synchronously from drill stack top level — avoids sync issues vs separate useState
+- [Phase 45-knowledge-graph-subspaces]: drillIntoNode provides 1-hop neighbourhood only; N-hop expansion delegated to useBrainNHop (Plan 06)
+- [Phase 45-knowledge-graph-subspaces]: Stale stack validation truncates to last valid crumb rather than full reset — preserves navigation context
+- [Phase 45]: Container subspace IDs prefixed with 'container:' to distinguish from DB-persisted IDs
+- [Phase 45]: Ghost stubs pinned at centroid of connected subspace nodes offset 50 units outward
 
 ### Roadmap Evolution
 
@@ -1525,7 +1542,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-14T03:12:43.468Z
-Stopped at: Phase 45 context gathered
-Resume file: .planning/phases/45-knowledge-graph-subspaces-container-scoped-subgraphs-focus-and-expand-pattern-hierarchical-drill-down-and-virtual-lenses-for-managing-growing-knowledge-graphs-at-scale/45-CONTEXT.md
+Last session: 2026-03-14T10:42:09.795Z
+Stopped at: Completed 45-04-PLAN.md
+Resume file: None
 Next action: Continue Phase 40 plan 02

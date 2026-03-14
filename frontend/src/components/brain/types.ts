@@ -185,3 +185,98 @@ export const ZOOM_LABEL_THRESHOLD = 1.5;
  * Below this threshold, only high-centrality nodes are rendered.
  */
 export const ZOOM_SECONDARY_THRESHOLD = 0.8;
+
+// ─── Phase 45: Drill-Down & Subspace Types ──────────────────────────────────
+
+/** The four hierarchical drill-down levels */
+export type DrillLevel = 'full' | 'subspace' | 'node' | 'document';
+
+/** One entry in the breadcrumb navigation trail */
+export interface BreadcrumbEntry {
+  /** Which drill level this crumb represents */
+  level: DrillLevel;
+  /** ID of the entity at this level (subspaceId, nodeId, or 'root') */
+  id: string;
+  /** Display label for the breadcrumb */
+  label: string;
+  /** Count of nodes visible at this level */
+  count: number;
+  /** Icon identifier for the breadcrumb (emoji string) */
+  icon: string;
+}
+
+/** Subspace definition — container-automatic or user-created */
+export interface BrainSubspace {
+  id: string;
+  problemSetId: string;
+  name: string;
+  /** 'container' = auto from containerId, 'manual' = lasso-selected, 'smart' = query-based */
+  subspaceType: 'container' | 'manual' | 'smart';
+  /** Node IDs for manual subspaces */
+  nodeIds?: string[];
+  /** Query definition for smart subspaces */
+  queryDefinition?: SmartSubspaceQuery;
+  createdBy: string;
+  isShared: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Query shape for smart subspaces */
+export interface SmartSubspaceQuery {
+  nodeTypes?: BrainNodeType[];
+  actorCategories?: ActorCategory[];
+  containerId?: string;
+  dimeCategories?: string[];
+  namePattern?: string;
+}
+
+/** A ghost stub node representing a cross-boundary connection */
+export interface GhostStubNode extends BrainNode {
+  /** Always true — identifies this as a ghost stub */
+  isGhostStub: true;
+  /** The subspace this ghost belongs to (external reference) */
+  ghostSourceSubspace?: string;
+}
+
+/** A ghost edge connecting a subspace node to an external stub */
+export interface GhostEdge extends BrainEdge {
+  /** Always true — identifies this as a ghost link */
+  isGhostLink: true;
+}
+
+/** Virtual lens — named configuration of filters, clustering, and visibility */
+export interface BrainLens {
+  id: string;
+  name: string;
+  /** true for the 4 built-in lenses (J2, J3, J5, Overview) */
+  isBuiltIn: boolean;
+  /** Which clustering mode this lens applies */
+  clusterMode: ClusterMode;
+  /** Which node types to show (empty = all) */
+  nodeTypeFilters: BrainNodeType[];
+  /** Which actor categories to show (empty = all) */
+  actorCategoryFilters: ActorCategory[];
+  /** Which DIME themes to show (empty = all) */
+  dimeCategoryFilters: string[];
+  /** Whether intelligence gap nodes are visible */
+  showGapNodes: boolean;
+  /** Whether to render confidence overlay */
+  showConfidenceOverlay: boolean;
+  /** Creator account ID */
+  createdBy: string;
+  /** Visible to all problem set members */
+  isShared: boolean;
+  /** Problem set scope */
+  problemSetId: string;
+  /** If cloned from another lens, that lens's ID */
+  clonedFrom?: string;
+}
+
+/** IDs for the four built-in lenses */
+export const BUILTIN_LENS_IDS = {
+  OVERVIEW: 'builtin:overview',
+  J2_INTEL: 'builtin:j2',
+  J3_OPS: 'builtin:j3',
+  J5_PLANS: 'builtin:j5',
+} as const;

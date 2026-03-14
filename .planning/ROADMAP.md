@@ -625,6 +625,22 @@ Plans:
 - [ ] 44-07-PLAN.md — Backend TypeScript types, profile service, vision handling
 - [ ] 44-08-PLAN.md — Integration wiring and end-to-end verification
 
+### Phase 45: Knowledge Graph Subspaces — Container-scoped subgraphs, focus-and-expand pattern, hierarchical drill-down, and virtual lenses for managing growing knowledge graphs at scale
+
+**Goal:** Manage growing knowledge graphs at scale through container-scoped subgraphs, focus-and-expand N-hop progressive loading, 4-level hierarchical drill-down with animated transitions, and a unified virtual lens system replacing the cluster mode toggle
+**Requirements**: SUB-SCHEMA, LENS-SCHEMA, TYPES-FOUNDATION, SUB-CRUD, LENS-CRUD, NHOP-ENDPOINT, LENS-HOOK, LENS-UI, LENS-BUILTIN, SUB-CONTAINER-AUTO, SUB-CUSTOM-MANUAL, SUB-CUSTOM-SMART, SUB-SIDEBAR-TREE, SUB-GHOST-LINKS, DRILL-4LEVEL, DRILL-BREADCRUMB, DRILL-ANIMATION, NHOP-HOOK, NHOP-EXPAND, NHOP-WARNING, WIRE-CONTROLLER, WIRE-TOOLBAR, WIRE-VISUALIZATION, WIRE-GHOST-RENDER
+**Depends on:** Phase 44
+**Plans:** 7/7 plans complete
+
+Plans:
+- [ ] 45-01-PLAN.md — Foundation: DB migration (subspaces + lenses tables) and TypeScript types
+- [ ] 45-02-PLAN.md — Backend stores, REST API endpoints, and N-hop Neo4j query
+- [ ] 45-03-PLAN.md — Lens hook and LensSelector UI component
+- [ ] 45-04-PLAN.md — Subspace hook (container-auto + custom) and SubspaceSidebar tree
+- [ ] 45-05-PLAN.md — Drill-down hook (4-level stack) and BrainBreadcrumb component
+- [ ] 45-06-PLAN.md — N-hop progressive neighbor loading hook
+- [ ] 45-07-PLAN.md — Integration wiring: BrainController, Toolbar, Visualization, Layout
+
 ---
 
 **MCP Tools (deterministic operations - added to MCP server):**
