@@ -264,3 +264,12 @@
   max-height: 200px;
   overflow-y: auto;
 }
+
+/* ─── Executive Briefing styling ──────────────────────────────────────────────── */
+
+.snapshot-briefing {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  max-height: 400px;
+}

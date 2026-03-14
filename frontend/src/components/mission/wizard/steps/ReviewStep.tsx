@@ -12,6 +12,7 @@
 import { MapContainer, TileLayer, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import type { MissionFormData } from '../MissionWizard.js';
+import { DARK_TILE_URL, DARK_TILE_ATTRIBUTION, DARK_TILE_SUBDOMAINS } from '../../../../lib/map-tiles';
 import './WizardSteps.css';
 
 interface ReviewStepProps {
@@ -132,8 +133,9 @@ export function ReviewStep({ formData, onEdit }: ReviewStepProps) {
                 style={{ height: '250px', width: '100%' }}
               >
                 <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                  subdomains="abcd"
+                  attribution={DARK_TILE_ATTRIBUTION}
+                  url={DARK_TILE_URL}
+                  subdomains={DARK_TILE_SUBDOMAINS}
                   maxZoom={18}
                   noWrap={true}
                 />

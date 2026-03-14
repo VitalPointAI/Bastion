@@ -46,6 +46,201 @@ function defaultSnapshotTitle(): string {
   return `Snapshot - ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 }
 
+// ─── Executive Briefing Builder ───────────────────────────────────────────────
+
+interface DocSummary {
+  title?: string;
+  docType?: string;
+  extractedData?: {
+    summary?: string;
+    classification?: string;
+    objectiveCount?: number;
+    objectives?: Array<{
+      description?: string;
+      instrument?: string;
+      priority?: string;
+      assumptions?: string[];
+      risks?: string[];
+    }>;
+  };
+  textContent?: string;
+}
+
+interface DecisionInfo {
+  totalDecisions?: number;
+  knowledgeGapCount?: number;
+  recentDecisions?: Array<{
+    title?: string;
+    outcome?: string;
+    basis?: string;
+    knowledgeGaps?: string[];
+  }>;
+}
+
+/**
+ * Build a structured executive briefing from raw strategic context.
+ * Produces a narrative organized into: Situation, Key Actors, Objectives,
+ * Decision Status, Intelligence Gaps, and Source Assessment.
+ */
+function buildExecutiveBriefing(ctx: Record<string, unknown>): string {
+  const sections: string[] = [];
+
+  // ── 1. Strategic Situation (from graph summaries) ──────────────────────
+  const graphs = ctx.graphSummaries as Record<string, {
+    summary?: string;
+    title?: string;
+    topActors?: Array<{ name: string; category?: string }>;
+    activeTensions?: Array<{ description: string; intensity?: string }>;
+    annotationCount?: number;
+  }> | undefined;
+
+  const situationParts: string[] = [];
+  const allActors: Array<{ name: string; category?: string }> = [];
+  const allTensions: Array<{ description: string; intensity?: string }> = [];
+
+  if (graphs) {
+    for (const [key, gs] of Object.entries(graphs)) {
+      if (key === '__brain_snapshot' && gs.summary) {
+        // Use saved snapshot as the baseline situation assessment
+        situationParts.unshift(gs.summary);
+        continue;
+      }
+      if (key === '__brain_annotations') continue; // handled separately
+      if (gs.summary) situationParts.push(gs.summary);
+      if (gs.topActors) allActors.push(...gs.topActors);
+      if (gs.activeTensions) allTensions.push(...gs.activeTensions);
+    }
+  }
+
+  if (situationParts.length > 0) {
+    sections.push(`STRATEGIC SITUATION\n${situationParts.join(' ')}`);
+  }
+
+  // ── 2. Key Actors ─────────────────────────────────────────────────────
+  if (allActors.length > 0) {
+    const grouped: Record<string, string[]> = {};
+    for (const actor of allActors) {
+      const cat = actor.category ?? 'other';
+      if (!grouped[cat]) grouped[cat] = [];
+      if (!grouped[cat].includes(actor.name)) grouped[cat].push(actor.name);
+    }
+    const actorLines = Object.entries(grouped)
+      .map(([cat, names]) => `  ${cat.toUpperCase()}: ${names.join(', ')}`)
+      .join('\n');
+    sections.push(`KEY ACTORS\n${actorLines}`);
+  }
+
+  // ── 3. Active Tensions ────────────────────────────────────────────────
+  if (allTensions.length > 0) {
+    const tensionLines = allTensions
+      .slice(0, 5)
+      .map((t, i) => `  ${i + 1}. ${t.description}${t.intensity ? ` [Intensity: ${t.intensity}]` : ''}`)
+      .join('\n');
+    sections.push(`ACTIVE TENSIONS\n${tensionLines}`);
+  }
+
+  // ── 4. Strategic Objectives (from document extractions) ───────────────
+  const docs = ctx.documentSummaries as DocSummary[] | undefined;
+  if (Array.isArray(docs) && docs.length > 0) {
+    const allObjectives: Array<{ description: string; instrument: string; priority: string; source: string }> = [];
+
+    for (const doc of docs) {
+      if (doc.extractedData?.objectives) {
+        for (const obj of doc.extractedData.objectives) {
+          if (obj.description) {
+            allObjectives.push({
+              description: obj.description,
+              instrument: obj.instrument ?? 'unknown',
+              priority: obj.priority ?? 'MEDIUM',
+              source: doc.title ?? 'Unknown',
+            });
+          }
+        }
+      }
+    }
+
+    if (allObjectives.length > 0) {
+      // Group by DIME instrument
+      const byInstrument: Record<string, typeof allObjectives> = {};
+      for (const obj of allObjectives) {
+        const key = obj.instrument.toUpperCase();
+        if (!byInstrument[key]) byInstrument[key] = [];
+        byInstrument[key].push(obj);
+      }
+
+      const objLines: string[] = [];
+      for (const [instrument, objs] of Object.entries(byInstrument)) {
+        objLines.push(`  ${instrument}:`);
+        for (const obj of objs.slice(0, 5)) {
+          const priorityTag = obj.priority !== 'MEDIUM' ? ` [${obj.priority}]` : '';
+          objLines.push(`    - ${obj.description.slice(0, 120)}${priorityTag}`);
+        }
+      }
+      sections.push(`STRATEGIC OBJECTIVES (${allObjectives.length} extracted)\n${objLines.join('\n')}`);
+    }
+
+    // ── 5. Source Assessment ─────────────────────────────────────────────
+    const docLines = docs.map(d => {
+      const objCount = d.extractedData?.objectiveCount ?? 0;
+      const cls = d.extractedData?.classification ?? 'UNCLASSIFIED';
+      const status = objCount > 0
+        ? `${objCount} objectives extracted`
+        : 'Pending analysis';
+      return `  - ${d.title ?? 'Untitled'} (${cls}) — ${status}`;
+    });
+    sections.push(`SOURCE DOCUMENTS (${docs.length})\n${docLines.join('\n')}`);
+
+    // Include document text summaries if no objectives were found
+    if (allObjectives.length === 0) {
+      const textSummaries: string[] = [];
+      for (const doc of docs.slice(0, 3)) {
+        const summary = doc.extractedData?.summary || doc.textContent;
+        if (summary) {
+          const truncated = summary.length > 300 ? summary.slice(0, 297) + '...' : summary;
+          textSummaries.push(`  ${doc.title ?? 'Document'}: ${truncated}`);
+        }
+      }
+      if (textSummaries.length > 0) {
+        sections.push(`DOCUMENT SUMMARIES\n${textSummaries.join('\n\n')}`);
+      }
+    }
+  }
+
+  // ── 6. Decision Status & Knowledge Gaps ────────────────────────────────
+  const decisions = ctx.decisionSummary as DecisionInfo | undefined;
+  if (decisions && decisions.totalDecisions && decisions.totalDecisions > 0) {
+    const decParts: string[] = [];
+    decParts.push(`  ${decisions.totalDecisions} decisions recorded, ${decisions.knowledgeGapCount ?? 0} with identified knowledge gaps.`);
+
+    if (decisions.recentDecisions && decisions.recentDecisions.length > 0) {
+      decParts.push('');
+      decParts.push('  Recent decisions:');
+      for (const dec of decisions.recentDecisions.slice(0, 5)) {
+        decParts.push(`    - ${dec.title ?? 'Untitled'}: ${dec.outcome ?? 'pending'} (basis: ${dec.basis ?? 'unknown'})`);
+        if (dec.knowledgeGaps && dec.knowledgeGaps.length > 0) {
+          decParts.push(`      Gaps: ${dec.knowledgeGaps.join('; ')}`);
+        }
+      }
+    }
+    sections.push(`DECISION STATUS\n${decParts.join('\n')}`);
+  }
+
+  // ── 7. Analyst Annotations ─────────────────────────────────────────────
+  if (graphs?.['__brain_annotations']) {
+    const annotSummary = (graphs['__brain_annotations'] as unknown as { summary?: string }).summary;
+    if (annotSummary) {
+      sections.push(`ANALYST NOTES\n${annotSummary}`);
+    }
+  }
+
+  // ── Final assembly ─────────────────────────────────────────────────────
+  if (sections.length === 0) {
+    return 'No strategic context has been generated yet.\n\nTo populate this briefing:\n1. Upload strategic documents in the Understand tab\n2. Run document analysis to extract objectives\n3. Build actor relationships in the knowledge graph\n\nThe briefing will automatically synthesize available intelligence into an executive summary.';
+  }
+
+  return `EXECUTIVE BRIEFING — ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}\n\n${sections.join('\n\n')}`;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AIContextSnapshotModal({
@@ -88,45 +283,10 @@ export function AIContextSnapshotModal({
         } else if (typeof data.context === 'string') {
           setFetchedSummary(data.context);
         } else {
-          // Build a concise narrative from the structured context
+          // Build an executive briefing from the structured context
           const ctx = data.context as Record<string, unknown>;
-          const narrativeParts: string[] = [];
-
-          // Extract graph summaries (contain actual strategic analysis)
-          const graphs = ctx.graphSummaries as Record<string, { summary?: string; topActors?: Array<{ name: string; category?: string }>; activeTensions?: Array<{ description: string; intensity?: string }> }> | undefined;
-          if (graphs) {
-            for (const [, gs] of Object.entries(graphs)) {
-              if (gs.summary) narrativeParts.push(gs.summary);
-              if (gs.topActors && gs.topActors.length > 0) {
-                const actorList = gs.topActors.slice(0, 5).map(a => `${a.name}${a.category ? ` (${a.category})` : ''}`).join(', ');
-                narrativeParts.push(`Key actors: ${actorList}.`);
-              }
-              if (gs.activeTensions && gs.activeTensions.length > 0) {
-                const tensionList = gs.activeTensions.slice(0, 3).map(t => `${t.description}${t.intensity ? ` [${t.intensity}]` : ''}`).join('; ');
-                narrativeParts.push(`Active tensions: ${tensionList}.`);
-              }
-            }
-          }
-
-          // Extract document summaries
-          const docs = ctx.documentSummaries as Array<{ title?: string; extractedData?: { summary?: string }; textContent?: string }> | undefined;
-          if (Array.isArray(docs) && docs.length > 0) {
-            const docNames = docs.slice(0, 5).map(d => d.title || 'Untitled').join(', ');
-            narrativeParts.push(`Based on ${docs.length} strategic document(s): ${docNames}.`);
-            // Include first document summary if available
-            for (const doc of docs.slice(0, 2)) {
-              const docSummary = doc.extractedData?.summary || doc.textContent;
-              if (docSummary) {
-                narrativeParts.push(docSummary.length > 200 ? docSummary.slice(0, 200) + '...' : docSummary);
-              }
-            }
-          }
-
-          if (narrativeParts.length > 0) {
-            setFetchedSummary(narrativeParts.join('\n\n'));
-          } else {
-            setFetchedSummary('Strategic context data is available but contains no narrative summaries yet. Run graph analysis to generate insights.');
-          }
+          const briefing = buildExecutiveBriefing(ctx);
+          setFetchedSummary(briefing);
         }
       })
       .catch(() => {
@@ -247,10 +407,10 @@ export function AIContextSnapshotModal({
         <div className="snapshot-modal-body">
 
           {/* Current context summary */}
-          <div className="snapshot-section-label">Current AI Context Summary</div>
-          <div className="snapshot-summary" style={{ whiteSpace: 'pre-wrap' }}>
+          <div className="snapshot-section-label">Executive Briefing</div>
+          <div className="snapshot-summary snapshot-briefing" style={{ whiteSpace: 'pre-wrap' }}>
             {summaryLoading
-              ? 'Loading context...'
+              ? 'Generating briefing...'
               : displaySummary ?? 'No context available.'}
           </div>
 
