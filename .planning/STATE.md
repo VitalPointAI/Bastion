@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 45-03-PLAN.md
-last_updated: "2026-03-14T10:35:14.827Z"
+stopped_at: Completed 45-02-PLAN.md
+last_updated: "2026-03-14T10:36:56.640Z"
 last_activity: "2026-03-13 - Completed 44-06: pre-flight validator with DID capability/speed/autonomy/national caveat checks; mission profile registry with resolve/getDefaultProfileForCommand; requirements PRE-01, PRE-02 met"
 progress:
   total_phases: 61
   completed_phases: 42
   total_plans: 385
-  completed_plans: 383
+  completed_plans: 384
 ---
 
 # Project State
@@ -185,6 +185,7 @@ Progress: ███████████████████████�
 | Phase 44 P08 | 7 | 2 tasks | 2 files |
 | Phase 45 P01 | 69 | 2 tasks | 2 files |
 | Phase 45-knowledge-graph-subspaces P03 | 138 | 2 tasks | 3 files |
+| Phase 45-knowledge-graph-subspaces P02 | 180 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -823,6 +824,8 @@ Recent decisions affecting current work:
 - [Phase 45]: BrainSubspace includes 'container' subspaceType (runtime-computed) alongside 'manual' and 'smart' (DB-persisted) so downstream code uses a single type regardless of origin
 - [Phase 45-03]: useBrainLens does NOT call useBrainClustering internally — exposes activeLens.clusterMode for controller to avoid hook-in-hook dependency
 - [Phase 45-03]: clusterModeChanged boolean flag on hook return — controller calls d3ReheatSimulation only on actual mode change, not on pure filter switches
+- [Phase 45-knowledge-graph-subspaces]: Mounted brainSubspacesRouter at /api/brain alongside existing brainRouter — routes use different paths (/subspaces, /lenses, /nhop vs /annotations, /snapshots)
+- [Phase 45-knowledge-graph-subspaces]: N-hop LIMIT: 200 nodes for hops<=2, 100 for hops>2 — caps Neo4j result set size
 
 ### Roadmap Evolution
 
@@ -1530,7 +1533,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-14T10:35:14.817Z
-Stopped at: Completed 45-03-PLAN.md
+Last session: 2026-03-14T10:36:56.630Z
+Stopped at: Completed 45-02-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
