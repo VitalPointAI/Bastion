@@ -81,6 +81,7 @@ class StateUpdateMsg(BaseModel):
     """State transition update sent from robot to Bastion."""
 
     type: str = "robot:state_update"
+    robot_id: str
     mission_id: str
     state: MissionState
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -95,7 +96,7 @@ class TelemetryMsg(BaseModel):
     robot_id: str
     position: Dict[str, float]  # {"x": float, "y": float} room-relative meters
     heading: float  # degrees, 0=north
-    battery_pct: int
+    battery: int
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     message_id: Optional[str] = None
 

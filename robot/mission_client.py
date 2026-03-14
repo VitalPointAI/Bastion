@@ -217,7 +217,7 @@ async def telemetry_loop(
                     robot_id=robot_id,
                     position={"x": x, "y": y},
                     heading=driver.heading,
-                    battery_pct=battery,
+                    battery=battery,
                     timestamp=datetime.utcnow(),
                 )
                 await _send_telemetry(ws, msg)

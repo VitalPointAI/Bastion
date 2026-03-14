@@ -54,7 +54,7 @@ class TestModelsAllHaveMessageId:
     """StateUpdateMsg, TelemetryMsg, RegisterMsg all have message_id field."""
 
     def test_models_all_have_message_id_state_update(self):
-        msg = StateUpdateMsg(mission_id="m1", state=MissionState.executing)
+        msg = StateUpdateMsg(robot_id="r1", mission_id="m1", state=MissionState.executing)
         assert hasattr(msg, "message_id")
 
     def test_models_all_have_message_id_telemetry(self):
@@ -62,7 +62,7 @@ class TestModelsAllHaveMessageId:
             robot_id="r1",
             position={"x": 0.0, "y": 0.0},
             heading=0.0,
-            battery_pct=100,
+            battery=100,
         )
         assert hasattr(msg, "message_id")
 

@@ -2,12 +2,27 @@
  * COPRobotStatusCard
  *
  * Phase 06 Plan 04: Detail panel showing robot mission status, state timeline,
- * telemetry snapshot, and policy summary. Opens when a robot marker is clicked.
+ * telemetry snapshot, vision feed, and capability list.
+ * Opens when a robot marker is clicked on the COP.
  */
 
 import { useEffect, useState } from 'react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
+
+interface VisionDetection {
+  class_desc: string;
+  confidence: number;
+  bbox: { left: number; top: number; right: number; bottom: number };
+}
+
+interface LatestVision {
+  timestamp: string;
+  mission_id?: string;
+  detections: VisionDetection[];
+  scene_description?: string;
+  keyframe_jpeg_b64?: string;
+}
 
 interface RobotInfo {
   robot_id: string;
@@ -21,10 +36,12 @@ interface RobotInfo {
     heading: number;
     battery: number;
   };
+  latest_vision?: LatestVision;
 }
 
 interface MissionStatus {
   state: string;
+  command?: string;
 }
 
 interface COPRobotStatusCardProps {
@@ -61,7 +78,6 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
     async function load() {
       setLoading(true);
       try {
-        // Fetch robot info
         const robotsRes = await fetch('/api/robot/robots');
         if (robotsRes.ok) {
           const robots = (await robotsRes.json()) as RobotInfo[];
@@ -69,12 +85,13 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
           if (!cancelled && found) {
             setRobot(found);
 
-            // Fetch mission status if active
             if (found.current_mission_id) {
               const missionRes = await fetch(`/api/robot/missions/${found.current_mission_id}`);
               if (missionRes.ok && !cancelled) {
                 setMission(await missionRes.json() as MissionStatus);
               }
+            } else {
+              if (!cancelled) setMission(null);
             }
           }
         }
@@ -86,7 +103,6 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
     }
 
     load();
-    // Refresh every 3 seconds while card is open
     const interval = setInterval(load, 3000);
     return () => {
       cancelled = true;
@@ -94,7 +110,7 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
     };
   }, [robotId]);
 
-  // ─── Battery icon ──────────────────────────────────────────────────────────
+  // ─── Helpers ──────────────────────────────────────────────────────────────
 
   function batteryColor(pct: number): string {
     if (pct > 60) return '#22c55e';
@@ -102,7 +118,31 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
     return '#ef4444';
   }
 
-  // ─── State timeline rendering ─────────────────────────────────────────────
+  function confidenceColor(conf: number): string {
+    if (conf >= 0.8) return '#22c55e';
+    if (conf >= 0.5) return '#eab308';
+    return '#ef4444';
+  }
+
+  function timeAgo(ts: string): string {
+    const diff = Date.now() - new Date(ts).getTime();
+    if (diff < 1000) return 'just now';
+    if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+    return `${Math.floor(diff / 3_600_000)}h ago`;
+  }
+
+  // ─── Section label ────────────────────────────────────────────────────────
+
+  const sectionLabel = {
+    fontSize: '10px',
+    color: '#6b7280',
+    textTransform: 'uppercase' as const,
+    marginBottom: '4px',
+    letterSpacing: '0.5px',
+  };
+
+  // ─── State timeline ───────────────────────────────────────────────────────
 
   function renderTimeline(currentState: string) {
     const currentIdx = STATE_ORDER.indexOf(currentState);
@@ -110,7 +150,6 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {STATE_ORDER.filter((s) => {
-          // Show states up to current + terminal states if they match
           const idx = STATE_ORDER.indexOf(s);
           if (s === 'failed' || s === 'rejected') return s === currentState;
           return idx <= currentIdx;
@@ -142,6 +181,84 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
     );
   }
 
+  // ─── Vision feed ──────────────────────────────────────────────────────────
+
+  function renderVision(vision: LatestVision) {
+    return (
+      <div>
+        <div style={{ ...sectionLabel, marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>Vision Feed</span>
+          <span style={{ fontSize: '9px', color: '#4b5563', fontWeight: 400, textTransform: 'none' }}>
+            {timeAgo(vision.timestamp)}
+          </span>
+        </div>
+
+        {/* Keyframe image */}
+        {vision.keyframe_jpeg_b64 && (
+          <div style={{
+            marginBottom: '8px',
+            borderRadius: '4px',
+            overflow: 'hidden',
+            border: '1px solid #374151',
+          }}>
+            <img
+              src={`data:image/jpeg;base64,${vision.keyframe_jpeg_b64}`}
+              alt="Robot camera feed"
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+              }}
+            />
+          </div>
+        )}
+
+        {/* Scene description */}
+        {vision.scene_description && (
+          <div style={{
+            fontSize: '11px',
+            color: '#9ca3af',
+            fontStyle: 'italic',
+            marginBottom: '6px',
+            lineHeight: '1.4',
+          }}>
+            {vision.scene_description}
+          </div>
+        )}
+
+        {/* Detections list */}
+        {vision.detections.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {vision.detections.map((det, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '11px',
+                  padding: '3px 6px',
+                  borderRadius: '4px',
+                  background: 'rgba(31, 41, 55, 0.6)',
+                  border: '1px solid #374151',
+                }}
+              >
+                <span style={{ color: '#e5e7eb', fontWeight: 500 }}>
+                  {det.class_desc}
+                </span>
+                <span style={{ color: confidenceColor(det.confidence), fontSize: '10px' }}>
+                  {(det.confidence * 100).toFixed(0)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize: '11px', color: '#4b5563' }}>No detections</div>
+        )}
+      </div>
+    );
+  }
+
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -150,11 +267,12 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
       top: '12px',
       right: '340px',
       width: '280px',
+      maxHeight: 'calc(100vh - 100px)',
+      overflowY: 'auto',
       zIndex: 1000,
       background: 'rgba(17, 24, 39, 0.97)',
       border: '1px solid #374151',
       borderRadius: '8px',
-      overflow: 'hidden',
       fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
     }}>
       {/* Header */}
@@ -165,6 +283,9 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
         padding: '10px 12px',
         borderBottom: '1px solid #374151',
         background: 'rgba(31, 41, 55, 0.5)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1,
       }}>
         <div>
           <div style={{ fontSize: '13px', fontWeight: 600, color: '#e5e7eb' }}>
@@ -214,12 +335,15 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
 
           {/* Current Mission */}
           <div>
-            <div style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.5px' }}>
-              Current Mission
-            </div>
+            <div style={sectionLabel}>Current Mission</div>
             {robot.current_mission_id ? (
               <div style={{ fontSize: '11px', color: '#d1d5db' }}>
-                <div>{robot.current_mission_id.slice(0, 8)}...</div>
+                {mission?.command && (
+                  <div style={{ fontWeight: 600, marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                    {mission.command.replace(/_/g, ' ')}
+                  </div>
+                )}
+                <div style={{ color: '#6b7280', fontSize: '10px' }}>{robot.current_mission_id.slice(0, 8)}...</div>
                 {mission && (
                   <div style={{ marginTop: '2px', color: STATE_COLORS[mission.state] || '#6b7280' }}>
                     {mission.state.replace(/_/g, ' ')}
@@ -234,19 +358,18 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
           {/* State Timeline */}
           {mission && (
             <div>
-              <div style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>
-                State Timeline
-              </div>
+              <div style={{ ...sectionLabel, marginBottom: '6px' }}>State Timeline</div>
               {renderTimeline(mission.state)}
             </div>
           )}
 
+          {/* Vision Feed */}
+          {robot.latest_vision && renderVision(robot.latest_vision)}
+
           {/* Telemetry */}
           {robot.latest_telemetry && (
             <div>
-              <div style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                Telemetry
-              </div>
+              <div style={sectionLabel}>Telemetry</div>
               <div style={{ fontSize: '11px', color: '#d1d5db', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                 <div>X: {robot.latest_telemetry.position.x.toFixed(2)}</div>
                 <div>Y: {robot.latest_telemetry.position.y.toFixed(2)}</div>
@@ -261,9 +384,7 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
           {/* Capabilities */}
           {robot.capabilities.length > 0 && (
             <div>
-              <div style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                Capabilities
-              </div>
+              <div style={sectionLabel}>Capabilities</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                 {robot.capabilities.map((cap) => (
                   <span
