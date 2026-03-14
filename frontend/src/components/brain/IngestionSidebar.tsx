@@ -16,6 +16,7 @@ import { useBrainIngestion } from './hooks/useBrainIngestion.js';
 import { DocIntelligencePanel } from '../doc-intelligence/DocIntelligencePanel.js';
 import { osintService } from '../../lib/osint-service.js';
 import type { OSINTFeedConfig, FeedSourceType, CreateFeedInput } from '../../lib/osint-service.js';
+import { copService } from '../../lib/cop-service.js';
 import type { IngestionEvent, ProcessStatus } from './hooks/useBrainIngestion.js';
 import './IngestionSidebar.css';
 
@@ -237,25 +238,37 @@ function AddOSINTSourceModal({ problemSetId, onClose, onCreated }: AddOSINTModal
 
       await osintService.createFeed(input);
 
-      // If COP layer creation is requested, trigger intel layer generation
-      // via the COP agent (which will populate it with actual content)
+      // If COP layer creation is requested, create an intel COP layer directly
+      // via copService (correct API base URL + auth). Layer appears in COP panel
+      // immediately and will be populated as OSINT events arrive.
       if (createCopLayer) {
         try {
-          const res = await fetch(`${API_BASE}/api/cop/agents/trigger`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
+          await copService.createLayer({
+            problemSetId,
+            sectionId: 'default',
+            layerType: 'intel',
+            spec: {
+              layerId: `osint-${Date.now()}`,
+              layerType: 'intel',
               workspaceId: problemSetId,
               sectionId: 'default',
-              triggeredBy: 'manual',
-            }),
+              symbols: [],
+              controlMeasures: [],
+              customAnnotations: [],
+              temporalPhases: [],
+              metadata: {
+                generatedBy: `osint-${sourceName.trim().toLowerCase().replace(/\s+/g, '-')}`,
+                generatedAt: new Date().toISOString(),
+                sourceDocumentIds: [],
+                ccoValidated: false,
+                osintSourceName: sourceName.trim(),
+                osintSourceType: sourceType,
+                osintFeedEndpoint: endpointUrl.trim() || null,
+              },
+            } as unknown as import('../../types/cop.js').COPLayerSpec,
           });
-          if (!res.ok) {
-            console.warn('[OSINT] COP layer generation failed:', res.statusText);
-          }
         } catch (err) {
-          console.warn('[OSINT] COP layer generation failed:', err);
+          console.warn('[OSINT] COP layer creation failed:', err);
         }
       }
 

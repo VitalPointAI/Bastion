@@ -624,7 +624,14 @@ export function BrainVisualization({
       className="brain-visualization"
       style={{ width: '100%', height: '100%', position: 'relative' }}
     >
-      <ForceGraph3D
+      {/* Defer rendering until we have nodes — ForceGraph3D crashes if the
+          d3 simulation is created with empty data then populated later */}
+      {graphPayload.nodes.length === 0 ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
+          Waiting for graph data...
+        </div>
+      ) : null}
+      {graphPayload.nodes.length > 0 && <ForceGraph3D
         ref={fgRef as MutableRefObject<ForceGraphMethods | undefined>}
         graphData={graphPayload}
         width={w}
@@ -650,7 +657,7 @@ export function BrainVisualization({
         cooldownTime={simParams.cooldownTime}
         d3AlphaDecay={simParams.alphaDecay}
         d3VelocityDecay={simParams.velocityDecay}
-      />
+      />}
 
       {/* Phase 45 — N-hop expand button at Level 3 (node detail) */}
       {showExpandButton && (
