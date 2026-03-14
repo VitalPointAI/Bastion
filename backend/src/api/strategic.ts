@@ -415,18 +415,11 @@ router.delete('/documents/:id', requireAuth, async (req, res) => {
 
     const documentId = req.params.id as string;
 
-    // Get user DID from authenticated session
-    const userDID = buildDID(req.anonUser!.nearAccountId);
-
-    // Verify ownership
+    // Verify document exists (any authenticated user can delete)
     const document = await store.get(documentId);
 
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
-    }
-
-    if (document.createdBy !== userDID) {
-      return res.status(403).json({ error: 'Access denied' });
     }
 
     // ── Cascade deletion ─────────────────────────────────────────────────
