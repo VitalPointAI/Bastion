@@ -232,3 +232,17 @@ export async function initCOP(): Promise<void> {
 export function getCOPTriggerHandler(): TriggerHandler | null {
   return _triggerHandler ?? null;
 }
+
+/**
+ * Notify COP that a relevant change has occurred in the system.
+ * This triggers layer regeneration for the affected workspace.
+ * Safe to call even if COP module is not initialized (no-op).
+ *
+ * @param workspaceId - Problem set ID
+ * @param source - What triggered the change (for logging)
+ */
+export function notifyCOPChange(workspaceId: string, source: string): void {
+  if (!_triggerHandler) return;
+  console.log(`[COP] Change notification from ${source} for workspace=${workspaceId}`);
+  _triggerHandler.handleManualTrigger(workspaceId, 'default');
+}

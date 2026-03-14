@@ -169,6 +169,15 @@ class COPService {
   }
 
   /**
+   * Delete a COP layer.
+   */
+  async deleteLayer(layerId: string): Promise<void> {
+    await this.fetch<{ success: boolean }>(`/api/cop/layers/${encodeURIComponent(layerId)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
    * Transition a layer to a new lifecycle state.
    */
   async transitionLayer(layerId: string, targetState: LayerState, reason?: string): Promise<COPLayer> {

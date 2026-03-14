@@ -41,6 +41,7 @@ router.put('/layers/:id/spec', requireAuth, (req, res) => layerHandlers.updateLa
 router.post('/layers/:id/transition', requireAuth, (req, res) => layerHandlers.transitionLayer(req, res));
 router.post('/layers/:id/feedback', requireAuth, (req, res) => layerHandlers.addReviewFeedback(req, res));
 router.post('/layers/:id/recall', requireAuth, (req, res) => layerHandlers.recallLayer(req, res));
+router.delete('/layers/:id', requireAuth, (req, res) => layerHandlers.deleteLayer(req, res));
 
 // =========================================================================
 // Version Browsing

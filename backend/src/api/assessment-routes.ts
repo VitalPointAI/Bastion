@@ -17,6 +17,7 @@ import { aggregationService } from '../assessment/aggregation-service.js';
 import { decayService } from '../assessment/decay-service.js';
 import { aiSuggestionService } from '../assessment/ai-suggestion-service.js';
 import { getPool } from '../lib/database.js';
+import { notifyCOPChange } from '../cop/index.js';
 
 const router = Router();
 
@@ -189,6 +190,9 @@ router.post('/aars/:id/finalize', async (req: Request, res: Response) => {
     } catch (triggerErr) {
       console.warn('[assessment-routes] Reframing trigger check failed (non-blocking):', triggerErr);
     }
+
+    // Notify COP of assessment changes
+    notifyCOPChange(aar.problemSetId, 'aar-finalized');
 
     res.json(aar);
   } catch (error) {

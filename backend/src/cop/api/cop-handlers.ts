@@ -380,6 +380,25 @@ export const layerHandlers = {
   },
 
   /**
+   * DELETE /cop/layers/:id - Delete a COP layer.
+   */
+  async deleteLayer(req: Request, res: Response): Promise<void> {
+    try {
+      const layerId = param(req, 'id');
+      const deleted = await layerStore.deleteLayer(layerId);
+      if (!deleted) {
+        res.status(404).json({ error: `Layer not found: ${layerId}` });
+        return;
+      }
+      res.json({ success: true, layerId });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[COP] deleteLayer error:', message);
+      res.status(500).json({ error: message });
+    }
+  },
+
+  /**
    * POST /cop/layers/:id/recall - Recall a layer from COP to review.
    */
   async recallLayer(req: Request, res: Response): Promise<void> {

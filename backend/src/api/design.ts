@@ -13,6 +13,7 @@ import { getAgentRegistry } from '../agents/registry.js';
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { listDocuments } from '../strategic/ingestion/document-store.js';
 import { ObjectiveStore } from '../strategic/objectives/store.js';
+import { notifyCOPChange } from '../cop/index.js';
 
 const router = Router();
 
@@ -219,6 +220,7 @@ router.post('/:problemSetId/push-handoff', async (req: Request, res: Response) =
   try {
     const problemSetId = req.params.problemSetId as string;
     const result = await designStore.pushHandoff(problemSetId);
+    notifyCOPChange(problemSetId, 'design-handoff');
     res.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

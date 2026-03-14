@@ -499,6 +499,17 @@ export class LayerStore implements ILayerStore {
     return layer;
   }
 
+  async deleteLayer(layerId: string): Promise<boolean> {
+    await this.ensureInitialized();
+    const { getPool } = await import('../../lib/database.js');
+    const pool = getPool();
+
+    // Also delete associated snapshots
+    await pool.query('DELETE FROM cop_layer_snapshots WHERE layer_id = $1', [layerId]);
+    const result = await pool.query('DELETE FROM cop_layers WHERE id = $1', [layerId]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
   private rowToLayer(row: Record<string, unknown>): COPLayer {
     return {
       id: row.id as string,

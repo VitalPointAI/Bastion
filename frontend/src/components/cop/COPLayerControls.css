@@ -1,14 +1,97 @@
 /* COP Layer Controls Panel */
 .cop-layer-controls {
   background: #1f2937;
-  border-left: 1px solid #374151;
   padding: 12px;
   overflow-y: auto;
   font-size: 13px;
   color: #d1d5db;
-  min-width: 260px;
-  max-width: 320px;
 }
+
+/* ─── Perspective Toggle ──────────────────────────────────────────────────── */
+
+.cop-perspective-section {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #374151;
+}
+
+.cop-section-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+
+.cop-perspective-toggle {
+  display: flex;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cop-perspective-btn {
+  flex: 1;
+  padding: 5px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.cop-perspective-btn:not(:last-child) {
+  border-right: 1px solid #4b5563;
+}
+
+.cop-perspective-btn:hover {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+.cop-perspective-btn.active.cop-perspective-friendly {
+  background: #1e40af30;
+  color: #60a5fa;
+}
+
+.cop-perspective-btn.active.cop-perspective-adversary {
+  background: #991b1b30;
+  color: #f87171;
+}
+
+.cop-perspective-btn.active.cop-perspective-combined {
+  background: #37415180;
+  color: #e5e7eb;
+}
+
+/* ─── Overlay Toggles (Resources, Robots) ────────────────────────────────── */
+
+.cop-overlay-toggles {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #374151;
+}
+
+.cop-overlay-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.cop-overlay-label {
+  color: #d1d5db;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
 
 .cop-layer-controls-header {
   display: flex;
@@ -172,6 +255,30 @@
 .cop-layer-state-cop {
   background: #2563eb20;
   color: #60a5fa;
+}
+
+/* Delete button */
+.cop-layer-delete-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+
+.cop-layer-delete-btn:hover:not(:disabled) {
+  color: #f87171;
+  background: #991b1b20;
+}
+
+.cop-layer-delete-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Opacity slider */

@@ -13,6 +13,7 @@ import type { Request, Response } from 'express';
 import { jppStore } from '../jpp/jpp-store.js';
 import { ewmStore } from '../jpp/ewm-store.js';
 import { entityToolHandlers } from '../graph/tools/entity-tools.js';
+import { notifyCOPChange } from '../cop/index.js';
 import type { JPPStepId, StepStatus } from '../jpp/types.js';
 
 const router = Router();
@@ -179,6 +180,11 @@ router.post('/:instanceId/steps/:step/products', async (req: Request, res: Respo
       reviewedBy: req.body.reviewedBy,
       status: req.body.status,
     });
+    // Notify COP of planning product changes
+    try {
+      const inst = await jppStore.getInstance(req.params.instanceId as string);
+      if (inst?.problemSetId) notifyCOPChange(inst.problemSetId, `jpp-step-${req.params.step as string}`);
+    } catch { /* non-fatal */ }
     res.json(product);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
