@@ -1,0 +1,1 @@
+/home/vitalpointai/projects/ssr/contracts/credential-registry/target/wasm32-unknown-unknown/release/credential_registry.wasm: /home/vitalpointai/projects/ssr/contracts/credential-registry/src/lib.rs /home/vitalpointai/projects/ssr/contracts/credential-registry/target/near/credential_registry_abi.zst

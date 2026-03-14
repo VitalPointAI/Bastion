@@ -80,7 +80,7 @@ robotRouter.post('/missions/trigger', async (req, res) => {
           lethal_effects_permitted: false,
         },
       },
-      issued_by: `dao:${problem_set_id || 'demo'}`,
+      issued_by: `did:near:bastion-dao:${problem_set_id || 'demo'}`,
       timestamp: now,
       auth_token: 'demo-token',
       problem_set_id: problem_set_id || undefined,

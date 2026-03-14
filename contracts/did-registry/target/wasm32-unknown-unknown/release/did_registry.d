@@ -1,0 +1,1 @@
+/home/vitalpointai/projects/ssr/contracts/did-registry/target/wasm32-unknown-unknown/release/did_registry.wasm: /home/vitalpointai/projects/ssr/contracts/did-registry/src/lib.rs /home/vitalpointai/projects/ssr/contracts/did-registry/target/near/did_registry_abi.zst
