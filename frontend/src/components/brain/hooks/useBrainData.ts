@@ -68,6 +68,11 @@ interface RawObjective {
   midlife_category?: string;
   extraction_confidence?: number;
   created_at?: string;
+  primary_instrument?: string;
+  priority?: string;
+  assumptions?: string[];
+  risks?: string[];
+  constraints?: string[];
 }
 
 interface RawObjectivesResponse {
@@ -84,6 +89,43 @@ interface RawDocument {
 
 interface RawDocumentsResponse {
   documents?: RawDocument[];
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** DIME instrument labels for human-readable objective labels */
+const INSTRUMENT_LABELS: Record<string, string> = {
+  DIPLOMATIC: 'Diplomatic',
+  INFORMATION: 'Information',
+  MILITARY: 'Military',
+  ECONOMIC: 'Economic',
+};
+
+/**
+ * Generate a meaningful short label for an objective node.
+ * Extracts the first sentence or clause (up to 80 chars) from the description,
+ * prefixed with the DIME instrument when available.
+ */
+function summarizeObjective(
+  text?: string,
+  instrument?: string,
+  priority?: string,
+): string {
+  if (!text) return 'Unnamed Objective';
+
+  // Extract first sentence or up to first comma/semicolon for a concise label
+  const firstSentence = text.split(/[.;]\s/)[0] ?? text;
+  const label = firstSentence.length > 80
+    ? firstSentence.slice(0, 77) + '...'
+    : firstSentence;
+
+  // Prefix with DIME category for quick identification
+  const prefix = instrument && INSTRUMENT_LABELS[instrument]
+    ? `[${INSTRUMENT_LABELS[instrument]}] `
+    : '';
+  const suffix = priority && priority !== 'MEDIUM' ? ` (${priority})` : '';
+
+  return `${prefix}${label}${suffix}`;
 }
 
 // ─── Return type ──────────────────────────────────────────────────────────────
@@ -303,11 +345,25 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
         const midlifeCategorySet = new Set<string>();
         for (const obj of objectivesResp?.objectives ?? []) {
           if (!nodeIds.has(obj.id)) {
+            // Build a meaningful label: prefer first sentence or clause of description
+            const label = summarizeObjective(obj.objective_text, obj.primary_instrument, obj.priority);
+            // Build rich description with assumptions, risks, constraints
+            const descParts: string[] = [];
+            if (obj.objective_text) descParts.push(obj.objective_text);
+            if (obj.assumptions && obj.assumptions.length > 0) {
+              descParts.push(`\nAssumptions: ${obj.assumptions.join('; ')}`);
+            }
+            if (obj.risks && obj.risks.length > 0) {
+              descParts.push(`\nRisks: ${obj.risks.join('; ')}`);
+            }
+            if (obj.constraints && obj.constraints.length > 0) {
+              descParts.push(`\nConstraints: ${obj.constraints.join('; ')}`);
+            }
             nodes.push({
               id: obj.id,
-              label: obj.objective_text?.slice(0, 60) ?? obj.id,
+              label,
               type: 'objective',
-              description: obj.objective_text,
+              description: descParts.join('') || undefined,
               dimeCategory: obj.midlife_category,
               confidence: obj.extraction_confidence ?? 0.5,
               createdAt: obj.created_at ?? new Date().toISOString(),
