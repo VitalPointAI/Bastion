@@ -17,7 +17,7 @@
  * NOT reheat the simulation.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { BrainNode, BrainLens, BrainNodeType, ActorCategory } from '../types.js';
 import { BUILTIN_LENS_IDS } from '../types.js';
 
@@ -130,7 +130,7 @@ export function useBrainLens(problemSetId: string): UseBrainLensReturn {
 
   // ── Derived state ──────────────────────────────────────────────────────────
 
-  const allLenses: BrainLens[] = [...BUILTIN_LENSES, ...customLenses];
+  const allLenses: BrainLens[] = useMemo(() => [...BUILTIN_LENSES, ...customLenses], [customLenses]);
 
   const activeLens: BrainLens =
     allLenses.find((l) => l.id === activeLensId) ?? BUILTIN_LENSES[0]!;
