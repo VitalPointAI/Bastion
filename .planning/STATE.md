@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 45-02-PLAN.md
-last_updated: "2026-03-14T10:36:56.640Z"
+stopped_at: Completed 45-06-PLAN.md
+last_updated: "2026-03-14T10:40:17.355Z"
 last_activity: "2026-03-13 - Completed 44-06: pre-flight validator with DID capability/speed/autonomy/national caveat checks; mission profile registry with resolve/getDefaultProfileForCommand; requirements PRE-01, PRE-02 met"
 progress:
   total_phases: 61
   completed_phases: 42
   total_plans: 385
-  completed_plans: 384
+  completed_plans: 385
 ---
 
 # Project State
@@ -186,6 +186,7 @@ Progress: ███████████████████████�
 | Phase 45 P01 | 69 | 2 tasks | 2 files |
 | Phase 45-knowledge-graph-subspaces P03 | 138 | 2 tasks | 3 files |
 | Phase 45-knowledge-graph-subspaces P02 | 180 | 2 tasks | 4 files |
+| Phase 45-knowledge-graph-subspaces P06 | 99 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -826,6 +827,7 @@ Recent decisions affecting current work:
 - [Phase 45-03]: clusterModeChanged boolean flag on hook return — controller calls d3ReheatSimulation only on actual mode change, not on pure filter switches
 - [Phase 45-knowledge-graph-subspaces]: Mounted brainSubspacesRouter at /api/brain alongside existing brainRouter — routes use different paths (/subspaces, /lenses, /nhop vs /annotations, /snapshots)
 - [Phase 45-knowledge-graph-subspaces]: N-hop LIMIT: 200 nodes for hops<=2, 100 for hops>2 — caps Neo4j result set size
+- [Phase 45-knowledge-graph-subspaces]: showWarning threshold at 3 hops; error path rolls back expandedHops to committedHopsRef.current; setFocusNode does not auto-fetch
 
 ### Roadmap Evolution
 
@@ -1533,7 +1535,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-14T10:36:56.630Z
-Stopped at: Completed 45-02-PLAN.md
+Last session: 2026-03-14T10:40:17.345Z
+Stopped at: Completed 45-06-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
