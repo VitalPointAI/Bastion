@@ -38,6 +38,15 @@ class Waypoint(BaseModel):
     y: float
 
 
+class AutonomyPolicy(BaseModel):
+    """Scoping what the robot can do without human authorization."""
+
+    autonomous_actions: List[str] = Field(default_factory=list)
+    restricted_actions: List[str] = Field(default_factory=list)
+    max_speed: int = Field(default=255, ge=0, le=255)
+    lethal_effects_permitted: bool = False
+
+
 class MissionParams(BaseModel):
     """Parameters for a mission command."""
 
@@ -47,7 +56,7 @@ class MissionParams(BaseModel):
     waypoints: Optional[List[Waypoint]] = None
     speed: int = Field(default=100, ge=0, le=255)
     duration_sec: Optional[float] = None
-    autonomy_policy: str = "default"
+    autonomy_policy: AutonomyPolicy = Field(default_factory=AutonomyPolicy)
     profile_name: Optional[str] = None
     """Behavior profile reference (e.g. 'stealth_recon', 'patrol'). Resolved by backend."""
     area: Optional[Dict[str, float]] = None
