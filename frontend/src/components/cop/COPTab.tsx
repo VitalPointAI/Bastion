@@ -101,12 +101,40 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
+// ─── Persistence helpers ─────────────────────────────────────────────────
+
+function loadCopPrefs(psId: string): {
+  visibility: Record<string, boolean>;
+  opacity: Record<string, number>;
+  perspective: Perspective;
+} {
+  try {
+    const raw = localStorage.getItem(`cop-prefs-${psId}`);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { visibility: {}, opacity: {}, perspective: 'combined' };
+}
+
+function saveCopPrefs(
+  psId: string,
+  visibility: Record<string, boolean>,
+  opacity: Record<string, number>,
+  perspective: Perspective,
+) {
+  try {
+    localStorage.setItem(`cop-prefs-${psId}`, JSON.stringify({ visibility, opacity, perspective }));
+  } catch { /* ignore */ }
+}
+
 export function COPTab({ problemSetId }: COPTabProps) {
+  // Load persisted user preferences
+  const savedPrefs = loadCopPrefs(problemSetId);
+
   // Existing COP state
   const [layers, setLayers] = useState<COPLayer[]>([]);
-  const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>({});
-  const [layerOpacity, setLayerOpacity] = useState<Record<string, number>>({});
-  const [currentPerspective, setCurrentPerspective] = useState<Perspective>('combined');
+  const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>(savedPrefs.visibility);
+  const [layerOpacity, setLayerOpacity] = useState<Record<string, number>>(savedPrefs.opacity);
+  const [currentPerspective, setCurrentPerspective] = useState<Perspective>(savedPrefs.perspective);
 
   // Sidebar state
   const [sidebarView, setSidebarView] = useState<SidebarView>('layers');
@@ -310,11 +338,24 @@ export function COPTab({ problemSetId }: COPTabProps) {
   }
 
   function handleVisibilityChange(layerId: string, visible: boolean) {
-    setLayerVisibility((prev) => ({ ...prev, [layerId]: visible }));
+    setLayerVisibility((prev) => {
+      const next = { ...prev, [layerId]: visible };
+      saveCopPrefs(problemSetId, next, layerOpacity, currentPerspective);
+      return next;
+    });
   }
 
   function handleOpacityChange(layerId: string, opacity: number) {
-    setLayerOpacity((prev) => ({ ...prev, [layerId]: opacity }));
+    setLayerOpacity((prev) => {
+      const next = { ...prev, [layerId]: opacity };
+      saveCopPrefs(problemSetId, layerVisibility, next, currentPerspective);
+      return next;
+    });
+  }
+
+  function handlePerspectiveChange(perspective: Perspective) {
+    setCurrentPerspective(perspective);
+    saveCopPrefs(problemSetId, layerVisibility, layerOpacity, perspective);
   }
 
   // ─── Actor graph handlers ─────────────────────────────────────────────────
@@ -349,7 +390,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
               setLayerOpacity((prev) => { const next = { ...prev }; delete next[layerId]; return next; });
             }}
             currentPerspective={currentPerspective}
-            onPerspectiveChange={setCurrentPerspective}
+            onPerspectiveChange={handlePerspectiveChange}
             resourceLayerVisible={resourceLayerVisible}
             onResourceLayerToggle={() => setResourceLayerVisible((v) => !v)}
             robotLayerVisible={robotLayerVisible}

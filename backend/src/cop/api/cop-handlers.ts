@@ -201,17 +201,17 @@ export const layerHandlers = {
         });
         res.status(201).json(layer);
       } else {
-        // Trigger generation and return draft layer
-        const layer = await runCOPGeneration(
+        // Trigger generation for a specific layer type
+        const layers = await runCOPGeneration(
           body.workspaceId,
           body.sectionId,
           'manual',
           { targetAgents: [body.layerType] },
         );
-        if (layer) {
-          res.status(201).json(layer);
+        if (layers.length > 0) {
+          res.status(201).json(layers[0]);
         } else {
-          res.status(500).json({ error: 'Layer generation failed' });
+          res.status(500).json({ error: 'Layer generation failed — no content produced' });
         }
       }
     } catch (error) {
@@ -550,19 +550,22 @@ export const agentHandlers = {
         // Non-fatal
       }
 
-      // Run generation synchronously
-      const layer = await runCOPGeneration(
+      // Run generation synchronously — creates one layer per warfighting function
+      const layers = await runCOPGeneration(
         body.workspaceId,
         body.sectionId,
         'manual',
         { documents, graphEntities },
       );
 
-      if (layer) {
-        res.json({ status: 'complete', layer });
-      } else {
-        res.json({ status: 'complete', layer: null, message: 'No layer produced (no documents or entities available)' });
-      }
+      res.json({
+        status: 'complete',
+        layers,
+        layerCount: layers.length,
+        message: layers.length > 0
+          ? `${layers.length} layers created`
+          : 'No layers produced (no documents or entities available)',
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('[COP] manualTrigger error:', message);
