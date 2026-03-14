@@ -757,7 +757,7 @@ function DynamicParamField({
           <button onClick={() => fileInputRef.current?.click()} style={addBtnStyle}>
             {value ? 'Change File' : 'Upload File'}
           </button>
-          {value && (
+          {typeof value === 'string' && value && (
             <div style={{ marginTop: '0.375rem', borderRadius: '0.25rem', overflow: 'hidden', border: '1px solid #334155' }}>
               <img src={`data:image/jpeg;base64,${value}`} alt="Preview" style={{ width: '100%', maxHeight: '80px', objectFit: 'cover', display: 'block' }} />
             </div>
