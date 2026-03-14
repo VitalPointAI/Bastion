@@ -52,6 +52,16 @@ export class PersonnelStore {
   ): Promise<Personnel> {
     await this.ensureInitialized();
     const pool = getPool();
+
+    // Duplicate check: same name + rank + mission must not already exist
+    const dupCheck = await pool.query(
+      `SELECT id FROM personnel WHERE name = $1 AND rank = $2 AND mission_id = $3 LIMIT 1`,
+      [name, rank, missionId]
+    );
+    if (dupCheck.rows.length > 0) {
+      throw new Error(`Duplicate personnel: "${rank} ${name}" already exists in this mission`);
+    }
+
     const id = `PER-${randomUUID()}`;
     const now = new Date();
 

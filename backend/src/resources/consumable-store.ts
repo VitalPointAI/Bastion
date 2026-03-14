@@ -55,6 +55,16 @@ export class ConsumableStore {
   ): Promise<Consumable> {
     await this.ensureInitialized();
     const pool = getPool();
+
+    // Duplicate check: same name + category + mission must not already exist
+    const dupCheck = await pool.query(
+      `SELECT id FROM consumables WHERE name = $1 AND category = $2 AND mission_id = $3 LIMIT 1`,
+      [name, category, missionId]
+    );
+    if (dupCheck.rows.length > 0) {
+      throw new Error(`Duplicate consumable: "${name}" (${category}) already exists in this mission`);
+    }
+
     const id = `CON-${randomUUID()}`;
     const now = new Date();
 
