@@ -364,9 +364,14 @@ export function BrainVisualization({
   }, [data.nodes]);
 
   // ── ForceGraph data ────────────────────────────────────────────────────────
+  // Use a stable empty payload to avoid re-triggering ForceGraph3D's internal
+  // graph rebuild when data is empty (which can cause animation cycle crashes).
+  const EMPTY_PAYLOAD: GraphPayload = useMemo(() => ({ nodes: [], links: [] }), []);
+
   const graphPayload = useMemo<GraphPayload>(() => {
     const nodes = Array.isArray(data.nodes) ? data.nodes : [];
     const edges = Array.isArray(data.edges) ? data.edges : [];
+    if (nodes.length === 0) return EMPTY_PAYLOAD;
     const nodeIdSet = new Set(nodes.map((n) => n.id));
     return {
       nodes: nodes as FGNode[],
@@ -378,7 +383,7 @@ export function BrainVisualization({
         })
         .map((e) => ({ ...e })) as FGLink[],
     };
-  }, [data]);
+  }, [data, EMPTY_PAYLOAD]);
 
   // Clear object caches when graph data changes
   useEffect(() => {
@@ -592,6 +597,16 @@ export function BrainVisualization({
     simulationHaltedRef.current = true;
   }, []);
 
+  // ── Pause animation on unmount to prevent stale _animationCycle ticks ──────
+  useEffect(() => {
+    return () => {
+      const fg = fgRef.current;
+      if (fg) {
+        try { fg.pauseAnimation(); } catch { /* already destroyed */ }
+      }
+    };
+  }, []);
+
   // ── Adaptive simulation parameters based on graph size ─────────────────────
   const simParams = useMemo(() => {
     if (nodeCount > 200) {
@@ -624,14 +639,7 @@ export function BrainVisualization({
       className="brain-visualization"
       style={{ width: '100%', height: '100%', position: 'relative' }}
     >
-      {/* Defer rendering until we have nodes — ForceGraph3D crashes if the
-          d3 simulation is created with empty data then populated later */}
-      {graphPayload.nodes.length === 0 ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
-          Waiting for graph data...
-        </div>
-      ) : null}
-      {graphPayload.nodes.length > 0 && <ForceGraph3D
+      <ForceGraph3D
         ref={fgRef as MutableRefObject<ForceGraphMethods | undefined>}
         graphData={graphPayload}
         width={w}
@@ -657,7 +665,7 @@ export function BrainVisualization({
         cooldownTime={simParams.cooldownTime}
         d3AlphaDecay={simParams.alphaDecay}
         d3VelocityDecay={simParams.velocityDecay}
-      />}
+      />
 
       {/* Phase 45 — N-hop expand button at Level 3 (node detail) */}
       {showExpandButton && (
