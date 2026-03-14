@@ -1,0 +1,102 @@
+/* ─── BrainBreadcrumb ─────────────────────────────────────────────────────── */
+
+/*
+ * Horizontal navigation bar rendered between the toolbar and the
+ * brain visualization canvas.
+ *
+ * Visual hierarchy:
+ *   - Above: toolbar
+ *   - This: breadcrumb bar (32px)
+ *   - Below: graph canvas
+ */
+
+.brain-breadcrumb {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  background: rgba(2, 8, 16, 0.85);  /* BRAIN_BG_COLOR at 85% opacity */
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 10;                         /* above canvas, below modals */
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;               /* Firefox: hide thin scrollbar */
+  -ms-overflow-style: none;
+  flex-shrink: 0;
+}
+
+.brain-breadcrumb::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Entries ────────────────────────────────────────────────────────────── */
+
+.brain-breadcrumb__entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+  font-size: 0.8125rem;               /* 13px */
+  letter-spacing: 0.01em;
+}
+
+/* Ancestor (clickable) entry */
+.brain-breadcrumb__entry--link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: #aaa;
+  transition: color 0.15s ease;
+}
+
+.brain-breadcrumb__entry--link:hover {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.brain-breadcrumb__entry--link:focus-visible {
+  outline: 1px solid rgba(74, 158, 255, 0.7);
+  border-radius: 2px;
+  outline-offset: 2px;
+}
+
+/* Current (active) level — not clickable */
+.brain-breadcrumb__entry--current {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ─── Parts ──────────────────────────────────────────────────────────────── */
+
+.brain-breadcrumb__icon {
+  font-size: 0.875rem;               /* slightly smaller emoji */
+  line-height: 1;
+  user-select: none;
+}
+
+.brain-breadcrumb__label {
+  /* inherits color from parent entry */
+}
+
+.brain-breadcrumb__count {
+  color: #666;
+  font-size: 0.75rem;                /* 12px */
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Chevron separator ──────────────────────────────────────────────────── */
+
+.brain-breadcrumb__chevron {
+  color: #555;
+  margin: 0 8px;
+  font-size: 0.6875rem;              /* 11px */
+  line-height: 1;
+  user-select: none;
+  flex-shrink: 0;
+}
