@@ -172,6 +172,7 @@ export function ControlSubView({ problemSetId }: ControlSubViewProps) {
     const defaults: Record<string, unknown> = {};
     for (const p of cmd.params) {
       if (p.default !== undefined) defaults[p.name] = p.default;
+      else if (p.type === 'select') defaults[p.name] = p.options?.[0]?.value ?? '';
       else if (p.type === 'location') defaults[p.name] = { x: 2.5, y: 2.5 };
       else if (p.type === 'waypoints') defaults[p.name] = [{ x: 1, y: 1 }, { x: 4, y: 1 }, { x: 2.5, y: 4 }];
       else if (p.type === 'area') defaults[p.name] = { x_min: 0, y_min: 0, x_max: 5, y_max: 5 };
@@ -196,6 +197,7 @@ export function ControlSubView({ problemSetId }: ControlSubViewProps) {
         const res = await fetch(`/api/resources/${selectedResourceId}/status`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ status: paramValues.status }),
         });
         if (res.ok) {
