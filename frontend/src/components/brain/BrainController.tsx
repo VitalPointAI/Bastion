@@ -4,13 +4,14 @@
  * Wires together all brain sub-components and manages shared state:
  *   - Node selection (single + multi-select via Shift-click)
  *   - Search filtering (dim non-matching nodes)
- *   - Clustering mode
+ *   - Clustering mode (driven by active lens)
  *   - Timeline scrubbing (historical + future views)
  *   - Annotations (per-node)
  *   - AI context snapshots
  *   - Intelligence gap marking
  *   - Proactive pattern alerts
  *   - Particle animation from sidebar into brain
+ *   - Phase 45: lens system, subspace navigation, drill-down hierarchy, N-hop expansion
  *
  * BrainController is the "nervous system" — it owns all cross-component state
  * and passes it down to the layout and sub-components via props.
@@ -29,6 +30,8 @@ import { IngestionSidebar } from './IngestionSidebar.js';
 import { AIContextSnapshotModal } from './AIContextSnapshotModal.js';
 import { GapSummaryPanel } from './GapSummaryPanel.js';
 import { ParticleOverlay } from './renderers/particleRenderer.js';
+import { BrainBreadcrumb } from './BrainBreadcrumb.js';
+import { SubspaceSidebar } from './SubspaceSidebar.js';
 
 import { useBrainData } from './hooks/useBrainData.js';
 import { useBrainIngestion } from './hooks/useBrainIngestion.js';
@@ -37,6 +40,11 @@ import { useBrainAnnotations } from './hooks/useBrainAnnotations.js';
 import { useBrainTimeline } from './hooks/useBrainTimeline.js';
 import { useBrainGaps } from './hooks/useBrainGaps.js';
 import { useBrainPatterns } from './hooks/useBrainPatterns.js';
+import { useBrainLens } from './hooks/useBrainLens.js';
+import { useBrainSubspaces } from './hooks/useBrainSubspaces.js';
+import { useBrainDrillDown } from './hooks/useBrainDrillDown.js';
+import { useBrainNHop } from './hooks/useBrainNHop.js';
+import { LensSelector } from './LensSelector.js';
 
 import type { BrainNode, BrainGraphData } from './types.js';
 import type { PatternAlert } from './hooks/useBrainPatterns.js';
@@ -83,6 +91,8 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   const { events: _events, activeProcesses: _activeProcesses, particlesRef, isConnected: _isConnected } =
     useBrainIngestion(problemSetId, true, centerSize.h);
 
+  // useBrainClustering is still used for force layout reheat — but clusterMode is
+  // now driven by the active lens via a useEffect below (RESEARCH.md Pitfall 5).
   const { clusterMode, setClusterMode, clusterLabels: _clusterLabels } = useBrainClustering(
     fgRef,
     data.nodes,
@@ -107,6 +117,75 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   const { alerts, unreadCount: _unreadCount, markAsRead: _markAsRead, markAllAsRead: _markAllAsRead } =
     useBrainPatterns(problemSetId);
   void alerts;
+
+  // ── Phase 45: Lens system ───────────────────────────────────────────────────
+  const {
+    activeLens,
+    allLenses,
+    setActiveLensId,
+    saveLens: _saveLens,
+    deleteLens: deleteLensAction,
+    cloneLens,
+    applyLensFilters,
+    clusterModeChanged,
+  } = useBrainLens(problemSetId);
+
+  // Sync clusterMode from active lens — only reheat when mode actually changes
+  // (RESEARCH.md Pitfall 5: pure filter-only lens switches must NOT reheat).
+  const prevClusterModeRef = useRef<string>(activeLens.clusterMode);
+  useEffect(() => {
+    if (clusterModeChanged && prevClusterModeRef.current !== activeLens.clusterMode) {
+      prevClusterModeRef.current = activeLens.clusterMode;
+      setClusterMode(activeLens.clusterMode);
+    }
+  }, [activeLens.clusterMode, clusterModeChanged, setClusterMode]);
+
+  // ── Phase 45: Subspace system ───────────────────────────────────────────────
+  const {
+    subspaces,
+    activeSubspaceId,
+    setActiveSubspaceId,
+    subspaceData,
+    createManualSubspace,
+    createSmartSubspace,
+    deleteSubspace,
+  } = useBrainSubspaces(problemSetId, effectiveData);
+
+  // ── Phase 45: Drill-down system ─────────────────────────────────────────────
+  const {
+    level: drillLevel,
+    breadcrumbs,
+    drillIntoSubspace,
+    drillIntoNode,
+    drillIntoDocuments,
+    drillUp,
+    drillData,
+    focusNodeId,
+    getCameraTarget,
+  } = useBrainDrillDown(effectiveData, activeSubspaceId, subspaceData);
+
+  // ── Phase 45: N-hop expansion ───────────────────────────────────────────────
+  const {
+    expandedHops,
+    expandedData,
+    loading: nhopLoading,
+    showWarning: nhopWarning,
+    expand: expandNHop,
+    reset: resetNHop,
+    setFocusNode: setNHopFocusNode,
+  } = useBrainNHop(problemSetId);
+
+  void nhopLoading;
+  void resetNHop;
+
+  // ── Camera transition on drill-level changes ────────────────────────────────
+  useEffect(() => {
+    const target = getCameraTarget();
+    if (target && fgRef.current) {
+      fgRef.current.cameraPosition(target.position, target.lookAt, target.duration);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drillLevel, breadcrumbs.length]);
 
   // ── Shift-key tracking (for multi-select on node click) ────────────────────
   const shiftHeldRef = useRef(false);
@@ -140,26 +219,49 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   const rightPanelOpen = selectedNodeId !== null || selectedNodeIds.length > 0 || gapPanelOpen;
 
   // ── Processed graph data ────────────────────────────────────────────────────
+  //
+  // Pipeline:
+  //   1. Start from drill-level data (subspace/node/document filtered by drill-down)
+  //   2. If Level 3 (node) with N-hop expanded data, use that instead
+  //   3. Apply lens filters (node type, actor category, gap visibility)
+  //   4. Apply gap marking (marks gap nodes + adds ghost stubs for missing intelligence)
+  //   5. Apply search dimming (set isSearchDimmed on non-matching nodes)
+  //   6. Filter edges to visible nodes
   const processedData: BrainGraphData = (() => {
-    // Start from the timeline's effective data
-    const base = effectiveData;
+    // Step 1: Start from drill-level data
+    let baseNodes = drillLevel === 'full' ? effectiveData.nodes : drillData.nodes;
+    let baseEdges = drillLevel === 'full' ? effectiveData.edges : drillData.edges;
 
-    // Apply gap marking — marks gap nodes with isGap=true and adds ghost nodes
-    const nodesWithGaps = markGapNodes(base.nodes ?? []);
+    // Step 2: If at Level 3 (node detail) with N-hop expansion active, use expanded data
+    if (drillLevel === 'node' && expandedData) {
+      baseNodes = expandedData.nodes;
+      baseEdges = expandedData.edges;
+    }
 
-    // Apply search dimming — set isSearchDimmed flag on non-matching nodes
-    const nodesWithSearch =
+    // Step 3: Apply lens filters
+    const lensFiltered = applyLensFilters(baseNodes);
+
+    // Step 4: Apply gap marking
+    const withGaps = markGapNodes(lensFiltered);
+
+    // Step 5: Apply search dimming
+    const withSearch =
       searchMatchIds !== null
-        ? nodesWithGaps.map((n) => ({
+        ? withGaps.map((n) => ({
             ...n,
             isSearchDimmed: !searchMatchIds.includes(n.id),
           }))
-        : nodesWithGaps;
+        : withGaps;
 
-    return {
-      nodes: nodesWithSearch,
-      edges: base.edges ?? [],
-    };
+    // Step 6: Filter edges to only include those between visible nodes
+    const visibleIds = new Set(withSearch.map((n) => n.id));
+    const filteredEdges = baseEdges.filter((e) => {
+      const srcId = typeof e.source === 'string' ? e.source : (e.source as BrainNode).id;
+      const tgtId = typeof e.target === 'string' ? e.target : (e.target as BrainNode).id;
+      return visibleIds.has(srcId) && visibleIds.has(tgtId);
+    });
+
+    return { nodes: withSearch, edges: filteredEdges };
   })();
 
   // Derive selected node objects from the processed data
@@ -190,6 +292,40 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
       }
     },
     [],
+  );
+
+  // ── Double-click: drive drill-down at the appropriate level ─────────────────
+  const handleNodeDoubleClick = useCallback(
+    (node: BrainNode) => {
+      if (drillLevel === 'full' && node.containerId) {
+        // At full graph: double-click node with a containerId drills into that container
+        const subId = `container:${node.containerId}`;
+        setActiveSubspaceId(subId);
+        drillIntoSubspace(subId, node.containerLabel ?? node.containerId);
+      } else if (drillLevel === 'subspace') {
+        // Inside subspace: double-click drills into node neighbourhood
+        drillIntoNode(node.id);
+        setNHopFocusNode(node.id);
+      } else if (drillLevel === 'node' && node.type === 'document') {
+        // At node detail: double-click on document drills into document layer
+        drillIntoDocuments(node.id);
+      }
+    },
+    [drillLevel, drillIntoSubspace, drillIntoNode, drillIntoDocuments, setActiveSubspaceId, setNHopFocusNode],
+  );
+
+  // ── Subspace sidebar selection ──────────────────────────────────────────────
+  const handleSubspaceSelect = useCallback(
+    (id: string | null) => {
+      setActiveSubspaceId(id);
+      if (id) {
+        const sub = subspaces.find((s) => s.id === id);
+        drillIntoSubspace(id, sub?.name ?? id);
+      } else {
+        drillUp(0); // return to full graph
+      }
+    },
+    [subspaces, setActiveSubspaceId, drillIntoSubspace, drillUp],
   );
 
   const handleClosePanel = useCallback(() => {
@@ -240,8 +376,11 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
           <BrainToolbar
             nodes={processedData.nodes}
             problemSetId={problemSetId}
-            clusterMode={clusterMode}
-            onClusterModeChange={setClusterMode}
+            activeLens={activeLens}
+            allLenses={allLenses}
+            onLensChange={setActiveLensId}
+            onDeleteLens={deleteLensAction}
+            onCloneLens={cloneLens}
             onSearchResults={handleSearchResults}
             onNodeFocus={handleNodeFocus}
             onSnapshotClick={() => setSnapshotModalOpen(true)}
@@ -249,10 +388,33 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
             onGapClick={() => { setGapPanelOpen((prev) => !prev); setSelectedNodeId(null); setSelectedNodeIds([]); }}
           />
         }
+        breadcrumb={
+          // Only show breadcrumb when drilled in (more than just root entry)
+          breadcrumbs.length > 1 ? (
+            <BrainBreadcrumb
+              breadcrumbs={breadcrumbs}
+              onNavigate={drillUp}
+            />
+          ) : undefined
+        }
         leftSidebar={
-          <IngestionSidebar
-            problemSetId={problemSetId}
-          />
+          <>
+            <IngestionSidebar
+              problemSetId={problemSetId}
+            />
+            <SubspaceSidebar
+              subspaces={subspaces}
+              activeSubspaceId={activeSubspaceId}
+              onSubspaceSelect={handleSubspaceSelect}
+              onCreateManual={createManualSubspace}
+              onCreateSmart={() => {
+                // Smart subspace creation UI is a future feature (Plan 45+)
+                // For now this is a no-op placeholder
+              }}
+              onDelete={deleteSubspace}
+              selectedNodeIds={selectedNodeIds}
+            />
+          </>
         }
         center={
           <div ref={centerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -261,9 +423,14 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
               selectedNodeId={selectedNodeId ?? undefined}
               selectedNodeIds={selectedNodeIds}
               onNodeClick={handleNodeClick}
+              onNodeDoubleClick={handleNodeDoubleClick}
               onLassoSelect={handleLassoSelect}
               clusterMode={clusterMode}
               fgRef={fgRef}
+              drillLevel={drillLevel}
+              expandedHops={expandedHops}
+              nhopWarning={nhopWarning}
+              onExpand={focusNodeId ? () => expandNHop(focusNodeId) : undefined}
             />
             <ParticleOverlay
               particlesRef={particlesRef}
