@@ -364,14 +364,17 @@ export function BrainVisualization({
   }, [data.nodes]);
 
   // ── ForceGraph data ────────────────────────────────────────────────────────
-  // Use a stable empty payload to avoid re-triggering ForceGraph3D's internal
-  // graph rebuild when data is empty (which can cause animation cycle crashes).
-  const EMPTY_PAYLOAD: GraphPayload = useMemo(() => ({ nodes: [], links: [] }), []);
+  // IMPORTANT: Use a single stable object as the graphData prop and update
+  // via the imperative ref.graphData() setter. Passing new objects as the
+  // graphData prop triggers internal graph rebuilds that race with the
+  // requestAnimationFrame loop, causing "Cannot read properties of undefined
+  // (reading 'tick')" crashes.
+  const INITIAL_PAYLOAD: GraphPayload = useMemo(() => ({ nodes: [], links: [] }), []);
 
   const graphPayload = useMemo<GraphPayload>(() => {
     const nodes = Array.isArray(data.nodes) ? data.nodes : [];
     const edges = Array.isArray(data.edges) ? data.edges : [];
-    if (nodes.length === 0) return EMPTY_PAYLOAD;
+    if (nodes.length === 0) return INITIAL_PAYLOAD;
     const nodeIdSet = new Set(nodes.map((n) => n.id));
     return {
       nodes: nodes as FGNode[],
@@ -383,7 +386,21 @@ export function BrainVisualization({
         })
         .map((e) => ({ ...e })) as FGLink[],
     };
-  }, [data, EMPTY_PAYLOAD]);
+  }, [data, INITIAL_PAYLOAD]);
+
+  // Use the imperative graphData() setter to update data after initial mount.
+  // This avoids the prop-driven rebuild that causes tick crashes.
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return; // Skip first render — initial data passed via prop
+    }
+    const fg = fgRef.current;
+    if (fg && graphPayload.nodes.length > 0) {
+      fg.graphData(graphPayload);
+    }
+  }, [graphPayload]);
 
   // Clear object caches when graph data changes
   useEffect(() => {
