@@ -144,6 +144,16 @@ ANTHROPIC_API_KEY: str = _optional("ANTHROPIC_API_KEY", "")
 ROBOT_AUTONOMY_LEVEL: int = int(_optional("ROBOT_AUTONOMY_LEVEL", "1"))
 """Robot's authorized autonomy level (1-5). Default 1 (safest). Set from DID document or operator config."""
 
+# ---------------------------------------------------------------------------
+# Swarm settings
+# ---------------------------------------------------------------------------
+
+SWARM_ENABLED: bool = _optional("SWARM_ENABLED", "false").lower() in ("true", "1", "yes")
+"""When True, initialize swarm coordinator at startup."""
+
+SWARM_ROLE: str = _optional("SWARM_ROLE", "auto")
+"""Swarm role: 'leader', 'follower', or 'auto' (leader if vision-equipped)."""
+
 
 # ---------------------------------------------------------------------------
 # DID persistence helpers

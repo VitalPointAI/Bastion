@@ -40,6 +40,28 @@ def _ensure_stubs():
         me.MissionExecutor = MagicMock()
         sys.modules["mission_executor"] = me
 
+    # Swarm imports (Phase 46) — import real modules so mission_client can resolve them.
+    # These are pure-Python with no hardware deps, so they import cleanly.
+    # Only guard against import errors (e.g. missing pydantic in minimal CI).
+    try:
+        import swarm.models  # noqa: F401
+        import swarm.coordinator  # noqa: F401
+    except ImportError:
+        # Provide minimal stubs if swarm modules can't be imported
+        if "swarm" not in sys.modules:
+            sys.modules["swarm"] = types.ModuleType("swarm")
+        if "swarm.models" not in sys.modules:
+            swarm_models = types.ModuleType("swarm.models")
+            swarm_models.SwarmAddResource = MagicMock()
+            swarm_models.SwarmRemoveResource = MagicMock()
+            swarm_models.SwarmRole = MagicMock()
+            swarm_models.SwarmTelemetry = MagicMock()
+            sys.modules["swarm.models"] = swarm_models
+        if "swarm.coordinator" not in sys.modules:
+            swarm_coord = types.ModuleType("swarm.coordinator")
+            swarm_coord.SwarmCoordinator = MagicMock()
+            sys.modules["swarm.coordinator"] = swarm_coord
+
 
 _ensure_stubs()
 

@@ -58,6 +58,20 @@ if "numpy" not in sys.modules:
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+# Remove any stale stubs for modules that may have been injected as mocks
+# by other test files (e.g. test_mission_client.py). We need the real
+# MissionExecutor, swarm models, etc.
+_stale_mods = [
+    "mission_executor", "swarm", "swarm.models", "swarm.coordinator",
+    "swarm.formations",
+]
+for _mod_name in _stale_mods:
+    if _mod_name in sys.modules:
+        _mod = sys.modules[_mod_name]
+        # Remove if it's a mock or a stub without a __file__
+        if isinstance(_mod, MagicMock) or not getattr(_mod, "__file__", None):
+            del sys.modules[_mod_name]
+
 from models import MissionJSON, MissionParams, MissionState, Waypoint, TargetLocation
 from vision.models import VisionConfig, VisionMsg
 

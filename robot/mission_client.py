@@ -40,6 +40,8 @@ from mission_executor import MissionExecutor
 from models import MissionJSON, RegisterMsg, StateUpdateMsg, TelemetryMsg
 from pre_flight import validate_mission
 from rvr_driver import RVRDriver
+from swarm.coordinator import SwarmCoordinator
+from swarm.models import SwarmAddResource, SwarmRemoveResource, SwarmRole, SwarmTelemetry
 from vision.camera import Camera
 from vision.models import VisionConfig, VisionMsg
 from vision.vision_engine import VisionEngine
@@ -59,6 +61,9 @@ _shutdown_event: asyncio.Event = asyncio.Event()
 _camera: Optional[Camera] = None
 _vision_engine: Optional[VisionEngine] = None
 _vision_config: Optional[VisionConfig] = None
+
+# Swarm coordinator initialized in run() for swarm-capable robots
+_swarm: Optional[SwarmCoordinator] = None
 
 # ---------------------------------------------------------------------------
 # Registration helpers
@@ -83,6 +88,8 @@ def _build_register_msg() -> dict:
     ]
     if cfg.VISION_ENABLED:
         capabilities.append("vision")
+    if cfg.SWARM_ENABLED:
+        capabilities.extend(["swarm_patrol", "swarm_recon", "swarm_advance", "swarm_leader"])
 
     # Priority 1: persisted DID
     did = cfg.load_persisted_did() or cfg.ROBOT_DID
@@ -178,6 +185,10 @@ async def _send_telemetry(ws: websockets.WebSocketClientProtocol, msg: Telemetry
 
 
 async def _send_vision(ws: websockets.WebSocketClientProtocol, msg: VisionMsg) -> None:
+    await send_stamped(ws, msg.model_dump(mode="json"))
+
+
+async def _send_swarm_telemetry(ws: websockets.WebSocketClientProtocol, msg: SwarmTelemetry) -> None:
     await send_stamped(ws, msg.model_dump(mode="json"))
 
 
@@ -302,7 +313,24 @@ async def receive_loop(
 
             elif msg_type == "robot:profile_response":
                 log.info("mission_client.profile_response", profile=msg.get("profile"))
-                # Profile stored for next mission execution (future enhancement)
+
+            elif msg_type == "swarm:add_resource":
+                log.info("mission_client.received.swarm_add_resource", robot_id=msg.get("robot_id"))
+                if _swarm is not None:
+                    try:
+                        add_msg = SwarmAddResource.model_validate(msg.get("payload", msg))
+                        await _swarm.add_resource(add_msg)
+                    except Exception as exc:
+                        log.error("mission_client.swarm_add.error", error=str(exc))
+
+            elif msg_type == "swarm:remove_resource":
+                log.info("mission_client.received.swarm_remove_resource", robot_id=msg.get("robot_id"))
+                if _swarm is not None:
+                    try:
+                        rm_msg = SwarmRemoveResource.model_validate(msg.get("payload", msg))
+                        await _swarm.remove_resource(rm_msg)
+                    except Exception as exc:
+                        log.error("mission_client.swarm_remove.error", error=str(exc))
 
             else:
                 log.debug("mission_client.received.unknown_type", msg_type=msg_type)
@@ -353,6 +381,11 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
             vision_config=_vision_config,
             camera=_camera,
         )
+
+        # Attach swarm coordinator if available
+        if _swarm is not None:
+            executor.set_swarm(_swarm)
+            _swarm._send_telemetry = lambda msg: _send_swarm_telemetry(ws, msg)
 
         # Store global reference so shutdown can abort active missions
         global _executor
@@ -443,6 +476,30 @@ async def run() -> None:
             mock=_vision_engine.is_mock,
         )
 
+    # Initialize swarm coordinator if enabled
+    global _swarm
+    if cfg.SWARM_ENABLED:
+        # Determine role: auto = leader if vision-equipped, else follower
+        if cfg.SWARM_ROLE == "leader":
+            swarm_role = SwarmRole.leader
+        elif cfg.SWARM_ROLE == "follower":
+            swarm_role = SwarmRole.follower
+        else:  # auto
+            swarm_role = SwarmRole.leader if cfg.VISION_ENABLED else SwarmRole.follower
+
+        _swarm = SwarmCoordinator(
+            robot_id=cfg.ROBOT_ID,
+            role=swarm_role,
+            drive_to_fn=driver.drive_to_point,
+            simulate=cfg.SIMULATE,
+        )
+        await _swarm.start()
+        log.info(
+            "mission_client.swarm_initialized",
+            role=swarm_role,
+            simulate=cfg.SIMULATE,
+        )
+
     # Discover bridge via mDNS before entering the connection loop
     bridge_url: Optional[str] = await discover_bridge()
 
@@ -519,6 +576,8 @@ async def run() -> None:
             await advert_task
         except (asyncio.CancelledError, Exception):
             pass
+    if _swarm is not None:
+        await _swarm.stop()
     if _executor is not None:
         await _executor.abort()
     await driver.safe_stop()

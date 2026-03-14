@@ -47,4 +47,14 @@ export type {
   BridgeRegisteredMsg,
   BridgeDiscoveryReportMsg,
   BridgeRobotRelayMsg,
+  SwarmTelemetryMsg,
+  SwarmMemberHeartbeat,
+  SwarmAddResourceMsg,
+  SwarmRemoveResourceMsg,
+} from './robot-types.js';
+
+export {
+  SwarmFormationType,
+  SwarmState,
+  ResourceType,
 } from './robot-types.js';

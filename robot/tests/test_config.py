@@ -6,13 +6,19 @@ import pytest
 
 
 def _reload_config(**env_overrides):
-    """Reload config module with modified env vars. Returns fresh config module."""
+    """Reload config module with modified env vars. Returns fresh config module.
+
+    Patches ``dotenv.load_dotenv`` to a no-op so the on-disk ``.env`` file
+    does not interfere with explicit test env var settings.
+    """
+    from unittest.mock import patch
+
     # Save originals
     saved = {}
     for key in list(env_overrides.keys()) + [
         "REGISTRATION_TOKEN", "ROBOT_DID", "DID_FILE",
         "BRIDGE_HOST", "BRIDGE_PORT", "MDNS_BROWSE_TIMEOUT_SEC", "BRIDGE_WS_URL",
-        "AUTH_TOKEN",
+        "AUTH_TOKEN", "SWARM_ENABLED", "SWARM_ROLE",
     ]:
         saved[key] = os.environ.get(key)
         if key in env_overrides:
@@ -27,8 +33,14 @@ def _reload_config(**env_overrides):
     if "BASTION_WS_URL" not in os.environ:
         os.environ["BASTION_WS_URL"] = "ws://localhost:3001"
 
-    import config
-    importlib.reload(config)
+    import dotenv
+    _orig_load = dotenv.load_dotenv
+    dotenv.load_dotenv = lambda *a, **kw: None
+    try:
+        import config
+        importlib.reload(config)
+    finally:
+        dotenv.load_dotenv = _orig_load
 
     # Restore originals
     for key, val in saved.items():

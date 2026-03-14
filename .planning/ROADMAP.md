@@ -60,6 +60,9 @@ None
 - [x] **Phase 40: Autonomous Document Intelligence Team** - Multi-agent document processing team that autonomously ingests, classifies, extracts, cross-links, and validates documents with minimal user involvement; problem set scoping interview captures context boundaries and standing intelligence requirements; specialist agents (orchestrator, converter, classifier, perspective analysts, fact/objective extractors, linker, bias identifier, quality assessor) process each document adaptively; autonomous problem set researcher uses web search and OSINT to fill knowledge gaps and build strategic understanding; ExtractionTheater visualization shows full pipeline live (INSERTED) (completed 2026-03-09)
 - [x] **Phase 42: Resources Tab — Inventory, Discovery & Onboarding** - Add a dedicated Resources tab to the problem set tab bar; consolidate orphaned discovery components (ClientDiscoveryPanel, DiscoveryLayer, NetworkTopologyView, EMSpectrumPanel) and existing ResourceCatalog into a unified inventory and onboarding view; sub-views for equipment/personnel/consumable inventory, network device discovery and onboarding pipeline, resource group management, capability search, and registry statistics; wires existing Phase 27 (Resource Registry) and Phase 32 (Discovery) backend services into a reachable UI (INSERTED) (completed 2026-03-12)
 - [x] **Phase 43: Robot Agent & Local Discovery Bridge** - Lightweight Python robot agent for outbound self-registration/command/telemetry via WebSocket; Docker-based local network bridge for mDNS/SSDP WiFi scanning and device relay to Bastion cloud; bridge acts as command proxy; mDNS auto-discovery between robot and bridge; dual-path connectivity for resilience (INSERTED) (completed 2026-03-12)
+- [x] **Phase 44: Robot Vision Capabilities & Mission Intent Translation** - Vision capabilities (CSI camera, detectNet, ORB feature matching) for Sphero RVR+/Jetson Orin Nano; mission intent translation (LLM + template fallback); mission behavior profiles; pre-flight DID constraint validation; four vision-enabled mission types (recon_area, visual_search, overwatch, resupply_route); sweep path planning (completed 2026-03-13)
+- [ ] **Phase 45: Knowledge Graph Subspaces** - Container-scoped subgraphs, focus-and-expand pattern, hierarchical drill-down, and virtual lenses for managing growing knowledge graphs at scale
+- [x] **Phase 46: Sphero RVR+ Swarm Leader & Doctrinal Movement Control** - Vision-equipped RVR+ as swarm leader coordinating heterogeneous resources (RVR+, drones, UGVs, sensors) in 6 doctrinal formations and 4 movement techniques; UDP broadcast peer mesh; DAO-driven dynamic membership; leader vision sharing; swarm telemetry to COP with all member positions visible (completed 2026-03-14)
 
 ## Phase Details
 
@@ -640,6 +643,20 @@ Plans:
 - [ ] 45-05-PLAN.md — Drill-down hook (4-level stack) and BrainBreadcrumb component
 - [ ] 45-06-PLAN.md — N-hop progressive neighbor loading hook
 - [ ] 45-07-PLAN.md — Integration wiring: BrainController, Toolbar, Visualization, Layout
+
+### Phase 46: Sphero RVR+ Swarm Leader & Doctrinal Movement Control
+
+**Goal:** Enable the vision-equipped Sphero RVR+/Jetson Orin Nano to act as a swarm leader coordinating additional RVR+ units and heterogeneous resources (drones, UGVs, sensors) in doctrinal formations and tactical movement techniques; peer-to-peer swarm mesh via UDP broadcast; 6 formation types (line, wedge, column, echelon-left/right, vee); 4 doctrinal movement techniques (traveling, traveling overwatch, bounding overwatch, successive bounds); DAO-driven dynamic membership; leader vision sharing; swarm telemetry aggregated to Bastion COP with all member positions visible
+**Requirements**: [SWARM-01: Peer discovery via mDNS mesh, SWARM-02: Leader election and role assignment, SWARM-03: Formation geometry engine with 6 formation types, SWARM-04: Doctrinal movement techniques (bounding/traveling overwatch, successive bounds), SWARM-05: Leader vision sharing to followers, SWARM-06: Swarm telemetry aggregation to Bastion, SWARM-07: Mission profile integration for swarm commands, MOVE-01: Profile-driven movement from mission assignment, MOVE-02: Coordinated waypoint navigation, MOVE-03: Formation-relative positioning]
+**Depends on:** Phase 44
+**Plans:** 5/5 plans complete
+
+Plans:
+- [x] 46-01-PLAN.md — Swarm protocol models and formation geometry engine
+- [x] 46-02-PLAN.md — Swarm coordinator (leader election, peer mesh, movement techniques)
+- [x] 46-03-PLAN.md — Mission executor swarm extension and mission client wiring
+- [x] 46-04-PLAN.md — Backend swarm types, coordination service, REST API, COP integration
+- [x] 46-05-PLAN.md — Intent translation, test fixes, integration verification
 
 ---
 

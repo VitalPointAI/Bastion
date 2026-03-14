@@ -208,3 +208,90 @@ robotRouter.put('/calibration/profiles/:name', (req, res) => {
   saveProfiles(profiles);
   res.json({ saved: req.params.name });
 });
+
+// ---------------------------------------------------------------------------
+// Swarm endpoints (Phase 46)
+// ---------------------------------------------------------------------------
+
+/** GET /swarms — List all active swarms with current state */
+robotRouter.get('/swarms', (_req, res) => {
+  const swarms = getRobotMissionService().getActiveSwarms();
+  res.json(
+    swarms.map((s) => ({
+      swarm_id: s.swarm_id,
+      leader_id: s.leader_id,
+      state: s.state,
+      formation: s.formation,
+      member_count: s.member_count,
+      center_of_mass: s.center_of_mass,
+      heading: s.heading,
+      members: s.members.map((m) => ({
+        robot_id: m.robot_id,
+        role: m.role,
+        position: m.position,
+        heading: m.heading,
+        battery_pct: m.battery_pct,
+        slot_index: m.slot_index,
+      })),
+      timestamp: s.timestamp,
+    })),
+  );
+});
+
+/** GET /swarms/:swarmId — Get a specific swarm's state */
+robotRouter.get('/swarms/:swarmId', (req, res) => {
+  const swarm = getRobotMissionService().getSwarmState(req.params.swarmId);
+  if (!swarm) {
+    res.status(404).json({ error: 'Swarm not found' });
+    return;
+  }
+  res.json(swarm);
+});
+
+/** POST /swarms/:leaderId/add-resource — DAO directive to add a resource to a swarm */
+robotRouter.post('/swarms/:leaderId/add-resource', (req, res) => {
+  const { robot_id, resource_type, did, capabilities, dao_proposal_id } = req.body;
+  if (!robot_id) {
+    res.status(400).json({ error: 'robot_id is required' });
+    return;
+  }
+
+  const success = getRobotMissionService().sendSwarmAddResource(
+    req.params.leaderId,
+    robot_id,
+    resource_type || 'rvr_plus',
+    did,
+    capabilities || [],
+    dao_proposal_id,
+  );
+
+  if (!success) {
+    res.status(422).json({ error: `Leader ${req.params.leaderId} not connected` });
+    return;
+  }
+
+  res.json({ status: 'add_resource_sent', leader_id: req.params.leaderId, robot_id });
+});
+
+/** POST /swarms/:leaderId/remove-resource — DAO directive to remove a resource from a swarm */
+robotRouter.post('/swarms/:leaderId/remove-resource', (req, res) => {
+  const { robot_id, reason, dao_proposal_id } = req.body;
+  if (!robot_id) {
+    res.status(400).json({ error: 'robot_id is required' });
+    return;
+  }
+
+  const success = getRobotMissionService().sendSwarmRemoveResource(
+    req.params.leaderId,
+    robot_id,
+    reason || 'dao_directive',
+    dao_proposal_id,
+  );
+
+  if (!success) {
+    res.status(422).json({ error: `Leader ${req.params.leaderId} not connected` });
+    return;
+  }
+
+  res.json({ status: 'remove_resource_sent', leader_id: req.params.leaderId, robot_id });
+});

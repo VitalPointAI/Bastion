@@ -62,6 +62,10 @@ export const RobotWsMessageType = {
   vision: 'robot:vision',
   profile_request: 'robot:profile_request',
   profile_response: 'robot:profile_response',
+  // Swarm message types (Phase 46)
+  swarm_telemetry: 'swarm:telemetry',
+  swarm_add_resource: 'swarm:add_resource',
+  swarm_remove_resource: 'swarm:remove_resource',
 } as const;
 
 export type RobotWsMessageType = (typeof RobotWsMessageType)[keyof typeof RobotWsMessageType];
@@ -89,7 +93,7 @@ export const MissionJSONSchema = z.object({
   /** Target robot identifier */
   robot_id: z.string().min(1),
   /** Mission type */
-  command: z.enum(['patrol_route', 'find_engage', 'recon_area', 'visual_search', 'overwatch', 'resupply_route']),
+  command: z.enum(['patrol_route', 'find_engage', 'recon_area', 'visual_search', 'overwatch', 'resupply_route', 'swarm_patrol', 'swarm_recon', 'swarm_advance']),
   /** Mission-specific parameters */
   params: z.object({
     /** Target location for find_engage missions (room-relative coordinates) */
@@ -316,6 +320,84 @@ export interface RobotProfileRequestMsg {
 }
 
 // ---------------------------------------------------------------------------
+// Swarm types (Phase 46)
+// ---------------------------------------------------------------------------
+
+export const SwarmFormationType = {
+  line: 'line',
+  wedge: 'wedge',
+  column: 'column',
+  echelon_left: 'echelon_left',
+  echelon_right: 'echelon_right',
+  vee: 'vee',
+} as const;
+
+export type SwarmFormationType = (typeof SwarmFormationType)[keyof typeof SwarmFormationType];
+
+export const SwarmState = {
+  forming: 'forming',
+  ready: 'ready',
+  moving: 'moving',
+  holding: 'holding',
+  dispersing: 'dispersing',
+} as const;
+
+export type SwarmState = (typeof SwarmState)[keyof typeof SwarmState];
+
+export const ResourceType = {
+  rvr_plus: 'rvr_plus',
+  drone: 'drone',
+  ugv: 'ugv',
+  sensor: 'sensor',
+  relay: 'relay',
+} as const;
+
+export type ResourceType = (typeof ResourceType)[keyof typeof ResourceType];
+
+/** Swarm member heartbeat (included in aggregated telemetry) */
+export interface SwarmMemberHeartbeat {
+  robot_id: string;
+  role: 'leader' | 'follower' | 'unassigned';
+  position: { x: number; y: number };
+  heading: number;
+  battery_pct: number;
+  slot_index?: number;
+}
+
+/** Leader → Bastion: aggregated swarm telemetry */
+export interface SwarmTelemetryMsg {
+  type: typeof RobotWsMessageType.swarm_telemetry;
+  swarm_id: string;
+  leader_id: string;
+  state: SwarmState;
+  formation: SwarmFormationType;
+  member_count: number;
+  members: SwarmMemberHeartbeat[];
+  center_of_mass: { x: number; y: number };
+  heading: number;
+  timestamp: string;
+  message_id?: string;
+}
+
+/** Bastion → Leader: DAO directive to add a resource to the swarm */
+export interface SwarmAddResourceMsg {
+  type: typeof RobotWsMessageType.swarm_add_resource;
+  robot_id: string;
+  resource_type: ResourceType;
+  did?: string;
+  capabilities: string[];
+  dao_proposal_id?: string;
+}
+
+/** Bastion → Leader: DAO directive to remove a resource from the swarm */
+export interface SwarmRemoveResourceMsg {
+  type: typeof RobotWsMessageType.swarm_remove_resource;
+  robot_id: string;
+  reason: string;
+  dao_proposal_id?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Union type for all inbound robot messages
 // ---------------------------------------------------------------------------
 
@@ -328,7 +410,8 @@ export type RobotWsMessage =
   | BridgeDiscoveryReportMsg
   | BridgeRobotRelayMsg
   | RobotVisionMsg
-  | RobotProfileRequestMsg;
+  | RobotProfileRequestMsg
+  | SwarmTelemetryMsg;
 
 // ---------------------------------------------------------------------------
 // Connected Robot — in-memory state for a live WS connection
