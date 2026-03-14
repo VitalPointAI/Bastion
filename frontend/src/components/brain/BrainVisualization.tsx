@@ -605,6 +605,7 @@ export function BrainVisualization({
         linkWidth={linkWidth}
         linkOpacity={LINK_OPACITY}
         linkThreeObject={linkThreeObject}
+        linkThreeObjectExtend={true}
         linkPositionUpdate={linkPositionUpdate as unknown as (obj: object, coords: object, link: object) => void}
         onNodeClick={handleNodeClickWithDoubleDetect}
         onEngineStop={handleEngineStop}
