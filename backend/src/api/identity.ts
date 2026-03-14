@@ -427,7 +427,7 @@ router.post('/validate', (req: Request, res: Response) => {
  */
 router.get('/member-profile/:accountId', async (req: Request, res: Response) => {
   try {
-    const { accountId } = req.params;
+    const accountId = req.params.accountId as string;
 
     if (!accountId) {
       res.status(400).json({ error: 'accountId required' });
