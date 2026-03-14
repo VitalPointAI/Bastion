@@ -1003,23 +1003,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-// Update resource
-router.patch('/:id', async (req: Request, res: Response) => {
-  try {
-    const resource = await resourceStore.getResource(req.params.id as string);
-    if (!resource) {
-      return res.status(404).json({ error: 'Resource not found' });
-    }
-
-    // For now, this is a placeholder - full update would require additional store method
-    // The status update endpoint below handles the primary use case
-    res.json({ success: true, message: 'Use /api/resources/:id/status for status updates' });
-  } catch (error) {
-    res.status(400).json({ error: String(error) });
-  }
-});
-
-// Update resource status
+// Update resource status (must be before generic /:id to avoid route shadowing)
 router.patch('/:id/status', async (req: Request, res: Response) => {
   try {
     const { status } = req.body;
@@ -1033,6 +1017,20 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
     }
 
     res.json(resource);
+  } catch (error) {
+    res.status(400).json({ error: String(error) });
+  }
+});
+
+// Update resource (generic)
+router.patch('/:id', async (req: Request, res: Response) => {
+  try {
+    const resource = await resourceStore.getResource(req.params.id as string);
+    if (!resource) {
+      return res.status(404).json({ error: 'Resource not found' });
+    }
+
+    res.json({ success: true, message: 'Use /api/resources/:id/status for status updates' });
   } catch (error) {
     res.status(400).json({ error: String(error) });
   }
