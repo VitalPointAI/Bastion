@@ -703,10 +703,12 @@ export class RobotMissionService {
     // Check if resource already exists by DID
     const existing = registry.getByDID(did);
     if (existing) {
-      // Robot already registered — update status and sync capabilities
+      // Robot already registered — update status and sync capabilities (DB + cache)
       await registry.updateResourceStatus(existing.id, 'FMC');
       if (capabilities.length > 0) {
         await resourceStore.updateResource(existing.id, { capabilities });
+        // Sync cache — getByDID returns the cached reference
+        (existing as { capabilities: string[] }).capabilities = capabilities;
       }
       this.robotResourceIds.set(did, existing.id);
       console.log(`[RobotMissionService] Resource bridge: updated existing resource ${existing.id} to FMC (capabilities: ${capabilities.join(', ')})`);
