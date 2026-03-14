@@ -394,8 +394,12 @@ export function BrainVisualization({
   const nodeObjCacheRef = useRef(new Map<string, { group: THREE.Group; key: string }>());
   const selectedIdRef = useRef(selectedNodeId);
   const selectedIdsRef = useRef(selectedNodeIds);
-  selectedIdRef.current = selectedNodeId;
-  selectedIdsRef.current = selectedNodeIds;
+
+  // Sync selection refs in effect (not during render) per react-hooks/refs rule
+  useEffect(() => {
+    selectedIdRef.current = selectedNodeId;
+    selectedIdsRef.current = selectedNodeIds;
+  }, [selectedNodeId, selectedNodeIds]);
 
   const nodeThreeObject = useCallback(
     (node: NodeObject) => {
