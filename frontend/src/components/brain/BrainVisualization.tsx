@@ -22,7 +22,7 @@ import { useRef, useMemo, useCallback, useEffect, useState, type MutableRefObjec
 import ForceGraph3D, { type ForceGraphMethods, type NodeObject } from 'react-force-graph-3d';
 import * as THREE from 'three';
 import SpriteText from 'three-spritetext';
-import type { BrainNode, BrainGraphData, ClusterMode } from './types.js';
+import type { BrainNode, BrainGraphData, ClusterMode, DrillLevel } from './types.js';
 import { CATEGORY_COLORS, BRAIN_BG_COLOR } from './types.js';
 import './BrainVisualization.css';
 
@@ -33,12 +33,22 @@ export interface BrainVisualizationProps {
   selectedNodeId?: string;
   selectedNodeIds?: string[];
   onNodeClick?: (node: BrainNode) => void;
+  /** Called on double-click — drives Phase 45 drill-down */
+  onNodeDoubleClick?: (node: BrainNode) => void;
   width?: number;
   height?: number;
   clusterMode?: ClusterMode;
   onLassoSelect?: (nodeIds: string[]) => void;
   /** External ForceGraph ref — allows parent to drive zoom/pan and clustering forces */
   fgRef?: MutableRefObject<ForceGraphMethods | undefined>;
+  /** Current drill level — used to show/hide the N-hop expand button */
+  drillLevel?: DrillLevel;
+  /** Number of N-hop rings currently expanded (shown on expand button) */
+  expandedHops?: number;
+  /** If true, shows a "may be slow" warning near the expand button */
+  nhopWarning?: boolean;
+  /** Called when user clicks the N-hop expand button at Level 3 */
+  onExpand?: () => void;
 }
 
 // ─── Internal types ────────────────────────────────────────────────────────────
@@ -289,11 +299,16 @@ export function BrainVisualization({
   selectedNodeId,
   selectedNodeIds,
   onNodeClick,
+  onNodeDoubleClick,
   width,
   height,
   clusterMode: _clusterMode = 'container',
   onLassoSelect: _onLassoSelect,
   fgRef: externalFgRef,
+  drillLevel,
+  expandedHops = 0,
+  nhopWarning = false,
+  onExpand,
 }: BrainVisualizationProps) {
   void _clusterMode;
   void _onLassoSelect; // Lasso not applicable in 3D — use click selection
@@ -369,6 +384,23 @@ export function BrainVisualization({
   const nodeThreeObject = useCallback(
     (node: NodeObject) => {
       const brainNode = node as FGNode;
+
+      // ── Ghost stub rendering (Phase 45 — cross-boundary nodes at subspace boundary)
+      if ((brainNode as { isGhostStub?: boolean }).isGhostStub) {
+        const ghostColor = 'rgba(100, 160, 255, 0.15)';
+        const ghostGeometry = getGeometry(brainNode.type ?? 'entity');
+        const ghostMaterial = getMaterial('#6490ff', 0.15);
+        const group = new THREE.Group();
+        const mesh = new THREE.Mesh(ghostGeometry, ghostMaterial);
+        // Ghost stubs render at 40% the scale of a normal node
+        const ghostScale = 0.4;
+        mesh.scale.set(ghostScale, ghostScale, ghostScale);
+        group.add(mesh);
+        // No label for ghost stubs — they are boundary hints only
+        void ghostColor;
+        return group;
+      }
+
       const isSelected =
         brainNode.id === selectedNodeId || (selectedNodeIds?.includes(brainNode.id) ?? false);
       const isDimmed =
@@ -420,6 +452,8 @@ export function BrainVisualization({
   const linkColor = useCallback(
     (link: object) => {
       const fgLink = link as FGLink;
+      // Ghost links (Phase 45 — cross-boundary edges to ghost stub nodes)
+      if ((fgLink as { isGhostLink?: boolean }).isGhostLink) return 'rgba(100, 160, 255, 0.1)';
       if (fgLink.isConflict) return 'rgba(255, 68, 68, 0.6)';
       const strength = fgLink.strength ?? 0.3;
       const alpha = 0.1 + strength * 0.4;
@@ -431,10 +465,17 @@ export function BrainVisualization({
   const linkWidth = useCallback(
     (link: object) => {
       const fgLink = link as FGLink;
+      // Ghost links render thin
+      if ((fgLink as { isGhostLink?: boolean }).isGhostLink) return 0.3;
       return fgLink.isConflict ? 2 : 0.5 + (fgLink.strength ?? 0.3) * 2;
     },
     [],
   );
+
+  // NOTE: react-force-graph-3d's linkOpacity only accepts a scalar number.
+  // Ghost link opacity is handled via the alpha channel in linkColor (0.1 for ghosts).
+  // This constant is used as the baseline opacity for non-ghost links.
+  const LINK_OPACITY = 0.6;
 
   // ── Link labels — skip for performance when graph is large ────────────────
   const nodeCount = graphPayload.nodes.length;
@@ -488,6 +529,30 @@ export function BrainVisualization({
     }
   };
 
+  // ── Double-click detection via click timing ────────────────────────────────
+  // react-force-graph-3d has no onNodeDoubleClick — detect via two rapid clicks.
+  const lastClickRef = useRef<{ nodeId: string; time: number } | null>(null);
+  const DOUBLE_CLICK_MS = 300;
+
+  const handleNodeDoubleClick = (node: NodeObject) => {
+    // Skip double-click on ghost stubs — they are boundary hints, not drillable
+    if ((node as { isGhostStub?: boolean }).isGhostStub) return;
+    onNodeDoubleClick?.(node as BrainNode);
+  };
+
+  const handleNodeClickWithDoubleDetect = (node: NodeObject) => {
+    const now = Date.now();
+    const last = lastClickRef.current;
+    if (last && last.nodeId === (node as FGNode).id && now - last.time < DOUBLE_CLICK_MS) {
+      // Double-click detected
+      lastClickRef.current = null;
+      handleNodeDoubleClick(node);
+      return;
+    }
+    lastClickRef.current = { nodeId: (node as FGNode).id, time: now };
+    handleNodeClick(node);
+  };
+
   // ── Simulation halt callback — stop CPU drain after layout stabilizes ──────
   const handleEngineStop = useCallback(() => {
     simulationHaltedRef.current = true;
@@ -516,11 +581,14 @@ export function BrainVisualization({
     }
   }, [nodeCount, linkCount, showLinkLabels, simParams]);
 
+  // ── Show Level 3 at node detail
+  const showExpandButton = drillLevel === 'node' && onExpand !== undefined;
+
   return (
     <div
       ref={containerRef}
       className="brain-visualization"
-      style={{ width: '100%', height: '100%' }}
+      style={{ width: '100%', height: '100%', position: 'relative' }}
     >
       <ForceGraph3D
         ref={fgRef as MutableRefObject<ForceGraphMethods | undefined>}
@@ -535,10 +603,10 @@ export function BrainVisualization({
         nodeLabel={nodeLabel}
         linkColor={linkColor}
         linkWidth={linkWidth}
-        linkOpacity={0.6}
+        linkOpacity={LINK_OPACITY}
         linkThreeObject={linkThreeObject}
         linkPositionUpdate={linkPositionUpdate as unknown as (obj: object, coords: object, link: object) => void}
-        onNodeClick={handleNodeClick}
+        onNodeClick={handleNodeClickWithDoubleDetect}
         onEngineStop={handleEngineStop}
         enableNodeDrag={true}
         enableNavigationControls={true}
@@ -548,6 +616,70 @@ export function BrainVisualization({
         d3AlphaDecay={simParams.alphaDecay}
         d3VelocityDecay={simParams.velocityDecay}
       />
+
+      {/* Phase 45 — N-hop expand button at Level 3 (node detail) */}
+      {showExpandButton && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            zIndex: 20,
+          }}
+        >
+          {nhopWarning && (
+            <span
+              style={{
+                fontSize: '11px',
+                color: '#f59e0b',
+                background: 'rgba(0,0,0,0.7)',
+                padding: '2px 8px',
+                borderRadius: '4px',
+              }}
+            >
+              Loading may be slow at this depth
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onExpand}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 16px',
+              background: 'rgba(56, 189, 248, 0.15)',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              borderRadius: '20px',
+              color: '#38bdf8',
+              fontSize: '13px',
+              cursor: 'pointer',
+              backdropFilter: 'blur(4px)',
+            }}
+            title="Load next hop ring of neighbors"
+          >
+            <span style={{ fontSize: '16px' }}>&#9711;</span>
+            Expand
+            {expandedHops > 0 && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  background: 'rgba(56, 189, 248, 0.2)',
+                  padding: '1px 6px',
+                  borderRadius: '8px',
+                }}
+              >
+                Hop {expandedHops}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

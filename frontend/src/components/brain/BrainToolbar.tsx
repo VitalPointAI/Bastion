@@ -1,13 +1,17 @@
 /**
  * BrainToolbar — top toolbar for the brain visualization.
  *
- * Left: cluster mode segmented toggle (Container | DIME | Organic)
+ * Left: LensSelector dropdown (Overview / J2 Intel / J3 Ops / J5 Plans / custom)
  * Center: BrainSearch component (text + filter dropdowns, or NL ask)
  * Right: AI Snapshot button, Gap indicator badge
+ *
+ * Phase 45: Cluster toggle buttons removed; replaced by LensSelector.
+ * The active lens drives cluster mode via BrainController → useBrainClustering.
  */
 
-import type { BrainNode, ClusterMode } from './types.js';
+import type { BrainNode, BrainLens } from './types.js';
 import { BrainSearch } from './BrainSearch.js';
+import { LensSelector } from './LensSelector.js';
 import './BrainToolbar.css';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -15,8 +19,18 @@ import './BrainToolbar.css';
 export interface BrainToolbarProps {
   nodes: BrainNode[];
   problemSetId?: string;
-  clusterMode: ClusterMode;
-  onClusterModeChange: (mode: ClusterMode) => void;
+  /** Active lens (replaces clusterMode prop) */
+  activeLens: BrainLens;
+  /** All available lenses */
+  allLenses: BrainLens[];
+  /** Called when the user selects a different lens */
+  onLensChange: (lensId: string) => void;
+  /** Called to save a new custom lens (optional) */
+  onSaveLens?: () => void;
+  /** Called to delete a custom lens (optional) */
+  onDeleteLens?: (id: string) => void;
+  /** Called to clone a lens (optional) */
+  onCloneLens?: (id: string) => void;
   onSearchResults: (matchingNodeIds: string[]) => void;
   onNodeFocus?: (nodeId: string) => void;
   onSnapshotClick?: () => void;
@@ -24,21 +38,17 @@ export interface BrainToolbarProps {
   onGapClick?: () => void;
 }
 
-// ─── Cluster mode options ─────────────────────────────────────────────────────
-
-const CLUSTER_OPTIONS: Array<{ value: ClusterMode; label: string }> = [
-  { value: 'container', label: 'Container' },
-  { value: 'dime', label: 'DIME' },
-  { value: 'organic', label: 'Organic' },
-];
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function BrainToolbar({
   nodes,
   problemSetId,
-  clusterMode,
-  onClusterModeChange,
+  activeLens,
+  allLenses,
+  onLensChange,
+  onSaveLens,
+  onDeleteLens,
+  onCloneLens,
   onSearchResults,
   onNodeFocus,
   onSnapshotClick,
@@ -47,20 +57,15 @@ export function BrainToolbar({
 }: BrainToolbarProps) {
   return (
     <div className="brain-toolbar">
-      {/* Left: cluster mode toggle */}
-      <div className="cluster-toggle" role="group" aria-label="Cluster mode">
-        {CLUSTER_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            className={`cluster-toggle-btn${clusterMode === opt.value ? ' active' : ''}`}
-            onClick={() => onClusterModeChange(opt.value)}
-            aria-pressed={clusterMode === opt.value}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+      {/* Left: lens selector (Phase 45 — replaces cluster toggle buttons) */}
+      <LensSelector
+        activeLens={activeLens}
+        allLenses={allLenses}
+        onLensChange={onLensChange}
+        onSaveLens={onSaveLens}
+        onDeleteLens={onDeleteLens}
+        onCloneLens={onCloneLens}
+      />
 
       {/* Center: search */}
       <BrainSearch
