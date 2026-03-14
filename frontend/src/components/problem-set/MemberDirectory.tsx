@@ -129,11 +129,11 @@ function MemberCard({ member, compartments, memberCompartmentIds }: MemberCardPr
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="font-mono text-xs text-gray-400 truncate" title={member.userDid}>
-            {formatDid(member.userDid)}
+          <div className="text-sm font-semibold text-gray-200 truncate" title={member.userDid}>
+            {member.displayName || formatDid(member.userDid)}
           </div>
           <div className="mt-1 flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-gray-200">
+            <span className="text-xs text-gray-400">
               {getRoleLabel(member.role)}
             </span>
             <span className="text-xs text-gray-500">·</span>
