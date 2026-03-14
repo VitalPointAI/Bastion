@@ -69,28 +69,6 @@
   color: #e5e7eb;
 }
 
-/* ─── Overlay Toggles (Resources, Robots) ────────────────────────────────── */
-
-.cop-overlay-toggles {
-  display: flex;
-  gap: 12px;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #374151;
-}
-
-.cop-overlay-toggle {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.cop-overlay-label {
-  color: #d1d5db;
-}
-
 /* ─── Header ─────────────────────────────────────────────────────────────── */
 
 .cop-layer-controls-header {
