@@ -25,7 +25,7 @@ export const DARK_TILE_URL = MAPTILER_KEY
 export const DARK_TILE_ATTRIBUTION = MAPTILER_KEY ? MAPTILER_ATTRIBUTION : CARTO_ATTRIBUTION;
 export const DARK_TILE_SUBDOMAINS = MAPTILER_KEY ? undefined : 'abcd';
 
-/** Light base-map tile URL — dark matter with labels for better readability */
+/** Light base-map tile URL — lighter theme for better readability */
 export const LIGHT_TILE_URL = MAPTILER_KEY
   ? `https://api.maptiler.com/maps/dataviz/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`
   : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
