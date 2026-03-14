@@ -550,6 +550,23 @@ export const agentHandlers = {
         // Non-fatal
       }
 
+      // Fetch OSINT events as additional documents
+      try {
+        const { osintEventStore } = await import('../../graph/osint/event-store.js');
+        const osintEvents = await osintEventStore.listEvents({
+          workspaceId: body.workspaceId,
+          limit: 100,
+        });
+        const osintDocs = osintEvents.map(evt => ({
+          id: evt.id,
+          content: `[OSINT ${evt.sourceType?.toUpperCase() ?? 'INTEL'}] ${evt.title}\n${evt.description ?? ''}\nSource: ${evt.sourceName ?? 'unknown'}\nActors: ${(evt.actors ?? []).join(', ')}\nTags: ${(evt.tags ?? []).join(', ')}`,
+          type: 'general',
+        }));
+        if (osintDocs.length > 0) documents = [...documents, ...osintDocs];
+      } catch {
+        // Non-fatal
+      }
+
       // Run generation synchronously — creates one layer per warfighting function
       const layers = await runCOPGeneration(
         body.workspaceId,
