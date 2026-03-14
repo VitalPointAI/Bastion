@@ -30,7 +30,7 @@ import { problemSetService } from '../../lib/problem-set-service';
 import { OrgTreeSidebar } from './OrgTreeSidebar';
 import { NotificationBadge } from './NotificationBadge';
 import { TabNotificationDropdown } from './TabNotificationDropdown';
-import { ProblemSetInviteModal } from './ProblemSetInviteModal';
+// ProblemSetInviteModal moved to ProblemSetMemberManager (manage members screen)
 import { UnderstandTab } from '../tabs/UnderstandTab';
 import { DesignTab } from '../tabs/DesignTab';
 import { PlanTab } from '../tabs/PlanTab';
@@ -121,12 +121,7 @@ export function ProblemSetTabContainer() {
   const [orgTreeOpen, setOrgTreeOpen] = useState(false);
   // Dropdown state: which tab's notification dropdown is open (null = none)
   const [dropdownTab, setDropdownTab] = useState<string | null>(null);
-  // Invite modal state (moved from ProblemSetDashboard)
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  // Quick invite state
-  const [quickInviteLink, setQuickInviteLink] = useState<string | null>(null);
-  const [quickInviteCopied, setQuickInviteCopied] = useState(false);
-  const [quickInviteLoading, setQuickInviteLoading] = useState(false);
+  // Invite modal moved to ProblemSetMemberManager (manage members screen)
 
   // COP team status (for badge in tab bar)
   const [copStatus, setCopStatus] = useState<{
@@ -407,69 +402,13 @@ export function ProblemSetTabContainer() {
 
         {/* Right-aligned actions + Org toggle */}
         <div className="ml-auto hidden lg:flex items-center gap-1 pr-1">
-          {/* Quick invite — one-click generic member invite with short code */}
-          {quickInviteLink ? (
-            <div className="flex items-center gap-1 bg-gray-800 border border-gray-600 rounded px-2 py-1">
-              <code className="text-xs text-blue-300 font-mono">{quickInviteLink}</code>
-              <button
-                onClick={() => {
-                  void navigator.clipboard.writeText(`${window.location.origin}/join/${quickInviteLink}`);
-                  setQuickInviteCopied(true);
-                  setTimeout(() => setQuickInviteCopied(false), 2000);
-                }}
-                className="px-1.5 py-0.5 text-xs text-green-400 hover:text-green-300 transition-colors"
-              >
-                {quickInviteCopied ? 'Copied!' : 'Copy'}
-              </button>
-              <button
-                onClick={() => setQuickInviteLink(null)}
-                className="text-gray-500 hover:text-gray-300 text-xs ml-1"
-              >
-                &times;
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={async () => {
-                if (!displayId || !userDID || quickInviteLoading) return;
-                setQuickInviteLoading(true);
-                try {
-                  const result = await problemSetService.createInvite(
-                    displayId,
-                    'member',
-                    'member',
-                    userDID,
-                    { expiresInHours: 168 },
-                  );
-                  // Backend returns flat object with shortCode
-                  const r = result as unknown as Record<string, unknown>;
-                  const shortCode = (r.shortCode as string | undefined)
-                    ?? ((r.invite as Record<string, unknown> | undefined)?.shortCode as string | undefined);
-                  if (shortCode) {
-                    setQuickInviteLink(shortCode);
-                  }
-                } catch {
-                  // Fall back to showing the full invite modal
-                  setShowInviteModal(true);
-                } finally {
-                  setQuickInviteLoading(false);
-                }
-              }}
-              disabled={quickInviteLoading}
-              className="px-3 py-2 text-xs font-medium text-green-400 hover:text-green-300 transition-colors whitespace-nowrap disabled:opacity-50"
-              title="Create a quick invite link anyone can use to join as a member"
-            >
-              {quickInviteLoading ? 'Creating...' : 'Quick Invite'}
-            </button>
-          )}
-          <button
-            onClick={() => setShowInviteModal(true)}
-            className="px-3 py-2 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors whitespace-nowrap"
-            title="Create a targeted invite with specific role"
-          >
-            Invite
-          </button>
           <AIActivityButton />
+          <Link
+            to={`/problem-set/${displayId}/members`}
+            className="px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors whitespace-nowrap"
+          >
+            Members
+          </Link>
           <Link
             to={`/problem-set/${displayId}/directory`}
             className="px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors whitespace-nowrap"
@@ -550,15 +489,6 @@ export function ProblemSetTabContainer() {
 
       {/* OrgTreeSidebar — rendered outside tab content to avoid overflow clipping */}
       {orgTreeOpen && <OrgTreeSidebar onClose={() => setOrgTreeOpen(false)} />}
-
-      {/* Invite modal */}
-      {showInviteModal && displayId && (
-        <ProblemSetInviteModal
-          problemSetId={displayId}
-          problemSetName={activeProblemSet?.name ?? 'Problem Set'}
-          onClose={() => setShowInviteModal(false)}
-        />
-      )}
 
     </div>
     </AIStaffProvider>

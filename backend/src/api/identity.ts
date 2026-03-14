@@ -420,6 +420,50 @@ router.post('/validate', (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/identity/member-profile/:accountId
+ * Server-side DID document resolution for admin/commander viewing of member profiles.
+ * Uses the same deterministic secret derivation as /register so the server
+ * can decrypt the DID document without the user's passkey.
+ */
+router.get('/member-profile/:accountId', async (req: Request, res: Response) => {
+  try {
+    const { accountId } = req.params;
+
+    if (!accountId) {
+      res.status(400).json({ error: 'accountId required' });
+      return;
+    }
+
+    // Derive the user secret deterministically (same as /register)
+    const userSecret = deriveUserSecretFromAccount(accountId);
+
+    // Attempt to resolve the DID document
+    const document = await didService.resolveDID(accountId, userSecret);
+
+    if (!document) {
+      res.json({
+        accountId,
+        did: `did:near:${accountId}`,
+        found: false,
+        didDocument: null,
+        message: 'DID not found or unable to decrypt',
+      });
+      return;
+    }
+
+    res.json({
+      accountId,
+      did: `did:near:${accountId}`,
+      found: true,
+      didDocument: document,
+    });
+  } catch (error) {
+    console.error('Member profile resolution error:', error);
+    res.status(500).json({ error: 'Failed to resolve member DID profile' });
+  }
+});
+
+/**
  * GET /api/identity/resolve/:did
  * Public DID resolution (returns metadata only, not encrypted content)
  */

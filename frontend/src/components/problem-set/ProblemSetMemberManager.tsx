@@ -18,6 +18,8 @@ import {
 } from '../../lib/problem-set-service';
 import { useUser } from '../../context/UserContext';
 import { useProblemSet } from '../../context/ProblemSetContext';
+import { ProblemSetInviteModal } from './ProblemSetInviteModal';
+import { MemberDetailModal } from './MemberDetailModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,6 +78,15 @@ export function ProblemSetMemberManager({ problemSetId }: ProblemSetMemberManage
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ConfirmAction | null>(null);
+
+  // Invite modal state
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [quickInviteLink, setQuickInviteLink] = useState<string | null>(null);
+  const [quickInviteCopied, setQuickInviteCopied] = useState(false);
+  const [quickInviteLoading, setQuickInviteLoading] = useState(false);
+
+  // Member detail modal
+  const [detailMember, setDetailMember] = useState<ProblemSetMemberDetail | null>(null);
 
   // ─── Load data ─────────────────────────────────────────────────────────────
 
@@ -137,6 +148,7 @@ export function ProblemSetMemberManager({ problemSetId }: ProblemSetMemberManage
     return sortedMembers.filter(
       (m) =>
         m.userDid.toLowerCase().includes(q) ||
+        (m.displayName?.toLowerCase().includes(q) ?? false) ||
         m.role.toLowerCase().includes(q) ||
         m.daoRole.toLowerCase().includes(q)
     );
@@ -218,23 +230,88 @@ export function ProblemSetMemberManager({ problemSetId }: ProblemSetMemberManage
 
   return (
     <div className="space-y-4">
-      {/* Header: counts + search */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <p className="text-sm text-gray-400">
-          <span className="text-white font-medium">{members.length}</span> members
-          &nbsp;&middot;&nbsp;
-          <span className="text-green-400">{activeCount} active</span>
-          {suspendedCount > 0 && (
-            <>
-              &nbsp;&middot;&nbsp;
-              <span className="text-yellow-400">{suspendedCount} suspended</span>
-            </>
-          )}
-        </p>
+      {/* Header: counts + invite actions + search */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="text-sm text-gray-400">
+            <span className="text-white font-medium">{members.length}</span> members
+            &nbsp;&middot;&nbsp;
+            <span className="text-green-400">{activeCount} active</span>
+            {suspendedCount > 0 && (
+              <>
+                &nbsp;&middot;&nbsp;
+                <span className="text-yellow-400">{suspendedCount} suspended</span>
+              </>
+            )}
+          </p>
+          <div className="flex items-center gap-2">
+            {/* Quick invite */}
+            {quickInviteLink ? (
+              <div className="flex items-center gap-1 bg-gray-800 border border-gray-600 rounded px-2 py-1">
+                <code className="text-xs text-blue-300 font-mono">{quickInviteLink}</code>
+                <button
+                  onClick={() => {
+                    void navigator.clipboard.writeText(`${window.location.origin}/join/${quickInviteLink}`);
+                    setQuickInviteCopied(true);
+                    setTimeout(() => setQuickInviteCopied(false), 2000);
+                  }}
+                  className="px-1.5 py-0.5 text-xs text-green-400 hover:text-green-300 transition-colors"
+                >
+                  {quickInviteCopied ? 'Copied!' : 'Copy'}
+                </button>
+                <button
+                  onClick={() => setQuickInviteLink(null)}
+                  className="text-gray-500 hover:text-gray-300 text-xs ml-1"
+                >
+                  &times;
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={async () => {
+                  if (!problemSetId || !userDID || quickInviteLoading) return;
+                  setQuickInviteLoading(true);
+                  try {
+                    const result = await problemSetService.createInvite(
+                      problemSetId,
+                      'member',
+                      'member',
+                      userDID,
+                      { expiresInHours: 168 },
+                    );
+                    const r = result as unknown as Record<string, unknown>;
+                    const shortCode = (r.shortCode as string | undefined)
+                      ?? ((r.invite as Record<string, unknown> | undefined)?.shortCode as string | undefined);
+                    if (shortCode) {
+                      setQuickInviteLink(shortCode);
+                    }
+                  } catch {
+                    setShowInviteModal(true);
+                  } finally {
+                    setQuickInviteLoading(false);
+                  }
+                }}
+                disabled={quickInviteLoading}
+                className="px-3 py-1.5 text-xs font-medium text-green-400 hover:text-green-300 bg-green-900/20 hover:bg-green-900/40 border border-green-800 rounded transition-colors disabled:opacity-50"
+                title="Create a quick invite link anyone can use to join as a member"
+              >
+                {quickInviteLoading ? 'Creating...' : 'Quick Invite'}
+              </button>
+            )}
+            {/* Full invite */}
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="px-3 py-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 bg-blue-900/20 hover:bg-blue-900/40 border border-blue-800 rounded transition-colors"
+              title="Create a targeted invite with specific role"
+            >
+              Invite
+            </button>
+          </div>
+        </div>
         <input
           type="text"
-          className="bg-gray-800 border border-gray-600 text-white text-sm rounded-md px-3 py-1.5 w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
-          placeholder="Search by DID or role..."
+          className="bg-gray-800 border border-gray-600 text-white text-sm rounded-md px-3 py-1.5 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
+          placeholder="Search by name, DID, or role..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -286,19 +363,26 @@ export function ProblemSetMemberManager({ problemSetId }: ProblemSetMemberManage
                 return (
                   <tr
                     key={member.id}
-                    className={`bg-gray-900 hover:bg-gray-800/60 transition-colors ${
+                    className={`bg-gray-900 hover:bg-gray-800/60 transition-colors cursor-pointer ${
                       isSuspended ? 'opacity-60' : ''
                     }`}
+                    onClick={() => setDetailMember(member)}
+                    title="Click to view member details"
                   >
-                    {/* DID + badges */}
+                    {/* Name + DID + badges */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className="text-gray-200 font-mono text-xs"
+                          className="text-gray-200 text-sm font-medium"
                           title={member.userDid}
                         >
-                          {shortenDid(member.userDid)}
+                          {member.displayName || shortenDid(member.userDid)}
                         </span>
+                        {member.displayName && (
+                          <span className="text-gray-500 font-mono text-xs">
+                            {shortenDid(member.userDid)}
+                          </span>
+                        )}
                         {isSelf && (
                           <span className="text-xs bg-blue-800/40 border border-blue-700 text-blue-300 rounded px-1.5 py-0.5">
                             You
@@ -341,7 +425,7 @@ export function ProblemSetMemberManager({ problemSetId }: ProblemSetMemberManage
 
                     {/* Actions */}
                     {canManageMembers && (
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         {!isSelf && (
                           <div className="flex items-center justify-end gap-2 flex-wrap">
                             {/* Change Role dropdown */}
@@ -418,6 +502,23 @@ export function ProblemSetMemberManager({ problemSetId }: ProblemSetMemberManage
             setActionError(null);
           }}
           loading={actionLoading !== null}
+        />
+      )}
+
+      {/* Invite modal */}
+      {showInviteModal && (
+        <ProblemSetInviteModal
+          problemSetId={problemSetId}
+          problemSetName="Problem Set"
+          onClose={() => setShowInviteModal(false)}
+        />
+      )}
+
+      {/* Member detail modal */}
+      {detailMember && (
+        <MemberDetailModal
+          member={detailMember}
+          onClose={() => setDetailMember(null)}
         />
       )}
     </div>
