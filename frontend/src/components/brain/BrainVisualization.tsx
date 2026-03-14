@@ -398,7 +398,7 @@ export function BrainVisualization({
     }
     const fg = fgRef.current;
     if (fg && graphPayload.nodes.length > 0) {
-      fg.graphData(graphPayload);
+      (fg as unknown as { graphData: (data: GraphPayload) => void }).graphData(graphPayload);
     }
   }, [graphPayload]);
 
