@@ -149,48 +149,54 @@ export function COPLayerControls({
         </div>
       </div>
 
-      {/* ── Overlay Toggles (Resources, Robots) ── */}
-      <div className="cop-overlay-toggles">
-        <label className="cop-overlay-toggle">
-          <input
-            type="checkbox"
-            checked={resourceLayerVisible}
-            onChange={onResourceLayerToggle}
-            className="cop-layer-checkbox"
-          />
-          <span className="cop-overlay-label">Resources</span>
-        </label>
-        <label className="cop-overlay-toggle">
-          <input
-            type="checkbox"
-            checked={robotLayerVisible}
-            onChange={onRobotLayerToggle}
-            className="cop-layer-checkbox"
-          />
-          <span className="cop-overlay-label">Robots</span>
-        </label>
-      </div>
-
       {/* ── Layers Header ── */}
       <div className="cop-layer-controls-header">
         <span className="cop-layer-controls-title">COP Layers</span>
         <span className="cop-layer-count">{totalVisible}/{layers.length} visible</span>
       </div>
 
-      {layers.length === 0 && (
-        <div className="text-center py-4 text-gray-500 text-xs">No layers loaded</div>
-      )}
+      {/* Bulk actions */}
+      <div className="cop-layer-bulk-actions">
+        <button className="cop-layer-bulk-btn" onClick={handleShowAll}>Show All</button>
+        <button className="cop-layer-bulk-btn" onClick={handleHideAll}>Hide All</button>
+      </div>
 
-      {layers.length > 0 && (
-        <>
-          {/* Bulk actions */}
-          <div className="cop-layer-bulk-actions">
-            <button className="cop-layer-bulk-btn" onClick={handleShowAll}>Show All</button>
-            <button className="cop-layer-bulk-btn" onClick={handleHideAll}>Hide All</button>
-          </div>
+      {/* ── Resources layer ── */}
+      <div className="cop-layer-group">
+        <div className="cop-layer-item">
+          <input
+            type="checkbox"
+            id="cop-layer-resources"
+            checked={resourceLayerVisible}
+            onChange={onResourceLayerToggle}
+            className="cop-layer-checkbox"
+          />
+          <span className="cop-layer-color-swatch" style={{ backgroundColor: '#f59e0b' }} />
+          <label htmlFor="cop-layer-resources" className="cop-layer-item-label">
+            Resources
+          </label>
+        </div>
+      </div>
 
-          {/* Layer groups */}
-          {orderedTypes.map((layerType) => {
+      {/* ── Robots layer ── */}
+      <div className="cop-layer-group">
+        <div className="cop-layer-item">
+          <input
+            type="checkbox"
+            id="cop-layer-robots"
+            checked={robotLayerVisible}
+            onChange={onRobotLayerToggle}
+            className="cop-layer-checkbox"
+          />
+          <span className="cop-layer-color-swatch" style={{ backgroundColor: '#22c55e' }} />
+          <label htmlFor="cop-layer-robots" className="cop-layer-item-label">
+            Robots
+          </label>
+        </div>
+      </div>
+
+      {/* ── COP Layer groups ── */}
+      {orderedTypes.map((layerType) => {
             const group = groups[layerType];
             const visibleCount = group.filter((l) => layerVisibility[l.id] !== false).length;
             const totalCount = group.length;
@@ -283,8 +289,6 @@ export function COPLayerControls({
               </div>
             );
           })}
-        </>
-      )}
     </div>
   );
 }
