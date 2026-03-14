@@ -693,6 +693,268 @@ router.get('/consumables/low-stock', async (req: Request, res: Response) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Command discovery — dynamic command schemas per resource
+// ---------------------------------------------------------------------------
+
+/**
+ * Command parameter field schema — describes one input field for a command.
+ */
+interface CommandParamField {
+  name: string;
+  type: 'number' | 'string' | 'boolean' | 'select' | 'location' | 'waypoints' | 'area' | 'file';
+  label: string;
+  required?: boolean;
+  default?: unknown;
+  min?: number;
+  max?: number;
+  step?: number;
+  options?: { value: string; label: string }[];
+  description?: string;
+}
+
+/**
+ * A command definition available for a specific resource.
+ */
+interface CommandDefinition {
+  command: string;
+  label: string;
+  description: string;
+  group: string;
+  params: CommandParamField[];
+}
+
+/** Robot mission command → required capability */
+const COMMAND_CAPABILITY_MAP: Record<string, string> = {
+  patrol_route: 'patrol',
+  find_engage: 'find_engage',
+  recon_area: 'ISR',
+  visual_search: 'ISR',
+  overwatch: 'patrol',
+  resupply_route: 'resupply',
+  swarm_patrol: 'swarm_leader',
+  swarm_recon: 'swarm_leader',
+  swarm_advance: 'swarm_leader',
+};
+
+/** Full mission command schemas — parameter definitions for each robot command */
+const MISSION_COMMAND_SCHEMAS: Record<string, Omit<CommandDefinition, 'command'>> = {
+  find_engage: {
+    label: 'Find & Engage',
+    description: 'Navigate to target location and engage',
+    group: 'mission',
+    params: [
+      { name: 'target_location', type: 'location', label: 'Target Location', required: true, description: 'Room-relative coordinates (meters)' },
+      { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+    ],
+  },
+  patrol_route: {
+    label: 'Patrol Route',
+    description: 'Follow waypoints in a patrol pattern',
+    group: 'mission',
+    params: [
+      { name: 'waypoints', type: 'waypoints', label: 'Waypoints', required: true, description: 'Ordered patrol points' },
+      { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+    ],
+  },
+  recon_area: {
+    label: 'Recon Area',
+    description: 'Sweep a bounded area with ISR sensors',
+    group: 'mission',
+    params: [
+      { name: 'area', type: 'area', label: 'Area Bounds', required: true, description: 'Bounding box in room-relative meters' },
+      { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+    ],
+  },
+  visual_search: {
+    label: 'Visual Search',
+    description: 'Search for object matching reference image',
+    group: 'mission',
+    params: [
+      { name: 'reference_image_b64', type: 'file', label: 'Reference Image', required: true, description: 'Image of the target object' },
+      { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+    ],
+  },
+  overwatch: {
+    label: 'Overwatch',
+    description: 'Hold position and observe target location',
+    group: 'mission',
+    params: [
+      { name: 'target_location', type: 'location', label: 'Observation Point', required: true },
+      { name: 'duration_sec', type: 'number', label: 'Duration (seconds)', min: 10, max: 600, step: 10, default: 60 },
+      { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+    ],
+  },
+  resupply_route: {
+    label: 'Resupply Route',
+    description: 'Follow waypoints to deliver supplies',
+    group: 'mission',
+    params: [
+      { name: 'waypoints', type: 'waypoints', label: 'Route Waypoints', required: true },
+      { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+    ],
+  },
+  swarm_patrol: {
+    label: 'Swarm Patrol',
+    description: 'Formation patrol along waypoints',
+    group: 'swarm',
+    params: [
+      { name: 'waypoints', type: 'waypoints', label: 'Waypoints', required: true },
+      { name: 'formation', type: 'select', label: 'Formation', default: 'wedge', options: [
+        { value: 'wedge', label: 'Wedge' }, { value: 'line', label: 'Line' },
+        { value: 'column', label: 'Column' }, { value: 'echelon_left', label: 'Echelon Left' },
+        { value: 'echelon_right', label: 'Echelon Right' }, { value: 'vee', label: 'Vee' },
+      ]},
+      { name: 'technique', type: 'select', label: 'Movement Technique', default: 'traveling', options: [
+        { value: 'traveling', label: 'Traveling' },
+        { value: 'traveling_overwatch', label: 'Traveling Overwatch' },
+        { value: 'bounding_overwatch', label: 'Bounding Overwatch' },
+      ]},
+      { name: 'spacing_m', type: 'number', label: 'Spacing (m)', min: 0.3, max: 3.0, step: 0.1, default: 1.0 },
+      { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+    ],
+  },
+  swarm_recon: {
+    label: 'Swarm Recon',
+    description: 'Formation sweep of area with shared vision',
+    group: 'swarm',
+    params: [
+      { name: 'area', type: 'area', label: 'Area Bounds', required: true },
+      { name: 'formation', type: 'select', label: 'Formation', default: 'line', options: [
+        { value: 'wedge', label: 'Wedge' }, { value: 'line', label: 'Line' },
+        { value: 'column', label: 'Column' }, { value: 'echelon_left', label: 'Echelon Left' },
+        { value: 'echelon_right', label: 'Echelon Right' }, { value: 'vee', label: 'Vee' },
+      ]},
+      { name: 'technique', type: 'select', label: 'Movement Technique', default: 'traveling', options: [
+        { value: 'traveling', label: 'Traveling' },
+        { value: 'traveling_overwatch', label: 'Traveling Overwatch' },
+        { value: 'bounding_overwatch', label: 'Bounding Overwatch' },
+      ]},
+      { name: 'spacing_m', type: 'number', label: 'Spacing (m)', min: 0.3, max: 3.0, step: 0.1, default: 1.0 },
+      { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+    ],
+  },
+  swarm_advance: {
+    label: 'Swarm Advance',
+    description: 'Doctrinal advance toward target in formation',
+    group: 'swarm',
+    params: [
+      { name: 'target_location', type: 'location', label: 'Objective', required: true },
+      { name: 'formation', type: 'select', label: 'Formation', default: 'wedge', options: [
+        { value: 'wedge', label: 'Wedge' }, { value: 'line', label: 'Line' },
+        { value: 'column', label: 'Column' }, { value: 'echelon_left', label: 'Echelon Left' },
+        { value: 'echelon_right', label: 'Echelon Right' }, { value: 'vee', label: 'Vee' },
+      ]},
+      { name: 'technique', type: 'select', label: 'Movement Technique', default: 'traveling', options: [
+        { value: 'traveling', label: 'Traveling' },
+        { value: 'traveling_overwatch', label: 'Traveling Overwatch' },
+        { value: 'bounding_overwatch', label: 'Bounding Overwatch' },
+      ]},
+      { name: 'spacing_m', type: 'number', label: 'Spacing (m)', min: 0.3, max: 3.0, step: 0.1, default: 1.0 },
+      { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+    ],
+  },
+};
+
+/** Bastion-level command schemas for plugin CommandAdapter commands */
+const BASTION_COMMAND_SCHEMAS: Record<string, Omit<CommandDefinition, 'command'>> = {
+  move: {
+    label: 'Move',
+    description: 'Move resource to a location',
+    group: 'bastion',
+    params: [
+      { name: 'target_location', type: 'location', label: 'Destination', required: true },
+      { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+    ],
+  },
+  report: {
+    label: 'Report',
+    description: 'Request a status report from the resource',
+    group: 'bastion',
+    params: [],
+  },
+  configure: {
+    label: 'Configure',
+    description: 'Update resource configuration',
+    group: 'bastion',
+    params: [
+      { name: 'key', type: 'string', label: 'Configuration Key', required: true },
+      { name: 'value', type: 'string', label: 'Value', required: true },
+    ],
+  },
+  execute: {
+    label: 'Execute',
+    description: 'Execute a device-specific command',
+    group: 'bastion',
+    params: [
+      { name: 'action', type: 'string', label: 'Action', required: true, description: 'Device-specific action name' },
+    ],
+  },
+};
+
+/** Lifecycle commands available to all resources */
+const LIFECYCLE_COMMANDS: CommandDefinition[] = [
+  {
+    command: 'set_status',
+    label: 'Set Status',
+    description: 'Change resource operational status',
+    group: 'lifecycle',
+    params: [
+      { name: 'status', type: 'select', label: 'Status', required: true, options: [
+        { value: 'FMC', label: 'Fully Mission Capable' },
+        { value: 'PMC', label: 'Partially Mission Capable' },
+        { value: 'NMC', label: 'Not Mission Capable' },
+      ]},
+    ],
+  },
+];
+
+router.get('/:id/commands', async (req: Request, res: Response) => {
+  try {
+    const resource = await resourceStore.getResource(req.params.id as string);
+    if (!resource) {
+      return res.status(404).json({ error: 'Resource not found' });
+    }
+
+    const commands: CommandDefinition[] = [...LIFECYCLE_COMMANDS];
+    const caps = resource.capabilities || [];
+
+    // 1. Mission commands — for resources with robot capabilities
+    // Invert commandCapabilityMap: find all commands this resource can execute
+    for (const [cmd, requiredCap] of Object.entries(COMMAND_CAPABILITY_MAP)) {
+      const hasCapability = caps.includes(requiredCap) ||
+        (caps.includes('ISR') && ['recon_area', 'visual_search'].includes(cmd)) ||
+        (caps.includes('patrol') && ['patrol_route', 'overwatch'].includes(cmd));
+
+      if (hasCapability && MISSION_COMMAND_SCHEMAS[cmd]) {
+        commands.push({ command: cmd, ...MISSION_COMMAND_SCHEMAS[cmd] });
+      }
+    }
+
+    // 2. Plugin CommandAdapter commands — for resources whose plugin defines a command adapter
+    const pluginRegistry = getPluginRegistry();
+    const plugin = pluginRegistry.getPlugin(resource.category);
+    if (plugin?.commandAdapter) {
+      for (const bastionCmd of plugin.commandAdapter.supportedCommands) {
+        if (BASTION_COMMAND_SCHEMAS[bastionCmd]) {
+          commands.push({ command: bastionCmd, ...BASTION_COMMAND_SCHEMAS[bastionCmd] });
+        }
+      }
+    }
+
+    res.json({
+      resource_id: resource.id,
+      name: resource.name,
+      category: resource.category,
+      capabilities: caps,
+      is_autonomous: resource.isAutonomous,
+      commands,
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
 // =====================
 // PARAMETRIC RESOURCE ENDPOINTS (must be last to prevent /:id shadowing /personnel, /consumables, etc.)
 // =====================
