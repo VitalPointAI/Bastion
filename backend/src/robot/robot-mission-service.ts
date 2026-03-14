@@ -29,6 +29,8 @@ import type {
   MissionJSON,
   RobotVisionMsg,
   RobotProfileRequestMsg,
+  SwarmTelemetryMsg,
+  SwarmMemberHeartbeat,
 } from './robot-types.js';
 import { robotStore } from './robot-store.js';
 import { gateService } from '../gates/gate-service.js';
@@ -212,6 +214,11 @@ export class RobotMissionService {
         });
         break;
       }
+      case RobotWsMessageType.swarm_telemetry:
+        this.handleSwarmTelemetry(msg as SwarmTelemetryMsg).catch((err) =>
+          console.error('[RobotMissionService] handleSwarmTelemetry error:', err),
+        );
+        break;
       default:
         console.warn('[RobotMissionService] Unknown message type:', (msg as { type: string }).type);
         this.sendError(ws, `Unknown message type: ${(msg as { type: string }).type}`);
@@ -829,6 +836,130 @@ export class RobotMissionService {
   }
 
   // -------------------------------------------------------------------------
+  // Swarm telemetry (Phase 46)
+  // -------------------------------------------------------------------------
+
+  /** Latest swarm telemetry from each swarm leader, keyed by swarm_id */
+  private swarmStates = new Map<string, SwarmTelemetryMsg>();
+
+  /**
+   * Handle aggregated swarm telemetry from the leader.
+   * Updates COP resource layer with positions of ALL swarm members.
+   */
+  private async handleSwarmTelemetry(msg: SwarmTelemetryMsg): Promise<void> {
+    const { swarm_id, leader_id, members, state, formation, member_count } = msg;
+
+    console.log(
+      `[RobotMissionService] Swarm telemetry from ${leader_id}: swarm=${swarm_id}, ` +
+      `state=${state}, formation=${formation}, members=${member_count}`,
+    );
+
+    this.swarmStates.set(swarm_id, msg);
+
+    // Forward each swarm member's position to the COP resource layer
+    const telemetryService = getResourceTelemetryService();
+    for (const member of members) {
+      const geo = roomToGeo(member.position.x, member.position.y);
+      const robot = this.connectedRobots.get(member.robot_id);
+      const resourceId = robot?.did ? this.robotResourceIds.get(robot.did) : undefined;
+
+      if (resourceId) {
+        telemetryService.ingestTelemetry(resourceId, {
+          lat: geo.lat,
+          lng: geo.lng,
+          heading: member.heading,
+          speed: undefined,
+        });
+      }
+    }
+
+    // Publish swarm state to message bus for UI consumers
+    const messageBus = getMessageBus();
+    messageBus.publish({
+      sourceDid: this.connectedRobots.get(leader_id)?.did ?? leader_id,
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: 'swarm:telemetry',
+      messageType: 'swarm.telemetry.update',
+      payload: msg as unknown as Record<string, unknown>,
+    }).catch((err) => {
+      console.warn('[RobotMissionService] Failed to publish swarm telemetry to message bus:', err);
+    });
+  }
+
+  /** Get current swarm state for a given swarm_id. */
+  getSwarmState(swarmId: string): SwarmTelemetryMsg | undefined {
+    return this.swarmStates.get(swarmId);
+  }
+
+  /** Get all active swarms. */
+  getActiveSwarms(): SwarmTelemetryMsg[] {
+    return Array.from(this.swarmStates.values());
+  }
+
+  /**
+   * Send a DAO directive to add a resource to a swarm.
+   * Forwards the message to the swarm leader's WebSocket.
+   */
+  sendSwarmAddResource(
+    leaderId: string,
+    robotId: string,
+    resourceType: string,
+    did?: string,
+    capabilities: string[] = [],
+    daoProposalId?: string,
+  ): boolean {
+    const leader = this.connectedRobots.get(leaderId);
+    if (!leader) {
+      console.warn(`[RobotMissionService] Swarm add: leader ${leaderId} not connected`);
+      return false;
+    }
+
+    this.safeSend(leader.ws, {
+      type: RobotWsMessageType.swarm_add_resource,
+      robot_id: robotId,
+      resource_type: resourceType,
+      did,
+      capabilities,
+      dao_proposal_id: daoProposalId,
+    });
+
+    console.log(
+      `[RobotMissionService] Sent swarm:add_resource for ${robotId} (${resourceType}) to leader ${leaderId}`,
+    );
+    return true;
+  }
+
+  /**
+   * Send a DAO directive to remove a resource from a swarm.
+   * Forwards the message to the swarm leader's WebSocket.
+   */
+  sendSwarmRemoveResource(
+    leaderId: string,
+    robotId: string,
+    reason: string = 'dao_directive',
+    daoProposalId?: string,
+  ): boolean {
+    const leader = this.connectedRobots.get(leaderId);
+    if (!leader) {
+      console.warn(`[RobotMissionService] Swarm remove: leader ${leaderId} not connected`);
+      return false;
+    }
+
+    this.safeSend(leader.ws, {
+      type: RobotWsMessageType.swarm_remove_resource,
+      robot_id: robotId,
+      reason,
+      dao_proposal_id: daoProposalId,
+    });
+
+    console.log(
+      `[RobotMissionService] Sent swarm:remove_resource for ${robotId} to leader ${leaderId}`,
+    );
+    return true;
+  }
+
+  // -------------------------------------------------------------------------
   // Pre-flight validation (Phase 44)
   // -------------------------------------------------------------------------
 
@@ -862,6 +993,9 @@ export class RobotMissionService {
       visual_search: 'ISR',
       overwatch: 'patrol',
       resupply_route: 'resupply',
+      swarm_patrol: 'swarm_leader',
+      swarm_recon: 'swarm_leader',
+      swarm_advance: 'swarm_leader',
     };
 
     const requiredCapability = commandCapabilityMap[mission.command];
@@ -925,6 +1059,12 @@ Available commands:
 - visual_search: Visual search for a target using camera (params: area, optionally reference_image_b64)
 - overwatch: Hold position and monitor (params: target_location or area)
 - resupply_route: Navigate a resupply corridor (params: waypoints)
+- swarm_patrol: Formation patrol with multiple robots (params: waypoints, formation, spacing_m, technique)
+- swarm_recon: Coordinated area recon with swarm (params: area, formation, spacing_m, technique)
+- swarm_advance: Doctrinal advance toward target (params: target_location, formation, spacing_m, technique)
+
+Formation types: line, wedge, column, echelon_left, echelon_right, vee
+Movement techniques: traveling, traveling_overwatch, bounding_overwatch, successive_bounds
 
 Output a JSON array of mission objects. Each mission must have:
 - mission_id: a UUID v4

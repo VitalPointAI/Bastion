@@ -872,6 +872,7 @@ Recent decisions affecting current work:
 - Phase 43 added: Robot Agent & Local Discovery Bridge — Python robot agent (outbound WebSocket self-registration/command/telemetry) + Docker network bridge (mDNS/SSDP WiFi scanning, device relay, command proxy). Design note: Raspberry Pi edge node is preferred production architecture but deferred due to procurement/policy constraints.
 - Phase 44 added: Robot vision capabilities and mission intent translation — Camera integration on Jetson Orin Nano for robot vision, plus translating plain text mission intents from Bastion cloud into Sphero RVR+ motor/sensor commands to execute assigned missions within constraints
 - Phase 45 added: Knowledge Graph Subspaces — Container-scoped subgraphs, focus-and-expand pattern, hierarchical drill-down, and virtual lenses for managing growing knowledge graphs at scale
+- Phase 46 added: Sphero RVR+ Swarm Leader & Doctrinal Movement Control — Swarm coordination enabling vision-equipped RVR+/Orin Nano as swarm leader directing additional units in doctrinal formations; heterogeneous resource support (drones, UGVs, sensors); DAO-driven dynamic membership; COP integration
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller

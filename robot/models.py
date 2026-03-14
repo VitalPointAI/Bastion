@@ -41,6 +41,8 @@ class Waypoint(BaseModel):
 class MissionParams(BaseModel):
     """Parameters for a mission command."""
 
+    model_config = {"extra": "allow"}
+
     target_location: Optional[TargetLocation] = None
     waypoints: Optional[List[Waypoint]] = None
     speed: int = Field(default=100, ge=0, le=255)

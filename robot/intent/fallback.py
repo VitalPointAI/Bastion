@@ -27,6 +27,12 @@ from models import MissionJSON, MissionParams
 TEMPLATES = [
     # resupply_route — check before generic "survey" to avoid false positives
     (re.compile(r"\b(resupply|deliver|supply|logistics)\b", re.I), "resupply_route"),
+    # swarm commands — check before individual commands to match "swarm" qualifier
+    (re.compile(r"\bswarm\s+(patrol|sweep\s+perimeter|circuit)\b", re.I), "swarm_patrol"),
+    (re.compile(r"\bswarm\s+(recon|reconn|surveil|survey|sweep\s+area)\b", re.I), "swarm_recon"),
+    (re.compile(r"\bswarm\s+(advance|push|assault|attack|move\s+to)\b", re.I), "swarm_advance"),
+    (re.compile(r"\b(formation|doctrinal)\s+(advance|move|patrol)\b", re.I), "swarm_advance"),
+    (re.compile(r"\b(bounding\s+overwatch|traveling\s+overwatch|successive\s+bounds)\b", re.I), "swarm_advance"),
     # recon_area — "survey" / "recon" / "sweep area" keywords
     (re.compile(r"\b(recon|reconn|surveil|survey|sweep\s+area)\b", re.I), "recon_area"),
     # patrol_route — "patrol" / "sweep perimeter" / "circuit"

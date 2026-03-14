@@ -24,6 +24,14 @@ import structlog
 
 from models import MissionJSON, MissionParams, MissionState, StateUpdateMsg, TelemetryMsg
 from rvr_driver import RVRDriver
+from swarm.coordinator import SwarmCoordinator
+from swarm.models import (
+    FormationType,
+    MovementTechnique,
+    Position2D,
+    SwarmMissionParams,
+    SwarmRole,
+)
 from vision.models import VisionMsg
 
 log = structlog.get_logger(__name__)
@@ -68,6 +76,7 @@ class MissionExecutor:
         self._send_vision_fn = send_vision_fn
         self._vision_config = vision_config
         self._camera = camera
+        self._swarm: Optional[SwarmCoordinator] = None
 
         self.current_mission: Optional[MissionJSON] = None
         self.current_state: Optional[MissionState] = None
@@ -97,6 +106,9 @@ class MissionExecutor:
             "visual_search",
             "overwatch",
             "resupply_route",
+            "swarm_patrol",
+            "swarm_recon",
+            "swarm_advance",
         }
         if mission.command not in supported_commands:
             log_ctx.warning("mission_executor.unsupported_command")
@@ -182,6 +194,8 @@ class MissionExecutor:
                 await self._execute_overwatch(mission)
             elif mission.command == "resupply_route":
                 await self._execute_resupply_route(mission)
+            elif mission.command in ("swarm_patrol", "swarm_recon", "swarm_advance"):
+                await self._execute_swarm_mission(mission)
         except asyncio.CancelledError:
             log_ctx.warning("mission_executor.cancelled")
             await self._transition(
@@ -583,6 +597,164 @@ class MissionExecutor:
 
         await self._transition(mission.mission_id, MissionState.complete)
         log_ctx.info("mission_executor.resupply_route.complete")
+
+    # ------------------------------------------------------------------
+    # Swarm coordinator integration
+    # ------------------------------------------------------------------
+
+    def set_swarm(self, swarm: SwarmCoordinator) -> None:
+        """Attach a swarm coordinator to this executor."""
+        self._swarm = swarm
+
+    async def _execute_swarm_mission(self, mission: MissionJSON) -> None:
+        """
+        Swarm-coordinated mission behaviors.
+
+        Only executable by the swarm leader. Coordinates the swarm through
+        formation setup, doctrinal movement, and vision sharing.
+
+        Supported swarm commands:
+          - swarm_patrol:  Formation patrol along waypoints
+          - swarm_recon:   Formation sweep of an area with shared vision
+          - swarm_advance: Doctrinal advance toward a target using movement technique
+        """
+        log_ctx = log.bind(mission_id=mission.mission_id, command=mission.command)
+
+        if self._swarm is None:
+            await self._transition(
+                mission.mission_id,
+                MissionState.rejected,
+                {"reason": "Swarm coordinator not initialized"},
+            )
+            return
+
+        if self._swarm.role != SwarmRole.leader:
+            await self._transition(
+                mission.mission_id,
+                MissionState.rejected,
+                {"reason": "Only the swarm leader can execute swarm missions"},
+            )
+            return
+
+        # Parse swarm params from mission (uses extra fields in params)
+        raw_swarm = mission.params.model_extra or {}
+        formation = FormationType(raw_swarm.get("formation", "wedge"))
+        spacing = raw_swarm.get("spacing_m", 1.0)
+        technique = MovementTechnique(raw_swarm.get("technique", "traveling"))
+
+        await self._transition(mission.mission_id, MissionState.executing)
+
+        # Set formation
+        await self._swarm.set_formation(formation, spacing)
+        await self._driver.set_leds(200, 100, 0)  # orange: swarm leader active
+
+        if mission.command == "swarm_patrol":
+            await self._swarm_patrol(mission, technique, log_ctx)
+        elif mission.command == "swarm_recon":
+            await self._swarm_recon(mission, technique, log_ctx)
+        elif mission.command == "swarm_advance":
+            await self._swarm_advance(mission, technique, log_ctx)
+
+        await self._transition(mission.mission_id, MissionState.complete)
+        log_ctx.info("mission_executor.swarm_mission.complete")
+
+    async def _swarm_patrol(self, mission: MissionJSON, technique: MovementTechnique, log_ctx: Any) -> None:
+        """Formation patrol: swarm moves through waypoints in formation."""
+        waypoints = mission.params.waypoints or []
+        speed = mission.params.speed
+
+        for idx, wp in enumerate(waypoints):
+            log_ctx.info(
+                "mission_executor.swarm_patrol.waypoint",
+                index=idx,
+                total=len(waypoints),
+                x=wp.x,
+                y=wp.y,
+            )
+            target = Position2D(x=wp.x, y=wp.y)
+            await self._swarm.move_swarm(target, speed=speed, technique=technique)
+            await self._emit_telemetry(mission.mission_id)
+
+            # Share vision at each waypoint if vision engine available
+            if self._vision_engine and self._camera:
+                detections = await self._vision_engine.detect_once(self._camera)
+                if detections:
+                    det_dicts = [d.model_dump(mode="json") for d in detections]
+                    await self._swarm.share_vision(det_dicts)
+
+    async def _swarm_recon(self, mission: MissionJSON, technique: MovementTechnique, log_ctx: Any) -> None:
+        """Formation recon: sweep an area with the swarm providing shared vision."""
+        from sweep.path_planner import generate_sweep_path
+
+        area = mission.params.area or {"x_min": 0.0, "y_min": 0.0, "x_max": 2.0, "y_max": 2.0}
+        speed = mission.params.speed
+        waypoints = generate_sweep_path(area)
+
+        stop_event = asyncio.Event()
+        vision_task = None
+        if self._vision_engine:
+            vision_task = asyncio.ensure_future(
+                self._vision_loop(mission.mission_id, stop_event)
+            )
+
+        try:
+            for idx, wp in enumerate(waypoints):
+                log_ctx.info(
+                    "mission_executor.swarm_recon.waypoint",
+                    index=idx,
+                    total=len(waypoints),
+                    x=wp.x,
+                    y=wp.y,
+                )
+                target = Position2D(x=wp.x, y=wp.y)
+                await self._swarm.move_swarm(target, speed=speed, technique=technique)
+                await self._emit_telemetry(mission.mission_id)
+
+                # Share vision with swarm
+                if self._vision_engine and self._camera:
+                    detections = await self._vision_engine.detect_once(self._camera)
+                    if detections:
+                        det_dicts = [d.model_dump(mode="json") for d in detections]
+                        await self._swarm.share_vision(det_dicts)
+        finally:
+            stop_event.set()
+            if vision_task:
+                vision_task.cancel()
+                try:
+                    await vision_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+
+    async def _swarm_advance(self, mission: MissionJSON, technique: MovementTechnique, log_ctx: Any) -> None:
+        """Doctrinal advance: swarm advances toward target using movement technique.
+
+        Uses bounding overwatch, traveling overwatch, or successive bounds
+        to advance the formation toward the target location.
+        """
+        target_loc = mission.params.target_location
+        if target_loc is None:
+            log_ctx.warning("mission_executor.swarm_advance.no_target")
+            return
+
+        speed = mission.params.speed
+        target = Position2D(x=target_loc.x, y=target_loc.y)
+
+        log_ctx.info(
+            "mission_executor.swarm_advance",
+            target_x=target.x,
+            target_y=target.y,
+            technique=technique,
+        )
+
+        # Share vision before advance begins
+        if self._vision_engine and self._camera:
+            detections = await self._vision_engine.detect_once(self._camera)
+            if detections:
+                det_dicts = [d.model_dump(mode="json") for d in detections]
+                await self._swarm.share_vision(det_dicts)
+
+        await self._swarm.move_swarm(target, speed=speed, technique=technique)
+        await self._emit_telemetry(mission.mission_id)
 
     # ------------------------------------------------------------------
     # Helpers
