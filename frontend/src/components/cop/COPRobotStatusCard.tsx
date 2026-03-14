@@ -25,6 +25,7 @@ interface RobotInfo {
 
 interface MissionStatus {
   state: string;
+  command?: string;
 }
 
 interface COPRobotStatusCardProps {
@@ -219,7 +220,12 @@ export function COPRobotStatusCard({ robotId, onClose }: COPRobotStatusCardProps
             </div>
             {robot.current_mission_id ? (
               <div style={{ fontSize: '11px', color: '#d1d5db' }}>
-                <div>{robot.current_mission_id.slice(0, 8)}...</div>
+                {mission?.command && (
+                  <div style={{ fontWeight: 600, marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                    {mission.command.replace(/_/g, ' ')}
+                  </div>
+                )}
+                <div style={{ color: '#6b7280', fontSize: '10px' }}>{robot.current_mission_id.slice(0, 8)}...</div>
                 {mission && (
                   <div style={{ marginTop: '2px', color: STATE_COLORS[mission.state] || '#6b7280' }}>
                     {mission.state.replace(/_/g, ' ')}

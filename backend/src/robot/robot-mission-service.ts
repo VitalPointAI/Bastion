@@ -1144,11 +1144,11 @@ Return ONLY valid JSON, no markdown.`;
 
   async getMissionStatus(
     missionId: string,
-  ): Promise<{ state: RobotMissionState } | null> {
+  ): Promise<{ state: RobotMissionState; command?: string } | null> {
     try {
       const row = await robotStore.getMission(missionId);
       if (!row) return null;
-      return { state: row.state };
+      return { state: row.state, command: row.command };
     } catch (err) {
       console.error('[RobotMissionService] getMissionStatus error:', err);
       return null;

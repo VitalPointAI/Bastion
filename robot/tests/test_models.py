@@ -15,6 +15,7 @@ class TestModelsHaveMessageId:
 
     def test_state_update_msg_has_message_id(self):
         msg = StateUpdateMsg(
+            robot_id="r1",
             mission_id="m1",
             state=MissionState.executing,
             message_id=None,
@@ -24,6 +25,7 @@ class TestModelsHaveMessageId:
 
     def test_state_update_msg_accepts_message_id(self):
         msg = StateUpdateMsg(
+            robot_id="r1",
             mission_id="m1",
             state=MissionState.executing,
             message_id="test-id-123",
@@ -35,7 +37,7 @@ class TestModelsHaveMessageId:
             robot_id="r1",
             position={"x": 1.0, "y": 2.0},
             heading=90.0,
-            battery_pct=80,
+            battery=80,
             message_id=None,
         )
         assert hasattr(msg, "message_id")
@@ -46,7 +48,7 @@ class TestModelsHaveMessageId:
             robot_id="r1",
             position={"x": 1.0, "y": 2.0},
             heading=90.0,
-            battery_pct=80,
+            battery=80,
             message_id="uuid-xyz",
         )
         assert msg.message_id == "uuid-xyz"

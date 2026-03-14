@@ -262,6 +262,12 @@ class MissionExecutor:
                         keyframe_jpeg_b64=keyframe,
                     )
                     await self._send_vision_fn(vision_msg)
+                    log.info(
+                        "mission_executor.vision_loop.detection",
+                        mission_id=mission_id,
+                        count=len(detections),
+                        classes=[d.class_desc if hasattr(d, 'class_desc') else str(d) for d in detections],
+                    )
             except Exception as exc:
                 log.warning("mission_executor.vision_loop.error", error=str(exc))
             await asyncio.sleep(cadence_sec)
@@ -769,6 +775,7 @@ class MissionExecutor:
         """Build and send a state update message."""
         self.current_state = state
         msg = StateUpdateMsg(
+            robot_id=self._robot_id,
             mission_id=mission_id,
             state=state,
             timestamp=datetime.utcnow(),
@@ -784,7 +791,7 @@ class MissionExecutor:
             robot_id=self._robot_id,
             position={"x": x, "y": y},
             heading=self._driver.heading,
-            battery_pct=await self._driver.get_battery_pct(),
+            battery=await self._driver.get_battery_pct(),
             timestamp=datetime.utcnow(),
         )
         await self._send_telemetry(msg)

@@ -3,10 +3,11 @@
  *
  * Phase 06 Plan 04: Renders connected robots as state-colored markers on the
  * COP Leaflet map. Polls /api/robot/robots for position and state updates.
+ * Smoothly interpolates marker positions between poll intervals.
  */
 
-import { useEffect, useState, useCallback } from 'react';
-import { Marker, Tooltip, useMap } from 'react-leaflet';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -45,14 +46,6 @@ const STATE_COLORS: Record<string, string> = {
 
 const DEFAULT_COLOR = '#6b7280'; // idle/connected
 
-// ─── Mission labels ─────────────────────────────────────────────────────────
-
-function getMissionLabel(robot: RobotInfo): string {
-  if (!robot.current_mission_id) return robot.robot_id;
-  // Derive a short label from the robot's state
-  return robot.robot_id;
-}
-
 // ─── Icon factory ───────────────────────────────────────────────────────────
 
 function createRobotIcon(state: string): L.DivIcon {
@@ -88,8 +81,6 @@ function createRobotIcon(state: string): L.DivIcon {
 // ─── Room-to-map coordinate transform (MVP linear mapping) ──────────────────
 
 function roomToLatLng(x: number, y: number): [number, number] {
-  // Linear mapping from room coords (0-5m range) to geo bounds in Taipei, Taiwan.
-  // Must match backend calibration in robot-mission-service.ts.
   const south = 25.0330, north = 25.0340;
   const west = 121.5640, east = 121.5650;
   const roomWidth = 5, roomHeight = 5;
@@ -97,6 +88,119 @@ function roomToLatLng(x: number, y: number): [number, number] {
     south + (y / roomHeight) * (north - south),
     west + (x / roomWidth) * (east - west),
   ];
+}
+
+// ─── Smooth marker component ──────────────────────────────────────────────
+
+const POLL_INTERVAL = 3000;
+const LERP_STEP_MS = 50; // 20fps interpolation
+
+interface SmoothTarget {
+  lat: number;
+  lng: number;
+}
+
+function SmoothRobotMarker({
+  robot,
+  onRobotClick,
+}: {
+  robot: RobotInfo;
+  onRobotClick?: (robotId: string) => void;
+}) {
+  const map = useMap();
+  const markerRef = useRef<L.Marker | null>(null);
+  const prevPos = useRef<SmoothTarget | null>(null);
+  const targetPos = useRef<SmoothTarget | null>(null);
+  const animFrame = useRef<number | null>(null);
+  const startTime = useRef<number>(0);
+
+  const pos = robot.latest_telemetry!.position;
+  const [lat, lng] = roomToLatLng(pos.x, pos.y);
+  const missionState = robot.current_mission_id ? 'executing' : 'idle';
+  const iconState = robot.state === 'connected' ? missionState : robot.state;
+
+  useEffect(() => {
+    // Create marker on mount
+    const icon = createRobotIcon(iconState);
+    const marker = L.marker([lat, lng], { icon }).addTo(map);
+    marker.on('click', () => onRobotClick?.(robot.robot_id));
+
+    // Add tooltip
+    const tooltipContent = `
+      <div style="font-size: 11px; font-family: 'Fira Code', monospace; text-align: center;">
+        <strong>${robot.robot_id}</strong><br/>
+        <span style="color: ${STATE_COLORS[robot.state] || DEFAULT_COLOR}">
+          ${robot.current_mission_id ? robot.state || 'active' : 'idle'}
+        </span>
+        ${robot.latest_telemetry ? `<br/><span style="color: #888">Battery: ${robot.latest_telemetry.battery ?? '?'}%</span>` : ''}
+      </div>
+    `;
+    marker.bindTooltip(tooltipContent, { direction: 'bottom', offset: [0, 14] });
+
+    markerRef.current = marker;
+    prevPos.current = { lat, lng };
+    targetPos.current = { lat, lng };
+
+    return () => {
+      if (animFrame.current) cancelAnimationFrame(animFrame.current);
+      map.removeLayer(marker);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
+
+  // When position updates, start smooth interpolation
+  useEffect(() => {
+    const marker = markerRef.current;
+    if (!marker) return;
+
+    // Update icon for state changes
+    marker.setIcon(createRobotIcon(iconState));
+
+    // Update tooltip
+    const tooltipContent = `
+      <div style="font-size: 11px; font-family: 'Fira Code', monospace; text-align: center;">
+        <strong>${robot.robot_id}</strong><br/>
+        <span style="color: ${STATE_COLORS[robot.state] || DEFAULT_COLOR}">
+          ${robot.current_mission_id ? robot.state || 'active' : 'idle'}
+        </span>
+        ${robot.latest_telemetry ? `<br/><span style="color: #888">Battery: ${robot.latest_telemetry.battery ?? '?'}%</span>` : ''}
+      </div>
+    `;
+    marker.setTooltipContent(tooltipContent);
+
+    // Set up interpolation from current position to new target
+    const currentLatLng = marker.getLatLng();
+    prevPos.current = { lat: currentLatLng.lat, lng: currentLatLng.lng };
+    targetPos.current = { lat, lng };
+    startTime.current = performance.now();
+
+    if (animFrame.current) cancelAnimationFrame(animFrame.current);
+
+    function animate() {
+      const marker = markerRef.current;
+      const prev = prevPos.current;
+      const target = targetPos.current;
+      if (!marker || !prev || !target) return;
+
+      const elapsed = performance.now() - startTime.current;
+      const t = Math.min(elapsed / POLL_INTERVAL, 1); // 0..1 over poll interval
+      // Ease-out for smooth deceleration
+      const eased = 1 - (1 - t) * (1 - t);
+
+      const newLat = prev.lat + (target.lat - prev.lat) * eased;
+      const newLng = prev.lng + (target.lng - prev.lng) * eased;
+      marker.setLatLng([newLat, newLng]);
+
+      if (t < 1) {
+        animFrame.current = requestAnimationFrame(animate);
+      }
+    }
+
+    animFrame.current = requestAnimationFrame(animate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lat, lng, iconState, robot.state, robot.current_mission_id]);
+
+  return null; // Marker is managed imperatively via Leaflet
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -107,7 +211,6 @@ export function COPRobotLayer({
   onRobotClick,
 }: COPRobotLayerProps) {
   const [robots, setRobots] = useState<RobotInfo[]>([]);
-  const _map = useMap();
 
   const fetchRobots = useCallback(async () => {
     try {
@@ -121,56 +224,25 @@ export function COPRobotLayer({
     }
   }, []);
 
-  // Initial fetch + polling every 3 seconds
   useEffect(() => {
     fetchRobots();
-    const interval = setInterval(fetchRobots, 3000);
+    const interval = setInterval(fetchRobots, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchRobots]);
 
   if (!visible) return null;
 
-  // Filter robots with telemetry positions
   const locatedRobots = robots.filter((r) => r.latest_telemetry?.position);
 
   return (
     <>
-      {locatedRobots.map((robot) => {
-        const pos = robot.latest_telemetry!.position;
-        const [lat, lng] = roomToLatLng(pos.x, pos.y);
-        const missionState = robot.current_mission_id ? 'executing' : 'idle';
-        // Use a more specific state if available from the robot's context
-        const icon = createRobotIcon(robot.state === 'connected' ? missionState : robot.state);
-
-        return (
-          <Marker
-            key={`robot-${robot.robot_id}`}
-            position={[lat, lng]}
-            icon={icon}
-            eventHandlers={{
-              click: () => onRobotClick?.(robot.robot_id),
-            }}
-          >
-            <Tooltip direction="bottom" offset={[0, 14]}>
-              <div style={{ fontSize: '11px', fontFamily: "'Fira Code', monospace", textAlign: 'center' }}>
-                <strong>{getMissionLabel(robot)}</strong>
-                <br />
-                <span style={{ color: STATE_COLORS[robot.state] || DEFAULT_COLOR }}>
-                  {robot.current_mission_id ? robot.state || 'active' : 'idle'}
-                </span>
-                {robot.latest_telemetry && (
-                  <>
-                    <br />
-                    <span style={{ color: '#888' }}>
-                      Battery: {robot.latest_telemetry.battery}%
-                    </span>
-                  </>
-                )}
-              </div>
-            </Tooltip>
-          </Marker>
-        );
-      })}
+      {locatedRobots.map((robot) => (
+        <SmoothRobotMarker
+          key={`robot-${robot.robot_id}`}
+          robot={robot}
+          onRobotClick={onRobotClick}
+        />
+      ))}
     </>
   );
 }

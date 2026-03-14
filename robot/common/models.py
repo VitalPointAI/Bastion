@@ -33,6 +33,7 @@ class StateUpdateMsg(BaseModel):
     """
 
     type: str = "robot:state_update"
+    robot_id: str
     mission_id: str
     state: MissionState
     timestamp: str = Field(default="")
@@ -52,7 +53,7 @@ class TelemetryMsg(BaseModel):
     robot_id: str
     position: Dict[str, float]
     heading: float
-    battery_pct: int
+    battery: int
     timestamp: str = Field(default="")
     message_id: Optional[str] = None
 
