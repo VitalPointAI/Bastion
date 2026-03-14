@@ -18,6 +18,8 @@ import {
 } from '../../lib/problem-set-service';
 import { useProblemSet } from '../../context/ProblemSetContext';
 import { useUser } from '../../context/UserContext';
+import { OrbatModal } from './OrbatModal';
+import { MemberDetailModal } from './MemberDetailModal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -119,13 +121,18 @@ interface MemberCardProps {
   member: ProblemSetMemberDetail;
   compartments: ProblemSetCompartment[];
   memberCompartmentIds: string[];
+  onClick?: () => void;
 }
 
-function MemberCard({ member, compartments, memberCompartmentIds }: MemberCardProps) {
+function MemberCard({ member, compartments, memberCompartmentIds, onClick }: MemberCardProps) {
   const memberCompartments = compartments.filter((c) => memberCompartmentIds.includes(c.id));
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors">
+    <div
+      className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors cursor-pointer"
+      onClick={onClick}
+      title="Click to view member details"
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -186,6 +193,10 @@ export function MemberDirectory({ problemSetId }: MemberDirectoryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended'>('active');
+
+  // ─── Modal state ─────────────────────────────────────────────────────────
+  const [showOrbat, setShowOrbat] = useState(false);
+  const [detailMember, setDetailMember] = useState<ProblemSetMemberDetail | null>(null);
 
   // ─── Load data ─────────────────────────────────────────────────────────────
 
@@ -306,17 +317,26 @@ export function MemberDirectory({ problemSetId }: MemberDirectoryProps) {
 
   return (
     <div className="space-y-4">
-      {/* Manage members link for commanders */}
-      {isCommander && (
-        <div className="flex justify-end">
+      {/* ORBAT + Manage members */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setShowOrbat(true)}
+          className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h8m-8 6h16" />
+          </svg>
+          ORBAT
+        </button>
+        {isCommander && (
           <Link
             to={`/problem-set/${problemSetId}/members`}
             className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
           >
             Manage Members &rarr;
           </Link>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Compartment filtering notice for non-commanders */}
       {!isCommander && myCompartmentIds.length > 0 && (
@@ -387,9 +407,30 @@ export function MemberDirectory({ problemSetId }: MemberDirectoryProps) {
               member={member}
               compartments={compartments}
               memberCompartmentIds={memberCompartmentMap[member.userDid] ?? []}
+              onClick={() => setDetailMember(member)}
             />
           ))}
         </div>
+      )}
+
+      {/* ORBAT modal */}
+      {showOrbat && (
+        <OrbatModal
+          members={visibleMembers}
+          onClose={() => setShowOrbat(false)}
+          onSelectMember={(m) => {
+            setShowOrbat(false);
+            setDetailMember(m);
+          }}
+        />
+      )}
+
+      {/* Member detail modal */}
+      {detailMember && (
+        <MemberDetailModal
+          member={detailMember}
+          onClose={() => setDetailMember(null)}
+        />
       )}
     </div>
   );
