@@ -1,8 +1,8 @@
 /**
  * ResourcesTab
  *
- * Top-level Resources tab shell. Renders a TabLayout with 4 sidebar
- * sub-views: Inventory | Discovery | Network | Groups.
+ * Top-level Resources tab shell. Renders a TabLayout with 5 sidebar
+ * sub-views: Inventory | Control | Discovery | Network | Groups.
  *
  * Default sub-view is always Inventory (no "remember last" behavior — locked
  * decision per Phase 42 Plan 01).
@@ -20,6 +20,7 @@ import { useDiscovery } from '../../hooks/useDiscovery';
 import { ResourcesProvider } from './ResourcesContext';
 import { DiscoverySubView } from './discovery/DiscoverySubView';
 import { GroupsSubView } from './groups/GroupsSubView';
+import { ControlSubView } from './control/ControlSubView';
 import { InventorySubView } from './inventory/InventorySubView';
 import { NetworkSubView } from './network/NetworkSubView';
 import { ResourceSearchBar } from './ResourceSearchBar';
@@ -36,6 +37,7 @@ interface QuickFilter {
 
 const RESOURCE_NAV_ITEMS: SidebarItem[] = [
   { id: 'inventory', label: 'Inventory' },
+  { id: 'control', label: 'Control' },
   { id: 'discovery', label: 'Discovery' },
   { id: 'network', label: 'Network' },
   { id: 'groups', label: 'Groups' },
@@ -56,6 +58,8 @@ export function ResourcesTab({ problemSetId }: ResourcesTabProps) {
     switch (activeView) {
       case 'inventory':
         return <InventorySubView problemSetId={problemSetId} />;
+      case 'control':
+        return <ControlSubView problemSetId={problemSetId} />;
       case 'discovery':
         return (
           <DiscoverySubView

@@ -1,12 +1,11 @@
 /**
  * RobotMissionTrigger
  *
- * Phase 06 Plan 05: Demo mission trigger UI for the Direct tab.
- * Allows operators to select a robot, choose a mission type, configure
- * parameters, and dispatch via POST /api/robot/missions/trigger.
+ * Phase 06 Plan 05: Mission trigger UI for the Direct tab.
+ * Supports all 9 mission types with appropriate parameter forms.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -34,6 +33,7 @@ interface ResourceMatch {
 
 interface MissionStatus {
   state: string;
+  command?: string;
 }
 
 interface Waypoint {
@@ -41,9 +41,96 @@ interface Waypoint {
   y: number;
 }
 
+interface AreaBounds {
+  x_min: number;
+  y_min: number;
+  x_max: number;
+  y_max: number;
+}
+
 interface RobotMissionTriggerProps {
   problemSetId: string;
 }
+
+// ─── Mission type definitions ────────────────────────────────────────────────
+
+type MissionCommand =
+  | 'find_engage'
+  | 'patrol_route'
+  | 'recon_area'
+  | 'visual_search'
+  | 'overwatch'
+  | 'resupply_route'
+  | 'swarm_patrol'
+  | 'swarm_recon'
+  | 'swarm_advance';
+
+interface MissionTypeInfo {
+  label: string;
+  description: string;
+  capability: string;
+  group: 'solo' | 'swarm';
+}
+
+const MISSION_TYPES: Record<MissionCommand, MissionTypeInfo> = {
+  find_engage: {
+    label: 'Find & Engage',
+    description: 'Navigate to target location and engage',
+    capability: 'find_engage',
+    group: 'solo',
+  },
+  patrol_route: {
+    label: 'Patrol Route',
+    description: 'Follow waypoints in a patrol pattern',
+    capability: 'patrol',
+    group: 'solo',
+  },
+  recon_area: {
+    label: 'Recon Area',
+    description: 'Sweep a bounded area with ISR sensors',
+    capability: 'ISR',
+    group: 'solo',
+  },
+  visual_search: {
+    label: 'Visual Search',
+    description: 'Search for object matching reference image',
+    capability: 'ISR',
+    group: 'solo',
+  },
+  overwatch: {
+    label: 'Overwatch',
+    description: 'Hold position and observe target location',
+    capability: 'patrol',
+    group: 'solo',
+  },
+  resupply_route: {
+    label: 'Resupply Route',
+    description: 'Follow waypoints to deliver supplies',
+    capability: 'resupply',
+    group: 'solo',
+  },
+  swarm_patrol: {
+    label: 'Swarm Patrol',
+    description: 'Formation patrol along waypoints',
+    capability: 'swarm_leader',
+    group: 'swarm',
+  },
+  swarm_recon: {
+    label: 'Swarm Recon',
+    description: 'Formation sweep of area with shared vision',
+    capability: 'swarm_leader',
+    group: 'swarm',
+  },
+  swarm_advance: {
+    label: 'Swarm Advance',
+    description: 'Doctrinal advance toward target in formation',
+    capability: 'swarm_leader',
+    group: 'swarm',
+  },
+};
+
+const FORMATIONS = ['wedge', 'line', 'column', 'echelon_left', 'echelon_right', 'vee'] as const;
+const TECHNIQUES = ['traveling', 'traveling_overwatch', 'bounding_overwatch'] as const;
 
 // ─── State colors ───────────────────────────────────────────────────────────
 
@@ -62,25 +149,44 @@ const STATE_COLORS: Record<string, string> = {
 export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) {
   // Connected robots
   const [robots, setRobots] = useState<RobotInfo[]>([]);
-  // Resource registry matches (auto-discovered)
   const [resourceMatches, setResourceMatches] = useState<Map<string, ResourceMatch>>(new Map());
 
   // Form state
-  const [command, setCommand] = useState<'find_engage' | 'patrol_route'>('find_engage');
+  const [command, setCommand] = useState<MissionCommand>('find_engage');
   const [robotId, setRobotId] = useState('alpha');
   const [speed, setSpeed] = useState(50);
+
+  // Target location (find_engage, overwatch, swarm_advance)
   const [targetX, setTargetX] = useState(2.5);
   const [targetY, setTargetY] = useState(3.0);
+
+  // Waypoints (patrol_route, resupply_route, swarm_patrol)
   const [waypoints, setWaypoints] = useState<Waypoint[]>([
     { x: 1, y: 1 },
     { x: 4, y: 1 },
     { x: 2.5, y: 4 },
   ]);
 
+  // Area bounds (recon_area, swarm_recon)
+  const [area, setArea] = useState<AreaBounds>({ x_min: 0, y_min: 0, x_max: 5, y_max: 5 });
+
+  // Duration (overwatch)
+  const [durationSec, setDurationSec] = useState(60);
+
+  // Reference image (visual_search)
+  const [referenceImageB64, setReferenceImageB64] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Swarm params
+  const [formation, setFormation] = useState<string>('wedge');
+  const [spacingM, setSpacingM] = useState(1.0);
+  const [technique, setTechnique] = useState<string>('traveling');
+
   // Status
   const [dispatching, setDispatching] = useState(false);
   const [activeMissionId, setActiveMissionId] = useState<string | null>(null);
   const [missionState, setMissionState] = useState<string | null>(null);
+  const [missionCommand, setMissionCommand] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Collapsed state
@@ -94,7 +200,6 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
       const robotList = await res.json() as RobotInfo[];
       setRobots(robotList);
 
-      // Look up each robot's DID in the resource registry
       const matches = new Map<string, ResourceMatch>();
       for (const r of robotList) {
         if (!r.did) continue;
@@ -125,6 +230,7 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
         if (res.ok) {
           const data = await res.json() as MissionStatus;
           setMissionState(data.state);
+          if (data.command) setMissionCommand(data.command);
           if (data.state === 'complete' || data.state === 'failed' || data.state === 'rejected') {
             clearInterval(interval);
           }
@@ -134,17 +240,76 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
     return () => clearInterval(interval);
   }, [activeMissionId]);
 
+  // Handle reference image file selection
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip data:image/...;base64, prefix
+      const b64 = result.includes(',') ? result.split(',')[1] : result;
+      setReferenceImageB64(b64);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Build params based on command type
+  function buildParams(): Record<string, unknown> {
+    const params: Record<string, unknown> = { speed };
+
+    switch (command) {
+      case 'find_engage':
+        params.target_location = { x: targetX, y: targetY };
+        break;
+
+      case 'patrol_route':
+      case 'resupply_route':
+        params.waypoints = waypoints;
+        break;
+
+      case 'recon_area':
+        params.area = area;
+        break;
+
+      case 'visual_search':
+        params.reference_image_b64 = referenceImageB64;
+        break;
+
+      case 'overwatch':
+        params.target_location = { x: targetX, y: targetY };
+        params.duration_sec = durationSec;
+        break;
+
+      case 'swarm_patrol':
+        params.waypoints = waypoints;
+        params.formation = formation;
+        params.spacing_m = spacingM;
+        params.technique = technique;
+        break;
+
+      case 'swarm_recon':
+        params.area = area;
+        params.formation = formation;
+        params.spacing_m = spacingM;
+        params.technique = technique;
+        break;
+
+      case 'swarm_advance':
+        params.target_location = { x: targetX, y: targetY };
+        params.formation = formation;
+        params.spacing_m = spacingM;
+        params.technique = technique;
+        break;
+    }
+
+    return params;
+  }
+
   // Launch mission
   async function handleLaunch() {
     setDispatching(true);
     setMessage(null);
-
-    const params: Record<string, unknown> = { speed };
-    if (command === 'find_engage') {
-      params.target_location = { x: targetX, y: targetY };
-    } else {
-      params.waypoints = waypoints;
-    }
 
     try {
       const res = await fetch('/api/robot/missions/trigger', {
@@ -153,7 +318,7 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
         body: JSON.stringify({
           robot_id: robotId,
           command,
-          params,
+          params: buildParams(),
           problem_set_id: problemSetId,
         }),
       });
@@ -163,6 +328,7 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
       if (res.status === 201 && data.mission_id) {
         setActiveMissionId(data.mission_id);
         setMissionState('pending');
+        setMissionCommand(command);
         setMessage({ type: 'success', text: `Mission dispatched: ${data.mission_id.slice(0, 8)}...` });
       } else if (res.status === 403) {
         setMessage({ type: 'error', text: `Policy violation: ${data.reason || data.error}` });
@@ -176,7 +342,7 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
     }
   }
 
-  // Update waypoint
+  // Waypoint helpers
   function updateWaypoint(index: number, field: 'x' | 'y', value: number) {
     setWaypoints((prev) => prev.map((wp, i) => (i === index ? { ...wp, [field]: value } : wp)));
   }
@@ -188,6 +354,15 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
   function removeWaypoint(index: number) {
     setWaypoints((prev) => prev.filter((_, i) => i !== index));
   }
+
+  // Which param sections to show
+  const needsTarget = ['find_engage', 'overwatch', 'swarm_advance'].includes(command);
+  const needsWaypoints = ['patrol_route', 'resupply_route', 'swarm_patrol'].includes(command);
+  const needsArea = ['recon_area', 'swarm_recon'].includes(command);
+  const needsDuration = command === 'overwatch';
+  const needsRefImage = command === 'visual_search';
+  const needsSwarmParams = command.startsWith('swarm_');
+  const missionInfo = MISSION_TYPES[command];
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -230,9 +405,7 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
         <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Connected Robots & Discovery Status */}
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.375rem' }}>
-              Connected Robots
-            </div>
+            <div style={sectionLabel}>Connected Robots</div>
             {robots.length === 0 ? (
               <div style={{ fontSize: '0.8125rem', color: '#64748b', padding: '0.5rem', background: 'var(--surface-primary, #0f172a)', borderRadius: '0.375rem', border: '1px solid var(--border-color, #334155)' }}>
                 <div>No robots connected</div>
@@ -251,7 +424,6 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
                       borderRadius: '0.375rem',
                       border: '1px solid var(--border-color, #334155)',
                     }}>
-                      {/* Robot identity row */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}>
                         <div style={{
                           width: '8px', height: '8px', borderRadius: '50%',
@@ -263,31 +435,19 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
                           <span style={{ fontSize: '0.6875rem', color: '#eab308', background: 'rgba(234,179,8,0.1)', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>active mission</span>
                         )}
                       </div>
-
-                      {/* DID */}
                       {r.did && (
                         <div style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem', fontFamily: 'monospace' }}>
                           {r.did.length > 40 ? `${r.did.slice(0, 20)}...${r.did.slice(-12)}` : r.did}
                         </div>
                       )}
-
-                      {/* Resource discovery status */}
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: '0.375rem',
-                        marginTop: '0.375rem', fontSize: '0.6875rem',
-                      }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.375rem', fontSize: '0.6875rem' }}>
                         {resource ? (
                           <>
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-                              padding: '0.125rem 0.5rem', borderRadius: '0.25rem',
-                              background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)',
-                              color: '#86efac',
-                            }}>
+                            <span style={registeredBadge}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                                 <polyline points="20 6 9 17 4 12" />
                               </svg>
-                              Registered in Resource Registry
+                              Registered
                             </span>
                             <span style={{
                               padding: '0.125rem 0.375rem', borderRadius: '0.25rem',
@@ -298,34 +458,19 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
                             </span>
                           </>
                         ) : (
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-                            padding: '0.125rem 0.5rem', borderRadius: '0.25rem',
-                            background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)',
-                            color: '#fde047',
-                          }}>
-                            <span style={{ display: 'inline-block', width: '8px', height: '8px', border: '2px solid rgba(253,224,71,0.5)', borderTopColor: '#fde047', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                          <span style={registeringBadge}>
+                            <span style={spinner} />
                             Registering...
                           </span>
                         )}
                       </div>
-
-                      {/* Capabilities */}
                       {(r.capabilities ?? resource?.capabilities)?.length ? (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.375rem' }}>
                           {(r.capabilities ?? resource?.capabilities ?? []).map((cap) => (
-                            <span key={cap} style={{
-                              fontSize: '0.625rem', padding: '0.0625rem 0.375rem',
-                              background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)',
-                              borderRadius: '0.25rem', color: '#93c5fd',
-                            }}>
-                              {cap}
-                            </span>
+                            <span key={cap} style={capBadge}>{cap}</span>
                           ))}
                         </div>
                       ) : null}
-
-                      {/* Telemetry snapshot */}
                       {r.latest_telemetry && (
                         <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.375rem', fontSize: '0.625rem', color: '#64748b' }}>
                           <span>pos: ({r.latest_telemetry.position.x.toFixed(1)}, {r.latest_telemetry.position.y.toFixed(1)})</span>
@@ -340,46 +485,44 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
             )}
           </div>
 
-          {/* Mission Type */}
+          {/* Mission Type — grouped by solo / swarm */}
           <div>
-            <label style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.375rem' }}>
-              Mission Type
-            </label>
+            <label style={sectionLabel}>Mission Type</label>
             <select
               value={command}
-              onChange={(e) => setCommand(e.target.value as 'find_engage' | 'patrol_route')}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                background: 'var(--surface-primary, #0f172a)',
-                border: '1px solid var(--border-color, #334155)',
-                borderRadius: '0.375rem',
-                color: '#e2e8f0',
-                fontSize: '0.8125rem',
-              }}
+              onChange={(e) => setCommand(e.target.value as MissionCommand)}
+              style={selectStyle}
             >
-              <option value="find_engage">Find & Engage Target</option>
-              <option value="patrol_route">Patrol Route</option>
+              <optgroup label="Solo Missions">
+                {Object.entries(MISSION_TYPES)
+                  .filter(([, info]) => info.group === 'solo')
+                  .map(([cmd, info]) => (
+                    <option key={cmd} value={cmd}>{info.label}</option>
+                  ))}
+              </optgroup>
+              <optgroup label="Swarm Missions">
+                {Object.entries(MISSION_TYPES)
+                  .filter(([, info]) => info.group === 'swarm')
+                  .map(([cmd, info]) => (
+                    <option key={cmd} value={cmd}>{info.label}</option>
+                  ))}
+              </optgroup>
             </select>
+            <div style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
+              {missionInfo.description}
+              <span style={{ marginLeft: '0.5rem', color: '#475569' }}>
+                (requires: {missionInfo.capability})
+              </span>
+            </div>
           </div>
 
           {/* Robot ID */}
           <div>
-            <label style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.375rem' }}>
-              Robot ID
-            </label>
+            <label style={sectionLabel}>Robot ID</label>
             <select
               value={robotId}
               onChange={(e) => setRobotId(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                background: 'var(--surface-primary, #0f172a)',
-                border: '1px solid var(--border-color, #334155)',
-                borderRadius: '0.375rem',
-                color: '#e2e8f0',
-                fontSize: '0.8125rem',
-              }}
+              style={selectStyle}
             >
               <option value="alpha">alpha (default)</option>
               {robots.map((r) => (
@@ -388,102 +531,152 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
             </select>
           </div>
 
-          {/* Target / Waypoints */}
-          {command === 'find_engage' ? (
+          {/* Target Location */}
+          {needsTarget && (
             <div>
-              <label style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.375rem' }}>
+              <label style={sectionLabel}>
                 Target Location (room meters)
               </label>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="number"
-                  value={targetX}
-                  onChange={(e) => setTargetX(Number(e.target.value))}
-                  step={0.1}
-                  placeholder="X"
-                  style={inputStyle}
-                />
-                <input
-                  type="number"
-                  value={targetY}
-                  onChange={(e) => setTargetY(Number(e.target.value))}
-                  step={0.1}
-                  placeholder="Y"
-                  style={inputStyle}
-                />
+                <input type="number" value={targetX} onChange={(e) => setTargetX(Number(e.target.value))} step={0.1} placeholder="X" style={inputStyle} />
+                <input type="number" value={targetY} onChange={(e) => setTargetY(Number(e.target.value))} step={0.1} placeholder="Y" style={inputStyle} />
               </div>
             </div>
-          ) : (
+          )}
+
+          {/* Waypoints */}
+          {needsWaypoints && (
             <div>
-              <label style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.375rem' }}>
-                Waypoints
-              </label>
+              <label style={sectionLabel}>Waypoints</label>
               {waypoints.map((wp, i) => (
                 <div key={i} style={{ display: 'flex', gap: '0.375rem', marginBottom: '0.375rem', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.6875rem', color: '#64748b', width: '1rem' }}>{i + 1}.</span>
-                  <input
-                    type="number"
-                    value={wp.x}
-                    onChange={(e) => updateWaypoint(i, 'x', Number(e.target.value))}
-                    step={0.1}
-                    placeholder="X"
-                    style={{ ...inputStyle, flex: 1 }}
-                  />
-                  <input
-                    type="number"
-                    value={wp.y}
-                    onChange={(e) => updateWaypoint(i, 'y', Number(e.target.value))}
-                    step={0.1}
-                    placeholder="Y"
-                    style={{ ...inputStyle, flex: 1 }}
-                  />
+                  <input type="number" value={wp.x} onChange={(e) => updateWaypoint(i, 'x', Number(e.target.value))} step={0.1} placeholder="X" style={{ ...inputStyle, flex: 1 }} />
+                  <input type="number" value={wp.y} onChange={(e) => updateWaypoint(i, 'y', Number(e.target.value))} step={0.1} placeholder="Y" style={{ ...inputStyle, flex: 1 }} />
                   {waypoints.length > 2 && (
-                    <button
-                      onClick={() => removeWaypoint(i)}
-                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', padding: '0.25rem' }}
-                    >
-                      x
-                    </button>
+                    <button onClick={() => removeWaypoint(i)} style={removeBtn}>x</button>
                   )}
                 </div>
               ))}
+              <button onClick={addWaypoint} style={addWaypointBtn}>+ Add Waypoint</button>
+            </div>
+          )}
+
+          {/* Area Bounds */}
+          {needsArea && (
+            <div>
+              <label style={sectionLabel}>Area Bounds (room meters)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.375rem' }}>
+                <div>
+                  <div style={fieldLabel}>X Min</div>
+                  <input type="number" value={area.x_min} onChange={(e) => setArea((a) => ({ ...a, x_min: Number(e.target.value) }))} step={0.1} style={inputStyle} />
+                </div>
+                <div>
+                  <div style={fieldLabel}>Y Min</div>
+                  <input type="number" value={area.y_min} onChange={(e) => setArea((a) => ({ ...a, y_min: Number(e.target.value) }))} step={0.1} style={inputStyle} />
+                </div>
+                <div>
+                  <div style={fieldLabel}>X Max</div>
+                  <input type="number" value={area.x_max} onChange={(e) => setArea((a) => ({ ...a, x_max: Number(e.target.value) }))} step={0.1} style={inputStyle} />
+                </div>
+                <div>
+                  <div style={fieldLabel}>Y Max</div>
+                  <input type="number" value={area.y_max} onChange={(e) => setArea((a) => ({ ...a, y_max: Number(e.target.value) }))} step={0.1} style={inputStyle} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Duration */}
+          {needsDuration && (
+            <div>
+              <label style={sectionLabel}>Duration: {durationSec}s</label>
+              <input type="range" min={10} max={600} value={durationSec} onChange={(e) => setDurationSec(Number(e.target.value))} style={{ width: '100%' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.625rem', color: '#475569' }}>
+                <span>10s</span><span>10min</span>
+              </div>
+            </div>
+          )}
+
+          {/* Reference Image */}
+          {needsRefImage && (
+            <div>
+              <label style={sectionLabel}>Reference Image</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
               <button
-                onClick={addWaypoint}
+                onClick={() => fileInputRef.current?.click()}
                 style={{
-                  background: 'none',
-                  border: '1px dashed #334155',
-                  borderRadius: '0.375rem',
-                  color: '#64748b',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                  padding: '0.25rem 0.5rem',
-                  width: '100%',
+                  ...addWaypointBtn,
+                  marginBottom: referenceImageB64 ? '0.5rem' : 0,
                 }}
               >
-                + Add Waypoint
+                {referenceImageB64 ? 'Change Image' : 'Upload Reference Image'}
               </button>
+              {referenceImageB64 && (
+                <div style={{ borderRadius: '0.375rem', overflow: 'hidden', border: '1px solid var(--border-color, #334155)' }}>
+                  <img
+                    src={`data:image/jpeg;base64,${referenceImageB64}`}
+                    alt="Reference"
+                    style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '120px', objectFit: 'cover' }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Swarm Parameters */}
+          {needsSwarmParams && (
+            <div style={{
+              padding: '0.75rem',
+              background: 'rgba(234, 179, 8, 0.05)',
+              border: '1px solid rgba(234, 179, 8, 0.2)',
+              borderRadius: '0.375rem',
+            }}>
+              <div style={{ ...sectionLabel, color: '#eab308', marginBottom: '0.5rem' }}>Swarm Parameters</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div>
+                  <div style={fieldLabel}>Formation</div>
+                  <select value={formation} onChange={(e) => setFormation(e.target.value)} style={selectStyle}>
+                    {FORMATIONS.map((f) => (
+                      <option key={f} value={f}>{f.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <div style={fieldLabel}>Movement Technique</div>
+                  <select value={technique} onChange={(e) => setTechnique(e.target.value)} style={selectStyle}>
+                    {TECHNIQUES.map((t) => (
+                      <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <div style={fieldLabel}>Spacing: {spacingM.toFixed(1)}m</div>
+                  <input type="range" min={0.3} max={3.0} step={0.1} value={spacingM} onChange={(e) => setSpacingM(Number(e.target.value))} style={{ width: '100%' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.625rem', color: '#475569' }}>
+                    <span>0.3m</span><span>3.0m</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Speed */}
           <div>
-            <label style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.375rem' }}>
-              Speed: {speed}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={255}
-              value={speed}
-              onChange={(e) => setSpeed(Number(e.target.value))}
-              style={{ width: '100%' }}
-            />
+            <label style={sectionLabel}>Speed: {speed}</label>
+            <input type="range" min={0} max={255} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} style={{ width: '100%' }} />
           </div>
 
           {/* Launch Button */}
           <button
             onClick={handleLaunch}
-            disabled={dispatching}
+            disabled={dispatching || (needsRefImage && !referenceImageB64)}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -498,16 +691,16 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
               fontSize: '0.875rem',
               fontWeight: 600,
               cursor: dispatching ? 'not-allowed' : 'pointer',
-              opacity: dispatching ? 0.7 : 1,
+              opacity: dispatching || (needsRefImage && !referenceImageB64) ? 0.7 : 1,
             }}
           >
             {dispatching ? (
               <>
-                <span style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                <span style={spinner} />
                 Dispatching...
               </>
             ) : (
-              'Launch Mission'
+              `Launch ${missionInfo.label}`
             )}
           </button>
 
@@ -533,9 +726,12 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
               borderRadius: '0.375rem',
               border: '1px solid var(--border-color, #334155)',
             }}>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.375rem' }}>
-                Active Mission
-              </div>
+              <div style={sectionLabel}>Active Mission</div>
+              {missionCommand && (
+                <div style={{ fontSize: '0.8125rem', color: '#e2e8f0', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.25rem' }}>
+                  {missionCommand.replace(/_/g, ' ')}
+                </div>
+              )}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <div style={{
                   width: '10px',
@@ -584,6 +780,8 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
   );
 }
 
+// ─── Shared styles ──────────────────────────────────────────────────────────
+
 const inputStyle: React.CSSProperties = {
   flex: 1,
   padding: '0.5rem',
@@ -592,4 +790,90 @@ const inputStyle: React.CSSProperties = {
   borderRadius: '0.375rem',
   color: '#e2e8f0',
   fontSize: '0.8125rem',
+};
+
+const selectStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '0.5rem',
+  background: 'var(--surface-primary, #0f172a)',
+  border: '1px solid var(--border-color, #334155)',
+  borderRadius: '0.375rem',
+  color: '#e2e8f0',
+  fontSize: '0.8125rem',
+};
+
+const sectionLabel: React.CSSProperties = {
+  fontSize: '0.75rem',
+  color: '#94a3b8',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  display: 'block',
+  marginBottom: '0.375rem',
+};
+
+const fieldLabel: React.CSSProperties = {
+  fontSize: '0.6875rem',
+  color: '#64748b',
+  marginBottom: '0.125rem',
+};
+
+const capBadge: React.CSSProperties = {
+  fontSize: '0.625rem',
+  padding: '0.0625rem 0.375rem',
+  background: 'rgba(59, 130, 246, 0.15)',
+  border: '1px solid rgba(59, 130, 246, 0.3)',
+  borderRadius: '0.25rem',
+  color: '#93c5fd',
+};
+
+const registeredBadge: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.25rem',
+  padding: '0.125rem 0.5rem',
+  borderRadius: '0.25rem',
+  background: 'rgba(34, 197, 94, 0.1)',
+  border: '1px solid rgba(34, 197, 94, 0.3)',
+  color: '#86efac',
+};
+
+const registeringBadge: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.25rem',
+  padding: '0.125rem 0.5rem',
+  borderRadius: '0.25rem',
+  background: 'rgba(234, 179, 8, 0.1)',
+  border: '1px solid rgba(234, 179, 8, 0.3)',
+  color: '#fde047',
+};
+
+const spinner: React.CSSProperties = {
+  display: 'inline-block',
+  width: '14px',
+  height: '14px',
+  border: '2px solid rgba(255,255,255,0.3)',
+  borderTopColor: 'white',
+  borderRadius: '50%',
+  animation: 'spin 0.6s linear infinite',
+};
+
+const removeBtn: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  color: '#ef4444',
+  cursor: 'pointer',
+  fontSize: '0.75rem',
+  padding: '0.25rem',
+};
+
+const addWaypointBtn: React.CSSProperties = {
+  background: 'none',
+  border: '1px dashed #334155',
+  borderRadius: '0.375rem',
+  color: '#64748b',
+  cursor: 'pointer',
+  fontSize: '0.75rem',
+  padding: '0.25rem 0.5rem',
+  width: '100%',
 };
