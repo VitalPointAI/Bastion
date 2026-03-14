@@ -1,24 +1,48 @@
 /**
  * OSINT Service
  *
- * Phase 33 Plan 04: API client for OSINT feed configuration and events.
+ * API client for OSINT feed configuration and events.
+ * Manages problem-set-scoped OSINT connections (RSS, API, webhook, simulated).
  */
 
-const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '';
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
-// ─── Types (mirrored from backend) ──────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export type FeedSourceType = 'argus_webhook' | 'rss' | 'api' | 'simulated';
+export type RelevanceMode = 'entity_objective' | 'ai_semantic';
 
 export interface OSINTFeedConfig {
   id: string;
   problemSetId: string;
-  feedUrl: string;
-  feedType: 'rss' | 'webhook';
-  name: string;
+  sourceName: string;
+  sourceType: FeedSourceType;
+  endpointUrl: string | null;
+  pollingIntervalMs: number;
+  relevanceMode: RelevanceMode;
   active: boolean;
-  filterKeywords: string[];
-  webhookSecret: string | null;
+  config: Record<string, unknown>;
   createdAt: string;
-  updatedAt: string;
+}
+
+export interface CreateFeedInput {
+  problemSetId: string;
+  sourceName: string;
+  sourceType: FeedSourceType;
+  endpointUrl?: string;
+  pollingIntervalMs?: number;
+  relevanceMode?: RelevanceMode;
+  config?: Record<string, unknown>;
+}
+
+export interface UpdateFeedInput {
+  sourceName?: string;
+  sourceType?: FeedSourceType;
+  endpointUrl?: string | null;
+  pollingIntervalMs?: number;
+  relevanceMode?: RelevanceMode;
+  active?: boolean;
+  config?: Record<string, unknown>;
 }
 
 export interface OSINTEvent {
@@ -33,30 +57,35 @@ export interface OSINTEvent {
   createdAt: string;
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function sourceTypeLabel(type: FeedSourceType): string {
+  switch (type) {
+    case 'rss': return 'RSS Feed';
+    case 'api': return 'API';
+    case 'argus_webhook': return 'Argus Webhook';
+    case 'simulated': return 'Simulated';
+    default: return type;
+  }
+}
+
 // ─── Service ────────────────────────────────────────────────────────────────
 
 export const osintService = {
-  /**
-   * Get feed configurations for a problem set.
-   */
+  sourceTypeLabel,
+
+  /** Get feed configurations for a problem set. */
   async getFeeds(problemSetId: string): Promise<OSINTFeedConfig[]> {
-    const res = await fetch(`${API_BASE}/api/osint/feeds/${problemSetId}`, {
+    const res = await fetch(`${API_BASE}/api/osint/feeds/${encodeURIComponent(problemSetId)}`, {
       credentials: 'include',
     });
     if (!res.ok) throw new Error(`Failed to get OSINT feeds: ${res.statusText}`);
-    return res.json();
+    const body = await res.json() as { feeds?: OSINTFeedConfig[] } | OSINTFeedConfig[];
+    return Array.isArray(body) ? body : (body.feeds ?? []);
   },
 
-  /**
-   * Create a new feed configuration.
-   */
-  async createFeed(data: {
-    problemSetId: string;
-    feedUrl: string;
-    feedType: 'rss' | 'webhook';
-    name: string;
-    filterKeywords?: string[];
-  }): Promise<OSINTFeedConfig> {
+  /** Create a new feed configuration. */
+  async createFeed(data: CreateFeedInput): Promise<OSINTFeedConfig> {
     const res = await fetch(`${API_BASE}/api/osint/feeds`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -64,24 +93,48 @@ export const osintService = {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error(`Failed to create OSINT feed: ${res.statusText}`);
-    return res.json();
+    const body = await res.json() as { feed?: OSINTFeedConfig };
+    return body.feed ?? body as unknown as OSINTFeedConfig;
   },
 
-  /**
-   * Get recent OSINT events for a problem set.
-   */
+  /** Update a feed configuration. */
+  async updateFeed(feedId: string, updates: UpdateFeedInput): Promise<OSINTFeedConfig> {
+    const res = await fetch(`${API_BASE}/api/osint/feeds/${encodeURIComponent(feedId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error(`Failed to update OSINT feed: ${res.statusText}`);
+    const body = await res.json() as { feed?: OSINTFeedConfig };
+    return body.feed ?? body as unknown as OSINTFeedConfig;
+  },
+
+  /** Delete a feed configuration. */
+  async deleteFeed(feedId: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/api/osint/feeds/${encodeURIComponent(feedId)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(`Failed to delete OSINT feed: ${res.statusText}`);
+  },
+
+  /** Toggle a feed active/inactive. */
+  async toggleFeed(feedId: string, active: boolean): Promise<OSINTFeedConfig> {
+    return osintService.updateFeed(feedId, { active });
+  },
+
+  /** Get recent OSINT events for a problem set. */
   async getRecentEvents(problemSetId: string, limit = 20): Promise<OSINTEvent[]> {
     const res = await fetch(
-      `${API_BASE}/api/osint/events?problemSetId=${problemSetId}&limit=${limit}`,
+      `${API_BASE}/api/osint/events?problemSetId=${encodeURIComponent(problemSetId)}&limit=${limit}`,
       { credentials: 'include' },
     );
     if (!res.ok) throw new Error(`Failed to get OSINT events: ${res.statusText}`);
     return res.json();
   },
 
-  /**
-   * Get OSINT events relevant to specific objectives.
-   */
+  /** Get OSINT events relevant to specific objectives. */
   async getEventsByRelevance(
     problemSetId: string,
     objectiveIds: string[],

@@ -2,8 +2,10 @@
  * IngestionSidebar — left column of the brain visualization
  *
  * Shows a real-time unified ingestion feed: all documents being processed,
- * recent node creation events, and filter tags by source type. When
- * mode='training', surfaces the TrainingPackagesView in a collapsible section.
+ * recent node creation events, and filter tags by source type.
+ *
+ * Includes OSINT source management: lists current connections, add/edit modal,
+ * and optional COP layer creation for geo-referenced feeds.
  *
  * The sidebar also exposes an "Ingest Documents" button that opens the
  * DocIntelligencePanel in a collapsible section for document upload.
@@ -12,6 +14,8 @@
 import { type ReactNode, useState, useCallback, useEffect } from 'react';
 import { useBrainIngestion } from './hooks/useBrainIngestion.js';
 import { DocIntelligencePanel } from '../doc-intelligence/DocIntelligencePanel.js';
+import { osintService } from '../../lib/osint-service.js';
+import type { OSINTFeedConfig, FeedSourceType, CreateFeedInput } from '../../lib/osint-service.js';
 import type { IngestionEvent, ProcessStatus } from './hooks/useBrainIngestion.js';
 import './IngestionSidebar.css';
 
@@ -43,6 +47,13 @@ const NODE_TYPE_EVENT_COLORS: Record<string, string> = {
   error: '#ff4444',
 };
 
+const FEED_SOURCE_TYPES: { value: FeedSourceType; label: string }[] = [
+  { value: 'rss', label: 'RSS Feed' },
+  { value: 'api', label: 'API Endpoint' },
+  { value: 'argus_webhook', label: 'Argus Webhook' },
+  { value: 'simulated', label: 'Simulated / Manual' },
+];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function relativeTime(isoTimestamp: string): string {
@@ -72,15 +83,19 @@ function dotColor(event: IngestionEvent): string {
 interface CollapsibleSectionProps {
   title: string;
   defaultOpen?: boolean;
+  badge?: string | number;
   children: ReactNode;
 }
 
-function CollapsibleSection({ title, defaultOpen = false, children }: CollapsibleSectionProps) {
+function CollapsibleSection({ title, defaultOpen = false, badge, children }: CollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="ingestion-section">
       <div className="ingestion-section-header" onClick={() => setOpen((v) => !v)}>
-        <span>{title}</span>
+        <span>
+          {title}
+          {badge != null && <span className="ingestion-section-badge">{badge}</span>}
+        </span>
         <span className={`ingestion-section-chevron${open ? ' open' : ''}`}>&#x25BC;</span>
       </div>
       <div className={`ingestion-section-body${open ? ' open' : ''}`}>
@@ -135,6 +150,228 @@ function EventItem({ event }: EventItemProps) {
   );
 }
 
+// ─── OSINT Feed Item ──────────────────────────────────────────────────────────
+
+interface OSINTFeedItemProps {
+  feed: OSINTFeedConfig;
+  onToggle: (feedId: string, active: boolean) => void;
+  onDelete: (feedId: string, name: string) => void;
+}
+
+function OSINTFeedItem({ feed, onToggle, onDelete }: OSINTFeedItemProps) {
+  return (
+    <div className="osint-feed-item">
+      <div
+        className={`osint-feed-status-dot ${feed.active ? 'active' : 'inactive'}`}
+        title={feed.active ? 'Active' : 'Inactive'}
+      />
+      <div className="osint-feed-info">
+        <div className="osint-feed-name" title={feed.sourceName}>
+          {feed.sourceName}
+        </div>
+        <div className="osint-feed-meta">
+          <span className="ingestion-event-badge">{osintService.sourceTypeLabel(feed.sourceType)}</span>
+          {feed.endpointUrl && (
+            <span className="osint-feed-url" title={feed.endpointUrl}>
+              {feed.endpointUrl.length > 28 ? `${feed.endpointUrl.slice(0, 28)}...` : feed.endpointUrl}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="osint-feed-actions">
+        <button
+          className={`osint-feed-toggle ${feed.active ? 'on' : 'off'}`}
+          onClick={() => onToggle(feed.id, !feed.active)}
+          title={feed.active ? 'Pause feed' : 'Resume feed'}
+        >
+          {feed.active ? '\u23F8' : '\u25B6'}
+        </button>
+        <button
+          className="ingestion-doc-delete-btn"
+          onClick={() => onDelete(feed.id, feed.sourceName)}
+          title="Remove source"
+        >
+          \u2715
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Add OSINT Source Modal ───────────────────────────────────────────────────
+
+interface AddOSINTModalProps {
+  problemSetId: string;
+  onClose: () => void;
+  onCreated: () => void;
+}
+
+function AddOSINTSourceModal({ problemSetId, onClose, onCreated }: AddOSINTModalProps) {
+  const [sourceName, setSourceName] = useState('');
+  const [sourceType, setSourceType] = useState<FeedSourceType>('rss');
+  const [endpointUrl, setEndpointUrl] = useState('');
+  const [pollingInterval, setPollingInterval] = useState(5);
+  const [createCopLayer, setCreateCopLayer] = useState(false);
+  const [relevanceMode, setRelevanceMode] = useState<'entity_objective' | 'ai_semantic'>('entity_objective');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sourceName.trim()) { setError('Source name is required'); return; }
+    if (sourceType !== 'simulated' && !endpointUrl.trim()) { setError('Endpoint URL is required'); return; }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const input: CreateFeedInput = {
+        problemSetId,
+        sourceName: sourceName.trim(),
+        sourceType,
+        endpointUrl: endpointUrl.trim() || undefined,
+        pollingIntervalMs: pollingInterval * 60_000,
+        relevanceMode,
+        config: createCopLayer ? { createCopLayer: true } : undefined,
+      };
+
+      await osintService.createFeed(input);
+
+      // If COP layer creation is requested, create a COP layer for this feed
+      if (createCopLayer) {
+        try {
+          await fetch(`${API_BASE}/api/cop/layers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              workspaceId: problemSetId,
+              sectionId: 'osint',
+              layerType: 'osint',
+              spec: {
+                name: `OSINT: ${sourceName.trim()}`,
+                description: `Geo-referenced feed from ${osintService.sourceTypeLabel(sourceType)} source: ${sourceName.trim()}`,
+                sourceType,
+                feedEndpoint: endpointUrl.trim(),
+                symbols: [],
+                controlMeasures: [],
+              },
+            }),
+          });
+        } catch {
+          // COP layer creation is best-effort; feed was already created
+        }
+      }
+
+      onCreated();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create source');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="osint-modal-overlay" onClick={onClose}>
+      <div className="osint-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="osint-modal-header">
+          <span>Add Information Source</span>
+          <button className="osint-modal-close" onClick={onClose}>&times;</button>
+        </div>
+        <form onSubmit={handleSubmit} className="osint-modal-body">
+          {error && <div className="osint-modal-error">{error}</div>}
+
+          <label className="osint-field">
+            <span className="osint-field-label">Source Name</span>
+            <input
+              type="text"
+              value={sourceName}
+              onChange={(e) => setSourceName(e.target.value)}
+              placeholder="e.g., Reuters World News, GDELT API"
+              className="osint-field-input"
+              autoFocus
+            />
+          </label>
+
+          <label className="osint-field">
+            <span className="osint-field-label">Source Type</span>
+            <select
+              value={sourceType}
+              onChange={(e) => setSourceType(e.target.value as FeedSourceType)}
+              className="osint-field-input"
+            >
+              {FEED_SOURCE_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </label>
+
+          {sourceType !== 'simulated' && (
+            <label className="osint-field">
+              <span className="osint-field-label">
+                {sourceType === 'argus_webhook' ? 'Webhook URL' : sourceType === 'rss' ? 'Feed URL' : 'API Endpoint'}
+              </span>
+              <input
+                type="text"
+                value={endpointUrl}
+                onChange={(e) => setEndpointUrl(e.target.value)}
+                placeholder={sourceType === 'rss' ? 'https://example.com/feed.rss' : 'https://api.example.com/v1/events'}
+                className="osint-field-input"
+              />
+            </label>
+          )}
+
+          <div className="osint-field-row">
+            <label className="osint-field">
+              <span className="osint-field-label">Poll Interval (min)</span>
+              <input
+                type="number"
+                value={pollingInterval}
+                onChange={(e) => setPollingInterval(Number(e.target.value))}
+                min={1}
+                max={1440}
+                className="osint-field-input"
+              />
+            </label>
+
+            <label className="osint-field">
+              <span className="osint-field-label">Relevance Mode</span>
+              <select
+                value={relevanceMode}
+                onChange={(e) => setRelevanceMode(e.target.value as 'entity_objective' | 'ai_semantic')}
+                className="osint-field-input"
+              >
+                <option value="entity_objective">Entity &amp; Objective</option>
+                <option value="ai_semantic">AI Semantic</option>
+              </select>
+            </label>
+          </div>
+
+          <label className="osint-checkbox">
+            <input
+              type="checkbox"
+              checked={createCopLayer}
+              onChange={(e) => setCreateCopLayer(e.target.checked)}
+            />
+            <span className="osint-checkbox-label">
+              Create COP Layer
+              <span className="osint-checkbox-hint">Geo-reference feed items and display as a layer on the COP dashboard</span>
+            </span>
+          </label>
+
+          <div className="osint-modal-footer">
+            <button type="button" className="osint-btn-cancel" onClick={onClose}>Cancel</button>
+            <button type="submit" className="osint-btn-submit" disabled={submitting}>
+              {submitting ? 'Adding...' : 'Add Source'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Document types ──────────────────────────────────────────────────────────
 
 interface IngestionDocument {
@@ -153,6 +390,11 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
   const [documents, setDocuments] = useState<IngestionDocument[]>([]);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [docsLoading, setDocsLoading] = useState(false);
+
+  // OSINT sources state
+  const [osintFeeds, setOsintFeeds] = useState<OSINTFeedConfig[]>([]);
+  const [osintLoading, setOsintLoading] = useState(false);
+  const [showAddSource, setShowAddSource] = useState(false);
 
   const { events, activeProcesses } = useBrainIngestion(
     problemSetId,
@@ -178,7 +420,22 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
     }
   }, [problemSetId]);
 
+  // ── Fetch OSINT feeds ────────────────────────────────────────────────────
+  const fetchOsintFeeds = useCallback(async () => {
+    if (!problemSetId) return;
+    setOsintLoading(true);
+    try {
+      const feeds = await osintService.getFeeds(problemSetId);
+      setOsintFeeds(feeds);
+    } catch {
+      // Non-fatal
+    } finally {
+      setOsintLoading(false);
+    }
+  }, [problemSetId]);
+
   useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
+  useEffect(() => { fetchOsintFeeds(); }, [fetchOsintFeeds]);
 
   // ── Delete document with cascade ────────────────────────────────────────
   const handleDeleteDocument = useCallback(async (docId: string, docTitle: string) => {
@@ -199,6 +456,26 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
     }
   }, []);
 
+  // ── OSINT feed actions ──────────────────────────────────────────────────
+  const handleToggleFeed = useCallback(async (feedId: string, active: boolean) => {
+    try {
+      await osintService.toggleFeed(feedId, active);
+      setOsintFeeds((prev) => prev.map((f) => f.id === feedId ? { ...f, active } : f));
+    } catch {
+      // Non-fatal
+    }
+  }, []);
+
+  const handleDeleteFeed = useCallback(async (feedId: string, name: string) => {
+    if (!confirm(`Remove OSINT source "${name}"? This will stop ingesting from this source.`)) return;
+    try {
+      await osintService.deleteFeed(feedId);
+      setOsintFeeds((prev) => prev.filter((f) => f.id !== feedId));
+    } catch {
+      // Non-fatal
+    }
+  }, []);
+
   const handleUploadClick = useCallback(() => {
     setDocIntelOpen(true);
     onUploadClick?.();
@@ -210,6 +487,7 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
     : events.filter((e) => e.sourceType === activeFilter);
 
   const isIngesting = activeProcesses.length > 0;
+  const activeFeeds = osintFeeds.filter((f) => f.active).length;
 
   return (
     <div className="ingestion-sidebar">
@@ -234,6 +512,36 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
         </CollapsibleSection>
       )}
 
+      {/* ── OSINT Sources section ── */}
+      <CollapsibleSection
+        title="OSINT Sources"
+        badge={osintFeeds.length > 0 ? `${activeFeeds}/${osintFeeds.length}` : undefined}
+        defaultOpen={true}
+      >
+        <div className="osint-sources-section">
+          {osintLoading && <div className="ingestion-doc-loading">Loading sources...</div>}
+
+          {!osintLoading && osintFeeds.length === 0 && (
+            <div className="osint-empty-state">
+              No OSINT sources connected.
+            </div>
+          )}
+
+          {osintFeeds.map((feed) => (
+            <OSINTFeedItem
+              key={feed.id}
+              feed={feed}
+              onToggle={handleToggleFeed}
+              onDelete={handleDeleteFeed}
+            />
+          ))}
+
+          <button className="osint-add-btn" onClick={() => setShowAddSource(true)}>
+            + Add Source
+          </button>
+        </div>
+      </CollapsibleSection>
+
       {/* ── Documents list with delete ── */}
       {documents.length > 0 && (
         <CollapsibleSection title={`Documents (${documents.length})`} defaultOpen={true}>
@@ -248,7 +556,7 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
                   <div className="ingestion-doc-meta">
                     {doc.classification ?? 'UNCLASSIFIED'}
                     {doc.objectiveCount != null && doc.objectiveCount > 0
-                      ? ` · ${doc.objectiveCount} objectives`
+                      ? ` \u00B7 ${doc.objectiveCount} objectives`
                       : ''}
                   </div>
                 </div>
@@ -304,6 +612,15 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
           ))
         )}
       </div>
+
+      {/* ── Add OSINT Source Modal ── */}
+      {showAddSource && (
+        <AddOSINTSourceModal
+          problemSetId={problemSetId}
+          onClose={() => setShowAddSource(false)}
+          onCreated={fetchOsintFeeds}
+        />
+      )}
 
     </div>
   );

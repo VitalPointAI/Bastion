@@ -171,4 +171,47 @@ osintWebhookRouter.post('/feeds', async (req, res) => {
   }
 });
 
+// ============================================================================
+// PUT /feeds/:feedId - Update a feed config
+// ============================================================================
+
+osintWebhookRouter.put('/feeds/:feedId', async (req, res) => {
+  try {
+    const feedId = req.params.feedId as string;
+    const updates = req.body;
+
+    const feed = await osintFeedStore.updateFeed(feedId, updates);
+    if (!feed) {
+      res.status(404).json({ error: 'Feed not found' });
+      return;
+    }
+
+    res.json({ feed });
+  } catch (error) {
+    console.error('[OSINT Feeds] Error updating feed:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// DELETE /feeds/:feedId - Delete a feed config
+// ============================================================================
+
+osintWebhookRouter.delete('/feeds/:feedId', async (req, res) => {
+  try {
+    const feedId = req.params.feedId as string;
+    const deleted = await osintFeedStore.deleteFeed(feedId);
+
+    if (!deleted) {
+      res.status(404).json({ error: 'Feed not found' });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[OSINT Feeds] Error deleting feed:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default osintWebhookRouter;

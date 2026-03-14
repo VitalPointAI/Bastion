@@ -127,8 +127,8 @@ class OSINTFeedStore {
 
     const result = await pool.query(
       `SELECT * FROM osint_feed_config
-       WHERE problem_set_id = $1 AND active = true
-       ORDER BY created_at DESC`,
+       WHERE problem_set_id = $1
+       ORDER BY active DESC, created_at DESC`,
       [problemSetId]
     );
 
