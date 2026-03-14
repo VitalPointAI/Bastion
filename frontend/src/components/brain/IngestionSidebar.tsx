@@ -237,41 +237,25 @@ function AddOSINTSourceModal({ problemSetId, onClose, onCreated }: AddOSINTModal
 
       await osintService.createFeed(input);
 
-      // If COP layer creation is requested, create a COP layer for this OSINT feed
+      // If COP layer creation is requested, trigger intel layer generation
+      // via the COP agent (which will populate it with actual content)
       if (createCopLayer) {
         try {
-          const layerSpec = {
-            layerId: `osint-intel-${Date.now()}`,
-            layerType: 'intel',
-            workspaceId: problemSetId,
-            sectionId: 'default',
-            symbols: [],
-            controlMeasures: [],
-            customAnnotations: [],
-            temporalPhases: [],
-            metadata: {
-              generatedBy: 'osint-feed-creation',
-              generatedAt: new Date().toISOString(),
-              sourceDocumentIds: [],
-              ccoValidated: false,
-              osintSourceName: sourceName.trim(),
-              osintSourceType: sourceType,
-              osintFeedEndpoint: endpointUrl.trim(),
-            },
-          };
-          await fetch(`${API_BASE}/api/cop/layers`, {
+          const res = await fetch(`${API_BASE}/api/cop/agents/trigger`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
               workspaceId: problemSetId,
               sectionId: 'default',
-              layerType: 'intel',
-              spec: layerSpec,
+              triggeredBy: 'manual',
             }),
           });
-        } catch {
-          // COP layer creation is best-effort; feed was already created
+          if (!res.ok) {
+            console.warn('[OSINT] COP layer generation failed:', res.statusText);
+          }
+        } catch (err) {
+          console.warn('[OSINT] COP layer generation failed:', err);
         }
       }
 
