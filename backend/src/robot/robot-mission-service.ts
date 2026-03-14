@@ -38,6 +38,7 @@ import { GateType, GateEnforcement } from '../gates/gate-types.js';
 import type { AuthResponseMsg } from './robot-types.js';
 import { problemSetActivityStore } from '../problem-set/problem-set-activity-store.js';
 import { getResourceRegistry } from '../resources/resource-registry.js';
+import { resourceStore } from '../resources/resource-store.js';
 import { getResourceTelemetryService } from '../resources/resource-telemetry.js';
 import { getMissionProfileService } from './mission-profile-service.js';
 import type { MissionProfile } from './mission-profile-service.js';
@@ -702,10 +703,13 @@ export class RobotMissionService {
     // Check if resource already exists by DID
     const existing = registry.getByDID(did);
     if (existing) {
-      // Robot already registered — update status to FMC (back online)
+      // Robot already registered — update status and sync capabilities
       await registry.updateResourceStatus(existing.id, 'FMC');
+      if (capabilities.length > 0) {
+        await resourceStore.updateResource(existing.id, { capabilities });
+      }
       this.robotResourceIds.set(did, existing.id);
-      console.log(`[RobotMissionService] Resource bridge: updated existing resource ${existing.id} to FMC`);
+      console.log(`[RobotMissionService] Resource bridge: updated existing resource ${existing.id} to FMC (capabilities: ${capabilities.join(', ')})`);
       return;
     }
 

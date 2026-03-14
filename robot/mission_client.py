@@ -83,11 +83,11 @@ def _build_register_msg() -> dict:
     """
     robot_id = cfg.ROBOT_ID
     capabilities = [
-        "patrol_route", "find_engage",
+        "patrol", "find_engage", "resupply",
         "recon_area", "visual_search", "overwatch", "resupply_route",
     ]
     if cfg.VISION_ENABLED:
-        capabilities.append("vision")
+        capabilities.extend(["vision", "ISR"])
     if cfg.SWARM_ENABLED:
         capabilities.extend(["swarm_patrol", "swarm_recon", "swarm_advance", "swarm_leader"])
 
@@ -283,7 +283,7 @@ async def receive_loop(
             elif msg_type == "mission:assign":
                 log.info("mission_client.received.mission_assign", payload_keys=list(msg.keys()))
                 try:
-                    mission = MissionJSON.model_validate(msg.get("payload", msg))
+                    mission = MissionJSON.model_validate(msg.get("mission") or msg.get("payload") or msg)
                     # Pre-flight validation before dispatching to hardware
                     rejection = validate_mission(
                         mission,
