@@ -192,7 +192,6 @@ export function useBrainNHop(workspaceId: string): UseBrainNHopReturn {
           setLoading(false);
         });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [workspaceId, expandedHops],
   );
 

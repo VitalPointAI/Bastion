@@ -44,7 +44,7 @@ import { useBrainLens } from './hooks/useBrainLens.js';
 import { useBrainSubspaces } from './hooks/useBrainSubspaces.js';
 import { useBrainDrillDown } from './hooks/useBrainDrillDown.js';
 import { useBrainNHop } from './hooks/useBrainNHop.js';
-import { LensSelector } from './LensSelector.js';
+
 
 import type { BrainNode, BrainGraphData } from './types.js';
 import type { PatternAlert } from './hooks/useBrainPatterns.js';
@@ -147,7 +147,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     setActiveSubspaceId,
     subspaceData,
     createManualSubspace,
-    createSmartSubspace,
+    createSmartSubspace: _createSmartSubspace,
     deleteSubspace,
   } = useBrainSubspaces(problemSetId, effectiveData);
 

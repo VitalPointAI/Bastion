@@ -1,5 +1,5 @@
 import React from 'react';
-import { BreadcrumbEntry } from './types';
+import type { BreadcrumbEntry } from './types';
 import './BrainBreadcrumb.css';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
