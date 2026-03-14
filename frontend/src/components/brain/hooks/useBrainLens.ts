@@ -142,8 +142,9 @@ export function useBrainLens(problemSetId: string): UseBrainLensReturn {
     try {
       const res = await fetch(`/api/brain/lenses?problemSetId=${encodeURIComponent(problemSetId)}`);
       if (!res.ok) return;
-      const data: BrainLens[] = await res.json() as BrainLens[];
-      setCustomLenses(data);
+      const body = (await res.json()) as { lenses?: BrainLens[] } | BrainLens[];
+      const lenses = Array.isArray(body) ? body : (body.lenses ?? []);
+      setCustomLenses(lenses);
     } catch {
       // Silently ignore network errors — built-in lenses always work
     }

@@ -231,7 +231,8 @@ export function useBrainSubspaces(
         `/api/brain/subspaces?problemSetId=${encodeURIComponent(problemSetId)}`,
       );
       if (!res.ok) return;
-      const fetched = (await res.json()) as BrainSubspace[];
+      const body = (await res.json()) as { subspaces?: BrainSubspace[] } | BrainSubspace[];
+      const fetched = Array.isArray(body) ? body : (body.subspaces ?? []);
       setCustomSubspaces(fetched);
     } catch {
       // Silently ignore — container-auto subspaces still work without API
