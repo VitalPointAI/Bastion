@@ -833,6 +833,20 @@ export class RobotMissionService {
       const sizeKb = Math.round((msg.keyframe_jpeg_b64.length * 3) / 4 / 1024);
       console.log(`[RobotMissionService] Vision keyframe from ${msg.robot_id}: ~${sizeKb} KB`);
     }
+
+    // Process threat detections → COP layer + knowledge graph (non-blocking)
+    if (msg.detections.length > 0) {
+      const robotTelemetry = robot?.latest_telemetry;
+      const robotPosition = robotTelemetry?.position
+        ? { lat: robotTelemetry.position.x, lng: robotTelemetry.position.y }
+        : null;
+
+      import('./vision-cop-pipeline.js').then(({ processVisionDetections }) => {
+        processVisionDetections(msg, undefined, robotPosition).catch(err =>
+          console.warn('[RobotMissionService] Vision pipeline error:', err),
+        );
+      }).catch(() => { /* module load failure — non-fatal */ });
+    }
   }
 
   // -------------------------------------------------------------------------

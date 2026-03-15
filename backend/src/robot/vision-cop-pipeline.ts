@@ -13,7 +13,7 @@
 
 import { randomUUID } from 'crypto';
 import type { RobotVisionMsg } from './robot-types.js';
-import { buildSIDC } from '../cop/svg/sidc-builder.js';
+import type { COPLayerSpec, COPSymbolSpec, COPAnnotationSpec, Affiliation } from '../cop/layers/layer-types.js';
 
 // ── Threat Classification ──────────────────────────────────────────────────
 
@@ -26,7 +26,6 @@ const THREAT_CLASS_MAP: Record<string, {
   symbolSet: string;  // MIL-STD-2525D symbol set
   entity: string;     // Entity code
 }> = {
-  // Custom trained tank types (add your class names here after training)
   // Bastion-trained tank classes (from robot/vision/training/)
   't-90': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
@@ -190,49 +189,50 @@ export async function updateAdversaryCOPLayer(
       }
     }
 
-    const spec = {
+    const copSymbols: COPSymbolSpec[] = symbols.map(s => ({
+      entityId: s.entityId,
+      designation: s.designation,
+      affiliation: (s.affiliation === 'hostile' ? 'enemy' : s.affiliation) as Affiliation,
+      sidc: s.sidc,
+      position: s.position,
+      linkedEntities: [] as string[],
+      ccoClass: s.type,
+      confidence: s.confidence,
+      sourceAuthority: `${s.detectedBy} (vision detection)`,
+    }));
+
+    const copAnnotations: COPAnnotationSpec[] = symbols.map(s => ({
+      id: s.entityId,
+      svgFragment: '',
+      position: s.position,
+      generatedBy: 'vision-detection-pipeline',
+      description: `${s.designation} detected by ${s.detectedBy} (${(s.confidence * 100).toFixed(0)}% confidence)`,
+    }));
+
+    const spec: COPLayerSpec = {
       layerId: layerId ?? `vision-adversary-${Date.now()}`,
-      layerType: 'force_disposition' as const,
+      layerType: 'force_disposition',
       workspaceId,
       sectionId: 'default',
-      symbols: symbols.map(s => ({
-        entityId: s.entityId,
-        designation: s.designation,
-        type: s.type,
-        echelon: s.echelon,
-        affiliation: s.affiliation,
-        sidc: s.sidc,
-        position: s.position,
-        sourceDocumentId: s.sourceDocumentId,
-        sourceAuthority: s.sourceAuthority,
-      })),
+      symbols: copSymbols,
       controlMeasures: [],
-      customAnnotations: symbols.map(s => ({
-        id: s.entityId,
-        type: 'detection' as const,
-        text: `${s.designation} detected by ${s.detectedBy} (${(s.confidence * 100).toFixed(0)}% confidence)`,
-        position: s.position,
-        style: { color: '#ef4444' },
-      })),
+      customAnnotations: copAnnotations,
       temporalPhases: [],
       metadata: {
         generatedBy: 'vision-detection-pipeline',
         generatedAt: new Date().toISOString(),
-        layerName: 'Adversary Detections',
-        detectionCount: symbols.length,
+        sourceDocumentIds: symbols.map(s => s.entityId),
+        ccoValidated: false,
       },
     };
 
     if (layerId) {
-      // Update existing layer
       await layerStore.updateLayerSpec(layerId, spec);
     } else {
-      // Create new layer
       await layerStore.createLayer({
         workspaceId,
         sectionId: 'default',
         layerType: 'force_disposition',
-        createdBy: 'vision-detection-pipeline',
         spec,
       });
     }
