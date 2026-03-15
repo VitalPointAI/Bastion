@@ -27,6 +27,8 @@ export const DEFAULT_SCAN_INTERVALS: Record<TransportType, number> = {
   wifi: 30_000,
   usb: 5_000,
   tak: 15_000,
+  mdns: 30_000,
+  arp: 60_000,
 };
 
 // ---------------------------------------------------------------------------

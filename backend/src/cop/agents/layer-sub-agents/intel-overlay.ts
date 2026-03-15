@@ -67,7 +67,7 @@ export async function intelOverlayAgent(
 
   try {
     const relevantDocs = input.documents.filter(
-      d => ['intsum', 'ipb', 'annex_b', 'threat_assessment', 'sigint', 'general'].includes(d.type),
+      d => ['intsum', 'ipb', 'annex_b', 'threat_assessment', 'sigint', 'osint', 'general'].includes(d.type),
     );
 
     if (relevantDocs.length === 0 && input.graphEntities.length === 0) {

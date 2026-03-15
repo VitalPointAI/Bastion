@@ -31,6 +31,7 @@ import { COP_AGENT_DEFINITIONS } from './agents/agent-definitions.js';
 import { setHandlerDependencies } from './api/cop-handlers.js';
 import { objectiveStore } from '../strategic/objectives/index.js';
 import { actorStore } from '../graph/raft/actor-store.js';
+import { osintEventStore } from '../graph/osint/event-store.js';
 
 // ─── Module State ────────────────────────────────────────────────────────────
 
@@ -133,6 +134,25 @@ function wireGenerationTrigger(_triggerHandler: TriggerHandler): void {
         }));
       } catch (err) {
         console.warn('[COP] Failed to fetch graph entities:', err instanceof Error ? err.message : err);
+      }
+
+      // Fetch OSINT events as additional documents for sub-agents
+      try {
+        const { events: osintEvents } = await osintEventStore.listEvents({
+          workspaceId: data.workspaceId,
+          limit: 100,
+        });
+        const osintDocs = osintEvents.map(evt => ({
+          id: evt.id,
+          content: `[OSINT ${evt.sourceType?.toUpperCase() ?? 'INTEL'}] ${evt.title}\n${evt.description ?? ''}\nSource: ${evt.sourceName ?? 'unknown'}\nActors: ${(evt.actors ?? []).join(', ')}\nTags: ${(evt.tags ?? []).join(', ')}`,
+          type: 'general',  // 'general' passes through all sub-agent doc filters
+        }));
+        if (osintDocs.length > 0) {
+          documents = [...documents, ...osintDocs];
+          console.log(`[COP] Added ${osintDocs.length} OSINT events as documents for sub-agents`);
+        }
+      } catch (err) {
+        console.warn('[COP] Failed to fetch OSINT events:', err instanceof Error ? err.message : err);
       }
 
       const layers = await runCOPGeneration(

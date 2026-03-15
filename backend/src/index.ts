@@ -411,6 +411,15 @@ server.listen(port, async () => {
     console.error('Failed to initialize COP module:', error);
   }
 
+  // Start OSINT feed poller (RSS/API polling on configured intervals)
+  try {
+    const { feedPoller } = await import('./osint/feed-poller.js');
+    await feedPoller.start();
+    console.log('OSINT feed poller started');
+  } catch (error) {
+    console.error('Failed to start OSINT feed poller:', error);
+  }
+
   // Initialize RAFT Neo4j schema (constraints and indexes)
   try {
     await initRAFTSchema();

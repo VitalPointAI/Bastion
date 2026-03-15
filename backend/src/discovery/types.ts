@@ -17,6 +17,8 @@ export const TransportType = {
   wifi: 'wifi',
   usb: 'usb',
   tak: 'tak',
+  mdns: 'mdns',
+  arp: 'arp',
 } as const;
 export type TransportType = (typeof TransportType)[keyof typeof TransportType];
 

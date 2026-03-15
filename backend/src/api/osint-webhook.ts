@@ -18,6 +18,7 @@ import { osintEventStore } from '../graph/osint/event-store.js';
 import { entityToolHandlers } from '../graph/tools/entity-tools.js';
 import { osintFeedStore } from '../jpp/osint-feed-store.js';
 import type { OSINTEventInput } from '../graph/osint/types.js';
+import { notifyCOPChange } from '../cop/index.js';
 
 export const osintWebhookRouter = Router();
 
@@ -114,6 +115,9 @@ osintWebhookRouter.post('/webhook/argus', async (req, res) => {
       // Store pending review info -- can be processed by OSINT agent later
       // Event is already created, metadata update is best-effort
     }
+
+    // Trigger COP layer regeneration with the new OSINT data
+    notifyCOPChange(body.workspaceId ?? 'default', 'osint-webhook');
 
     res.status(200).json({
       eventId: event.id,
