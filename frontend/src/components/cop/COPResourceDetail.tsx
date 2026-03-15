@@ -839,7 +839,7 @@ function ManualControlPad({ robotId }: { robotId: string }) {
     }
   }
 
-  const arrowBtn: React.CSSProperties = {
+  const arrowBtn: Record<string, string | number> = {
     width: '36px',
     height: '36px',
     background: 'rgba(59, 130, 246, 0.1)',
@@ -855,7 +855,7 @@ function ManualControlPad({ robotId }: { robotId: string }) {
     transition: 'background 0.15s',
   };
 
-  const sliderLabel: React.CSSProperties = {
+  const sliderLabel: Record<string, string> = {
     fontSize: '0.5625rem',
     color: '#6b7280',
     textTransform: 'uppercase',
