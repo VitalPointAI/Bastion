@@ -103,11 +103,88 @@ def augment_image(img: np.ndarray, idx: int) -> List[Tuple[np.ndarray, str]]:
     return results
 
 
+def load_annotations(img_path: Path, class_idx: int) -> List[str]:
+    """Load real bounding box annotations from labels/ directory.
+
+    Falls back to full-image box if no annotation file exists.
+    Returns list of YOLO label lines (e.g. "0 0.5 0.3 0.2 0.4").
+    """
+    label_dir = LABELS_DIR / img_path.parent.name
+    label_file = label_dir / f"{img_path.stem}.txt"
+    if label_file.exists():
+        lines = label_file.read_text().strip().splitlines()
+        if lines:
+            return lines
+    # Fallback: full-image bounding box
+    return [f"{class_idx} 0.5 0.5 0.9 0.9"]
+
+
+def transform_bbox_for_augment(
+    label_line: str,
+    aug_type: str,
+    img_w: int,
+    img_h: int,
+) -> str:
+    """Transform a YOLO bbox label to match an augmentation.
+
+    Handles horizontal flip, rotation, zoom in/out.
+    Returns the transformed label line.
+    """
+    parts = label_line.strip().split()
+    class_id = parts[0]
+    cx, cy, bw, bh = float(parts[1]), float(parts[2]), float(parts[3]), float(parts[4])
+
+    if "hflip" in aug_type:
+        cx = 1.0 - cx
+
+    elif aug_type.startswith("rot"):
+        import math
+        angle_str = aug_type.split("_")[0].replace("rot", "")
+        angle = float(angle_str)
+        rad = math.radians(-angle)  # negative because image rotation is opposite
+        # Rotate center around (0.5, 0.5)
+        dx, dy = cx - 0.5, cy - 0.5
+        new_dx = dx * math.cos(rad) - dy * math.sin(rad)
+        new_dy = dx * math.sin(rad) + dy * math.cos(rad)
+        cx = new_dx + 0.5
+        cy = new_dy + 0.5
+        # Clamp to image bounds
+        cx = max(0.01, min(0.99, cx))
+        cy = max(0.01, min(0.99, cy))
+
+    elif "zoomout" in aug_type:
+        scale = 0.7
+        cx = 0.5 + (cx - 0.5) * scale
+        cy = 0.5 + (cy - 0.5) * scale
+        bw *= scale
+        bh *= scale
+
+    elif "zoomin" in aug_type:
+        scale = 1.3
+        cx = 0.5 + (cx - 0.5) * scale
+        cy = 0.5 + (cy - 0.5) * scale
+        bw *= scale
+        bh *= scale
+        # Clamp — object may be partially out of frame
+        x1 = max(0.0, cx - bw / 2)
+        y1 = max(0.0, cy - bh / 2)
+        x2 = min(1.0, cx + bw / 2)
+        y2 = min(1.0, cy + bh / 2)
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        bw = x2 - x1
+        bh = y2 - y1
+
+    # For brightness, noise, blur, jitter — bbox stays the same
+
+    return f"{class_id} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}"
+
+
 def run_augmentation(classes: List[str]) -> int:
     """Augment all source images and create YOLO-format dataset.
 
-    Each augmented image gets a full-image bounding box label (the tank
-    occupies most/all of the reference image).
+    Uses real bounding box annotations from labels/ directory when available.
+    Falls back to full-image bbox if no annotation exists.
 
     Returns total number of augmented images generated.
     """
@@ -139,6 +216,9 @@ def run_augmentation(classes: List[str]) -> int:
                 print(f"    Warning: Could not read {img_path}")
                 continue
 
+            h, w = img.shape[:2]
+            labels = load_annotations(img_path, class_idx)
+
             augmented = augment_image(img, img_idx)
             for aug_img, suffix in augmented:
                 out_name = f"{class_name}_{suffix}"
@@ -147,10 +227,11 @@ def run_augmentation(classes: List[str]) -> int:
 
                 cv2.imwrite(str(img_out), aug_img)
 
-                # YOLO label: class_idx cx cy w h (normalized)
-                # Full-image bbox since the reference image IS the tank
+                # Transform each bbox to match the augmentation
                 with open(label_out, "w") as f:
-                    f.write(f"{class_idx} 0.5 0.5 0.9 0.9\n")
+                    for lbl in labels:
+                        transformed = transform_bbox_for_augment(lbl, suffix, w, h)
+                        f.write(transformed + "\n")
 
                 total += 1
 
@@ -228,10 +309,13 @@ def run_training(epochs: int = 100, imgsz: int = 640, batch: int = 8):
         batch=batch,
         name="bastion-tanks",
         project=str(SCRIPT_DIR / "runs" / "detect"),
+        exist_ok=True,  # Overwrite previous runs instead of incrementing
         patience=20,
         save=True,
         plots=True,
         device=0,  # GPU (use 'cpu' if no GPU)
+        amp=False,  # Disable AMP — Orin Nano OOMs during AMP check
+        workers=2,  # Reduce workers for low-memory devices
     )
 
     best_path = SCRIPT_DIR / "runs" / "detect" / "bastion-tanks" / "weights" / "best.pt"
