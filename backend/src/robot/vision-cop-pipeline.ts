@@ -180,7 +180,7 @@ export async function updateAdversaryCOPLayer(
       symbols: symbols.map(s => ({
         entityId: s.entityId,
         designation: s.designation,
-        affiliation: s.affiliation as 'hostile' | 'friendly' | 'neutral' | 'unknown',
+        affiliation: (s.affiliation === 'hostile' ? 'enemy' : s.affiliation) as 'friendly' | 'enemy' | 'neutral' | 'unknown',
         sidc: s.sidc,
         position: s.position,
         linkedEntities: [],
