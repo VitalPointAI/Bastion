@@ -180,13 +180,13 @@ export async function updateAdversaryCOPLayer(
       symbols: symbols.map(s => ({
         entityId: s.entityId,
         designation: s.designation,
-        type: s.type,
-        echelon: s.echelon,
-        affiliation: s.affiliation,
+        affiliation: s.affiliation as 'hostile' | 'friendly' | 'neutral' | 'unknown',
         sidc: s.sidc,
         position: s.position,
-        sourceDocumentId: s.sourceDocumentId,
-        sourceAuthority: s.sourceAuthority,
+        linkedEntities: [],
+        ccoClass: s.type,
+        confidence: s.confidence,
+        sourceAuthority: `${s.detectedBy} (vision detection)`,
       })),
       controlMeasures: [],
       customAnnotations: symbols.map(s => ({
