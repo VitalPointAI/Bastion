@@ -764,10 +764,9 @@ function GroupActions({
             }}
           >
             <option value="task_force">Task Force</option>
-            <option value="platoon">Platoon</option>
-            <option value="squad">Squad</option>
-            <option value="team">Team</option>
-            <option value="swarm">Swarm</option>
+            <option value="support">Support</option>
+            <option value="reserve">Reserve</option>
+            <option value="custom">Custom</option>
           </select>
           <div style={{ display: 'flex', gap: '4px' }}>
             <button onClick={handleCreateGroup} disabled={creating || !newGroupName.trim()} style={btnStyle}>
