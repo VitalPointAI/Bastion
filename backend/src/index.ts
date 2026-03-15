@@ -149,6 +149,52 @@ app.get('/health', (req, res) => {
 // Wire NEAR account funding to package registration completion:
 // Intercept /register/finish responses and trigger fundAccount on success
 app.use('/api/auth', (req, res, next) => {
+  // Single-session enforcement: invalidate all other sessions on login
+  // When a user logs in, delete all their previous sessions so they can
+  // only be authenticated in one place at a time.
+  if (req.method === 'POST' && req.path === '/login/finish') {
+    const originalJson = res.json.bind(res);
+    res.json = (body: unknown) => {
+      const responseBody = body as Record<string, unknown>;
+      if (res.statusCode < 400 && responseBody?.success) {
+        // The library just created a new session (the newest row in anon_sessions).
+        // Delete all OTHER sessions for this user, keeping only the most recent.
+        void (async () => {
+          try {
+            const { getPool } = await import('./lib/database.js');
+            const pool = getPool();
+            const codename = responseBody.codename as string;
+            if (!codename) return;
+            // Look up user by codename to get userId
+            const userResult = await pool.query(
+              `SELECT id FROM anon_users WHERE codename = $1 LIMIT 1`,
+              [codename],
+            );
+            const userId = userResult.rows[0]?.id;
+            if (!userId) return;
+            // Delete all sessions except the newest one for this user
+            const deleted = await pool.query(
+              `DELETE FROM anon_sessions
+               WHERE user_id = $1
+                 AND id != (
+                   SELECT id FROM anon_sessions
+                   WHERE user_id = $1
+                   ORDER BY created_at DESC
+                   LIMIT 1
+                 )`,
+              [userId],
+            );
+            if ((deleted.rowCount ?? 0) > 0) {
+              console.log(`[Auth] Single-session: invalidated ${deleted.rowCount} prior session(s) for ${codename}`);
+            }
+          } catch (err) {
+            console.warn('[Auth] Failed to enforce single session:', err);
+          }
+        })();
+      }
+      return originalJson(body);
+    };
+  }
   if (req.method === 'POST' && req.path === '/register/finish') {
     const originalJson = res.json.bind(res);
     res.json = (body: unknown) => {
