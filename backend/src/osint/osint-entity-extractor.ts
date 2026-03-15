@@ -17,7 +17,7 @@
 
 import { randomUUID } from 'crypto';
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
-import { extractLocation } from './osint-graph-sync.js';
+import { geocodingService, type GeoLocation } from '../lib/geocoding-service.js';
 import type { OSINTEvent } from '../graph/osint/types.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ interface ExtractionResult {
   actors: ExtractedActor[];
   relationships: ExtractedRelationship[];
   tensions: ExtractedTension[];
-  locations: string[];
+  locations: GeoLocation[];
 }
 
 // ── LLM Extraction ─────────────────────────────────────────────────────────
@@ -68,13 +68,16 @@ For each report, extract:
 3. **tensions** — conflict points, disputes, or friction between actors.
    Each tension has: actors (2+ names), description (one sentence), intensity (0.0-1.0 where 1.0 = active conflict), domain (military|diplomatic|economic|informational|cyber|territorial|other).
 
-4. **locations** — place names mentioned in the text.
+4. **locations** — ALL geographic locations mentioned with coordinates.
+   Each location has: name (string), latitude (number), longitude (number), region (optional), country (optional).
+   Use your knowledge to provide accurate lat/lng for every location worldwide.
 
 Rules:
 - Extract ONLY what is explicitly stated or clearly implied in the text
 - Use canonical names (e.g., "China" not "PRC" unless PRC is the primary reference)
 - Strength/intensity should reflect the text's tone (threats=high, cooperation=low tension)
 - Include at least the primary actors even if relationships aren't explicit
+- For locations, ALWAYS include latitude and longitude
 - Return valid JSON only, no explanation text
 
 Respond with ONLY a JSON object matching this schema:
@@ -82,7 +85,7 @@ Respond with ONLY a JSON object matching this schema:
   "actors": [...],
   "relationships": [...],
   "tensions": [...],
-  "locations": [...]
+  "locations": [{"name": "...", "latitude": 0.0, "longitude": 0.0, "region": "...", "country": "..."}]
 }`;
 
 /**
@@ -120,11 +123,37 @@ export async function extractEntitiesFromEvent(event: OSINTEvent): Promise<Extra
     if (!parsed || typeof parsed !== 'object') return empty;
 
     const obj = parsed as Record<string, unknown>;
+
+    // Parse locations — handle both string[] and structured object[] formats
+    let locations: GeoLocation[] = [];
+    if (Array.isArray(obj.locations)) {
+      for (const loc of obj.locations as unknown[]) {
+        if (typeof loc === 'string') {
+          // Plain name — geocode via shared service
+          const geocoded = await geocodingService.geocode(loc);
+          if (geocoded) locations.push(geocoded);
+        } else if (loc && typeof loc === 'object') {
+          const l = loc as Record<string, unknown>;
+          const name = (l.name as string)?.trim();
+          if (!name) continue;
+          const lat = Number(l.latitude) || 0;
+          const lng = Number(l.longitude) || 0;
+          if (lat !== 0 && lng !== 0) {
+            locations.push({ name, latitude: lat, longitude: lng, region: l.region as string, country: l.country as string });
+          } else {
+            // LLM returned 0,0 — try Nominatim
+            const geocoded = await geocodingService.geocode(name);
+            if (geocoded) locations.push(geocoded);
+          }
+        }
+      }
+    }
+
     return {
       actors: Array.isArray(obj.actors) ? obj.actors as ExtractedActor[] : [],
       relationships: Array.isArray(obj.relationships) ? obj.relationships as ExtractedRelationship[] : [],
       tensions: Array.isArray(obj.tensions) ? obj.tensions as ExtractedTension[] : [],
-      locations: Array.isArray(obj.locations) ? obj.locations as string[] : [],
+      locations,
     };
   } catch (err) {
     console.warn(`[OSINT-Extract] LLM extraction failed for "${event.title}":`, err instanceof Error ? err.message : err);
@@ -147,6 +176,20 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
 
   const extraction = await extractEntitiesFromEvent(event);
   if (extraction.actors.length === 0) return stats;
+
+  // Backfill event location in PostgreSQL if we extracted one and it was missing
+  const primaryLocation = extraction.locations.find(l => l.latitude !== 0 && l.longitude !== 0);
+  if (primaryLocation && !event.location) {
+    try {
+      const { getPool } = await import('../lib/database.js');
+      await getPool().query(
+        `UPDATE osint_events SET location = $1 WHERE id = $2`,
+        [JSON.stringify(primaryLocation), event.id],
+      );
+    } catch (err) {
+      console.warn(`[OSINT-Extract] Failed to update event location:`, err);
+    }
+  }
 
   try {
     const { executeWriteQuery } = await import('../graph/neo4j-client.js');
