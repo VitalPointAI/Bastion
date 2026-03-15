@@ -149,32 +149,43 @@ async function handleBridgeRegister(
       return;
     }
 
-    // Register bridge as a resource in the registry
+    // Register bridge as a resource in the registry (dedup by bridge_id name)
     const registry = getResourceRegistry();
     await registry.ensureInitialized();
 
-    const resource = await registry.registerResource({
-      name: `Bridge ${bridge_id}`,
-      category: 'other',
-      specifications: {
-        otherType: 'engineering',
-        description: `Local discovery bridge: ${bridge_id}`,
-      },
-      isAutonomous: false,
-      capabilities: capabilities?.length ? capabilities : ['scanning', 'relay', 'queueing'],
-    });
+    const bridgeName = `Bridge ${bridge_id}`;
+    const existing = registry.getAllResources().find(r => r.name === bridgeName);
+
+    let assignedDid: string;
+    if (existing) {
+      // Bridge already registered — reuse existing resource/DID
+      assignedDid = existing.did;
+      console.log(`[BridgeWS] Found existing resource for ${bridge_id} (DID: ${assignedDid}), skipping duplicate`);
+    } else {
+      const resource = await registry.registerResource({
+        name: bridgeName,
+        category: 'other',
+        specifications: {
+          otherType: 'engineering',
+          description: `Local discovery bridge: ${bridge_id}`,
+        },
+        isAutonomous: false,
+        capabilities: capabilities?.length ? capabilities : ['scanning', 'relay', 'queueing'],
+      });
+      assignedDid = resource.did;
+    }
 
     // Register in service (auto-accepts at participant trust tier)
-    service.registerBridge(bridge_id, ws, resource.did, capabilities ?? []);
+    service.registerBridge(bridge_id, ws, assignedDid, capabilities ?? []);
     ws.bridgeId = bridge_id;
 
     const response: BridgeRegisteredMsg = {
       type: RobotWsMessageType.bridge_registered,
-      did: resource.did,
+      did: assignedDid,
       bridge_id,
     };
     safeSend(ws, response);
-    console.log(`[BridgeWS] Bridge registered: ${bridge_id} (DID: ${resource.did})`);
+    console.log(`[BridgeWS] Bridge registered: ${bridge_id} (DID: ${assignedDid})`);
     return;
   }
 
