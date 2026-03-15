@@ -2,8 +2,8 @@
 LAN device scanner for the local discovery bridge.
 
 Implements two scanners:
-  - MDNSScanner: Browses mDNS service types using AsyncZeroconf / AsyncServiceBrowser.
-  - SSDPScanner: Sends an SSDP M-SEARCH for "ssdp:all" using the ``ssdp`` library.
+  - MDNSScanner: Browses mDNS service types using zeroconf AsyncServiceBrowser.
+  - SSDPScanner: Sends an SSDP M-SEARCH for "ssdp:all" via raw UDP socket.
 
 Both scanners normalize results to the same discovery schema:
     {
@@ -23,20 +23,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import socket
+import struct
 from typing import List
 
-try:
-    import ssdp
-except ImportError:  # allow tests to patch if ssdp unavailable
-    ssdp = None  # type: ignore[assignment]
-
-from zeroconf.asyncio import AsyncServiceBrowser, AsyncZeroconf
+from zeroconf import Zeroconf, ServiceBrowser, ServiceInfo
 
 logger = logging.getLogger(__name__)
 
 # mDNS service types to browse during a full scan.
-# We browse the most common service classes to discover printers, cameras,
-# IoT devices, smart speakers, robots, etc.
 _MDNS_SERVICE_TYPES = [
     "_http._tcp.local.",
     "_https._tcp.local.",
@@ -76,117 +70,173 @@ def _decode_properties(raw: dict) -> dict:
 
 
 class MDNSScanner:
-    """Browse common mDNS service types to discover LAN devices."""
+    """Browse common mDNS service types to discover LAN devices.
+
+    Uses synchronous Zeroconf + ServiceBrowser running in a thread executor
+    to avoid AsyncZeroconf API compatibility issues across versions.
+    """
 
     async def scan(self, duration_sec: float = 30.0) -> List[dict]:
-        """Browse all registered mDNS service types and return normalized device dicts.
+        """Browse all registered mDNS service types and return normalized device dicts."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._scan_sync, duration_sec)
 
-        Opens an AsyncZeroconf instance, starts browsers for all service types,
-        waits *duration_sec*, then fetches service info for all discovered names.
+    def _scan_sync(self, duration_sec: float) -> List[dict]:
+        """Synchronous mDNS scan — runs in a thread."""
+        import time
 
-        Args:
-            duration_sec: How long to browse before collecting results.
-
-        Returns:
-            List of normalized device dicts.
-        """
-        discovered_names: List[tuple[str, str]] = []  # (service_type, name)
+        discovered: List[tuple[str, str]] = []  # (service_type, name)
 
         class _Listener:
             def __init__(self, svc_type: str) -> None:
                 self._svc_type = svc_type
 
-            def add_service(self, zc, type_: str, name: str) -> None:
-                discovered_names.append((self._svc_type, name))
+            def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+                discovered.append((self._svc_type, name))
 
-            def remove_service(self, zc, type_: str, name: str) -> None:
+            def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
                 pass
 
-            def update_service(self, zc, type_: str, name: str) -> None:
+            def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
                 pass
 
         results: List[dict] = []
-
-        async with AsyncZeroconf() as azc:
+        zc = Zeroconf()
+        try:
             browsers = []
             for svc_type in _MDNS_SERVICE_TYPES:
                 listener = _Listener(svc_type)
-                browser = AsyncServiceBrowser(azc, svc_type, listener)
+                browser = ServiceBrowser(zc, svc_type, listener)
                 browsers.append(browser)
 
-            await asyncio.sleep(duration_sec)
+            time.sleep(duration_sec)
 
             seen_names: set[str] = set()
-            for svc_type, name in discovered_names:
+            for svc_type, name in discovered:
                 if name in seen_names:
                     continue
                 seen_names.add(name)
                 try:
-                    info = await azc.async_get_service_info(svc_type, name)
-                    if info is None:
-                        continue
-                    addresses = [
-                        _decode_address(a) for a in info.addresses if len(a) == 4
-                    ]
-                    properties = _decode_properties(info.properties)
-                    results.append({
-                        "transport_type": "wifi",
-                        "raw_identifier": info.name,
-                        "raw_data": {
-                            "addresses": addresses,
-                            "port": info.port,
-                            "properties": properties,
-                            "service_type": svc_type,
-                        },
-                        "origin": "bridge",
-                    })
-                except Exception as exc:  # noqa: BLE001
+                    info = ServiceInfo(svc_type, name)
+                    info.request(zc, 3000)  # 3 second timeout
+                    if info.addresses:
+                        addresses = [
+                            _decode_address(a) for a in info.addresses if len(a) == 4
+                        ]
+                        properties = _decode_properties(info.properties) if info.properties else {}
+                        results.append({
+                            "transport_type": "mdns",
+                            "raw_identifier": info.name or name,
+                            "raw_data": {
+                                "addresses": addresses,
+                                "port": info.port,
+                                "properties": properties,
+                                "service_type": svc_type,
+                                "hostname": info.server,
+                            },
+                            "origin": "bridge",
+                        })
+                except Exception as exc:
                     logger.warning("MDNSScanner: failed to get info for %s: %s", name, exc)
+
+            for browser in browsers:
+                browser.cancel()
+        finally:
+            zc.close()
 
         logger.info("MDNSScanner: discovered %d device(s)", len(results))
         return results
 
 
+# ---------------------------------------------------------------------------
+# SSDP Scanner — raw UDP M-SEARCH (no external library dependency)
+# ---------------------------------------------------------------------------
+
+_SSDP_ADDR = "239.255.255.250"
+_SSDP_PORT = 1900
+_MSEARCH_MSG = (
+    "M-SEARCH * HTTP/1.1\r\n"
+    "HOST: 239.255.255.250:1900\r\n"
+    'MAN: "ssdp:discover"\r\n'
+    "MX: 3\r\n"
+    "ST: ssdp:all\r\n"
+    "\r\n"
+)
+
+
 class SSDPScanner:
-    """Send SSDP M-SEARCH for 'ssdp:all' and return normalized device dicts."""
+    """Send SSDP M-SEARCH for 'ssdp:all' via raw UDP and return normalized device dicts."""
 
     async def scan(self, timeout_sec: float = 5.0) -> List[dict]:
-        """Discover SSDP devices on the LAN.
+        """Discover SSDP devices on the LAN via raw multicast UDP."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._scan_sync, timeout_sec)
 
-        Args:
-            timeout_sec: How long to wait for SSDP responses.
-
-        Returns:
-            List of normalized device dicts.
-        """
-        if ssdp is None:
-            logger.warning("SSDPScanner: 'ssdp' library not available, skipping SSDP scan")
-            return []
+    def _scan_sync(self, timeout_sec: float) -> List[dict]:
+        """Synchronous SSDP M-SEARCH — runs in a thread."""
+        results: List[dict] = []
 
         try:
-            responses = await ssdp.discover("ssdp:all", timeout=timeout_sec)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("SSDPScanner: scan failed: %s", exc)
-            return []
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.settimeout(timeout_sec)
 
-        results: List[dict] = []
-        for resp in responses:
-            usn = getattr(resp, "usn", None) or getattr(resp, "headers", {}).get("USN", "")
-            location = getattr(resp, "location", "") or getattr(resp, "headers", {}).get("LOCATION", "")
-            headers = dict(getattr(resp, "headers", {})) if hasattr(resp, "headers") else {}
-            results.append({
-                "transport_type": "wifi",
-                "raw_identifier": usn or location,
-                "raw_data": {
-                    "location": location,
-                    "usn": usn,
-                    "headers": headers,
-                },
-                "origin": "bridge",
-            })
+            # Join multicast group on all interfaces
+            mreq = struct.pack("4sL", socket.inet_aton(_SSDP_ADDR), socket.INADDR_ANY)
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+
+            # Send M-SEARCH
+            sock.sendto(_MSEARCH_MSG.encode("utf-8"), (_SSDP_ADDR, _SSDP_PORT))
+
+            seen_usns: set[str] = set()
+            while True:
+                try:
+                    data, addr = sock.recvfrom(4096)
+                    text = data.decode("utf-8", errors="replace")
+                    headers = self._parse_headers(text)
+                    usn = headers.get("USN", "")
+                    location = headers.get("LOCATION", "")
+                    identifier = usn or location or f"{addr[0]}:{addr[1]}"
+
+                    if identifier in seen_usns:
+                        continue
+                    seen_usns.add(identifier)
+
+                    results.append({
+                        "transport_type": "ssdp",
+                        "raw_identifier": identifier,
+                        "raw_data": {
+                            "location": location,
+                            "usn": usn,
+                            "server": headers.get("SERVER", ""),
+                            "st": headers.get("ST", ""),
+                            "source_ip": addr[0],
+                            "headers": headers,
+                        },
+                        "origin": "bridge",
+                    })
+                except socket.timeout:
+                    break
+                except Exception as exc:
+                    logger.debug("SSDPScanner: recv error: %s", exc)
+                    break
+
+            sock.close()
+        except Exception as exc:
+            logger.warning("SSDPScanner: scan failed: %s", exc)
 
         logger.info("SSDPScanner: discovered %d device(s)", len(results))
         return results
+
+    @staticmethod
+    def _parse_headers(text: str) -> dict[str, str]:
+        """Parse HTTP-like SSDP response headers into a dict."""
+        headers: dict[str, str] = {}
+        for line in text.split("\r\n"):
+            if ":" in line:
+                key, _, value = line.partition(":")
+                headers[key.strip().upper()] = value.strip()
+        return headers
 
 
 async def run_full_scan(
@@ -197,13 +247,6 @@ async def run_full_scan(
 
     Deduplication is by ``raw_identifier`` — if both scanners return a device
     with the same identifier, only the first occurrence is kept.
-
-    Args:
-        mdns_duration: Duration (seconds) to browse mDNS.
-        ssdp_timeout: Timeout (seconds) for SSDP M-SEARCH.
-
-    Returns:
-        Merged, deduplicated list of normalized device dicts.
     """
     mdns_scanner = MDNSScanner()
     ssdp_scanner = SSDPScanner()
