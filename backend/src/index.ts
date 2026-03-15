@@ -462,7 +462,15 @@ server.listen(port, async () => {
       messageBus: getMessageBus(),
       gateService,
     });
-    console.log('[Server] Discovery service initialized (scanners paused)');
+    console.log('[Server] Discovery service initialized');
+
+    // Start server-side scanners (bridge reports still flow through even if local scanners fail)
+    try {
+      discoveryService.start('global', 'server');
+      console.log('[Server] Discovery service started (server scanners active)');
+    } catch (startErr) {
+      console.warn('[Server] Discovery scanners failed to start (bridge reports still work):', startErr);
+    }
   } catch (error) {
     console.error('Failed to initialize discovery service:', error);
   }

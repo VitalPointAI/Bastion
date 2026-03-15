@@ -14,8 +14,9 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { getRobotMissionService } from './robot-mission-service.js';
 import { bridgeTokenStore } from './bridge-token-store.js';
 import { getResourceRegistry } from '../resources/resource-registry.js';
-import { discoveryStore } from '../discovery/discovery-store.js';
-import type { TransportType, DeviceState } from '../discovery/types.js';
+import { getDiscoveryService } from '../discovery/discovery-service.js';
+import type { TransportType } from '../discovery/types.js';
+import { notifyCOPChange } from '../cop/index.js';
 import type {
   BridgeRegisterMsg,
   BridgeDiscoveryReportMsg,
@@ -219,36 +220,42 @@ async function handleDiscoveryReport(
 
   if (!devices || devices.length === 0) return;
 
-  const now = new Date();
+  const now = Date.now();
+  const discoveryService = getDiscoveryService();
+  let ingested = 0;
 
-  // Ingest each device into discovery pipeline
+  // Route each device through the onboarding pipeline (fingerprint → auth → gate → register)
   for (const device of devices) {
     try {
-      await discoveryStore.insertDiscoveredDevice({
-        transportType: device.transport_type as TransportType,
+      const result = await discoveryService.ingestBridgeDiscovery({
+        transportType: (device.transport_type ?? 'mdns') as TransportType,
         rawIdentifier: device.raw_identifier,
-        fingerprint: null,
-        state: 'pending' as DeviceState,
-        deviceDid: undefined,
-        resourceId: undefined,
+        signalStrength: device.signal_strength,
         firstSeen: now,
         lastSeen: now,
-        signalStrength: device.signal_strength,
-        location: undefined,
-        ironclawAnalysis: {
+        rawData: {
           ...device.raw_data,
           origin: 'bridge',
           bridge_id,
         },
-        gateId: undefined,
-        quarantineReason: undefined,
       });
+      if (result.success) ingested++;
     } catch (err) {
-      console.error(`[BridgeWS] Failed to insert discovered device from bridge ${bridge_id}:`, err);
+      console.error(`[BridgeWS] Failed to ingest device from bridge ${bridge_id}:`, err);
     }
   }
 
-  console.log(`[BridgeWS] Ingested ${devices.length} device(s) from bridge ${bridge_id}`);
+  console.log(`[BridgeWS] Ingested ${ingested}/${devices.length} device(s) from bridge ${bridge_id}`);
+
+  // Notify COP so discovered devices can appear on the operating picture
+  // Look up workspace from bridge registration (bridgeId → problemSetId mapping)
+  if (ingested > 0) {
+    const bridgeInfo = service.getBridgeInfo?.(bridge_id);
+    const workspaceId = bridgeInfo?.problemSetId ?? bridgeInfo?.workspaceId;
+    if (workspaceId) {
+      notifyCOPChange(workspaceId, `bridge-discovery-${bridge_id}`);
+    }
+  }
 }
 
 function handleRobotRelay(
