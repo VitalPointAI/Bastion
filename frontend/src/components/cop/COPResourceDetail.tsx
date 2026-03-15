@@ -610,7 +610,7 @@ function GroupActions({
   const [assigning, setAssigning] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
-  const [newGroupType, setNewGroupType] = useState('task_force');
+  const [newGroupType, setNewGroupType] = useState<'task_force' | 'support' | 'reserve' | 'custom'>('task_force');
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -753,7 +753,7 @@ function GroupActions({
           />
           <select
             value={newGroupType}
-            onChange={e => setNewGroupType(e.target.value)}
+            onChange={e => setNewGroupType(e.target.value as 'task_force' | 'support' | 'reserve' | 'custom')}
             style={{
               background: '#1a1a24',
               border: '1px solid #374151',
@@ -764,10 +764,9 @@ function GroupActions({
             }}
           >
             <option value="task_force">Task Force</option>
-            <option value="platoon">Platoon</option>
-            <option value="squad">Squad</option>
-            <option value="team">Team</option>
-            <option value="swarm">Swarm</option>
+            <option value="support">Support</option>
+            <option value="reserve">Reserve</option>
+            <option value="custom">Custom</option>
           </select>
           <div style={{ display: 'flex', gap: '4px' }}>
             <button onClick={handleCreateGroup} disabled={creating || !newGroupName.trim()} style={btnStyle}>
