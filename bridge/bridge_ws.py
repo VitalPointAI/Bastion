@@ -195,6 +195,20 @@ async def bridge_cloud_loop(
                     if did:
                         cfg.persist_did(did)
                         logger.info("bridge_ws: registered, DID=%s", did)
+                    else:
+                        logger.warning("bridge_ws: registered but no DID in response")
+                elif resp.get("type") == "error":
+                    logger.error(
+                        "bridge_ws: registration rejected: %s",
+                        resp.get("message", "unknown error"),
+                    )
+                    # Don't proceed — wait and retry with backoff
+                    continue
+                else:
+                    logger.warning(
+                        "bridge_ws: unexpected response type %r during registration",
+                        resp.get("type"),
+                    )
 
                 # Share cloud WS ref with relay
                 relay._cloud_ws = ws

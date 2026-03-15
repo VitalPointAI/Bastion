@@ -1,0 +1,16 @@
+[Unit]
+Description=Bastion Discovery Bridge
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=vitalpoint
+WorkingDirectory=/home/vitalpoint/projects/bastion/bridge
+ExecStart=/usr/bin/docker compose -f /home/vitalpoint/projects/bastion/bridge/docker-compose.yml up --build
+ExecStop=/usr/bin/docker compose -f /home/vitalpoint/projects/bastion/bridge/docker-compose.yml down
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
