@@ -314,6 +314,30 @@ async def receive_loop(
             elif msg_type == "robot:profile_response":
                 log.info("mission_client.profile_response", profile=msg.get("profile"))
 
+            elif msg_type == "robot:manual_nudge":
+                try:
+                    heading = float(msg.get("heading", 0))
+                    speed = int(msg.get("speed", 100))
+                    duration = float(msg.get("duration_sec", 1.0))
+                    log.info("mission_client.manual_nudge", heading=heading, speed=speed, duration=duration)
+                    asyncio.create_task(driver.drive(speed, heading, duration))
+                except Exception as exc:
+                    log.error("mission_client.manual_nudge.error", error=str(exc))
+
+            elif msg_type == "robot:manual_navigate":
+                try:
+                    tx = float(msg.get("target_x", 0))
+                    ty = float(msg.get("target_y", 0))
+                    speed = int(msg.get("speed", 100))
+                    log.info("mission_client.manual_navigate", target_x=tx, target_y=ty, speed=speed)
+                    asyncio.create_task(driver.drive_to_point(tx, ty, speed))
+                except Exception as exc:
+                    log.error("mission_client.manual_navigate.error", error=str(exc))
+
+            elif msg_type == "robot:manual_stop":
+                log.info("mission_client.manual_stop")
+                asyncio.create_task(driver.safe_stop())
+
             elif msg_type == "swarm:add_resource":
                 log.info("mission_client.received.swarm_add_resource", robot_id=msg.get("robot_id"))
                 if _swarm is not None:

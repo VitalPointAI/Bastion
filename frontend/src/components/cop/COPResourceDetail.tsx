@@ -536,6 +536,23 @@ function TelemetryTab({ resource }: { resource: RegisteredResource }) {
           </span>
         </div>
       )}
+
+      {/* Manual Control D-pad */}
+      {robotInfo && <ManualControlPad robotId={robotInfo.robot_id} />}
+
+      {!robotInfo && (
+        <div style={{
+          marginTop: '0.5rem',
+          padding: '1rem',
+          border: '1px dashed rgba(107, 114, 128, 0.3)',
+          borderRadius: '8px',
+          textAlign: 'center',
+          color: '#6b7280',
+          fontSize: '0.75rem',
+        }}>
+          No live telemetry — resource not connected as a robot
+        </div>
+      )}
     </div>
   );
 }
@@ -781,6 +798,149 @@ function GroupActions({
         <button onClick={() => setShowCreate(true)} style={{ ...btnStyle, background: 'rgba(139, 92, 246, 0.15)', color: '#c4b5fd' }}>
           + Create New Group
         </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Manual Control D-pad ────────────────────────────────────────────────────
+
+function ManualControlPad({ robotId }: { robotId: string }) {
+  const [speed, setSpeed] = useState(100);
+  const [duration, setDuration] = useState(1.0);
+  const [sending, setSending] = useState(false);
+  const [lastAction, setLastAction] = useState<string | null>(null);
+
+  async function nudge(heading: number, label: string) {
+    setSending(true);
+    setLastAction(label);
+    try {
+      await fetch(`/api/robot/robots/${robotId}/nudge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heading, speed, duration_sec: duration }),
+      });
+    } catch {
+      // ignore
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function stopRobot() {
+    setSending(true);
+    setLastAction('STOP');
+    try {
+      await fetch(`/api/robot/robots/${robotId}/stop`, { method: 'POST' });
+    } catch {
+      // ignore
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const arrowBtn: Record<string, string | number> = {
+    width: '36px',
+    height: '36px',
+    background: 'rgba(59, 130, 246, 0.1)',
+    border: '1px solid rgba(59, 130, 246, 0.3)',
+    borderRadius: '6px',
+    color: '#93c5fd',
+    fontSize: '1rem',
+    cursor: sending ? 'not-allowed' : 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: sending ? 0.5 : 1,
+    transition: 'background 0.15s',
+  };
+
+  const sliderLabel: Record<string, string> = {
+    fontSize: '0.5625rem',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+  };
+
+  return (
+    <div>
+      <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#8888a0', textTransform: 'uppercase' }}>
+        Manual Control
+      </h4>
+
+      {/* D-pad grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '36px 36px 36px',
+        gridTemplateRows: '36px 36px 36px',
+        gap: '4px',
+        justifyContent: 'center',
+        marginBottom: '0.5rem',
+      }}>
+        <div /> {/* top-left empty */}
+        <button style={arrowBtn} onClick={() => nudge(0, 'N')} disabled={sending} title="North">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 2L12 10H2Z" fill="currentColor"/></svg>
+        </button>
+        <div /> {/* top-right empty */}
+
+        <button style={arrowBtn} onClick={() => nudge(270, 'W')} disabled={sending} title="West">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 7L10 2V12Z" fill="currentColor"/></svg>
+        </button>
+        <button
+          style={{ ...arrowBtn, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '0.5625rem', fontWeight: 700 }}
+          onClick={stopRobot}
+          disabled={sending}
+          title="Emergency Stop"
+        >
+          STOP
+        </button>
+        <button style={arrowBtn} onClick={() => nudge(90, 'E')} disabled={sending} title="East">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M12 7L4 2V12Z" fill="currentColor"/></svg>
+        </button>
+
+        <div /> {/* bottom-left empty */}
+        <button style={arrowBtn} onClick={() => nudge(180, 'S')} disabled={sending} title="South">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 12L2 4H12Z" fill="currentColor"/></svg>
+        </button>
+        <div /> {/* bottom-right empty */}
+      </div>
+
+      {/* Speed + duration sliders */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.375rem' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', ...sliderLabel }}>
+            <span>Speed</span>
+            <span>{speed}</span>
+          </div>
+          <input
+            type="range"
+            min={10}
+            max={255}
+            value={speed}
+            onChange={(e) => setSpeed(Number(e.target.value))}
+            style={{ width: '100%', accentColor: '#3b82f6', height: '4px' }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', ...sliderLabel }}>
+            <span>Duration</span>
+            <span>{duration.toFixed(1)}s</span>
+          </div>
+          <input
+            type="range"
+            min={0.2}
+            max={5}
+            step={0.1}
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
+            style={{ width: '100%', accentColor: '#3b82f6', height: '4px' }}
+          />
+        </div>
+      </div>
+
+      {lastAction && (
+        <div style={{ fontSize: '0.5625rem', color: '#4b5563', textAlign: 'center' }}>
+          Last: {lastAction} @ speed {speed}, {duration.toFixed(1)}s
+        </div>
       )}
     </div>
   );

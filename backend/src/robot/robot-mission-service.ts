@@ -850,6 +850,28 @@ export class RobotMissionService {
   }
 
   // -------------------------------------------------------------------------
+  // Manual control (D-pad nudge, navigate-to-point, emergency stop)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Send a manual control command to a connected robot.
+   * Used by the COP D-pad and map click-to-navigate features.
+   */
+  sendManualCommand(
+    robotId: string,
+    command: { type: string; [key: string]: unknown },
+  ): { success: boolean; error?: string } {
+    const robot = this.connectedRobots.get(robotId);
+    if (!robot) {
+      return { success: false, error: `Robot '${robotId}' not connected` };
+    }
+
+    console.log(`[RobotMissionService] Manual command to ${robotId}: ${command.type}`);
+    this.safeSend(robot.ws, command);
+    return { success: true };
+  }
+
+  // -------------------------------------------------------------------------
   // Profile resolution (Phase 44)
   // -------------------------------------------------------------------------
 

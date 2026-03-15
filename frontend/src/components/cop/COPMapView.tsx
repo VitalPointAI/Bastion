@@ -50,6 +50,8 @@ interface COPMapViewProps {
   robotLayerVisible?: boolean;
   /** Callback when a robot marker is clicked (Phase 06) */
   onRobotClick?: (robotId: string) => void;
+  /** Currently selected robot ID for map click-to-navigate */
+  selectedRobotId?: string | null;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -92,6 +94,7 @@ export function COPMapView({
   onResourceSelect,
   robotLayerVisible = true,
   onRobotClick,
+  selectedRobotId,
 }: COPMapViewProps) {
   const [layers, setLayers] = useState<COPLayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,6 +181,7 @@ export function COPMapView({
           problemSetId={problemSetId}
           visible={robotLayerVisible}
           onRobotClick={onRobotClick}
+          selectedRobotId={selectedRobotId}
         />
       </MapContainer>
     </div>

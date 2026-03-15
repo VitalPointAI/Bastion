@@ -543,6 +543,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
             }}
             robotLayerVisible={robotLayerVisible}
             onRobotClick={(id) => { setSelectedRobotId(id); setSelectedResource(null); }}
+            selectedRobotId={selectedRobotId}
           />
 
           {/* Generating spinner overlay */}

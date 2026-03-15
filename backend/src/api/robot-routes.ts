@@ -164,6 +164,83 @@ robotRouter.get('/robots', (_req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /robots/:robotId/nudge — Manual D-pad nudge control
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/robots/:robotId/nudge', (req, res) => {
+  const { robotId } = req.params;
+  const { heading, speed, duration_sec } = req.body;
+
+  if (typeof heading !== 'number' || typeof speed !== 'number') {
+    res.status(400).json({ error: 'heading (number) and speed (number) are required' });
+    return;
+  }
+
+  const service = getRobotMissionService();
+  const result = service.sendManualCommand(robotId, {
+    type: 'robot:manual_nudge',
+    robot_id: robotId,
+    heading: Math.round(heading) % 360,
+    speed: Math.max(0, Math.min(255, Math.round(speed))),
+    duration_sec: typeof duration_sec === 'number' ? duration_sec : 1.0,
+  });
+
+  if (!result.success) {
+    res.status(404).json({ error: result.error });
+    return;
+  }
+  res.json({ status: 'sent' });
+});
+
+// ---------------------------------------------------------------------------
+// POST /robots/:robotId/navigate — Click-to-navigate (map target point)
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/robots/:robotId/navigate', (req, res) => {
+  const { robotId } = req.params;
+  const { x, y, speed } = req.body;
+
+  if (typeof x !== 'number' || typeof y !== 'number') {
+    res.status(400).json({ error: 'x (number) and y (number) are required' });
+    return;
+  }
+
+  const service = getRobotMissionService();
+  const result = service.sendManualCommand(robotId, {
+    type: 'robot:manual_navigate',
+    robot_id: robotId,
+    target_x: x,
+    target_y: y,
+    speed: typeof speed === 'number' ? Math.max(0, Math.min(255, Math.round(speed))) : 100,
+  });
+
+  if (!result.success) {
+    res.status(404).json({ error: result.error });
+    return;
+  }
+  res.json({ status: 'sent' });
+});
+
+// ---------------------------------------------------------------------------
+// POST /robots/:robotId/stop — Emergency stop
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/robots/:robotId/stop', (req, res) => {
+  const { robotId } = req.params;
+  const service = getRobotMissionService();
+  const result = service.sendManualCommand(robotId, {
+    type: 'robot:manual_stop',
+    robot_id: robotId,
+  });
+
+  if (!result.success) {
+    res.status(404).json({ error: result.error });
+    return;
+  }
+  res.json({ status: 'sent' });
+});
+
+// ---------------------------------------------------------------------------
 // POST /missions/:missionId/auth — Manual auth response (backup for gate flow)
 // ---------------------------------------------------------------------------
 
