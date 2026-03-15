@@ -536,6 +536,23 @@ function TelemetryTab({ resource }: { resource: RegisteredResource }) {
           </span>
         </div>
       )}
+
+      {/* Manual Control D-pad */}
+      {robotInfo && <ManualControlPad robotId={robotInfo.robot_id} />}
+
+      {!robotInfo && (
+        <div style={{
+          marginTop: '0.5rem',
+          padding: '1rem',
+          border: '1px dashed rgba(107, 114, 128, 0.3)',
+          borderRadius: '8px',
+          textAlign: 'center',
+          color: '#6b7280',
+          fontSize: '0.75rem',
+        }}>
+          No live telemetry — resource not connected as a robot
+        </div>
+      )}
     </div>
   );
 }
@@ -784,6 +801,230 @@ function GroupActions({
       )}
     </div>
   );
+}
+
+// ─── Manual Control D-pad ────────────────────────────────────────────────────
+
+function ManualControlPad({ robotId }: { robotId: string }) {
+  const [speed, setSpeed] = useState(100);
+  const [duration, setDuration] = useState(1.0);
+  const [sending, setSending] = useState(false);
+  const [lastAction, setLastAction] = useState<string | null>(null);
+
+  async function nudge(heading: number, label: string) {
+    setSending(true);
+    setLastAction(label);
+    try {
+      await fetch(`/api/robot/robots/${robotId}/nudge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heading, speed, duration_sec: duration }),
+      });
+    } catch {
+      // ignore
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function stopRobot() {
+    setSending(true);
+    setLastAction('STOP');
+    try {
+      await fetch(`/api/robot/robots/${robotId}/stop`, { method: 'POST' });
+    } catch {
+      // ignore
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const arrowBtn: React.CSSProperties = {
+    width: '36px',
+    height: '36px',
+    background: 'rgba(59, 130, 246, 0.1)',
+    border: '1px solid rgba(59, 130, 246, 0.3)',
+    borderRadius: '6px',
+    color: '#93c5fd',
+    fontSize: '1rem',
+    cursor: sending ? 'not-allowed' : 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: sending ? 0.5 : 1,
+    transition: 'background 0.15s',
+  };
+
+  const sliderLabel: React.CSSProperties = {
+    fontSize: '0.5625rem',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+  };
+
+  return (
+    <div>
+      <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#8888a0', textTransform: 'uppercase' }}>
+        Manual Control
+      </h4>
+
+      {/* D-pad grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '36px 36px 36px',
+        gridTemplateRows: '36px 36px 36px',
+        gap: '4px',
+        justifyContent: 'center',
+        marginBottom: '0.5rem',
+      }}>
+        <div /> {/* top-left empty */}
+        <button style={arrowBtn} onClick={() => nudge(0, 'N')} disabled={sending} title="North">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 2L12 10H2Z" fill="currentColor"/></svg>
+        </button>
+        <div /> {/* top-right empty */}
+
+        <button style={arrowBtn} onClick={() => nudge(270, 'W')} disabled={sending} title="West">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 7L10 2V12Z" fill="currentColor"/></svg>
+        </button>
+        <button
+          style={{ ...arrowBtn, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '0.5625rem', fontWeight: 700 }}
+          onClick={stopRobot}
+          disabled={sending}
+          title="Emergency Stop"
+        >
+          STOP
+        </button>
+        <button style={arrowBtn} onClick={() => nudge(90, 'E')} disabled={sending} title="East">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M12 7L4 2V12Z" fill="currentColor"/></svg>
+        </button>
+
+        <div /> {/* bottom-left empty */}
+        <button style={arrowBtn} onClick={() => nudge(180, 'S')} disabled={sending} title="South">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 12L2 4H12Z" fill="currentColor"/></svg>
+        </button>
+        <div /> {/* bottom-right empty */}
+      </div>
+
+      {/* Speed + duration sliders */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.375rem' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', ...sliderLabel }}>
+            <span>Speed</span>
+            <span>{speed}</span>
+          </div>
+          <input
+            type="range"
+            min={10}
+            max={255}
+            value={speed}
+            onChange={(e) => setSpeed(Number(e.target.value))}
+            style={{ width: '100%', accentColor: '#3b82f6', height: '4px' }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', ...sliderLabel }}>
+            <span>Duration</span>
+            <span>{duration.toFixed(1)}s</span>
+          </div>
+          <input
+            type="range"
+            min={0.2}
+            max={5}
+            step={0.1}
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
+            style={{ width: '100%', accentColor: '#3b82f6', height: '4px' }}
+          />
+        </div>
+      </div>
+
+      {lastAction && (
+        <div style={{ fontSize: '0.5625rem', color: '#4b5563', textAlign: 'center' }}>
+          Last: {lastAction} @ speed {speed}, {duration.toFixed(1)}s
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Battery Sparkline ───────────────────────────────────────────────────────
+
+function BatterySparkline({ data }: { data: number[] }) {
+  if (data.length < 2) return null;
+
+  const w = 280;
+  const h = 32;
+  const pad = 2;
+  const minVal = Math.max(0, Math.min(...data) - 5);
+  const maxVal = Math.min(100, Math.max(...data) + 5);
+  const range = maxVal - minVal || 1;
+
+  const points = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1)) * (w - 2 * pad);
+    const y = h - pad - ((v - minVal) / range) * (h - 2 * pad);
+    return `${x},${y}`;
+  });
+
+  const lastVal = data[data.length - 1];
+  const color = batteryColor(lastVal);
+
+  return (
+    <svg width={w} height={h} style={{ display: 'block', marginTop: '0.25rem' }}>
+      <defs>
+        <linearGradient id="battGradDetail" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.05" />
+        </linearGradient>
+      </defs>
+      <polygon
+        points={`${pad},${h - pad} ${points.join(' ')} ${w - pad},${h - pad}`}
+        fill="url(#battGradDetail)"
+      />
+      <polyline
+        points={points.join(' ')}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      {(() => {
+        const parts = points[points.length - 1].split(',');
+        return <circle cx={parts[0]} cy={parts[1]} r="2.5" fill={color} />;
+      })()}
+    </svg>
+  );
+}
+
+// ─── Compass Indicator ───────────────────────────────────────────────────────
+
+function CompassIndicator({ heading, size = 40 }: { heading: number; size?: number }) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const rad = (heading - 90) * (Math.PI / 180);
+  const needleLen = size * 0.34;
+  const nx = cx + Math.cos(rad) * needleLen;
+  const ny = cy + Math.sin(rad) * needleLen;
+
+  return (
+    <svg width={size} height={size} style={{ flexShrink: 0 }}>
+      <circle cx={cx} cy={cy} r={size * 0.44} fill="none" stroke="#374151" strokeWidth="1" />
+      <text x={cx} y={size * 0.18} textAnchor="middle" fill="#6b7280" fontSize={size * 0.16} fontFamily="monospace">N</text>
+      <text x={size - 2} y={cy + 2} textAnchor="end" fill="#4b5563" fontSize={size * 0.14} fontFamily="monospace">E</text>
+      <text x={cx} y={size - 1} textAnchor="middle" fill="#4b5563" fontSize={size * 0.14} fontFamily="monospace">S</text>
+      <text x={3} y={cy + 2} textAnchor="start" fill="#4b5563" fontSize={size * 0.14} fontFamily="monospace">W</text>
+      <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
+      <circle cx={cx} cy={cy} r={size * 0.06} fill="#3b82f6" />
+    </svg>
+  );
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function timeAgo(ts: string): string {
+  const diff = Date.now() - new Date(ts).getTime();
+  if (diff < 1000) return 'just now';
+  if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  return `${Math.floor(diff / 3_600_000)}h ago`;
 }
 
 // ─── Shared detail row ───────────────────────────────────────────────────────

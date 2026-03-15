@@ -62,6 +62,10 @@ export const RobotWsMessageType = {
   vision: 'robot:vision',
   profile_request: 'robot:profile_request',
   profile_response: 'robot:profile_response',
+  // Manual control message types
+  manual_nudge: 'robot:manual_nudge',
+  manual_navigate: 'robot:manual_navigate',
+  manual_stop: 'robot:manual_stop',
   // Swarm message types (Phase 46)
   swarm_telemetry: 'swarm:telemetry',
   swarm_add_resource: 'swarm:add_resource',

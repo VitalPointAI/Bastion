@@ -33,6 +33,8 @@ interface COPRobotLayerProps {
   problemSetId: string;
   visible: boolean;
   onRobotClick?: (robotId: string) => void;
+  /** When set, clicking the map sends a navigate command to this robot */
+  selectedRobotId?: string | null;
 }
 
 // ─── State colors ───────────────────────────────────────────────────────────
@@ -91,6 +93,16 @@ function roomToLatLng(x: number, y: number): [number, number] {
     south + (y / roomHeight) * (north - south),
     west + (x / roomWidth) * (east - west),
   ];
+}
+
+function latLngToRoom(lat: number, lng: number): { x: number; y: number } {
+  const south = 25.0330, north = 25.0340;
+  const west = 121.5640, east = 121.5650;
+  const roomWidth = 5, roomHeight = 5;
+  return {
+    x: ((lng - west) / (east - west)) * roomWidth,
+    y: ((lat - south) / (north - south)) * roomHeight,
+  };
 }
 
 // ─── Smooth marker component ──────────────────────────────────────────────
@@ -207,10 +219,76 @@ function SmoothRobotMarker({
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
+// ─── Map click → navigate handler ────────────────────────────────────────────
+
+function MapClickNavigator({ robotId }: { robotId: string }) {
+  const map = useMap();
+  const targetMarkerRef = useRef<L.Marker | null>(null);
+
+  useEffect(() => {
+    async function handleClick(e: L.LeafletMouseEvent) {
+      const { lat, lng } = e.latlng;
+      const room = latLngToRoom(lat, lng);
+
+      // Show target marker
+      if (targetMarkerRef.current) {
+        map.removeLayer(targetMarkerRef.current);
+      }
+      const targetIcon = L.divIcon({
+        className: '',
+        html: `<div style="width:20px;height:20px;border:2px solid #f59e0b;border-radius:50%;background:rgba(245,158,11,0.2);display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:#f59e0b;border-radius:50%"></div></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+      });
+      const marker = L.marker([lat, lng], { icon: targetIcon }).addTo(map);
+      marker.bindTooltip(`Navigate to (${room.x.toFixed(1)}, ${room.y.toFixed(1)})`, { direction: 'bottom', offset: [0, 10] });
+      targetMarkerRef.current = marker;
+
+      // Auto-remove after 10s
+      setTimeout(() => {
+        if (targetMarkerRef.current === marker) {
+          map.removeLayer(marker);
+          targetMarkerRef.current = null;
+        }
+      }, 10000);
+
+      // Send navigate command
+      try {
+        await fetch(`/api/robot/robots/${robotId}/navigate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ x: room.x, y: room.y, speed: 100 }),
+        });
+      } catch (err) {
+        console.warn('[COPRobotLayer] Navigate command failed:', err);
+      }
+    }
+
+    map.on('click', handleClick);
+
+    // Change cursor to crosshair when navigate mode is active
+    const container = map.getContainer();
+    container.style.cursor = 'crosshair';
+
+    return () => {
+      map.off('click', handleClick);
+      container.style.cursor = '';
+      if (targetMarkerRef.current) {
+        map.removeLayer(targetMarkerRef.current);
+      }
+    };
+  }, [map, robotId]);
+
+  return null;
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────
+
 export function COPRobotLayer({
   problemSetId: _problemSetId,
   visible,
   onRobotClick,
+  selectedRobotId,
 }: COPRobotLayerProps) {
   const [robots, setRobots] = useState<RobotInfo[]>([]);
 
@@ -245,6 +323,8 @@ export function COPRobotLayer({
           onRobotClick={onRobotClick}
         />
       ))}
+      {/* When a robot is selected, enable map click-to-navigate */}
+      {selectedRobotId && <MapClickNavigator robotId={selectedRobotId} />}
     </>
   );
 }
