@@ -393,6 +393,16 @@ function TelemetryTab({ resource }: { resource: RegisteredResource }) {
 
   const telem = robotInfo?.latest_telemetry;
 
+  // Compute heartbeat age outside JSX to avoid impure Date.now() in render
+  const [heartbeatAge, setHeartbeatAge] = useState('');
+  useEffect(() => {
+    if (!robotInfo?.last_heartbeat) { setHeartbeatAge(''); return; }
+    const update = () => setHeartbeatAge(`${Math.round((Date.now() - robotInfo.last_heartbeat) / 1000)}s ago`);
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [robotInfo?.last_heartbeat]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       {/* Connection status */}
@@ -407,7 +417,7 @@ function TelemetryTab({ resource }: { resource: RegisteredResource }) {
             {robotInfo.state}
           </span>
           <span style={{ fontSize: '0.625rem', color: '#4b5563', marginLeft: 'auto' }}>
-            {robotInfo.last_heartbeat ? `${Math.round((Date.now() - robotInfo.last_heartbeat) / 1000)}s ago` : ''}
+            {heartbeatAge}
           </span>
         </div>
       )}
