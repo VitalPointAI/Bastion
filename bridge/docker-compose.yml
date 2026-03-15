@@ -23,7 +23,7 @@ services:
     # Port mappings are ignored when network_mode is host; the container
     # shares the host's network stack directly.
     network_mode: host
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     environment:
