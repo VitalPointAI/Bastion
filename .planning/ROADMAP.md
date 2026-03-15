@@ -675,7 +675,7 @@ Plans:
 - Fix COP layer generation pipeline end-to-end (currently broken)
 - Wire upgraded graph into: COP sub-agents, design tab, plan tab, assess tab, doc-intelligence, OSINT pipeline, vision detection pipeline
 **Depends on:** Phase 45
-**Plans:** 10 plans
+**Plans:** 11 plans
 
 Plans:
 - [ ] 47-01-PLAN.md — JSON-LD context file + shared types + confidence utilities
@@ -688,6 +688,7 @@ Plans:
 - [ ] 47-08-PLAN.md — Brain visualization timeline slider + temporal playback
 - [ ] 47-09-PLAN.md — Ingestion pipeline wiring (graph-builder, doc-intel, OSINT, vision)
 - [ ] 47-10-PLAN.md — Read consumer wiring (graph API, RAFT tools, COP confidence rendering)
+- [ ] 47-11-PLAN.md — Design, plan, assess tab JSON-LD consumer wiring
 
 ---
 
@@ -1426,7 +1427,7 @@ Plans:
 **Depends on:** Phase 4.3, Phase 5, Phase 5.1
 **Research:** Complete (5.2-RESEARCH.md, .planning/mdmp-governance/)
 **Research topics:** Adversary COA development methodology (ATP 2-01.3), escalation ladder theory and simulation, second/third-order effects across DIME domains, deception detection patterns, wargaming action-reaction-counteraction frameworks
-**Plans:** 10 plans
+**Plans:** 11 plans
 
 **Context:**
 This phase addresses the adversary modeling and effects analysis capabilities identified during MDMP governance analysis. The existing Red Team Simulator agent is expanded to a full wargaming framework, supported by 4 new specialized agents for adversary modeling, escalation dynamics, effects cascading, and deception detection. Additional capabilities cover force ratio analysis, COA sketch generation, branch/sequel planning, and sustainment modeling.
