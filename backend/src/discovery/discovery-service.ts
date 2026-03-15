@@ -16,6 +16,8 @@ import { BLEScanner } from './scanners/ble-scanner.js';
 import { WiFiScanner } from './scanners/wifi-scanner.js';
 import { USBScanner } from './scanners/usb-scanner.js';
 import { TAKScanner } from './scanners/tak-scanner.js';
+import { MDNSScanner } from './scanners/mdns-scanner.js';
+import { ARPScanner } from './scanners/arp-scanner.js';
 import { DEFAULT_SCAN_INTERVALS } from './scanners/scanner-interface.js';
 import { DeviceState, TransportType, DiscoveryOrigin } from './types.js';
 import type {
@@ -166,10 +168,15 @@ export class DiscoveryService {
     const usb = new USBScanner();
     const tak = new TAKScanner();
 
+    const mdns = new MDNSScanner();
+    const arp = new ARPScanner();
+
     this.scanners.set(TransportType.ble, ble);
     this.scanners.set(TransportType.wifi, wifi);
     this.scanners.set(TransportType.usb, usb);
     this.scanners.set(TransportType.tak, tak);
+    this.scanners.set(TransportType.mdns, mdns);
+    this.scanners.set(TransportType.arp, arp);
   }
 
   /**
