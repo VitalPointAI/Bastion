@@ -12,7 +12,8 @@ import RSSParser from 'rss-parser';
 import { osintFeedStore } from '../jpp/osint-feed-store.js';
 import { osintEventStore } from '../graph/osint/event-store.js';
 import { notifyCOPChange } from '../cop/index.js';
-import { extractLocation, syncOSINTEventToGraph } from './osint-graph-sync.js';
+import { extractLocation } from './osint-graph-sync.js';
+import { extractAndSyncToGraph } from './osint-entity-extractor.js';
 import { getPool } from '../lib/database.js';
 import type { OSINTEventInput } from '../graph/osint/types.js';
 import type { OSINTFeedConfig } from '../jpp/osint-feed-store.js';
@@ -267,9 +268,9 @@ class FeedPoller {
         stored++;
         lastGuid = (item.metadata as Record<string, unknown>)?.guid as string ?? item.sourceUrl ?? null;
 
-        // Sync to knowledge graph (non-blocking)
-        syncOSINTEventToGraph(storedEvent).catch(err =>
-          console.warn(`[FeedPoller] Graph sync failed for "${item.title}":`, err),
+        // Extract entities via LLM and sync to knowledge graph (non-blocking)
+        extractAndSyncToGraph(storedEvent).catch(err =>
+          console.warn(`[FeedPoller] Entity extraction/graph sync failed for "${item.title}":`, err),
         );
       } catch (err) {
         console.warn(`[FeedPoller] Failed to store event "${item.title}":`, err);

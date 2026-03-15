@@ -1,0 +1,409 @@
+/**
+ * OSINT Entity & Tension Extractor
+ *
+ * Uses LLM to extract structured entities, relationships, and tensions
+ * from OSINT event content. Creates proper Neo4j Actor nodes and
+ * Relationship edges so the knowledge graph reflects real-world dynamics.
+ *
+ * Flow:
+ *   OSINT event text → LLM extraction → Neo4j nodes + edges
+ *
+ * Extracted data:
+ *   - Actors (nations, organizations, individuals, groups)
+ *   - Relationships (allied, adversarial, competing, cooperating, neutral)
+ *   - Tensions (conflict points with intensity scores)
+ *   - Locations mentioned (with coordinates if extractable)
+ */
+
+import { randomUUID } from 'crypto';
+import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
+import { extractLocation } from './osint-graph-sync.js';
+import type { OSINTEvent } from '../graph/osint/types.js';
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+interface ExtractedActor {
+  name: string;
+  type: 'nation' | 'organization' | 'individual' | 'non_state_actor' | 'military_unit' | 'group';
+  aliases?: string[];
+  description?: string;
+}
+
+interface ExtractedRelationship {
+  source: string;  // actor name
+  target: string;  // actor name
+  type: 'allied_with' | 'adversarial' | 'competing' | 'cooperating' | 'neutral' | 'supports' | 'opposes' | 'threatens';
+  strength: number; // 0-1
+  description: string;
+}
+
+interface ExtractedTension {
+  actors: string[];  // 2+ actor names involved
+  description: string;
+  intensity: number;  // 0-1
+  domain: 'military' | 'diplomatic' | 'economic' | 'informational' | 'cyber' | 'territorial' | 'other';
+}
+
+interface ExtractionResult {
+  actors: ExtractedActor[];
+  relationships: ExtractedRelationship[];
+  tensions: ExtractedTension[];
+  locations: string[];
+}
+
+// ── LLM Extraction ─────────────────────────────────────────────────────────
+
+const AGENT_ID = 'osint-entity-extractor';
+
+const SYSTEM_PROMPT = `You are an intelligence analyst extracting structured entities, relationships, and tensions from OSINT reports.
+
+For each report, extract:
+
+1. **actors** — nations, organizations, individuals, military units, non-state actors mentioned.
+   Each actor has: name, type (nation|organization|individual|non_state_actor|military_unit|group), aliases (optional), description (optional brief).
+
+2. **relationships** — connections between extracted actors.
+   Each relationship has: source (actor name), target (actor name), type (allied_with|adversarial|competing|cooperating|neutral|supports|opposes|threatens), strength (0.0-1.0), description (one sentence).
+
+3. **tensions** — conflict points, disputes, or friction between actors.
+   Each tension has: actors (2+ names), description (one sentence), intensity (0.0-1.0 where 1.0 = active conflict), domain (military|diplomatic|economic|informational|cyber|territorial|other).
+
+4. **locations** — place names mentioned in the text.
+
+Rules:
+- Extract ONLY what is explicitly stated or clearly implied in the text
+- Use canonical names (e.g., "China" not "PRC" unless PRC is the primary reference)
+- Strength/intensity should reflect the text's tone (threats=high, cooperation=low tension)
+- Include at least the primary actors even if relationships aren't explicit
+- Return valid JSON only, no explanation text
+
+Respond with ONLY a JSON object matching this schema:
+{
+  "actors": [...],
+  "relationships": [...],
+  "tensions": [...],
+  "locations": [...]
+}`;
+
+/**
+ * Extract entities, relationships, and tensions from an OSINT event using LLM.
+ */
+export async function extractEntitiesFromEvent(event: OSINTEvent): Promise<ExtractionResult> {
+  const empty: ExtractionResult = { actors: [], relationships: [], tensions: [], locations: [] };
+
+  // Skip events with very short content
+  const text = `${event.title}\n${event.description ?? ''}`.trim();
+  if (text.length < 50) return empty;
+
+  try {
+    const llm = await createLLMForAgent({
+      agentId: AGENT_ID,
+      overrides: { temperature: 0.1, maxTokens: 2048 },
+    });
+
+    const result = await Promise.race([
+      llm.invoke([
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: `Extract entities, relationships, and tensions from this OSINT report:\n\nTitle: ${event.title}\nSource: ${event.sourceName ?? 'unknown'}\nDate: ${event.publishedAt?.toISOString() ?? 'unknown'}\nTags: ${(event.tags ?? []).join(', ')}\n\nContent:\n${event.description ?? ''}` },
+      ]),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('LLM extraction timed out')), 45_000),
+      ),
+    ]);
+
+    const content = typeof result.content === 'string'
+      ? result.content
+      : JSON.stringify(result.content);
+
+    // Parse JSON with resilience
+    const parsed = parseJsonResponse(content);
+    if (!parsed || typeof parsed !== 'object') return empty;
+
+    const obj = parsed as Record<string, unknown>;
+    return {
+      actors: Array.isArray(obj.actors) ? obj.actors as ExtractedActor[] : [],
+      relationships: Array.isArray(obj.relationships) ? obj.relationships as ExtractedRelationship[] : [],
+      tensions: Array.isArray(obj.tensions) ? obj.tensions as ExtractedTension[] : [],
+      locations: Array.isArray(obj.locations) ? obj.locations as string[] : [],
+    };
+  } catch (err) {
+    console.warn(`[OSINT-Extract] LLM extraction failed for "${event.title}":`, err instanceof Error ? err.message : err);
+    return empty;
+  }
+}
+
+// ── Graph Sync ─────────────────────────────────────────────────────────────
+
+/**
+ * Full pipeline: extract entities from OSINT event, then sync to Neo4j graph.
+ * Creates actor nodes, relationship edges, and tension edges.
+ */
+export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
+  actorsCreated: number;
+  relationshipsCreated: number;
+  tensionsCreated: number;
+}> {
+  const stats = { actorsCreated: 0, relationshipsCreated: 0, tensionsCreated: 0 };
+
+  const extraction = await extractEntitiesFromEvent(event);
+  if (extraction.actors.length === 0) return stats;
+
+  try {
+    const { executeWriteQuery } = await import('../graph/neo4j-client.js');
+    const now = new Date().toISOString();
+
+    // Map actor names to stable IDs
+    const actorIdMap = new Map<string, string>();
+
+    // 1. Create/merge actor nodes
+    for (const actor of extraction.actors) {
+      if (!actor.name || actor.name.length < 2) continue;
+
+      const stableId = `ACT-${actor.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+      actorIdMap.set(actor.name, stableId);
+
+      // Determine actor type mapping
+      const typeMap: Record<string, string> = {
+        nation: 'state',
+        organization: 'organization',
+        individual: 'individual',
+        non_state_actor: 'non_state',
+        military_unit: 'military',
+        group: 'organization',
+      };
+      const graphType = typeMap[actor.type] ?? 'organization';
+
+      await executeWriteQuery(`
+        MERGE (a:Actor {id: $id})
+        ON CREATE SET
+          a.name = $name,
+          a.type = $type,
+          a.aliases = $aliases,
+          a.attributes = $attributes,
+          a.workspaceId = $workspaceId,
+          a.sourceDocumentIds = [$docId],
+          a.containerIds = [],
+          a.createdAt = $now,
+          a.updatedAt = $now
+        ON MATCH SET
+          a.updatedAt = $now,
+          a.sourceDocumentIds = CASE
+            WHEN NOT $docId IN a.sourceDocumentIds
+            THEN a.sourceDocumentIds + $docId
+            ELSE a.sourceDocumentIds
+          END
+      `, {
+        id: stableId,
+        name: actor.name,
+        type: graphType,
+        aliases: actor.aliases ?? [],
+        attributes: JSON.stringify({
+          source: 'osint',
+          description: actor.description ?? '',
+          extractedFrom: event.id,
+        }),
+        workspaceId: event.workspaceId ?? null,
+        docId: event.id,
+        now,
+      });
+
+      stats.actorsCreated++;
+    }
+
+    // 2. Create OSINT event node (links actors to the source)
+    const eventNodeId = `OSINT-${event.id}`;
+    const loc = event.location as { name?: string; latitude?: number; longitude?: number } | null;
+
+    await executeWriteQuery(`
+      MERGE (e:Actor {id: $id})
+      ON CREATE SET
+        e.name = $name,
+        e.type = 'event',
+        e.aliases = $tags,
+        e.attributes = $attributes,
+        e.workspaceId = $workspaceId,
+        e.sourceDocumentIds = [$docId],
+        e.containerIds = [],
+        e.createdAt = $now,
+        e.updatedAt = $now
+      ON MATCH SET
+        e.attributes = $attributes,
+        e.updatedAt = $now
+    `, {
+      id: eventNodeId,
+      name: event.title,
+      tags: event.tags ?? [],
+      attributes: JSON.stringify({
+        nodeType: 'osint_event',
+        sourceType: event.sourceType,
+        sourceUrl: event.sourceUrl,
+        sourceName: event.sourceName,
+        publishedAt: event.publishedAt?.toISOString(),
+        description: (event.description ?? '').slice(0, 500),
+        location: loc,
+        actorCount: extraction.actors.length,
+        relationshipCount: extraction.relationships.length,
+        tensionCount: extraction.tensions.length,
+      }),
+      workspaceId: event.workspaceId ?? null,
+      docId: event.id,
+      now,
+    });
+
+    // 3. Link actors to event
+    for (const actor of extraction.actors) {
+      const actorId = actorIdMap.get(actor.name);
+      if (!actorId) continue;
+
+      await executeWriteQuery(`
+        MATCH (a:Actor {id: $actorId})
+        MATCH (e:Actor {id: $eventId})
+        MERGE (a)-[r:RELATES_TO {type: 'mentioned_in'}]->(e)
+        ON CREATE SET
+          r.id = $relId,
+          r.type = 'mentioned_in',
+          r.strength = 0.5,
+          r.description = $desc,
+          r.evidence = $evidence,
+          r.sourceDocumentIds = [$docId],
+          r.createdAt = $now,
+          r.updatedAt = $now
+      `, {
+        actorId,
+        eventId: eventNodeId,
+        relId: `REL-${randomUUID()}`,
+        desc: `${actor.name} mentioned in: ${event.title}`,
+        evidence: event.sourceUrl ?? '',
+        docId: event.id,
+        now,
+      });
+    }
+
+    // 4. Create relationship edges between actors
+    for (const rel of extraction.relationships) {
+      const sourceId = actorIdMap.get(rel.source);
+      const targetId = actorIdMap.get(rel.target);
+      if (!sourceId || !targetId) continue;
+
+      await executeWriteQuery(`
+        MATCH (s:Actor {id: $sourceId})
+        MATCH (t:Actor {id: $targetId})
+        MERGE (s)-[r:RELATES_TO {type: $relType}]->(t)
+        ON CREATE SET
+          r.id = $relId,
+          r.type = $relType,
+          r.strength = $strength,
+          r.description = $desc,
+          r.evidence = $evidence,
+          r.sourceDocumentIds = [$docId],
+          r.createdAt = $now,
+          r.updatedAt = $now
+        ON MATCH SET
+          r.strength = CASE WHEN $strength > r.strength THEN $strength ELSE r.strength END,
+          r.updatedAt = $now,
+          r.sourceDocumentIds = CASE
+            WHEN NOT $docId IN r.sourceDocumentIds
+            THEN r.sourceDocumentIds + $docId
+            ELSE r.sourceDocumentIds
+          END
+      `, {
+        sourceId,
+        targetId,
+        relType: rel.type,
+        relId: `REL-${randomUUID()}`,
+        strength: Math.max(0, Math.min(1, rel.strength)),
+        desc: rel.description,
+        evidence: event.sourceUrl ?? '',
+        docId: event.id,
+        now,
+      });
+
+      stats.relationshipsCreated++;
+    }
+
+    // 5. Create tension edges (special relationship type)
+    for (const tension of extraction.tensions) {
+      if (tension.actors.length < 2) continue;
+
+      // Create pairwise tension edges for all actors involved
+      for (let i = 0; i < tension.actors.length - 1; i++) {
+        for (let j = i + 1; j < tension.actors.length; j++) {
+          const aId = actorIdMap.get(tension.actors[i]);
+          const bId = actorIdMap.get(tension.actors[j]);
+          if (!aId || !bId) continue;
+
+          await executeWriteQuery(`
+            MATCH (a:Actor {id: $aId})
+            MATCH (b:Actor {id: $bId})
+            MERGE (a)-[r:RELATES_TO {type: 'tension'}]->(b)
+            ON CREATE SET
+              r.id = $relId,
+              r.type = 'tension',
+              r.strength = $intensity,
+              r.description = $desc,
+              r.evidence = $evidence,
+              r.sourceDocumentIds = [$docId],
+              r.domain = $domain,
+              r.createdAt = $now,
+              r.updatedAt = $now
+            ON MATCH SET
+              r.strength = CASE WHEN $intensity > r.strength THEN $intensity ELSE r.strength END,
+              r.description = $desc,
+              r.domain = $domain,
+              r.updatedAt = $now,
+              r.sourceDocumentIds = CASE
+                WHEN NOT $docId IN r.sourceDocumentIds
+                THEN r.sourceDocumentIds + $docId
+                ELSE r.sourceDocumentIds
+              END
+          `, {
+            aId,
+            bId,
+            relId: `REL-${randomUUID()}`,
+            intensity: Math.max(0, Math.min(1, tension.intensity)),
+            desc: tension.description,
+            evidence: event.sourceUrl ?? '',
+            docId: event.id,
+            domain: tension.domain,
+            now,
+          });
+
+          stats.tensionsCreated++;
+        }
+      }
+    }
+
+    console.log(
+      `[OSINT-Extract] "${event.title}" → ${stats.actorsCreated} actors, ` +
+      `${stats.relationshipsCreated} relationships, ${stats.tensionsCreated} tensions`,
+    );
+  } catch (err) {
+    console.warn(`[OSINT-Extract] Graph sync failed for "${event.title}":`, err);
+  }
+
+  return stats;
+}
+
+// ── JSON Parsing Helper ────────────────────────────────────────────────────
+
+function parseJsonResponse(content: string): unknown {
+  // Strip thinking tags (Qwen3, DeepSeek)
+  const cleaned = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+
+  // Try direct parse
+  try { return JSON.parse(cleaned); } catch { /* continue */ }
+
+  // Try markdown code block
+  const codeBlockMatch = cleaned.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  if (codeBlockMatch) {
+    try { return JSON.parse(codeBlockMatch[1].trim()); } catch { /* continue */ }
+  }
+
+  // Try finding JSON object
+  const objectMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (objectMatch) {
+    try { return JSON.parse(objectMatch[0]); } catch { /* continue */ }
+  }
+
+  return null;
+}
