@@ -26,7 +26,24 @@ const THREAT_CLASS_MAP: Record<string, {
   symbolSet: string;  // MIL-STD-2525D symbol set
   entity: string;     // Entity code
 }> = {
-  // Custom trained tank types (add your class names here after training)
+  // Bastion-trained tank classes (from robot/vision/training/)
+  't-90': {
+    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
+    designation: 'T-90 Main Battle Tank', symbolSet: '10', entity: '120100',
+  },
+  't90': {
+    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
+    designation: 'T-90 Main Battle Tank', symbolSet: '10', entity: '120100',
+  },
+  'chn-99g': {
+    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
+    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '10', entity: '120100',
+  },
+  'chn99g': {
+    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
+    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '10', entity: '120100',
+  },
+  // Other known tank types
   't72': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
     designation: 'T-72 Main Battle Tank', symbolSet: '10', entity: '120100',
