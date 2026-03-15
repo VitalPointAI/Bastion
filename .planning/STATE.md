@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Checkpoint 45-07-PLAN.md Task 3 (human-verify)
-last_updated: "2026-03-14T10:50:00.000Z"
-last_activity: "2026-03-14 - Completed 45-07 Tasks 1+2: BrainController wired with all Phase 45 hooks; LensSelector replaces cluster toggle; ghost node/edge rendering; N-hop expand button; awaiting Task 3 browser verification"
+status: verifying
+stopped_at: Phase 47 context gathered
+last_updated: "2026-03-15T20:54:27.596Z"
+last_activity: "2026-03-14 - Completed 45-07 Tasks 1+2: Phase 45 integration wiring complete, checkpoint reached"
 progress:
-  total_phases: 61
-  completed_phases: 42
-  total_plans: 385
-  completed_plans: 388
+  total_phases: 63
+  completed_phases: 44
+  total_plans: 390
+  completed_plans: 393
 ---
 
 # Project State
@@ -873,6 +873,7 @@ Recent decisions affecting current work:
 - Phase 44 added: Robot vision capabilities and mission intent translation — Camera integration on Jetson Orin Nano for robot vision, plus translating plain text mission intents from Bastion cloud into Sphero RVR+ motor/sensor commands to execute assigned missions within constraints
 - Phase 45 added: Knowledge Graph Subspaces — Container-scoped subgraphs, focus-and-expand pattern, hierarchical drill-down, and virtual lenses for managing growing knowledge graphs at scale
 - Phase 46 added: Sphero RVR+ Swarm Leader & Doctrinal Movement Control — Swarm coordination enabling vision-equipped RVR+/Orin Nano as swarm leader directing additional units in doctrinal formations; heterogeneous resource support (drones, UGVs, sensors); DAO-driven dynamic membership; COP integration
+- Phase 47 added: JSON-LD Semantic Brain + COP Fix — Refactor knowledge graph to JSON-LD with BFO (Basic Formal Ontology) upper ontology, CCO (Common Core Ontologies) for DoD/DND interoperability, DODAF/DNDAF architectural data model compliance, military ontology alignment (APP-6, JC3IEDM). Provenance tracking, temporal reasoning, entity resolution, confidence scoring, contradiction detection. Wire upgraded graph into all downstream consumers (COP, design, plan, assess, doc-intel, OSINT, vision). Fix COP layer generation end-to-end.
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
@@ -1543,7 +1544,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-14T10:42:09.795Z
-Stopped at: Completed 45-04-PLAN.md
-Resume file: None
+Last session: 2026-03-15T20:54:27.584Z
+Stopped at: Phase 47 context gathered
+Resume file: .planning/phases/47-json-ld-semantic-brain-cop-fix/47-CONTEXT.md
 Next action: Continue Phase 40 plan 02
