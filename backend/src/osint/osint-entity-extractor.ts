@@ -44,11 +44,19 @@ interface ExtractedTension {
   domain: 'military' | 'diplomatic' | 'economic' | 'informational' | 'cyber' | 'territorial' | 'other';
 }
 
+interface ExtractedLocation {
+  name: string;
+  latitude: number;
+  longitude: number;
+  region?: string;
+  country?: string;
+}
+
 interface ExtractionResult {
   actors: ExtractedActor[];
   relationships: ExtractedRelationship[];
   tensions: ExtractedTension[];
-  locations: string[];
+  locations: ExtractedLocation[];
 }
 
 // ── LLM Extraction ─────────────────────────────────────────────────────────
@@ -68,13 +76,16 @@ For each report, extract:
 3. **tensions** — conflict points, disputes, or friction between actors.
    Each tension has: actors (2+ names), description (one sentence), intensity (0.0-1.0 where 1.0 = active conflict), domain (military|diplomatic|economic|informational|cyber|territorial|other).
 
-4. **locations** — place names mentioned in the text.
+4. **locations** — ALL geographic locations mentioned in the text with approximate coordinates.
+   Each location has: name (string), latitude (number), longitude (number), region (optional string), country (optional string).
+   Use your knowledge to provide approximate lat/lng for every location. Be as accurate as possible.
 
 Rules:
 - Extract ONLY what is explicitly stated or clearly implied in the text
 - Use canonical names (e.g., "China" not "PRC" unless PRC is the primary reference)
 - Strength/intensity should reflect the text's tone (threats=high, cooperation=low tension)
 - Include at least the primary actors even if relationships aren't explicit
+- For locations, ALWAYS include latitude and longitude — use approximate center coordinates for countries/regions
 - Return valid JSON only, no explanation text
 
 Respond with ONLY a JSON object matching this schema:
@@ -82,7 +93,7 @@ Respond with ONLY a JSON object matching this schema:
   "actors": [...],
   "relationships": [...],
   "tensions": [...],
-  "locations": [...]
+  "locations": [{"name": "...", "latitude": 0.0, "longitude": 0.0, "region": "...", "country": "..."}]
 }`;
 
 /**
@@ -120,15 +131,89 @@ export async function extractEntitiesFromEvent(event: OSINTEvent): Promise<Extra
     if (!parsed || typeof parsed !== 'object') return empty;
 
     const obj = parsed as Record<string, unknown>;
+
+    // Parse locations — handle both string[] (old) and object[] (new) formats
+    let locations: ExtractedLocation[] = [];
+    if (Array.isArray(obj.locations)) {
+      locations = (obj.locations as unknown[]).map(loc => {
+        if (typeof loc === 'string') {
+          // Old format: just a name string — geocode via Nominatim fallback
+          return { name: loc, latitude: 0, longitude: 0 };
+        }
+        const l = loc as Record<string, unknown>;
+        return {
+          name: (l.name as string) ?? '',
+          latitude: Number(l.latitude) || 0,
+          longitude: Number(l.longitude) || 0,
+          region: l.region as string | undefined,
+          country: l.country as string | undefined,
+        };
+      }).filter(l => l.name.length > 0);
+    }
+
+    // Geocode any locations with missing coordinates via Nominatim
+    for (const loc of locations) {
+      if (loc.latitude === 0 && loc.longitude === 0 && loc.name) {
+        const coords = await geocodeViaNominatim(loc.name);
+        if (coords) {
+          loc.latitude = coords.lat;
+          loc.longitude = coords.lng;
+        }
+      }
+    }
+
     return {
       actors: Array.isArray(obj.actors) ? obj.actors as ExtractedActor[] : [],
       relationships: Array.isArray(obj.relationships) ? obj.relationships as ExtractedRelationship[] : [],
       tensions: Array.isArray(obj.tensions) ? obj.tensions as ExtractedTension[] : [],
-      locations: Array.isArray(obj.locations) ? obj.locations as string[] : [],
+      locations,
     };
   } catch (err) {
     console.warn(`[OSINT-Extract] LLM extraction failed for "${event.title}":`, err instanceof Error ? err.message : err);
     return empty;
+  }
+}
+
+// ── Nominatim Geocoding Fallback ───────────────────────────────────────────
+
+// Simple in-memory cache to avoid hammering Nominatim (respects 1 req/sec policy)
+const geocodeCache = new Map<string, { lat: number; lng: number } | null>();
+let lastNominatimCall = 0;
+
+/**
+ * Geocode a location name using OpenStreetMap Nominatim (free, no API key).
+ * Respects 1 request/second rate limit. Caches results.
+ */
+async function geocodeViaNominatim(name: string): Promise<{ lat: number; lng: number } | null> {
+  const cacheKey = name.toLowerCase().trim();
+  if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey) ?? null;
+
+  // Rate limit: 1 request per second
+  const now = Date.now();
+  const wait = Math.max(0, 1100 - (now - lastNominatimCall));
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastNominatimCall = Date.now();
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=1`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Bastion-OSINT/1.0 (https://bastion.vitalpoint.ai)' },
+    });
+    if (!res.ok) {
+      geocodeCache.set(cacheKey, null);
+      return null;
+    }
+    const data = await res.json() as Array<{ lat: string; lon: string }>;
+    if (data.length === 0) {
+      geocodeCache.set(cacheKey, null);
+      return null;
+    }
+    const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    geocodeCache.set(cacheKey, result);
+    return result;
+  } catch {
+    geocodeCache.set(cacheKey, null);
+    return null;
   }
 }
 
@@ -137,6 +222,7 @@ export async function extractEntitiesFromEvent(event: OSINTEvent): Promise<Extra
 /**
  * Full pipeline: extract entities from OSINT event, then sync to Neo4j graph.
  * Creates actor nodes, relationship edges, and tension edges.
+ * Also updates the event's location in PostgreSQL if extracted.
  */
 export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
   actorsCreated: number;
@@ -147,6 +233,21 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
 
   const extraction = await extractEntitiesFromEvent(event);
   if (extraction.actors.length === 0) return stats;
+
+  // Update event's location in PostgreSQL if we extracted one and it was missing
+  const primaryLocation = extraction.locations.find(l => l.latitude !== 0 && l.longitude !== 0);
+  if (primaryLocation && !event.location) {
+    try {
+      const { getPool } = await import('../lib/database.js');
+      const pool = getPool();
+      await pool.query(
+        `UPDATE osint_events SET location = $1 WHERE id = $2`,
+        [JSON.stringify(primaryLocation), event.id],
+      );
+    } catch (err) {
+      console.warn(`[OSINT-Extract] Failed to update event location:`, err);
+    }
+  }
 
   try {
     const { executeWriteQuery } = await import('../graph/neo4j-client.js');
