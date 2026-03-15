@@ -12,6 +12,8 @@ import RSSParser from 'rss-parser';
 import { osintFeedStore } from '../jpp/osint-feed-store.js';
 import { osintEventStore } from '../graph/osint/event-store.js';
 import { notifyCOPChange } from '../cop/index.js';
+import { extractLocation } from './osint-graph-sync.js';
+import { extractAndSyncToGraph } from './osint-entity-extractor.js';
 import { getPool } from '../lib/database.js';
 import type { OSINTEventInput } from '../graph/osint/types.js';
 import type { OSINTFeedConfig } from '../jpp/osint-feed-store.js';
@@ -82,6 +84,10 @@ async function fetchRSSFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
       }
     }
 
+    // Extract geo-location from title + description
+    const fullText = `${item.title ?? ''} ${item.contentSnippet ?? item.content ?? item.summary ?? ''}`;
+    const location = extractLocation(fullText) ?? undefined;
+
     events.push({
       title: item.title ?? 'Untitled',
       description: item.contentSnippet ?? item.content ?? item.summary ?? '',
@@ -89,6 +95,7 @@ async function fetchRSSFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
       sourceUrl: item.link,
       sourceName: feed.sourceName,
       publishedAt: pubDate,
+      location,
       actors: item.creator ? [item.creator] : [],
       tags,
       rawContent: item.content ?? '',
@@ -121,13 +128,17 @@ async function fetchAPIFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
 
   return items.map((item: unknown) => {
     const obj = item as Record<string, unknown>;
+    const title = (obj.title as string) ?? 'Untitled';
+    const description = (obj.description as string) ?? (obj.summary as string) ?? '';
+    const location = extractLocation(`${title} ${description}`) ?? undefined;
     return {
-      title: (obj.title as string) ?? 'Untitled',
-      description: (obj.description as string) ?? (obj.summary as string) ?? '',
+      title,
+      description,
       sourceType: 'news' as const,
       sourceUrl: (obj.url as string) ?? (obj.link as string),
       sourceName: feed.sourceName,
       publishedAt: obj.publishedAt ? new Date(obj.publishedAt as string) : new Date(),
+      location,
       actors: Array.isArray(obj.actors) ? obj.actors as string[] : [],
       tags: Array.isArray(obj.tags) ? obj.tags as string[] : [],
       rawContent: (obj.content as string) ?? '',
@@ -253,9 +264,14 @@ class FeedPoller {
       item.workspaceId = feed.problemSetId;
 
       try {
-        await osintEventStore.createEvent(item);
+        const storedEvent = await osintEventStore.createEvent(item);
         stored++;
         lastGuid = (item.metadata as Record<string, unknown>)?.guid as string ?? item.sourceUrl ?? null;
+
+        // Extract entities via LLM and sync to knowledge graph (non-blocking)
+        extractAndSyncToGraph(storedEvent).catch(err =>
+          console.warn(`[FeedPoller] Entity extraction/graph sync failed for "${item.title}":`, err),
+        );
       } catch (err) {
         console.warn(`[FeedPoller] Failed to store event "${item.title}":`, err);
       }
