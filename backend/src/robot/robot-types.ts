@@ -465,4 +465,8 @@ export interface ConnectedBridge {
   last_heartbeat: number;
   /** Robot IDs currently proxied through this bridge */
   connected_robots: string[];
+  /** Problem set this bridge is associated with (for COP notifications) */
+  problemSetId?: string;
+  /** Alias for problemSetId */
+  workspaceId?: string;
 }

@@ -545,6 +545,25 @@ export class DiscoveryService {
     }
   }
 
+  /**
+   * Ingest a discovery event reported by a local bridge agent.
+   * Routes through the standard onboarding pipeline with origin='bridge'.
+   */
+  async ingestBridgeDiscovery(event: DiscoveryEvent): Promise<{ success: boolean; resourceId?: string }> {
+    if (!this.pipeline) return { success: false };
+
+    const result = await this.pipeline.processDiscoveryEvent(event, this.scope);
+    if (result.success) {
+      this.publishScanEvent('discovery.device.bridge_reported', {
+        event: 'bridge_discovery',
+        transportType: event.transportType,
+        rawIdentifier: event.rawIdentifier,
+        resourceId: result.resourceId,
+      });
+    }
+    return result;
+  }
+
   // -------------------------------------------------------------------------
   // Interface restrictions
   // -------------------------------------------------------------------------

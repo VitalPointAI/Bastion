@@ -143,6 +143,11 @@ export class RobotMissionService {
     console.log(`[RobotMissionService] Bridge registered: ${bridge_id} (DID: ${did})`);
   }
 
+  /** Get bridge info by bridge_id. Returns undefined if not connected. */
+  getBridgeInfo(bridge_id: string): ConnectedBridge | undefined {
+    return this.connectedBridges.get(bridge_id);
+  }
+
   /** Handle bridge WebSocket close — remove from connected bridges map. */
   handleBridgeDisconnect(bridge_id: string): void {
     this.connectedBridges.delete(bridge_id);
