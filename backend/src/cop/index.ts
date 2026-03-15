@@ -142,11 +142,17 @@ function wireGenerationTrigger(_triggerHandler: TriggerHandler): void {
           workspaceId: data.workspaceId,
           limit: 100,
         });
-        const osintDocs = osintEvents.map(evt => ({
-          id: evt.id,
-          content: `[OSINT ${evt.sourceType?.toUpperCase() ?? 'INTEL'}] ${evt.title}\n${evt.description ?? ''}\nSource: ${evt.sourceName ?? 'unknown'}\nActors: ${(evt.actors ?? []).join(', ')}\nTags: ${(evt.tags ?? []).join(', ')}`,
-          type: 'general',  // 'general' passes through all sub-agent doc filters
-        }));
+        const osintDocs = osintEvents.map(evt => {
+          const loc = evt.location as { name?: string; latitude?: number; longitude?: number } | null;
+          const locStr = loc?.latitude && loc?.longitude
+            ? `\nLocation: ${loc.name ?? 'unknown'} (${loc.latitude}, ${loc.longitude})`
+            : '';
+          return {
+            id: evt.id,
+            content: `[OSINT ${evt.sourceType?.toUpperCase() ?? 'INTEL'}] ${evt.title}\n${evt.description ?? ''}\nSource: ${evt.sourceName ?? 'unknown'}\nActors: ${(evt.actors ?? []).join(', ')}\nTags: ${(evt.tags ?? []).join(', ')}${locStr}`,
+            type: 'general',  // 'general' passes through all sub-agent doc filters
+          };
+        });
         if (osintDocs.length > 0) {
           documents = [...documents, ...osintDocs];
           console.log(`[COP] Added ${osintDocs.length} OSINT events as documents for sub-agents`);

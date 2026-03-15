@@ -557,11 +557,17 @@ export const agentHandlers = {
           workspaceId: body.workspaceId,
           limit: 100,
         });
-        const osintDocs = osintEvents.map(evt => ({
-          id: evt.id,
-          content: `[OSINT ${evt.sourceType?.toUpperCase() ?? 'INTEL'}] ${evt.title}\n${evt.description ?? ''}\nSource: ${evt.sourceName ?? 'unknown'}\nActors: ${(evt.actors ?? []).join(', ')}\nTags: ${(evt.tags ?? []).join(', ')}`,
-          type: 'general',
-        }));
+        const osintDocs = osintEvents.map(evt => {
+          const loc = evt.location as { name?: string; latitude?: number; longitude?: number } | null;
+          const locStr = loc?.latitude && loc?.longitude
+            ? `\nLocation: ${loc.name ?? 'unknown'} (${loc.latitude}, ${loc.longitude})`
+            : '';
+          return {
+            id: evt.id,
+            content: `[OSINT ${evt.sourceType?.toUpperCase() ?? 'INTEL'}] ${evt.title}\n${evt.description ?? ''}\nSource: ${evt.sourceName ?? 'unknown'}\nActors: ${(evt.actors ?? []).join(', ')}\nTags: ${(evt.tags ?? []).join(', ')}${locStr}`,
+            type: 'general',
+          };
+        });
         if (osintDocs.length > 0) documents = [...documents, ...osintDocs];
       } catch {
         // Non-fatal
