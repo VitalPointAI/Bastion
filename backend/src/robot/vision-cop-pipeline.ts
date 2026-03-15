@@ -191,10 +191,10 @@ export async function updateAdversaryCOPLayer(
       controlMeasures: [],
       customAnnotations: symbols.map(s => ({
         id: s.entityId,
-        type: 'detection' as const,
-        text: `${s.designation} detected by ${s.detectedBy} (${(s.confidence * 100).toFixed(0)}% confidence)`,
+        svgFragment: '',
         position: s.position,
-        style: { color: '#ef4444' },
+        generatedBy: 'vision-detection-pipeline',
+        description: `${s.designation} detected by ${s.detectedBy} (${(s.confidence * 100).toFixed(0)}% confidence)`,
       })),
       temporalPhases: [],
       metadata: {
