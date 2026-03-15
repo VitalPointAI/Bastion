@@ -240,6 +240,18 @@ export class DocumentOrchestrator {
       throw new Error(`Orchestrator failed to produce report for document ${documentId}`);
     }
 
+    // Enrich report with geographic locations (non-blocking best-effort)
+    try {
+      const { geocodingService } = await import('../lib/geocoding-service.js');
+      const locations = await geocodingService.extractLocations(text.slice(0, 4000));
+      if (locations.length > 0) {
+        (result.report as Record<string, unknown>).locations = locations;
+        console.log(`[DocIntel] Extracted ${locations.length} location(s) from document ${documentId}`);
+      }
+    } catch {
+      // Non-fatal — location enrichment is best-effort
+    }
+
     return result.report;
   }
 
