@@ -529,9 +529,20 @@ export function COPTab({ problemSetId }: COPTabProps) {
             currentPhase={currentPhase || undefined}
             onLayersLoaded={handleLayersLoaded}
             resourceLayerVisible={resourceLayerVisible}
-            onResourceSelect={setSelectedResource}
+            onResourceSelect={(res) => {
+              // If this resource is a robot (autonomous or bridge), show the full robot card
+              if (res.isAutonomous || res.name?.startsWith('Bridge ')) {
+                // Find matching robot ID from resource name/DID
+                const robotId = res.name?.replace('Bridge ', 'bridge-') || res.did || res.id;
+                setSelectedRobotId(robotId);
+                setSelectedResource(null);
+              } else {
+                setSelectedResource(res);
+                setSelectedRobotId(null);
+              }
+            }}
             robotLayerVisible={robotLayerVisible}
-            onRobotClick={(id) => setSelectedRobotId(id)}
+            onRobotClick={(id) => { setSelectedRobotId(id); setSelectedResource(null); }}
           />
 
           {/* Generating spinner overlay */}
