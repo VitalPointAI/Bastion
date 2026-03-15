@@ -245,7 +245,7 @@ export class DocumentOrchestrator {
       const { geocodingService } = await import('../lib/geocoding-service.js');
       const locations = await geocodingService.extractLocations(text.slice(0, 4000));
       if (locations.length > 0) {
-        (result.report as Record<string, unknown>).locations = locations;
+        (result.report as unknown as Record<string, unknown>).locations = locations;
         console.log(`[DocIntel] Extracted ${locations.length} location(s) from document ${documentId}`);
       }
     } catch {
