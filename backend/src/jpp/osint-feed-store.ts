@@ -219,6 +219,22 @@ class OSINTFeedStore {
   }
 
   /**
+   * Get all active feeds (RSS, API, webhook — for the feed poller)
+   */
+  async getActiveFeeds(): Promise<OSINTFeedConfig[]> {
+    await this.ensureTable();
+    const pool = getPool();
+
+    const result = await pool.query(
+      `SELECT * FROM osint_feed_config
+       WHERE active = true
+       ORDER BY polling_interval_ms ASC`
+    );
+
+    return result.rows.map(row => this.rowToFeedConfig(row));
+  }
+
+  /**
    * Convert database row to OSINTFeedConfig
    */
   private rowToFeedConfig(row: Record<string, unknown>): OSINTFeedConfig {

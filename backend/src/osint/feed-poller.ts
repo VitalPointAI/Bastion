@@ -270,30 +270,4 @@ class FeedPoller {
   }
 }
 
-// Add getActiveFeeds method to feed store if it doesn't exist
-// We need ALL active feeds, not just RSS
-const originalGetFeeds = osintFeedStore.getActiveRSSFeeds.bind(osintFeedStore);
-if (!('getActiveFeeds' in osintFeedStore)) {
-  (osintFeedStore as unknown as Record<string, unknown>).getActiveFeeds = async function(): Promise<OSINTFeedConfig[]> {
-    // Use getActiveRSSFeeds pattern but for all types
-    const pool = getPool();
-    const result = await pool.query(
-      `SELECT * FROM osint_feed_config WHERE active = true ORDER BY polling_interval_ms ASC`,
-    );
-    return result.rows.map((row: Record<string, unknown>) => ({
-      id: row.id as string,
-      problemSetId: row.problem_set_id as string,
-      sourceName: row.source_name as string,
-      sourceType: row.source_type as OSINTFeedConfig['sourceType'],
-      endpointUrl: row.endpoint_url as string | null,
-      pollingIntervalMs: row.polling_interval_ms as number,
-      relevanceMode: row.relevance_mode as OSINTFeedConfig['relevanceMode'],
-      active: row.active as boolean,
-      config: (row.config as Record<string, unknown>) ?? {},
-      createdAt: new Date(row.created_at as string),
-    }));
-  };
-}
-void originalGetFeeds; // suppress unused warning
-
 export const feedPoller = new FeedPoller();

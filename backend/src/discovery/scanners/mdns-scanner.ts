@@ -69,7 +69,7 @@ export class MDNSScanner extends BaseScanner {
 
       for (const serviceType of SERVICE_TYPES) {
         const [name, protocol] = serviceType.split('.');
-        const browser = instance.find({ type: name.replace('_', ''), protocol: protocol?.replace('_', '') ?? 'tcp' });
+        const browser = instance.find({ type: name.replace('_', ''), protocol: (protocol?.replace('_', '') ?? 'tcp') as 'tcp' | 'udp' });
 
         browser.on('up', (service: { name?: string; host?: string; port?: number; addresses?: string[]; txt?: Record<string, string> }) => {
           const ip = service.addresses?.[0] ?? service.host ?? 'unknown';
