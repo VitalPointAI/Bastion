@@ -8,16 +8,58 @@ developed and tested without a physical robot.
 The Sphero SDK (sphero-sdk-raspberrypi-python) is NOT installed via pip;
 it is installed via git clone on the Jetson. Import is deferred to runtime
 so the rest of the codebase can be imported without the SDK present.
+
+Uses SpheroRvrObserver (synchronous/blocking API). The SDK is constructed
+and woken in a dedicated thread to avoid "event loop already running"
+conflicts. All subsequent SDK calls are dispatched to a thread pool.
 """
 from __future__ import annotations
 
 import asyncio
+import functools
 import math
-from typing import Optional, Tuple
+import threading
+import time
+from typing import Any, Optional, Tuple
 
 import structlog
 
 log = structlog.get_logger(__name__)
+
+
+def _init_sdk_in_thread(serial_port: str) -> Any:
+    """Construct and wake the SpheroRvrObserver in a dedicated thread.
+
+    The SDK internally calls asyncio.get_event_loop() for firmware checks,
+    so we create a throwaway loop for this thread before constructing.
+
+    Returns the rvr instance or None on failure.
+    """
+    try:
+        # SDK internals expect an event loop even in the Observer (sync) API
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        from sphero_sdk.observer.client.dal.serial_observer_dal import SerialObserverDal  # type: ignore
+
+        _orig_init = SerialObserverDal.__init__
+
+        def _patched_init(self_dal, port_id='/dev/ttyS0', baud=115200):
+            _orig_init(self_dal, port_id=serial_port, baud=baud)
+
+        SerialObserverDal.__init__ = _patched_init
+        try:
+            from sphero_sdk import SpheroRvrObserver  # type: ignore
+            rvr = SpheroRvrObserver()
+        finally:
+            SerialObserverDal.__init__ = _orig_init
+
+        rvr.wake()
+        time.sleep(2)
+        return rvr
+    except Exception as exc:  # noqa: BLE001
+        log.error("rvr_driver._init_sdk_in_thread.error", error=str(exc))
+        return None
 
 
 class RVRDriver:
@@ -27,6 +69,9 @@ class RVRDriver:
     Provides drive, LED control, and safe-stop operations. Wraps every SDK
     call in try/except so hardware failures never crash the mission client.
 
+    The SDK is initialized in a dedicated thread to avoid event-loop
+    conflicts, and all subsequent calls use run_in_executor.
+
     Args:
         serial_port: Serial device path (e.g. /dev/ttyTHS1).
         simulate: When True, log actions instead of calling the real SDK.
@@ -35,7 +80,7 @@ class RVRDriver:
     def __init__(self, serial_port: str, simulate: bool = False) -> None:
         self._serial_port = serial_port
         self._simulate = simulate
-        self._rvr = None  # Sphero SDK object, created in wake()
+        self._rvr: Any = None  # SpheroRvrObserver instance
 
         # Dead-reckoning state
         self._position: Tuple[float, float] = (0.0, 0.0)  # (x, y) room meters
@@ -44,6 +89,16 @@ class RVRDriver:
 
         if simulate:
             log.info("rvr_driver.simulate_mode", serial_port=serial_port)
+
+    # ------------------------------------------------------------------
+    # Helper: run blocking SDK call in executor
+    # ------------------------------------------------------------------
+
+    async def _run(self, fn: Any, *args: Any, **kwargs: Any) -> Any:
+        """Run a blocking SDK function in the default thread pool executor."""
+        loop = asyncio.get_running_loop()
+        call = functools.partial(fn, *args, **kwargs)
+        return await loop.run_in_executor(None, call)
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -56,15 +111,45 @@ class RVRDriver:
             await asyncio.sleep(0.1)
             return
 
+        log.info("rvr_driver.wake.calling", serial_port=self._serial_port)
         try:
-            from sphero_sdk import SpheroRvrAsync, SerialAsyncDal  # type: ignore
+            # Run SDK construction + wake in a plain thread (no asyncio loop)
+            # to avoid "This event loop is already running" from the SDK internals.
+            result: list = [None]
+            error: list = [None]
 
-            self._rvr = SpheroRvrAsync(dal=SerialAsyncDal(self._serial_port))
-            await self._rvr.wake()
-            await asyncio.sleep(2)
-            log.info("rvr_driver.wake", serial_port=self._serial_port)
+            def _thread_target():
+                try:
+                    result[0] = _init_sdk_in_thread(self._serial_port)
+                except Exception as exc:  # noqa: BLE001
+                    error[0] = exc
+
+            t = threading.Thread(target=_thread_target, daemon=True, name="sphero-init")
+            t.start()
+            # Wait up to 15 seconds for init
+            await asyncio.get_running_loop().run_in_executor(
+                None, lambda: t.join(timeout=15.0)
+            )
+
+            if t.is_alive():
+                log.error("rvr_driver.wake.timeout", serial_port=self._serial_port,
+                          msg="SDK init did not complete within 15s")
+                # Thread is stuck but daemon so it won't block shutdown
+                return
+
+            if error[0]:
+                log.error("rvr_driver.wake.error", error=str(error[0]))
+                return
+
+            if result[0] is None:
+                log.error("rvr_driver.wake.error", error="SDK init returned None")
+                return
+
+            self._rvr = result[0]
+            log.info("rvr_driver.wake.ok", serial_port=self._serial_port)
         except Exception as exc:  # noqa: BLE001
             log.error("rvr_driver.wake.error", error=str(exc))
+            self._rvr = None
 
     async def close(self) -> None:
         """Cleanly close the connection to the RVR+."""
@@ -74,7 +159,7 @@ class RVRDriver:
 
         if self._rvr is not None:
             try:
-                await self._rvr.close()
+                await self._run(self._rvr.close)
                 log.info("rvr_driver.close")
             except Exception as exc:  # noqa: BLE001
                 log.error("rvr_driver.close.error", error=str(exc))
@@ -113,7 +198,16 @@ class RVRDriver:
 
         try:
             self._heading = heading
-            await self._rvr.drive_with_heading(speed=speed, heading=heading, flags=0)
+            if self._rvr:
+                log.info("rvr_driver.drive.sending", speed=speed, heading=heading)
+                await self._run(
+                    self._rvr.drive_with_heading,
+                    speed=int(speed),
+                    heading=int(heading),
+                    flags=0,
+                )
+            else:
+                log.warning("rvr_driver.drive.no_rvr", msg="SDK not initialized, skipping")
             await asyncio.sleep(duration_sec)
             await self.safe_stop()
         except Exception as exc:  # noqa: BLE001
@@ -172,11 +266,13 @@ class RVRDriver:
             return
 
         try:
-            # RVR+ has multiple LED groups; set all to the same color
-            await self._rvr.set_all_leds(
-                led_group=0xFF,
-                led_brightness_values=[r, g, b] * 10,  # 10 LED groups × 3 channels
-            )
+            if self._rvr:
+                # RVR+ has multiple LED groups; set all to the same color
+                await self._run(
+                    self._rvr.set_all_leds,
+                    led_group=0xFF,
+                    led_brightness_values=[r, g, b] * 10,  # 10 LED groups × 3 channels
+                )
         except Exception as exc:  # noqa: BLE001
             log.error("rvr_driver.set_leds.error", error=str(exc))
 
@@ -208,7 +304,13 @@ class RVRDriver:
             return
 
         try:
-            await self._rvr.drive_with_heading(speed=0, heading=self._heading, flags=0)
+            if self._rvr:
+                await self._run(
+                    self._rvr.drive_with_heading,
+                    speed=0,
+                    heading=int(self._heading),
+                    flags=0,
+                )
         except Exception as exc:  # noqa: BLE001
             log.error("rvr_driver.safe_stop.error", error=str(exc))
 
@@ -227,10 +329,27 @@ class RVRDriver:
             return self._battery_pct
 
         try:
-            result = await self._rvr.get_battery_percentage()
-            pct = int(result.get("percentage", 100))
-            self._battery_pct = pct
-            return pct
+            if self._rvr is None:
+                return self._battery_pct
+
+            # Observer API uses callbacks; bridge with threading.Event
+            result_holder: dict = {}
+            done = threading.Event()
+
+            def _handler(percentage: dict) -> None:
+                result_holder.update(percentage)
+                done.set()
+
+            await self._run(self._rvr.get_battery_percentage, handler=_handler)
+            # Wait up to 2 seconds for the callback
+            got = await asyncio.get_running_loop().run_in_executor(
+                None, lambda: done.wait(timeout=2.0)
+            )
+            if got and "percentage" in result_holder:
+                pct = int(result_holder["percentage"])
+                self._battery_pct = pct
+                return pct
+            return self._battery_pct
         except Exception as exc:  # noqa: BLE001
             log.warning("rvr_driver.get_battery_pct.error", error=str(exc))
             return self._battery_pct

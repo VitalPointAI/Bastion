@@ -226,7 +226,7 @@ export class RobotMissionService {
         );
         break;
       default:
-        console.warn('[RobotMissionService] Unknown message type:', (msg as { type: string }).type);
+        console.warn('[RobotMissionService] Unknown message type:', (msg as { type: string }).type, JSON.stringify(msg).slice(0, 200));
         this.sendError(ws, `Unknown message type: ${(msg as { type: string }).type}`);
     }
   }
@@ -348,6 +348,7 @@ export class RobotMissionService {
     const { robot_id, position, heading, battery } = msg;
 
     if (!robot_id || !position) {
+      console.warn(`[RobotMissionService] telemetry rejected: robot_id=${robot_id}, position=${JSON.stringify(position)}`);
       this.sendError(ws, 'telemetry: robot_id and position are required');
       return;
     }
@@ -356,6 +357,8 @@ export class RobotMissionService {
     if (robot) {
       robot.last_heartbeat = Date.now();
       robot.latest_telemetry = { position, heading, battery };
+    } else {
+      console.warn(`[RobotMissionService] telemetry for unknown robot: ${robot_id} (known: ${[...this.connectedRobots.keys()].join(',')})`);
     }
 
     // Persist heartbeat timestamp
