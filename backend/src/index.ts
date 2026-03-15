@@ -152,10 +152,11 @@ app.use('/api/auth', (req, res, next) => {
   // Single-session enforcement: invalidate all other sessions on login
   // When a user logs in, delete all their previous sessions so they can
   // only be authenticated in one place at a time.
-  if (req.method === 'POST' && req.path === '/login/finish') {
+  if (req.method === 'POST' && (req.path === '/login/finish' || req.url === '/login/finish')) {
     const originalJson = res.json.bind(res);
     res.json = (body: unknown) => {
       const responseBody = body as Record<string, unknown>;
+      console.log(`[Auth] login/finish intercepted — success: ${responseBody?.success}, codename: ${responseBody?.codename}, status: ${res.statusCode}`);
       if (res.statusCode < 400 && responseBody?.success) {
         // The library just created a new session (the newest row in anon_sessions).
         // Delete all OTHER sessions for this user, keeping only the most recent.
