@@ -154,8 +154,7 @@ export async function updateAdversaryCOPLayer(
   if (symbols.length === 0) return;
 
   try {
-    const { getLayerStore } = await import('../cop/layers/layer-store.js');
-    const layerStore = getLayerStore();
+    const { layerStore } = await import('../cop/layers/layer-store.js');
 
     // Find or create the adversary detection layer
     const existingLayers = await layerStore.queryLayers({
