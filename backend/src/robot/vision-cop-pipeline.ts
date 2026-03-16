@@ -65,6 +65,27 @@ const THREAT_CLASS_MAP: Record<string, {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
     designation: 'Type 99 Main Battle Tank', symbolSet: '10', entity: '120100',
   },
+  // Phase 48 additions — adversary classes for Taiwan contingency training
+  't-99': {
+    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
+    designation: 'Type 99 Main Battle Tank', symbolSet: '10', entity: '120100',
+  },
+  'zbd-04': {
+    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
+    designation: 'ZBD-04 Infantry Fighting Vehicle', symbolSet: '10', entity: '120200',
+  },
+  'zbd04': {
+    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
+    designation: 'ZBD-04 Infantry Fighting Vehicle', symbolSet: '10', entity: '120200',
+  },
+  'btr-82': {
+    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
+    designation: 'BTR-82 Armored Personnel Carrier', symbolSet: '10', entity: '120200',
+  },
+  'btr82': {
+    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
+    designation: 'BTR-82 Armored Personnel Carrier', symbolSet: '10', entity: '120200',
+  },
   // Generic YOLO classes that map to threats
   'tank': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
@@ -165,6 +186,102 @@ export function extractThreatSymbols(
   }
 
   return symbols;
+}
+
+// ── Multi-Robot Corroboration ──────────────────────────────────────────────
+
+const VISION_PIPELINE_WEIGHT = 0.70;
+
+/**
+ * Fuse confidence scores from multiple robot detections of the same threat.
+ *
+ * Uses the Phase 47 weighted complementary probability formula:
+ *   fused = 1 - product(1 - d.confidence * VISION_PIPELINE_WEIGHT)
+ *
+ * Confidence increases as more independent sources corroborate a detection.
+ */
+export function fuseDetectionConfidence(
+  detections: Array<{ confidence: number }>,
+): number {
+  const product = detections.reduce(
+    (prod, d) => prod * (1 - d.confidence * VISION_PIPELINE_WEIGHT),
+    1,
+  );
+  return 1 - product;
+}
+
+/**
+ * Determine corroboration status for visual encoding on the COP.
+ *
+ * - ghosted: single-source or low confidence (< 0.5) — semi-transparent symbol
+ * - low:     partially corroborated (0.5–0.85) — muted symbol
+ * - solid:   multi-source corroborated (> 0.85) — full opacity symbol
+ */
+export function corroborationStatus(
+  confidence: number,
+): 'ghosted' | 'low' | 'solid' {
+  if (confidence < 0.5) return 'ghosted';
+  if (confidence <= 0.85) return 'low';
+  return 'solid';
+}
+
+/**
+ * Check if two detections are of the same threat.
+ * Matches on class category and position within 50m radius.
+ */
+function isSameThreat(
+  existing: COPSymbol,
+  incoming: COPSymbol,
+): boolean {
+  if (existing.type !== incoming.type) return false;
+  if (existing.affiliation !== incoming.affiliation) return false;
+
+  // Approximate 50m radius check (1 degree lat ≈ 111km, 50m ≈ 0.00045 deg)
+  const LAT_DEG_PER_METER = 1 / 111000;
+  const latDiff = Math.abs(existing.position.lat - incoming.position.lat);
+  const lngDiff = Math.abs(existing.position.lng - incoming.position.lng);
+  const distApprox = Math.sqrt(latDiff ** 2 + lngDiff ** 2) / LAT_DEG_PER_METER;
+
+  return distApprox < 50;
+}
+
+/**
+ * Corroborate incoming symbols against existing symbols.
+ *
+ * When a new detection matches an existing one (same class + within 50m),
+ * fuses confidence instead of creating a duplicate symbol.
+ * Returns de-duplicated list with fused confidence on corroborated threats.
+ */
+export function corroborateDetections(
+  incoming: COPSymbol[],
+  existing: COPSymbol[],
+): COPSymbol[] {
+  const result: COPSymbol[] = [...existing];
+
+  for (const symbol of incoming) {
+    const matchIdx = result.findIndex(e => isSameThreat(e, symbol));
+    if (matchIdx >= 0) {
+      // Corroborate: fuse confidence from both sources
+      const fused = fuseDetectionConfidence([
+        { confidence: result[matchIdx].confidence },
+        { confidence: symbol.confidence },
+      ]);
+      result[matchIdx] = {
+        ...result[matchIdx],
+        confidence: fused,
+        detectedBy: `${result[matchIdx].detectedBy},${symbol.detectedBy}`,
+        detectedAt: symbol.detectedAt,
+      };
+    } else {
+      // New detection — apply single-source weight
+      result.push({
+        ...symbol,
+        confidence: fuseDetectionConfidence([{ confidence: symbol.confidence }]),
+      });
+    }
+  }
+
+  return result;
 }
 
 // ── COP Layer Update ───────────────────────────────────────────────────────
