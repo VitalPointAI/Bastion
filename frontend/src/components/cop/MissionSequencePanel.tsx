@@ -20,6 +20,8 @@ type SequencePhase =
   | 'set'
   | 'authorize'
   | 'engage'
+  | 'bda'
+  | 'withdraw'
   | 'complete';
 
 interface LogEntry {
@@ -49,6 +51,8 @@ const PHASE_CONFIG: Record<SequencePhase, { color: string; bg: string; label: st
   set: { color: '#eab308', bg: 'rgba(234,179,8,0.15)', label: 'SET' },
   authorize: { color: '#f97316', bg: 'rgba(249,115,22,0.15)', label: 'AUTHORIZE' },
   engage: { color: '#dc2626', bg: 'rgba(220,38,38,0.25)', label: 'ENGAGE' },
+  bda: { color: '#a855f7', bg: 'rgba(168,85,247,0.15)', label: 'BDA' },
+  withdraw: { color: '#6366f1', bg: 'rgba(99,102,241,0.15)', label: 'WITHDRAW' },
   complete: { color: '#22c55e', bg: 'rgba(34,197,94,0.15)', label: 'COMPLETE' },
 };
 
@@ -310,7 +314,7 @@ export function MissionSequencePanel() {
 // ─── Phase Progress Bar ─────────────────────────────────────────────────────
 
 const PHASE_ORDER: SequencePhase[] = [
-  'hold', 'recon', 'contact', 'overwatch', 'advance', 'set', 'authorize', 'engage', 'complete',
+  'hold', 'recon', 'contact', 'overwatch', 'advance', 'set', 'authorize', 'engage', 'bda', 'withdraw', 'complete',
 ];
 
 function PhaseProgressBar({ phase }: { phase: SequencePhase }) {

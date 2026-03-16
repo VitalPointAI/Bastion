@@ -35,6 +35,8 @@ export type SequencePhase =
   | 'set'
   | 'authorize'
   | 'engage'
+  | 'bda'
+  | 'withdraw'
   | 'complete';
 
 interface SequenceConfig {
@@ -83,22 +85,42 @@ const IRON_BASTION_DEFAULTS: SequenceConfig = {
   leaderId: 'alpha',
   followerIds: ['bravo', 'charlie'],
   problemSetId: 'default',
-  // Home base: southwest corner of room
-  homeBase: { x: 0.5, y: 0.5 },
-  // Recon area: northeast quadrant where tanks are expected
-  //   Expected enemy positions: T1 ~(3.5, 4.0), T2 ~(4.0, 3.5)
-  reconArea: { x_min: 2.5, y_min: 2.5, x_max: 4.5, y_max: 4.5 },
-  // Overwatch: SW of tanks, offset west so NOT in any follower firing line
-  //   Fire line check: F1→T1 crosses x≈3.1 at this y, F2→T2 crosses x≈4.0
-  //   Overwatch at x=1.5 is well clear of both firing corridors
-  overwatchPosition: { x: 1.5, y: 3.5 },
-  // Flanking positions: followers approach from the south, 2m apart
-  //   F1 fires NE toward T1 (3.5,4.0), F2 fires NW toward T2 (4.0,3.5)
-  //   Neither firing line passes near overwatch (1.5, 3.5)
+
+  // ── All positions mapped to actual Taipei Zhongzheng District streets ──
+  // Room 5×5m → geo via calibration-profiles.json (25.042-25.048°N, 121.512-121.518°E)
+  //
+  // Road grid (room coords):
+  //   N-S: Hengyang Rd x=0.3, Xiangyang Rd x=1.4, Guanqian Rd x=2.5,
+  //        Chongqing S Rd x=1.1, Chengde Rd x=3.4, Gongyuan Rd x=4.4
+  //   E-W: Wuchang St y=1.7, Nanyang St y=2.0, Hankou St y=2.6,
+  //        Xuchang St y=2.9, Kaifeng St y=3.3, Zhongxiao W Rd y=4.4
+  //
+  // Enemy tanks advancing south on Zhongxiao West Rd (y≈4.4):
+  //   T1 on Chengde Rd (3.4, 4.4), T2 on Chongqing S Rd (1.1, 4.4)
+
+  // Home base: Hengyang Road south end
+  homeBase: { x: 0.3, y: 0.5 },
+
+  // Recon area: northern half — sweep streets where tanks are expected
+  reconArea: { x_min: 0.5, y_min: 2.5, x_max: 4.5, y_max: 4.8 },
+
+  // Overwatch: Changyang Parking Tower on Guanqian Rd — multi-storey ELEVATED
+  // position with sight lines north to Zhongxiao West Rd
+  // Fire line check:
+  //   F1 (1.4,2.0)→T2 (1.1,4.4): at OW y=2.9 → x≈1.27, OW x=2.1 → 0.8m clear ✓
+  //   F2 (3.4,3.3)→T1 (3.4,4.4): at OW y=2.9 → x=3.4,  OW x=2.1 → 1.3m clear ✓
+  overwatchPosition: { x: 2.1, y: 2.9 },
+
+  // Firing positions: on real intersections, flanking the enemy axis
+  //   F1: Xiangyang Rd / Nanyang St intersection — fires N toward T2
+  //   F2: Chengde Rd / Kaifeng St intersection — fires N toward T1
+  //   Spacing: 2.3m (different streets, mutual defilade)
+  //   Neither firing corridor passes through overwatch
   firingPositions: [
-    { x: 2.5, y: 1.5 },  // F1 (bravo)  — south-center, flanking shot NE
-    { x: 4.5, y: 1.5 },  // F2 (charlie) — south-east, flanking shot NW
+    { x: 1.4, y: 2.0 },  // F1 (bravo)  — Xiangyang/Nanyang, fires N up corridor
+    { x: 3.4, y: 3.3 },  // F2 (charlie) — Chengde/Kaifeng, fires N up Chengde
   ],
+
   reconSpeed: 80,    // Slow for stealth recon
   advanceSpeed: 120, // Moderate for tactical advance
   issuedBy: 'did:near:bastion.testnet',
@@ -294,14 +316,40 @@ class MissionSequenceOrchestrator extends EventEmitter {
 
     state.phase = 'advance';
     state.phaseStartedAt = new Date().toISOString();
-    this.logPhase(state, 'ADVANCE phase — Followers moving to firing positions');
+    this.logPhase(state, 'ADVANCE phase — Followers moving to firing positions via road routes');
 
     const svc = getRobotMissionService();
+
+    // Road-following waypoint routes (room coords mapped to real Taipei streets)
+    // Followers start at home base (0.3, 0.5) on Hengyang Road
+    //
+    // F1 (bravo) route → Xiangyang/Nanyang intersection (1.4, 2.0):
+    //   Home → N on Hengyang Rd → E on Wuchang St → N on Xiangyang → Nanyang St
+    //
+    // F2 (charlie) route → Chengde/Kaifeng intersection (3.4, 3.3):
+    //   Home → N on Hengyang Rd → E on Hankou St → N on Guanqian → E on Kaifeng → Chengde
+    const advanceRoutes: Array<Array<{ x: number; y: number }>> = [
+      // F1: Home → Hengyang/Wuchang → Xiangyang/Wuchang → Xiangyang/Nanyang
+      [
+        { x: 0.3, y: 1.7 },  // N on Hengyang to Wuchang St
+        { x: 1.4, y: 1.7 },  // E on Wuchang to Xiangyang Rd
+        { x: 1.4, y: 2.0 },  // N on Xiangyang to Nanyang St — FIRING POS
+      ],
+      // F2: Home → Hengyang/Wuchang → Hankou → Guanqian/Hankou → Guanqian/Kaifeng → Chengde/Kaifeng
+      [
+        { x: 0.3, y: 1.7 },  // N on Hengyang to Wuchang St
+        { x: 0.3, y: 2.6 },  // N on Hengyang to Hankou St
+        { x: 2.5, y: 2.6 },  // E on Hankou to Guanqian Rd
+        { x: 2.5, y: 3.3 },  // N on Guanqian to Kaifeng St
+        { x: 3.4, y: 3.3 },  // E on Kaifeng to Chengde Rd — FIRING POS
+      ],
+    ];
 
     const followerMissions: string[] = [];
 
     for (let i = 0; i < state.config.followerIds.length; i++) {
       const followerId = state.config.followerIds[i];
+      const route = advanceRoutes[i] ?? advanceRoutes[0];
       const firingPos = state.config.firingPositions[i] ?? state.config.firingPositions[0];
       const missionId = randomUUID();
 
@@ -313,7 +361,7 @@ class MissionSequenceOrchestrator extends EventEmitter {
         robot_id: followerId,
         command: 'patrol_route',
         params: {
-          waypoints: [firingPos],
+          waypoints: route,
           speed: state.config.advanceSpeed,
           autonomy_policy: { max_speed: 255, restricted_actions: [] },
         },
@@ -322,7 +370,7 @@ class MissionSequenceOrchestrator extends EventEmitter {
         problem_set_id: state.config.problemSetId,
       });
 
-      this.logPhase(state, `Follower ${followerId} advancing to firing position (${firingPos.x}, ${firingPos.y})`);
+      this.logPhase(state, `Follower ${followerId} advancing via road route to (${firingPos.x}, ${firingPos.y})`);
     }
 
     this.publishUpdate(state);
@@ -517,15 +565,182 @@ class MissionSequenceOrchestrator extends EventEmitter {
 
     this.publishUpdate(state);
 
-    // Monitor for completion
-    setTimeout(() => {
-      if (state.phase === 'engage') {
+    // After engagement effects complete (red LED flash ~5s), advance to BDA
+    setTimeout(() => this.executeBDA(seqId), 8000);
+  }
+
+  private async executeBDA(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state || state.phase !== 'engage') return;
+
+    state.phase = 'bda';
+    state.phaseStartedAt = new Date().toISOString();
+    this.logPhase(state, 'BDA phase — Leader conducting battle damage assessment');
+
+    // Update adversary COP symbols to destroyed status (SIDC position 7 = '5')
+    await this.markThreatsDestroyed(state);
+
+    // Log BDA report
+    const threatCount = state.detectedThreats.length;
+    this.logPhase(state, `BDA REPORT: ${threatCount} enemy armored vehicle(s) destroyed`);
+    this.logPhase(state, 'All targets neutralized — area clear');
+    this.publishUpdate(state);
+
+    // Advance to withdrawal after BDA report
+    setTimeout(() => this.executeWithdrawal(seqId), 5000);
+  }
+
+  /**
+   * Update adversary COP layer symbols to destroyed status.
+   * Changes SIDC position 7 from '0' (present) to '5' (destroyed).
+   */
+  private async markThreatsDestroyed(state: SequenceState): Promise<void> {
+    try {
+      const { layerStore } = await import('../cop/layers/layer-store.js');
+
+      // Find the vision-generated adversary layer
+      const layers = await layerStore.queryLayers({
+        workspaceId: state.config.problemSetId || 'default',
+        layerType: 'force_disposition',
+      });
+
+      for (const layer of layers) {
+        const meta = layer.spec?.metadata as Record<string, unknown> | undefined;
+        if (meta?.generatedBy !== 'vision-detection-pipeline') continue;
+
+        const symbols = layer.spec?.symbols;
+        if (!symbols || !Array.isArray(symbols)) continue;
+
+        // Update each hostile symbol's SIDC: change position 7 from '0' to '5' (destroyed)
+        let updated = false;
+        for (const sym of symbols) {
+          if (sym.sidc && sym.sidc.length === 20 && sym.affiliation === 'enemy') {
+            const chars = sym.sidc.split('');
+            chars[6] = '5'; // Position 7 (0-indexed: 6) = destroyed
+            sym.sidc = chars.join('');
+            sym.designation = `${sym.designation} [DESTROYED]`;
+            updated = true;
+          }
+        }
+
+        if (updated) {
+          const updatedMeta = { ...(meta ?? {}), generatedBy: 'vision-detection-pipeline', generatedAt: new Date().toISOString(), sourceDocumentIds: (meta?.sourceDocumentIds ?? []) as string[], ccoValidated: false };
+          await layerStore.updateLayerSpec(layer.id, {
+            ...layer.spec!,
+            symbols,
+            metadata: updatedMeta,
+          });
+          this.logPhase(state, `COP updated — enemy symbols marked DESTROYED`);
+        }
+      }
+    } catch (err) {
+      this.logPhase(state, `Failed to update COP symbols: ${err}`);
+    }
+  }
+
+  private async executeWithdrawal(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state || state.phase !== 'bda') return;
+
+    state.phase = 'withdraw';
+    state.phaseStartedAt = new Date().toISOString();
+    this.logPhase(state, 'WITHDRAW phase — All elements returning to home base');
+
+    const svc = getRobotMissionService();
+    const home = state.config.homeBase;
+
+    // Withdrawal routes (reverse of advance, following roads)
+    // F1 at Xiangyang/Nanyang (1.4, 2.0) → Wuchang → Hengyang → Home
+    // F2 at Chengde/Kaifeng (3.4, 3.3) → Kaifeng → Guanqian → Hankou → Hengyang → Home
+    // Leader at Parking Tower (2.1, 2.9) → Guanqian → Hankou → Hengyang → Home
+    const withdrawalRoutes: Record<string, Array<{ x: number; y: number }>> = {
+      [state.config.leaderId]: [
+        { x: 2.5, y: 2.6 },  // S on Guanqian to Hankou St
+        { x: 0.3, y: 2.6 },  // W on Hankou to Hengyang Rd
+        { x: 0.3, y: 0.5 },  // S on Hengyang to home
+      ],
+      [state.config.followerIds[0]]: [
+        { x: 1.4, y: 1.7 },  // S on Xiangyang to Wuchang St
+        { x: 0.3, y: 1.7 },  // W on Wuchang to Hengyang Rd
+        { x: 0.3, y: 0.5 },  // S on Hengyang to home
+      ],
+      [state.config.followerIds[1]]: [
+        { x: 2.5, y: 3.3 },  // W on Kaifeng to Guanqian Rd
+        { x: 2.5, y: 2.6 },  // S on Guanqian to Hankou St
+        { x: 0.3, y: 2.6 },  // W on Hankou to Hengyang Rd
+        { x: 0.3, y: 0.5 },  // S on Hengyang to home
+      ],
+    };
+
+    // Dispatch patrol_route for all three robots to return home
+    const allRobots = [state.config.leaderId, ...state.config.followerIds];
+    for (const robotId of allRobots) {
+      const route = withdrawalRoutes[robotId] ?? [home];
+      const missionId = randomUUID();
+      state.missions[`withdraw_${robotId}`] = missionId;
+
+      await svc.dispatchMission({
+        mission_id: missionId,
+        robot_id: robotId,
+        command: 'patrol_route',
+        params: {
+          waypoints: route,
+          speed: state.config.advanceSpeed,
+          autonomy_policy: { max_speed: 255, restricted_actions: [] },
+        },
+        issued_by: state.config.issuedBy,
+        timestamp: new Date().toISOString(),
+        problem_set_id: state.config.problemSetId,
+      });
+
+      this.logPhase(state, `${robotId} withdrawing to home base via road route`);
+    }
+
+    this.publishUpdate(state);
+
+    // Monitor for all robots to complete withdrawal
+    this.monitorWithdrawal(seqId, allRobots);
+  }
+
+  private monitorWithdrawal(seqId: string, robotIds: string[]): void {
+    const checkInterval = setInterval(async () => {
+      const state = this.sequences.get(seqId);
+      if (!state || state.phase !== 'withdraw') {
+        clearInterval(checkInterval);
+        return;
+      }
+
+      const svc = getRobotMissionService();
+      const robots = svc.getConnectedRobots();
+
+      const allHome = robotIds.every((rid) => {
+        const robot = robots.find((r) => r.robot_id === rid);
+        if (!robot) return false;
+        const withdrawMissionId = state.missions[`withdraw_${rid}`];
+        return robot.current_mission_id !== withdrawMissionId;
+      });
+
+      if (allHome) {
+        clearInterval(checkInterval);
         state.phase = 'complete';
         state.phaseStartedAt = new Date().toISOString();
-        this.logPhase(state, 'COMPLETE — All targets engaged, mission sequence finished');
+        this.logPhase(state, 'COMPLETE — All elements at home base, mission sequence finished');
+        this.logPhase(state, `BDA: ${state.detectedThreats.length} enemy destroyed, 0 friendly casualties`);
         this.publishUpdate(state);
       }
-    }, 10000);
+    }, 2000);
+
+    // Safety timeout
+    setTimeout(() => {
+      const state = this.sequences.get(seqId);
+      if (state && state.phase === 'withdraw') {
+        clearInterval(checkInterval);
+        state.phase = 'complete';
+        state.phaseStartedAt = new Date().toISOString();
+        this.logPhase(state, 'COMPLETE — Withdrawal timeout, mission sequence finished');
+        this.publishUpdate(state);
+      }
+    }, 3 * 60 * 1000);
   }
 
   // ── Vision Event Subscription ──────────────────────────────────────────
