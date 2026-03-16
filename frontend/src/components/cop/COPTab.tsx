@@ -29,7 +29,6 @@ import type { RegisteredResource } from '../../lib/resource-registry-service.js'
 import { inheritanceApiService, type AggregatedMissionStatus, type MissionStatusSnapshot } from '../../services/inheritance-service.js';
 import { MissionStatusCard } from '../inheritance/MissionStatusCard.js';
 import { MissionStatusDrilldown } from '../inheritance/MissionStatusDrilldown.js';
-import { COPRobotStatusCard } from './COPRobotStatusCard.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -156,7 +155,6 @@ export function COPTab({ problemSetId }: COPTabProps) {
 
   // Robot layer state (Phase 06)
   const [robotLayerVisible, setRobotLayerVisible] = useState(true);
-  const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null);
 
   // Auto-trigger state
   const [generating, setGenerating] = useState(false);
@@ -530,20 +528,37 @@ export function COPTab({ problemSetId }: COPTabProps) {
             onLayersLoaded={handleLayersLoaded}
             resourceLayerVisible={resourceLayerVisible}
             onResourceSelect={(res) => {
-              // If this resource is a robot (autonomous or bridge), show the full robot card
-              if (res.isAutonomous || res.name?.startsWith('Bridge ')) {
-                // Find matching robot ID from resource name/DID
-                const robotId = res.name?.replace('Bridge ', 'bridge-') || res.did || res.id;
-                setSelectedRobotId(robotId);
-                setSelectedResource(null);
-              } else {
-                setSelectedResource(res);
-                setSelectedRobotId(null);
-              }
+              setSelectedResource(res);
             }}
             robotLayerVisible={robotLayerVisible}
-            onRobotClick={(id) => { setSelectedRobotId(id); setSelectedResource(null); }}
-            selectedRobotId={selectedRobotId}
+            onRobotClick={async (id) => {
+              // Build a RegisteredResource from robot data so COPResourceDetail renders
+              // with the full tabbed panel (telemetry, vision, D-pad, grouping)
+              try {
+                const res = await fetch('/api/robot/robots');
+                if (res.ok) {
+                  const robots = await res.json();
+                  const match = robots.find((r: { robot_id: string }) => r.robot_id === id);
+                  if (match) {
+                    const resource: RegisteredResource = {
+                      id: match.robot_id,
+                      missionId: '',
+                      name: match.robot_id,
+                      category: 'sensors',
+                      status: match.state === 'connected' ? 'FMC' : 'NMC',
+                      did: match.did,
+                      isAutonomous: true,
+                      capabilities: match.capabilities || [],
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                    };
+                    setSelectedResource(resource);
+                    return;
+                  }
+                }
+              } catch { /* ignore — robot API unavailable */ }
+            }}
+            selectedRobotId={null}
           />
 
           {/* Generating spinner overlay */}
@@ -650,13 +665,6 @@ export function COPTab({ problemSetId }: COPTabProps) {
         />
       )}
 
-      {/* Robot status card (Phase 06) */}
-      {selectedRobotId && (
-        <COPRobotStatusCard
-          robotId={selectedRobotId}
-          onClose={() => setSelectedRobotId(null)}
-        />
-      )}
 
       {/* Sidebar */}
       {sidebarOpen && (
