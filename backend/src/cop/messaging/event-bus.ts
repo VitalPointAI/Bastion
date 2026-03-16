@@ -54,6 +54,21 @@ export interface COPEvents {
     confidence: number;
     autoCommitted: boolean;
   };
+  'contradiction:detected': {
+    contradictionId: string;
+    entityId: string;
+    propertyKey: string;
+    assertionAId: string;
+    assertionBId: string;
+    workspaceId: string;
+    detectedAt: string;
+  };
+  'contradiction:resolved': {
+    contradictionId: string;
+    entityId: string;
+    resolution: 'accept_a' | 'accept_b' | 'both_valid' | 'flagged_for_intel';
+    resolvedAt: string;
+  };
 }
 
 // ─── Typed Event Bus ─────────────────────────────────────────────────────────
