@@ -206,6 +206,9 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
   // Coalition caveat check result (swarm missions only)
   const [caveatResult, setCaveatResult] = useState<CaveatCheckResult | null>(null);
 
+  // Track DIDs that returned 404 to avoid repeated polling
+  const notFoundDidsRef = useRef(new Set<string>());
+
   // Fetch connected robots and their resource registry status
   const fetchRobots = useCallback(async () => {
     try {
@@ -217,11 +220,17 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
       const matches = new Map<string, ResourceMatch>();
       for (const r of robotList) {
         if (!r.did) continue;
+        // Skip DIDs already known to be unregistered
+        if (notFoundDidsRef.current.has(r.did)) continue;
         try {
           const didRes = await fetch(`/api/resources/did/${encodeURIComponent(r.did)}`);
           if (didRes.ok) {
             const resource = await didRes.json() as ResourceMatch;
             matches.set(r.robot_id, resource);
+            // Clear from not-found if it was previously missing but now registered
+            notFoundDidsRef.current.delete(r.did);
+          } else if (didRes.status === 404) {
+            notFoundDidsRef.current.add(r.did);
           }
         } catch { /* non-fatal */ }
       }
@@ -398,7 +407,8 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
       border: '1px solid var(--border-color, #334155)',
       borderRadius: '0.5rem',
       marginTop: '1rem',
-      overflow: 'hidden',
+      overflow: 'auto',
+      maxHeight: 'calc(100vh - 8rem)',
     }}>
       {/* Header */}
       <button
