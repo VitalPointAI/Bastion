@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 47-06-PLAN.md
-last_updated: "2026-03-16T14:20:25.412Z"
+stopped_at: Completed 47-08-PLAN.md
+last_updated: "2026-03-16T14:32:43.439Z"
 last_activity: "2026-03-14 - Completed 45-07 Tasks 1+2: Phase 45 integration wiring complete, checkpoint reached"
 progress:
   total_phases: 64
   completed_phases: 44
   total_plans: 409
-  completed_plans: 399
+  completed_plans: 400
 ---
 
 # Project State
@@ -194,6 +194,7 @@ Progress: ███████████████████████�
 | Phase 47-json-ld-semantic-brain-cop-fix P03 | 13 | 2 tasks | 6 files |
 | Phase 47-json-ld-semantic-brain-cop-fix P05 | 451 | 2 tasks | 5 files |
 | Phase 47-json-ld-semantic-brain-cop-fix P06 | 8 | 2 tasks | 11 files |
+| Phase 47 P08 | 8 | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -852,6 +853,8 @@ Recent decisions affecting current work:
 - [Phase 47]: detectContradiction accepts two AssertionInput objects to match Plan 02 test contracts
 - [Phase 47]: Hybrid resolution: 0.4*string + 0.4*embedding + 0.2*type; auto_merge>=0.85, human_review>=0.5, distinct<0.5
 - [Phase 47-06]: matchesEntityType() helper checks both properties.type (legacy) and jsonldType (CCO URI) for backward compat during JSON-LD migration
+- [Phase 47]: Export filterByTemporalValidity and getStalenessOpacity as named exports from useBrainTimeline for testability
+- [Phase 47]: Brain graph-snapshot atTime param replaces at (legacy kept for backward compat); optional timestamp defaults to current time
 
 ### Roadmap Evolution
 
@@ -1562,7 +1565,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T14:20:25.401Z
-Stopped at: Completed 47-06-PLAN.md
+Last session: 2026-03-16T14:32:43.427Z
+Stopped at: Completed 47-08-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
