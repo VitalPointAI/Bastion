@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 48-07-PLAN.md
-last_updated: "2026-03-16T16:14:57.139Z"
+stopped_at: Completed 48-06-PLAN.md
+last_updated: "2026-03-16T16:19:22.689Z"
 last_activity: "2026-03-16 - Completed 48-05: SwarmCOPLayer frontend — formation polygon, member markers, telemetry panel, smooth interpolation; wired into COPMapView"
 progress:
   total_phases: 64
   completed_phases: 45
   total_plans: 409
-  completed_plans: 410
+  completed_plans: 411
 ---
 
 # Project State
@@ -203,6 +203,7 @@ Progress: ███████████████████████�
 | Phase 48 P03 | 7 | 2 tasks | 5 files |
 | Phase 48 P04 | 12 | 2 tasks | 10 files |
 | Phase 48 P07 | 15 | 2 tasks | 3 files |
+| Phase 48-robot-swarm-behaviour-end-to-end-demo P06 | 6 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -891,6 +892,9 @@ Recent decisions affecting current work:
 - [Phase 48]: Python swarm modules placed in robot/swarm/ subpackage (graph_events.py, corroboration.py, cop_utils.py) to match Wave 0 test imports from robot.swarm.*; top-level re-exports added for backward compatibility
 - [Phase 48]: expeditedAuthorize falls back to local record when NEAR unavailable — demo does not stall on testnet issues
 - [Phase 48]: Lethal gates differentiated from standard gates via decision_context.escalation_type=lethal_force
+- [Phase 48-robot-swarm-behaviour-end-to-end-demo]: Client-side caveat evaluation mirrors backend logic for immediate pre-flight display without API round-trip
+- [Phase 48-robot-swarm-behaviour-end-to-end-demo]: Attribution lines default OFF for clean COP; operator-activated progressive disclosure
+- [Phase 48-robot-swarm-behaviour-end-to-end-demo]: Even/odd array index determines bounding vs overwatch role in bounding_overwatch technique
 
 ### Roadmap Evolution
 
@@ -1601,7 +1605,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T16:14:57.126Z
-Stopped at: Completed 48-07-PLAN.md
+Last session: 2026-03-16T16:19:22.679Z
+Stopped at: Completed 48-06-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
