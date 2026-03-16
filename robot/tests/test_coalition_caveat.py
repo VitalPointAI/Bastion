@@ -1,221 +1,222 @@
 """
-Wave 0 test scaffolds for coalition caveat enforcement.
+Tests for the coalition caveat checker (Python side).
 
-These tests define the expected behavior of check_swarm_caveat(), which validates
-whether a swarm mission type is permitted given the national profiles of all
-member robots. Tests cover the three demo nations: Taiwan (full authority),
-US (ROE restrictions on urban offensive ops), Australia (observer/recon only).
+Phase 48 Plan 03: Validates that check_swarm_caveat correctly enforces
+national DID caveats for Taiwan, US, and Australia profiles.
 
-All tests are marked skip (Wave 0 scaffold) — they will pass once implementation
-plans create robot/swarm/coalition_caveats.py.
+All tests use inline profile dicts — no file I/O.
 """
-import pytest
+import sys
+import os
+
+# Ensure robot/ root is on the path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from coalition_caveat import check_swarm_caveat, suggest_alternative_asset
 
 
 # ---------------------------------------------------------------------------
-# Fixtures: national caveat profiles
+# Inline test profiles (mirrors coalition-profiles.json)
 # ---------------------------------------------------------------------------
 
+TEST_PROFILES = {
+    "tw-defense": {
+        "nation": "Taiwan",
+        "did": "did:near:resource-tw-coalition",
+        "authority": "full",
+        "allowed_missions": ["recon_area", "swarm_recon", "swarm_advance", "find_engage", "swarm_patrol"],
+        "restrictions": [],
+    },
+    "us-coalition": {
+        "nation": "United States",
+        "did": "did:near:resource-us-coalition",
+        "authority": "restricted",
+        "allowed_missions": ["recon_area", "swarm_recon", "swarm_patrol", "swarm_advance"],
+        "restrictions": [
+            {
+                "mission_type": "swarm_advance",
+                "area_type": "urban",
+                "reason": "US national policy: no offensive urban ops",
+            },
+            {
+                "mission_type": "find_engage",
+                "reason": "US ROE: engagement requires host-nation lead",
+            },
+        ],
+    },
+    "au-observer": {
+        "nation": "Australia",
+        "did": "did:near:resource-au-coalition",
+        "authority": "observer",
+        "allowed_missions": ["recon_area", "swarm_recon"],
+        "restrictions": [
+            {
+                "mission_type": "*",
+                "except": ["recon_area", "swarm_recon"],
+                "reason": "Australia observer status: recon only",
+            },
+        ],
+    },
+}
 
-def _make_profiles():
-    """
-    Return the three national caveat profiles used in the Taiwan defense demo.
+# ─── Member helpers ───────────────────────────────────────────────────────────
 
-    Each profile specifies:
-      - allowed_missions: list of mission type strings the nation permits
-      - blocked_contexts: list of operational contexts where restrictions apply
-      - authority_level: "full" | "restricted" | "observer"
-    """
-    return {
-        "did:near:resource-taiwan-coalition": {
-            "nation": "TW",
-            "authority_level": "full",
-            "allowed_missions": [
-                "recon_area",
-                "swarm_recon",
-                "swarm_advance",
-                "find_engage",
-                "swarm_hold",
-            ],
-            "blocked_contexts": [],
-        },
-        "did:near:resource-us-coalition": {
-            "nation": "US",
-            "authority_level": "restricted",
-            "allowed_missions": [
-                "recon_area",
-                "swarm_recon",
-                "swarm_hold",
-            ],
-            "blocked_missions": ["swarm_advance", "find_engage"],
-            "blocked_contexts": ["urban"],
-        },
-        "did:near:resource-au-coalition": {
-            "nation": "AU",
-            "authority_level": "observer",
-            "allowed_missions": [
-                "recon_area",
-                "swarm_recon",
-            ],
-            "blocked_missions": ["swarm_advance", "find_engage", "swarm_hold"],
-            "blocked_contexts": ["urban", "combat"],
-        },
-    }
-
-
-def _make_us_member():
-    return {
-        "robot_id": "robot-us-01",
-        "national_did": "did:near:resource-us-coalition",
-        "role": "overwatch",
-    }
-
-
-def _make_au_member():
-    return {
-        "robot_id": "robot-au-01",
-        "national_did": "did:near:resource-au-coalition",
-        "role": "recon",
-    }
-
-
-def _make_tw_member():
-    return {
-        "robot_id": "robot-tw-01",
-        "national_did": "did:near:resource-taiwan-coalition",
-        "role": "point",
-    }
+TW_MEMBER = {"robot_id": "robot-tw-01", "national_did": "did:near:resource-tw-coalition"}
+US_MEMBER = {"robot_id": "robot-us-01", "national_did": "did:near:resource-us-coalition"}
+AU_MEMBER = {"robot_id": "robot-au-01", "national_did": "did:near:resource-au-coalition"}
 
 
 # ---------------------------------------------------------------------------
-# Tests
+# Test: us_urban_blocked
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
 def test_us_urban_advance_blocked():
-    """
-    US profile has a national restriction on swarm_advance in urban contexts.
-
-    check_swarm_caveat("swarm_advance", "urban", [us_member], profiles) must:
-      - return allowed=False
-      - include robot-us-01 in blocked_robots list
-      - include a reason string referencing the US caveat
-    """
-    from robot.swarm.coalition_caveats import check_swarm_caveat
-
-    profiles = _make_profiles()
-    us_member = _make_us_member()
-
-    result = check_swarm_caveat(
-        mission_type="swarm_advance",
-        context="urban",
-        members=[us_member],
-        profiles=profiles,
-    )
-
-    assert result["allowed"] is False, "US swarm_advance in urban must be blocked"
-    assert "robot-us-01" in result["blocked_robots"], (
-        "US robot must appear in blocked_robots"
-    )
-    assert result["reason"], "A reason string must be provided"
+    """US robot cannot perform swarm_advance in urban area."""
+    result = check_swarm_caveat("swarm_advance", "urban", [US_MEMBER], TEST_PROFILES)
+    assert result["allowed"] is False
+    assert len(result["blocked_robots"]) == 1
+    blocked = result["blocked_robots"][0]
+    assert blocked["robot_id"] == "robot-us-01"
+    assert blocked["nation"] == "United States"
+    assert blocked["reason"] == "US national policy: no offensive urban ops"
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
-def test_au_recon_only():
-    """
-    AU observer profile allows recon_area and swarm_recon, but blocks swarm_advance.
-
-    Two sub-checks:
-      1. recon_area in any context → allowed=True, no blocked_robots
-      2. swarm_advance in any context → allowed=False, robot-au-01 in blocked_robots
-    """
-    from robot.swarm.coalition_caveats import check_swarm_caveat
-
-    profiles = _make_profiles()
-    au_member = _make_au_member()
-
-    # Allow: recon_area
-    allow_result = check_swarm_caveat(
-        mission_type="recon_area",
-        context="open",
-        members=[au_member],
-        profiles=profiles,
-    )
-    assert allow_result["allowed"] is True, "AU must be allowed to execute recon_area"
-    assert len(allow_result.get("blocked_robots", [])) == 0
-
-    # Block: swarm_advance
-    block_result = check_swarm_caveat(
-        mission_type="swarm_advance",
-        context="open",
-        members=[au_member],
-        profiles=profiles,
-    )
-    assert block_result["allowed"] is False, "AU must be blocked from swarm_advance"
-    assert "robot-au-01" in block_result["blocked_robots"]
+def test_us_find_engage_blocked_globally():
+    """US find_engage is blocked globally (no area_type constraint)."""
+    result = check_swarm_caveat("find_engage", "rural", [US_MEMBER], TEST_PROFILES)
+    assert result["allowed"] is False
+    assert result["blocked_robots"][0]["reason"] == "US ROE: engagement requires host-nation lead"
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
-def test_tw_full_authority():
-    """
-    Taiwan profile has full authority — all mission types including find_engage.
-
-    check_swarm_caveat for any mission type with only TW members must return
-    allowed=True with no blocked_robots, even for find_engage in urban context.
-    """
-    from robot.swarm.coalition_caveats import check_swarm_caveat
-
-    profiles = _make_profiles()
-    tw_member = _make_tw_member()
-
-    for mission_type in ["recon_area", "swarm_recon", "swarm_advance", "find_engage"]:
-        result = check_swarm_caveat(
-            mission_type=mission_type,
-            context="urban",
-            members=[tw_member],
-            profiles=profiles,
-        )
-        assert result["allowed"] is True, (
-            f"Taiwan full authority must allow {mission_type} in urban context"
-        )
-        assert len(result.get("blocked_robots", [])) == 0
+def test_us_swarm_advance_rural_allowed():
+    """US swarm_advance restriction only applies to urban — rural is permitted."""
+    result = check_swarm_caveat("swarm_advance", "rural", [US_MEMBER], TEST_PROFILES)
+    assert result["allowed"] is True
+    assert result["blocked_robots"] == []
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
+# ---------------------------------------------------------------------------
+# Test: au_recon_only
+# ---------------------------------------------------------------------------
+
+
+def test_au_recon_only_swarm_recon_passes():
+    """Australia observer status allows swarm_recon in any area."""
+    result = check_swarm_caveat("swarm_recon", "urban", [AU_MEMBER], TEST_PROFILES)
+    assert result["allowed"] is True
+    assert result["blocked_robots"] == []
+
+
+def test_au_recon_only_recon_area_passes():
+    """Australia observer status allows recon_area."""
+    result = check_swarm_caveat("recon_area", "rural", [AU_MEMBER], TEST_PROFILES)
+    assert result["allowed"] is True
+
+
+def test_au_find_engage_blocked():
+    """Australia is blocked from find_engage (observer status: recon only)."""
+    result = check_swarm_caveat("find_engage", "rural", [AU_MEMBER], TEST_PROFILES)
+    assert result["allowed"] is False
+    blocked = result["blocked_robots"][0]
+    assert blocked["robot_id"] == "robot-au-01"
+    assert blocked["nation"] == "Australia"
+    assert "recon only" in blocked["reason"]
+
+
+def test_au_swarm_advance_blocked():
+    """Australia is blocked from swarm_advance (not a recon mission)."""
+    result = check_swarm_caveat("swarm_advance", "rural", [AU_MEMBER], TEST_PROFILES)
+    assert result["allowed"] is False
+
+
+# ---------------------------------------------------------------------------
+# Test: tw_full_authority
+# ---------------------------------------------------------------------------
+
+
+def test_tw_full_authority_all_missions():
+    """Taiwan full authority: all mission types pass in any area."""
+    for mission in ["recon_area", "swarm_recon", "swarm_advance", "find_engage", "swarm_patrol"]:
+        result = check_swarm_caveat(mission, "urban", [TW_MEMBER], TEST_PROFILES)
+        assert result["allowed"] is True, f"Taiwan must allow {mission} in urban"
+        assert result["blocked_robots"] == []
+
+
+# ---------------------------------------------------------------------------
+# Test: mixed_swarm_blocks
+# ---------------------------------------------------------------------------
+
+
 def test_mixed_swarm_blocks_on_any_member():
-    """
-    A mixed swarm with TW leader + US follower executing swarm_advance in urban
-    must be blocked because the US member cannot participate.
-
-    The entire mission is blocked if ANY member's national profile prohibits it.
-    The result must include:
-      - allowed=False
-      - robot-us-01 in blocked_robots
-      - robot-tw-01 NOT in blocked_robots (TW has full authority)
-      - suggested_alternative pointing to a TW-only asset or mission reassignment
-    """
-    from robot.swarm.coalition_caveats import check_swarm_caveat
-
-    profiles = _make_profiles()
-    tw_member = _make_tw_member()
-    us_member = _make_us_member()
-
+    """A single blocked member blocks the entire swarm mission."""
     result = check_swarm_caveat(
-        mission_type="swarm_advance",
-        context="urban",
-        members=[tw_member, us_member],
-        profiles=profiles,
+        "swarm_advance",
+        "urban",
+        [TW_MEMBER, US_MEMBER],
+        TEST_PROFILES,
     )
+    assert result["allowed"] is False
+    assert len(result["blocked_robots"]) == 1
+    assert result["blocked_robots"][0]["robot_id"] == "robot-us-01"
 
-    assert result["allowed"] is False, (
-        "Mixed swarm must be blocked if any member is restricted"
+
+def test_tw_and_au_mixed_advance_au_blocked():
+    """TW is allowed; AU is blocked from swarm_advance."""
+    result = check_swarm_caveat(
+        "swarm_advance",
+        "rural",
+        [TW_MEMBER, AU_MEMBER],
+        TEST_PROFILES,
     )
-    assert "robot-us-01" in result["blocked_robots"]
-    assert "robot-tw-01" not in result["blocked_robots"], (
-        "TW robot must not appear in blocked_robots (it has full authority)"
+    assert result["allowed"] is False
+    assert result["blocked_robots"][0]["robot_id"] == "robot-au-01"
+
+
+def test_all_three_recon_all_pass():
+    """All three nations can perform swarm_recon — recon is universally permitted."""
+    result = check_swarm_caveat(
+        "swarm_recon",
+        "urban",
+        [TW_MEMBER, US_MEMBER, AU_MEMBER],
+        TEST_PROFILES,
     )
-    # System should suggest an alternative asset or approach
-    assert "suggested_alternative" in result or "suggestion" in result, (
-        "Result must include a suggested_alternative or suggestion field"
+    assert result["allowed"] is True
+    assert result["blocked_robots"] == []
+
+
+# ---------------------------------------------------------------------------
+# Test: suggest_alternative_asset
+# ---------------------------------------------------------------------------
+
+
+def test_suggests_tw_when_us_blocked():
+    """When US is blocked, suggest Taiwan robot as alternative."""
+    blocked = [
+        {
+            "robot_id": "robot-us-01",
+            "national_did": "did:near:resource-us-coalition",
+            "nation": "United States",
+            "reason": "US national policy: no offensive urban ops",
+        }
+    ]
+    suggestion = suggest_alternative_asset(
+        blocked, [TW_MEMBER, US_MEMBER], TEST_PROFILES, "swarm_advance"
     )
+    assert suggestion == "robot-tw-01"
+
+
+def test_returns_none_when_no_alternative():
+    """Returns None when no swarm member can satisfy the mission."""
+    blocked = [
+        {
+            "robot_id": "robot-au-01",
+            "national_did": "did:near:resource-au-coalition",
+            "nation": "Australia",
+            "reason": "Australia observer status: recon only",
+        }
+    ]
+    suggestion = suggest_alternative_asset(
+        blocked, [AU_MEMBER], TEST_PROFILES, "find_engage"
+    )
+    assert suggestion is None
