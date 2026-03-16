@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple
 
 import structlog
 
-from ..ble_rvr_driver import BLERVRDriver, scan_for_rvr_plus
+from ble_rvr_driver import BLERVRDriver, scan_for_rvr_plus
 
 log = structlog.get_logger(__name__)
 

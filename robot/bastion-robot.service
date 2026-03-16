@@ -9,8 +9,7 @@ User=vitalpoint
 WorkingDirectory=/home/vitalpoint/projects/bastion/robot
 Environment=PATH=/home/vitalpoint/.local/bin:/usr/local/bin:/usr/bin:/bin
 Environment=PYTHONPATH=/home/vitalpoint/projects/sphero-sdk-raspberrypi-python
-ExecStartPre=/usr/bin/systemctl restart bluetooth
-ExecStartPre=/bin/sleep 3
+ExecStartPre=/bin/sleep 5
 ExecStart=/usr/bin/python3 mission_client.py
 Restart=on-failure
 RestartSec=10

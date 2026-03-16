@@ -580,7 +580,9 @@ class SwarmCoordinator:
         """Receive and dispatch UDP messages from swarm peers."""
         while self._running:
             try:
-                data, addr = await loop.sock_recvfrom(self._sock, 4096)
+                data, addr = await loop.run_in_executor(
+                    None, lambda: self._sock.recvfrom(4096)
+                )
                 msg = json.loads(data.decode("utf-8"))
                 await self._handle_message(msg, addr)
             except (asyncio.CancelledError, OSError):
