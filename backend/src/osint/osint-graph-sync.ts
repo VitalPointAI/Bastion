@@ -10,6 +10,13 @@
 
 import { randomUUID } from 'crypto';
 import type { OSINTEvent } from '../graph/osint/types.js';
+import { SOURCE_WEIGHTS } from '../graph/confidence-calculator.js';
+import { ACTOR_TYPE_TO_CCO_MAP } from '../graph/raft/types.js';
+import { entityResolutionService } from '../graph/resolution/resolution-service.js';
+
+const BASTION_CONTEXT = 'https://bastion.vitalpoint.ai/ontology/context.jsonld';
+const OSINT_ASSERTED_BY = 'system:osint-feed-poller';
+const OSINT_SOURCE_WEIGHT = SOURCE_WEIGHTS['osint']; // 0.65
 
 // ── Geo-location extraction ────────────────────────────────────────────────
 
@@ -117,12 +124,14 @@ export function extractLocation(text: string): {
  */
 export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
   try {
-    const { executeWriteQuery, executeReadQuery } = await import('../graph/neo4j-client.js');
+    const { executeWriteQuery } = await import('../graph/neo4j-client.js');
 
     const now = new Date().toISOString();
+    const validFrom = event.publishedAt?.toISOString() ?? now;
     const eventNodeId = `OSINT-${event.id}`;
+    const derivedFrom = JSON.stringify([event.id, event.sourceUrl ?? ''].filter(Boolean));
 
-    // Create or update the OSINT event as a node
+    // Create or update the OSINT event as a node with JSON-LD provenance
     await executeWriteQuery(`
       MERGE (e:Actor {id: $id})
       ON CREATE SET
@@ -134,10 +143,22 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
         e.sourceDocumentIds = $sourceDocIds,
         e.containerIds = [],
         e.createdAt = $now,
-        e.updatedAt = $now
+        e.updatedAt = $now,
+        e.jsonldType = $jsonldType,
+        e.jsonldContext = $jsonldContext,
+        e.assertedBy = $assertedBy,
+        e.assertedVia = $assertedVia,
+        e.derivedFrom = $derivedFrom,
+        e.confidence = $confidence,
+        e.sourceWeight = $sourceWeight,
+        e.validFrom = $validFrom,
+        e.validTo = null,
+        e.halfLifeDays = $halfLifeDays
       ON MATCH SET
         e.attributes = $attributes,
-        e.updatedAt = $now
+        e.updatedAt = $now,
+        e.derivedFrom = $derivedFrom,
+        e.confidence = $confidence
     `, {
       id: eventNodeId,
       name: event.title,
@@ -155,6 +176,17 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
       workspaceId: event.workspaceId ?? null,
       sourceDocIds: [event.id],
       now,
+      // JSON-LD provenance fields
+      jsonldType: ACTOR_TYPE_TO_CCO_MAP['organization'] ?? 'cco:Organization',
+      jsonldContext: BASTION_CONTEXT,
+      assertedBy: OSINT_ASSERTED_BY,
+      assertedVia: 'osint',
+      derivedFrom,
+      confidence: OSINT_SOURCE_WEIGHT,
+      sourceWeight: OSINT_SOURCE_WEIGHT,
+      validFrom,
+      // OSINT events: political content decays in ~90 days
+      halfLifeDays: 90,
     });
 
     // Create actor nodes for mentioned actors and link to event
@@ -162,8 +194,9 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
       if (!actorName || actorName.length < 2) continue;
 
       const actorId = `ACT-osint-${actorName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+      const actorDerivedFrom = JSON.stringify([event.id, event.sourceUrl ?? ''].filter(Boolean));
 
-      // Merge actor (create if not exists)
+      // Merge actor (create if not exists) with JSON-LD provenance
       await executeWriteQuery(`
         MERGE (a:Actor {id: $id})
         ON CREATE SET
@@ -175,7 +208,17 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
           a.sourceDocumentIds = $sourceDocIds,
           a.containerIds = [],
           a.createdAt = $now,
-          a.updatedAt = $now
+          a.updatedAt = $now,
+          a.jsonldType = $jsonldType,
+          a.jsonldContext = $jsonldContext,
+          a.assertedBy = $assertedBy,
+          a.assertedVia = $assertedVia,
+          a.derivedFrom = $derivedFrom,
+          a.confidence = $confidence,
+          a.sourceWeight = $sourceWeight,
+          a.validFrom = $validFrom,
+          a.validTo = null,
+          a.halfLifeDays = $halfLifeDays
         ON MATCH SET
           a.sourceDocumentIds = a.sourceDocumentIds + $eventId,
           a.updatedAt = $now
@@ -187,6 +230,17 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
         sourceDocIds: [event.id],
         eventId: event.id,
         now,
+        // JSON-LD provenance fields
+        jsonldType: ACTOR_TYPE_TO_CCO_MAP['organization'] ?? 'cco:Organization',
+        jsonldContext: BASTION_CONTEXT,
+        assertedBy: OSINT_ASSERTED_BY,
+        assertedVia: 'osint',
+        derivedFrom: actorDerivedFrom,
+        confidence: OSINT_SOURCE_WEIGHT,
+        sourceWeight: OSINT_SOURCE_WEIGHT,
+        validFrom,
+        // Political actors from OSINT: 90-day half-life
+        halfLifeDays: 90,
       });
 
       // Create RELATES_TO edge from actor → event
@@ -198,21 +252,49 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
         ON CREATE SET
           r.id = $relId,
           r.type = 'mentioned_in',
-          r.strength = 0.7,
+          r.strength = $strength,
           r.description = $desc,
           r.evidence = $evidence,
           r.sourceDocumentIds = [$docId],
           r.createdAt = $now,
-          r.updatedAt = $now
+          r.updatedAt = $now,
+          r.jsonldType = 'cco:ActOfRelating',
+          r.jsonldContext = $jsonldContext,
+          r.assertedBy = $assertedBy,
+          r.assertedVia = 'osint',
+          r.derivedFrom = $derivedFrom,
+          r.confidence = $confidence,
+          r.sourceWeight = $sourceWeight,
+          r.validFrom = $validFrom,
+          r.validTo = null,
+          r.halfLifeDays = 90
       `, {
         actorId,
         eventId: eventNodeId,
         relId,
+        strength: OSINT_SOURCE_WEIGHT,
         desc: `${actorName} mentioned in OSINT: ${event.title}`,
         evidence: event.sourceUrl ?? '',
         docId: event.id,
         now,
+        jsonldContext: BASTION_CONTEXT,
+        assertedBy: OSINT_ASSERTED_BY,
+        derivedFrom,
+        confidence: OSINT_SOURCE_WEIGHT,
+        sourceWeight: OSINT_SOURCE_WEIGHT,
+        validFrom,
       });
+    }
+
+    // Trigger entity resolution after OSINT writes to check for duplicates
+    try {
+      const resolution = await entityResolutionService.findDuplicates(event.workspaceId ?? undefined);
+      if (resolution.autoMerge.length > 0) {
+        await entityResolutionService.autoMergeDuplicates(resolution);
+      }
+    } catch (resolutionErr) {
+      // Non-fatal: entity resolution failure should not block OSINT sync
+      console.warn('[OSINT→Graph] Entity resolution failed after sync:', resolutionErr);
     }
   } catch (err) {
     // Non-fatal: log but don't block feed polling
