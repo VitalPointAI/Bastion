@@ -157,6 +157,8 @@ class BLERVRDriver:
     async def _send_raw(self, hex_data: str, handle: str = HANDLE_API) -> bool:
         """Write hex data to a BLE handle via gatttool."""
         if not self._connected or not self._child:
+            log.warning("ble_rvr.send_raw.no_connection", name=self._name,
+                        connected=self._connected, has_child=self._child is not None)
             return False
 
         loop = asyncio.get_running_loop()
@@ -166,7 +168,8 @@ class BLERVRDriver:
                 self._child.sendline(f"char-write-cmd {handle} {hex_data}")
                 self._child.expect(r"\[LE\]>", timeout=3)
                 return True
-            except (pexpect.TIMEOUT, pexpect.EOF):
+            except (pexpect.TIMEOUT, pexpect.EOF) as exc:
+                log.warning("ble_rvr.send_raw.failed", name=self._name, error=str(exc))
                 return False
 
         async with self._lock:
@@ -282,7 +285,8 @@ class BLERVRDriver:
         try:
             self._heading = heading
             data = struct.pack(">BHB", int(speed) & 0xFF, int(heading) % 360, 0)
-            await self._send_packet(DID_DRIVE, CID_DRIVE_WITH_HEADING, data, TARGET_ST)
+            ok = await self._send_packet(DID_DRIVE, CID_DRIVE_WITH_HEADING, data, TARGET_ST)
+            log.info("ble_rvr.drive.sent", name=self._name, speed=speed, heading=heading, ok=ok)
 
             # Dead-reckoning
             speed_ms = (speed / 255) * 1.0
