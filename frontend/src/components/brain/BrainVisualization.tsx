@@ -424,7 +424,9 @@ export function BrainVisualization({
 
   const nodeThreeObject = useCallback(
     (node: NodeObject) => {
+      if (!node) return new THREE.Group();
       const brainNode = node as FGNode;
+      if (!brainNode.id) return new THREE.Group();
       const cache = nodeObjCacheRef.current;
 
       // ── Ghost stub rendering (Phase 45)
@@ -565,6 +567,7 @@ export function BrainVisualization({
 
   const linkPositionUpdate = useCallback(
     (sprite: THREE.Object3D, _coords: { start: { x: number; y: number; z: number }; end: { x: number; y: number; z: number } }) => {
+      if (!sprite || !_coords?.start || !_coords?.end) return;
       sprite.position.set(
         (_coords.start.x + _coords.end.x) / 2,
         (_coords.start.y + _coords.end.y) / 2,
@@ -681,10 +684,6 @@ export function BrainVisualization({
           linkColor={linkColor}
           linkWidth={linkWidth}
           linkOpacity={LINK_OPACITY}
-          linkDirectionalParticles={(link: object) => { if (!link) return 0; const l = link as FGLink; return (l.isConflict || l.isContradiction) ? 4 : 0; }}
-          linkDirectionalParticleColor={() => '#ff4444'}
-          linkDirectionalParticleSpeed={0.004}
-          linkDirectionalParticleWidth={1.5}
           linkThreeObject={linkThreeObject}
           linkThreeObjectExtend={true}
           linkPositionUpdate={linkPositionUpdate as unknown as (obj: object, coords: object, link: object) => void}
