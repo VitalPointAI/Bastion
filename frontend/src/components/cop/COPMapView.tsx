@@ -27,6 +27,7 @@ import { createMilSymbolIcon } from '../mission/map/MilSymbolMarker.js';
 import { SandboxedSVG } from './SandboxedSVG.js';
 import { COPResourceLayer } from './COPResourceLayer.js';
 import { COPRobotLayer } from './COPRobotLayer.js';
+import { SwarmCOPLayer } from './SwarmCOPLayer.js';
 import type { RegisteredResource } from '../../lib/resource-registry-service.js';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
@@ -211,6 +212,9 @@ export function COPMapView({
           onRobotClick={onRobotClick}
           selectedRobotId={selectedRobotId}
         />
+
+        {/* Swarm formation layer (Phase 48) — renders behind robot dots */}
+        <SwarmCOPLayer />
       </MapContainer>
     </div>
   );
