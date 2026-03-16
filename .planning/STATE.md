@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 47-07-PLAN.md
-last_updated: "2026-03-16T14:35:27.942Z"
-last_activity: "2026-03-14 - Completed 45-07 Tasks 1+2: Phase 45 integration wiring complete, checkpoint reached"
+status: executing
+stopped_at: Completed 47-10-PLAN.md
+last_updated: "2026-03-16T17:00:00.000Z"
+last_activity: "2026-03-16 - Completed 47-10: Graph API, RAFT tools, entity tools, aggregation service wired to JSON-LD; COP confidence visual encoding complete"
 progress:
   total_phases: 64
   completed_phases: 44
   total_plans: 409
-  completed_plans: 401
+  completed_plans: 404
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 45 of 61 (Knowledge Graph Subspaces, Lenses, Drill-Down) — IN PROGRESS
-Plan: 7 of 7 in current phase — CHECKPOINT (awaiting Task 3 browser verification)
-Status: Plan 45-07 Tasks 1+2 complete — BrainController wired with useBrainLens, useBrainSubspaces, useBrainDrillDown, useBrainNHop; BrainToolbar replaced cluster toggle with LensSelector; BrainVisualization has ghost rendering + expand button; awaiting human browser verify
-Last activity: 2026-03-14 - Completed 45-07 Tasks 1+2: Phase 45 integration wiring complete, checkpoint reached
+Phase: 47 of 64 (JSON-LD Semantic Brain COP Fix) — IN PROGRESS
+Plan: 9 of 10 in current phase — COMPLETE
+Status: Plan 47-09 complete — All 4 ingestion pipelines (graph-builder, doc-intelligence, OSINT, vision) write JSON-LD native properties with source-specific provenance. Entity resolution and contradiction detection wired.
+Last activity: 2026-03-16 - Completed 47-09: JSON-LD provenance wired across all ingestion paths
 
-Progress: ██████████████████████████ 397 plans complete
+Progress: ████████████████████████████ 403 plans complete
 
 ## Performance Metrics
 
@@ -196,6 +196,7 @@ Progress: ███████████████████████�
 | Phase 47-json-ld-semantic-brain-cop-fix P06 | 8 | 2 tasks | 11 files |
 | Phase 47 P08 | 8 | 3 tasks | 5 files |
 | Phase 47 P07 | 664 | 2 tasks | 11 files |
+| Phase 47 P09 | 15 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -209,6 +210,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 47 Plan 09 (Ingestion Pipeline Wiring):**
+- graph-builder defaults to assertedVia='ai_inference' when not passed by caller — callers must explicitly override
+- OSINT entities use halfLifeDays=90; vision detections use halfLifeDays=1 (maximally perishable tactical intel)
+- Contradiction detection scoped to 'type' property on actor updates only — avoids noise on other property conflicts
 
 **Phase 47 Plan 03 (RAFT Store Rewrite):**
 - Soft delete is now default: delete* sets validTo=now; hard delete moved to purge* variants for temporal history preservation
