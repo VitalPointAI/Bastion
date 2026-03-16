@@ -51,8 +51,8 @@ CID_RESET_YAW = 0x06
 CID_SET_ALL_LEDS = 0x1A
 
 # BLE handles (from GATT discovery)
-HANDLE_INIT = "0x0011"  # Characteristic 00010003 — anti-DOS + wake only
-HANDLE_API = "0x000e"   # Characteristic 00010002 — all API commands
+HANDLE_INIT = "0x0011"  # Characteristic 00010003 — anti-DOS + wake
+HANDLE_API = "0x0011"   # All commands go through 0x0011 on RVR+
 
 # Anti-DOS string (hex-encoded)
 ANTIDOS_HEX = "757365746865666f7263652e2e2e62616e64"  # "usetheforce...band"
