@@ -13,6 +13,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { MissionJSONSchema } from '../robot/robot-types.js';
 import { getRobotMissionService } from '../robot/robot-mission-service.js';
+import { loadCoalitionProfiles } from '../robot/coalition-caveat-service.js';
 
 // Calibration profile storage (file-based for MVP)
 const __filename = fileURLToPath(import.meta.url);
@@ -292,6 +293,21 @@ robotRouter.put('/calibration/profiles/:name', (req, res) => {
   profiles[req.params.name] = { room_width, room_height, map_bounds };
   saveProfiles(profiles);
   res.json({ saved: req.params.name });
+});
+
+// ---------------------------------------------------------------------------
+// Coalition profiles (Phase 48)
+// ---------------------------------------------------------------------------
+
+/** GET /coalition-profiles — Return all coalition profiles (DID → policy) */
+robotRouter.get('/coalition-profiles', (_req, res) => {
+  try {
+    const profiles = loadCoalitionProfiles();
+    res.json(profiles);
+  } catch (err) {
+    console.error('[robot-routes] GET /coalition-profiles error:', err);
+    res.status(500).json({ error: 'Failed to load coalition profiles' });
+  }
 });
 
 // ---------------------------------------------------------------------------
