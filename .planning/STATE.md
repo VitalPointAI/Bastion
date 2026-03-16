@@ -26,11 +26,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 48 of 64 (Robot Swarm Behaviour End-to-End Demo) — IN PROGRESS
-Plan: 1 of 11 in current phase — COMPLETE
-Status: Plan 48-01 complete — Wave 0 test scaffolds for swarm COP, coalition caveats, corroboration, and brain graph events. Taiwan defense seed data (directive, ORBAT, coalition forces). Taipei Zhongzheng District calibration profile.
-Last activity: 2026-03-16 - Completed 48-01: Wave 0 test scaffolds (11 tests) + Taiwan defense seed data + Taipei calibration profile
+Plan: 2 of 11 in current phase — COMPLETE
+Status: Plan 48-02 complete — SwarmFormationSpec, SwarmMemberSpec, DetectionAttribution types added to layer-types.ts. swarm-cop-bridge.ts converts SwarmTelemetryMsg to geo-coordinate SwarmFormationSpec and emits on COP event bus via message bus. robot-mission-service.ts calls bridge in handleSwarmTelemetry.
+Last activity: 2026-03-16 - Completed 48-02: swarm COP layer types + swarm-cop-bridge service; SwarmFormationSpec bridged to COP event bus
 
-Progress: █████████████████████████████ 405 plans complete
+Progress: █████████████████████████████ 406 plans complete
 
 ## Performance Metrics
 
