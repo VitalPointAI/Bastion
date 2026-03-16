@@ -28,6 +28,9 @@ SUPPORTED_COMMANDS = {
     "visual_search",
     "overwatch",
     "resupply_route",
+    "swarm_patrol",
+    "swarm_recon",
+    "swarm_advance",
 }
 
 # Commands that require the robot to declare 'vision' in its DID capabilities

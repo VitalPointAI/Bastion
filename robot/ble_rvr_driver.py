@@ -51,8 +51,8 @@ CID_RESET_YAW = 0x06
 CID_SET_ALL_LEDS = 0x1A
 
 # BLE handles (from GATT discovery)
-HANDLE_INIT = "0x0011"  # Characteristic 00010003 — anti-DOS + wake only
-HANDLE_API = "0x000e"   # Characteristic 00010002 — all API commands
+HANDLE_INIT = "0x0011"  # Characteristic 00010003 — anti-DOS + wake
+HANDLE_API = "0x0011"   # All commands go through 0x0011 on RVR+
 
 # Anti-DOS string (hex-encoded)
 ANTIDOS_HEX = "757365746865666f7263652e2e2e62616e64"  # "usetheforce...band"
@@ -144,6 +144,8 @@ class BLERVRDriver:
         self._connected = False
         self._lock = asyncio.Lock()
 
+        self._keepalive_task: Optional[asyncio.Task] = None
+
         # Dead-reckoning state
         self._position: Tuple[float, float] = (0.0, 0.0)
         self._heading: float = 0.0
@@ -157,6 +159,8 @@ class BLERVRDriver:
     async def _send_raw(self, hex_data: str, handle: str = HANDLE_API) -> bool:
         """Write hex data to a BLE handle via gatttool."""
         if not self._connected or not self._child:
+            log.warning("ble_rvr.send_raw.no_connection", name=self._name,
+                        connected=self._connected, has_child=self._child is not None)
             return False
 
         loop = asyncio.get_running_loop()
@@ -166,11 +170,94 @@ class BLERVRDriver:
                 self._child.sendline(f"char-write-cmd {handle} {hex_data}")
                 self._child.expect(r"\[LE\]>", timeout=3)
                 return True
-            except (pexpect.TIMEOUT, pexpect.EOF):
+            except (pexpect.TIMEOUT, pexpect.EOF) as exc:
+                log.warning("ble_rvr.send_raw.failed", name=self._name, error=str(exc))
                 return False
 
         async with self._lock:
-            return await loop.run_in_executor(None, _write)
+            ok = await loop.run_in_executor(None, _write)
+            if not ok and handle == HANDLE_API:
+                # Connection likely dropped — attempt reconnect
+                log.warning("ble_rvr.connection_lost", name=self._name)
+                self._connected = False
+                await self._reconnect()
+                if self._connected:
+                    ok = await loop.run_in_executor(None, _write)
+            return ok
+
+    async def _reconnect(self) -> None:
+        """Attempt to reconnect to the RVR+ after a connection drop."""
+        log.info("ble_rvr.reconnecting", name=self._name, address=self._address)
+        if self._child:
+            try:
+                self._child.close()
+            except Exception:
+                pass
+            self._child = None
+
+        loop = asyncio.get_running_loop()
+
+        def _connect():
+            for attempt in range(1, 10):
+                child = pexpect.spawn(
+                    f"gatttool -b {self._address} -t random -I",
+                    timeout=5,
+                )
+                try:
+                    child.expect(r"\[LE\]>")
+                    child.sendline("connect")
+                    idx = child.expect(
+                        ["Connection successful", "not connected", pexpect.TIMEOUT],
+                        timeout=5,
+                    )
+                    if idx == 0:
+                        log.info("ble_rvr.reconnected", name=self._name, attempt=attempt)
+                        return child
+                except (pexpect.TIMEOUT, pexpect.EOF):
+                    pass
+                child.close()
+                import time
+                time.sleep(RETRY_DELAY)
+            return None
+
+        child = await loop.run_in_executor(None, _connect)
+        if child:
+            self._child = child
+            self._connected = True
+            # Re-send anti-DOS
+            await self._send_raw(ANTIDOS_HEX, HANDLE_INIT)
+            await asyncio.sleep(0.3)
+            # Re-send wake
+            seq = self._next_seq()
+            wake_pkt = _build_packet(DID_POWER, CID_WAKE, seq, target=TARGET_NORDIC)
+            await self._send_raw(wake_pkt.hex(), HANDLE_INIT)
+            await asyncio.sleep(1)
+            # Reset yaw
+            await self._send_packet(DID_DRIVE, CID_RESET_YAW, b"", TARGET_ST)
+            await asyncio.sleep(0.3)
+        else:
+            log.error("ble_rvr.reconnect_failed", name=self._name)
+
+    async def start_keepalive(self, interval: float = 15.0) -> None:
+        """Periodically ping the RVR+ to keep the BLE connection alive."""
+        self._keepalive_task = asyncio.create_task(self._keepalive_loop(interval))
+
+    async def _keepalive_loop(self, interval: float) -> None:
+        """Send a periodic LED pulse to keep the connection active."""
+        while self._connected:
+            try:
+                await asyncio.sleep(interval)
+                if not self._connected:
+                    break
+                # Send a no-op LED set (dim blue) as keepalive
+                led = bytes([0xFF]) + bytes([0, 0, 10] * 10)
+                ok = await self._send_packet(DID_IO, CID_SET_ALL_LEDS, led, TARGET_ST)
+                if not ok:
+                    log.warning("ble_rvr.keepalive.failed", name=self._name)
+            except asyncio.CancelledError:
+                break
+            except Exception as exc:
+                log.warning("ble_rvr.keepalive.error", name=self._name, error=str(exc))
 
     async def _send_packet(self, did: int, cid: int, data: bytes = b"",
                            target: int = TARGET_ST) -> bool:
@@ -244,10 +331,16 @@ class BLERVRDriver:
         await self._send_packet(DID_DRIVE, CID_RESET_YAW, b"", TARGET_ST)
         await asyncio.sleep(0.5)
 
+        # Start keepalive to prevent BLE timeout disconnect
+        await self.start_keepalive(interval=10.0)
+
         log.info("ble_rvr.wake.ok", name=self._name)
 
     async def close(self) -> None:
         """Disconnect from the RVR+."""
+        if self._keepalive_task:
+            self._keepalive_task.cancel()
+            self._keepalive_task = None
         if self._child and self._connected:
             try:
                 await self.safe_stop()
@@ -282,7 +375,8 @@ class BLERVRDriver:
         try:
             self._heading = heading
             data = struct.pack(">BHB", int(speed) & 0xFF, int(heading) % 360, 0)
-            await self._send_packet(DID_DRIVE, CID_DRIVE_WITH_HEADING, data, TARGET_ST)
+            ok = await self._send_packet(DID_DRIVE, CID_DRIVE_WITH_HEADING, data, TARGET_ST)
+            log.info("ble_rvr.drive.sent", name=self._name, speed=speed, heading=heading, ok=ok)
 
             # Dead-reckoning
             speed_ms = (speed / 255) * 1.0
