@@ -19,7 +19,7 @@ import type { BrainNode } from '../types.js';
 // ─── Mock Setup ───────────────────────────────────────────────────────────────
 
 // Mock fetch for API calls in useBrainTimeline
-global.fetch = vi.fn().mockResolvedValue({
+globalThis.fetch = vi.fn().mockResolvedValue({
   ok: true,
   json: async () => ({ nodes: [], edges: [] }),
 });
