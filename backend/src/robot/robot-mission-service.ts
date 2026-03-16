@@ -30,7 +30,6 @@ import type {
   RobotVisionMsg,
   RobotProfileRequestMsg,
   SwarmTelemetryMsg,
-  SwarmMemberHeartbeat,
 } from './robot-types.js';
 import { robotStore } from './robot-store.js';
 import { gateService, expeditedAuthorize } from '../gates/gate-service.js';
@@ -705,7 +704,7 @@ export class RobotMissionService {
   /**
    * Poll gate status until resolved. Checks every 2 seconds.
    */
-  private pollGateResolution(gateId: string, missionId: string, robotId: string): void {
+  private pollGateResolution(gateId: string, missionId: string, _robotId: string): void {
     const interval = setInterval(async () => {
       try {
         const gate = await gateService.getGateById(gateId);
