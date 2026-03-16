@@ -14,6 +14,7 @@
 import { randomUUID } from 'crypto';
 import type { RobotVisionMsg } from './robot-types.js';
 import type { COPLayerSpec, COPSymbolSpec, COPAnnotationSpec, Affiliation } from '../cop/layers/layer-types.js';
+import { getConfidenceTier } from '../graph/provenance-types.js';
 
 // ── Threat Classification ──────────────────────────────────────────────────
 
@@ -199,6 +200,9 @@ export async function updateAdversaryCOPLayer(
       ccoClass: s.type,
       confidence: s.confidence,
       sourceAuthority: `${s.detectedBy} (vision detection)`,
+      confidenceTier: getConfidenceTier(s.confidence),
+      assertedVia: 'vision_pipeline',
+      provenanceSummary: `${s.detectedBy} vision detection (confidence: ${Math.round(s.confidence * 100)}%)`,
     }));
 
     const copAnnotations: COPAnnotationSpec[] = symbols.map(s => ({

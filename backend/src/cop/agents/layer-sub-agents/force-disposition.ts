@@ -15,7 +15,8 @@ import { suggestCCOClass } from '../../cco/cco-validator.js';
 import { copEventBus } from '../../messaging/event-bus.js';
 import type { COPLayerSpec, COPSymbolSpec } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec, matchesEntityType } from './sub-agent-types.js';
+import { createEmptyLayerSpec, getEntityAffiliation } from './sub-agent-types.js';
+import { getConfidenceTier } from '../../../graph/provenance-types.js';
 
 const AGENT_ID = 'cop-force-disposition-001';
 const TIMEOUT_MS = 30_000;
@@ -83,21 +84,28 @@ export async function forceDispositionAgent(
     // Extract entities from documents via LLM
     const extractedUnits = await extractUnitsFromDocuments(relevantDocs);
 
-    // Also include graph entities that represent military units
+    // Also include graph entities that represent friendly military units
+    // Filter by semantic jsonldType (CCO/JC3IEDM ontology classes) and friendly affiliation
+    const FRIENDLY_JSONLD_TYPES = ['cco:MilitaryOrganization', 'jc3:Unit'];
     const graphUnits = input.graphEntities
-      .filter(e => matchesEntityType(e, ['organization', 'military_unit', 'unit', 'militaryorganization', 'agent']))
+      .filter(e =>
+        FRIENDLY_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase().replace(':', ''))) &&
+        ['friendly', 'friend'].includes(getEntityAffiliation(e)),
+      )
       .map(e => ({
         entityId: e.id,
         designation: e.name,
-        type: (e.properties.unitType as string) || 'infantry',
-        echelon: (e.properties.echelon as string) || 'unspecified',
-        affiliation: (e.properties.affiliation as string) || 'friendly',
+        type: (e.properties.attributes_unitType as string) || (e.properties.unitType as string) || 'infantry',
+        echelon: (e.properties.attributes_echelon as string) || (e.properties.echelon as string) || 'unspecified',
+        affiliation: (e.properties.attributes_affiliation as string) || (e.properties.affiliation as string) || 'friendly',
         position: {
           lat: (e.properties.lat as number) || 0,
           lng: (e.properties.lng as number) || 0,
         },
         movementPath: undefined as ExtractedUnit['movementPath'],
         sourceDocumentId: 'raft-graph',
+        confidence: e.confidence,
+        assertedVia: e.provenance.assertedVia,
       }));
 
     const allUnits = [...extractedUnits, ...graphUnits];
@@ -116,6 +124,11 @@ export async function forceDispositionAgent(
         echelon: unit.echelon,
       });
 
+      const unitWithMeta = unit as typeof unit & { confidence?: number; assertedVia?: string };
+      const confidence: number = unitWithMeta.confidence ?? (unit.sourceDocumentId === 'raft-graph' ? 0.9 : 0.8);
+      const assertedVia: string | undefined = unitWithMeta.assertedVia;
+      const sourceAuthority = unit.sourceDocumentId === 'raft-graph' ? 'RAFT' : 'DOCEX';
+
       return {
         entityId: unit.entityId,
         sidc,
@@ -125,8 +138,13 @@ export async function forceDispositionAgent(
         movementPath: unit.movementPath,
         linkedEntities: [],
         ccoClass,
-        confidence: unit.sourceDocumentId === 'raft-graph' ? 0.9 : 0.8,
-        sourceAuthority: unit.sourceDocumentId === 'raft-graph' ? 'RAFT' : 'DOCEX',
+        confidence,
+        sourceAuthority,
+        confidenceTier: getConfidenceTier(confidence),
+        assertedVia,
+        provenanceSummary: assertedVia
+          ? `Source: ${sourceAuthority} via ${assertedVia} (confidence: ${Math.round(confidence * 100)}%)`
+          : `Source: ${sourceAuthority} (confidence: ${Math.round(confidence * 100)}%)`,
       };
     });
 

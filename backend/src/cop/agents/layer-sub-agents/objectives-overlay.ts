@@ -19,7 +19,8 @@ import type {
   COPControlMeasureSpec,
 } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec, matchesEntityType } from './sub-agent-types.js';
+import { createEmptyLayerSpec } from './sub-agent-types.js';
+import { getConfidenceTier } from '../../../graph/provenance-types.js';
 
 const AGENT_ID = 'cop-objectives-001';
 const TIMEOUT_MS = 30_000;
@@ -80,24 +81,31 @@ export async function objectivesOverlayAgent(
     const extractedObjectives = await extractObjectivesFromDocuments(relevantDocs);
 
     // Also include graph entities that represent objectives/areas
+    // Filter by jsonldType for geospatial and objective types
+    const OBJECTIVE_JSONLD_TYPES = ['objective', 'nai', 'tai', 'geospatialregion', 'area_of_interest', 'areaofinterest'];
     const graphObjectives = input.graphEntities
-      .filter(e => matchesEntityType(e, ['objective', 'nai', 'tai', 'area_of_interest', 'geospatialregion']))
+      .filter(e =>
+        OBJECTIVE_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase().replace(/_/g, ''))),
+      )
       .map(e => ({
         entityId: e.id,
         name: e.name,
         type: (
+          (e.properties['attributes_type'] as string) ||
           (e.properties['type'] as string) ||
-          (e.jsonldType.includes('nai') ? 'nai' :
-            e.jsonldType.includes('tai') ? 'tai' :
-            e.jsonldType.includes('objective') ? 'objective' : 'area_of_interest')
+          (e.jsonldType.toLowerCase().includes('nai') ? 'nai' :
+            e.jsonldType.toLowerCase().includes('tai') ? 'tai' :
+            e.jsonldType.toLowerCase().includes('objective') ? 'objective' : 'area_of_interest')
         ) as ExtractedObjective['type'],
         position: {
           lat: (e.properties.lat as number) || 0,
           lng: (e.properties.lng as number) || 0,
         },
         area: e.properties.area as Array<{ lat: number; lng: number }> | undefined,
-        description: (e.properties.description as string) || '',
+        description: (e.properties.attributes_description as string) || (e.properties.description as string) || '',
         sourceDocumentId: 'raft-graph',
+        confidence: e.confidence,
+        assertedVia: e.provenance.assertedVia,
       }));
 
     const allObjectives = [...extractedObjectives, ...graphObjectives];
@@ -115,6 +123,11 @@ export async function objectivesOverlayAgent(
         description: obj.description,
       });
 
+      const objWithMeta = obj as typeof obj & { confidence?: number; assertedVia?: string };
+      const confidence: number = objWithMeta.confidence ?? (obj.sourceDocumentId === 'raft-graph' ? 0.9 : 0.8);
+      const assertedVia: string | undefined = objWithMeta.assertedVia;
+      const sourceAuthority = obj.sourceDocumentId === 'raft-graph' ? 'RAFT' : 'DOCEX';
+
       return {
         entityId: obj.entityId,
         sidc,
@@ -123,8 +136,13 @@ export async function objectivesOverlayAgent(
         affiliation: 'friendly' as const,
         linkedEntities: [],
         ccoClass,
-        confidence: obj.sourceDocumentId === 'raft-graph' ? 0.9 : 0.8,
-        sourceAuthority: obj.sourceDocumentId === 'raft-graph' ? 'RAFT' : 'DOCEX',
+        confidence,
+        sourceAuthority,
+        confidenceTier: getConfidenceTier(confidence),
+        assertedVia,
+        provenanceSummary: assertedVia
+          ? `Source: ${sourceAuthority} via ${assertedVia} (confidence: ${Math.round(confidence * 100)}%)`
+          : `Source: ${sourceAuthority} (confidence: ${Math.round(confidence * 100)}%)`,
       };
     });
 

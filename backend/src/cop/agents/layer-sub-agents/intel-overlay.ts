@@ -14,7 +14,8 @@ import { suggestCCOClass } from '../../cco/cco-validator.js';
 import { copEventBus } from '../../messaging/event-bus.js';
 import type { COPLayerSpec, COPSymbolSpec } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec, matchesEntityType, getEntityAffiliation } from './sub-agent-types.js';
+import { createEmptyLayerSpec, getEntityAffiliation } from './sub-agent-types.js';
+import { getConfidenceTier } from '../../../graph/provenance-types.js';
 
 const AGENT_ID = 'cop-intel-001';
 const TIMEOUT_MS = 30_000;
@@ -77,23 +78,27 @@ export async function intelOverlayAgent(
     const extractedThreats = await extractThreatsFromDocuments(relevantDocs);
 
     // Include graph entities representing hostile/unknown forces
+    // Filter by semantic jsonldType (CCO/JC3IEDM ontology classes) and affiliation
+    const HOSTILE_JSONLD_TYPES = ['cco:MilitaryOrganization', 'jc3:Unit', 'jc3:Facility', 'cco:Organization'];
     const graphThreats = input.graphEntities
       .filter(e =>
-        matchesEntityType(e, ['organization', 'military_unit', 'unit', 'militaryorganization', 'agent']) &&
+        HOSTILE_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase().replace(':', ''))) &&
         ['hostile', 'enemy', 'suspect', 'unknown'].includes(getEntityAffiliation(e)),
       )
       .map(e => ({
         entityId: e.id,
         designation: e.name,
-        type: (e.properties.unitType as string) || 'infantry',
-        echelon: (e.properties.echelon as string) || 'unspecified',
-        affiliation: (e.properties.affiliation as string) || 'hostile',
+        type: (e.properties.attributes_unitType as string) || (e.properties.unitType as string) || 'infantry',
+        echelon: (e.properties.attributes_echelon as string) || (e.properties.echelon as string) || 'unspecified',
+        affiliation: (e.properties.attributes_affiliation as string) || (e.properties.affiliation as string) || 'hostile',
         position: {
           lat: (e.properties.lat as number) || 0,
           lng: (e.properties.lng as number) || 0,
         },
-        sourceAuthority: (e.properties.sourceAuthority as string) || 'OSINT',
+        sourceAuthority: (e.properties.attributes_sourceAuthority as string) || (e.properties.sourceAuthority as string) || 'OSINT',
         sourceDocumentId: 'raft-graph',
+        confidence: e.confidence,
+        assertedVia: e.provenance.assertedVia,
       }));
 
     const allThreats = [...extractedThreats, ...graphThreats];
@@ -111,6 +116,10 @@ export async function intelOverlayAgent(
         echelon: threat.echelon,
       });
 
+      const threatWithMeta = threat as typeof threat & { confidence?: number; assertedVia?: string };
+      const confidence: number = threatWithMeta.confidence ?? (threat.sourceDocumentId === 'raft-graph' ? 0.9 : 0.7);
+      const assertedVia: string | undefined = threatWithMeta.assertedVia;
+
       return {
         entityId: threat.entityId,
         sidc,
@@ -119,8 +128,13 @@ export async function intelOverlayAgent(
         affiliation: (threat.affiliation === 'suspect' ? 'unknown' : threat.affiliation) as COPSymbolSpec['affiliation'],
         linkedEntities: [],
         ccoClass,
-        confidence: threat.sourceDocumentId === 'raft-graph' ? 0.9 : 0.7,
+        confidence,
         sourceAuthority: threat.sourceAuthority,
+        confidenceTier: getConfidenceTier(confidence),
+        assertedVia,
+        provenanceSummary: assertedVia
+          ? `Source: ${threat.sourceAuthority} via ${assertedVia} (confidence: ${Math.round(confidence * 100)}%)`
+          : `Source: ${threat.sourceAuthority} (confidence: ${Math.round(confidence * 100)}%)`,
       };
     });
 

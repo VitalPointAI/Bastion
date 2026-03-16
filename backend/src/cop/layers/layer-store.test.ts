@@ -251,6 +251,7 @@ describe('LayerStoreMemory', () => {
           ccoClass: 'cco:MilitaryOrganization',
           confidence: 0.95,
           sourceAuthority: 'HUMINT',
+          confidenceTier: 'high',
         },
       ];
       const updated = await store.updateLayerSpec(layer.id, newSpec);
