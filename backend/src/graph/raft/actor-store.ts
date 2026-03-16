@@ -11,20 +11,40 @@ import { executeReadQuery, executeWriteQuery } from '../neo4j-client.js';
 import type { Actor, ActorInput, ActorType } from './types.js';
 
 /**
- * Convert Neo4j record to Actor object
+ * Convert Neo4j record to Actor object.
+ * JSON-LD fields default to migration values when not yet present on nodes
+ * (pre-migration backward compat — see Phase 47 migration script).
  */
 function recordToActor(record: Record<string, unknown>): Actor {
   return {
+    // Existing fields
     id: record.id as string,
     name: record.name as string,
     type: record.type as ActorType,
     aliases: record.aliases as string[] || [],
     attributes: record.attributes ? JSON.parse(record.attributes as string) : {},
+    attributesJson: record.attributesJson as string | undefined,
+    attributes_affiliation: record.attributes_affiliation as string | undefined,
+    attributes_echelon: record.attributes_echelon as string | undefined,
+    attributes_unitType: record.attributes_unitType as string | undefined,
+    attributes_lat: record.attributes_lat as number | undefined,
+    attributes_lng: record.attributes_lng as number | undefined,
     workspaceId: record.workspaceId as string | undefined,
     sourceDocumentIds: record.sourceDocumentIds as string[] || [],
     containerIds: record.containerIds as string[] || [],
     createdAt: new Date(record.createdAt as string),
     updatedAt: new Date(record.updatedAt as string),
+    // JSON-LD fields (Phase 47) — defaults for pre-migration nodes
+    jsonldType: (record.jsonldType as string) || 'cco:Agent',
+    jsonldContext: (record.jsonldContext as string) || 'https://bastion.vitalpoint.ai/ontology/context.jsonld',
+    assertedBy: (record.assertedBy as string) || 'system:migration',
+    assertedVia: (record.assertedVia as import('../provenance-types.js').SourceMethod) || 'manual_entry',
+    derivedFrom: (record.derivedFrom as string) || '[]',
+    confidence: typeof record.confidence === 'number' ? record.confidence : 0.75,
+    sourceWeight: typeof record.sourceWeight === 'number' ? record.sourceWeight : 0.75,
+    validFrom: (record.validFrom as string) || (record.createdAt as string),
+    validTo: (record.validTo as string | null) ?? null,
+    halfLifeDays: typeof record.halfLifeDays === 'number' ? record.halfLifeDays : 180,
   };
 }
 

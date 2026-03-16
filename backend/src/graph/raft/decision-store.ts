@@ -12,10 +12,13 @@ import { executeReadQuery, executeWriteQuery } from '../neo4j-client.js';
 import type { Decision, DecisionInput, DecisionBasis } from './types.js';
 
 /**
- * Convert Neo4j node properties to Decision object
+ * Convert Neo4j node properties to Decision object.
+ * JSON-LD fields default to migration values when not yet present on nodes
+ * (pre-migration backward compat — see Phase 47 migration script).
  */
 function recordToDecision(props: Record<string, unknown>): Decision {
   return {
+    // Existing fields
     id: props.id as string,
     gateId: props.gateId as string | undefined,
     decisionType: props.decisionType as string,
@@ -35,6 +38,17 @@ function recordToDecision(props: Record<string, unknown>): Decision {
     containerIds: props.containerIds as string[] || [],
     createdAt: new Date(props.createdAt as string),
     updatedAt: new Date(props.updatedAt as string),
+    // JSON-LD fields (Phase 47) — defaults for pre-migration nodes
+    jsonldType: (props.jsonldType as string) || 'cco:InformationContentEntity',
+    jsonldContext: (props.jsonldContext as string) || 'https://bastion.vitalpoint.ai/ontology/context.jsonld',
+    assertedBy: (props.assertedBy as string) || 'system:migration',
+    assertedVia: (props.assertedVia as import('../provenance-types.js').SourceMethod) || 'manual_entry',
+    derivedFrom: (props.derivedFrom as string) || '[]',
+    confidence: typeof props.confidence === 'number' ? props.confidence : 0.75,
+    sourceWeight: typeof props.sourceWeight === 'number' ? props.sourceWeight : 0.75,
+    validFrom: (props.validFrom as string) || (props.createdAt as string),
+    validTo: (props.validTo as string | null) ?? null,
+    halfLifeDays: typeof props.halfLifeDays === 'number' ? props.halfLifeDays : 365,
   };
 }
 

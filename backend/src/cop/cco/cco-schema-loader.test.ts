@@ -1,10 +1,11 @@
 /**
- * Tests for CCO schema loader and validator.
+ * Tests for CCO schema loader, validator, and Bastion JSON-LD context loader.
  *
- * Covers: loadCCOSchema, getCCOClassMap, validateCCOClass, suggestCCOClass
+ * Covers: loadCCOSchema, getCCOClassMap, validateCCOClass, suggestCCOClass,
+ *         loadBastionContext, getBastionContext
  */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { loadCCOSchema, getCCOClassMap } from './cco-schema-loader.js';
+import { loadCCOSchema, getCCOClassMap, loadBastionContext, getBastionContext } from './cco-schema-loader.js';
 import { validateCCOClass, suggestCCOClass } from './cco-validator.js';
 
 describe('CCO Schema Loader', () => {
@@ -37,6 +38,63 @@ describe('CCO Schema Loader', () => {
     // This test verifies the function returns a Map regardless
     const map = getCCOClassMap();
     expect(map).toBeInstanceOf(Map);
+  });
+});
+
+describe('Bastion JSON-LD Context Loader', () => {
+  beforeAll(() => {
+    loadBastionContext();
+  });
+
+  it('loadBastionContext() succeeds without error', () => {
+    // If this throws, beforeAll would fail and all tests below would fail
+    expect(() => loadBastionContext()).not.toThrow();
+  });
+
+  it('getBastionContext() returns object with @context key', () => {
+    const ctx = getBastionContext();
+    expect(ctx).not.toBeNull();
+    expect(ctx).toBeTypeOf('object');
+    expect(ctx).toHaveProperty('@context');
+  });
+
+  it('context includes all 6 ontology namespace prefixes', () => {
+    const ctx = getBastionContext();
+    const context = (ctx as Record<string, unknown>)['@context'] as Record<string, unknown>;
+    expect(context).toHaveProperty('bfo');
+    expect(context).toHaveProperty('cco');
+    expect(context).toHaveProperty('prov');
+    expect(context).toHaveProperty('jc3');
+    expect(context).toHaveProperty('dodaf');
+    expect(context).toHaveProperty('bastion');
+  });
+
+  it('context includes property aliases for JSON-LD native fields', () => {
+    const ctx = getBastionContext();
+    const context = (ctx as Record<string, unknown>)['@context'] as Record<string, unknown>;
+    expect(context).toHaveProperty('jsonldType');
+    expect(context).toHaveProperty('jsonldId');
+    expect(context).toHaveProperty('validFrom');
+    expect(context).toHaveProperty('validTo');
+    expect(context).toHaveProperty('confidence');
+    expect(context).toHaveProperty('assertedBy');
+    expect(context).toHaveProperty('assertedVia');
+    expect(context).toHaveProperty('derivedFrom');
+    expect(context).toHaveProperty('sourceWeight');
+    expect(context).toHaveProperty('halfLifeDays');
+  });
+
+  it('jsonldType alias maps to @type', () => {
+    const ctx = getBastionContext();
+    const context = (ctx as Record<string, unknown>)['@context'] as Record<string, unknown>;
+    expect(context['jsonldType']).toBe('@type');
+  });
+
+  it('assertedBy maps to prov:wasAttributedTo', () => {
+    const ctx = getBastionContext();
+    const context = (ctx as Record<string, unknown>)['@context'] as Record<string, unknown>;
+    const assertedBy = context['assertedBy'] as Record<string, unknown>;
+    expect(assertedBy['@id']).toBe('prov:wasAttributedTo');
   });
 });
 

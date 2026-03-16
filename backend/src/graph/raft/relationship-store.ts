@@ -11,7 +11,9 @@ import { executeReadQuery, executeWriteQuery } from '../neo4j-client.js';
 import type { Relationship, RelationshipInput, RelationshipType } from './types.js';
 
 /**
- * Convert Neo4j relationship record to Relationship object
+ * Convert Neo4j relationship record to Relationship object.
+ * JSON-LD fields default to migration values when not yet present on nodes
+ * (pre-migration backward compat — see Phase 47 migration script).
  */
 function recordToRelationship(
   relProps: Record<string, unknown>,
@@ -19,6 +21,7 @@ function recordToRelationship(
   targetId: string
 ): Relationship {
   return {
+    // Existing fields
     id: relProps.id as string,
     sourceActorId: sourceId,
     targetActorId: targetId,
@@ -35,6 +38,17 @@ function recordToRelationship(
     containerIds: relProps.containerIds as string[] || [],
     createdAt: new Date(relProps.createdAt as string),
     updatedAt: new Date(relProps.updatedAt as string),
+    // JSON-LD fields (Phase 47) — defaults for pre-migration nodes
+    jsonldType: (relProps.jsonldType as string) || 'cco:Process',
+    jsonldContext: (relProps.jsonldContext as string) || 'https://bastion.vitalpoint.ai/ontology/context.jsonld',
+    assertedBy: (relProps.assertedBy as string) || 'system:migration',
+    assertedVia: (relProps.assertedVia as import('../provenance-types.js').SourceMethod) || 'manual_entry',
+    derivedFrom: (relProps.derivedFrom as string) || '[]',
+    confidence: typeof relProps.confidence === 'number' ? relProps.confidence : 0.75,
+    sourceWeight: typeof relProps.sourceWeight === 'number' ? relProps.sourceWeight : 0.75,
+    validFrom: (relProps.validFrom as string) || (relProps.createdAt as string),
+    validTo: (relProps.validTo as string | null) ?? null,
+    halfLifeDays: typeof relProps.halfLifeDays === 'number' ? relProps.halfLifeDays : 365,
   };
 }
 

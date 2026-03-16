@@ -11,10 +11,13 @@ import { executeReadQuery, executeWriteQuery } from '../neo4j-client.js';
 import type { Tension, TensionInput, TensionIntensity, TensionDomain } from './types.js';
 
 /**
- * Convert Neo4j record to Tension object
+ * Convert Neo4j record to Tension object.
+ * JSON-LD fields default to migration values when not yet present on nodes
+ * (pre-migration backward compat — see Phase 47 migration script).
  */
 function recordToTension(record: Record<string, unknown>): Tension {
   return {
+    // Existing fields
     id: record.id as string,
     actorIds: record.actorIds as string[] || [],
     description: record.description as string,
@@ -28,6 +31,17 @@ function recordToTension(record: Record<string, unknown>): Tension {
     containerIds: record.containerIds as string[] || [],
     createdAt: new Date(record.createdAt as string),
     updatedAt: new Date(record.updatedAt as string),
+    // JSON-LD fields (Phase 47) — defaults for pre-migration nodes
+    jsonldType: (record.jsonldType as string) || 'cco:Process',
+    jsonldContext: (record.jsonldContext as string) || 'https://bastion.vitalpoint.ai/ontology/context.jsonld',
+    assertedBy: (record.assertedBy as string) || 'system:migration',
+    assertedVia: (record.assertedVia as import('../provenance-types.js').SourceMethod) || 'manual_entry',
+    derivedFrom: (record.derivedFrom as string) || '[]',
+    confidence: typeof record.confidence === 'number' ? record.confidence : 0.75,
+    sourceWeight: typeof record.sourceWeight === 'number' ? record.sourceWeight : 0.75,
+    validFrom: (record.validFrom as string) || (record.createdAt as string),
+    validTo: (record.validTo as string | null) ?? null,
+    halfLifeDays: typeof record.halfLifeDays === 'number' ? record.halfLifeDays : 90,
   };
 }
 
