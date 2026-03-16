@@ -19,7 +19,8 @@ import type {
   COPAnnotationSpec,
 } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec, matchesEntityType } from './sub-agent-types.js';
+import { createEmptyLayerSpec } from './sub-agent-types.js';
+import { getConfidenceTier } from '../../../graph/provenance-types.js';
 
 const AGENT_ID = 'cop-c2-001';
 const TIMEOUT_MS = 30_000;
@@ -81,18 +82,24 @@ export async function c2OverlayAgent(
     const extractedCPs = await extractCommandPostsFromDocuments(relevantDocs);
 
     // Include graph entities for HQs/CPs
+    // Filter by jsonldType for command/headquarters entity types
+    const C2_JSONLD_TYPES = ['headquarters', 'commandpost', 'hq', 'militaryunit', 'cco:MilitaryOrganization'];
     const graphCPs = input.graphEntities
-      .filter(e => matchesEntityType(e, ['headquarters', 'command_post', 'hq', 'commandpost']))
+      .filter(e =>
+        C2_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase().replace(':', ''))),
+      )
       .map(e => ({
         entityId: e.id,
         designation: e.name,
-        echelon: (e.properties.echelon as string) || 'unspecified',
+        echelon: (e.properties.attributes_echelon as string) || (e.properties.echelon as string) || 'unspecified',
         position: {
           lat: (e.properties.lat as number) || 0,
           lng: (e.properties.lng as number) || 0,
         },
-        commandRelationships: (e.properties.commandRelationships as ExtractedCommandPost['commandRelationships']) || [],
+        commandRelationships: (e.properties.attributes_commandRelationships as ExtractedCommandPost['commandRelationships']) || (e.properties.commandRelationships as ExtractedCommandPost['commandRelationships']) || [],
         sourceDocumentId: 'raft-graph',
+        confidence: e.confidence,
+        assertedVia: e.provenance.assertedVia,
       }));
 
     const allCPs = [...extractedCPs, ...graphCPs];
@@ -111,6 +118,11 @@ export async function c2OverlayAgent(
         echelon: cp.echelon,
       });
 
+      const cpWithMeta = cp as typeof cp & { confidence?: number; assertedVia?: string };
+      const confidence: number = cpWithMeta.confidence ?? (cp.sourceDocumentId === 'raft-graph' ? 0.9 : 0.8);
+      const assertedVia: string | undefined = cpWithMeta.assertedVia;
+      const sourceAuthority = cp.sourceDocumentId === 'raft-graph' ? 'RAFT' : 'DOCEX';
+
       return {
         entityId: cp.entityId,
         sidc,
@@ -119,8 +131,13 @@ export async function c2OverlayAgent(
         affiliation: 'friendly' as const,
         linkedEntities: cp.commandRelationships.map(r => r.relatedEntityId),
         ccoClass,
-        confidence: cp.sourceDocumentId === 'raft-graph' ? 0.9 : 0.8,
-        sourceAuthority: cp.sourceDocumentId === 'raft-graph' ? 'RAFT' : 'DOCEX',
+        confidence,
+        sourceAuthority,
+        confidenceTier: getConfidenceTier(confidence),
+        assertedVia,
+        provenanceSummary: assertedVia
+          ? `Source: ${sourceAuthority} via ${assertedVia} (confidence: ${Math.round(confidence * 100)}%)`
+          : `Source: ${sourceAuthority} (confidence: ${Math.round(confidence * 100)}%)`,
       };
     });
 

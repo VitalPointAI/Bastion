@@ -17,7 +17,7 @@ import type {
   COPControlMeasureSpec,
 } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec, matchesEntityType } from './sub-agent-types.js';
+import { createEmptyLayerSpec } from './sub-agent-types.js';
 
 const AGENT_ID = 'cop-control-measures-001';
 const TIMEOUT_MS = 30_000;
@@ -89,15 +89,19 @@ export async function controlMeasuresAgent(
     const extractedMeasures = await extractControlMeasures(relevantDocs);
 
     // Also include graph entities that represent control measures
+    // Filter by jsonldType for boundary/control measure types
+    const CONTROL_MEASURE_JSONLD_TYPES = ['boundary', 'phaseline', 'axisofadvance', 'route', 'controlmeasure', 'geospatialregion'];
     const graphMeasures = input.graphEntities
-      .filter(e => matchesEntityType(e, ['boundary', 'phase_line', 'axis_of_advance', 'route', 'control_measure', 'controlmeasure']))
+      .filter(e =>
+        CONTROL_MEASURE_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase())),
+      )
       .map(e => ({
         id: e.id,
-        type: (e.properties.measureType as ExtractedControlMeasure['type']) || 'boundary',
+        type: ((e.properties.attributes_measureType ?? e.properties.measureType) as ExtractedControlMeasure['type']) || 'boundary',
         label: e.name,
         points: (e.properties.points as Array<{ lat: number; lng: number }>) || [],
-        phaseRange: e.properties.phaseRange as { start: number; end: number } | undefined,
-        description: (e.properties.description as string) || '',
+        phaseRange: (e.properties.attributes_phaseRange ?? e.properties.phaseRange) as { start: number; end: number } | undefined,
+        description: (e.properties.attributes_description as string) || (e.properties.description as string) || '',
         sourceDocumentId: 'raft-graph',
       }));
 
