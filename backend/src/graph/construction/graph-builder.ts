@@ -11,6 +11,10 @@ import { actorStore } from '../raft/actor-store.js';
 import { relationshipStore } from '../raft/relationship-store.js';
 import { tensionStore } from '../raft/tension-store.js';
 import { entityResolutionService } from '../resolution/resolution-service.js';
+import { detectContradiction, type AssertionInput } from '../contradiction-detector.js';
+import { SOURCE_WEIGHTS, HALF_LIFE_DEFAULTS } from '../confidence-calculator.js';
+import { ACTOR_TYPE_TO_CCO_MAP } from '../raft/types.js';
+import type { SourceMethod } from '../provenance-types.js';
 import {
   ActorExtractionResponseSchema,
   RelationshipExtractionResponseSchema,
@@ -70,6 +74,10 @@ export interface GraphBuildOptions {
   sourceDocumentId: string;
   /** Container IDs for container-scoped graph tagging */
   containerIds?: string[];
+  /** Provenance: who asserted these entities (user DID or system identifier) */
+  assertedBy?: string;
+  /** Provenance: which ingestion pathway produced these entities */
+  assertedVia?: SourceMethod;
   /** Called when an individual entity is created (for live streaming) */
   onEntityCreated?: (entity: GraphEntityEvent) => void;
   /** Called with running totals after each objective is processed */
@@ -236,6 +244,18 @@ export class GraphBuilder {
       // Extract entities from objective text
       const extracted = await this.extractFromText(objectiveText);
 
+      // Resolve provenance from options (default to ai_inference for LLM extraction)
+      const assertedVia: SourceMethod = options.assertedVia ?? 'ai_inference';
+      const assertedBy = options.assertedBy ?? 'system:llm-extraction';
+      const now = new Date().toISOString();
+
+      const provenance = {
+        assertedBy,
+        assertedVia,
+        derivedFrom: [options.sourceDocumentId],
+        validFrom: new Date(),
+      };
+
       // Create actor name to ID mapping for relationship creation
       const actorNameToId = new Map<string, string>();
 
@@ -259,17 +279,55 @@ export class GraphBuilder {
                 await actorStore.addAlias(existingActor.id, alias);
               }
             }
+
+            // Check for contradictions on affiliation/type property if incoming differs
+            if (existingActor.type !== actor.type) {
+              const existingAssertion: AssertionInput = {
+                id: existingActor.id,
+                entityId: existingActor.id,
+                propertyKey: 'type',
+                value: existingActor.type,
+                validFrom: existingActor.validFrom ?? now,
+                validTo: existingActor.validTo ?? null,
+                confidence: existingActor.confidence ?? SOURCE_WEIGHTS[existingActor.assertedVia ?? 'manual_entry'],
+                workspaceId: existingActor.workspaceId,
+              };
+              const incomingAssertion: AssertionInput = {
+                id: `${existingActor.id}-incoming`,
+                entityId: existingActor.id,
+                propertyKey: 'type',
+                value: actor.type,
+                validFrom: now,
+                validTo: null,
+                confidence: SOURCE_WEIGHTS[assertedVia],
+                workspaceId: options.workspaceId,
+              };
+              await detectContradiction(existingAssertion, incomingAssertion).catch(() => {
+                // Non-fatal: log but continue
+                console.warn(`[Graph Builder] Contradiction check failed for actor ${actor.name}`);
+              });
+            }
           } else {
-            // Create new actor
-            const newActor = await actorStore.createActor({
-              name: actor.name,
-              type: actor.type,
-              aliases: actor.aliases || [],
-              attributes: actor.role ? { role: actor.role } : {},
-              workspaceId: options.workspaceId,
-              sourceDocumentIds: [options.sourceDocumentId],
-              containerIds: options.containerIds || [],
-            });
+            // Derive half-life from actor type
+            const halfLifeDays = actor.type === 'individual'
+              ? HALF_LIFE_DEFAULTS['personnel']
+              : actor.type === 'nation'
+                ? HALF_LIFE_DEFAULTS['geographic']
+                : HALF_LIFE_DEFAULTS['political'];
+
+            // Create new actor with JSON-LD provenance
+            const newActor = await actorStore.createActor(
+              {
+                name: actor.name,
+                type: actor.type,
+                aliases: actor.aliases || [],
+                attributes: actor.role ? { role: actor.role } : {},
+                workspaceId: options.workspaceId,
+                sourceDocumentIds: [options.sourceDocumentId],
+                containerIds: options.containerIds || [],
+              },
+              { ...provenance, halfLifeDays },
+            );
             actorNameToId.set(actor.name.toLowerCase(), newActor.id);
 
             // Map aliases too
@@ -295,17 +353,20 @@ export class GraphBuilder {
           const targetId = this.resolveActorId(rel.targetActor, actorNameToId);
 
           if (sourceId && targetId) {
-            await relationshipStore.createRelationship({
-              sourceActorId: sourceId,
-              targetActorId: targetId,
-              type: rel.type,
-              strength: rel.strength ?? 0,
-              description: rel.description,
-              evidence: [objectiveId],
-              workspaceId: options.workspaceId,
-              sourceDocumentIds: [options.sourceDocumentId],
-              containerIds: options.containerIds || [],
-            });
+            await relationshipStore.createRelationship(
+              {
+                sourceActorId: sourceId,
+                targetActorId: targetId,
+                type: rel.type,
+                strength: rel.strength ?? 0,
+                description: rel.description,
+                evidence: [objectiveId],
+                workspaceId: options.workspaceId,
+                sourceDocumentIds: [options.sourceDocumentId],
+                containerIds: options.containerIds || [],
+              },
+              { ...provenance, halfLifeDays: HALF_LIFE_DEFAULTS['political'] },
+            );
             result.relationshipsCreated++;
             options.onEntityCreated?.({
               type: 'relationship',
@@ -335,18 +396,21 @@ export class GraphBuilder {
             .filter((id): id is string => id !== undefined);
 
           if (actorIds.length >= 2) {
-            const newTension = await tensionStore.createTension({
-              actorIds,
-              description: tension.description,
-              intensity: tension.intensity,
-              domain: tension.domain,
-              triggers: [],
-              mitigators: [],
-              linkedObjectiveIds: [objectiveId],
-              workspaceId: options.workspaceId,
-              sourceDocumentIds: [options.sourceDocumentId],
-              containerIds: options.containerIds || [],
-            });
+            const newTension = await tensionStore.createTension(
+              {
+                actorIds,
+                description: tension.description,
+                intensity: tension.intensity,
+                domain: tension.domain,
+                triggers: [],
+                mitigators: [],
+                linkedObjectiveIds: [objectiveId],
+                workspaceId: options.workspaceId,
+                sourceDocumentIds: [options.sourceDocumentId],
+                containerIds: options.containerIds || [],
+              },
+              { ...provenance, halfLifeDays: HALF_LIFE_DEFAULTS['political'] },
+            );
             result.tensionsCreated++;
             options.onEntityCreated?.({
               type: 'tension',
