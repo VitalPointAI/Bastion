@@ -675,7 +675,7 @@ Plans:
 - Fix COP layer generation pipeline end-to-end (currently broken)
 - Wire upgraded graph into: COP sub-agents, design tab, plan tab, assess tab, doc-intelligence, OSINT pipeline, vision detection pipeline
 **Depends on:** Phase 45
-**Plans:** 1/11 plans executed
+**Plans:** 2/11 plans executed
 
 Plans:
 - [ ] 47-01-PLAN.md — JSON-LD context file + shared types + confidence utilities
