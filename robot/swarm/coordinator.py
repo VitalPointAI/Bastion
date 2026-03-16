@@ -130,7 +130,8 @@ class SwarmCoordinator:
 
     @property
     def member_count(self) -> int:
-        return len(self._members) + 1  # +1 for self
+        ble_count = self._ble_followers.connected_count if self._ble_followers else 0
+        return len(self._members) + 1 + ble_count  # +1 for self + BLE followers
 
     @property
     def members(self) -> Dict[str, SwarmMember]:
