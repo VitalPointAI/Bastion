@@ -505,6 +505,7 @@ export function BrainVisualization({
   // ── Link styling ──────────────────────────────────────────────────────────
   const linkColor = useCallback(
     (link: object) => {
+      if (!link) return 'rgba(100, 160, 255, 0.3)';
       const fgLink = link as FGLink;
       // Ghost links (Phase 45 — cross-boundary edges to ghost stub nodes)
       if ((fgLink as { isGhostLink?: boolean }).isGhostLink) return 'rgba(100, 160, 255, 0.1)';
@@ -518,6 +519,7 @@ export function BrainVisualization({
 
   const linkWidth = useCallback(
     (link: object) => {
+      if (!link) return 0.5;
       const fgLink = link as FGLink;
       // Ghost links render thin
       if ((fgLink as { isGhostLink?: boolean }).isGhostLink) return 0.3;
@@ -542,7 +544,7 @@ export function BrainVisualization({
     (link: object) => {
       // Must return a unique THREE.Object3D per link — shared instances cause
       // Three.js reparenting which corrupts the force graph scene graph
-      if (!showLinkLabels) return new THREE.Group();
+      if (!link || !showLinkLabels) return new THREE.Group();
       const fgLink = link as FGLink;
       const label = fgLink.type === 'related' ? '' : fgLink.type;
       if (!label) return new THREE.Group();
@@ -679,8 +681,8 @@ export function BrainVisualization({
           linkColor={linkColor}
           linkWidth={linkWidth}
           linkOpacity={LINK_OPACITY}
-          linkDirectionalParticles={(link: object) => { const l = link as FGLink; return (l.isConflict || l.isContradiction) ? 4 : 0; }}
-          linkDirectionalParticleColor={(link: object) => { const l = link as FGLink; return (l.isConflict || l.isContradiction) ? '#ff4444' : '#4a9eff'; }}
+          linkDirectionalParticles={(link: object) => { if (!link) return 0; const l = link as FGLink; return (l.isConflict || l.isContradiction) ? 4 : 0; }}
+          linkDirectionalParticleColor={() => '#ff4444'}
           linkDirectionalParticleSpeed={0.004}
           linkDirectionalParticleWidth={1.5}
           linkThreeObject={linkThreeObject}
