@@ -8,6 +8,12 @@
  *   - Smooth position interpolation via requestAnimationFrame (mirrors SmoothRobotMarker)
  *   - Clickable polygon to open a SwarmTelemetryPanel
  *
+ * Phase 48 Plan 06 additions:
+ *   - Detection attribution toggle: dashed polylines from detecting robot to
+ *     detected entity, colored by nation (default OFF for clean COP)
+ *   - Bounding overwatch animation: pulsing divIcon for bounding element,
+ *     translucent sector arc for overwatch element (bounding_overwatch / successive_bounds)
+ *
  * WebSocket subscription: connects to /ws/messages and subscribes to the
  * 'swarm:cop_update' channel. Receives SwarmFormationSpec payloads with
  * messageType 'swarm.cop.update'.
@@ -36,6 +42,15 @@ interface SwarmMemberSpec {
   nationalDid?: string;
 }
 
+interface DetectionAttribution {
+  robotId: string;
+  entityId: string;
+  confidence: number;
+  detectedAt: string;
+  robotPosition?: LatLng;     // Injected by bridge from member position
+  entityPosition?: LatLng;    // COP symbol position for the detected entity
+}
+
 interface SwarmFormationSpec {
   swarmId: string;
   leaderId: string;
@@ -47,7 +62,7 @@ interface SwarmFormationSpec {
   centerOfMass: LatLng;
   heading: number;
   missionId?: string;
-  detectionAttributions?: unknown[];
+  detectionAttributions?: DetectionAttribution[];
 }
 
 // ─── State colors ────────────────────────────────────────────────────────────
@@ -62,6 +77,18 @@ const FORMATION_STATE_COLORS: Record<string, string> = {
 };
 
 const DEFAULT_FORMATION_COLOR = '#6b7280';
+
+// Nation colors for attribution lines
+const NATION_COLORS: Record<string, string> = {
+  'did:near:resource-tw-coalition': '#22c55e',  // TW = green
+  'did:near:resource-us-coalition': '#3b82f6',  // US = blue
+  'did:near:resource-au-coalition': '#d97706',  // AU = gold/amber
+};
+
+function nationColor(nationalDid?: string): string {
+  if (!nationalDid) return '#94a3b8';
+  return NATION_COLORS[nationalDid] ?? '#94a3b8';
+}
 
 // ─── WebSocket constants ─────────────────────────────────────────────────────
 
@@ -87,6 +114,279 @@ function convexHullOrder(positions: LatLng[]): LatLng[] {
     (a, b) =>
       Math.atan2(a.lat - cx, a.lng - cy) - Math.atan2(b.lat - cx, b.lng - cy),
   );
+}
+
+// ─── Attribution polyline layer ──────────────────────────────────────────────
+
+/**
+ * DetectionAttributionLayer
+ *
+ * Renders dashed polylines from each detecting robot to the detected entity
+ * when showAttribution is true. Lines are keyed by robotId+entityId.
+ */
+interface DetectionAttributionLayerProps {
+  swarms: SwarmFormationSpec[];
+  show: boolean;
+}
+
+function DetectionAttributionLayer({ swarms, show }: DetectionAttributionLayerProps) {
+  const map = useMap();
+  const layerGroupRef = useRef<L.LayerGroup | null>(null);
+
+  // Build or destroy attribution lines whenever show or swarms change
+  useEffect(() => {
+    // Ensure layer group exists and is on map
+    if (!layerGroupRef.current) {
+      layerGroupRef.current = L.layerGroup();
+    }
+
+    // Clear existing lines
+    layerGroupRef.current.clearLayers();
+
+    if (show) {
+      layerGroupRef.current.addTo(map);
+
+      // Build a robotId → position + nationalDid map from swarm members
+      const robotPositions = new Map<string, { position: LatLng; nationalDid?: string }>();
+      for (const swarm of swarms) {
+        for (const member of swarm.members) {
+          robotPositions.set(member.robotId, {
+            position: member.position,
+            nationalDid: member.nationalDid,
+          });
+        }
+      }
+
+      for (const swarm of swarms) {
+        const attributions = swarm.detectionAttributions ?? [];
+        for (const attr of attributions) {
+          // Use robotPosition from attr (injected by bridge) or fall back to member lookup
+          const robotInfo = robotPositions.get(attr.robotId);
+          const robotPos = attr.robotPosition ?? robotInfo?.position;
+          const entityPos = attr.entityPosition;
+
+          if (!robotPos || !entityPos) continue;
+
+          const nationDid = robotInfo?.nationalDid;
+          const color = nationColor(nationDid);
+
+          const line = L.polyline(
+            [
+              [robotPos.lat, robotPos.lng],
+              [entityPos.lat, entityPos.lng],
+            ],
+            {
+              color,
+              weight: 1.5,
+              dashArray: '4 4',
+              opacity: 0.7,
+            },
+          );
+
+          line.bindTooltip(
+            `${attr.robotId} \u2192 ${attr.entityId} (${Math.round(attr.confidence * 100)}%)`,
+            { sticky: true },
+          );
+
+          layerGroupRef.current?.addLayer(line);
+        }
+      }
+    } else {
+      // Remove from map when hidden
+      layerGroupRef.current.remove();
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show, JSON.stringify(swarms.map((s) => s.detectionAttributions))]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (layerGroupRef.current) {
+        layerGroupRef.current.remove();
+        layerGroupRef.current = null;
+      }
+    };
+  }, []);
+
+  return null;
+}
+
+// ─── Bounding overwatch animation layer ─────────────────────────────────────
+
+/**
+ * Creates CSS injection for the bounding pulse animation (once per page).
+ */
+let _pulseCssInjected = false;
+
+function ensurePulseCss() {
+  if (_pulseCssInjected) return;
+  _pulseCssInjected = true;
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes swarm-bound-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.8); }
+      70%  { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+    }
+    .swarm-bounding-marker {
+      background: rgba(251, 191, 36, 0.9);
+      border: 2px solid #f59e0b;
+      border-radius: 50%;
+      animation: swarm-bound-pulse 1.2s ease-out infinite;
+    }
+    .swarm-overwatch-marker {
+      background: rgba(59, 130, 246, 0.6);
+      border: 2px solid #3b82f6;
+      border-radius: 50%;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+/**
+ * Generate SVG fan-sector path for an overwatch arc.
+ * Center at (cx, cy), radius r, heading in degrees, spread degrees.
+ */
+function buildSectorPath(cx: number, cy: number, r: number, headingDeg: number, spreadDeg: number): string {
+  const startAngle = ((headingDeg - spreadDeg / 2) * Math.PI) / 180;
+  const endAngle = ((headingDeg + spreadDeg / 2) * Math.PI) / 180;
+
+  const x1 = cx + r * Math.sin(startAngle);
+  const y1 = cy - r * Math.cos(startAngle);
+  const x2 = cx + r * Math.sin(endAngle);
+  const y2 = cy - r * Math.cos(endAngle);
+
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+}
+
+interface BoundingOverwatchLayerProps {
+  swarm: SwarmFormationSpec;
+}
+
+function BoundingOverwatchLayer({ swarm }: BoundingOverwatchLayerProps) {
+  const map = useMap();
+  const layersRef = useRef<L.Layer[]>([]);
+
+  const isBoundingTechnique =
+    swarm.technique === 'bounding_overwatch' || swarm.technique === 'successive_bounds';
+
+  useEffect(() => {
+    // Clean up previous bounding layers
+    for (const layer of layersRef.current) {
+      layer.remove();
+    }
+    layersRef.current = [];
+
+    if (!isBoundingTechnique || swarm.members.length === 0) return;
+
+    ensurePulseCss();
+
+    swarm.members.forEach((member, idx) => {
+      const isBounding = idx % 2 === 0; // even slots bound, odd slots overwatch
+      const { lat, lng } = member.position;
+
+      if (isBounding) {
+        // Pulsing divIcon marker for bounding element
+        const icon = L.divIcon({
+          className: 'swarm-bounding-marker',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+          html: '',
+        });
+        const marker = L.marker([lat, lng], { icon, zIndexOffset: 500 });
+        marker.bindTooltip(`${member.robotId} — BOUNDING`, { direction: 'top', offset: [0, -14] });
+        marker.addTo(map);
+        layersRef.current.push(marker);
+
+        // Arrow polyline pointing in swarm heading direction (short arrow, ~15m equivalent in lat/lng)
+        const headingRad = (swarm.heading * Math.PI) / 180;
+        const arrowLen = 0.00008; // roughly 9m at mid-latitudes
+        const arrowLat = lat + arrowLen * Math.cos(headingRad);
+        const arrowLng = lng + arrowLen * Math.sin(headingRad);
+
+        const arrow = L.polyline(
+          [
+            [lat, lng],
+            [arrowLat, arrowLng],
+          ],
+          {
+            color: '#f59e0b',
+            weight: 2.5,
+            opacity: 0.85,
+          },
+        );
+        arrow.addTo(map);
+        layersRef.current.push(arrow);
+      } else {
+        // Overwatch element: divIcon + SVG sector arc
+        const icon = L.divIcon({
+          className: 'swarm-overwatch-marker',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+          html: '',
+        });
+        const marker = L.marker([lat, lng], { icon, zIndexOffset: 400 });
+        marker.bindTooltip(`${member.robotId} — OVERWATCH`, { direction: 'top', offset: [0, -12] });
+        marker.addTo(map);
+        layersRef.current.push(marker);
+
+        // SVG sector fan using a Leaflet SVGOverlay
+        const spreadDeg = 60;
+        const sectorSize = 40; // pixels, purely visual
+        const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${sectorSize * 2}" height="${sectorSize * 2}" viewBox="0 0 ${sectorSize * 2} ${sectorSize * 2}">
+          <path d="${buildSectorPath(sectorSize, sectorSize, sectorSize * 0.9, swarm.heading, spreadDeg)}"
+            fill="rgba(59,130,246,0.25)" stroke="#3b82f6" stroke-width="1.5" />
+        </svg>`;
+
+        // Convert lat/lng to a bounding box for the SVG overlay
+        const metersPerDeg = 111320;
+        const latDelta = (sectorSize * 0.00005); // ~5.5m half-extent
+        const lngDelta = latDelta / Math.cos((lat * Math.PI) / 180);
+
+        const bounds: L.LatLngBoundsExpression = [
+          [lat - latDelta, lng - lngDelta],
+          [lat + latDelta, lng + lngDelta],
+        ];
+
+        // Leaflet svgOverlay API requires an SVGElement
+        const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svgEl.setAttribute('viewBox', `0 0 ${sectorSize * 2} ${sectorSize * 2}`);
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', buildSectorPath(sectorSize, sectorSize, sectorSize * 0.9, swarm.heading, spreadDeg));
+        path.setAttribute('fill', 'rgba(59,130,246,0.25)');
+        path.setAttribute('stroke', '#3b82f6');
+        path.setAttribute('stroke-width', '1.5');
+        svgEl.appendChild(path);
+
+        const overlay = L.svgOverlay(svgEl, bounds, { opacity: 0.85, zIndex: 450 });
+        overlay.addTo(map);
+        layersRef.current.push(overlay);
+
+        // Suppress unused variable warning for metersPerDeg
+        void metersPerDeg;
+        void svgContent;
+      }
+    });
+
+    return () => {
+      for (const layer of layersRef.current) {
+        layer.remove();
+      }
+      layersRef.current = [];
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    map,
+    isBoundingTechnique,
+    swarm.technique,
+    swarm.heading,
+    // Stringify member positions to detect movement
+    JSON.stringify(swarm.members.map((m) => `${m.robotId}:${m.position.lat}:${m.position.lng}`)),
+  ]);
+
+  return null;
 }
 
 // ─── SwarmFormationPolygon ────────────────────────────────────────────────────
@@ -238,10 +538,18 @@ function SwarmMemberMarker({ member, swarmState }: SwarmMemberMarkerProps) {
 interface SwarmTelemetryPanelProps {
   swarm: SwarmFormationSpec;
   onClose: () => void;
+  showAttribution: boolean;
+  onToggleAttribution: () => void;
 }
 
-function SwarmTelemetryPanel({ swarm, onClose }: SwarmTelemetryPanelProps) {
+function SwarmTelemetryPanel({
+  swarm,
+  onClose,
+  showAttribution,
+  onToggleAttribution,
+}: SwarmTelemetryPanelProps) {
   const stateColor = FORMATION_STATE_COLORS[swarm.state] ?? DEFAULT_FORMATION_COLOR;
+  const hasAttributions = (swarm.detectionAttributions?.length ?? 0) > 0;
 
   return (
     <div
@@ -315,6 +623,37 @@ function SwarmTelemetryPanel({ swarm, onClose }: SwarmTelemetryPanelProps) {
         </tbody>
       </table>
 
+      {/* Detection attribution toggle */}
+      {hasAttributions && (
+        <div
+          style={{
+            marginTop: 8,
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            paddingTop: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span style={{ color: '#94a3b8', fontSize: 11 }}>SHOW ATTRIBUTION</span>
+          <button
+            onClick={onToggleAttribution}
+            style={{
+              background: showAttribution ? 'rgba(34,197,94,0.2)' : 'rgba(100,116,139,0.2)',
+              border: `1px solid ${showAttribution ? 'rgba(34,197,94,0.5)' : 'rgba(100,116,139,0.4)'}`,
+              borderRadius: 4,
+              color: showAttribution ? '#86efac' : '#64748b',
+              cursor: 'pointer',
+              fontSize: 10,
+              padding: '2px 8px',
+              fontFamily: 'inherit',
+            }}
+          >
+            {showAttribution ? 'ON' : 'OFF'}
+          </button>
+        </div>
+      )}
+
       {/* Per-member battery */}
       {swarm.members.length > 0 && (
         <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8 }}>
@@ -369,6 +708,7 @@ function Row({ label, value }: { label: string; value: string }) {
 export function SwarmCOPLayer() {
   const [swarms, setSwarms] = useState<Map<string, SwarmFormationSpec>>(new Map());
   const [selectedSwarmId, setSelectedSwarmId] = useState<string | null>(null);
+  const [showAttribution, setShowAttribution] = useState(false); // default OFF
 
   // WebSocket subscription to swarm:cop_update channel
   const wsRef = useRef<WebSocket | null>(null);
@@ -480,11 +820,24 @@ export function SwarmCOPLayer() {
         )),
       )}
 
+      {/* Bounding overwatch animation per swarm (only for bounding techniques) */}
+      {swarmArray.map((swarm) => (
+        <BoundingOverwatchLayer
+          key={`swarm-bounding-${swarm.swarmId}`}
+          swarm={swarm}
+        />
+      ))}
+
+      {/* Detection attribution lines (global toggle, default OFF) */}
+      <DetectionAttributionLayer swarms={swarmArray} show={showAttribution} />
+
       {/* Telemetry detail panel for selected swarm */}
       {selectedSwarm && (
         <SwarmTelemetryPanel
           swarm={selectedSwarm}
           onClose={() => setSelectedSwarmId(null)}
+          showAttribution={showAttribution}
+          onToggleAttribution={() => setShowAttribution((v) => !v)}
         />
       )}
     </>
