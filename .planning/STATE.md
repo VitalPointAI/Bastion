@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 47-02-PLAN.md
-last_updated: "2026-03-16T13:57:30.274Z"
+stopped_at: Completed 47-03-PLAN.md
+last_updated: "2026-03-16T14:06:00Z"
 last_activity: "2026-03-14 - Completed 45-07 Tasks 1+2: Phase 45 integration wiring complete, checkpoint reached"
 progress:
   total_phases: 64
   completed_phases: 44
   total_plans: 409
-  completed_plans: 396
+  completed_plans: 397
 ---
 
 # Project State
@@ -30,7 +30,7 @@ Plan: 7 of 7 in current phase — CHECKPOINT (awaiting Task 3 browser verificati
 Status: Plan 45-07 Tasks 1+2 complete — BrainController wired with useBrainLens, useBrainSubspaces, useBrainDrillDown, useBrainNHop; BrainToolbar replaced cluster toggle with LensSelector; BrainVisualization has ghost rendering + expand button; awaiting human browser verify
 Last activity: 2026-03-14 - Completed 45-07 Tasks 1+2: Phase 45 integration wiring complete, checkpoint reached
 
-Progress: ██████████████████████████ 388 plans complete
+Progress: ██████████████████████████ 397 plans complete
 
 ## Performance Metrics
 
@@ -191,6 +191,7 @@ Progress: ███████████████████████�
 | Phase 45 P04 | 167 | 2 tasks | 3 files |
 | Phase 47-json-ld-semantic-brain-cop-fix P01 | 7 | 2 tasks | 11 files |
 | Phase 47-json-ld-semantic-brain-cop-fix P02 | 352 | 2 tasks | 5 files |
+| Phase 47-json-ld-semantic-brain-cop-fix P03 | 13 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -204,6 +205,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 47 Plan 03 (RAFT Store Rewrite):**
+- Soft delete is now default: delete* sets validTo=now; hard delete moved to purge* variants for temporal history preservation
+- Optional provenance parameter on all create/update: assertedBy/Via/From/validFrom/halfLifeDays with safe defaults (assertedBy=system:unknown, assertedVia=manual_entry)
+- listActorsAtTime + listActorsWithDecay added as named methods to match TDD test scaffold expectations from plan 47-02
 
 **Phase 43 Plan 04 (Bridge Service):**
 - _relay_robot_message preserves original message_id (may be None) — never re-stamps — so cloud dedup receives the robot's own UUID rather than a bridge-generated one
