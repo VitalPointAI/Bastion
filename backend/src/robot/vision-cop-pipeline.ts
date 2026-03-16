@@ -14,6 +14,15 @@
 import { randomUUID } from 'crypto';
 import type { RobotVisionMsg } from './robot-types.js';
 import type { COPLayerSpec, COPSymbolSpec, COPAnnotationSpec, Affiliation } from '../cop/layers/layer-types.js';
+import { getConfidenceTier } from '../graph/provenance-types.js';
+import { SOURCE_WEIGHTS } from '../graph/confidence-calculator.js';
+import { entityResolutionService } from '../graph/resolution/resolution-service.js';
+
+const BASTION_CONTEXT = 'https://bastion.vitalpoint.ai/ontology/context.jsonld';
+const VISION_ASSERTED_BY = 'system:yolov8-detector';
+const VISION_SOURCE_WEIGHT = SOURCE_WEIGHTS['vision_pipeline']; // 0.70
+// Vision detections are highly perishable: 1-day half-life
+const VISION_HALF_LIFE_DAYS = 1;
 
 // ── Threat Classification ──────────────────────────────────────────────────
 
@@ -199,6 +208,9 @@ export async function updateAdversaryCOPLayer(
       ccoClass: s.type,
       confidence: s.confidence,
       sourceAuthority: `${s.detectedBy} (vision detection)`,
+      confidenceTier: getConfidenceTier(s.confidence),
+      assertedVia: 'vision_pipeline',
+      provenanceSummary: `${s.detectedBy} vision detection (confidence: ${Math.round(s.confidence * 100)}%)`,
     }));
 
     const copAnnotations: COPAnnotationSpec[] = symbols.map(s => ({
@@ -261,8 +273,14 @@ export async function updateKnowledgeGraph(
 
     for (const symbol of symbols) {
       const actorId = `ACT-det-${symbol.designation.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+      const derivedFrom = JSON.stringify([symbol.entityId, symbol.sourceDocumentId]);
 
-      // Create/update hostile actor node
+      // Map detection category to CCO JSON-LD type
+      const jsonldType = symbol.type === 'personnel'
+        ? 'cco:Person'
+        : 'jc3:Equipment'; // tanks, vehicles, aircraft, naval
+
+      // Create/update hostile actor node with JSON-LD provenance
       await executeWriteQuery(`
         MERGE (a:Actor {id: $id})
         ON CREATE SET
@@ -274,10 +292,27 @@ export async function updateKnowledgeGraph(
           a.sourceDocumentIds = [$docId],
           a.containerIds = [],
           a.createdAt = $now,
-          a.updatedAt = $now
+          a.updatedAt = $now,
+          a.jsonldType = $jsonldType,
+          a.jsonldContext = $jsonldContext,
+          a.assertedBy = $assertedBy,
+          a.assertedVia = 'vision_pipeline',
+          a.derivedFrom = $derivedFrom,
+          a.confidence = $confidence,
+          a.sourceWeight = $sourceWeight,
+          a.validFrom = $validFrom,
+          a.validTo = null,
+          a.halfLifeDays = $halfLifeDays,
+          a.attributes_affiliation = $affiliation,
+          a.attributes_lat = $lat,
+          a.attributes_lng = $lng
         ON MATCH SET
           a.attributes = $attributes,
-          a.updatedAt = $now
+          a.updatedAt = $now,
+          a.confidence = $confidence,
+          a.derivedFrom = $derivedFrom,
+          a.attributes_lat = $lat,
+          a.attributes_lng = $lng
       `, {
         id: actorId,
         name: symbol.designation,
@@ -294,6 +329,18 @@ export async function updateKnowledgeGraph(
         workspaceId,
         docId: `detection-${symbol.entityId}`,
         now,
+        // JSON-LD provenance fields
+        jsonldType,
+        jsonldContext: BASTION_CONTEXT,
+        assertedBy: VISION_ASSERTED_BY,
+        derivedFrom,
+        confidence: symbol.confidence * VISION_SOURCE_WEIGHT, // scale by source reliability
+        sourceWeight: VISION_SOURCE_WEIGHT,
+        validFrom: symbol.detectedAt,
+        halfLifeDays: VISION_HALF_LIFE_DAYS,
+        affiliation: symbol.affiliation,
+        lat: symbol.position.lat,
+        lng: symbol.position.lng,
       });
 
       // Create DETECTED_BY relationship to the robot
@@ -310,12 +357,25 @@ export async function updateKnowledgeGraph(
           r.sourceDocumentIds = [],
           r.containerIds = [],
           r.createdAt = $now,
-          r.updatedAt = $now
+          r.updatedAt = $now,
+          r.jsonldType = 'cco:Agent',
+          r.jsonldContext = $jsonldContext,
+          r.assertedBy = $assertedBy,
+          r.assertedVia = 'vision_pipeline',
+          r.derivedFrom = '[]',
+          r.confidence = 1.0,
+          r.sourceWeight = $sourceWeight,
+          r.validFrom = $now,
+          r.validTo = null,
+          r.halfLifeDays = 3650
       `, {
         robotId: robotActorId,
         robotName: robotId,
         workspaceId,
         now,
+        jsonldContext: BASTION_CONTEXT,
+        assertedBy: VISION_ASSERTED_BY,
+        sourceWeight: VISION_SOURCE_WEIGHT,
       });
 
       await executeWriteQuery(`
@@ -330,7 +390,17 @@ export async function updateKnowledgeGraph(
           rel.evidence = $evidence,
           rel.sourceDocumentIds = [$docId],
           rel.createdAt = $now,
-          rel.updatedAt = $now
+          rel.updatedAt = $now,
+          rel.jsonldType = 'cco:ActOfRelating',
+          rel.jsonldContext = $jsonldContext,
+          rel.assertedBy = $assertedBy,
+          rel.assertedVia = 'vision_pipeline',
+          rel.derivedFrom = $derivedFrom,
+          rel.confidence = $confidence,
+          rel.sourceWeight = $sourceWeight,
+          rel.validFrom = $validFrom,
+          rel.validTo = null,
+          rel.halfLifeDays = $halfLifeDays
         ON MATCH SET
           rel.strength = $confidence,
           rel.updatedAt = $now
@@ -343,10 +413,27 @@ export async function updateKnowledgeGraph(
         evidence: `Vision detection, confidence: ${(symbol.confidence * 100).toFixed(0)}%`,
         docId: `detection-${symbol.entityId}`,
         now,
+        jsonldContext: BASTION_CONTEXT,
+        assertedBy: VISION_ASSERTED_BY,
+        derivedFrom,
+        sourceWeight: VISION_SOURCE_WEIGHT,
+        validFrom: symbol.detectedAt,
+        halfLifeDays: VISION_HALF_LIFE_DAYS,
       });
     }
 
     console.log(`[Vision→Graph] Added ${symbols.length} threat detection(s) to knowledge graph`);
+
+    // Trigger entity resolution after writes to check for duplicates with other sources
+    try {
+      const resolution = await entityResolutionService.findDuplicates(workspaceId);
+      if (resolution.autoMerge.length > 0) {
+        await entityResolutionService.autoMergeDuplicates(resolution);
+      }
+    } catch (resolutionErr) {
+      // Non-fatal: entity resolution failure should not block vision pipeline
+      console.warn('[Vision→Graph] Entity resolution failed after writes:', resolutionErr);
+    }
   } catch (err) {
     console.warn('[Vision→Graph] Failed to update knowledge graph:', err);
   }

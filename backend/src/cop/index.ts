@@ -30,7 +30,7 @@ import { runCOPGeneration } from './agents/cop-coordinator.js';
 import { COP_AGENT_DEFINITIONS } from './agents/agent-definitions.js';
 import { setHandlerDependencies } from './api/cop-handlers.js';
 import { objectiveStore } from '../strategic/objectives/index.js';
-import { actorStore } from '../graph/raft/actor-store.js';
+import { fetchAllSemanticEntities } from './agents/semantic-entity-query.js';
 import { osintEventStore } from '../graph/osint/event-store.js';
 
 // ─── Module State ────────────────────────────────────────────────────────────
@@ -108,7 +108,7 @@ function wireGenerationTrigger(_triggerHandler: TriggerHandler): void {
     try {
       // Fetch real documents (objectives) for sub-agent context
       let documents: Array<{ id: string; content: string; type: string }> = [];
-      let graphEntities: Array<{ id: string; name: string; type: string; properties: Record<string, unknown> }> = [];
+      let graphEntities: Awaited<ReturnType<typeof fetchAllSemanticEntities>> = [];
 
       try {
         const { objectives } = await objectiveStore.listObjectives({
@@ -123,15 +123,10 @@ function wireGenerationTrigger(_triggerHandler: TriggerHandler): void {
         console.warn('[COP] Failed to fetch objectives:', err instanceof Error ? err.message : err);
       }
 
-      // Fetch real graph entities (actors) for sub-agent context
+      // Fetch semantic graph entities for sub-agent context
       try {
-        const actors = await actorStore.listActors(data.workspaceId);
-        graphEntities = actors.map(actor => ({
-          id: actor.id,
-          name: actor.name,
-          type: actor.type,
-          properties: actor.attributes || {},
-        }));
+        graphEntities = await fetchAllSemanticEntities(data.workspaceId);
+        console.log(`[COP] Fetched ${graphEntities.length} semantic entities for workspace=${data.workspaceId}`);
       } catch (err) {
         console.warn('[COP] Failed to fetch graph entities:', err instanceof Error ? err.message : err);
       }

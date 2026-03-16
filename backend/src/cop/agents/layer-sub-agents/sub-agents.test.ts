@@ -181,8 +181,18 @@ describe('Force Disposition Agent Output', () => {
         {
           id: 'graph-unit-1',
           name: '3rd Armored Division',
-          type: 'military_unit',
+          jsonldType: 'cco:MilitaryOrganization',
+          confidence: 0.9,
+          provenance: {
+            assertedBy: 'system',
+            assertedVia: 'manual_entry' as const,
+            derivedFrom: '[]',
+            confidence: 0.9,
+            sourceWeight: 0.95,
+          },
+          temporalValid: true,
           properties: {
+            type: 'military_unit',
             unitType: 'armor',
             echelon: 'division',
             affiliation: 'friendly',

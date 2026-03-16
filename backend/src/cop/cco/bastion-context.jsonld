@@ -1,0 +1,25 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "bfo":     "http://purl.obolibrary.org/obo/BFO_",
+    "cco":     "http://www.ontologyrepository.com/CommonCoreOntologies/",
+    "prov":    "http://www.w3.org/ns/prov#",
+    "jc3":     "http://www.mip.saic.com/jc3iedm/",
+    "dodaf":   "https://dodcio.defense.gov/ontology/dodaf/",
+    "bastion": "https://bastion.vitalpoint.ai/ontology/",
+    "rdfs":    "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd":     "http://www.w3.org/2001/XMLSchema#",
+
+    "jsonldType":   "@type",
+    "jsonldId":     "@id",
+
+    "validFrom":    { "@id": "bastion:validFrom",    "@type": "xsd:dateTime" },
+    "validTo":      { "@id": "bastion:validTo",      "@type": "xsd:dateTime" },
+    "confidence":   { "@id": "bastion:confidence",   "@type": "xsd:decimal" },
+    "assertedBy":   { "@id": "prov:wasAttributedTo" },
+    "assertedVia":  { "@id": "prov:wasGeneratedBy" },
+    "derivedFrom":  { "@id": "prov:wasDerivedFrom" },
+    "sourceWeight": { "@id": "bastion:sourceWeight", "@type": "xsd:decimal" },
+    "halfLifeDays": { "@id": "bastion:halfLifeDays", "@type": "xsd:integer" }
+  }
+}

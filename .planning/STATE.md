@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 47 context gathered
-last_updated: "2026-03-15T20:54:27.596Z"
-last_activity: "2026-03-14 - Completed 45-07 Tasks 1+2: Phase 45 integration wiring complete, checkpoint reached"
+status: completed
+stopped_at: Completed 47-11-PLAN.md
+last_updated: "2026-03-16T15:05:01.096Z"
+last_activity: "2026-03-16 - Completed 47-11: design/plan/assess tabs wired to JSON-LD provenance; phase 47 fully complete"
 progress:
-  total_phases: 63
-  completed_phases: 44
-  total_plans: 390
-  completed_plans: 393
+  total_phases: 64
+  completed_phases: 45
+  total_plans: 409
+  completed_plans: 404
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 45 of 61 (Knowledge Graph Subspaces, Lenses, Drill-Down) — IN PROGRESS
-Plan: 7 of 7 in current phase — CHECKPOINT (awaiting Task 3 browser verification)
-Status: Plan 45-07 Tasks 1+2 complete — BrainController wired with useBrainLens, useBrainSubspaces, useBrainDrillDown, useBrainNHop; BrainToolbar replaced cluster toggle with LensSelector; BrainVisualization has ghost rendering + expand button; awaiting human browser verify
-Last activity: 2026-03-14 - Completed 45-07 Tasks 1+2: Phase 45 integration wiring complete, checkpoint reached
+Phase: 47 of 64 (JSON-LD Semantic Brain COP Fix) — COMPLETE
+Plan: 11 of 11 in current phase — COMPLETE
+Status: Plan 47-11 complete — JPP entity API enriched with JSON-LD fields. plan/design/assess tabs wired to JSON-LD provenance data. EntityResolutionPanel shows confidence tier/source/ontology badges. DesignAIPanel warns on low-confidence entities. OperationalAssess has Intelligence Quality view with tier distribution and contradiction count. All 7+ downstream consumers from CONTEXT.md now wired.
+Last activity: 2026-03-16 - Completed 47-11: design/plan/assess tabs wired to JSON-LD provenance; phase 47 fully complete
 
-Progress: ██████████████████████████ 388 plans complete
+Progress: █████████████████████████████ 404 plans complete
 
 ## Performance Metrics
 
@@ -189,6 +189,15 @@ Progress: ███████████████████████�
 | Phase 45-knowledge-graph-subspaces P06 | 99 | 1 tasks | 1 files |
 | Phase 45-knowledge-graph-subspaces P05 | 133 | 2 tasks | 3 files |
 | Phase 45 P04 | 167 | 2 tasks | 3 files |
+| Phase 47-json-ld-semantic-brain-cop-fix P01 | 7 | 2 tasks | 11 files |
+| Phase 47-json-ld-semantic-brain-cop-fix P02 | 352 | 2 tasks | 5 files |
+| Phase 47-json-ld-semantic-brain-cop-fix P03 | 13 | 2 tasks | 6 files |
+| Phase 47-json-ld-semantic-brain-cop-fix P05 | 451 | 2 tasks | 5 files |
+| Phase 47-json-ld-semantic-brain-cop-fix P06 | 8 | 2 tasks | 11 files |
+| Phase 47 P08 | 8 | 3 tasks | 5 files |
+| Phase 47 P07 | 664 | 2 tasks | 11 files |
+| Phase 47 P09 | 15 | 2 tasks | 4 files |
+| Phase 47 P10 | 394 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -202,6 +211,23 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 47 Plan 10 (Consumer Wiring + COP Visual Encoding):**
+- includeProvenance defaults to true on graph API endpoints — opt-out pattern (?includeProvenance=false) rather than opt-in
+- Temporal filtering for atTime param is client-side on returned actor list — avoids Cypher coupling while migration may not have run
+- confidenceTier on COPSymbolSpec is optional to maintain backward compat with pre-Plan-07 layers
+- Confidence threshold slider renders only when onConfidenceThresholdChange callback provided — progressive enhancement
+- Opacity stacks: layer opacity * tier modifier — medium at 70% layer opacity renders at 49% effective opacity
+
+**Phase 47 Plan 09 (Ingestion Pipeline Wiring):**
+- graph-builder defaults to assertedVia='ai_inference' when not passed by caller — callers must explicitly override
+- OSINT entities use halfLifeDays=90; vision detections use halfLifeDays=1 (maximally perishable tactical intel)
+- Contradiction detection scoped to 'type' property on actor updates only — avoids noise on other property conflicts
+
+**Phase 47 Plan 03 (RAFT Store Rewrite):**
+- Soft delete is now default: delete* sets validTo=now; hard delete moved to purge* variants for temporal history preservation
+- Optional provenance parameter on all create/update: assertedBy/Via/From/validFrom/halfLifeDays with safe defaults (assertedBy=system:unknown, assertedVia=manual_entry)
+- listActorsAtTime + listActorsWithDecay added as named methods to match TDD test scaffold expectations from plan 47-02
 
 **Phase 43 Plan 04 (Bridge Service):**
 - _relay_robot_message preserves original message_id (may be None) — never re-stamps — so cloud dedup receives the robot's own UUID rather than a bridge-generated one
@@ -835,6 +861,18 @@ Recent decisions affecting current work:
 - [Phase 45-knowledge-graph-subspaces]: Stale stack validation truncates to last valid crumb rather than full reset — preserves navigation context
 - [Phase 45]: Container subspace IDs prefixed with 'container:' to distinguish from DB-persisted IDs
 - [Phase 45]: Ghost stubs pinned at centroid of connected subspace nodes offset 50 units outward
+- [Phase 47-json-ld-semantic-brain-cop-fix]: JSON-LD property aliases (jsonldType, jsonldContext) avoid Neo4j Cypher @ syntax collision while maintaining full JSON-LD semantic alignment via bundled context file
+- [Phase 47-json-ld-semantic-brain-cop-fix]: RAFT store recordTo* functions use backward-compat JSON-LD field defaults for pre-migration nodes; migration will populate real values in plan 47-02
+- [Phase 47-json-ld-semantic-brain-cop-fix]: Dynamic import() in test it() blocks allows RED-phase TDD scaffolding where implementation module does not exist yet
+- [Phase 47-json-ld-semantic-brain-cop-fix]: useBrainTimeline tests separate filterByTemporalValidity and getStalenessOpacity as pure exports for Node.js test environment without DOM
+- [Phase 47]: detectContradiction accepts two AssertionInput objects to match Plan 02 test contracts
+- [Phase 47]: Hybrid resolution: 0.4*string + 0.4*embedding + 0.2*type; auto_merge>=0.85, human_review>=0.5, distinct<0.5
+- [Phase 47-06]: matchesEntityType() helper checks both properties.type (legacy) and jsonldType (CCO URI) for backward compat during JSON-LD migration
+- [Phase 47]: Export filterByTemporalValidity and getStalenessOpacity as named exports from useBrainTimeline for testability
+- [Phase 47]: Brain graph-snapshot atTime param replaces at (legacy kept for backward compat); optional timestamp defaults to current time
+- [Phase 47]: normalizeType() strips colons/spaces/underscores for jsonldType comparison across all COP sub-agents
+- [Phase 47]: confidenceTier required (not optional) in COPSymbolSpec enforces all sub-agents provide visual confidence encoding
+- [Phase 47]: Normalize entity field names in jpp.ts (name->canonicalName, type->entityType) to match frontend Entity interface contract
 
 ### Roadmap Evolution
 
@@ -874,6 +912,7 @@ Recent decisions affecting current work:
 - Phase 45 added: Knowledge Graph Subspaces — Container-scoped subgraphs, focus-and-expand pattern, hierarchical drill-down, and virtual lenses for managing growing knowledge graphs at scale
 - Phase 46 added: Sphero RVR+ Swarm Leader & Doctrinal Movement Control — Swarm coordination enabling vision-equipped RVR+/Orin Nano as swarm leader directing additional units in doctrinal formations; heterogeneous resource support (drones, UGVs, sensors); DAO-driven dynamic membership; COP integration
 - Phase 47 added: JSON-LD Semantic Brain + COP Fix — Refactor knowledge graph to JSON-LD with BFO (Basic Formal Ontology) upper ontology, CCO (Common Core Ontologies) for DoD/DND interoperability, DODAF/DNDAF architectural data model compliance, military ontology alignment (APP-6, JC3IEDM). Provenance tracking, temporal reasoning, entity resolution, confidence scoring, contradiction detection. Wire upgraded graph into all downstream consumers (COP, design, plan, assess, doc-intel, OSINT, vision). Fix COP layer generation end-to-end.
+- Phase 48 added: Robot swarm behaviour end-to-end demo
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
@@ -1544,7 +1583,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-15T20:54:27.584Z
-Stopped at: Phase 47 context gathered
-Resume file: .planning/phases/47-json-ld-semantic-brain-cop-fix/47-CONTEXT.md
+Last session: 2026-03-16T14:55:24.702Z
+Stopped at: Completed 47-11-PLAN.md
+Resume file: None
 Next action: Continue Phase 40 plan 02

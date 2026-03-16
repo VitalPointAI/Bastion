@@ -128,6 +128,18 @@ function summarizeObjective(
   return `${prefix}${label}${suffix}`;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Compute a confidence tier from a 0-1 confidence value.
+ * > 0.85 = 'high', 0.5-0.85 = 'medium', < 0.5 = 'low'
+ */
+function computeConfidenceTier(confidence: number): 'high' | 'medium' | 'low' {
+  if (confidence > 0.85) return 'high';
+  if (confidence >= 0.5) return 'medium';
+  return 'low';
+}
+
 // ─── Return type ──────────────────────────────────────────────────────────────
 
 export interface UseBrainDataReturn {
@@ -255,7 +267,18 @@ async function safeFetch<T>(url: string): Promise<T | null> {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useBrainData(problemSetId: string): UseBrainDataReturn {
+/**
+ * useBrainData
+ *
+ * Fetches brain graph data from multiple API endpoints and merges into a single
+ * BrainGraphData structure. When atTime is provided (ISO string), the hook uses
+ * the /api/brain/graph-snapshot endpoint for temporal filtering instead of the
+ * live endpoints.
+ *
+ * @param problemSetId - ID of the problem set to fetch data for
+ * @param atTime - Optional ISO timestamp for temporal (historical) queries
+ */
+export function useBrainData(problemSetId: string, atTime?: string | null): UseBrainDataReturn {
   const [data, setData] = useState<BrainGraphData>({ nodes: [], edges: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -265,6 +288,68 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
 
   useEffect(() => {
     if (!problemSetId) return;
+
+    // ── If atTime is set, use the graph-snapshot endpoint for temporal queries ─
+    if (atTime) {
+      let cancelled = false;
+      setLoading(true);
+      setError(null);
+
+      const url = `${API_BASE}/api/brain/graph-snapshot?problemSetId=${encodeURIComponent(problemSetId)}&atTime=${encodeURIComponent(atTime)}`;
+      fetch(url)
+        .then((res) => {
+          if (!res.ok) throw new Error(`graph-snapshot ${res.status}`);
+          return res.json() as Promise<{ nodes?: unknown[]; edges?: unknown[] }>;
+        })
+        .then((raw) => {
+          if (cancelled) return;
+          // Map snapshot nodes to BrainNode shape with JSON-LD fields
+          const snapshotNodes: BrainNode[] = (raw.nodes ?? []).map((n: unknown) => {
+            const node = n as Record<string, unknown>;
+            const conf = typeof node.confidence === 'number' ? node.confidence : 0.3;
+            return {
+              id: node.id as string,
+              label: (node.label ?? node.name ?? node.id) as string,
+              type: (node.type ?? 'entity') as BrainNode['type'],
+              actorCategory: node.actorCategory as ActorCategory | undefined,
+              confidence: conf,
+              confidenceTier: computeConfidenceTier(conf),
+              createdAt: (node.createdAt ?? new Date().toISOString()) as string,
+              validFrom: node.validFrom as string | undefined,
+              validTo: node.validTo as string | null | undefined,
+              assertedVia: node.assertedVia as string | undefined,
+              assertedBy: node.assertedBy as string | undefined,
+              isContradicted: node.isContradicted as boolean | undefined,
+              jsonldType: node.jsonldType as string | undefined,
+              halfLifeDays: node.halfLifeDays as number | undefined,
+              validityScore: node.validityScore as number | undefined,
+              sourceDocumentIds: node.sourceDocumentIds as string[] | undefined,
+            };
+          });
+          const snapshotEdges: BrainEdge[] = (raw.edges ?? []).map((e: unknown) => {
+            const edge = e as Record<string, unknown>;
+            return {
+              source: edge.source as string,
+              target: edge.target as string,
+              type: (edge.type ?? 'related') as string,
+              strength: edge.strength as number | undefined,
+              confidence: edge.confidence as number | undefined,
+              isConflict: edge.isConflict as boolean | undefined,
+              isContradiction: edge.isContradiction as boolean | undefined,
+            };
+          });
+          setData({ nodes: snapshotNodes, edges: snapshotEdges });
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return;
+          setError(err instanceof Error ? err.message : 'Failed to load graph snapshot');
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+
+      return () => { cancelled = true; };
+    }
 
     let cancelled = false;
     setLoading(true);
@@ -302,12 +387,14 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
           if (nodeIds.has(rawNode.id)) continue;
           const detail = actorMap.get(rawNode.id);
           const category = toActorCategory(detail?.actor_category ?? rawNode.type);
+          const conf = detail ? actorConfidence(detail) : 0.3;
           nodes.push({
             id: rawNode.id,
             label: detail?.name ?? rawNode.label ?? rawNode.name ?? rawNode.id,
             type: 'entity',
             actorCategory: category,
-            confidence: detail ? actorConfidence(detail) : 0.3,
+            confidence: conf,
+            confidenceTier: computeConfidenceTier(conf),
             sourceDocumentIds: detail?.sourceDocumentIds,
             validityScore: detail?.validity_score,
             aliases: detail?.aliases,
@@ -323,12 +410,14 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
         // Add any actors from the actors endpoint not already in the graph
         for (const actor of actorsResp?.actors ?? []) {
           if (nodeIds.has(actor.id)) continue;
+          const conf = actorConfidence(actor);
           nodes.push({
             id: actor.id,
             label: actor.name ?? actor.id,
             type: 'entity',
             actorCategory: toActorCategory(actor.actor_category),
-            confidence: actorConfidence(actor),
+            confidence: conf,
+            confidenceTier: computeConfidenceTier(conf),
             sourceDocumentIds: actor.sourceDocumentIds,
             validityScore: actor.validity_score,
             aliases: actor.aliases,
@@ -359,13 +448,15 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
             if (obj.constraints && obj.constraints.length > 0) {
               descParts.push(`\nConstraints: ${obj.constraints.join('; ')}`);
             }
+            const objConf = obj.extraction_confidence ?? 0.5;
             nodes.push({
               id: obj.id,
               label,
               type: 'objective',
               description: descParts.join('') || undefined,
               dimeCategory: obj.midlife_category,
-              confidence: obj.extraction_confidence ?? 0.5,
+              confidence: objConf,
+              confidenceTier: computeConfidenceTier(objConf),
               createdAt: obj.created_at ?? new Date().toISOString(),
             });
             nodeIds.add(obj.id);
@@ -381,13 +472,14 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
           if (nodeIds.has(doc.id)) continue;
           const qualityRating = doc.quality_rating;
           // quality_rating is typically 1-5; normalise to 0-1
-          const confidence =
+          const docConf =
             qualityRating != null ? Math.min(1, qualityRating / 5) : 0.5;
           nodes.push({
             id: doc.id,
             label: doc.document_name ?? doc.filename ?? doc.id,
             type: 'document',
-            confidence,
+            confidence: docConf,
+            confidenceTier: computeConfidenceTier(docConf),
             createdAt: doc.created_at ?? new Date().toISOString(),
           });
           nodeIds.add(doc.id);
@@ -402,6 +494,7 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
             label: category,
             type: 'concept',
             confidence: 0.7, // concepts derived from structured data are moderately reliable
+            confidenceTier: 'medium',
             createdAt: new Date().toISOString(),
           });
           nodeIds.add(conceptId);
@@ -442,7 +535,7 @@ export function useBrainData(problemSetId: string): UseBrainDataReturn {
     return () => {
       cancelled = true;
     };
-  }, [problemSetId, tick]);
+  }, [problemSetId, tick, atTime]);
 
   return { data, loading, error, refetch };
 }

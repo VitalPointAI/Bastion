@@ -3,7 +3,32 @@
  *
  * Core data model for strategic environment analysis based on ATP 5-0.1.
  * These types represent the fundamental entities in operational environment modeling.
+ *
+ * Phase 47: Extended with JSON-LD-native fields (jsonldType, jsonldContext),
+ * W3C PROV-O provenance (ProvenanceProps), and temporal validity (TemporalProps)
+ * on all entity interfaces. All existing fields preserved for backward compatibility.
  */
+
+import type { ProvenanceProps, TemporalProps } from '../provenance-types.js';
+
+// ============================================================================
+// JSON-LD Entity Base
+// ============================================================================
+
+/**
+ * Base interface for all JSON-LD-native RAFT entities.
+ * Provides ontology typing, context reference, provenance, and temporal validity.
+ *
+ * jsonldType stores the CCO/BFO class URI (e.g., 'cco:MilitaryOrganization').
+ * jsonldContext stores the canonical context URL for interop signaling — the
+ * bundled bastion-context.jsonld is used at runtime (never fetched from URL).
+ */
+export interface JsonLdEntityBase extends ProvenanceProps, TemporalProps {
+  /** CCO/BFO class URI, e.g. 'cco:MilitaryOrganization'. Stored as Neo4j property. */
+  jsonldType: string;
+  /** Canonical @context URL — 'https://bastion.vitalpoint.ai/ontology/context.jsonld' */
+  jsonldContext: string;
+}
 
 // ============================================================================
 // Actor Types
@@ -19,9 +44,14 @@
 export type ActorType = 'nation' | 'organization' | 'individual' | 'non_state_actor';
 
 /**
- * Actor - An entity that can take action in the operational environment
+ * Actor - An entity that can take action in the operational environment.
+ *
+ * Phase 47: Extended with JsonLdEntityBase (jsonldType, jsonldContext,
+ * provenance, temporal validity) and promoted attribute fields for
+ * Cypher queryability. Existing attributes blob preserved as attributesJson
+ * for backward compat during migration.
  */
-export interface Actor {
+export interface Actor extends JsonLdEntityBase {
   /** Unique identifier (ACT-{uuid}) */
   id: string;
   /** Primary name of the actor */
@@ -30,8 +60,23 @@ export interface Actor {
   type: ActorType;
   /** Alternative names for entity resolution */
   aliases: string[];
-  /** Flexible key-value attributes */
+  /** Flexible key-value attributes — kept for backward compat reads during migration */
   attributes: Record<string, unknown>;
+  /**
+   * Raw attributes blob as JSON string — kept for backward compat during migration.
+   * After migration complete, consumed code updates to use promoted fields.
+   */
+  attributesJson?: string;
+  /** Promoted attribute: force affiliation (hostile, friendly, neutral, suspect, unknown) */
+  attributes_affiliation?: string;
+  /** Promoted attribute: echelon level (team, squad, platoon, company, battalion, etc.) */
+  attributes_echelon?: string;
+  /** Promoted attribute: unit type classification */
+  attributes_unitType?: string;
+  /** Promoted attribute: latitude (WGS84) */
+  attributes_lat?: number;
+  /** Promoted attribute: longitude (WGS84) */
+  attributes_lng?: number;
   /** Workspace isolation for multi-tenant support */
   workspaceId?: string;
   /** Document IDs this actor was extracted from */
@@ -59,10 +104,12 @@ export interface Actor {
 export type RelationshipType = 'alliance' | 'conflict' | 'dependency' | 'competition' | 'cooperation';
 
 /**
- * Relationship - A connection between two actors
- * Strength ranges from -1.0 (hostile) to 1.0 (allied)
+ * Relationship - A connection between two actors.
+ * Strength ranges from -1.0 (hostile) to 1.0 (allied).
+ *
+ * Phase 47: Extended with JsonLdEntityBase.
  */
-export interface Relationship {
+export interface Relationship extends JsonLdEntityBase {
   /** Unique identifier (REL-{uuid}) */
   id: string;
   /** Actor ID where relationship originates */
@@ -110,9 +157,11 @@ export interface Relationship {
 export type FunctionDomain = 'diplomatic' | 'informational' | 'military' | 'economic' | 'legal' | 'intelligence' | 'financial';
 
 /**
- * ActorFunction - A capability or role an actor performs
+ * ActorFunction - A capability or role an actor performs.
+ *
+ * Phase 47: Extended with JsonLdEntityBase.
  */
-export interface ActorFunction {
+export interface ActorFunction extends JsonLdEntityBase {
   /** Unique identifier (FUN-{uuid}) */
   id: string;
   /** Actor this function belongs to */
@@ -159,9 +208,11 @@ export type TensionIntensity = 'low' | 'medium' | 'high' | 'critical';
 export type TensionDomain = 'political' | 'military' | 'economic' | 'social' | 'information';
 
 /**
- * Tension - A point of friction or potential conflict between actors
+ * Tension - A point of friction or potential conflict between actors.
+ *
+ * Phase 47: Extended with JsonLdEntityBase.
  */
-export interface Tension {
+export interface Tension extends JsonLdEntityBase {
   /** Unique identifier (TEN-{uuid}) */
   id: string;
   /** Actor IDs involved in this tension (2+) */
@@ -207,8 +258,10 @@ export type DecisionBasis = 'document_based' | 'analysis_based' | 'intuition_bas
  * Decision — A recorded decision point in the planning process.
  * Captures the what, why, and evidence basis for decisions made,
  * enabling traceability and surfacing where intuition fills knowledge gaps.
+ *
+ * Phase 47: Extended with JsonLdEntityBase.
  */
-export interface Decision {
+export interface Decision extends JsonLdEntityBase {
   /** Unique identifier (DEC-{uuid}) */
   id: string;
   /** Gate ID from decision_gates table (if from a formal gate) */
@@ -323,3 +376,23 @@ export interface DecisionInput {
   workspaceId?: string;
   containerIds?: string[];
 }
+
+// ============================================================================
+// Actor Type to CCO URI Mapping
+// ============================================================================
+
+/**
+ * Maps existing Actor.type values to their CCO class URIs.
+ * Used by migration scripts and entity classification utilities to
+ * populate jsonldType when creating or migrating Actor nodes.
+ */
+export const ACTOR_TYPE_TO_CCO_MAP: Record<string, string> = {
+  nation:           'cco:GovernmentOrganization',
+  organization:     'cco:Organization',
+  individual:       'cco:Person',
+  non_state_actor:  'cco:Organization',
+  military_unit:    'cco:MilitaryOrganization',
+  facility:         'jc3:Facility',
+  equipment:        'cco:Artifact',
+  default:          'cco:Agent',
+};

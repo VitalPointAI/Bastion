@@ -124,7 +124,8 @@ export const entityToolDefinitions: MCPToolInput[] = [
  */
 export const entityToolHandlers = {
   /**
-   * Search for entities by name
+   * Search for entities by name.
+   * Returns JSON-LD fields (jsonldType, confidence, provenance) in results.
    */
   async search_entities(input: {
     query: string;
@@ -145,7 +146,25 @@ export const entityToolHandlers = {
       filtered = filtered.filter(e => e.workspaceId === input.workspaceId);
     }
 
-    return { entities: filtered };
+    // Shape with JSON-LD fields for agent consumption
+    const shaped = filtered.map(e => ({
+      id: e.id,
+      name: e.name,
+      type: e.type,
+      jsonldType: e.jsonldType,
+      confidence: e.confidence,
+      validFrom: e.validFrom,
+      validTo: e.validTo,
+      provenance: {
+        assertedBy: e.assertedBy,
+        assertedVia: e.assertedVia,
+        derivedFrom: e.derivedFrom,
+      },
+      aliases: e.aliases,
+      workspaceId: e.workspaceId,
+    }));
+
+    return { entities: shaped };
   },
 
   /**
@@ -193,11 +212,12 @@ export const entityToolHandlers = {
   },
 
   /**
-   * Get all references to an entity
+   * Get all references to an entity.
+   * Returns JSON-LD fields (jsonldType, confidence, provenance) alongside document/objective refs.
    */
   async get_entity_references(input: {
     entityId: string;
-  }): Promise<{ documentIds: string[]; objectiveIds: string[] }> {
+  }): Promise<{ documentIds: string[]; objectiveIds: string[]; jsonldType?: string; confidence?: number; provenance?: Record<string, unknown> }> {
     const actor = await actorStore.getActor(input.entityId);
 
     if (!actor) {
@@ -211,6 +231,13 @@ export const entityToolHandlers = {
     return {
       documentIds: actor.sourceDocumentIds,
       objectiveIds: [...new Set(objectiveIds)],
+      jsonldType: actor.jsonldType,
+      confidence: actor.confidence,
+      provenance: {
+        assertedBy: actor.assertedBy,
+        assertedVia: actor.assertedVia,
+        derivedFrom: actor.derivedFrom,
+      },
     };
   },
 };

@@ -48,6 +48,8 @@ export interface FactExtractorInput {
   documentId: string;
   /** Optional: workspace ID for graph entity scoping */
   workspaceId?: string;
+  /** Optional: user DID or system identifier — passed as assertedBy on graph entities */
+  uploadedBy?: string;
   /** Optional: callback for SSE streaming of entity creation events */
   onEntityCreated?: (event: GraphEntityEvent) => void;
   /** Optional: progress callback */
@@ -135,7 +137,7 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
    * and write provenance records.
    */
   async extract(input: FactExtractorInput): Promise<FactExtractorOutput> {
-    const { documentText, problemSetContext, documentId, workspaceId, onEntityCreated, onProgress, skipGraphIngestion } = input;
+    const { documentText, problemSetContext, documentId, workspaceId, uploadedBy, onEntityCreated, onProgress, skipGraphIngestion } = input;
 
     this.setProblemSetContext(problemSetContext);
 
@@ -181,6 +183,7 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
       graphResult = await this.buildGraphEntities(deduplicatedFacts, {
         sourceDocumentId: documentId,
         workspaceId,
+        assertedBy: uploadedBy ?? 'system:doc-intelligence',
         onEntityCreated,
       });
 
@@ -316,6 +319,7 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
     options: {
       sourceDocumentId: string;
       workspaceId?: string;
+      assertedBy?: string;
       onEntityCreated?: (event: GraphEntityEvent) => void;
     },
   ): Promise<{
@@ -340,6 +344,9 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
       sourceDocumentId: options.sourceDocumentId,
       workspaceId: options.workspaceId,
       runEntityResolution: true,
+      // Doc intelligence provenance: every entity from this path is assertedVia 'doc_intelligence'
+      assertedVia: 'doc_intelligence',
+      assertedBy: options.assertedBy ?? 'system:doc-intelligence',
       onEntityCreated: (event) => {
         if (event.data.id) {
           entityIds.push(event.data.id);

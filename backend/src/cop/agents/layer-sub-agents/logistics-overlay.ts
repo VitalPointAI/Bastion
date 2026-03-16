@@ -19,6 +19,7 @@ import type {
 } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
 import { createEmptyLayerSpec } from './sub-agent-types.js';
+import { getConfidenceTier } from '../../../graph/provenance-types.js';
 
 const AGENT_ID = 'cop-logistics-001';
 const TIMEOUT_MS = 30_000;
@@ -81,19 +82,29 @@ export async function logisticsOverlayAgent(
     const extracted = await extractLogisticsFromDocuments(relevantDocs);
 
     // Include graph entities for logistics
+    // Filter by jsonldType for artifact/facility/logistics types
+    // Normalize by lowercasing and stripping colons/underscores for comparison
+    const LOGISTICS_JSONLD_TYPES = ['cco:artifact', 'jc3:facility', 'facility', 'logisticsnode', 'supplyroute', 'artifact'];
+    const normalizeType = (s: string) => s.toLowerCase().replace(/[:\s_]/g, '');
     const graphEntities = input.graphEntities
-      .filter(e => ['logistics_node', 'supply_route', 'facility'].includes(e.type))
+      .filter(e =>
+        LOGISTICS_JSONLD_TYPES.some(t => normalizeType(e.jsonldType).includes(normalizeType(t))),
+      )
       .map(e => ({
         entityId: e.id,
         name: e.name,
-        type: (e.properties.entityType === 'route' ? 'route' : 'facility') as 'facility' | 'route',
-        facilityType: (e.properties.facilityType as string) || 'logistics',
-        routeType: (e.properties.routeType as 'msr' | 'asr' | 'loc') || undefined,
+        type: (
+          (e.properties.attributes_entityType ?? e.properties.entityType) === 'route' ? 'route' : 'facility'
+        ) as 'facility' | 'route',
+        facilityType: (e.properties.attributes_facilityType as string) || (e.properties.facilityType as string) || 'logistics',
+        routeType: ((e.properties.attributes_routeType ?? e.properties.routeType) as 'msr' | 'asr' | 'loc') || undefined,
         position: e.properties.lat
           ? { lat: e.properties.lat as number, lng: e.properties.lng as number }
           : undefined,
         points: (e.properties.points as Array<{ lat: number; lng: number }>) || undefined,
         sourceDocumentId: 'raft-graph',
+        confidence: e.confidence,
+        assertedVia: e.provenance.assertedVia,
       }));
 
     const allEntities = [...extracted, ...graphEntities];
@@ -113,6 +124,11 @@ export async function logisticsOverlayAgent(
         name: fac.name,
       });
 
+      const facWithMeta = fac as typeof fac & { confidence?: number; assertedVia?: string };
+      const confidence: number = facWithMeta.confidence ?? (fac.sourceDocumentId === 'raft-graph' ? 0.9 : 0.8);
+      const assertedVia: string | undefined = facWithMeta.assertedVia;
+      const sourceAuthority = fac.sourceDocumentId === 'raft-graph' ? 'RAFT' : 'DOCEX';
+
       return {
         entityId: fac.entityId,
         sidc,
@@ -121,8 +137,13 @@ export async function logisticsOverlayAgent(
         affiliation: 'friendly' as const,
         linkedEntities: [],
         ccoClass,
-        confidence: fac.sourceDocumentId === 'raft-graph' ? 0.9 : 0.8,
-        sourceAuthority: fac.sourceDocumentId === 'raft-graph' ? 'RAFT' : 'DOCEX',
+        confidence,
+        sourceAuthority,
+        confidenceTier: getConfidenceTier(confidence),
+        assertedVia,
+        provenanceSummary: assertedVia
+          ? `Source: ${sourceAuthority} via ${assertedVia} (confidence: ${Math.round(confidence * 100)}%)`
+          : `Source: ${sourceAuthority} (confidence: ${Math.round(confidence * 100)}%)`,
       };
     });
 

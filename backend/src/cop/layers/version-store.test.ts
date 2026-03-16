@@ -46,6 +46,7 @@ function makeSymbol(overrides: Partial<COPSymbolSpec> = {}): COPSymbolSpec {
     ccoClass: 'cco:MilitaryOrganization',
     confidence: 0.9,
     sourceAuthority: 'HUMINT',
+    confidenceTier: 'high',
     ...overrides,
   };
 }

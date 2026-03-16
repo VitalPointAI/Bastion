@@ -614,13 +614,13 @@ export function BrainVisualization({
 
   // ── Pause animation on unmount to prevent stale _animationCycle ticks ──────
   useEffect(() => {
+    const fg = fgRef.current;
     return () => {
-      const fg = fgRef.current;
       if (fg) {
         try { fg.pauseAnimation(); } catch { /* already destroyed */ }
       }
     };
-  }, []);
+  }, [fgRef]);
 
   // ── Adaptive simulation parameters based on graph size ─────────────────────
   const simParams = useMemo(() => {

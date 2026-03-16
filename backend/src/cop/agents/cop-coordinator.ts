@@ -17,7 +17,7 @@ import { validateCCOClass, suggestCCOClass } from '../cco/cco-validator.js';
 import { copEventBus } from '../messaging/event-bus.js';
 import { EntityLinker } from '../linkage/entity-linker.js';
 
-import type { SubAgentInput } from './layer-sub-agents/sub-agent-types.js';
+import type { SubAgentInput, SemanticEntity } from './layer-sub-agents/sub-agent-types.js';
 import { forceDispositionAgent } from './layer-sub-agents/force-disposition.js';
 import { objectivesOverlayAgent } from './layer-sub-agents/objectives-overlay.js';
 import { controlMeasuresAgent } from './layer-sub-agents/control-measures.js';
@@ -82,7 +82,7 @@ export const COPCoordinatorState = Annotation.Root({
     reducer: (_prev, next) => next,
     default: () => [],
   }),
-  graphEntities: Annotation<SubAgentInput['graphEntities']>({
+  graphEntities: Annotation<SemanticEntity[]>({
     reducer: (_prev, next) => next,
     default: () => [],
   }),
@@ -136,6 +136,8 @@ async function generateLayersNode(
     timestamp: new Date().toISOString(),
   });
 
+  console.log(`[COP] Coordinator received ${state.graphEntities.length} semantic entities`);
+
   const subAgentInput: SubAgentInput = {
     workspaceId: state.workspaceId,
     sectionId: state.sectionId,
@@ -148,6 +150,8 @@ async function generateLayersNode(
     if (!agentFn) {
       return { status: 'rejected' as const, reason: `Unknown agent: ${agentKey}` };
     }
+
+    console.log(`[COP] Invoking ${agentKey} with ${subAgentInput.graphEntities.length} entities`);
 
     copEventBus.emit('agent:activity', {
       agentId: `cop-${agentKey}`,
@@ -401,7 +405,7 @@ export async function runCOPGeneration(
     triggeredBy,
     triggerContext: context || {},
     documents: (context?.documents as SubAgentInput['documents']) || [],
-    graphEntities: (context?.graphEntities as SubAgentInput['graphEntities']) || [],
+    graphEntities: (context?.graphEntities as SemanticEntity[]) || [],
   });
 
   return result.assembledLayers;

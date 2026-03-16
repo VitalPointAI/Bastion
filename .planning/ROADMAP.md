@@ -675,7 +675,7 @@ Plans:
 - Fix COP layer generation pipeline end-to-end (currently broken)
 - Wire upgraded graph into: COP sub-agents, design tab, plan tab, assess tab, doc-intelligence, OSINT pipeline, vision detection pipeline
 **Depends on:** Phase 45
-**Plans:** 11 plans
+**Plans:** 11/11 plans complete
 
 Plans:
 - [ ] 47-01-PLAN.md — JSON-LD context file + shared types + confidence utilities
@@ -689,6 +689,23 @@ Plans:
 - [ ] 47-09-PLAN.md — Ingestion pipeline wiring (graph-builder, doc-intel, OSINT, vision)
 - [ ] 47-10-PLAN.md — Read consumer wiring (graph API, RAFT tools, COP confidence rendering)
 - [ ] 47-11-PLAN.md — Design, plan, assess tab JSON-LD consumer wiring
+
+### Phase 48: Robot swarm behaviour end-to-end demo
+
+**Goal:** Demonstrate the complete BASTION strategy-to-autonomous-execution pipeline using a Taiwan defense scenario with 3-robot coalition swarm — strategic directive ingestion through AI objective extraction, DAO-authorized missions, swarm recon in formation, detections on COP, lethal escalation gates, and brain graph timeline playback
+**Requirements:** [DEMO-SEED, TAIPEI-COORDS, WAVE0-TESTS, COP-SWARM-LAYER, SWARM-COP-BRIDGE, COALITION-CAVEATS, CAVEAT-ENFORCEMENT, BRAIN-GRAPH-EVENTS, NATIONAL-PROVENANCE, MULTI-ROBOT-CORROBORATION, DETECTION-CONFIDENCE-FUSION, FORMATION-POLYGON, STATE-COLORS, SMOOTH-INTERPOLATION, SWARM-TELEMETRY-PANEL, LEADER-ICON, CAVEAT-DASHBOARD, DETECTION-ATTRIBUTION, BOUNDING-ANIMATION, CAVEAT-BLOCK-UI, DAO-EXPEDITED-AUTH, LETHAL-ESCALATION-GATE, LETHAL-DENY-PATH, LETHAL-APPROVE-PATH, BLOCKCHAIN-AUDIT, END-TO-END-WIRING, GHOSTED-TO-SOLID, CORROBORATION-COP, TIMELINE-PLAYBACK]
+**Depends on:** Phase 47
+**Plans:** 8 plans
+
+Plans:
+- [ ] 48-01-PLAN.md — Wave 0 test scaffolds, Taiwan demo seed data, Taipei calibration
+- [ ] 48-02-PLAN.md — Swarm COP layer types and swarm-cop-bridge service
+- [ ] 48-03-PLAN.md — Coalition caveat profiles and enforcement service
+- [ ] 48-04-PLAN.md — Brain graph swarm event writer and multi-robot corroboration
+- [ ] 48-05-PLAN.md — Frontend SwarmCOPLayer with formation polygons and telemetry panel
+- [ ] 48-06-PLAN.md — Coalition caveat dashboard, detection attribution, bounding animation
+- [ ] 48-07-PLAN.md — DAO expedited authorization and lethal escalation gates
+- [ ] 48-08-PLAN.md — End-to-end wiring, corroboration visual encoding, human checkpoint
 
 ---
 

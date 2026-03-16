@@ -89,15 +89,21 @@ export async function controlMeasuresAgent(
     const extractedMeasures = await extractControlMeasures(relevantDocs);
 
     // Also include graph entities that represent control measures
+    // Filter by jsonldType for boundary/control measure types
+    // Normalize by lowercasing and stripping colons/underscores for comparison
+    const CONTROL_MEASURE_JSONLD_TYPES = ['boundary', 'phaseline', 'axisofadvance', 'route', 'controlmeasure', 'geospatialregion'];
+    const normalizeType = (s: string) => s.toLowerCase().replace(/[:\s_]/g, '');
     const graphMeasures = input.graphEntities
-      .filter(e => ['boundary', 'phase_line', 'axis_of_advance', 'route', 'control_measure'].includes(e.type))
+      .filter(e =>
+        CONTROL_MEASURE_JSONLD_TYPES.some(t => normalizeType(e.jsonldType).includes(normalizeType(t))),
+      )
       .map(e => ({
         id: e.id,
-        type: (e.properties.measureType as ExtractedControlMeasure['type']) || 'boundary',
+        type: ((e.properties.attributes_measureType ?? e.properties.measureType) as ExtractedControlMeasure['type']) || 'boundary',
         label: e.name,
         points: (e.properties.points as Array<{ lat: number; lng: number }>) || [],
-        phaseRange: e.properties.phaseRange as { start: number; end: number } | undefined,
-        description: (e.properties.description as string) || '',
+        phaseRange: (e.properties.attributes_phaseRange ?? e.properties.phaseRange) as { start: number; end: number } | undefined,
+        description: (e.properties.attributes_description as string) || (e.properties.description as string) || '',
         sourceDocumentId: 'raft-graph',
       }));
 

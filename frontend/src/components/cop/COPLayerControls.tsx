@@ -62,6 +62,10 @@ interface COPLayerControlsProps {
   onResourceLayerToggle: () => void;
   robotLayerVisible: boolean;
   onRobotLayerToggle: () => void;
+  /** Current confidence threshold (0-1). Symbols below this value are hidden. */
+  confidenceThreshold?: number;
+  /** Callback when confidence threshold slider is adjusted */
+  onConfidenceThresholdChange?: (threshold: number) => void;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -79,6 +83,8 @@ export function COPLayerControls({
   onResourceLayerToggle,
   robotLayerVisible,
   onRobotLayerToggle,
+  confidenceThreshold = 0,
+  onConfidenceThresholdChange,
 }: COPLayerControlsProps) {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -148,6 +154,36 @@ export function COPLayerControls({
           ))}
         </div>
       </div>
+
+      {/* ── Confidence Filter ── */}
+      {onConfidenceThresholdChange && (
+        <div className="cop-confidence-filter-section">
+          <div className="cop-confidence-filter-header">
+            <span className="cop-section-label">Confidence Filter</span>
+            <span className="cop-confidence-value">
+              {confidenceThreshold > 0 ? `≥${Math.round(confidenceThreshold * 100)}%` : 'All'}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={confidenceThreshold}
+            onChange={(e) => onConfidenceThresholdChange(Number(e.target.value))}
+            className="cop-layer-opacity-slider"
+            aria-label="Confidence threshold — hide symbols below this confidence level"
+          />
+          <div className="cop-confidence-tier-legend">
+            <span className="cop-tier-indicator cop-tier-high" />
+            <span className="cop-tier-label">High (&gt;85%)</span>
+            <span className="cop-tier-indicator cop-tier-medium" />
+            <span className="cop-tier-label">Medium (50-85%)</span>
+            <span className="cop-tier-indicator cop-tier-low" />
+            <span className="cop-tier-label">Low (&lt;50%)</span>
+          </div>
+        </div>
+      )}
 
       {/* ── Layers Header ── */}
       <div className="cop-layer-controls-header">

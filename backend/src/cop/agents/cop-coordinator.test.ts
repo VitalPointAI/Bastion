@@ -91,6 +91,7 @@ function createMockSpec(
       ccoClass: 'cco:Entity',
       confidence: 0.85,
       sourceAuthority: 'DOCEX',
+      confidenceTier: 'medium' as const,
     })),
     controlMeasures: [],
     customAnnotations: [],

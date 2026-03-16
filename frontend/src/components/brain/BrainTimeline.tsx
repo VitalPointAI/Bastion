@@ -20,7 +20,23 @@ export interface BrainTimelineProps {
   onGoLive: () => void;
   /** Optional array of node creation timestamps for activity density dots */
   nodeTimestamps?: Date[];
+  // ── Playback props ─────────────────────────────────────────────────────────
+  /** Whether animated playback is currently running */
+  isPlaying?: boolean;
+  /** Current playback speed multiplier */
+  playbackSpeed?: number;
+  /** Called when user clicks play */
+  onPlayStart?: (speed: number) => void;
+  /** Called when user clicks pause */
+  onPlayStop?: () => void;
+  /** Called when user changes playback speed */
+  onSpeedChange?: (speed: number) => void;
 }
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const PLAYBACK_SPEEDS = [0.5, 1, 2, 5] as const;
+type PlaybackSpeed = (typeof PLAYBACK_SPEEDS)[number];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,6 +71,9 @@ function formatTimeDisplay(date: Date | null): string {
  *
  * Users drag the thumb to scrub to any point in time. Clicking the LIVE button
  * returns to the current real-time view.
+ *
+ * Animated playback auto-advances through time, triggering graph re-fetches
+ * that show entities appearing and fading based on validFrom/validTo.
  */
 export const BrainTimeline: React.FC<BrainTimelineProps> = ({
   timeRange,
@@ -65,6 +84,11 @@ export const BrainTimeline: React.FC<BrainTimelineProps> = ({
   onTimeChange,
   onGoLive,
   nodeTimestamps,
+  isPlaying = false,
+  playbackSpeed = 1,
+  onPlayStart,
+  onPlayStop,
+  onSpeedChange,
 }) => {
   const now = useMemo(() => new Date(), []);
 
@@ -111,17 +135,83 @@ export const BrainTimeline: React.FC<BrainTimelineProps> = ({
     [now, onTimeChange],
   );
 
+  const handlePlayPause = useCallback(() => {
+    if (isPlaying) {
+      onPlayStop?.();
+    } else {
+      onPlayStart?.(playbackSpeed);
+    }
+  }, [isPlaying, onPlayStart, onPlayStop, playbackSpeed]);
+
+  const handleSpeedChange = useCallback(
+    (speed: PlaybackSpeed) => {
+      onSpeedChange?.(speed);
+      // If currently playing, restart with new speed
+      if (isPlaying) {
+        onPlayStop?.();
+        onPlayStart?.(speed);
+      }
+    },
+    [isPlaying, onPlayStop, onPlayStart, onSpeedChange],
+  );
+
   // ── Labels ────────────────────────────────────────────────────────────────
 
   const startLabel = formatLabel(timeRange.start, now);
   const nowLabel = 'NOW';
   const futureLabel = formatLabel(futureTime, now);
 
+  const showPlaybackControls = !!(onPlayStart || onPlayStop);
+
   return (
     <div className="brain-timeline-container">
-      {/* Time display */}
+      {/* Header: time display + live button + playback controls */}
       <div className="brain-timeline-header">
         <span className="brain-timeline-time-display">{formatTimeDisplay(selectedTime)}</span>
+
+        {/* Playback controls */}
+        {showPlaybackControls && (
+          <div className="brain-timeline-playback">
+            {/* Play / Pause button */}
+            <button
+              className={`brain-timeline-play-btn${isPlaying ? ' brain-timeline-play-btn--active' : ''}`}
+              onClick={handlePlayPause}
+              type="button"
+              title={isPlaying ? 'Pause playback' : 'Start animated playback'}
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isPlaying ? (
+                // Pause icon (two vertical bars)
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+                  <rect x="1" y="1" width="4" height="10" rx="1" />
+                  <rect x="7" y="1" width="4" height="10" rx="1" />
+                </svg>
+              ) : (
+                // Play icon (triangle)
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+                  <polygon points="2,1 11,6 2,11" />
+                </svg>
+              )}
+            </button>
+
+            {/* Speed selector */}
+            <div className="brain-timeline-speed-selector" role="group" aria-label="Playback speed">
+              {PLAYBACK_SPEEDS.map((speed) => (
+                <button
+                  key={speed}
+                  type="button"
+                  className={`brain-timeline-speed-btn${playbackSpeed === speed ? ' brain-timeline-speed-btn--active' : ''}`}
+                  onClick={() => handleSpeedChange(speed)}
+                  aria-pressed={playbackSpeed === speed}
+                  title={`${speed}x speed`}
+                >
+                  {speed}x
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <button
           className={`brain-timeline-live-btn${isLive ? ' brain-timeline-live-btn--active' : ''}`}
           onClick={onGoLive}

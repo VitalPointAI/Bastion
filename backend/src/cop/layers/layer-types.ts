@@ -8,6 +8,11 @@
  * to maintain backend/frontend module boundary separation.
  */
 
+import type { ConfidenceTier } from '../../graph/provenance-types.js';
+
+// Re-export for consumers that import from this module
+export type { ConfidenceTier };
+
 // ---------------------------------------------------------------------------
 // Re-declared shared types (canonical source: frontend/src/types/cop.ts)
 // ---------------------------------------------------------------------------
@@ -40,6 +45,12 @@ export interface COPSymbolSpec {
   ccoClass: string;
   confidence: number;
   sourceAuthority: string;
+  /** Confidence tier computed from confidence score — drives visual encoding */
+  confidenceTier: ConfidenceTier;
+  /** Provenance source method (prov:wasGeneratedBy) */
+  assertedVia?: string;
+  /** Human-readable provenance summary for symbol tooltips */
+  provenanceSummary?: string;
 }
 
 export interface COPControlMeasureSpec {

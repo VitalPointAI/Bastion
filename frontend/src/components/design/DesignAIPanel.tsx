@@ -6,7 +6,7 @@
  * Renders section-specific cards for problem-framing, cog-analysis, and lines-of-effort.
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { designService } from '../../lib/design-service.ts';
 import { AIFramingCard } from './AIFramingCard.tsx';
 import type { AlternativeFraming } from './AIFramingCard.tsx';
@@ -334,6 +334,34 @@ export function DesignAIPanel({
     },
     [activeSection],
   );
+
+  // Graph confidence summary for the current problem set
+  // Fetched once when panel first opens; used to show data quality context
+  const [graphConfidenceSummary, setGraphConfidenceSummary] = useState<{
+    avgConfidence: number;
+    hasLowConfidence: boolean;
+    entityCount: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !problemSetId) return;
+    // Fetch entity list to compute avg confidence
+    const API_BASE = (import.meta as unknown as { env: { VITE_BACKEND_API_URL?: string } }).env.VITE_BACKEND_API_URL || '';
+    fetch(`${API_BASE}/api/graph/actors?workspaceId=${encodeURIComponent(problemSetId)}&includeProvenance=false`, {
+      credentials: 'include',
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data || !Array.isArray(data.actors) || data.actors.length === 0) return;
+        const actors = data.actors as Array<{ confidence?: number }>;
+        const total = actors.length;
+        const sum = actors.reduce((acc, a) => acc + (a.confidence ?? 0), 0);
+        const avg = sum / total;
+        const hasLow = actors.some((a) => (a.confidence ?? 1) < 0.5);
+        setGraphConfidenceSummary({ avgConfidence: avg, hasLowConfidence: hasLow, entityCount: total });
+      })
+      .catch(() => {/* non-fatal */});
+  }, [isOpen, problemSetId]);
 
   const cachedResults = resultsCache.get(activeSection);
   const dismissed = dismissedIds.get(activeSection) ?? new Set<number>();
@@ -699,6 +727,21 @@ export function DesignAIPanel({
         {error && (
           <div className="text-xs text-red-400 mb-3 p-2 bg-red-900/20 rounded">
             {error}
+          </div>
+        )}
+
+        {/* Graph Confidence context banner — shown when low-confidence entities are present */}
+        {graphConfidenceSummary?.hasLowConfidence && (
+          <div className="mb-3 p-2 rounded border border-amber-500/40 bg-amber-900/20">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-0.5">
+              Graph Confidence Warning
+            </p>
+            <p className="text-xs text-amber-300">
+              Some entities in this problem set have low confidence (&lt;0.5).
+              Avg: {Math.round(graphConfidenceSummary.avgConfidence * 100)}% across{' '}
+              {graphConfidenceSummary.entityCount} entities. Verify underlying intelligence
+              before adopting framings.
+            </p>
           </div>
         )}
 

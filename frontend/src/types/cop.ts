@@ -60,6 +60,20 @@ export interface COPSymbolSpec {
   confidence: number;
   /** Source authority for conflict resolution ranking */
   sourceAuthority: string;
+  /** Confidence tier for visual encoding: high (>0.85) / medium (0.5-0.85) / low (<0.5) */
+  confidenceTier?: 'high' | 'medium' | 'low';
+  /** Provenance source method (prov:wasGeneratedBy) */
+  assertedVia?: string;
+  /** Human-readable provenance summary for symbol tooltips */
+  provenanceSummary?: string;
+  /** ISO 8601 datetime when this assertion became valid */
+  validFrom?: string;
+  /** ISO 8601 datetime when this assertion expired; null = currently valid */
+  validTo?: string | null;
+  /** DID or system identifier of the asserting agent */
+  assertedBy?: string;
+  /** Last updated timestamp */
+  updatedAt?: string;
 }
 
 /**

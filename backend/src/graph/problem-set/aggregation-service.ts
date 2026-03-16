@@ -8,10 +8,23 @@ import { validityService } from '../osint/validity-service.js';
 export interface AggregatedView {
   problemSets: GraphProblemSet[];
   totalStats: GraphProblemSetStats;
-  topActors: Array<{ id: string; name: string; type: string; problemSetId: string }>;
+  topActors: Array<{
+    id: string;
+    name: string;
+    type: string;
+    /** JSON-LD ontology type — coalesce from pre-migration default 'cco:Agent' */
+    jsonldType: string;
+    /** Current confidence value (may be decayed) */
+    confidence: number;
+    problemSetId: string;
+  }>;
   criticalTensions: Array<{ id: string; description: string; intensity: string; problemSetId: string }>;
   recentEvents: Array<{ id: string; title: string; publishedAt: Date; problemSetId: string }>;
   activeAlerts: Array<{ id: string; title: string; severity: string; objectiveId: string }>;
+  /** Ontology type breakdown — count of actors per JSON-LD class across all problem sets */
+  ontologyTypeCounts: Record<string, number>;
+  /** Average confidence across all actors (0 if no actors) */
+  averageConfidence: number;
 }
 
 export interface GraphProblemSetWithContext extends GraphProblemSet {
@@ -44,17 +57,34 @@ export class GraphProblemSetAggregationService {
       alertCount: 0,
     };
 
-    // Get actors from all problem sets
+    // Get actors from all problem sets — include JSON-LD fields for ontology grouping
     const allActors: AggregatedView['topActors'] = [];
+    const ontologyTypeCounts: Record<string, number> = {};
+    let totalConfidenceSum = 0;
+    let totalActorsWithConfidence = 0;
+
     for (const ps of problemSets) {
       const actors = await actorStore.listActors(ps.id);
       for (const actor of actors) {
+        // Use coalesced jsonldType — handles pre-migration actors without the field
+        const jsonldType = actor.jsonldType ?? 'cco:Agent';
+        const confidence = typeof actor.confidence === 'number' ? actor.confidence : 0.75;
+
         allActors.push({
           id: actor.id,
           name: actor.name,
           type: actor.type,
+          jsonldType,
+          confidence,
           problemSetId: ps.id,
         });
+
+        // Aggregate ontology type counts
+        ontologyTypeCounts[jsonldType] = (ontologyTypeCounts[jsonldType] ?? 0) + 1;
+
+        // Track confidence for average calculation
+        totalConfidenceSum += confidence;
+        totalActorsWithConfidence++;
       }
       totalStats.actorCount += actors.length;
     }
@@ -96,6 +126,10 @@ export class GraphProblemSetAggregationService {
     }));
     totalStats.alertCount = alerts.length;
 
+    const averageConfidence = totalActorsWithConfidence > 0
+      ? totalConfidenceSum / totalActorsWithConfidence
+      : 0;
+
     return {
       problemSets,
       totalStats,
@@ -103,6 +137,8 @@ export class GraphProblemSetAggregationService {
       criticalTensions: criticalTensions.slice(0, 10),
       recentEvents,
       activeAlerts,
+      ontologyTypeCounts,
+      averageConfidence,
     };
   }
 

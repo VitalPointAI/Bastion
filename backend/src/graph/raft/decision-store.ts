@@ -5,17 +5,28 @@
  * Decisions capture planning choices, their evidence basis, and
  * knowledge gaps — enabling traceability of decision pathways
  * and surfacing where intuition fills evidence gaps.
+ *
+ * Phase 47 Plan 03: Rewritten with JSON-LD-native property writes on all
+ * create/update operations. Soft delete via validTo replaces hard delete.
  */
 
 import { randomUUID } from 'crypto';
 import { executeReadQuery, executeWriteQuery } from '../neo4j-client.js';
 import type { Decision, DecisionInput, DecisionBasis } from './types.js';
+import type { SourceMethod } from '../provenance-types.js';
+import { SOURCE_WEIGHTS } from '../confidence-calculator.js';
+
+const BASTION_CONTEXT = 'https://bastion.vitalpoint.ai/ontology/context.jsonld';
+const DECISION_JSONLD_TYPE = 'cco:ActOfDecisionMaking';
 
 /**
- * Convert Neo4j node properties to Decision object
+ * Convert Neo4j node properties to Decision object.
+ * JSON-LD fields default to migration values when not yet present on nodes
+ * (pre-migration backward compat — see Phase 47 migration script).
  */
 function recordToDecision(props: Record<string, unknown>): Decision {
   return {
+    // Existing fields
     id: props.id as string,
     gateId: props.gateId as string | undefined,
     decisionType: props.decisionType as string,
@@ -35,6 +46,17 @@ function recordToDecision(props: Record<string, unknown>): Decision {
     containerIds: props.containerIds as string[] || [],
     createdAt: new Date(props.createdAt as string),
     updatedAt: new Date(props.updatedAt as string),
+    // JSON-LD fields (Phase 47) — defaults for pre-migration nodes
+    jsonldType: (props.jsonldType as string) || 'cco:InformationContentEntity',
+    jsonldContext: (props.jsonldContext as string) || BASTION_CONTEXT,
+    assertedBy: (props.assertedBy as string) || 'system:migration',
+    assertedVia: (props.assertedVia as SourceMethod) || 'manual_entry',
+    derivedFrom: (props.derivedFrom as string) || '[]',
+    confidence: typeof props.confidence === 'number' ? props.confidence : 0.75,
+    sourceWeight: typeof props.sourceWeight === 'number' ? props.sourceWeight : 0.75,
+    validFrom: (props.validFrom as string) || (props.createdAt as string),
+    validTo: (props.validTo as string | null) ?? null,
+    halfLifeDays: typeof props.halfLifeDays === 'number' ? props.halfLifeDays : 365,
   };
 }
 
@@ -50,11 +72,31 @@ function extractDecisions(result: { records: Array<{ get: (key: string) => { pro
  */
 export class DecisionStore {
   /**
-   * Create a new Decision node and link it to related actors/decisions
+   * Create a new Decision node and link it to related actors/decisions.
+   * Writes JSON-LD type, context, provenance, and temporal fields on every create.
    */
-  async createDecision(input: DecisionInput): Promise<Decision> {
+  async createDecision(
+    input: DecisionInput,
+    provenance?: {
+      assertedBy?: string;
+      assertedVia?: SourceMethod;
+      derivedFrom?: string[];
+      validFrom?: Date;
+      halfLifeDays?: number;
+    },
+  ): Promise<Decision> {
     const id = `DEC-${randomUUID()}`;
     const now = new Date().toISOString();
+
+    // Provenance fields with defaults
+    const assertedBy = provenance?.assertedBy ?? 'system:unknown';
+    const assertedVia: SourceMethod = provenance?.assertedVia ?? 'manual_entry';
+    const derivedFrom = JSON.stringify(provenance?.derivedFrom ?? []);
+    const sourceWeight = SOURCE_WEIGHTS[assertedVia];
+    const confidence = sourceWeight;
+    const validFrom = (provenance?.validFrom ?? new Date()).toISOString();
+    // Decisions default to 365-day half-life (capability/strategic fact type)
+    const halfLifeDays = provenance?.halfLifeDays ?? 365;
 
     const query = `
       CREATE (d:Decision {
@@ -76,7 +118,17 @@ export class DecisionStore {
         workspaceId: $workspaceId,
         containerIds: $containerIds,
         createdAt: $now,
-        updatedAt: $now
+        updatedAt: $now,
+        jsonldType: $jsonldType,
+        jsonldContext: $jsonldContext,
+        assertedBy: $assertedBy,
+        assertedVia: $assertedVia,
+        derivedFrom: $derivedFrom,
+        confidence: $confidence,
+        sourceWeight: $sourceWeight,
+        validFrom: $validFrom,
+        validTo: null,
+        halfLifeDays: $halfLifeDays
       })
       RETURN d
     `;
@@ -100,6 +152,15 @@ export class DecisionStore {
       workspaceId: input.workspaceId || null,
       containerIds: input.containerIds || [],
       now,
+      jsonldType: DECISION_JSONLD_TYPE,
+      jsonldContext: BASTION_CONTEXT,
+      assertedBy,
+      assertedVia,
+      derivedFrom,
+      confidence,
+      sourceWeight,
+      validFrom,
+      halfLifeDays,
     });
 
     const props = result.records[0].get('d').properties;
@@ -143,23 +204,34 @@ export class DecisionStore {
   }
 
   /**
-   * List decisions for a problem set, optionally filtered
+   * List decisions for a problem set, optionally filtered.
+   *
+   * @param problemSetId - Required problem set scope
+   * @param options      - Optional filters: decisionType, basis, limit, atTime
    */
   async listDecisions(
     problemSetId: string,
-    options?: { decisionType?: string; basis?: DecisionBasis; limit?: number },
+    options?: { decisionType?: string; basis?: DecisionBasis; limit?: number; atTime?: Date },
   ): Promise<Decision[]> {
     let query = `MATCH (d:Decision {problemSetId: $problemSetId})`;
     const params: Record<string, unknown> = { problemSetId };
+    const conditions: string[] = [];
 
     if (options?.decisionType) {
-      query += ` WHERE d.decisionType = $decisionType`;
+      conditions.push('d.decisionType = $decisionType');
       params.decisionType = options.decisionType;
     }
     if (options?.basis) {
-      query += params.decisionType ? ` AND` : ` WHERE`;
-      query += ` d.basis = $basis`;
+      conditions.push('d.basis = $basis');
       params.basis = options.basis;
+    }
+    if (options?.atTime) {
+      conditions.push('d.validFrom <= $atTime AND (d.validTo IS NULL OR d.validTo > $atTime)');
+      params.atTime = options.atTime.toISOString();
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
     }
 
     query += ` RETURN d ORDER BY d.createdAt DESC`;
@@ -171,6 +243,139 @@ export class DecisionStore {
 
     const result = await executeReadQuery(query, params);
     return extractDecisions(result);
+  }
+
+  /**
+   * Update an existing Decision.
+   * Recalculates sourceWeight if assertedVia changes.
+   */
+  async updateDecision(
+    id: string,
+    updates: Partial<DecisionInput>,
+    provenance?: {
+      assertedBy?: string;
+      assertedVia?: SourceMethod;
+      derivedFrom?: string[];
+    },
+  ): Promise<boolean> {
+    const setClauses: string[] = ['d.updatedAt = $updatedAt'];
+    const params: Record<string, unknown> = {
+      id,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (updates.title !== undefined) {
+      setClauses.push('d.title = $title');
+      params.title = updates.title;
+    }
+
+    if (updates.description !== undefined) {
+      setClauses.push('d.description = $description');
+      params.description = updates.description;
+    }
+
+    if (updates.outcome !== undefined) {
+      setClauses.push('d.outcome = $outcome');
+      params.outcome = updates.outcome;
+    }
+
+    if (updates.rationale !== undefined) {
+      setClauses.push('d.rationale = $rationale');
+      params.rationale = updates.rationale;
+    }
+
+    if (updates.basis !== undefined) {
+      setClauses.push('d.basis = $basis');
+      params.basis = updates.basis;
+    }
+
+    if (updates.knowledgeGaps !== undefined) {
+      setClauses.push('d.knowledgeGaps = $knowledgeGaps');
+      params.knowledgeGaps = updates.knowledgeGaps;
+    }
+
+    if (updates.supportingDocumentIds !== undefined) {
+      setClauses.push('d.supportingDocumentIds = $supportingDocumentIds');
+      params.supportingDocumentIds = updates.supportingDocumentIds;
+    }
+
+    if (updates.linkedObjectiveIds !== undefined) {
+      setClauses.push('d.linkedObjectiveIds = $linkedObjectiveIds');
+      params.linkedObjectiveIds = updates.linkedObjectiveIds;
+    }
+
+    if (updates.affectedActorIds !== undefined) {
+      setClauses.push('d.affectedActorIds = $affectedActorIds');
+      params.affectedActorIds = updates.affectedActorIds;
+    }
+
+    // Update provenance fields if provided
+    if (provenance?.assertedBy !== undefined) {
+      setClauses.push('d.assertedBy = $assertedBy');
+      params.assertedBy = provenance.assertedBy;
+    }
+
+    if (provenance?.assertedVia !== undefined) {
+      setClauses.push('d.assertedVia = $assertedVia');
+      params.assertedVia = provenance.assertedVia;
+      // Recalculate sourceWeight when assertedVia changes
+      const newWeight = SOURCE_WEIGHTS[provenance.assertedVia];
+      setClauses.push('d.sourceWeight = $sourceWeight');
+      params.sourceWeight = newWeight;
+      setClauses.push('d.confidence = $confidence');
+      params.confidence = newWeight;
+    }
+
+    if (provenance?.derivedFrom !== undefined) {
+      setClauses.push('d.derivedFrom = $derivedFrom');
+      params.derivedFrom = JSON.stringify(provenance.derivedFrom);
+    }
+
+    const result = await executeWriteQuery(
+      `MATCH (d:Decision {id: $id})
+       SET ${setClauses.join(', ')}
+       RETURN d`,
+      params,
+    );
+
+    return result.records.length > 0;
+  }
+
+  /**
+   * Soft delete a Decision by setting validTo = now.
+   * Preserves temporal history — entity remains in graph but is marked expired.
+   * Use purgeDecision() for hard delete.
+   */
+  async deleteDecision(id: string): Promise<boolean> {
+    const result = await executeWriteQuery(
+      `MATCH (d:Decision {id: $id})
+       WHERE d.validTo IS NULL
+       SET d.validTo = $validTo, d.updatedAt = $updatedAt
+       RETURN d`,
+      {
+        id,
+        validTo: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    );
+
+    return result.records.length > 0;
+  }
+
+  /**
+   * Hard delete a Decision by ID.
+   * Prefer deleteDecision() (soft delete) for temporal history preservation.
+   */
+  async purgeDecision(id: string): Promise<boolean> {
+    const result = await executeWriteQuery(
+      `MATCH (d:Decision {id: $id})
+       DETACH DELETE d
+       RETURN COUNT(d) as deleted`,
+      { id },
+    );
+
+    const deleted = result.records[0]?.get('deleted');
+    return deleted && deleted.toNumber() > 0;
   }
 
   /**

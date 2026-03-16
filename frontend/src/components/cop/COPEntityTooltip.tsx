@@ -43,6 +43,27 @@ const METHOD_LABELS: Record<string, string> = {
   manual: 'Manual',
 };
 
+/** Source method display labels for provenance assertedVia field */
+const SOURCE_METHOD_LABELS: Record<string, string> = {
+  manual_entry: 'Manual Entry',
+  doc_intelligence: 'Document Intelligence',
+  osint: 'OSINT Feed',
+  vision_pipeline: 'Vision Pipeline',
+  ai_inference: 'AI Inference',
+  sigint: 'SIGINT',
+};
+
+/** Format ISO datetime string to readable "last assessed" label */
+function formatLastAssessed(iso?: string): string {
+  if (!iso) return 'Unknown';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return iso;
+  }
+}
+
 function getConfidenceColor(confidence: number): string {
   if (confidence >= 0.85) return '#22c55e';
   if (confidence >= 0.7) return '#eab308';
@@ -177,6 +198,45 @@ export function COPEntityTooltip({
           />
         </div>
       </div>
+
+      {/* Provenance Information */}
+      {(symbol.assertedVia || symbol.assertedBy || symbol.provenanceSummary) && (
+        <div className="tooltip-provenance">
+          <span className="tooltip-section-label">Provenance</span>
+          {symbol.assertedVia && (
+            <p className="tooltip-provenance-row">
+              <span className="tooltip-provenance-key">Source:</span>
+              <span className="tooltip-provenance-value">
+                {SOURCE_METHOD_LABELS[symbol.assertedVia] ?? symbol.assertedVia}
+              </span>
+            </p>
+          )}
+          <p className="tooltip-provenance-row">
+            <span className="tooltip-provenance-key">Confidence:</span>
+            <span className="tooltip-provenance-value">
+              {Math.round(symbol.confidence * 100)}%
+            </span>
+          </p>
+          {(symbol.updatedAt ?? symbol.validFrom) && (
+            <p className="tooltip-provenance-row">
+              <span className="tooltip-provenance-key">Last assessed:</span>
+              <span className="tooltip-provenance-value">
+                {formatLastAssessed(symbol.updatedAt ?? symbol.validFrom)}
+              </span>
+            </p>
+          )}
+          {symbol.assertedBy && (
+            <p className="tooltip-provenance-row">
+              <span className="tooltip-provenance-key">Assessed by:</span>
+              <span className="tooltip-provenance-value tooltip-provenance-did">
+                {symbol.assertedBy.length > 20
+                  ? `${symbol.assertedBy.slice(0, 18)}…`
+                  : symbol.assertedBy}
+              </span>
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Key Linked Entities */}
       <div className="tooltip-linkages">

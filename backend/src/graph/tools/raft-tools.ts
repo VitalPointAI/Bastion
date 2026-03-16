@@ -672,9 +672,26 @@ export const raftToolHandlers = {
     attributes?: Record<string, unknown>;
     workspaceId?: string;
     sourceDocumentIds?: string[];
+    assertedBy?: string;
+    assertedVia?: 'manual_entry' | 'doc_intelligence' | 'osint' | 'vision_pipeline' | 'ai_inference' | 'sigint';
   }) => {
-    const actor = await actorStore.createActor(input);
-    return { actorId: actor.id, actor };
+    const actor = await actorStore.createActor(input, {
+      assertedBy: input.assertedBy,
+      assertedVia: input.assertedVia,
+    });
+    return {
+      actorId: actor.id,
+      actor: {
+        ...actor,
+        jsonldType: actor.jsonldType,
+        confidence: actor.confidence,
+        provenance: {
+          assertedBy: actor.assertedBy,
+          assertedVia: actor.assertedVia,
+          derivedFrom: actor.derivedFrom,
+        },
+      },
+    };
   },
 
   /**
@@ -828,6 +845,7 @@ export const raftToolHandlers = {
 
   /**
    * Get Actor Profile tool handler
+   * Returns full JSON-LD semantic entity data for LangGraph agent consumption.
    */
   get_actor_profile: async (input: { actorId: string }) => {
     const actor = await actorStore.getActor(input.actorId);
@@ -851,8 +869,33 @@ export const raftToolHandlers = {
       });
     }
 
+    // Compute confidence tier for LangGraph agent interpretation
+    function getTier(c: number): 'high' | 'medium' | 'low' {
+      if (c > 0.85) return 'high';
+      if (c >= 0.5) return 'medium';
+      return 'low';
+    }
+
     return {
-      actor,
+      actor: {
+        id: actor.id,
+        name: actor.name,
+        type: actor.type,
+        jsonldType: actor.jsonldType,
+        confidence: actor.confidence,
+        confidenceTier: getTier(actor.confidence),
+        validFrom: actor.validFrom,
+        validTo: actor.validTo,
+        provenance: {
+          assertedBy: actor.assertedBy,
+          assertedVia: actor.assertedVia,
+          derivedFrom: actor.derivedFrom,
+          sourceWeight: actor.sourceWeight,
+        },
+        aliases: actor.aliases,
+        attributes: actor.attributes,
+        workspaceId: actor.workspaceId,
+      },
       relationships,
       tensions,
       relatedActorCount: relatedActorIds.size,
@@ -916,12 +959,22 @@ export const raftToolHandlers = {
       }
     }
 
+    // Compute confidence tier helper
+    function getTier(c: number): 'high' | 'medium' | 'low' {
+      if (c > 0.85) return 'high';
+      if (c >= 0.5) return 'medium';
+      return 'low';
+    }
+
     if (format === 'nodes_edges') {
       return {
         nodes: limitedActors.map(a => ({
           id: a.id,
           label: a.name,
           type: a.type,
+          jsonldType: a.jsonldType,
+          confidence: a.confidence,
+          confidenceTier: getTier(a.confidence),
           aliases: a.aliases,
         })),
         edges: allRelationships,
@@ -932,6 +985,9 @@ export const raftToolHandlers = {
           id: a.id,
           name: a.name,
           group: a.type,
+          jsonldType: a.jsonldType,
+          confidence: a.confidence,
+          confidenceTier: getTier(a.confidence),
         })),
         links: allRelationships.map(r => ({
           source: r.source,
@@ -945,7 +1001,14 @@ export const raftToolHandlers = {
       return {
         elements: {
           nodes: limitedActors.map(a => ({
-            data: { id: a.id, label: a.name, type: a.type },
+            data: {
+              id: a.id,
+              label: a.name,
+              type: a.type,
+              jsonldType: a.jsonldType,
+              confidence: a.confidence,
+              confidenceTier: getTier(a.confidence),
+            },
           })),
           edges: allRelationships.map(r => ({
             data: {
