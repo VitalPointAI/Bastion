@@ -223,8 +223,6 @@ export async function updateAdversaryCOPLayer(
         generatedAt: new Date().toISOString(),
         sourceDocumentIds: symbols.map(s => s.entityId),
         ccoValidated: false,
-        layerName: 'Adversary Detections',
-        detectionCount: symbols.length,
       },
     };
 
@@ -235,7 +233,6 @@ export async function updateAdversaryCOPLayer(
         workspaceId,
         sectionId: 'default',
         layerType: 'force_disposition',
-        createdBy: 'vision-detection-pipeline',
         spec,
       });
     }
