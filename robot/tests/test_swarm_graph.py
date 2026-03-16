@@ -20,7 +20,6 @@ from datetime import datetime, timezone
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
 def test_event_dedup():
     """
     build_swarm_event_id() must return the same deterministic ID for events
@@ -72,7 +71,6 @@ def test_event_dedup():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
 def test_national_provenance():
     """
     build_swarm_event_assertion() must include prov:wasAttributedTo set to
