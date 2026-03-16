@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 47 of 64 (JSON-LD Semantic Brain COP Fix) — IN PROGRESS
-Plan: 9 of 10 in current phase — COMPLETE
-Status: Plan 47-09 complete — All 4 ingestion pipelines (graph-builder, doc-intelligence, OSINT, vision) write JSON-LD native properties with source-specific provenance. Entity resolution and contradiction detection wired.
-Last activity: 2026-03-16 - Completed 47-09: JSON-LD provenance wired across all ingestion paths
+Phase: 47 of 64 (JSON-LD Semantic Brain COP Fix) — COMPLETE
+Plan: 10 of 10 in current phase — COMPLETE
+Status: Plan 47-10 complete — Graph API returns JSON-LD entities with provenance + temporal filtering. RAFT tools and entity tools pass JSON-LD data to LangGraph agents. Aggregation service groups by ontology type and calculates average confidence. COP map applies confidence visual encoding (opacity tiers) with threshold filter. All downstream consumers wired to JSON-LD graph.
+Last activity: 2026-03-16 - Completed 47-10: All consumers wired; COP confidence visual encoding complete
 
-Progress: ████████████████████████████ 403 plans complete
+Progress: █████████████████████████████ 404 plans complete
 
 ## Performance Metrics
 
@@ -197,6 +197,7 @@ Progress: ███████████████████████�
 | Phase 47 P08 | 8 | 3 tasks | 5 files |
 | Phase 47 P07 | 664 | 2 tasks | 11 files |
 | Phase 47 P09 | 15 | 2 tasks | 4 files |
+| Phase 47 P10 | 394 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -210,6 +211,13 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 47 Plan 10 (Consumer Wiring + COP Visual Encoding):**
+- includeProvenance defaults to true on graph API endpoints — opt-out pattern (?includeProvenance=false) rather than opt-in
+- Temporal filtering for atTime param is client-side on returned actor list — avoids Cypher coupling while migration may not have run
+- confidenceTier on COPSymbolSpec is optional to maintain backward compat with pre-Plan-07 layers
+- Confidence threshold slider renders only when onConfidenceThresholdChange callback provided — progressive enhancement
+- Opacity stacks: layer opacity * tier modifier — medium at 70% layer opacity renders at 49% effective opacity
 
 **Phase 47 Plan 09 (Ingestion Pipeline Wiring):**
 - graph-builder defaults to assertedVia='ai_inference' when not passed by caller — callers must explicitly override
