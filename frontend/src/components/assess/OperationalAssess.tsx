@@ -10,7 +10,7 @@
  *   with new reframing trigger banner from assessment data
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TabLayout, type SidebarItem } from '../tabs/TabLayout.js';
 import {
   DecisionGateBanner,
@@ -34,7 +34,7 @@ import { MOPCard } from './MOPCard.tsx';
 // Types
 // ============================================================================
 
-type OpsAssessView = 'moe-overview' | 'mop-overview' | 'reframing';
+type OpsAssessView = 'moe-overview' | 'mop-overview' | 'reframing' | 'intel-quality';
 
 // ============================================================================
 // Sidebar Configuration
@@ -44,6 +44,7 @@ const OPS_ASSESS_ITEMS: SidebarItem[] = [
   { id: 'moe-overview', label: 'MOE Overview' },
   { id: 'mop-overview', label: 'MOP Overview' },
   { id: 'reframing', label: 'Reframing' },
+  { id: 'intel-quality', label: 'Intelligence Quality' },
 ];
 
 // ============================================================================
@@ -68,6 +69,22 @@ export function OperationalAssess({ problemSetId }: OperationalAssessProps) {
   const [reframingTrigger, setReframingTrigger] = useState<ReframingTriggerResult | null>(null);
   const [loadingMOEs, setLoadingMOEs] = useState(false);
   const [loadingMOPs, setLoadingMOPs] = useState(false);
+
+  // ─── Graph confidence summary state ──────────────────────────────────────
+
+  interface GraphConfidenceSummary {
+    avgConfidence: number;
+    entityCount: number;
+    high: number;
+    medium: number;
+    low: number;
+    contradictionCount: number;
+    pending: boolean;
+  }
+
+  const [graphConfidence, setGraphConfidence] = useState<GraphConfidenceSummary | null>(null);
+  const [loadingGraphConfidence, setLoadingGraphConfidence] = useState(false);
+  const hasFetchedGraphConfidence = useRef(false);
 
   // ─── Add MOE form state ──────────────────────────────────────────────────
 
@@ -124,11 +141,91 @@ export function OperationalAssess({ problemSetId }: OperationalAssessProps) {
     }
   }, [problemSetId]);
 
+  const loadGraphConfidence = useCallback(async () => {
+    if (!problemSetId || hasFetchedGraphConfidence.current) return;
+    hasFetchedGraphConfidence.current = true;
+    setLoadingGraphConfidence(true);
+    try {
+      const API_BASE = (import.meta as unknown as { env: { VITE_BACKEND_API_URL?: string } }).env.VITE_BACKEND_API_URL || '';
+      const [actorsRes, contradictionsRes] = await Promise.allSettled([
+        fetch(`${API_BASE}/api/graph/actors?workspaceId=${encodeURIComponent(problemSetId)}&includeProvenance=false`, {
+          credentials: 'include',
+        }),
+        fetch(`${API_BASE}/api/graph/contradictions?workspaceId=${encodeURIComponent(problemSetId)}`, {
+          credentials: 'include',
+        }),
+      ]);
+
+      let actorData: Array<{ confidence?: number }> = [];
+      if (actorsRes.status === 'fulfilled' && actorsRes.value.ok) {
+        const json = await actorsRes.value.json() as { actors?: Array<{ confidence?: number }> };
+        actorData = json.actors ?? [];
+      }
+
+      let contradictionCount = 0;
+      if (contradictionsRes.status === 'fulfilled' && contradictionsRes.value.ok) {
+        const cJson = await contradictionsRes.value.json() as { contradictions?: unknown[] };
+        contradictionCount = (cJson.contradictions ?? []).length;
+      }
+
+      if (actorData.length === 0) {
+        // No JSON-LD enriched data yet — mark as pending
+        setGraphConfidence({
+          avgConfidence: 0,
+          entityCount: 0,
+          high: 0,
+          medium: 0,
+          low: 0,
+          contradictionCount,
+          pending: true,
+        });
+      } else {
+        const total = actorData.length;
+        const sum = actorData.reduce((acc, a) => acc + (a.confidence ?? 0), 0);
+        const high = actorData.filter((a) => (a.confidence ?? 0) > 0.85).length;
+        const medium = actorData.filter((a) => {
+          const c = a.confidence ?? 0;
+          return c >= 0.5 && c <= 0.85;
+        }).length;
+        const low = actorData.filter((a) => (a.confidence ?? 0) < 0.5).length;
+        setGraphConfidence({
+          avgConfidence: sum / total,
+          entityCount: total,
+          high,
+          medium,
+          low,
+          contradictionCount,
+          pending: false,
+        });
+      }
+    } catch {
+      // Non-fatal — will show pending state
+      setGraphConfidence({
+        avgConfidence: 0,
+        entityCount: 0,
+        high: 0,
+        medium: 0,
+        low: 0,
+        contradictionCount: 0,
+        pending: true,
+      });
+    } finally {
+      setLoadingGraphConfidence(false);
+    }
+  }, [problemSetId]);
+
   useEffect(() => {
     loadMOEs();
     loadMOPs();
     loadReframingTrigger();
   }, [loadMOEs, loadMOPs, loadReframingTrigger]);
+
+  // Lazy-load graph confidence when the intel-quality view is selected
+  useEffect(() => {
+    if (selectedView === 'intel-quality') {
+      loadGraphConfidence();
+    }
+  }, [selectedView, loadGraphConfidence]);
 
   // ─── Handlers ────────────────────────────────────────────────────────────
 
@@ -412,6 +509,173 @@ export function OperationalAssess({ problemSetId }: OperationalAssessProps) {
               </div>
             )}
           </section>
+        </div>
+      )}
+      {/* ── Intelligence Quality ──────────────────────────────────────────── */}
+      {selectedView === 'intel-quality' && (
+        <div className="ops-assess-section">
+          <div className="ops-assess-section-header">
+            <h2>Graph Confidence Summary</h2>
+          </div>
+
+          {loadingGraphConfidence && (
+            <div className="ops-assess-empty">Loading intelligence quality data...</div>
+          )}
+
+          {!loadingGraphConfidence && graphConfidence?.pending && (
+            <div className="assess-placeholder-card">
+              <span className="placeholder-label">
+                Confidence data pending migration — entity graph not yet JSON-LD enriched
+              </span>
+            </div>
+          )}
+
+          {!loadingGraphConfidence && graphConfidence && !graphConfidence.pending && (
+            <div>
+              {/* Average confidence bar */}
+              <div className="assess-section" style={{ marginBottom: '1rem' }}>
+                <h3>Overall Confidence</h3>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    marginTop: '0.5rem',
+                  }}
+                >
+                  <div
+                    style={{
+                      flex: 1,
+                      height: '0.5rem',
+                      backgroundColor: '#374151',
+                      borderRadius: '0.25rem',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${Math.round(graphConfidence.avgConfidence * 100)}%`,
+                        height: '100%',
+                        backgroundColor:
+                          graphConfidence.avgConfidence > 0.85
+                            ? '#10b981'
+                            : graphConfidence.avgConfidence >= 0.5
+                            ? '#f59e0b'
+                            : '#ef4444',
+                        borderRadius: '0.25rem',
+                        transition: 'width 0.3s ease',
+                      }}
+                    />
+                  </div>
+                  <span style={{ color: '#d1d5db', fontSize: '0.875rem', fontWeight: 600, minWidth: '3rem' }}>
+                    {Math.round(graphConfidence.avgConfidence * 100)}%
+                  </span>
+                  <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
+                    across {graphConfidence.entityCount} entities
+                  </span>
+                </div>
+              </div>
+
+              {/* Tier distribution */}
+              <div className="assess-section" style={{ marginBottom: '1rem' }}>
+                <h3>Confidence Tier Distribution</h3>
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: '6rem',
+                      padding: '0.75rem',
+                      backgroundColor: '#065f46',
+                      borderRadius: '0.5rem',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#a7f3d0' }}>
+                      {graphConfidence.high}
+                    </div>
+                    <div style={{ fontSize: '0.6875rem', color: '#6ee7b7', textTransform: 'uppercase' }}>
+                      High
+                    </div>
+                    <div style={{ fontSize: '0.625rem', color: '#6ee7b7', marginTop: '0.125rem' }}>
+                      &gt;85%
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: '6rem',
+                      padding: '0.75rem',
+                      backgroundColor: '#78350f',
+                      borderRadius: '0.5rem',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fcd34d' }}>
+                      {graphConfidence.medium}
+                    </div>
+                    <div style={{ fontSize: '0.6875rem', color: '#fbbf24', textTransform: 'uppercase' }}>
+                      Medium
+                    </div>
+                    <div style={{ fontSize: '0.625rem', color: '#fbbf24', marginTop: '0.125rem' }}>
+                      50–85%
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: '6rem',
+                      padding: '0.75rem',
+                      backgroundColor: '#7f1d1d',
+                      borderRadius: '0.5rem',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fca5a5' }}>
+                      {graphConfidence.low}
+                    </div>
+                    <div style={{ fontSize: '0.6875rem', color: '#f87171', textTransform: 'uppercase' }}>
+                      Low
+                    </div>
+                    <div style={{ fontSize: '0.625rem', color: '#f87171', marginTop: '0.125rem' }}>
+                      &lt;50%
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contradiction count */}
+              <div className="assess-section">
+                <h3>Unresolved Contradictions</h3>
+                <div style={{ marginTop: '0.5rem' }}>
+                  {graphConfidence.contradictionCount === 0 ? (
+                    <div style={{ color: '#6ee7b7', fontSize: '0.875rem' }}>
+                      No unresolved contradictions detected.
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.5rem 0.75rem',
+                        backgroundColor: '#7f1d1d',
+                        borderRadius: '0.5rem',
+                        color: '#fca5a5',
+                      }}
+                    >
+                      <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+                        {graphConfidence.contradictionCount}
+                      </span>
+                      <span style={{ fontSize: '0.75rem' }}>
+                        contradiction{graphConfidence.contradictionCount !== 1 ? 's' : ''} require
+                        {graphConfidence.contradictionCount === 1 ? 's' : ''} resolution
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </TabLayout>

@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { entityService, type Entity, type EntityType } from '../../lib/entity-service.ts';
+import { entityService, formatSourceMethod, type Entity, type EntityType } from '../../lib/entity-service.ts';
 
 // ---- Types ------------------------------------------------------------------
 
@@ -25,6 +25,23 @@ type FilterTab = 'all' | 'nation' | 'organization' | 'person' | 'location' | 'eq
 
 interface EntityResolutionPanelProps {
   problemSetId: string;
+}
+
+// ---- Helpers ----------------------------------------------------------------
+
+/** Return background and text color for a confidence tier badge. */
+function confidenceTierStyle(tier: 'high' | 'medium' | 'low'): { background: string; color: string } {
+  if (tier === 'high') return { background: '#065f46', color: '#a7f3d0' };
+  if (tier === 'medium') return { background: '#78350f', color: '#fcd34d' };
+  return { background: '#7f1d1d', color: '#fca5a5' };
+}
+
+/** Strip CCO/BFO namespace prefix to produce a readable ontology label. */
+function formatJsonldType(jsonldType: string): string {
+  // e.g. 'cco:MilitaryOrganization' → 'Military Organization'
+  const localName = jsonldType.includes(':') ? jsonldType.split(':')[1]! : jsonldType;
+  // Insert spaces before capital letters (PascalCase → words)
+  return localName.replace(/([A-Z])/g, ' $1').trim();
 }
 
 // ---- Component --------------------------------------------------------------
@@ -357,11 +374,68 @@ export function EntityResolutionPanel({ problemSetId: _problemSetId }: EntityRes
                   </div>
 
                   {/* Source reference */}
-                  <div style={{ marginBottom: '0.75rem' }}>
+                  <div style={{ marginBottom: '0.5rem' }}>
                     <span style={{ color: '#6b7280', fontSize: '0.6875rem' }}>
                       Source: {match.sourceDocument}
                     </span>
                   </div>
+
+                  {/* JSON-LD provenance badges (shown when entity has been semantically enriched) */}
+                  {match.suggestedEntity &&
+                    (match.suggestedEntity.confidenceTier || match.suggestedEntity.assertedVia || match.suggestedEntity.jsonldType) && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.375rem',
+                        marginBottom: '0.75rem',
+                        padding: '0.375rem 0.5rem',
+                        backgroundColor: '#0f172a',
+                        borderRadius: '0.25rem',
+                        border: '1px solid #1e293b',
+                      }}
+                    >
+                      {/* Confidence tier badge */}
+                      {match.suggestedEntity.confidenceTier && (() => {
+                        const style = confidenceTierStyle(match.suggestedEntity.confidenceTier!);
+                        return (
+                          <span
+                            style={{
+                              fontSize: '0.625rem',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              padding: '0.125rem 0.375rem',
+                              borderRadius: '0.25rem',
+                              backgroundColor: style.background,
+                              color: style.color,
+                            }}
+                          >
+                            {match.suggestedEntity.confidenceTier}
+                          </span>
+                        );
+                      })()}
+                      {/* Source method */}
+                      {match.suggestedEntity.assertedVia && (
+                        <span style={{ color: '#9ca3af', fontSize: '0.625rem' }}>
+                          {formatSourceMethod(match.suggestedEntity.assertedVia)}
+                        </span>
+                      )}
+                      {/* Ontology type */}
+                      {match.suggestedEntity.jsonldType && (
+                        <span
+                          style={{
+                            fontSize: '0.625rem',
+                            color: '#60a5fa',
+                            backgroundColor: '#1e3a5f',
+                            padding: '0.125rem 0.375rem',
+                            borderRadius: '0.25rem',
+                          }}
+                        >
+                          {formatJsonldType(match.suggestedEntity.jsonldType)}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Create new inline form */}
                   {creatingNew === match.id ? (
