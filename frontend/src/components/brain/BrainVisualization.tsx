@@ -497,10 +497,10 @@ export function BrainVisualization({
     [], // Stable callback — uses refs for selection state
   );
 
-  // Invalidate node object cache when selection changes
-  useEffect(() => {
-    nodeObjCacheRef.current.clear();
-  }, [selectedNodeId, selectedNodeIds]);
+  // Selection changes are handled by the cacheKey in nodeThreeObject —
+  // nodes whose visual state changed (selected/dimmed) will cache-miss
+  // and rebuild automatically. No need to clear the entire cache, which
+  // causes a full rebuild of all THREE.Group objects and GC spikes.
 
   // ── Link styling ──────────────────────────────────────────────────────────
   const linkColor = useCallback(
