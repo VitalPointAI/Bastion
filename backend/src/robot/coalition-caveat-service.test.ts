@@ -23,7 +23,7 @@ const TEST_PROFILES: Record<string, CoalitionProfile> = {
     nation: 'United States',
     did: 'did:near:resource-us-coalition',
     authority: 'restricted',
-    allowed_missions: ['recon_area', 'swarm_recon', 'swarm_patrol'],
+    allowed_missions: ['recon_area', 'swarm_recon', 'swarm_patrol', 'swarm_advance'],
     restrictions: [
       {
         mission_type: 'swarm_advance',
