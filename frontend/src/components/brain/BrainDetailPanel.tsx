@@ -67,6 +67,21 @@ function getConfidenceColor(confidence: number): string {
   return `rgb(${r}, ${g}, 60)`;
 }
 
+function confidenceTierStyle(tier: 'high' | 'medium' | 'low'): { background: string; color: string } {
+  if (tier === 'high') return { background: '#065f46', color: '#a7f3d0' };
+  if (tier === 'medium') return { background: '#78350f', color: '#fcd34d' };
+  return { background: '#7f1d1d', color: '#fca5a5' };
+}
+
+function formatJsonldType(jsonldType: string): string {
+  const localName = jsonldType.includes(':') ? jsonldType.split(':')[1]! : jsonldType;
+  return localName.replace(/([A-Z])/g, ' $1').trim();
+}
+
+function formatSourceMethod(method: string): string {
+  return method.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 /**
  * Resolve an edge endpoint to a string ID.
  * react-force-graph-2d mutates source/target from string → object at runtime,
@@ -253,6 +268,38 @@ function SingleNodeView({
         <div className="brain-detail-section-title">Confidence</div>
         <ConfidenceMeter value={node.confidence} />
       </div>
+
+      {/* Provenance — rendered when Phase 47 JSON-LD fields are present */}
+      {(node.confidenceTier || node.assertedVia || node.jsonldType || node.isContradicted) && (
+        <div className="brain-detail-section">
+          <div className="brain-detail-section-title">Provenance</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', padding: '0.375rem 0.5rem', backgroundColor: '#0b1120', borderRadius: '0.25rem', border: '1px solid #1e293b' }}>
+            {node.confidenceTier && (() => {
+              const s = confidenceTierStyle(node.confidenceTier!);
+              return (
+                <span style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', padding: '0.125rem 0.375rem', borderRadius: '0.25rem', backgroundColor: s.background, color: s.color }}>
+                  {node.confidenceTier}
+                </span>
+              );
+            })()}
+            {node.assertedVia && (
+              <span style={{ color: '#9ca3af', fontSize: '0.625rem' }}>
+                {formatSourceMethod(node.assertedVia)}
+              </span>
+            )}
+            {node.jsonldType && (
+              <span style={{ fontSize: '0.625rem', color: '#60a5fa', backgroundColor: '#1e3a5f', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>
+                {formatJsonldType(node.jsonldType)}
+              </span>
+            )}
+            {node.isContradicted && (
+              <span style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', padding: '0.125rem 0.375rem', borderRadius: '0.25rem', backgroundColor: '#450a0a', color: '#fca5a5', border: '1px solid #991b1b' }}>
+                CONTRADICTED
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Connections */}
       {nodeEdges.length > 0 && (
