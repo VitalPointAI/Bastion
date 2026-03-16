@@ -22,6 +22,7 @@ import { COPVersionBrowser } from './COPVersionBrowser.js';
 import { COPLayerLifecycle } from './COPLayerLifecycle.js';
 import { COPReviewPanel } from './COPReviewPanel.js';
 import { COPResourceDetail } from './COPResourceDetail.js';
+import { MissionSequencePanel } from './MissionSequencePanel.js';
 import { GraphExplorer, type GraphData } from '../graph/GraphExplorer.js';
 import { NodeDetailPanel } from '../graph/NodeDetailPanel.js';
 import { ActivityFeed } from '../problem-set/ActivityFeed.js';
@@ -519,6 +520,9 @@ export function COPTab({ problemSetId }: COPTabProps) {
 
         {/* Map */}
         <div className="flex-1 min-h-0 relative">
+          {/* Mission Sequence Panel (Iron Bastion) */}
+          <MissionSequencePanel />
+
           <COPMapView
             problemSetId={problemSetId}
             layerVisibility={layerVisibility}

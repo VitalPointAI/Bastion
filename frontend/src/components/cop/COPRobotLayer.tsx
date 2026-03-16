@@ -85,23 +85,22 @@ function createRobotIcon(state: string): L.DivIcon {
 
 // ─── Room-to-map coordinate transform (MVP linear mapping) ──────────────────
 
+// Must match backend/data/calibration-profiles.json "default" profile
+const CAL_SOUTH = 25.0420, CAL_NORTH = 25.0480;
+const CAL_WEST = 121.5120, CAL_EAST = 121.5180;
+const CAL_ROOM_W = 5, CAL_ROOM_H = 5;
+
 function roomToLatLng(x: number, y: number): [number, number] {
-  const south = 25.0330, north = 25.0340;
-  const west = 121.5640, east = 121.5650;
-  const roomWidth = 5, roomHeight = 5;
   return [
-    south + (y / roomHeight) * (north - south),
-    west + (x / roomWidth) * (east - west),
+    CAL_SOUTH + (y / CAL_ROOM_H) * (CAL_NORTH - CAL_SOUTH),
+    CAL_WEST + (x / CAL_ROOM_W) * (CAL_EAST - CAL_WEST),
   ];
 }
 
 function latLngToRoom(lat: number, lng: number): { x: number; y: number } {
-  const south = 25.0330, north = 25.0340;
-  const west = 121.5640, east = 121.5650;
-  const roomWidth = 5, roomHeight = 5;
   return {
-    x: ((lng - west) / (east - west)) * roomWidth,
-    y: ((lat - south) / (north - south)) * roomHeight,
+    x: ((lng - CAL_WEST) / (CAL_EAST - CAL_WEST)) * CAL_ROOM_W,
+    y: ((lat - CAL_SOUTH) / (CAL_NORTH - CAL_SOUTH)) * CAL_ROOM_H,
   };
 }
 

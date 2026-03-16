@@ -21,6 +21,7 @@ Environment variables must be set (copy .env.example to .env and fill in values)
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import signal
 import sys
@@ -253,6 +254,62 @@ async def telemetry_loop(
 
 
 # ---------------------------------------------------------------------------
+# Background vision feed (sends keyframes independently of mission detections)
+# ---------------------------------------------------------------------------
+
+VISION_FEED_INTERVAL_SEC = 1.0  # Send a camera frame every 1 second
+
+
+async def vision_feed_loop(
+    ws: websockets.WebSocketClientProtocol,
+    robot_id: str,
+) -> None:
+    """
+    Periodically capture a JPEG keyframe from the camera and send it as a
+    VisionMsg regardless of whether there are active detections or a mission
+    running.  This enables the robot detail panel on the COP to show a live
+    camera feed at all times.
+
+    Only runs when ``VISION_ENABLED`` and ``KEYFRAME_ENABLED`` are both true.
+    """
+    if not _vision_engine or not _camera or not _vision_config:
+        return
+    if not _vision_config.keyframe_enabled:
+        return
+
+    log.info("mission_client.vision_feed_loop.start", interval_sec=VISION_FEED_INTERVAL_SEC)
+    try:
+        while not _shutdown_event.is_set():
+            try:
+                jpeg = await _vision_engine.get_keyframe_jpeg(
+                    _camera, _vision_config.keyframe_quality
+                )
+                if jpeg:
+                    keyframe_b64 = base64.b64encode(jpeg).decode()
+                    # Also run a quick detection pass so the feed overlay
+                    # can show bounding boxes / class labels in real time
+                    detections = await _vision_engine.detect_once(_camera)
+                    msg = VisionMsg(
+                        robot_id=robot_id,
+                        timestamp=datetime.utcnow(),
+                        detections=detections or [],
+                        keyframe_jpeg_b64=keyframe_b64,
+                    )
+                    await _send_vision(ws, msg)
+            except (ConnectionClosed, RuntimeError):
+                log.warning("mission_client.vision_feed_loop.ws_closed")
+                break
+            except Exception as exc:  # noqa: BLE001
+                log.error("mission_client.vision_feed_loop.error", error=str(exc))
+
+            await asyncio.sleep(VISION_FEED_INTERVAL_SEC)
+    except asyncio.CancelledError:
+        pass
+    finally:
+        log.info("mission_client.vision_feed_loop.stop")
+
+
+# ---------------------------------------------------------------------------
 # Message receive loop
 # ---------------------------------------------------------------------------
 
@@ -450,7 +507,7 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
         global _executor
         _executor = executor
 
-        # Run telemetry and receive loops concurrently
+        # Run telemetry, receive, and vision feed loops concurrently
         telemetry_task = asyncio.create_task(
             telemetry_loop(ws, driver, cfg.ROBOT_ID),
             name="telemetry-loop",
@@ -459,10 +516,14 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
             receive_loop(ws, executor, capabilities_list=capabilities_list),
             name="receive-loop",
         )
+        vision_feed_task = asyncio.create_task(
+            vision_feed_loop(ws, cfg.ROBOT_ID),
+            name="vision-feed-loop",
+        )
 
-        # Wait for either loop to exit (connection closed or shutdown)
+        # Wait for any loop to exit (connection closed or shutdown)
         done, pending = await asyncio.wait(
-            [telemetry_task, receive_task],
+            [telemetry_task, receive_task, vision_feed_task],
             return_when=asyncio.FIRST_COMPLETED,
         )
         for task in pending:

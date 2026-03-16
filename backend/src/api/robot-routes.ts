@@ -13,6 +13,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { MissionJSONSchema } from '../robot/robot-types.js';
 import { getRobotMissionService } from '../robot/robot-mission-service.js';
+import { getMissionSequenceOrchestrator } from '../robot/mission-sequence-orchestrator.js';
 import { loadCoalitionProfiles } from '../robot/coalition-caveat-service.js';
 
 // Calibration profile storage (file-based for MVP)
@@ -33,7 +34,7 @@ function loadProfiles(): Record<string, CalibrationProfile> {
       default: {
         room_width: 5,
         room_height: 5,
-        map_bounds: { north: 25.0340, south: 25.0330, east: 121.5650, west: 121.5640 },
+        map_bounds: { north: 25.0480, south: 25.0420, east: 121.5180, west: 121.5120 },
       },
     };
     if (!existsSync(CALIBRATION_DIR)) mkdirSync(CALIBRATION_DIR, { recursive: true });
@@ -395,4 +396,63 @@ robotRouter.post('/swarms/:leaderId/remove-resource', (req, res) => {
   }
 
   res.json({ status: 'remove_resource_sent', leader_id: req.params.leaderId, robot_id });
+});
+
+// ---------------------------------------------------------------------------
+// POST /scenarios/iron-bastion — Start Iron Bastion mission sequence
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
+  const overrides = req.body ?? {};
+
+  try {
+    const orchestrator = getMissionSequenceOrchestrator();
+    const { sequenceId, state } = await orchestrator.startIronBastion(overrides);
+
+    res.json({
+      sequenceId,
+      phase: state.phase,
+      startedAt: state.startedAt,
+      config: state.config,
+    });
+  } catch (err) {
+    console.error('[robot-routes] Failed to start Iron Bastion scenario:', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /scenarios/:sequenceId — Get mission sequence status
+// ---------------------------------------------------------------------------
+
+robotRouter.get('/scenarios/:sequenceId', (req, res) => {
+  const orchestrator = getMissionSequenceOrchestrator();
+  const state = orchestrator.getState(req.params.sequenceId);
+
+  if (!state) {
+    res.status(404).json({ error: 'Sequence not found' });
+    return;
+  }
+
+  res.json(state);
+});
+
+// ---------------------------------------------------------------------------
+// GET /scenarios — List all mission sequences
+// ---------------------------------------------------------------------------
+
+robotRouter.get('/scenarios', (_req, res) => {
+  const orchestrator = getMissionSequenceOrchestrator();
+  const sequences = orchestrator.listSequences();
+
+  res.json(
+    sequences.map((s) => ({
+      id: s.id,
+      phase: s.phase,
+      startedAt: s.startedAt,
+      phaseStartedAt: s.phaseStartedAt,
+      detectedThreats: s.detectedThreats.length,
+      logEntries: s.log.length,
+    })),
+  );
 });
