@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 48-03-PLAN.md
-last_updated: "2026-03-16T15:57:00Z"
-last_activity: "2026-03-16 - Completed 48-03: coalition caveat service; Taiwan/US/Australia national profiles; checkSwarmCaveat TypeScript + Python; 22 tests pass"
+status: completed
+stopped_at: Completed 48-04-PLAN.md (out-of-order, 48-05 previously completed)
+last_updated: "2026-03-16T16:08:43.185Z"
+last_activity: "2026-03-16 - Completed 48-05: SwarmCOPLayer frontend — formation polygon, member markers, telemetry panel, smooth interpolation; wired into COPMapView"
 progress:
   total_phases: 64
   completed_phases: 45
   total_plans: 409
-  completed_plans: 407
+  completed_plans: 409
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 48 of 64 (Robot Swarm Behaviour End-to-End Demo) — IN PROGRESS
-Plan: 3 of 11 in current phase — COMPLETE
-Status: Plan 48-03 complete — Coalition caveat service with Taiwan (full), US (restricted urban/find_engage), Australia (observer/recon only) national profiles. checkSwarmCaveat blocks mission if ANY member's DID forbids mission type. TypeScript + Python implementations with 9+13 passing tests.
-Last activity: 2026-03-16 - Completed 48-03: coalition caveat service; Taiwan/US/Australia national profiles; checkSwarmCaveat TypeScript + Python; 22 tests pass
+Plan: 5 of 11 in current phase — COMPLETE
+Status: Plan 48-05 complete — SwarmCOPLayer frontend with formation polygon, member markers, smooth interpolation, and telemetry panel. Wired into COPMapView.
+Last activity: 2026-03-16 - Completed 48-05: SwarmCOPLayer frontend — formation polygon, member markers, telemetry panel, smooth interpolation; wired into COPMapView
 
-Progress: █████████████████████████████ 406 plans complete
+Progress: █████████████████████████████ 408 plans complete
 
 ## Performance Metrics
 
@@ -201,6 +201,7 @@ Progress: ███████████████████████�
 | Phase 48 P01 | 0 | 0 tasks | 0 files |
 | Phase 48 P02 | 8 | 2 tasks | 4 files |
 | Phase 48 P03 | 7 | 2 tasks | 5 files |
+| Phase 48 P04 | 12 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -214,6 +215,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 48 Plan 05 (SwarmCOPLayer Frontend):**
+- WebSocket channel 'swarm:cop_update' on /ws/messages for swarm telemetry push to frontend
+- Convex hull ordering by atan2 angle from centroid prevents bowtie polygon for 3-member swarms
+- No roomToLatLng in frontend — positions already geo-coordinates from swarm-cop-bridge.ts
 
 **Phase 48 Plan 03 (Coalition Caveat Enforcement):**
 - Restrictions checked before allowed_missions: ensures specific restriction reason strings surface in block results (e.g. "US national policy: no offensive urban ops")
@@ -881,6 +887,7 @@ Recent decisions affecting current work:
 - [Phase 47]: normalizeType() strips colons/spaces/underscores for jsonldType comparison across all COP sub-agents
 - [Phase 47]: confidenceTier required (not optional) in COPSymbolSpec enforces all sub-agents provide visual confidence encoding
 - [Phase 47]: Normalize entity field names in jpp.ts (name->canonicalName, type->entityType) to match frontend Entity interface contract
+- [Phase 48]: Python swarm modules placed in robot/swarm/ subpackage (graph_events.py, corroboration.py, cop_utils.py) to match Wave 0 test imports from robot.swarm.*; top-level re-exports added for backward compatibility
 
 ### Roadmap Evolution
 
@@ -1591,7 +1598,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T14:55:24.702Z
-Stopped at: Completed 47-11-PLAN.md
+Last session: 2026-03-16T16:08:32.457Z
+Stopped at: Completed 48-04-PLAN.md (out-of-order, 48-05 previously completed)
 Resume file: None
 Next action: Continue Phase 40 plan 02
