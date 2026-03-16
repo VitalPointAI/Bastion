@@ -43,6 +43,7 @@ import { getResourceTelemetryService } from '../resources/resource-telemetry.js'
 import { getMissionProfileService } from './mission-profile-service.js';
 import type { MissionProfile } from './mission-profile-service.js';
 import { getMessageBus } from '../messaging/message-bus.js';
+import { bridgeSwarmTelemetryToCOP } from './swarm-cop-bridge.js';
 import Anthropic from '@anthropic-ai/sdk';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
@@ -915,6 +916,25 @@ export class RobotMissionService {
     );
 
     this.swarmStates.set(swarm_id, msg);
+
+    // Bridge swarm telemetry to COP layer as a SwarmFormationSpec (Phase 48)
+    try {
+      const messageBus = getMessageBus();
+      bridgeSwarmTelemetryToCOP(msg, (event, data) => {
+        messageBus.publish({
+          sourceDid: this.connectedRobots.get(leader_id)?.did ?? leader_id,
+          sourceType: 'system',
+          destinationType: 'channel',
+          destinationTarget: event,
+          messageType: 'swarm.cop.update',
+          payload: data as Record<string, unknown>,
+        }).catch((err) => {
+          console.warn('[RobotMissionService] Failed to publish swarm COP update:', err);
+        });
+      });
+    } catch (err) {
+      console.warn('[RobotMissionService] swarm-cop-bridge error (non-fatal):', err);
+    }
 
     // Forward each swarm member's position to the COP resource layer
     const telemetryService = getResourceTelemetryService();
