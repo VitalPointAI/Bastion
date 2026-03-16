@@ -83,12 +83,28 @@ export interface BrainNode {
   // ── Temporal fields ───────────────────────────────────────────────────────
   /** ISO timestamp of node creation — used for timeline scrubbing and recency fading */
   createdAt: string;
+  /** ISO datetime when this assertion became valid (JSON-LD temporal validity) */
+  validFrom?: string;
+  /** ISO datetime when this assertion expired. null = currently valid */
+  validTo?: string | null;
 
   // ── Provenance fields ─────────────────────────────────────────────────────
   /** Source document IDs that contributed to this node */
   sourceDocumentIds?: string[];
   /** Validity score from source quality assessment (0-1) */
   validityScore?: number;
+  /** Source method that generated this assertion (manual_entry, doc_intelligence, osint, etc.) */
+  assertedVia?: string;
+  /** DID of the agent or user that asserted this node */
+  assertedBy?: string;
+  /** True if this node has unresolved :CONTRADICTS edges in the graph */
+  isContradicted?: boolean;
+  /** Computed confidence tier for visual styling (high/medium/low) */
+  confidenceTier?: 'high' | 'medium' | 'low';
+  /** CCO/BFO class URI (e.g. 'cco:MilitaryOrganization') */
+  jsonldType?: string;
+  /** Half-life in days for client-side confidence decay display */
+  halfLifeDays?: number;
 
   // ── Content / description ──────────────────────────────────────────────
   /** Description or summary of what this node represents */
@@ -129,6 +145,10 @@ export interface BrainEdge {
   strength?: number;
   /** When true, this edge represents conflicting intelligence — rendered distinctly */
   isConflict?: boolean;
+  /** When true, this edge is an active :CONTRADICTS relationship (aligns with isConflict semantics) */
+  isContradiction?: boolean;
+  /** Edge-level confidence (0-1) */
+  confidence?: number;
   /** ISO timestamp — used for recency-based edge fading */
   createdAt?: string;
 }
