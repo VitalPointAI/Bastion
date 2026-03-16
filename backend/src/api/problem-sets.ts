@@ -1041,6 +1041,11 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Cannot delete a problem set that has child problem sets. Delete children first.' });
     }
 
+    // Clear FK references that lack ON DELETE CASCADE
+    const { getPool } = await import('../lib/database.js');
+    const pool = getPool();
+    await pool.query('UPDATE exercise_scenarios SET problem_set_id = NULL WHERE problem_set_id = $1', [problemSetId]);
+
     await problemSetStore.deleteProblemSet(problemSetId);
 
     console.log(`Problem set deleted: ${problemSetId} by ${userDid}`);
