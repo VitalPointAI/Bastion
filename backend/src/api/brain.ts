@@ -10,6 +10,7 @@ import { Router, type Request, type Response } from 'express';
 import { brainStore } from '../brain/brain-store.js';
 import type { CreateAnnotationInput, UpdateAnnotationInput, CreateSnapshotInput } from '../brain/brain-types.js';
 import { executeReadQuery } from '../graph/neo4j-client.js';
+import { getConfidenceTier } from '../graph/provenance-types.js';
 
 const router = Router();
 
@@ -163,17 +164,79 @@ router.delete('/snapshots/:id', async (req: Request, res: Response) => {
 // HISTORICAL GRAPH ENDPOINT
 // =====================
 
-// GET /api/brain/graph-snapshot?problemSetId=X&at=ISO_TIMESTAMP
-// Returns the graph state as it existed at the given timestamp
+// GET /api/brain/graph-snapshot?problemSetId=X&atTime=ISO_TIMESTAMP
+// Returns the graph state as it existed at the given timestamp.
+// Accepts atTime (preferred) or at (legacy alias) as the timestamp parameter.
+// When neither is provided, returns the current (latest) graph state.
+// Response nodes include JSON-LD fields: jsonldType, validFrom, validTo, assertedVia,
+// assertedBy, confidence, sourceWeight, halfLifeDays, isContradicted, confidenceTier.
 router.get('/graph-snapshot', async (req: Request, res: Response) => {
   try {
     const problemSetId = getQueryString(req.query.problemSetId);
-    const at = getQueryString(req.query.at);
-    if (!problemSetId || !at) {
-      return res.status(400).json({ error: 'problemSetId and at (ISO timestamp) query parameters are required' });
+    if (!problemSetId) {
+      return res.status(400).json({ error: 'problemSetId query parameter is required' });
     }
-    const graphState = await brainStore.getGraphAtTime(problemSetId, at);
-    res.json(graphState);
+
+    // Accept atTime (preferred by frontend) or at (legacy alias)
+    const atTime = getQueryString(req.query.atTime) || getQueryString(req.query.at);
+
+    // When no timestamp provided, use current time to return the latest graph state
+    const timestamp = atTime ?? new Date().toISOString();
+
+    const graphState = await brainStore.getGraphAtTime(problemSetId, timestamp);
+
+    // ── Enrich nodes with JSON-LD provenance fields ──────────────────────────
+    // Batch query to detect :CONTRADICTS edges (isContradicted flag)
+    let contradictedNodeIds = new Set<string>();
+    try {
+      const nodeIds = (graphState.nodes as Array<{ id?: unknown }>)
+        .map((n) => n.id)
+        .filter((id): id is string => typeof id === 'string');
+
+      if (nodeIds.length > 0) {
+        const contradictResult = await executeReadQuery(
+          `MATCH (a)-[:CONTRADICTS]->(b)
+           WHERE a.workspaceId = $workspaceId
+             AND (a.id IN $nodeIds OR b.id IN $nodeIds)
+           RETURN a.id AS aId, b.id AS bId`,
+          { workspaceId: problemSetId, nodeIds },
+        );
+        for (const record of contradictResult.records) {
+          const aId = record.get('aId') as string | null;
+          const bId = record.get('bId') as string | null;
+          if (aId) contradictedNodeIds.add(aId);
+          if (bId) contradictedNodeIds.add(bId);
+        }
+      }
+    } catch {
+      // Non-fatal: contradiction detection failure doesn't block the snapshot response
+    }
+
+    // ── Map nodes to include JSON-LD fields ───────────────────────────────────
+    const enrichedNodes = (graphState.nodes as Array<Record<string, unknown>>).map((node) => {
+      const conf = typeof node.confidence === 'number' ? node.confidence : 0;
+      return {
+        ...node,
+        // Temporal validity fields
+        validFrom: node.validFrom ?? node.createdAt ?? null,
+        validTo: node.validTo ?? null,
+        // Provenance fields
+        assertedVia: node.assertedVia ?? node.source_method ?? null,
+        assertedBy: node.assertedBy ?? node.created_by ?? null,
+        // Semantic type
+        jsonldType: node.jsonldType ?? node.jsonld_type ?? null,
+        // Confidence + tier
+        confidence: conf,
+        confidenceTier: getConfidenceTier(conf),
+        sourceWeight: node.sourceWeight ?? node.source_weight ?? null,
+        // Half-life for client-side decay
+        halfLifeDays: node.halfLifeDays ?? node.half_life_days ?? null,
+        // Contradiction flag
+        isContradicted: contradictedNodeIds.has(String(node.id ?? '')),
+      };
+    });
+
+    res.json({ nodes: enrichedNodes, edges: graphState.edges });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
