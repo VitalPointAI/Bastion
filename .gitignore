@@ -45,3 +45,10 @@ docs/whitepaper/exports/
 *.xlsx
 robot/.robot_did
 *.pt
+
+# Vision training artifacts
+robot/vision/training/augmented/
+robot/vision/training/dataset/
+robot/vision/training/dataset.yaml
+robot/vision/training/runs/
+robot/vision/training/labels/
