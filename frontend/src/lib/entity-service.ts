@@ -16,6 +16,13 @@ export interface Entity {
   entityType: EntityType;
   aliases: string[];
   metadata: Record<string, unknown>;
+  // JSON-LD provenance fields (populated after Plan 47 migration)
+  jsonldType?: string;
+  confidence?: number;
+  confidenceTier?: 'high' | 'medium' | 'low';
+  assertedVia?: string;
+  validFrom?: string;
+  validTo?: string | null;
 }
 
 export interface EntityReference {
@@ -34,6 +41,24 @@ export interface MergeResult {
   targetId: string;
   mergedCount: number;
   success: boolean;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Map a SourceMethod value to a human-readable label.
+ * Gracefully returns the raw value for unknown methods.
+ */
+export function formatSourceMethod(method: string): string {
+  const labels: Record<string, string> = {
+    doc_intelligence: 'Document Intelligence',
+    osint: 'OSINT Feed',
+    manual_entry: 'Manual Entry',
+    vision_pipeline: 'Vision Detection',
+    ai_inference: 'AI Inference',
+    sigint: 'SIGINT',
+  };
+  return labels[method] ?? method;
 }
 
 // ─── Service ────────────────────────────────────────────────────────────────

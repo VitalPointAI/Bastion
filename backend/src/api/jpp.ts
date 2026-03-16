@@ -15,6 +15,7 @@ import { ewmStore } from '../jpp/ewm-store.js';
 import { entityToolHandlers } from '../graph/tools/entity-tools.js';
 import { notifyCOPChange } from '../cop/index.js';
 import type { JPPStepId, StepStatus } from '../jpp/types.js';
+import { getConfidenceTier } from '../graph/provenance-types.js';
 
 const router = Router();
 
@@ -38,7 +39,30 @@ router.get('/entities/search', async (req: Request, res: Response) => {
       entityType: entityType as Parameters<typeof entityToolHandlers.search_entities>[0]['entityType'],
       fuzzy: true,
     });
-    res.json(result);
+
+    // Enrich each entity with JSON-LD fields and normalize field names
+    // to match the frontend Entity interface (canonicalName, entityType, etc.)
+    const entities = (result.entities as Array<Record<string, unknown>>).map((e) => {
+      const confidence = typeof e.confidence === 'number' ? e.confidence : 0;
+      const assertedVia =
+        (e.provenance as Record<string, unknown> | undefined)?.assertedVia as string | undefined;
+      return {
+        id: e.id,
+        canonicalName: e.name,
+        entityType: e.type,
+        aliases: (e.aliases as string[]) || [],
+        metadata: {},
+        // JSON-LD fields
+        jsonldType: e.jsonldType as string | undefined,
+        confidence,
+        confidenceTier: getConfidenceTier(confidence),
+        assertedVia,
+        validFrom: e.validFrom as string | undefined,
+        validTo: (e.validTo as string | null) ?? null,
+      };
+    });
+
+    res.json({ entities, total: entities.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[jpp] GET /entities/search failed:', message);
