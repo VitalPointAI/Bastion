@@ -25,7 +25,8 @@ export type COPLayerType =
   | 'control_measures'
   | 'intel'
   | 'logistics'
-  | 'c2';
+  | 'c2'
+  | 'swarm';
 
 export type Affiliation = 'friendly' | 'enemy' | 'neutral' | 'unknown';
 
@@ -152,4 +153,36 @@ export interface LayerQueryFilters {
   layerType?: COPLayerType;
   beforeDate?: string;
   afterDate?: string;
+}
+
+// --- Swarm COP Layer Types (Phase 48) ---
+
+export interface SwarmMemberSpec {
+  robotId: string;
+  role: 'leader' | 'follower';
+  position: LatLng;
+  slotIndex: number;
+  batteryPct: number;
+  nationalDid?: string;
+}
+
+export interface DetectionAttribution {
+  robotId: string;
+  entityId: string;       // COP symbol entity ID this robot detected
+  confidence: number;
+  detectedAt: string;     // ISO timestamp
+}
+
+export interface SwarmFormationSpec {
+  swarmId: string;
+  leaderId: string;
+  state: 'forming' | 'ready' | 'moving' | 'holding' | 'dispersing' | 'contact';
+  formation: 'line' | 'wedge' | 'column' | 'echelon_left' | 'echelon_right' | 'vee';
+  technique: 'traveling' | 'traveling_overwatch' | 'bounding_overwatch' | 'successive_bounds';
+  memberCount: number;
+  members: SwarmMemberSpec[];
+  centerOfMass: LatLng;
+  heading: number;         // degrees 0-360
+  missionId?: string;
+  detectionAttributions?: DetectionAttribution[];
 }
