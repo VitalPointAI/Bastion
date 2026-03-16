@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 48-06-PLAN.md
-last_updated: "2026-03-16T16:19:22.689Z"
+stopped_at: Completed 48-08 Task 1 — awaiting human-verify checkpoint for Phase 48 end-to-end demo
+last_updated: "2026-03-16T16:28:44.587Z"
 last_activity: "2026-03-16 - Completed 48-05: SwarmCOPLayer frontend — formation polygon, member markers, telemetry panel, smooth interpolation; wired into COPMapView"
 progress:
   total_phases: 64
-  completed_phases: 45
+  completed_phases: 46
   total_plans: 409
-  completed_plans: 411
+  completed_plans: 412
 ---
 
 # Project State
@@ -204,6 +204,7 @@ Progress: ███████████████████████�
 | Phase 48 P04 | 12 | 2 tasks | 10 files |
 | Phase 48 P07 | 15 | 2 tasks | 3 files |
 | Phase 48-robot-swarm-behaviour-end-to-end-demo P06 | 6 | 2 tasks | 4 files |
+| Phase 48-robot-swarm-behaviour-end-to-end-demo P08 | 12 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -895,6 +896,7 @@ Recent decisions affecting current work:
 - [Phase 48-robot-swarm-behaviour-end-to-end-demo]: Client-side caveat evaluation mirrors backend logic for immediate pre-flight display without API round-trip
 - [Phase 48-robot-swarm-behaviour-end-to-end-demo]: Attribution lines default OFF for clean COP; operator-activated progressive disclosure
 - [Phase 48-robot-swarm-behaviour-end-to-end-demo]: Even/odd array index determines bounding vs overwatch role in bounding_overwatch technique
+- [Phase 48]: createMilSymbolIconWithBadge wraps existing divIcon HTML to add confidence badge pills without re-creating milsymbol
 
 ### Roadmap Evolution
 
@@ -1605,7 +1607,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T16:19:22.679Z
-Stopped at: Completed 48-06-PLAN.md
+Last session: 2026-03-16T16:28:44.577Z
+Stopped at: Completed 48-08 Task 1 — awaiting human-verify checkpoint for Phase 48 end-to-end demo
 Resume file: None
 Next action: Continue Phase 40 plan 02
