@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 47-10-PLAN.md
-last_updated: "2026-03-16T17:00:00.000Z"
-last_activity: "2026-03-16 - Completed 47-10: Graph API, RAFT tools, entity tools, aggregation service wired to JSON-LD; COP confidence visual encoding complete"
+status: completed
+stopped_at: Completed 47-11-PLAN.md
+last_updated: "2026-03-16T14:55:24.714Z"
+last_activity: "2026-03-16 - Completed 47-11: design/plan/assess tabs wired to JSON-LD provenance; phase 47 fully complete"
 progress:
   total_phases: 64
-  completed_phases: 44
+  completed_phases: 45
   total_plans: 409
   completed_plans: 404
 ---
@@ -26,9 +26,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 47 of 64 (JSON-LD Semantic Brain COP Fix) — COMPLETE
-Plan: 10 of 10 in current phase — COMPLETE
-Status: Plan 47-10 complete — Graph API returns JSON-LD entities with provenance + temporal filtering. RAFT tools and entity tools pass JSON-LD data to LangGraph agents. Aggregation service groups by ontology type and calculates average confidence. COP map applies confidence visual encoding (opacity tiers) with threshold filter. All downstream consumers wired to JSON-LD graph.
-Last activity: 2026-03-16 - Completed 47-10: All consumers wired; COP confidence visual encoding complete
+Plan: 11 of 11 in current phase — COMPLETE
+Status: Plan 47-11 complete — JPP entity API enriched with JSON-LD fields. plan/design/assess tabs wired to JSON-LD provenance data. EntityResolutionPanel shows confidence tier/source/ontology badges. DesignAIPanel warns on low-confidence entities. OperationalAssess has Intelligence Quality view with tier distribution and contradiction count. All 7+ downstream consumers from CONTEXT.md now wired.
+Last activity: 2026-03-16 - Completed 47-11: design/plan/assess tabs wired to JSON-LD provenance; phase 47 fully complete
 
 Progress: █████████████████████████████ 404 plans complete
 
@@ -872,6 +872,7 @@ Recent decisions affecting current work:
 - [Phase 47]: Brain graph-snapshot atTime param replaces at (legacy kept for backward compat); optional timestamp defaults to current time
 - [Phase 47]: normalizeType() strips colons/spaces/underscores for jsonldType comparison across all COP sub-agents
 - [Phase 47]: confidenceTier required (not optional) in COPSymbolSpec enforces all sub-agents provide visual confidence encoding
+- [Phase 47]: Normalize entity field names in jpp.ts (name->canonicalName, type->entityType) to match frontend Entity interface contract
 
 ### Roadmap Evolution
 
@@ -1582,7 +1583,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T14:35:27.932Z
-Stopped at: Completed 47-07-PLAN.md
+Last session: 2026-03-16T14:55:24.702Z
+Stopped at: Completed 47-11-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
