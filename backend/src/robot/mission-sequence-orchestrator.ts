@@ -86,13 +86,18 @@ const IRON_BASTION_DEFAULTS: SequenceConfig = {
   // Home base: southwest corner of room
   homeBase: { x: 0.5, y: 0.5 },
   // Recon area: northeast quadrant where tanks are expected
+  //   Expected enemy positions: T1 ~(3.5, 4.0), T2 ~(4.0, 3.5)
   reconArea: { x_min: 2.5, y_min: 2.5, x_max: 4.5, y_max: 4.5 },
-  // Overwatch: elevated position with view of recon area
-  overwatchPosition: { x: 2.0, y: 2.0 },
-  // Firing positions: line abreast facing northeast
+  // Overwatch: SW of tanks, offset west so NOT in any follower firing line
+  //   Fire line check: F1→T1 crosses x≈3.1 at this y, F2→T2 crosses x≈4.0
+  //   Overwatch at x=1.5 is well clear of both firing corridors
+  overwatchPosition: { x: 1.5, y: 3.5 },
+  // Flanking positions: followers approach from the south, 2m apart
+  //   F1 fires NE toward T1 (3.5,4.0), F2 fires NW toward T2 (4.0,3.5)
+  //   Neither firing line passes near overwatch (1.5, 3.5)
   firingPositions: [
-    { x: 2.5, y: 3.0 },
-    { x: 3.5, y: 3.0 },
+    { x: 2.5, y: 1.5 },  // F1 (bravo)  — south-center, flanking shot NE
+    { x: 4.5, y: 1.5 },  // F2 (charlie) — south-east, flanking shot NW
   ],
   reconSpeed: 80,    // Slow for stealth recon
   advanceSpeed: 120, // Moderate for tactical advance
