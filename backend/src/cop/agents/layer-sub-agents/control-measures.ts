@@ -17,7 +17,7 @@ import type {
   COPControlMeasureSpec,
 } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec } from './sub-agent-types.js';
+import { createEmptyLayerSpec, matchesEntityType } from './sub-agent-types.js';
 
 const AGENT_ID = 'cop-control-measures-001';
 const TIMEOUT_MS = 30_000;
@@ -90,7 +90,7 @@ export async function controlMeasuresAgent(
 
     // Also include graph entities that represent control measures
     const graphMeasures = input.graphEntities
-      .filter(e => ['boundary', 'phase_line', 'axis_of_advance', 'route', 'control_measure'].includes(e.type))
+      .filter(e => matchesEntityType(e, ['boundary', 'phase_line', 'axis_of_advance', 'route', 'control_measure', 'controlmeasure']))
       .map(e => ({
         id: e.id,
         type: (e.properties.measureType as ExtractedControlMeasure['type']) || 'boundary',

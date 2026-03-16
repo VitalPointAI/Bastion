@@ -15,7 +15,7 @@ import { suggestCCOClass } from '../../cco/cco-validator.js';
 import { copEventBus } from '../../messaging/event-bus.js';
 import type { COPLayerSpec, COPSymbolSpec } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec } from './sub-agent-types.js';
+import { createEmptyLayerSpec, matchesEntityType } from './sub-agent-types.js';
 
 const AGENT_ID = 'cop-force-disposition-001';
 const TIMEOUT_MS = 30_000;
@@ -85,7 +85,7 @@ export async function forceDispositionAgent(
 
     // Also include graph entities that represent military units
     const graphUnits = input.graphEntities
-      .filter(e => ['organization', 'military_unit', 'unit'].includes(e.type))
+      .filter(e => matchesEntityType(e, ['organization', 'military_unit', 'unit', 'militaryorganization', 'agent']))
       .map(e => ({
         entityId: e.id,
         designation: e.name,

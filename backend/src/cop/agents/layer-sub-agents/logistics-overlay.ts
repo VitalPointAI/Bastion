@@ -18,7 +18,7 @@ import type {
   COPControlMeasureSpec,
 } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec } from './sub-agent-types.js';
+import { createEmptyLayerSpec, matchesEntityType } from './sub-agent-types.js';
 
 const AGENT_ID = 'cop-logistics-001';
 const TIMEOUT_MS = 30_000;
@@ -82,7 +82,7 @@ export async function logisticsOverlayAgent(
 
     // Include graph entities for logistics
     const graphEntities = input.graphEntities
-      .filter(e => ['logistics_node', 'supply_route', 'facility'].includes(e.type))
+      .filter(e => matchesEntityType(e, ['logistics_node', 'supply_route', 'facility', 'logistics', 'artifact']))
       .map(e => ({
         entityId: e.id,
         name: e.name,

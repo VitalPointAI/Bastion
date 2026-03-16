@@ -19,7 +19,7 @@ import type {
   COPControlMeasureSpec,
 } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec } from './sub-agent-types.js';
+import { createEmptyLayerSpec, matchesEntityType } from './sub-agent-types.js';
 
 const AGENT_ID = 'cop-objectives-001';
 const TIMEOUT_MS = 30_000;
@@ -81,11 +81,16 @@ export async function objectivesOverlayAgent(
 
     // Also include graph entities that represent objectives/areas
     const graphObjectives = input.graphEntities
-      .filter(e => ['objective', 'nai', 'tai', 'area_of_interest'].includes(e.type))
+      .filter(e => matchesEntityType(e, ['objective', 'nai', 'tai', 'area_of_interest', 'geospatialregion']))
       .map(e => ({
         entityId: e.id,
         name: e.name,
-        type: e.type as ExtractedObjective['type'],
+        type: (
+          (e.properties['type'] as string) ||
+          (e.jsonldType.includes('nai') ? 'nai' :
+            e.jsonldType.includes('tai') ? 'tai' :
+            e.jsonldType.includes('objective') ? 'objective' : 'area_of_interest')
+        ) as ExtractedObjective['type'],
         position: {
           lat: (e.properties.lat as number) || 0,
           lng: (e.properties.lng as number) || 0,

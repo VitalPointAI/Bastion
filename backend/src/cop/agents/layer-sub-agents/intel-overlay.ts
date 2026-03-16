@@ -14,7 +14,7 @@ import { suggestCCOClass } from '../../cco/cco-validator.js';
 import { copEventBus } from '../../messaging/event-bus.js';
 import type { COPLayerSpec, COPSymbolSpec } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec } from './sub-agent-types.js';
+import { createEmptyLayerSpec, matchesEntityType, getEntityAffiliation } from './sub-agent-types.js';
 
 const AGENT_ID = 'cop-intel-001';
 const TIMEOUT_MS = 30_000;
@@ -79,10 +79,8 @@ export async function intelOverlayAgent(
     // Include graph entities representing hostile/unknown forces
     const graphThreats = input.graphEntities
       .filter(e =>
-        ['organization', 'military_unit', 'unit'].includes(e.type) &&
-        ['hostile', 'enemy', 'suspect', 'unknown'].includes(
-          (e.properties.affiliation as string) || '',
-        ),
+        matchesEntityType(e, ['organization', 'military_unit', 'unit', 'militaryorganization', 'agent']) &&
+        ['hostile', 'enemy', 'suspect', 'unknown'].includes(getEntityAffiliation(e)),
       )
       .map(e => ({
         entityId: e.id,

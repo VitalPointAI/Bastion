@@ -19,7 +19,7 @@ import type {
   COPAnnotationSpec,
 } from '../../layers/layer-types.js';
 import type { SubAgentInput } from './sub-agent-types.js';
-import { createEmptyLayerSpec } from './sub-agent-types.js';
+import { createEmptyLayerSpec, matchesEntityType } from './sub-agent-types.js';
 
 const AGENT_ID = 'cop-c2-001';
 const TIMEOUT_MS = 30_000;
@@ -82,7 +82,7 @@ export async function c2OverlayAgent(
 
     // Include graph entities for HQs/CPs
     const graphCPs = input.graphEntities
-      .filter(e => ['headquarters', 'command_post', 'hq'].includes(e.type))
+      .filter(e => matchesEntityType(e, ['headquarters', 'command_post', 'hq', 'commandpost']))
       .map(e => ({
         entityId: e.id,
         designation: e.name,
