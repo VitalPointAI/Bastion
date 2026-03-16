@@ -3,12 +3,56 @@
  *
  * Finds and resolves duplicate actors across documents using string similarity,
  * blocking algorithms, and LLM-assisted semantic verification.
+ *
+ * Phase 47 extension: hybrid three-signal scoring (string + embedding + type).
+ * Weights: 0.4 * stringSim + 0.4 * embeddingSim + 0.2 * typeSim
+ * Thresholds: auto_merge >= 0.85 | human_review 0.5-0.85 | distinct < 0.5
  */
 
 import { createLLMForAgent } from '../../agents/langgraph/llm-factory.js';
 import { actorStore } from '../raft/actor-store.js';
 import { findCandidateMatches } from './blocking.js';
 import type { MatchCandidate } from './string-matcher.js';
+
+// ─── Re-exports for test compatibility ───────────────────────────────────────
+
+/** Compute embedding cosine similarity between two text strings (0–1). */
+export { computeEmbeddingSimilarity } from './embedding-matcher.js';
+
+/** Compute ontology type similarity based on jsonldType (1.0 same, 0.0 different). */
+export { computeOntologyTypeScore } from './ontology-matcher.js';
+
+// ─── Hybrid Three-Signal Scoring ─────────────────────────────────────────────
+
+/**
+ * Fuse three resolution signals into a single hybrid score.
+ *
+ * @param stringSim    - String similarity score (0–1), weight: 0.4
+ * @param embeddingSim - Embedding cosine similarity (0–1), weight: 0.4
+ * @param typeSim      - Ontology type similarity (0–1), weight: 0.2
+ */
+export function computeHybridScore(
+  stringSim: number,
+  embeddingSim: number,
+  typeSim: number,
+): number {
+  return 0.4 * stringSim + 0.4 * embeddingSim + 0.2 * typeSim;
+}
+
+/**
+ * Classify a hybrid score into a resolution action.
+ *
+ * - >= 0.85 → 'auto_merge'  (high confidence — merge without human review)
+ * - >= 0.50 → 'human_review' (ambiguous — queue for review)
+ * -  < 0.50 → 'distinct'    (low similarity — treat as different entities)
+ */
+export function classifyHybridScore(
+  score: number,
+): 'auto_merge' | 'human_review' | 'distinct' {
+  if (score >= 0.85) return 'auto_merge';
+  if (score >= 0.5) return 'human_review';
+  return 'distinct';
+}
 
 export interface ResolutionResult {
   candidates: MatchCandidate[];

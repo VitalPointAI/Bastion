@@ -15,6 +15,7 @@ import { versionStore } from '../layers/version-store.js';
 import { detectConflicts } from '../layers/conflict-detector.js';
 import { linkageStore } from '../linkage/linkage-store.js';
 import { runCOPGeneration } from '../agents/cop-coordinator.js';
+import { fetchAllSemanticEntities } from '../agents/semantic-entity-query.js';
 import { TriggerHandler } from '../messaging/trigger-handler.js';
 import { ActivityBridge } from '../messaging/activity-bridge.js';
 
@@ -523,7 +524,7 @@ export const agentHandlers = {
 
       // Fetch documents and graph entities for the sub-agents
       let documents: Array<{ id: string; content: string; type: string }> = [];
-      let graphEntities: Array<{ id: string; name: string; type: string; properties: Record<string, unknown> }> = [];
+      let graphEntities: Awaited<ReturnType<typeof fetchAllSemanticEntities>> = [];
 
       try {
         const { objectiveStore } = await import('../../strategic/objectives/index.js');
@@ -538,14 +539,8 @@ export const agentHandlers = {
       }
 
       try {
-        const { actorStore } = await import('../../graph/raft/actor-store.js');
-        const actors = await actorStore.listActors(body.workspaceId);
-        graphEntities = actors.map(actor => ({
-          id: actor.id,
-          name: actor.name,
-          type: actor.type,
-          properties: actor.attributes || {},
-        }));
+        graphEntities = await fetchAllSemanticEntities(body.workspaceId);
+        console.log(`[COP] Fetched ${graphEntities.length} semantic entities for workspace=${body.workspaceId}`);
       } catch {
         // Non-fatal
       }
