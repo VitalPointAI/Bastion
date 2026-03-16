@@ -61,11 +61,11 @@ function makeMockActorRecord(overrides: Record<string, unknown> = {}) {
   };
 
   return {
-    get: (key: string) => {
+    get: (key: string): { properties: typeof props } | null => {
       if (key === 'a') return { properties: props };
-      return props[key as keyof typeof props];
+      return null;
     },
-    records: [{ get: (k: string) => (k === 'a' ? { properties: props } : null) }],
+    records: [{ get: (k: string): { properties: typeof props } | null => (k === 'a' ? { properties: props } : null) }],
   };
 }
 
@@ -75,7 +75,7 @@ describe('createActor (JSON-LD)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockExecuteWriteQuery.mockResolvedValue({
-      records: [{ get: (key: string) => key === 'a' ? { properties: makeMockActorRecord().get('a').properties } : null }],
+      records: [{ get: (key: string) => key === 'a' ? { properties: makeMockActorRecord().get('a')!.properties } : null }],
     });
   });
 
@@ -250,14 +250,14 @@ describe('temporal queries', () => {
       name: 'Expired Entity',
       validFrom: '2025-01-01T00:00:00Z',
       validTo: '2025-12-31T00:00:00Z', // expired before our query time
-    }).get('a').properties;
+    }).get('a')!.properties;
 
     const validActorProps = makeMockActorRecord({
       id: 'ACT-valid',
       name: 'Valid Entity',
       validFrom: '2026-01-01T00:00:00Z',
       validTo: null, // still current
-    }).get('a').properties;
+    }).get('a')!.properties;
 
     mockExecuteReadQuery.mockResolvedValue({
       records: [
@@ -291,7 +291,7 @@ describe('temporal queries', () => {
   it('includes nodes where validTo is null (currently valid)', async () => {
     const { actorStore } = await import('./actor-store.js');
 
-    const currentActor = makeMockActorRecord({ validTo: null }).get('a').properties;
+    const currentActor = makeMockActorRecord({ validTo: null }).get('a')!.properties;
 
     mockExecuteReadQuery.mockResolvedValue({
       records: [{ get: (k: string) => k === 'a' ? { properties: currentActor } : null }],
@@ -319,7 +319,7 @@ describe('staleness decay', () => {
       confidence: 0.95,
       halfLifeDays: 180,
       updatedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-    }).get('a').properties;
+    }).get('a')!.properties;
 
     // Mock returns actor plus a decayedConf value
     mockExecuteReadQuery.mockResolvedValue({
