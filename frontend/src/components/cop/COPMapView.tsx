@@ -38,6 +38,8 @@ interface COPMapViewProps {
   currentPerspective: Perspective;
   /** Optional phase for temporal filtering (used by COPPhaseSlider in Plan 10) */
   currentPhase?: number;
+  /** Confidence threshold (0-1): symbols below this value are hidden. Default 0 (show all) */
+  confidenceThreshold?: number;
   /** Callback when layers are fetched (used by parent to update layer list) */
   onLayersLoaded?: (layers: COPLayer[]) => void;
   /** Callback when entity is clicked */
@@ -64,6 +66,30 @@ function matchesPerspective(symbol: COPSymbolSpec, perspective: Perspective): bo
   return symbol.affiliation === 'enemy';
 }
 
+/**
+ * Derive the confidence tier from a symbol, falling back to the raw confidence value.
+ * Phase 47 Plan 07 added confidenceTier to symbols; older symbols may only have confidence.
+ */
+function getSymbolTier(symbol: COPSymbolSpec): 'high' | 'medium' | 'low' {
+  if (symbol.confidenceTier) return symbol.confidenceTier;
+  const c = symbol.confidence ?? 1;
+  if (c > 0.85) return 'high';
+  if (c >= 0.5) return 'medium';
+  return 'low';
+}
+
+/**
+ * Compute marker opacity modifier based on confidence tier.
+ * Applied on top of the layer-level opacity.
+ */
+function getTierOpacityModifier(tier: 'high' | 'medium' | 'low'): number {
+  switch (tier) {
+    case 'high': return 1.0;
+    case 'medium': return 0.7;
+    case 'low': return 0.4;
+  }
+}
+
 /** Check if control measure is visible in current phase */
 function isInPhase(measure: COPControlMeasureSpec, currentPhase?: number): boolean {
   if (currentPhase === undefined || !measure.phaseRange) return true;
@@ -88,6 +114,7 @@ export function COPMapView({
   layerOpacity,
   currentPerspective,
   currentPhase,
+  confidenceThreshold = 0,
   onLayersLoaded,
   onEntityClick,
   resourceLayerVisible = true,
@@ -162,6 +189,7 @@ export function COPMapView({
               opacity={opacity}
               perspective={currentPerspective}
               currentPhase={currentPhase}
+              confidenceThreshold={confidenceThreshold}
               onEntityClick={onEntityClick}
             />
           );
@@ -195,31 +223,53 @@ interface LayerContentProps {
   opacity: number;
   perspective: Perspective;
   currentPhase?: number;
+  /** Minimum confidence to show symbol (0 = show all) */
+  confidenceThreshold?: number;
   onEntityClick?: (entityId: string) => void;
 }
 
-function LayerContent({ layer, opacity, perspective, currentPhase, onEntityClick }: LayerContentProps) {
+function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThreshold = 0, onEntityClick }: LayerContentProps) {
   const spec = layer.spec;
   if (!spec) return null;
 
   return (
     <>
-      {/* Military symbols */}
+      {/* Military symbols with confidence visual encoding */}
       {(spec.symbols ?? [])
         .filter((s) => matchesPerspective(s, perspective))
+        .filter((s) => (s.confidence ?? 1) >= confidenceThreshold)
         .map((symbol) => {
           // Use movement path position if filtering by phase
           const position = getSymbolPosition(symbol, currentPhase);
+
+          // Determine confidence tier and apply visual encoding
+          const tier = getSymbolTier(symbol);
+          const tierOpacity = getTierOpacityModifier(tier);
+          const effectiveOpacity = opacity * tierOpacity;
+
           const icon = createMilSymbolIcon(symbol.sidc, {
             uniqueDesignation: symbol.designation,
           });
+
+          // SVG stroke style based on confidence tier
+          // high = solid, medium = dashed, low = dotted/ghost
+          const strokeDasharray =
+            tier === 'medium' ? '5,3' :
+            tier === 'low' ? '2,2' :
+            undefined;
+
+          // Confidence badge color (amber for medium, red for low)
+          const badgeColor =
+            tier === 'medium' ? '#f59e0b' :
+            tier === 'low' ? '#ef4444' :
+            undefined;
 
           return (
             <Marker
               key={`${layer.id}-${symbol.entityId}`}
               position={toLatLng(position)}
               icon={icon}
-              opacity={opacity}
+              opacity={effectiveOpacity}
               eventHandlers={{
                 click: () => onEntityClick?.(symbol.entityId),
               }}
@@ -231,10 +281,34 @@ function LayerContent({ layer, opacity, perspective, currentPhase, onEntityClick
                   <p className="text-gray-600 text-xs">
                     Affiliation: {symbol.affiliation}
                   </p>
-                  {symbol.confidence < 1 && (
-                    <p className="text-gray-500 text-xs">
-                      Confidence: {Math.round(symbol.confidence * 100)}%
-                    </p>
+                  {/* Confidence tier badge */}
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-gray-500 text-xs">
+                      Confidence: {Math.round((symbol.confidence ?? 1) * 100)}%
+                    </span>
+                    {badgeColor && (
+                      <span
+                        className="text-xs px-1 rounded text-white font-bold"
+                        style={{ backgroundColor: badgeColor }}
+                      >
+                        {tier.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  {/* Provenance summary when available */}
+                  {symbol.provenanceSummary && (
+                    <p className="text-gray-400 text-xs mt-1">{symbol.provenanceSummary}</p>
+                  )}
+                  {/* Stroke encoding hint for dashed/ghost symbols */}
+                  {strokeDasharray && (
+                    <svg width="40" height="8" className="mt-1">
+                      <line
+                        x1="0" y1="4" x2="40" y2="4"
+                        stroke={badgeColor}
+                        strokeWidth="2"
+                        strokeDasharray={strokeDasharray}
+                      />
+                    </svg>
                   )}
                 </div>
               </Popup>
