@@ -118,3 +118,109 @@ export async function writeSwarmEventToGraph(
     `[SwarmGraph] Wrote event ${event.eventType} for swarm ${event.swarmId} (id: ${eventId})`,
   );
 }
+
+// ── Convenience Wrappers ───────────────────────────────────────────────────
+
+/**
+ * Write an escalation_requested event when the swarm detects a threat and
+ * requests engagement authority from the commander.
+ */
+export async function writeEscalationRequestedEvent(
+  workspaceId: string,
+  missionId: string,
+  swarmId: string,
+  threatEntityId: string,
+  nationalDid: string,
+): Promise<void> {
+  await writeSwarmEventToGraph({
+    swarmId,
+    eventType: 'escalation_requested',
+    timestamp: new Date().toISOString(),
+    nationalDid,
+    workspaceId,
+    payload: {
+      mission_id: missionId,
+      threat_entity_id: threatEntityId,
+    },
+  });
+}
+
+/**
+ * Write an authorization_granted or authorization_denied event after a
+ * commander makes a lethal escalation decision. The DAO tx hash anchors
+ * the decision to the NEAR blockchain for full provenance.
+ */
+export async function writeAuthorizationDecisionEvent(
+  workspaceId: string,
+  missionId: string,
+  swarmId: string,
+  decision: 'granted' | 'denied',
+  daoTxHash: string,
+  commanderDid: string,
+  nationalDid: string,
+): Promise<void> {
+  const eventType: SwarmEventType = decision === 'granted'
+    ? 'authorization_granted'
+    : 'authorization_denied';
+
+  await writeSwarmEventToGraph({
+    swarmId,
+    eventType,
+    timestamp: new Date().toISOString(),
+    nationalDid,
+    daoTxHash: daoTxHash || undefined,
+    workspaceId,
+    payload: {
+      mission_id: missionId,
+      commander_did: commanderDid,
+      decision,
+      escalation_type: 'lethal_force',
+    },
+  });
+}
+
+/**
+ * Write a mission_dispatched event when a mission is sent to a robot/swarm.
+ */
+export async function writeMissionDispatchedEvent(
+  workspaceId: string,
+  missionId: string,
+  swarmId: string,
+  missionType: string,
+  nationalDid: string,
+): Promise<void> {
+  await writeSwarmEventToGraph({
+    swarmId,
+    eventType: 'mission_dispatched',
+    timestamp: new Date().toISOString(),
+    nationalDid,
+    workspaceId,
+    payload: {
+      mission_id: missionId,
+      mission_type: missionType,
+    },
+  });
+}
+
+/**
+ * Write a mission_complete event when a swarm mission concludes (success or failure).
+ */
+export async function writeMissionCompleteEvent(
+  workspaceId: string,
+  missionId: string,
+  swarmId: string,
+  outcome: string,
+  nationalDid: string,
+): Promise<void> {
+  await writeSwarmEventToGraph({
+    swarmId,
+    eventType: 'mission_complete',
+    timestamp: new Date().toISOString(),
+    nationalDid,
+    workspaceId,
+    payload: {
+      mission_id: missionId,
+      outcome,
+    },
+  });
+}
