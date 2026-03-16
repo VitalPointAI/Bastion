@@ -154,6 +154,11 @@ SWARM_ENABLED: bool = _optional("SWARM_ENABLED", "false").lower() in ("true", "1
 SWARM_ROLE: str = _optional("SWARM_ROLE", "auto")
 """Swarm role: 'leader', 'follower', or 'auto' (leader if vision-equipped)."""
 
+# BLE follower addresses — comma-separated list of BLE MAC addresses
+# for RVR+ units to control as followers (only used when SWARM_ENABLED=true and role=leader)
+BLE_FOLLOWERS: str = _optional("BLE_FOLLOWERS", "")
+"""Comma-separated BLE MAC addresses of follower RVR+ units (e.g. 'D4:86:01:19:88:77,ED:E5:09:52:A6:33')."""
+
 
 # ---------------------------------------------------------------------------
 # DID persistence helpers

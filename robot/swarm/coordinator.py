@@ -105,6 +105,9 @@ class SwarmCoordinator:
         self._assigned_slot: Optional[int] = None
         self._leader_id: Optional[str] = None
 
+        # BLE follower manager (set by mission_client when BLE followers are connected)
+        self._ble_followers: Optional[Any] = None
+
         # UDP socket for peer mesh
         self._sock: Optional[socket.socket] = None
         self._recv_task: Optional[asyncio.Task] = None
@@ -394,15 +397,46 @@ class SwarmCoordinator:
             self._members[self._robot_id].heading = heading
 
     # ------------------------------------------------------------------
+    # BLE follower integration
+    # ------------------------------------------------------------------
+
+    def set_ble_followers(self, ble_followers: Any) -> None:
+        """Attach a BLEFollowerManager for direct BLE control of followers."""
+        self._ble_followers = ble_followers
+        log.info("swarm.ble_followers_attached", count=ble_followers.connected_count)
+
+    async def _drive_ble_followers_to_formation(self, leader_target: Position2D, speed: int) -> None:
+        """Drive BLE followers to their formation-relative positions around the leader target."""
+        if not self._ble_followers or self._ble_followers.connected_count == 0:
+            return
+
+        # Compute world positions for each slot
+        world_positions = slots_to_world_positions(
+            self._slots, leader_target, self._heading,
+        )
+
+        # Build slot→position map for followers (skip slot 0 = leader)
+        slot_targets: dict = {}
+        for slot_idx, pos in world_positions:
+            if slot_idx == 0:
+                continue  # Leader drives itself
+            slot_targets[slot_idx] = (pos.x, pos.y)
+
+        if slot_targets:
+            await self._ble_followers.drive_all_to_slots(slot_targets, speed)
+
+    # ------------------------------------------------------------------
     # Movement techniques
     # ------------------------------------------------------------------
 
     async def _move_traveling(self, target: Position2D, speed: int) -> None:
         """All elements move simultaneously toward the target."""
-        # Leader drives to target; followers receive MoveCommand and
-        # drive to their formation-relative position
+        # Leader and BLE followers move concurrently
+        tasks = []
         if self._drive_to:
-            await self._drive_to(target.x, target.y, speed)
+            tasks.append(self._drive_to(target.x, target.y, speed))
+        tasks.append(self._drive_ble_followers_to_formation(target, speed))
+        await asyncio.gather(*tasks, return_exceptions=True)
         self._position = target
 
     async def _move_traveling_overwatch(self, target: Position2D, speed: int) -> None:
@@ -416,16 +450,22 @@ class SwarmCoordinator:
         midpoint = Position2D(x=mid_x, y=mid_y)
 
         # Lead echelon moves to midpoint
+        tasks = []
         if self._drive_to:
-            await self._drive_to(midpoint.x, midpoint.y, speed)
+            tasks.append(self._drive_to(midpoint.x, midpoint.y, speed))
+        tasks.append(self._drive_ble_followers_to_formation(midpoint, speed))
+        await asyncio.gather(*tasks, return_exceptions=True)
         self._position = midpoint
 
         # Brief pause for overwatch establishment
         await asyncio.sleep(0.5)
 
         # Lead continues to target
+        tasks = []
         if self._drive_to:
-            await self._drive_to(target.x, target.y, speed)
+            tasks.append(self._drive_to(target.x, target.y, speed))
+        tasks.append(self._drive_ble_followers_to_formation(target, speed))
+        await asyncio.gather(*tasks, return_exceptions=True)
         self._position = target
 
     async def _move_bounding_overwatch(self, target: Position2D, speed: int) -> None:
@@ -446,15 +486,17 @@ class SwarmCoordinator:
         num_bounds = max(2, int(total_dist / bound_length))
 
         for bound in range(num_bounds):
-            frac = (bound + 1) / num_bounds
             bound_target = Position2D(
                 x=self._position.x + dx * (1.0 / num_bounds),
                 y=self._position.y + dy * (1.0 / num_bounds),
             )
 
-            # Leader bounds forward
+            # Leader bounds forward, followers follow in formation
+            tasks = []
             if self._drive_to:
-                await self._drive_to(bound_target.x, bound_target.y, speed)
+                tasks.append(self._drive_to(bound_target.x, bound_target.y, speed))
+            tasks.append(self._drive_ble_followers_to_formation(bound_target, speed))
+            await asyncio.gather(*tasks, return_exceptions=True)
             self._position = bound_target
 
             # Pause for overwatch
@@ -465,8 +507,11 @@ class SwarmCoordinator:
             dy = target.y - self._position.y
 
         # Final position correction
+        tasks = []
         if self._drive_to:
-            await self._drive_to(target.x, target.y, speed)
+            tasks.append(self._drive_to(target.x, target.y, speed))
+        tasks.append(self._drive_ble_followers_to_formation(target, speed))
+        await asyncio.gather(*tasks, return_exceptions=True)
         self._position = target
 
     async def _move_successive_bounds(self, target: Position2D, speed: int) -> None:
@@ -475,9 +520,13 @@ class SwarmCoordinator:
         Leader moves to target. Each follower then moves to the position
         the element ahead of it just vacated, in slot order.
         """
+        # Leader moves first
         if self._drive_to:
             await self._drive_to(target.x, target.y, speed)
         self._position = target
+
+        # Then followers move to formation positions around new leader position
+        await self._drive_ble_followers_to_formation(target, speed)
 
     # ------------------------------------------------------------------
     # Formation computation
