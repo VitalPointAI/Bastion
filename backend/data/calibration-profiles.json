@@ -1,0 +1,13 @@
+{
+  "default": {
+    "room_width": 5,
+    "room_height": 5,
+    "map_bounds": {
+      "north": 25.0480,
+      "south": 25.0420,
+      "east": 121.5180,
+      "west": 121.5120
+    },
+    "label": "Taipei Zhongzheng District — Strategic Demo Area"
+  }
+}

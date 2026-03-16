@@ -1,0 +1,123 @@
+{
+  "operation": "IRON BASTION",
+  "theater": "Taipei, Taiwan — Zhongzheng District",
+  "timestamp": "2026-03-16T00:00:00Z",
+  "nations": [
+    {
+      "nation": "Taiwan",
+      "nation_code": "TW",
+      "did": "did:near:resource-taiwan-coalition",
+      "authority_level": "full",
+      "allowed_missions": [
+        "recon_area",
+        "swarm_recon",
+        "swarm_advance",
+        "find_engage",
+        "swarm_hold"
+      ],
+      "blocked_contexts": [],
+      "command_note": "Host nation with full territorial defense authority. No restrictions.",
+      "robots": [
+        {
+          "robot_id": "robot-tw-01",
+          "designation": "TW-BOT-01",
+          "role": "point",
+          "national_did": "did:near:resource-taiwan-coalition",
+          "authority_level": "full",
+          "capabilities": [
+            "movement",
+            "vision",
+            "formation_lead",
+            "target_designation"
+          ],
+          "formation_slot": 0,
+          "notes": "Formation leader. Equipped with vision pipeline. Full engagement authority."
+        }
+      ]
+    },
+    {
+      "nation": "United States",
+      "nation_code": "US",
+      "did": "did:near:resource-us-coalition",
+      "authority_level": "restricted",
+      "allowed_missions": [
+        "recon_area",
+        "swarm_recon",
+        "swarm_hold"
+      ],
+      "blocked_missions": [
+        "swarm_advance",
+        "find_engage"
+      ],
+      "blocked_contexts": [
+        "urban"
+      ],
+      "command_note": "US 1MEU ROE: No offensive urban advance operations. Support and overwatch only.",
+      "robots": [
+        {
+          "robot_id": "robot-us-01",
+          "designation": "US-BOT-01",
+          "role": "overwatch",
+          "national_did": "did:near:resource-us-coalition",
+          "authority_level": "restricted",
+          "capabilities": [
+            "movement",
+            "overwatch",
+            "formation_follow"
+          ],
+          "formation_slot": 1,
+          "notes": "Overwatch element. May not participate in urban advance or engagement missions per US national policy."
+        }
+      ]
+    },
+    {
+      "nation": "Australia",
+      "nation_code": "AU",
+      "did": "did:near:resource-au-coalition",
+      "authority_level": "observer",
+      "allowed_missions": [
+        "recon_area",
+        "swarm_recon"
+      ],
+      "blocked_missions": [
+        "swarm_advance",
+        "find_engage",
+        "swarm_hold"
+      ],
+      "blocked_contexts": [
+        "urban",
+        "combat"
+      ],
+      "command_note": "AU SASR observer status. Recon and intelligence contribution only. No engagement authority.",
+      "robots": [
+        {
+          "robot_id": "robot-au-01",
+          "designation": "AU-BOT-01",
+          "role": "recon",
+          "national_did": "did:near:resource-au-coalition",
+          "authority_level": "observer",
+          "capabilities": [
+            "movement",
+            "recon",
+            "formation_follow"
+          ],
+          "formation_slot": 2,
+          "notes": "Recon element. Intelligence contribution only. No authority to designate targets or advance in contact."
+        }
+      ]
+    }
+  ],
+  "swarm_config": {
+    "swarm_id": "swarm-iron-bastion",
+    "default_formation": "wedge",
+    "default_technique": "traveling_overwatch",
+    "leader_robot_id": "robot-tw-01",
+    "member_robot_ids": [
+      "robot-tw-01",
+      "robot-us-01",
+      "robot-au-01"
+    ],
+    "corroboration_threshold": 0.75,
+    "dedup_window_seconds": 5
+  }
+}

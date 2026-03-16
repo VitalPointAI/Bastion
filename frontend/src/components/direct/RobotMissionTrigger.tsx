@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { CoalitionCaveatDashboard } from './CoalitionCaveatDashboard.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,16 @@ interface ResourceMatch {
 interface MissionStatus {
   state: string;
   command?: string;
+}
+
+interface CaveatCheckResult {
+  allowed: boolean;
+  blockedRobots: Array<{
+    robotId: string;
+    nationalDid: string;
+    nation: string;
+    reason: string;
+  }>;
 }
 
 interface Waypoint {
@@ -191,6 +202,9 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
 
   // Collapsed state
   const [expanded, setExpanded] = useState(true);
+
+  // Coalition caveat check result (swarm missions only)
+  const [caveatResult, setCaveatResult] = useState<CaveatCheckResult | null>(null);
 
   // Fetch connected robots and their resource registry status
   const fetchRobots = useCallback(async () => {
@@ -361,8 +375,20 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
   const needsArea = ['recon_area', 'swarm_recon'].includes(command);
   const needsDuration = command === 'overwatch';
   const needsRefImage = command === 'visual_search';
-  const needsSwarmParams = command.startsWith('swarm_');
+  const needsSwarmParams = command.startsWith('swarm_') || command === 'find_engage';
+  const isSwarmMission = command.startsWith('swarm_') || command === 'find_engage';
   const missionInfo = MISSION_TYPES[command];
+
+  // Build swarm member list from known robots for the caveat check
+  // Only include robots that have a DID (coalition robots)
+  const swarmMembersForCaveat = robots
+    .filter((r) => r.did)
+    .map((r) => ({ robotId: r.robot_id, nationalDid: r.did as string }));
+
+  // Determine if dispatch should be blocked by caveats
+  const caveatBlocked = isSwarmMission && swarmMembersForCaveat.length > 0
+    && caveatResult !== null
+    && !caveatResult.allowed;
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -667,6 +693,16 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
             </div>
           )}
 
+          {/* Coalition Caveat Pre-Flight Check — swarm missions only */}
+          {isSwarmMission && swarmMembersForCaveat.length > 0 && (
+            <CoalitionCaveatDashboard
+              swarmMembers={swarmMembersForCaveat}
+              missionType={command}
+              areaType="urban"
+              onCaveatResult={setCaveatResult}
+            />
+          )}
+
           {/* Speed */}
           <div>
             <label style={sectionLabel}>Speed: {speed}</label>
@@ -676,7 +712,7 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
           {/* Launch Button */}
           <button
             onClick={handleLaunch}
-            disabled={dispatching || (needsRefImage && !referenceImageB64)}
+            disabled={dispatching || (needsRefImage && !referenceImageB64) || caveatBlocked}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -684,14 +720,14 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
               gap: '0.5rem',
               width: '100%',
               padding: '0.625rem',
-              background: dispatching ? '#1e3a5f' : '#2563eb',
-              border: 'none',
+              background: caveatBlocked ? '#374151' : dispatching ? '#1e3a5f' : '#2563eb',
+              border: caveatBlocked ? '1px solid rgba(239,68,68,0.4)' : 'none',
               borderRadius: '0.375rem',
-              color: 'white',
+              color: caveatBlocked ? '#9ca3af' : 'white',
               fontSize: '0.875rem',
               fontWeight: 600,
-              cursor: dispatching ? 'not-allowed' : 'pointer',
-              opacity: dispatching || (needsRefImage && !referenceImageB64) ? 0.7 : 1,
+              cursor: dispatching || caveatBlocked ? 'not-allowed' : 'pointer',
+              opacity: dispatching || (needsRefImage && !referenceImageB64) || caveatBlocked ? 0.7 : 1,
             }}
           >
             {dispatching ? (
@@ -699,6 +735,8 @@ export function RobotMissionTrigger({ problemSetId }: RobotMissionTriggerProps) 
                 <span style={spinner} />
                 Dispatching...
               </>
+            ) : caveatBlocked ? (
+              `Blocked — Caveat Violation`
             ) : (
               `Launch ${missionInfo.label}`
             )}

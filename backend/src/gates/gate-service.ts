@@ -22,6 +22,7 @@ import { getPool } from '../lib/database.js';
 import { inheritanceStore } from '../inheritance/inheritance-store.js';
 import { decisionStore } from '../graph/raft/decision-store.js';
 import type { DecisionBasis } from '../graph/raft/types.js';
+import { signAndSubmitFunctionCall } from '../near/tx-signer.js';
 
 // ---------------------------------------------------------------------------
 // Gate Permissions Type
@@ -509,6 +510,94 @@ export class GateService {
       console.error('[GateService] Failed to capture decision in graph (non-fatal):', err);
     });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Expedited Authorization — single-signer blockchain-anchored decision
+// ---------------------------------------------------------------------------
+
+/**
+ * Expedited single-signer authorization for robot action gates.
+ *
+ * Records the decision on the NEAR blockchain via tx-signer, then updates
+ * the gate status locally. If the blockchain call fails, the gate status is
+ * still updated locally and the failure is logged — the demo does not stall
+ * on NEAR testnet issues.
+ *
+ * @param gateId  - The gate to authorize
+ * @param decision - 'approve' or 'deny'
+ * @param missionContext - Contextual data to anchor on-chain
+ * @param commanderSecret - Commander's derived signing secret (32 bytes).
+ *   Pass a zero-filled buffer in environments without a live NEAR key.
+ * @returns { txHash, gateStatus, blockchainStatus }
+ */
+export async function expeditedAuthorize(
+  gateId: string,
+  decision: 'approve' | 'deny',
+  missionContext: Record<string, unknown>,
+  commanderSecret?: Uint8Array,
+): Promise<{ txHash: string; gateStatus: string; blockchainStatus: 'recorded' | 'pending' }> {
+  const contractId = process.env.DID_CONTRACT_ID || 'did.bastion.testnet';
+
+  let txHash = '';
+  let blockchainStatus: 'recorded' | 'pending' = 'pending';
+
+  // Attempt blockchain recording — non-fatal if it fails
+  if (commanderSecret && commanderSecret.length >= 32) {
+    try {
+      const result = await signAndSubmitFunctionCall(
+        commanderSecret,
+        contractId,
+        'record_authorization',
+        {
+          gate_id: gateId,
+          decision,
+          context: missionContext,
+          timestamp: new Date().toISOString(),
+        },
+      );
+
+      if (result.success && result.txHash) {
+        txHash = result.txHash;
+        blockchainStatus = 'recorded';
+        console.log(
+          `[GateService] expeditedAuthorize: blockchain recorded gate=${gateId} tx=${txHash}`,
+        );
+      } else {
+        // Contract may not expose record_authorization — log and proceed locally
+        console.warn(
+          `[GateService] expeditedAuthorize: blockchain call returned non-success (gate=${gateId}): ${result.error ?? 'unknown'}. Falling back to local record.`,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `[GateService] expeditedAuthorize: blockchain error (non-fatal, gate=${gateId}):`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  } else {
+    // No commander secret provided (dev/demo environment without NEAR key)
+    txHash = `local-${Date.now()}`;
+    console.log(
+      `[GateService] expeditedAuthorize: no commander secret — recording locally (gate=${gateId}, decision=${decision})`,
+    );
+  }
+
+  // Update gate status locally regardless of blockchain outcome
+  const newStatus = decision === 'approve' ? GateStatus.approved : GateStatus.rejected;
+  await gateStore.update(gateId, {
+    status: newStatus,
+    proposal_id: txHash || `local-${Date.now()}`,
+    decided_at: new Date().toISOString(),
+    decision_context: {
+      ...missionContext,
+      expedited: true,
+      blockchain_status: blockchainStatus,
+      dao_tx_hash: txHash,
+    },
+  });
+
+  return { txHash, gateStatus: newStatus, blockchainStatus };
 }
 
 // ---------------------------------------------------------------------------

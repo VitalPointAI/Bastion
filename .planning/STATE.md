@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 47-11-PLAN.md
-last_updated: "2026-03-16T15:05:01.096Z"
-last_activity: "2026-03-16 - Completed 47-11: design/plan/assess tabs wired to JSON-LD provenance; phase 47 fully complete"
+stopped_at: Completed 48-08 Task 1 — awaiting human-verify checkpoint for Phase 48 end-to-end demo
+last_updated: "2026-03-16T16:28:44.587Z"
+last_activity: "2026-03-16 - Completed quick task 13: Phase 47 provenance badges + contradiction highlighting in Understanding tab"
 progress:
   total_phases: 64
-  completed_phases: 45
+  completed_phases: 46
   total_plans: 409
-  completed_plans: 404
+  completed_plans: 412
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 47 of 64 (JSON-LD Semantic Brain COP Fix) — COMPLETE
-Plan: 11 of 11 in current phase — COMPLETE
-Status: Plan 47-11 complete — JPP entity API enriched with JSON-LD fields. plan/design/assess tabs wired to JSON-LD provenance data. EntityResolutionPanel shows confidence tier/source/ontology badges. DesignAIPanel warns on low-confidence entities. OperationalAssess has Intelligence Quality view with tier distribution and contradiction count. All 7+ downstream consumers from CONTEXT.md now wired.
-Last activity: 2026-03-16 - Completed 47-11: design/plan/assess tabs wired to JSON-LD provenance; phase 47 fully complete
+Phase: 48 of 64 (Robot Swarm Behaviour End-to-End Demo) — IN PROGRESS
+Plan: 5 of 11 in current phase — COMPLETE
+Status: Plan 48-05 complete — SwarmCOPLayer frontend with formation polygon, member markers, smooth interpolation, and telemetry panel. Wired into COPMapView.
+Last activity: 2026-03-16 - Completed 48-05: SwarmCOPLayer frontend — formation polygon, member markers, telemetry panel, smooth interpolation; wired into COPMapView
 
-Progress: █████████████████████████████ 404 plans complete
+Progress: █████████████████████████████ 408 plans complete
 
 ## Performance Metrics
 
@@ -198,6 +198,13 @@ Progress: ███████████████████████�
 | Phase 47 P07 | 664 | 2 tasks | 11 files |
 | Phase 47 P09 | 15 | 2 tasks | 4 files |
 | Phase 47 P10 | 394 | 2 tasks | 8 files |
+| Phase 48 P01 | 0 | 0 tasks | 0 files |
+| Phase 48 P02 | 8 | 2 tasks | 4 files |
+| Phase 48 P03 | 7 | 2 tasks | 5 files |
+| Phase 48 P04 | 12 | 2 tasks | 10 files |
+| Phase 48 P07 | 15 | 2 tasks | 3 files |
+| Phase 48-robot-swarm-behaviour-end-to-end-demo P06 | 6 | 2 tasks | 4 files |
+| Phase 48-robot-swarm-behaviour-end-to-end-demo P08 | 12 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -211,6 +218,16 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 48 Plan 05 (SwarmCOPLayer Frontend):**
+- WebSocket channel 'swarm:cop_update' on /ws/messages for swarm telemetry push to frontend
+- Convex hull ordering by atan2 angle from centroid prevents bowtie polygon for 3-member swarms
+- No roomToLatLng in frontend — positions already geo-coordinates from swarm-cop-bridge.ts
+
+**Phase 48 Plan 03 (Coalition Caveat Enforcement):**
+- Restrictions checked before allowed_missions: ensures specific restriction reason strings surface in block results (e.g. "US national policy: no offensive urban ops")
+- US swarm_advance added to allowed_missions with area-specific restriction (urban only) — a mission with only area-scoped restrictions is broadly allowed in other areas
+- Wave 0 scaffold test file (test_coalition_caveat.py) fully replaced — old API (context param, string blocked_robots) incompatible with implemented API
 
 **Phase 47 Plan 10 (Consumer Wiring + COP Visual Encoding):**
 - includeProvenance defaults to true on graph API endpoints — opt-out pattern (?includeProvenance=false) rather than opt-in
@@ -873,6 +890,13 @@ Recent decisions affecting current work:
 - [Phase 47]: normalizeType() strips colons/spaces/underscores for jsonldType comparison across all COP sub-agents
 - [Phase 47]: confidenceTier required (not optional) in COPSymbolSpec enforces all sub-agents provide visual confidence encoding
 - [Phase 47]: Normalize entity field names in jpp.ts (name->canonicalName, type->entityType) to match frontend Entity interface contract
+- [Phase 48]: Python swarm modules placed in robot/swarm/ subpackage (graph_events.py, corroboration.py, cop_utils.py) to match Wave 0 test imports from robot.swarm.*; top-level re-exports added for backward compatibility
+- [Phase 48]: expeditedAuthorize falls back to local record when NEAR unavailable — demo does not stall on testnet issues
+- [Phase 48]: Lethal gates differentiated from standard gates via decision_context.escalation_type=lethal_force
+- [Phase 48-robot-swarm-behaviour-end-to-end-demo]: Client-side caveat evaluation mirrors backend logic for immediate pre-flight display without API round-trip
+- [Phase 48-robot-swarm-behaviour-end-to-end-demo]: Attribution lines default OFF for clean COP; operator-activated progressive disclosure
+- [Phase 48-robot-swarm-behaviour-end-to-end-demo]: Even/odd array index determines bounding vs overwatch role in bounding_overwatch technique
+- [Phase 48]: createMilSymbolIconWithBadge wraps existing divIcon HTML to add confidence badge pills without re-creating milsymbol
 
 ### Roadmap Evolution
 
@@ -959,6 +983,8 @@ None.
 | 9 | Custom exercise positions with phase-transition mapping | 2026-03-06 | 91a7758 | [9-custom-exercise-positions-with-phase-tra](./quick/9-custom-exercise-positions-with-phase-tra/) |
 | 10 | Fix AI panel reopen, assessment 500 errors, useAIStaffFeed TypeError, strategic-guidance 404s | 2026-03-09 | 1d41a48 | [10-fix-ai-panel-reopen-assessment-500-error](./quick/10-fix-ai-panel-reopen-assessment-500-error/) |
 | 11 | Fix training mode tab differentiation and re-enable improved AI agents | 2026-03-09 | ee2c4e0 | [11-fix-training-mode-tab-differentiation-an](./quick/11-fix-training-mode-tab-differentiation-an/) |
+| 12 | Fix admin unable to delete problem sets | 2026-03-16 | 0290337a | [12-fix-admin-unable-to-delete-problem-sets-](./quick/12-fix-admin-unable-to-delete-problem-sets-/) |
+| 13 | Add Phase 47 provenance badges + contradiction highlighting to Understanding tab | 2026-03-16 | 6a3183f8 | [13-add-phase-47-provenance-badges-and-contr](./quick/13-add-phase-47-provenance-badges-and-contr/) |
 
 **Phase 4 Plan 6-FIX (Strategic API Table Init Fix):**
 - Unified lazy init: all strategic API tables initialized from single ensureTableExists()
@@ -1583,7 +1609,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T14:55:24.702Z
-Stopped at: Completed 47-11-PLAN.md
+Last session: 2026-03-16T16:28:44.577Z
+Stopped at: Completed 48-08 Task 1 — awaiting human-verify checkpoint for Phase 48 end-to-end demo
 Resume file: None
 Next action: Continue Phase 40 plan 02

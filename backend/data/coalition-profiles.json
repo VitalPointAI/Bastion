@@ -1,0 +1,28 @@
+{
+  "tw-defense": {
+    "nation": "Taiwan",
+    "did": "did:near:resource-tw-coalition",
+    "authority": "full",
+    "allowed_missions": ["recon_area", "swarm_recon", "swarm_advance", "find_engage", "swarm_patrol"],
+    "restrictions": []
+  },
+  "us-coalition": {
+    "nation": "United States",
+    "did": "did:near:resource-us-coalition",
+    "authority": "restricted",
+    "allowed_missions": ["recon_area", "swarm_recon", "swarm_patrol", "swarm_advance"],
+    "restrictions": [
+      { "mission_type": "swarm_advance", "area_type": "urban", "reason": "US national policy: no offensive urban ops" },
+      { "mission_type": "find_engage", "reason": "US ROE: engagement requires host-nation lead" }
+    ]
+  },
+  "au-observer": {
+    "nation": "Australia",
+    "did": "did:near:resource-au-coalition",
+    "authority": "observer",
+    "allowed_missions": ["recon_area", "swarm_recon"],
+    "restrictions": [
+      { "mission_type": "*", "except": ["recon_area", "swarm_recon"], "reason": "Australia observer status: recon only" }
+    ]
+  }
+}

@@ -1025,12 +1025,14 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Problem set not found' });
     }
 
-    // Allow creator or any commander to delete
+    // Allow creator, any commander, or platform admin to delete
     const member = await problemSetMemberStore.getMember(problemSetId, userDid);
     const isCreator = problemSet.createdBy === userDid;
     const isCommander = member?.role === 'commander';
-    if (!isCreator && !isCommander) {
-      return res.status(403).json({ error: 'Only the creator or a commander can delete a problem set' });
+    const adminDids = (process.env.ADMIN_DIDS || '').split(',').map((d) => d.trim()).filter(Boolean);
+    const isAdmin = adminDids.includes(userDid);
+    if (!isCreator && !isCommander && !isAdmin) {
+      return res.status(403).json({ error: 'Only the creator, a commander, or a platform admin can delete a problem set' });
     }
 
     // Check for child problem sets — prevent deletion if children exist

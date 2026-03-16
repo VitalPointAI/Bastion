@@ -61,6 +61,7 @@ interface FGLink {
   type: string;
   strength?: number;
   isConflict?: boolean;
+  isContradiction?: boolean;
   createdAt?: string;
 }
 
@@ -450,7 +451,7 @@ export function BrainVisualization({
       const opacity = isDimmed ? 0.15 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
 
       // Build a cache key from the visual state to detect actual changes
-      const cacheKey = `${color}|${opacity}|${isSelected ? 1 : 0}|${brainNode.isGap ? 1 : 0}|${brainNode.confidence}|${brainNode.centrality ?? 0}`;
+      const cacheKey = `${color}|${opacity}|${isSelected ? 1 : 0}|${brainNode.isGap ? 1 : 0}|${brainNode.confidence}|${brainNode.centrality ?? 0}|${brainNode.confidenceTier ?? ''}`;
       const cached = cache.get(brainNode.id);
       if (cached && cached.key === cacheKey) return cached.group;
 
@@ -468,6 +469,15 @@ export function BrainVisualization({
       if (isSelected) {
         const ring = new THREE.Mesh(getRingGeometry(scale), getRingMaterial('#38bdf8', 0.8));
         group.add(ring);
+      }
+
+      // Confidence-tier stroke ring: high=solid cyan, medium=dashed amber, low=dotted red
+      if (!isSelected && brainNode.confidenceTier) {
+        const tierColors: Record<string, string> = { high: '#34d399', medium: '#fbbf24', low: '#f87171' };
+        const tierColor = tierColors[brainNode.confidenceTier] ?? '#888888';
+        const tierOpacity = brainNode.confidenceTier === 'high' ? 0.5 : brainNode.confidenceTier === 'medium' ? 0.65 : 0.8;
+        const tierRing = new THREE.Mesh(getRingGeometry(scale * 1.1), getRingMaterial(tierColor, tierOpacity));
+        group.add(tierRing);
       }
 
       if (brainNode.isGap) {
@@ -498,7 +508,7 @@ export function BrainVisualization({
       const fgLink = link as FGLink;
       // Ghost links (Phase 45 — cross-boundary edges to ghost stub nodes)
       if ((fgLink as { isGhostLink?: boolean }).isGhostLink) return 'rgba(100, 160, 255, 0.1)';
-      if (fgLink.isConflict) return 'rgba(255, 68, 68, 0.6)';
+      if (fgLink.isConflict || fgLink.isContradiction) return 'rgba(255, 68, 68, 0.8)';
       const strength = fgLink.strength ?? 0.3;
       const alpha = 0.1 + strength * 0.4;
       return `rgba(100, 160, 255, ${alpha})`;
@@ -511,7 +521,7 @@ export function BrainVisualization({
       const fgLink = link as FGLink;
       // Ghost links render thin
       if ((fgLink as { isGhostLink?: boolean }).isGhostLink) return 0.3;
-      return fgLink.isConflict ? 2 : 0.5 + (fgLink.strength ?? 0.3) * 2;
+      return (fgLink.isConflict || fgLink.isContradiction) ? 2.5 : 0.5 + (fgLink.strength ?? 0.3) * 2;
     },
     [],
   );
@@ -542,7 +552,7 @@ export function BrainVisualization({
       if (cached) return cached;
 
       const sprite = new SpriteText(label);
-      sprite.color = fgLink.isConflict ? 'rgba(255,100,100,0.7)' : 'rgba(180,200,255,0.5)';
+      sprite.color = (fgLink.isConflict || fgLink.isContradiction) ? 'rgba(255,100,100,0.7)' : 'rgba(180,200,255,0.5)';
       sprite.textHeight = 1.5;
       sprite.backgroundColor = 'transparent';
       linkSpriteCacheRef.current.set(linkKey, sprite);
@@ -669,6 +679,10 @@ export function BrainVisualization({
           linkColor={linkColor}
           linkWidth={linkWidth}
           linkOpacity={LINK_OPACITY}
+          linkDirectionalParticles={(link: object) => { const l = link as FGLink; return (l.isConflict || l.isContradiction) ? 4 : 0; }}
+          linkDirectionalParticleColor={(link: object) => { const l = link as FGLink; return (l.isConflict || l.isContradiction) ? '#ff4444' : '#4a9eff'; }}
+          linkDirectionalParticleSpeed={0.004}
+          linkDirectionalParticleWidth={1.5}
           linkThreeObject={linkThreeObject}
           linkThreeObjectExtend={true}
           linkPositionUpdate={linkPositionUpdate as unknown as (obj: object, coords: object, link: object) => void}

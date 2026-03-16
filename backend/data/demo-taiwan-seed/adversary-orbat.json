@@ -1,0 +1,93 @@
+[
+  {
+    "id": "pla-99a-alpha",
+    "designation": "1st Type 99A — Alpha",
+    "type": "t-99",
+    "nation": "PLA",
+    "estimated_position": {
+      "lat": 25.0792,
+      "lng": 121.5227
+    },
+    "echelon": "platoon",
+    "strength": 4,
+    "notes": "Lead MBT, confirmed advancing south on Zhongshan N. Rd"
+  },
+  {
+    "id": "pla-99a-bravo",
+    "designation": "2nd Type 99A — Bravo",
+    "type": "t-99",
+    "nation": "PLA",
+    "estimated_position": {
+      "lat": 25.0745,
+      "lng": 121.5235
+    },
+    "echelon": "platoon",
+    "strength": 4,
+    "notes": "Second MBT, 200m behind Alpha, maintaining 50m column spacing"
+  },
+  {
+    "id": "pla-zbd04-01",
+    "designation": "ZBD-04A IFV — Charlie",
+    "type": "zbd-04",
+    "nation": "PLA",
+    "estimated_position": {
+      "lat": 25.0703,
+      "lng": 121.5241
+    },
+    "echelon": "squad",
+    "strength": 9,
+    "notes": "Infantry fighting vehicle, dismounts estimated 7 personnel"
+  },
+  {
+    "id": "pla-zbd04-02",
+    "designation": "ZBD-04A IFV — Delta",
+    "type": "zbd-04",
+    "nation": "PLA",
+    "estimated_position": {
+      "lat": 25.0668,
+      "lng": 121.5246
+    },
+    "echelon": "squad",
+    "strength": 9,
+    "notes": "Second IFV, trailing ZBD-04 Charlie by 150m"
+  },
+  {
+    "id": "ru-t90m-01",
+    "designation": "T-90M — Echo",
+    "type": "t-90",
+    "nation": "Russia",
+    "estimated_position": {
+      "lat": 25.0631,
+      "lng": 121.5251
+    },
+    "echelon": "section",
+    "strength": 3,
+    "notes": "Russian contract element, T-90M with Shtora active protection system"
+  },
+  {
+    "id": "ru-btr82-01",
+    "designation": "BTR-82A APC — Foxtrot",
+    "type": "btr-82",
+    "nation": "Russia",
+    "estimated_position": {
+      "lat": 25.0598,
+      "lng": 121.5255
+    },
+    "echelon": "section",
+    "strength": 11,
+    "notes": "APC with 9 dismounts, 14.5mm KPVT heavy machine gun"
+  },
+  {
+    "id": "ru-btr82-02",
+    "designation": "BTR-82A APC — Golf",
+    "type": "btr-82",
+    "nation": "Russia",
+    "estimated_position": {
+      "lat": 25.0565,
+      "lng": 121.5258
+    },
+    "echelon": "section",
+    "strength": 11,
+    "notes": "Rear-guard APC, 100m behind Foxtrot. Possible EW equipment mounted"
+  }
+]
