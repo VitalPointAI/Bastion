@@ -1,0 +1,211 @@
+COALITION JOINT HEADQUARTERS — TAIWAN THEATER OF OPERATIONS
+OPERATION IRON BASTION
+OPERATION ORDER 001 — DEFENSE OF TAIPEI STRATEGIC DISTRICT
+
+CLASSIFICATION: COALITION — REL TO TW, US, AU
+
+REFERENCES:
+  A. Joint Publication 5-0, Joint Planning (2020)
+  B. Taiwan Strait Contingency Plan (classified annex)
+  C. Coalition Rules of Engagement — Indo-Pacific Theater (IREOF-IP-2026)
+  D. Zhongzheng District Urban Combat Annex (attached)
+
+TIME ZONE USED THROUGHOUT: Zulu (UTC+0) / Local: UTC+8
+
+TASK ORGANIZATION:
+  COALITION JOINT TASK FORCE IRON BASTION
+    Taiwan Ground Force (Home Defense, Full Authority)
+      Robot Assets: TW-BOT-01 (point/advance)
+    US 1st Marine Expeditionary Unit (Restricted — no offensive urban ops)
+      Robot Assets: US-BOT-01 (overwatch/support)
+    Australian Special Air Service Regiment (Observer — recon only)
+      Robot Assets: AU-BOT-01 (recon/surveillance)
+
+---
+
+1. SITUATION
+
+a. ENEMY FORCES
+
+Intelligence assessment as of D-Day minus 6 hours indicates a mixed Chinese/Russian
+mechanized column has crossed the northern Taipei approaches and is advancing south
+through the Shilin and Zhongshan districts toward the Zhongzheng District.
+
+Enemy Order of Battle (current assessment):
+  Lead element:  2x PLA Type 99A Main Battle Tanks (T-99)
+                 2x PLA ZBD-04A Infantry Fighting Vehicles
+  Trail element: 1x Russian T-90M Main Battle Tank (Russian contract element)
+                 2x Russian BTR-82A Armored Personnel Carriers
+  Total strength: 7 armored/mechanized vehicles, estimated 40-60 personnel
+  Echelon: Company-minus task force
+  Movement axis: Zhongshan N. Road → Zhongxiao W. Road → Presidential Office sector
+
+Enemy Intent: Seize the Presidential Office Building and Zhongzheng District
+administrative complex to establish a propaganda event and decapitate
+civilian government. Secondary objective: seize Taipei Main Station to
+cut civilian evacuation routes.
+
+Enemy Capabilities: Direct fire defeat of light armor; dismounted urban assault;
+electronic warfare (EW) suppression of civilian comms. Assessed to lack
+organic air defense — coalition air superiority assumed (not verified).
+
+b. FRIENDLY FORCES
+
+COALITION JOINT TASK FORCE IRON BASTION holds Zhongzheng District with
+three national contingents. Coordinating authority: Taiwan Ground Force
+Commander per host-nation status.
+
+  Higher HQ: US Indo-Pacific Command (INDOPACOM) — strategic coordination only.
+             Taiwan Ministry of National Defense — operational authority.
+
+  Adjacent Units:
+    Left:  Taiwan Military Police — Guarding Presidential Office perimeter
+    Right: US Marine Rapid Response Force — Positioned at Songshan Airport
+
+c. CIVIL CONSIDERATIONS
+
+Zhongzheng District contains high-value civilian infrastructure including
+Presidential Office Building (25.0398N, 121.5124E), National Taiwan University
+Hospital, and major metro stations. Any collateral damage to these facilities
+will have significant strategic and political consequences.
+
+Civilian evacuation corridors have been established along Ren'ai Road and
+Roosevelt Road. Coalition forces must not obstruct these routes.
+
+---
+
+2. MISSION
+
+Coalition Joint Task Force Iron Bastion DEFENDS Zhongzheng District, Taipei,
+NLT D-Day H+2 hours, in order to deny enemy forces access to the Presidential
+Office Building area and preserve the legitimate government of the Republic of China
+(Taiwan), while maintaining verifiable human control over all lethal force decisions
+in accordance with Coalition Rules of Engagement.
+
+---
+
+3. EXECUTION
+
+COMMANDER'S INTENT:
+
+Purpose: Prevent enemy armored column from reaching the Presidential Office Building.
+Method: Conduct robot-enabled recon to locate and track enemy vehicles, establish
+defensive positions at key terrain chokepoints, and engage advancing armor only
+upon confirmed DAO governance authorization from the Coalition commander.
+End State: Enemy column halted north of Zhongzheng District. Coalition forces
+holding key terrain. Full audit trail of all lethal force decisions on blockchain.
+
+CONCEPT OF OPERATIONS:
+
+This operation is conducted in three phases:
+
+PHASE 1 — RECONNAISSANCE SWEEP (H-Hour to H+45 minutes)
+  Coalition robot assets execute a coordinated recon sweep of the Zhongzheng
+  District approach corridors. Formation: Wedge, with TW-BOT-01 as point.
+  AU-BOT-01 conducts independent surveillance along northern approach.
+  Objective: Locate, identify, and track all enemy vehicles. Populate
+  coalition COP with confirmed hostile positions. Build corroborated
+  intelligence picture (minimum 2-robot confirmation per detected vehicle).
+  ROE Phase 1: Observation and reporting only. No engagement authorized.
+
+PHASE 2 — DEFENSIVE POSITIONING (H+45 to H+90 minutes)
+  Based on Phase 1 intelligence, TW-BOT-01 advances to chokepoint position
+  at Zhongxiao W. Road / Zhongshan S. Road intersection.
+  US-BOT-01 establishes overwatch position at Taipei Main Station approach.
+  AU-BOT-01 continues observation from elevated position (NTU Hospital area).
+  Objective: Deny enemy armor direct-fire approach to Presidential Office sector.
+  ROE Phase 2: Defensive engagement authorized per Coalition ROE.
+  CAVEAT: US asset (US-BOT-01) PROHIBITED from offensive urban advance operations
+  per US national policy. US-BOT-01 role limited to overwatch and support.
+  AU asset (AU-BOT-01) PROHIBITED from any engagement — observer status only.
+
+PHASE 3 — ENGAGE IF AUTHORIZED (H+90 minutes, contingent on DAO approval)
+  If enemy column continues advance after Phase 2 defensive positioning,
+  coalition commander may request lethal engagement authorization through
+  the BASTION DAO governance system (NEAR blockchain smart contract).
+  Authorization requires: commander identity verification (DID), threat
+  confirmation (2+ robot corroboration, >0.75 confidence), and explicit
+  target designation recorded to immutable ledger.
+
+  PATH A — AUTHORIZATION GRANTED:
+    TW-BOT-01 (full authority) designates target. Engagement recorded to NEAR
+    blockchain with: authorizing DID, timestamp, target coordinates, confidence
+    level, corroborating robot IDs. Mission continues.
+
+  PATH B — AUTHORIZATION DENIED:
+    Swarm receives halt command. Robots withdraw to Phase 2 positions.
+    Denial recorded to blockchain with commander DID and timestamp.
+    BASTION brain graph records denial as a provenance event.
+
+---
+
+4. COORDINATING INSTRUCTIONS
+
+a. RULES OF ENGAGEMENT
+
+Coalition ROE per Reference C applies. Key restrictions:
+  (1) All lethal force requires explicit commander authorization via DAO gateway.
+      No autonomous engagement permitted under any circumstances.
+  (2) US forces (US-BOT-01) prohibited from offensive urban advance operations
+      per standing US national policy. Restricted to support and overwatch roles.
+  (3) AU forces (AU-BOT-01) are observers only. No engagement authority.
+      AU data may be used to build intelligence picture but AU robots have no
+      authority to designate targets or participate in advance operations.
+  (4) Minimum corroboration threshold: 2 robot detections, fused confidence > 0.75
+      before any target can be nominated for engagement consideration.
+  (5) All authorization decisions (approve or deny) are recorded immutably
+      on the NEAR Protocol blockchain with authorizing DID and timestamp.
+
+b. NATIONAL CAVEATS — SUMMARY TABLE
+
+  Nation   | Authority Level | swarm_advance | find_engage | recon_area | overwatch
+  ---------|-----------------|---------------|-------------|------------|----------
+  Taiwan   | Full            | YES           | YES         | YES        | YES
+  US       | Restricted      | NO (urban)    | NO          | YES        | YES
+  Australia| Observer        | NO            | NO          | YES        | NO
+
+c. INTELLIGENCE REQUIREMENTS
+
+Priority Intelligence Requirements (PIR):
+  PIR 1: Location and composition of enemy lead element (T-99 tanks)
+  PIR 2: Enemy intent — continued advance or halt?
+  PIR 3: Presence of dismounted infantry (BTR-82 passengers)
+
+d. COALITION INFORMATION SHARING
+
+All robot observations are tagged with national provenance DID per BASTION
+knowledge graph protocol. Coalition partners may filter intelligence by
+national contributor. Brain graph visualization enables post-mission review
+of what each national contingent contributed to the intelligence picture.
+
+e. COMMAND AND SIGNAL
+
+  Command post: BASTION digital COP, Zhongzheng District operational area
+  Communications: BASTION WebSocket mesh, UDP swarm coordination port 5807
+  Authentication: DID-based per NEAR Protocol blockchain identity
+
+---
+
+5. COMMAND AND CONTROL
+
+a. COMMAND
+
+  Coalition Commander: BASTION AI Planning System (NEAR Wallet DID authenticated)
+  Human oversight: Required for all lethal force authorization (DAO gate)
+  Audit trail: All decisions recorded to NEAR Protocol blockchain
+
+b. SIGNAL
+
+  Robot mesh: mDNS discovery + UDP broadcast (port 5807)
+  Bastion backend: WebSocket real-time telemetry
+  COP updates: Sub-100ms latency target for position tracking
+
+ACKNOWLEDGE RECEIPT OF THIS ORDER.
+
+COALITION JOINT HEADQUARTERS
+IRON BASTION JOINT OPERATIONS CENTER
+TAIPEI, TAIWAN
+2026-03-16 / DTGSIGNED: 160000Z MAR 2026
+
+DISTRIBUTION: TW GROUND FORCE, US 1MEU, AU SASR, COALITION AI STAFF
+CLASSIFICATION: COALITION — REL TO TW, US, AU
