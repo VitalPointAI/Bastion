@@ -9,6 +9,27 @@ export interface BrainNodeWithRecency extends BrainNode {
   recencyScore: number;
 }
 
+/** Node extended with temporal opacity computed from staleness decay */
+export interface BrainNodeWithOpacity extends BrainNode {
+  /**
+   * Visual opacity 0-1 computed from staleness decay formula.
+   * High confidence (>0.85): 1.0 — full opacity
+   * Medium confidence (0.5-0.85): 0.7 — reduced opacity
+   * Low confidence (<0.5): 0.4 — ghost style
+   */
+  temporalOpacity: number;
+}
+
+/** Playback state for animated timeline */
+export interface PlaybackState {
+  /** Whether animated playback is running */
+  isPlaying: boolean;
+  /** Playback speed multiplier (0.5x, 1x, 2x, 5x — default 1x = 1 month per second) */
+  speed: number;
+  /** Current playback position */
+  currentTime: Date;
+}
+
 export interface UseBrainTimelineReturn {
   /** Currently selected point in time. null = live/current view */
   selectedTime: Date | null;
@@ -43,6 +64,22 @@ export interface UseBrainTimelineReturn {
   applyRecencyToNodes: (nodes: BrainNode[], viewTime?: Date) => BrainNodeWithRecency[];
   /** The data that should actually be rendered — historicalData if present, else currentData */
   effectiveData: BrainGraphData;
+  /**
+   * Filter nodes by temporal validity at the given time, compute staleness decay opacity.
+   * Nodes with no validFrom/validTo are always included.
+   * Exported for testability.
+   */
+  filterByTemporalValidity: (nodes: BrainNode[], atTime: Date) => BrainNodeWithOpacity[];
+  /** Current playback state (isPlaying, speed, currentTime) */
+  playbackState: PlaybackState;
+  /** Start animated playback at the given speed multiplier (default 1x) */
+  startPlayback: (speed?: number) => void;
+  /** Stop animated playback */
+  stopPlayback: () => void;
+  /** Set playback speed (0.5, 1, 2, or 5) */
+  setPlaybackSpeed: (speed: number) => void;
+  /** Directly set the current playback/scrubber position */
+  setCurrentTime: (time: Date) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -51,6 +88,82 @@ const RECENCY_FRESH_MS = 24 * 60 * 60 * 1000;   // 24 hours → score = 1
 const RECENCY_STALE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days → score = 0
 const FUTURE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days ahead
 const DEBOUNCE_MS = 300;
+
+/** Default playback step: 1x = advance 1 month per second of real time */
+const PLAYBACK_STEP_1X_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const PLAYBACK_INTERVAL_MS = 1000; // tick every 1 second
+
+// ─── Exported utility functions ───────────────────────────────────────────────
+
+/**
+ * getStalenessOpacity
+ *
+ * Map a decayed confidence value (0-1) to a visual opacity level.
+ * Used for rendering stale/decayed nodes with reduced visual weight.
+ *
+ * - > 0.85: full opacity (1.0) — high confidence
+ * - 0.5-0.85: 70% opacity (0.7) — medium confidence
+ * - < 0.5: ghost style (0.4) — low confidence
+ */
+export function getStalenessOpacity(confidence: number): number {
+  if (confidence > 0.85) return 1.0;
+  if (confidence >= 0.5) return 0.7;
+  return 0.4;
+}
+
+// ─── Exported filter function ─────────────────────────────────────────────────
+
+/**
+ * filterByTemporalValidity
+ *
+ * Filter a node array to those valid at atTime (per validFrom/validTo),
+ * and compute visual opacity from staleness decay for the surviving nodes.
+ *
+ * Nodes without validFrom/validTo pass through with full opacity.
+ *
+ * Decay formula: decayedConf = validityScore * 0.5^(ageDays / halfLifeDays)
+ *   - > 0.85: full opacity (1.0)
+ *   - 0.5-0.85: 70% opacity (0.7)
+ *   - < 0.5: ghost style (0.4)
+ */
+export function filterByTemporalValidity(
+  nodes: BrainNode[],
+  atTime: Date,
+): BrainNodeWithOpacity[] {
+  const atMs = atTime.getTime();
+
+  return nodes
+    .filter((node) => {
+      if (!node.validFrom) return true; // no temporal data → always show
+      const fromMs = new Date(node.validFrom).getTime();
+      if (fromMs > atMs) return false; // not yet valid
+      if (node.validTo != null) {
+        const toMs = new Date(node.validTo).getTime();
+        if (toMs <= atMs) return false; // expired
+      }
+      return true;
+    })
+    .map((node) => {
+      // Compute decayed confidence
+      let temporalOpacity = 1.0;
+      if (node.validFrom) {
+        const ageDays =
+          (atMs - new Date(node.validFrom).getTime()) / (24 * 60 * 60 * 1000);
+        const halfLife = node.halfLifeDays ?? 180;
+        const baseConf = node.validityScore ?? node.confidence ?? 0.5;
+        const decayedConf = baseConf * Math.pow(0.5, ageDays / halfLife);
+
+        if (decayedConf > 0.85) {
+          temporalOpacity = 1.0;
+        } else if (decayedConf >= 0.5) {
+          temporalOpacity = 0.7;
+        } else {
+          temporalOpacity = 0.4;
+        }
+      }
+      return { ...node, temporalOpacity };
+    });
+}
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -61,6 +174,7 @@ const DEBOUNCE_MS = 300;
  * - past scrubbing → fetches historical graph snapshots from the backend
  * - future zone   → generates basic trend-projection ghost nodes
  * - live mode     → passes currentData through unchanged (no fetch)
+ * - playback      → interval that auto-advances currentTime through the timeline
  */
 export function useBrainTimeline(
   problemSetId: string,
@@ -69,7 +183,13 @@ export function useBrainTimeline(
   const [selectedTime, setSelectedTimeState] = useState<Date | null>(null);
   const [historicalData, setHistoricalData] = useState<BrainGraphData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [playbackState, setPlaybackState] = useState<PlaybackState>({
+    isPlaying: false,
+    speed: 1,
+    currentTime: new Date(),
+  });
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── Derived constants ──────────────────────────────────────────────────────
 
@@ -114,6 +234,15 @@ export function useBrainTimeline(
       return nodes.map((n) => ({ ...n, recencyScore: computeRecency(n, vt) }));
     },
     [computeRecency], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // ── Temporal validity filter (stable callback wrapping pure function) ──────
+
+  const filterByTemporalValidityCallback = useCallback(
+    (nodes: BrainNode[], atTime: Date): BrainNodeWithOpacity[] => {
+      return filterByTemporalValidity(nodes, atTime);
+    },
+    [],
   );
 
   // ── Future prediction generator ────────────────────────────────────────────
@@ -205,7 +334,7 @@ export function useBrainTimeline(
       if (!problemSetId) return;
       setLoading(true);
       try {
-        const url = `/api/brain/graph-snapshot?problemSetId=${encodeURIComponent(problemSetId)}&at=${encodeURIComponent(selectedTime.toISOString())}`;
+        const url = `/api/brain/graph-snapshot?problemSetId=${encodeURIComponent(problemSetId)}&atTime=${encodeURIComponent(selectedTime.toISOString())}`;
         const res = await fetch(url);
         if (!res.ok) throw new Error(`graph-snapshot ${res.status}`);
         const raw = await res.json();
@@ -229,15 +358,89 @@ export function useBrainTimeline(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTime, problemSetId]);
 
+  // ── Playback controls ──────────────────────────────────────────────────────
+
+  const stopPlayback = useCallback(() => {
+    if (playbackIntervalRef.current) {
+      clearInterval(playbackIntervalRef.current);
+      playbackIntervalRef.current = null;
+    }
+    setPlaybackState((prev) => ({ ...prev, isPlaying: false }));
+  }, []);
+
+  const startPlayback = useCallback(
+    (speed = 1) => {
+      // Stop any existing playback first
+      if (playbackIntervalRef.current) {
+        clearInterval(playbackIntervalRef.current);
+      }
+
+      // Initialize currentTime from selectedTime or start of range
+      const startTime = selectedTime ?? timeRange.start;
+
+      setPlaybackState({ isPlaying: true, speed, currentTime: startTime });
+
+      playbackIntervalRef.current = setInterval(() => {
+        setPlaybackState((prev) => {
+          const stepMs = PLAYBACK_STEP_1X_MS * prev.speed;
+          const next = new Date(prev.currentTime.getTime() + stepMs);
+          // Stop at futureTime
+          if (next >= futureTime) {
+            clearInterval(playbackIntervalRef.current!);
+            playbackIntervalRef.current = null;
+            return { ...prev, isPlaying: false, currentTime: futureTime };
+          }
+          return { ...prev, currentTime: next };
+        });
+
+        // Also advance the timeline selectedTime
+        setSelectedTimeState((prev) => {
+          if (prev === null) return null; // don't disrupt live mode
+          const stepMs = PLAYBACK_STEP_1X_MS * speed;
+          const next = new Date(prev.getTime() + stepMs);
+          return next >= futureTime ? futureTime : next;
+        });
+      }, PLAYBACK_INTERVAL_MS);
+    },
+    [selectedTime, timeRange.start, futureTime],
+  );
+
+  const setPlaybackSpeed = useCallback((speed: number) => {
+    setPlaybackState((prev) => {
+      if (prev.isPlaying) {
+        // Restart interval with new speed — handled by startPlayback
+      }
+      return { ...prev, speed };
+    });
+  }, []);
+
+  const setCurrentTime = useCallback((time: Date) => {
+    setSelectedTimeState(time);
+    setPlaybackState((prev) => ({ ...prev, currentTime: time }));
+  }, []);
+
+  // ── Cleanup playback on unmount ────────────────────────────────────────────
+
+  useEffect(() => {
+    return () => {
+      if (playbackIntervalRef.current) clearInterval(playbackIntervalRef.current);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
+
   // ── Exposed setters ────────────────────────────────────────────────────────
 
   const setSelectedTime = useCallback((time: Date | null) => {
     setSelectedTimeState(time);
+    if (time) {
+      setPlaybackState((prev) => ({ ...prev, currentTime: time }));
+    }
   }, []);
 
   const goLive = useCallback(() => {
+    stopPlayback();
     setSelectedTimeState(null);
-  }, []);
+  }, [stopPlayback]);
 
   // ── effectiveData ──────────────────────────────────────────────────────────
 
@@ -255,5 +458,11 @@ export function useBrainTimeline(
     computeRecency,
     applyRecencyToNodes,
     effectiveData,
+    filterByTemporalValidity: filterByTemporalValidityCallback,
+    playbackState,
+    startPlayback,
+    stopPlayback,
+    setPlaybackSpeed,
+    setCurrentTime,
   };
 }
