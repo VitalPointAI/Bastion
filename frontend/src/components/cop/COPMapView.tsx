@@ -11,6 +11,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Polygon, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LIGHT_TILE_URL, LIGHT_TILE_ATTRIBUTION, LIGHT_TILE_SUBDOMAINS } from '../../lib/map-tiles';
 import './COPMapView.css';
@@ -89,6 +90,53 @@ function getTierOpacityModifier(tier: 'high' | 'medium' | 'low'): number {
     case 'medium': return 0.7;
     case 'low': return 0.4;
   }
+}
+
+/**
+ * Create a MIL-STD-2525D marker icon with an optional confidence badge overlay.
+ *
+ * For ghosted symbols (low tier): adds a dotted border ring around the icon.
+ * For medium tier: adds an amber confidence percentage pill above the symbol.
+ * For high tier: adds a green confidence percentage pill above the symbol.
+ * No badge is shown when confidence === 1 (default, unlabeled symbols).
+ */
+function createMilSymbolIconWithBadge(
+  sidc: string,
+  designation: string | undefined,
+  tier: 'high' | 'medium' | 'low',
+  confidencePct: number,
+): L.DivIcon {
+  const baseIcon = createMilSymbolIcon(sidc, { uniqueDesignation: designation });
+  const [w, h] = baseIcon.options.iconSize as [number, number];
+
+  const badgeColor =
+    tier === 'high' ? '#22c55e' :
+    tier === 'medium' ? '#f59e0b' :
+    '#ef4444';
+
+  // Ghost ring for low-confidence symbols (dotted border circle overlay)
+  const ghostRing =
+    tier === 'low'
+      ? `<div style="position:absolute;top:0;left:0;width:${w}px;height:${h}px;
+           border:2px dotted #ef4444;border-radius:50%;box-sizing:border-box;
+           pointer-events:none;"></div>`
+      : '';
+
+  // Confidence badge pill above the symbol (shown for medium and high)
+  const badge =
+    tier !== 'high' || confidencePct < 100
+      ? `<div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+           background:${badgeColor};color:#fff;font-size:9px;font-weight:700;
+           padding:1px 4px;border-radius:9px;white-space:nowrap;pointer-events:none;
+           font-family:'Fira Code',monospace;line-height:1.4;">${confidencePct}%</div>`
+      : '';
+
+  return L.divIcon({
+    className: 'milsymbol-marker',
+    html: `<div style="position:relative;display:inline-block;">${(baseIcon.options.html as string) ?? ''}${ghostRing}${badge}</div>`,
+    iconSize: [w, h + 14],
+    iconAnchor: [w / 2, h / 2 + 14],
+  });
 }
 
 /** Check if control measure is visible in current phase */
@@ -251,9 +299,13 @@ function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThr
           const tierOpacity = getTierOpacityModifier(tier);
           const effectiveOpacity = opacity * tierOpacity;
 
-          const icon = createMilSymbolIcon(symbol.sidc, {
-            uniqueDesignation: symbol.designation,
-          });
+          const confidencePct = Math.round((symbol.confidence ?? 1) * 100);
+          const icon = createMilSymbolIconWithBadge(
+            symbol.sidc,
+            symbol.designation,
+            tier,
+            confidencePct,
+          );
 
           // SVG stroke style based on confidence tier
           // high = solid, medium = dashed, low = dotted/ghost

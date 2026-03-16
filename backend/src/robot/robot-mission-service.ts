@@ -49,6 +49,7 @@ import {
   writeAuthorizationDecisionEvent,
   writeMissionDispatchedEvent,
   writeMissionCompleteEvent,
+  writeSwarmEventToGraph,
 } from './swarm-graph-writer.js';
 import Anthropic from '@anthropic-ai/sdk';
 import { readFileSync, existsSync } from 'fs';
@@ -1169,6 +1170,47 @@ export class RobotMissionService {
       `[RobotMissionService] Swarm telemetry from ${leader_id}: swarm=${swarm_id}, ` +
       `state=${state}, formation=${formation}, members=${member_count}`,
     );
+
+    const prevState = this.swarmStates.get(swarm_id);
+
+    // Write swarm_formed event when a new swarm_id appears for the first time
+    if (!prevState) {
+      writeSwarmEventToGraph({
+        swarmId: swarm_id,
+        eventType: 'swarm_formed',
+        timestamp: msg.timestamp || new Date().toISOString(),
+        nationalDid: 'did:near:bastion.testnet',
+        workspaceId: 'default',
+        members: members.map((m) => m.robot_id),
+        payload: {
+          leader_id,
+          formation,
+          state,
+          member_count,
+        },
+      }).catch((err) => {
+        console.warn('[RobotMissionService] Failed to write swarm_formed graph event (non-fatal):', err);
+      });
+    }
+
+    // Write formation_changed event when the formation type changes
+    if (prevState && prevState.formation !== formation) {
+      writeSwarmEventToGraph({
+        swarmId: swarm_id,
+        eventType: 'formation_changed',
+        timestamp: msg.timestamp || new Date().toISOString(),
+        nationalDid: 'did:near:bastion.testnet',
+        workspaceId: 'default',
+        members: members.map((m) => m.robot_id),
+        payload: {
+          previous_formation: prevState.formation,
+          new_formation: formation,
+          state,
+        },
+      }).catch((err) => {
+        console.warn('[RobotMissionService] Failed to write formation_changed graph event (non-fatal):', err);
+      });
+    }
 
     this.swarmStates.set(swarm_id, msg);
 

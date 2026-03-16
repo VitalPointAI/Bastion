@@ -123,10 +123,36 @@ function convexHullOrder(positions: LatLng[]): LatLng[] {
  *
  * Renders dashed polylines from each detecting robot to the detected entity
  * when showAttribution is true. Lines are keyed by robotId+entityId.
+ * Also renders source count badges ("2x"/"3x") on entities with corroborated
+ * detections from multiple robots.
  */
 interface DetectionAttributionLayerProps {
   swarms: SwarmFormationSpec[];
   show: boolean;
+}
+
+/** Inject corroboration badge CSS once per page load */
+let _corrobCssInjected = false;
+
+function ensureCorrobCss() {
+  if (_corrobCssInjected) return;
+  _corrobCssInjected = true;
+  const style = document.createElement('style');
+  style.textContent = `
+    .swarm-corroboration-badge {
+      background: rgba(34, 197, 94, 0.9);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      font-family: 'Fira Code', monospace;
+      border: 1px solid #16a34a;
+      border-radius: 9px;
+      padding: 1px 5px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 function DetectionAttributionLayer({ swarms, show }: DetectionAttributionLayerProps) {
@@ -145,6 +171,7 @@ function DetectionAttributionLayer({ swarms, show }: DetectionAttributionLayerPr
 
     if (show) {
       layerGroupRef.current.addTo(map);
+      ensureCorrobCss();
 
       // Build a robotId → position + nationalDid map from swarm members
       const robotPositions = new Map<string, { position: LatLng; nationalDid?: string }>();
@@ -154,6 +181,24 @@ function DetectionAttributionLayer({ swarms, show }: DetectionAttributionLayerPr
             position: member.position,
             nationalDid: member.nationalDid,
           });
+        }
+      }
+
+      // Count how many distinct robots attribute to each entity (corroboration count)
+      const entitySourceCount = new Map<string, Set<string>>();
+      const entityPositionMap = new Map<string, LatLng>();
+
+      for (const swarm of swarms) {
+        const attributions = swarm.detectionAttributions ?? [];
+        for (const attr of attributions) {
+          if (!entitySourceCount.has(attr.entityId)) {
+            entitySourceCount.set(attr.entityId, new Set());
+          }
+          entitySourceCount.get(attr.entityId)!.add(attr.robotId);
+
+          if (attr.entityPosition) {
+            entityPositionMap.set(attr.entityId, attr.entityPosition);
+          }
         }
       }
 
@@ -190,6 +235,32 @@ function DetectionAttributionLayer({ swarms, show }: DetectionAttributionLayerPr
 
           layerGroupRef.current?.addLayer(line);
         }
+      }
+
+      // Render corroboration source count badges for entities with 2+ detectors
+      for (const [entityId, sources] of entitySourceCount.entries()) {
+        if (sources.size < 2) continue;
+        const entityPos = entityPositionMap.get(entityId);
+        if (!entityPos) continue;
+
+        const count = sources.size;
+        const badge = L.marker([entityPos.lat, entityPos.lng], {
+          icon: L.divIcon({
+            className: 'swarm-corroboration-badge',
+            html: `${count}x`,
+            iconSize: undefined,
+            iconAnchor: [-4, 16], // offset above-right of symbol
+          }),
+          zIndexOffset: 600,
+          interactive: false,
+        });
+
+        badge.bindTooltip(
+          `Corroborated by ${count} robots: ${Array.from(sources).join(', ')}`,
+          { sticky: true },
+        );
+
+        layerGroupRef.current?.addLayer(badge);
       }
     } else {
       // Remove from map when hidden
