@@ -32,7 +32,7 @@ SOP = 0x8D
 EOP = 0xD8
 
 # Flags
-FLAGS_CMD = 0x38  # is_activity(0x08) + has_target(0x10) + has_source(0x20)
+FLAGS_CMD = 0x3A  # requests_response(0x02) + is_activity(0x08) + has_target(0x10) + has_source(0x20)
 
 # Targets
 TARGET_NORDIC = 0x01   # Nordic BLE processor (power, connection)
@@ -51,8 +51,9 @@ CID_RESET_YAW = 0x06
 CID_SET_ALL_LEDS = 0x1A
 
 # BLE handles (from GATT discovery)
-HANDLE_INIT = "0x0011"  # Characteristic 00010003 — anti-DOS + wake
-HANDLE_API = "0x0011"   # All commands go through 0x0011 on RVR+
+HANDLE_CMD = "0x000e"   # Characteristic 00010002 — ALL commands (anti-DOS, wake, drive)
+HANDLE_NOTIFY_CCCD = "0x000f"  # CCCD for 0x000e notifications
+HANDLE_NOTIFY2_CCCD = "0x0012"  # CCCD for 0x0011 notifications
 
 # Anti-DOS string (hex-encoded)
 ANTIDOS_HEX = "757365746865666f7263652e2e2e62616e64"  # "usetheforce...band"
@@ -156,7 +157,7 @@ class BLERVRDriver:
         self._seq = (self._seq + 1) & 0xFF
         return seq
 
-    async def _send_raw(self, hex_data: str, handle: str = HANDLE_API) -> bool:
+    async def _send_raw(self, hex_data: str, handle: str = HANDLE_CMD) -> bool:
         """Write hex data to a BLE handle via gatttool."""
         if not self._connected or not self._child:
             log.warning("ble_rvr.send_raw.no_connection", name=self._name,
@@ -176,7 +177,7 @@ class BLERVRDriver:
 
         async with self._lock:
             ok = await loop.run_in_executor(None, _write)
-            if not ok and handle == HANDLE_API:
+            if not ok and handle == HANDLE_CMD:
                 # Connection likely dropped — attempt reconnect
                 log.warning("ble_rvr.connection_lost", name=self._name)
                 self._connected = False
@@ -224,13 +225,17 @@ class BLERVRDriver:
         if child:
             self._child = child
             self._connected = True
+            # Enable notifications first
+            await self._send_raw("0100", HANDLE_NOTIFY_CCCD)
+            await self._send_raw("0100", HANDLE_NOTIFY2_CCCD)
+            await asyncio.sleep(0.3)
             # Re-send anti-DOS
-            await self._send_raw(ANTIDOS_HEX, HANDLE_INIT)
+            await self._send_raw(ANTIDOS_HEX, HANDLE_CMD)
             await asyncio.sleep(0.3)
             # Re-send wake
             seq = self._next_seq()
             wake_pkt = _build_packet(DID_POWER, CID_WAKE, seq, target=TARGET_NORDIC)
-            await self._send_raw(wake_pkt.hex(), HANDLE_INIT)
+            await self._send_raw(wake_pkt.hex(), HANDLE_CMD)
             await asyncio.sleep(1)
             # Reset yaw
             await self._send_packet(DID_DRIVE, CID_RESET_YAW, b"", TARGET_ST)
@@ -316,18 +321,23 @@ class BLERVRDriver:
         self._child = child
         self._connected = True
 
-        # Anti-DOS on INIT handle
-        await self._send_raw(ANTIDOS_HEX, HANDLE_INIT)
+        # Enable notifications BEFORE anti-DOS (required for BLE command channel)
+        await self._send_raw("0100", HANDLE_NOTIFY_CCCD)
+        await self._send_raw("0100", HANDLE_NOTIFY2_CCCD)
+        await asyncio.sleep(0.3)
+
+        # Anti-DOS on command handle
+        await self._send_raw(ANTIDOS_HEX, HANDLE_CMD)
         await asyncio.sleep(0.5)
         log.info("ble_rvr.antidos_sent", name=self._name)
 
-        # Wake on INIT handle (power commands go to Nordic)
+        # Wake
         seq = self._next_seq()
         wake_pkt = _build_packet(DID_POWER, CID_WAKE, seq, target=TARGET_NORDIC)
-        await self._send_raw(wake_pkt.hex(), HANDLE_INIT)
+        await self._send_raw(wake_pkt.hex(), HANDLE_CMD)
         await asyncio.sleep(2)
 
-        # Reset yaw on API handle so heading=0 means current facing direction
+        # Reset yaw so heading=0 means current facing direction
         await self._send_packet(DID_DRIVE, CID_RESET_YAW, b"", TARGET_ST)
         await asyncio.sleep(0.5)
 
