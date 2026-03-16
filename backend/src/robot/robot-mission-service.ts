@@ -75,7 +75,7 @@ function loadDefaultCalibration(): { room_width: number; room_height: number; ma
   return {
     room_width: 5,
     room_height: 5,
-    map_bounds: { north: 25.0340, south: 25.0330, east: 121.5650, west: 121.5640 },
+    map_bounds: { north: 25.0480, south: 25.0420, east: 121.5180, west: 121.5120 },
   };
 }
 
@@ -1159,7 +1159,7 @@ export class RobotMissionService {
     if (msg.detections.length > 0) {
       const robotTelemetry = robot?.latest_telemetry;
       const robotPosition = robotTelemetry?.position
-        ? { lat: robotTelemetry.position.x, lng: robotTelemetry.position.y }
+        ? roomToGeo(robotTelemetry.position.x, robotTelemetry.position.y)
         : null;
 
       import('./vision-cop-pipeline.js').then(({ processVisionDetections }) => {

@@ -50,6 +50,8 @@ export const STATUS_MAP = {
   planned: '1',
   anticipated: '2',
   fully_capable: '3',
+  damaged: '4',
+  destroyed: '5',
 } as const;
 
 /** HQ/Task Force/Feint Dummy (position 8) */

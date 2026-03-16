@@ -45,7 +45,7 @@ function loadDefaultCalibration(): CalibrationProfile {
   return {
     room_width: 5,
     room_height: 5,
-    map_bounds: { north: 25.0340, south: 25.0330, east: 121.5650, west: 121.5640 },
+    map_bounds: { north: 25.0480, south: 25.0420, east: 121.5180, west: 121.5120 },
   };
 }
 
