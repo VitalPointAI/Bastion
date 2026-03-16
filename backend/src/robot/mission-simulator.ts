@@ -1,0 +1,351 @@
+/**
+ * Mission Simulator
+ *
+ * Creates virtual robots that register with the mission service and simulate
+ * movement, telemetry, and vision detections. Allows testing the full mission
+ * sequence flow (map symbols moving, decision gates, COP updates) without
+ * physical robots connected.
+ *
+ * Usage:
+ *   POST /api/robot/scenarios/autonomous?simulate=true
+ *   POST /api/robot/scenarios/iron-bastion?simulate=true
+ *
+ * The simulator:
+ *   1. Registers virtual robots with the mission service (fake WebSocket)
+ *   2. Runs a telemetry loop that moves robots along dispatched waypoints
+ *   3. Generates mock vision detections when the leader enters the recon area
+ *   4. Responds to mission:assign messages by executing movement simulation
+ */
+
+import { randomUUID } from 'crypto';
+import { getRobotMissionService } from './robot-mission-service.js';
+import type { ConnectedRobot } from './robot-types.js';
+import { RobotMissionState } from './robot-types.js';
+import { getMessageBus } from '../messaging/message-bus.js';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface SimRobot {
+  id: string;
+  did: string;
+  position: { x: number; y: number };
+  heading: number;
+  battery: number;
+  capabilities: string[];
+  /** Current movement target queue */
+  waypoints: Array<{ x: number; y: number }>;
+  /** Current mission being executed */
+  activeMissionId?: string;
+  activeCommand?: string;
+  /** Speed in room-meters per second (scaled for simulation) */
+  speed: number;
+}
+
+interface SimSession {
+  id: string;
+  robots: Map<string, SimRobot>;
+  telemetryInterval?: ReturnType<typeof setInterval>;
+  running: boolean;
+  /** Detection trigger area */
+  reconArea?: { x_min: number; y_min: number; x_max: number; y_max: number };
+  /** Whether detection has been triggered */
+  detectionTriggered: boolean;
+  /** Threat classes to simulate detecting */
+  threatClasses: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Globals
+// ---------------------------------------------------------------------------
+
+const sessions: Map<string, SimSession> = new Map();
+
+// ---------------------------------------------------------------------------
+// Fake WebSocket that captures messages sent to robots
+// ---------------------------------------------------------------------------
+
+class FakeWebSocket {
+  readyState = 1; // OPEN
+  private robotId: string;
+  private sessionId: string;
+
+  constructor(robotId: string, sessionId: string) {
+    this.robotId = robotId;
+    this.sessionId = sessionId;
+  }
+
+  send(data: string): void {
+    try {
+      const msg = JSON.parse(data);
+
+      if (msg.type === 'mission:assign') {
+        // Handle mission assignment by setting up waypoints
+        const session = sessions.get(this.sessionId);
+        const robot = session?.robots.get(this.robotId);
+        if (!robot || !session) return;
+
+        const mission = msg.mission;
+        robot.activeMissionId = mission.mission_id;
+        robot.activeCommand = mission.command;
+
+        // Extract waypoints based on command type
+        if (mission.params.waypoints) {
+          robot.waypoints = [...mission.params.waypoints];
+        } else if (mission.params.target_location) {
+          robot.waypoints = [mission.params.target_location];
+        } else if (mission.params.area) {
+          // Generate a simple sweep path for recon_area
+          const a = mission.params.area;
+          robot.waypoints = [
+            { x: a.x_min, y: a.y_min },
+            { x: a.x_max, y: a.y_min },
+            { x: a.x_max, y: a.y_max },
+            { x: a.x_min, y: a.y_max },
+            { x: (a.x_min + a.x_max) / 2, y: (a.y_min + a.y_max) / 2 },
+          ];
+        }
+
+        robot.speed = (mission.params.speed ?? 100) / 255 * 0.5; // Scale to ~0.5 m/s max
+
+        // Send accepted state
+        const svc = getRobotMissionService();
+        svc.handleSimulatedStateUpdate(this.robotId, mission.mission_id, 'accepted');
+
+        // Then transition to executing after brief delay
+        setTimeout(() => {
+          svc.handleSimulatedStateUpdate(this.robotId, mission.mission_id, 'executing');
+        }, 500);
+
+        console.log(`[Simulator] ${this.robotId} received mission ${mission.command} (${mission.mission_id.slice(0, 8)})`);
+      }
+
+      if (msg.type === 'robot:auth_response') {
+        // Handle auth response for find_engage
+        const session = sessions.get(this.sessionId);
+        const robot = session?.robots.get(this.robotId);
+        if (!robot) return;
+
+        if (msg.approved) {
+          // Flash red (simulated) then complete
+          const svc = getRobotMissionService();
+          svc.handleSimulatedStateUpdate(this.robotId, robot.activeMissionId!, 'executing');
+          setTimeout(() => {
+            svc.handleSimulatedStateUpdate(this.robotId, robot.activeMissionId!, 'complete');
+            robot.activeMissionId = undefined;
+            robot.activeCommand = undefined;
+          }, 3000);
+        }
+      }
+    } catch { /* ignore parse errors */ }
+  }
+
+  close(): void { this.readyState = 3; }
+  ping(): void { /* no-op */ }
+  on(): this { return this; }
+  once(): this { return this; }
+  removeListener(): this { return this; }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Start a simulation session with virtual robots.
+ */
+export function startSimulation(config: {
+  robotIds: string[];
+  leaderId: string;
+  homeBase: { x: number; y: number };
+  reconArea?: { x_min: number; y_min: number; x_max: number; y_max: number };
+  threatClasses?: string[];
+}): string {
+  const sessionId = randomUUID();
+  const session: SimSession = {
+    id: sessionId,
+    robots: new Map(),
+    running: true,
+    reconArea: config.reconArea,
+    detectionTriggered: false,
+    threatClasses: config.threatClasses ?? ['CHN-99G', 'T-90'],
+  };
+
+  const svc = getRobotMissionService();
+
+  // Register virtual robots
+  for (const robotId of config.robotIds) {
+    const isLeader = robotId === config.leaderId;
+    const did = `did:near:sim-robot-${robotId}`;
+    const capabilities = isLeader
+      ? ['patrol', 'find_engage', 'recon_area', 'visual_search', 'overwatch', 'resupply_route', 'vision', 'ISR', 'swarm_patrol', 'swarm_recon', 'swarm_advance', 'swarm_leader']
+      : ['patrol', 'find_engage'];
+
+    const robot: SimRobot = {
+      id: robotId,
+      did,
+      position: { ...config.homeBase },
+      heading: 0,
+      battery: 95 + Math.random() * 5,
+      capabilities,
+      waypoints: [],
+      speed: 0.3,
+    };
+
+    session.robots.set(robotId, robot);
+
+    // Register with mission service using fake WebSocket
+    const fakeWs = new FakeWebSocket(robotId, sessionId) as unknown as import('ws').WebSocket;
+    svc.registerSimulatedRobot(robotId, did, capabilities, fakeWs);
+
+    console.log(`[Simulator] Registered virtual robot '${robotId}' (DID: ${did})`);
+  }
+
+  sessions.set(sessionId, session);
+
+  // Start telemetry/movement loop (runs every 500ms)
+  session.telemetryInterval = setInterval(() => {
+    simulationTick(session);
+  }, 500);
+
+  console.log(`[Simulator] Session ${sessionId.slice(0, 8)} started with ${config.robotIds.length} virtual robots`);
+  return sessionId;
+}
+
+/**
+ * Stop a simulation session.
+ */
+export function stopSimulation(sessionId: string): void {
+  const session = sessions.get(sessionId);
+  if (!session) return;
+
+  session.running = false;
+  if (session.telemetryInterval) {
+    clearInterval(session.telemetryInterval);
+  }
+
+  // Disconnect virtual robots
+  const svc = getRobotMissionService();
+  for (const [robotId] of session.robots) {
+    svc.handleRobotDisconnect(robotId);
+  }
+
+  sessions.delete(sessionId);
+  console.log(`[Simulator] Session ${sessionId.slice(0, 8)} stopped`);
+}
+
+// ---------------------------------------------------------------------------
+// Simulation tick — move robots, send telemetry, trigger detections
+// ---------------------------------------------------------------------------
+
+function simulationTick(session: SimSession): void {
+  if (!session.running) return;
+
+  const svc = getRobotMissionService();
+
+  for (const [robotId, robot] of session.robots) {
+    // Move toward current waypoint
+    if (robot.waypoints.length > 0) {
+      const target = robot.waypoints[0];
+      const dx = target.x - robot.position.x;
+      const dy = target.y - robot.position.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 0.1) {
+        // Reached waypoint
+        robot.waypoints.shift();
+        robot.heading = 0;
+
+        // If no more waypoints, mission is complete
+        if (robot.waypoints.length === 0 && robot.activeMissionId) {
+          // For find_engage, transition to awaiting_auth instead of complete
+          if (robot.activeCommand === 'find_engage') {
+            svc.handleSimulatedStateUpdate(robotId, robot.activeMissionId, 'awaiting_auth');
+          } else if (robot.activeCommand === 'overwatch') {
+            // Overwatch stays executing (holding position)
+          } else {
+            svc.handleSimulatedStateUpdate(robotId, robot.activeMissionId, 'complete');
+            robot.activeMissionId = undefined;
+            robot.activeCommand = undefined;
+          }
+        }
+      } else {
+        // Move toward target
+        const step = Math.min(robot.speed * 0.5, dist); // 0.5s per tick
+        robot.position.x += (dx / dist) * step;
+        robot.position.y += (dy / dist) * step;
+        robot.heading = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+      }
+    }
+
+    // Drain battery slowly
+    robot.battery = Math.max(0, robot.battery - 0.01);
+
+    // Update telemetry in mission service
+    svc.updateSimulatedTelemetry(robotId, robot.position, robot.heading, Math.round(robot.battery));
+
+    // Check if leader is in recon area → trigger vision detection
+    if (
+      robotId === [...session.robots.keys()][0] && // leader is first
+      session.reconArea &&
+      !session.detectionTriggered &&
+      robot.position.x >= session.reconArea.x_min &&
+      robot.position.x <= session.reconArea.x_max &&
+      robot.position.y >= session.reconArea.y_min &&
+      robot.position.y <= session.reconArea.y_max
+    ) {
+      session.detectionTriggered = true;
+      triggerSimulatedDetection(session, robot);
+    }
+  }
+}
+
+function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
+  console.log(`[Simulator] Triggering vision detection for ${robot.id} at (${robot.position.x.toFixed(1)}, ${robot.position.y.toFixed(1)})`);
+
+  const messageBus = getMessageBus();
+
+  // Simulate detection of each threat class with slight delay between them
+  session.threatClasses.forEach((classDesc, i) => {
+    setTimeout(() => {
+      const visionMsg = {
+        type: 'robot:vision',
+        robot_id: robot.id,
+        timestamp: new Date().toISOString(),
+        detections: [
+          {
+            class_desc: classDesc,
+            confidence: 0.82 + Math.random() * 0.15,
+            bbox: { left: 100, top: 80, right: 300, bottom: 420 },
+            center_x: 200,
+            center_y: 250,
+          },
+        ],
+        message_id: randomUUID(),
+      };
+
+      // Feed through mission service vision handler
+      const svc = getRobotMissionService();
+      svc.handleVisionMsg(visionMsg as any);
+
+      console.log(`[Simulator] Vision detection: ${classDesc} (conf=${visionMsg.detections[0].confidence.toFixed(2)})`);
+    }, i * 2000);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Mission service integration helpers
+// ---------------------------------------------------------------------------
+
+// These methods need to be added to RobotMissionService
+// to support simulated robots without real WebSocket connections.
+// We extend the service's public API via module augmentation.
+
+declare module './robot-mission-service.js' {
+  interface RobotMissionService {
+    registerSimulatedRobot(robotId: string, did: string, capabilities: string[], fakeWs: import('ws').WebSocket): void;
+    handleSimulatedStateUpdate(robotId: string, missionId: string, state: string): void;
+    updateSimulatedTelemetry(robotId: string, position: { x: number; y: number }, heading: number, battery: number): void;
+  }
+}
