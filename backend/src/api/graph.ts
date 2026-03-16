@@ -23,6 +23,16 @@ import { graphSummaryService } from '../exercise/graph-summary-service.js';
 const router = Router();
 
 /**
+ * Classify confidence value into visual tier.
+ * Mirrors frontend getConfidenceTier() from provenance-types.
+ */
+function getConfidenceTierForValue(confidence: number): 'high' | 'medium' | 'low' {
+  if (confidence > 0.85) return 'high';
+  if (confidence >= 0.5) return 'medium';
+  return 'low';
+}
+
+/**
  * Helper to extract string value from query param (handles arrays)
  */
 function getQueryString(value: unknown): string | undefined {
@@ -133,12 +143,48 @@ router.get('/workspaces/:id/tree', async (req: Request, res: Response) => {
 // =====================
 
 // List actors
+// Query params: atTime (ISO string for temporal filtering), includeProvenance (bool, default true)
 router.get('/actors', async (req: Request, res: Response) => {
   try {
     const workspaceId = getQueryString(req.query.workspaceId);
     const type = getQueryString(req.query.type) as ActorType | undefined;
+    const atTime = getQueryString(req.query.atTime);
+    const includeProvenanceStr = getQueryString(req.query.includeProvenance);
+    const includeProvenance = includeProvenanceStr !== 'false'; // default true
+
     const actors = await actorStore.listActors(workspaceId, type);
-    res.json({ actors });
+
+    // Temporal filtering: only include actors valid at the given point in time
+    const filteredActors = atTime
+      ? actors.filter((a) => {
+          const validFrom = a.validFrom ? new Date(a.validFrom).getTime() : 0;
+          const validTo = a.validTo ? new Date(a.validTo).getTime() : Infinity;
+          const atMs = new Date(atTime).getTime();
+          return atMs >= validFrom && atMs <= validTo;
+        })
+      : actors;
+
+    const shaped = filteredActors.map((actor) => ({
+      id: actor.id,
+      name: actor.name,
+      type: actor.type,
+      jsonldType: actor.jsonldType,
+      confidence: actor.confidence,
+      confidenceTier: getConfidenceTierForValue(actor.confidence),
+      validFrom: actor.validFrom,
+      validTo: actor.validTo,
+      workspaceId: actor.workspaceId,
+      ...(includeProvenance && {
+        provenance: {
+          assertedBy: actor.assertedBy,
+          assertedVia: actor.assertedVia,
+          derivedFrom: actor.derivedFrom,
+          sourceWeight: actor.sourceWeight,
+        },
+      }),
+    }));
+
+    res.json({ actors: shaped });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
@@ -148,13 +194,39 @@ router.get('/actors', async (req: Request, res: Response) => {
 router.get('/actors/:id', async (req: Request, res: Response) => {
   try {
     const actorId = req.params.id as string;
+    const includeProvenanceStr = getQueryString(req.query.includeProvenance);
+    const includeProvenance = includeProvenanceStr !== 'false'; // default true
+
     const actor = await actorStore.getActor(actorId);
     if (!actor) {
       return res.status(404).json({ error: 'Actor not found' });
     }
     const relationships = await relationshipStore.getActorRelationships(actorId, 'both');
     const tensions = await tensionStore.getTensionsForActor(actorId);
-    res.json({ actor, relationships, tensions });
+
+    const actorShaped = {
+      id: actor.id,
+      name: actor.name,
+      type: actor.type,
+      jsonldType: actor.jsonldType,
+      confidence: actor.confidence,
+      confidenceTier: getConfidenceTierForValue(actor.confidence),
+      validFrom: actor.validFrom,
+      validTo: actor.validTo,
+      workspaceId: actor.workspaceId,
+      aliases: actor.aliases,
+      attributes: actor.attributes,
+      ...(includeProvenance && {
+        provenance: {
+          assertedBy: actor.assertedBy,
+          assertedVia: actor.assertedVia,
+          derivedFrom: actor.derivedFrom,
+          sourceWeight: actor.sourceWeight,
+        },
+      }),
+    };
+
+    res.json({ actor: actorShaped, relationships, tensions });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
@@ -172,12 +244,28 @@ router.get('/actors/search/:query', async (req: Request, res: Response) => {
 });
 
 // List tensions
+// Tensions carry jsonldType and confidence from Phase 47 Plan 03 schema additions
 router.get('/tensions', async (req: Request, res: Response) => {
   try {
     const workspaceId = getQueryString(req.query.workspaceId);
     const intensity = getQueryString(req.query.intensity) as TensionIntensity | undefined;
+    const includeProvenanceStr = getQueryString(req.query.includeProvenance);
+    const includeProvenance = includeProvenanceStr !== 'false'; // default true
+
     const tensions = await tensionStore.listTensions(workspaceId, intensity);
-    res.json({ tensions });
+
+    const shaped = tensions.map((t) => ({
+      ...t,
+      // Include provenance only when requested (default: true)
+      ...(!includeProvenance && {
+        assertedBy: undefined,
+        assertedVia: undefined,
+        derivedFrom: undefined,
+        sourceWeight: undefined,
+      }),
+    }));
+
+    res.json({ tensions: shaped });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
@@ -429,12 +517,27 @@ router.get('/validity/objectives', async (req: Request, res: Response) => {
 router.get('/', async (req: Request, res: Response) => {
   try {
     const workspaceId = getQueryString(req.query.workspaceId) || 'default';
+    const atTime = getQueryString(req.query.atTime);
 
-    const actors = await actorStore.listActors(workspaceId);
+    let actors = await actorStore.listActors(workspaceId);
+
+    // Temporal filtering
+    if (atTime) {
+      const atMs = new Date(atTime).getTime();
+      actors = actors.filter((a) => {
+        const validFrom = a.validFrom ? new Date(a.validFrom).getTime() : 0;
+        const validTo = a.validTo ? new Date(a.validTo).getTime() : Infinity;
+        return atMs >= validFrom && atMs <= validTo;
+      });
+    }
+
     const nodes = actors.map(actor => ({
       id: actor.id,
       label: actor.name,
       type: actor.type,
+      jsonldType: actor.jsonldType ?? 'cco:Agent',
+      confidence: actor.confidence ?? 0.75,
+      confidenceTier: getConfidenceTierForValue(actor.confidence ?? 0.75),
       workspaceId: actor.workspaceId,
     }));
 
@@ -464,13 +567,28 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
   try {
     const workspaceId = req.params.id as string;
+    const atTime = getQueryString(req.query.atTime);
 
     // Get actors as nodes
-    const actors = await actorStore.listActors(workspaceId);
+    let actors = await actorStore.listActors(workspaceId);
+
+    // Temporal filtering
+    if (atTime) {
+      const atMs = new Date(atTime).getTime();
+      actors = actors.filter((a) => {
+        const validFrom = a.validFrom ? new Date(a.validFrom).getTime() : 0;
+        const validTo = a.validTo ? new Date(a.validTo).getTime() : Infinity;
+        return atMs >= validFrom && atMs <= validTo;
+      });
+    }
+
     const nodes = actors.map(actor => ({
       id: actor.id,
       label: actor.name,
       type: actor.type,
+      jsonldType: actor.jsonldType ?? 'cco:Agent',
+      confidence: actor.confidence ?? 0.75,
+      confidenceTier: getConfidenceTierForValue(actor.confidence ?? 0.75),
       workspaceId: actor.workspaceId,
     }));
 
