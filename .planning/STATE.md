@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-stopped_at: Completed 48-02-PLAN.md
-last_updated: "2026-03-16T15:55:16Z"
-last_activity: "2026-03-16 - Completed 48-02: swarm COP layer types + swarm-cop-bridge service; SwarmFormationSpec bridged to COP event bus"
+stopped_at: Completed 48-03-PLAN.md
+last_updated: "2026-03-16T15:57:00Z"
+last_activity: "2026-03-16 - Completed 48-03: coalition caveat service; Taiwan/US/Australia national profiles; checkSwarmCaveat TypeScript + Python; 22 tests pass"
 progress:
   total_phases: 64
   completed_phases: 45
   total_plans: 409
-  completed_plans: 406
+  completed_plans: 407
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 48 of 64 (Robot Swarm Behaviour End-to-End Demo) — IN PROGRESS
-Plan: 2 of 11 in current phase — COMPLETE
-Status: Plan 48-02 complete — SwarmFormationSpec, SwarmMemberSpec, DetectionAttribution types added to layer-types.ts. swarm-cop-bridge.ts converts SwarmTelemetryMsg to geo-coordinate SwarmFormationSpec and emits on COP event bus via message bus. robot-mission-service.ts calls bridge in handleSwarmTelemetry.
-Last activity: 2026-03-16 - Completed 48-02: swarm COP layer types + swarm-cop-bridge service; SwarmFormationSpec bridged to COP event bus
+Plan: 3 of 11 in current phase — COMPLETE
+Status: Plan 48-03 complete — Coalition caveat service with Taiwan (full), US (restricted urban/find_engage), Australia (observer/recon only) national profiles. checkSwarmCaveat blocks mission if ANY member's DID forbids mission type. TypeScript + Python implementations with 9+13 passing tests.
+Last activity: 2026-03-16 - Completed 48-03: coalition caveat service; Taiwan/US/Australia national profiles; checkSwarmCaveat TypeScript + Python; 22 tests pass
 
 Progress: █████████████████████████████ 406 plans complete
 
@@ -198,6 +198,9 @@ Progress: ███████████████████████�
 | Phase 47 P07 | 664 | 2 tasks | 11 files |
 | Phase 47 P09 | 15 | 2 tasks | 4 files |
 | Phase 47 P10 | 394 | 2 tasks | 8 files |
+| Phase 48 P01 | 0 | 0 tasks | 0 files |
+| Phase 48 P02 | 8 | 2 tasks | 4 files |
+| Phase 48 P03 | 7 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -211,6 +214,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 48 Plan 03 (Coalition Caveat Enforcement):**
+- Restrictions checked before allowed_missions: ensures specific restriction reason strings surface in block results (e.g. "US national policy: no offensive urban ops")
+- US swarm_advance added to allowed_missions with area-specific restriction (urban only) — a mission with only area-scoped restrictions is broadly allowed in other areas
+- Wave 0 scaffold test file (test_coalition_caveat.py) fully replaced — old API (context param, string blocked_robots) incompatible with implemented API
 
 **Phase 47 Plan 10 (Consumer Wiring + COP Visual Encoding):**
 - includeProvenance defaults to true on graph API endpoints — opt-out pattern (?includeProvenance=false) rather than opt-in
