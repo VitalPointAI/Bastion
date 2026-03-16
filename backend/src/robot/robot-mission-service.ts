@@ -33,7 +33,7 @@ import type {
   SwarmMemberHeartbeat,
 } from './robot-types.js';
 import { robotStore } from './robot-store.js';
-import { gateService } from '../gates/gate-service.js';
+import { gateService, expeditedAuthorize } from '../gates/gate-service.js';
 import { GateType, GateEnforcement } from '../gates/gate-types.js';
 import type { AuthResponseMsg } from './robot-types.js';
 import { problemSetActivityStore } from '../problem-set/problem-set-activity-store.js';
@@ -44,6 +44,12 @@ import { getMissionProfileService } from './mission-profile-service.js';
 import type { MissionProfile } from './mission-profile-service.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import { bridgeSwarmTelemetryToCOP } from './swarm-cop-bridge.js';
+import {
+  writeEscalationRequestedEvent,
+  writeAuthorizationDecisionEvent,
+  writeMissionDispatchedEvent,
+  writeMissionCompleteEvent,
+} from './swarm-graph-writer.js';
 import Anthropic from '@anthropic-ai/sdk';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
@@ -333,6 +339,20 @@ export class RobotMissionService {
       );
     }
 
+    // Write mission_complete event to brain graph on terminal states (non-blocking)
+    if (state === RobotMissionState.complete || state === RobotMissionState.failed) {
+      const missionForGraph = await robotStore.getMission(mission_id).catch(() => null);
+      writeMissionCompleteEvent(
+        missionForGraph?.problem_set_id || 'default',
+        mission_id,
+        robot_id,
+        state === RobotMissionState.complete ? 'success' : `failed${reason ? `: ${reason}` : ''}`,
+        'did:near:bastion.testnet',
+      ).catch((err) => {
+        console.warn('[RobotMissionService] Failed to write mission_complete graph event (non-fatal):', err);
+      });
+    }
+
     const ack: RobotAckMsg = {
       type: RobotWsMessageType.ack,
       ref_type: RobotWsMessageType.state_update,
@@ -551,6 +571,17 @@ export class RobotMissionService {
       );
     }
 
+    // Write mission_dispatched event to brain graph (non-blocking)
+    writeMissionDispatchedEvent(
+      mission.problem_set_id || 'default',
+      mission.mission_id,
+      mission.robot_id,
+      mission.command,
+      'did:near:bastion.testnet',
+    ).catch((err) => {
+      console.warn('[RobotMissionService] Failed to write mission_dispatched graph event (non-fatal):', err);
+    });
+
     return { success: true };
   }
 
@@ -698,6 +729,230 @@ export class RobotMissionService {
 
     // Safety timeout: stop polling after 10 minutes
     setTimeout(() => clearInterval(interval), 10 * 60 * 1000);
+  }
+
+  // -------------------------------------------------------------------------
+  // Lethal escalation gate lifecycle (Phase 48 Plan 07)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Create a lethal escalation gate ad-hoc when the swarm detects a threat
+   * and requests engagement authority from the commander.
+   *
+   * The gate uses decision_context.escalation_type = 'lethal_force' to
+   * differentiate it from standard robot_action_auth gates.
+   *
+   * @returns The created gate ID
+   */
+  async createLethalEscalationGate(
+    missionId: string,
+    swarmId: string,
+    threatEntityId: string,
+    threatDesignation: string,
+    workspaceId?: string,
+    nationalDid?: string,
+  ): Promise<string> {
+    // Derive problem_set_id from mission record
+    const mission = await robotStore.getMission(missionId).catch(() => null);
+    const problemSetId = mission?.problem_set_id || 'default';
+    const resolvedWorkspaceId = workspaceId || problemSetId;
+    const resolvedNationalDid = nationalDid || 'did:near:bastion.testnet';
+
+    const gate = await gateService.createGate({
+      problem_set_id: problemSetId,
+      gate_type: GateType.robot_action_auth,
+      target_item_id: threatEntityId,
+      target_item_type: 'threat_entity',
+      target_item_title: `Lethal Force Authorization — ${threatDesignation} — Swarm ${swarmId}`,
+      enforcement: GateEnforcement.hard_block,
+      mode: 'operational',
+    });
+
+    // Tag the gate with lethal escalation context
+    await gateService['store'].update(gate.id, {
+      decision_context: {
+        ...gate.decision_context,
+        escalation_type: 'lethal_force',
+        threat_entity: threatEntityId,
+        threat_designation: threatDesignation,
+        swarm_id: swarmId,
+        mission_id: missionId,
+      },
+    });
+
+    console.log(
+      `[RobotMissionService] Lethal escalation gate ${gate.id} created for swarm=${swarmId} threat=${threatDesignation}`,
+    );
+
+    // Emit WebSocket event so frontend can show the approval UI
+    const messageBus = getMessageBus();
+    messageBus.publish({
+      sourceDid: resolvedNationalDid,
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: 'swarm:escalation_requested',
+      messageType: 'swarm.escalation.requested',
+      payload: {
+        gate_id: gate.id,
+        swarm_id: swarmId,
+        mission_id: missionId,
+        threat_entity_id: threatEntityId,
+        threat_designation: threatDesignation,
+      },
+    }).catch((err) => {
+      console.warn('[RobotMissionService] Failed to publish escalation event:', err);
+    });
+
+    // Write to brain graph (non-blocking)
+    writeEscalationRequestedEvent(
+      resolvedWorkspaceId,
+      missionId,
+      swarmId,
+      threatEntityId,
+      resolvedNationalDid,
+    ).catch((err) => {
+      console.warn('[RobotMissionService] Failed to write escalation graph event (non-fatal):', err);
+    });
+
+    return gate.id;
+  }
+
+  /**
+   * Handle a commander's decision on a lethal escalation gate.
+   *
+   * - 'approve': send swarm:engage_authorized, record blockchain audit trail
+   * - 'deny': send swarm:hold to halt swarm, record blockchain audit trail
+   *
+   * Both paths write to the brain graph with DAO tx hash for provenance.
+   */
+  async handleEscalationDecision(
+    gateId: string,
+    decision: 'approve' | 'deny',
+    commanderDid?: string,
+    commanderSecret?: Uint8Array,
+    workspaceId?: string,
+    nationalDid?: string,
+  ): Promise<void> {
+    // Look up gate to get swarm/mission context
+    const gate = await gateService.getGateById(gateId);
+    if (!gate) {
+      console.warn(`[RobotMissionService] handleEscalationDecision: gate ${gateId} not found`);
+      return;
+    }
+
+    const ctx = gate.decision_context as Record<string, unknown>;
+    const swarmId = (ctx.swarm_id as string) || 'unknown';
+    const missionId = (ctx.mission_id as string) || gate.target_item_id;
+    const threatEntityId = (ctx.threat_entity as string) || gate.target_item_id;
+    const resolvedWorkspaceId = workspaceId || gate.problem_set_id;
+    const resolvedNationalDid = nationalDid || 'did:near:bastion.testnet';
+    const resolvedCommanderDid = commanderDid || 'did:near:commander.bastion.testnet';
+
+    // Record decision on blockchain and update gate status
+    const { txHash, gateStatus, blockchainStatus } = await expeditedAuthorize(
+      gateId,
+      decision,
+      {
+        swarm_id: swarmId,
+        mission_id: missionId,
+        threat_entity: threatEntityId,
+        commander_did: resolvedCommanderDid,
+        national_did: resolvedNationalDid,
+        escalation_type: 'lethal_force',
+      },
+      commanderSecret,
+    );
+
+    console.log(
+      `[RobotMissionService] Escalation ${decision}: gate=${gateId} gateStatus=${gateStatus} tx=${txHash} blockchain=${blockchainStatus}`,
+    );
+
+    // Look up leader robot for the swarm
+    const mission = await robotStore.getMission(missionId).catch(() => null);
+    const leaderId = mission?.robot_id;
+
+    const messageBus = getMessageBus();
+
+    if (decision === 'approve') {
+      // Send engage_authorized to swarm leader
+      if (leaderId) {
+        const leader = this.connectedRobots.get(leaderId);
+        if (leader) {
+          this.safeSend(leader.ws, {
+            type: 'swarm:engage_authorized',
+            swarm_id: swarmId,
+            target_entity_id: threatEntityId,
+            gate_id: gateId,
+            dao_tx_hash: txHash,
+          });
+        }
+      }
+
+      // Broadcast approval to COP via message bus
+      messageBus.publish({
+        sourceDid: resolvedNationalDid,
+        sourceType: 'system',
+        destinationType: 'channel',
+        destinationTarget: 'swarm:escalation_approved',
+        messageType: 'swarm.escalation.approved',
+        payload: {
+          gate_id: gateId,
+          swarm_id: swarmId,
+          mission_id: missionId,
+          threat_entity_id: threatEntityId,
+          dao_tx_hash: txHash,
+          commander_did: resolvedCommanderDid,
+        },
+      }).catch((err) => {
+        console.warn('[RobotMissionService] Failed to publish escalation approval:', err);
+      });
+    } else {
+      // Send hold command to swarm leader
+      if (leaderId) {
+        const leader = this.connectedRobots.get(leaderId);
+        if (leader) {
+          this.safeSend(leader.ws, {
+            type: 'swarm:hold',
+            swarm_id: swarmId,
+            gate_id: gateId,
+            reason: 'escalation_denied',
+            dao_tx_hash: txHash,
+          });
+        }
+      }
+
+      // Broadcast denial to COP via message bus
+      messageBus.publish({
+        sourceDid: resolvedNationalDid,
+        sourceType: 'system',
+        destinationType: 'channel',
+        destinationTarget: 'swarm:escalation_denied',
+        messageType: 'swarm.escalation.denied',
+        payload: {
+          gate_id: gateId,
+          swarm_id: swarmId,
+          mission_id: missionId,
+          threat_entity_id: threatEntityId,
+          dao_tx_hash: txHash,
+          commander_did: resolvedCommanderDid,
+        },
+      }).catch((err) => {
+        console.warn('[RobotMissionService] Failed to publish escalation denial:', err);
+      });
+    }
+
+    // Write authorization decision to brain graph (non-blocking)
+    writeAuthorizationDecisionEvent(
+      resolvedWorkspaceId,
+      missionId,
+      swarmId,
+      decision === 'approve' ? 'granted' : 'denied',
+      txHash,
+      resolvedCommanderDid,
+      resolvedNationalDid,
+    ).catch((err) => {
+      console.warn('[RobotMissionService] Failed to write auth decision graph event (non-fatal):', err);
+    });
   }
 
   // -------------------------------------------------------------------------
