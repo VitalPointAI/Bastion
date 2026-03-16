@@ -441,6 +441,9 @@ export function BrainVisualization({
         return group;
       }
 
+      const color = getNodeColor(brainNode);
+
+      // Compute selection/dimming state
       const selId = selectedIdRef.current;
       const selIds = selectedIdsRef.current;
       const isSelected = brainNode.id === selId || (selIds?.includes(brainNode.id) ?? false);
@@ -448,18 +451,27 @@ export function BrainVisualization({
         !!selId && !isSelected &&
         neighborhoodRef.current.size > 0 &&
         !neighborhoodRef.current.has(brainNode.id);
+      const targetOpacity = isDimmed ? 0.15 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
 
-      const color = getNodeColor(brainNode);
-      const opacity = isDimmed ? 0.15 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
-
-      // Build a cache key from the visual state to detect actual changes
-      const cacheKey = `${color}|${opacity}|${isSelected ? 1 : 0}|${brainNode.isGap ? 1 : 0}|${brainNode.confidence}|${brainNode.centrality ?? 0}|${brainNode.confidenceTier ?? ''}`;
+      // Cache key includes selection (only 1-2 nodes change) but NOT dimming (all nodes change)
+      // Dimming is handled via in-place opacity updates on cache hit
+      const cacheKey = `${color}|${isSelected ? 1 : 0}|${brainNode.isGap ? 1 : 0}|${brainNode.confidence}|${brainNode.centrality ?? 0}|${brainNode.confidenceTier ?? ''}`;
       const cached = cache.get(brainNode.id);
-      if (cached && cached.key === cacheKey) return cached.group;
 
-      // Rebuild the THREE.Group only when visual state changes
+      if (cached && cached.key === cacheKey) {
+        // Update opacity in-place without rebuilding the group
+        cached.group.traverse((child) => {
+          if ((child as THREE.Mesh).material) {
+            const mat = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
+            if (mat.opacity !== undefined) mat.opacity = targetOpacity;
+          }
+        });
+        return cached.group;
+      }
+
+      // Rebuild the THREE.Group only when node data actually changes
       const geometry = getGeometry(brainNode.type);
-      const material = getMaterial(color, opacity);
+      const material = getMaterial(color, targetOpacity);
       const group = new THREE.Group();
       const mesh = new THREE.Mesh(geometry, material);
 
