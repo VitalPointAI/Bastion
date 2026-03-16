@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 48-04-PLAN.md (out-of-order, 48-05 previously completed)
-last_updated: "2026-03-16T16:08:43.185Z"
+stopped_at: Completed 48-07-PLAN.md
+last_updated: "2026-03-16T16:14:57.139Z"
 last_activity: "2026-03-16 - Completed 48-05: SwarmCOPLayer frontend — formation polygon, member markers, telemetry panel, smooth interpolation; wired into COPMapView"
 progress:
   total_phases: 64
   completed_phases: 45
   total_plans: 409
-  completed_plans: 409
+  completed_plans: 410
 ---
 
 # Project State
@@ -202,6 +202,7 @@ Progress: ███████████████████████�
 | Phase 48 P02 | 8 | 2 tasks | 4 files |
 | Phase 48 P03 | 7 | 2 tasks | 5 files |
 | Phase 48 P04 | 12 | 2 tasks | 10 files |
+| Phase 48 P07 | 15 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -888,6 +889,8 @@ Recent decisions affecting current work:
 - [Phase 47]: confidenceTier required (not optional) in COPSymbolSpec enforces all sub-agents provide visual confidence encoding
 - [Phase 47]: Normalize entity field names in jpp.ts (name->canonicalName, type->entityType) to match frontend Entity interface contract
 - [Phase 48]: Python swarm modules placed in robot/swarm/ subpackage (graph_events.py, corroboration.py, cop_utils.py) to match Wave 0 test imports from robot.swarm.*; top-level re-exports added for backward compatibility
+- [Phase 48]: expeditedAuthorize falls back to local record when NEAR unavailable — demo does not stall on testnet issues
+- [Phase 48]: Lethal gates differentiated from standard gates via decision_context.escalation_type=lethal_force
 
 ### Roadmap Evolution
 
@@ -1598,7 +1601,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T16:08:32.457Z
-Stopped at: Completed 48-04-PLAN.md (out-of-order, 48-05 previously completed)
+Last session: 2026-03-16T16:14:57.126Z
+Stopped at: Completed 48-07-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
