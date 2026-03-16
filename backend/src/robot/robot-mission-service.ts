@@ -30,6 +30,7 @@ import type {
   RobotVisionMsg,
   RobotProfileRequestMsg,
   SwarmTelemetryMsg,
+  SwarmMemberHeartbeat,
 } from './robot-types.js';
 import { robotStore } from './robot-store.js';
 import { gateService, expeditedAuthorize } from '../gates/gate-service.js';
@@ -1010,6 +1011,70 @@ export class RobotMissionService {
   }
 
   /**
+   * Auto-register a swarm member robot in the resource registry via leader trust delegation.
+   * Called from handleSwarmTelemetry when a member's DID is connected but not yet registered.
+   * Trust metadata is stored in specifications so it survives in the DB record.
+   */
+  private async autoRegisterSwarmMember(
+    member: SwarmMemberHeartbeat,
+    leaderDid: string,
+    leaderNationalDid: string,
+  ): Promise<void> {
+    const robot = this.connectedRobots.get(member.robot_id);
+    if (!robot) return; // member not connected via WebSocket relay — skip
+
+    const { did } = robot;
+
+    const registry = getResourceRegistry();
+    await registry.ensureInitialized();
+
+    // Idempotency — already registered
+    if (registry.getByDID(did)) {
+      if (!this.robotResourceIds.has(did)) {
+        // Cache miss (e.g. server restart) — rebuild the map entry
+        const existing = registry.getByDID(did);
+        if (existing) this.robotResourceIds.set(did, existing.id);
+      }
+      return;
+    }
+
+    // Derive capabilities from swarm role
+    const roleCapabilities: Record<string, string[]> = {
+      leader:     ['patrol', 'ISR', 'command'],
+      follower:   ['patrol', 'ISR'],
+      unassigned: ['patrol'],
+    };
+    // Prefer robot's own capabilities if richer; fall back to role-derived
+    const baseCaps = roleCapabilities[member.role] ?? ['patrol'];
+    const effectiveCaps = robot.capabilities.length > 0 ? robot.capabilities : baseCaps;
+
+    const registered = await registry.registerResource({
+      name: `Robot ${member.robot_id} (swarm)`,
+      category: 'vehicles',
+      specifications: {
+        type: 'ground',
+        maxSpeed: 1.5,
+        maxRange: 100,
+        payload: 0,
+        fuelType: 'electric',
+        autonomyLevel: 3,
+        // Trust delegation metadata
+        trust_source: 'swarm_leader',
+        trusted_by: leaderDid,
+        coalition_national_did: leaderNationalDid,
+      },
+      isAutonomous: true,
+      capabilities: effectiveCaps,
+    });
+
+    this.robotResourceIds.set(did, registered.id);
+    console.log(
+      `[RobotMissionService] Swarm member ${member.robot_id} auto-registered via leader trust ` +
+      `(DID: ${registered.did}, trusted_by: ${leaderDid})`,
+    );
+  }
+
+  /**
    * Forward robot telemetry (room-space position) to the ResourceTelemetryService
    * so the robot appears on the COP resource layer alongside other resources.
    */
@@ -1230,6 +1295,21 @@ export class RobotMissionService {
       });
     } catch (err) {
       console.warn('[RobotMissionService] swarm-cop-bridge error (non-fatal):', err);
+    }
+
+    // Auto-register connected swarm members that lack a resource-registry entry
+    // (leader trust delegation — no registration token required)
+    const leaderRobot = this.connectedRobots.get(leader_id);
+    const leaderResourceId = leaderRobot?.did ? this.robotResourceIds.get(leaderRobot.did) : undefined;
+    if (leaderRobot && leaderResourceId) {
+      // Leader is registered — use its national DID for coalition caveat inheritance
+      const leaderNationalDid = 'did:near:bastion.testnet'; // default; extend if leaders carry national DID in future
+      for (const member of members) {
+        if (member.robot_id === leader_id) continue; // skip leader itself
+        this.autoRegisterSwarmMember(member, leaderRobot.did, leaderNationalDid).catch((err) => {
+          console.warn(`[RobotMissionService] Swarm member auto-registration failed for ${member.robot_id} (non-fatal):`, err);
+        });
+      }
     }
 
     // Forward each swarm member's position to the COP resource layer
