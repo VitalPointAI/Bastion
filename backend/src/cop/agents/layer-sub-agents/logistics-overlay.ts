@@ -83,10 +83,12 @@ export async function logisticsOverlayAgent(
 
     // Include graph entities for logistics
     // Filter by jsonldType for artifact/facility/logistics types
-    const LOGISTICS_JSONLD_TYPES = ['cco:Artifact', 'jc3:Facility', 'facility', 'logisticsnode', 'supplyroute', 'artifact'];
+    // Normalize by lowercasing and stripping colons/underscores for comparison
+    const LOGISTICS_JSONLD_TYPES = ['cco:artifact', 'jc3:facility', 'facility', 'logisticsnode', 'supplyroute', 'artifact'];
+    const normalizeType = (s: string) => s.toLowerCase().replace(/[:\s_]/g, '');
     const graphEntities = input.graphEntities
       .filter(e =>
-        LOGISTICS_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase().replace(':', ''))),
+        LOGISTICS_JSONLD_TYPES.some(t => normalizeType(e.jsonldType).includes(normalizeType(t))),
       )
       .map(e => ({
         entityId: e.id,

@@ -83,10 +83,12 @@ export async function c2OverlayAgent(
 
     // Include graph entities for HQs/CPs
     // Filter by jsonldType for command/headquarters entity types
-    const C2_JSONLD_TYPES = ['headquarters', 'commandpost', 'hq', 'militaryunit', 'cco:MilitaryOrganization'];
+    // Normalize by lowercasing and stripping colons/underscores for comparison
+    const C2_JSONLD_TYPES = ['headquarters', 'commandpost', 'hq', 'militaryunit', 'cco:militaryorganization'];
+    const normalizeType = (s: string) => s.toLowerCase().replace(/[:\s_]/g, '');
     const graphCPs = input.graphEntities
       .filter(e =>
-        C2_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase().replace(':', ''))),
+        C2_JSONLD_TYPES.some(t => normalizeType(e.jsonldType).includes(normalizeType(t))),
       )
       .map(e => ({
         entityId: e.id,

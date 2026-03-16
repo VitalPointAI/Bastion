@@ -79,10 +79,12 @@ export async function intelOverlayAgent(
 
     // Include graph entities representing hostile/unknown forces
     // Filter by semantic jsonldType (CCO/JC3IEDM ontology classes) and affiliation
-    const HOSTILE_JSONLD_TYPES = ['cco:MilitaryOrganization', 'jc3:Unit', 'jc3:Facility', 'cco:Organization'];
+    // Normalize by lowercasing and stripping colons/underscores for comparison
+    const HOSTILE_JSONLD_TYPES = ['cco:militaryorganization', 'jc3:unit', 'jc3:facility', 'cco:organization'];
+    const normalizeType = (s: string) => s.toLowerCase().replace(/[:\s_]/g, '');
     const graphThreats = input.graphEntities
       .filter(e =>
-        HOSTILE_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase().replace(':', ''))) &&
+        HOSTILE_JSONLD_TYPES.some(t => normalizeType(e.jsonldType).includes(normalizeType(t))) &&
         ['hostile', 'enemy', 'suspect', 'unknown'].includes(getEntityAffiliation(e)),
       )
       .map(e => ({

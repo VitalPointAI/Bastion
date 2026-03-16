@@ -82,10 +82,12 @@ export async function objectivesOverlayAgent(
 
     // Also include graph entities that represent objectives/areas
     // Filter by jsonldType for geospatial and objective types
-    const OBJECTIVE_JSONLD_TYPES = ['objective', 'nai', 'tai', 'geospatialregion', 'area_of_interest', 'areaofinterest'];
+    // Normalize by lowercasing and stripping colons/underscores for comparison
+    const OBJECTIVE_JSONLD_TYPES = ['objective', 'nai', 'tai', 'geospatialregion', 'areaofinterest'];
+    const normalizeType = (s: string) => s.toLowerCase().replace(/[:\s_]/g, '');
     const graphObjectives = input.graphEntities
       .filter(e =>
-        OBJECTIVE_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase().replace(/_/g, ''))),
+        OBJECTIVE_JSONLD_TYPES.some(t => normalizeType(e.jsonldType).includes(normalizeType(t))),
       )
       .map(e => ({
         entityId: e.id,

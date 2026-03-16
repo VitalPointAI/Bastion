@@ -90,10 +90,12 @@ export async function controlMeasuresAgent(
 
     // Also include graph entities that represent control measures
     // Filter by jsonldType for boundary/control measure types
+    // Normalize by lowercasing and stripping colons/underscores for comparison
     const CONTROL_MEASURE_JSONLD_TYPES = ['boundary', 'phaseline', 'axisofadvance', 'route', 'controlmeasure', 'geospatialregion'];
+    const normalizeType = (s: string) => s.toLowerCase().replace(/[:\s_]/g, '');
     const graphMeasures = input.graphEntities
       .filter(e =>
-        CONTROL_MEASURE_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase())),
+        CONTROL_MEASURE_JSONLD_TYPES.some(t => normalizeType(e.jsonldType).includes(normalizeType(t))),
       )
       .map(e => ({
         id: e.id,

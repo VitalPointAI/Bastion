@@ -86,10 +86,12 @@ export async function forceDispositionAgent(
 
     // Also include graph entities that represent friendly military units
     // Filter by semantic jsonldType (CCO/JC3IEDM ontology classes) and friendly affiliation
-    const FRIENDLY_JSONLD_TYPES = ['cco:MilitaryOrganization', 'jc3:Unit'];
+    // Normalize by lowercasing and stripping colons/underscores for comparison
+    const FRIENDLY_JSONLD_TYPES = ['cco:militaryorganization', 'jc3:unit'];
+    const normalizeType = (s: string) => s.toLowerCase().replace(/[:\s_]/g, '');
     const graphUnits = input.graphEntities
       .filter(e =>
-        FRIENDLY_JSONLD_TYPES.some(t => e.jsonldType.toLowerCase().includes(t.toLowerCase().replace(':', ''))) &&
+        FRIENDLY_JSONLD_TYPES.some(t => normalizeType(e.jsonldType).includes(normalizeType(t))) &&
         ['friendly', 'friend'].includes(getEntityAffiliation(e)),
       )
       .map(e => ({
