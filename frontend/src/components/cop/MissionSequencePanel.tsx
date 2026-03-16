@@ -1,59 +1,67 @@
 /**
  * MissionSequencePanel
  *
- * Floating overlay on the COP map for triggering and monitoring
- * the Iron Bastion mission sequence. Shows current phase, event log,
- * and a launch button.
+ * Floating overlay on the COP map for triggering and monitoring mission
+ * sequences. Supports both scripted (Iron Bastion) and autonomous
+ * (AI-driven) missions. Shows current phase, event log, AI assessment,
+ * policy blocks, and commander action buttons.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type SequencePhase =
-  | 'idle'
-  | 'hold'
-  | 'recon'
-  | 'contact'
-  | 'overwatch'
-  | 'advance'
-  | 'set'
-  | 'authorize'
-  | 'engage'
-  | 'bda'
-  | 'withdraw'
-  | 'complete';
+// Union of all phases across both orchestrators
+type Phase =
+  | 'idle' | 'hold' | 'recon' | 'contact' | 'overwatch' | 'advance' | 'set'
+  | 'authorize' | 'engage' | 'bda' | 'withdraw' | 'complete'
+  // Autonomous-only phases
+  | 'assess' | 'plan_submitted' | 'positioning' | 'engage_blocked' | 'shadow';
+
+type MissionType = 'scripted' | 'autonomous';
 
 interface LogEntry {
   ts: string;
   msg: string;
+  phase?: string;
 }
 
 interface SequenceStatus {
   id: string;
-  phase: SequencePhase;
+  phase: Phase;
   startedAt: string;
   phaseStartedAt: string;
-  detectedThreats: string[];
+  detectedThreats: unknown[];
   gateId?: string;
+  resourceGateId?: string;
+  lethalGateId?: string;
+  tacticalPlan?: { assessment: string; engagementRecommendation: string; planConfidence: number };
+  planAssessment?: string;
+  planRecommendation?: string;
+  policyBlock?: { robotDid: string; reason: string };
   log: LogEntry[];
 }
 
 // ─── Phase styling ──────────────────────────────────────────────────────────
 
-const PHASE_CONFIG: Record<SequencePhase, { color: string; bg: string; label: string }> = {
-  idle: { color: '#6b7280', bg: 'rgba(107,114,128,0.15)', label: 'IDLE' },
-  hold: { color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', label: 'HOLD' },
-  recon: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', label: 'RECON' },
-  contact: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)', label: 'CONTACT' },
-  overwatch: { color: '#06b6d4', bg: 'rgba(6,182,212,0.15)', label: 'OVERWATCH' },
-  advance: { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', label: 'ADVANCE' },
-  set: { color: '#eab308', bg: 'rgba(234,179,8,0.15)', label: 'SET' },
-  authorize: { color: '#f97316', bg: 'rgba(249,115,22,0.15)', label: 'AUTHORIZE' },
-  engage: { color: '#dc2626', bg: 'rgba(220,38,38,0.25)', label: 'ENGAGE' },
-  bda: { color: '#a855f7', bg: 'rgba(168,85,247,0.15)', label: 'BDA' },
-  withdraw: { color: '#6366f1', bg: 'rgba(99,102,241,0.15)', label: 'WITHDRAW' },
-  complete: { color: '#22c55e', bg: 'rgba(34,197,94,0.15)', label: 'COMPLETE' },
+const PHASE_CONFIG: Record<Phase, { color: string; bg: string; label: string }> = {
+  idle:            { color: '#6b7280', bg: 'rgba(107,114,128,0.15)', label: 'IDLE' },
+  hold:            { color: '#3b82f6', bg: 'rgba(59,130,246,0.15)',  label: 'HOLD' },
+  recon:           { color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)',  label: 'RECON' },
+  contact:         { color: '#ef4444', bg: 'rgba(239,68,68,0.15)',   label: 'CONTACT' },
+  assess:          { color: '#e879f9', bg: 'rgba(232,121,249,0.15)', label: 'AI ASSESS' },
+  plan_submitted:  { color: '#f472b6', bg: 'rgba(244,114,182,0.15)', label: 'PLAN SUBMITTED' },
+  overwatch:       { color: '#06b6d4', bg: 'rgba(6,182,212,0.15)',   label: 'OVERWATCH' },
+  positioning:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',  label: 'POSITIONING' },
+  advance:         { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',  label: 'ADVANCE' },
+  set:             { color: '#eab308', bg: 'rgba(234,179,8,0.15)',   label: 'SET' },
+  engage_blocked:  { color: '#fb923c', bg: 'rgba(251,146,60,0.2)',   label: 'BLOCKED' },
+  authorize:       { color: '#f97316', bg: 'rgba(249,115,22,0.15)',  label: 'AUTHORIZE' },
+  engage:          { color: '#dc2626', bg: 'rgba(220,38,38,0.25)',   label: 'ENGAGE' },
+  bda:             { color: '#a855f7', bg: 'rgba(168,85,247,0.15)',  label: 'BDA' },
+  shadow:          { color: '#64748b', bg: 'rgba(100,116,139,0.2)',  label: 'SHADOW' },
+  withdraw:        { color: '#6366f1', bg: 'rgba(99,102,241,0.15)',  label: 'WITHDRAW' },
+  complete:        { color: '#22c55e', bg: 'rgba(34,197,94,0.15)',   label: 'COMPLETE' },
 };
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -61,33 +69,28 @@ const PHASE_CONFIG: Record<SequencePhase, { color: string; bg: string; label: st
 export function MissionSequencePanel() {
   const [collapsed, setCollapsed] = useState(true);
   const [sequenceId, setSequenceId] = useState<string | null>(null);
+  const [missionType, setMissionType] = useState<MissionType>('autonomous');
   const [status, setStatus] = useState<SequenceStatus | null>(null);
   const [launching, setLaunching] = useState(false);
+  const [simulate, setSimulate] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   // Poll sequence status
   useEffect(() => {
     if (!sequenceId) return;
-
     let cancelled = false;
-
     async function poll() {
       try {
         const res = await fetch(`/api/robot/scenarios/${sequenceId}`);
-        if (res.ok && !cancelled) {
-          const data = await res.json();
-          setStatus(data);
-        }
+        if (res.ok && !cancelled) setStatus(await res.json());
       } catch { /* silent */ }
     }
-
     poll();
     const interval = setInterval(poll, 2000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [sequenceId]);
 
-  // Auto-scroll log
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [status?.log.length]);
@@ -104,6 +107,7 @@ export function MissionSequencePanel() {
           );
           if (active) {
             setSequenceId(active.id);
+            setMissionType(active.type ?? 'scripted');
             setCollapsed(false);
           }
         }
@@ -112,22 +116,26 @@ export function MissionSequencePanel() {
     checkExisting();
   }, []);
 
-  const handleLaunch = useCallback(async () => {
+  const handleLaunch = useCallback(async (type: MissionType) => {
     setLaunching(true);
     setError(null);
+    setMissionType(type);
+
+    const base = type === 'autonomous'
+      ? '/api/robot/scenarios/autonomous'
+      : '/api/robot/scenarios/iron-bastion';
+    const endpoint = simulate ? `${base}?simulate=true` : base;
 
     try {
-      const res = await fetch('/api/robot/scenarios/iron-bastion', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
-
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Failed to start scenario');
       }
-
       const data = await res.json();
       setSequenceId(data.sequenceId);
       setCollapsed(false);
@@ -138,9 +146,19 @@ export function MissionSequencePanel() {
     }
   }, []);
 
-  const phase = status?.phase ?? 'idle';
-  const phaseCfg = PHASE_CONFIG[phase];
+  const handleReturnToBase = useCallback(async () => {
+    if (!sequenceId) return;
+    try {
+      await fetch(`/api/robot/scenarios/${sequenceId}/return-to-base`, { method: 'POST' });
+    } catch { /* silent */ }
+  }, [sequenceId]);
+
+  const phase = (status?.phase ?? 'idle') as Phase;
+  const phaseCfg = PHASE_CONFIG[phase] ?? PHASE_CONFIG.idle;
   const isActive = sequenceId && phase !== 'idle' && phase !== 'complete';
+  const isShadow = phase === 'shadow';
+
+  const title = missionType === 'autonomous' ? 'Autonomous Mission' : 'Iron Bastion';
 
   return (
     <div style={{
@@ -148,7 +166,7 @@ export function MissionSequencePanel() {
       top: '12px',
       left: '12px',
       zIndex: 950,
-      width: collapsed ? 'auto' : '340px',
+      width: collapsed ? 'auto' : '360px',
       backgroundColor: 'rgba(17, 24, 39, 0.95)',
       border: `1px solid ${isActive ? phaseCfg.color + '60' : '#374151'}`,
       borderRadius: '8px',
@@ -162,40 +180,25 @@ export function MissionSequencePanel() {
       <button
         onClick={() => setCollapsed(!collapsed)}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          width: '100%',
-          padding: '8px 12px',
-          backgroundColor: 'transparent',
-          border: 'none',
+          display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+          padding: '8px 12px', backgroundColor: 'transparent', border: 'none',
           borderBottom: collapsed ? 'none' : '1px solid #374151',
-          color: '#e0e0e8',
-          cursor: 'pointer',
-          fontSize: '0.6875rem',
-          fontWeight: 600,
-          textTransform: 'uppercase' as const,
-          letterSpacing: '0.5px',
+          color: '#e0e0e8', cursor: 'pointer', fontSize: '0.6875rem',
+          fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.5px',
         }}
       >
-        {/* Status indicator */}
         <span style={{
-          width: '8px',
-          height: '8px',
-          borderRadius: '50%',
+          width: '8px', height: '8px', borderRadius: '50%',
           backgroundColor: isActive ? phaseCfg.color : '#6b7280',
           boxShadow: isActive ? `0 0 8px ${phaseCfg.color}` : 'none',
           animation: isActive ? 'msp-pulse 2s ease-in-out infinite' : 'none',
         }} />
-        <span>Iron Bastion</span>
+        <span>{title}</span>
         {isActive && (
           <span style={{
-            padding: '1px 6px',
-            borderRadius: '9999px',
-            backgroundColor: phaseCfg.bg,
-            color: phaseCfg.color,
-            fontSize: '0.5625rem',
-            fontWeight: 700,
+            padding: '1px 6px', borderRadius: '9999px',
+            backgroundColor: phaseCfg.bg, color: phaseCfg.color,
+            fontSize: '0.5625rem', fontWeight: 700,
           }}>
             {phaseCfg.label}
           </span>
@@ -205,69 +208,138 @@ export function MissionSequencePanel() {
         </span>
       </button>
 
-      <style>{`
-        @keyframes msp-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
+      <style>{`@keyframes msp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }`}</style>
 
-      {/* Expanded content */}
       {!collapsed && (
         <div style={{ padding: '10px 12px' }}>
           {/* Phase progress bar */}
-          {isActive && <PhaseProgressBar phase={phase} />}
+          {isActive && <PhaseProgressBar phase={phase} missionType={missionType} />}
 
-          {/* Launch button */}
+          {/* Simulate toggle + Launch buttons */}
           {(!sequenceId || phase === 'complete' || phase === 'idle') && (
-            <button
-              onClick={handleLaunch}
-              disabled={launching}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                border: '1px solid rgba(239, 68, 68, 0.4)',
-                backgroundColor: launching ? 'rgba(127, 29, 29, 0.3)' : 'rgba(239, 68, 68, 0.15)',
-                color: '#fca5a5',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                cursor: launching ? 'not-allowed' : 'pointer',
-                textTransform: 'uppercase' as const,
-                letterSpacing: '0.5px',
-                transition: 'background-color 0.15s',
-                marginBottom: '8px',
-              }}
-            >
-              {launching ? 'Deploying...' : 'Launch Iron Bastion'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                fontSize: '0.5625rem', color: '#9ca3af', cursor: 'pointer',
+                textTransform: 'uppercase' as const, letterSpacing: '0.3px',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={simulate}
+                  onChange={(e) => setSimulate(e.target.checked)}
+                  style={{ accentColor: '#6366f1', width: '12px', height: '12px' }}
+                />
+                Simulate
+              </label>
+              <span style={{ fontSize: '0.5rem', color: '#4b5563' }}>
+                {simulate ? '(virtual robots)' : '(physical robots)'}
+              </span>
+            </div>
+          )}
+          {(!sequenceId || phase === 'complete' || phase === 'idle') && (
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+              <button
+                onClick={() => handleLaunch('autonomous')}
+                disabled={launching}
+                style={{
+                  flex: 1, padding: '8px 8px', borderRadius: '6px',
+                  border: '1px solid rgba(139, 92, 246, 0.4)',
+                  backgroundColor: launching ? 'rgba(88, 28, 135, 0.3)' : 'rgba(139, 92, 246, 0.15)',
+                  color: '#c4b5fd', fontSize: '0.6875rem', fontWeight: 600,
+                  cursor: launching ? 'not-allowed' : 'pointer',
+                  textTransform: 'uppercase' as const, letterSpacing: '0.3px',
+                }}
+              >
+                {launching && missionType === 'autonomous' ? 'Deploying...' : 'Autonomous'}
+              </button>
+              <button
+                onClick={() => handleLaunch('scripted')}
+                disabled={launching}
+                style={{
+                  flex: 1, padding: '8px 8px', borderRadius: '6px',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  backgroundColor: launching ? 'rgba(127, 29, 29, 0.3)' : 'rgba(239, 68, 68, 0.15)',
+                  color: '#fca5a5', fontSize: '0.6875rem', fontWeight: 600,
+                  cursor: launching ? 'not-allowed' : 'pointer',
+                  textTransform: 'uppercase' as const, letterSpacing: '0.3px',
+                }}
+              >
+                {launching && missionType === 'scripted' ? 'Deploying...' : 'Scripted'}
+              </button>
+            </div>
           )}
 
           {error && (
             <div style={{
-              padding: '6px 8px',
-              borderRadius: '4px',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#fca5a5',
-              fontSize: '0.6875rem',
-              marginBottom: '8px',
+              padding: '6px 8px', borderRadius: '4px',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#fca5a5', fontSize: '0.6875rem', marginBottom: '8px',
             }}>
               {error}
             </div>
           )}
 
-          {/* Threat detections */}
-          {status && status.detectedThreats.length > 0 && (
-            <div style={{ marginBottom: '8px' }}>
+          {/* AI Assessment (autonomous only) */}
+          {status?.planAssessment && (
+            <div style={{
+              padding: '6px 8px', borderRadius: '4px',
+              backgroundColor: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.2)',
+              marginBottom: '8px', fontSize: '0.625rem', color: '#c4b5fd',
+            }}>
+              <span style={{ fontWeight: 600, fontSize: '0.5625rem', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                AI Assessment
+              </span>
+              <div style={{ marginTop: '3px', color: '#d1d5db' }}>{status.planAssessment}</div>
+              {status.planRecommendation && (
+                <div style={{ marginTop: '2px', color: '#f59e0b', fontWeight: 600 }}>
+                  Recommendation: {status.planRecommendation.toUpperCase()}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* DID Policy Block (autonomous only) */}
+          {status?.policyBlock && (
+            <div style={{
+              padding: '6px 8px', borderRadius: '4px',
+              backgroundColor: 'rgba(251, 146, 60, 0.1)', border: '1px solid rgba(251, 146, 60, 0.3)',
+              marginBottom: '8px', fontSize: '0.625rem',
+            }}>
+              <span style={{ fontWeight: 600, fontSize: '0.5625rem', color: '#fb923c', textTransform: 'uppercase' }}>
+                Smart Contract Policy Block
+              </span>
+              <div style={{ marginTop: '3px', color: '#fed7aa', fontFamily: "'Fira Code', monospace", fontSize: '0.5625rem' }}>
+                {status.policyBlock.robotDid}
+              </div>
+              <div style={{ marginTop: '2px', color: '#d1d5db' }}>{status.policyBlock.reason}</div>
+            </div>
+          )}
+
+          {/* Shadow mode: Return to Base button */}
+          {isShadow && (
+            <button
+              onClick={handleReturnToBase}
+              style={{
+                width: '100%', padding: '8px 12px', borderRadius: '6px',
+                border: '1px solid rgba(99, 102, 241, 0.4)',
+                backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                color: '#a5b4fc', fontSize: '0.6875rem', fontWeight: 600,
+                cursor: 'pointer', textTransform: 'uppercase' as const,
+                marginBottom: '8px',
+              }}
+            >
+              Order Return to Base
+            </button>
+          )}
+
+          {/* Threat count */}
+          {status && (status.detectedThreats?.length ?? 0) > 0 && (
+            <div style={{ marginBottom: '6px' }}>
               <span style={{
-                fontSize: '0.5625rem',
-                color: '#ef4444',
-                textTransform: 'uppercase',
-                fontWeight: 600,
-                letterSpacing: '0.5px',
+                fontSize: '0.5625rem', color: '#ef4444',
+                textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px',
               }}>
-                Threats Detected: {status.detectedThreats.length}
+                Threats: {Array.isArray(status.detectedThreats) ? status.detectedThreats.length : status.detectedThreats}
               </span>
             </div>
           )}
@@ -275,27 +347,19 @@ export function MissionSequencePanel() {
           {/* Event log */}
           {status && status.log.length > 0 && (
             <div style={{
-              maxHeight: '180px',
-              overflowY: 'auto',
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              borderRadius: '4px',
-              border: '1px solid #1f2937',
-              padding: '4px',
+              maxHeight: '200px', overflowY: 'auto',
+              backgroundColor: 'rgba(0, 0, 0, 0.3)', borderRadius: '4px',
+              border: '1px solid #1f2937', padding: '4px',
             }}>
               {status.log.map((entry, i) => (
                 <div key={i} style={{
-                  display: 'flex',
-                  gap: '6px',
-                  padding: '2px 4px',
-                  fontSize: '0.625rem',
-                  lineHeight: '1.4',
+                  display: 'flex', gap: '6px', padding: '2px 4px',
+                  fontSize: '0.5625rem', lineHeight: '1.4',
                   borderBottom: i < status.log.length - 1 ? '1px solid rgba(31, 41, 55, 0.5)' : 'none',
                 }}>
                   <span style={{
-                    color: '#4b5563',
-                    fontFamily: "'Fira Code', monospace",
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
+                    color: '#4b5563', fontFamily: "'Fira Code', monospace",
+                    whiteSpace: 'nowrap', flexShrink: 0,
                   }}>
                     {new Date(entry.ts).toLocaleTimeString('en-US', { hour12: false })}
                   </span>
@@ -313,38 +377,33 @@ export function MissionSequencePanel() {
 
 // ─── Phase Progress Bar ─────────────────────────────────────────────────────
 
-const PHASE_ORDER: SequencePhase[] = [
+const SCRIPTED_PHASES: Phase[] = [
   'hold', 'recon', 'contact', 'overwatch', 'advance', 'set', 'authorize', 'engage', 'bda', 'withdraw', 'complete',
 ];
 
-function PhaseProgressBar({ phase }: { phase: SequencePhase }) {
-  const currentIdx = PHASE_ORDER.indexOf(phase);
+const AUTO_PHASES: Phase[] = [
+  'recon', 'assess', 'plan_submitted', 'positioning', 'engage_blocked', 'authorize', 'engage', 'bda', 'withdraw', 'complete',
+];
+
+function PhaseProgressBar({ phase, missionType }: { phase: Phase; missionType: MissionType }) {
+  const phases = missionType === 'autonomous' ? AUTO_PHASES : SCRIPTED_PHASES;
+  // shadow branches off — show it separately
+  const currentIdx = phase === 'shadow' ? phases.indexOf('authorize') + 1 : phases.indexOf(phase);
   const phaseCfg = PHASE_CONFIG[phase];
 
   return (
-    <div style={{
-      display: 'flex',
-      gap: '2px',
-      marginBottom: '10px',
-    }}>
-      {PHASE_ORDER.map((p, i) => {
+    <div style={{ display: 'flex', gap: '2px', marginBottom: '10px' }}>
+      {phases.map((p, i) => {
         const isComplete = i < currentIdx;
-        const isCurrent = i === currentIdx;
-        const cfg = PHASE_CONFIG[p];
+        const isCurrent = i === currentIdx || (phase === 'shadow' && p === 'authorize');
 
         return (
           <div
             key={p}
-            title={cfg.label}
+            title={PHASE_CONFIG[p].label}
             style={{
-              flex: 1,
-              height: '4px',
-              borderRadius: '2px',
-              backgroundColor: isComplete
-                ? '#22c55e'
-                : isCurrent
-                ? phaseCfg.color
-                : 'rgba(75, 85, 99, 0.4)',
+              flex: 1, height: '4px', borderRadius: '2px',
+              backgroundColor: isComplete ? '#22c55e' : isCurrent ? phaseCfg.color : 'rgba(75, 85, 99, 0.4)',
               transition: 'background-color 0.5s',
               boxShadow: isCurrent ? `0 0 6px ${phaseCfg.color}` : 'none',
             }}

@@ -1628,6 +1628,118 @@ Return ONLY valid JSON, no markdown.`;
     };
     this.safeSend(ws, errMsg);
   }
+
+  // -------------------------------------------------------------------------
+  // Simulation helpers (for virtual robot testing without hardware)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Register a simulated robot using a fake WebSocket.
+   * The fake WS captures mission:assign messages and drives the simulation.
+   */
+  registerSimulatedRobot(
+    robotId: string,
+    did: string,
+    capabilities: string[],
+    fakeWs: WebSocket,
+  ): void {
+    const robot: ConnectedRobot = {
+      robot_id: robotId,
+      did,
+      capabilities,
+      ws: fakeWs,
+      state: RobotConnectionState.connected,
+      current_mission_id: undefined,
+      last_heartbeat: Date.now(),
+      network: { remoteAddress: '127.0.0.1', remotePort: 0, connectedAt: new Date().toISOString() },
+    };
+    this.connectedRobots.set(robotId, robot);
+    console.log(`[RobotMissionService] Simulated robot registered: ${robotId} (DID: ${did})`);
+
+    // Bridge to resource registry so COP layers can pick it up
+    this.bridgeToResourceRegistry(robotId, did, capabilities).catch(() => { /* non-fatal */ });
+  }
+
+  /**
+   * Handle a simulated state update (replaces the WS message path).
+   */
+  handleSimulatedStateUpdate(
+    robotId: string,
+    missionId: string,
+    state: string,
+  ): void {
+    const robot = this.connectedRobots.get(robotId);
+    if (!robot) return;
+
+    // Create a synthetic state update message and process it
+    const msg = {
+      type: 'robot:state_update' as const,
+      robot_id: robotId,
+      mission_id: missionId,
+      state,
+    };
+
+    // Use the same handler but skip WS ack (simulated)
+    this.handleStateUpdateInternal(robot, msg as any).catch((err) =>
+      console.error('[RobotMissionService] Simulated state update error:', err),
+    );
+  }
+
+  /**
+   * Update telemetry for a simulated robot (replaces the WS telemetry path).
+   */
+  updateSimulatedTelemetry(
+    robotId: string,
+    position: { x: number; y: number },
+    heading: number,
+    battery: number,
+  ): void {
+    const robot = this.connectedRobots.get(robotId);
+    if (robot) {
+      robot.last_heartbeat = Date.now();
+      robot.latest_telemetry = { position, heading, battery };
+    }
+
+    // Forward to resource telemetry for COP
+    this.forwardTelemetryToResources(robotId, position);
+  }
+
+  /**
+   * Internal state update handler (shared between real WS and simulation).
+   */
+  private async handleStateUpdateInternal(
+    robot: ConnectedRobot,
+    msg: { robot_id: string; mission_id: string; state: string },
+  ): Promise<void> {
+    const { robot_id, mission_id, state } = msg;
+    const stateEnum = state as RobotMissionState;
+
+    // Update in-memory state
+    if (stateEnum === RobotMissionState.executing || stateEnum === RobotMissionState.awaiting_auth) {
+      robot.current_mission_id = mission_id;
+    } else if (
+      stateEnum === RobotMissionState.complete ||
+      stateEnum === RobotMissionState.failed ||
+      stateEnum === RobotMissionState.rejected
+    ) {
+      if (robot.current_mission_id === mission_id) {
+        robot.current_mission_id = undefined;
+      }
+    }
+
+    // Persist state change
+    try {
+      await robotStore.updateMissionState(mission_id, stateEnum);
+    } catch { /* non-fatal for simulation */ }
+
+    // Log to activity feed
+    this.logMissionActivity(robot_id, mission_id, stateEnum).catch(() => {});
+
+    // Create governance gate when entering awaiting_auth
+    if (stateEnum === RobotMissionState.awaiting_auth) {
+      this.createAuthGate(robot_id, mission_id).catch(() => {});
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

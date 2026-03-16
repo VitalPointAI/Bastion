@@ -45,6 +45,8 @@ export enum ProposalKind {
   RedTeamGate = 'RedTeamGate',
   /** MDMP: Commander planning guidance */
   CommanderGuidance = 'CommanderGuidance',
+  /** Autonomous agent requesting resource allocation (e.g. robot leader requesting followers) */
+  ResourceAllocation = 'ResourceAllocation',
 }
 
 /**

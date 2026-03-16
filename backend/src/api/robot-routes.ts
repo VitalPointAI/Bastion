@@ -14,6 +14,8 @@ import { fileURLToPath } from 'url';
 import { MissionJSONSchema } from '../robot/robot-types.js';
 import { getRobotMissionService } from '../robot/robot-mission-service.js';
 import { getMissionSequenceOrchestrator } from '../robot/mission-sequence-orchestrator.js';
+import { getAutonomousOrchestrator } from '../robot/autonomous-mission-orchestrator.js';
+import { startSimulation } from '../robot/mission-simulator.js';
 import { loadCoalitionProfiles } from '../robot/coalition-caveat-service.js';
 
 // Calibration profile storage (file-based for MVP)
@@ -404,8 +406,22 @@ robotRouter.post('/swarms/:leaderId/remove-resource', (req, res) => {
 
 robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
   const overrides = req.body ?? {};
+  const simulate = req.query.simulate === 'true' || req.body?.simulate === true;
 
   try {
+    // Start virtual robots if simulate mode
+    if (simulate) {
+      const leaderId = overrides.leaderId ?? 'alpha';
+      const followerIds = overrides.followerIds ?? ['bravo', 'charlie'];
+      startSimulation({
+        robotIds: [leaderId, ...followerIds],
+        leaderId,
+        homeBase: overrides.homeBase ?? { x: 0.3, y: 0.5 },
+        reconArea: overrides.reconArea ?? { x_min: 0.5, y_min: 2.5, x_max: 4.5, y_max: 4.8 },
+        threatClasses: ['CHN-99G', 'T-90'],
+      });
+    }
+
     const orchestrator = getMissionSequenceOrchestrator();
     const { sequenceId, state } = await orchestrator.startIronBastion(overrides);
 
@@ -413,7 +429,7 @@ robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
       sequenceId,
       phase: state.phase,
       startedAt: state.startedAt,
-      config: state.config,
+      simulate,
     });
   } catch (err) {
     console.error('[robot-routes] Failed to start Iron Bastion scenario:', err);
@@ -427,7 +443,13 @@ robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
 
 robotRouter.get('/scenarios/:sequenceId', (req, res) => {
   const orchestrator = getMissionSequenceOrchestrator();
-  const state = orchestrator.getState(req.params.sequenceId);
+  let state: unknown = orchestrator.getState(req.params.sequenceId);
+
+  if (!state) {
+    // Check autonomous orchestrator
+    const autoOrch = getAutonomousOrchestrator();
+    state = autoOrch.getState(req.params.sequenceId);
+  }
 
   if (!state) {
     res.status(404).json({ error: 'Sequence not found' });
@@ -445,14 +467,73 @@ robotRouter.get('/scenarios', (_req, res) => {
   const orchestrator = getMissionSequenceOrchestrator();
   const sequences = orchestrator.listSequences();
 
-  res.json(
-    sequences.map((s) => ({
-      id: s.id,
-      phase: s.phase,
-      startedAt: s.startedAt,
-      phaseStartedAt: s.phaseStartedAt,
-      detectedThreats: s.detectedThreats.length,
-      logEntries: s.log.length,
+  // Merge scripted + autonomous sequences
+  const autoOrch = getAutonomousOrchestrator();
+  const autoSequences = autoOrch.listSequences();
+
+  const all = [
+    ...sequences.map((s) => ({
+      id: s.id, type: 'scripted' as const, phase: s.phase, startedAt: s.startedAt,
+      phaseStartedAt: s.phaseStartedAt, detectedThreats: s.detectedThreats.length, logEntries: s.log.length,
     })),
-  );
+    ...autoSequences.map((s) => ({
+      id: s.id, type: 'autonomous' as const, phase: s.phase, startedAt: s.startedAt,
+      phaseStartedAt: s.phaseStartedAt, detectedThreats: s.detectedThreats.length, logEntries: s.log.length,
+    })),
+  ];
+
+  res.json(all);
+});
+
+// ---------------------------------------------------------------------------
+// POST /scenarios/autonomous — Start autonomous AI-driven mission
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/autonomous', async (req, res) => {
+  const overrides = req.body ?? {};
+  const simulate = req.query.simulate === 'true' || req.body?.simulate === true;
+
+  try {
+    if (simulate) {
+      const leaderId = overrides.leaderId ?? 'alpha';
+      const followerIds = overrides.followerIds ?? ['bravo', 'charlie'];
+      startSimulation({
+        robotIds: [leaderId, ...followerIds],
+        leaderId,
+        homeBase: overrides.homeBase ?? { x: 0.3, y: 0.5 },
+        reconArea: overrides.reconArea ?? { x_min: 0.5, y_min: 2.5, x_max: 4.5, y_max: 4.8 },
+        threatClasses: ['CHN-99G', 'T-90'],
+      });
+    }
+
+    const orchestrator = getAutonomousOrchestrator();
+    const { sequenceId, state } = await orchestrator.startAutonomousMission(overrides);
+
+    res.json({
+      sequenceId,
+      phase: state.phase,
+      startedAt: state.startedAt,
+      type: 'autonomous',
+      simulate,
+    });
+  } catch (err) {
+    console.error('[robot-routes] Failed to start autonomous mission:', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /scenarios/:sequenceId/return-to-base — Commander orders withdrawal (shadow mode)
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/:sequenceId/return-to-base', async (req, res) => {
+  const orchestrator = getAutonomousOrchestrator();
+  const success = await orchestrator.orderReturnToBase(req.params.sequenceId);
+
+  if (!success) {
+    res.status(404).json({ error: 'Sequence not found or not in shadow mode' });
+    return;
+  }
+
+  res.json({ status: 'withdrawal_ordered' });
 });
