@@ -658,6 +658,38 @@ Plans:
 - [x] 46-04-PLAN.md — Backend swarm types, coordination service, REST API, COP integration
 - [x] 46-05-PLAN.md — Intent translation, test fixes, integration verification
 
+### Phase 47: JSON-LD Semantic Brain + COP Fix
+
+**Goal:** Refactor the knowledge graph to use JSON-LD with formal ontology alignment (BFO, CCO, DODAF/DNDAF), provenance tracking, temporal reasoning, entity resolution, and confidence scoring. Wire the upgraded graph into all downstream consumers and fix COP layer generation end-to-end.
+**Requirements**:
+- JSON-LD representation for all brain graph entities, relationships, and events
+- Basic Formal Ontology (BFO) as upper ontology foundation
+- Common Core Ontologies (CCO) alignment for DoD/DND interoperability
+- DODAF/DNDAF architectural framework data model compliance
+- Military ontology alignment (APP-6, JC3IEDM) for NATO symbology and entity typing
+- Provenance chain on every node/edge (source, confidence, assertion method, asserter)
+- Temporal reasoning (validFrom/validTo on facts, point-in-time graph queries, staleness decay)
+- Entity resolution / fusion across ingestion paths (OSINT, documents, vision, manual)
+- Confidence scoring with multi-source corroboration
+- Contradiction detection when new data conflicts with existing graph facts
+- Fix COP layer generation pipeline end-to-end (currently broken)
+- Wire upgraded graph into: COP sub-agents, design tab, plan tab, assess tab, doc-intelligence, OSINT pipeline, vision detection pipeline
+**Depends on:** Phase 45
+**Plans:** 11 plans
+
+Plans:
+- [ ] 47-01-PLAN.md — JSON-LD context file + shared types + confidence utilities
+- [ ] 47-02-PLAN.md — Test scaffolds for core behaviors (confidence, contradiction, resolution)
+- [ ] 47-03-PLAN.md — RAFT store rewrites (actor, relationship, tension, decision) + schema indexes
+- [ ] 47-04-PLAN.md — Big-bang migration script for existing Neo4j data
+- [ ] 47-05-PLAN.md — Contradiction detection + hybrid entity resolution upgrade
+- [ ] 47-06-PLAN.md — Semantic entity query module + COP coordinator fix
+- [ ] 47-07-PLAN.md — Sub-agent semantic upgrades + COP confidence visual encoding
+- [ ] 47-08-PLAN.md — Brain visualization timeline slider + temporal playback
+- [ ] 47-09-PLAN.md — Ingestion pipeline wiring (graph-builder, doc-intel, OSINT, vision)
+- [ ] 47-10-PLAN.md — Read consumer wiring (graph API, RAFT tools, COP confidence rendering)
+- [ ] 47-11-PLAN.md — Design, plan, assess tab JSON-LD consumer wiring
+
 ---
 
 **MCP Tools (deterministic operations - added to MCP server):**
@@ -1395,7 +1427,7 @@ Plans:
 **Depends on:** Phase 4.3, Phase 5, Phase 5.1
 **Research:** Complete (5.2-RESEARCH.md, .planning/mdmp-governance/)
 **Research topics:** Adversary COA development methodology (ATP 2-01.3), escalation ladder theory and simulation, second/third-order effects across DIME domains, deception detection patterns, wargaming action-reaction-counteraction frameworks
-**Plans:** 10 plans
+**Plans:** 11 plans
 
 **Context:**
 This phase addresses the adversary modeling and effects analysis capabilities identified during MDMP governance analysis. The existing Red Team Simulator agent is expanded to a full wargaming framework, supported by 4 new specialized agents for adversary modeling, escalation dynamics, effects cascading, and deception detection. Additional capabilities cover force ratio analysis, COA sketch generation, branch/sequel planning, and sustainment modeling.
