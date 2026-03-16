@@ -381,14 +381,16 @@ export function useBrainTimeline(
       setPlaybackState({ isPlaying: true, speed, currentTime: startTime });
 
       playbackIntervalRef.current = setInterval(() => {
+        // Compute end boundary inside interval so it's always fresh
+        const endTime = new Date(Date.now() + FUTURE_WINDOW_MS);
+
         setPlaybackState((prev) => {
           const stepMs = PLAYBACK_STEP_1X_MS * prev.speed;
           const next = new Date(prev.currentTime.getTime() + stepMs);
-          // Stop at futureTime
-          if (next >= futureTime) {
+          if (next >= endTime) {
             clearInterval(playbackIntervalRef.current!);
             playbackIntervalRef.current = null;
-            return { ...prev, isPlaying: false, currentTime: futureTime };
+            return { ...prev, isPlaying: false, currentTime: endTime };
           }
           return { ...prev, currentTime: next };
         });
@@ -398,11 +400,11 @@ export function useBrainTimeline(
           if (prev === null) return null; // don't disrupt live mode
           const stepMs = PLAYBACK_STEP_1X_MS * speed;
           const next = new Date(prev.getTime() + stepMs);
-          return next >= futureTime ? futureTime : next;
+          return next >= endTime ? endTime : next;
         });
       }, PLAYBACK_INTERVAL_MS);
     },
-    [selectedTime, timeRange.start, futureTime],
+    [selectedTime, timeRange.start],
   );
 
   const setPlaybackSpeed = useCallback((speed: number) => {
