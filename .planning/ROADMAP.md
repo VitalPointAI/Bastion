@@ -695,7 +695,7 @@ Plans:
 **Goal:** Demonstrate the complete BASTION strategy-to-autonomous-execution pipeline using a Taiwan defense scenario with 3-robot coalition swarm — strategic directive ingestion through AI objective extraction, DAO-authorized missions, swarm recon in formation, detections on COP, lethal escalation gates, and brain graph timeline playback
 **Requirements:** [DEMO-SEED, TAIPEI-COORDS, WAVE0-TESTS, COP-SWARM-LAYER, SWARM-COP-BRIDGE, COALITION-CAVEATS, CAVEAT-ENFORCEMENT, BRAIN-GRAPH-EVENTS, NATIONAL-PROVENANCE, MULTI-ROBOT-CORROBORATION, DETECTION-CONFIDENCE-FUSION, FORMATION-POLYGON, STATE-COLORS, SMOOTH-INTERPOLATION, SWARM-TELEMETRY-PANEL, LEADER-ICON, CAVEAT-DASHBOARD, DETECTION-ATTRIBUTION, BOUNDING-ANIMATION, CAVEAT-BLOCK-UI, DAO-EXPEDITED-AUTH, LETHAL-ESCALATION-GATE, LETHAL-DENY-PATH, LETHAL-APPROVE-PATH, BLOCKCHAIN-AUDIT, END-TO-END-WIRING, GHOSTED-TO-SOLID, CORROBORATION-COP, TIMELINE-PLAYBACK]
 **Depends on:** Phase 47
-**Plans:** 8 plans
+**Plans:** 2/8 plans executed
 
 Plans:
 - [ ] 48-01-PLAN.md — Wave 0 test scaffolds, Taiwan demo seed data, Taipei calibration

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 47-11-PLAN.md
-last_updated: "2026-03-16T15:05:01.096Z"
-last_activity: "2026-03-16 - Completed 47-11: design/plan/assess tabs wired to JSON-LD provenance; phase 47 fully complete"
+status: in-progress
+stopped_at: Completed 48-02-PLAN.md
+last_updated: "2026-03-16T15:55:16Z"
+last_activity: "2026-03-16 - Completed 48-02: swarm COP layer types + swarm-cop-bridge service; SwarmFormationSpec bridged to COP event bus"
 progress:
   total_phases: 64
   completed_phases: 45
   total_plans: 409
-  completed_plans: 404
+  completed_plans: 406
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 47 of 64 (JSON-LD Semantic Brain COP Fix) — COMPLETE
-Plan: 11 of 11 in current phase — COMPLETE
-Status: Plan 47-11 complete — JPP entity API enriched with JSON-LD fields. plan/design/assess tabs wired to JSON-LD provenance data. EntityResolutionPanel shows confidence tier/source/ontology badges. DesignAIPanel warns on low-confidence entities. OperationalAssess has Intelligence Quality view with tier distribution and contradiction count. All 7+ downstream consumers from CONTEXT.md now wired.
-Last activity: 2026-03-16 - Completed 47-11: design/plan/assess tabs wired to JSON-LD provenance; phase 47 fully complete
+Phase: 48 of 64 (Robot Swarm Behaviour End-to-End Demo) — IN PROGRESS
+Plan: 1 of 11 in current phase — COMPLETE
+Status: Plan 48-01 complete — Wave 0 test scaffolds for swarm COP, coalition caveats, corroboration, and brain graph events. Taiwan defense seed data (directive, ORBAT, coalition forces). Taipei Zhongzheng District calibration profile.
+Last activity: 2026-03-16 - Completed 48-01: Wave 0 test scaffolds (11 tests) + Taiwan defense seed data + Taipei calibration profile
 
-Progress: █████████████████████████████ 404 plans complete
+Progress: █████████████████████████████ 405 plans complete
 
 ## Performance Metrics
 
