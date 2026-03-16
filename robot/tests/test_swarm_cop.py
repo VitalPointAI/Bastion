@@ -14,7 +14,6 @@ import pytest
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
 def test_polygon_hull_ordering():
     """
     Given member positions in arbitrary order, order_polygon_hull() returns them
@@ -54,7 +53,6 @@ def test_polygon_hull_ordering():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
 def test_formation_state_colors():
     """
     FORMATION_STATE_COLORS maps each SwarmState to a hex color for COP rendering.

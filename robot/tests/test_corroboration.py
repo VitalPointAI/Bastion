@@ -23,7 +23,6 @@ VISION_PIPELINE_WEIGHT = 0.70
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
 def test_confidence_fusion_two_sources():
     """
     Two detections each with raw confidence 0.7, VISION_PIPELINE_WEIGHT = 0.70.
@@ -58,7 +57,6 @@ def test_confidence_fusion_two_sources():
     )
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
 def test_confidence_fusion_single_source():
     """
     Single detection returns its own weighted confidence (no fusion partners).
@@ -86,7 +84,6 @@ def test_confidence_fusion_single_source():
     )
 
 
-@pytest.mark.skip(reason="Wave 0 scaffold — implementation pending")
 def test_confidence_fusion_three_sources():
     """
     Three detections converge toward 1.0 as more sources corroborate.
