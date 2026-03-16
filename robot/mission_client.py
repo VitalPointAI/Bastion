@@ -42,6 +42,7 @@ from pre_flight import validate_mission
 from rvr_driver import RVRDriver
 from swarm.coordinator import SwarmCoordinator
 from swarm.models import SwarmAddResource, SwarmRemoveResource, SwarmRole, SwarmTelemetry
+from swarm.ble_follower_manager import BLEFollowerManager
 from vision.camera import Camera
 from vision.models import VisionConfig, VisionMsg
 from vision.vision_engine import VisionEngine
@@ -64,6 +65,7 @@ _vision_config: Optional[VisionConfig] = None
 
 # Swarm coordinator initialized in run() for swarm-capable robots
 _swarm: Optional[SwarmCoordinator] = None
+_ble_followers: Optional[BLEFollowerManager] = None
 
 # ---------------------------------------------------------------------------
 # Registration helpers
@@ -211,6 +213,7 @@ async def telemetry_loop(
     try:
         while not _shutdown_event.is_set():
             try:
+                # Leader telemetry
                 x, y = driver.position
                 battery = await driver.get_battery_pct()
                 msg = TelemetryMsg(
@@ -221,6 +224,21 @@ async def telemetry_loop(
                     timestamp=datetime.utcnow(),
                 )
                 await _send_telemetry(ws, msg)
+
+                # BLE follower telemetry — send each follower's position
+                if _ble_followers and _ble_followers.connected_count > 0:
+                    for follower in _ble_followers.followers:
+                        if follower.driver.connected:
+                            fx, fy = follower.driver.position
+                            fbat = await follower.driver.get_battery_pct()
+                            fmsg = TelemetryMsg(
+                                robot_id=follower.robot_id,
+                                position={"x": fx, "y": fy},
+                                heading=follower.driver.heading,
+                                battery=fbat,
+                                timestamp=datetime.utcnow(),
+                            )
+                            await _send_telemetry(ws, fmsg)
             except (ConnectionClosed, RuntimeError):
                 log.warning("mission_client.telemetry_loop.ws_closed")
                 break
@@ -394,6 +412,23 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
         await send_stamped(ws, reg_msg)
         log.info("mission_client.registered", robot_id=cfg.ROBOT_ID)
 
+        # Register BLE followers as sub-resources of the leader
+        if _ble_followers and _ble_followers.connected_count > 0:
+            leader_did = reg_msg.get("did", "")
+            for follower in _ble_followers.followers:
+                if follower.driver.connected:
+                    follower_reg = {
+                        "type": "robot:register",
+                        "robot_id": follower.robot_id,
+                        "did": f"did:ble:{follower.driver.address.replace(':', '')}",
+                        "capabilities": ["patrol", "find_engage"],
+                        "parent_robot_id": cfg.ROBOT_ID,
+                    }
+                    await send_stamped(ws, follower_reg)
+                    log.info("mission_client.follower_registered",
+                             robot_id=follower.robot_id,
+                             address=follower.driver.address)
+
         # Build executor with bound WS callbacks and vision components
         executor = MissionExecutor(
             driver=driver,
@@ -501,7 +536,7 @@ async def run() -> None:
         )
 
     # Initialize swarm coordinator if enabled
-    global _swarm
+    global _swarm, _ble_followers
     if cfg.SWARM_ENABLED:
         # Determine role: auto = leader if vision-equipped, else follower
         if cfg.SWARM_ROLE == "leader":
@@ -523,6 +558,34 @@ async def run() -> None:
             role=swarm_role,
             simulate=cfg.SIMULATE,
         )
+
+        # Connect to BLE followers if configured and we're the leader
+        if swarm_role == SwarmRole.leader and cfg.BLE_FOLLOWERS:
+            addresses = [a.strip() for a in cfg.BLE_FOLLOWERS.split(",") if a.strip()]
+            if addresses:
+                _ble_followers = BLEFollowerManager(
+                    exclude_addresses=[],
+                    max_followers=len(addresses),
+                )
+                for i, addr in enumerate(addresses):
+                    name = f"ble-{addr[-5:].replace(':', '')}"
+                    success = await _ble_followers.connect_by_address(
+                        address=addr, name=name, slot_index=i + 1,
+                    )
+                    if success:
+                        log.info("mission_client.ble_follower_connected",
+                                 address=addr, name=name, slot=i + 1)
+                    else:
+                        log.warning("mission_client.ble_follower_failed",
+                                    address=addr)
+
+                log.info("mission_client.ble_followers_ready",
+                         connected=_ble_followers.connected_count,
+                         total=len(addresses))
+
+                # Wire follower drivers into swarm coordinator
+                if _ble_followers.connected_count > 0:
+                    _swarm.set_ble_followers(_ble_followers)
 
     # Discover bridge via mDNS before entering the connection loop
     bridge_url: Optional[str] = await discover_bridge()
@@ -600,6 +663,9 @@ async def run() -> None:
             await advert_task
         except (asyncio.CancelledError, Exception):
             pass
+    if _ble_followers is not None:
+        await _ble_followers.stop_all()
+        await _ble_followers.disconnect_all()
     if _swarm is not None:
         await _swarm.stop()
     if _executor is not None:
