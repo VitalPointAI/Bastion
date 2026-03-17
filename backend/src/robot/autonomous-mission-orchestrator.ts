@@ -19,7 +19,7 @@
 import { randomUUID } from 'crypto';
 import { getRobotMissionService } from './robot-mission-service.js';
 import { gateService } from '../gates/gate-service.js';
-import { GateType, GateEnforcement } from '../gates/gate-types.js';
+import { GateType, GateEnforcement, GateStatus } from '../gates/gate-types.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import { generateTacticalPlan, type TacticalPlan, type ThreatInfo } from './tactical-ai-service.js';
 import { EventEmitter } from 'events';
@@ -268,6 +268,11 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     });
     state.resourceGateId = resourceGate.id;
 
+    // Advance to 'submitted' so approveGate() works (requires submitted/escalated)
+    await gateService['store'].update(resourceGate.id, {
+      status: 'submitted' as GateStatus,
+    });
+
     // Publish DAO proposal event for NEAR blockchain audit trail
     const messageBus = getMessageBus();
     await messageBus.publish({
@@ -302,18 +307,27 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     this.logPhase(state, `DAO ResourceAllocation proposal submitted (gate ${resourceGate.id.slice(0, 8)})`);
     this.logPhase(state, 'Requesting commander approval for follower deployment');
 
-    // 2. Concurrently move leader to AI-chosen overwatch
+    // 2. Concurrently move leader to AI-chosen overwatch via road-following route
     const owMissionId = randomUUID();
     state.missions['overwatch_leader'] = owMissionId;
+
+    // Build road-following route from recon area to overwatch position
+    // Leader is near the end of recon sweep (Chengde/Kaifeng area)
+    const owPos = plan.overwatch.position;
+    const owWaypoints = [
+      { x: 3.4, y: 3.3 },  // Chengde/Kaifeng (near last recon waypoint)
+      { x: 2.5, y: 3.3 },  // W on Kaifeng to Guanqian Rd
+      { x: 2.5, y: owPos.y },  // S/N on Guanqian to overwatch latitude
+      owPos,                 // Final overwatch position
+    ];
 
     await svc.dispatchMission({
       mission_id: owMissionId,
       robot_id: state.config.leaderId,
-      command: 'overwatch',
+      command: 'patrol_route',
       params: {
-        target_location: plan.overwatch.position,
+        waypoints: owWaypoints,
         speed: state.config.reconSpeed,
-        duration_sec: 600,
         autonomy_policy: { max_speed: 255, restricted_actions: [] },
       },
       issued_by: state.config.issuedBy,

@@ -1186,8 +1186,12 @@ export class RobotMissionService {
         ? roomToGeo(robotTelemetry.position.x, robotTelemetry.position.y)
         : null;
 
-      // Resolve workspace from mission record so COP layer goes to correct problem set
+      // Resolve workspace: prefer problem_set_id on message, fall back to DB lookup
       const resolveWorkspace = async (): Promise<string | undefined> => {
+        // Direct from simulator (avoids DB dependency)
+        const directPsId = (msg as unknown as Record<string, unknown>).problem_set_id as string | undefined;
+        if (directPsId) return directPsId;
+        // Fall back to DB lookup via mission record
         if (msg.mission_id) {
           const mission = await robotStore.getMission(msg.mission_id).catch(() => null);
           return mission?.problem_set_id || undefined;
