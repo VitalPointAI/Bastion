@@ -759,6 +759,17 @@ export class RobotMissionService {
     const resolvedWorkspaceId = workspaceId || problemSetId;
     const resolvedNationalDid = nationalDid || 'did:near:bastion.testnet';
 
+    // Build lethal context BEFORE creating gate so the gate.created event
+    // published by gateService includes is_lethal=true for COP notifications
+    const lethalContext = {
+      escalation_type: 'lethal_force' as const,
+      threat_entity: threatEntityId,
+      threat_designation: threatDesignation,
+      swarm_id: swarmId,
+      mission_id: missionId,
+    };
+
+    // Pre-set decision_context via store so it's present when publishGateEvent fires
     const gate = await gateService.createGate({
       problem_set_id: problemSetId,
       gate_type: GateType.robot_action_auth,
@@ -769,23 +780,26 @@ export class RobotMissionService {
       mode: 'operational',
     });
 
-    // Tag the gate with lethal escalation context
+    // Tag the gate with lethal escalation context and re-publish the event
+    // so COP notifications receive is_lethal=true and urgency=critical
     await gateService['store'].update(gate.id, {
       decision_context: {
         ...gate.decision_context,
-        escalation_type: 'lethal_force',
-        threat_entity: threatEntityId,
-        threat_designation: threatDesignation,
-        swarm_id: swarmId,
-        mission_id: missionId,
+        ...lethalContext,
       },
     });
+
+    // Re-fetch gate with context and re-publish so frontend gets the lethal flag
+    const updatedGate = await gateService.getGateById(gate.id);
+    if (updatedGate) {
+      gateService['publishGateEvent']('gate.created', updatedGate);
+    }
 
     console.log(
       `[RobotMissionService] Lethal escalation gate ${gate.id} created for swarm=${swarmId} threat=${threatDesignation}`,
     );
 
-    // Emit WebSocket event so frontend can show the approval UI
+    // Also emit on swarm channel for swarm-specific listeners
     const messageBus = getMessageBus();
     messageBus.publish({
       sourceDid: resolvedNationalDid,
@@ -1171,11 +1185,22 @@ export class RobotMissionService {
         ? roomToGeo(robotTelemetry.position.x, robotTelemetry.position.y)
         : null;
 
-      import('./vision-cop-pipeline.js').then(({ processVisionDetections }) => {
-        processVisionDetections(msg, undefined, robotPosition).catch(err =>
-          console.warn('[RobotMissionService] Vision pipeline error:', err),
-        );
-      }).catch(() => { /* module load failure — non-fatal */ });
+      // Resolve workspace from mission record so COP layer goes to correct problem set
+      const resolveWorkspace = async (): Promise<string | undefined> => {
+        if (msg.mission_id) {
+          const mission = await robotStore.getMission(msg.mission_id).catch(() => null);
+          return mission?.problem_set_id || undefined;
+        }
+        return undefined;
+      };
+
+      resolveWorkspace().then((workspaceId) => {
+        import('./vision-cop-pipeline.js').then(({ processVisionDetections }) => {
+          processVisionDetections(msg, workspaceId, robotPosition).catch(err =>
+            console.warn('[RobotMissionService] Vision pipeline error:', err),
+          );
+        }).catch(() => { /* module load failure — non-fatal */ });
+      });
     }
   }
 

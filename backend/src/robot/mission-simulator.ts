@@ -105,18 +105,38 @@ class FakeWebSocket {
         } else if (mission.params.target_location) {
           robot.waypoints = [mission.params.target_location];
         } else if (mission.params.area) {
-          // Generate a simple sweep path for recon_area
-          const a = mission.params.area;
+          // Generate a road-following sweep path for recon_area
+          // Uses actual Taipei Zhongzheng District street grid (room coords):
+          //   N-S: Hengyang x=0.3, Chongqing S x=1.1, Xiangyang x=1.4,
+          //        Guanqian x=2.5, Chengde x=3.4, Gongyuan x=4.4
+          //   E-W: Hankou y=2.6, Xuchang y=2.9, Kaifeng y=3.3, Zhongxiao W y=4.4
           robot.waypoints = [
-            { x: a.x_min, y: a.y_min },
-            { x: a.x_max, y: a.y_min },
-            { x: a.x_max, y: a.y_max },
-            { x: a.x_min, y: a.y_max },
-            { x: (a.x_min + a.x_max) / 2, y: (a.y_min + a.y_max) / 2 },
+            // Start: Hengyang/Hankou intersection
+            { x: 0.3, y: 2.6 },
+            // E on Hankou St to Guanqian Rd
+            { x: 2.5, y: 2.6 },
+            // N on Guanqian to Xuchang St
+            { x: 2.5, y: 2.9 },
+            // E on Xuchang to Chengde Rd
+            { x: 3.4, y: 2.9 },
+            // N on Chengde to Kaifeng St
+            { x: 3.4, y: 3.3 },
+            // W on Kaifeng to Guanqian Rd
+            { x: 2.5, y: 3.3 },
+            // N on Guanqian to Zhongxiao W Rd
+            { x: 2.5, y: 4.4 },
+            // E on Zhongxiao W to Chengde Rd (enemy axis)
+            { x: 3.4, y: 4.4 },
+            // E on Zhongxiao W to Gongyuan Rd
+            { x: 4.4, y: 4.4 },
+            // S on Gongyuan to Kaifeng St
+            { x: 4.4, y: 3.3 },
+            // W on Kaifeng back to Chengde (sweep complete)
+            { x: 3.4, y: 3.3 },
           ];
         }
 
-        robot.speed = (mission.params.speed ?? 100) / 255 * 2.0; // Scale to ~2.0 m/s max for visible map movement
+        robot.speed = (mission.params.speed ?? 100) / 255 * 0.5; // Scale to ~0.5 m/s max (tactical crawl speed, ~1.8 km/h on map)
 
         // Send accepted state
         const svc = getRobotMissionService();
@@ -328,6 +348,7 @@ function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
       const visionMsg = {
         type: 'robot:vision',
         robot_id: robot.id,
+        mission_id: robot.activeMissionId,
         timestamp: new Date().toISOString(),
         detections: [
           {
