@@ -13,6 +13,7 @@
 import { useState, useCallback } from 'react';
 import { useDecisionGates } from '../../context/DecisionGateContext';
 import type { DecisionGate } from '../../lib/gate-service';
+import { designRevisionService } from '../../lib/design-revision-service';
 import './DecisionGateBanner.css';
 
 // ============================================================================
@@ -75,6 +76,9 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
   const [rejectingGateId, setRejectingGateId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [mergeLoading, setMergeLoading] = useState<string | null>(null);
+  const [mergeError, setMergeError] = useState<string | null>(null);
+  const [mergedGates, setMergedGates] = useState<Set<string>>(new Set());
 
   const handleToggle = useCallback(() => {
     setExpanded((prev) => !prev);
@@ -117,6 +121,21 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
   const handleRejectCancel = useCallback(() => {
     setRejectingGateId(null);
     setRejectReason('');
+  }, []);
+
+  /** Merge an approved design_revision gate back into the canonical Design artifact. */
+  const handleMergeRevision = useCallback(async (gate: DecisionGate) => {
+    if (!gate.problem_set_id || !gate.target_item_id) return;
+    setMergeLoading(gate.id);
+    setMergeError(null);
+    try {
+      await designRevisionService.merge(gate.problem_set_id, gate.target_item_id);
+      setMergedGates((prev) => new Set(prev).add(gate.id));
+    } catch (err) {
+      setMergeError(err instanceof Error ? err.message : 'Merge failed');
+    } finally {
+      setMergeLoading(null);
+    }
   }, []);
 
   // Non-commander roles see no banner
@@ -196,6 +215,20 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
                   >
                     Reject
                   </button>
+                  {/* Merge to Design button: shown on approved design_revision gates */}
+                  {gate.gate_type === 'design_revision' && gate.status === 'approved' && !mergedGates.has(gate.id) && (
+                    <button
+                      className="gate-action-btn merge"
+                      onClick={() => handleMergeRevision(gate)}
+                      disabled={mergeLoading === gate.id}
+                      title="Merge approved revision back into Design Tab"
+                    >
+                      {mergeLoading === gate.id ? '...' : 'Merge to Design'}
+                    </button>
+                  )}
+                  {gate.gate_type === 'design_revision' && mergedGates.has(gate.id) && (
+                    <span className="gate-merged-label">Merged</span>
+                  )}
                   {onOpenDetail && (
                     <button
                       className="gate-action-btn details"
@@ -205,6 +238,12 @@ export function DecisionGateBanner({ tabId, onOpenDetail }: DecisionGateBannerPr
                     </button>
                   )}
                 </div>
+                {/* Merge error display */}
+                {mergeError && mergeLoading === null && (
+                  <div className="merge-error-row" style={{ color: '#f87171', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                    Merge failed: {mergeError}
+                  </div>
+                )}
               </div>
 
               {/* Reject reason input row */}

@@ -14,8 +14,12 @@ import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { listDocuments } from '../strategic/ingestion/document-store.js';
 import { ObjectiveStore } from '../strategic/objectives/store.js';
 import { notifyCOPChange } from '../cop/index.js';
+import { router as revisionRouter } from './design-revisions.js';
 
 const router = Router();
+
+// Mount revision sub-router before the /:problemSetId catch-all routes to avoid conflicts
+router.use('/:problemSetId/revisions', revisionRouter);
 
 const VALID_SECTIONS = ['problem-framing', 'cog-analysis', 'lines-of-effort', 'operational-approach'];
 
@@ -215,6 +219,7 @@ router.get('/:problemSetId/handoff', async (req: Request, res: Response) => {
 /**
  * POST /api/design/:problemSetId/push-handoff
  * Packages handoff payload and persists it in the database.
+ * @deprecated Phase 49 — Plan tab fetches directly via GET /api/design/:problemSetId. Kept for backward compatibility.
  */
 router.post('/:problemSetId/push-handoff', async (req: Request, res: Response) => {
   try {

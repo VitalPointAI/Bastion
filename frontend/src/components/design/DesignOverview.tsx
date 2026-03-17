@@ -7,6 +7,7 @@
 
 import type { OperationalDesign, CoGNode, SectionStatus } from '../../lib/design-service.ts';
 import { DesignStatusBadge } from './DesignStatusBadge.tsx';
+import { DesignSyncIndicator } from './DesignSyncIndicator.tsx';
 
 interface DesignOverviewProps {
   designData: OperationalDesign;
@@ -237,6 +238,9 @@ export function DesignOverview({ designData, onNavigate }: DesignOverviewProps) 
 
       {/* Progress Bar */}
       <DesignProgressBar status={designData.status} />
+
+      {/* Plan Tab Sync Status */}
+      <DesignSyncIndicator status={designData.status} />
 
       {/* Section Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

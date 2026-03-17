@@ -164,6 +164,7 @@ export const designService = {
 
   /**
    * Push handoff payload to database (persists for Plan tab consumption).
+   * @deprecated Phase 49 — Plan tab fetches directly via getDesign(). Kept for backward compatibility.
    */
   async pushHandoff(problemSetId: string): Promise<{ success: boolean; pushedAt: string }> {
     const res = await fetch(`${API_BASE}/api/design/${problemSetId}/push-handoff`, {

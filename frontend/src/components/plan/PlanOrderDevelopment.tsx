@@ -16,6 +16,8 @@ import { JPPStepLayout } from './JPPStepLayout.tsx';
 import { RoleGatedSection } from './RoleGatedSection.tsx';
 import { jppService, type JPPStepProduct, type StepStatus } from '../../lib/jpp-service.ts';
 import { ewmService, type EWMGap } from '../../lib/ewm-service.ts';
+import { designService, type OperationalDesign, type DesignStatus } from '../../lib/design-service.ts';
+import { DesignContextPanel } from './DesignContextPanel.tsx';
 import { GateSubmitButton } from '../governance/index.ts';
 import { DocumentExport } from './DocumentExport.tsx';
 import { DocumentVersionHistory } from './DocumentVersionHistory.tsx';
@@ -245,6 +247,11 @@ export function PlanOrderDevelopment({
   const [stepStatus, setStepStatus] = useState<StepStatus>('not_started');
   const [saving, setSaving] = useState(false);
 
+  // Design tab data (read-only context)
+  const [designData, setDesignData] = useState<OperationalDesign | null>(null);
+  const [designStatus, setDesignStatus] = useState<DesignStatus | null>(null);
+  const [designLoading, setDesignLoading] = useState(true);
+
   // Phase 35: Structured subordinate tasks and mission grouping
   const [subordinateTasks, setSubordinateTasks] = useState<OPORDSubordinateTask[]>([]);
   const [missionGroups, setMissionGroups] = useState<MissionGroup[]>([]);
@@ -289,6 +296,33 @@ export function PlanOrderDevelopment({
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Load Design tab data for context panels
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDesign() {
+      try {
+        const [design, status] = await Promise.all([
+          designService.getDesign(problemSetId),
+          designService.getStatus(problemSetId),
+        ]);
+        if (!cancelled) {
+          setDesignData(design);
+          setDesignStatus(status);
+        }
+      } catch {
+        // Design not yet created — panel will show empty state
+      } finally {
+        if (!cancelled) setDesignLoading(false);
+      }
+    }
+
+    loadDesign();
+    return () => {
+      cancelled = true;
+    };
+  }, [problemSetId]);
 
   // Fetch current PS members and AI agents for mission role assignment
   useEffect(() => {
@@ -410,6 +444,16 @@ export function PlanOrderDevelopment({
       status={stepStatus}
       aiAgentId="jpp-plan-dev-agent"
     >
+      {/* ── Design Context: Operational Phases & Transitions (from Design) ─ */}
+      <DesignContextPanel
+        title="Operational Phases & Transitions (from Design)"
+        artifact="phases"
+        data={designData?.operationalApproach ?? null}
+        sectionStatus={designStatus?.operationalApproach ?? 'not-started'}
+        problemSetId={problemSetId}
+        loading={designLoading}
+      />
+
       {/* Section 1: Plan Type Selection */}
       <RoleGatedSection
         allowedRoles={['j3', 'j5', 'commander']}

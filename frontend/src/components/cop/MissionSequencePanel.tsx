@@ -148,7 +148,7 @@ export function MissionSequencePanel() {
     } finally {
       setLaunching(false);
     }
-  }, []);
+  }, [simulate]);
 
   const handleReturnToBase = useCallback(async () => {
     if (!sequenceId) return;

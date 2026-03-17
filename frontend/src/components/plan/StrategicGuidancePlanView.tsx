@@ -13,7 +13,7 @@ import { EchelonBadge } from './EchelonBadge.tsx';
 import { PlanEmptyState } from './PlanEmptyState.tsx';
 import { StrategicGuidanceStepLayout } from './StrategicGuidanceStepLayout.tsx';
 import { StrategicAssessment } from './steps/StrategicAssessment.tsx';
-import { OperationalApproach } from './steps/OperationalApproach.tsx';
+import { StrategicAlignment } from './steps/StrategicAlignment.tsx';
 import { CommanderDirective } from './steps/CommanderDirective.tsx';
 import {
   SG_STEPS,
@@ -187,8 +187,8 @@ export function StrategicGuidancePlanView({
             {stepId === 'strategic_assessment' && (
               <StrategicAssessment problemSetId={problemSetId} instanceId={instance.id} />
             )}
-            {stepId === 'operational_approach' && (
-              <OperationalApproach problemSetId={problemSetId} instanceId={instance.id} />
+            {stepId === 'strategic_alignment' && (
+              <StrategicAlignment problemSetId={problemSetId} instanceId={instance.id} />
             )}
             {stepId === 'commander_directive' && (
               <CommanderDirective problemSetId={problemSetId} instanceId={instance.id} />

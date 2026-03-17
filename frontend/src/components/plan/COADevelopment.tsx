@@ -10,7 +10,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { JPPStepLayout } from './JPPStepLayout.tsx';
 import { RoleGatedSection } from './RoleGatedSection.tsx';
 import { jppService, type StepStatus } from '../../lib/jpp-service.ts';
-import { designService, type LineOfEffort } from '../../lib/design-service.ts';
+import { designService, type LineOfEffort, type DesignStatus } from '../../lib/design-service.ts';
+import { DesignContextPanel } from './DesignContextPanel.tsx';
 import { ewmService, type EWMLinkage, type EWMGap } from '../../lib/ewm-service.ts';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -134,6 +135,7 @@ export function COADevelopment({
 }: COADevelopmentProps) {
   // LOEs from Design tab (read-only input)
   const [loes, setLoes] = useState<LineOfEffort[]>([]);
+  const [designStatus, setDesignStatus] = useState<DesignStatus | null>(null);
 
   // COAs
   const [coas, setCoas] = useState<COA[]>([]);
@@ -156,11 +158,15 @@ export function COADevelopment({
     let cancelled = false;
 
     async function load() {
-      // Load LOEs from Design tab
+      // Load LOEs and status from Design tab
       try {
-        const design = await designService.getDesign(problemSetId);
+        const [design, status] = await Promise.all([
+          designService.getDesign(problemSetId),
+          designService.getStatus(problemSetId),
+        ]);
         if (!cancelled && design.linesOfEffort) {
           setLoes(design.linesOfEffort);
+          setDesignStatus(status);
           // Extract objectives from LOE objective references
           const objList: ObjectiveOption[] = design.linesOfEffort
             .filter((loe) => loe.objectiveId)
@@ -375,6 +381,15 @@ export function COADevelopment({
       status={stepStatus}
       aiAgentId="jpp-coa-dev-agent"
     >
+      {/* ── Design Context: Lines of Effort (from Design tab) ─────────── */}
+      <DesignContextPanel
+        title="Lines of Effort (from Design)"
+        artifact="lines-of-effort"
+        data={loes}
+        sectionStatus={designStatus?.linesOfEffort ?? 'not-started'}
+        problemSetId={problemSetId}
+      />
+
       {/* ── Section 1: LOE Input (read-only from Design tab) ───────────── */}
       <RoleGatedSection
         allowedRoles={[]}

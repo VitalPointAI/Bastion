@@ -107,6 +107,7 @@ const GATE_TYPE_LABELS: Record<string, string> = {
   targeting: 'Targeting',
   assessment: 'Assessment',
   resource: 'Resource',
+  design_revision: 'Design Revision Proposal',
 };
 
 // ==========================================================================

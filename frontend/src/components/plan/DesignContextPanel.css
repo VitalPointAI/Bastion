@@ -1,0 +1,328 @@
+/* DesignContextPanel — Phase 49 Plan 02
+ *
+ * Visual treatment: blue-tinted background to clearly signal
+ * this content is sourced from the Design tab (read-only).
+ */
+
+/* ─── Panel container ─────────────────────────────────────────────────────── */
+
+.design-ctx-panel {
+  background-color: rgba(30, 58, 138, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
+
+.design-ctx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background-color: rgba(30, 58, 138, 0.25);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.design-ctx-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.design-ctx-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.design-ctx-lock-icon {
+  font-size: 0.75rem;
+  color: #93c5fd;
+  flex-shrink: 0;
+}
+
+.design-ctx-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #bfdbfe;
+}
+
+.design-ctx-source-label {
+  font-size: 0.65rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* ─── Status badges ───────────────────────────────────────────────────────── */
+
+.design-ctx-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+
+.design-ctx-badge--not-started {
+  background-color: rgba(75, 85, 99, 0.3);
+  color: #9ca3af;
+  border: 1px solid rgba(75, 85, 99, 0.4);
+}
+
+.design-ctx-badge--in-progress {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #fde68a;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.design-ctx-badge--complete {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #a7f3d0;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* ─── Body ────────────────────────────────────────────────────────────────── */
+
+.design-ctx-body {
+  padding: 0.75rem;
+}
+
+.design-ctx-not-started {
+  font-size: 0.82rem;
+  color: #6b7280;
+  font-style: italic;
+  margin: 0;
+}
+
+.design-ctx-in-progress-notice {
+  font-size: 0.75rem;
+  color: #fde68a;
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.design-ctx-text {
+  font-size: 0.85rem;
+  color: #d1d5db;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.design-ctx-empty-data {
+  font-size: 0.82rem;
+  color: #6b7280;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ─── CoG analysis ────────────────────────────────────────────────────────── */
+
+.design-ctx-cog-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .design-ctx-cog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.design-ctx-cog-side {
+  background-color: rgba(17, 24, 39, 0.4);
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.625rem;
+}
+
+.design-ctx-cog-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #93c5fd;
+  margin: 0 0 0.375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.design-ctx-cog-row {
+  display: flex;
+  gap: 0.375rem;
+  margin-bottom: 0.25rem;
+  align-items: flex-start;
+}
+
+.design-ctx-cog-type {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #60a5fa;
+  background-color: rgba(59, 130, 246, 0.15);
+  border-radius: 0.2rem;
+  padding: 0.1rem 0.3rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.design-ctx-cog-value {
+  font-size: 0.8rem;
+  color: #d1d5db;
+}
+
+/* ─── Lines of Effort ─────────────────────────────────────────────────────── */
+
+.design-ctx-loe-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.design-ctx-loe-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background-color: rgba(17, 24, 39, 0.4);
+  border-radius: 0.25rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.design-ctx-loe-number {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #60a5fa;
+  background-color: rgba(59, 130, 246, 0.15);
+  border-radius: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.design-ctx-loe-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.design-ctx-loe-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.design-ctx-loe-objective {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+/* ─── Phases ──────────────────────────────────────────────────────────────── */
+
+.design-ctx-phases-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.design-ctx-phase-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background-color: rgba(17, 24, 39, 0.4);
+  border-radius: 0.25rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.design-ctx-phase-number {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #60a5fa;
+  background-color: rgba(59, 130, 246, 0.15);
+  border-radius: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.design-ctx-phase-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.design-ctx-phase-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.design-ctx-phase-desc {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+.design-ctx-phase-transition {
+  font-size: 0.72rem;
+  color: #60a5fa;
+  font-style: italic;
+}
+
+/* ─── Skeleton loading ────────────────────────────────────────────────────── */
+
+.design-ctx-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.design-ctx-skeleton-line {
+  height: 0.75rem;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 25%, rgba(59, 130, 246, 0.2) 50%, rgba(59, 130, 246, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: design-ctx-pulse 1.5s ease-in-out infinite;
+  border-radius: 0.25rem;
+}
+
+@keyframes design-ctx-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Footer ──────────────────────────────────────────────────────────────── */
+
+.design-ctx-footer {
+  padding: 0.375rem 0.75rem;
+  border-top: 1px solid rgba(59, 130, 246, 0.15);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.design-ctx-propose-btn {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.6rem;
+  background-color: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 0.25rem;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.design-ctx-propose-btn:disabled {
+  cursor: not-allowed;
+}

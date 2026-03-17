@@ -342,6 +342,8 @@ function BoundingOverwatchLayer({ swarm }: BoundingOverwatchLayerProps) {
   const isBoundingTechnique =
     swarm.technique === 'bounding_overwatch' || swarm.technique === 'successive_bounds';
 
+  const memberPositionKey = JSON.stringify(swarm.members.map((m) => `${m.robotId}:${m.position.lat}:${m.position.lng}`));
+
   useEffect(() => {
     // Clean up previous bounding layers
     for (const layer of layersRef.current) {
@@ -447,14 +449,12 @@ function BoundingOverwatchLayer({ swarm }: BoundingOverwatchLayerProps) {
       }
       layersRef.current = [];
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     map,
     isBoundingTechnique,
     swarm.technique,
     swarm.heading,
-    // Stringify member positions to detect movement
-    JSON.stringify(swarm.members.map((m) => `${m.robotId}:${m.position.lat}:${m.position.lng}`)),
+    memberPositionKey,
   ]);
 
   return null;
