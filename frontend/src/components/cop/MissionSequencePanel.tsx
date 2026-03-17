@@ -66,11 +66,18 @@ const PHASE_CONFIG: Record<Phase, { color: string; bg: string; label: string }> 
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
+// AO bounds for the Iron Bastion scenario (Taipei Zhongzheng District)
+// From calibration profile: 5m room → 25.042-25.048°N, 121.512-121.518°E
+const AO_CENTER: [number, number] = [25.045, 121.515];
+const AO_ZOOM = 17;
+
 interface MissionSequencePanelProps {
   problemSetId: string;
+  /** Callback to zoom the map to the robot AO on simulation start */
+  onZoomToAO?: (lat: number, lng: number, zoom: number) => void;
 }
 
-export function MissionSequencePanel({ problemSetId }: MissionSequencePanelProps) {
+export function MissionSequencePanel({ problemSetId, onZoomToAO }: MissionSequencePanelProps) {
   const [collapsed, setCollapsed] = useState(true);
   const [sequenceId, setSequenceId] = useState<string | null>(null);
   const [missionType, setMissionType] = useState<MissionType>('autonomous');
@@ -147,12 +154,14 @@ export function MissionSequencePanel({ problemSetId }: MissionSequencePanelProps
       if (data.simSessionId) setSimSessionId(data.simSessionId);
       setSimPaused(false);
       setCollapsed(false);
+      // Auto-zoom from strategic view to robot AO
+      onZoomToAO?.(AO_CENTER[0], AO_CENTER[1], AO_ZOOM);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLaunching(false);
     }
-  }, [simulate, problemSetId]);
+  }, [simulate, problemSetId, onZoomToAO]);
 
   const handleReturnToBase = useCallback(async () => {
     if (!sequenceId) return;
