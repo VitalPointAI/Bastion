@@ -116,31 +116,10 @@
 
 .dashboard-header h1 {
   margin: 0;
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text-primary, #fff);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  position: relative;
-}
-
-/* Corner accent brackets */
-.dashboard-header h1::before,
-.dashboard-header h1::after {
-  position: absolute;
-  font-size: 1.5rem;
-  color: var(--accent-blue, #4a90d9);
-  opacity: 0.6;
-}
-
-.dashboard-header h1::before {
-  content: '[';
-  left: -1.25rem;
-}
-
-.dashboard-header h1::after {
-  content: ']';
-  right: -1.25rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  letter-spacing: 0.02em;
 }
 
 /* DAO Selector - Premium Dropdown */
@@ -626,11 +605,6 @@
 
   .dashboard-header h1 {
     text-align: center;
-  }
-
-  .dashboard-header h1::before,
-  .dashboard-header h1::after {
-    display: none;
   }
 
   .dao-selector select {

@@ -2,7 +2,7 @@
  * GateStatusBadge Styles
  *
  * Small inline pill/chip badge for gate status display.
- * Used by non-commander roles next to items they submitted.
+ * Dark-theme optimized for BASTION command interface.
  */
 
 .gate-status-badge {
@@ -19,31 +19,37 @@
 }
 
 .gate-status-badge.status-pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .gate-status-badge.status-submitted {
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
 .gate-status-badge.status-approved {
-  background: #d1fae5;
-  color: #065f46;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .gate-status-badge.status-rejected {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .gate-status-badge.status-escalated {
-  background: #f3e8ff;
-  color: #6b21a8;
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .gate-status-badge.status-overridden {
-  background: var(--bg-secondary, #f3f4f6);
-  color: var(--text-muted, #6b7280);
+  background: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.3);
 }

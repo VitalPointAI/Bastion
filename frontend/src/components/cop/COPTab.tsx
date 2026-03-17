@@ -538,7 +538,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
           <MissionSequencePanel problemSetId={problemSetId} onZoomToAO={handleZoomToAction} onLayersChanged={handleLayersChanged} />
 
           {/* Gate notifications — lethal modal + toast notifications */}
-          <COPGateNotifications onZoomToAction={handleZoomToAction} />
+          <COPGateNotifications onZoomToAction={handleZoomToAction} problemSetId={problemSetId} />
 
           <COPMapView
             problemSetId={problemSetId}

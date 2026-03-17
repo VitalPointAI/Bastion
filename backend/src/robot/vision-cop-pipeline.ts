@@ -368,9 +368,28 @@ export async function updateAdversaryCOPLayer(
       });
     }
 
-    console.log(`[Vision→COP] Updated adversary layer with ${symbols.length} detection(s)`);
+    console.log(`[Vision→COP] Updated adversary layer in workspace=${workspaceId} with ${symbols.length} detection(s)`);
+
+    // Notify frontend to refresh COP layers
+    try {
+      const { getMessageBus } = await import('../messaging/message-bus.js');
+      const messageBus = getMessageBus();
+      await messageBus.publish({
+        sourceDid: 'system:vision-pipeline',
+        sourceType: 'system',
+        destinationType: 'channel',
+        destinationTarget: 'cop:layer_updated',
+        messageType: 'cop.layer.updated',
+        payload: {
+          workspaceId,
+          layerType: 'force_disposition',
+          symbolCount: symbols.length,
+          source: 'vision-detection-pipeline',
+        },
+      });
+    } catch { /* non-fatal */ }
   } catch (err) {
-    console.warn('[Vision→COP] Failed to update COP layer:', err);
+    console.error('[Vision→COP] Failed to update COP layer:', err);
   }
 }
 
@@ -576,12 +595,14 @@ export async function processVisionDetections(
   const symbols = extractThreatSymbols(msg, robotPosition);
   if (symbols.length === 0) return;
 
-  console.log(`[Vision Pipeline] ${symbols.length} threat(s) detected by ${msg.robot_id}`);
+  console.log(`[Vision Pipeline] ${symbols.length} threat(s) detected by ${msg.robot_id}, workspace=${workspaceId ?? 'default'}`);
 
-  // Run COP and graph updates concurrently
+  // Run COP update first (critical), then graph (best-effort)
   const wsId = workspaceId ?? 'default';
-  await Promise.all([
-    updateAdversaryCOPLayer(wsId, symbols),
-    updateKnowledgeGraph(wsId, symbols, msg.robot_id),
-  ]);
+  await updateAdversaryCOPLayer(wsId, symbols);
+
+  // Graph update is best-effort — don't let it block or mask COP errors
+  updateKnowledgeGraph(wsId, symbols, msg.robot_id).catch((err) =>
+    console.warn('[Vision Pipeline] Graph update failed (non-fatal):', err),
+  );
 }

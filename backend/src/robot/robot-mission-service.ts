@@ -1200,11 +1200,14 @@ export class RobotMissionService {
       };
 
       resolveWorkspace().then((workspaceId) => {
+        console.log(`[RobotMissionService] Vision pipeline: workspace=${workspaceId ?? 'default'}, position=${robotPosition ? `${robotPosition.lat.toFixed(4)},${robotPosition.lng.toFixed(4)}` : 'null'}`);
         import('./vision-cop-pipeline.js').then(({ processVisionDetections }) => {
           processVisionDetections(msg, workspaceId, robotPosition).catch(err =>
-            console.warn('[RobotMissionService] Vision pipeline error:', err),
+            console.error('[RobotMissionService] Vision pipeline error:', err),
           );
-        }).catch(() => { /* module load failure — non-fatal */ });
+        }).catch((err) => {
+          console.error('[RobotMissionService] Vision pipeline module load failure:', err);
+        });
       });
     }
   }

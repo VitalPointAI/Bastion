@@ -13,6 +13,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   useCOPGateNotifications,
   type GateNotification,
@@ -23,6 +24,8 @@ import {
 interface COPGateNotificationsProps {
   /** Callback to zoom the map to a specific area when a critical gate arrives */
   onZoomToAction?: (lat: number, lng: number, zoom: number) => void;
+  /** Problem set ID for navigation */
+  problemSetId?: string;
 }
 
 // ─── Calibration (must match calibration-profiles.json) ─────────────────────
@@ -40,7 +43,8 @@ function roomToLatLng(x: number, y: number): [number, number] {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function COPGateNotifications({ onZoomToAction }: COPGateNotificationsProps) {
+export function COPGateNotifications({ onZoomToAction, problemSetId }: COPGateNotificationsProps) {
+  const navigate = useNavigate();
   const {
     criticalGate,
     toastNotifications,
@@ -48,6 +52,13 @@ export function COPGateNotifications({ onZoomToAction }: COPGateNotificationsPro
     rejectGate,
     dismissNotification,
   } = useCOPGateNotifications();
+
+  const handleViewInDirect = useCallback((id: string) => {
+    dismissNotification(id);
+    if (problemSetId) {
+      navigate(`/problem-set/${problemSetId}/direct`);
+    }
+  }, [dismissNotification, problemSetId, navigate]);
 
   // Auto-zoom map when a critical gate arrives
   useEffect(() => {
@@ -76,6 +87,7 @@ export function COPGateNotifications({ onZoomToAction }: COPGateNotificationsPro
           notifications={toastNotifications}
           onApprove={approveGate}
           onDismiss={dismissNotification}
+          onViewInDirect={handleViewInDirect}
         />
       )}
     </>
@@ -297,10 +309,12 @@ function ToastStack({
   notifications,
   onApprove,
   onDismiss,
+  onViewInDirect,
 }: {
   notifications: GateNotification[];
   onApprove: (gateId: string) => Promise<void>;
   onDismiss: (id: string) => void;
+  onViewInDirect: (id: string) => void;
 }) {
   return (
     <div style={{
@@ -314,7 +328,7 @@ function ToastStack({
       maxWidth: '340px',
     }}>
       {notifications.slice(0, 3).map((n) => (
-        <Toast key={n.id} notification={n} onApprove={onApprove} onDismiss={onDismiss} />
+        <Toast key={n.id} notification={n} onApprove={onApprove} onDismiss={onDismiss} onViewInDirect={onViewInDirect} />
       ))}
     </div>
   );
@@ -324,10 +338,12 @@ function Toast({
   notification,
   onApprove,
   onDismiss,
+  onViewInDirect,
 }: {
   notification: GateNotification;
   onApprove: (gateId: string) => Promise<void>;
   onDismiss: (id: string) => void;
+  onViewInDirect: (id: string) => void;
 }) {
   const [acting, setActing] = useState(false);
 
@@ -414,7 +430,7 @@ function Toast({
           Approve
         </button>
         <button
-          onClick={() => onDismiss(notification.id)}
+          onClick={() => onViewInDirect(notification.id)}
           style={{
             padding: '4px 12px',
             borderRadius: '4px',

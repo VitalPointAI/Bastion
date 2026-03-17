@@ -55,6 +55,8 @@ const GATE_TYPE_LABELS: Record<string, string> = {
   coa_selection: 'COA Selection',
   order_release: 'Order Release',
   reframing: 'Reframing Decision',
+  robot_action_auth: 'Robot Action Auth',
+  design_revision: 'Design Revision',
 };
 
 const TAB_LABELS: Record<string, string> = {
@@ -91,6 +93,11 @@ function AllGatesOverview() {
     );
   }
 
+  // Filter out internal robot gates stuck in pending (no user action possible)
+  const filteredGates = gates.filter(
+    (g) => !(g.status === 'pending' && g.gate_type === 'robot_action_auth'),
+  );
+
   // Sort: pending/submitted first, then by updated_at descending
   const statusOrder: Record<string, number> = {
     submitted: 0,
@@ -100,7 +107,7 @@ function AllGatesOverview() {
     approved: 4,
     overridden: 5,
   };
-  const sorted = [...gates].sort((a, b) => {
+  const sorted = [...filteredGates].sort((a, b) => {
     const orderA = statusOrder[a.status] ?? 99;
     const orderB = statusOrder[b.status] ?? 99;
     if (orderA !== orderB) return orderA - orderB;
@@ -202,9 +209,6 @@ export function DirectTab({ problemSetId, daoId }: DirectTabProps) {
       items={DIRECT_ITEMS}
       selectedItem={selectedView}
       onSelectItem={(id) => setSelectedView(id as DirectView)}
-      decisionHistory={
-        <DecisionGateTimeline tabId="direct" onEntryClick={handleGateDetailClick} />
-      }
     >
       {/* Decision gate banner for commanders */}
       <DecisionGateBanner tabId="direct" />
@@ -218,11 +222,23 @@ export function DirectTab({ problemSetId, daoId }: DirectTabProps) {
       )}
 
       {selectedView === 'governance' && (
-        <div style={{ marginTop: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary, #94a3b8)' }}>
-              Order Release Gate
-            </span>
+        <>
+          <div style={{
+            marginTop: '1rem',
+            padding: '0.75rem 1rem',
+            background: 'var(--surface-secondary, rgba(30, 41, 59, 0.5))',
+            borderRadius: '0.5rem',
+            border: '1px solid var(--border-color, #334155)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary, #e2e8f0)' }}>
+                Order Release Gate
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #94a3b8)', marginTop: '0.125rem' }}>
+                Submit order for commander release authorization
+              </div>
+            </div>
             <GateSubmitButton
               gateType="order_release"
               itemId={`${problemSetId}-order-release`}
@@ -231,7 +247,12 @@ export function DirectTab({ problemSetId, daoId }: DirectTabProps) {
               tabId="direct"
             />
           </div>
-        </div>
+
+          {/* Decision History — inline collapsible panel */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <DecisionGateTimeline tabId="direct" onEntryClick={handleGateDetailClick} />
+          </div>
+        </>
       )}
 
       {selectedView === 'escalation' && (
