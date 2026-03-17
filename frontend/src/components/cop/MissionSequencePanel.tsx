@@ -75,9 +75,11 @@ interface MissionSequencePanelProps {
   problemSetId: string;
   /** Callback to zoom the map to the robot AO on simulation start */
   onZoomToAO?: (lat: number, lng: number, zoom: number) => void;
+  /** Callback to refresh COP layers after seeding */
+  onLayersChanged?: () => void;
 }
 
-export function MissionSequencePanel({ problemSetId, onZoomToAO }: MissionSequencePanelProps) {
+export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged }: MissionSequencePanelProps) {
   const [collapsed, setCollapsed] = useState(true);
   const [sequenceId, setSequenceId] = useState<string | null>(null);
   const [missionType, setMissionType] = useState<MissionType>('autonomous');
@@ -202,6 +204,7 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO }: MissionSequen
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ problemSetId }),
       }).catch(() => { /* non-fatal */ });
+      onLayersChanged?.();
       setSequenceId(null);
       setStatus(null);
       setSimPaused(false);
@@ -377,6 +380,7 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO }: MissionSequen
                       setSeedStatus('Already seeded');
                     } else {
                       setSeedStatus(`${data.friendlyCount + data.adversaryCount} symbols`);
+                      onLayersChanged?.();
                     }
                   } catch {
                     setSeedStatus('Failed');

@@ -637,15 +637,18 @@ robotRouter.post('/scenarios/seed-strategic-cop', async (req, res) => {
 
     const created: string[] = [];
     for (const layer of layers) {
+      // Use distinct sectionIds to avoid layer-store deduplication
+      // (same workspace + layerType + sectionId = upsert instead of create)
+      const sectionId = layer.name.includes('Friendly') ? 'strategic-friendly' : 'strategic-adversary';
       const result = await layerStore.createLayer({
         workspaceId: problemSetId,
-        sectionId: 'default',
+        sectionId,
         layerType: 'force_disposition',
         spec: {
-          layerId: `strategic-${layer.name.includes('Friendly') ? 'friendly' : 'adversary'}-${Date.now()}`,
+          layerId: `${sectionId}-${Date.now()}`,
           layerType: 'force_disposition',
           workspaceId: problemSetId,
-          sectionId: 'default',
+          sectionId,
           symbols: layer.symbols,
           controlMeasures: [],
           customAnnotations: [],
