@@ -414,7 +414,7 @@ robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
     if (simulate) {
       const leaderId = overrides.leaderId ?? 'alpha';
       const followerIds = overrides.followerIds ?? ['bravo', 'charlie'];
-      simSessionId = startSimulation({
+      simSessionId = await startSimulation({
         robotIds: [leaderId, ...followerIds],
         leaderId,
         homeBase: overrides.homeBase ?? { x: 0.3, y: 0.5 },
@@ -500,7 +500,7 @@ robotRouter.post('/scenarios/autonomous', async (req, res) => {
     if (simulate) {
       const leaderId = overrides.leaderId ?? 'alpha';
       const followerIds = overrides.followerIds ?? ['bravo', 'charlie'];
-      simSessionId = startSimulation({
+      simSessionId = await startSimulation({
         robotIds: [leaderId, ...followerIds],
         leaderId,
         homeBase: overrides.homeBase ?? { x: 0.3, y: 0.5 },

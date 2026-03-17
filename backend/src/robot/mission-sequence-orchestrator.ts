@@ -200,7 +200,7 @@ class MissionSequenceOrchestrator extends EventEmitter {
       const missionId = randomUUID();
       state.missions[`hold_${followerId}`] = missionId;
 
-      await svc.dispatchMission({
+      const result = await svc.dispatchMission({
         mission_id: missionId,
         robot_id: followerId,
         command: 'overwatch',
@@ -215,14 +215,18 @@ class MissionSequenceOrchestrator extends EventEmitter {
         problem_set_id: state.config.problemSetId,
       });
 
-      this.logPhase(state, `Follower ${followerId} holding at base (mission ${missionId.slice(0, 8)})`);
+      if (!result.success) {
+        this.logPhase(state, `WARNING: Follower ${followerId} dispatch failed — ${result.error}`);
+      } else {
+        this.logPhase(state, `Follower ${followerId} holding at base (mission ${missionId.slice(0, 8)})`);
+      }
     }
 
     // Dispatch recon_area to leader
     const reconMissionId = randomUUID();
     state.missions['recon_leader'] = reconMissionId;
 
-    await svc.dispatchMission({
+    const reconResult = await svc.dispatchMission({
       mission_id: reconMissionId,
       robot_id: state.config.leaderId,
       command: 'recon_area',
@@ -237,7 +241,12 @@ class MissionSequenceOrchestrator extends EventEmitter {
       problem_set_id: state.config.problemSetId,
     });
 
-    this.logPhase(state, `Leader ${state.config.leaderId} dispatched for recon (mission ${reconMissionId.slice(0, 8)})`);
+    if (!reconResult.success) {
+      this.logPhase(state, `CRITICAL: Leader recon dispatch failed — ${reconResult.error}`);
+      state.error = reconResult.error;
+    } else {
+      this.logPhase(state, `Leader ${state.config.leaderId} dispatched for recon (mission ${reconMissionId.slice(0, 8)})`);
+    }
     this.publishUpdate(state);
   }
 
@@ -356,7 +365,7 @@ class MissionSequenceOrchestrator extends EventEmitter {
       state.missions[`advance_${followerId}`] = missionId;
       followerMissions.push(missionId);
 
-      await svc.dispatchMission({
+      const advResult = await svc.dispatchMission({
         mission_id: missionId,
         robot_id: followerId,
         command: 'patrol_route',
@@ -370,7 +379,11 @@ class MissionSequenceOrchestrator extends EventEmitter {
         problem_set_id: state.config.problemSetId,
       });
 
-      this.logPhase(state, `Follower ${followerId} advancing via road route to (${firingPos.x}, ${firingPos.y})`);
+      if (!advResult.success) {
+        this.logPhase(state, `WARNING: Follower ${followerId} advance dispatch failed — ${advResult.error}`);
+      } else {
+        this.logPhase(state, `Follower ${followerId} advancing via road route to (${firingPos.x}, ${firingPos.y})`);
+      };
     }
 
     this.publishUpdate(state);
