@@ -3,12 +3,16 @@
  *
  * Phase 36 Plan 02: Strategic guidance step definitions, role mappings,
  * agent IDs, governance gate configs for strategic-echelon planning.
+ *
+ * Phase 49 Plan 01: Replaced operational_approach with strategic_alignment.
+ * Operational design (CoG, LOEs, operational approach) now lives exclusively
+ * in the Design tab. Strategic Guidance focuses on strategic-to-operational alignment.
  */
 
-/** The 3 strategic guidance steps in doctrinal order */
+/** The 3 strategic guidance steps in doctrinal order: Assessment / Alignment / Directive */
 export const SG_STEPS = [
   'strategic_assessment',
-  'operational_approach',
+  'strategic_alignment',
   'commander_directive',
 ] as const;
 
@@ -28,18 +32,18 @@ export const SGStepConfig: Record<SGStepId, SGStepConfigEntry> = {
   strategic_assessment: {
     label: 'Strategic Assessment',
     description:
-      'Review strategic environment, conduct center of gravity analysis, validate key assumptions.',
+      'Review strategic environment, validate key assumptions, and assess strategic factors.',
     primaryRoles: ['commander', 'strategic_analyst'],
     supportingRoles: ['j2_intelligence', 'j5_plans'],
     aiAgentId: 'strategic-analyst',
   },
-  operational_approach: {
-    label: 'Operational Approach',
+  strategic_alignment: {
+    label: 'Strategic Alignment',
     description:
-      'Define lines of effort, objectives hierarchy, force apportionment, and constraints.',
-    primaryRoles: ['commander', 'j5_plans'],
-    supportingRoles: ['j3_operations', 'j4_logistics'],
-    aiAgentId: 'operational-planner',
+      'Map national and political objectives to operational-level ends with AI assistance.',
+    primaryRoles: ['commander', 'j5_plans', 'strategic_analyst'],
+    supportingRoles: ['j2_intelligence', 'chief_of_staff'],
+    aiAgentId: 'strategic-analyst',
   },
   commander_directive: {
     label: "Commander's Planning Guidance",
