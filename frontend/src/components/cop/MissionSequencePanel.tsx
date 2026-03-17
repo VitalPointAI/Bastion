@@ -73,6 +73,8 @@ export function MissionSequencePanel() {
   const [status, setStatus] = useState<SequenceStatus | null>(null);
   const [launching, setLaunching] = useState(false);
   const [simulate, setSimulate] = useState(true);
+  const [simSessionId, setSimSessionId] = useState<string | null>(null);
+  const [simPaused, setSimPaused] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
@@ -138,6 +140,8 @@ export function MissionSequencePanel() {
       }
       const data = await res.json();
       setSequenceId(data.sequenceId);
+      if (data.simSessionId) setSimSessionId(data.simSessionId);
+      setSimPaused(false);
       setCollapsed(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -152,6 +156,36 @@ export function MissionSequencePanel() {
       await fetch(`/api/robot/scenarios/${sequenceId}/return-to-base`, { method: 'POST' });
     } catch { /* silent */ }
   }, [sequenceId]);
+
+  const handleSimPause = useCallback(async () => {
+    if (!simSessionId) return;
+    const endpoint = simPaused ? 'resume' : 'pause';
+    try {
+      const res = await fetch(`/api/robot/simulations/${simSessionId}/${endpoint}`, { method: 'POST' });
+      if (res.ok) setSimPaused(!simPaused);
+    } catch { /* silent */ }
+  }, [simSessionId, simPaused]);
+
+  const handleSimStop = useCallback(async () => {
+    if (!simSessionId) return;
+    try {
+      await fetch(`/api/robot/simulations/${simSessionId}/stop`, { method: 'POST' });
+      setSimSessionId(null);
+      setSequenceId(null);
+      setStatus(null);
+      setSimPaused(false);
+    } catch { /* silent */ }
+  }, [simSessionId]);
+
+  const handleSimReset = useCallback(async () => {
+    if (!simSessionId) return;
+    try {
+      await fetch(`/api/robot/simulations/${simSessionId}/reset`, { method: 'POST' });
+      setSequenceId(null);
+      setStatus(null);
+      setSimPaused(false);
+    } catch { /* silent */ }
+  }, [simSessionId]);
 
   const phase = (status?.phase ?? 'idle') as Phase;
   const phaseCfg = PHASE_CONFIG[phase] ?? PHASE_CONFIG.idle;
@@ -214,6 +248,46 @@ export function MissionSequencePanel() {
         <div style={{ padding: '10px 12px' }}>
           {/* Phase progress bar */}
           {isActive && <PhaseProgressBar phase={phase} missionType={missionType} />}
+
+          {/* Simulation controls */}
+          {simSessionId && isActive && (
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+              <button
+                onClick={handleSimPause}
+                style={{
+                  flex: 1, padding: '4px 8px', borderRadius: '4px',
+                  border: '1px solid #374151', fontSize: '0.5625rem', fontWeight: 600,
+                  backgroundColor: simPaused ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
+                  color: simPaused ? '#86efac' : '#fde047',
+                  cursor: 'pointer', textTransform: 'uppercase' as const,
+                }}
+              >
+                {simPaused ? 'Resume' : 'Pause'}
+              </button>
+              <button
+                onClick={handleSimStop}
+                style={{
+                  flex: 1, padding: '4px 8px', borderRadius: '4px',
+                  border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.5625rem', fontWeight: 600,
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5',
+                  cursor: 'pointer', textTransform: 'uppercase' as const,
+                }}
+              >
+                Stop
+              </button>
+              <button
+                onClick={handleSimReset}
+                style={{
+                  flex: 1, padding: '4px 8px', borderRadius: '4px',
+                  border: '1px solid #374151', fontSize: '0.5625rem', fontWeight: 600,
+                  backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#a5b4fc',
+                  cursor: 'pointer', textTransform: 'uppercase' as const,
+                }}
+              >
+                Reset
+              </button>
+            </div>
+          )}
 
           {/* Simulate toggle + Launch buttons */}
           {(!sequenceId || phase === 'complete' || phase === 'idle') && (

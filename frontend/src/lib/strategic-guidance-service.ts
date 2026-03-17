@@ -91,10 +91,10 @@ async function getInstance(problemSetId: string): Promise<SGInstance | null> {
   }
 }
 
-async function createInstance(problemSetId: string): Promise<SGInstance> {
+async function createInstance(problemSetId: string, createdBy?: string): Promise<SGInstance> {
   return fetchJson<SGInstance>(`${API_BASE}/instances`, {
     method: 'POST',
-    body: JSON.stringify({ problemSetId, createdBy: '' }),
+    body: JSON.stringify({ problemSetId, createdBy: createdBy || 'commander' }),
   });
 }
 

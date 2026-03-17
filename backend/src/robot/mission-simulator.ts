@@ -48,12 +48,20 @@ interface SimSession {
   robots: Map<string, SimRobot>;
   telemetryInterval?: ReturnType<typeof setInterval>;
   running: boolean;
+  paused: boolean;
   /** Detection trigger area */
   reconArea?: { x_min: number; y_min: number; x_max: number; y_max: number };
   /** Whether detection has been triggered */
   detectionTriggered: boolean;
   /** Threat classes to simulate detecting */
   threatClasses: string[];
+  /** Home base for reset */
+  homeBase: { x: number; y: number };
+  /** Config for re-initialization on reset */
+  config: {
+    robotIds: string[];
+    leaderId: string;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -167,9 +175,12 @@ export function startSimulation(config: {
     id: sessionId,
     robots: new Map(),
     running: true,
+    paused: false,
     reconArea: config.reconArea,
     detectionTriggered: false,
     threatClasses: config.threatClasses ?? ['CHN-99G', 'T-90'],
+    homeBase: config.homeBase,
+    config: { robotIds: config.robotIds, leaderId: config.leaderId },
   };
 
   const svc = getRobotMissionService();
@@ -240,7 +251,7 @@ export function stopSimulation(sessionId: string): void {
 // ---------------------------------------------------------------------------
 
 function simulationTick(session: SimSession): void {
-  if (!session.running) return;
+  if (!session.running || session.paused) return;
 
   const svc = getRobotMissionService();
 
@@ -332,6 +343,101 @@ function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
       console.log(`[Simulator] Vision detection: ${classDesc} (conf=${visionMsg.detections[0].confidence.toFixed(2)})`);
     }, i * 2000);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Simulation control: pause, resume, reset, status
+// ---------------------------------------------------------------------------
+
+/**
+ * Pause a simulation — robots freeze in place, timers stop.
+ */
+export function pauseSimulation(sessionId: string): boolean {
+  const session = sessions.get(sessionId);
+  if (!session || !session.running) return false;
+  session.paused = true;
+  console.log(`[Simulator] Session ${sessionId.slice(0, 8)} PAUSED`);
+  return true;
+}
+
+/**
+ * Resume a paused simulation.
+ */
+export function resumeSimulation(sessionId: string): boolean {
+  const session = sessions.get(sessionId);
+  if (!session || !session.running || !session.paused) return false;
+  session.paused = false;
+  console.log(`[Simulator] Session ${sessionId.slice(0, 8)} RESUMED`);
+  return true;
+}
+
+/**
+ * Reset a simulation — move all robots back to home base, clear state,
+ * re-enable vision detection trigger. The session stays alive so you can
+ * re-launch a scenario without re-registering robots.
+ */
+export function resetSimulation(sessionId: string): boolean {
+  const session = sessions.get(sessionId);
+  if (!session) return false;
+
+  session.paused = false;
+  session.detectionTriggered = false;
+
+  // Move all robots back to home base, clear missions
+  for (const [, robot] of session.robots) {
+    robot.position = { ...session.homeBase };
+    robot.heading = 0;
+    robot.waypoints = [];
+    robot.activeMissionId = undefined;
+    robot.activeCommand = undefined;
+    robot.speed = 0.3;
+    robot.battery = 95 + Math.random() * 5;
+  }
+
+  // Update telemetry to show robots at home
+  const svc = getRobotMissionService();
+  for (const [robotId, robot] of session.robots) {
+    svc.updateSimulatedTelemetry(robotId, robot.position, robot.heading, Math.round(robot.battery));
+  }
+
+  console.log(`[Simulator] Session ${sessionId.slice(0, 8)} RESET — all robots at home base`);
+  return true;
+}
+
+/**
+ * Get simulation session status.
+ */
+export function getSimulationStatus(sessionId: string): {
+  running: boolean;
+  paused: boolean;
+  robotCount: number;
+  robots: Array<{ id: string; position: { x: number; y: number }; activeMission?: string }>;
+} | null {
+  const session = sessions.get(sessionId);
+  if (!session) return null;
+
+  return {
+    running: session.running,
+    paused: session.paused,
+    robotCount: session.robots.size,
+    robots: [...session.robots.values()].map((r) => ({
+      id: r.id,
+      position: { ...r.position },
+      activeMission: r.activeMissionId,
+    })),
+  };
+}
+
+/**
+ * List all active simulation sessions.
+ */
+export function listSimulations(): Array<{ id: string; running: boolean; paused: boolean; robotCount: number }> {
+  return [...sessions.values()].map((s) => ({
+    id: s.id,
+    running: s.running,
+    paused: s.paused,
+    robotCount: s.robots.size,
+  }));
 }
 
 // ---------------------------------------------------------------------------

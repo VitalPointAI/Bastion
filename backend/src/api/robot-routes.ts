@@ -15,7 +15,7 @@ import { MissionJSONSchema } from '../robot/robot-types.js';
 import { getRobotMissionService } from '../robot/robot-mission-service.js';
 import { getMissionSequenceOrchestrator } from '../robot/mission-sequence-orchestrator.js';
 import { getAutonomousOrchestrator } from '../robot/autonomous-mission-orchestrator.js';
-import { startSimulation } from '../robot/mission-simulator.js';
+import { startSimulation, pauseSimulation, resumeSimulation, stopSimulation, resetSimulation, listSimulations } from '../robot/mission-simulator.js';
 import { loadCoalitionProfiles } from '../robot/coalition-caveat-service.js';
 
 // Calibration profile storage (file-based for MVP)
@@ -410,10 +410,11 @@ robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
 
   try {
     // Start virtual robots if simulate mode
+    let simSessionId: string | undefined;
     if (simulate) {
       const leaderId = overrides.leaderId ?? 'alpha';
       const followerIds = overrides.followerIds ?? ['bravo', 'charlie'];
-      startSimulation({
+      simSessionId = startSimulation({
         robotIds: [leaderId, ...followerIds],
         leaderId,
         homeBase: overrides.homeBase ?? { x: 0.3, y: 0.5 },
@@ -430,6 +431,7 @@ robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
       phase: state.phase,
       startedAt: state.startedAt,
       simulate,
+      simSessionId,
     });
   } catch (err) {
     console.error('[robot-routes] Failed to start Iron Bastion scenario:', err);
@@ -494,10 +496,11 @@ robotRouter.post('/scenarios/autonomous', async (req, res) => {
   const simulate = req.query.simulate === 'true' || req.body?.simulate === true;
 
   try {
+    let simSessionId: string | undefined;
     if (simulate) {
       const leaderId = overrides.leaderId ?? 'alpha';
       const followerIds = overrides.followerIds ?? ['bravo', 'charlie'];
-      startSimulation({
+      simSessionId = startSimulation({
         robotIds: [leaderId, ...followerIds],
         leaderId,
         homeBase: overrides.homeBase ?? { x: 0.3, y: 0.5 },
@@ -515,6 +518,7 @@ robotRouter.post('/scenarios/autonomous', async (req, res) => {
       startedAt: state.startedAt,
       type: 'autonomous',
       simulate,
+      simSessionId,
     });
   } catch (err) {
     console.error('[robot-routes] Failed to start autonomous mission:', err);
@@ -536,4 +540,35 @@ robotRouter.post('/scenarios/:sequenceId/return-to-base', async (req, res) => {
   }
 
   res.json({ status: 'withdrawal_ordered' });
+});
+
+// ---------------------------------------------------------------------------
+// Simulation control endpoints
+// ---------------------------------------------------------------------------
+
+robotRouter.get('/simulations', (_req, res) => {
+  res.json(listSimulations());
+});
+
+robotRouter.post('/simulations/:sessionId/pause', (req, res) => {
+  const ok = pauseSimulation(req.params.sessionId);
+  if (!ok) { res.status(404).json({ error: 'Simulation not found or not running' }); return; }
+  res.json({ status: 'paused' });
+});
+
+robotRouter.post('/simulations/:sessionId/resume', (req, res) => {
+  const ok = resumeSimulation(req.params.sessionId);
+  if (!ok) { res.status(404).json({ error: 'Simulation not found or not paused' }); return; }
+  res.json({ status: 'resumed' });
+});
+
+robotRouter.post('/simulations/:sessionId/stop', (req, res) => {
+  stopSimulation(req.params.sessionId);
+  res.json({ status: 'stopped' });
+});
+
+robotRouter.post('/simulations/:sessionId/reset', (req, res) => {
+  const ok = resetSimulation(req.params.sessionId);
+  if (!ok) { res.status(404).json({ error: 'Simulation not found' }); return; }
+  res.json({ status: 'reset' });
 });

@@ -23,6 +23,7 @@ import { COPLayerLifecycle } from './COPLayerLifecycle.js';
 import { COPReviewPanel } from './COPReviewPanel.js';
 import { COPResourceDetail } from './COPResourceDetail.js';
 import { MissionSequencePanel } from './MissionSequencePanel.js';
+import { COPGateNotifications } from './COPGateNotifications.js';
 import { GraphExplorer, type GraphData } from '../graph/GraphExplorer.js';
 import { NodeDetailPanel } from '../graph/NodeDetailPanel.js';
 import { ActivityFeed } from '../problem-set/ActivityFeed.js';
@@ -156,6 +157,15 @@ export function COPTab({ problemSetId }: COPTabProps) {
 
   // Robot layer state (Phase 06)
   const [robotLayerVisible, setRobotLayerVisible] = useState(true);
+
+  // Map flyTo control for gate notifications (zoom to action area)
+  const mapFlyToRef = useRef<((lat: number, lng: number, zoom: number) => void) | null>(null);
+  const handleMapReady = useCallback((flyTo: (lat: number, lng: number, zoom: number) => void) => {
+    mapFlyToRef.current = flyTo;
+  }, []);
+  const handleZoomToAction = useCallback((lat: number, lng: number, zoom: number) => {
+    mapFlyToRef.current?.(lat, lng, zoom);
+  }, []);
 
   // Auto-trigger state
   const [generating, setGenerating] = useState(false);
@@ -520,8 +530,11 @@ export function COPTab({ problemSetId }: COPTabProps) {
 
         {/* Map */}
         <div className="flex-1 min-h-0 relative">
-          {/* Mission Sequence Panel (Iron Bastion) */}
+          {/* Mission Sequence Panel (Iron Bastion / Autonomous) */}
           <MissionSequencePanel />
+
+          {/* Gate notifications — lethal modal + toast notifications */}
+          <COPGateNotifications onZoomToAction={handleZoomToAction} />
 
           <COPMapView
             problemSetId={problemSetId}
@@ -563,6 +576,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
               } catch { /* ignore — robot API unavailable */ }
             }}
             selectedRobotId={null}
+            onMapReady={handleMapReady}
           />
 
           {/* Generating spinner overlay */}

@@ -9,8 +9,8 @@
  * Layer visibility and opacity are controlled via the COPLayerControls panel.
  */
 
-import { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, Polygon, Popup } from 'react-leaflet';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Polyline, Polygon, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LIGHT_TILE_URL, LIGHT_TILE_ATTRIBUTION, LIGHT_TILE_SUBDOMAINS } from '../../lib/map-tiles';
@@ -56,6 +56,8 @@ interface COPMapViewProps {
   onRobotClick?: (robotId: string) => void;
   /** Currently selected robot ID for map click-to-navigate */
   selectedRobotId?: string | null;
+  /** Callback providing a flyTo function for external map control (e.g. gate zoom) */
+  onMapReady?: (flyTo: (lat: number, lng: number, zoom: number) => void) => void;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -171,6 +173,7 @@ export function COPMapView({
   robotLayerVisible = true,
   onRobotClick,
   selectedRobotId,
+  onMapReady,
 }: COPMapViewProps) {
   const [layers, setLayers] = useState<COPLayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -263,9 +266,30 @@ export function COPMapView({
 
         {/* Swarm formation layer (Phase 48) — renders behind robot dots */}
         <SwarmCOPLayer />
+
+        {/* Expose flyTo for external map control (gate notifications, zoom to action) */}
+        {onMapReady && <MapFlyToController onMapReady={onMapReady} />}
       </MapContainer>
     </div>
   );
+}
+
+// ─── MapFlyToController (exposes flyTo for external control) ─────────────────
+
+function MapFlyToController({ onMapReady }: { onMapReady: (flyTo: (lat: number, lng: number, zoom: number) => void) => void }) {
+  const map = useMap();
+  const calledRef = useRef(false);
+
+  useEffect(() => {
+    if (!calledRef.current) {
+      calledRef.current = true;
+      onMapReady((lat, lng, zoom) => {
+        map.flyTo([lat, lng], zoom, { duration: 1.5 });
+      });
+    }
+  }, [map, onMapReady]);
+
+  return null;
 }
 
 // ─── LayerContent (renders symbols, control measures, annotations) ──────────
