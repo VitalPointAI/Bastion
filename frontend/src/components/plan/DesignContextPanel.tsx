@@ -4,8 +4,11 @@
  * Phase 49 Plan 02: Reusable read-only panel for displaying Design tab artifacts
  * inside JPP steps. Provides visual distinction (blue tint) to make clear that
  * content is sourced from the Design tab, not editable within the Plan tab.
+ *
+ * Phase 49 Plan 04: Wired "Propose Revision" button to open RevisionProposalModal.
  */
 
+import { useState } from 'react';
 import './DesignContextPanel.css';
 import type {
   SectionStatus,
@@ -14,6 +17,8 @@ import type {
   LineOfEffort,
   OperationalApproach,
 } from '../../lib/design-service.ts';
+import type { RevisionArtifactType } from '../../lib/design-revision-service.ts';
+import { RevisionProposalModal } from './RevisionProposalModal.tsx';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -191,6 +196,15 @@ function PhasesRenderer({ data }: { data: OperationalApproach }) {
   );
 }
 
+// ─── Artifact type mapping ────────────────────────────────────────────────────
+
+const ARTIFACT_TYPE_MAP: Record<DesignArtifact, RevisionArtifactType> = {
+  'problem-statement': 'problem-framing',
+  'cog-analysis': 'cog-analysis',
+  'lines-of-effort': 'lines-of-effort',
+  'phases': 'operational-approach',
+};
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function DesignContextPanel({
@@ -198,9 +212,14 @@ export function DesignContextPanel({
   artifact,
   data,
   sectionStatus,
+  problemSetId,
   loading = false,
+  onRevisionProposed,
 }: DesignContextPanelProps) {
   const isEmpty = sectionStatus === 'not-started';
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
+
+  const revisionArtifactType = ARTIFACT_TYPE_MAP[artifact];
 
   return (
     <div className="design-ctx-panel">
@@ -252,12 +271,32 @@ export function DesignContextPanel({
       <div className="design-ctx-footer">
         <button
           className="design-ctx-propose-btn"
-          disabled
-          title="Coming soon — revisions to Design artifacts will be enabled in a future update"
+          disabled={sectionStatus !== 'complete'}
+          title={
+            sectionStatus !== 'complete'
+              ? 'Section must be complete in the Design Tab before proposing a revision'
+              : 'Propose a revision to this Design artifact'
+          }
+          onClick={() => setShowRevisionModal(true)}
         >
           Propose Revision
         </button>
       </div>
+
+      {/* Revision Proposal Modal */}
+      {showRevisionModal && (
+        <RevisionProposalModal
+          isOpen={showRevisionModal}
+          onClose={() => setShowRevisionModal(false)}
+          artifactType={revisionArtifactType}
+          originalData={data}
+          problemSetId={problemSetId}
+          onSubmitted={() => {
+            setShowRevisionModal(false);
+            onRevisionProposed?.();
+          }}
+        />
+      )}
     </div>
   );
 }
