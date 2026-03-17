@@ -276,8 +276,8 @@ export function COPLayerControls({
                     // Determine affiliation for force disposition layers
                     let affiliationPrefix = '';
                     if (layer.layerType === 'force_disposition' && symbolCount > 0) {
-                      const hasFriendly = symbols.some((s: Record<string, unknown>) => s.affiliation === 'friendly');
-                      const hasEnemy = symbols.some((s: Record<string, unknown>) => s.affiliation === 'enemy' || s.affiliation === 'hostile');
+                      const hasFriendly = symbols.some((s) => s.affiliation === 'friendly');
+                      const hasEnemy = symbols.some((s) => s.affiliation === 'enemy' || (s as unknown as Record<string, unknown>).affiliation === 'hostile');
                       if (hasFriendly && !hasEnemy) affiliationPrefix = 'Friendly ';
                       else if (hasEnemy && !hasFriendly) affiliationPrefix = 'Adversary ';
                       else if (hasFriendly && hasEnemy) affiliationPrefix = 'Combined ';
