@@ -23,6 +23,7 @@ import { inheritanceStore } from '../inheritance/inheritance-store.js';
 import { decisionStore } from '../graph/raft/decision-store.js';
 import type { DecisionBasis } from '../graph/raft/types.js';
 import { signAndSubmitFunctionCall } from '../near/tx-signer.js';
+import { getMessageBus } from '../messaging/message-bus.js';
 
 // ---------------------------------------------------------------------------
 // Gate Permissions Type
@@ -70,7 +71,12 @@ export class GateService {
       };
     }
 
-    return this.store.create(enrichedParams);
+    const gate = await this.store.create(enrichedParams);
+
+    // Publish gate creation event for real-time COP notifications
+    this.publishGateEvent('gate.created', gate);
+
+    return gate;
   }
 
   /**
@@ -171,6 +177,9 @@ export class GateService {
     // Capture in knowledge graph
     this.captureDecisionInGraph(approved, 'approved', decidedBy, 'Approved by commander');
 
+    // Publish approval event
+    this.publishGateEvent('gate.approved', approved);
+
     return approved;
   }
 
@@ -199,6 +208,9 @@ export class GateService {
 
     // Capture in knowledge graph
     this.captureDecisionInGraph(rejected, 'rejected', decidedBy, reason);
+
+    // Publish rejection event
+    this.publishGateEvent('gate.rejected', rejected);
 
     return rejected;
   }
@@ -509,6 +521,53 @@ export class GateService {
     }).catch((err) => {
       console.error('[GateService] Failed to capture decision in graph (non-fatal):', err);
     });
+  }
+
+  /**
+   * Publish gate lifecycle event to message bus for real-time COP notifications.
+   * Critical gates (robot_action_auth with lethal context) are tagged as urgent.
+   */
+  private publishGateEvent(eventType: string, gate: DecisionGate): void {
+    try {
+      const context = gate.decision_context as Record<string, unknown> | null;
+      const isLethal = context?.escalation_type === 'lethal_force';
+      const isResourceAllocation = gate.target_item_type === 'resource_allocation';
+
+      // Determine urgency: lethal > resource_allocation > standard
+      const urgency = isLethal ? 'critical' : isResourceAllocation ? 'high' : 'standard';
+
+      const messageBus = getMessageBus();
+      messageBus.publish({
+        sourceDid: 'system:gate-service',
+        sourceType: 'system',
+        destinationType: 'channel',
+        destinationTarget: 'gate:lifecycle',
+        messageType: eventType,
+        payload: {
+          gate_id: gate.id,
+          gate_type: gate.gate_type,
+          status: gate.status,
+          urgency,
+          is_lethal: isLethal,
+          title: gate.target_item_title,
+          problem_set_id: gate.problem_set_id,
+          target_item_id: gate.target_item_id,
+          target_item_type: gate.target_item_type,
+          enforcement: gate.enforcement,
+          // Include location context for map zoom (from decision_context)
+          threat_entity: context?.threat_entity,
+          threat_designation: context?.threat_designation,
+          swarm_id: context?.swarm_id,
+          mission_id: context?.mission_id,
+          decided_by: gate.decided_by,
+          decided_at: gate.decided_at,
+        },
+      }).catch((err) => {
+        console.warn('[GateService] Failed to publish gate event (non-fatal):', err);
+      });
+    } catch {
+      // Non-fatal — don't break gate operations if message bus is unavailable
+    }
   }
 }
 
