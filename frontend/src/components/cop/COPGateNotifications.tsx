@@ -57,7 +57,7 @@ export function COPGateNotifications({ onZoomToAction }: COPGateNotificationsPro
       const [lat, lng] = roomToLatLng(2.5, 3.5);
       onZoomToAction(lat, lng, 17);
     }
-  }, [criticalGate?.gateId, onZoomToAction]);
+  }, [criticalGate, onZoomToAction]);
 
   return (
     <>
