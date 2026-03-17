@@ -115,7 +115,7 @@ class FakeWebSocket {
           ];
         }
 
-        robot.speed = (mission.params.speed ?? 100) / 255 * 0.5; // Scale to ~0.5 m/s max
+        robot.speed = (mission.params.speed ?? 100) / 255 * 2.0; // Scale to ~2.0 m/s max for visible map movement
 
         // Send accepted state
         const svc = getRobotMissionService();
@@ -163,13 +163,13 @@ class FakeWebSocket {
 /**
  * Start a simulation session with virtual robots.
  */
-export function startSimulation(config: {
+export async function startSimulation(config: {
   robotIds: string[];
   leaderId: string;
   homeBase: { x: number; y: number };
   reconArea?: { x_min: number; y_min: number; x_max: number; y_max: number };
   threatClasses?: string[];
-}): string {
+}): Promise<string> {
   const sessionId = randomUUID();
   const session: SimSession = {
     id: sessionId,
@@ -185,7 +185,8 @@ export function startSimulation(config: {
 
   const svc = getRobotMissionService();
 
-  // Register virtual robots
+  // Register virtual robots — await each so resource registry bridge completes
+  // before missions are dispatched (prevents pre-flight validation failures)
   for (const robotId of config.robotIds) {
     const isLeader = robotId === config.leaderId;
     const did = `did:near:sim-robot-${robotId}`;
@@ -201,14 +202,14 @@ export function startSimulation(config: {
       battery: 95 + Math.random() * 5,
       capabilities,
       waypoints: [],
-      speed: 0.3,
+      speed: 1.0,
     };
 
     session.robots.set(robotId, robot);
 
-    // Register with mission service using fake WebSocket
+    // Register with mission service using fake WebSocket — await resource bridge
     const fakeWs = new FakeWebSocket(robotId, sessionId) as unknown as import('ws').WebSocket;
-    svc.registerSimulatedRobot(robotId, did, capabilities, fakeWs);
+    await svc.registerSimulatedRobot(robotId, did, capabilities, fakeWs);
 
     console.log(`[Simulator] Registered virtual robot '${robotId}' (DID: ${did})`);
   }
@@ -390,7 +391,7 @@ export function resetSimulation(sessionId: string): boolean {
     robot.waypoints = [];
     robot.activeMissionId = undefined;
     robot.activeCommand = undefined;
-    robot.speed = 0.3;
+    robot.speed = 1.0;
     robot.battery = 95 + Math.random() * 5;
   }
 
@@ -450,7 +451,7 @@ export function listSimulations(): Array<{ id: string; running: boolean; paused:
 
 declare module './robot-mission-service.js' {
   interface RobotMissionService {
-    registerSimulatedRobot(robotId: string, did: string, capabilities: string[], fakeWs: import('ws').WebSocket): void;
+    registerSimulatedRobot(robotId: string, did: string, capabilities: string[], fakeWs: import('ws').WebSocket): Promise<void>;
     handleSimulatedStateUpdate(robotId: string, missionId: string, state: string): void;
     updateSimulatedTelemetry(robotId: string, position: { x: number; y: number }, heading: number, battery: number): void;
   }

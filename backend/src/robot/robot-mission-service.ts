@@ -1636,13 +1636,15 @@ Return ONLY valid JSON, no markdown.`;
   /**
    * Register a simulated robot using a fake WebSocket.
    * The fake WS captures mission:assign messages and drives the simulation.
+   * Returns a promise that resolves once the resource registry bridge completes
+   * (needed so dispatchMission pre-flight validation can find the resource).
    */
-  registerSimulatedRobot(
+  async registerSimulatedRobot(
     robotId: string,
     did: string,
     capabilities: string[],
     fakeWs: WebSocket,
-  ): void {
+  ): Promise<void> {
     const robot: ConnectedRobot = {
       robot_id: robotId,
       did,
@@ -1656,8 +1658,12 @@ Return ONLY valid JSON, no markdown.`;
     this.connectedRobots.set(robotId, robot);
     console.log(`[RobotMissionService] Simulated robot registered: ${robotId} (DID: ${did})`);
 
-    // Bridge to resource registry so COP layers can pick it up
-    this.bridgeToResourceRegistry(robotId, did, capabilities).catch(() => { /* non-fatal */ });
+    // Bridge to resource registry — await so pre-flight validation works on first dispatch
+    try {
+      await this.bridgeToResourceRegistry(robotId, did, capabilities);
+    } catch (err) {
+      console.warn(`[RobotMissionService] Resource bridge failed for sim robot ${robotId} (non-fatal):`, err);
+    }
   }
 
   /**
