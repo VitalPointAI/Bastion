@@ -200,6 +200,14 @@ export function COPMapView({
     fetchLayers();
   }, [fetchLayers, refreshKey]);
 
+  // Auto-refresh layers every 10s to pick up vision detections and destroyed markers
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchLayers();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [fetchLayers]);
+
   // Get visible layers
   const visibleLayers = layers.filter((l) => layerVisibility[l.id] !== false);
 
