@@ -3,7 +3,9 @@
  *
  * Phase 25 Plan 05: Synthesis section that brings together problem framing,
  * CoG analysis, and LOEs into a coherent operational approach narrative.
- * Includes Design-to-Plan handoff button.
+ *
+ * Phase 49 Plan 02: Removed manual "Push to Plan Tab" button — Design artifacts
+ * now flow automatically to Plan tab JPP steps via fetch-on-render.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -26,7 +28,6 @@ interface OperationalApproachSectionProps {
   onAiCacheUpdate?: (cache: Map<string, Record<string, any>>) => void;
 }
 
-type HandoffState = 'idle' | 'packaging' | 'ready' | 'pushed';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -65,8 +66,6 @@ export function OperationalApproachSection({
     decisionPoints: initialData.decisionPoints ?? [],
     narrative: initialData.narrative ?? '',
   }));
-  const [handoffState, setHandoffState] = useState<HandoffState>('idle');
-  const [handoffTimestamp, setHandoffTimestamp] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
@@ -253,26 +252,6 @@ export function OperationalApproachSection({
           }));
         })()
       : [];
-
-  // ─── Handoff logic ────────────────────────────────────────────────────────
-
-  const canPush = (() => {
-    const statuses = Object.values(designData.status);
-    // At least one section must not be 'not-started'
-    return statuses.some((s) => s !== 'not-started');
-  })();
-
-  const handlePushHandoff = async () => {
-    setHandoffState('packaging');
-    try {
-      await designService.pushHandoff(problemSetId);
-      setHandoffState('pushed');
-      setHandoffTimestamp(new Date().toISOString());
-    } catch (err) {
-      console.error('[OperationalApproach] Handoff failed:', err);
-      setHandoffState('idle');
-    }
-  };
 
   // ─── Synthesis data for summary cards ─────────────────────────────────────
 
@@ -537,42 +516,6 @@ export function OperationalApproachSection({
         />
       </div>
 
-      {/* ─── Design-to-Plan Handoff ────────────────────────────────────────── */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-5">
-        <h3 className="text-base font-medium text-gray-200 mb-3">Design-to-Plan Handoff</h3>
-        <p className="text-sm text-gray-400 mb-4">
-          Package your operational design outputs and push them to the Plan tab for structured planning.
-        </p>
-
-        {handoffState === 'pushed' && handoffTimestamp && (
-          <div className="bg-green-900/30 border border-green-700/50 rounded p-3 mb-4">
-            <p className="text-sm text-green-300">
-              Design outputs pushed to Plan tab. Switch to the Plan tab to begin structured planning.
-            </p>
-            <p className="text-xs text-green-400/70 mt-1">
-              Pushed at {new Date(handoffTimestamp).toLocaleString()}
-            </p>
-          </div>
-        )}
-
-        <button
-          onClick={handlePushHandoff}
-          disabled={!canPush || handoffState === 'packaging'}
-          className={`w-full py-3 px-6 rounded-lg text-base font-medium transition-colors ${
-            handoffState === 'pushed'
-              ? 'bg-green-700 text-green-100 cursor-default'
-              : canPush && handoffState !== 'packaging'
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          {handoffState === 'packaging'
-            ? 'Packaging design outputs...'
-            : handoffState === 'pushed'
-              ? 'Pushed to Plan Tab'
-              : 'Push to Plan Tab'}
-        </button>
-      </div>
       </div>
 
       {/* AI Panel */}

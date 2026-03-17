@@ -10,6 +10,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { JPPStepLayout } from './JPPStepLayout.tsx';
 import { RoleGatedSection } from './RoleGatedSection.tsx';
 import { jppService, type StepStatus } from '../../lib/jpp-service.ts';
+import { designService, type OperationalDesign, type DesignStatus } from '../../lib/design-service.ts';
+import { DesignContextPanel } from './DesignContextPanel.tsx';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -185,6 +187,39 @@ export function MissionAnalysis({
 
   // Step status
   const [stepStatus, setStepStatus] = useState<StepStatus>('not_started');
+
+  // Design tab data (read-only context)
+  const [designData, setDesignData] = useState<OperationalDesign | null>(null);
+  const [designStatus, setDesignStatus] = useState<DesignStatus | null>(null);
+  const [designLoading, setDesignLoading] = useState(true);
+
+  // ─── Load design data from Design tab ──────────────────────────────────
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDesign() {
+      try {
+        const [design, status] = await Promise.all([
+          designService.getDesign(problemSetId),
+          designService.getStatus(problemSetId),
+        ]);
+        if (!cancelled) {
+          setDesignData(design);
+          setDesignStatus(status);
+        }
+      } catch {
+        // Design not yet created — panels will show empty state
+      } finally {
+        if (!cancelled) setDesignLoading(false);
+      }
+    }
+
+    loadDesign();
+    return () => {
+      cancelled = true;
+    };
+  }, [problemSetId]);
 
   // ─── Load existing data ────────────────────────────────────────────────
 
@@ -382,7 +417,6 @@ export function MissionAnalysis({
 
   void stepStatus;
   void setStepStatus;
-  void problemSetId;
 
   return (
     <JPPStepLayout
@@ -394,6 +428,26 @@ export function MissionAnalysis({
       status={stepStatus}
       aiAgentId="jpp-mission-analysis-agent"
     >
+      {/* ── Design Context: Problem Statement (from Design tab) ─────────── */}
+      <DesignContextPanel
+        title="Problem Statement (from Design)"
+        artifact="problem-statement"
+        data={designData?.problemFraming ?? null}
+        sectionStatus={designStatus?.problemFraming ?? 'not-started'}
+        problemSetId={problemSetId}
+        loading={designLoading}
+      />
+
+      {/* ── Design Context: Center of Gravity Analysis (from Design tab) ── */}
+      <DesignContextPanel
+        title="Center of Gravity Analysis (from Design)"
+        artifact="cog-analysis"
+        data={designData?.cogAnalysis ?? null}
+        sectionStatus={designStatus?.cogAnalysis ?? 'not-started'}
+        problemSetId={problemSetId}
+        loading={designLoading}
+      />
+
       {/* ── Section 1: Intelligence Preparation ────────────────────────── */}
       <RoleGatedSection
         allowedRoles={['j2', 'j2x']}
