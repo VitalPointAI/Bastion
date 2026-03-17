@@ -87,6 +87,8 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO }: MissionSequen
   const [simSessionId, setSimSessionId] = useState<string | null>(null);
   const [simPaused, setSimPaused] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
+  const [seedStatus, setSeedStatus] = useState<string | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   // Poll sequence status
@@ -194,11 +196,18 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO }: MissionSequen
     if (!simSessionId) return;
     try {
       await fetch(`/api/robot/simulations/${simSessionId}/reset`, { method: 'POST' });
+      // Also clear seeded strategic COP layers
+      await fetch('/api/robot/scenarios/clear-strategic-cop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problemSetId }),
+      }).catch(() => { /* non-fatal */ });
       setSequenceId(null);
       setStatus(null);
       setSimPaused(false);
+      setSeedStatus(null);
     } catch { /* silent */ }
-  }, [simSessionId]);
+  }, [simSessionId, problemSetId]);
 
   const phase = (status?.phase ?? 'idle') as Phase;
   const phaseCfg = PHASE_CONFIG[phase] ?? PHASE_CONFIG.idle;
@@ -327,7 +336,7 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO }: MissionSequen
             <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
               <button
                 onClick={() => handleLaunch('autonomous')}
-                disabled={launching}
+                disabled={launching || seeding}
                 style={{
                   flex: 1, padding: '8px 8px', borderRadius: '6px',
                   border: '1px solid rgba(139, 92, 246, 0.4)',
@@ -341,7 +350,7 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO }: MissionSequen
               </button>
               <button
                 onClick={() => handleLaunch('scripted')}
-                disabled={launching}
+                disabled={launching || seeding}
                 style={{
                   flex: 1, padding: '8px 8px', borderRadius: '6px',
                   border: '1px solid rgba(239, 68, 68, 0.4)',
@@ -352,6 +361,42 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO }: MissionSequen
                 }}
               >
                 {launching && missionType === 'scripted' ? 'Deploying...' : 'Scripted'}
+              </button>
+              <button
+                onClick={async () => {
+                  setSeeding(true);
+                  setSeedStatus(null);
+                  try {
+                    const res = await fetch('/api/robot/scenarios/seed-strategic-cop', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ problemSetId }),
+                    });
+                    const data = await res.json();
+                    if (data.status === 'already_seeded') {
+                      setSeedStatus('Already seeded');
+                    } else {
+                      setSeedStatus(`${data.friendlyCount + data.adversaryCount} symbols`);
+                    }
+                  } catch {
+                    setSeedStatus('Failed');
+                  } finally {
+                    setSeeding(false);
+                    setTimeout(() => setSeedStatus(null), 3000);
+                  }
+                }}
+                disabled={seeding || launching}
+                style={{
+                  padding: '8px 8px', borderRadius: '6px',
+                  border: '1px solid rgba(34, 197, 94, 0.4)',
+                  backgroundColor: seeding ? 'rgba(22, 101, 52, 0.3)' : 'rgba(34, 197, 94, 0.15)',
+                  color: '#86efac', fontSize: '0.6875rem', fontWeight: 600,
+                  cursor: seeding ? 'not-allowed' : 'pointer',
+                  textTransform: 'uppercase' as const, letterSpacing: '0.3px',
+                  whiteSpace: 'nowrap' as const,
+                }}
+              >
+                {seeding ? 'Seeding...' : seedStatus ?? 'Seed COP'}
               </button>
             </div>
           )}

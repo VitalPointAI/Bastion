@@ -572,3 +572,140 @@ robotRouter.post('/simulations/:sessionId/reset', (req, res) => {
   if (!ok) { res.status(404).json({ error: 'Simulation not found' }); return; }
   res.json({ status: 'reset' });
 });
+
+// ---------------------------------------------------------------------------
+// POST /scenarios/seed-strategic-cop — Seed strategic force disposition layers
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/seed-strategic-cop', async (req, res) => {
+  const { problemSetId } = req.body;
+  if (!problemSetId) {
+    res.status(400).json({ error: 'problemSetId is required' });
+    return;
+  }
+
+  try {
+    const { layerStore } = await import('../cop/layers/layer-store.js');
+
+    // Check if strategic layers already exist for this workspace
+    const existing = await layerStore.queryLayers({ workspaceId: problemSetId, layerType: 'force_disposition' });
+    const hasStrategic = existing.some((l: { spec?: { metadata?: Record<string, unknown> } }) => {
+      const meta = l.spec?.metadata as Record<string, unknown> | undefined;
+      return meta?.generatedBy === 'strategic-cop-seed';
+    });
+    if (hasStrategic) {
+      res.json({ status: 'already_seeded', message: 'Strategic COP layers already exist for this problem set' });
+      return;
+    }
+
+    const friendlySymbols = [
+      { entityId: 'tw-6th-army', designation: '6th Army Command (ROC)', affiliation: 'friendly', sidc: '10031000001211004600', position: { lat: 25.034, lng: 121.564 }, confidence: 0.95, confidenceTier: 'high' },
+      { entityId: 'tw-10th-army-corps', designation: '10th Army Corps (ROC)', affiliation: 'friendly', sidc: '10031000001211001400', position: { lat: 24.80, lng: 120.97 }, confidence: 0.95, confidenceTier: 'high' },
+      { entityId: 'tw-8th-army-corps', designation: '8th Army Corps (ROC)', affiliation: 'friendly', sidc: '10031000001211001400', position: { lat: 22.63, lng: 120.30 }, confidence: 0.95, confidenceTier: 'high' },
+      { entityId: 'tw-269-mech-bde', designation: '269th Mechanized Inf Bde (ROC)', affiliation: 'friendly', sidc: '10031000001211001200', position: { lat: 24.15, lng: 120.68 }, confidence: 0.90, confidenceTier: 'high' },
+      { entityId: 'tw-coast-def-north', designation: 'Northern Coastal Defense Group', affiliation: 'friendly', sidc: '10031000001211001200', position: { lat: 25.15, lng: 121.74 }, confidence: 0.90, confidenceTier: 'high' },
+      { entityId: 'tw-air-def-cmd', designation: 'Air Defense Missile Command (ROC)', affiliation: 'friendly', sidc: '10031000001407001400', position: { lat: 24.99, lng: 121.23 }, confidence: 0.90, confidenceTier: 'high' },
+      { entityId: 'us-7th-fleet-csg', designation: 'CSG-5 (USS Ronald Reagan)', affiliation: 'friendly', sidc: '10033000001301000000', position: { lat: 24.50, lng: 123.80 }, confidence: 0.85, confidenceTier: 'high' },
+      { entityId: 'us-iii-mef', designation: 'III MEF (Okinawa)', affiliation: 'friendly', sidc: '10031000001211001600', position: { lat: 26.33, lng: 127.77 }, confidence: 0.90, confidenceTier: 'high' },
+      { entityId: 'us-18th-wing', designation: '18th Wing (Kadena AB)', affiliation: 'friendly', sidc: '10030500001101001400', position: { lat: 26.35, lng: 127.76 }, confidence: 0.90, confidenceTier: 'high' },
+    ];
+
+    const adversarySymbols = [
+      { entityId: 'pla-etc-hq', designation: 'Eastern Theater Command HQ', affiliation: 'enemy', sidc: '10061000001211001800', position: { lat: 28.23, lng: 120.63 }, confidence: 0.80, confidenceTier: 'medium' },
+      { entityId: 'pla-73rd-group-army', designation: '73rd Group Army (Amphibious)', affiliation: 'enemy', sidc: '10061000001211001600', position: { lat: 26.05, lng: 119.31 }, confidence: 0.75, confidenceTier: 'medium' },
+      { entityId: 'pla-71st-group-army', designation: '71st Group Army', affiliation: 'enemy', sidc: '10061000001211001600', position: { lat: 27.90, lng: 120.50 }, confidence: 0.70, confidenceTier: 'medium' },
+      { entityId: 'pla-esf-amphib', designation: 'East Sea Fleet Amphibious Group', affiliation: 'enemy', sidc: '10063000001302000000', position: { lat: 25.80, lng: 120.10 }, confidence: 0.70, confidenceTier: 'medium' },
+      { entityId: 'pla-ssf-destroyer-grp', designation: 'South Sea Fleet Surface Action Group', affiliation: 'enemy', sidc: '10063000001301000000', position: { lat: 23.50, lng: 119.50 }, confidence: 0.65, confidenceTier: 'medium' },
+      { entityId: 'pla-sub-wolfpack', designation: 'Submarine Patrol Group', affiliation: 'enemy', sidc: '10063500001301000000', position: { lat: 24.20, lng: 122.50 }, confidence: 0.50, confidenceTier: 'low' },
+      { entityId: 'pla-air-east', designation: 'PLAAF Eastern Theater Air Force', affiliation: 'enemy', sidc: '10060500001101001600', position: { lat: 26.90, lng: 119.95 }, confidence: 0.75, confidenceTier: 'medium' },
+      { entityId: 'pla-rocket-force-base', designation: 'PLARF Base 61 (DF-15/DF-16)', affiliation: 'enemy', sidc: '10061000001409001400', position: { lat: 27.50, lng: 118.80 }, confidence: 0.65, confidenceTier: 'medium' },
+      { entityId: 'pla-marine-bde-taipei', designation: 'PLA Marine Brigade (Taipei Assault)', affiliation: 'enemy', sidc: '10061000001211001200', position: { lat: 25.13, lng: 121.46 }, confidence: 0.60, confidenceTier: 'medium' },
+    ];
+
+    const toLayerSymbols = (symbols: typeof friendlySymbols) => symbols.map(s => ({
+      ...s, linkedEntities: [], ccoClass: 'military_unit',
+      sourceAuthority: 'Pacific Strategy AY26 Exercise',
+      assertedVia: 'exercise_seed',
+      provenanceSummary: 'Pacific Strategy AY26 exercise scenario data',
+    }));
+
+    const now = new Date().toISOString();
+    const layers = [
+      { name: 'Friendly Force Disposition (Strategic)', symbols: toLayerSymbols(friendlySymbols) },
+      { name: 'Adversary Force Disposition (Strategic)', symbols: toLayerSymbols(adversarySymbols) },
+    ];
+
+    const created: string[] = [];
+    for (const layer of layers) {
+      const result = await layerStore.createLayer({
+        workspaceId: problemSetId,
+        sectionId: 'default',
+        layerType: 'force_disposition',
+        spec: {
+          layerId: `strategic-${layer.name.includes('Friendly') ? 'friendly' : 'adversary'}-${Date.now()}`,
+          layerType: 'force_disposition',
+          workspaceId: problemSetId,
+          sectionId: 'default',
+          symbols: layer.symbols,
+          controlMeasures: [],
+          customAnnotations: [],
+          temporalPhases: [],
+          metadata: {
+            generatedBy: 'strategic-cop-seed',
+            generatedAt: now,
+            sourceDocumentIds: ['pacific-strategy-ay26'],
+            ccoValidated: false,
+          },
+        } as any,
+      });
+      created.push(result.id);
+    }
+
+    console.log(`[robot-routes] Seeded strategic COP for ${problemSetId}: ${created.join(', ')}`);
+    res.json({ status: 'seeded', layerIds: created, friendlyCount: friendlySymbols.length, adversaryCount: adversarySymbols.length });
+  } catch (err) {
+    console.error('[robot-routes] Failed to seed strategic COP:', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /scenarios/clear-strategic-cop — Remove seeded strategic COP layers
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/clear-strategic-cop', async (req, res) => {
+  const { problemSetId } = req.body;
+  if (!problemSetId) {
+    res.status(400).json({ error: 'problemSetId is required' });
+    return;
+  }
+
+  try {
+    const { layerStore } = await import('../cop/layers/layer-store.js');
+
+    const existing = await layerStore.queryLayers({ workspaceId: problemSetId, layerType: 'force_disposition' });
+    let removed = 0;
+    for (const layer of existing) {
+      const meta = (layer as { spec?: { metadata?: Record<string, unknown> } }).spec?.metadata as Record<string, unknown> | undefined;
+      if (meta?.generatedBy === 'strategic-cop-seed') {
+        await layerStore.deleteLayer(layer.id);
+        removed++;
+      }
+    }
+
+    // Also remove vision-generated adversary layers (from simulation detections)
+    for (const layer of existing) {
+      const meta = (layer as { spec?: { metadata?: Record<string, unknown> } }).spec?.metadata as Record<string, unknown> | undefined;
+      if (meta?.generatedBy === 'vision-detection-pipeline') {
+        await layerStore.deleteLayer(layer.id);
+        removed++;
+      }
+    }
+
+    console.log(`[robot-routes] Cleared ${removed} strategic/vision COP layers for ${problemSetId}`);
+    res.json({ status: 'cleared', removed });
+  } catch (err) {
+    console.error('[robot-routes] Failed to clear strategic COP:', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
