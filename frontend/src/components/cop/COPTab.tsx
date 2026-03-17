@@ -158,6 +158,10 @@ export function COPTab({ problemSetId }: COPTabProps) {
   // Robot layer state (Phase 06)
   const [robotLayerVisible, setRobotLayerVisible] = useState(true);
 
+  // Refresh key — increment to force COPMapView to re-fetch layers
+  const [layerRefreshKey, setLayerRefreshKey] = useState(0);
+  const handleLayersChanged = useCallback(() => setLayerRefreshKey(k => k + 1), []);
+
   // Map flyTo control for gate notifications (zoom to action area)
   const mapFlyToRef = useRef<((lat: number, lng: number, zoom: number) => void) | null>(null);
   const handleMapReady = useCallback((flyTo: (lat: number, lng: number, zoom: number) => void) => {
@@ -531,7 +535,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
         {/* Map */}
         <div className="flex-1 min-h-0 relative">
           {/* Mission Sequence Panel (Iron Bastion / Autonomous) */}
-          <MissionSequencePanel problemSetId={problemSetId} onZoomToAO={handleZoomToAction} />
+          <MissionSequencePanel problemSetId={problemSetId} onZoomToAO={handleZoomToAction} onLayersChanged={handleLayersChanged} />
 
           {/* Gate notifications — lethal modal + toast notifications */}
           <COPGateNotifications onZoomToAction={handleZoomToAction} />
@@ -542,6 +546,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
             layerOpacity={layerOpacity}
             currentPerspective={currentPerspective}
             currentPhase={currentPhase || undefined}
+            refreshKey={layerRefreshKey}
             onLayersLoaded={handleLayersLoaded}
             resourceLayerVisible={resourceLayerVisible}
             onResourceSelect={(res) => {

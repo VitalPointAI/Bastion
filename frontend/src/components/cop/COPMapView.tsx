@@ -58,6 +58,8 @@ interface COPMapViewProps {
   selectedRobotId?: string | null;
   /** Callback providing a flyTo function for external map control (e.g. gate zoom) */
   onMapReady?: (flyTo: (lat: number, lng: number, zoom: number) => void) => void;
+  /** Increment to trigger layer re-fetch (e.g. after seeding COP data) */
+  refreshKey?: number;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -174,6 +176,7 @@ export function COPMapView({
   onRobotClick,
   selectedRobotId,
   onMapReady,
+  refreshKey,
 }: COPMapViewProps) {
   const [layers, setLayers] = useState<COPLayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,7 +198,7 @@ export function COPMapView({
 
   useEffect(() => {
     fetchLayers();
-  }, [fetchLayers]);
+  }, [fetchLayers, refreshKey]);
 
   // Get visible layers
   const visibleLayers = layers.filter((l) => layerVisibility[l.id] !== false);
