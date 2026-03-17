@@ -719,7 +719,7 @@ Plans:
 ### Phase 49: Align Design Tab with Plan Tab
 **Goal:** Remove duplicate operational design from Plan tab, establish Design tab as single source of truth for operational design artifacts (CoG, LOEs, problem framing, operational approach), wire Design outputs as automatic starting point for campaign planning in Plan tab, restructure Strategic Guidance to remove Operational Approach step and add Alignment step, build generic fork-and-merge revision system for Plan-to-Design change proposals through DAO governance
 **Depends on:** Phase 25, Phase 28, Phase 36
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 - [ ] 49-01-PLAN.md — Restructure Strategic Guidance (Assessment/Alignment/Directive), delete OperationalApproach, remove CoG from StrategicAssessment
