@@ -168,6 +168,19 @@ export class ResourceRegistry {
   }
 
   /**
+   * Re-index a resource under a new DID (cache + didIndex update).
+   * Used when the robot's actual DID differs from the auto-generated one.
+   */
+  reindexResourceDID(resourceId: string, oldDid: string, newDid: string): void {
+    this.didIndex.delete(oldDid);
+    this.didIndex.set(newDid, resourceId);
+    const cached = this.cache.get(resourceId);
+    if (cached) {
+      (cached as { did: string }).did = newDid;
+    }
+  }
+
+  /**
    * Remove a resource from cache and indexes.
    */
   private removeFromCache(id: string): void {
