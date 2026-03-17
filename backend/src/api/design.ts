@@ -14,8 +14,12 @@ import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { listDocuments } from '../strategic/ingestion/document-store.js';
 import { ObjectiveStore } from '../strategic/objectives/store.js';
 import { notifyCOPChange } from '../cop/index.js';
+import { router as revisionRouter } from './design-revisions.js';
 
 const router = Router();
+
+// Mount revision sub-router before the /:problemSetId catch-all routes to avoid conflicts
+router.use('/:problemSetId/revisions', revisionRouter);
 
 const VALID_SECTIONS = ['problem-framing', 'cog-analysis', 'lines-of-effort', 'operational-approach'];
 
