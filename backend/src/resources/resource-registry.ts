@@ -377,6 +377,14 @@ export class ResourceRegistry {
     return resource;
   }
 
+  /**
+   * Remove a simulated resource from cache only (no DB).
+   * Counterpart to registerSimulated() — call on simulation stop.
+   */
+  unregisterSimulated(id: string): void {
+    this.removeFromCache(id);
+  }
+
   // ─── Other Methods ─────────────────────────────────────────────
 
   /**
