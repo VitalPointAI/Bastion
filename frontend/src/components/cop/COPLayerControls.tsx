@@ -271,8 +271,18 @@ export function COPLayerControls({
                   {group.map((layer) => {
                     const visible = layerVisibility[layer.id] !== false;
                     const opacity = layerOpacity[layer.id] ?? 100;
-                    const symbolCount = layer.spec?.symbols?.length ?? 0;
-                    const label = `${LAYER_TYPE_LABELS[layer.layerType] ?? layer.layerType}${
+                    const symbols = layer.spec?.symbols ?? [];
+                    const symbolCount = symbols.length;
+                    // Determine affiliation for force disposition layers
+                    let affiliationPrefix = '';
+                    if (layer.layerType === 'force_disposition' && symbolCount > 0) {
+                      const hasFriendly = symbols.some((s: Record<string, unknown>) => s.affiliation === 'friendly');
+                      const hasEnemy = symbols.some((s: Record<string, unknown>) => s.affiliation === 'enemy' || s.affiliation === 'hostile');
+                      if (hasFriendly && !hasEnemy) affiliationPrefix = 'Friendly ';
+                      else if (hasEnemy && !hasFriendly) affiliationPrefix = 'Adversary ';
+                      else if (hasFriendly && hasEnemy) affiliationPrefix = 'Combined ';
+                    }
+                    const label = `${affiliationPrefix}${LAYER_TYPE_LABELS[layer.layerType] ?? layer.layerType}${
                       symbolCount > 0 ? ` (${symbolCount})` : ''
                     }`;
 
