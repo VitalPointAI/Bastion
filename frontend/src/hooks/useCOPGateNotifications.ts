@@ -126,7 +126,11 @@ export function useCOPGateNotifications(): UseCOPGateNotificationsResult {
         };
 
         if (mountedRef.current) {
-          setNotifications((prev) => [notification, ...prev]);
+          setNotifications((prev) => {
+            // Deduplicate: skip if we already have a notification for this gateId
+            if (prev.some((n) => n.gateId === notification.gateId)) return prev;
+            return [notification, ...prev];
+          });
         }
       } catch {
         // Non-JSON or unexpected message — ignore
@@ -167,11 +171,16 @@ export function useCOPGateNotifications(): UseCOPGateNotificationsResult {
 
   const approveGate = useCallback(async (gateId: string) => {
     try {
-      await fetch(`/api/gates/${gateId}/approve`, {
+      const res = await fetch(`/api/gates/${gateId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decidedBy: 'commander' }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[useCOPGateNotifications] approve failed:', err.error);
+        return;
+      }
       // Mark as dismissed
       setNotifications((prev) =>
         prev.map((n) => n.gateId === gateId ? { ...n, dismissed: true, status: 'approved' } : n),
@@ -183,11 +192,16 @@ export function useCOPGateNotifications(): UseCOPGateNotificationsResult {
 
   const rejectGate = useCallback(async (gateId: string, reason: string) => {
     try {
-      await fetch(`/api/gates/${gateId}/reject`, {
+      const res = await fetch(`/api/gates/${gateId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decidedBy: 'commander', reason }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[useCOPGateNotifications] reject failed:', err.error);
+        return;
+      }
       setNotifications((prev) =>
         prev.map((n) => n.gateId === gateId ? { ...n, dismissed: true, status: 'rejected' } : n),
       );

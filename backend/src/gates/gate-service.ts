@@ -158,7 +158,12 @@ export class GateService {
   async approveGate(gateId: string, decidedBy: string): Promise<DecisionGate> {
     const gate = await this.store.findById(gateId);
     if (!gate) throw new Error(`Gate not found: ${gateId}`);
-    if (gate.status !== GateStatus.submitted && gate.status !== GateStatus.escalated) {
+
+    // Robot action auth gates may still be in 'pending' if the status advancement
+    // from the orchestrator failed — auto-advance to submitted before approving
+    if (gate.status === GateStatus.pending && gate.gate_type === GateType.robot_action_auth) {
+      await this.store.update(gateId, { status: GateStatus.submitted as GateStatus });
+    } else if (gate.status !== GateStatus.submitted && gate.status !== GateStatus.escalated) {
       throw new Error(`Cannot approve gate in status '${gate.status}'. Must be 'submitted' or 'escalated'.`);
     }
 

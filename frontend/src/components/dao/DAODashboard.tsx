@@ -49,6 +49,209 @@ function formatRelativeTime(isoString: string): string {
   return `${diffDays}d ago`;
 }
 
+// ============================================================================
+// Decision Gates Table with inline actions
+// ============================================================================
+
+function DecisionGatesTable({
+  gates,
+  isCommander,
+  onApprove,
+  onReject,
+}: {
+  gates: import('../../lib/gate-service').DecisionGate[];
+  isCommander: boolean;
+  onApprove: (gateId: string) => Promise<void>;
+  onReject: (gateId: string, reason: string) => Promise<void>;
+}) {
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const handleApprove = useCallback(async (gateId: string) => {
+    setActionLoading(gateId);
+    try { await onApprove(gateId); } finally { setActionLoading(null); }
+  }, [onApprove]);
+
+  const handleRejectConfirm = useCallback(async () => {
+    if (!rejectingId || !rejectReason.trim()) return;
+    setActionLoading(rejectingId);
+    try {
+      await onReject(rejectingId, rejectReason.trim());
+      setRejectingId(null);
+      setRejectReason('');
+    } finally { setActionLoading(null); }
+  }, [rejectingId, rejectReason, onReject]);
+
+  const filtered = gates
+    .filter((g) => !(g.status === 'pending' && g.gate_type === 'robot_action_auth'))
+    .sort((a, b) => {
+      const order: Record<string, number> = { submitted: 0, pending: 1, escalated: 2, rejected: 3, approved: 4, overridden: 5 };
+      const diff = (order[a.status] ?? 99) - (order[b.status] ?? 99);
+      return diff !== 0 ? diff : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+
+  if (filtered.length === 0) return null;
+
+  // Split into actionable vs resolved
+  const actionable = filtered.filter((g) => g.status === 'submitted' || g.status === 'escalated');
+  const resolved = filtered.filter((g) => g.status !== 'submitted' && g.status !== 'escalated');
+
+  return (
+    <div className="decision-gates-section">
+      <h3 className="section-title">Decision Gates</h3>
+
+      {/* Actionable gates — prominent cards */}
+      {actionable.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: resolved.length > 0 ? '1rem' : 0 }}>
+          {actionable.map((gate) => (
+            <div key={gate.id} style={{
+              padding: '0.75rem 1rem',
+              background: 'rgba(245, 158, 11, 0.06)',
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+              borderRadius: '0.5rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.8125rem', color: '#e2e8f0', marginBottom: '0.125rem' }}>
+                    {gate.target_item_title || formatGateTypeLabel(gate.gate_type)}
+                  </div>
+                  <div style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
+                    {formatGateTypeLabel(gate.gate_type)}
+                    {' \u2022 '}
+                    <span style={{ textTransform: 'capitalize' }}>{gate.tab}</span>
+                    {gate.submitted_at && ` \u2022 ${formatRelativeTime(gate.submitted_at)}`}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
+                  <GateStatusBadge status={gate.status} />
+                  {isCommander && (
+                    <>
+                      <button
+                        onClick={() => handleApprove(gate.id)}
+                        disabled={actionLoading === gate.id}
+                        style={{
+                          padding: '0.25rem 0.625rem',
+                          borderRadius: '0.25rem',
+                          border: '1px solid rgba(34, 197, 94, 0.4)',
+                          background: 'rgba(34, 197, 94, 0.1)',
+                          color: '#4ade80',
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                          cursor: actionLoading === gate.id ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {actionLoading === gate.id ? '...' : 'Approve'}
+                      </button>
+                      <button
+                        onClick={() => { setRejectingId(gate.id); setRejectReason(''); }}
+                        disabled={actionLoading === gate.id}
+                        style={{
+                          padding: '0.25rem 0.625rem',
+                          borderRadius: '0.25rem',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          background: 'rgba(239, 68, 68, 0.08)',
+                          color: '#f87171',
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                          cursor: actionLoading === gate.id ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+              {/* Inline reject reason input */}
+              {rejectingId === gate.id && (
+                <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.5rem' }}>
+                  <input
+                    type="text"
+                    placeholder="Reason for rejection..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleRejectConfirm(); if (e.key === 'Escape') setRejectingId(null); }}
+                    autoFocus
+                    style={{
+                      flex: 1,
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '0.25rem',
+                      border: '1px solid #374151',
+                      background: '#1e293b',
+                      color: '#e2e8f0',
+                      fontSize: '0.75rem',
+                      outline: 'none',
+                    }}
+                  />
+                  <button
+                    onClick={handleRejectConfirm}
+                    disabled={!rejectReason.trim()}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '0.25rem',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      color: '#f87171',
+                      fontSize: '0.6875rem',
+                      fontWeight: 600,
+                      cursor: rejectReason.trim() ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setRejectingId(null)}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '0.25rem',
+                      border: '1px solid #374151',
+                      background: 'transparent',
+                      color: '#9ca3af',
+                      fontSize: '0.6875rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Resolved gates — compact table */}
+      {resolved.length > 0 && (
+        <div className="gates-table-wrapper">
+          <table className="gates-overview-table">
+            <thead>
+              <tr>
+                <th>Gate</th>
+                <th>Tab</th>
+                <th>Item</th>
+                <th>Status</th>
+                <th>Decided</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resolved.map((gate) => (
+                <tr key={gate.id}>
+                  <td>{formatGateTypeLabel(gate.gate_type)}</td>
+                  <td style={{ textTransform: 'capitalize' }}>{gate.tab}</td>
+                  <td>{gate.target_item_title || '--'}</td>
+                  <td><GateStatusBadge status={gate.status} /></td>
+                  <td>{gate.decided_at ? formatRelativeTime(gate.decided_at) : gate.submitted_at ? formatRelativeTime(gate.submitted_at) : '--'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface DAODashboardProps {
   daoId?: string; // If not provided, show all user's DAOs
   initialView?: 'governance' | 'proposals' | 'mdmp';
@@ -169,7 +372,7 @@ export function DAODashboard({ daoId: initialDaoId, initialView }: DAODashboardP
   };
 
   // Decision gates cross-tab overview
-  const { gates: allGates, loading: gatesLoading } = useDecisionGates();
+  const { gates: allGates, loading: gatesLoading, approveGate: approveGateCtx, rejectGate: rejectGateCtx, isCommander } = useDecisionGates();
 
   const selectedDao = daos.find((d) => d.daoId === selectedDaoId);
 
@@ -242,43 +445,12 @@ export function DAODashboard({ daoId: initialDaoId, initialView }: DAODashboardP
 
         {/* Decision Gates Cross-Tab Overview */}
         {!gatesLoading && allGates.length > 0 && (
-          <div className="decision-gates-section">
-            <h3 className="section-title">Decision Gates</h3>
-            <div className="gates-table-wrapper">
-              <table className="gates-overview-table">
-                <thead>
-                  <tr>
-                    <th>Gate</th>
-                    <th>Tab</th>
-                    <th>Item</th>
-                    <th>Status</th>
-                    <th>Submitted</th>
-                    <th>Decided</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...allGates]
-                    // Hide internal robot gates stuck in pending (never submitted — no user action possible)
-                    .filter((gate) => !(gate.status === 'pending' && gate.gate_type === 'robot_action_auth'))
-                    .sort((a, b) => {
-                      const order: Record<string, number> = { submitted: 0, pending: 1, rejected: 2, escalated: 3, approved: 4, overridden: 5 };
-                      const diff = (order[a.status] ?? 99) - (order[b.status] ?? 99);
-                      return diff !== 0 ? diff : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-                    })
-                    .map((gate) => (
-                      <tr key={gate.id}>
-                        <td>{formatGateTypeLabel(gate.gate_type)}</td>
-                        <td style={{ textTransform: 'capitalize' }}>{gate.tab}</td>
-                        <td>{gate.target_item_title || '--'}</td>
-                        <td><GateStatusBadge status={gate.status} /></td>
-                        <td>{gate.submitted_at ? formatRelativeTime(gate.submitted_at) : '--'}</td>
-                        <td>{gate.decided_at ? formatRelativeTime(gate.decided_at) : '--'}</td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <DecisionGatesTable
+            gates={allGates}
+            isCommander={isCommander}
+            onApprove={approveGateCtx}
+            onReject={rejectGateCtx}
+          />
         )}
 
         <div className="dashboard-main">
