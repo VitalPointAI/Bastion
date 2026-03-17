@@ -21,6 +21,7 @@ import {
   type SGStepId,
 } from './StrategicGuidanceStepConfig.ts';
 import { sgService, type SGInstance } from '../../lib/strategic-guidance-service.ts';
+import { useAuth } from '../../hooks/useAuth.tsx';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -66,6 +67,7 @@ export function StrategicGuidancePlanView({
   problemSetId,
   daoId: _daoId,
 }: StrategicGuidancePlanViewProps) {
+  const { accountId } = useAuth();
   const [selectedStep, setSelectedStep] = useState<SGStepId>('strategic_assessment');
   const [instance, setInstance] = useState<SGInstance | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,7 +132,7 @@ export function StrategicGuidancePlanView({
     const handleStartPlanning = async () => {
       try {
         setCreating(true);
-        await sgService.createInstance(problemSetId);
+        await sgService.createInstance(problemSetId, accountId ?? undefined);
         await loadInstance();
       } catch (err) {
         const message =
