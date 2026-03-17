@@ -454,6 +454,7 @@ function BoundingOverwatchLayer({ swarm }: BoundingOverwatchLayerProps) {
     isBoundingTechnique,
     swarm.technique,
     swarm.heading,
+    swarm.members,
     memberPositionKey,
   ]);
 
