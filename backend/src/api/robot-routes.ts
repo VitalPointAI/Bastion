@@ -420,6 +420,7 @@ robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
         homeBase: overrides.homeBase ?? { x: 0.3, y: 0.5 },
         reconArea: overrides.reconArea ?? { x_min: 0.5, y_min: 2.5, x_max: 4.5, y_max: 4.8 },
         threatClasses: ['CHN-99G', 'T-90'],
+        problemSetId: overrides.problemSetId,
       });
     }
 
@@ -506,6 +507,7 @@ robotRouter.post('/scenarios/autonomous', async (req, res) => {
         homeBase: overrides.homeBase ?? { x: 0.3, y: 0.5 },
         reconArea: overrides.reconArea ?? { x_min: 0.5, y_min: 2.5, x_max: 4.5, y_max: 4.8 },
         threatClasses: ['CHN-99G', 'T-90'],
+        problemSetId: overrides.problemSetId,
       });
     }
 

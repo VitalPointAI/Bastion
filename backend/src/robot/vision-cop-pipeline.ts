@@ -299,13 +299,15 @@ export async function updateAdversaryCOPLayer(
   try {
     const { layerStore } = await import('../cop/layers/layer-store.js');
 
-    // Find or create the adversary detection layer
+    // Find or create the adversary detection layer (tactical level)
+    // Uses dedicated sectionId to avoid dedup collision with strategic seed layers
+    const visionSectionId = 'vision-detections';
     const existingLayers = await layerStore.queryLayers({
       workspaceId,
       layerType: 'force_disposition',
     });
 
-    // Look for an existing "Adversary Detections" layer
+    // Look for an existing vision-generated adversary layer
     let layerId: string | null = null;
     for (const layer of existingLayers) {
       const meta = layer.spec?.metadata as Record<string, unknown> | undefined;
@@ -342,7 +344,7 @@ export async function updateAdversaryCOPLayer(
       layerId: layerId ?? `vision-adversary-${Date.now()}`,
       layerType: 'force_disposition',
       workspaceId,
-      sectionId: 'default',
+      sectionId: visionSectionId,
       symbols: copSymbols,
       controlMeasures: [],
       customAnnotations: copAnnotations,
@@ -360,7 +362,7 @@ export async function updateAdversaryCOPLayer(
     } else {
       await layerStore.createLayer({
         workspaceId,
-        sectionId: 'default',
+        sectionId: visionSectionId,
         layerType: 'force_disposition',
         spec,
       });

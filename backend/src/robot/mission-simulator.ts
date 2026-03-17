@@ -58,6 +58,8 @@ interface SimSession {
   threatClasses: string[];
   /** Home base for reset */
   homeBase: { x: number; y: number };
+  /** Problem set for workspace routing */
+  problemSetId?: string;
   /** Config for re-initialization on reset */
   config: {
     robotIds: string[];
@@ -190,6 +192,7 @@ export async function startSimulation(config: {
   homeBase: { x: number; y: number };
   reconArea?: { x_min: number; y_min: number; x_max: number; y_max: number };
   threatClasses?: string[];
+  problemSetId?: string;
 }): Promise<string> {
   const sessionId = randomUUID();
   const session: SimSession = {
@@ -201,6 +204,7 @@ export async function startSimulation(config: {
     detectionTriggered: false,
     threatClasses: config.threatClasses ?? ['CHN-99G', 'T-90'],
     homeBase: config.homeBase,
+    problemSetId: config.problemSetId,
     config: { robotIds: config.robotIds, leaderId: config.leaderId },
   };
 
@@ -349,6 +353,7 @@ function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
         type: 'robot:vision',
         robot_id: robot.id,
         mission_id: robot.activeMissionId,
+        problem_set_id: session.problemSetId,
         timestamp: new Date().toISOString(),
         detections: [
           {
