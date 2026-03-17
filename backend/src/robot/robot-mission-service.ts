@@ -1006,8 +1006,17 @@ export class RobotMissionService {
       capabilities: capabilities.length > 0 ? capabilities : ['patrol', 'ISR'],
     });
 
+    // Overwrite auto-generated DID with the robot's actual DID so pre-flight
+    // validation (which looks up by robot DID) can find the resource.
+    if (registered.did !== did) {
+      const { getPool } = await import('../lib/database.js');
+      const pool = getPool();
+      await pool.query('UPDATE resources SET did = $1 WHERE id = $2', [did, registered.id]);
+      registry.reindexResourceDID(registered.id, registered.did, did);
+    }
+
     this.robotResourceIds.set(did, registered.id);
-    console.log(`[RobotMissionService] Resource bridge: registered robot ${robotId} as resource ${registered.id} (DID: ${registered.did})`);
+    console.log(`[RobotMissionService] Resource bridge: registered robot ${robotId} as resource ${registered.id} (DID: ${did})`);
   }
 
   /**
