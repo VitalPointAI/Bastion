@@ -256,7 +256,7 @@ interface DAODashboardProps {
   initialView?: 'governance' | 'proposals';
 }
 
-export function DAODashboard({ }: DAODashboardProps) {
+export function DAODashboard(_props: DAODashboardProps) {
   // Always show approve/reject — the backend enforces actual authorization.
   // isCommander from context may be false if membership role isn't set yet.
   const { gates: allGates, loading: gatesLoading, approveGate: approveGateCtx, rejectGate: rejectGateCtx, isCommander } = useDecisionGates();
