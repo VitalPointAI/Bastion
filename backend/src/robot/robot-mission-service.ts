@@ -34,7 +34,7 @@ import type {
 } from './robot-types.js';
 import { robotStore } from './robot-store.js';
 import { gateService, expeditedAuthorize } from '../gates/gate-service.js';
-import { GateType, GateEnforcement } from '../gates/gate-types.js';
+import { GateType, GateEnforcement, GateStatus } from '../gates/gate-types.js';
 import type { AuthResponseMsg } from './robot-types.js';
 import { problemSetActivityStore } from '../problem-set/problem-set-activity-store.js';
 import { getResourceRegistry } from '../resources/resource-registry.js';
@@ -780,9 +780,10 @@ export class RobotMissionService {
       mode: 'operational',
     });
 
-    // Tag the gate with lethal escalation context and re-publish the event
-    // so COP notifications receive is_lethal=true and urgency=critical
+    // Tag the gate with lethal context and advance to 'submitted' so it can
+    // be approved (approveGate requires status='submitted' or 'escalated')
     await gateService['store'].update(gate.id, {
+      status: 'submitted' as GateStatus,
       decision_context: {
         ...gate.decision_context,
         ...lethalContext,
