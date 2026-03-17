@@ -219,6 +219,7 @@ router.get('/:problemSetId/handoff', async (req: Request, res: Response) => {
 /**
  * POST /api/design/:problemSetId/push-handoff
  * Packages handoff payload and persists it in the database.
+ * @deprecated Phase 49 — Plan tab fetches directly via GET /api/design/:problemSetId. Kept for backward compatibility.
  */
 router.post('/:problemSetId/push-handoff', async (req: Request, res: Response) => {
   try {

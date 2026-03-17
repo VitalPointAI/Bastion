@@ -22,6 +22,7 @@ const GATE_TYPE_LABELS: Record<string, string> = {
   coa_selection: 'COA Selection',
   order_release: 'Order Release',
   reframing: 'Reframing Decision',
+  design_revision: 'Design Revision Proposal',
 };
 
 // ============================================================================

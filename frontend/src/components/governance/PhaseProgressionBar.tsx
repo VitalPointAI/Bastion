@@ -66,6 +66,7 @@ const GATE_TYPE_SHORT: Record<string, string> = {
   targeting: 'TGT',
   assessment: 'ASMT',
   resource: 'RES',
+  design_revision: 'DSN-REV',
 };
 
 export function PhaseProgressionBar({
