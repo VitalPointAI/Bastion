@@ -184,9 +184,10 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
   }, [simSessionId, simPaused]);
 
   const handleSimStop = useCallback(async () => {
-    if (!simSessionId) return;
     try {
-      await fetch(`/api/robot/simulations/${simSessionId}/stop`, { method: 'POST' });
+      if (simSessionId) {
+        await fetch(`/api/robot/simulations/${simSessionId}/stop`, { method: 'POST' });
+      }
       setSimSessionId(null);
       setSequenceId(null);
       setStatus(null);
@@ -195,22 +196,24 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
   }, [simSessionId]);
 
   const handleSimReset = useCallback(async () => {
-    if (!simSessionId) return;
     try {
-      await fetch(`/api/robot/simulations/${simSessionId}/reset`, { method: 'POST' });
-      // Also clear seeded strategic COP layers
+      if (simSessionId) {
+        await fetch(`/api/robot/simulations/${simSessionId}/reset`, { method: 'POST' });
+      }
+      // Also clear seeded strategic COP layers and vision detections
       await fetch('/api/robot/scenarios/clear-strategic-cop', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ problemSetId }),
       }).catch(() => { /* non-fatal */ });
       onLayersChanged?.();
+      setSimSessionId(null);
       setSequenceId(null);
       setStatus(null);
       setSimPaused(false);
       setSeedStatus(null);
     } catch { /* silent */ }
-  }, [simSessionId, problemSetId]);
+  }, [simSessionId, problemSetId, onLayersChanged]);
 
   const phase = (status?.phase ?? 'idle') as Phase;
   const phaseCfg = PHASE_CONFIG[phase] ?? PHASE_CONFIG.idle;
@@ -274,17 +277,19 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
           {/* Phase progress bar */}
           {isActive && <PhaseProgressBar phase={phase} missionType={missionType} />}
 
-          {/* Simulation controls */}
-          {simSessionId && isActive && (
+          {/* Simulation controls — show for any active sequence (sim or physical) */}
+          {isActive && (
             <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
               <button
                 onClick={handleSimPause}
+                disabled={!simSessionId}
                 style={{
                   flex: 1, padding: '4px 8px', borderRadius: '4px',
                   border: '1px solid #374151', fontSize: '0.5625rem', fontWeight: 600,
                   backgroundColor: simPaused ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
                   color: simPaused ? '#86efac' : '#fde047',
-                  cursor: 'pointer', textTransform: 'uppercase' as const,
+                  cursor: simSessionId ? 'pointer' : 'not-allowed', textTransform: 'uppercase' as const,
+                  opacity: simSessionId ? 1 : 0.4,
                 }}
               >
                 {simPaused ? 'Resume' : 'Pause'}
