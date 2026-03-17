@@ -71,6 +71,21 @@ export class GateService {
       };
     }
 
+    // Duplicate guard: if an active gate with the same target already exists, return it
+    if (enrichedParams.problem_set_id && enrichedParams.target_item_id) {
+      const existing = await this.store.findByProblemSet(enrichedParams.problem_set_id);
+      const duplicate = existing.find(
+        (g) =>
+          g.gate_type === enrichedParams.gate_type &&
+          g.target_item_id === enrichedParams.target_item_id &&
+          !['approved', 'rejected', 'overridden'].includes(g.status),
+      );
+      if (duplicate) {
+        console.log(`[GateService] Duplicate gate suppressed: ${duplicate.id} (${duplicate.gate_type}/${duplicate.target_item_id})`);
+        return duplicate;
+      }
+    }
+
     const gate = await this.store.create(enrichedParams);
 
     // Publish gate creation event for real-time COP notifications

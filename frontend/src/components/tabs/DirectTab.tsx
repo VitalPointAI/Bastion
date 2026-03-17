@@ -12,15 +12,10 @@ import { useDecisionGates } from '../../context/DecisionGateContext.js';
 import type { DecisionGate } from '../../lib/gate-service';
 import { RobotMissionTrigger } from '../direct/RobotMissionTrigger.js';
 
-type DirectView = 'governance' | 'proposals' | 'escalation' | 'all-gates' | 'robot-missions';
+type DirectView = 'governance' | 'escalation' | 'all-gates' | 'robot-missions';
 
 const DIRECT_ITEMS: SidebarItem[] = [
   { id: 'governance', label: 'Governance Overview' },
-  {
-    id: 'proposals',
-    label: 'Proposals & Voting',
-    tooltip: 'Active proposals requiring action',
-  },
   {
     id: 'escalation',
     label: 'Escalation',
@@ -37,13 +32,6 @@ const DIRECT_ITEMS: SidebarItem[] = [
     tooltip: 'Trigger and monitor autonomous vehicle missions',
   },
 ];
-
-const DAO_VIEWS = new Set<DirectView>(['governance', 'proposals']);
-
-const VIEW_TO_INITIAL: Record<'governance' | 'proposals', 'governance' | 'proposals'> = {
-  governance: 'governance',
-  proposals: 'proposals',
-};
 
 // ============================================================================
 // Gate Type Label Map
@@ -213,12 +201,8 @@ export function DirectTab({ problemSetId, daoId }: DirectTabProps) {
       {/* Decision gate banner for commanders */}
       <DecisionGateBanner tabId="direct" />
 
-      {DAO_VIEWS.has(selectedView) && (
-        <DAODashboard
-          key={selectedView}
-          daoId={daoId}
-          initialView={VIEW_TO_INITIAL[selectedView as 'governance' | 'proposals']}
-        />
+      {selectedView === 'governance' && (
+        <DAODashboard daoId={daoId} />
       )}
 
       {selectedView === 'governance' && (

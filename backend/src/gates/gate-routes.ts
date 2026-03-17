@@ -127,12 +127,12 @@ gateRoutes.post('/:gateId/submit', async (req, res) => {
 // ---------------------------------------------------------------------------
 gateRoutes.post('/:gateId/approve', async (req, res) => {
   try {
-    const { decidedBy } = req.body as { decidedBy: string };
+    const decidedBy = req.body?.decidedBy ?? req.body?.decided_by;
     if (!decidedBy) {
       res.status(400).json({ error: 'Missing required field: decidedBy' });
       return;
     }
-    const gate = await gateService.approveGate(req.params.gateId, decidedBy);
+    const gate = await gateService.approveGate(req.params.gateId, decidedBy as string);
     res.json(gate);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to approve gate';
@@ -146,12 +146,13 @@ gateRoutes.post('/:gateId/approve', async (req, res) => {
 // ---------------------------------------------------------------------------
 gateRoutes.post('/:gateId/reject', async (req, res) => {
   try {
-    const { decidedBy, reason } = req.body as { decidedBy: string; reason: string };
+    const decidedBy = req.body?.decidedBy ?? req.body?.decided_by;
+    const reason = req.body?.reason;
     if (!decidedBy || !reason) {
       res.status(400).json({ error: 'Missing required fields: decidedBy, reason' });
       return;
     }
-    const gate = await gateService.rejectGate(req.params.gateId, decidedBy, reason);
+    const gate = await gateService.rejectGate(req.params.gateId, decidedBy as string, reason as string);
     res.json(gate);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to reject gate';

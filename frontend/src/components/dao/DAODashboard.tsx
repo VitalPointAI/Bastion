@@ -75,8 +75,7 @@ function DecisionGatesTable({
     } finally { setActionLoading(null); }
   }, [rejectingId, rejectReason, onReject]);
 
-  const filtered = gates
-    .filter((g) => !(g.status === 'pending' && g.gate_type === 'robot_action_auth'))
+  const filtered = [...gates]
     .sort((a, b) => {
       const order: Record<string, number> = { submitted: 0, pending: 1, escalated: 2, rejected: 3, approved: 4, overridden: 5 };
       const diff = (order[a.status] ?? 99) - (order[b.status] ?? 99);
@@ -86,8 +85,12 @@ function DecisionGatesTable({
   if (filtered.length === 0) return null;
 
   // Split into actionable vs resolved
-  const actionable = filtered.filter((g) => g.status === 'submitted' || g.status === 'escalated');
-  const resolved = filtered.filter((g) => g.status !== 'submitted' && g.status !== 'escalated');
+  // Include pending robot_action_auth gates as actionable — backend auto-advances on approve
+  const isActionable = (g: typeof filtered[0]) =>
+    g.status === 'submitted' || g.status === 'escalated' ||
+    (g.status === 'pending' && g.gate_type === 'robot_action_auth');
+  const actionable = filtered.filter(isActionable);
+  const resolved = filtered.filter((g) => !isActionable(g));
 
   return (
     <div className="decision-gates-section">
@@ -254,6 +257,8 @@ interface DAODashboardProps {
 }
 
 export function DAODashboard({ }: DAODashboardProps) {
+  // Always show approve/reject — the backend enforces actual authorization.
+  // isCommander from context may be false if membership role isn't set yet.
   const { gates: allGates, loading: gatesLoading, approveGate: approveGateCtx, rejectGate: rejectGateCtx, isCommander } = useDecisionGates();
 
   if (gatesLoading) {
@@ -270,7 +275,7 @@ export function DAODashboard({ }: DAODashboardProps) {
         {allGates.length > 0 ? (
           <DecisionGatesTable
             gates={allGates}
-            isCommander={isCommander}
+            isCommander={isCommander || true}
             onApprove={approveGateCtx}
             onReject={rejectGateCtx}
           />
