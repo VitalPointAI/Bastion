@@ -1,8 +1,11 @@
 /**
  * StrategicAssessment — Step 1 content component
  *
- * Phase 36 Plan 03: Strategic environment summary, center of gravity analysis,
- * key assumptions, and strategic factors with auto-save.
+ * Phase 36 Plan 03: Strategic environment summary, key assumptions, and
+ * strategic factors with auto-save.
+ *
+ * Phase 49 Plan 01: Removed center of gravity analysis section.
+ * CoG analysis is now the single source of truth in the Design tab.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -11,13 +14,6 @@ import { sgService } from '../../../lib/strategic-guidance-service.ts';
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-interface COGAnalysis {
-  cog: string;
-  criticalCapabilities: string[];
-  criticalRequirements: string[];
-  criticalVulnerabilities: string[];
-}
 
 interface Assumption {
   id: string;
@@ -30,28 +26,14 @@ interface Assumption {
 
 interface StrategicAssessmentContent {
   strategicEnvironmentSummary: string;
-  centerOfGravityAnalysis: {
-    friendly: COGAnalysis;
-    adversary: COGAnalysis;
-  };
+  // CoG analysis moved to Design tab (Phase 49) — single source of truth
   keyAssumptions: Assumption[];
   strategicFactors: string[];
   sourceContainerIds: string[];
 }
 
-const EMPTY_COG: COGAnalysis = {
-  cog: '',
-  criticalCapabilities: [],
-  criticalRequirements: [],
-  criticalVulnerabilities: [],
-};
-
 const EMPTY_CONTENT: StrategicAssessmentContent = {
   strategicEnvironmentSummary: '',
-  centerOfGravityAnalysis: {
-    friendly: { ...EMPTY_COG },
-    adversary: { ...EMPTY_COG },
-  },
   keyAssumptions: [],
   strategicFactors: [],
   sourceContainerIds: [],
@@ -173,61 +155,6 @@ function EditableStringList({
   );
 }
 
-function COGSection({
-  label,
-  cog,
-  onChange,
-}: {
-  label: string;
-  cog: COGAnalysis;
-  onChange: (updated: COGAnalysis) => void;
-}) {
-  return (
-    <div style={{ flex: 1, minWidth: '280px' }}>
-      <h4 style={{ ...labelStyle, fontSize: '0.85rem', color: '#d1d5db', marginBottom: '0.5rem' }}>
-        {label}
-      </h4>
-
-      <div style={{ marginBottom: '0.5rem' }}>
-        <label style={labelStyle}>Center of Gravity</label>
-        <input
-          style={inputStyle}
-          value={cog.cog}
-          placeholder="e.g., National will, military capability..."
-          onChange={(e) => onChange({ ...cog, cog: e.target.value })}
-        />
-      </div>
-
-      <div style={{ marginBottom: '0.5rem' }}>
-        <label style={labelStyle}>Critical Capabilities</label>
-        <EditableStringList
-          items={cog.criticalCapabilities}
-          onChange={(caps) => onChange({ ...cog, criticalCapabilities: caps })}
-          placeholder="Capability..."
-        />
-      </div>
-
-      <div style={{ marginBottom: '0.5rem' }}>
-        <label style={labelStyle}>Critical Requirements</label>
-        <EditableStringList
-          items={cog.criticalRequirements}
-          onChange={(reqs) => onChange({ ...cog, criticalRequirements: reqs })}
-          placeholder="Requirement..."
-        />
-      </div>
-
-      <div>
-        <label style={labelStyle}>Critical Vulnerabilities</label>
-        <EditableStringList
-          items={cog.criticalVulnerabilities}
-          onChange={(vulns) => onChange({ ...cog, criticalVulnerabilities: vulns })}
-          placeholder="Vulnerability..."
-        />
-      </div>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
@@ -329,32 +256,9 @@ export function StrategicAssessment({ problemSetId: _problemSetId, instanceId }:
         />
       </div>
 
-      {/* 2. Center of Gravity Analysis */}
-      <div style={sectionStyle}>
-        <h3 style={sectionHeaderStyle}>Center of Gravity Analysis</h3>
-        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-          <COGSection
-            label="Friendly"
-            cog={content.centerOfGravityAnalysis.friendly}
-            onChange={(friendly) =>
-              updateContent({
-                centerOfGravityAnalysis: { ...content.centerOfGravityAnalysis, friendly },
-              })
-            }
-          />
-          <COGSection
-            label="Adversary"
-            cog={content.centerOfGravityAnalysis.adversary}
-            onChange={(adversary) =>
-              updateContent({
-                centerOfGravityAnalysis: { ...content.centerOfGravityAnalysis, adversary },
-              })
-            }
-          />
-        </div>
-      </div>
+      {/* CoG analysis moved to Design tab (Phase 49) — single source of truth */}
 
-      {/* 3. Key Assumptions */}
+      {/* 2. Key Assumptions */}
       <div style={sectionStyle}>
         <h3 style={sectionHeaderStyle}>Key Assumptions</h3>
         {content.keyAssumptions.map((assumption, idx) => (
@@ -437,7 +341,7 @@ export function StrategicAssessment({ problemSetId: _problemSetId, instanceId }:
         </button>
       </div>
 
-      {/* 4. Strategic Factors */}
+      {/* 3. Strategic Factors */}
       <div style={sectionStyle}>
         <h3 style={sectionHeaderStyle}>Strategic Factors</h3>
         <EditableStringList
