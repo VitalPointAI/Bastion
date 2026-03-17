@@ -9,7 +9,6 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { designService } from '../../lib/design-service.ts';
 import type {
   OperationalApproach,
   OperationalDesign,
