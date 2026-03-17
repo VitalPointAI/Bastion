@@ -10,6 +10,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { sgService } from '../../../lib/strategic-guidance-service.ts';
+import { fetchStrategicContextPreview } from '../../../lib/strategic-context-service.ts';
+import type { StrategicContextPreviewData } from '../../../lib/strategic-context-service.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -164,13 +166,77 @@ interface StrategicAssessmentProps {
   instanceId: string;
 }
 
-export function StrategicAssessment({ problemSetId: _problemSetId, instanceId }: StrategicAssessmentProps) {
+export function StrategicAssessment({ problemSetId, instanceId }: StrategicAssessmentProps) {
   const [content, setContent] = useState<StrategicAssessmentContent>(EMPTY_CONTENT);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pulling, setPulling] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load step content on mount
+  /**
+   * Assemble a strategic environment summary from Understand tab context.
+   * Combines graph summaries (actor analysis) and document summaries into
+   * a structured text block.
+   */
+  const assembleFromContext = useCallback((ctx: StrategicContextPreviewData): string => {
+    const parts: string[] = [];
+
+    // Graph summaries — actor/relationship analysis from containers
+    for (const [containerName, graph] of Object.entries(ctx.graphSummaries)) {
+      if (graph.summary) {
+        parts.push(`[${containerName}]\n${graph.summary}`);
+      }
+      if (graph.activeTensions?.length > 0) {
+        const tensions = graph.activeTensions
+          .map((t) => `- ${t.description} (${t.intensity}, ${t.domain})`)
+          .join('\n');
+        parts.push(`Key Tensions:\n${tensions}`);
+      }
+    }
+
+    // Document summaries — strategic documents with extracted objectives
+    if (ctx.documentSummaries?.length > 0) {
+      const docLines = ctx.documentSummaries.map((doc) => {
+        const extracted = doc.extractedData as Record<string, unknown> | undefined;
+        const objectives = extracted?.objectives as string[] | undefined;
+        let line = `- ${doc.title} (${doc.docType})`;
+        if (objectives?.length) {
+          line += `\n  Objectives: ${objectives.join('; ')}`;
+        }
+        return line;
+      });
+      parts.push(`Strategic Documents:\n${docLines.join('\n')}`);
+    }
+
+    return parts.join('\n\n');
+  }, []);
+
+  /**
+   * Pull strategic context from the Understand tab and populate the summary.
+   */
+  const pullFromUnderstand = useCallback(async () => {
+    setPulling(true);
+    try {
+      const ctx = await fetchStrategicContextPreview(problemSetId);
+      if (!ctx) return;
+
+      const summary = assembleFromContext(ctx);
+      if (!summary) return;
+
+      setContent((prev) => {
+        const updated = { ...prev, strategicEnvironmentSummary: summary };
+        // Auto-save the populated content
+        sgService.saveStepContent(instanceId, 'strategic_assessment', updated).catch(() => {});
+        return updated;
+      });
+    } catch (err) {
+      console.error('[StrategicAssessment] Failed to pull from Understand tab:', err);
+    } finally {
+      setPulling(false);
+    }
+  }, [problemSetId, instanceId, assembleFromContext]);
+
+  // Load step content on mount — auto-populate from Understand if empty
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -178,7 +244,32 @@ export function StrategicAssessment({ problemSetId: _problemSetId, instanceId }:
         setLoading(true);
         const result = await sgService.getStepContent(instanceId, 'strategic_assessment');
         if (!cancelled && result.content) {
-          setContent(result.content as StrategicAssessmentContent);
+          const loaded = result.content as StrategicAssessmentContent;
+          setContent(loaded);
+
+          // Auto-populate if summary is empty and documents exist in Understand
+          if (!loaded.strategicEnvironmentSummary) {
+            const ctx = await fetchStrategicContextPreview(problemSetId);
+            if (!cancelled && ctx) {
+              const summary = assembleFromContext(ctx);
+              if (summary) {
+                const updated = { ...loaded, strategicEnvironmentSummary: summary };
+                setContent(updated);
+                sgService.saveStepContent(instanceId, 'strategic_assessment', updated).catch(() => {});
+              }
+            }
+          }
+        } else if (!cancelled) {
+          // No saved content — try to populate from Understand
+          const ctx = await fetchStrategicContextPreview(problemSetId);
+          if (!cancelled && ctx) {
+            const summary = assembleFromContext(ctx);
+            if (summary) {
+              const populated = { ...EMPTY_CONTENT, strategicEnvironmentSummary: summary };
+              setContent(populated);
+              sgService.saveStepContent(instanceId, 'strategic_assessment', populated).catch(() => {});
+            }
+          }
         }
       } catch {
         // No content yet — use defaults
@@ -187,7 +278,7 @@ export function StrategicAssessment({ problemSetId: _problemSetId, instanceId }:
       }
     })();
     return () => { cancelled = true; };
-  }, [instanceId]);
+  }, [instanceId, problemSetId, assembleFromContext]);
 
   // Debounced auto-save
   const scheduleAutoSave = useCallback(
@@ -244,10 +335,20 @@ export function StrategicAssessment({ problemSetId: _problemSetId, instanceId }:
 
       {/* 1. Strategic Environment Summary */}
       <div style={sectionStyle}>
-        <h3 style={sectionHeaderStyle}>Strategic Environment Summary</h3>
-        <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem', marginTop: 0 }}>
-          Pull from strategic document containers in the Understand tab for source material.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid rgba(107, 114, 128, 0.3)' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#e5e7eb', margin: 0 }}>Strategic Environment Summary</h3>
+          <button
+            style={{
+              ...addBtnStyle,
+              opacity: pulling ? 0.6 : 1,
+              cursor: pulling ? 'not-allowed' : 'pointer',
+            }}
+            onClick={pullFromUnderstand}
+            disabled={pulling}
+          >
+            {pulling ? 'Pulling...' : '↻ Pull from Understand'}
+          </button>
+        </div>
         <textarea
           style={{ ...textareaStyle, minHeight: '8rem' }}
           value={content.strategicEnvironmentSummary}
