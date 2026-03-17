@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 49-04-PLAN.md
-last_updated: "2026-03-17T14:53:55.508Z"
+stopped_at: Completed 49-05-PLAN.md (Task 2 human verification checkpoint pending)
+last_updated: "2026-03-17T15:00:54.057Z"
 last_activity: "2026-03-17 - Completed 49-03: Design revisions backend — migration, revision-store CRUD, Express API with 5 endpoints for fork-and-merge lifecycle"
 progress:
   total_phases: 65
-  completed_phases: 46
+  completed_phases: 47
   total_plans: 414
-  completed_plans: 416
+  completed_plans: 417
 ---
 
 # Project State
@@ -208,6 +208,7 @@ Progress: ███████████████████████�
 | Phase 49 P01 | 15 | 2 tasks | 5 files |
 | Phase 49 P02 | 18 | 2 tasks | 8 files |
 | Phase 49 P04 | 4 | 2 tasks | 4 files |
+| Phase 49 P05 | 8 | 1 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -909,6 +910,7 @@ Recent decisions affecting current work:
 - [Phase 49]: DesignContextPanel uses fetch-on-render pattern (same as COADevelopment) to always show current Design data; no manual push required
 - [Phase 49]: No diff library — field-by-field JSON.stringify comparison sufficient for small structured JSON artifacts
 - [Phase 49]: RevisionDiffView serves dual purpose: static diff AND live preview while editing proposedData in modal
+- [Phase 49]: Merge to Design shown in banner as explicit manual action; local Set tracks merged state; pushHandoff kept for backward compat; design_revision added to GATE_TYPE_LABELS across all 5 governance components
 
 ### Roadmap Evolution
 
@@ -1623,7 +1625,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-17T14:53:55.499Z
-Stopped at: Completed 49-04-PLAN.md
+Last session: 2026-03-17T15:00:54.046Z
+Stopped at: Completed 49-05-PLAN.md (Task 2 human verification checkpoint pending)
 Resume file: None
 Next action: Continue Phase 40 plan 02

@@ -71,7 +71,7 @@ None
 - [x] **Phase 46: Sphero RVR+ Swarm Leader & Doctrinal Movement Control** - Vision-equipped RVR+ as swarm leader coordinating heterogeneous resources (RVR+, drones, UGVs, sensors) in 6 doctrinal formations and 4 movement techniques; UDP broadcast peer mesh; DAO-driven dynamic membership; leader vision sharing; swarm telemetry to COP with all member positions visible (completed 2026-03-14)
 - [ ] **Phase 47: JSON-LD Semantic Brain + COP Fix** - Refactor knowledge graph to JSON-LD with formal ontology alignment (BFO, CCO, DODAF/DNDAF), provenance tracking, temporal reasoning, entity resolution, confidence scoring; fix COP layer generation end-to-end (INSERTED)
 - [ ] **Phase 48: Robot Swarm Behaviour End-to-End Demo** - Complete BASTION strategy-to-autonomous-execution pipeline demo with Taiwan defense scenario, 3-robot coalition swarm, AI objective extraction, DAO-authorized missions, swarm recon, COP detections, lethal escalation gates, brain graph timeline playback (INSERTED)
-- [ ] **Phase 49: Align Design Tab with Plan Tab** - Remove duplicate operational design from Plan tab, establish Design tab as single source of truth for operational design artifacts, wire Design outputs as automatic starting point for campaign planning, restructure Strategic Guidance to remove Operational Approach step and add Alignment step, build generic fork-and-merge revision system for Plan-to-Design change proposals through DAO governance (INSERTED)
+- [x] **Phase 49: Align Design Tab with Plan Tab** - Remove duplicate operational design from Plan tab, establish Design tab as single source of truth for operational design artifacts, wire Design outputs as automatic starting point for campaign planning, restructure Strategic Guidance to remove Operational Approach step and add Alignment step, build generic fork-and-merge revision system for Plan-to-Design change proposals through DAO governance (INSERTED) (completed 2026-03-17)
 
 ## Phase Details
 
@@ -719,7 +719,7 @@ Plans:
 ### Phase 49: Align Design Tab with Plan Tab
 **Goal:** Remove duplicate operational design from Plan tab, establish Design tab as single source of truth for operational design artifacts (CoG, LOEs, problem framing, operational approach), wire Design outputs as automatic starting point for campaign planning in Plan tab, restructure Strategic Guidance to remove Operational Approach step and add Alignment step, build generic fork-and-merge revision system for Plan-to-Design change proposals through DAO governance
 **Depends on:** Phase 25, Phase 28, Phase 36
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [ ] 49-01-PLAN.md — Restructure Strategic Guidance (Assessment/Alignment/Directive), delete OperationalApproach, remove CoG from StrategicAssessment
