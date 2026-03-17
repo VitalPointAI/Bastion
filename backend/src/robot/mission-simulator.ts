@@ -22,6 +22,7 @@ import { getRobotMissionService } from './robot-mission-service.js';
 import type { ConnectedRobot } from './robot-types.js';
 import { RobotMissionState } from './robot-types.js';
 import { getMessageBus } from '../messaging/message-bus.js';
+import { getResourceRegistry } from '../resources/resource-registry.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -237,9 +238,12 @@ export function stopSimulation(sessionId: string): void {
     clearInterval(session.telemetryInterval);
   }
 
-  // Disconnect virtual robots
+  // Disconnect virtual robots and remove from resource registry cache
   const svc = getRobotMissionService();
+  const registry = getResourceRegistry();
   for (const [robotId] of session.robots) {
+    // Remove sim resource from cache before disconnect (prevents NMC ghost entries)
+    registry.unregisterSimulated(`RES-sim-${robotId}`);
     svc.handleRobotDisconnect(robotId);
   }
 
