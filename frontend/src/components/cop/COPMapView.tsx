@@ -173,6 +173,7 @@ export function COPMapView({
   robotLayerVisible = true,
   onRobotClick,
   selectedRobotId,
+  onMapReady,
 }: COPMapViewProps) {
   const [layers, setLayers] = useState<COPLayer[]>([]);
   const [loading, setLoading] = useState(true);
