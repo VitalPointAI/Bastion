@@ -5,7 +5,7 @@
  * progress bar, and rich data cards per JP 5-0 workflow.
  */
 
-import type { OperationalDesign, CoGNode, SectionStatus } from '../../lib/design-service.ts';
+import type { OperationalDesign, CoGNode } from '../../lib/design-service.ts';
 import { DesignStatusBadge } from './DesignStatusBadge.tsx';
 import { DesignSyncIndicator } from './DesignSyncIndicator.tsx';
 
@@ -180,49 +180,6 @@ function getEmptyMessage(sectionId: string): string {
   }
 }
 
-// ─── Progress Bar ─────────────────────────────────────────────────────────────
-
-const STATUS_COLORS: Record<SectionStatus, string> = {
-  'not-started': 'bg-gray-700',
-  'in-progress': 'bg-yellow-600',
-  complete: 'bg-green-600',
-};
-
-function DesignProgressBar({ status }: { status: OperationalDesign['status'] }) {
-  const sections = SECTION_CARDS.map((c) => ({
-    name: c.name,
-    status: status[c.statusKey],
-  }));
-  const completeCount = sections.filter((s) => s.status === 'complete').length;
-
-  return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-300">Design Progress</h3>
-        <span className="text-sm text-gray-400">
-          {completeCount}/{sections.length} sections complete
-        </span>
-      </div>
-      <div className="flex gap-1 h-2 rounded overflow-hidden">
-        {sections.map((s) => (
-          <div
-            key={s.name}
-            className={`flex-1 ${STATUS_COLORS[s.status]} transition-colors`}
-            title={`${s.name}: ${s.status}`}
-          />
-        ))}
-      </div>
-      <div className="flex gap-1 mt-1">
-        {sections.map((s) => (
-          <span key={s.name} className="flex-1 text-center text-[10px] text-gray-500 truncate">
-            {s.name}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function DesignOverview({ designData, onNavigate }: DesignOverviewProps) {
@@ -236,10 +193,7 @@ export function DesignOverview({ designData, onNavigate }: DesignOverviewProps) 
         </p>
       </div>
 
-      {/* Progress Bar */}
-      <DesignProgressBar status={designData.status} />
-
-      {/* Plan Tab Sync Status */}
+      {/* Design Progress + Plan Tab Sync (unified) */}
       <DesignSyncIndicator status={designData.status} />
 
       {/* Section Cards */}
