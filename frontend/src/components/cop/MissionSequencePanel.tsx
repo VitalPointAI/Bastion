@@ -66,7 +66,11 @@ const PHASE_CONFIG: Record<Phase, { color: string; bg: string; label: string }> 
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function MissionSequencePanel() {
+interface MissionSequencePanelProps {
+  problemSetId: string;
+}
+
+export function MissionSequencePanel({ problemSetId }: MissionSequencePanelProps) {
   const [collapsed, setCollapsed] = useState(true);
   const [sequenceId, setSequenceId] = useState<string | null>(null);
   const [missionType, setMissionType] = useState<MissionType>('autonomous');
@@ -132,7 +136,7 @@ export function MissionSequencePanel() {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ problemSetId }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -148,7 +152,7 @@ export function MissionSequencePanel() {
     } finally {
       setLaunching(false);
     }
-  }, [simulate]);
+  }, [simulate, problemSetId]);
 
   const handleReturnToBase = useCallback(async () => {
     if (!sequenceId) return;

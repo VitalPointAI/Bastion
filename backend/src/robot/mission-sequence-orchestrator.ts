@@ -297,14 +297,21 @@ class MissionSequenceOrchestrator extends EventEmitter {
     const owMissionId = randomUUID();
     state.missions['overwatch_leader'] = owMissionId;
 
+    // Route leader to overwatch via roads (from recon area near Chengde/Kaifeng)
+    // Overwatch position: Guanqian/Xuchang parking tower (2.1, 2.9)
+    // Route: Chengde → Kaifeng W → Guanqian S → Xuchang → overwatch position
     await svc.dispatchMission({
       mission_id: owMissionId,
       robot_id: state.config.leaderId,
-      command: 'overwatch',
+      command: 'patrol_route',
       params: {
-        target_location: state.config.overwatchPosition,
+        waypoints: [
+          { x: 3.4, y: 3.3 },  // Chengde/Kaifeng (near last recon waypoint)
+          { x: 2.5, y: 3.3 },  // W on Kaifeng to Guanqian Rd
+          { x: 2.5, y: 2.9 },  // S on Guanqian to Xuchang St
+          state.config.overwatchPosition, // Final overwatch position (2.1, 2.9)
+        ],
         speed: state.config.reconSpeed,
-        duration_sec: 300, // Hold overwatch for 5 min or until sequence ends
         autonomy_policy: { max_speed: 255, restricted_actions: [] },
       },
       issued_by: state.config.issuedBy,
