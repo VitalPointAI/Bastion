@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 49-01-PLAN.md
-last_updated: "2026-03-17T14:37:27.670Z"
-last_activity: "2026-03-16 - Completed 48-05: SwarmCOPLayer frontend — formation polygon, member markers, telemetry panel, smooth interpolation; wired into COPMapView"
+stopped_at: Completed 49-02-PLAN.md (retroactive — ran after 49-03)
+last_updated: "2026-03-17T14:45:19.956Z"
+last_activity: "2026-03-17 - Completed 49-03: Design revisions backend — migration, revision-store CRUD, Express API with 5 endpoints for fork-and-merge lifecycle"
 progress:
   total_phases: 65
   completed_phases: 46
   total_plans: 414
-  completed_plans: 413
+  completed_plans: 415
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 48 of 64 (Robot Swarm Behaviour End-to-End Demo) — IN PROGRESS
-Plan: 5 of 11 in current phase — COMPLETE
-Status: Plan 48-05 complete — SwarmCOPLayer frontend with formation polygon, member markers, smooth interpolation, and telemetry panel. Wired into COPMapView.
-Last activity: 2026-03-16 - Completed 48-05: SwarmCOPLayer frontend — formation polygon, member markers, telemetry panel, smooth interpolation; wired into COPMapView
+Phase: 49 of 65 (Align Design Tab Operational Approach with Plan Tab) — IN PROGRESS
+Plan: 3 of 5 in current phase — COMPLETE
+Status: Plan 49-03 complete — Design revisions backend: migration 033-design-revisions.sql, revision-store.ts CRUD, design-revisions.ts Express router with 5 endpoints for fork-and-merge lifecycle.
+Last activity: 2026-03-17 - Completed 49-03: Design revisions backend — migration, revision-store CRUD, Express API with 5 endpoints for fork-and-merge lifecycle
 
-Progress: █████████████████████████████ 408 plans complete
+Progress: ██████████████████████████████ 414 plans complete
 
 ## Performance Metrics
 
@@ -206,6 +206,7 @@ Progress: ███████████████████████�
 | Phase 48-robot-swarm-behaviour-end-to-end-demo P06 | 6 | 2 tasks | 4 files |
 | Phase 48-robot-swarm-behaviour-end-to-end-demo P08 | 12 | 1 tasks | 3 files |
 | Phase 49 P01 | 15 | 2 tasks | 5 files |
+| Phase 49 P02 | 18 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -219,6 +220,11 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 49 Plan 03 (Design Revisions Backend):**
+- Migration numbered 033 (not 049 as plan suggested) — matched actual sequence in backend/src/db/migrations/
+- revisionStore exported as plain object (not class) — simpler pattern, operational_designs already guaranteed to exist
+- merge() does not update operational_designs status JSONB — preserves Design tab's auto-derived status system
 
 **Phase 48 Plan 05 (SwarmCOPLayer Frontend):**
 - WebSocket channel 'swarm:cop_update' on /ws/messages for swarm telemetry push to frontend
@@ -899,6 +905,7 @@ Recent decisions affecting current work:
 - [Phase 48-robot-swarm-behaviour-end-to-end-demo]: Even/odd array index determines bounding vs overwatch role in bounding_overwatch technique
 - [Phase 48]: createMilSymbolIconWithBadge wraps existing divIcon HTML to add confidence badge pills without re-creating milsymbol
 - [Phase 49]: Design tab is single source of truth for CoG and operational approach; Strategic Guidance focuses on Assessment/Alignment/Directive without duplicating operational design
+- [Phase 49]: DesignContextPanel uses fetch-on-render pattern (same as COADevelopment) to always show current Design data; no manual push required
 
 ### Roadmap Evolution
 
@@ -1613,7 +1620,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-17T14:37:27.660Z
-Stopped at: Completed 49-01-PLAN.md
+Last session: 2026-03-17T14:45:04.899Z
+Stopped at: Completed 49-02-PLAN.md (retroactive — ran after 49-03)
 Resume file: None
 Next action: Continue Phase 40 plan 02
