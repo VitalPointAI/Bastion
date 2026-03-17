@@ -66,11 +66,18 @@ const PHASE_CONFIG: Record<Phase, { color: string; bg: string; label: string }> 
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
+// AO bounds for the Iron Bastion scenario (Taipei Zhongzheng District)
+// From calibration profile: 5m room → 25.042-25.048°N, 121.512-121.518°E
+const AO_CENTER: [number, number] = [25.045, 121.515];
+const AO_ZOOM = 17;
+
 interface MissionSequencePanelProps {
   problemSetId: string;
+  /** Callback to zoom the map to the robot AO on simulation start */
+  onZoomToAO?: (lat: number, lng: number, zoom: number) => void;
 }
 
-export function MissionSequencePanel({ problemSetId }: MissionSequencePanelProps) {
+export function MissionSequencePanel({ problemSetId, onZoomToAO }: MissionSequencePanelProps) {
   const [collapsed, setCollapsed] = useState(true);
   const [sequenceId, setSequenceId] = useState<string | null>(null);
   const [missionType, setMissionType] = useState<MissionType>('autonomous');
@@ -80,6 +87,8 @@ export function MissionSequencePanel({ problemSetId }: MissionSequencePanelProps
   const [simSessionId, setSimSessionId] = useState<string | null>(null);
   const [simPaused, setSimPaused] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
+  const [seedStatus, setSeedStatus] = useState<string | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   // Poll sequence status
@@ -147,12 +156,14 @@ export function MissionSequencePanel({ problemSetId }: MissionSequencePanelProps
       if (data.simSessionId) setSimSessionId(data.simSessionId);
       setSimPaused(false);
       setCollapsed(false);
+      // Auto-zoom from strategic view to robot AO
+      onZoomToAO?.(AO_CENTER[0], AO_CENTER[1], AO_ZOOM);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLaunching(false);
     }
-  }, [simulate, problemSetId]);
+  }, [simulate, problemSetId, onZoomToAO]);
 
   const handleReturnToBase = useCallback(async () => {
     if (!sequenceId) return;
@@ -185,11 +196,18 @@ export function MissionSequencePanel({ problemSetId }: MissionSequencePanelProps
     if (!simSessionId) return;
     try {
       await fetch(`/api/robot/simulations/${simSessionId}/reset`, { method: 'POST' });
+      // Also clear seeded strategic COP layers
+      await fetch('/api/robot/scenarios/clear-strategic-cop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problemSetId }),
+      }).catch(() => { /* non-fatal */ });
       setSequenceId(null);
       setStatus(null);
       setSimPaused(false);
+      setSeedStatus(null);
     } catch { /* silent */ }
-  }, [simSessionId]);
+  }, [simSessionId, problemSetId]);
 
   const phase = (status?.phase ?? 'idle') as Phase;
   const phaseCfg = PHASE_CONFIG[phase] ?? PHASE_CONFIG.idle;
@@ -318,7 +336,7 @@ export function MissionSequencePanel({ problemSetId }: MissionSequencePanelProps
             <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
               <button
                 onClick={() => handleLaunch('autonomous')}
-                disabled={launching}
+                disabled={launching || seeding}
                 style={{
                   flex: 1, padding: '8px 8px', borderRadius: '6px',
                   border: '1px solid rgba(139, 92, 246, 0.4)',
@@ -332,7 +350,7 @@ export function MissionSequencePanel({ problemSetId }: MissionSequencePanelProps
               </button>
               <button
                 onClick={() => handleLaunch('scripted')}
-                disabled={launching}
+                disabled={launching || seeding}
                 style={{
                   flex: 1, padding: '8px 8px', borderRadius: '6px',
                   border: '1px solid rgba(239, 68, 68, 0.4)',
@@ -343,6 +361,42 @@ export function MissionSequencePanel({ problemSetId }: MissionSequencePanelProps
                 }}
               >
                 {launching && missionType === 'scripted' ? 'Deploying...' : 'Scripted'}
+              </button>
+              <button
+                onClick={async () => {
+                  setSeeding(true);
+                  setSeedStatus(null);
+                  try {
+                    const res = await fetch('/api/robot/scenarios/seed-strategic-cop', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ problemSetId }),
+                    });
+                    const data = await res.json();
+                    if (data.status === 'already_seeded') {
+                      setSeedStatus('Already seeded');
+                    } else {
+                      setSeedStatus(`${data.friendlyCount + data.adversaryCount} symbols`);
+                    }
+                  } catch {
+                    setSeedStatus('Failed');
+                  } finally {
+                    setSeeding(false);
+                    setTimeout(() => setSeedStatus(null), 3000);
+                  }
+                }}
+                disabled={seeding || launching}
+                style={{
+                  padding: '8px 8px', borderRadius: '6px',
+                  border: '1px solid rgba(34, 197, 94, 0.4)',
+                  backgroundColor: seeding ? 'rgba(22, 101, 52, 0.3)' : 'rgba(34, 197, 94, 0.15)',
+                  color: '#86efac', fontSize: '0.6875rem', fontWeight: 600,
+                  cursor: seeding ? 'not-allowed' : 'pointer',
+                  textTransform: 'uppercase' as const, letterSpacing: '0.3px',
+                  whiteSpace: 'nowrap' as const,
+                }}
+              >
+                {seeding ? 'Seeding...' : seedStatus ?? 'Seed COP'}
               </button>
             </div>
           )}
