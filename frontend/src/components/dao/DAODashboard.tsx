@@ -28,6 +28,8 @@ const GATE_TYPE_LABELS: Record<string, string> = {
   coa_selection: 'COA Selection',
   order_release: 'Order Release',
   reframing: 'Reframing',
+  robot_action_auth: 'Robot Action Auth',
+  design_revision: 'Design Revision',
 };
 
 function formatGateTypeLabel(gateType: string): string {
@@ -256,6 +258,8 @@ export function DAODashboard({ daoId: initialDaoId, initialView }: DAODashboardP
                 </thead>
                 <tbody>
                   {[...allGates]
+                    // Hide internal robot gates stuck in pending (never submitted — no user action possible)
+                    .filter((gate) => !(gate.status === 'pending' && gate.gate_type === 'robot_action_auth'))
                     .sort((a, b) => {
                       const order: Record<string, number> = { submitted: 0, pending: 1, rejected: 2, escalated: 3, approved: 4, overridden: 5 };
                       const diff = (order[a.status] ?? 99) - (order[b.status] ?? 99);
