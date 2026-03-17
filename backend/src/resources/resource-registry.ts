@@ -338,6 +338,45 @@ export class ResourceRegistry {
     return results;
   }
 
+  // ─── Simulation Support ──────────────────────────────────────────
+
+  /**
+   * Register a simulated resource in cache only (no DB writes).
+   * Used for virtual robots so pre-flight validation works even without
+   * a database connection. The resource is fully queryable via getByDID()
+   * and findByCapability() but won't survive a server restart.
+   */
+  registerSimulated(opts: {
+    id: string;
+    did: string;
+    name: string;
+    category: ResourceCategory;
+    capabilities: string[];
+    specifications?: Record<string, unknown>;
+  }): RegisteredResource {
+    // Ensure initialized flag is set so getByDID doesn't try to loadFromDB
+    this.initialized = true;
+
+    const resource: RegisteredResource = {
+      id: opts.id,
+      did: opts.did,
+      blindedKey: `sim-blinded-${opts.id}`,
+      publicKey: `sim-public-${opts.id}`,
+      name: opts.name,
+      category: opts.category,
+      status: 'FMC',
+      specifications: opts.specifications ?? {},
+      isAutonomous: true,
+      capabilities: opts.capabilities,
+      trustTier: 'autonomous',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    this.addToCache(resource);
+    return resource;
+  }
+
   // ─── Other Methods ─────────────────────────────────────────────
 
   /**

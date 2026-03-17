@@ -1667,12 +1667,20 @@ Return ONLY valid JSON, no markdown.`;
     this.connectedRobots.set(robotId, robot);
     console.log(`[RobotMissionService] Simulated robot registered: ${robotId} (DID: ${did})`);
 
-    // Bridge to resource registry — await so pre-flight validation works on first dispatch
-    try {
-      await this.bridgeToResourceRegistry(robotId, did, capabilities);
-    } catch (err) {
-      console.warn(`[RobotMissionService] Resource bridge failed for sim robot ${robotId} (non-fatal):`, err);
-    }
+    // Register directly in resource registry cache (no DB writes) so pre-flight
+    // validation works immediately without depending on database availability
+    const registry = getResourceRegistry();
+    const simResourceId = `RES-sim-${robotId}`;
+    registry.registerSimulated({
+      id: simResourceId,
+      did,
+      name: `Robot ${robotId}`,
+      category: 'vehicles',
+      capabilities,
+      specifications: { type: 'ground', maxSpeed: 1.5, maxRange: 100, payload: 0, fuelType: 'electric', autonomyLevel: 3 },
+    });
+    this.robotResourceIds.set(did, simResourceId);
+    console.log(`[RobotMissionService] Sim robot ${robotId} registered in cache (DID: ${did}, resourceId: ${simResourceId})`);
   }
 
   /**
