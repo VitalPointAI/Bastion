@@ -26,7 +26,9 @@ import { BrainVisualization } from './BrainVisualization.js';
 import { BrainToolbar } from './BrainToolbar.js';
 import { BrainDetailPanel } from './BrainDetailPanel.js';
 import { BrainTimeline } from './BrainTimeline.js';
-import { IngestionSidebar } from './IngestionSidebar.js';
+// IngestionSidebar is preserved but no longer used in BrainController (Phase 50 Plan 07).
+// It remains as a fallback reference — do not delete.
+import { IngestionDrawer } from './IngestionDrawer.js';
 import { AIContextSnapshotModal } from './AIContextSnapshotModal.js';
 import { GapSummaryPanel } from './GapSummaryPanel.js';
 import { ParticleOverlay } from './renderers/particleRenderer.js';
@@ -216,6 +218,11 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   const [snapshotModalOpen, setSnapshotModalOpen] = useState(false);
   const [gapPanelOpen, setGapPanelOpen] = useState(false);
 
+  // ── IngestionDrawer state (Phase 50 Plan 07) ────────────────────────────────
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const handleDrawerOpen = useCallback(() => setDrawerOpen(true), []);
+  const handleDrawerClose = useCallback(() => setDrawerOpen(false), []);
+
   const rightPanelOpen = selectedNodeId !== null || selectedNodeIds.length > 0 || gapPanelOpen;
 
   // ── Processed graph data (memoized to avoid full graph rebuild per render) ──
@@ -399,23 +406,28 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
           ) : undefined
         }
         leftSidebar={
-          <>
-            <IngestionSidebar
-              problemSetId={problemSetId}
-            />
-            <SubspaceSidebar
-              subspaces={subspaces}
-              activeSubspaceId={activeSubspaceId}
-              onSubspaceSelect={handleSubspaceSelect}
-              onCreateManual={createManualSubspace}
-              onCreateSmart={() => {
-                // Smart subspace creation UI is a future feature (Plan 45+)
-                // For now this is a no-op placeholder
-              }}
-              onDelete={deleteSubspace}
-              selectedNodeIds={selectedNodeIds}
-            />
-          </>
+          /* Phase 50 Plan 07: IngestionSidebar removed from grid — replaced by IngestionDrawer overlay.
+           * Left column now only holds SubspaceSidebar (narrowed to 200px in BrainLayout.css). */
+          <SubspaceSidebar
+            subspaces={subspaces}
+            activeSubspaceId={activeSubspaceId}
+            onSubspaceSelect={handleSubspaceSelect}
+            onCreateManual={createManualSubspace}
+            onCreateSmart={() => {
+              // Smart subspace creation UI is a future feature (Plan 45+)
+              // For now this is a no-op placeholder
+            }}
+            onDelete={deleteSubspace}
+            selectedNodeIds={selectedNodeIds}
+          />
+        }
+        ingestionDrawer={
+          <IngestionDrawer
+            problemSetId={problemSetId}
+            isOpen={drawerOpen}
+            onOpen={handleDrawerOpen}
+            onClose={handleDrawerClose}
+          />
         }
         center={
           <div ref={centerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -437,7 +449,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
               particlesRef={particlesRef}
               width={centerSize.w}
               height={centerSize.h}
-              sidebarWidth={280}
+              sidebarWidth={200}
             />
           </div>
         }
