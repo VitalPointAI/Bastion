@@ -3,8 +3,11 @@
  *
  * Registers strategy-document-reviewer, strategic-fusion-agent,
  * entity-resolution-agent, RAFT extraction/reasoning agents,
- * and other LangGraph-based agents in the agent registry,
- * assigns tools, and sets up characters.
+ * and other LangGraph-based agents via AgentStore (DB-backed).
+ *
+ * Phase 51: Uses toStandardAgent() and agentStore.registerAgent() directly
+ * to produce full StandardAgent records with systemPrompt, clearance, skills,
+ * and status fields. Idempotent — upserts via ON CONFLICT DO UPDATE.
  *
  * Note: Stub agents (assumption-auditor, orders-validator,
  * uncertainty-quantifier, data-bias-detector, problem-framing,
@@ -12,10 +15,19 @@
  * escalation-modeler, deception-detector, deception-planner,
  * exploitation-analyst, deescalation-manager) were removed in
  * Phase 51 Plan 02 as part of the unified agent architecture cleanup.
+ * They are seeded here with status='inactive' to preserve definitions.
  */
 
 import { getAgentRegistry } from '../registry.js';
+import { getAgentStore } from '../agent-store.js';
+import { toStandardAgent } from '../standard-agent.js';
 import { getToolRegistry } from '../tool-registry.js';
+import {
+  AgentPhase,
+  AgentCapability,
+  AutonomyLevel,
+  type AgentManifest,
+} from '../types.js';
 import {
   STRATEGY_REVIEWER_MANIFEST,
   STRATEGY_REVIEWER_TOOLS,
@@ -82,623 +94,578 @@ export interface SeedResult {
   error?: string;
 }
 
-/**
- * Seed the strategy document reviewer agent.
- */
+// ============================================================================
+// Inactive stub agent IDs (removed in Phase 51 Plan 02)
+// Still seeded with status='inactive' to preserve definitions for reactivation.
+// ============================================================================
+
+const INACTIVE_STUB_AGENTS: Array<Omit<AgentManifest, 'agentDID' | 'agentBlindedKey' | 'agentPublicKey'>> = [
+  {
+    agentId: 'assumption-auditor',
+    name: 'Assumption Auditor',
+    description: 'Audits assumptions embedded in planning documents for validity and evidence basis.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.AssumptionAuditing],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'orders-validator',
+    name: 'Orders Validator',
+    description: 'Validates military orders for doctrinal compliance and completeness.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.OrdersValidation],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'uncertainty-quantifier',
+    name: 'Uncertainty Quantifier',
+    description: 'Quantifies uncertainty in planning estimates and intelligence assessments.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.UncertaintyQuantification],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'data-bias-detector',
+    name: 'Data Bias Detector',
+    description: 'Detects cognitive and data biases in analytical products.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.DataBiasDetection],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'problem-framing',
+    name: 'Problem Framing Agent',
+    description: 'Assists in structuring and framing complex operational problems.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.ProblemFraming],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'roe-compliance',
+    name: 'ROE Compliance Agent',
+    description: 'Checks operational plans for compliance with Rules of Engagement.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.ROECompliance],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'adversary-modeler',
+    name: 'Adversary Modeler',
+    description: 'Models adversary behavior and decision-making for red team analysis.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.AdversaryModeling],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'effect-cascader',
+    name: 'Effect Cascader',
+    description: 'Analyzes cascading effects of military actions across domains.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.EffectCascading],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'escalation-modeler',
+    name: 'Escalation Modeler',
+    description: 'Models escalation dynamics and de-escalation opportunities.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.EscalationModeling],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'deception-detector',
+    name: 'Deception Detector',
+    description: 'Identifies deception operations in intelligence and operational reporting.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.DeceptionDetection],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'deception-planner',
+    name: 'Deception Planner',
+    description: 'Plans military deception operations in support of operational objectives.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.DeceptionPlanning],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'exploitation-analyst',
+    name: 'Exploitation Analyst',
+    description: 'Analyzes exploitation opportunities from tactical and strategic actions.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.ExploitationAnalysis],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+  {
+    agentId: 'deescalation-manager',
+    name: 'De-escalation Manager',
+    description: 'Manages de-escalation pathways to reduce conflict intensity.',
+    phase: AgentPhase.Support,
+    capabilities: [AgentCapability.DeescalationManagement],
+    maxAutonomy: AutonomyLevel.SemiAutonomous,
+    allowedProposalKinds: [],
+    requiresHumanApproval: [],
+    createdAt: new Date(),
+    createdBy: 'system',
+    active: false,
+  },
+];
+
+// ============================================================================
+// Helper: seed a single agent with StandardAgent extras
+// ============================================================================
+
+async function seedAgent(
+  manifestBase: Omit<AgentManifest, 'agentDID' | 'agentBlindedKey' | 'agentPublicKey' | 'createdAt' | 'createdBy'> & { createdAt?: Date | string; createdBy?: string },
+  tools: string[],
+  systemPrompt: string,
+  status: 'active' | 'inactive'
+): Promise<SeedResult> {
+  const agentId = manifestBase.agentId;
+  const result: SeedResult = {
+    agentId,
+    registered: false,
+    toolsAssigned: [],
+    characterSet: false,
+  };
+
+  try {
+    const registry = getAgentRegistry();
+    await registry.ensureInitialized();
+    const store = getAgentStore();
+
+    // Build full manifest (DID generated by registerAgent)
+    const manifest: AgentManifest = {
+      ...manifestBase,
+      createdAt: manifestBase.createdAt instanceof Date ? manifestBase.createdAt : new Date(),
+      createdBy: manifestBase.createdBy || 'system',
+      agentDID: '',
+      agentBlindedKey: '',
+      agentPublicKey: '',
+    };
+
+    // Convert to StandardAgent with system prompt and status
+    const sa = toStandardAgent(manifest, {
+      systemPrompt,
+      clearance: 'Secret',
+      skills: [],
+      status,
+    });
+
+    // Upsert via AgentStore (idempotent)
+    await store.registerAgent(sa);
+
+    // Also ensure the registry cache has the agent (may have been loaded from DB already)
+    const existing = registry.getAgent(agentId);
+    if (!existing || !existing.character) {
+      // Register through registry to also handle DID generation and cache update
+      try {
+        await registry.registerAgent(manifest);
+      } catch {
+        // Already in DB — cache may already be populated; that's fine
+      }
+    }
+
+    result.registered = true;
+
+    // Set character if provided (look up from registry or set via updateAgentCharacter)
+    const agentInCache = registry.getAgent(agentId);
+    if (agentInCache && manifestBase.active !== false) {
+      result.characterSet = true;
+    }
+
+    // Assign tools
+    if (tools.length > 0) {
+      const toolRegistry = getToolRegistry();
+      await toolRegistry.ensureInitialized();
+
+      for (const toolId of tools) {
+        try {
+          const tool = toolRegistry.getTool(toolId);
+          if (tool) {
+            const agentTools = toolRegistry.getToolsForAgent(agentId);
+            if (!agentTools.some(t => t.toolId === toolId)) {
+              toolRegistry.assignToolToAgent(toolId, agentId, 'system');
+              result.toolsAssigned.push(toolId);
+            }
+          } else {
+            console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
+          }
+        } catch (err) {
+          console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
+        }
+      }
+    }
+
+    return result;
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[AgentSeeder] Failed to seed ${agentId}:`, error);
+    return result;
+  }
+}
+
+// ============================================================================
+// Individual agent seeders
+// ============================================================================
+
 async function seedStrategyReviewer(): Promise<SeedResult> {
-  const result: SeedResult = {
-    agentId: 'strategy-document-reviewer',
-    registered: false,
-    toolsAssigned: [],
-    characterSet: false,
-  };
+  const systemPrompt = `You are the Strategy Document Reviewer, an expert in national security strategy analysis.
+Your role is to review strategic documents and categorize objectives using the MIDLIFE framework
+(Military, Intelligence, Diplomatic, Law Enforcement, Information, Finance, Economic).
 
+Responsibilities:
+- Review strategic planning documents for doctrinal alignment with JP 5-0
+- Categorize objectives by MIDLIFE instrument of power
+- Assess priority levels based on Ends-Ways-Means analysis
+- Flag inconsistencies, gaps, and assumptions for human review
+
+Clearance: SECRET. Never discuss or reference classified information above SECRET.
+All findings require human review before action — you operate in SemiAutonomous mode.`;
+
+  const result = await seedAgent(
+    { ...STRATEGY_REVIEWER_MANIFEST, active: true },
+    STRATEGY_REVIEWER_TOOLS,
+    systemPrompt,
+    'active'
+  );
+
+  // Set Eliza character via registry for LangGraph wrapper compatibility
   try {
     const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-
-    // Check if already registered
-    const existing = registry.getAgent('strategy-document-reviewer');
-    if (existing) {
-      console.log('[AgentSeeder] strategy-document-reviewer already registered');
-      result.registered = true;
-      // Still update character if needed
-      if (!existing.character) {
-        registry.updateAgentCharacter('strategy-document-reviewer', STRATEGY_REVIEWER_CHARACTER);
-        result.characterSet = true;
-        console.log('[AgentSeeder] Updated character for strategy-document-reviewer');
-      }
-      return result;
+    const agent = registry.getAgent('strategy-document-reviewer');
+    if (agent && !agent.character) {
+      registry.updateAgentCharacter('strategy-document-reviewer', STRATEGY_REVIEWER_CHARACTER);
+      result.characterSet = true;
     }
-
-    // Register the agent
-    const manifest = {
-      ...STRATEGY_REVIEWER_MANIFEST,
-      createdAt: new Date(),
-      createdBy: 'system',
-      agentDID: '', // Will be generated
-      agentBlindedKey: '',
-      agentPublicKey: '',
-    };
-
-    await registry.registerAgent(manifest);
-    result.registered = true;
-    console.log('[AgentSeeder] Registered strategy-document-reviewer');
-
-    // Set character
-    registry.updateAgentCharacter('strategy-document-reviewer', STRATEGY_REVIEWER_CHARACTER);
-    result.characterSet = true;
-    console.log('[AgentSeeder] Set character for strategy-document-reviewer');
-
-    // Assign tools
-    const toolRegistry = getToolRegistry();
-    await toolRegistry.ensureInitialized();
-
-    for (const toolId of STRATEGY_REVIEWER_TOOLS) {
-      try {
-        // Check if tool exists
-        const tool = toolRegistry.getTool(toolId);
-        if (tool) {
-          // Check if already assigned
-          const agentTools = toolRegistry.getToolsForAgent('strategy-document-reviewer');
-          if (!agentTools.some(t => t.toolId === toolId)) {
-            toolRegistry.assignToolToAgent(toolId, 'strategy-document-reviewer', 'system');
-            result.toolsAssigned.push(toolId);
-            console.log(`[AgentSeeder] Assigned tool ${toolId} to strategy-document-reviewer`);
-          }
-        } else {
-          console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
-        }
-      } catch (err) {
-        console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
-      }
-    }
-
-    return result;
-  } catch (error) {
-    result.error = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[AgentSeeder] Failed to seed strategy-document-reviewer:', error);
-    return result;
+  } catch (err) {
+    console.warn('[AgentSeeder] Character set warning for strategy-document-reviewer:', err);
   }
+
+  return result;
 }
 
-/**
- * Seed the strategic fusion agent.
- */
 async function seedStrategicFusionAgent(): Promise<SeedResult> {
-  const result: SeedResult = {
-    agentId: STRATEGIC_FUSION_AGENT_ID,
-    registered: false,
-    toolsAssigned: [],
-    characterSet: false,
-  };
+  const systemPrompt = `You are the Strategic Fusion Agent, an expert intelligence analyst.
+Your role is to consolidate objectives from multiple strategic documents into a unified strategic picture.
+
+Responsibilities:
+- Identify semantically duplicate objectives across documents while preserving unique perspectives
+- Detect conflicts and contradictions between strategic objectives
+- Synthesize coherent unified objectives that preserve the intent of source documents
+- Provide confidence scores and source traceability for all fused outputs
+
+Clearance: SECRET. All outputs require human review before integration into planning products.`;
+
+  const result = await seedAgent(
+    { ...STRATEGIC_FUSION_MANIFEST, active: true },
+    STRATEGIC_FUSION_TOOLS,
+    systemPrompt,
+    'active'
+  );
 
   try {
     const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-
-    // Check if already registered
-    const existing = registry.getAgent(STRATEGIC_FUSION_AGENT_ID);
-    if (existing) {
-      console.log(`[AgentSeeder] ${STRATEGIC_FUSION_AGENT_ID} already registered`);
-      result.registered = true;
-      if (!existing.character) {
-        registry.updateAgentCharacter(STRATEGIC_FUSION_AGENT_ID, STRATEGIC_FUSION_CHARACTER);
-        result.characterSet = true;
-        console.log(`[AgentSeeder] Updated character for ${STRATEGIC_FUSION_AGENT_ID}`);
-      }
-      return result;
+    const agent = registry.getAgent(STRATEGIC_FUSION_AGENT_ID);
+    if (agent && !agent.character) {
+      registry.updateAgentCharacter(STRATEGIC_FUSION_AGENT_ID, STRATEGIC_FUSION_CHARACTER);
+      result.characterSet = true;
     }
-
-    // Register the agent
-    const manifest = {
-      ...STRATEGIC_FUSION_MANIFEST,
-      createdAt: new Date(),
-      createdBy: 'system',
-      agentDID: '',
-      agentBlindedKey: '',
-      agentPublicKey: '',
-    };
-
-    await registry.registerAgent(manifest);
-    result.registered = true;
-    console.log(`[AgentSeeder] Registered ${STRATEGIC_FUSION_AGENT_ID}`);
-
-    // Set character
-    registry.updateAgentCharacter(STRATEGIC_FUSION_AGENT_ID, STRATEGIC_FUSION_CHARACTER);
-    result.characterSet = true;
-    console.log(`[AgentSeeder] Set character for ${STRATEGIC_FUSION_AGENT_ID}`);
-
-    // Assign tools
-    const toolRegistry = getToolRegistry();
-    await toolRegistry.ensureInitialized();
-
-    for (const toolId of STRATEGIC_FUSION_TOOLS) {
-      try {
-        const tool = toolRegistry.getTool(toolId);
-        if (tool) {
-          const agentTools = toolRegistry.getToolsForAgent(STRATEGIC_FUSION_AGENT_ID);
-          if (!agentTools.some(t => t.toolId === toolId)) {
-            toolRegistry.assignToolToAgent(toolId, STRATEGIC_FUSION_AGENT_ID, 'system');
-            result.toolsAssigned.push(toolId);
-            console.log(`[AgentSeeder] Assigned tool ${toolId} to ${STRATEGIC_FUSION_AGENT_ID}`);
-          }
-        } else {
-          console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
-        }
-      } catch (err) {
-        console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
-      }
-    }
-
-    return result;
-  } catch (error) {
-    result.error = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[AgentSeeder] Failed to seed ${STRATEGIC_FUSION_AGENT_ID}:`, error);
-    return result;
+  } catch (err) {
+    console.warn(`[AgentSeeder] Character set warning for ${STRATEGIC_FUSION_AGENT_ID}:`, err);
   }
+
+  return result;
 }
 
-/**
- * Seed the entity resolution agent.
- */
 async function seedEntityResolutionAgent(): Promise<SeedResult> {
-  const result: SeedResult = {
-    agentId: ENTITY_RESOLUTION_AGENT_ID,
-    registered: false,
-    toolsAssigned: [],
-    characterSet: false,
-  };
+  const systemPrompt = `You are the Entity Resolution Agent, a specialist in identifying and deduplicating entities across intelligence databases.
+Your role is to resolve entity references across multiple sources, maintaining a canonical entity registry.
+
+Responsibilities:
+- Identify when different names/aliases refer to the same real-world entity
+- Maintain confidence scores for entity resolution decisions
+- Flag ambiguous cases for human review
+- Support graph-based entity relationship analysis
+
+Clearance: SECRET.`;
+
+  const result = await seedAgent(
+    { ...ENTITY_RESOLUTION_MANIFEST, active: true },
+    ENTITY_RESOLUTION_TOOLS,
+    systemPrompt,
+    'active'
+  );
 
   try {
     const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-
-    // Check if already registered
-    const existing = registry.getAgent(ENTITY_RESOLUTION_AGENT_ID);
-    if (existing) {
-      console.log(`[AgentSeeder] ${ENTITY_RESOLUTION_AGENT_ID} already registered`);
-      result.registered = true;
-      if (!existing.character) {
-        registry.updateAgentCharacter(ENTITY_RESOLUTION_AGENT_ID, ENTITY_RESOLUTION_CHARACTER);
-        result.characterSet = true;
-        console.log(`[AgentSeeder] Updated character for ${ENTITY_RESOLUTION_AGENT_ID}`);
-      }
-      return result;
+    const agent = registry.getAgent(ENTITY_RESOLUTION_AGENT_ID);
+    if (agent && !agent.character) {
+      registry.updateAgentCharacter(ENTITY_RESOLUTION_AGENT_ID, ENTITY_RESOLUTION_CHARACTER);
+      result.characterSet = true;
     }
-
-    // Register the agent
-    const manifest = {
-      ...ENTITY_RESOLUTION_MANIFEST,
-      createdAt: new Date(),
-      createdBy: 'system',
-      agentDID: '',
-      agentBlindedKey: '',
-      agentPublicKey: '',
-    };
-
-    await registry.registerAgent(manifest);
-    result.registered = true;
-    console.log(`[AgentSeeder] Registered ${ENTITY_RESOLUTION_AGENT_ID}`);
-
-    // Set character
-    registry.updateAgentCharacter(ENTITY_RESOLUTION_AGENT_ID, ENTITY_RESOLUTION_CHARACTER);
-    result.characterSet = true;
-    console.log(`[AgentSeeder] Set character for ${ENTITY_RESOLUTION_AGENT_ID}`);
-
-    // Assign tools
-    const toolRegistry = getToolRegistry();
-    await toolRegistry.ensureInitialized();
-
-    for (const toolId of ENTITY_RESOLUTION_TOOLS) {
-      try {
-        const tool = toolRegistry.getTool(toolId);
-        if (tool) {
-          const agentTools = toolRegistry.getToolsForAgent(ENTITY_RESOLUTION_AGENT_ID);
-          if (!agentTools.some(t => t.toolId === toolId)) {
-            toolRegistry.assignToolToAgent(toolId, ENTITY_RESOLUTION_AGENT_ID, 'system');
-            result.toolsAssigned.push(toolId);
-            console.log(`[AgentSeeder] Assigned tool ${toolId} to ${ENTITY_RESOLUTION_AGENT_ID}`);
-          }
-        } else {
-          console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
-        }
-      } catch (err) {
-        console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
-      }
-    }
-
-    return result;
-  } catch (error) {
-    result.error = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[AgentSeeder] Failed to seed ${ENTITY_RESOLUTION_AGENT_ID}:`, error);
-    return result;
+  } catch (err) {
+    console.warn(`[AgentSeeder] Character set warning for ${ENTITY_RESOLUTION_AGENT_ID}:`, err);
   }
+
+  return result;
 }
 
-/**
- * Seed the OSINT Monitor agent.
- */
 async function seedOsintMonitorAgent(): Promise<SeedResult> {
-  const result: SeedResult = {
-    agentId: OSINT_MONITOR_AGENT_ID,
-    registered: false,
-    toolsAssigned: [],
-    characterSet: false,
-  };
+  const systemPrompt = `You are the OSINT Monitor Agent, a specialist in open-source intelligence collection and analysis.
+Your role is to monitor, collect, and assess open-source information relevant to operational planning.
+
+Responsibilities:
+- Monitor designated open sources for relevant intelligence indicators
+- Assess credibility and relevance of OSINT findings
+- Cross-reference OSINT with other intelligence to identify corroboration or contradictions
+- Flag high-priority intelligence for immediate human review
+
+Clearance: UNCLASSIFIED (OSINT only). All analysis is based on open-source material.`;
+
+  const result = await seedAgent(
+    { ...OSINT_MONITOR_MANIFEST, active: true },
+    OSINT_MONITOR_TOOLS,
+    systemPrompt,
+    'active'
+  );
 
   try {
     const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-
-    // Check if already registered
-    const existing = registry.getAgent(OSINT_MONITOR_AGENT_ID);
-    if (existing) {
-      console.log(`[AgentSeeder] ${OSINT_MONITOR_AGENT_ID} already registered`);
-      result.registered = true;
-      if (!existing.character) {
-        registry.updateAgentCharacter(OSINT_MONITOR_AGENT_ID, OSINT_MONITOR_CHARACTER);
-        result.characterSet = true;
-        console.log(`[AgentSeeder] Updated character for ${OSINT_MONITOR_AGENT_ID}`);
-      }
-      return result;
+    const agent = registry.getAgent(OSINT_MONITOR_AGENT_ID);
+    if (agent && !agent.character) {
+      registry.updateAgentCharacter(OSINT_MONITOR_AGENT_ID, OSINT_MONITOR_CHARACTER);
+      result.characterSet = true;
     }
-
-    // Register the agent
-    const manifest = {
-      ...OSINT_MONITOR_MANIFEST,
-      createdAt: new Date(),
-      createdBy: 'system',
-      agentDID: '',
-      agentBlindedKey: '',
-      agentPublicKey: '',
-    };
-
-    await registry.registerAgent(manifest);
-    result.registered = true;
-    console.log(`[AgentSeeder] Registered ${OSINT_MONITOR_AGENT_ID}`);
-
-    // Set character
-    registry.updateAgentCharacter(OSINT_MONITOR_AGENT_ID, OSINT_MONITOR_CHARACTER);
-    result.characterSet = true;
-    console.log(`[AgentSeeder] Set character for ${OSINT_MONITOR_AGENT_ID}`);
-
-    // Assign tools
-    const toolRegistry = getToolRegistry();
-    await toolRegistry.ensureInitialized();
-
-    for (const toolId of OSINT_MONITOR_TOOLS) {
-      try {
-        const tool = toolRegistry.getTool(toolId);
-        if (tool) {
-          const agentTools = toolRegistry.getToolsForAgent(OSINT_MONITOR_AGENT_ID);
-          if (!agentTools.some(t => t.toolId === toolId)) {
-            toolRegistry.assignToolToAgent(toolId, OSINT_MONITOR_AGENT_ID, 'system');
-            result.toolsAssigned.push(toolId);
-            console.log(`[AgentSeeder] Assigned tool ${toolId} to ${OSINT_MONITOR_AGENT_ID}`);
-          }
-        } else {
-          console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
-        }
-      } catch (err) {
-        console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
-      }
-    }
-
-    return result;
-  } catch (error) {
-    result.error = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[AgentSeeder] Failed to seed ${OSINT_MONITOR_AGENT_ID}:`, error);
-    return result;
+  } catch (err) {
+    console.warn(`[AgentSeeder] Character set warning for ${OSINT_MONITOR_AGENT_ID}:`, err);
   }
+
+  return result;
 }
 
-/**
- * Seed the Validity Assessment agent.
- */
 async function seedValidityAssessmentAgent(): Promise<SeedResult> {
-  const result: SeedResult = {
-    agentId: VALIDITY_ASSESSMENT_AGENT_ID,
-    registered: false,
-    toolsAssigned: [],
-    characterSet: false,
-  };
+  const systemPrompt = `You are the Validity Assessment Agent, a specialist in evaluating the validity of analytical conclusions.
+Your role is to assess the logical validity, evidentiary support, and methodological soundness of analytical products.
+
+Responsibilities:
+- Evaluate logical consistency of analytical arguments
+- Assess quality and sufficiency of supporting evidence
+- Identify alternative explanations that were not considered
+- Flag validity concerns for analyst review
+
+Clearance: SECRET.`;
+
+  const result = await seedAgent(
+    { ...VALIDITY_ASSESSMENT_MANIFEST, active: true },
+    VALIDITY_ASSESSMENT_TOOLS,
+    systemPrompt,
+    'active'
+  );
 
   try {
     const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-
-    // Check if already registered
-    const existing = registry.getAgent(VALIDITY_ASSESSMENT_AGENT_ID);
-    if (existing) {
-      console.log(`[AgentSeeder] ${VALIDITY_ASSESSMENT_AGENT_ID} already registered`);
-      result.registered = true;
-      if (!existing.character) {
-        registry.updateAgentCharacter(VALIDITY_ASSESSMENT_AGENT_ID, VALIDITY_ASSESSMENT_CHARACTER);
-        result.characterSet = true;
-        console.log(`[AgentSeeder] Updated character for ${VALIDITY_ASSESSMENT_AGENT_ID}`);
-      }
-      return result;
+    const agent = registry.getAgent(VALIDITY_ASSESSMENT_AGENT_ID);
+    if (agent && !agent.character) {
+      registry.updateAgentCharacter(VALIDITY_ASSESSMENT_AGENT_ID, VALIDITY_ASSESSMENT_CHARACTER);
+      result.characterSet = true;
     }
-
-    // Register the agent
-    const manifest = {
-      ...VALIDITY_ASSESSMENT_MANIFEST,
-      createdAt: new Date(),
-      createdBy: 'system',
-      agentDID: '',
-      agentBlindedKey: '',
-      agentPublicKey: '',
-    };
-
-    await registry.registerAgent(manifest);
-    result.registered = true;
-    console.log(`[AgentSeeder] Registered ${VALIDITY_ASSESSMENT_AGENT_ID}`);
-
-    // Set character
-    registry.updateAgentCharacter(VALIDITY_ASSESSMENT_AGENT_ID, VALIDITY_ASSESSMENT_CHARACTER);
-    result.characterSet = true;
-    console.log(`[AgentSeeder] Set character for ${VALIDITY_ASSESSMENT_AGENT_ID}`);
-
-    // Assign tools
-    const toolRegistry = getToolRegistry();
-    await toolRegistry.ensureInitialized();
-
-    for (const toolId of VALIDITY_ASSESSMENT_TOOLS) {
-      try {
-        const tool = toolRegistry.getTool(toolId);
-        if (tool) {
-          const agentTools = toolRegistry.getToolsForAgent(VALIDITY_ASSESSMENT_AGENT_ID);
-          if (!agentTools.some(t => t.toolId === toolId)) {
-            toolRegistry.assignToolToAgent(toolId, VALIDITY_ASSESSMENT_AGENT_ID, 'system');
-            result.toolsAssigned.push(toolId);
-            console.log(`[AgentSeeder] Assigned tool ${toolId} to ${VALIDITY_ASSESSMENT_AGENT_ID}`);
-          }
-        } else {
-          console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
-        }
-      } catch (err) {
-        console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
-      }
-    }
-
-    return result;
-  } catch (error) {
-    result.error = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[AgentSeeder] Failed to seed ${VALIDITY_ASSESSMENT_AGENT_ID}:`, error);
-    return result;
+  } catch (err) {
+    console.warn(`[AgentSeeder] Character set warning for ${VALIDITY_ASSESSMENT_AGENT_ID}:`, err);
   }
+
+  return result;
 }
 
-/**
- * Seed the Conflict Detection agent.
- */
 async function seedConflictDetectionAgent(): Promise<SeedResult> {
-  const result: SeedResult = {
-    agentId: CONFLICT_DETECTION_AGENT_ID,
-    registered: false,
-    toolsAssigned: [],
-    characterSet: false,
-  };
+  const systemPrompt = `You are the Conflict Detection Agent, a specialist in identifying contradictions and conflicts within planning products.
+Your role is to detect logical conflicts, resource conflicts, and timeline conflicts in operational plans.
+
+Responsibilities:
+- Identify contradictory guidance between planning products
+- Flag resource allocation conflicts
+- Detect timeline incompatibilities across synchronized operations
+- Propose conflict resolution options for human decision
+
+Clearance: SECRET.`;
+
+  const result = await seedAgent(
+    { ...CONFLICT_DETECTION_MANIFEST, active: true },
+    CONFLICT_DETECTION_TOOLS,
+    systemPrompt,
+    'active'
+  );
 
   try {
     const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-
-    // Check if already registered
-    const existing = registry.getAgent(CONFLICT_DETECTION_AGENT_ID);
-    if (existing) {
-      console.log(`[AgentSeeder] ${CONFLICT_DETECTION_AGENT_ID} already registered`);
-      result.registered = true;
-      if (!existing.character) {
-        registry.updateAgentCharacter(CONFLICT_DETECTION_AGENT_ID, CONFLICT_DETECTION_CHARACTER);
-        result.characterSet = true;
-        console.log(`[AgentSeeder] Updated character for ${CONFLICT_DETECTION_AGENT_ID}`);
-      }
-      return result;
+    const agent = registry.getAgent(CONFLICT_DETECTION_AGENT_ID);
+    if (agent && !agent.character) {
+      registry.updateAgentCharacter(CONFLICT_DETECTION_AGENT_ID, CONFLICT_DETECTION_CHARACTER);
+      result.characterSet = true;
     }
-
-    // Register the agent
-    const manifest = {
-      ...CONFLICT_DETECTION_MANIFEST,
-      createdAt: new Date(),
-      createdBy: 'system',
-      agentDID: '',
-      agentBlindedKey: '',
-      agentPublicKey: '',
-    };
-
-    await registry.registerAgent(manifest);
-    result.registered = true;
-    console.log(`[AgentSeeder] Registered ${CONFLICT_DETECTION_AGENT_ID}`);
-
-    // Set character
-    registry.updateAgentCharacter(CONFLICT_DETECTION_AGENT_ID, CONFLICT_DETECTION_CHARACTER);
-    result.characterSet = true;
-    console.log(`[AgentSeeder] Set character for ${CONFLICT_DETECTION_AGENT_ID}`);
-
-    // Assign tools
-    const toolRegistry = getToolRegistry();
-    await toolRegistry.ensureInitialized();
-
-    for (const toolId of CONFLICT_DETECTION_TOOLS) {
-      try {
-        const tool = toolRegistry.getTool(toolId);
-        if (tool) {
-          const agentTools = toolRegistry.getToolsForAgent(CONFLICT_DETECTION_AGENT_ID);
-          if (!agentTools.some(t => t.toolId === toolId)) {
-            toolRegistry.assignToolToAgent(toolId, CONFLICT_DETECTION_AGENT_ID, 'system');
-            result.toolsAssigned.push(toolId);
-            console.log(`[AgentSeeder] Assigned tool ${toolId} to ${CONFLICT_DETECTION_AGENT_ID}`);
-          }
-        } else {
-          console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
-        }
-      } catch (err) {
-        console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
-      }
-    }
-
-    return result;
-  } catch (error) {
-    result.error = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[AgentSeeder] Failed to seed ${CONFLICT_DETECTION_AGENT_ID}:`, error);
-    return result;
+  } catch (err) {
+    console.warn(`[AgentSeeder] Character set warning for ${CONFLICT_DETECTION_AGENT_ID}:`, err);
   }
+
+  return result;
 }
 
-/**
- * Seed the RAFT Extraction agent.
- */
 async function seedRaftExtractionAgent(): Promise<SeedResult> {
-  const result: SeedResult = {
-    agentId: RAFT_EXTRACTION_AGENT_ID,
-    registered: false,
-    toolsAssigned: [],
-    characterSet: false,
-  };
+  const systemPrompt = `You are the RAFT Extraction Agent, a specialist in structured data extraction from unstructured documents.
+Your role is to extract structured information from planning documents using the RAFT (Retrieval Augmented Fine-Tuning) methodology.
+
+Responsibilities:
+- Extract facts, entities, relationships, and events from documents
+- Structure extracted data into defined schemas for downstream processing
+- Assign confidence scores to extractions
+- Flag low-confidence extractions for human review
+
+Clearance: SECRET.`;
+
+  const result = await seedAgent(
+    { ...RAFT_EXTRACTION_MANIFEST, active: true },
+    RAFT_EXTRACTION_TOOLS,
+    systemPrompt,
+    'active'
+  );
 
   try {
     const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-
-    // Check if already registered
-    const existing = registry.getAgent(RAFT_EXTRACTION_AGENT_ID);
-    if (existing) {
-      console.log(`[AgentSeeder] ${RAFT_EXTRACTION_AGENT_ID} already registered`);
-      result.registered = true;
-      if (!existing.character) {
-        registry.updateAgentCharacter(RAFT_EXTRACTION_AGENT_ID, RAFT_EXTRACTION_CHARACTER);
-        result.characterSet = true;
-        console.log(`[AgentSeeder] Updated character for ${RAFT_EXTRACTION_AGENT_ID}`);
-      }
-      return result;
+    const agent = registry.getAgent(RAFT_EXTRACTION_AGENT_ID);
+    if (agent && !agent.character) {
+      registry.updateAgentCharacter(RAFT_EXTRACTION_AGENT_ID, RAFT_EXTRACTION_CHARACTER);
+      result.characterSet = true;
     }
-
-    // Register the agent
-    const manifest = {
-      ...RAFT_EXTRACTION_MANIFEST,
-      createdAt: new Date(),
-      createdBy: 'system',
-      agentDID: '',
-      agentBlindedKey: '',
-      agentPublicKey: '',
-    };
-
-    await registry.registerAgent(manifest);
-    result.registered = true;
-    console.log(`[AgentSeeder] Registered ${RAFT_EXTRACTION_AGENT_ID}`);
-
-    // Set character
-    registry.updateAgentCharacter(RAFT_EXTRACTION_AGENT_ID, RAFT_EXTRACTION_CHARACTER);
-    result.characterSet = true;
-    console.log(`[AgentSeeder] Set character for ${RAFT_EXTRACTION_AGENT_ID}`);
-
-    // Assign tools
-    const toolRegistry = getToolRegistry();
-    await toolRegistry.ensureInitialized();
-
-    for (const toolId of RAFT_EXTRACTION_TOOLS) {
-      try {
-        const tool = toolRegistry.getTool(toolId);
-        if (tool) {
-          const agentTools = toolRegistry.getToolsForAgent(RAFT_EXTRACTION_AGENT_ID);
-          if (!agentTools.some(t => t.toolId === toolId)) {
-            toolRegistry.assignToolToAgent(toolId, RAFT_EXTRACTION_AGENT_ID, 'system');
-            result.toolsAssigned.push(toolId);
-            console.log(`[AgentSeeder] Assigned tool ${toolId} to ${RAFT_EXTRACTION_AGENT_ID}`);
-          }
-        } else {
-          console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
-        }
-      } catch (err) {
-        console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
-      }
-    }
-
-    return result;
-  } catch (error) {
-    result.error = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[AgentSeeder] Failed to seed ${RAFT_EXTRACTION_AGENT_ID}:`, error);
-    return result;
+  } catch (err) {
+    console.warn(`[AgentSeeder] Character set warning for ${RAFT_EXTRACTION_AGENT_ID}:`, err);
   }
+
+  return result;
+}
+
+async function seedRaftReasoningAgent(): Promise<SeedResult> {
+  const systemPrompt = `You are the RAFT Reasoning Agent, a specialist in structured analytical reasoning.
+Your role is to apply systematic reasoning chains to extracted data, producing auditable analytical conclusions.
+
+Responsibilities:
+- Apply structured reasoning to extracted intelligence and planning data
+- Generate traceable reasoning chains with supporting evidence
+- Assess alternative hypotheses and assign probability weights
+- Produce structured analytical conclusions for human review
+
+Clearance: SECRET.`;
+
+  const result = await seedAgent(
+    { ...RAFT_REASONING_MANIFEST, active: true },
+    RAFT_REASONING_TOOLS,
+    systemPrompt,
+    'active'
+  );
+
+  try {
+    const registry = getAgentRegistry();
+    const agent = registry.getAgent(RAFT_REASONING_AGENT_ID);
+    if (agent && !agent.character) {
+      registry.updateAgentCharacter(RAFT_REASONING_AGENT_ID, RAFT_REASONING_CHARACTER);
+      result.characterSet = true;
+    }
+  } catch (err) {
+    console.warn(`[AgentSeeder] Character set warning for ${RAFT_REASONING_AGENT_ID}:`, err);
+  }
+
+  return result;
 }
 
 /**
- * Seed the RAFT Reasoning agent.
+ * Seed the 14 inactive stub agents.
+ * Preserves agent definitions in DB with status='inactive' for future reactivation.
  */
-async function seedRaftReasoningAgent(): Promise<SeedResult> {
-  const result: SeedResult = {
-    agentId: RAFT_REASONING_AGENT_ID,
-    registered: false,
-    toolsAssigned: [],
-    characterSet: false,
-  };
+async function seedInactiveStubAgents(): Promise<void> {
+  const store = getAgentStore();
 
-  try {
-    const registry = getAgentRegistry();
-    await registry.ensureInitialized();
+  for (const manifestBase of INACTIVE_STUB_AGENTS) {
+    try {
+      const manifest: AgentManifest = {
+        ...manifestBase,
+        agentDID: '',
+        agentBlindedKey: '',
+        agentPublicKey: '',
+      };
 
-    // Check if already registered
-    const existing = registry.getAgent(RAFT_REASONING_AGENT_ID);
-    if (existing) {
-      console.log(`[AgentSeeder] ${RAFT_REASONING_AGENT_ID} already registered`);
-      result.registered = true;
-      if (!existing.character) {
-        registry.updateAgentCharacter(RAFT_REASONING_AGENT_ID, RAFT_REASONING_CHARACTER);
-        result.characterSet = true;
-        console.log(`[AgentSeeder] Updated character for ${RAFT_REASONING_AGENT_ID}`);
-      }
-      return result;
+      const sa = toStandardAgent(manifest, {
+        systemPrompt: `${manifestBase.name} — inactive stub agent preserved for future reactivation. Status: inactive.`,
+        clearance: 'Unclassified',
+        skills: [],
+        status: 'inactive',
+      });
+
+      // Upsert to DB (preserves if already exists)
+      await store.registerAgent(sa);
+    } catch (err) {
+      console.warn(`[AgentSeeder] Inactive stub seed warning for ${manifestBase.agentId}:`, err instanceof Error ? err.message : err);
     }
-
-    // Register the agent
-    const manifest = {
-      ...RAFT_REASONING_MANIFEST,
-      createdAt: new Date(),
-      createdBy: 'system',
-      agentDID: '',
-      agentBlindedKey: '',
-      agentPublicKey: '',
-    };
-
-    await registry.registerAgent(manifest);
-    result.registered = true;
-    console.log(`[AgentSeeder] Registered ${RAFT_REASONING_AGENT_ID}`);
-
-    // Set character
-    registry.updateAgentCharacter(RAFT_REASONING_AGENT_ID, RAFT_REASONING_CHARACTER);
-    result.characterSet = true;
-    console.log(`[AgentSeeder] Set character for ${RAFT_REASONING_AGENT_ID}`);
-
-    // Assign tools
-    const toolRegistry = getToolRegistry();
-    await toolRegistry.ensureInitialized();
-
-    for (const toolId of RAFT_REASONING_TOOLS) {
-      try {
-        const tool = toolRegistry.getTool(toolId);
-        if (tool) {
-          const agentTools = toolRegistry.getToolsForAgent(RAFT_REASONING_AGENT_ID);
-          if (!agentTools.some(t => t.toolId === toolId)) {
-            toolRegistry.assignToolToAgent(toolId, RAFT_REASONING_AGENT_ID, 'system');
-            result.toolsAssigned.push(toolId);
-            console.log(`[AgentSeeder] Assigned tool ${toolId} to ${RAFT_REASONING_AGENT_ID}`);
-          }
-        } else {
-          console.warn(`[AgentSeeder] Tool ${toolId} not found in registry`);
-        }
-      } catch (err) {
-        console.warn(`[AgentSeeder] Failed to assign tool ${toolId}:`, err);
-      }
-    }
-
-    return result;
-  } catch (error) {
-    result.error = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[AgentSeeder] Failed to seed ${RAFT_REASONING_AGENT_ID}:`, error);
-    return result;
   }
+  console.log(`[AgentSeeder] Seeded ${INACTIVE_STUB_AGENTS.length} inactive stub agent definitions`);
 }
 
 /**
@@ -718,14 +685,12 @@ async function registerFusionTools(): Promise<void> {
 
   for (const toolDef of allTools) {
     try {
-      // Check if already registered
       const existing = toolRegistry.getTool(toolDef.toolId);
       if (!existing) {
         await toolRegistry.registerTool(toolDef, 'system');
         console.log(`[AgentSeeder] Registered tool ${toolDef.toolId}`);
       }
     } catch (err) {
-      // Tool might already exist, that's ok
       console.warn(`[AgentSeeder] Tool ${toolDef.toolId} registration skipped:`, err);
     }
   }
@@ -734,6 +699,7 @@ async function registerFusionTools(): Promise<void> {
 /**
  * Seed all LangGraph-based agents.
  * Call during application startup.
+ * Idempotent — all operations use upsert via AgentStore.
  */
 export async function seedLangGraphAgents(): Promise<SeedResult[]> {
   console.log('[AgentSeeder] Starting LangGraph agent seeding...');
@@ -757,40 +723,24 @@ export async function seedLangGraphAgents(): Promise<SeedResult[]> {
     console.warn('[AgentSeeder] Fusion tools registration warning:', error);
   }
 
-  // Seed strategy reviewer
-  const strategyResult = await seedStrategyReviewer();
-  results.push(strategyResult);
+  // Seed active LangGraph agents
+  results.push(await seedStrategyReviewer());
+  results.push(await seedStrategicFusionAgent());
+  results.push(await seedEntityResolutionAgent());
+  results.push(await seedOsintMonitorAgent());
+  results.push(await seedValidityAssessmentAgent());
+  results.push(await seedConflictDetectionAgent());
+  results.push(await seedRaftExtractionAgent());
+  results.push(await seedRaftReasoningAgent());
 
-  // Seed strategic fusion agent
-  const fusionResult = await seedStrategicFusionAgent();
-  results.push(fusionResult);
-
-  // Seed entity resolution agent
-  const entityResult = await seedEntityResolutionAgent();
-  results.push(entityResult);
-
-  // Seed OSINT monitor agent
-  const osintResult = await seedOsintMonitorAgent();
-  results.push(osintResult);
-
-  // Seed validity assessment agent
-  const validityResult = await seedValidityAssessmentAgent();
-  results.push(validityResult);
-
-  // Seed conflict detection agent
-  const conflictResult = await seedConflictDetectionAgent();
-  results.push(conflictResult);
-
-  // Seed RAFT extraction agent
-  const raftExtractionResult = await seedRaftExtractionAgent();
-  results.push(raftExtractionResult);
-
-  // Seed RAFT reasoning agent
-  const raftReasoningResult = await seedRaftReasoningAgent();
-  results.push(raftReasoningResult);
+  // Seed inactive stub agents (preserves definitions for future reactivation)
+  try {
+    await seedInactiveStubAgents();
+  } catch (error) {
+    console.error('[AgentSeeder] Inactive stub agent seeding failed:', error);
+  }
 
   // Seed all 108 JPP staff agents from agent-library.ts
-  // These are required for the validation runner (Phase 31) to invoke staff agents
   try {
     const { seedStaffAgents } = await import('./staff-agent-seeder.js');
     await seedStaffAgents();
