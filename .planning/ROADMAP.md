@@ -1747,7 +1747,14 @@ Plans:
 - UNIV-19: Mobile-responsive input area — works with touch drag-and-drop and mobile paste
 - UNIV-20: Accessibility — ARIA labels, keyboard navigation, screen reader announcements for status changes
 
-**Plans:** TBD
+**Plans:** 5 plans
+
+Plans:
+- [ ] 50-01-PLAN.md — Backend content classifier + URL unfurler with tests
+- [ ] 50-02-PLAN.md — Backend API endpoints (classify + submit) + pipeline router + SSE extension
+- [ ] 50-03-PLAN.md — Frontend UniversalInputZone component + useUniversalIngest hook
+- [ ] 50-04-PLAN.md — Wire into IngestionSidebar, smart suggestions, unified feed, deprecate old panels
+- [ ] 50-05-PLAN.md — Human verification checkpoint
 
 ## Progress
 
