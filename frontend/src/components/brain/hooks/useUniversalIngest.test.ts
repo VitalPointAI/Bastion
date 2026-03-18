@@ -527,9 +527,10 @@ describe('useUniversalIngest', () => {
       });
 
       // Mark first item complete via SSE
-      const processId1 = result.current.items.find(
+      const match1 = result.current.items.find(
         (i) => i.label === 'https://example.com/1',
-      )?.processId!;
+      );
+      const processId1 = match1?.processId ?? '';
 
       act(() => {
         result.current.handleSSEEvent('processing:complete', { processId: processId1 });
