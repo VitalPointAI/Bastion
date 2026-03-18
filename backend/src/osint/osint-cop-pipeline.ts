@@ -133,6 +133,12 @@ export async function updateOSINTCOPLayer(
       });
     }
 
+    // Build descriptive display name from source feed names
+    const sourceNames = [...new Set(geoEvents.map((e) => e.sourceName).filter(Boolean))];
+    const displayName = sourceNames.length > 0
+      ? `OSINT Feeds: ${sourceNames.slice(0, 3).join(', ')}${sourceNames.length > 3 ? ` +${sourceNames.length - 3} more` : ''}`
+      : 'OSINT Feed Intelligence';
+
     const spec: COPLayerSpec = {
       layerId: layerId ?? `osint-intel-${Date.now()}`,
       layerType: 'intel',
@@ -147,7 +153,8 @@ export async function updateOSINTCOPLayer(
         generatedAt: new Date().toISOString(),
         sourceDocumentIds: geoEvents.map((e) => e.id),
         ccoValidated: false,
-      },
+        displayName,
+      } as COPLayerSpec['metadata'] & { displayName: string },
     };
 
     if (layerId) {

@@ -132,6 +132,29 @@ async function routeToDocIntelligence(
         console.warn('[IngestRouter] Failed to update processing status:', dbErr);
       }
 
+      // Geocode locations and create COP layer (best-effort, non-blocking)
+      // Gate: skip if trust-flagged (graphIngestionBlocked)
+      if (!report.graphIngestionBlocked) {
+        try {
+          const { geocodingService } = await import('../lib/geocoding-service.js');
+          const locations = await geocodingService.extractLocations(documentText.slice(0, 4000));
+          if (locations.length > 0) {
+            const { updateDocIntelCOPLayer } = await import('../doc-intelligence/doc-cop-pipeline.js');
+            const copResult = await updateDocIntelCOPLayer(problemSetId, report, locations, metadata);
+            if (copResult) {
+              broadcastSSE(problemSetId, 'cop:doc_layer_updated', {
+                processId,
+                documentId,
+                symbolCount: copResult.symbolCount,
+                layerSectionId: copResult.layerSectionId,
+              });
+            }
+          }
+        } catch (copErr) {
+          console.warn('[IngestRouter] COP layer creation failed (non-fatal):', copErr);
+        }
+      }
+
       onProgress('processing:complete', {
         processId,
         documentId,
