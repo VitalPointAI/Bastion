@@ -29,6 +29,9 @@ import { AgentModelConfigSchema } from '../strategic/config/types.js';
 import { clearLLMCache } from '../agents/langgraph/llm-factory.js';
 import { getFundingService } from '../auth/funding-service.js';
 import { requireAuth } from '../auth/auth-instance.js';
+import { agentAdminRouter } from './agent-admin.js';
+import { getAgentStore } from '../agents/agent-store.js';
+import { getPool } from '../lib/database.js';
 
 const router = Router();
 
@@ -980,24 +983,45 @@ router.delete('/config/blocked-emails', async (req: Request, res: Response) => {
 // ============================================================================
 
 /**
- * GET /api/admin/agents - List all agents with their configs
+ * GET /api/admin/agents - List all agents with their configs and health metrics (Phase 51)
  */
 router.get('/agents', async (req: Request, res: Response) => {
   try {
-    const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-    const agents = registry.listAgents();
+    // Phase 51: fetch from agents_v2 table for health metrics alongside agent data
+    const pool = getPool();
+    const result = await pool.query<{
+      agent_id: string;
+      status: string;
+      last_invocation: Date | null;
+      success_rate: string | null;
+      avg_response_time_ms: string | null;
+      validation_score: string | null;
+      agent_data: Record<string, unknown>;
+    }>(
+      `SELECT agent_id, status, last_invocation, success_rate, avg_response_time_ms,
+              validation_score, agent_data
+       FROM agents_v2
+       ORDER BY created_at`
+    );
 
-    // Get model configs from config service
+    // Also get model configs for backward compat
     const modelConfigs = await configService.listAgentModelConfigs();
 
-    // Merge model configs with agent data
-    const agentsWithConfigs = agents.map(agent => ({
-      ...agent,
-      customModelConfig: modelConfigs.find(c => c.agentId === agent.agentId) || null,
+    const data = result.rows.map((r) => ({
+      ...r.agent_data,
+      // Health metric columns (typed floats from NUMERIC columns)
+      status: r.status,
+      lastInvocation: r.last_invocation ?? null,
+      successRate: r.success_rate !== null ? parseFloat(r.success_rate) : null,
+      avgResponseTimeMs: r.avg_response_time_ms !== null ? parseFloat(r.avg_response_time_ms) : null,
+      validationScore: r.validation_score !== null ? parseFloat(r.validation_score) : null,
+      // Legacy compat fields
+      customModelConfig: modelConfigs.find((c) => c.agentId === r.agent_id) || null,
     }));
 
-    res.json({ agents: agentsWithConfigs });
+    res.setHeader('Cache-Control', 'no-cache');
+    // Return both shapes: new `data` array + legacy `agents` array for backward compat
+    res.json({ success: true, data, agents: data, count: data.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('List agents failed:', message);
@@ -1062,7 +1086,19 @@ router.post('/agents', async (req: Request, res: Response) => {
     await registry.ensureInitialized();
     await registry.registerAgent(manifest);
 
+    // Phase 51: persist StandardAgent extras (systemPrompt, clearance, skills, tools)
+    const store = getAgentStore();
+    const phase51Extras: Record<string, unknown> = {};
+    if (req.body.systemPrompt) phase51Extras.systemPrompt = req.body.systemPrompt;
+    if (req.body.clearance) phase51Extras.clearance = req.body.clearance;
+    if (req.body.skills) phase51Extras.skills = req.body.skills;
+    if (req.body.tools) phase51Extras.tools = req.body.tools;
+    if (Object.keys(phase51Extras).length > 0) {
+      await store.updateAgent(agentId, phase51Extras as unknown as import('../agents/standard-agent.js').StandardAgent);
+    }
+
     res.status(201).json({
+      success: true,
       agentId,
       agentDID: didResult.did,
       created: true,
@@ -1079,16 +1115,24 @@ router.post('/agents', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/admin/agents/:agentId - Get single agent
+ * GET /api/admin/agents/:agentId - Get single agent (Phase 51: uses AgentStore)
  */
 router.get('/agents/:agentId', async (req: Request, res: Response) => {
   try {
     const agentId = req.params.agentId as string;
-    const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-    const agent = registry.getAgent(agentId);
+    // Phase 51: use AgentStore for full StandardAgent data including systemPrompt, clearance, etc.
+    const store = getAgentStore();
+    const agent = await store.getAgent(agentId);
     if (!agent) {
-      res.status(404).json({ error: 'Agent not found' });
+      // Fall back to registry for agents not yet in agents_v2
+      const registry = getAgentRegistry();
+      await registry.ensureInitialized();
+      const regAgent = registry.getAgent(agentId);
+      if (!regAgent) {
+        res.status(404).json({ error: 'Agent not found' });
+        return;
+      }
+      res.json(regAgent);
       return;
     }
     res.json(agent);
@@ -1100,34 +1144,63 @@ router.get('/agents/:agentId', async (req: Request, res: Response) => {
 });
 
 /**
- * PUT /api/admin/agents/:agentId - Update agent
+ * PUT /api/admin/agents/:agentId - Update agent (Phase 51: persists via AgentStore)
  */
 router.put('/agents/:agentId', async (req: Request, res: Response) => {
   try {
     const agentId = req.params.agentId as string;
-    const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-    const agent = registry.getAgent(agentId);
-    if (!agent) {
-      res.status(404).json({ error: 'Agent not found' });
+    const store = getAgentStore();
+
+    const existing = await store.getAgent(agentId);
+    if (!existing) {
+      // Fall back to registry for legacy agents
+      const registry = getAgentRegistry();
+      await registry.ensureInitialized();
+      const regAgent = registry.getAgent(agentId);
+      if (!regAgent) {
+        res.status(404).json({ error: 'Agent not found' });
+        return;
+      }
+      // Apply legacy in-memory updates
+      if (req.body.isEnabled !== undefined) regAgent.active = req.body.isEnabled;
+      if (req.body.modelConfig) regAgent.modelConfig = req.body.modelConfig;
+      if (req.body.name) regAgent.name = req.body.name;
+      if (req.body.description) regAgent.description = req.body.description;
+      res.json({ updated: true, agent: regAgent });
       return;
     }
 
-    // Update allowed fields
+    // Build updates object from request body (supports both legacy and Phase 51 field names)
+    const updates: Record<string, unknown> = {};
+    if (req.body.name !== undefined) updates.name = req.body.name;
+    if (req.body.description !== undefined) updates.description = req.body.description;
+    if (req.body.modelConfig !== undefined) updates.modelConfig = req.body.modelConfig;
     if (req.body.isEnabled !== undefined) {
-      agent.active = req.body.isEnabled;
+      updates.active = req.body.isEnabled;
+      updates.status = req.body.isEnabled ? 'active' : 'inactive';
     }
-    if (req.body.modelConfig) {
-      agent.modelConfig = req.body.modelConfig;
+    // Phase 51 fields
+    if (req.body.systemPrompt !== undefined) updates.systemPrompt = req.body.systemPrompt;
+    if (req.body.clearance !== undefined) updates.clearance = req.body.clearance;
+    if (req.body.skills !== undefined) updates.skills = req.body.skills;
+    if (req.body.tools !== undefined) updates.tools = req.body.tools;
+    if (req.body.status !== undefined) {
+      updates.status = req.body.status;
+      updates.active = req.body.status === 'active';
     }
-    if (req.body.name) {
-      agent.name = req.body.name;
-    }
-    if (req.body.description) {
-      agent.description = req.body.description;
+    if (req.body.capabilities !== undefined) updates.capabilities = req.body.capabilities;
+    if (req.body.maxAutonomy !== undefined) updates.maxAutonomy = req.body.maxAutonomy;
+
+    await store.updateAgent(agentId, updates as Partial<import('../agents/standard-agent.js').StandardAgent>);
+
+    // Sync registry cache
+    const updated = await store.getAgent(agentId);
+    if (updated) {
+      const registry = getAgentRegistry();
+      (registry as unknown as { agents: Map<string, import('../agents/standard-agent.js').StandardAgent> }).agents.set(agentId, updated);
     }
 
-    res.json({ updated: true, agent });
+    res.json({ success: true, updated: true, message: `Agent ${agentId} updated` });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Update agent failed:', message);
@@ -1136,22 +1209,35 @@ router.put('/agents/:agentId', async (req: Request, res: Response) => {
 });
 
 /**
- * DELETE /api/admin/agents/:agentId - Deactivate agent
+ * DELETE /api/admin/agents/:agentId - Delete agent (Phase 51: true delete via AgentStore)
  */
 router.delete('/agents/:agentId', async (req: Request, res: Response) => {
   try {
     const agentId = req.params.agentId as string;
-    const registry = getAgentRegistry();
-    await registry.ensureInitialized();
-    registry.deactivateAgent(agentId);
-    res.json({ deactivated: true });
+    const store = getAgentStore();
+
+    const existing = await store.getAgent(agentId);
+    if (existing) {
+      // Phase 51: true delete from DB (cascades to agent_memory)
+      await store.deleteAgent(agentId);
+      // Remove from registry cache
+      const registry = getAgentRegistry();
+      (registry as unknown as { agents: Map<string, unknown> }).agents.delete(agentId);
+      res.json({ success: true, deleted: true });
+    } else {
+      // Legacy: deactivate only
+      const registry = getAgentRegistry();
+      await registry.ensureInitialized();
+      registry.deactivateAgent(agentId);
+      res.json({ success: true, deactivated: true });
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Deactivate agent failed:', message);
+    console.error('Delete/deactivate agent failed:', message);
     if (message.includes('not found')) {
       res.status(404).json({ error: 'Agent not found' });
     } else {
-      res.status(500).json({ error: 'Failed to deactivate agent' });
+      res.status(500).json({ error: 'Failed to delete agent' });
     }
   }
 });
@@ -2494,6 +2580,33 @@ router.post('/teams/:teamId/test', async (req: Request, res: Response) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[teams] Test failed:', message);
     res.status(500).json({ error: 'Team test execution failed', details: message });
+  }
+});
+
+// ============================================================================
+// Agent Admin Sub-Router (Phase 51)
+// ============================================================================
+
+// Mount agent admin routes — protected by requireAuth + requireSystemAdmin already applied above
+router.use('/agents', agentAdminRouter);
+
+// GET /api/admin/tools — list all available tools (must be distinct from /agents routes)
+router.get('/tools', async (req: Request, res: Response) => {
+  try {
+    const toolRegistry = getToolRegistry();
+    await toolRegistry.ensureInitialized();
+    const tools = toolRegistry.listTools();
+    const data = tools.map((t) => ({
+      toolId: t.toolId,
+      name: t.name,
+      description: t.description,
+      category: t.category,
+      schema: t.inputSchema,
+    }));
+    res.json({ success: true, data, count: data.length });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ success: false, error: message });
   }
 });
 
