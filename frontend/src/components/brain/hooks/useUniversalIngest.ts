@@ -244,7 +244,7 @@ export function useUniversalIngest(problemSetId: string): UseUniversalIngestRetu
         const file = files[i];
         try {
           const formData = new FormData();
-          formData.append('file', file);
+          formData.append('document', file);
           formData.append('problemSetId', problemSetId);
 
           const res = await fetch(`${API_BASE}/api/ingest/submit`, {
