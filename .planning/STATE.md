@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 50-07-PLAN.md
-last_updated: "2026-03-18T18:35:00Z"
-last_activity: "2026-03-18 - Completed 50-07: IngestionDrawer overlay component (33vw slide-out), auto-open/close, enlarged processing cards, document + OSINT feed management, wired into BrainLayout and BrainController"
+stopped_at: Completed 51-01-PLAN.md
+last_updated: "2026-03-18T21:43:00Z"
+last_activity: "2026-03-18 - Completed 51-01: StandardAgent type system, AgentStore, TeamStore, AgentMemoryStore with PostgreSQL persistence and cosine-similarity semantic recall, SQL migrations 034-035"
 progress:
   total_phases: 66
   completed_phases: 47
   total_plans: 419
-  completed_plans: 422
+  completed_plans: 423
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 50 of 66 (Universal Intelligence Input) — IN PROGRESS
-Plan: 7 of 5 in current phase — COMPLETE
-Status: Plan 50-07 complete — IngestionDrawer overlay (33vw, min(33vw,520px)), replaces IngestionSidebar in BrainController, auto-open/close on submission activity, enlarged processing cards with classification details, document + OSINT feed management, 17 new tests, tsc + eslint clean.
-Last activity: 2026-03-18 - Completed 50-07: IngestionDrawer overlay component, auto-open/close, enlarged processing cards with classification details, document and OSINT feed management, wired into BrainLayout and BrainController
+Phase: 51 of 66 (Unified Agent Architecture) — IN PROGRESS
+Plan: 1 of 8 in current phase — COMPLETE
+Status: Plan 51-01 complete — StandardAgent type system (extends AgentManifest), AgentStore/TeamStore/AgentMemoryStore with PostgreSQL persistence, cosine-similarity semantic recall, SQL migrations 034-035. TSC clean.
+Last activity: 2026-03-18 - Completed 51-01: StandardAgent interface, toStandardAgent helper, AgentStore, TeamStore, AgentMemoryStore, migrations 034-035
 
-Progress: ████████████████████████████████ 422 plans complete
+Progress: ████████████████████████████████ 423 plans complete
 
 ## Performance Metrics
 
@@ -213,6 +213,7 @@ Progress: ███████████████████████�
 | Phase 50-universal-intelligence-input P02 | 15 | 2 tasks | 4 files |
 | Phase 50 P04 | 301 | 2 tasks | 5 files |
 | Phase 50 P07 | 12 | 2 tasks | 6 files |
+| Phase 51-unified-agent-architecture P01 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -226,6 +227,13 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 51 Plan 01 (StandardAgent Foundation):**
+- StandardAgent extends AgentManifest rather than replacing it — all existing agent consumers (registry.ts, agent routes) remain unbroken
+- Health metrics (status, last_invocation, success_rate, avg_response_time_ms) stored as separate NUMERIC columns on agents_v2 for efficient filtering, not only in JSONB
+- Embeddings are caller-supplied in AgentMemoryStore — store never generates embeddings, decoupled from any embedding provider
+- recall() falls back to ILIKE text search when no embeddings present — memory retrieval works immediately without embedding pipeline
+- agent_memory uses ON DELETE CASCADE FK to agents_v2 so deleting an agent cascades to all its memories automatically
 
 **Phase 50 Plan 07 (IngestionDrawer):**
 - Drawer renders via ingestionDrawer prop in BrainLayout so it exists outside the CSS grid — workspace grid never resizes
