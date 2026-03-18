@@ -9,16 +9,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { CoGAnalysis, CoGTree as CoGTreeType, CoGNode } from '../../lib/design-service.ts';
 import { CoGTree } from './CoGTree.tsx';
-import { DesignAIPanel } from './DesignAIPanel.tsx';
+import { useIronclawContext } from '../../context/IronclawContext.tsx';
 
 interface CoGAnalysisSectionProps {
   problemSetId: string;
   initialData: CoGAnalysis;
   onUpdate: (data: CoGAnalysis) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  aiCache?: Map<string, Record<string, any>>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onAiCacheUpdate?: (cache: Map<string, Record<string, any>>) => void;
 }
 
 /**
@@ -66,9 +62,9 @@ function addNodeToTree(tree: CoGTreeType, newNode: CoGNode, parentType: string |
   return { root: clonedRoot };
 }
 
-export function CoGAnalysisSection({ problemSetId, initialData, onUpdate, aiCache, onAiCacheUpdate }: CoGAnalysisSectionProps) {
+export function CoGAnalysisSection({ problemSetId: _problemSetId, initialData, onUpdate }: CoGAnalysisSectionProps) {
+  const { sendMessage, toggleDrawer } = useIronclawContext();
   const [cogAnalysis, setCogAnalysis] = useState<CoGAnalysis>(initialData);
-  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync if initialData changes externally
@@ -150,9 +146,18 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate, aiCach
           <h2 className="text-lg font-semibold text-gray-100">Center of Gravity Analysis</h2>
           <p className="text-sm text-gray-400">Strange's CG-CC-CR-CV Framework</p>
         </div>
+        <button
+          onClick={() => {
+            sendMessage("Analyze: " + JSON.stringify(cogAnalysis));
+            toggleDrawer();
+          }}
+          className="px-3 py-1.5 text-xs font-medium rounded bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+        >
+          Ask Ironclaw to Analyze
+        </button>
       </div>
 
-      {/* Content + AI Panel */}
+      {/* Content */}
       <div className="flex flex-1 min-h-0">
         {/* Main Content */}
         <div className="flex-1 min-w-0 flex flex-col gap-4 overflow-y-auto">
@@ -214,17 +219,6 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate, aiCach
           </div>
         </div>
 
-        {/* AI Panel */}
-        <DesignAIPanel
-          problemSetId={problemSetId}
-          activeSection="cog-analysis"
-          sectionData={cogAnalysis}
-          isOpen={aiPanelOpen}
-          onToggle={() => setAiPanelOpen(!aiPanelOpen)}
-          onApplyCogSuggestion={handleApplyCogSuggestion}
-          externalCache={aiCache}
-          onCacheUpdate={onAiCacheUpdate}
-        />
       </div>
     </div>
   );

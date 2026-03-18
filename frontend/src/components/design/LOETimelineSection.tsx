@@ -14,8 +14,8 @@ import type {
   LOECoGLink,
   DecisivePoint,
 } from '../../lib/design-service.ts';
-import { DesignAIPanel } from './DesignAIPanel.tsx';
 import { LOELane } from './LOELane.tsx';
+import { useIronclawContext } from '../../context/IronclawContext.tsx';
 
 // Suppress unused import warnings — types needed for documentation
 void (undefined as unknown as LOECoGLink);
@@ -41,10 +41,6 @@ interface LOETimelineSectionProps {
   initialLOEs: LineOfEffort[];
   cogAnalysis: CoGAnalysis;
   onUpdate: (loes: LineOfEffort[]) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  aiCache?: Map<string, Record<string, any>>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onAiCacheUpdate?: (cache: Map<string, Record<string, any>>) => void;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -71,16 +67,14 @@ function collectVulnerabilities(node: CoGNode | null): CoGNode[] {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function LOETimelineSection({
-  problemSetId,
+  problemSetId: _problemSetId,
   initialLOEs,
   cogAnalysis,
   onUpdate,
-  aiCache,
-  onAiCacheUpdate,
 }: LOETimelineSectionProps) {
+  const { sendMessage, toggleDrawer } = useIronclawContext();
   const [loes, setLoes] = useState<LineOfEffort[]>(initialLOEs);
   const [phases, setPhases] = useState<Phase[]>(DEFAULT_PHASES);
-  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
   const [phaseEditValue, setPhaseEditValue] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -218,6 +212,15 @@ export function LOETimelineSection({
           </h2>
           <p className="text-sm text-gray-400">Decisive Points and Phasing</p>
         </div>
+        <button
+          onClick={() => {
+            sendMessage("Analyze: " + JSON.stringify({ loes, cogAnalysis }));
+            toggleDrawer();
+          }}
+          className="px-3 py-1.5 text-xs font-medium rounded bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+        >
+          Ask Ironclaw to Analyze
+        </button>
       </div>
 
       <div className="flex gap-0 flex-1 min-h-0">
@@ -481,17 +484,6 @@ export function LOETimelineSection({
             </div>
           </div>
         </div>
-
-        {/* AI Panel */}
-        <DesignAIPanel
-          problemSetId={problemSetId}
-          activeSection="lines-of-effort"
-          sectionData={{ loes, cogAnalysis }}
-          isOpen={aiPanelOpen}
-          onToggle={() => setAiPanelOpen(!aiPanelOpen)}
-          externalCache={aiCache}
-          onCacheUpdate={onAiCacheUpdate}
-        />
       </div>
     </div>
   );

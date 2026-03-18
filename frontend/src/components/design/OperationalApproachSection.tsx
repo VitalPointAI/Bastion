@@ -14,17 +14,13 @@ import type {
   OperationalDesign,
   CoGNode,
 } from '../../lib/design-service.ts';
-import { DesignAIPanel } from './DesignAIPanel.tsx';
+import { useIronclawContext } from '../../context/IronclawContext.tsx';
 
 interface OperationalApproachSectionProps {
   problemSetId: string;
   initialData: OperationalApproach;
   designData: OperationalDesign;
   onUpdate: (data: OperationalApproach) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  aiCache?: Map<string, Record<string, any>>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onAiCacheUpdate?: (cache: Map<string, Record<string, any>>) => void;
 }
 
 
@@ -52,13 +48,12 @@ function countCVLinks(loes: OperationalDesign['linesOfEffort']): number {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function OperationalApproachSection({
-  problemSetId,
+  problemSetId: _problemSetId,
   initialData,
   designData,
   onUpdate,
-  aiCache,
-  onAiCacheUpdate,
 }: OperationalApproachSectionProps) {
+  const { sendMessage, toggleDrawer } = useIronclawContext();
   const [approach, setApproach] = useState<OperationalApproach>(() => ({
     phases: initialData.phases ?? [],
     transitions: initialData.transitions ?? [],
@@ -66,7 +61,6 @@ export function OperationalApproachSection({
     narrative: initialData.narrative ?? '',
   }));
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -226,9 +220,6 @@ export function OperationalApproachSection({
     updateApproach((prev) => ({ ...prev, narrative: value }));
   };
 
-  const handleApplyNarrative = useCallback((narrative: string) => {
-    updateApproach((prev) => ({ ...prev, narrative }));
-  }, [updateApproach]);
 
   // ─── Available phases (from LOEs or operationalApproach) ──────────────────
 
@@ -281,6 +272,15 @@ export function OperationalApproachSection({
               {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
             </span>
           )}
+          <button
+            onClick={() => {
+              sendMessage("Analyze: " + JSON.stringify({ ...approach, designData }));
+              toggleDrawer();
+            }}
+            className="px-3 py-1.5 text-xs font-medium rounded bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+          >
+            Ask Ironclaw to Analyze
+          </button>
         </div>
       </div>
 
@@ -516,18 +516,6 @@ export function OperationalApproachSection({
       </div>
 
       </div>
-
-      {/* AI Panel */}
-      <DesignAIPanel
-        problemSetId={problemSetId}
-        activeSection="operational-approach"
-        sectionData={{ ...approach, designData }}
-        isOpen={aiPanelOpen}
-        onToggle={() => setAiPanelOpen(!aiPanelOpen)}
-        onApplyNarrative={handleApplyNarrative}
-        externalCache={aiCache}
-        onCacheUpdate={onAiCacheUpdate}
-      />
     </div>
   );
 }
