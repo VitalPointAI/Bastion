@@ -28,6 +28,7 @@ vi.mock('./hooks/useUniversalIngest.js', () => ({
 
 // We'll import and configure the mock per test
 import { useUniversalIngest } from './hooks/useUniversalIngest.js';
+import type { ItemStatus } from './hooks/useUniversalIngest.js';
 const mockUseUniversalIngest = vi.mocked(useUniversalIngest);
 
 function makeDefaultHookReturn(overrides?: Partial<ReturnType<typeof useUniversalIngest>>) {
@@ -49,7 +50,7 @@ function makeDefaultHookReturn(overrides?: Partial<ReturnType<typeof useUniversa
 function makeItem(overrides?: Partial<{
   id: string;
   label: string;
-  status: string;
+  status: ItemStatus;
   progress: number;
   processId: string;
   error: string;
@@ -181,7 +182,7 @@ describe('UniversalInputZone', () => {
   it('shows "Clear completed" link when any items are complete', async () => {
     mockUseUniversalIngest.mockReturnValue(
       makeDefaultHookReturn({
-        items: [makeItem({ status: 'complete' }) as ReturnType<typeof makeItem>],
+        items: [makeItem({ status: 'complete' })],
       }),
     );
 
@@ -195,7 +196,7 @@ describe('UniversalInputZone', () => {
   it('does not show "Clear completed" when no items are complete', async () => {
     mockUseUniversalIngest.mockReturnValue(
       makeDefaultHookReturn({
-        items: [makeItem({ status: 'processing' }) as ReturnType<typeof makeItem>],
+        items: [makeItem({ status: 'processing' })],
       }),
     );
 
