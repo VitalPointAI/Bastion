@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 50-03-PLAN.md
-last_updated: "2026-03-18T16:14:28Z"
+stopped_at: Completed 50-04-PLAN.md
+last_updated: "2026-03-18T16:23:53.729Z"
 last_activity: "2026-03-18 - Completed 50-03: useUniversalIngest hook + UniversalInputZone component with drag-drop, paste, keyboard, per-item status chips, ARIA accessibility"
 progress:
   total_phases: 66
   completed_phases: 47
   total_plans: 419
-  completed_plans: 420
+  completed_plans: 421
 ---
 
 # Project State
@@ -211,6 +211,7 @@ Progress: ███████████████████████�
 | Phase 49 P05 | 8 | 1 tasks | 8 files |
 | Phase 50-universal-intelligence-input P01 | 4 | 2 tasks | 5 files |
 | Phase 50-universal-intelligence-input P02 | 15 | 2 tasks | 4 files |
+| Phase 50 P04 | 301 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -914,6 +915,9 @@ Recent decisions affecting current work:
 - [Phase 49]: RevisionDiffView serves dual purpose: static diff AND live preview while editing proposedData in modal
 - [Phase 49]: Merge to Design shown in banner as explicit manual action; local Set tracks merged state; pushHandoff kept for backward compat; design_revision added to GATE_TYPE_LABELS across all 5 governance components
 - [Phase 50]: Function-style vi.mock() constructors required for rss-parser and jsdom — arrow vi.fn() cannot be used with new
+- [Phase 50]: SSE forwarding via callback rather than second EventSource — one connection for whole sidebar
+- [Phase 50]: Unified feed merges IngestItem[] + IngestionEvent[] sorted newest-first by timestamp
+- [Phase 50]: Old DocIntelligencePanel + OSINT modal deprecated behind Advanced collapsible, not deleted (UNIV-18)
 
 ### Roadmap Evolution
 
@@ -1628,7 +1632,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-18T16:00:36.934Z
-Stopped at: Completed 50-01-PLAN.md
+Last session: 2026-03-18T16:23:53.720Z
+Stopped at: Completed 50-04-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
