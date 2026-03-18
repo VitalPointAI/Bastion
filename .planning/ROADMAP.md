@@ -72,6 +72,7 @@ None
 - [ ] **Phase 47: JSON-LD Semantic Brain + COP Fix** - Refactor knowledge graph to JSON-LD with formal ontology alignment (BFO, CCO, DODAF/DNDAF), provenance tracking, temporal reasoning, entity resolution, confidence scoring; fix COP layer generation end-to-end (INSERTED)
 - [ ] **Phase 48: Robot Swarm Behaviour End-to-End Demo** - Complete BASTION strategy-to-autonomous-execution pipeline demo with Taiwan defense scenario, 3-robot coalition swarm, AI objective extraction, DAO-authorized missions, swarm recon, COP detections, lethal escalation gates, brain graph timeline playback (INSERTED)
 - [x] **Phase 49: Align Design Tab with Plan Tab** - Remove duplicate operational design from Plan tab, establish Design tab as single source of truth for operational design artifacts, wire Design outputs as automatic starting point for campaign planning, restructure Strategic Guidance to remove Operational Approach step and add Alignment step, build generic fork-and-merge revision system for Plan-to-Design change proposals through DAO governance (INSERTED) (completed 2026-03-17)
+- [ ] **Phase 50: Universal Intelligence Input & Auto-Classification** - Replace fragmented ingestion sidebar (separate document upload, OSINT modal, filter tags) with a single universal input area that accepts any content type (files, URLs, pasted text, structured data) and automatically discerns source type, classifies content, routes to appropriate specialist agents, and extracts intelligence — all orchestrated by the lead agent with robust error handling, retry logic, and user-facing status; eliminates manual source-type selection and reduces ingestion to a single drag/drop/paste/type interaction (INSERTED)
 
 ## Phase Details
 
@@ -1715,6 +1716,39 @@ Plans:
 - [x] 15-04-PLAN.md — Cross-staff notification panel with bell icon, WebSocket real-time delivery, role filtering, and per-role sidebar badges (wave 3, parallel with 03)
 - [x] 15-05-PLAN.md — Product diff integration view, strategic direction import UI, AI agent suggestion panel with per-block accept/reject (wave 4)
 
+### Phase 50: Universal Intelligence Input & Auto-Classification
+
+**Goal:** Replace the fragmented ingestion sidebar (separate document upload zone, OSINT source modal with manual type/URL/interval config, disconnected filter tags) with a single universal input area that accepts any content — drag-and-drop files, pasted URLs, raw text, structured data — and automatically discerns the source type, classifies content, routes to appropriate specialist agents, and extracts intelligence into the brain graph. The lead agent orchestrator manages the full pipeline with robust error handling, retry logic, and clear user-facing status. Eliminates manual source-type selection; reduces all ingestion to one intuitive interaction point.
+
+**Depends on:** Phase 40 (document intelligence team), Phase 41 (brain visualization redesign)
+
+**Research:** Yes — input type detection heuristics, URL unfurling/content extraction, paste event handling across browsers, streaming classification feedback UX patterns
+
+**Requirements:**
+
+- UNIV-01: Single universal input zone at top of ingestion sidebar — accepts drag-and-drop files, pasted text, typed/pasted URLs, and clipboard images
+- UNIV-02: Auto-detect input type from content: file uploads (by MIME/extension), URLs (by pattern match), raw text (fallback), structured data (JSON/XML detection)
+- UNIV-03: URL unfurling — fetch URL content, detect if RSS feed, API endpoint, news article, PDF link, or web page; extract metadata (title, description, OG tags)
+- UNIV-04: For detected RSS/Atom feeds, auto-create OSINT source subscription with sensible defaults (polling interval, relevance mode) — no manual modal required
+- UNIV-05: For detected web articles/pages, extract and ingest as document through existing doc-intelligence pipeline
+- UNIV-06: For pasted text blocks, classify as intelligence report snippet, strategic guidance, OSINT item, or freeform note; route to appropriate extraction pipeline
+- UNIV-07: For file drops, use existing doc-intelligence pipeline (PDF, DOCX, TXT, MD, HTML, CSV, JSON, XML) with automatic format detection
+- UNIV-08: Lead agent orchestrator triages all inputs — determines classification, selects specialist agents, manages parallel processing, handles failures with retry/fallback
+- UNIV-09: Real-time inline status for each input item: queued → classifying → processing → extracting → complete/error, with expandable detail
+- UNIV-10: Error recovery UI — failed items show actionable error message with retry button; orchestrator attempts automatic retry with backoff before surfacing to user
+- UNIV-11: Batch input support — multiple files/URLs/text blocks can be submitted simultaneously; orchestrator processes in parallel with individual status per item
+- UNIV-12: Input history feed below the input zone replaces current separate Documents/OSINT/Events sections — unified chronological feed of all ingested items regardless of source type
+- UNIV-13: Smart suggestions — when input is ambiguous, show classification options as clickable chips (e.g., "Looks like an RSS feed — Subscribe?" / "Treat as document?") rather than requiring manual modal
+- UNIV-14: Keyboard-friendly — Ctrl+V paste triggers ingestion, Enter submits typed URL/text, Escape cancels
+- UNIV-15: Backend auto-classification endpoint: `POST /api/ingest/classify` — accepts raw content/URL/file, returns detected type + confidence + suggested pipeline
+- UNIV-16: Backend unified ingest endpoint: `POST /api/ingest/submit` — accepts classified input, routes to doc-intelligence or OSINT pipeline, returns process ID for status tracking
+- UNIV-17: Preserve existing SSE event stream for real-time processing updates; extend with classification and routing events
+- UNIV-18: Deprecate but don't remove AddOSINTSourceModal and separate document upload zone — keep as advanced/manual fallback accessible via "Advanced" link
+- UNIV-19: Mobile-responsive input area — works with touch drag-and-drop and mobile paste
+- UNIV-20: Accessibility — ARIA labels, keyboard navigation, screen reader announcements for status changes
+
+**Plans:** TBD
+
 ## Progress
 
 **Execution Order:**
@@ -1768,3 +1802,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 31. AI Agent Validation & Compliance Testing | 7/7 | In Progress|  |
 | 40. Autonomous Document Intelligence Team | 12/12 | Complete   | 2026-03-09 |
 | 42. Resources Tab — Inventory, Discovery & Onboarding | 6/6 | Complete   | 2026-03-12 |
+| 50. Universal Intelligence Input & Auto-Classification | 0/TBD | Not started | - |
