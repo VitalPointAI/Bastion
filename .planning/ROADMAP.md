@@ -734,7 +734,7 @@ Plans:
 **Goal:** Rearchitect the fragmented agent system into a coherent ecosystem: standardized agent template with persistent memory/skills/tools, admin dashboard for agent lifecycle management, team designer for composing agent teams, and Ironclaw as the sole AI interface replacing all scattered AI panels.
 **Requirements**: Standardized agent base class, persistent agent memory, agent admin dashboard (CRUD, health, validation), team designer UI, Ironclaw consolidation as single AI entry point, removal of AIStaffContext and per-tab AI panels
 **Depends on:** Phase 50
-**Plans:** 4/8 plans executed
+**Plans:** 6/8 plans executed
 
 Plans:
 - [x] 51-01-PLAN.md — StandardAgent types, DB migrations, AgentStore/TeamStore/MemoryStore
