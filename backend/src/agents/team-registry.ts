@@ -3,10 +3,15 @@
  *
  * Manages agent team registration, membership, and lifecycle.
  * Implements singleton pattern for global access.
+ *
+ * Phase 51: Backed by TeamStore (PostgreSQL) with a write-through in-memory cache
+ * so that synchronous callers continue to work without code changes.
+ * Writes go to both cache and DB; reads hit cache after initialization.
  */
 
 import { createTeamDID } from './tool-did.js';
 import { getAgentRegistry } from './registry.js';
+import { getTeamStore } from './team-store.js';
 import type {
   AgentTeam,
   TeamMember,
@@ -20,10 +25,14 @@ import {
 
 /**
  * Team Registry - manages team lifecycle, membership, and workflows.
+ *
+ * Storage: write-through cache (Map) + TeamStore (PostgreSQL).
  */
 export class TeamRegistry {
+  // Write-through cache: teamId -> AgentTeam
   private teams: Map<string, AgentTeam> = new Map();
-  private agentTeams: Map<string, Set<string>> = new Map(); // agentId -> teamIds
+  // agentId -> teamIds (rebuilt from cache on init)
+  private agentTeams: Map<string, Set<string>> = new Map();
   private initialized: boolean = false;
   private initPromise: Promise<void> | null = null;
 
@@ -34,9 +43,28 @@ export class TeamRegistry {
 
   /**
    * Initialize the registry asynchronously.
+   * Loads all teams from the DB into the write-through cache.
    */
   private async initialize(): Promise<void> {
     if (this.initialized) return;
+    try {
+      const store = getTeamStore();
+      const existing = await store.listTeams();
+      for (const team of existing) {
+        this.teams.set(team.teamId, team);
+        // Rebuild agent-team mapping
+        for (const member of team.members) {
+          let teamSet = this.agentTeams.get(member.agentId);
+          if (!teamSet) {
+            teamSet = new Set();
+            this.agentTeams.set(member.agentId, teamSet);
+          }
+          teamSet.add(team.teamId);
+        }
+      }
+    } catch (err) {
+      console.warn('[TeamRegistry] init warning (DB may not be ready yet):', err instanceof Error ? err.message : err);
+    }
     this.initialized = true;
   }
 
@@ -58,6 +86,7 @@ export class TeamRegistry {
    * Automatically generates DID.
    * Validates that all member agents exist.
    * Returns the created team with DID fields populated.
+   * Persists to DB via TeamStore.
    */
   async createTeam(input: AgentTeamInput, createdBy: string): Promise<AgentTeam> {
     // Validate input
@@ -126,6 +155,7 @@ export class TeamRegistry {
       createdBy,
     };
 
+    // Write-through: update cache
     this.teams.set(team.teamId, team);
 
     // Update agent-team mapping
@@ -138,11 +168,20 @@ export class TeamRegistry {
       teamSet.add(team.teamId);
     }
 
+    // Persist to DB
+    try {
+      const store = getTeamStore();
+      await store.createTeam(team);
+    } catch (err) {
+      console.warn(`[TeamRegistry] DB persist failed for ${team.teamId}:`, err instanceof Error ? err.message : err);
+    }
+
     return team;
   }
 
   /**
    * Get a team by ID.
+   * Returns from cache (populated at startup from DB).
    */
   getTeam(teamId: string): AgentTeam | undefined {
     return this.teams.get(teamId);
@@ -169,6 +208,7 @@ export class TeamRegistry {
 
   /**
    * Update a team's configuration.
+   * Updates cache and persists to DB.
    */
   async updateTeam(teamId: string, updates: AgentTeamUpdate): Promise<AgentTeam | undefined> {
     const team = this.teams.get(teamId);
@@ -223,6 +263,7 @@ export class TeamRegistry {
         : team.members,
     };
 
+    // Write-through: update cache
     this.teams.set(teamId, updatedTeam);
 
     // Update agent-team mapping if members changed
@@ -237,11 +278,20 @@ export class TeamRegistry {
       }
     }
 
+    // Persist to DB
+    try {
+      const store = getTeamStore();
+      await store.updateTeam(teamId, validUpdates);
+    } catch (err) {
+      console.warn(`[TeamRegistry] DB update failed for ${teamId}:`, err instanceof Error ? err.message : err);
+    }
+
     return updatedTeam;
   }
 
   /**
    * Delete a team.
+   * Removes from cache and deletes from DB.
    */
   deleteTeam(teamId: string): boolean {
     const team = this.teams.get(teamId);
@@ -260,7 +310,15 @@ export class TeamRegistry {
       }
     }
 
+    // Remove from cache
     this.teams.delete(teamId);
+
+    // Delete from DB (fire-and-forget)
+    const store = getTeamStore();
+    store.deleteTeam(teamId).catch((err) => {
+      console.warn(`[TeamRegistry] DB delete failed for ${teamId}:`, err instanceof Error ? err.message : err);
+    });
+
     return true;
   }
 
@@ -270,6 +328,7 @@ export class TeamRegistry {
 
   /**
    * Add a member to a team.
+   * Updates cache and persists to DB.
    */
   async addMember(teamId: string, member: TeamMember): Promise<AgentTeam | undefined> {
     const team = this.teams.get(teamId);
@@ -310,11 +369,18 @@ export class TeamRegistry {
     }
     teamSet.add(teamId);
 
+    // Persist to DB (store full updated team)
+    const store = getTeamStore();
+    store.updateTeam(teamId, { members: team.members }).catch((err) => {
+      console.warn(`[TeamRegistry] DB member add failed for ${teamId}:`, err instanceof Error ? err.message : err);
+    });
+
     return team;
   }
 
   /**
    * Remove a member from a team.
+   * Updates cache and persists to DB.
    */
   removeMember(teamId: string, agentId: string): AgentTeam | undefined {
     const team = this.teams.get(teamId);
@@ -339,6 +405,12 @@ export class TeamRegistry {
         this.agentTeams.delete(agentId);
       }
     }
+
+    // Persist to DB (fire-and-forget)
+    const store = getTeamStore();
+    store.updateTeam(teamId, { members: team.members }).catch((err) => {
+      console.warn(`[TeamRegistry] DB member remove failed for ${teamId}:`, err instanceof Error ? err.message : err);
+    });
 
     return team;
   }

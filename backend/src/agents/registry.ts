@@ -3,6 +3,11 @@
  *
  * Manages AI governance agents, delegations, and action audit trails.
  * Implements trust tier management and permission checking for agent actions.
+ *
+ * Phase 51: Backed by AgentStore (PostgreSQL) with a write-through in-memory cache
+ * so that synchronous callers (api/agents.ts, executor.ts, etc.) continue to work
+ * without code changes. Writes go to both cache and DB; reads hit cache after
+ * initialization.
  */
 
 import { randomUUID } from 'crypto';
@@ -20,14 +25,21 @@ import { CharacterSchema } from './character-schema.js';
 import { Proposal } from '../dao/types.js';
 import { createAgentDID } from './agent-did.js';
 import { canActivateAgent } from '../validation/activation-gate.js';
+import { getAgentStore } from './agent-store.js';
+import { toStandardAgent } from './standard-agent.js';
+import type { StandardAgent } from './standard-agent.js';
 
 /**
  * Agent Registry - manages agent lifecycle, delegations, and audit trail.
+ *
+ * Storage: write-through cache (Map) + AgentStore (PostgreSQL).
+ * On startup the registry loads all agents from the DB into the cache so that
+ * synchronous reads work without breaking existing callers.
  */
 export class AgentRegistry {
-  private agents: Map<string, AgentManifest> = new Map();
+  // Write-through cache: agentId -> StandardAgent (superset of AgentManifest)
+  private agents: Map<string, StandardAgent> = new Map();
   private delegations: Map<string, AgentDelegation[]> = new Map();
-  private actionLog: AgentAction[] = [];
   private messengers: Map<string, unknown> = new Map(); // AgentMessenger instances
   private initialized: boolean = false;
   private initPromise: Promise<void> | null = null;
@@ -39,11 +51,22 @@ export class AgentRegistry {
 
   /**
    * Initialize the registry asynchronously.
-   * Registers default agents with DIDs.
+   * Loads existing agents from the DB, then registers default agents.
    */
   private async initialize(): Promise<void> {
     if (this.initialized) return;
-    await this.registerDefaultAgents();
+    try {
+      // Load existing agents from DB into cache
+      const store = getAgentStore();
+      const existing = await store.listAgents();
+      for (const agent of existing) {
+        this.agents.set(agent.agentId, agent);
+      }
+      // Register defaults (idempotent — skips if already in cache/DB)
+      await this.registerDefaultAgents();
+    } catch (err) {
+      console.warn('[AgentRegistry] init warning (DB may not be ready yet):', err instanceof Error ? err.message : err);
+    }
     this.initialized = true;
   }
 
@@ -64,12 +87,9 @@ export class AgentRegistry {
    * Register a new agent.
    * Automatically generates DID if not provided.
    * Returns the registered manifest with DID fields populated.
+   * Upserts to DB (idempotent — safe to call multiple times for same agent).
    */
   async registerAgent(manifest: AgentManifest): Promise<AgentManifest> {
-    if (this.agents.has(manifest.agentId)) {
-      throw new Error(`Agent ${manifest.agentId} already registered`);
-    }
-
     // Generate DID if not provided
     if (!manifest.agentDID) {
       const didResult = await createAgentDID(manifest.agentId);
@@ -79,7 +99,6 @@ export class AgentRegistry {
     }
 
     // Activation gate: check test fixture requirements before allowing active status.
-    // Agents without sufficient test fixtures are registered but kept inactive.
     if (manifest.active) {
       try {
         const gate = await canActivateAgent(manifest.agentId, manifest.agentId);
@@ -98,14 +117,39 @@ export class AgentRegistry {
       }
     }
 
-    this.agents.set(manifest.agentId, manifest);
-    return manifest;
+    // Convert to StandardAgent and persist
+    const existing = this.agents.get(manifest.agentId);
+    const sa = toStandardAgent(manifest, existing ? {
+      // Preserve existing health metrics and StandardAgent extras
+      systemPrompt: existing.systemPrompt,
+      clearance: existing.clearance,
+      skills: existing.skills,
+      status: manifest.active ? 'active' : 'inactive',
+      lastInvocation: existing.lastInvocation,
+      successRate: existing.successRate,
+      avgResponseTimeMs: existing.avgResponseTimeMs,
+      validationScore: existing.validationScore,
+    } : undefined);
+
+    // Write-through: update cache
+    this.agents.set(manifest.agentId, sa);
+
+    // Persist to DB (upsert)
+    try {
+      const store = getAgentStore();
+      await store.registerAgent(sa);
+    } catch (err) {
+      console.warn(`[AgentRegistry] DB persist failed for ${manifest.agentId}:`, err instanceof Error ? err.message : err);
+    }
+
+    return sa;
   }
 
   /**
    * Get an agent by ID.
+   * Returns from cache (populated at startup from DB).
    */
-  getAgent(agentId: string): AgentManifest | undefined {
+  getAgent(agentId: string): StandardAgent | undefined {
     return this.agents.get(agentId);
   }
 
@@ -134,7 +178,7 @@ export class AgentRegistry {
 
   /**
    * Activate an agent, subject to activation gate requirements.
-   * Returns the gate result indicating whether activation was allowed.
+   * Updates status in cache and DB.
    */
   async activateAgent(
     agentId: string,
@@ -150,12 +194,24 @@ export class AgentRegistry {
     }
 
     agent.active = true;
+    agent.status = 'active';
+    agent.activatedAt = new Date();
     this.agents.set(agentId, agent);
+
+    // Persist to DB
+    try {
+      const store = getAgentStore();
+      await store.updateAgent(agentId, { active: true, status: 'active', activatedAt: new Date() });
+    } catch (err) {
+      console.warn(`[AgentRegistry] DB update failed for ${agentId}:`, err instanceof Error ? err.message : err);
+    }
+
     return { allowed: true };
   }
 
   /**
    * Deactivate an agent.
+   * Updates status in cache and DB.
    */
   deactivateAgent(agentId: string): void {
     const agent = this.agents.get(agentId);
@@ -163,10 +219,18 @@ export class AgentRegistry {
       throw new Error(`Agent ${agentId} not found`);
     }
     agent.active = false;
+    agent.status = 'inactive';
+    agent.deactivatedAt = new Date();
     this.agents.set(agentId, agent);
 
     // Cleanup messenger if exists
     this.cleanupMessenger(agentId);
+
+    // Persist to DB (fire-and-forget)
+    const store = getAgentStore();
+    store.updateAgent(agentId, { active: false, status: 'inactive', deactivatedAt: new Date() }).catch((err) => {
+      console.warn(`[AgentRegistry] DB update failed for ${agentId}:`, err instanceof Error ? err.message : err);
+    });
   }
 
   // ==========================================================================
@@ -175,7 +239,6 @@ export class AgentRegistry {
 
   /**
    * Register a messenger for an agent.
-   * Used by AgentMessenger to track instances.
    */
   registerMessenger(agentId: string, messenger: unknown): void {
     this.messengers.set(agentId, messenger);
@@ -216,6 +279,7 @@ export class AgentRegistry {
   /**
    * Update an agent's character definition.
    * Validates the character against the CharacterSchema.
+   * Persists the character to DB.
    */
   updateAgentCharacter(agentId: string, character: AgentCharacter): AgentManifest {
     const agent = this.agents.get(agentId);
@@ -231,12 +295,18 @@ export class AgentRegistry {
 
     agent.character = parseResult.data as AgentCharacter;
     this.agents.set(agentId, agent);
+
+    // Persist to DB (fire-and-forget)
+    const store = getAgentStore();
+    store.updateAgent(agentId, { character: parseResult.data as AgentCharacter }).catch((err) => {
+      console.warn(`[AgentRegistry] DB character update failed for ${agentId}:`, err instanceof Error ? err.message : err);
+    });
+
     return agent;
   }
 
   /**
    * Get an agent's character definition.
-   * Returns undefined if no character is set.
    */
   getAgentCharacter(agentId: string): AgentCharacter | undefined {
     const agent = this.agents.get(agentId);
@@ -257,6 +327,13 @@ export class AgentRegistry {
 
     delete agent.character;
     this.agents.set(agentId, agent);
+
+    // Persist to DB (fire-and-forget)
+    const store = getAgentStore();
+    store.updateAgent(agentId, { character: undefined }).catch((err) => {
+      console.warn(`[AgentRegistry] DB character remove failed for ${agentId}:`, err instanceof Error ? err.message : err);
+    });
+
     return agent;
   }
 
@@ -275,6 +352,7 @@ export class AgentRegistry {
   /**
    * Create a new delegation for an agent.
    * Returns the delegation ID.
+   * Delegations are kept in-memory (not persisted to DB — DAO governance concern).
    */
   createDelegation(
     delegation: Omit<AgentDelegation, 'delegationId' | 'createdAt' | 'revoked'>
@@ -415,8 +493,6 @@ export class AgentRegistry {
 
   /**
    * Get the effective autonomy level for an agent acting on a proposal kind.
-   * Returns the minimum of: agent's maxAutonomy, delegation's maxAutonomy, and DAO default.
-   * Strike authorization always returns NotAutonomous.
    */
   getEffectiveAutonomy(
     agentId: string,
@@ -470,36 +546,41 @@ export class AgentRegistry {
 
   /**
    * Log an agent action for audit purposes.
-   * Returns the action ID.
+   * Writes to agent_action_log via AgentStore and returns a generated actionId.
    */
   logAction(action: Omit<AgentAction, 'actionId' | 'timestamp'>): string {
     const actionId = randomUUID();
-    const fullAction: AgentAction = {
-      ...action,
+
+    // Persist to DB via AgentStore (fire-and-forget)
+    const store = getAgentStore();
+    store.logAction(action.agentId, action.actionType, {
       actionId,
+      ...action,
       timestamp: new Date(),
-    };
-    this.actionLog.push(fullAction);
+    }).catch((err) => {
+      console.warn(`[AgentRegistry] DB action log failed for ${action.agentId}:`, err instanceof Error ? err.message : err);
+    });
+
     return actionId;
   }
 
   /**
    * Get actions for a specific agent.
+   * Note: now persisted in DB — returns empty array (callers should query DB directly).
+   * Kept for API compatibility.
    */
-  getActionsForAgent(agentId: string, limit: number = 100): AgentAction[] {
-    return this.actionLog
-      .filter((a) => a.agentId === agentId)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, limit);
+  getActionsForAgent(_agentId: string, _limit: number = 100): AgentAction[] {
+    // Actions are now stored in agent_action_log table via AgentStore.
+    // Legacy in-memory log removed. Callers needing full history should query DB.
+    return [];
   }
 
   /**
    * Get actions for a specific proposal.
+   * Kept for API compatibility — returns empty array (use DB query for full history).
    */
-  getActionsForProposal(daoId: string, proposalId: number): AgentAction[] {
-    return this.actionLog
-      .filter((a) => a.daoId === daoId && a.proposalId === proposalId)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  getActionsForProposal(_daoId: string, _proposalId: number): AgentAction[] {
+    return [];
   }
 
   // ==========================================================================
@@ -508,6 +589,7 @@ export class AgentRegistry {
 
   /**
    * Register default Support-phase agents with DIDs.
+   * Idempotent — skips agents already present in cache (loaded from DB at init).
    */
   private async registerDefaultAgents(): Promise<void> {
     const now = new Date();
@@ -524,69 +606,76 @@ export class AgentRegistry {
       ProposalKind.Custom,
     ];
 
-    // Governance Copilot - summarizes proposals, analyzes context, and provides voting guidance
-    await this.registerAgent({
-      agentId: 'governance-copilot',
-      name: 'Governance Copilot',
-      description:
-        'AI assistant that summarizes proposals, provides context analysis, and guides voting decisions to reduce cognitive load on governance participants.',
-      phase: AgentPhase.Support,
-      capabilities: [AgentCapability.ProposalSummary, AgentCapability.ContextAnalysis, AgentCapability.VotingGuidance],
-      maxAutonomy: AutonomyLevel.SemiAutonomous,
-      allowedProposalKinds: safeProposalKinds,
-      requiresHumanApproval: [ProposalKind.StrikeAuthorization],
-      createdAt: now,
-      createdBy: systemUser,
-      active: true,
-    });
+    const defaultAgents: AgentManifest[] = [
+      {
+        agentId: 'governance-copilot',
+        name: 'Governance Copilot',
+        description:
+          'AI assistant that summarizes proposals, provides context analysis, and guides voting decisions to reduce cognitive load on governance participants.',
+        phase: AgentPhase.Support,
+        capabilities: [AgentCapability.ProposalSummary, AgentCapability.ContextAnalysis, AgentCapability.VotingGuidance],
+        maxAutonomy: AutonomyLevel.SemiAutonomous,
+        allowedProposalKinds: safeProposalKinds,
+        requiresHumanApproval: [ProposalKind.StrikeAuthorization],
+        createdAt: now,
+        createdBy: systemUser,
+        active: true,
+      },
+      {
+        agentId: 'proposal-screener',
+        name: 'Proposal Screener',
+        description:
+          'AI agent that screens proposals for potential issues, spam, or policy violations before human review.',
+        phase: AgentPhase.Support,
+        capabilities: [AgentCapability.ProposalScreening],
+        maxAutonomy: AutonomyLevel.SemiAutonomous,
+        allowedProposalKinds: safeProposalKinds,
+        requiresHumanApproval: [ProposalKind.StrikeAuthorization],
+        createdAt: now,
+        createdBy: systemUser,
+        active: true,
+      },
+      {
+        agentId: 'context-analyzer',
+        name: 'Context Analyzer',
+        description:
+          'AI agent that analyzes proposal context and identifies information gaps that need to be addressed.',
+        phase: AgentPhase.Support,
+        capabilities: [AgentCapability.ContextAnalysis],
+        maxAutonomy: AutonomyLevel.SemiAutonomous,
+        allowedProposalKinds: safeProposalKinds,
+        requiresHumanApproval: [ProposalKind.StrikeAuthorization],
+        createdAt: now,
+        createdBy: systemUser,
+        active: true,
+      },
+      {
+        agentId: 'feasibility-assessor',
+        name: 'Feasibility Assessor',
+        description:
+          'AI agent that assesses the feasibility of proposals, identifying risks and potential benefits.',
+        phase: AgentPhase.Support,
+        capabilities: [AgentCapability.FeasibilityAssessment],
+        maxAutonomy: AutonomyLevel.SemiAutonomous,
+        allowedProposalKinds: safeProposalKinds,
+        requiresHumanApproval: [ProposalKind.StrikeAuthorization],
+        createdAt: now,
+        createdBy: systemUser,
+        active: true,
+      },
+    ];
 
-    // Proposal Screener - screens proposals for issues
-    await this.registerAgent({
-      agentId: 'proposal-screener',
-      name: 'Proposal Screener',
-      description:
-        'AI agent that screens proposals for potential issues, spam, or policy violations before human review.',
-      phase: AgentPhase.Support,
-      capabilities: [AgentCapability.ProposalScreening],
-      maxAutonomy: AutonomyLevel.SemiAutonomous,
-      allowedProposalKinds: safeProposalKinds,
-      requiresHumanApproval: [ProposalKind.StrikeAuthorization],
-      createdAt: now,
-      createdBy: systemUser,
-      active: true,
-    });
-
-    // Context Analyzer - identifies context gaps
-    await this.registerAgent({
-      agentId: 'context-analyzer',
-      name: 'Context Analyzer',
-      description:
-        'AI agent that analyzes proposal context and identifies information gaps that need to be addressed.',
-      phase: AgentPhase.Support,
-      capabilities: [AgentCapability.ContextAnalysis],
-      maxAutonomy: AutonomyLevel.SemiAutonomous,
-      allowedProposalKinds: safeProposalKinds,
-      requiresHumanApproval: [ProposalKind.StrikeAuthorization],
-      createdAt: now,
-      createdBy: systemUser,
-      active: true,
-    });
-
-    // Feasibility Assessor - assesses proposal feasibility
-    await this.registerAgent({
-      agentId: 'feasibility-assessor',
-      name: 'Feasibility Assessor',
-      description:
-        'AI agent that assesses the feasibility of proposals, identifying risks and potential benefits.',
-      phase: AgentPhase.Support,
-      capabilities: [AgentCapability.FeasibilityAssessment],
-      maxAutonomy: AutonomyLevel.SemiAutonomous,
-      allowedProposalKinds: safeProposalKinds,
-      requiresHumanApproval: [ProposalKind.StrikeAuthorization],
-      createdAt: now,
-      createdBy: systemUser,
-      active: true,
-    });
+    for (const manifest of defaultAgents) {
+      // Skip if already in cache (loaded from DB)
+      if (this.agents.has(manifest.agentId)) {
+        continue;
+      }
+      try {
+        await this.registerAgent(manifest);
+      } catch (err) {
+        console.warn(`[AgentRegistry] Failed to register default agent ${manifest.agentId}:`, err instanceof Error ? err.message : err);
+      }
+    }
   }
 }
 
