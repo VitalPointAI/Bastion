@@ -145,7 +145,7 @@ function wireGenerationTrigger(_triggerHandler: TriggerHandler): void {
           return {
             id: evt.id,
             content: `[OSINT ${evt.sourceType?.toUpperCase() ?? 'INTEL'}] ${evt.title}\n${evt.description ?? ''}\nSource: ${evt.sourceName ?? 'unknown'}\nActors: ${(evt.actors ?? []).join(', ')}\nTags: ${(evt.tags ?? []).join(', ')}${locStr}`,
-            type: 'general',  // 'general' passes through all sub-agent doc filters
+            type: 'osint',
           };
         });
         if (osintDocs.length > 0) {

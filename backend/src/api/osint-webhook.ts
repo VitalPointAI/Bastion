@@ -116,7 +116,14 @@ osintWebhookRouter.post('/webhook/argus', async (req, res) => {
       // Event is already created, metadata update is best-effort
     }
 
-    // Trigger COP layer regeneration with the new OSINT data
+    // Direct COP layer creation from geo-located event (immediate)
+    import('../osint/osint-cop-pipeline.js').then(({ updateOSINTCOPLayer }) => {
+      updateOSINTCOPLayer(body.workspaceId ?? 'default', [event]).catch(err =>
+        console.error('[OSINT Webhook] COP layer creation failed:', err),
+      );
+    }).catch(() => { /* module load failure — non-fatal */ });
+
+    // Also trigger full LLM COP generation (best-effort, slower)
     notifyCOPChange(body.workspaceId ?? 'default', 'osint-webhook');
 
     res.status(200).json({
