@@ -1,0 +1,234 @@
+/* ─── Universal Input Zone ────────────────────────────────────────────────── */
+
+.universal-input-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  border: 1px dashed rgba(74, 158, 255, 0.25);
+  border-radius: 8px;
+  background: rgba(74, 158, 255, 0.02);
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+
+.universal-input-zone--drag-over {
+  border-style: solid;
+  border-color: rgba(74, 158, 255, 0.6);
+  background: rgba(74, 158, 255, 0.06);
+}
+
+/* ─── Interview-required banner ──────────────────────────────────────────── */
+
+.universal-input-zone__banner {
+  padding: 0.4rem 0.625rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255, 190, 50, 0.95);
+  background: rgba(255, 190, 50, 0.1);
+  border: 1px solid rgba(255, 190, 50, 0.25);
+  border-radius: 5px;
+  line-height: 1.4;
+}
+
+/* ─── Text input ─────────────────────────────────────────────────────────── */
+
+.universal-input-zone__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+}
+
+.universal-input-zone__input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.universal-input-zone__input:focus {
+  /* Subtle focus ring inside the zone — the zone border handles overall focus */
+  box-shadow: none;
+}
+
+/* ─── Items status list ──────────────────────────────────────────────────── */
+
+.universal-input-zone__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ─── Clear completed button ─────────────────────────────────────────────── */
+
+.universal-input-zone__clear-btn {
+  align-self: flex-start;
+  padding: 0;
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.4);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s;
+}
+
+.universal-input-zone__clear-btn:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ─── IngestItemStatus chip ─────────────────────────────────────────────── */
+
+.ingest-item-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.72rem;
+}
+
+.ingest-item-status--error {
+  background: rgba(255, 100, 100, 0.07);
+  border-left: 2px solid rgba(255, 100, 100, 0.4);
+}
+
+.ingest-item-status--complete {
+  background: rgba(68, 204, 102, 0.07);
+  border-left: 2px solid rgba(68, 204, 102, 0.4);
+}
+
+.ingest-item-status--processing {
+  background: rgba(74, 158, 255, 0.07);
+  border-left: 2px solid rgba(74, 158, 255, 0.3);
+}
+
+.ingest-item-status__content {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.ingest-item-status__label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.ingest-item-status__status-text {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+}
+
+.ingest-item-status__error {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  color: rgba(255, 100, 100, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.ingest-item-status__spinner {
+  display: inline-block;
+  animation: ingest-spin 1.2s linear infinite;
+}
+
+@keyframes ingest-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Progress bar ────────────────────────────────────────────────────────── */
+
+.ingest-item-status__progress {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+/* Reuse existing ingestion progress bar fill class */
+.ingest-process-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #4a9eff);
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+/* ─── Action buttons ─────────────────────────────────────────────────────── */
+
+.ingest-item-status__actions {
+  display: flex;
+  gap: 0.2rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.ingest-item-status__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  /* Min 44px touch target via padding on mobile */
+}
+
+.ingest-item-status__btn--retry:hover {
+  background: rgba(74, 158, 255, 0.15);
+  color: rgba(74, 158, 255, 0.9);
+  border-color: rgba(74, 158, 255, 0.4);
+}
+
+.ingest-item-status__btn--dismiss:hover {
+  background: rgba(255, 100, 100, 0.12);
+  color: rgba(255, 100, 100, 0.8);
+  border-color: rgba(255, 100, 100, 0.3);
+}
+
+/* ─── Mobile responsive ──────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .universal-input-zone {
+    padding: 0.75rem;
+  }
+
+  .universal-input-zone__input {
+    font-size: 1rem;     /* Prevent iOS zoom on focus */
+    min-height: 44px;    /* Touch-friendly */
+  }
+
+  .ingest-item-status__btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+
+  .ingest-item-status {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.85rem;
+  }
+}
