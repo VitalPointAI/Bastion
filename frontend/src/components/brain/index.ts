@@ -5,7 +5,7 @@ export * from './BrainController.js';
 export * from './BrainVisualization.js';
 export * from './BrainDetailPanel.js';
 export * from './NodeAnnotationPanel.js';
-export * from './IngestionSidebar.js';
+// IngestionSidebar removed — replaced by IngestionDrawer in Phase 50 Plan 07
 export * from './BrainSearch.js';
 export * from './BrainToolbar.js';
 export * from './BrainTimeline.js';
