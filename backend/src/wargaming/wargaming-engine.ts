@@ -14,8 +14,10 @@ import {
   MoveActor,
   WhatIfAdjustment,
 } from './types.js';
-import { EffectCascadeOutput } from '../agents/effect-cascader.js';
-import { EscalationRiskAssessment } from '../agents/escalation-modeler.js';
+// Inline type stubs — agent files removed in Phase 51 Plan 02
+// wargaming-engine.ts is scheduled for deletion (see AUDIT-BACKEND-DEAD-CODE.md)
+type EffectCascadeOutput = Record<string, unknown>;
+type EscalationRiskAssessment = Record<string, unknown>;
 
 /**
  * Wargaming Engine
