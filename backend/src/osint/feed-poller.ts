@@ -14,8 +14,9 @@ import { osintEventStore } from '../graph/osint/event-store.js';
 import { notifyCOPChange } from '../cop/index.js';
 import { extractLocation } from './osint-graph-sync.js';
 import { extractAndSyncToGraph } from './osint-entity-extractor.js';
+import { updateOSINTCOPLayer } from './osint-cop-pipeline.js';
 import { getPool } from '../lib/database.js';
-import type { OSINTEventInput } from '../graph/osint/types.js';
+import type { OSINTEventInput, OSINTEvent } from '../graph/osint/types.js';
 import type { OSINTFeedConfig } from '../jpp/osint-feed-store.js';
 
 const rssParser = new RSSParser();
@@ -248,6 +249,7 @@ class FeedPoller {
 
     let stored = 0;
     let lastGuid: string | null = null;
+    const storedEvents: OSINTEvent[] = [];
 
     for (const item of items) {
       // Dedup by source URL
@@ -266,21 +268,29 @@ class FeedPoller {
       try {
         const storedEvent = await osintEventStore.createEvent(item);
         stored++;
+        storedEvents.push(storedEvent);
         lastGuid = (item.metadata as Record<string, unknown>)?.guid as string ?? item.sourceUrl ?? null;
 
         // Extract entities via LLM and sync to knowledge graph (non-blocking)
         extractAndSyncToGraph(storedEvent).catch(err =>
-          console.warn(`[FeedPoller] Entity extraction/graph sync failed for "${item.title}":`, err),
+          console.error(`[FeedPoller] Entity extraction/graph sync failed for "${item.title}":`, err),
         );
       } catch (err) {
-        console.warn(`[FeedPoller] Failed to store event "${item.title}":`, err);
+        console.error(`[FeedPoller] Failed to store event "${item.title}":`, err);
       }
     }
 
     await updatePollState(feed.id, lastGuid, stored);
 
     if (stored > 0) {
-      console.log(`[FeedPoller] Stored ${stored} new events from "${feed.sourceName}", triggering COP regeneration`);
+      console.log(`[FeedPoller] Stored ${stored} new events from "${feed.sourceName}"`);
+
+      // 1. Direct COP layer creation from geo-located events (immediate, no LLM)
+      updateOSINTCOPLayer(feed.problemSetId, storedEvents).catch(err =>
+        console.error(`[FeedPoller] OSINT→COP layer creation failed:`, err),
+      );
+
+      // 2. Also trigger full LLM COP generation (best-effort, slower)
       notifyCOPChange(feed.problemSetId, `osint-feed-${feed.sourceName}`);
     }
   }
