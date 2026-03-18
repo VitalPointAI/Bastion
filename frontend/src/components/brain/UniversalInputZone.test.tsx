@@ -28,7 +28,7 @@ vi.mock('./hooks/useUniversalIngest.js', () => ({
 
 // We'll import and configure the mock per test
 import { useUniversalIngest } from './hooks/useUniversalIngest.js';
-import type { ItemStatus } from './hooks/useUniversalIngest.js';
+import type { ItemStatus, IngestItem } from './hooks/useUniversalIngest.js';
 const mockUseUniversalIngest = vi.mocked(useUniversalIngest);
 
 function makeDefaultHookReturn(overrides?: Partial<ReturnType<typeof useUniversalIngest>>) {
@@ -47,20 +47,11 @@ function makeDefaultHookReturn(overrides?: Partial<ReturnType<typeof useUniversa
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-function makeItem(overrides?: Partial<{
-  id: string;
-  label: string;
-  status: ItemStatus;
-  progress: number;
-  processId: string;
-  error: string;
-  retryCount: number;
-  createdAt: string;
-}>) {
+function makeItem(overrides?: Partial<IngestItem>): IngestItem {
   return {
     id: 'item-1',
     label: 'https://example.com',
-    status: 'processing',
+    status: 'processing' as ItemStatus,
     progress: 0.5,
     retryCount: 0,
     createdAt: new Date().toISOString(),
