@@ -44,6 +44,12 @@ const CANONICAL_DESCRIPTIONS: Record<string, string> = {
   'bastion.gate.create': 'Create a decision gate for approval workflow',
   'bastion.code.create_pr': 'Create a GitHub PR with code changes (HIGH RISK)',
   'bastion.system.update_config': 'Update system-level configuration (HIGH RISK)',
+  // Agent/team delegation
+  'agent.list_active': 'List all currently active agents',
+  'agent.get_status': 'Get health and status summary for a specific agent',
+  'agent.assign_to_problem_set': 'Assign an agent to a problem set',
+  'agent.unassign_from_problem_set': 'Unassign an agent from a problem set',
+  'agent.form_team_for_task': 'Activate a team to work on a specific task',
 };
 
 export class ActionRegistry {

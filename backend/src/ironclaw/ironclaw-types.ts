@@ -42,6 +42,12 @@ export const ACTION_RISK: Record<string, ActionRiskLevel> = {
   'discovery.onboard_device': ActionRiskLevel.medium,
   'discovery.emergency_disconnect': ActionRiskLevel.high,
   'discovery.modify_access_list': ActionRiskLevel.high,
+  // Agent/team delegation actions
+  'agent.list_active': ActionRiskLevel.low,
+  'agent.get_status': ActionRiskLevel.low,
+  'agent.assign_to_problem_set': ActionRiskLevel.medium,
+  'agent.unassign_from_problem_set': ActionRiskLevel.low,
+  'agent.form_team_for_task': ActionRiskLevel.medium,
 } as const;
 
 // ---------------------------------------------------------------------------

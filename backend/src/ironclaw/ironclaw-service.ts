@@ -13,10 +13,27 @@ import { ironclawClient } from './ironclaw-client.js';
 import { ironclawStore } from './ironclaw-store.js';
 import { actionRegistry } from './action-registry.js';
 import { getMessageBus } from '../messaging/message-bus.js';
+import { getAgentStore } from '../agents/agent-store.js';
+import { getTeamStore } from '../agents/team-store.js';
 import type {
   IronclawChatMessage,
   ActionCardData,
 } from './ironclaw-types.js';
+
+// ---------------------------------------------------------------------------
+// Message Context
+// ---------------------------------------------------------------------------
+
+/**
+ * Optional UI context sent with each message.
+ * Allows Ironclaw to tailor responses based on what the user is currently
+ * viewing (tab, problem set, role).
+ */
+export interface MessageContext {
+  currentTab?: string;
+  problemSetId?: string;
+  userRole?: string;
+}
 
 const SERVICE_DID = 'did:system:ironclaw-service';
 
@@ -96,11 +113,12 @@ export class IronclawService {
     problemSetId: string,
     userDid: string,
     content: string,
+    context?: MessageContext,
   ): Promise<void> {
     // 1. Get or create local session — uses problemSetId as thread_id
     const session = await ironclawStore.getOrCreateSession(problemSetId, userDid);
 
-    // 2. Persist user message
+    // 2. Persist user message (original content, without context prefix)
     const userMsg = await ironclawStore.addMessage({
       problem_set_id: problemSetId,
       content,
@@ -115,13 +133,20 @@ export class IronclawService {
     // Publish user message to WebSocket
     await publishToChannel(problemSetId, 'ironclaw.user-message', userMsg);
 
-    // 3. Send to Ironclaw webhook (synchronous — waits for response)
+    // 3. Build context-prefixed message for Ironclaw (if context provided)
+    // The prefix helps Ironclaw tailor responses to the current UI state.
+    // The original content is persisted; only the enriched version is sent to the AI.
+    const messageForAi = context
+      ? `[Context: tab=${context.currentTab ?? 'unknown'}, problemSet=${context.problemSetId ?? 'none'}, role=${context.userRole ?? 'user'}]\n${content}`
+      : content;
+
+    // 4. Send to Ironclaw webhook (synchronous — waits for response)
     const result = await ironclawClient.sendMessage(
       session.id,
-      content,
+      messageForAi,
     );
 
-    // 4. Process the response
+    // 5. Process the response
     if (result.response) {
       await this.processResponse(problemSetId, result.response);
     }
@@ -341,6 +366,121 @@ export class IronclawService {
    */
   getGlobalChannel(userDid: string): string {
     return `ironclaw.${globalChannelId(userDid)}`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent/Team Delegation Commands
+  // ---------------------------------------------------------------------------
+  // These handlers are invoked when Ironclaw returns an action card with the
+  // corresponding action_type (agent.list_active, agent.get_status, etc.).
+  // They query AgentStore / TeamStore and return structured results for Ironclaw
+  // to format and relay back to the user.
+
+  /**
+   * List all agents with 'active' status.
+   * Action type: agent.list_active (LOW risk — read-only)
+   */
+  async listActiveAgents(): Promise<Record<string, unknown>[]> {
+    const agents = await getAgentStore().listAgents({ status: 'active' });
+    return agents.map((a) => ({
+      agentId: a.agentId,
+      name: a.name,
+      phase: a.phase,
+      status: a.status,
+      successRate: a.successRate ?? null,
+      lastInvocation: a.lastInvocation ?? null,
+    }));
+  }
+
+  /**
+   * Get health summary for a specific agent.
+   * Action type: agent.get_status (LOW risk — read-only)
+   */
+  async getAgentStatus(agentId: string): Promise<Record<string, unknown> | null> {
+    const agent = await getAgentStore().getAgent(agentId);
+    if (!agent) return null;
+    return {
+      agentId: agent.agentId,
+      name: agent.name,
+      phase: agent.phase,
+      status: agent.status,
+      successRate: agent.successRate ?? null,
+      avgResponseTimeMs: agent.avgResponseTimeMs ?? null,
+      validationScore: agent.validationScore ?? null,
+      lastInvocation: agent.lastInvocation ?? null,
+    };
+  }
+
+  /**
+   * Assign an agent to a problem set.
+   * Stores the assignment in agent_data JSONB under the 'assignments' key.
+   * Action type: agent.assign_to_problem_set (MEDIUM risk)
+   */
+  async assignAgentToProblemSet(agentId: string, problemSetId: string): Promise<void> {
+    const store = getAgentStore();
+    const agent = await store.getAgent(agentId);
+    if (!agent) throw new Error(`Agent not found: ${agentId}`);
+
+    // assignments is stored as an extra field in agent_data JSONB
+    const existing = agent as unknown as Record<string, unknown>;
+    const assignments: string[] = (existing.assignments as string[] | undefined) ?? [];
+    if (!assignments.includes(problemSetId)) {
+      assignments.push(problemSetId);
+    }
+
+    // Use updateAgent which merges into agent_data JSONB via || operator
+    await store.updateAgent(agentId, { assignments } as unknown as Partial<typeof agent>);
+  }
+
+  /**
+   * Unassign an agent from a problem set.
+   * Removes the problemSetId from agent_data.assignments.
+   * Action type: agent.unassign_from_problem_set (LOW risk)
+   */
+  async unassignAgentFromProblemSet(agentId: string, problemSetId: string): Promise<void> {
+    const store = getAgentStore();
+    const agent = await store.getAgent(agentId);
+    if (!agent) throw new Error(`Agent not found: ${agentId}`);
+
+    const existing = agent as unknown as Record<string, unknown>;
+    const assignments: string[] = (existing.assignments as string[] | undefined) ?? [];
+    const updated = assignments.filter((id) => id !== problemSetId);
+
+    await store.updateAgent(agentId, { assignments: updated } as unknown as Partial<typeof agent>);
+  }
+
+  /**
+   * Activate a team to work on a task.
+   * Looks up the team and marks it as assigned to the task via TeamStore.
+   * Action type: agent.form_team_for_task (MEDIUM risk)
+   */
+  async formTeamForTask(teamId: string, taskDescription: string): Promise<Record<string, unknown>> {
+    const store = getTeamStore();
+    const team = await store.getTeam(teamId);
+    if (!team) throw new Error(`Team not found: ${teamId}`);
+
+    // Record the task assignment on the team (stored in team_data JSONB)
+    const currentTask = {
+      taskDescription,
+      assignedAt: new Date().toISOString(),
+    };
+
+    // Store task in the sharedContext array as a JSON-encoded entry
+    const taskEntry = `currentTask:${JSON.stringify(currentTask)}`;
+    const updatedSharedContext = [
+      ...(team.sharedContext ?? []).filter((c: string) => !c.startsWith('currentTask:')),
+      taskEntry,
+    ];
+
+    await store.updateTeam(teamId, { sharedContext: updatedSharedContext });
+
+    return {
+      teamId: team.teamId,
+      name: team.name,
+      taskDescription,
+      memberCount: Array.isArray(team.members) ? team.members.length : 0,
+      assignedAt: currentTask.assignedAt,
+    };
   }
 
   /**

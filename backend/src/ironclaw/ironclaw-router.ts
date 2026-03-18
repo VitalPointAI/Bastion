@@ -8,6 +8,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { ironclawService } from './ironclaw-service.js';
+import type { MessageContext } from './ironclaw-service.js';
 import { actionPipeline } from './action-pipeline.js';
 import { ironclawStore } from './ironclaw-store.js';
 import { getMessageBus } from '../messaging/message-bus.js';
@@ -131,8 +132,9 @@ ironclawRouter.post(
   '/:problemSetId/message',
   async (req: Request, res: Response) => {
     const problemSetId = req.params.problemSetId as string;
-    const { content } = req.body as {
+    const { content, context } = req.body as {
       content?: string;
+      context?: MessageContext;
     };
 
     if (!content || typeof content !== 'string' || !content.trim()) {
@@ -145,7 +147,7 @@ ironclawRouter.post(
     try {
       // Fire-and-forget: response delivered via WebSocket
       ironclawService
-        .handleMessage(problemSetId, userDid, content.trim())
+        .handleMessage(problemSetId, userDid, content.trim(), context)
         .catch((err) => {
           console.error(
             `[ironclaw-router] handleMessage error (ps=${problemSetId}):`,
