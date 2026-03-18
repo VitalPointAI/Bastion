@@ -465,8 +465,9 @@ export interface WorkflowStage {
 
 /**
  * Workflow type for team coordination.
+ * Phase 51-05 adds: pipeline (output chains as input), supervised (leader routes)
  */
-export type WorkflowType = 'sequential' | 'parallel' | 'consensus' | 'hierarchical';
+export type WorkflowType = 'sequential' | 'parallel' | 'consensus' | 'hierarchical' | 'pipeline' | 'supervised';
 
 /**
  * Team workflow definition.
@@ -505,6 +506,10 @@ export interface AgentTeam {
   createdAt: string;
   createdBy: string;
   memberCount?: number;
+  /** Problem set IDs this team is assigned to (Phase 51-05) */
+  assignedProblemSets?: string[];
+  /** Designated leader/orchestrator agent ID (Phase 51-05) */
+  leaderId?: string;
 }
 
 /**
@@ -527,6 +532,37 @@ export interface AgentTeamInput {
  * Team update input.
  */
 export type AgentTeamUpdate = Partial<Omit<AgentTeamInput, 'teamId'>>;
+
+/**
+ * Per-agent execution trace from a team test run.
+ */
+export interface AgentTestTrace {
+  agentId: string;
+  role: string;
+  input: string;
+  output: string;
+  durationMs: number;
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Result returned by POST /api/admin/teams/:teamId/test
+ */
+export interface TeamTestResult {
+  teamId: string;
+  prompt: string;
+  scenario: string | null;
+  workflowType: string;
+  agentTraces: AgentTestTrace[];
+  summary: {
+    totalAgents: number;
+    successfulAgents: number;
+    failedAgents: number;
+    totalDurationMs: number;
+  };
+  success: boolean;
+}
 
 // ============================================================================
 // Character Types (Eliza-compatible)

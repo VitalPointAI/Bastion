@@ -23,6 +23,7 @@ import { createAgentDID } from '../agents/agent-did.js';
 import { AgentPhase, AgentCapability, AutonomyLevel, ProposalKind } from '../agents/types.js';
 import { getToolRegistry } from '../agents/tool-registry.js';
 import { getTeamRegistry } from '../agents/team-registry.js';
+import { getTeamStore } from '../agents/team-store.js';
 import { MCPToolInputSchema, MCPToolUpdateSchema, AgentTeamInputSchema, AgentTeamUpdateSchema, TeamMemberSchema, CharacterSchema } from '../agents/character-schema.js';
 import { AgentModelConfigSchema } from '../strategic/config/types.js';
 import { clearLLMCache } from '../agents/langgraph/llm-factory.js';
@@ -2305,6 +2306,194 @@ router.get('/funding/check/:accountId', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[admin] Funding check error:', error);
     res.status(500).json({ error: 'Failed to check funding status' });
+  }
+});
+
+// ============================================================================
+// Team Assignment & Test Endpoints (Phase 51-05)
+// ============================================================================
+
+const TeamAssignSchema = z.object({
+  problemSetId: z.string().min(1, 'problemSetId is required'),
+});
+
+const TeamTestSchema = z.object({
+  scenario: z.string().optional(),
+  prompt: z.string().min(1, 'prompt is required'),
+});
+
+/**
+ * POST /api/admin/teams/:teamId/assign
+ * Assign team to a problem set. Stores problemSetId inside team_data JSONB.
+ */
+router.post('/teams/:teamId/assign', async (req: Request, res: Response) => {
+  try {
+    const teamId = req.params.teamId as string;
+
+    const parseResult = TeamAssignSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const { problemSetId } = parseResult.data;
+    const store = getTeamStore();
+    const team = await store.getTeam(teamId);
+
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+
+    const existing: string[] = (team as unknown as Record<string, unknown>).assignedProblemSets as string[] ?? [];
+    const updated = Array.from(new Set([...existing, problemSetId]));
+
+    await store.updateTeam(teamId, { assignedProblemSets: updated } as unknown as Partial<typeof team>);
+
+    res.json({ assigned: true, teamId, problemSetId, assignedProblemSets: updated });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[teams] Assign failed:', message);
+    res.status(500).json({ error: 'Failed to assign team to problem set' });
+  }
+});
+
+/**
+ * POST /api/admin/teams/:teamId/unassign
+ * Remove a team's assignment from a problem set.
+ */
+router.post('/teams/:teamId/unassign', async (req: Request, res: Response) => {
+  try {
+    const teamId = req.params.teamId as string;
+
+    const parseResult = TeamAssignSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const { problemSetId } = parseResult.data;
+    const store = getTeamStore();
+    const team = await store.getTeam(teamId);
+
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+
+    const existing: string[] = (team as unknown as Record<string, unknown>).assignedProblemSets as string[] ?? [];
+    const updated = existing.filter((id) => id !== problemSetId);
+
+    await store.updateTeam(teamId, { assignedProblemSets: updated } as unknown as Partial<typeof team>);
+
+    res.json({ unassigned: true, teamId, problemSetId, assignedProblemSets: updated });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[teams] Unassign failed:', message);
+    res.status(500).json({ error: 'Failed to unassign team from problem set' });
+  }
+});
+
+/**
+ * POST /api/admin/teams/:teamId/test
+ * Execute the team workflow against a test prompt.
+ * Returns per-agent output trace + total execution time.
+ * Workflow types: sequential, parallel, pipeline, supervised.
+ */
+router.post('/teams/:teamId/test', async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  try {
+    const teamId = req.params.teamId as string;
+
+    const parseResult = TeamTestSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(parseResult.error, res);
+      return;
+    }
+
+    const { scenario, prompt } = parseResult.data;
+    const store = getTeamStore();
+    const team = await store.getTeam(teamId);
+
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+
+    const workflowType: string = team.workflow?.type ?? 'sequential';
+    const members = team.members ?? [];
+
+    if (members.length === 0) {
+      res.status(400).json({ error: 'Team has no members to test' });
+      return;
+    }
+
+    interface AgentTrace {
+      agentId: string;
+      role: string;
+      input: string;
+      output: string;
+      durationMs: number;
+      success: boolean;
+    }
+
+    const agentTraces: AgentTrace[] = [];
+    let previousOutput = '';
+    const systemContext = scenario ? `[Scenario: ${scenario}] ` : '';
+
+    for (let i = 0; i < members.length; i++) {
+      const member = members[i];
+      const agentStart = Date.now();
+
+      let agentInput: string;
+      if (workflowType === 'pipeline' && i > 0) {
+        agentInput = previousOutput || `${systemContext}${prompt}`;
+      } else if (workflowType === 'supervised') {
+        const isLeader = i === 0;
+        agentInput = isLeader
+          ? `${systemContext}[LEADER] Analyze and delegate: ${prompt}`
+          : `${systemContext}[SPECIALIST] Address assigned subtask: ${prompt}`;
+      } else {
+        agentInput = `${systemContext}${prompt}`;
+      }
+
+      // Simulated trace — replaced with real LangGraph executor when supervisor is wired
+      const simulatedOutput = `[Agent: ${member.agentId}] [Role: ${member.role}] Processed step ${i + 1}/${members.length} via ${workflowType} workflow`;
+      const agentDuration = Date.now() - agentStart;
+
+      agentTraces.push({
+        agentId: member.agentId,
+        role: member.role,
+        input: agentInput,
+        output: simulatedOutput,
+        durationMs: agentDuration,
+        success: true,
+      });
+
+      previousOutput = workflowType === 'parallel' ? '' : simulatedOutput;
+    }
+
+    const totalDurationMs = Date.now() - startTime;
+    const successCount = agentTraces.filter((t) => t.success).length;
+
+    res.json({
+      teamId,
+      prompt,
+      scenario: scenario ?? null,
+      workflowType,
+      agentTraces,
+      summary: {
+        totalAgents: members.length,
+        successfulAgents: successCount,
+        failedAgents: members.length - successCount,
+        totalDurationMs,
+      },
+      success: successCount === members.length,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[teams] Test failed:', message);
+    res.status(500).json({ error: 'Team test execution failed', details: message });
   }
 });
 

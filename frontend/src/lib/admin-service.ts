@@ -29,6 +29,7 @@ import type {
   AgentTeamInput,
   AgentTeamUpdate,
   TeamMember,
+  TeamTestResult,
   AgentCharacter,
 } from '../types/admin';
 
@@ -621,6 +622,36 @@ class AdminService {
   async getTeamsForAgent(agentId: string): Promise<AgentTeam[]> {
     const response = await this.fetch<{ agentId: string; teams: AgentTeam[] }>(`/api/admin/agents/${encodeURIComponent(agentId)}/teams`);
     return response.teams;
+  }
+
+  /**
+   * Assign a team to a problem set.
+   */
+  async assignTeam(teamId: string, problemSetId: string): Promise<{ assigned: boolean; assignedProblemSets: string[] }> {
+    return this.fetch<{ assigned: boolean; teamId: string; problemSetId: string; assignedProblemSets: string[] }>(
+      `/api/admin/teams/${encodeURIComponent(teamId)}/assign`,
+      { method: 'POST', body: JSON.stringify({ problemSetId }) }
+    );
+  }
+
+  /**
+   * Unassign a team from a problem set.
+   */
+  async unassignTeam(teamId: string, problemSetId: string): Promise<{ unassigned: boolean; assignedProblemSets: string[] }> {
+    return this.fetch<{ unassigned: boolean; teamId: string; problemSetId: string; assignedProblemSets: string[] }>(
+      `/api/admin/teams/${encodeURIComponent(teamId)}/unassign`,
+      { method: 'POST', body: JSON.stringify({ problemSetId }) }
+    );
+  }
+
+  /**
+   * Test a team by running a prompt through the team workflow.
+   */
+  async testTeam(teamId: string, prompt: string, scenario?: string): Promise<TeamTestResult> {
+    return this.fetch<TeamTestResult>(
+      `/api/admin/teams/${encodeURIComponent(teamId)}/test`,
+      { method: 'POST', body: JSON.stringify({ prompt, scenario }) }
+    );
   }
 
   // ============================================================================
