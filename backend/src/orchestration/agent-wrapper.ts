@@ -23,6 +23,7 @@ import type { AgentManifest, AgentCharacter, MCPTool, JSONSchema } from '../agen
 import { getAgentRegistry } from '../agents/registry.js';
 import { buildSystemPrompt, buildKnowledgeContext } from '../agents/character-builder.js';
 import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
+import { getActivityLogger } from '../agents/activity-logger.js';
 import {
   type BastionState,
   type ClassificationLevel,
@@ -211,6 +212,12 @@ export class LangGraphAgentWrapper {
           wasFiltered: this.applyFilter,
         };
 
+        // Log error to activity audit trail
+        getActivityLogger().logError(this.agentId, error instanceof Error ? error : String(error), {
+          agentName: this.name,
+          operation: 'llm_invocation',
+        });
+
         return {
           executionTrace: [...workingState.executionTrace, errorTrace],
         };
@@ -233,6 +240,22 @@ export class LangGraphAgentWrapper {
         classification: workingState.classification,
         wasFiltered: this.applyFilter,
       };
+
+      // Log successful LLM invocation to activity audit trail
+      const lastInputMsg = messages[messages.length - 1];
+      getActivityLogger().logAgentExecution(
+        this.agentId,
+        this.name,
+        lastInputMsg?.content,
+        response.content,
+        Date.now() - startTime,
+        'success',
+        {
+          model: this.providerConfig.model,
+          inputTokens,
+          outputTokens,
+        }
+      );
 
       // Add classification to response message
       const classifiedResponse = this.addClassificationToMessage(response, workingState.classification);

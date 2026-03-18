@@ -32,6 +32,7 @@ import {
 import { LangGraphAgentWrapper } from './agent-wrapper.js';
 import { getClassificationFilter, createClassificationFilterNode } from './classification-filter.js';
 import { getCheckpointer } from './checkpointer.js';
+import { getActivityLogger } from '../agents/activity-logger.js';
 
 /**
  * Supervisor configuration
@@ -403,6 +404,16 @@ export class BastionSupervisor {
         classification: state.classification,
         wasFiltered: false,
       };
+
+      // Log dispatch to activity audit trail (if routing to an agent)
+      if (decision) {
+        getActivityLogger().logSupervisorDispatch(
+          this.config.supervisorId,
+          decision,
+          undefined,
+          `Routed by LLM decision`
+        );
+      }
 
       return {
         next: decision,

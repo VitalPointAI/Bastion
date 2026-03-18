@@ -32,6 +32,8 @@ import { requireAuth } from '../auth/auth-instance.js';
 import { agentAdminRouter } from './agent-admin.js';
 import { getAgentStore } from '../agents/agent-store.js';
 import { getPool } from '../lib/database.js';
+import { getActivityStore } from '../agents/activity-store.js';
+import type { ActivityFilter } from '../agents/activity-store.js';
 
 const router = Router();
 
@@ -2607,6 +2609,61 @@ router.get('/tools', async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({ success: false, error: message });
+  }
+});
+
+// ============================================================================
+// Agent Activity Log Endpoints (Phase 51 Plan 08)
+// ============================================================================
+
+/**
+ * GET /api/admin/activity
+ * Query agent activity log with optional filters and pagination.
+ *
+ * Query params:
+ *   agentId, teamId, type (action_type), problemSetId, status,
+ *   startDate, endDate, limit (default 50), offset (default 0)
+ */
+router.get('/activity', async (req: Request, res: Response) => {
+  try {
+    const filter: ActivityFilter = {
+      agentId: req.query.agentId as string | undefined,
+      teamId: req.query.teamId as string | undefined,
+      actionType: req.query.type as string | undefined,
+      problemSetId: req.query.problemSetId as string | undefined,
+      status: req.query.status as string | undefined,
+      startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+      endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 50,
+      offset: req.query.offset ? parseInt(req.query.offset as string, 10) : 0,
+    };
+
+    const result = await getActivityStore().query(filter);
+    res.json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[admin] Activity query failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/admin/activity/stats
+ * Get aggregated activity statistics.
+ *
+ * Query params: agentId, teamId
+ */
+router.get('/activity/stats', async (req: Request, res: Response) => {
+  try {
+    const stats = await getActivityStore().getStats({
+      agentId: req.query.agentId as string | undefined,
+      teamId: req.query.teamId as string | undefined,
+    });
+    res.json(stats);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[admin] Activity stats failed:', message);
+    res.status(500).json({ error: message });
   }
 });
 

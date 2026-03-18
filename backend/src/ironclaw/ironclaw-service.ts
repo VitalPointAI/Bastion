@@ -15,6 +15,7 @@ import { actionRegistry } from './action-registry.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import { getAgentStore } from '../agents/agent-store.js';
 import { getTeamStore } from '../agents/team-store.js';
+import { getActivityLogger } from '../agents/activity-logger.js';
 import type {
   IronclawChatMessage,
   ActionCardData,
@@ -133,6 +134,9 @@ export class IronclawService {
     // Publish user message to WebSocket
     await publishToChannel(problemSetId, 'ironclaw.user-message', userMsg);
 
+    // Log inbound user message to activity audit trail
+    getActivityLogger().logIronclawMessage('inbound', 'ironclaw', content, problemSetId);
+
     // 3. Build context-prefixed message for Ironclaw (if context provided)
     // The prefix helps Ironclaw tailor responses to the current UI state.
     // The original content is persisted; only the enriched version is sent to the AI.
@@ -215,6 +219,26 @@ export class IronclawService {
 
     // 6. Publish to WebSocket for real-time frontend updates
     await publishToChannel(problemSetId, 'ironclaw.response', chatMsg);
+
+    // Log outbound agent response to activity audit trail
+    getActivityLogger().logIronclawMessage(
+      'outbound',
+      specialistId ?? 'ironclaw',
+      messageContent,
+      problemSetId,
+      specialistDisplayName ? { specialist: specialistDisplayName } : undefined
+    );
+
+    // Log action card if present
+    if (actionCard) {
+      getActivityLogger().logActionCard(
+        specialistId ?? 'ironclaw',
+        actionCard.action_type,
+        actionCard.risk_level,
+        'presented',
+        problemSetId
+      );
+    }
   }
 
   /**

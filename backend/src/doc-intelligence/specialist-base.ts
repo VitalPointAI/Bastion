@@ -18,6 +18,7 @@ import type { ClassificationLevel } from '../orchestration/state.js';
 import type { BastionState } from '../orchestration/state.js';
 import type { SpecialistId } from './types.js';
 import type { ProblemSetContext } from './schemas.js';
+import { getActivityLogger } from '../agents/activity-logger.js';
 
 // ============================================================================
 // Configuration
@@ -93,11 +94,43 @@ export abstract class SpecialistBase {
 
   /**
    * Create a LangGraph node function for StateGraph registration.
+   * Wraps the underlying wrapper node to also log specialist execution
+   * to the activity audit trail.
    *
    * @returns Node function compatible with `graph.addNode()`
    */
   createNode(): (state: BastionState) => Promise<Partial<BastionState>> {
-    return this.wrapper.createNode();
+    const innerNode = this.wrapper.createNode();
+    const specialistId = this.specialistId;
+    const specialistName = this.name;
+    const problemSetContext = () => this.problemSetContext;
+
+    return async (state: BastionState): Promise<Partial<BastionState>> => {
+      const startTime = Date.now();
+      const result = await innerNode(state);
+      const durationMs = Date.now() - startTime;
+
+      // Determine if execution succeeded (no error in trace delta)
+      const lastTrace = result.executionTrace
+        ? result.executionTrace[result.executionTrace.length - 1]
+        : undefined;
+      const status = lastTrace?.status === 'error' ? 'error' : 'success';
+
+      // Log the specialist execution
+      const ctx = problemSetContext();
+      getActivityLogger().logAgentExecution(
+        `doc-${specialistId}`,
+        specialistName,
+        state.messages[state.messages.length - 1]?.content,
+        result.messages ? result.messages[result.messages.length - 1]?.content : undefined,
+        durationMs,
+        status,
+        { specialistId },
+        { problemSetId: ctx?.problemSetId }
+      );
+
+      return result;
+    };
   }
 
   /**
