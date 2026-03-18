@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import './BrainLayout.css';
 
 interface BrainLayoutProps {
-  /** Compact left sidebar — unified ingestion feed + subspace navigation */
+  /** Compact left sidebar — subspace navigation (narrowed since ingestion moved to drawer) */
   leftSidebar: ReactNode;
   /** Main content area — force-graph canvas */
   center: ReactNode;
@@ -18,6 +18,11 @@ interface BrainLayoutProps {
   breadcrumb?: ReactNode;
   /** Additional CSS class names for the root element */
   className?: string;
+  /**
+   * Optional overlay drawer — rendered as a fixed overlay outside the grid
+   * so the workspace grid is never resized. Used for the IngestionDrawer.
+   */
+  ingestionDrawer?: ReactNode;
 }
 
 /**
@@ -42,6 +47,7 @@ export function BrainLayout({
   topBar,
   breadcrumb,
   className,
+  ingestionDrawer,
 }: BrainLayoutProps) {
   return (
     <div className={`brain-layout${className ? ` ${className}` : ''}`}>
@@ -64,6 +70,9 @@ export function BrainLayout({
       {timeline !== undefined && (
         <div className="brain-timeline">{timeline}</div>
       )}
+
+      {/* Ingestion drawer renders outside grid as a fixed overlay — does NOT resize grid columns */}
+      {ingestionDrawer !== undefined && ingestionDrawer}
     </div>
   );
 }

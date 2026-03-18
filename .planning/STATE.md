@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 50-04-PLAN.md
-last_updated: "2026-03-18T16:23:53.729Z"
-last_activity: "2026-03-18 - Completed 50-03: useUniversalIngest hook + UniversalInputZone component with drag-drop, paste, keyboard, per-item status chips, ARIA accessibility"
+stopped_at: Completed 50-07-PLAN.md
+last_updated: "2026-03-18T18:35:00Z"
+last_activity: "2026-03-18 - Completed 50-07: IngestionDrawer overlay component (33vw slide-out), auto-open/close, enlarged processing cards, document + OSINT feed management, wired into BrainLayout and BrainController"
 progress:
   total_phases: 66
   completed_phases: 47
   total_plans: 419
-  completed_plans: 421
+  completed_plans: 422
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 50 of 66 (Universal Intelligence Input) — IN PROGRESS
-Plan: 3 of 5 in current phase — COMPLETE
-Status: Plan 50-03 complete — useUniversalIngest hook (state machine: queued->classifying->routing->processing->complete/error), UniversalInputZone component (drag-drop, paste, keyboard), IngestItemStatus chip with retry/dismiss, CSS, full ARIA labels, 56 tests pass.
-Last activity: 2026-03-18 - Completed 50-03: useUniversalIngest hook + UniversalInputZone component with drag-drop, paste, keyboard, per-item status chips, ARIA accessibility
+Plan: 7 of 5 in current phase — COMPLETE
+Status: Plan 50-07 complete — IngestionDrawer overlay (33vw, min(33vw,520px)), replaces IngestionSidebar in BrainController, auto-open/close on submission activity, enlarged processing cards with classification details, document + OSINT feed management, 17 new tests, tsc + eslint clean.
+Last activity: 2026-03-18 - Completed 50-07: IngestionDrawer overlay component, auto-open/close, enlarged processing cards with classification details, document and OSINT feed management, wired into BrainLayout and BrainController
 
-Progress: ████████████████████████████████ 420 plans complete
+Progress: ████████████████████████████████ 422 plans complete
 
 ## Performance Metrics
 
@@ -212,6 +212,7 @@ Progress: ███████████████████████�
 | Phase 50-universal-intelligence-input P01 | 4 | 2 tasks | 5 files |
 | Phase 50-universal-intelligence-input P02 | 15 | 2 tasks | 4 files |
 | Phase 50 P04 | 301 | 2 tasks | 5 files |
+| Phase 50 P07 | 12 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -225,6 +226,12 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 50 Plan 07 (IngestionDrawer):**
+- Drawer renders via ingestionDrawer prop in BrainLayout so it exists outside the CSS grid — workspace grid never resizes
+- Left sidebar column narrowed from 280px to 200px since SubspaceSidebar is the sole occupant
+- IngestionSidebar.tsx preserved (not deleted) as fallback reference per plan spec
+- Auto-close timer uses ref-based timeout to avoid re-render cycles; cancelled on new item submission
 
 **Phase 49 Plan 03 (Design Revisions Backend):**
 - Migration numbered 033 (not 049 as plan suggested) — matched actual sequence in backend/src/db/migrations/
