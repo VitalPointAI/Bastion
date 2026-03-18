@@ -966,6 +966,7 @@ Recent decisions affecting current work:
 - Phase 47 added: JSON-LD Semantic Brain + COP Fix — Refactor knowledge graph to JSON-LD with BFO (Basic Formal Ontology) upper ontology, CCO (Common Core Ontologies) for DoD/DND interoperability, DODAF/DNDAF architectural data model compliance, military ontology alignment (APP-6, JC3IEDM). Provenance tracking, temporal reasoning, entity resolution, confidence scoring, contradiction detection. Wire upgraded graph into all downstream consumers (COP, design, plan, assess, doc-intel, OSINT, vision). Fix COP layer generation end-to-end.
 - Phase 48 added: Robot swarm behaviour end-to-end demo
 - Phase 49 added: Align Design tab operational approach with Plan tab — remove duplicate operational design from Plan, use Design tab outputs as campaign planning starting point
+- Phase 51 added: Unified Agent Architecture — Rearchitect fragmented agent system into coherent ecosystem: standardized agent template with persistent memory/skills/tools, admin dashboard for agent lifecycle management, team designer for composing agent teams, Ironclaw consolidation as sole AI interface replacing all scattered AI panels
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller

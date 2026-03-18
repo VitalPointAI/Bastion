@@ -729,6 +729,13 @@ Plans:
 - [ ] 49-04-PLAN.md — Frontend revision proposal (service, modal, diff view, DAO gate integration)
 - [ ] 49-05-PLAN.md — Governance wiring, push-handoff deprecation, human verification checkpoint
 
+### Phase 51: Unified Agent Architecture
+
+**Goal:** Rearchitect the fragmented agent system into a coherent ecosystem: standardized agent template with persistent memory/skills/tools, admin dashboard for agent lifecycle management, team designer for composing agent teams, and Ironclaw as the sole AI interface replacing all scattered AI panels.
+**Requirements**: Standardized agent base class, persistent agent memory, agent admin dashboard (CRUD, health, validation), team designer UI, Ironclaw consolidation as single AI entry point, removal of AIStaffContext and per-tab AI panels
+**Depends on:** Phase 50
+**Plans:** 0 plans (run /gsd:plan-phase 51 to break down)
+
 ---
 
 **MCP Tools (deterministic operations - added to MCP server):**
