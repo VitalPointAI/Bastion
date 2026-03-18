@@ -1,18 +1,11 @@
 /**
- * AI Staff Panel - Barrel Export
+ * AI Staff - Remaining Exports
  *
- * Re-exports for the AI staff panel component system.
- *
- * Note: AgentRoutingConfig, InlineAnnotation, AIShowContributions removed
- * in Phase 51 Plan 02 (dead code cleanup). AIStaffPanel and related
- * components will be removed in Plan 07 once Ironclaw replaces them.
+ * Core AI staff panel components removed in Phase 51 Plan 07 (Ironclaw consolidation).
+ * Remaining: feed/confidence/team display components still used by other views.
  */
 
-export { AIStaffPanel } from './AIStaffPanel.tsx';
-export { AIStaffDocked } from './AIStaffDocked.tsx';
-export { AIStaffFloating } from './AIStaffFloating.tsx';
 export { AIStaffFeedItem } from './AIStaffFeedItem.tsx';
 export { AIStaffTeamBadge } from './AIStaffTeamBadge.tsx';
 export { AIStaffConfidence } from './AIStaffConfidence.tsx';
 export { AIStaffTeamDetail } from './AIStaffTeamDetail.tsx';
-export { AIStaffChatInput } from './AIStaffChatInput.tsx';

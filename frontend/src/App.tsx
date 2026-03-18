@@ -144,8 +144,6 @@ function AppContent() {
 }
 
 // ─── Authenticated shell with ProblemSetProvider ──────────────────────────────
-// AIStaffContext kept for backward compatibility during Ironclaw transition. New features use IronclawContext.
-
 function AuthenticatedShell() {
   return (
     <ModeProvider>

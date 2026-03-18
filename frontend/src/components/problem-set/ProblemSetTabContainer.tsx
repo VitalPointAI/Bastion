@@ -40,10 +40,6 @@ import { AssessEchelonRouter } from '../assess/AssessEchelonRouter';
 import { copService } from '../../lib/cop-service';
 import { inheritanceApi } from '../../lib/inheritance-service';
 import { DecisionGateProvider } from '../../context/DecisionGateContext';
-import { AIStaffProvider } from '../../context/AIStaffContext';
-import { AIStaffPanel } from '../ai-staff/AIStaffPanel';
-import { useAIStaffFeed } from '../../hooks/useAIStaffFeed';
-import { useAIStaff, useAIStaffDispatch } from '../../context/AIStaffContext';
 import { useMode } from '../../context/ModeContext';
 import { ResourcesTab } from '../resources/ResourcesTab';
 
@@ -311,8 +307,7 @@ export function ProblemSetTabContainer() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <AIStaffProvider problemSetId={displayId} activeTab={activeTab}>
-    <AIStaffFeedConnector problemSetId={displayId} />
+    <>
     <div className={['flex flex-col flex-1 min-h-0 bg-gray-900', isTraining ? 'border-t-2 border-amber-500/40' : ''].join(' ')}>
 
       {/* Horizontal tab bar */}
@@ -402,7 +397,6 @@ export function ProblemSetTabContainer() {
 
         {/* Right-aligned actions + Org toggle */}
         <div className="ml-auto hidden lg:flex items-center gap-1 pr-1">
-          <AIActivityButton />
           <Link
             to={`/problem-set/${displayId}/members`}
             className="px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors whitespace-nowrap"
@@ -485,53 +479,12 @@ export function ProblemSetTabContainer() {
       </DecisionGateProvider>
 
       {/* Floating AI Activity panel — rendered via portal, position independent */}
-      <AIStaffPanel />
-
       {/* OrgTreeSidebar — rendered outside tab content to avoid overflow clipping */}
       {orgTreeOpen && <OrgTreeSidebar onClose={() => setOrgTreeOpen(false)} />}
 
     </div>
-    </AIStaffProvider>
+    </>
   );
-}
-
-/**
- * Top-bar button to toggle the floating AI Activity panel.
- * Must be rendered inside AIStaffProvider so it can access context.
- */
-function AIActivityButton() {
-  const { isOpen, unreadCount } = useAIStaff();
-  const dispatch = useAIStaffDispatch();
-
-  return (
-    <button
-      onClick={() => dispatch.setOpen(!isOpen)}
-      className={`px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
-        isOpen ? 'text-green-400 hover:text-green-300' : 'text-gray-400 hover:text-gray-200'
-      }`}
-      title={isOpen ? 'Close AI Activity panel' : 'Open AI Activity panel'}
-      aria-label="Toggle AI Activity panel"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 7h10v10H7z" />
-      </svg>
-      AI
-      {unreadCount > 0 && (
-        <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-red-500 rounded-full">
-          {unreadCount > 9 ? '9+' : unreadCount}
-        </span>
-      )}
-    </button>
-  );
-}
-
-/**
- * Invisible connector that subscribes to the AI staff WebSocket feed.
- * Must be rendered inside AIStaffProvider so it can dispatch feed items.
- */
-function AIStaffFeedConnector({ problemSetId }: { problemSetId: string }) {
-  useAIStaffFeed(problemSetId);
-  return null;
 }
 
 export default ProblemSetTabContainer;
