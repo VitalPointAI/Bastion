@@ -24,9 +24,7 @@ import { AgentTestHarness } from './AgentTestHarness';
 import { FormField } from './common/FormField';
 import type {
   StandardAgentWithHealth,
-  StandardAgentFormData,
   AgentClearanceLevel,
-  AgentStatus,
   ToolSummary,
 } from '../../types/admin';
 

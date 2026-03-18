@@ -12,7 +12,6 @@ import { adminService } from '../../lib/admin-service';
 import { useUser } from '../../context/UserContext';
 import { LLMConfigPanel } from './LLMConfigPanel';
 import { AgentConfigPanel } from './AgentConfigPanel';
-import { AgentManagementPanel } from './AgentManagementPanel';
 import { AgentDashboardPanel } from './AgentDashboardPanel';
 import { ToolRegistryPanel } from './ToolRegistryPanel';
 import { CharacterBuilderPanel } from './CharacterBuilderPanel';

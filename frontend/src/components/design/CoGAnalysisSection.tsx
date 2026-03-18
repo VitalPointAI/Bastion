@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { CoGAnalysis, CoGTree as CoGTreeType, CoGNode } from '../../lib/design-service.ts';
+import type { CoGAnalysis, CoGTree as CoGTreeType } from '../../lib/design-service.ts';
 import { CoGTree } from './CoGTree.tsx';
 import { useIronclawContext } from '../../context/IronclawContext.tsx';
 
@@ -17,50 +17,6 @@ interface CoGAnalysisSectionProps {
   onUpdate: (data: CoGAnalysis) => void;
 }
 
-/**
- * Map a CoG suggestion type to the expected child type in the CG-CC-CR-CV hierarchy.
- */
-function findParentForType(
-  node: CoGNode | null,
-  suggestionParentType: string | null
-): CoGNode | null {
-  if (!node) return null;
-  if (suggestionParentType === null) return null; // Root-level suggestion
-  if (node.type === suggestionParentType) return node;
-  for (const child of node.children) {
-    const found = findParentForType(child, suggestionParentType);
-    if (found) return found;
-  }
-  return null;
-}
-
-/**
- * Deep clone a CoG tree, adding a new node under the first matching parent.
- */
-function addNodeToTree(tree: CoGTreeType, newNode: CoGNode, parentType: string | null): CoGTreeType {
-  // If no root and suggestion is for a CG, create it as root
-  if (!tree.root && (parentType === null || newNode.type === 'cog')) {
-    return { root: newNode };
-  }
-
-  if (!tree.root) return tree;
-
-  // Deep clone
-  const cloneNode = (n: CoGNode): CoGNode => ({
-    ...n,
-    children: n.children.map(cloneNode),
-  });
-
-  const clonedRoot = cloneNode(tree.root);
-
-  // Find parent and add child
-  const parent = findParentForType(clonedRoot, parentType);
-  if (parent) {
-    parent.children = [...parent.children, newNode];
-  }
-
-  return { root: clonedRoot };
-}
 
 export function CoGAnalysisSection({ problemSetId: _problemSetId, initialData, onUpdate }: CoGAnalysisSectionProps) {
   const { sendMessage, toggleDrawer } = useIronclawContext();
@@ -109,33 +65,6 @@ export function CoGAnalysisSection({ problemSetId: _problemSetId, initialData, o
       scheduleAutoSave(updated);
     },
     [cogAnalysis, scheduleAutoSave]
-  );
-
-  const handleApplyCogSuggestion = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (suggestion: any) => {
-      const newNode: CoGNode = {
-        id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        type: suggestion.type,
-        label: suggestion.label,
-        description: suggestion.description,
-        children: [],
-      };
-
-      const side: 'friendly' | 'adversary' = suggestion.side || 'friendly';
-      const parentType: string | null = suggestion.parentType ?? null;
-
-      const updatedTree = addNodeToTree(cogAnalysis[side], newNode, parentType);
-      const updated: CoGAnalysis = {
-        ...cogAnalysis,
-        [side]: updatedTree,
-      };
-
-      setCogAnalysis(updated);
-      // Trigger immediate save for applied suggestions
-      onUpdate(updated);
-    },
-    [cogAnalysis, onUpdate]
   );
 
   return (
