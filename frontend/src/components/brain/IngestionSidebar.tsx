@@ -1,23 +1,29 @@
 /**
  * IngestionSidebar — left column of the brain visualization
  *
- * Shows a real-time unified ingestion feed: all documents being processed,
- * recent node creation events, and filter tags by source type.
+ * Phase 50 Plan 04 refactor. UniversalInputZone is the PRIMARY interaction
+ * surface at the top. Old document upload and OSINT modal are preserved but
+ * hidden behind an "Advanced" collapsible link. The feed is unified:
+ * all IngestItems (new pipeline) + legacy IngestionEvents are merged and
+ * sorted chronologically.
  *
- * Includes OSINT source management: lists current connections, add/edit modal,
- * and optional COP layer creation for geo-referenced feeds.
- *
- * The sidebar also exposes an "Ingest Documents" button that opens the
- * DocIntelligencePanel in a collapsible section for document upload.
+ * UNIV-12: Unified chronological feed
+ * UNIV-13: Smart suggestion chips for ambiguous classifications
+ * UNIV-18: Old panels deprecated behind "Advanced" link (not deleted)
  */
 
-import { type ReactNode, useState, useCallback, useEffect } from 'react';
+import { type ReactNode, useState, useCallback, useEffect, useRef } from 'react';
 import { useBrainIngestion } from './hooks/useBrainIngestion.js';
+import { useUniversalIngest } from './hooks/useUniversalIngest.js';
+import { UniversalInputZone } from './UniversalInputZone.js';
+import { IngestItemStatus } from './IngestItemStatus.js';
+import { SmartSuggestionChips } from './SmartSuggestionChips.js';
 import { DocIntelligencePanel } from '../doc-intelligence/DocIntelligencePanel.js';
 import { osintService } from '../../lib/osint-service.js';
 import type { OSINTFeedConfig, FeedSourceType, CreateFeedInput } from '../../lib/osint-service.js';
 import { copService } from '../../lib/cop-service.js';
 import type { IngestionEvent, ProcessStatus } from './hooks/useBrainIngestion.js';
+import type { IngestItem } from './hooks/useUniversalIngest.js';
 import './IngestionSidebar.css';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
@@ -79,6 +85,48 @@ function dotColor(event: IngestionEvent): string {
   return NODE_TYPE_EVENT_COLORS[event.type] ?? '#888888';
 }
 
+/** Derive a type badge label and color for an IngestItem */
+function ingestItemBadge(item: IngestItem): { label: string; color: string } {
+  const pipeline = item.classification?.suggestedPipeline;
+  const inputType = item.classification?.inputType;
+
+  if (pipeline === 'osint-subscribe' || inputType === 'rss_url') {
+    return { label: 'RSS', color: '#ff9933' };
+  }
+  if (inputType === 'raw_text' || inputType === 'json_data' || inputType === 'xml_data') {
+    return { label: 'TEXT', color: '#888888' };
+  }
+  if (pipeline === 'doc-intelligence' || inputType === 'file' || inputType === 'pdf_url' || inputType === 'article_url') {
+    return { label: 'DOC', color: '#4a9eff' };
+  }
+  // Default
+  return { label: 'DOC', color: '#4a9eff' };
+}
+
+/** Derive a type badge for legacy IngestionEvent */
+function eventBadge(event: IngestionEvent): { label: string; color: string } {
+  const st = event.sourceType?.toLowerCase() ?? '';
+  if (st.includes('osint') || st.includes('subscript')) return { label: 'OSINT', color: '#44cc66' };
+  if (st.includes('research')) return { label: 'DOC', color: '#4a9eff' };
+  return { label: 'DOC', color: '#4a9eff' };
+}
+
+/** Map SourceFilter to feed-item test */
+function matchesFilter(filter: SourceFilter, badge: string): boolean {
+  if (filter === 'All') return true;
+  if (filter === 'Documents' && (badge === 'DOC')) return true;
+  if (filter === 'OSINT' && badge === 'OSINT') return true;
+  if (filter === 'Subscriptions' && badge === 'RSS') return true;
+  if (filter === 'Research' && badge === 'TEXT') return true;
+  return false;
+}
+
+// ─── Unified feed item types ──────────────────────────────────────────────────
+
+type UnifiedFeedItem =
+  | { kind: 'ingest'; item: IngestItem; timestamp: string; badge: { label: string; color: string } }
+  | { kind: 'event'; event: IngestionEvent; badge: { label: string; color: string } };
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 interface CollapsibleSectionProps {
@@ -86,12 +134,13 @@ interface CollapsibleSectionProps {
   defaultOpen?: boolean;
   badge?: string | number;
   children: ReactNode;
+  id?: string;
 }
 
-function CollapsibleSection({ title, defaultOpen = false, badge, children }: CollapsibleSectionProps) {
+function CollapsibleSection({ title, defaultOpen = false, badge, children, id }: CollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="ingestion-section">
+    <div className="ingestion-section" id={id}>
       <div className="ingestion-section-header" onClick={() => setOpen((v) => !v)}>
         <span>
           {title}
@@ -405,9 +454,25 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
   const [osintLoading, setOsintLoading] = useState(false);
   const [showAddSource, setShowAddSource] = useState(false);
 
+  // Ref to advanced section for scroll-to behavior
+  const advancedSectionRef = useRef<HTMLDivElement>(null);
+
+  // ── Universal ingest hook — owns the new item state machine ──────────────
+  const {
+    items: universalItems,
+    retryItem,
+    dismissItem,
+    handleSSEEvent,
+    submitText: submitWithForcedPipeline,
+  } = useUniversalIngest(problemSetId);
+
+  // ── Brain ingestion hook — owns legacy SSE + particles ───────────────────
+  // Pass handleSSEEvent as the callback so classify/route events forwarded here
   const { events, activeProcesses } = useBrainIngestion(
     problemSetId,
     !!problemSetId,
+    600,
+    handleSSEEvent,
   );
 
   // ── Fetch documents ──────────────────────────────────────────────────────
@@ -490,10 +555,45 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
     onUploadClick?.();
   }, [onUploadClick]);
 
-  // Filter events by source type
-  const filteredEvents = activeFilter === 'All'
-    ? events
-    : events.filter((e) => e.sourceType === activeFilter);
+  // ── Suggestion chip handler — re-submit item with forced pipeline ────────
+  const handleSuggestionSelect = useCallback(
+    (itemId: string, pipeline: string) => {
+      // Re-submit the original item's content with forced pipeline in the label
+      // For now, dismiss old item and re-submit with pipeline hint prepended
+      const item = universalItems.find((i) => i.id === itemId);
+      if (!item) return;
+      dismissItem(itemId);
+      // Submit with pipeline hint prefix so classifier can prioritize
+      const content = item._originalContent ?? item.label;
+      void submitWithForcedPipeline(`[pipeline:${pipeline}] ${content}`);
+    },
+    [universalItems, dismissItem, submitWithForcedPipeline],
+  );
+
+  // ── Build unified chronological feed ─────────────────────────────────────
+
+  const unifiedFeed: UnifiedFeedItem[] = [
+    ...universalItems.map((item): UnifiedFeedItem => ({
+      kind: 'ingest',
+      item,
+      timestamp: item.createdAt,
+      badge: ingestItemBadge(item),
+    })),
+    ...events.map((event): UnifiedFeedItem => ({
+      kind: 'event',
+      event,
+      badge: eventBadge(event),
+    })),
+  ].sort((a, b) => {
+    const tA = a.kind === 'ingest' ? a.timestamp : a.event.timestamp;
+    const tB = b.kind === 'ingest' ? b.timestamp : b.event.timestamp;
+    return new Date(tB).getTime() - new Date(tA).getTime(); // newest first
+  });
+
+  // Apply source filter
+  const filteredFeed = unifiedFeed.filter((entry) =>
+    matchesFilter(activeFilter, entry.badge.label),
+  );
 
   const isIngesting = activeProcesses.length > 0;
   const activeFeeds = osintFeeds.filter((f) => f.active).length;
@@ -512,77 +612,21 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
         </button>
       </div>
 
-      {/* ── DocIntelligencePanel section (collapsible) ── */}
-      {docIntelOpen && (
-        <CollapsibleSection title="Document Upload" defaultOpen={true}>
-          <div className="ingestion-doc-intel-wrapper">
-            <DocIntelligencePanel problemSetId={problemSetId} />
-          </div>
-        </CollapsibleSection>
-      )}
-
-      {/* ── OSINT Sources section ── */}
-      <CollapsibleSection
-        title="OSINT Sources"
-        badge={osintFeeds.length > 0 ? `${activeFeeds}/${osintFeeds.length}` : undefined}
-        defaultOpen={true}
-      >
-        <div className="osint-sources-section">
-          {osintLoading && <div className="ingestion-doc-loading">Loading sources...</div>}
-
-          {!osintLoading && osintFeeds.length === 0 && (
-            <div className="osint-empty-state">
-              No OSINT sources connected.
-            </div>
-          )}
-
-          {osintFeeds.map((feed) => (
-            <OSINTFeedItem
-              key={feed.id}
-              feed={feed}
-              onToggle={handleToggleFeed}
-              onDelete={handleDeleteFeed}
-            />
-          ))}
-
-          <button className="osint-add-btn" onClick={() => setShowAddSource(true)}>
-            + Add Source
-          </button>
-        </div>
-      </CollapsibleSection>
-
-      {/* ── Documents list with delete ── */}
-      {documents.length > 0 && (
-        <CollapsibleSection title={`Documents (${documents.length})`} defaultOpen={true}>
-          <div className="ingestion-doc-list">
-            {docsLoading && <div className="ingestion-doc-loading">Loading...</div>}
-            {documents.map((doc) => (
-              <div key={doc.id} className="ingestion-doc-item">
-                <div className="ingestion-doc-info">
-                  <div className="ingestion-doc-title" title={doc.title}>
-                    {doc.title}
-                  </div>
-                  <div className="ingestion-doc-meta">
-                    {doc.classification ?? 'UNCLASSIFIED'}
-                    {doc.objectiveCount != null && doc.objectiveCount > 0
-                      ? ` \u00B7 ${doc.objectiveCount} objectives`
-                      : ''}
-                  </div>
-                </div>
-                <button
-                  className="ingestion-doc-delete-btn"
-                  onClick={() => handleDeleteDocument(doc.id, doc.title)}
-                  disabled={deletingDocId === doc.id}
-                  title="Delete document and related graph data"
-                  aria-label={`Delete ${doc.title}`}
-                >
-                  {deletingDocId === doc.id ? '...' : '\u2715'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </CollapsibleSection>
-      )}
+      {/* ── PRIMARY: UniversalInputZone ── */}
+      <div className="ingestion-universal-zone">
+        <UniversalInputZone problemSetId={problemSetId} />
+        {/* "Advanced options" link — scrolls to/expands the Advanced section */}
+        <button
+          type="button"
+          className="ingestion-advanced-link"
+          onClick={() => {
+            advancedSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          aria-label="Open advanced ingestion options"
+        >
+          Advanced options...
+        </button>
+      </div>
 
       {/* ── Filter tags ── */}
       <div className="ingestion-filters">
@@ -597,7 +641,7 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
         ))}
       </div>
 
-      {/* ── Active processes ── */}
+      {/* ── Active processes (legacy doc-intelligence tracker) ── */}
       {activeProcesses.length > 0 && (
         <div className="ingestion-processes">
           {activeProcesses.map((p) => (
@@ -606,9 +650,9 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
         </div>
       )}
 
-      {/* ── Event feed ── */}
-      <div className="ingestion-feed">
-        {filteredEvents.length === 0 ? (
+      {/* ── Unified chronological feed ── */}
+      <div className="ingestion-feed" role="log" aria-live="polite" aria-label="Intelligence feed">
+        {filteredFeed.length === 0 ? (
           <div className="ingestion-empty">
             <p>Feed documents to grow the brain</p>
             <button className="ingestion-empty-cta" onClick={handleUploadClick}>
@@ -616,10 +660,124 @@ export function IngestionSidebar({ problemSetId, onUploadClick }: IngestionSideb
             </button>
           </div>
         ) : (
-          filteredEvents.map((event) => (
-            <EventItem key={event.id} event={event} />
-          ))
+          filteredFeed.map((entry) => {
+            if (entry.kind === 'event') {
+              return (
+                <div key={entry.event.id} className="ingestion-feed-entry">
+                  <span
+                    className="ingestion-type-badge"
+                    style={{ background: entry.badge.color }}
+                  >
+                    {entry.badge.label}
+                  </span>
+                  <EventItem event={entry.event} />
+                </div>
+              );
+            }
+
+            // IngestItem entry
+            const { item, badge } = entry;
+            return (
+              <div key={item.id} className="ingestion-feed-entry">
+                <span
+                  className="ingestion-type-badge"
+                  style={{ background: badge.color }}
+                >
+                  {badge.label}
+                </span>
+                <IngestItemStatus
+                  item={item}
+                  onRetry={retryItem}
+                  onDismiss={dismissItem}
+                />
+                {/* Smart suggestion chips for ambiguous/low-confidence items */}
+                <SmartSuggestionChips
+                  item={item}
+                  onSelect={handleSuggestionSelect}
+                />
+              </div>
+            );
+          })
         )}
+      </div>
+
+      {/* ── ADVANCED section (old panels, hidden by default) ── */}
+      <div ref={advancedSectionRef}>
+        <CollapsibleSection title="Advanced" defaultOpen={false} id="ingestion-advanced">
+
+          {/* DocIntelligencePanel section (collapsible) */}
+          {docIntelOpen && (
+            <CollapsibleSection title="Document Upload" defaultOpen={true}>
+              <div className="ingestion-doc-intel-wrapper">
+                <DocIntelligencePanel problemSetId={problemSetId} />
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* OSINT Sources section */}
+          <CollapsibleSection
+            title="OSINT Sources"
+            badge={osintFeeds.length > 0 ? `${activeFeeds}/${osintFeeds.length}` : undefined}
+            defaultOpen={true}
+          >
+            <div className="osint-sources-section">
+              {osintLoading && <div className="ingestion-doc-loading">Loading sources...</div>}
+
+              {!osintLoading && osintFeeds.length === 0 && (
+                <div className="osint-empty-state">
+                  No OSINT sources connected.
+                </div>
+              )}
+
+              {osintFeeds.map((feed) => (
+                <OSINTFeedItem
+                  key={feed.id}
+                  feed={feed}
+                  onToggle={handleToggleFeed}
+                  onDelete={handleDeleteFeed}
+                />
+              ))}
+
+              <button className="osint-add-btn" onClick={() => setShowAddSource(true)}>
+                + Add Source
+              </button>
+            </div>
+          </CollapsibleSection>
+
+          {/* Documents list with delete */}
+          {documents.length > 0 && (
+            <CollapsibleSection title={`Documents (${documents.length})`} defaultOpen={true}>
+              <div className="ingestion-doc-list">
+                {docsLoading && <div className="ingestion-doc-loading">Loading...</div>}
+                {documents.map((doc) => (
+                  <div key={doc.id} className="ingestion-doc-item">
+                    <div className="ingestion-doc-info">
+                      <div className="ingestion-doc-title" title={doc.title}>
+                        {doc.title}
+                      </div>
+                      <div className="ingestion-doc-meta">
+                        {doc.classification ?? 'UNCLASSIFIED'}
+                        {doc.objectiveCount != null && doc.objectiveCount > 0
+                          ? ` \u00B7 ${doc.objectiveCount} objectives`
+                          : ''}
+                      </div>
+                    </div>
+                    <button
+                      className="ingestion-doc-delete-btn"
+                      onClick={() => handleDeleteDocument(doc.id, doc.title)}
+                      disabled={deletingDocId === doc.id}
+                      title="Delete document and related graph data"
+                      aria-label={`Delete ${doc.title}`}
+                    >
+                      {deletingDocId === doc.id ? '...' : '\u2715'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+        </CollapsibleSection>
       </div>
 
       {/* ── Add OSINT Source Modal ── */}

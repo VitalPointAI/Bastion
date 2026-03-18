@@ -67,6 +67,7 @@ import { strategicGuidanceRouter } from './strategic/guidance/routes.js';
 import docIntelligenceRouter from './api/doc-intelligence.js';
 import brainRouter from './api/brain.js';
 import brainSubspacesRouter from './api/brain-subspaces.js';
+import ingestRouter from './api/ingest.js';
 
 dotenv.config();
 
@@ -263,6 +264,7 @@ app.use('/api/documents/planning', requireAuth, documentRouter);
 app.use('/api/assessment', assessmentRouter);
 app.use('/api/strategic-guidance', strategicGuidanceRouter);
 app.use('/api/doc-intelligence', docIntelligenceRouter);
+app.use('/api/ingest', ingestRouter);
 app.use('/api/robot', robotRouter);
 app.use('/api/brain', brainRouter);
 app.use('/api/brain', brainSubspacesRouter);

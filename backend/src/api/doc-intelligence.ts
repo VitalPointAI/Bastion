@@ -83,8 +83,32 @@ const processingSessions = new Map<string, ProcessingSession>();
 /**
  * Problem-set-wide SSE clients — receives multiplexed events from ALL
  * processing sessions belonging to a given problemSetId.
+ *
+ * Exported so the universal ingest router can broadcast classification and
+ * routing events without duplicating SSE infrastructure.
  */
-const problemSetSSEClients = new Map<string, Set<Response>>();
+export const problemSetSSEClients = new Map<string, Set<Response>>();
+
+/**
+ * Broadcast an SSE event to all clients subscribed to a problem set stream.
+ * Safe to call from outside this module (e.g. universal-ingest-router).
+ */
+export function broadcastSSE(
+  problemSetId: string,
+  event: string,
+  data: Record<string, unknown>,
+): void {
+  const psClients = problemSetSSEClients.get(problemSetId);
+  if (!psClients) return;
+  for (const client of psClients) {
+    try {
+      client.write(`event: ${event}\n`);
+      client.write(`data: ${JSON.stringify(data)}\n\n`);
+    } catch {
+      psClients.delete(client);
+    }
+  }
+}
 
 // ==========================================================================
 // Document Hashing & Similarity Utilities
@@ -190,18 +214,8 @@ function createSSEProgressCallback(session: ProcessingSession): ProgressCallback
       }
     }
 
-    // Broadcast to problem-set-wide SSE clients
-    const psClients = problemSetSSEClients.get(session.problemSetId);
-    if (psClients) {
-      for (const client of psClients) {
-        try {
-          client.write(`event: ${event}\n`);
-          client.write(`data: ${JSON.stringify(enrichedData)}\n\n`);
-        } catch {
-          psClients.delete(client);
-        }
-      }
-    }
+    // Broadcast to problem-set-wide SSE clients (via shared helper)
+    broadcastSSE(session.problemSetId, event, enrichedData);
   };
 }
 
