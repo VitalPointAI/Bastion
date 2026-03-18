@@ -13,6 +13,7 @@ import type {
   TrustDecision,
   TrustPreference,
 } from '../types/ironclaw.ts';
+import type { MessageContext } from '../hooks/useIronclaw.ts';
 
 // Use environment variable or empty string for relative URLs (Vite proxy)
 const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '';
@@ -101,11 +102,14 @@ class IronclawApi {
   /**
    * Send a chat message to Ironclaw. Response is 202 (streaming via WebSocket).
    * When problemSetId is null, sends to the global (user-scoped) endpoint.
+   * Optional context (currentTab, problemSetId, userRole) is sent to help
+   * Ironclaw tailor responses to the current UI state.
    */
   async sendMessage(
     problemSetId: string | null,
     content: string,
     mentionedAgent?: string,
+    context?: MessageContext,
   ): Promise<void> {
     const path = problemSetId
       ? `/api/ironclaw/${encodeURIComponent(problemSetId)}/message`
@@ -113,7 +117,7 @@ class IronclawApi {
 
     await this.fetch<void>(path, {
       method: 'POST',
-      body: JSON.stringify({ content, mentionedAgent }),
+      body: JSON.stringify({ content, mentionedAgent, context }),
     });
   }
 

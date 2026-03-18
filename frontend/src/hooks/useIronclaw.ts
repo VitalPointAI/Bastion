@@ -25,6 +25,15 @@ const WS_BASE_URL =
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
 
+// ─── Message Context ─────────────────────────────────────────────────────────
+
+/** UI context attached to each message to help Ironclaw tailor responses. */
+export interface MessageContext {
+  currentTab?: string;
+  problemSetId?: string;
+  userRole?: string;
+}
+
 // ─── Public interface ────────────────────────────────────────────────────────
 
 export interface UseIronclawResult {
@@ -42,12 +51,22 @@ export interface UseIronclawResult {
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
-export function useIronclaw(problemSetId: string | null): UseIronclawResult {
+export function useIronclaw(
+  problemSetId: string | null,
+  messageContext?: MessageContext,
+): UseIronclawResult {
   const [messages, setMessages] = useState<IronclawChatMessage[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+
+  // Keep messageContext in a ref so sendMessage doesn't need to re-bind when context changes.
+  // This avoids rebuilding the callback (and WebSocket subscriptions) on every render.
+  const messageContextRef = useRef<MessageContext | undefined>(messageContext);
+  useEffect(() => {
+    messageContextRef.current = messageContext;
+  }, [messageContext]);
 
   // Refs for WebSocket lifecycle
   const wsRef = useRef<WebSocket | null>(null);
@@ -290,7 +309,7 @@ export function useIronclaw(problemSetId: string | null): UseIronclawResult {
       setIsLoading(true);
 
       try {
-        await ironclawApi.sendMessage(problemSetId, content, mentionedAgent);
+        await ironclawApi.sendMessage(problemSetId, content, mentionedAgent, messageContextRef.current);
         // Response will arrive via WebSocket -- isLoading cleared on ws message
       } catch (err) {
         console.error('[useIronclaw] sendMessage failed:', err);

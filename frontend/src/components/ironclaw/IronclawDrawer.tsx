@@ -37,6 +37,14 @@ interface IronclawDrawerProps {
   isConnected?: boolean;
   /** True when no problem set is selected — chat works but in global/user-scoped mode */
   isGlobalMode?: boolean;
+  /** Current UI tab derived from route pathname */
+  currentTab?: string | null;
+  /** Name of the active problem set */
+  problemSetName?: string | null;
+  /** User's role in the active problem set */
+  userRole?: string | null;
+  /** User's DID (for display, not auth) */
+  userDid?: string | null;
 }
 
 export function IronclawDrawer({
@@ -50,6 +58,9 @@ export function IronclawDrawer({
   isLoading,
   isConnected,
   isGlobalMode,
+  currentTab,
+  problemSetName,
+  userRole,
 }: IronclawDrawerProps) {
   const [inputValue, setInputValue] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -199,6 +210,39 @@ export function IronclawDrawer({
           </button>
         </div>
 
+        {/* Context banner — shows current tab / problem set / role */}
+        {!isGlobalMode && (currentTab || problemSetName || userRole) && (
+          <div className="px-4 py-1.5 border-b border-slate-700/60 bg-slate-800/40">
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 flex-wrap">
+              <svg className="w-3 h-3 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {currentTab && (
+                <span className="bg-slate-700/60 px-1.5 py-0.5 rounded text-slate-300 capitalize">
+                  {currentTab}
+                </span>
+              )}
+              {problemSetName && (
+                <>
+                  <span className="text-slate-600">|</span>
+                  <span className="text-slate-400 truncate max-w-30" title={problemSetName}>
+                    {problemSetName}
+                  </span>
+                </>
+              )}
+              {userRole && (
+                <>
+                  <span className="text-slate-600">|</span>
+                  <span className="bg-amber-900/40 text-amber-400 px-1.5 py-0.5 rounded capitalize">
+                    {userRole}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Message list */}
         <div className="ironclaw-messages flex-1 overflow-y-auto px-4 py-3">
           {messages.length === 0 && (
@@ -259,6 +303,28 @@ export function IronclawDrawer({
               <span className="text-[10px] text-gray-500 bg-slate-800 px-2 py-0.5 rounded-full">
                 General conversation — select a problem set for specialist access
               </span>
+            </div>
+          )}
+
+          {/* Agent quick-action buttons — only in problem-set mode */}
+          {!isGlobalMode && (
+            <div className="flex gap-1.5 pb-2 flex-wrap">
+              <button
+                onClick={() => onSendMessage('List all active agents and their current status.')}
+                className="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700
+                  text-slate-300 hover:bg-slate-700 hover:border-slate-600 transition-colors"
+                title="Ask Ironclaw to list active agents"
+              >
+                Show Active Agents
+              </button>
+              <button
+                onClick={() => onSendMessage('What is the current health and availability of all agents assigned to this problem set?')}
+                className="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700
+                  text-slate-300 hover:bg-slate-700 hover:border-slate-600 transition-colors"
+                title="Ask Ironclaw for agent status"
+              >
+                Agent Status
+              </button>
             </div>
           )}
 
