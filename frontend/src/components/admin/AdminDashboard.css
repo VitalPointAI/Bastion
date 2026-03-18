@@ -3036,3 +3036,441 @@ body:has(.admin-dashboard),
   border: 1px dashed rgba(255,255,255,0.1);
   border-radius: 6px;
 }
+
+/* ============================================================================
+   AgentHub — Unified Agent View
+   ============================================================================ */
+
+.agent-hub {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.agent-hub__tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.agent-hub__tab {
+  padding: 10px 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.agent-hub__tab:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.agent-hub__tab--active {
+  color: #f59e0b;
+  border-bottom-color: #f59e0b;
+}
+
+.agent-hub__content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 0;
+}
+
+/* Flush variant — no extra padding from config-panel */
+.config-panel--flush {
+  padding: 0;
+}
+
+/* ============================================================================
+   Agent Overview Stats
+   ============================================================================ */
+
+.agent-overview-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.agent-stat-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.agent-stat-card--active {
+  border-color: rgba(34, 197, 94, 0.2);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.agent-stat-card--inactive {
+  border-color: rgba(148, 163, 184, 0.15);
+}
+
+.agent-stat-value {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.agent-stat-card--active .agent-stat-value {
+  color: #22c55e;
+}
+
+.agent-stat-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Full-width health grid */
+.agent-health-grid--full {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+/* Dense table variant */
+.admin-table--dense td,
+.admin-table--dense th {
+  padding: 8px 10px;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 768px) {
+  .agent-overview-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================================================================
+   Team Designer — DnD Layout
+   ============================================================================ */
+
+.team-designer-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr 320px;
+  gap: 16px;
+  min-height: 400px;
+}
+
+.team-designer-left,
+.team-designer-center,
+.team-designer-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-designer-left h3,
+.team-designer-center h3,
+.team-designer-right h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.section-hint {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin: 0 0 8px 0;
+}
+
+/* Available agents list */
+.agent-available-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  max-height: 500px;
+  padding-right: 4px;
+}
+
+/* Draggable agent card */
+.agent-drag-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 10px 12px;
+  cursor: grab;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+  touch-action: none;
+}
+
+.agent-drag-card:hover {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.agent-drag-card:active {
+  cursor: grabbing;
+}
+
+.agent-drag-card--used {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.agent-drag-card-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+}
+
+.agent-drag-card-meta {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.agent-drag-card-in-team {
+  font-size: 0.65rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Composition droppable area */
+.composition-area {
+  flex: 1;
+  min-height: 200px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.composition-area--over {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.composition-area-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: #475569;
+  text-align: center;
+  gap: 4px;
+}
+
+.composition-area-empty p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.composition-area-hint {
+  font-size: 0.7rem;
+  color: #334155;
+}
+
+/* Sortable team member card */
+.team-member-designer-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 8px 10px;
+  transition: border-color 0.15s;
+}
+
+.team-member-designer-card--leader {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.team-member-drag-handle {
+  cursor: grab;
+  color: #475569;
+  font-size: 1rem;
+  padding: 0 4px;
+  user-select: none;
+  touch-action: none;
+}
+
+.team-member-drag-handle:active {
+  cursor: grabbing;
+}
+
+.team-member-info-section {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-member-name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.leader-crown {
+  color: #f59e0b;
+  font-size: 0.9rem;
+}
+
+.team-member-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-member-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Team test section */
+.team-test-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Agent trace items */
+.agent-trace-item {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+
+.agent-trace-item--success {
+  border-left: 3px solid #22c55e;
+}
+
+.agent-trace-item--fail {
+  border-left: 3px solid #ef4444;
+}
+
+.agent-trace-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: #e2e8f0;
+}
+
+.agent-trace-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.agent-trace-name {
+  font-weight: 500;
+}
+
+.agent-trace-duration {
+  color: #64748b;
+  margin-left: auto;
+}
+
+.agent-trace-expand {
+  color: #475569;
+  font-size: 0.7rem;
+}
+
+.agent-trace-body {
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 0.75rem;
+}
+
+.agent-trace-section {
+  margin-bottom: 6px;
+}
+
+.agent-trace-section--error {
+  color: #fca5a5;
+}
+
+.agent-trace-label {
+  font-weight: 600;
+  color: #94a3b8;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.agent-trace-content {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px 8px;
+  border-radius: 3px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+}
+
+/* Header with back button */
+.header-with-back {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* Team name cell in table */
+.team-name-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.team-name {
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.team-id-label {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+@media (max-width: 1024px) {
+  .team-designer-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+}

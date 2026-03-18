@@ -13,13 +13,15 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useMemo,
+  useRef,
   type ReactNode,
 } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import type { IronclawChatMessage, TrustDecision } from '../types/ironclaw.ts';
+import type { IronclawChatMessage, SuggestionData, TrustDecision } from '../types/ironclaw.ts';
 import { useIronclaw } from '../hooks/useIronclaw.ts';
 import { useProblemSet } from './ProblemSetContext.tsx';
 import { useUser } from './UserContext.tsx';
@@ -59,6 +61,15 @@ function deriveTabFromPath(pathname: string): string {
 
 // ─── Context Value ───────────────────────────────────────────────────────────
 
+/** Dispatched when user accepts a suggestion that targets a field */
+export interface FieldWriteEvent {
+  targetField: string;
+  value: string;
+  suggestionId: string;
+}
+
+type FieldWriteListener = (event: FieldWriteEvent) => void;
+
 interface IronclawContextValue {
   messages: IronclawChatMessage[];
   isOpen: boolean;
@@ -74,6 +85,10 @@ interface IronclawContextValue {
   toggleDrawer: () => void;
   sendMessage: (content: string, mentionedAgent?: string) => Promise<void>;
   handleActionDecision: (actionId: string, decision: TrustDecision) => Promise<void>;
+  acceptSuggestion: (id: string) => void;
+  dismissSuggestion: (id: string) => void;
+  /** Subscribe to field write events — returns unsubscribe function */
+  onFieldWrite: (listener: FieldWriteListener) => () => void;
 }
 
 const IronclawContext = createContext<IronclawContextValue | null>(null);
@@ -101,10 +116,40 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     userRole: userRoleInActive ?? undefined,
   });
 
+  // Field write-back event bus
+  const fieldWriteListeners = useRef<Set<FieldWriteListener>>(new Set());
+
+  const onFieldWrite = useCallback((listener: FieldWriteListener) => {
+    fieldWriteListeners.current.add(listener);
+    return () => { fieldWriteListeners.current.delete(listener); };
+  }, []);
+
+  // Suggestion handlers — find suggestion in messages, dispatch field write if targeted
+  const acceptSuggestion = useCallback((id: string) => {
+    const msg = ironclaw.messages.find((m) => m.suggestion?.id === id);
+    const suggestion: SuggestionData | undefined = msg?.suggestion;
+    if (suggestion?.targetField && suggestion?.fieldValue) {
+      const event: FieldWriteEvent = {
+        targetField: suggestion.targetField,
+        value: suggestion.fieldValue,
+        suggestionId: id,
+      };
+      fieldWriteListeners.current.forEach((fn) => fn(event));
+    }
+    // TODO: notify backend of acceptance if needed
+  }, [ironclaw.messages]);
+
+  const dismissSuggestion = useCallback((_id: string) => {
+    // TODO: notify backend of dismissal if needed
+  }, []);
+
   const contextValue: IronclawContextValue = {
     ...ironclaw,
     currentTab,
     userRole: userRoleInActive,
+    acceptSuggestion,
+    dismissSuggestion,
+    onFieldWrite,
   };
 
   return (
@@ -124,6 +169,8 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         messages={ironclaw.messages}
         onSendMessage={ironclaw.sendMessage}
         onActionDecision={ironclaw.handleActionDecision}
+        onAcceptSuggestion={acceptSuggestion}
+        onDismissSuggestion={dismissSuggestion}
         isLoading={ironclaw.isLoading}
         isConnected={ironclaw.isConnected}
         isGlobalMode={!activeProblemSetId}

@@ -72,6 +72,12 @@ export interface SuggestionData {
   agentId: string;
   agentDisplayName: string;
   actionType?: string;
+  /** Target field path for write-back (e.g., 'problemStatement', 'design.cogAnalysis.friendly') */
+  targetField?: string;
+  /** Human-readable field label (e.g., 'Problem Statement') */
+  targetFieldLabel?: string;
+  /** The value to write to the field when accepted */
+  fieldValue?: string;
 }
 
 // ============================================================================

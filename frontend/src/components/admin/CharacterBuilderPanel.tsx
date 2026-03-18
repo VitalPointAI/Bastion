@@ -74,7 +74,12 @@ function characterToForm(character: AgentCharacter): CharacterFormData {
   };
 }
 
-export function CharacterBuilderPanel() {
+interface CharacterBuilderPanelProps {
+  /** When provided, locks to this agent — hides agent selector */
+  agentId?: string;
+}
+
+export function CharacterBuilderPanel({ agentId: fixedAgentId }: CharacterBuilderPanelProps = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -192,6 +197,14 @@ export function CharacterBuilderPanel() {
       setCurrentCharacter(null);
     }
   }, [agents, reset]);
+
+  // Auto-select fixed agent when provided (embedded mode)
+  useEffect(() => {
+    if (fixedAgentId && fixedAgentId !== selectedAgentId) {
+      setSelectedAgentId(fixedAgentId);
+      loadCharacter(fixedAgentId);
+    }
+  }, [fixedAgentId, selectedAgentId, loadCharacter]);
 
   // Handle agent selection change
   const handleAgentChange = (agentId: string) => {
@@ -344,30 +357,32 @@ export function CharacterBuilderPanel() {
         </div>
       )}
 
-      {/* Agent Selection */}
-      <div className="config-section">
-        <div className="config-section-header-row">
-          <h3>Select Agent</h3>
-          {currentCharacter && (
-            <span className="badge badge--character">Has Character</span>
-          )}
-        </div>
+      {/* Agent Selection — hidden when agentId is fixed (embedded mode) */}
+      {!fixedAgentId && (
+        <div className="config-section">
+          <div className="config-section-header-row">
+            <h3>Select Agent</h3>
+            {currentCharacter && (
+              <span className="badge badge--character">Has Character</span>
+            )}
+          </div>
 
-        <FormField label="Agent">
-          <select
-            className="form-select"
-            value={selectedAgentId}
-            onChange={(e) => handleAgentChange(e.target.value)}
-          >
-            <option value="">Select an agent...</option>
-            {agents.map(agent => (
-              <option key={agent.agentId} value={agent.agentId}>
-                {agent.name}
-              </option>
-            ))}
-          </select>
-        </FormField>
-      </div>
+          <FormField label="Agent">
+            <select
+              className="form-select"
+              value={selectedAgentId}
+              onChange={(e) => handleAgentChange(e.target.value)}
+            >
+              <option value="">Select an agent...</option>
+              {agents.map(agent => (
+                <option key={agent.agentId} value={agent.agentId}>
+                  {agent.name}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        </div>
+      )}
 
       {selectedAgentId && (
         <form onSubmit={handleSubmit(onSubmit)}>

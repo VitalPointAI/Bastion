@@ -38,6 +38,7 @@
     "react-hook-form": "^7.71.1",
     "react-leaflet": "^5.0.0",
     "react-leaflet-draw": "^0.21.0",
+    "react-markdown": "^10.1.0",
     "react-organizational-chart": "^2.2.1",
     "react-router-dom": "^7.0.0",
     "react-tabs": "^6.1.0",

@@ -21,6 +21,7 @@ import { adminService } from '../../lib/admin-service';
 import { AgentHealthCard } from './AgentHealthCard';
 import { AgentMemoryViewer } from './AgentMemoryViewer';
 import { AgentTestHarness } from './AgentTestHarness';
+import { CharacterBuilderPanel } from './CharacterBuilderPanel';
 import { FormField } from './common/FormField';
 import type {
   StandardAgentWithHealth,
@@ -79,7 +80,7 @@ type DashboardView = 'list' | 'create' | 'edit' | 'detail';
 
 interface DetailState {
   agent: StandardAgentWithHealth;
-  detailTab: 'config' | 'memory' | 'test';
+  detailTab: 'config' | 'character' | 'memory' | 'test';
 }
 
 // ============================================================================
@@ -177,7 +178,12 @@ function ToolAssignment({ availableTools, assignedTools, onChange }: ToolAssignm
 // AgentDashboardPanel
 // ============================================================================
 
-export function AgentDashboardPanel() {
+interface AgentDashboardPanelProps {
+  /** 'overview' shows health grid + summary only; 'management' shows full CRUD (default) */
+  viewMode?: 'overview' | 'management';
+}
+
+export function AgentDashboardPanel({ viewMode = 'management' }: AgentDashboardPanelProps) {
   const [agents, setAgents] = useState<StandardAgentWithHealth[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -457,13 +463,13 @@ export function AgentDashboardPanel() {
         {/* Detail tabs */}
         <div className="management-tabs">
           <div className="management-tab-list">
-            {(['config', 'memory', 'test'] as const).map((tab) => (
+            {(['config', 'character', 'memory', 'test'] as const).map((tab) => (
               <button
                 key={tab}
                 className={`management-tab${detailTab === tab ? ' management-tab--selected' : ''}`}
                 onClick={() => setDetail({ agent, detailTab: tab })}
               >
-                {tab === 'config' ? 'Configuration' : tab === 'memory' ? 'Memory' : 'Test Harness'}
+                {tab === 'config' ? 'Configuration' : tab === 'character' ? 'Character' : tab === 'memory' ? 'Memory' : 'Test Harness'}
               </button>
             ))}
           </div>
@@ -532,6 +538,10 @@ export function AgentDashboardPanel() {
                 )}
               </div>
             </div>
+          )}
+
+          {detailTab === 'character' && (
+            <CharacterBuilderPanel agentId={agent.agentId} />
           )}
 
           {detailTab === 'memory' && (
@@ -703,17 +713,84 @@ export function AgentDashboardPanel() {
   }
 
   // ============================================================================
-  // Render list view
+  // Render overview (health-focused) or management list
   // ============================================================================
 
-  return (
-    <div className="config-panel">
-      <div className="config-panel-header">
-        <div>
-          <h2>Agent Management</h2>
-          <p>Monitor and manage agents in the unified Phase 51 ecosystem.</p>
+  const activeAgents = agents.filter((a) => a.status === 'active');
+  const inactiveAgents = agents.filter((a) => a.status !== 'active');
+
+  // Overview mode: health dashboard only
+  if (viewMode === 'overview') {
+    return (
+      <div className="config-panel config-panel--flush">
+        {error && (
+          <div className="alert alert--error">
+            <span className="alert-icon">!</span>
+            {error}
+            <button className="alert-dismiss" onClick={() => setError(null)}>×</button>
+          </div>
+        )}
+
+        {/* Summary stats row */}
+        <div className="agent-overview-stats">
+          <div className="agent-stat-card">
+            <div className="agent-stat-value">{agents.length}</div>
+            <div className="agent-stat-label">Total Agents</div>
+          </div>
+          <div className="agent-stat-card agent-stat-card--active">
+            <div className="agent-stat-value">{activeAgents.length}</div>
+            <div className="agent-stat-label">Active</div>
+          </div>
+          <div className="agent-stat-card agent-stat-card--inactive">
+            <div className="agent-stat-value">{inactiveAgents.length}</div>
+            <div className="agent-stat-label">Inactive</div>
+          </div>
+          <div className="agent-stat-card">
+            <div className="agent-stat-value">
+              {agents.length > 0
+                ? `${Math.round((agents.filter((a) => a.successRate !== null && a.successRate > 0.9).length / agents.length) * 100)}%`
+                : '—'}
+            </div>
+            <div className="agent-stat-label">Healthy</div>
+          </div>
         </div>
-        <div className="header-actions">
+
+        {/* Health card grid — full width */}
+        {agents.length > 0 ? (
+          <div className="agent-health-grid agent-health-grid--full">
+            {agents.map((agent) => (
+              <AgentHealthCard
+                key={agent.agentId}
+                agent={agent}
+                onClick={() => openDetail(agent)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="table-empty-state">
+            <p>No agents configured yet.</p>
+          </div>
+        )}
+
+        {/* Confirm action modal */}
+        {confirmAction && (
+          <ConfirmModal
+            action={confirmAction.type}
+            agentName={confirmAction.agent.name}
+            isConfirming={isConfirming}
+            onConfirm={handleConfirmAction}
+            onCancel={() => setConfirmAction(null)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Management mode: full CRUD
+  return (
+    <div className="config-panel config-panel--flush">
+      <div className="config-panel-header" style={{ padding: '0 0 16px 0' }}>
+        <div className="header-actions" style={{ marginLeft: 'auto' }}>
           <button
             className="btn btn--sm btn--secondary"
             onClick={() => loadAgents()}
@@ -742,110 +819,91 @@ export function AgentDashboardPanel() {
         </div>
       )}
 
-      {/* Health Card Grid */}
-      {agents.length > 0 && (
-        <div className="config-section">
-          <h3>Agent Health Overview</h3>
-          <div className="agent-health-grid">
-            {agents.map((agent) => (
-              <AgentHealthCard
-                key={agent.agentId}
-                agent={agent}
-                onClick={() => openDetail(agent)}
-              />
-            ))}
-          </div>
+      {/* Agent Table — full width, dense */}
+      {agents.length === 0 ? (
+        <div className="table-empty-state">
+          <p>No agents configured. Click "Create Agent" to add one.</p>
+        </div>
+      ) : (
+        <div className="table-container">
+          <table className="admin-table admin-table--dense">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Success Rate</th>
+                <th>Last Invocation</th>
+                <th>Clearance</th>
+                <th>Tools</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agents.map((agent) => (
+                <tr key={agent.agentId}>
+                  <td>
+                    <button
+                      className="link-button"
+                      onClick={() => openDetail(agent)}
+                    >
+                      {agent.name}
+                    </button>
+                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{agent.agentId}</div>
+                  </td>
+                  <td>
+                    <span className={`status-badge status-badge--${agent.status}`}>
+                      {agent.status}
+                    </span>
+                  </td>
+                  <td>
+                    {agent.successRate !== null
+                      ? `${Math.round(agent.successRate * 100)}%`
+                      : '—'}
+                  </td>
+                  <td>
+                    {agent.lastInvocation
+                      ? new Date(agent.lastInvocation).toLocaleString()
+                      : '—'}
+                  </td>
+                  <td>{agent.clearance}</td>
+                  <td>{(agent.tools || []).length}</td>
+                  <td>
+                    <div className="table-actions">
+                      <button
+                        className="btn btn--sm btn--secondary"
+                        onClick={() => openEdit(agent)}
+                      >
+                        Edit
+                      </button>
+                      {agent.status === 'active' ? (
+                        <button
+                          className="btn btn--sm btn--warning"
+                          onClick={() => setConfirmAction({ type: 'deactivate', agent })}
+                        >
+                          Deactivate
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn--sm btn--success"
+                          onClick={() => setConfirmAction({ type: 'activate', agent })}
+                        >
+                          Activate
+                        </button>
+                      )}
+                      <button
+                        className="btn btn--sm btn--danger"
+                        onClick={() => setConfirmAction({ type: 'delete', agent })}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
-
-      {/* Agent Table */}
-      <div className="config-section">
-        <h3>All Agents ({agents.length})</h3>
-        {agents.length === 0 ? (
-          <div className="table-empty-state">
-            <p>No agents configured. Click "Create Agent" to add one.</p>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th>Success Rate</th>
-                  <th>Last Invocation</th>
-                  <th>Clearance</th>
-                  <th>Tools</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agents.map((agent) => (
-                  <tr key={agent.agentId}>
-                    <td>
-                      <button
-                        className="link-button"
-                        onClick={() => openDetail(agent)}
-                      >
-                        {agent.name}
-                      </button>
-                      <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{agent.agentId}</div>
-                    </td>
-                    <td>
-                      <span className={`status-badge status-badge--${agent.status}`}>
-                        {agent.status}
-                      </span>
-                    </td>
-                    <td>
-                      {agent.successRate !== null
-                        ? `${Math.round(agent.successRate * 100)}%`
-                        : '—'}
-                    </td>
-                    <td>
-                      {agent.lastInvocation
-                        ? new Date(agent.lastInvocation).toLocaleString()
-                        : '—'}
-                    </td>
-                    <td>{agent.clearance}</td>
-                    <td>{(agent.tools || []).length}</td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          className="btn btn--sm btn--secondary"
-                          onClick={() => openEdit(agent)}
-                        >
-                          Edit
-                        </button>
-                        {agent.status === 'active' ? (
-                          <button
-                            className="btn btn--sm btn--warning"
-                            onClick={() => setConfirmAction({ type: 'deactivate', agent })}
-                          >
-                            Deactivate
-                          </button>
-                        ) : (
-                          <button
-                            className="btn btn--sm btn--success"
-                            onClick={() => setConfirmAction({ type: 'activate', agent })}
-                          >
-                            Activate
-                          </button>
-                        )}
-                        <button
-                          className="btn btn--sm btn--danger"
-                          onClick={() => setConfirmAction({ type: 'delete', agent })}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
 
       {/* Confirm action modal */}
       {confirmAction && (

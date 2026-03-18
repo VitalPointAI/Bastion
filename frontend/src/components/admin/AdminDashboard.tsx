@@ -11,18 +11,14 @@ import { TabLayout, type SidebarItem } from '../tabs/TabLayout.js';
 import { adminService } from '../../lib/admin-service';
 import { useUser } from '../../context/UserContext';
 import { LLMConfigPanel } from './LLMConfigPanel';
-import { AgentConfigPanel } from './AgentConfigPanel';
-import { AgentDashboardPanel } from './AgentDashboardPanel';
+import { AgentHub } from './AgentHub';
 import { ToolRegistryPanel } from './ToolRegistryPanel';
-import { CharacterBuilderPanel } from './CharacterBuilderPanel';
-import { TeamDesignerPanel } from './TeamDesignerPanel';
 import { WorkflowConfigPanel } from './WorkflowConfigPanel';
 import { OSINTSourcePanel } from './OSINTSourcePanel';
 import { AuditLogPanel } from './AuditLogPanel';
 import { FundingPanel } from './FundingPanel';
 import { RegistrationControlPanel } from './RegistrationControlPanel';
 import { ValidationDashboard } from './ValidationDashboard';
-import { AgentActivityPanel } from './AgentActivityPanel';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -32,11 +28,7 @@ interface AdminDashboardProps {
 type AdminView =
   | 'llm'
   | 'agents'
-  | 'agent-management'
   | 'tools'
-  | 'characters'
-  | 'teams'
-  | 'agent-activity'
   | 'workflow'
   | 'osint'
   | 'audit'
@@ -46,12 +38,8 @@ type AdminView =
 
 const ADMIN_ITEMS: SidebarItem[] = [
   { id: 'llm', label: 'LLM Provider', tooltip: 'Configure LLM provider settings' },
-  { id: 'agents', label: 'Agents', tooltip: 'Per-agent model configuration' },
-  { id: 'agent-management', label: 'Agent Management', tooltip: 'Create and manage agents' },
+  { id: 'agents', label: 'Agents', tooltip: 'Agent management, teams, and activity' },
   { id: 'tools', label: 'Tools', tooltip: 'MCP tool registry' },
-  { id: 'characters', label: 'Characters', tooltip: 'Agent character definitions' },
-  { id: 'teams', label: 'Teams', tooltip: 'Agent team composition' },
-  { id: 'agent-activity', label: 'Agent Activity', tooltip: 'Real-time agent & Ironclaw activity audit trail' },
   { id: 'workflow', label: 'Workflow', tooltip: 'Workflow configuration' },
   { id: 'osint', label: 'OSINT Sources', tooltip: 'Open source intelligence feeds' },
   { id: 'audit', label: 'Audit Log', tooltip: 'System audit trail' },
@@ -171,12 +159,8 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           onSelectItem={(id) => setSelectedView(id as AdminView)}
         >
           {selectedView === 'llm' && <LLMConfigPanel />}
-          {selectedView === 'agents' && <AgentConfigPanel />}
-          {selectedView === 'agent-management' && <AgentDashboardPanel />}
+          {selectedView === 'agents' && <AgentHub />}
           {selectedView === 'tools' && <ToolRegistryPanel />}
-          {selectedView === 'characters' && <CharacterBuilderPanel />}
-          {selectedView === 'teams' && <TeamDesignerPanel />}
-          {selectedView === 'agent-activity' && <AgentActivityPanel />}
           {selectedView === 'workflow' && <WorkflowConfigPanel />}
           {selectedView === 'osint' && <OSINTSourcePanel />}
           {selectedView === 'audit' && <AuditLogPanel />}
