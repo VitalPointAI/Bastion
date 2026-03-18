@@ -55,6 +55,13 @@ export interface UseBrainIngestionReturn {
   isConnected: boolean;
 }
 
+/**
+ * Optional callback for classify/route SSE events.
+ * Provided by IngestionSidebar to forward new universal pipeline events to
+ * useUniversalIngest.handleSSEEvent without creating a second EventSource.
+ */
+export type UniversalIngestEventCallback = (event: string, data: unknown) => void;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 let idCounter = 0;
@@ -80,11 +87,14 @@ function makeParticle(nodeId: string, nodeType: BrainNodeType, canvasHeight: num
  * @param problemSetId - Active problem set to watch for ingestion events
  * @param enabled - Set to false to skip connecting (e.g. no problemSetId yet)
  * @param canvasHeight - Height of the canvas so particles spawn at valid y coords
+ * @param onUniversalIngestEvent - Optional callback for classify/route SSE events.
+ *   Forwarded to useUniversalIngest.handleSSEEvent by IngestionSidebar.
  */
 export function useBrainIngestion(
   problemSetId: string,
   enabled: boolean = true,
   canvasHeight: number = 600,
+  onUniversalIngestEvent?: UniversalIngestEventCallback,
 ): UseBrainIngestionReturn {
   const [events, setEvents] = useState<IngestionEvent[]>([]);
   const [activeProcesses, setActiveProcesses] = useState<Map<string, ProcessStatus>>(new Map());
@@ -278,6 +288,30 @@ export function useBrainIngestion(
       });
     });
 
+    // ── classify/route events — forwarded to universal ingest hook ──────────
+    // These are new universal pipeline events (Phase 50). We forward them to
+    // useUniversalIngest.handleSSEEvent via the onUniversalIngestEvent callback
+    // so there is only ONE EventSource connection for the whole sidebar.
+    const classifyEvents = [
+      'classify:start',
+      'classify:result',
+      'route:selected',
+      'route:error',
+      'route:retry_success',
+    ] as const;
+    for (const eventName of classifyEvents) {
+      es.addEventListener(eventName, (e: MessageEvent) => {
+        try {
+          const data = JSON.parse(e.data) as unknown;
+          if (onUniversalIngestEvent) {
+            onUniversalIngestEvent(eventName, data);
+          }
+        } catch {
+          // Malformed SSE payload — ignore silently
+        }
+      });
+    }
+
     // ── onerror → reconnect ─────────────────────────────────────────────────
     es.onerror = () => {
       if (es.readyState === EventSource.CLOSED) {
@@ -291,7 +325,7 @@ export function useBrainIngestion(
         }
       }
     };
-  }, [problemSetId, enabled, addEvent, emitParticle]);
+  }, [problemSetId, enabled, addEvent, emitParticle, onUniversalIngestEvent]);
 
   useEffect(() => {
     connectRef.current = connect;
