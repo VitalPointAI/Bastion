@@ -619,3 +619,124 @@ export interface AgentCharacter {
   settings?: CharacterSettings;
   plugins: string[];
 }
+
+// ============================================================================
+// Phase 51: StandardAgent Admin Types
+// ============================================================================
+
+/**
+ * Classification clearance level for agents.
+ */
+export type AgentClearanceLevel = 'Unclassified' | 'CUI' | 'Secret' | 'TopSecret';
+
+/**
+ * Agent operational status.
+ */
+export type AgentStatus = 'active' | 'inactive' | 'degraded' | 'error';
+
+/**
+ * Agent skill definition (simplified for admin UI — Zod schemas not included).
+ */
+export interface AgentSkill {
+  skillId: string;
+  name: string;
+  description: string;
+}
+
+/**
+ * Phase 51 StandardAgent with health metrics — returned by GET /api/admin/agents.
+ */
+export interface StandardAgentWithHealth {
+  agentId: string;
+  name: string;
+  description: string;
+  status: AgentStatus;
+  active: boolean;
+  clearance: AgentClearanceLevel;
+  systemPrompt?: string;
+  skills: AgentSkill[] | string[];
+  tools: string[];
+  capabilities: string[];
+  maxAutonomy: string;
+  phase: string;
+  agentDID?: string;
+  modelConfig?: {
+    provider: string;
+    model: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
+  /** Health metrics from agents_v2 DB columns */
+  lastInvocation: string | null;
+  successRate: number | null;
+  avgResponseTimeMs: number | null;
+  validationScore: number | null;
+  /** Legacy compat */
+  customModelConfig?: AgentModelConfig | null;
+}
+
+/**
+ * Form data for creating/editing a Phase 51 StandardAgent.
+ */
+export interface StandardAgentFormData {
+  name: string;
+  description: string;
+  systemPrompt: string;
+  clearance: AgentClearanceLevel;
+  skills: string[];
+  tools: string[];
+  capabilities: string[];
+  maxAutonomy: string;
+  status: AgentStatus;
+  modelConfig?: {
+    provider: string;
+    model: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
+}
+
+/**
+ * Memory entry for agent memory viewer.
+ */
+export interface AgentMemoryEntry {
+  entryId: string;
+  agentId: string;
+  memoryType: 'knowledge' | 'working' | 'episode';
+  category?: string;
+  content: string;
+  importance: number;
+  createdAt: string;
+  lastAccessed?: string;
+  taskId?: string;
+}
+
+/**
+ * Tool summary for agent tool assignment UI.
+ */
+export interface ToolSummary {
+  toolId: string;
+  name: string;
+  description: string;
+  category: string;
+  schema?: Record<string, unknown>;
+}
+
+/**
+ * Result from POST /api/admin/agents/:agentId/test
+ */
+export interface AgentTestResult {
+  output: string | null;
+  durationMs: number;
+  agentId: string;
+  skill: string | null;
+  executionTrace: Array<{
+    spanId: string;
+    agentId: string;
+    operation: string;
+    status: 'running' | 'success' | 'error';
+    durationMs?: number;
+    error?: string;
+  }>;
+  error?: string;
+}

@@ -13,6 +13,7 @@ import { useUser } from '../../context/UserContext';
 import { LLMConfigPanel } from './LLMConfigPanel';
 import { AgentConfigPanel } from './AgentConfigPanel';
 import { AgentManagementPanel } from './AgentManagementPanel';
+import { AgentDashboardPanel } from './AgentDashboardPanel';
 import { ToolRegistryPanel } from './ToolRegistryPanel';
 import { CharacterBuilderPanel } from './CharacterBuilderPanel';
 import { TeamDesignerPanel } from './TeamDesignerPanel';
@@ -169,7 +170,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
         >
           {selectedView === 'llm' && <LLMConfigPanel />}
           {selectedView === 'agents' && <AgentConfigPanel />}
-          {selectedView === 'agent-management' && <AgentManagementPanel />}
+          {selectedView === 'agent-management' && <AgentDashboardPanel />}
           {selectedView === 'tools' && <ToolRegistryPanel />}
           {selectedView === 'characters' && <CharacterBuilderPanel />}
           {selectedView === 'teams' && <TeamDesignerPanel />}

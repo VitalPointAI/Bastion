@@ -763,6 +763,125 @@ class AdminService {
   async checkAccountFunding(accountId: string): Promise<AccountFundingCheck> {
     return this.fetch<AccountFundingCheck>(`/api/admin/funding/check/${encodeURIComponent(accountId)}`);
   }
+
+  // ============================================================================
+  // Phase 51: StandardAgent Admin Methods
+  // ============================================================================
+
+  /**
+   * List all agents with health metrics (Phase 51 unified format).
+   */
+  async listAgentsWithHealth(): Promise<import('../types/admin').StandardAgentWithHealth[]> {
+    const response = await this.fetch<{
+      success: boolean;
+      data: import('../types/admin').StandardAgentWithHealth[];
+    }>('/api/admin/agents');
+    return response.data || [];
+  }
+
+  /**
+   * Get detailed health for one agent.
+   */
+  async getAgentHealth(agentId: string): Promise<{
+    agentId: string;
+    name: string;
+    status: string;
+    lastInvocation: string | null;
+    successRate: number | null;
+    avgResponseTimeMs: number | null;
+    validationScore: number | null;
+  }> {
+    const response = await this.fetch<{
+      success: boolean;
+      data: {
+        agentId: string;
+        name: string;
+        status: string;
+        lastInvocation: string | null;
+        successRate: number | null;
+        avgResponseTimeMs: number | null;
+        validationScore: number | null;
+      };
+    }>(`/api/admin/agents/${encodeURIComponent(agentId)}/health`);
+    return response.data;
+  }
+
+  /**
+   * Activate an agent (checks health gate first).
+   */
+  async activateAgent(agentId: string): Promise<{ success: boolean; error?: string; gateReason?: string }> {
+    return this.fetch<{ success: boolean; error?: string; gateReason?: string }>(
+      `/api/admin/agents/${encodeURIComponent(agentId)}/activate`,
+      { method: 'POST' }
+    );
+  }
+
+  /**
+   * Deactivate an agent.
+   */
+  async deactivateAgent(agentId: string): Promise<{ success: boolean }> {
+    return this.fetch<{ success: boolean }>(
+      `/api/admin/agents/${encodeURIComponent(agentId)}/deactivate`,
+      { method: 'POST' }
+    );
+  }
+
+  /**
+   * List memory entries for an agent.
+   */
+  async listAgentMemory(
+    agentId: string,
+    type?: 'knowledge' | 'working' | 'episode',
+    limit?: number,
+    offset?: number
+  ): Promise<{ data: import('../types/admin').AgentMemoryEntry[]; total: number; count: number }> {
+    const params = new URLSearchParams();
+    if (type) params.set('type', type);
+    if (limit !== undefined) params.set('limit', String(limit));
+    if (offset !== undefined) params.set('offset', String(offset));
+    const qs = params.toString();
+    return this.fetch<{ data: import('../types/admin').AgentMemoryEntry[]; total: number; count: number }>(
+      `/api/admin/agents/${encodeURIComponent(agentId)}/memory${qs ? `?${qs}` : ''}`
+    );
+  }
+
+  /**
+   * Delete a memory entry.
+   */
+  async deleteAgentMemoryEntry(agentId: string, entryId: string): Promise<{ success: boolean }> {
+    return this.fetch<{ success: boolean }>(
+      `/api/admin/agents/${encodeURIComponent(agentId)}/memory/${encodeURIComponent(entryId)}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /**
+   * Send a test prompt to an agent and get the output.
+   */
+  async testAgent(
+    agentId: string,
+    prompt: string,
+    skill?: string
+  ): Promise<import('../types/admin').AgentTestResult> {
+    const response = await this.fetch<{ success: boolean; data: import('../types/admin').AgentTestResult; error?: string }>(
+      `/api/admin/agents/${encodeURIComponent(agentId)}/test`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ prompt, skill }),
+      }
+    );
+    return response.data || ({ output: null, durationMs: 0, agentId, skill: skill || null, executionTrace: [], error: response.error } as import('../types/admin').AgentTestResult);
+  }
+
+  /**
+   * List all available tools for agent assignment.
+   */
+  async listAvailableTools(): Promise<import('../types/admin').ToolSummary[]> {
+    const response = await this.fetch<{ success: boolean; data: import('../types/admin').ToolSummary[] }>(
+      '/api/admin/tools'
+    );
+    return response.data || [];
+  }
 }
 
 /**
