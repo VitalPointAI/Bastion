@@ -740,3 +740,106 @@ export interface AgentTestResult {
   }>;
   error?: string;
 }
+
+// ============================================================================
+// Phase 51-08: Agent Activity Log Types
+// ============================================================================
+
+/**
+ * Activity action types for agent activity audit trail.
+ */
+export type ActivityActionType =
+  | 'llm_invocation'
+  | 'tool_call'
+  | 'delegation'
+  | 'message_received'
+  | 'message_sent'
+  | 'action_card'
+  | 'checkpoint'
+  | 'error'
+  | 'team_dispatch'
+  | 'specialist_handoff';
+
+/**
+ * Activity status values.
+ */
+export type ActivityStatus = 'success' | 'error' | 'pending' | 'cancelled';
+
+/**
+ * A single agent activity log entry.
+ */
+export interface ActivityEntry {
+  id: number;
+  activityId: string;
+  agentId: string;
+  agentName?: string;
+  teamId?: string;
+  teamName?: string;
+  problemSetId?: string;
+  actionType: ActivityActionType;
+  actionDetail?: string;
+  inputSummary?: string;
+  outputSummary?: string;
+  durationMs?: number;
+  status: ActivityStatus;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+/**
+ * Filter criteria for activity log queries.
+ */
+export interface ActivityFilter {
+  agentId?: string;
+  teamId?: string;
+  type?: string;
+  problemSetId?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Per-agent activity stats breakdown.
+ */
+export interface AgentActivityStats {
+  agentId: string;
+  agentName?: string;
+  count: number;
+  successCount: number;
+  errorCount: number;
+  avgDurationMs?: number;
+}
+
+/**
+ * Per-team activity stats breakdown.
+ */
+export interface TeamActivityStats {
+  teamId: string;
+  teamName?: string;
+  count: number;
+}
+
+/**
+ * Aggregated activity statistics from GET /api/admin/activity/stats.
+ */
+export interface ActivityStats {
+  total: number;
+  successCount: number;
+  errorCount: number;
+  successRate: number;
+  avgDurationMs: number;
+  byAgent: AgentActivityStats[];
+  byTeam: TeamActivityStats[];
+  byActionType: Record<string, number>;
+}
+
+/**
+ * Paginated response from GET /api/admin/activity.
+ */
+export interface ActivityResponse {
+  entries: ActivityEntry[];
+  total: number;
+}

@@ -23,6 +23,7 @@ import { AuditLogPanel } from './AuditLogPanel';
 import { FundingPanel } from './FundingPanel';
 import { RegistrationControlPanel } from './RegistrationControlPanel';
 import { ValidationDashboard } from './ValidationDashboard';
+import { AgentActivityPanel } from './AgentActivityPanel';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -36,6 +37,7 @@ type AdminView =
   | 'tools'
   | 'characters'
   | 'teams'
+  | 'agent-activity'
   | 'workflow'
   | 'osint'
   | 'audit'
@@ -50,6 +52,7 @@ const ADMIN_ITEMS: SidebarItem[] = [
   { id: 'tools', label: 'Tools', tooltip: 'MCP tool registry' },
   { id: 'characters', label: 'Characters', tooltip: 'Agent character definitions' },
   { id: 'teams', label: 'Teams', tooltip: 'Agent team composition' },
+  { id: 'agent-activity', label: 'Agent Activity', tooltip: 'Real-time agent & Ironclaw activity audit trail' },
   { id: 'workflow', label: 'Workflow', tooltip: 'Workflow configuration' },
   { id: 'osint', label: 'OSINT Sources', tooltip: 'Open source intelligence feeds' },
   { id: 'audit', label: 'Audit Log', tooltip: 'System audit trail' },
@@ -174,6 +177,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           {selectedView === 'tools' && <ToolRegistryPanel />}
           {selectedView === 'characters' && <CharacterBuilderPanel />}
           {selectedView === 'teams' && <TeamDesignerPanel />}
+          {selectedView === 'agent-activity' && <AgentActivityPanel />}
           {selectedView === 'workflow' && <WorkflowConfigPanel />}
           {selectedView === 'osint' && <OSINTSourcePanel />}
           {selectedView === 'audit' && <AuditLogPanel />}

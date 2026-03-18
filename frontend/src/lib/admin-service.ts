@@ -882,6 +882,48 @@ class AdminService {
     );
     return response.data || [];
   }
+
+  // ============================================================================
+  // Agent Activity Log (Phase 51-08)
+  // ============================================================================
+
+  /**
+   * Query agent activity log with filters and pagination.
+   */
+  async getAgentActivity(
+    filter: import('../types/admin').ActivityFilter
+  ): Promise<import('../types/admin').ActivityResponse> {
+    const params = new URLSearchParams();
+    if (filter.agentId) params.set('agentId', filter.agentId);
+    if (filter.teamId) params.set('teamId', filter.teamId);
+    if (filter.type) params.set('type', filter.type);
+    if (filter.problemSetId) params.set('problemSetId', filter.problemSetId);
+    if (filter.status) params.set('status', filter.status);
+    if (filter.startDate) params.set('startDate', filter.startDate);
+    if (filter.endDate) params.set('endDate', filter.endDate);
+    params.set('limit', String(filter.limit ?? 50));
+    params.set('offset', String(filter.offset ?? 0));
+
+    return this.fetch<import('../types/admin').ActivityResponse>(
+      `/api/admin/activity?${params}`
+    );
+  }
+
+  /**
+   * Get aggregated activity statistics.
+   */
+  async getAgentActivityStats(filter?: {
+    agentId?: string;
+    teamId?: string;
+  }): Promise<import('../types/admin').ActivityStats> {
+    const params = new URLSearchParams();
+    if (filter?.agentId) params.set('agentId', filter.agentId);
+    if (filter?.teamId) params.set('teamId', filter.teamId);
+
+    return this.fetch<import('../types/admin').ActivityStats>(
+      `/api/admin/activity/stats?${params}`
+    );
+  }
 }
 
 /**
