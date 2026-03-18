@@ -734,14 +734,14 @@ Plans:
 **Goal:** Rearchitect the fragmented agent system into a coherent ecosystem: standardized agent template with persistent memory/skills/tools, admin dashboard for agent lifecycle management, team designer for composing agent teams, and Ironclaw as the sole AI interface replacing all scattered AI panels.
 **Requirements**: Standardized agent base class, persistent agent memory, agent admin dashboard (CRUD, health, validation), team designer UI, Ironclaw consolidation as single AI entry point, removal of AIStaffContext and per-tab AI panels
 **Depends on:** Phase 50
-**Plans:** 2/8 plans executed
+**Plans:** 4/8 plans executed
 
 Plans:
-- [ ] 51-01-PLAN.md — StandardAgent types, DB migrations, AgentStore/TeamStore/MemoryStore
-- [ ] 51-02-PLAN.md — Dead code removal (17 backend + 6 frontend files)
-- [ ] 51-03-PLAN.md — Registry/executor rewrite to use DB stores, agent seeder migration
-- [ ] 51-04-PLAN.md — Agent admin dashboard (CRUD, health, memory, test harness)
-- [ ] 51-05-PLAN.md — Team designer UI (DnD, workflow, testing)
+- [x] 51-01-PLAN.md — StandardAgent types, DB migrations, AgentStore/TeamStore/MemoryStore
+- [x] 51-02-PLAN.md — Dead code removal (17 backend + 6 frontend files)
+- [x] 51-03-PLAN.md — Registry/executor rewrite to use DB stores, agent seeder migration
+- [x] 51-04-PLAN.md — Agent admin dashboard (CRUD, health, memory, test harness)
+- [x] 51-05-PLAN.md — Team designer UI (DnD, workflow, testing)
 - [ ] 51-06-PLAN.md — Ironclaw upgrade, context-awareness, delegation commands
 - [ ] 51-07-PLAN.md — AIStaffContext removal, Ironclaw sole interface, verification
 
