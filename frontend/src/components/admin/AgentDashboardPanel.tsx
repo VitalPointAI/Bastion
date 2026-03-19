@@ -191,6 +191,7 @@ export function AgentDashboardPanel() {
 
   const [availableTools, setAvailableTools] = useState<ToolSummary[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editSubTab, setEditSubTab] = useState<'general' | 'character'>('general');
 
   // Confirm modal state
   const [confirmAction, setConfirmAction] = useState<{
@@ -293,6 +294,7 @@ export function AgentDashboardPanel() {
 
   const openEdit = (agent: StandardAgentWithHealth) => {
     setEditTarget(agent);
+    setEditSubTab('general');
     reset({
       name: agent.name,
       description: agent.description || '',
@@ -630,6 +632,33 @@ export function AgentDashboardPanel() {
           </div>
         )}
 
+        {/* Sub-tabs for edit mode */}
+        {view === 'edit' && editTarget && (
+          <div className="management-tabs">
+            <div className="management-tab-list">
+              <button
+                className={`management-tab${editSubTab === 'general' ? ' management-tab--selected' : ''}`}
+                onClick={() => setEditSubTab('general')}
+              >
+                General
+              </button>
+              <button
+                className={`management-tab${editSubTab === 'character' ? ' management-tab--selected' : ''}`}
+                onClick={() => setEditSubTab('character')}
+              >
+                Character
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Character sub-tab */}
+        {view === 'edit' && editTarget && editSubTab === 'character' ? (
+          <div className="management-tab-panel">
+            <CharacterBuilderPanel agentId={editTarget.agentId} />
+          </div>
+        ) : (
+
         <form onSubmit={handleSubmit(onSubmit)} className="agent-create-form">
           <div className="config-section">
             <h3>Basic Information</h3>
@@ -751,6 +780,7 @@ export function AgentDashboardPanel() {
             </button>
           </div>
         </form>
+        )}
       </div>
     );
   }
