@@ -315,14 +315,37 @@ export class ProblemSetStore {
 
   /**
    * Delete a problem set by ID.
-   * Child tables use ON DELETE CASCADE so members, invites, activity, roles,
-   * compartments, subscriptions, escalation rules, and panel config are removed automatically.
+   * Child tables with FK constraints use ON DELETE CASCADE automatically.
+   * Tables with plain TEXT problem_set_id columns are cleaned up explicitly.
    *
    * @returns true if deleted, false if not found
    */
   async deleteProblemSet(id: string): Promise<boolean> {
     await this.ensureInitialized();
     const pool = getPool();
+
+    // Clean up tables that reference problem_set_id without ON DELETE CASCADE
+    const orphanTables = [
+      'brain_annotations',
+      'brain_snapshots',
+      'brain_subspaces',
+      'brain_lenses',
+      'doc_intelligence_configs',
+      'doc_processing_queue',
+      'doc_extraction_results',
+      'doc_processing_status',
+      'agent_activity_log',
+      'member_reporting_relationships',
+      'decisions',
+      'raci_assignments',
+    ];
+
+    for (const table of orphanTables) {
+      await pool.query(`DELETE FROM ${table} WHERE problem_set_id = $1`, [id]).catch(() => {
+        // Table may not exist yet — skip silently
+      });
+    }
+
     const result = await pool.query('DELETE FROM problem_sets WHERE id = $1', [id]);
     return (result.rowCount ?? 0) > 0;
   }
