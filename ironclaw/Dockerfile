@@ -24,6 +24,9 @@ ARG IRONCLAW_COMMIT=56b72188974e042c379f9b74384a82bd0f5e8449
 RUN git clone https://github.com/nearai/ironclaw.git . \
     && git checkout ${IRONCLAW_COMMIT}
 
+# Extract version from Cargo.toml for runtime reporting
+RUN grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/' > /tmp/ironclaw-version
+
 RUN cargo build --release \
     && strip target/release/ironclaw
 
@@ -35,6 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /build/target/release/ironclaw /usr/local/bin/ironclaw
+COPY --from=builder /tmp/ironclaw-version /tmp/ironclaw-version
 RUN chmod +x /usr/local/bin/ironclaw
 
 # Token-sync entrypoint: reads refreshed OAuth tokens from shared volume

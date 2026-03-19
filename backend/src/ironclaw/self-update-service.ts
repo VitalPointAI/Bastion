@@ -310,16 +310,27 @@ export class SelfUpdateService {
    * Fetch the current Ironclaw version from the health/version endpoint.
    */
   private async fetchCurrentVersion(): Promise<string | null> {
+    // Try HTTP version endpoint first
     try {
       const baseUrl = process.env.IRONCLAW_URL ?? 'http://ironclaw:8080';
       const response = await fetch(`${baseUrl}/version`);
       if (response.ok) {
         const data = (await response.json()) as { version?: string };
-        return data.version ?? null;
+        if (data.version) return data.version;
       }
     } catch {
-      // Ironclaw not reachable at startup -- not critical
+      // Ironclaw HTTP not reachable — try shared file fallback
     }
+
+    // Fallback: read version from shared volume (written by Ironclaw entrypoint)
+    try {
+      const { readFileSync } = await import('fs');
+      const version = readFileSync('/shared/tokens/ironclaw-version', 'utf-8').trim();
+      if (version) return version;
+    } catch {
+      // File not available
+    }
+
     return null;
   }
 

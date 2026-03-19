@@ -24,7 +24,14 @@ load_token() {
 # Initial token load
 load_token
 
-echo "[entrypoint] Starting Ironclaw (token source: ${TOKEN_FILE})"
+# Export version from build-time extraction and share with backend
+if [ -f /tmp/ironclaw-version ]; then
+  export IRONCLAW_VERSION="$(cat /tmp/ironclaw-version)"
+  # Write to shared volume so backend can read it
+  echo "$IRONCLAW_VERSION" > /shared/tokens/ironclaw-version 2>/dev/null || true
+fi
+
+echo "[entrypoint] Starting Ironclaw v${IRONCLAW_VERSION:-unknown} (token source: ${TOKEN_FILE})"
 
 # Start ironclaw in the background.
 # 'sleep infinity' keeps stdin open so the repl channel doesn't EOF-shutdown.
