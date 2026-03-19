@@ -19,6 +19,7 @@ import { gateService } from '../gates/index.js';
 import { ironclawStore } from './ironclaw-store.js';
 import { actionRegistry } from './action-registry.js';
 import type { IronclawAction, ActionCardData, TrustDecision, ActionRiskLevel } from './ironclaw-types.js';
+import type { AgentGovernancePolicy } from '../identity/types.js';
 
 // ---------------------------------------------------------------------------
 // Action Result
@@ -38,6 +39,75 @@ export interface ActionResult {
 // ---------------------------------------------------------------------------
 
 export class ActionPipeline {
+  // Per-agent governance cache — loaded from DID documents at session start.
+  // Registry locks at startup and cannot accept per-agent changes afterward;
+  // the pipeline consults both locked registry defaults AND per-agent overrides.
+  private readonly agentGovernanceCache = new Map<string, AgentGovernancePolicy>();
+
+  /**
+   * Compute the effective risk level for an action, applying per-agent governance
+   * overrides on top of registry defaults.
+   *
+   * INVARIANT: Risk can only be elevated, never downgraded.
+   * Unknown agents (no cache entry) fall back to ACTION_RISK defaults.
+   */
+  private getEffectiveRisk(actionType: string, agentDid?: string): ActionRiskLevel {
+    const base = actionRegistry.getRiskLevel(actionType);
+    if (!agentDid) return base;
+
+    const policy = this.agentGovernanceCache.get(agentDid);
+    if (!policy) return base;
+
+    // Blocked actions are treated as high risk — will require explicit approval
+    if (policy.blockedActions?.includes(actionType)) {
+      return 'high';
+    }
+
+    // If allowedActions is specified, unlisted actions are treated as high risk
+    if (policy.allowedActions && policy.allowedActions.length > 0 && !policy.allowedActions.includes(actionType)) {
+      return 'high';
+    }
+
+    // Apply risk overrides — can ONLY elevate, never downgrade
+    const override = policy.actionRiskOverrides?.[actionType];
+    if (!override) return base;
+
+    const riskOrder: Record<string, number> = { low: 0, medium: 1, high: 2 };
+    return (riskOrder[override] ?? 0) > (riskOrder[base] ?? 0) ? override as ActionRiskLevel : base;
+  }
+
+  /**
+   * Load governance policy for an agent from its DID document and cache it.
+   *
+   * Called at session start. Falls back silently if the agent's DID has no
+   * governance section (backward compatible — no cache entry means use defaults).
+   *
+   * Note: Full DID resolution requires the agent's userSecret. For the Phase 53
+   * MVP, use setGovernancePolicy() to populate the cache directly when governance
+   * data is available from a higher-trust source (e.g., session initialization).
+   */
+  async loadAgentGovernance(agentDid: string): Promise<void> {
+    try {
+      // Phase 53 MVP: the cache is populated via setGovernancePolicy() by callers
+      // who have access to the resolved DID document (e.g., session init code).
+      // Full DID resolution path requires the agent's userSecret and is deferred.
+      console.log(`[action-pipeline] Governance load requested for ${agentDid} — use setGovernancePolicy() to populate directly.`);
+    } catch (err) {
+      console.warn(`[action-pipeline] Failed to load governance for ${agentDid}:`, err);
+    }
+  }
+
+  /**
+   * Directly set the governance policy for an agent in the cache.
+   *
+   * Called by session initialization code after resolving the agent's DID document.
+   * This bypasses the need for a separate DID resolution within the pipeline.
+   */
+  setGovernancePolicy(agentDid: string, policy: AgentGovernancePolicy): void {
+    this.agentGovernanceCache.set(agentDid, policy);
+    console.log(`[action-pipeline] Governance policy cached for ${agentDid} (v${policy.policyVersion})`);
+  }
+
   /**
    * Process an inbound action request through the confirmation pipeline.
    *
@@ -48,7 +118,7 @@ export class ActionPipeline {
    * Note: For 'executed' status, the caller is responsible for actually
    * executing the action — the pipeline only decides approval.
    */
-  async processAction(action: IronclawAction, userDid: string): Promise<ActionResult> {
+  async processAction(action: IronclawAction, userDid: string, agentDid?: string): Promise<ActionResult> {
     // 1. Rate limit check
     const rateCheck = actionRegistry.checkRateLimit(userDid, action.type);
     if (!rateCheck.allowed) {
@@ -57,7 +127,7 @@ export class ActionPipeline {
         user_did: userDid,
         action_type: action.type,
         action_payload: action.payload,
-        risk_level: actionRegistry.getRiskLevel(action.type),
+        risk_level: this.getEffectiveRisk(action.type, agentDid),
         decision: 'denied',
         gate_id: null,
         result: null,
@@ -68,8 +138,8 @@ export class ActionPipeline {
       return { status: 'rate_limited', retry_after: rateCheck.retryAfter };
     }
 
-    // 2. Risk classification
-    const riskLevel: ActionRiskLevel = actionRegistry.getRiskLevel(action.type);
+    // 2. Risk classification (per-agent governance overrides applied here)
+    const riskLevel: ActionRiskLevel = this.getEffectiveRisk(action.type, agentDid);
 
     // 3. Trust preference check
     const trustPref = await ironclawStore.getTrustPreference(
@@ -206,13 +276,14 @@ export class ActionPipeline {
     action: IronclawAction,
     userDid: string,
     justification: string,
+    agentDid?: string,
   ): Promise<ActionResult> {
     await ironclawStore.logAction({
       problem_set_id: action.problem_set_id,
       user_did: userDid,
       action_type: action.type,
       action_payload: action.payload,
-      risk_level: actionRegistry.getRiskLevel(action.type),
+      risk_level: this.getEffectiveRisk(action.type, agentDid),
       decision: 'auto_approved',
       gate_id: null,
       result: null,
