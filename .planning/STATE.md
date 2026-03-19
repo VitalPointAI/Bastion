@@ -987,6 +987,7 @@ Recent decisions affecting current work:
 - Phase 49 added: Align Design tab operational approach with Plan tab — remove duplicate operational design from Plan, use Design tab outputs as campaign planning starting point
 - Phase 51 added: Unified Agent Architecture — Rearchitect fragmented agent system into coherent ecosystem: standardized agent template with persistent memory/skills/tools, admin dashboard for agent lifecycle management, team designer for composing agent teams, Ironclaw consolidation as sole AI interface replacing all scattered AI panels
 - Phase 52 added: Agent Skills & MCP — Standalone MCP server for agent tool execution, reusable skills registry, Ironclaw builder capabilities for skills/tools/teams, field write-back handler
+- Phase 53 added: DID Governance Architecture & Bug Fixes — Move agent governance from hardcoded TypeScript to DID documents with smart contract enforcement, fix Agent Hub bugs, Ironclaw UX improvements, Phase 52 deferred items
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
