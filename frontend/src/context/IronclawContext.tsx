@@ -129,15 +129,28 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     const msg = ironclaw.messages.find((m) => m.suggestion?.id === id);
     const suggestion: SuggestionData | undefined = msg?.suggestion;
     if (suggestion?.targetField && suggestion?.fieldValue) {
+      // Dispatch local field write event for immediate form updates
       const event: FieldWriteEvent = {
         targetField: suggestion.targetField,
         value: suggestion.fieldValue,
         suggestionId: id,
       };
       fieldWriteListeners.current.forEach((fn) => fn(event));
+
+      // Notify backend of acceptance for persistence
+      fetch(`/api/ironclaw/suggestions/${id}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          problemSetId: activeProblemSetId,
+          targetField: suggestion.targetField,
+          fieldValue: suggestion.fieldValue,
+        }),
+      }).catch((err) => {
+        console.error('[ironclaw] Failed to apply suggestion:', err);
+      });
     }
-    // TODO: notify backend of acceptance if needed
-  }, [ironclaw.messages]);
+  }, [ironclaw.messages, activeProblemSetId]);
 
   const dismissSuggestion = useCallback((_id: string) => {
     // TODO: notify backend of dismissal if needed

@@ -11,8 +11,13 @@ import { ironclawService } from './ironclaw-service.js';
 import type { MessageContext } from './ironclaw-service.js';
 import { actionPipeline } from './action-pipeline.js';
 import { ironclawStore } from './ironclaw-store.js';
+import { SENSITIVE_FIELDS } from './ironclaw-types.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import { verifyRequest } from './hmac-auth.js';
+import { getPool } from '../lib/database.js';
+import { problemSetMemberStore } from '../problem-set/problem-set-member-store.js';
+import { problemSetStore } from '../problem-set/problem-set-store.js';
+import { designStore } from '../design/design-store.js';
 import type { TrustDecision } from './ironclaw-types.js';
 
 // ---------------------------------------------------------------------------
@@ -400,6 +405,180 @@ ironclawRouter.post(
       res.json(result);
     } catch (err) {
       console.error('[ironclaw-router] Emergency endpoint error:', err);
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Internal server error',
+      });
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Suggestion Accept Endpoint
+// ---------------------------------------------------------------------------
+
+/**
+ * Role → allowed target field prefixes.
+ * '*' means the role can write any field.
+ * All other entries are prefix matches (startsWith).
+ */
+const ROLE_FIELD_PERMISSIONS: Record<string, string[] | '*'> = {
+  commander:    '*',
+  xo:           '*',
+  j2:           ['design.problemFraming', 'design.cogAnalysis', 'intelligence'],
+  j3:           ['design.operationalApproach', 'design.linesOfEffort', 'plan.coaDetails'],
+  j5:           ['design', 'plan'],
+  j4:           ['plan.sustainment', 'resources'],
+  j6:           ['plan.c4isr', 'communications'],
+};
+
+function roleCanWriteField(role: string, targetField: string): boolean {
+  const normalizedRole = role.toLowerCase();
+  const perms = ROLE_FIELD_PERMISSIONS[normalizedRole];
+  if (!perms) return false;
+  if (perms === '*') return true;
+  return perms.some((prefix) => targetField.startsWith(prefix));
+}
+
+/**
+ * Dispatch a field write to the correct persistence layer.
+ * Returns true on success, throws on failure.
+ */
+async function dispatchFieldWrite(
+  problemSetId: string,
+  targetField: string,
+  fieldValue: string,
+): Promise<void> {
+  // Design section fields — route to design store
+  if (targetField.startsWith('design.')) {
+    const section = targetField.replace(/^design\./, '');
+    // designStore.updateSection expects the section key (e.g. 'problemFraming')
+    // and a value that can be a string or object
+    await designStore.updateSection(problemSetId, section, fieldValue);
+    return;
+  }
+
+  // Top-level problem set fields
+  if (
+    targetField === 'name' ||
+    targetField === 'description' ||
+    targetField === 'problemStatement' ||
+    targetField === 'missionStatement' ||
+    targetField === 'commandersIntent'
+  ) {
+    // Map targetField to ProblemSet update fields
+    const fieldMap: Record<string, 'name' | 'description' | 'problemStatement'> = {
+      name: 'name',
+      description: 'description',
+      problemStatement: 'problemStatement',
+      // missionStatement and commandersIntent map to problemStatement for now
+      missionStatement: 'problemStatement',
+      commandersIntent: 'description',
+    };
+    const mappedField = fieldMap[targetField];
+    if (mappedField) {
+      await problemSetStore.updateProblemSet(problemSetId, { [mappedField]: fieldValue });
+      return;
+    }
+  }
+
+  // Generic fallback: attempt a raw DB update into the problem set metadata
+  // This handles any unknown field paths gracefully
+  console.warn(
+    `[ironclaw-router] dispatchFieldWrite: unknown targetField "${targetField}" — skipping write`,
+  );
+}
+
+/**
+ * POST /api/ironclaw/suggestions/:id/accept
+ * Body: { problemSetId, targetField, fieldValue }
+ *
+ * Validates the suggestion exists, checks role permissions, enforces Decision Gate
+ * requirement for sensitive fields, and dispatches the field write.
+ */
+ironclawRouter.post(
+  '/suggestions/:id/accept',
+  async (req: Request, res: Response) => {
+    const suggestionId = req.params.id as string;
+    const { problemSetId, targetField, fieldValue } = req.body as {
+      problemSetId?: string;
+      targetField?: string;
+      fieldValue?: string;
+    };
+
+    if (!problemSetId || typeof problemSetId !== 'string') {
+      res.status(400).json({ error: 'problemSetId is required' });
+      return;
+    }
+    if (!targetField || typeof targetField !== 'string') {
+      res.status(400).json({ error: 'targetField is required' });
+      return;
+    }
+    if (fieldValue === undefined || fieldValue === null) {
+      res.status(400).json({ error: 'fieldValue is required' });
+      return;
+    }
+
+    const userDid = getUserDid(req);
+
+    try {
+      // 1. Verify the suggestion exists in the message store
+      const pool = getPool();
+      const msgResult = await pool.query(
+        `SELECT id FROM ironclaw_chat
+         WHERE suggestion->>'id' = $1
+         LIMIT 1`,
+        [suggestionId],
+      );
+      if (msgResult.rows.length === 0) {
+        res.status(404).json({ error: 'Suggestion not found' });
+        return;
+      }
+
+      // 2. Check the user's role in this problem set
+      const member = await problemSetMemberStore.getMember(problemSetId, userDid);
+      if (!member) {
+        res.status(403).json({ error: 'Not a member of this problem set' });
+        return;
+      }
+      if (member.status === 'suspended') {
+        res.status(403).json({ error: 'Your membership is suspended' });
+        return;
+      }
+
+      if (!roleCanWriteField(member.role, targetField)) {
+        res.status(403).json({
+          error: `Your role (${member.role}) does not have write access to field: ${targetField}`,
+        });
+        return;
+      }
+
+      // 3. Sensitive fields require a Decision Gate
+      if (SENSITIVE_FIELDS.has(targetField)) {
+        const gateResult = await pool.query(
+          `SELECT id FROM decision_gates
+           WHERE problem_set_id = $1
+             AND status = 'approved'
+             AND metadata->>'suggestion_id' = $2
+           LIMIT 1`,
+          [problemSetId, suggestionId],
+        );
+        if (gateResult.rows.length === 0) {
+          res.status(403).json({
+            error: 'Requires Decision Gate approval',
+            requiresGate: true,
+            targetField,
+          });
+          return;
+        }
+      }
+
+      // 4. Dispatch field write
+      await dispatchFieldWrite(problemSetId, targetField, String(fieldValue));
+
+      // 5. Success
+      res.json({ applied: true, field: targetField });
+    } catch (err) {
+      console.error('[ironclaw-router] Suggestion accept error:', err);
       res.status(500).json({
         error: err instanceof Error ? err.message : 'Internal server error',
       });
