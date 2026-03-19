@@ -237,7 +237,12 @@ export class SelfUpdateService {
   /**
    * Get the current status of the self-update service.
    */
-  getStatus(): UpdateStatus {
+  async getStatus(): Promise<UpdateStatus> {
+    // Lazy retry: if version is still unknown, try fetching it
+    if (!this.currentVersion) {
+      this.currentVersion =
+        process.env.IRONCLAW_VERSION ?? (await this.fetchCurrentVersion());
+    }
     return {
       currentVersion: this.currentVersion,
       isUpdating: this.isUpdating,

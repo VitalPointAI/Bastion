@@ -65,7 +65,7 @@ ironclawRouter.get('/health', async (_req: Request, res: Response) => {
  */
 ironclawRouter.get('/status', async (_req: Request, res: Response) => {
   try {
-    const status = selfUpdateService.getStatus();
+    const status = await selfUpdateService.getStatus();
     res.json(status);
   } catch (error) {
     res.status(500).json({ error: String(error) });
