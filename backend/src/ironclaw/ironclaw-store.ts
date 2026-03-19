@@ -15,6 +15,7 @@ import type {
   AuditAnchor,
   ActionCardData,
   StepProgressData,
+  SuggestionPayload,
 } from './ironclaw-types.js';
 import { TRUST_TTL_DAYS } from './ironclaw-types.js';
 import type { ActionRiskLevel } from './ironclaw-types.js';
@@ -45,6 +46,7 @@ function rowToChatMessage(row: Record<string, unknown>): IronclawChatMessage {
     delegated_by: (row.delegated_by as string) ?? null,
     action_card: (row.action_card as ActionCardData) ?? null,
     step_progress: (row.step_progress as StepProgressData) ?? null,
+    suggestion: (row.suggestion as SuggestionPayload) ?? null,
     created_at: (row.created_at as Date).toISOString(),
   };
 }
@@ -249,8 +251,8 @@ export class IronclawStore {
     const result = await pool.query(
       `INSERT INTO ironclaw_chat
         (problem_set_id, content, sender, specialist_id, specialist_display_name,
-         delegated_by, action_card, step_progress)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         delegated_by, action_card, step_progress, suggestion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         msg.problem_set_id,
@@ -261,6 +263,7 @@ export class IronclawStore {
         msg.delegated_by ?? null,
         msg.action_card ? JSON.stringify(msg.action_card) : null,
         msg.step_progress ? JSON.stringify(msg.step_progress) : null,
+        msg.suggestion ? JSON.stringify(msg.suggestion) : null,
       ],
     );
     return rowToChatMessage(result.rows[0]);

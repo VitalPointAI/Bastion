@@ -19,7 +19,9 @@ import { getActivityLogger } from '../agents/activity-logger.js';
 import type {
   IronclawChatMessage,
   ActionCardData,
+  SuggestionPayload,
 } from './ironclaw-types.js';
+import { SENSITIVE_FIELDS } from './ironclaw-types.js';
 
 // ---------------------------------------------------------------------------
 // Message Context
@@ -129,6 +131,7 @@ export class IronclawService {
       delegated_by: null,
       action_card: null,
       step_progress: null,
+      suggestion: null,
     });
 
     // Publish user message to WebSocket
@@ -203,6 +206,24 @@ export class IronclawService {
       ? (parsed.content as string) ?? (parsed.text as string) ?? responseText
       : responseText;
 
+    // Detect suggestion (field write-back proposal)
+    let suggestion: SuggestionPayload | null = null;
+    if (parsed?.suggestion) {
+      const s = parsed.suggestion as Record<string, unknown>;
+      const targetField = (s.target_field as string) ?? null;
+      suggestion = {
+        id: `sug_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        content: (s.content as string) ?? messageContent,
+        agent_id: (s.agent_id as string) ?? 'ironclaw',
+        agent_display_name: (s.agent_display_name as string) ?? 'Ironclaw',
+        target_field: targetField,
+        target_field_label: (s.target_field_label as string) ?? null,
+        field_value: (s.field_value as string) ?? null,
+        // Flag sensitive fields so the frontend can show a Decision Gate notice
+        ...(targetField && SENSITIVE_FIELDS.has(targetField) ? { risk: 'high' as const } : {}),
+      };
+    }
+
     if (!messageContent && !actionCard) return;
 
     // 5. Persist the message
@@ -215,6 +236,7 @@ export class IronclawService {
       delegated_by: delegatedBy,
       action_card: actionCard,
       step_progress: null,
+      suggestion,
     });
 
     // 6. Publish to WebSocket for real-time frontend updates
@@ -318,6 +340,7 @@ export class IronclawService {
       delegated_by: null,
       action_card: null,
       step_progress: null,
+      suggestion: null,
     });
 
     // Publish to user's global WebSocket channel
@@ -369,6 +392,7 @@ export class IronclawService {
       delegated_by: delegatedBy,
       action_card: null,
       step_progress: null,
+      suggestion: null,
     });
 
     await publishToChannel(globalChannelId(userDid), 'ironclaw.response', chatMsg);

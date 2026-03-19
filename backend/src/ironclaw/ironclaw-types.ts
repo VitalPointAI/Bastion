@@ -151,6 +151,32 @@ export interface ActionCardData {
 }
 
 // ---------------------------------------------------------------------------
+// Suggestion Payload (field write-back)
+// ---------------------------------------------------------------------------
+
+export interface SuggestionPayload {
+  id: string;
+  content: string;
+  agent_id: string;
+  agent_display_name: string;
+  target_field: string | null;
+  target_field_label: string | null;
+  field_value: string | null;
+  /** Present on high-risk fields to indicate Decision Gate is required */
+  risk?: 'high';
+}
+
+/**
+ * Fields that require an explicit Decision Gate approval before write-back.
+ * These govern commander intent / rules of engagement — high governance impact.
+ */
+export const SENSITIVE_FIELDS = new Set([
+  'missionStatement',
+  'commandersIntent',
+  'ruleOfEngagement',
+]) as ReadonlySet<string>;
+
+// ---------------------------------------------------------------------------
 // Chat Message
 // ---------------------------------------------------------------------------
 
@@ -165,6 +191,7 @@ export interface IronclawChatMessage {
   delegated_by: string | null;
   action_card: ActionCardData | null;
   step_progress: StepProgressData | null;
+  suggestion: SuggestionPayload | null;
   created_at: string;
 }
 

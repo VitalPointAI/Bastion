@@ -293,6 +293,7 @@ export class SelfUpdateService {
           delegated_by: null,
           action_card: null,
           step_progress: null,
+          suggestion: null,
         });
       }
     } catch (err) {
