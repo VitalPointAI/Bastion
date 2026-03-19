@@ -14,6 +14,7 @@ import type {
 import { IronclawMessage } from './IronclawMessage.tsx';
 import { IronclawSuggestion } from './IronclawSuggestion.tsx';
 import { IronclawTaskPanel } from './IronclawTaskPanel.tsx';
+import type { Decision, ActOnDecisionParams } from '../../lib/decision-service.ts';
 import './IronclawDrawer.css';
 
 // Hardcoded initial specialist list
@@ -55,6 +56,10 @@ interface IronclawDrawerProps {
   onDismissTaskSuggestion?: (taskId: string, suggestionId: string) => void;
   /** Request refinement of a task */
   onRefineTask?: (taskId: string, feedback: string) => void;
+  /** Pending decisions surfaced proactively by Ironclaw */
+  pendingDecisions?: Decision[];
+  /** Act on a pending decision from the drawer */
+  onActOnDecision?: (decisionId: string, params: ActOnDecisionParams) => Promise<void>;
 }
 
 export function IronclawDrawer({
@@ -75,6 +80,8 @@ export function IronclawDrawer({
   onApproveTaskSuggestion,
   onDismissTaskSuggestion,
   onRefineTask,
+  pendingDecisions,
+  onActOnDecision,
 }: IronclawDrawerProps) {
   const [inputValue, setInputValue] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -268,6 +275,72 @@ export function IronclawDrawer({
                     {userRole}
                   </span>
                 </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Pending decisions panel — proactively surfaced by Ironclaw */}
+        {pendingDecisions && pendingDecisions.length > 0 && (
+          <div style={{ borderBottom: '1px solid #334155', paddingBottom: '0.75rem', marginBottom: '0.25rem' }}>
+            <div style={{ padding: '0.5rem 1rem 0.25rem', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <span style={{ display: 'inline-block', width: '0.5rem', height: '0.5rem', borderRadius: '9999px', background: '#f59e0b', animation: 'pulse 2s infinite' }} />
+              Pending Decisions ({pendingDecisions.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0 0.75rem' }}>
+              {pendingDecisions.slice(0, 5).map((d) => (
+                <div
+                  key={d.id}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    background: 'rgba(245,158,11,0.07)',
+                    border: '1px solid rgba(245,158,11,0.2)',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.8rem',
+                  }}
+                >
+                  <div style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '0.375rem' }}>{d.title}</div>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.375rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {d.decision_type.replace(/_/g, ' ')}
+                  </div>
+                  {onActOnDecision && (
+                    <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+                      {(['approve', 'reject', 'defer', 'info'] as const).map((action) => {
+                        const colors: Record<string, { color: string; bg: string }> = {
+                          approve: { color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+                          reject: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+                          defer: { color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' },
+                          info: { color: '#60a5fa', bg: 'rgba(96,165,250,0.15)' },
+                        };
+                        const c = colors[action];
+                        return (
+                          <button
+                            key={action}
+                            onClick={() => onActOnDecision(d.id, { action })}
+                            style={{
+                              padding: '0.125rem 0.5rem',
+                              fontSize: '0.65rem',
+                              fontWeight: 600,
+                              background: c.bg,
+                              color: c.color,
+                              border: `1px solid ${c.color}40`,
+                              borderRadius: '0.25rem',
+                              cursor: 'pointer',
+                              textTransform: 'capitalize',
+                            }}
+                          >
+                            {action === 'info' ? 'Need Info' : action}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {pendingDecisions.length > 5 && (
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>
+                  +{pendingDecisions.length - 5} more — visit the Decide tab
+                </div>
               )}
             </div>
           </div>

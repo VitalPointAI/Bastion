@@ -29,6 +29,7 @@ import { useProblemSet } from './ProblemSetContext.tsx';
 import { useUser } from './UserContext.tsx';
 import { IronclawButton } from '../components/ironclaw/IronclawButton.tsx';
 import { IronclawDrawer } from '../components/ironclaw/IronclawDrawer.tsx';
+import { decisionApiService, type Decision } from '../lib/decision-service.ts';
 
 // ─── Tab Derivation ───────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ function deriveTabFromPath(pathname: string): string {
   if (lower.includes('/understand')) return 'understand';
   if (lower.includes('/design')) return 'design';
   if (lower.includes('/plan')) return 'plan';
+  if (lower.includes('/decide')) return 'decide';
   if (lower.includes('/direct')) return 'direct';
   if (lower.includes('/cop')) return 'cop';
   if (lower.includes('/assess')) return 'assess';
@@ -53,7 +55,6 @@ function deriveTabFromPath(pathname: string): string {
   if (lower.includes('/overview')) return 'overview';
 
   // Legacy tab names (pre-Phase 24)
-  if (lower.includes('/decide')) return 'decide';
   if (lower.includes('/intelligence') || lower.includes('/ipb')) return 'understand';
   if (lower.includes('/planning') || lower.includes('/jpp')) return 'plan';
   if (lower.includes('/operations')) return 'direct';
@@ -99,6 +100,10 @@ interface IronclawContextValue {
   dismissTaskSuggestion: (taskId: string, suggestionId: string) => void;
   /** Request refinement of a task */
   refineTask: (taskId: string, feedback: string) => void;
+  /** Pending decisions for the current user's position (proactively surfaced) */
+  pendingDecisions: Decision[];
+  /** Force re-fetch of pending decisions */
+  refreshPendingDecisions: () => void;
 }
 
 const IronclawContext = createContext<IronclawContextValue | null>(null);
@@ -125,6 +130,45 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     problemSetId: activeProblemSetId ?? undefined,
     userRole: userRoleInActive ?? undefined,
   });
+
+  // ─── Pending Decisions State (proactive surfacing) ────────────────────────
+  const [pendingDecisions, setPendingDecisions] = useState<Decision[]>([]);
+  const [pendingDecisionTick, setPendingDecisionTick] = useState(0);
+
+  const refreshPendingDecisions = useCallback(() => {
+    setPendingDecisionTick((n) => n + 1);
+  }, []);
+
+  // Poll every 60 seconds for pending decisions for the user's position
+  useEffect(() => {
+    if (!activeProblemSetId || !userRoleInActive) {
+      setPendingDecisions([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchPending = async () => {
+      try {
+        const data = await decisionApiService.getPendingForPosition(
+          activeProblemSetId,
+          userRoleInActive,
+        );
+        if (!cancelled) setPendingDecisions(data);
+      } catch {
+        // Non-fatal — pending decisions badge just won't show
+      }
+    };
+
+    fetchPending();
+    const interval = setInterval(fetchPending, 60_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProblemSetId, userRoleInActive, pendingDecisionTick]);
 
   // ─── Task State ──────────────────────────────────────────────────────────
   const [activeTask, setActiveTask] = useState<IronclawTaskData | null>(null);
@@ -250,6 +294,8 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     approveTaskSuggestion,
     dismissTaskSuggestion,
     refineTask,
+    pendingDecisions,
+    refreshPendingDecisions,
   };
 
   return (
@@ -259,7 +305,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
       {/* Floating button -- always present */}
       <IronclawButton
         onClick={ironclaw.toggleDrawer}
-        hasUnread={ironclaw.hasUnread}
+        hasUnread={ironclaw.hasUnread || pendingDecisions.length > 0}
       />
 
       {/* Slide-out drawer -- renders globally, works with or without a problem set */}
@@ -282,6 +328,11 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         onApproveTaskSuggestion={approveTaskSuggestion}
         onDismissTaskSuggestion={dismissTaskSuggestion}
         onRefineTask={refineTask}
+        pendingDecisions={pendingDecisions}
+        onActOnDecision={activeProblemSetId ? async (decisionId, params) => {
+          await decisionApiService.actOnDecision(activeProblemSetId, decisionId, params);
+          refreshPendingDecisions();
+        } : undefined}
       />
     </IronclawContext.Provider>
   );
