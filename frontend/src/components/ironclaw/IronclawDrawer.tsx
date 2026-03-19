@@ -83,6 +83,15 @@ export function IronclawDrawer({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [topOffset, setTopOffset] = useState(56);
+  const [version, setVersion] = useState<string | null>(null);
+
+  // Fetch version from /api/ironclaw/status on mount
+  useEffect(() => {
+    fetch('/api/ironclaw/status')
+      .then((r) => r.json())
+      .then((d: { currentVersion?: string | null }) => setVersion(d.currentVersion ?? null))
+      .catch(() => {});
+  }, []);
 
   // Measure actual header + banner height so the drawer clears them
   useEffect(() => {
@@ -202,7 +211,14 @@ export function IronclawDrawer({
               />
             </svg>
             <div>
-              <h2 className="text-sm font-semibold text-white">Ironclaw</h2>
+              <div className="flex items-baseline gap-1">
+                <h2 className="text-sm font-semibold text-white">Ironclaw</h2>
+                {version && (
+                  <span style={{ fontSize: '0.625rem', color: 'var(--text-secondary, #94a3b8)', marginLeft: '0.25rem', fontWeight: 400 }}>
+                    v{version}
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-gray-400">Chief of Staff</p>
             </div>
             {/* Connection status */}
