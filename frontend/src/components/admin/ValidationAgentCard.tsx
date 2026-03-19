@@ -18,6 +18,7 @@ const STATUS_COLORS: Record<string, string> = {
   warning: '#eab308',
   critical: '#ef4444',
   disabled: '#6b7280',
+  not_validated: '#6b7280',
   unknown: '#9ca3af',
 };
 
@@ -26,6 +27,7 @@ const STATUS_BG: Record<string, string> = {
   warning: 'bg-yellow-900/20 border-yellow-700/30',
   critical: 'bg-red-900/20 border-red-700/30',
   disabled: 'bg-gray-800/40 border-gray-600/30',
+  not_validated: 'bg-gray-800/40 border-gray-600/30',
   unknown: 'bg-gray-800/40 border-gray-600/30',
 };
 

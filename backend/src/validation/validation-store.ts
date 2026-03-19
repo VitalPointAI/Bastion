@@ -609,6 +609,28 @@ export class ValidationStore {
       });
     }
 
+    // Include agents registered in agents_v2 but without any validation scores
+    const { rows: unvalidatedRows } = await pool.query(`
+      SELECT a.agent_id
+      FROM agents_v2 a
+      LEFT JOIN (SELECT DISTINCT agent_id FROM validation_agent_scores) v
+        ON a.agent_id = v.agent_id
+      WHERE v.agent_id IS NULL
+      ORDER BY a.agent_id
+    `);
+
+    for (const row of unvalidatedRows) {
+      summaries.push({
+        agentId: (row as Record<string, unknown>).agent_id as string,
+        agentName: (row as Record<string, unknown>).agent_id as string,
+        agentRole: '',
+        overallStatus: 'not_validated',
+        categories: {} as ValidationDashboardSummary['categories'],
+        lastRunAt: null,
+        scenarioCount: 0,
+      });
+    }
+
     return summaries;
   }
 }

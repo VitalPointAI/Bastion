@@ -23,6 +23,7 @@ export const ValidationStatus = {
   warning: 'warning',
   critical: 'critical',
   disabled: 'disabled',
+  not_validated: 'not_validated',
   unknown: 'unknown',
 } as const;
 export type ValidationStatus =
