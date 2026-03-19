@@ -323,13 +323,14 @@ function simulationTick(session: SimSession): void {
     // Update telemetry in mission service
     svc.updateSimulatedTelemetry(robotId, robot.position, robot.heading, Math.round(robot.battery));
 
-    // Check if leader is in recon area → trigger vision detection
+    // Check if leader is entering the near edge of the recon area → trigger
+    // forward detection. A proper recce screen detects threats at range — the
+    // enemy should be spotted several km ahead, well outside weapons range.
     if (
       robotId === [...session.robots.keys()][0] && // leader is first
       session.reconArea &&
       !session.detectionTriggered &&
       robot.position.x >= session.reconArea.x_min &&
-      robot.position.x <= session.reconArea.x_max &&
       robot.position.y >= session.reconArea.y_min &&
       robot.position.y <= session.reconArea.y_max
     ) {
@@ -340,7 +341,19 @@ function simulationTick(session: SimSession): void {
 }
 
 function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
-  console.log(`[Simulator] Triggering vision detection for ${robot.id} at (${robot.position.x.toFixed(1)}, ${robot.position.y.toFixed(1)})`);
+  // Proper recce screen: leader detects enemy at the far edge of the AO,
+  // several km ahead and well outside direct-fire weapons range.
+  // This gives the commander time to position followers before the enemy
+  // reaches the kill zone.
+  const reconArea = session.reconArea;
+  const detectionY = reconArea
+    ? reconArea.y_max + 0.3  // Place enemy beyond the far edge of the recon area
+    : robot.position.y + 2.0;
+  const detectionX = reconArea
+    ? (reconArea.x_min + reconArea.x_max) / 2  // Centered on the enemy advance axis
+    : robot.position.x;
+
+  console.log(`[Simulator] Leader ${robot.id} at (${robot.position.x.toFixed(1)}, ${robot.position.y.toFixed(1)}) detects enemy at range (${detectionX.toFixed(1)}, ${detectionY.toFixed(1)})`);
 
   // Simulate detection of each threat class with slight delay between them
   session.threatClasses.forEach((classDesc, i) => {
@@ -358,6 +371,8 @@ function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
             bbox: { left: 100, top: 80, right: 300, bottom: 420 },
             center_x: 200,
             center_y: 250,
+            // Estimated detection position — enemy is at range, not co-located with leader
+            estimated_position: { x: detectionX + (Math.random() - 0.5) * 0.4, y: detectionY + (Math.random() - 0.5) * 0.2 },
           },
         ],
         message_id: randomUUID(),
@@ -367,7 +382,7 @@ function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
       const svc = getRobotMissionService();
       svc.handleVisionMsg(visionMsg as RobotVisionMsg);
 
-      console.log(`[Simulator] Vision detection: ${classDesc} (conf=${visionMsg.detections[0].confidence.toFixed(2)})`);
+      console.log(`[Simulator] Vision detection: ${classDesc} (conf=${visionMsg.detections[0].confidence.toFixed(2)}) at range`);
     }, i * 2000);
   });
 }

@@ -36,68 +36,68 @@ const THREAT_CLASS_MAP: Record<string, {
   entity: string;     // Entity code
 }> = {
   // Bastion-trained tank classes (from robot/vision/training/)
+  // MBTs — symbol set 15 (land equipment), entity 120101 (tank)
   't-90': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'T-90 Main Battle Tank', symbolSet: '10', entity: '120100',
+    designation: 'T-90 Main Battle Tank', symbolSet: '15', entity: '120101',
   },
   't90': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'T-90 Main Battle Tank', symbolSet: '10', entity: '120100',
+    designation: 'T-90 Main Battle Tank', symbolSet: '15', entity: '120101',
   },
   'chn-99g': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '10', entity: '120100',
+    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '15', entity: '120101',
   },
   'chn99g': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '10', entity: '120100',
+    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '15', entity: '120101',
   },
-  // Other known tank types
   't72': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'T-72 Main Battle Tank', symbolSet: '10', entity: '120100',
+    designation: 'T-72 Main Battle Tank', symbolSet: '15', entity: '120101',
   },
   'ztz99': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'ZTZ-99 Main Battle Tank', symbolSet: '10', entity: '120100',
+    designation: 'ZTZ-99 Main Battle Tank', symbolSet: '15', entity: '120101',
   },
   'type99': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99 Main Battle Tank', symbolSet: '10', entity: '120100',
+    designation: 'Type 99 Main Battle Tank', symbolSet: '15', entity: '120101',
   },
-  // Phase 48 additions — adversary classes for Taiwan contingency training
   't-99': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99 Main Battle Tank', symbolSet: '10', entity: '120100',
+    designation: 'Type 99 Main Battle Tank', symbolSet: '15', entity: '120101',
   },
+  // IFVs/APCs — symbol set 15 (land equipment), entity 120200 (APC/IFV)
   'zbd-04': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'ZBD-04 Infantry Fighting Vehicle', symbolSet: '10', entity: '120200',
+    designation: 'ZBD-04 Infantry Fighting Vehicle', symbolSet: '15', entity: '120200',
   },
   'zbd04': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'ZBD-04 Infantry Fighting Vehicle', symbolSet: '10', entity: '120200',
+    designation: 'ZBD-04 Infantry Fighting Vehicle', symbolSet: '15', entity: '120200',
   },
   'btr-82': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'BTR-82 Armored Personnel Carrier', symbolSet: '10', entity: '120200',
+    designation: 'BTR-82 Armored Personnel Carrier', symbolSet: '15', entity: '120200',
   },
   'btr82': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'BTR-82 Armored Personnel Carrier', symbolSet: '10', entity: '120200',
+    designation: 'BTR-82 Armored Personnel Carrier', symbolSet: '15', entity: '120200',
   },
-  // Generic YOLO classes that map to threats
+  // Generic classes
   'tank': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Unknown Tank', symbolSet: '10', entity: '120100',
+    designation: 'Unknown Tank', symbolSet: '15', entity: '120101',
   },
   'military vehicle': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Military Vehicle', symbolSet: '10', entity: '120000',
+    designation: 'Military Vehicle', symbolSet: '15', entity: '120000',
   },
   'armored vehicle': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Armored Vehicle', symbolSet: '10', entity: '120200',
+    designation: 'Armored Vehicle', symbolSet: '15', entity: '120200',
   },
   'truck': {
     category: 'ground_vehicle', affiliation: 'unknown', echelon: 'unit',
@@ -121,12 +121,12 @@ const THREAT_CLASS_MAP: Record<string, {
   },
 };
 
-/** Affiliation code for MIL-STD-2525D */
+/** Standard Identity (positions 3-4) for MIL-STD-2525D */
 const AFFILIATION_CODE: Record<string, string> = {
-  hostile: '6',    // Hostile
-  unknown: '1',    // Unknown
-  neutral: '4',    // Neutral
-  friendly: '3',   // Friendly
+  hostile: '06',   // Hostile
+  unknown: '01',   // Unknown
+  neutral: '04',   // Neutral
+  friendly: '03',  // Friendly
 };
 
 // ── COP Symbol Generation ──────────────────────────────────────────────────
@@ -164,10 +164,12 @@ export function extractThreatSymbols(
     // (future: triangulate from camera angle + distance estimation)
     const position = robotPosition ?? { lat: 0, lng: 0 };
 
-    // Build MIL-STD-2525D SIDC
-    const affiliationCode = AFFILIATION_CODE[threat.affiliation] ?? '1';
-    // SIDC format: Version(2) + Context(1) + Affiliation(1) + SymbolSet(2) + Status(1) + HQTFD(1) + Amplifier(2) + Entity(6) + Modifier(4)
-    const sidc = `10${affiliationCode}${threat.symbolSet}0000${threat.entity}0000`;
+    // Build MIL-STD-2525D SIDC (20 characters)
+    // Pos 1-2: Version (10), Pos 3-4: Standard Identity, Pos 5-6: Symbol Set,
+    // Pos 7: Status (0=present), Pos 8: HQ/TF/FD (0=none),
+    // Pos 9-10: Echelon (00=unspecified), Pos 11-16: Entity, Pos 17-20: Modifiers
+    const identityCode = AFFILIATION_CODE[threat.affiliation] ?? '01';
+    const sidc = `10${identityCode}${threat.symbolSet}0000${threat.entity}0000`;
 
     symbols.push({
       entityId: `DET-${randomUUID().slice(0, 8)}`,
