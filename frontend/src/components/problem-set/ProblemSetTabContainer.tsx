@@ -188,7 +188,9 @@ export function ProblemSetTabContainer() {
   // Derive visible tabs: use backend config if available, fall back to client defaults
   const visibleTabs = useMemo((): ProblemSetTab[] => {
     const source = panelConfig ?? DEFAULT_TAB_ACCESS;
-    const tabs = source[userRoleInActive ?? 'member'] ?? FALLBACK_TABS;
+    const rawTabs = source[userRoleInActive ?? 'member'] ?? FALLBACK_TABS;
+    // Normalize old tab names from stored configs (direct → decide)
+    const tabs = rawTabs.map(t => (OLD_TAB_REDIRECTS[t] as ProblemSetTab) ?? t);
     // Maintain fixed tab order — filter PROBLEM_SET_TABS by what's in tabs
     return PROBLEM_SET_TABS.filter(t => tabs.includes(t));
   }, [panelConfig, userRoleInActive]);

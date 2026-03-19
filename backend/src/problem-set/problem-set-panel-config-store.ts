@@ -26,7 +26,7 @@ import { getPool } from '../lib/database.js';
  * The 6 doctrinal lifecycle tabs (JP 5-0 aligned).
  * Phase 24: All roles see all tabs — no per-role restrictions.
  */
-const ALL_DOCTRINAL_TABS = ['understand', 'design', 'plan', 'direct', 'cop', 'assess', 'resources'];
+const ALL_DOCTRINAL_TABS = ['understand', 'design', 'plan', 'decide', 'cop', 'assess', 'resources'];
 
 const DEFAULT_VISIBILITY_BY_ECHELON: Record<string, Record<string, string[]>> = {
   strategic: {
