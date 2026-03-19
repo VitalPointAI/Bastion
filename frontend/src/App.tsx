@@ -15,7 +15,6 @@ import { InviteAcceptPage } from './components/problem-set/InviteAcceptPage'
 import { JoinByCodePage } from './components/problem-set/JoinByCodePage'
 import { ProblemSetTabContainer } from './components/problem-set/ProblemSetTabContainer'
 import { ProblemSetMemberManager } from './components/problem-set/ProblemSetMemberManager'
-import { MemberDirectory } from './components/problem-set/MemberDirectory'
 import { ProblemSetSettings } from './components/problem-set/ProblemSetSettings'
 import { IronclawProvider } from './context/IronclawContext'
 import './App.css'
@@ -41,7 +40,7 @@ function ProblemSetPlaceholder({ label }: { label: string }) {
   );
 }
 
-function ProblemSetMemberManagerPage() {
+function MemberDirectoryPage() {
   const { problemSetId } = useParams<{ problemSetId: string }>();
   const navigate = useNavigate();
   if (!problemSetId) return <ProblemSetPlaceholder label="Members" />;
@@ -54,29 +53,9 @@ function ProblemSetMemberManagerPage() {
         >
           &larr; Back to Dashboard
         </button>
-        <h2 className="text-lg font-semibold text-white">Manage Members</h2>
+        <h2 className="text-lg font-semibold text-white">Members</h2>
       </div>
       <ProblemSetMemberManager problemSetId={problemSetId} />
-    </div>
-  );
-}
-
-function MemberDirectoryPage() {
-  const { problemSetId } = useParams<{ problemSetId: string }>();
-  const navigate = useNavigate();
-  if (!problemSetId) return <ProblemSetPlaceholder label="Directory" />;
-  return (
-    <div className="p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => navigate(`/problem-set/${problemSetId}`)}
-          className="text-sm text-gray-400 hover:text-white transition-colors"
-        >
-          &larr; Back to Dashboard
-        </button>
-        <h2 className="text-lg font-semibold text-white">Member Directory</h2>
-      </div>
-      <MemberDirectory problemSetId={problemSetId} />
     </div>
   );
 }
@@ -139,7 +118,7 @@ function AppContent() {
           <Routes>
             <Route path="invite/:token" element={<InviteAcceptPage />} />
             {/* Specific sub-routes must come before /:tab catch-all */}
-            <Route path=":problemSetId/members" element={<ProblemSetMemberManagerPage />} />
+            <Route path=":problemSetId/members" element={<MemberDirectoryPage />} />
             <Route path=":problemSetId/directory" element={<MemberDirectoryPage />} />
             <Route path=":problemSetId/invite" element={<ProblemSetPlaceholder label="Invite" />} />
             <Route path=":problemSetId/settings" element={<ProblemSetSettings />} />

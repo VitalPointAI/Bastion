@@ -406,12 +406,6 @@ export function ProblemSetTabContainer() {
             Members
           </Link>
           <Link
-            to={`/problem-set/${displayId}/directory`}
-            className="px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors whitespace-nowrap"
-          >
-            Directory
-          </Link>
-          <Link
             to={`/problem-set/${displayId}/settings`}
             className="px-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition-colors whitespace-nowrap"
           >

@@ -7,13 +7,13 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TabLayout, type SidebarItem } from '../tabs/TabLayout.js';
 import { adminService } from '../../lib/admin-service';
 import { useUser } from '../../context/UserContext';
 import { LLMConfigPanel } from './LLMConfigPanel';
 import { AgentHub } from './AgentHub';
 import { WorkflowConfigPanel } from './WorkflowConfigPanel';
-import { OSINTSourcePanel } from './OSINTSourcePanel';
 import { AuditLogPanel } from './AuditLogPanel';
 import { FundingPanel } from './FundingPanel';
 import { RegistrationControlPanel } from './RegistrationControlPanel';
@@ -27,7 +27,6 @@ type AdminView =
   | 'llm'
   | 'agent-hub'
   | 'workflow'
-  | 'osint'
   | 'audit'
   | 'funding'
   | 'registration';
@@ -36,13 +35,13 @@ const ADMIN_ITEMS: SidebarItem[] = [
   { id: 'llm', label: 'LLM Provider', tooltip: 'Configure LLM provider settings' },
   { id: 'agent-hub', label: 'Agent Hub', tooltip: 'Agents, tools, skills, teams, activity, and health' },
   { id: 'workflow', label: 'Workflow', tooltip: 'Workflow configuration' },
-  { id: 'osint', label: 'OSINT Sources', tooltip: 'Open source intelligence feeds' },
   { id: 'audit', label: 'Audit Log', tooltip: 'System audit trail' },
   { id: 'funding', label: 'Funding', tooltip: 'NEAR account funding management' },
   { id: 'registration', label: 'Registration', tooltip: 'Domain whitelist & email blacklist' },
 ];
 
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
+  const navigate = useNavigate();
   const { userDID, isAuthenticated } = useUser();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -122,6 +121,23 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
   // Admin dashboard with sidebar navigation
   return (
     <div className="admin-dashboard">
+      <div style={{ padding: '0.5rem 1rem 0' }}>
+        <button
+          onClick={() => navigate('/problem-set')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-secondary, #94a3b8)',
+            fontSize: '0.8rem',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary, #e2e8f0)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary, #94a3b8)')}
+        >
+          &larr; Back to Dashboard
+        </button>
+      </div>
       <div className="dashboard-header">
         <h1>System Configuration</h1>
         <div className="header-actions">
@@ -155,7 +171,6 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           {selectedView === 'llm' && <LLMConfigPanel />}
           {selectedView === 'agent-hub' && <AgentHub />}
           {selectedView === 'workflow' && <WorkflowConfigPanel />}
-          {selectedView === 'osint' && <OSINTSourcePanel />}
           {selectedView === 'audit' && <AuditLogPanel />}
           {selectedView === 'funding' && <FundingPanel />}
           {selectedView === 'registration' && <RegistrationControlPanel />}
