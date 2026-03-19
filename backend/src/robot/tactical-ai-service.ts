@@ -9,7 +9,8 @@
  * area's street grid (from OpenStreetMap data of Taipei Zhongzheng District).
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -105,24 +106,13 @@ export async function generateTacticalPlan(
   },
   homeBase: { x: number; y: number },
 ): Promise<TacticalPlan> {
-  let apiKey: string | undefined;
-  let isOAuth = false;
+  let llm;
   try {
-    const { resolveProviderConfig } = await import('../strategic/config/resolve-api-key.js');
-    const resolved = await resolveProviderConfig();
-    apiKey = resolved.apiKey;
-    isOAuth = apiKey?.startsWith('sk-ant-oat') ?? false;
+    llm = await createLLMForAgent({ agentId: 'tactical-ai' });
   } catch {
-    apiKey = process.env.ANTHROPIC_API_KEY;
-  }
-  if (!apiKey) {
-    console.warn('[TacticalAI] No Anthropic API key available — using fallback plan');
+    console.warn('[TacticalAI] No LLM available — using fallback plan');
     return generateFallbackPlan(threats, friendlyPositions, homeBase);
   }
-
-  const client = isOAuth
-    ? new Anthropic({ authToken: apiKey, defaultHeaders: { 'anthropic-beta': 'oauth-2025-04-20' } })
-    : new Anthropic({ apiKey });
 
   const systemPrompt = `You are a military tactical AI assistant embedded in an autonomous robot team leader.
 You have been conducting reconnaissance and have detected enemy threats. You must now assess the situation
@@ -189,21 +179,18 @@ ${friendlyDesc}
 Assess the tactical situation. Recommend an overwatch position for the leader and flanking firing positions for ${friendlyPositions.followers.length} followers to engage the detected threats. Plan road-following routes for advance and withdrawal.`;
 
   try {
-    console.log('[TacticalAI] Requesting tactical assessment from Claude...');
+    console.log('[TacticalAI] Requesting tactical assessment from LLM...');
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    });
+    const response = await llm.invoke([
+      new SystemMessage(systemPrompt),
+      new HumanMessage(userPrompt),
+    ]);
 
-    const text = response.content[0];
-    if (text.type !== 'text') {
-      throw new Error('Unexpected response type');
-    }
+    const responseText = typeof response.content === 'string'
+      ? response.content
+      : (response.content as Array<{ type: string; text?: string }>).find(b => b.type === 'text')?.text ?? '';
 
-    const cleaned = text.text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+    const cleaned = responseText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
     const plan = JSON.parse(cleaned) as TacticalPlan;
 
     console.log(`[TacticalAI] Plan generated: recommendation=${plan.engagementRecommendation}, confidence=${plan.planConfidence}`);

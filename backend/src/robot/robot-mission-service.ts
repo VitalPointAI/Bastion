@@ -51,7 +51,8 @@ import {
   writeMissionCompleteEvent,
   writeSwarmEventToGraph,
 } from './swarm-graph-writer.js';
-import Anthropic from '@anthropic-ai/sdk';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -1540,24 +1541,13 @@ export class RobotMissionService {
    * This is the cloud path of the dual intent translation architecture.
    */
   async translateIntent(text: string, robotId: string, issuedBy: string): Promise<MissionJSON[]> {
-    let apiKey: string | undefined;
-    let isOAuth = false;
+    let llm;
     try {
-      const { resolveProviderConfig } = await import('../strategic/config/resolve-api-key.js');
-      const resolved = await resolveProviderConfig();
-      apiKey = resolved.apiKey;
-      isOAuth = apiKey?.startsWith('sk-ant-oat') ?? false;
+      llm = await createLLMForAgent({ agentId: 'mission-translator' });
     } catch {
-      apiKey = process.env.ANTHROPIC_API_KEY;
-    }
-    if (!apiKey) {
-      console.error('[RobotMissionService] translateIntent: No Anthropic API key available');
+      console.error('[RobotMissionService] translateIntent: No LLM available');
       return [];
     }
-
-    const client = isOAuth
-      ? new Anthropic({ authToken: apiKey, defaultHeaders: { 'anthropic-beta': 'oauth-2025-04-20' } })
-      : new Anthropic({ apiKey });
 
     const systemPrompt = `You are a military mission planner. Convert natural language intent into structured mission JSON.
 
@@ -1586,28 +1576,19 @@ Output a JSON array of mission objects. Each mission must have:
 Return ONLY valid JSON, no markdown.`;
 
     try {
-      const response = await client.messages.create({
-        model: 'claude-haiku-4-20250514',
-        max_tokens: 2048,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: `Robot ID: ${robotId}\nIssued by: ${issuedBy}\nIntent: ${text}`,
-          },
-        ],
-      });
+      const response = await llm.invoke([
+        new SystemMessage(systemPrompt),
+        new HumanMessage(`Robot ID: ${robotId}\nIssued by: ${issuedBy}\nIntent: ${text}`),
+      ]);
 
-      const content = response.content[0];
-      if (content.type !== 'text') {
-        console.error('[RobotMissionService] translateIntent: unexpected response type');
-        return [];
-      }
+      const responseText = typeof response.content === 'string'
+        ? response.content
+        : (response.content as Array<{ type: string; text?: string }>).find(b => b.type === 'text')?.text ?? '';
 
       let parsed: unknown;
       try {
         // Strip markdown code fences if present
-        const cleaned = content.text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+        const cleaned = responseText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
         parsed = JSON.parse(cleaned);
       } catch (parseErr) {
         console.error('[RobotMissionService] translateIntent: failed to parse LLM response as JSON', parseErr);
