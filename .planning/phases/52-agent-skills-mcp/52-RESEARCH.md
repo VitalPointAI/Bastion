@@ -1,7 +1,7 @@
 # Phase 52: Agent Skills & MCP - Research
 
 **Researched:** 2026-03-19
-**Domain:** MCP Server (Model Context Protocol), Skills Registry, Ironclaw Builder Actions, Field Write-Back
+**Domain:** MCP Server (Model Context Protocol), Skills Registry, Ironclaw Builder Actions, Field Write-Back, Autonomous Orchestration Loop
 **Confidence:** HIGH (based on direct codebase inspection)
 
 ---
@@ -41,11 +41,23 @@
 - On acceptance, field value written via problem set API
 - Sensitive fields (mission statement, ROE) use `field.write_sensitive` (high risk — requires explicit approval)
 
+**Autonomous Orchestration Loop (Critical)**
+- Ironclaw needs a task lifecycle: receive complex task → assign to agent(s) → wait for completion → collect/synthesize results → present as suggestion cards → user approves → apply to problem set fields
+- Collaborative back-and-forth pattern: Ironclaw proposes → user reviews/provides input → Ironclaw refines → user approves → Ironclaw applies
+- Same pattern as Chief of Staff ↔ Commander: staff prepares products, commander reviews and decides, staff refines and implements
+- Task progress must be visible in the Ironclaw drawer (uses existing StepProgressData/IronclawStepStream)
+- Permission scoping: user's role determines which fields they can approve changes to
+- Multi-step tasks with intermediate checkpoints and decision gates
+- Results presented as rich suggestion cards with "Apply to {field}" buttons (uses existing IronclawSuggestion component)
+- Must work for ALL problem set fields: mission statement, COA, COP layers, design sections, objectives, etc.
+
 ### Claude's Discretion
 - MCP server implementation details (transport protocol, connection pooling)
 - Skill definition schema design
 - How skills compose tools internally
 - MCP server health monitoring approach
+- Task lifecycle state machine design
+- Orchestration loop polling/streaming strategy
 
 ### Deferred Ideas (OUT OF SCOPE)
 - Skill marketplace (sharing skills between BASTION instances)
@@ -65,13 +77,14 @@
 | REQ-52-02 | Skills registry with PostgreSQL storage, versioning, and admin UI panel | AgentSkill interface already exists; agents_v2 migration pattern; AgentHub Skills tab already stubbed |
 | REQ-52-03 | Ironclaw builder action handlers for agent.create, tool.create, team.create, and related types | action-registry.ts already has all action types registered; tool-bridge + action-pipeline patterns cover the approval path |
 | REQ-52-04 | Field write-back pipeline applying Ironclaw suggestions to problem set fields with risk-tiered approval | SuggestionData frontend type complete; IronclawContext event bus wired; backend ironclaw-service.ts needs suggestion embedding in processResponse |
+| REQ-52-05 | Autonomous orchestration loop: task lifecycle with agent dispatch, progress tracking, multi-step approval, and field write-back | BastionSupervisor + LangGraph orchestration exists; StepProgressData/IronclawStepStream UI exists; task persistence and Ironclaw-to-supervisor bridge are the gaps |
 </phase_requirements>
 
 ---
 
 ## Summary
 
-Phase 52 builds four tightly coupled capabilities on top of the Phase 51 unified agent architecture. All foundations are in place — the research task is to understand the exact wiring gaps so the planner can create precise implementation tasks.
+Phase 52 builds five tightly coupled capabilities on top of the Phase 51 unified agent architecture. All foundations are in place — the research task is to understand the exact wiring gaps so the planner can create precise implementation tasks.
 
 The **MCP server** will be a new Node.js process in its own Docker container, using `@modelcontextprotocol/sdk` to expose the tools already registered in `ToolRegistry` over stdio or SSE transport. The backend's `agent-wrapper.ts` currently wires LangChain tools directly; the MCP server provides the same tools via the official protocol, enabling any MCP-compatible agent to invoke them.
 
@@ -81,7 +94,16 @@ The **Ironclaw builder handlers** are the most structurally interesting piece. `
 
 The **field write-back** frontend infrastructure is complete: `SuggestionData.targetField`, `SuggestionData.fieldValue`, `IronclawContext.acceptSuggestion`, and the `onFieldWrite` event bus all exist. The only gap is on the backend: `ironclaw-service.ts:processResponse` does not yet parse or embed suggestion payloads from the Ironclaw sidecar response. Phase 52 adds the `suggestion` field parsing alongside the existing `tool_call` parsing.
 
-**Primary recommendation:** Implement in four independent streams (MCP container, Skills registry, Ironclaw builder, Field write-back) — they share data structures but have no circular build dependencies.
+The **autonomous orchestration loop** is the core value proposition of Phase 52. It bridges Ironclaw's Chief of Staff role with the existing LangGraph agent infrastructure to enable multi-step collaborative workflows. The user issues a complex task (e.g., "develop a COA for this scenario"), Ironclaw decomposes it, dispatches sub-tasks to specialist agents via the BastionSupervisor, tracks progress with StepProgressData (already wired to IronclawStepStream in the drawer), and presents results as suggestion cards with "Apply to {field}" buttons. The user approves or refines at each decision gate, and approved changes are written to problem set fields via the field write-back pipeline. All existing infrastructure pieces are present but not connected: BastionSupervisor handles agent routing, HumanCheckpointManager handles approval gates, StepProgressData tracks multi-step progress, and SuggestionData handles field targeting. The gap is a **task orchestrator** service that ties these together into a coherent lifecycle with persistent task state.
+
+**Primary recommendation:** Implement in five streams. The orchestration loop depends on field write-back (for the "apply" step) and builder handlers (for executing approved actions), so it should be the final stream. The MCP server and skills registry are independent.
+
+Stream dependency order:
+1. MCP container (independent)
+2. Skills registry (independent)
+3. Ironclaw builder handlers (independent)
+4. Field write-back pipeline (independent)
+5. Orchestration loop (depends on 3 + 4)
 
 ---
 
@@ -125,11 +147,20 @@ backend/src/agents/
 
 backend/src/ironclaw/
 ├── builder-handlers.ts    # NEW: dispatch map for agent.create, tool.create, etc.
+├── task-orchestrator.ts   # NEW: task lifecycle, agent dispatch, result collection
+├── task-store.ts          # NEW: PostgreSQL CRUD for ironclaw_tasks table
+├── task-types.ts          # NEW: task state machine types
 ├── tool-bridge.ts         # EXISTING: add executeApprovedAction(action, result) dispatch
-└── ironclaw-service.ts    # EXISTING: add suggestion parsing in processResponse()
+└── ironclaw-service.ts    # EXISTING: add suggestion parsing + task dispatch in processResponse()
 
 backend/src/db/migrations/
-└── 038-skills.sql         # NEW: skills table
+├── 038-skills.sql         # NEW: skills table
+└── 039-ironclaw-tasks.sql # NEW: task lifecycle + suggestion columns
+
+frontend/src/components/ironclaw/
+├── IronclawTaskPanel.tsx  # NEW: task progress panel in drawer (uses IronclawStepStream)
+├── IronclawStepStream.tsx # EXISTING: multi-step progress stepper
+└── IronclawSuggestion.tsx # EXISTING: suggestion card with "Apply to {field}" button
 
 frontend/src/components/admin/
 └── SkillRegistryPanel.tsx # NEW: replaces SkillsPlaceholder in AgentHub
@@ -285,11 +316,185 @@ This should call `POST /api/ironclaw/suggestions/:id/accept` which calls the pro
 - Fields listed in `SENSITIVE_FIELDS` set (e.g., `missionStatement`, `ruleOfEngagement`) emit `field.write_sensitive` action type (high risk — requires Decision Gate).
 - All other fields emit `field.write` (medium risk — inline confirmation).
 
+### Pattern 5: Autonomous Orchestration Loop (Task Lifecycle)
+**What:** A persistent task lifecycle that bridges the Ironclaw chat interface with the LangGraph agent execution infrastructure. Ironclaw receives a complex request, creates a task, dispatches agents, tracks progress via WebSocket, and presents results as suggestion cards for user approval.
+**When to use:** Any multi-step work request that requires agent execution and produces artifacts to write back to problem set fields.
+
+**The Chief of Staff metaphor:**
+The orchestration loop mirrors military staff process. The Commander (user) issues guidance. The Chief of Staff (Ironclaw) decomposes it into staff tasks, assigns them to the right J-code staff officers (specialist agents), monitors progress, collects products, and presents them to the Commander for decision. The Commander approves, rejects, or redirects. Approved products are published (written to problem set fields).
+
+**Existing infrastructure inventory (what is already built):**
+
+| Component | Location | What It Does | Gap |
+|-----------|----------|-------------|-----|
+| `BastionSupervisor` | `orchestration/supervisor.ts` | LangGraph StateGraph — routes tasks to agents, tracks execution trace | Not connected to Ironclaw; no persistent task state |
+| `LangGraphAgentWrapper` | `orchestration/agent-wrapper.ts` | Wraps agents as LangGraph nodes with tool binding, classification filtering | Works but only invoked via supervisor.execute() — no Ironclaw trigger |
+| `HumanCheckpointManager` | `orchestration/human-checkpoints.ts` | DB-persisted pause/resume with approval, expiry, notification via message bus | Not connected to Ironclaw drawer; only used for classification escalation |
+| `StepProgressData` | `ironclaw-types.ts` | Backend type: `steps[]`, `current_step`, `started_at` | Type exists, not emitted by any code path |
+| `IronclawStepStream` | `frontend IronclawStepStream.tsx` | Vertical stepper UI with pending/running/complete/failed icons | Fully built; renders from `stepProgress` on `IronclawChatMessage` — just never receives data |
+| `SuggestionData` | `frontend types/ironclaw.ts` | `targetField`, `fieldValue`, `agentDisplayName` | Frontend component complete; backend doesn't emit suggestions yet (REQ-52-04 gap) |
+| `IronclawSuggestion` | `frontend IronclawSuggestion.tsx` | "Apply to {field}" card with accept/dismiss | Fully built; wired to IronclawContext event bus |
+| `ActionPipeline` | `ironclaw/action-pipeline.ts` | Risk classification, trust check, Decision Gate creation | Works for action cards; needs extension for task-level approval |
+| `ironclawService.formTeamForTask()` | `ironclaw-service.ts` | Assigns a team to a task, stores in team_data JSONB | Works but returns synchronously — no async task tracking |
+
+**Task state machine:**
+```
+CREATED → DISPATCHED → AGENT_WORKING → COLLECTING_RESULTS → PRESENTING → AWAITING_APPROVAL → APPLYING → COMPLETED
+                ↑                                                     ↓                          ↑
+                └─────────────────── REFINING ←──────────────────────┘(user requests changes)    │
+                                                                                                  │
+                                                              REJECTED ←── (user rejects) ────────┘
+                                                              FAILED ←── (agent error at any step)
+```
+
+**Task persistence (new table):**
+```sql
+-- 039-ironclaw-tasks.sql
+CREATE TABLE IF NOT EXISTS ironclaw_tasks (
+  task_id         TEXT        PRIMARY KEY,
+  problem_set_id  TEXT        NOT NULL,
+  user_did        TEXT        NOT NULL,
+  title           TEXT        NOT NULL,           -- "Develop COA for Phase 3"
+  description     TEXT,                           -- Full task description
+  status          TEXT        NOT NULL DEFAULT 'created',
+  assigned_agents TEXT[]      DEFAULT '{}',       -- Agent IDs dispatched
+  assigned_team   TEXT,                           -- Team ID if team-based
+  thread_id       TEXT,                           -- LangGraph supervisor thread_id
+  steps           JSONB       DEFAULT '[]',       -- StepInfo[] — progress tracking
+  current_step    INTEGER     DEFAULT 0,
+  results         JSONB       DEFAULT '[]',       -- Collected agent outputs
+  suggestions     JSONB       DEFAULT '[]',       -- SuggestionData[] ready for user review
+  target_fields   JSONB       DEFAULT '{}',       -- Map of field path → proposed value
+  user_feedback   JSONB       DEFAULT '[]',       -- User refinement comments
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW(),
+  completed_at    TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_ironclaw_tasks_ps ON ironclaw_tasks(problem_set_id);
+CREATE INDEX IF NOT EXISTS idx_ironclaw_tasks_status ON ironclaw_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_ironclaw_tasks_user ON ironclaw_tasks(user_did);
+```
+
+**Orchestrator service (new module):**
+```typescript
+// backend/src/ironclaw/task-orchestrator.ts
+export class TaskOrchestrator {
+  /**
+   * Create and dispatch a task. Called when Ironclaw identifies a complex request
+   * that requires agent execution (not a simple chat response).
+   *
+   * Flow:
+   * 1. Parse user request into task definition with target fields
+   * 2. Create task record in DB
+   * 3. Emit CREATED step progress to drawer via WebSocket
+   * 4. Identify required agents (from request context + agent capabilities)
+   * 5. Dispatch to BastionSupervisor.execute() in background
+   * 6. Stream step progress updates via WebSocket as agents complete
+   * 7. Collect results and generate SuggestionData[] with target fields
+   * 8. Present suggestions in drawer — one per target field
+   * 9. Wait for user approval per suggestion
+   * 10. On approval, write to problem set via field write-back pipeline
+   */
+  async createTask(params: CreateTaskParams): Promise<IronclawTask> { /* ... */ }
+  async dispatchTask(taskId: string): Promise<void> { /* ... */ }
+  async handleStepComplete(taskId: string, stepIdx: number, result: unknown): Promise<void> { /* ... */ }
+  async presentResults(taskId: string): Promise<void> { /* ... */ }
+  async handleApproval(taskId: string, suggestionId: string, decision: TrustDecision): Promise<void> { /* ... */ }
+  async handleRefinement(taskId: string, feedback: string): Promise<void> { /* ... */ }
+  async applyApproved(taskId: string): Promise<void> { /* ... */ }
+}
+```
+
+**How Ironclaw triggers the orchestration loop:**
+The Ironclaw sidecar (LLM) is instructed via system prompt to emit a `task_request` JSON key when a user message requires multi-step agent work. `ironclaw-service.ts:processResponse()` detects this (same pattern as `tool_call` detection) and routes to `TaskOrchestrator.createTask()`:
+
+```typescript
+// In processResponse(), after existing tool_call and suggestion detection:
+if (parsed?.task_request) {
+  const tr = parsed.task_request as Record<string, unknown>;
+  const task = await taskOrchestrator.createTask({
+    problemSetId,
+    userDid: session.userDid,
+    title: tr.title as string,
+    description: tr.description as string,
+    targetFields: tr.target_fields as Record<string, string>, // field path → label
+    agentHints: tr.agent_hints as string[] ?? [],
+  });
+  // Emit initial step progress message to drawer
+  await this.emitTaskProgress(problemSetId, task);
+  // Dispatch agents in background (non-blocking)
+  taskOrchestrator.dispatchTask(task.taskId).catch(err =>
+    console.error(`[ironclaw] Task dispatch failed: ${task.taskId}`, err)
+  );
+}
+```
+
+**Progress tracking via WebSocket (leverages existing StepProgressData):**
+As agents complete steps, the orchestrator publishes `ironclaw.step-progress` messages through the existing `publishToChannel` function. The frontend already renders these via `IronclawStepStream`. The step labels come from the task definition (e.g., "Analyzing threat environment", "Developing courses of action", "Evaluating COA feasibility").
+
+**Result presentation as suggestion cards:**
+When all agents complete, the orchestrator:
+1. Collects results from the LangGraph execution trace
+2. Synthesizes them into per-field suggestions (one `SuggestionData` per target field)
+3. Persists suggestions to the task record
+4. Emits each as an `ironclaw.response` message with `suggestion` data
+5. Frontend renders them as `IronclawSuggestion` cards with "Apply to {field}" buttons
+
+**Permission scoping for field writes:**
+The orchestrator checks the user's role before presenting suggestions:
+- **Commander role**: Can approve writes to ALL fields including sensitive ones (mission statement, ROE, commander's intent)
+- **Staff officer roles (J2-J6)**: Can approve writes within their functional lane (e.g., J2 can approve intelligence estimate, J3 can approve scheme of maneuver)
+- **Observer/analyst**: Can view suggestions but cannot approve writes — suggestion cards show "Request Approval" instead of "Apply"
+
+Role-to-field mapping uses the existing problem set membership model (`userRoleInActive` from `ProblemSetContext`). The mapping is configured in a `ROLE_FIELD_PERMISSIONS` constant:
+```typescript
+const ROLE_FIELD_PERMISSIONS: Record<string, string[]> = {
+  commander: ['*'],  // All fields
+  xo: ['*'],         // Deputy — all fields
+  j2_intelligence: ['design.problemFraming', 'design.cogAnalysis.*', 'intelligence.*'],
+  j3_operations: ['design.operationalApproach', 'design.linesOfEffort', 'plan.coaDetails.*'],
+  j4_logistics: ['plan.sustainment.*', 'logistics.*'],
+  j5_plans: ['design.*', 'plan.*', 'campaign.*'],
+  j6_communications: ['plan.commandSignal.*', 'communications.*'],
+};
+```
+
+**Multi-step refinement loop:**
+When the user rejects a suggestion or provides feedback, the orchestrator:
+1. Records feedback in `user_feedback` JSONB array on the task
+2. Transitions task to `REFINING` status
+3. Re-dispatches to the relevant agent(s) with the feedback as additional context
+4. Agent produces revised output
+5. New suggestion card replaces the rejected one in the drawer
+6. Cycle continues until user approves or cancels
+
+This refinement loop is the key differentiator from a one-shot action card. It enables the iterative staff-commander dynamic where products are refined through multiple review cycles.
+
+**Writable problem set field map (from codebase inspection):**
+
+| Field Path | API Target | Risk Level | Description |
+|-----------|-----------|-----------|-------------|
+| `name` | `PATCH /api/problem-sets/:id` body.name | medium | Problem set name |
+| `description` | `PATCH /api/problem-sets/:id` body.description | medium | Problem set description |
+| `design.problemFraming` | `PUT /api/design/:psId/problem-framing` | medium | Problem framing section |
+| `design.cogAnalysis` | `PUT /api/design/:psId/cog-analysis` | medium | Center of gravity analysis (friendly/adversary) |
+| `design.linesOfEffort` | `PUT /api/design/:psId/lines-of-effort` | medium | Lines of effort definitions |
+| `design.operationalApproach` | `PUT /api/design/:psId/operational-approach` | medium | Operational approach narrative |
+| `missionStatement` | Design API or PS metadata | **high** (sensitive) | Mission statement — requires Decision Gate |
+| `commandersIntent` | Design API or PS metadata | **high** (sensitive) | Commander's intent |
+| `ruleOfEngagement` | PS metadata | **high** (sensitive) | Rules of engagement |
+| `plan.coaDetails` | Planning API | medium | Course of action details |
+| `cop.layers.*` | COP API | medium | COP layer configurations |
+
 ### Anti-Patterns to Avoid
 - **Building a custom tool protocol:** Do not hand-roll a tool transport. Use `@modelcontextprotocol/sdk` — it handles protocol framing, capability negotiation, and error responses.
 - **Storing Zod schema instances in PostgreSQL:** Zod schemas cannot be serialized. Store JSON Schema (`zod-to-json-schema` conversion) in the DB; reconstruct Zod schema at runtime for validation.
 - **Parallel admin paths for Ironclaw builder:** Ironclaw builder handlers MUST call the exact same admin service functions that the UI calls — no separate DB queries. This is a locked decision.
 - **Making `action-registry.ts` mutable after startup:** The registry is locked after startup. Phase 52 does not add new action types to `ACTION_RISK` — all 16 builder action types are already registered there.
+- **Synchronous orchestration in the request handler:** The `handleMessage` flow is synchronous (request → Ironclaw webhook → response). Task dispatch MUST be async/background — the user gets an immediate "Task created, tracking progress..." message, and results arrive later via WebSocket. Never block the chat on a multi-minute agent workflow.
+- **Coupling task orchestrator to specific field schemas:** The orchestrator should be field-agnostic — it receives `targetFields` as `Record<string, string>` (path → label) from the Ironclaw LLM. It does not hardcode knowledge of which fields exist. Field validation happens at write time in the respective API endpoint.
+- **Skipping the approval step for "low risk" fields:** Every field write from agent results MUST go through suggestion → approval. The orchestration loop is never fully autonomous — the Commander always decides. Trust preferences (via `always` button) can auto-approve repeat patterns, but the first instance always presents a card.
 
 ---
 
@@ -301,6 +506,9 @@ This should call `POST /api/ironclaw/suggestions/:id/accept` which calls the pro
 | Zod → JSON Schema conversion | Custom schema serializer | `zod-to-json-schema` (already in project) | Already a dependency; handles all Zod constructs including unions, refinements |
 | Skill version comparison | Custom semver logic | Store `version` as TEXT, compare with `semver` or simple string equality | Phase 52 doesn't need complex version resolution — single active version per skill is sufficient |
 | Field write routing | Custom field-to-API dispatch | Call the existing problem set PATCH/update API endpoint directly | The problem set API is already tested and handles validation, access control |
+| Agent orchestration | Custom agent execution pipeline | `BastionSupervisor` (LangGraph StateGraph) via `supervisor.execute()` | Already handles routing, classification, checkpointing, and trace collection |
+| Progress streaming | Custom WebSocket protocol | Existing `publishToChannel` + `StepProgressData` on `IronclawChatMessage` | Already wired end-to-end; `IronclawStepStream` renders steps — just needs data |
+| Human approval gates | Custom approval UI | Existing `ActionPipeline` for risk-tiered confirmation + `IronclawActionCard` / `IronclawSuggestion` components | Two approval patterns already built: action cards (yes/no/always) and suggestion cards (accept/dismiss) |
 
 ---
 
@@ -335,6 +543,24 @@ This should call `POST /api/ironclaw/suggestions/:id/accept` which calls the pro
 **Why it happens:** `tool-bridge.ts:registerTools()` calls `actionRegistry.lock()` on startup.
 **How to avoid:** If Phase 52 adds new action types (e.g., `skill.create`, `skill.assign`), they MUST be added to `ACTION_RISK` in `ironclaw-types.ts` before the lock fires. Do not call `registerAction()` dynamically at runtime.
 **Warning signs:** Console warning: `REJECTED: Attempt to modify locked registry`.
+
+### Pitfall 6: Task Orchestrator Blocks on Supervisor.execute()
+**What goes wrong:** `BastionSupervisor.execute()` is a long-running LangGraph invocation (can take 30-120 seconds with multiple agent hops). If called in the Express request handler, the HTTP connection times out and the user sees no progress.
+**Why it happens:** The existing `handleMessage` → `processResponse` flow is synchronous request-response.
+**How to avoid:** `dispatchTask()` must spawn the supervisor execution in a background worker (fire-and-forget with error handling). Use `setImmediate` or a task queue. Progress updates stream via WebSocket, not HTTP response.
+**Warning signs:** Chat drawer shows infinite loading spinner; request times out at 30s.
+
+### Pitfall 7: Stale Task State After Server Restart
+**What goes wrong:** Server restarts mid-task. In-memory task state is lost. Task shows as `DISPATCHED` in DB forever.
+**Why it happens:** LangGraph supervisor state is in the checkpointer (PostgreSQL), but the orchestrator's in-memory tracking of "which tasks are active" is lost.
+**How to avoid:** On startup, `TaskOrchestrator.init()` queries `ironclaw_tasks WHERE status IN ('dispatched', 'agent_working')` and either resumes them (via `BastionSupervisor.resume(threadId)`) or marks them as `FAILED` with a "server restart" error. The LangGraph checkpointer already persists execution state — resumption is supported.
+**Warning signs:** Tasks stuck in "Agent Working..." state with no progress updates after deploy.
+
+### Pitfall 8: Multiple Suggestions Per Task Cause Partial Apply
+**What goes wrong:** Task produces 3 suggestions (e.g., problem statement + CoG analysis + operational approach). User approves 2, dismisses 1. System tries to apply all 3 or applies none.
+**Why it happens:** Suggestion approval is per-card but task completion is per-task.
+**How to avoid:** Each suggestion is independently approvable. Task tracks per-suggestion status in `suggestions` JSONB array. Task transitions to `COMPLETED` only when all suggestions are resolved (approved, dismissed, or the user explicitly closes the task). Partial application is the expected path — not all suggestions need to be accepted.
+**Warning signs:** User approves one field but the other pending suggestions disappear from the drawer.
 
 ---
 
@@ -409,6 +635,9 @@ CREATE TABLE IF NOT EXISTS skills (
 | In-memory ToolRegistry (Map) | ToolRegistry loads from memory, AgentStore persists agents to PostgreSQL | Phase 51 | Skills registry should follow AgentStore DB pattern, not in-memory Map |
 | Eliza agent tools wired directly in LangChain | LangChain StructuredToolInterface wrapping via `getLangChainToolsForAgent()` | Phase 51 | MCP server is the next evolution — serves same tools over MCP protocol |
 | Manual suggestion patterns (ad-hoc) | `SuggestionData` with `targetField`/`fieldValue` typed interface | Phase 51 (frontend types) | Backend needs to emit this structure — types are ready |
+| One-shot chat responses (ask → answer) | Action cards with risk-tiered approval (ask → card → approve → execute) | Phase 30 | Orchestration loop extends this to multi-step: ask → task → progress → suggestions → approve → apply |
+| Per-tab AI panels (AIStaffContext, DesignAIPanel) | Single Ironclaw drawer as sole AI interface | Phase 51 | Ironclaw drawer is the right surface for orchestration — it already has context (tab, PS, role) |
+| Manual agent invocation via supervisor tests | Ironclaw can assign agents to problem sets and form teams | Phase 51 | Orchestration loop automates what was manual: Ironclaw dispatches, tracks, and presents results |
 
 ---
 
@@ -434,6 +663,21 @@ CREATE TABLE IF NOT EXISTS skills (
    - What's unclear: The exact JSON shape the Ironclaw sidecar will emit for suggestions — this requires configuring the Ironclaw system prompt to output a `suggestion` key.
    - Recommendation: Define the suggestion JSON schema in Phase 52 (e.g., `{ suggestion: { target_field, field_value, content, agent_id } }`) and update the Ironclaw system prompt accordingly.
 
+5. **Orchestration loop: how does the Ironclaw LLM decide "this needs a task"?**
+   - What we know: Currently `processResponse` detects `tool_call` for action cards. The same pattern extends to `task_request` for orchestration tasks.
+   - What's unclear: Whether the Ironclaw sidecar LLM can reliably distinguish between "simple chat response" vs "needs multi-step agent work" from the system prompt alone.
+   - Recommendation: Add explicit task-triggering keywords/patterns to the system prompt. Examples: "develop a COA", "analyze the center of gravity", "generate an OPORD". The LLM outputs `{ task_request: { title, description, target_fields, agent_hints } }` when it detects these. For Phase 52 MVP, also support an explicit user command like `/task develop a COA` to guarantee task creation.
+
+6. **Orchestration loop: supervisor reuse vs per-task supervisor**
+   - What we know: `BastionSupervisor` creates a compiled LangGraph StateGraph with a fixed set of agents. Creating one per task is expensive (LangGraph compilation).
+   - What's unclear: Whether to use a shared supervisor singleton or create lightweight task-specific supervisors.
+   - Recommendation: Create a shared supervisor per problem set (or per team) that can be reused across tasks. The `threadId` differentiates tasks within the same supervisor graph. This matches the existing `thread_id` pattern in `ironclawStore.getOrCreateSession()`.
+
+7. **Orchestration loop: connecting supervisor output to suggestions**
+   - What we know: `BastionSupervisor.execute()` returns `SupervisorOutput` with `state.messages` (LangChain BaseMessage[]) and `trace` (ExecutionTraceEntry[]). Agent responses are `AIMessage` objects.
+   - What's unclear: How to extract structured field values from free-text agent responses and map them to `SuggestionData.fieldValue`.
+   - Recommendation: Two approaches: (a) Agents are given a structured output schema via tools that returns `{ field_path, field_value, explanation }` — clean but requires tool definition. (b) A post-processing step asks Ironclaw LLM to parse agent output and extract field values — more flexible but adds latency. Start with (a) for Phase 52 MVP using DynamicStructuredTool output.
+
 ---
 
 ## Validation Architecture
@@ -456,12 +700,23 @@ CREATE TABLE IF NOT EXISTS skills (
 | REQ-52-03 | Ironclaw builder: agent.create action executes | integration | Send action card via ironclaw router, verify agent in DB | Wave 0 |
 | REQ-52-04 | Field write-back: suggestion parsed and emitted | unit | Unit test `processResponse` with suggestion payload | Wave 0 |
 | REQ-52-04 | Field write-back: accept writes to problem set | integration | POST accept, verify PS field updated | Wave 0 |
+| REQ-52-05 | Task created from chat request | integration | Send "develop a COA" message, verify task record in DB | Wave 0 |
+| REQ-52-05 | Task dispatches agents and tracks progress | integration | Create task, verify step progress messages on WebSocket | Wave 0 |
+| REQ-52-05 | Task results presented as suggestion cards | integration | Complete task, verify suggestion messages in drawer | Wave 0 |
+| REQ-52-05 | Approved suggestion writes to field | integration | Accept suggestion card, verify field updated via design API | Wave 0 |
+| REQ-52-05 | Refinement loop re-dispatches agent | integration | Reject suggestion with feedback, verify agent re-invoked | Wave 0 |
+| REQ-52-05 | Permission scoping blocks unauthorized field write | unit | Staff officer tries to approve sensitive field, verify blocked | Wave 0 |
 
 ### Wave 0 Gaps
 - [ ] `backend/src/mcp/mcp-server.ts` — covers REQ-52-01
 - [ ] `backend/src/agents/skill-registry.ts` + `skill-store.ts` — covers REQ-52-02
 - [ ] `backend/src/ironclaw/builder-handlers.ts` — covers REQ-52-03
 - [ ] `backend/src/db/migrations/038-skills.sql` — prerequisite for REQ-52-02 and REQ-52-04
+- [ ] `backend/src/ironclaw/task-orchestrator.ts` — covers REQ-52-05 (core orchestration loop)
+- [ ] `backend/src/ironclaw/task-store.ts` — covers REQ-52-05 (task persistence)
+- [ ] `backend/src/ironclaw/task-types.ts` — covers REQ-52-05 (task state machine types)
+- [ ] `backend/src/db/migrations/039-ironclaw-tasks.sql` — prerequisite for REQ-52-05
+- [ ] `frontend/src/components/ironclaw/IronclawTaskPanel.tsx` — covers REQ-52-05 (task list UI in drawer)
 
 ---
 
@@ -470,13 +725,22 @@ CREATE TABLE IF NOT EXISTS skills (
 ### Primary (HIGH confidence — direct codebase inspection)
 - `backend/src/agents/tool-registry.ts` — tool registration pattern, LangChain integration
 - `backend/src/ironclaw/action-registry.ts` — all 16 builder action types already registered
-- `backend/src/ironclaw/ironclaw-types.ts` — `ACTION_RISK` map, risk levels, rate limits
-- `backend/src/ironclaw/ironclaw-service.ts` — `processResponse` pattern for suggestion integration
+- `backend/src/ironclaw/ironclaw-types.ts` — `ACTION_RISK` map, risk levels, rate limits, `StepProgressData` type
+- `backend/src/ironclaw/ironclaw-service.ts` — `processResponse` pattern for suggestion integration; `formTeamForTask()` for team dispatch; `buildSystemPrompt()` for Chief of Staff persona
 - `backend/src/ironclaw/tool-bridge.ts` — `handleToolCall` execution gap (returns ActionResult but doesn't dispatch)
 - `backend/src/ironclaw/action-pipeline.ts` — approval flow, `processAction` returns status
-- `frontend/src/context/IronclawContext.tsx` — field write event bus, `acceptSuggestion` TODO
-- `frontend/src/types/ironclaw.ts` — `SuggestionData` interface with `targetField`/`fieldValue`
+- `backend/src/orchestration/supervisor.ts` — `BastionSupervisor` with LangGraph StateGraph, agent routing, human checkpoints, execution trace
+- `backend/src/orchestration/agent-wrapper.ts` — `LangGraphAgentWrapper.createNode()` for LangGraph-compatible agent execution
+- `backend/src/orchestration/human-checkpoints.ts` — `HumanCheckpointManager` with DB persistence, approval/reject/resume, message bus notifications
+- `frontend/src/context/IronclawContext.tsx` — field write event bus, `acceptSuggestion` TODO, `FieldWriteEvent` dispatch
+- `frontend/src/types/ironclaw.ts` — `SuggestionData` with `targetField`/`fieldValue`, `StepProgressData` with `StepInfo[]`
+- `frontend/src/components/ironclaw/IronclawStepStream.tsx` — multi-step progress stepper (fully built, renders from StepProgressData)
+- `frontend/src/components/ironclaw/IronclawSuggestion.tsx` — "Apply to {field}" card with accept/dismiss (fully built)
+- `frontend/src/components/ironclaw/IronclawDrawer.tsx` — main drawer UI, renders suggestions and step progress
 - `backend/src/agents/standard-agent.ts` — `AgentSkill` interface with Zod schemas
+- `backend/src/design/types.ts` — `OperationalDesign` with `problemFraming`, `cogAnalysis`, `linesOfEffort`, `operationalApproach`
+- `backend/src/api/design.ts` — Design API routes for section CRUD
+- `backend/src/api/problem-sets.ts` — `PATCH /:id` for problem set field updates
 - `docker-compose.yml` — ironclaw service pattern to replicate for bastion-mcp
 - `backend/src/db/migrations/034-agent-tables.sql` — migration pattern
 - `frontend/src/components/admin/AgentHub.tsx` — Skills tab already stubbed as `<SkillsPlaceholder />`
@@ -491,7 +755,8 @@ CREATE TABLE IF NOT EXISTS skills (
 **Confidence breakdown:**
 - Standard stack: HIGH — all key dependencies either already in the project or clearly identified
 - Architecture: HIGH — patterns directly observable in existing ironclaw, tool registry, and agent store code
-- Pitfalls: HIGH — identified from direct code inspection (Zod serialization, ToolRegistry singleton, DB schema gaps)
+- Orchestration loop: HIGH — all building blocks exist (Supervisor, StepProgress, Suggestions, Checkpoints, WebSocket); the gap is purely the connecting tissue (TaskOrchestrator + TaskStore)
+- Pitfalls: HIGH — identified from direct code inspection (Zod serialization, ToolRegistry singleton, DB schema gaps, async task dispatch, server restart recovery)
 
 **Research date:** 2026-03-19
 **Valid until:** 2026-04-19 (30 days — stable architecture, no fast-moving external dependencies beyond MCP SDK)

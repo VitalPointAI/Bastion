@@ -7,11 +7,12 @@
 <domain>
 ## Phase Boundary
 
-This phase builds three interconnected capabilities:
+This phase builds five interconnected capabilities:
 1. A standalone MCP (Model Context Protocol) server that agents use to access tools
 2. A reusable skills registry where skills can be defined, versioned, and assigned to agents
 3. Ironclaw builder capabilities — Ironclaw can create agents, tools, skills, and teams via action cards
 4. Field write-back handler — backend pipeline for applying Ironclaw suggestions to problem set fields
+5. Autonomous orchestration loop — the core value proposition: Ironclaw receives complex tasks, dispatches agents, tracks progress, presents results as suggestion cards, and applies approved changes to problem set fields through a collaborative Commander-Staff workflow
 
 </domain>
 
