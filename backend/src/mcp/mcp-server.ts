@@ -19,7 +19,7 @@ import {
   CallToolRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { BASTION_TOOLS } from '../ironclaw/tool-bridge.js';
+import { BASTION_TOOLS, toolBridge } from '../ironclaw/tool-bridge.js';
 import type { MCPToolDefinition } from '../ironclaw/tool-bridge.js';
 
 // ---------------------------------------------------------------------------
@@ -83,8 +83,7 @@ function isToolAccessAuthorized(
 /**
  * Execute a BASTION tool call.
  *
- * Phase 52 MVP stub: Returns a structured acknowledgment. Real domain service
- * execution will be wired in subsequent plans.
+ * Routes through toolBridge.handleToolCall() for real domain service execution.
  */
 async function executeTool(
   toolName: string,
@@ -96,14 +95,9 @@ async function executeTool(
     args: JSON.stringify(args),
   });
 
-  return {
-    status: 'ok',
-    tool: toolName,
-    agentDID,
-    args,
-    message: `Tool "${toolName}" acknowledged. Full execution wired in subsequent phases.`,
-    timestamp: new Date().toISOString(),
-  };
+  const problemSetId = (args.problem_set_id ?? args.id ?? args.parent_id ?? '') as string;
+  const result = await toolBridge.handleToolCall(toolName, args, agentDID, problemSetId);
+  return result;
 }
 
 // ---------------------------------------------------------------------------

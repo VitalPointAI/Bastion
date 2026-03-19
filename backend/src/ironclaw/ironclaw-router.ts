@@ -21,6 +21,7 @@ import { designStore } from '../design/design-store.js';
 import type { TrustDecision } from './ironclaw-types.js';
 import { getTaskStore } from './task-store.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
+import { selfUpdateService } from './self-update-service.js';
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -56,6 +57,19 @@ ironclawRouter.get('/health', async (_req: Request, res: Response) => {
   } catch (err) {
     console.error('[ironclaw-router] Health check error:', err);
     res.status(500).json({ error: 'Health check failed' });
+  }
+});
+
+/**
+ * GET /status
+ * Returns Ironclaw self-update service status including the current version.
+ */
+ironclawRouter.get('/status', async (_req: Request, res: Response) => {
+  try {
+    const status = selfUpdateService.getStatus();
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
   }
 });
 

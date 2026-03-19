@@ -60,7 +60,7 @@ export function IronclawButton({ onClick, hasUnread }: IronclawButtonProps) {
     if (!dragMoved.current) return;
 
     const newRight = Math.max(0, Math.min(window.innerWidth - BUTTON_SIZE, startPos.current.right - dx));
-    const newBottom = Math.max(0, Math.min(window.innerHeight - BUTTON_SIZE, startPos.current.bottom + dy));
+    const newBottom = Math.max(0, Math.min(window.innerHeight - BUTTON_SIZE, startPos.current.bottom - dy));
     setPosition({ bottom: newBottom, right: newRight });
   }, []);
 
