@@ -327,7 +327,7 @@ body:has(.admin-dashboard),
    ============================================================================ */
 
 .config-panel {
-  max-width: 900px;
+  max-width: none;
   padding-bottom: 2rem;
 }
 

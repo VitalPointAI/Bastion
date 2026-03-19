@@ -93,7 +93,7 @@ function WorkspaceRedirect() {
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isTraining } = useMode();
+  const { isTraining, requestModeSwitch } = useMode();
 
   const isAdmin = location.pathname.startsWith('/admin');
   const isProblemSet = location.pathname.startsWith('/problem-set');
@@ -105,9 +105,21 @@ function AppContent() {
       <header className="app-header">
         <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>BASTION</h1>
         <nav className="app-nav">
+          <button
+            onClick={() => requestModeSwitch(isTraining ? 'operational' : 'training')}
+            title={`Switch to ${isTraining ? 'Operational' : 'Training'} mode`}
+            className={[
+              'px-2 py-1 text-[11px] font-bold uppercase tracking-wider rounded transition-colors whitespace-nowrap',
+              isTraining
+                ? 'bg-amber-600 text-black hover:bg-amber-500'
+                : 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30',
+            ].join(' ')}
+          >
+            {isTraining ? 'TRAINING' : 'OPERATIONAL'}
+          </button>
+          <ProblemSetSwitcher />
           <ProblemSetBreadcrumb />
           <div className="nav-spacer" />
-          <ProblemSetSwitcher />
           <button
             className={`nav-button nav-button--admin ${isAdmin ? 'active' : ''}`}
             onClick={() => navigate('/admin')}
