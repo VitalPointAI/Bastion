@@ -65,6 +65,12 @@ const CANONICAL_DESCRIPTIONS: Record<string, string> = {
   'team.delete': 'Permanently delete a team (HIGH RISK)',
   'team.add_member': 'Add an agent to an existing team',
   'team.remove_member': 'Remove an agent from a team',
+  // Skill CRUD
+  'skill.create': 'Create a new agent skill definition',
+  'skill.update': 'Update an existing skill definition',
+  'skill.delete': 'Permanently delete a skill — affects all agents using it (HIGH RISK)',
+  'skill.assign': 'Assign a skill to an agent',
+  'skill.unassign': 'Remove a skill from an agent',
   // Field write-back
   'field.write': 'Apply a suggested value to a problem set field',
   'field.write_sensitive': 'Update a sensitive field (e.g., mission statement, ROE) — requires explicit approval',

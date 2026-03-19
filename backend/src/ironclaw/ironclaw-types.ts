@@ -63,6 +63,12 @@ export const ACTION_RISK: Record<string, ActionRiskLevel> = {
   'team.delete': ActionRiskLevel.high,
   'team.add_member': ActionRiskLevel.medium,
   'team.remove_member': ActionRiskLevel.medium,
+  // Skill CRUD — Ironclaw can create and assign agent skills
+  'skill.create': ActionRiskLevel.medium,
+  'skill.update': ActionRiskLevel.medium,
+  'skill.delete': ActionRiskLevel.high,
+  'skill.assign': ActionRiskLevel.low,
+  'skill.unassign': ActionRiskLevel.low,
   // Field write-back — Ironclaw can suggest and apply field values
   'field.write': ActionRiskLevel.medium,
   'field.write_sensitive': ActionRiskLevel.high,
