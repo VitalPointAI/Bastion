@@ -48,11 +48,22 @@ This phase builds three interconnected capabilities:
 - On acceptance, the field value is written via problem set API
 - Sensitive fields (mission statement, ROE) use 'field.write_sensitive' (high risk — requires explicit approval)
 
+### Ironclaw Orchestration Loop (Critical)
+- Ironclaw needs a task lifecycle: assign task to agent → agent works → collect result → propose changes → user approves → apply to problem set
+- This is a collaborative back-and-forth workflow, not a one-shot action card
+- Pattern: Ironclaw proposes → user provides input/approves → Ironclaw refines → user approves → Ironclaw applies
+- Same pattern as how a Chief of Staff works with a Commander — staff prepares, commander decides
+- Permission scoping: Ironclaw checks user's role permissions before proposing field writes
+- Role-based write access: Commander can approve mission statement changes, staff officer can approve within their lane
+- Results from agent work must be presented as suggestion cards with "Apply to {field}" buttons
+- Multi-step tasks need progress tracking visible in the Ironclaw drawer
+
 ### Claude's Discretion
 - MCP server implementation details (transport protocol, connection pooling)
 - Skill definition schema design
 - How skills compose tools internally
 - MCP server health monitoring approach
+- Task lifecycle state machine design
 
 </decisions>
 
