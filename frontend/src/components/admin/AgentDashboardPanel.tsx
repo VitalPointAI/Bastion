@@ -178,12 +178,7 @@ function ToolAssignment({ availableTools, assignedTools, onChange }: ToolAssignm
 // AgentDashboardPanel
 // ============================================================================
 
-interface AgentDashboardPanelProps {
-  /** 'overview' shows health grid + summary only; 'management' shows full CRUD (default) */
-  viewMode?: 'overview' | 'management';
-}
-
-export function AgentDashboardPanel({ viewMode = 'management' }: AgentDashboardPanelProps) {
+export function AgentDashboardPanel() {
   const [agents, setAgents] = useState<StandardAgentWithHealth[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -713,84 +708,17 @@ export function AgentDashboardPanel({ viewMode = 'management' }: AgentDashboardP
   }
 
   // ============================================================================
-  // Render overview (health-focused) or management list
+  // Render combined agents view — stats + table
   // ============================================================================
 
   const activeAgents = agents.filter((a) => a.status === 'active');
   const inactiveAgents = agents.filter((a) => a.status !== 'active');
 
-  // Overview mode: health dashboard only
-  if (viewMode === 'overview') {
-    return (
-      <div className="config-panel config-panel--flush">
-        {error && (
-          <div className="alert alert--error">
-            <span className="alert-icon">!</span>
-            {error}
-            <button className="alert-dismiss" onClick={() => setError(null)}>×</button>
-          </div>
-        )}
-
-        {/* Summary stats row */}
-        <div className="agent-overview-stats">
-          <div className="agent-stat-card">
-            <div className="agent-stat-value">{agents.length}</div>
-            <div className="agent-stat-label">Total Agents</div>
-          </div>
-          <div className="agent-stat-card agent-stat-card--active">
-            <div className="agent-stat-value">{activeAgents.length}</div>
-            <div className="agent-stat-label">Active</div>
-          </div>
-          <div className="agent-stat-card agent-stat-card--inactive">
-            <div className="agent-stat-value">{inactiveAgents.length}</div>
-            <div className="agent-stat-label">Inactive</div>
-          </div>
-          <div className="agent-stat-card">
-            <div className="agent-stat-value">
-              {agents.length > 0
-                ? `${Math.round((agents.filter((a) => a.successRate !== null && a.successRate > 0.9).length / agents.length) * 100)}%`
-                : '—'}
-            </div>
-            <div className="agent-stat-label">Healthy</div>
-          </div>
-        </div>
-
-        {/* Health card grid — full width */}
-        {agents.length > 0 ? (
-          <div className="agent-health-grid agent-health-grid--full">
-            {agents.map((agent) => (
-              <AgentHealthCard
-                key={agent.agentId}
-                agent={agent}
-                onClick={() => openDetail(agent)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="table-empty-state">
-            <p>No agents configured yet.</p>
-          </div>
-        )}
-
-        {/* Confirm action modal */}
-        {confirmAction && (
-          <ConfirmModal
-            action={confirmAction.type}
-            agentName={confirmAction.agent.name}
-            isConfirming={isConfirming}
-            onConfirm={handleConfirmAction}
-            onCancel={() => setConfirmAction(null)}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // Management mode: full CRUD
   return (
     <div className="config-panel config-panel--flush">
-      <div className="config-panel-header" style={{ padding: '0 0 16px 0' }}>
-        <div className="header-actions" style={{ marginLeft: 'auto' }}>
+      {/* Actions row */}
+      <div className="config-panel-header" style={{ padding: '0 0 12px 0', display: 'flex', alignItems: 'center' }}>
+        <div className="header-actions" style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
           <button
             className="btn btn--sm btn--secondary"
             onClick={() => loadAgents()}
@@ -801,6 +729,30 @@ export function AgentDashboardPanel({ viewMode = 'management' }: AgentDashboardP
           <button className="btn btn--primary" onClick={openCreate}>
             + Create Agent
           </button>
+        </div>
+      </div>
+
+      {/* Summary stats row */}
+      <div className="agent-overview-stats">
+        <div className="agent-stat-card">
+          <div className="agent-stat-value">{agents.length}</div>
+          <div className="agent-stat-label">Total Agents</div>
+        </div>
+        <div className="agent-stat-card agent-stat-card--active">
+          <div className="agent-stat-value">{activeAgents.length}</div>
+          <div className="agent-stat-label">Active</div>
+        </div>
+        <div className="agent-stat-card agent-stat-card--inactive">
+          <div className="agent-stat-value">{inactiveAgents.length}</div>
+          <div className="agent-stat-label">Inactive</div>
+        </div>
+        <div className="agent-stat-card">
+          <div className="agent-stat-value">
+            {agents.length > 0
+              ? `${Math.round((agents.filter((a) => a.successRate !== null && a.successRate > 0.9).length / agents.length) * 100)}%`
+              : '—'}
+          </div>
+          <div className="agent-stat-label">Healthy</div>
         </div>
       </div>
 

@@ -1,29 +1,30 @@
 /**
  * AgentHub — Unified agent administration view
  *
- * Consolidates agent management into 4 tabs:
- * - Overview: Health dashboard with metrics grid
- * - Agents: CRUD, config, character, memory, test harness
+ * Tabs:
+ * - Agents: Stats cards + full agent list (combined overview + management)
  * - Teams: Drag-and-drop team composition
  * - Activity: Audit trail timeline
+ * - Health: Validation & compliance testing
  */
 
 import { useState } from 'react';
 import { AgentDashboardPanel } from './AgentDashboardPanel';
 import { TeamDesignerPanel } from './TeamDesignerPanel';
 import { AgentActivityPanel } from './AgentActivityPanel';
+import { ValidationDashboard } from './ValidationDashboard';
 
-type AgentHubTab = 'overview' | 'agents' | 'teams' | 'activity';
+type AgentHubTab = 'agents' | 'teams' | 'activity' | 'health';
 
 const TABS: { id: AgentHubTab; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
   { id: 'agents', label: 'Agents' },
   { id: 'teams', label: 'Teams' },
   { id: 'activity', label: 'Activity' },
+  { id: 'health', label: 'Health' },
 ];
 
 export function AgentHub() {
-  const [activeTab, setActiveTab] = useState<AgentHubTab>('overview');
+  const [activeTab, setActiveTab] = useState<AgentHubTab>('agents');
 
   return (
     <div className="agent-hub">
@@ -42,10 +43,10 @@ export function AgentHub() {
 
       {/* Tab content */}
       <div className="agent-hub__content">
-        {activeTab === 'overview' && <AgentDashboardPanel viewMode="overview" />}
-        {activeTab === 'agents' && <AgentDashboardPanel viewMode="management" />}
+        {activeTab === 'agents' && <AgentDashboardPanel />}
         {activeTab === 'teams' && <TeamDesignerPanel />}
         {activeTab === 'activity' && <AgentActivityPanel />}
+        {activeTab === 'health' && <ValidationDashboard />}
       </div>
     </div>
   );
