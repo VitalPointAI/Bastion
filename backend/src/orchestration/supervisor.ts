@@ -16,7 +16,6 @@
 
 import { randomUUID } from 'crypto';
 import { StateGraph, END, START } from '@langchain/langgraph';
-import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import type { BaseMessage } from '@langchain/core/messages';
@@ -33,6 +32,7 @@ import { LangGraphAgentWrapper } from './agent-wrapper.js';
 import { getClassificationFilter, createClassificationFilterNode } from './classification-filter.js';
 import { getCheckpointer } from './checkpointer.js';
 import { getActivityLogger } from '../agents/activity-logger.js';
+import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 
 /**
  * Supervisor configuration
@@ -121,18 +121,16 @@ interface AgentInfo {
 export class BastionSupervisor {
   private config: SupervisorConfig;
   private agents: LangGraphAgentWrapper[];
-  private model: BaseChatModel;
+  private model: BaseChatModel | null = null;
   private compiled: ReturnType<StateGraph<typeof BastionStateAnnotation>['compile']> | null = null;
 
   constructor(config: SupervisorConfig, agents: LangGraphAgentWrapper[]) {
     this.config = config;
     this.agents = agents;
 
-    // Initialize model
+    // Pre-set model if provided directly; otherwise defer to initialize()
     if (config.model) {
       this.model = config.model;
-    } else {
-      this.model = this.createModel(config.providerType || 'anthropic', config.modelName);
     }
   }
 
@@ -140,6 +138,14 @@ export class BastionSupervisor {
    * Initialize and compile the supervisor graph
    */
   async initialize(): Promise<void> {
+    // Create model if not provided in config (deferred from constructor for async support)
+    if (!this.model) {
+      this.model = await this.createModel(
+        this.config.providerType || 'anthropic',
+        this.config.modelName
+      );
+    }
+
     const checkpointer = await getCheckpointer();
 
     // Build node names
@@ -386,7 +392,7 @@ export class BastionSupervisor {
         new HumanMessage('Based on the current state and available agents, which agent should handle the next step? Respond with just the agent ID or "END" if complete.'),
       ];
 
-      const response = await this.model.invoke(messages);
+      const response = await this.model!.invoke(messages);
       const decision = this.parseRoutingDecision(response, agentInfos);
 
       // Create trace entry
@@ -564,14 +570,14 @@ IMPORTANT:
   /**
    * Create LLM model
    */
-  private createModel(providerType: 'anthropic' | 'openai', modelName?: string): BaseChatModel {
+  private async createModel(providerType: 'anthropic' | 'openai', modelName?: string): Promise<BaseChatModel> {
     if (providerType === 'openai') {
       return new ChatOpenAI({
         model: modelName || 'gpt-4o',
       });
     }
-    return new ChatAnthropic({
-      model: modelName || 'claude-sonnet-4-20250514',
+    return createLLMForAgent({
+      agentId: 'supervisor',
     });
   }
 }

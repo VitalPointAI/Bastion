@@ -5,12 +5,12 @@
  */
 
 import { StateGraph, Annotation, MemorySaver } from '@langchain/langgraph';
-import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage, SystemMessage, BaseMessage } from '@langchain/core/messages';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { COA_GENERATOR_CHARACTER } from './coa-generator-character.js';
 import { getCOAGeneratorTools } from './coa-generator-tools.js';
 import { buildSystemPrompt } from '../../agents/character-builder.js';
+import { createLLMForAgent } from '../../agents/langgraph/llm-factory.js';
 import { coaStore } from '../stores/coa-store.js';
 
 // State annotation
@@ -45,12 +45,13 @@ const AGENT_ID = 'did:near:agent-coa-generator';
 /**
  * Create the COA Generator LangGraph
  */
-export function createCOAGeneratorGraph() {
-  // Get LLM from agent configuration
-  const model = new ChatAnthropic({
-    modelName: 'claude-sonnet-4-20250514',
-    temperature: 0.7, // Some creativity for distinct COAs
-  }).bindTools(getCOAGeneratorTools(AGENT_ID));
+export async function createCOAGeneratorGraph() {
+  // Get LLM from agent configuration (OAuth-aware factory)
+  const baseLLM = await createLLMForAgent({
+    agentId: AGENT_ID,
+    overrides: { temperature: 0.7 }, // Some creativity for distinct COAs
+  });
+  const model = baseLLM.bindTools!(getCOAGeneratorTools(AGENT_ID));
 
   const systemPrompt = buildSystemPrompt(COA_GENERATOR_CHARACTER);
 
@@ -143,7 +144,7 @@ export async function generateCOAs(
   confidence: number;
   messages: BaseMessage[];
 }> {
-  const graph = createCOAGeneratorGraph();
+  const graph = await createCOAGeneratorGraph();
   const thread = threadId || `coa-gen-${planId}-${Date.now()}`;
 
   const result = await graph.invoke(

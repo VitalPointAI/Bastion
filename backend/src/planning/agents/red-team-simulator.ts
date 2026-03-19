@@ -1,10 +1,10 @@
 import { StateGraph, Annotation, MemorySaver } from '@langchain/langgraph';
-import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage, SystemMessage, BaseMessage } from '@langchain/core/messages';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { RED_TEAM_CHARACTER } from './red-team-character.js';
 import { getRedTeamTools } from './red-team-tools.js';
 import { buildSystemPrompt } from '../../agents/character-builder.js';
+import { createLLMForAgent } from '../../agents/langgraph/llm-factory.js';
 import { coaStore } from '../stores/coa-store.js';
 
 // State annotation
@@ -39,11 +39,13 @@ const AGENT_ID = 'did:near:agent-red-team-simulator';
 /**
  * Create the Red Team Simulator LangGraph
  */
-export function createRedTeamGraph() {
-  const model = new ChatAnthropic({
-    modelName: 'claude-sonnet-4-20250514',
-    temperature: 0.5, // Balanced for realistic analysis
-  }).bindTools(getRedTeamTools(AGENT_ID));
+export async function createRedTeamGraph() {
+  // Get LLM from agent configuration (OAuth-aware factory)
+  const baseLLM = await createLLMForAgent({
+    agentId: AGENT_ID,
+    overrides: { temperature: 0.5 }, // Balanced for realistic analysis
+  });
+  const model = baseLLM.bindTools!(getRedTeamTools(AGENT_ID));
 
   const systemPrompt = buildSystemPrompt(RED_TEAM_CHARACTER);
 
@@ -166,7 +168,7 @@ export async function simulateAdversary(
     targetCoaIds = coas.map(c => c.id);
   }
 
-  const graph = createRedTeamGraph();
+  const graph = await createRedTeamGraph();
   const thread = threadId || `red-team-${planId}-${Date.now()}`;
 
   const result = await graph.invoke(

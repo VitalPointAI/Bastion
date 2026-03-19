@@ -1,10 +1,10 @@
 import { StateGraph, Annotation, MemorySaver } from '@langchain/langgraph';
-import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage, SystemMessage, BaseMessage } from '@langchain/core/messages';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { COA_COMPARATOR_CHARACTER } from './coa-comparator-character.js';
 import { getCOAComparatorTools } from './coa-comparator-tools.js';
 import { buildSystemPrompt } from '../../agents/character-builder.js';
+import { createLLMForAgent } from '../../agents/langgraph/llm-factory.js';
 import { coaStore } from '../stores/coa-store.js';
 
 // State annotation
@@ -39,11 +39,13 @@ const AGENT_ID = 'did:near:agent-coa-comparator';
 /**
  * Create the COA Comparator LangGraph
  */
-export function createCOAComparatorGraph() {
-  const model = new ChatAnthropic({
-    modelName: 'claude-sonnet-4-20250514',
-    temperature: 0.3, // Lower temperature for consistent scoring
-  }).bindTools(getCOAComparatorTools(AGENT_ID));
+export async function createCOAComparatorGraph() {
+  // Get LLM from agent configuration (OAuth-aware factory)
+  const baseLLM = await createLLMForAgent({
+    agentId: AGENT_ID,
+    overrides: { temperature: 0.3 }, // Lower temperature for consistent scoring
+  });
+  const model = baseLLM.bindTools!(getCOAComparatorTools(AGENT_ID));
 
   const systemPrompt = buildSystemPrompt(COA_COMPARATOR_CHARACTER);
 
@@ -159,7 +161,7 @@ export async function compareCOAs(
   rankings: Array<{ coaId: string; rank: number; score: number }>;
   topRanked: { coaId: string; score: number } | null;
 }> {
-  const graph = createCOAComparatorGraph();
+  const graph = await createCOAComparatorGraph();
   const thread = threadId || `coa-compare-${planId}-${Date.now()}`;
 
   const result = await graph.invoke(

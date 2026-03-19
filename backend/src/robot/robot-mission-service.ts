@@ -1540,13 +1540,24 @@ export class RobotMissionService {
    * This is the cloud path of the dual intent translation architecture.
    */
   async translateIntent(text: string, robotId: string, issuedBy: string): Promise<MissionJSON[]> {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    let apiKey: string | undefined;
+    let isOAuth = false;
+    try {
+      const { resolveProviderConfig } = await import('../strategic/config/resolve-api-key.js');
+      const resolved = await resolveProviderConfig();
+      apiKey = resolved.apiKey;
+      isOAuth = apiKey?.startsWith('sk-ant-oat') ?? false;
+    } catch {
+      apiKey = process.env.ANTHROPIC_API_KEY;
+    }
     if (!apiKey) {
-      console.error('[RobotMissionService] translateIntent: ANTHROPIC_API_KEY not set');
+      console.error('[RobotMissionService] translateIntent: No Anthropic API key available');
       return [];
     }
 
-    const client = new Anthropic({ apiKey });
+    const client = isOAuth
+      ? new Anthropic({ authToken: apiKey, defaultHeaders: { 'anthropic-beta': 'oauth-2025-04-20' } })
+      : new Anthropic({ apiKey });
 
     const systemPrompt = `You are a military mission planner. Convert natural language intent into structured mission JSON.
 

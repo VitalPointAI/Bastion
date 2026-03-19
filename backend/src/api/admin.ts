@@ -484,7 +484,17 @@ router.get('/llm-models', async (req: Request, res: Response) => {
     };
 
     // Provider-specific auth headers
-    const key = apiKey as string | undefined;
+    // If no key passed in query, resolve from stored LLM config (supports OAuth)
+    let key = apiKey as string | undefined;
+    if (!key && provider === 'anthropic') {
+      try {
+        const { resolveProviderConfig } = await import('../strategic/config/resolve-api-key.js');
+        const resolved = await resolveProviderConfig();
+        key = resolved.apiKey;
+      } catch {
+        // Fall through — will attempt unauthenticated or return defaults
+      }
+    }
     if (key) {
       if (provider === 'anthropic') {
         const isOAuth = key.startsWith('sk-ant-oat');

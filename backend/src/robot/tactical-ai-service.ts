@@ -105,13 +105,24 @@ export async function generateTacticalPlan(
   },
   homeBase: { x: number; y: number },
 ): Promise<TacticalPlan> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  let apiKey: string | undefined;
+  let isOAuth = false;
+  try {
+    const { resolveProviderConfig } = await import('../strategic/config/resolve-api-key.js');
+    const resolved = await resolveProviderConfig();
+    apiKey = resolved.apiKey;
+    isOAuth = apiKey?.startsWith('sk-ant-oat') ?? false;
+  } catch {
+    apiKey = process.env.ANTHROPIC_API_KEY;
+  }
   if (!apiKey) {
-    console.warn('[TacticalAI] ANTHROPIC_API_KEY not set — using fallback plan');
+    console.warn('[TacticalAI] No Anthropic API key available — using fallback plan');
     return generateFallbackPlan(threats, friendlyPositions, homeBase);
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = isOAuth
+    ? new Anthropic({ authToken: apiKey, defaultHeaders: { 'anthropic-beta': 'oauth-2025-04-20' } })
+    : new Anthropic({ apiKey });
 
   const systemPrompt = `You are a military tactical AI assistant embedded in an autonomous robot team leader.
 You have been conducting reconnaissance and have detected enemy threats. You must now assess the situation
