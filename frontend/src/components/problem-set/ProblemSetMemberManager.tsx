@@ -20,6 +20,7 @@ import { useUser } from '../../context/UserContext';
 import { useProblemSet } from '../../context/ProblemSetContext';
 import { ProblemSetInviteModal } from './ProblemSetInviteModal';
 import { MemberDetailModal } from './MemberDetailModal';
+import { OrbatModal } from './OrbatModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,6 +88,9 @@ export function ProblemSetMemberManager({ problemSetId }: ProblemSetMemberManage
 
   // Member detail modal
   const [detailMember, setDetailMember] = useState<ProblemSetMemberDetail | null>(null);
+
+  // ORBAT modal
+  const [showOrbat, setShowOrbat] = useState(false);
 
   // ─── Load data ─────────────────────────────────────────────────────────────
 
@@ -245,6 +249,17 @@ export function ProblemSetMemberManager({ problemSetId }: ProblemSetMemberManage
             )}
           </p>
           <div className="flex items-center gap-2">
+            {/* ORBAT */}
+            <button
+              onClick={() => setShowOrbat(true)}
+              className="px-3 py-1.5 text-xs font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-900/20 hover:bg-indigo-900/40 border border-indigo-800 rounded transition-colors flex items-center gap-1"
+              title="View organizational breakdown"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h8m-8 6h16" />
+              </svg>
+              ORBAT
+            </button>
             {/* Quick invite */}
             {quickInviteLink ? (
               <div className="flex items-center gap-1 bg-gray-800 border border-gray-600 rounded px-2 py-1">
@@ -511,6 +526,18 @@ export function ProblemSetMemberManager({ problemSetId }: ProblemSetMemberManage
           problemSetId={problemSetId}
           problemSetName="Problem Set"
           onClose={() => setShowInviteModal(false)}
+        />
+      )}
+
+      {/* ORBAT modal */}
+      {showOrbat && (
+        <OrbatModal
+          members={members}
+          onClose={() => setShowOrbat(false)}
+          onSelectMember={(m) => {
+            setShowOrbat(false);
+            setDetailMember(m);
+          }}
         />
       )}
 
