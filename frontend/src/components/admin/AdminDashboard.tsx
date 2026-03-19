@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { TabLayout, type SidebarItem } from '../tabs/TabLayout.js';
 import { adminService } from '../../lib/admin-service';
 import { useUser } from '../../context/UserContext';
+import { useProblemSet } from '../../context/ProblemSetContext';
 import { LLMConfigPanel } from './LLMConfigPanel';
 import { AgentHub } from './AgentHub';
 import { WorkflowConfigPanel } from './WorkflowConfigPanel';
@@ -43,6 +44,7 @@ const ADMIN_ITEMS: SidebarItem[] = [
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
   const navigate = useNavigate();
   const { userDID, isAuthenticated } = useUser();
+  const { activeProblemSetId } = useProblemSet();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,7 +125,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     <div className="admin-dashboard">
       <div style={{ padding: '0.5rem 1rem 0' }}>
         <button
-          onClick={() => navigate('/problem-set')}
+          onClick={() => navigate(activeProblemSetId ? `/problem-set/${activeProblemSetId}` : '/problem-set')}
           style={{
             background: 'none',
             border: 'none',
