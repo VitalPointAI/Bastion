@@ -48,6 +48,13 @@ export class DIDService {
       }],
       authentication: [`${did}#key-1`],
       controller: [did],
+      // Add governance section for AI agents — empty overrides means defaults from ACTION_RISK apply.
+      // Existing agents without governance default to hardcoded ACTION_RISK (backward compatible).
+      ...(entityType === 'AiAgent' ? {
+        governance: {
+          policyVersion: 1,
+        },
+      } : {}),
       created: new Date().toISOString(),
       updated: new Date().toISOString()
     };
