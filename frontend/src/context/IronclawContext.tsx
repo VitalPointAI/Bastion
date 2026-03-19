@@ -15,13 +15,15 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import type { IronclawChatMessage, SuggestionData, TrustDecision } from '../types/ironclaw.ts';
+import type { IronclawChatMessage, IronclawTaskData, SuggestionData, TrustDecision } from '../types/ironclaw.ts';
 import { useIronclaw } from '../hooks/useIronclaw.ts';
 import { useProblemSet } from './ProblemSetContext.tsx';
 import { useUser } from './UserContext.tsx';
@@ -89,6 +91,14 @@ interface IronclawContextValue {
   dismissSuggestion: (id: string) => void;
   /** Subscribe to field write events — returns unsubscribe function */
   onFieldWrite: (listener: FieldWriteListener) => () => void;
+  /** Active task for the current problem set (from orchestration loop) */
+  activeTask: IronclawTaskData | null;
+  /** Approve a task suggestion */
+  approveTaskSuggestion: (taskId: string, suggestionId: string) => void;
+  /** Dismiss a task suggestion */
+  dismissTaskSuggestion: (taskId: string, suggestionId: string) => void;
+  /** Request refinement of a task */
+  refineTask: (taskId: string, feedback: string) => void;
 }
 
 const IronclawContext = createContext<IronclawContextValue | null>(null);
@@ -115,6 +125,79 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     problemSetId: activeProblemSetId ?? undefined,
     userRole: userRoleInActive ?? undefined,
   });
+
+  // ─── Task State ──────────────────────────────────────────────────────────
+  const [activeTask, setActiveTask] = useState<IronclawTaskData | null>(null);
+
+  // Fetch active tasks when problem set changes
+  useEffect(() => {
+    if (!activeProblemSetId) {
+      setActiveTask(null);
+      return;
+    }
+    fetch(`/api/ironclaw/tasks/${activeProblemSetId}?status=dispatched`)
+      .then((r) => r.json())
+      .then((tasks: Array<Record<string, unknown>>) => {
+        if (tasks.length > 0) {
+          const t = tasks[0];
+          setActiveTask({
+            taskId: t.taskId as string,
+            title: t.title as string,
+            status: t.status as string,
+            stepProgress: {
+              actionId: t.taskId as string,
+              steps: ((t.steps as Array<Record<string, unknown>>) ?? []).map((s) => ({
+                label: s.label as string,
+                status: s.status as 'pending' | 'running' | 'complete' | 'failed',
+              })),
+              currentStep: (t.currentStep as number) ?? 0,
+              startedAt: (t.createdAt as string) ?? new Date().toISOString(),
+            },
+            suggestions: ((t.suggestions as Array<Record<string, unknown>>) ?? []).map((s) => ({
+              id: s.id as string,
+              content: s.content as string,
+              agentId: s.agentId as string,
+              agentDisplayName: (s.agentId as string) ?? 'Agent',
+              targetField: s.fieldPath as string | undefined,
+              targetFieldLabel: s.fieldLabel as string | undefined,
+              fieldValue: s.content as string | undefined,
+            })),
+            currentStep: (t.currentStep as number) ?? 0,
+          });
+        }
+      })
+      .catch(() => { /* Task fetch failed — not critical */ });
+  }, [activeProblemSetId]);
+
+  // Listen for step-progress WebSocket messages to update active task
+  useEffect(() => {
+    const msgs = ironclaw.messages;
+    if (msgs.length === 0) return;
+    const latest = msgs[msgs.length - 1];
+    if (latest.stepProgress && activeTask) {
+      setActiveTask((prev) =>
+        prev ? { ...prev, stepProgress: latest.stepProgress!, status: 'agent_working' } : prev,
+      );
+    }
+  }, [ironclaw.messages, activeTask]);
+
+  const approveTaskSuggestion = useCallback((taskId: string, suggestionId: string) => {
+    fetch(`/api/ironclaw/tasks/${taskId}/approve/${suggestionId}`, { method: 'POST' })
+      .catch((err) => console.error('[ironclaw] Task approve failed:', err));
+  }, []);
+
+  const dismissTaskSuggestion = useCallback((taskId: string, suggestionId: string) => {
+    fetch(`/api/ironclaw/tasks/${taskId}/dismiss/${suggestionId}`, { method: 'POST' })
+      .catch((err) => console.error('[ironclaw] Task dismiss failed:', err));
+  }, []);
+
+  const refineTask = useCallback((taskId: string, feedback: string) => {
+    fetch(`/api/ironclaw/tasks/${taskId}/refine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback }),
+    }).catch((err) => console.error('[ironclaw] Task refine failed:', err));
+  }, []);
 
   // Field write-back event bus
   const fieldWriteListeners = useRef<Set<FieldWriteListener>>(new Set());
@@ -163,6 +246,10 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     acceptSuggestion,
     dismissSuggestion,
     onFieldWrite,
+    activeTask,
+    approveTaskSuggestion,
+    dismissTaskSuggestion,
+    refineTask,
   };
 
   return (
@@ -191,6 +278,10 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         problemSetName={activeProblemSet?.name ?? null}
         userRole={userRoleInActive}
         userDid={userDID}
+        activeTask={activeTask}
+        onApproveTaskSuggestion={approveTaskSuggestion}
+        onDismissTaskSuggestion={dismissTaskSuggestion}
+        onRefineTask={refineTask}
       />
     </IronclawContext.Provider>
   );

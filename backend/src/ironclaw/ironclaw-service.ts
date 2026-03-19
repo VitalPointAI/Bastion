@@ -610,6 +610,23 @@ export class IronclawService {
       '',
       'When delegating, include the specialist_id and specialist_display_name in your response.',
       'When proposing actions that modify data, include a tool_call with action_id, action_type, description, risk_level, and options.',
+      '',
+      '## Task Requests',
+      'When the user requests complex multi-step work that requires agent analysis or document generation,',
+      'respond with a task_request JSON:',
+      '{ "task_request": { "title": "Brief task title", "description": "What needs to be done",',
+      '  "target_fields": { "field.path": "Field Label" }, "agent_hints": ["agent_id"] } }',
+      '',
+      'Task-triggering requests: developing COAs, analyzing center of gravity, generating OPORDs,',
+      'writing mission statements, performing threat assessments, building intelligence estimates,',
+      'designing lines of effort, and any request using "develop", "analyze", "generate", or "build"',
+      'for problem set content.',
+      '',
+      '## Suggestions',
+      'When suggesting content for a specific problem set field, include:',
+      '{ "suggestion": { "content": "The suggested text", "target_field": "field.path",',
+      '  "target_field_label": "Human-readable field name", "field_value": "The value to write" } }',
+      'For simple questions or clarifications, respond normally without task_request or suggestion.',
     ].join('\n');
   }
 }
