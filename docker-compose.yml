@@ -132,6 +132,30 @@ services:
       - bastion-network
 
   # ==========================================
+  # BASTION MCP Server
+  # Exposes BASTION tools to AI agents via Model Context Protocol (SSE transport)
+  # ==========================================
+  bastion-mcp:
+    build:
+      context: ./backend
+      target: runtime
+    container_name: bastion-mcp
+    command: node dist/mcp/index.js
+    ports:
+      - "3334:3334"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/coalition_ops
+      - MCP_PORT=3334
+      - MCP_SHARED_SECRET=${MCP_SHARED_SECRET:-dev-mcp-secret}
+      - NODE_ENV=${NODE_ENV:-development}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bastion-network
+    restart: unless-stopped
+
+  # ==========================================
   # Backend API Server
   # ==========================================
   backend:
