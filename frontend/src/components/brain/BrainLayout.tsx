@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import './BrainLayout.css';
 
 interface BrainLayoutProps {
-  /** Compact left sidebar — subspace navigation (narrowed since ingestion moved to drawer) */
-  leftSidebar: ReactNode;
+  /** Optional left sidebar */
+  leftSidebar?: ReactNode;
   /** Main content area — force-graph canvas */
   center: ReactNode;
   /** Optional detail panel content — slides in from the right */
@@ -59,7 +59,9 @@ export function BrainLayout({
         <div className="brain-breadcrumb-bar">{breadcrumb}</div>
       )}
 
-      <div className="brain-left-sidebar">{leftSidebar}</div>
+      {leftSidebar !== undefined && (
+        <div className="brain-left-sidebar">{leftSidebar}</div>
+      )}
 
       <div className="brain-center">{center}</div>
 

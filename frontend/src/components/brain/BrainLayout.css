@@ -4,8 +4,8 @@
 
 .brain-layout {
   display: grid;
-  /* Left column narrowed from 280px to 200px — ingestion moved to overlay drawer */
-  grid-template-columns: 200px 1fr auto;
+  /* Two columns: center canvas + optional right panel */
+  grid-template-columns: 1fr auto;
   grid-template-rows: auto auto 1fr auto;
   height: 100%;
   background: #020810;
@@ -55,7 +55,7 @@
 /* ─── Center area (force-graph canvas) ──────────────────────────────────── */
 
 .brain-center {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 3;
   position: relative;
   overflow: hidden;
@@ -65,7 +65,7 @@
 /* ─── Right detail panel (hidden by default, slides in on demand) ────────── */
 
 .brain-right-panel {
-  grid-column: 3;
+  grid-column: 2;
   grid-row: 3;
   width: 0;
   overflow: hidden;

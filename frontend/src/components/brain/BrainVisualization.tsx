@@ -33,6 +33,10 @@ export interface BrainVisualizationProps {
   selectedNodeId?: string;
   selectedNodeIds?: string[];
   onNodeClick?: (node: BrainNode) => void;
+  /** Called on right-click — drives context menu */
+  onNodeRightClick?: (node: BrainNode, event: MouseEvent) => void;
+  /** Called on right-click background — context menu without node */
+  onBackgroundRightClick?: (event: MouseEvent) => void;
   /** Called on double-click — drives Phase 45 drill-down */
   onNodeDoubleClick?: (node: BrainNode) => void;
   width?: number;
@@ -300,6 +304,8 @@ export function BrainVisualization({
   selectedNodeId,
   selectedNodeIds,
   onNodeClick,
+  onNodeRightClick,
+  onBackgroundRightClick,
   onNodeDoubleClick,
   width,
   height,
@@ -680,6 +686,10 @@ export function BrainVisualization({
       ref={containerRef}
       className="brain-visualization"
       style={{ width: '100%', height: '100%', position: 'relative' }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onBackgroundRightClick?.(e.nativeEvent);
+      }}
     >
       {graphReady ? (
         <ForceGraph3D
@@ -700,6 +710,13 @@ export function BrainVisualization({
           linkThreeObjectExtend={true}
           linkPositionUpdate={linkPositionUpdate as unknown as (obj: object, coords: object, link: object) => void}
           onNodeClick={handleNodeClickWithDoubleDetect}
+          onNodeRightClick={(node: NodeObject, event: MouseEvent) => {
+            event.preventDefault();
+            onNodeRightClick?.(node as BrainNode, event);
+          }}
+          onBackgroundClick={(_event: MouseEvent) => {
+            // No-op — let BrainController handle background clicks if needed
+          }}
           onEngineStop={handleEngineStop}
           enableNodeDrag={true}
           enableNavigationControls={true}

@@ -8,7 +8,7 @@
  * attribute differences table, and bulk annotation.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { BrainNode, BrainEdge, BrainGraphData, BrainAnnotation } from './types.js';
 import { CATEGORY_COLORS, NODE_TYPE_SHAPES } from './types.js';
 import { NodeAnnotationPanel } from './NodeAnnotationPanel.js';
@@ -169,8 +169,8 @@ function SingleNodeView({
   onUpdateAnnotation,
   onDeleteAnnotation,
 }: SingleNodeViewProps): React.ReactElement {
-  const nodeEdges = getNodeEdges(node.id, graphData.edges);
-  const nodeAnnotations = annotations.filter((a) => a.nodeId === node.id);
+  const nodeEdges = useMemo(() => getNodeEdges(node.id, graphData.edges), [node.id, graphData.edges]);
+  const nodeAnnotations = useMemo(() => annotations.filter((a) => a.nodeId === node.id), [annotations, node.id]);
 
   return (
     <>
@@ -439,31 +439,34 @@ function ComparisonView({
   const [bulkNoteExpanded, setBulkNoteExpanded] = useState(false);
   const [bulkNoteContent, setBulkNoteContent] = useState('');
 
-  const nodeIds = new Set(nodes.map((n) => n.id));
+  const nodeIds = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
 
   // Build connection map: connectedNodeId -> how many selected nodes it connects to
-  const connectionCount = new Map<string, { edge: BrainEdge; connectedTo: string[] }>();
-  for (const node of nodes) {
-    const edges = getNodeEdges(node.id, graphData.edges);
-    for (const edge of edges) {
-      const otherId = getOtherNodeId(edge, node.id);
-      if (nodeIds.has(otherId)) continue; // skip intra-selection connections
-      if (!connectionCount.has(otherId)) {
-        connectionCount.set(otherId, { edge, connectedTo: [] });
+  const connectionCount = useMemo(() => {
+    const map = new Map<string, { edge: BrainEdge; connectedTo: string[] }>();
+    for (const node of nodes) {
+      const edges = getNodeEdges(node.id, graphData.edges);
+      for (const edge of edges) {
+        const otherId = getOtherNodeId(edge, node.id);
+        if (nodeIds.has(otherId)) continue;
+        if (!map.has(otherId)) {
+          map.set(otherId, { edge, connectedTo: [] });
+        }
+        map.get(otherId)!.connectedTo.push(node.id);
       }
-      connectionCount.get(otherId)!.connectedTo.push(node.id);
     }
-  }
+    return map;
+  }, [nodes, graphData.edges, nodeIds]);
 
-  const sharedConnections = [...connectionCount.entries()].filter(
+  const sharedConnections = useMemo(() => [...connectionCount.entries()].filter(
     ([, v]) => v.connectedTo.length >= 2,
-  );
-  const uniqueConnectionsByNode = nodes.map((node) => {
+  ), [connectionCount]);
+  const uniqueConnectionsByNode = useMemo(() => nodes.map((node) => {
     const unique = [...connectionCount.entries()].filter(
       ([, v]) => v.connectedTo.length === 1 && v.connectedTo[0] === node.id,
     );
     return { node, unique };
-  });
+  }), [nodes, connectionCount]);
 
   function handleBulkAnnotate(): void {
     for (const node of nodes) {

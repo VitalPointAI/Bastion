@@ -33,7 +33,7 @@ import { AIContextSnapshotModal } from './AIContextSnapshotModal.js';
 import { GapSummaryPanel } from './GapSummaryPanel.js';
 import { ParticleOverlay } from './renderers/particleRenderer.js';
 import { BrainBreadcrumb } from './BrainBreadcrumb.js';
-import { SubspaceSidebar } from './SubspaceSidebar.js';
+import { BrainContextMenu, type ContextMenuState } from './BrainContextMenu.js';
 
 import { useBrainData } from './hooks/useBrainData.js';
 import { useBrainIngestion } from './hooks/useBrainIngestion.js';
@@ -144,13 +144,13 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
 
   // ── Phase 45: Subspace system ───────────────────────────────────────────────
   const {
-    subspaces,
+    subspaces: _subspaces,
     activeSubspaceId,
     setActiveSubspaceId,
     subspaceData,
     createManualSubspace,
     createSmartSubspace: _createSmartSubspace,
-    deleteSubspace,
+    deleteSubspace: _deleteSubspace,
   } = useBrainSubspaces(problemSetId, effectiveData);
 
   // ── Phase 45: Drill-down system ─────────────────────────────────────────────
@@ -210,6 +210,9 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   // ── Selection state ─────────────────────────────────────────────────────────
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+
+  // ── Context menu state ──────────────────────────────────────────────────────
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   // ── Search state ────────────────────────────────────────────────────────────
   const [searchMatchIds, setSearchMatchIds] = useState<string[] | null>(null);
@@ -322,18 +325,31 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     [drillLevel, drillIntoSubspace, drillIntoNode, drillIntoDocuments, setActiveSubspaceId, setNHopFocusNode],
   );
 
-  // ── Subspace sidebar selection ──────────────────────────────────────────────
-  const handleSubspaceSelect = useCallback(
-    (id: string | null) => {
-      setActiveSubspaceId(id);
-      if (id) {
-        const sub = subspaces.find((s) => s.id === id);
-        drillIntoSubspace(id, sub?.name ?? id);
-      } else {
-        drillUp(0); // return to full graph
-      }
+
+
+  // ── Right-click context menu ─────────────────────────────────────────────
+  const handleNodeRightClick = useCallback(
+    (node: BrainNode, event: MouseEvent) => {
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        node,
+        selectedCount: selectedNodeIds.length,
+      });
     },
-    [subspaces, setActiveSubspaceId, drillIntoSubspace, drillUp],
+    [selectedNodeIds.length],
+  );
+
+  const handleBackgroundRightClick = useCallback(
+    (event: MouseEvent) => {
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        node: null,
+        selectedCount: selectedNodeIds.length,
+      });
+    },
+    [selectedNodeIds.length],
   );
 
   const handleClosePanel = useCallback(() => {
@@ -405,22 +421,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
             />
           ) : undefined
         }
-        leftSidebar={
-          /* Phase 50 Plan 07: IngestionSidebar removed from grid — replaced by IngestionDrawer overlay.
-           * Left column now only holds SubspaceSidebar (narrowed to 200px in BrainLayout.css). */
-          <SubspaceSidebar
-            subspaces={subspaces}
-            activeSubspaceId={activeSubspaceId}
-            onSubspaceSelect={handleSubspaceSelect}
-            onCreateManual={createManualSubspace}
-            onCreateSmart={() => {
-              // Smart subspace creation UI is a future feature (Plan 45+)
-              // For now this is a no-op placeholder
-            }}
-            onDelete={deleteSubspace}
-            selectedNodeIds={selectedNodeIds}
-          />
-        }
+        leftSidebar={undefined}
         ingestionDrawer={
           <IngestionDrawer
             problemSetId={problemSetId}
@@ -436,6 +437,8 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
               selectedNodeId={selectedNodeId ?? undefined}
               selectedNodeIds={selectedNodeIds}
               onNodeClick={handleNodeClick}
+              onNodeRightClick={handleNodeRightClick}
+              onBackgroundRightClick={handleBackgroundRightClick}
               onNodeDoubleClick={handleNodeDoubleClick}
               onLassoSelect={handleLassoSelect}
               clusterMode={clusterMode}
@@ -502,6 +505,35 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
           nodeCount={processedData.nodes.length}
           edgeCount={processedData.edges.length}
           currentTimeScale={selectedTime ?? undefined}
+        />
+      )}
+
+      {contextMenu && (
+        <BrainContextMenu
+          menu={contextMenu}
+          onClose={() => setContextMenu(null)}
+          onViewDetails={() => {
+            if (contextMenu.node) {
+              setSelectedNodeId(contextMenu.node.id);
+              setSelectedNodeIds([]);
+            }
+          }}
+          onDrillInto={() => {
+            if (contextMenu.node) handleNodeDoubleClick(contextMenu.node);
+          }}
+          onCreateSubspaceFromSelection={() => {
+            // If right-clicked on a node and nothing multi-selected, use just that node
+            const ids = selectedNodeIds.length > 0
+              ? selectedNodeIds
+              : contextMenu.node ? [contextMenu.node.id] : [];
+            if (ids.length > 0) {
+              const name = `Subspace (${ids.length} nodes)`;
+              createManualSubspace(name, ids);
+            }
+          }}
+          onCreateSmartSubspace={() => {
+            // Placeholder — smart subspace creation is a future feature
+          }}
         />
       )}
     </>
