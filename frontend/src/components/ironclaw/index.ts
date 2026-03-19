@@ -11,6 +11,7 @@ export { IronclawMessage } from './IronclawMessage.tsx';
 export { IronclawActionCard } from './IronclawActionCard.tsx';
 export { IronclawSuggestion } from './IronclawSuggestion.tsx';
 export { IronclawStepStream } from './IronclawStepStream.tsx';
+export { IronclawTaskPanel } from './IronclawTaskPanel.tsx';
 
 // Types (re-exported from types module)
 export type {
@@ -23,5 +24,6 @@ export type {
   StepProgressData,
   StepInfo,
   SuggestionData,
+  IronclawTaskData,
   TrustPreference,
 } from '../../types/ironclaw.ts';

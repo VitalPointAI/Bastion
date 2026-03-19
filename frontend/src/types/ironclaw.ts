@@ -81,6 +81,19 @@ export interface SuggestionData {
 }
 
 // ============================================================================
+// Task Orchestration
+// ============================================================================
+
+export interface IronclawTaskData {
+  taskId: string;
+  title: string;
+  status: string;
+  stepProgress: StepProgressData;
+  suggestions: SuggestionData[];
+  currentStep: number;
+}
+
+// ============================================================================
 // Trust Preferences
 // ============================================================================
 

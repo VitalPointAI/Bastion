@@ -8,10 +8,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type {
   IronclawChatMessage,
+  IronclawTaskData,
   TrustDecision,
 } from '../../types/ironclaw.ts';
 import { IronclawMessage } from './IronclawMessage.tsx';
 import { IronclawSuggestion } from './IronclawSuggestion.tsx';
+import { IronclawTaskPanel } from './IronclawTaskPanel.tsx';
 import './IronclawDrawer.css';
 
 // Hardcoded initial specialist list
@@ -45,6 +47,14 @@ interface IronclawDrawerProps {
   userRole?: string | null;
   /** User's DID (for display, not auth) */
   userDid?: string | null;
+  /** Active task for the current problem set (from context) */
+  activeTask?: IronclawTaskData | null;
+  /** Approve a task suggestion */
+  onApproveTaskSuggestion?: (taskId: string, suggestionId: string) => void;
+  /** Dismiss a task suggestion */
+  onDismissTaskSuggestion?: (taskId: string, suggestionId: string) => void;
+  /** Request refinement of a task */
+  onRefineTask?: (taskId: string, feedback: string) => void;
 }
 
 export function IronclawDrawer({
@@ -61,6 +71,10 @@ export function IronclawDrawer({
   currentTab,
   problemSetName,
   userRole,
+  activeTask,
+  onApproveTaskSuggestion,
+  onDismissTaskSuggestion,
+  onRefineTask,
 }: IronclawDrawerProps) {
   const [inputValue, setInputValue] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -240,6 +254,18 @@ export function IronclawDrawer({
                 </>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Active task panel — shown above chat messages when a task is running */}
+        {activeTask && onApproveTaskSuggestion && onDismissTaskSuggestion && onRefineTask && (
+          <div className="pt-3">
+            <IronclawTaskPanel
+              task={activeTask}
+              onApprove={onApproveTaskSuggestion}
+              onDismiss={onDismissTaskSuggestion}
+              onRefine={onRefineTask}
+            />
           </div>
         )}
 
