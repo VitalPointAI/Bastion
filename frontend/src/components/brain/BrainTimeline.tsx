@@ -49,7 +49,7 @@ function formatLabel(date: Date, now: Date): string {
 }
 
 function formatTimeDisplay(date: Date | null): string {
-  if (!date) return 'LIVE';
+  if (!date) return 'Current';
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

@@ -348,20 +348,42 @@ export function BrainVisualization({
     return () => ro.disconnect();
   }, []);
 
-  // ── Neighborhood computation ───────────────────────────────────────────────
+  // ── Neighborhood computation + direct opacity update ───────────────────────
+  // Instead of relying on ForceGraph3D to re-call nodeThreeObject for ALL nodes
+  // (which causes a freeze), we compute the neighborhood and update opacity
+  // directly on cached Three.js objects outside the React render cycle.
   useEffect(() => {
     if (!selectedNodeId) {
       neighborhoodRef.current = new Set();
-      return;
+    } else {
+      const neighbors = new Set<string>([selectedNodeId]);
+      for (const edge of (data.edges ?? [])) {
+        const src = typeof edge.source === 'object' ? (edge.source as FGNode).id : edge.source;
+        const tgt = typeof edge.target === 'object' ? (edge.target as FGNode).id : edge.target;
+        if (src === selectedNodeId) neighbors.add(tgt);
+        if (tgt === selectedNodeId) neighbors.add(src);
+      }
+      neighborhoodRef.current = neighbors;
     }
-    const neighbors = new Set<string>([selectedNodeId]);
-    for (const edge of (data.edges ?? [])) {
-      const src = typeof edge.source === 'object' ? (edge.source as FGNode).id : edge.source;
-      const tgt = typeof edge.target === 'object' ? (edge.target as FGNode).id : edge.target;
-      if (src === selectedNodeId) neighbors.add(tgt);
-      if (tgt === selectedNodeId) neighbors.add(src);
-    }
-    neighborhoodRef.current = neighbors;
+
+    // Directly update opacity on all cached node objects — no ForceGraph re-render needed
+    requestAnimationFrame(() => {
+      const cache = nodeObjCacheRef.current;
+      const neighborhood = neighborhoodRef.current;
+      const hasSelection = !!selectedNodeId;
+
+      cache.forEach(({ group, key }, nodeId) => {
+        if (key === 'ghost') return;
+        const isDimmed = hasSelection && nodeId !== selectedNodeId && neighborhood.size > 0 && !neighborhood.has(nodeId);
+        const opacity = isDimmed ? 0.15 : 0.85;
+        group.traverse((child) => {
+          if ((child as THREE.Mesh).material) {
+            const mat = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
+            if (mat.opacity !== undefined) mat.opacity = opacity;
+          }
+        });
+      });
+    });
   }, [selectedNodeId, data.edges]);
 
   // ── Clean sprite cache when data changes ──────────────────────────────────
@@ -449,29 +471,17 @@ export function BrainVisualization({
 
       const color = getNodeColor(brainNode);
 
-      // Compute selection/dimming state
+      // Compute selection state (dimming is handled by the neighborhood effect)
       const selId = selectedIdRef.current;
       const selIds = selectedIdsRef.current;
       const isSelected = brainNode.id === selId || (selIds?.includes(brainNode.id) ?? false);
-      const isDimmed =
-        !!selId && !isSelected &&
-        neighborhoodRef.current.size > 0 &&
-        !neighborhoodRef.current.has(brainNode.id);
-      const targetOpacity = isDimmed ? 0.15 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
+      const isDimmed = false; // Dimming applied asynchronously via neighborhood effect
+      const targetOpacity = brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
 
-      // Cache key includes selection (only 1-2 nodes change) but NOT dimming (all nodes change)
-      // Dimming is handled via in-place opacity updates on cache hit
       const cacheKey = `${color}|${isSelected ? 1 : 0}|${brainNode.isGap ? 1 : 0}|${brainNode.confidence}|${brainNode.centrality ?? 0}|${brainNode.confidenceTier ?? ''}`;
       const cached = cache.get(brainNode.id);
 
       if (cached && cached.key === cacheKey) {
-        // Update opacity in-place without rebuilding the group
-        cached.group.traverse((child) => {
-          if ((child as THREE.Mesh).material) {
-            const mat = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
-            if (mat.opacity !== undefined) mat.opacity = targetOpacity;
-          }
-        });
         return cached.group;
       }
 
