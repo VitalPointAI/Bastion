@@ -71,6 +71,17 @@ export interface ProblemSetMemberDetail {
   displayName?: string | null;
 }
 
+export interface ReportingRelationship {
+  id: string;
+  problem_set_id: string;
+  superior_did: string;
+  subordinate_did: string;
+  relationship_type: 'direct' | 'dotted';
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
 export interface ProblemSetInviteDetail {
   id: string;
   problemSetId: string;
@@ -716,6 +727,31 @@ class ProblemSetService {
   /** List enabled teams (no admin required) */
   async listTeams(): Promise<{ teamId: string; name: string; description: string; teamDID: string; isEnabled: boolean }[]> {
     return this.fetchJSON(`${this.baseUrl}/teams/list`);
+  }
+
+  // ─── ORBAT Reporting Relationships ──────────────────────────────────────────
+
+  async getReportingRelationships(problemSetId: string): Promise<ReportingRelationship[]> {
+    const res = await this.fetchJSON<{ relationships: ReportingRelationship[] }>(
+      `${this.baseUrl}/${problemSetId}/reporting`,
+    );
+    return res.relationships ?? [];
+  }
+
+  async saveReportingRelationships(
+    problemSetId: string,
+    relationships: Array<{ superior_did: string; subordinate_did: string; relationship_type: 'direct' | 'dotted' }>,
+    userDID: string,
+  ): Promise<ReportingRelationship[]> {
+    const res = await this.fetchJSON<{ relationships: ReportingRelationship[] }>(
+      `${this.baseUrl}/${problemSetId}/reporting`,
+      {
+        method: 'PUT',
+        headers: { 'X-DID': userDID },
+        body: JSON.stringify({ relationships }),
+      },
+    );
+    return res.relationships ?? [];
   }
 }
 

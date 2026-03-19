@@ -533,6 +533,7 @@ export function ProblemSetMemberManager({ problemSetId }: ProblemSetMemberManage
       {showOrbat && (
         <OrbatModal
           members={members}
+          problemSetId={problemSetId}
           onClose={() => setShowOrbat(false)}
           onSelectMember={(m) => {
             setShowOrbat(false);

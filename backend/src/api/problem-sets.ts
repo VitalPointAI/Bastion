@@ -2511,4 +2511,65 @@ router.post('/:id/positions/bulk', requireAuth, async (req: Request, res: Respon
   }
 });
 
+// ============================================================================
+// ORBAT Reporting Relationships
+// ============================================================================
+
+import { memberReportingStore } from '../problem-set/member-reporting-store.js';
+
+/**
+ * GET /api/problem-sets/:problemSetId/reporting
+ * Get all reporting relationships for a problem set.
+ */
+router.get('/:problemSetId/reporting', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.problemSetId as string;
+    const relationships = await memberReportingStore.getByProblemSet(problemSetId);
+    res.json({ relationships });
+  } catch (error) {
+    handleError(res, error);
+  }
+});
+
+/**
+ * PUT /api/problem-sets/:problemSetId/reporting
+ * Replace all reporting relationships for a problem set.
+ * Body: { relationships: Array<{ superior_did, subordinate_did, relationship_type }> }
+ */
+router.put('/:problemSetId/reporting', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.problemSetId as string;
+    const actorDid = (req.headers['x-did'] as string) || undefined;
+    const { relationships } = req.body as {
+      relationships?: Array<{
+        superior_did: string;
+        subordinate_did: string;
+        relationship_type: 'direct' | 'dotted';
+      }>;
+    };
+
+    if (!Array.isArray(relationships)) {
+      res.status(400).json({ error: 'relationships array is required' });
+      return;
+    }
+
+    // Validate relationship types
+    for (const rel of relationships) {
+      if (!rel.superior_did || !rel.subordinate_did) {
+        res.status(400).json({ error: 'superior_did and subordinate_did are required' });
+        return;
+      }
+      if (rel.relationship_type !== 'direct' && rel.relationship_type !== 'dotted') {
+        res.status(400).json({ error: 'relationship_type must be "direct" or "dotted"' });
+        return;
+      }
+    }
+
+    const result = await memberReportingStore.replaceAll(problemSetId, relationships, actorDid);
+    res.json({ relationships: result });
+  } catch (error) {
+    handleError(res, error);
+  }
+});
+
 export default router;

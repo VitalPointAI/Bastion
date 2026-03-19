@@ -417,6 +417,7 @@ export function MemberDirectory({ problemSetId }: MemberDirectoryProps) {
       {showOrbat && (
         <OrbatModal
           members={visibleMembers}
+          problemSetId={problemSetId}
           onClose={() => setShowOrbat(false)}
           onSelectMember={(m) => {
             setShowOrbat(false);
