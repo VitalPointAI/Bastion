@@ -6,7 +6,6 @@
  * (node_ids array) or defined by a smart query (query_definition JSONB).
  */
 
-import { randomUUID } from 'crypto';
 import { getPool } from '../../lib/database.js';
 
 // =====================

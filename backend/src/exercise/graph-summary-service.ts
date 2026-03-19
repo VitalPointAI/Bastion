@@ -11,8 +11,6 @@ import {
   fetchTensionsByContainer,
   computeEigenvectorCentrality,
   type AdjacencyEntry,
-  type EigenvectorResult,
-  type ContainerTension,
 } from '../graph/tools/raft-tools.js';
 
 // =============================================================================

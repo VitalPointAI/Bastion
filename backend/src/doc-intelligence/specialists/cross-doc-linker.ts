@@ -20,7 +20,7 @@ import { SpecialistBase } from '../specialist-base.js';
 import type { SpecialistConfig } from '../specialist-base.js';
 import { CrossDocLinkSchema } from '../schemas.js';
 import type { ProblemSetContext } from '../schemas.js';
-import type { CrossDocLink, ExtractedFact, LinkType } from '../types.js';
+import type { CrossDocLink, ExtractedFact } from '../types.js';
 import { SpecialistId } from '../types.js';
 import type { BastionState } from '../../orchestration/state.js';
 import { entityResolutionService } from '../../graph/resolution/resolution-service.js';
@@ -31,9 +31,6 @@ import { getPool } from '../../lib/database.js';
 // ============================================================================
 // Constants
 // ============================================================================
-
-/** Minimum similarity for entity co-reference detection */
-const CO_REFERENCE_THRESHOLD = 0.80;
 
 /** Minimum strength to consider a cross-doc link significant */
 const LINK_STRENGTH_THRESHOLD = 0.3;

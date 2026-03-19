@@ -11,7 +11,6 @@
  */
 
 import { discoveryStore } from './discovery-store.js';
-import type { DeviceBehavioralBaseline } from './types.js';
 
 // ---------------------------------------------------------------------------
 // Constants

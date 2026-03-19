@@ -402,7 +402,7 @@ class MissionSequenceOrchestrator extends EventEmitter {
   /**
    * Poll mission states until all followers complete their advance.
    */
-  private monitorFollowerArrival(seqId: string, missionIds: string[]): void {
+  private monitorFollowerArrival(seqId: string, _missionIds: string[]): void {
     const checkInterval = setInterval(async () => {
       const state = this.sequences.get(seqId);
       if (!state || state.phase !== 'advance') {

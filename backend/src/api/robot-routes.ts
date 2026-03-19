@@ -17,6 +17,7 @@ import { getMissionSequenceOrchestrator } from '../robot/mission-sequence-orches
 import { getAutonomousOrchestrator } from '../robot/autonomous-mission-orchestrator.js';
 import { startSimulation, pauseSimulation, resumeSimulation, stopSimulation, resetSimulation, listSimulations } from '../robot/mission-simulator.js';
 import { loadCoalitionProfiles } from '../robot/coalition-caveat-service.js';
+import type { COPLayerSpec } from '../cop/layers/layer-types.js';
 
 // Calibration profile storage (file-based for MVP)
 const __filename = fileURLToPath(import.meta.url);
@@ -661,7 +662,7 @@ robotRouter.post('/scenarios/seed-strategic-cop', async (req, res) => {
             sourceDocumentIds: ['pacific-strategy-ay26'],
             ccoValidated: false,
           },
-        } as any,
+        } as COPLayerSpec,
       });
       created.push(result.id);
     }

@@ -199,7 +199,7 @@ router.post(
 
         broadcastSSE(problemSetId, 'classify:start', { processId, content_preview: contentPreview });
 
-        let classifyContent: string | Buffer = fileBuffer ?? content ?? '';
+        const classifyContent: string | Buffer = fileBuffer ?? content ?? '';
         const hint: { filename?: string; mimeType?: string } = {};
         if (filename) hint.filename = filename;
         if (mimeType) hint.mimeType = mimeType;

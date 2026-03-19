@@ -302,7 +302,7 @@ validationRouter.get(
 
       // Get all results (limited by query params)
       const runs = await validationStore.getRecentRuns(100);
-      let allResults: Array<Record<string, unknown>> = [];
+      const allResults: Array<Record<string, unknown>> = [];
 
       for (const run of runs) {
         // Filter by date range

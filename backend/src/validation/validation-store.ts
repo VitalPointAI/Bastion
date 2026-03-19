@@ -104,7 +104,7 @@ function rowToThreshold(row: Record<string, unknown>): ThresholdConfigRow {
   };
 }
 
-function rowToEvaluatorDrift(row: Record<string, unknown>): EvaluatorDriftRow {
+function _rowToEvaluatorDrift(row: Record<string, unknown>): EvaluatorDriftRow {
   return {
     id: row.id as string,
     run_id: row.run_id as string,

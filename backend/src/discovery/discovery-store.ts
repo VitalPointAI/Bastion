@@ -299,7 +299,6 @@ async function updateDeviceState(
   if (extra?.quarantineReason !== undefined) {
     setClauses.push(`quarantine_reason = $${paramIdx}`);
     params.push(extra.quarantineReason);
-    paramIdx++;
   }
 
   const result = await pool.query(
@@ -623,7 +622,7 @@ async function updateScanTarget(
     params.push(updates.enabled);
   }
   if (updates.legalConsentAt !== undefined) {
-    setClauses.push(`legal_consent_at = $${paramIdx++}`);
+    setClauses.push(`legal_consent_at = $${paramIdx}`);
     params.push(updates.legalConsentAt);
   }
 

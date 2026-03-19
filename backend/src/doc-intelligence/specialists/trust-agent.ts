@@ -22,7 +22,6 @@ import { z } from 'zod';
 import { SpecialistBase } from '../specialist-base.js';
 import type { SpecialistConfig } from '../specialist-base.js';
 import type { ProblemSetContext } from '../schemas.js';
-import { NATORatingSchema } from '../schemas.js';
 import type { NATORating } from '../source-registry/nato-ratings.js';
 import { isHumanReviewRequired } from '../source-registry/nato-ratings.js';
 import type { SourceReliability } from '../source-registry/nato-ratings.js';

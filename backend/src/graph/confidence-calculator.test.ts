@@ -121,7 +121,7 @@ describe('SOURCE_WEIGHTS', () => {
   });
 
   it('all weights are in the 0-1 range', () => {
-    for (const [src, weight] of Object.entries(SOURCE_WEIGHTS)) {
+    for (const [_src, weight] of Object.entries(SOURCE_WEIGHTS)) {
       expect(weight).toBeGreaterThanOrEqual(0);
       expect(weight).toBeLessThanOrEqual(1);
       expect(weight).not.toBeNaN();
@@ -167,7 +167,7 @@ describe('HALF_LIFE_DEFAULTS', () => {
   });
 
   it('all half-lives are positive integers in days', () => {
-    for (const [factType, days] of Object.entries(HALF_LIFE_DEFAULTS)) {
+    for (const [_factType, days] of Object.entries(HALF_LIFE_DEFAULTS)) {
       expect(days).toBeGreaterThan(0);
       expect(Number.isInteger(days)).toBe(true);
     }

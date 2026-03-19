@@ -120,7 +120,7 @@ mcpRouter.post('/messages', async (req: Request, res: Response) => {
   }
 
   try {
-    await session.transport.handlePostMessage(req as any, res as any);
+    await session.transport.handlePostMessage(req as unknown as Request, res as unknown as Response);
   } catch (err) {
     console.error(`[mcp-router] Error handling message for session ${sessionId}:`, err);
     if (!res.headersSent) {

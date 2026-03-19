@@ -28,7 +28,6 @@ import type {
   BiasAssessment,
   CrossDocLink,
   SpecialistResult,
-  SpecialistId,
   DocumentIntelligenceReport,
 } from './types.js';
 import { DocumentType, SpecialistId as SpecialistIds } from './types.js';
@@ -260,13 +259,11 @@ export class DocumentOrchestrator {
    */
   private async createGraph() {
     const checkpointer = await getCheckpointer();
-    const orchestrator = this;
-
     const graph = new StateGraph(DocIntelligenceStateAnnotation);
 
     // ------- Triage Node -------
     graph.addNode('triage', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: 'triage',
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -284,7 +281,7 @@ export class DocumentOrchestrator {
         ),
       ];
 
-      const model = await orchestrator.getModel();
+      const model = await this.getModel();
       const response = await model.invoke(messages);
       const content = typeof response.content === 'string'
         ? response.content
@@ -299,7 +296,7 @@ export class DocumentOrchestrator {
       const parsed = JSON.parse(jsonMatch[0]);
       const validated = TriageDecisionSchema.parse(parsed);
 
-      orchestrator.emitProgress('specialist:complete', {
+      this.emitProgress('specialist:complete', {
         agentId: 'triage',
         documentId: state.documentId,
         result: { documentType: validated.documentType, relevanceScore: validated.relevanceScore },
@@ -311,7 +308,7 @@ export class DocumentOrchestrator {
 
     // ------- Format Converter Node (stub - implemented by specialist in Task 2) -------
     graph.addNode('format-converter', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: SpecialistIds.FORMAT_CONVERTER,
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -327,7 +324,7 @@ export class DocumentOrchestrator {
         duration: Date.now() - startTime,
       };
 
-      orchestrator.emitProgress('specialist:complete', {
+      this.emitProgress('specialist:complete', {
         agentId: SpecialistIds.FORMAT_CONVERTER,
         documentId: state.documentId,
         duration: result.duration,
@@ -342,7 +339,7 @@ export class DocumentOrchestrator {
 
     // ------- Document Classifier Node (stub - implemented by specialist in Task 2) -------
     graph.addNode('classifier', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: SpecialistIds.DOCUMENT_CLASSIFIER,
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -365,7 +362,7 @@ export class DocumentOrchestrator {
         duration: Date.now() - startTime,
       };
 
-      orchestrator.emitProgress('specialist:complete', {
+      this.emitProgress('specialist:complete', {
         agentId: SpecialistIds.DOCUMENT_CLASSIFIER,
         documentId: state.documentId,
         duration: result.duration,
@@ -382,7 +379,7 @@ export class DocumentOrchestrator {
     // These will be replaced by actual specialist implementations in later plans.
 
     graph.addNode('fact-extractor', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: SpecialistIds.FACT_EXTRACTOR,
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -398,7 +395,7 @@ export class DocumentOrchestrator {
     });
 
     graph.addNode('perspective-analyst', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: SpecialistIds.PERSPECTIVE_ANALYST,
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -414,7 +411,7 @@ export class DocumentOrchestrator {
     });
 
     graph.addNode('bias-identifier', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: SpecialistIds.BIAS_IDENTIFIER,
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -430,7 +427,7 @@ export class DocumentOrchestrator {
     });
 
     graph.addNode('objective-extractor', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: SpecialistIds.OBJECTIVE_EXTRACTOR,
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -446,7 +443,7 @@ export class DocumentOrchestrator {
     });
 
     graph.addNode('cross-doc-linker', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: SpecialistIds.CROSS_DOC_LINKER,
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -462,7 +459,7 @@ export class DocumentOrchestrator {
     });
 
     graph.addNode('quality-assessor', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: SpecialistIds.QUALITY_ASSESSOR,
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -478,7 +475,7 @@ export class DocumentOrchestrator {
     });
 
     graph.addNode('trust-agent', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: SpecialistIds.TRUST_AGENT,
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -496,7 +493,7 @@ export class DocumentOrchestrator {
     // ------- Categorization Agent Node (runs after fact+objective extraction) -------
     // Enriches extracted objectives with DIME/MIDLIFE categories. Non-blocking.
     graph.addNode('categorization-agent', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: SpecialistIds.CATEGORIZATION_AGENT,
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -546,7 +543,7 @@ export class DocumentOrchestrator {
             extractedObjectives,
             extractedEntityNames: [...new Set(extractedEntityNames)],
             onProgress: (stage, detail) => {
-              orchestrator.emitProgress('specialist:progress', {
+              this.emitProgress('specialist:progress', {
                 agentId: SpecialistIds.CATEGORIZATION_AGENT,
                 stage,
                 detail,
@@ -570,7 +567,7 @@ export class DocumentOrchestrator {
         duration: Date.now() - startTime,
       };
 
-      orchestrator.emitProgress('specialist:complete', {
+      this.emitProgress('specialist:complete', {
         agentId: SpecialistIds.CATEGORIZATION_AGENT,
         documentId: state.documentId,
         duration: result.duration,
@@ -582,7 +579,7 @@ export class DocumentOrchestrator {
 
     // ------- Report Assembly Node -------
     graph.addNode('report-assembly', async (state: DocIntelligenceState) => {
-      orchestrator.emitProgress('specialist:start', {
+      this.emitProgress('specialist:start', {
         agentId: 'report-assembly',
         documentId: state.documentId,
         timestamp: new Date().toISOString(),
@@ -611,7 +608,7 @@ export class DocumentOrchestrator {
         summary: `Document ${state.documentId} classified as ${triage.documentType} with relevance ${triage.relevanceScore}. ${Object.keys(state.specialistResults).length} specialists executed.`,
       };
 
-      orchestrator.emitProgress('report:assembled', {
+      this.emitProgress('report:assembled', {
         reportId: state.documentId,
         entityCount: state.facts.length,
         specialistCount: Object.keys(state.specialistResults).length,
@@ -648,9 +645,7 @@ export class DocumentOrchestrator {
       const targets: string[] = [];
 
       // Always run fact extractor
-      if (specialists.includes(SpecialistIds.FACT_EXTRACTOR) || true) {
-        targets.push('fact-extractor');
-      }
+      targets.push('fact-extractor');
       if (specialists.includes(SpecialistIds.PERSPECTIVE_ANALYST)) {
         targets.push('perspective-analyst');
       }

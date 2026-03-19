@@ -16,7 +16,7 @@ import { mopStore } from './mop-store.js';
 import { decayService } from './decay-service.js';
 import { getPool } from '../lib/database.js';
 import { gateStore } from '../gates/gate-store.js';
-import { GateType } from '../gates/gate-types.js';
+import { GateType, GateStatus } from '../gates/gate-types.js';
 
 class AggregationService {
   /**
@@ -122,7 +122,7 @@ class AggregationService {
       if (redMOPs >= 3) {
         reasons.push(`${redMOPs} MOPs at red status`);
       }
-      const description =
+      const _description =
         `Assessment-driven reframing recommended: ${reasons.join('; ')}. ` +
         'Current operational approach may need re-evaluation based on assessment data.';
 
@@ -131,7 +131,7 @@ class AggregationService {
         const existingGates = await gateStore.findByFilter({
           problem_set_id: problemSetId,
           gate_type: GateType.reframing,
-          status: 'pending' as any,
+          status: GateStatus.pending,
         });
 
         if (existingGates.length > 0) {

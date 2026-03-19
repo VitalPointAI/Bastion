@@ -245,7 +245,7 @@ describe('temporal queries', () => {
     const { actorStore } = await import('./actor-store.js');
 
     // Mock: one expired actor (validTo in past) and one currently valid
-    const expiredActorProps = makeMockActorRecord({
+    const _expiredActorProps = makeMockActorRecord({
       id: 'ACT-expired',
       name: 'Expired Entity',
       validFrom: '2025-01-01T00:00:00Z',

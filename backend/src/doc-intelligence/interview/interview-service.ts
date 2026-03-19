@@ -14,7 +14,7 @@
  *   process_answer -> check_complete -> ask_question|summarize -> END
  */
 
-import { Annotation, StateGraph, MessagesAnnotation, END } from '@langchain/langgraph';
+import { Annotation, StateGraph, MessagesAnnotation } from '@langchain/langgraph';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 import type { BaseMessage } from '@langchain/core/messages';
 import { getCheckpointer } from '../../orchestration/checkpointer.js';
@@ -28,7 +28,6 @@ import {
 } from './interview-prompts.js';
 import {
   saveProblemSetContext,
-  getProblemSetContext,
   getContextVersion,
 } from './interview-store.js';
 
@@ -469,7 +468,7 @@ export class InterviewService {
       content.length, content.substring(0, 300));
 
     // Try direct JSON.parse first (in case LLM returned clean JSON)
-    let rawContext: Record<string, unknown> | null = null;
+    let rawContext: Record<string, unknown> | null;
     try {
       rawContext = JSON.parse(content.trim());
     } catch {
@@ -486,7 +485,7 @@ export class InterviewService {
         rawContext = JSON.parse(jsonMatch[1]);
       } catch (parseErr) {
         console.error('[InterviewService] JSON parse failed:', parseErr, 'Raw:', jsonMatch[1].substring(0, 500));
-        throw new Error('Failed to parse ProblemSetContext JSON from interview');
+        throw new Error('Failed to parse ProblemSetContext JSON from interview', { cause: parseErr });
       }
     }
 

@@ -13,7 +13,6 @@ import { tensionStore } from '../raft/tension-store.js';
 import { entityResolutionService } from '../resolution/resolution-service.js';
 import { detectContradiction, type AssertionInput } from '../contradiction-detector.js';
 import { SOURCE_WEIGHTS, HALF_LIFE_DEFAULTS } from '../confidence-calculator.js';
-import { ACTOR_TYPE_TO_CCO_MAP } from '../raft/types.js';
 import type { SourceMethod } from '../provenance-types.js';
 import {
   ActorExtractionResponseSchema,

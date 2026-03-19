@@ -112,7 +112,7 @@ function inferFrequency(transportType: string, rawData: Record<string, unknown>)
 // ---------------------------------------------------------------------------
 
 export class EMCollector implements EMDataSource {
-  readonly sourceType: 'inferred' = 'inferred';
+  readonly sourceType = 'inferred' as const;
 
   /** Sliding window of environmental signal observations */
   private environmentSignals: EMSignalEntry[] = [];

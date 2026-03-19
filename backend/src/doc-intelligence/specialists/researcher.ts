@@ -642,8 +642,6 @@ Return ONLY the Markdown brief content.`,
    */
   async registerWorkers(): Promise<void> {
     const boss = await getSharedBoss();
-    const researcher = this;
-
     // Create queues
     await boss.createQueue(RESEARCH_QUEUE);
     await boss.createQueue(OSINT_MONITOR_QUEUE);
@@ -656,7 +654,7 @@ Return ONLY the Markdown brief content.`,
 
         try {
           // Load problem set context
-          const context = await researcher.loadProblemSetContext(data.problemSetId);
+          const context = await this.loadProblemSetContext(data.problemSetId);
           if (!context) {
             console.error(`[researcher] No context found for ${data.problemSetId}`);
             return;
@@ -671,7 +669,7 @@ Return ONLY the Markdown brief content.`,
             priority: 'high' as const,
           }));
 
-          await researcher.executeResearchCycle(
+          await this.executeResearchCycle(
             data.problemSetId,
             context,
             gaps,
@@ -690,14 +688,14 @@ Return ONLY the Markdown brief content.`,
         console.log(`[researcher] OSINT monitoring cycle for ${data.problemSetId}`);
 
         try {
-          const context = await researcher.loadProblemSetContext(data.problemSetId);
+          const context = await this.loadProblemSetContext(data.problemSetId);
           if (!context) {
             console.error(`[researcher] No context found for ${data.problemSetId}`);
             return;
           }
 
           // Auto-detect gaps and research them
-          await researcher.executeResearchCycle(
+          await this.executeResearchCycle(
             data.problemSetId,
             context,
             [], // Empty = auto-detect

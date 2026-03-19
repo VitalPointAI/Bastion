@@ -167,7 +167,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
       cancelled = true;
       clearInterval(interval);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [activeProblemSetId, userRoleInActive, pendingDecisionTick]);
 
   // ─── Task State ──────────────────────────────────────────────────────────

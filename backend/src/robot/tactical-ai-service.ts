@@ -211,11 +211,11 @@ Assess the tactical situation. Recommend an overwatch position for the leader an
 
 function generateFallbackPlan(
   threats: ThreatInfo[],
-  friendlyPositions: {
+  _friendlyPositions: {
     leader: { id: string; position: { x: number; y: number } };
     followers: Array<{ id: string; position: { x: number; y: number } }>;
   },
-  homeBase: { x: number; y: number },
+  _homeBase: { x: number; y: number },
 ): TacticalPlan {
   // Use the same positions as the scripted Iron Bastion but with reasoning
   return {

@@ -26,7 +26,7 @@ import { SpecialistBase } from '../specialist-base.js';
 import type { SpecialistConfig } from '../specialist-base.js';
 import type { ProblemSetContext } from '../schemas.js';
 import { BiasAssessmentSchema } from '../schemas.js';
-import type { BiasAssessment, BiasSeverity, DocumentType } from '../types.js';
+import type { BiasAssessment, DocumentType } from '../types.js';
 import { SpecialistId, DocumentType as DocType } from '../types.js';
 import type { BastionState } from '../../orchestration/state.js';
 import { z } from 'zod';
@@ -198,10 +198,10 @@ export class BiasIdentifier extends SpecialistBase {
 
     this.reportProgress('analyzing', 'Scanning for biases and IO markers');
 
-    const systemPrompt = this.buildSystemPrompt(context, documentType);
+    const _systemPrompt = this.buildSystemPrompt(context, documentType);
 
     // Build user message
-    const userMessage = [
+    const _userMessage = [
       documentType ? `Document type: ${documentType}` : '',
       `Document text:\n${documentText}`,
       '',

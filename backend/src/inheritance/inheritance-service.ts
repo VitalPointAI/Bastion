@@ -17,8 +17,6 @@ import type {
   InterpretationAcknowledgment,
   InheritanceRFI,
 } from './inheritance-types.js';
-import type { Echelon } from '../problem-set/types.js';
-
 // ============================================================================
 // Change Severity Classification
 // ============================================================================

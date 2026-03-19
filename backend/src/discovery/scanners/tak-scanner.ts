@@ -104,7 +104,6 @@ export class TAKScanner extends BaseScanner {
         let startIdx: number;
         let endIdx: number;
 
-        // eslint-disable-next-line no-constant-condition
         while (true) {
           startIdx = buffer.indexOf('<event');
           endIdx = buffer.indexOf('</event>');

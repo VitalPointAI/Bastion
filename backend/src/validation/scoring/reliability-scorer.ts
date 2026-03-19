@@ -74,8 +74,6 @@ function checkCitations(
     }
   }
 
-  const score = requiredCitations.length > 0 ? found / requiredCitations.length : 1;
-
   return {
     name: 'required-citations',
     passed: missing.length === 0,
@@ -105,8 +103,6 @@ function checkTerminology(
       missing.push(term);
     }
   }
-
-  const score = requiredTerminology.length > 0 ? found / requiredTerminology.length : 1;
 
   return {
     name: 'required-terminology',
@@ -149,8 +145,6 @@ function checkStructuredOutput(
       mismatches.push(key);
     }
   }
-
-  const score = matching / expectedKeys.length;
 
   return {
     name: 'structured-output',

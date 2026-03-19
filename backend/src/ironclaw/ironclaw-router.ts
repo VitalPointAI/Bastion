@@ -13,7 +13,6 @@ import { actionPipeline } from './action-pipeline.js';
 import { ironclawStore } from './ironclaw-store.js';
 import { SENSITIVE_FIELDS } from './ironclaw-types.js';
 import { getMessageBus } from '../messaging/message-bus.js';
-import { verifyRequest } from './hmac-auth.js';
 import { getPool } from '../lib/database.js';
 import { problemSetMemberStore } from '../problem-set/problem-set-member-store.js';
 import { problemSetStore } from '../problem-set/problem-set-store.js';

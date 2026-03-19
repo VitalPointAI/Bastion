@@ -148,7 +148,7 @@ export class SelfUpdateService {
    * Rolls back on health check failure.
    */
   async performUpdate(
-    notifyProblemSetId?: string,
+    _notifyProblemSetId?: string,
   ): Promise<UpdateResult> {
     if (this.isUpdating) {
       return {

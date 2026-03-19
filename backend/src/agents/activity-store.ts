@@ -241,7 +241,7 @@ class ActivityStore {
     const dataResult = await pool.query(
       `SELECT * FROM agent_activity_log ${whereClause}
        ORDER BY created_at DESC
-       LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
+       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
       [...params, limit, offset]
     );
 
@@ -267,7 +267,7 @@ class ActivityStore {
       params.push(filter.agentId);
     }
     if (filter?.teamId) {
-      conditions.push(`team_id = $${paramIdx++}`);
+      conditions.push(`team_id = $${paramIdx}`);
       params.push(filter.teamId);
     }
 

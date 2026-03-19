@@ -1736,7 +1736,7 @@ Return ONLY valid JSON, no markdown.`;
     };
 
     // Use the same handler but skip WS ack (simulated)
-    this.handleStateUpdateInternal(robot, msg as any).catch((err) =>
+    this.handleStateUpdateInternal(robot, msg).catch((err) =>
       console.error('[RobotMissionService] Simulated state update error:', err),
     );
   }

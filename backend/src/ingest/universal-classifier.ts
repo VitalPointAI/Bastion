@@ -26,11 +26,6 @@ const DOC_MIME_PREFIXES = [
   'image/',
 ];
 
-function mimeToSuggestedPipeline(_mimeType: string): SuggestedPipeline {
-  // All known file types route through doc-intelligence
-  return 'doc-intelligence';
-}
-
 // ─── Main Export ────────────────────────────────────────────────────────────
 
 /**
@@ -46,7 +41,7 @@ export async function classifyInput(
   // ── 1. Buffer → file ────────────────────────────────────────────────────
   if (Buffer.isBuffer(content)) {
     const mimeType = hint?.mimeType;
-    const isKnownDocMime = mimeType
+    const _isKnownDocMime = mimeType
       ? DOC_MIME_PREFIXES.some((prefix) => mimeType.startsWith(prefix))
       : false;
 
@@ -64,8 +59,8 @@ export async function classifyInput(
 
   // ── 2. URL → call unfurlUrl, map result ─────────────────────────────────
   if (isUrl(trimmed)) {
-    let inputType: InputType = 'api_url';
-    let suggestedPipeline: SuggestedPipeline = 'manual';
+    let inputType: InputType;
+    let suggestedPipeline: SuggestedPipeline;
     const metadata: ClassificationResult['metadata'] = {};
 
     try {

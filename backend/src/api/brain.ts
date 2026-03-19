@@ -187,7 +187,7 @@ router.get('/graph-snapshot', async (req: Request, res: Response) => {
 
     // ── Enrich nodes with JSON-LD provenance fields ──────────────────────────
     // Batch query to detect :CONTRADICTS edges (isContradicted flag)
-    let contradictedNodeIds = new Set<string>();
+    const contradictedNodeIds = new Set<string>();
     try {
       const nodeIds = (graphState.nodes as Array<{ id?: unknown }>)
         .map((n) => n.id)

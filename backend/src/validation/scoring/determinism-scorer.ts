@@ -243,7 +243,7 @@ export async function scoreDeterminism(
     const outputB = runs[j].output;
     const pairLabel = `run-${i}-vs-${j}`;
 
-    let pairScore = 0;
+    let pairScore: number;
 
     if (method === 'structured_diff') {
       const result = structuredDiffScore(outputA, outputB);

@@ -252,8 +252,8 @@ class StrategicGuidanceService {
 
   private async autoPopulateChildCampaigns(
     problemSetId: string,
-    directive: CommanderDirectiveContent,
-    approach: OperationalApproachContent | undefined,
+    _directive: CommanderDirectiveContent,
+    _approach: OperationalApproachContent | undefined,
   ): Promise<void> {
     const children = await this.getChildCampaignProblemSets(problemSetId);
     if (children.length === 0) return;

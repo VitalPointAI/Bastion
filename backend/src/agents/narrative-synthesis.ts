@@ -170,14 +170,14 @@ function collectCVs(node: CoGNode | null): CoGNode[] {
 /**
  * Recursively collect all CCs from a CoG node tree.
  */
-function collectCCs(node: CoGNode | null): CoGNode[] {
+function _collectCCs(node: CoGNode | null): CoGNode[] {
   if (!node) return [];
   const ccs: CoGNode[] = [];
   if (node.type === 'critical-capability') {
     ccs.push(node);
   }
   for (const child of node.children) {
-    ccs.push(...collectCCs(child));
+    ccs.push(..._collectCCs(child));
   }
   return ccs;
 }

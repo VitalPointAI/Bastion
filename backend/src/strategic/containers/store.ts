@@ -8,14 +8,13 @@ import { getPool } from '../../lib/database.js';
 import { randomUUID } from 'crypto';
 import type {
   StrategicEnvironment,
-  ActorCategory,
   StrategicContainer,
   ContainerAgentAssignment,
   CategoryGroup,
   ContainerSuggestion,
 } from './types.js';
 import { DEFAULT_ACTOR_CATEGORIES } from './types.js';
-import { createProvider, getDefaultConfig } from '../../strategic/extraction/providers/index.js';
+import { createProvider } from '../../strategic/extraction/providers/index.js';
 import type { ProviderConfig } from '../../strategic/extraction/providers/types.js';
 import { configService } from '../../strategic/config/service.js';
 import { graphBuilder } from '../../graph/construction/graph-builder.js';

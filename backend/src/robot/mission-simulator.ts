@@ -19,9 +19,7 @@
 
 import { randomUUID } from 'crypto';
 import { getRobotMissionService } from './robot-mission-service.js';
-import type { ConnectedRobot } from './robot-types.js';
-import { RobotMissionState } from './robot-types.js';
-import { getMessageBus } from '../messaging/message-bus.js';
+import type { RobotVisionMsg } from './robot-types.js';
 import { getResourceRegistry } from '../resources/resource-registry.js';
 
 // ---------------------------------------------------------------------------
@@ -344,8 +342,6 @@ function simulationTick(session: SimSession): void {
 function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
   console.log(`[Simulator] Triggering vision detection for ${robot.id} at (${robot.position.x.toFixed(1)}, ${robot.position.y.toFixed(1)})`);
 
-  const messageBus = getMessageBus();
-
   // Simulate detection of each threat class with slight delay between them
   session.threatClasses.forEach((classDesc, i) => {
     setTimeout(() => {
@@ -369,7 +365,7 @@ function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
 
       // Feed through mission service vision handler
       const svc = getRobotMissionService();
-      svc.handleVisionMsg(visionMsg as any);
+      svc.handleVisionMsg(visionMsg as RobotVisionMsg);
 
       console.log(`[Simulator] Vision detection: ${classDesc} (conf=${visionMsg.detections[0].confidence.toFixed(2)})`);
     }, i * 2000);

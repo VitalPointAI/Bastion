@@ -6,7 +6,7 @@
  * comparison and text similarity for free-text responses.
  */
 
-import type { EvaluationResult, TestScenario } from '../validation-types.js';
+import type { TestScenario } from '../validation-types.js';
 
 /**
  * Score determinism by comparing multiple agent outputs for the same scenario.
@@ -17,7 +17,7 @@ import type { EvaluationResult, TestScenario } from '../validation-types.js';
  */
 export async function scoreDeterminism(
   runs: Array<string | Record<string, unknown>>,
-  scenario: TestScenario,
+  _scenario: TestScenario,
 ): Promise<{ score: number; details: Record<string, unknown> }> {
   if (runs.length < 2) {
     return { score: 1.0, details: { reason: 'single run, determinism=1' } };

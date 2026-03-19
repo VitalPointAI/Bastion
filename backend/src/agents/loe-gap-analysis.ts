@@ -151,7 +151,7 @@ function collectCVs(node: CoGNode | null): CoGNode[] {
 /**
  * Get all unique phases referenced by decisive points across LOEs.
  */
-function getReferencedPhases(loes: LineOfEffort[]): Set<string> {
+function _getReferencedPhases(loes: LineOfEffort[]): Set<string> {
   const phases = new Set<string>();
   for (const loe of loes) {
     for (const dp of loe.decisivePoints) {

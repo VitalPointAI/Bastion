@@ -13,8 +13,6 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ContradictionRecord } from './provenance-types.js';
-
 // ─── Mock Setup ───────────────────────────────────────────────────────────────
 
 // Mock the Neo4j client to avoid real DB connections in unit tests

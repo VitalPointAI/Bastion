@@ -10,7 +10,6 @@
  * records for traceability.
  */
 
-import { z } from 'zod';
 import { SpecialistBase } from '../specialist-base.js';
 import type { SpecialistConfig } from '../specialist-base.js';
 import type { ProblemSetContext } from '../schemas.js';
@@ -33,24 +32,6 @@ const OBJECTIVE_DOCUMENT_TYPES: DocumentType[] = [
   'POLICY_PAPER',
   'MILITARY_ORDER',
 ];
-
-/** Zod schema for validated objective output */
-const ObjectiveOutputSchema = z.object({
-  objectives: z.array(z.object({
-    id: z.string(),
-    description: z.string(),
-    dimeCategory: z.string(),
-    midlifeCategory: z.string(),
-    priority: z.string(),
-    relevanceScore: z.number().min(0).max(1),
-    relevanceReason: z.string(),
-  })),
-  documentSummary: z.string(),
-  extractionConfidence: z.number().min(0).max(1),
-  documentLevel: z.string(),
-});
-
-type ObjectiveOutput = z.infer<typeof ObjectiveOutputSchema>;
 
 // ============================================================================
 // Types
@@ -340,7 +321,7 @@ For each extracted objective, provide a relevance score (0-1) indicating how clo
       .join(' ')
       .toLowerCase();
 
-    const objectiveWords = new Set(objectiveText.split(/\s+/).filter((w) => w.length > 3));
+    const _objectiveWords = new Set(objectiveText.split(/\s+/).filter((w) => w.length > 3));
     const reasons: string[] = [];
 
     // Calculate term overlap

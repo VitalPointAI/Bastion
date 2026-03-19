@@ -8,7 +8,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { designStore } from '../design/design-store.js';
-import type { CoGAnalysis, LineOfEffort, OperationalApproach, OperationalDesign } from '../design/types.js';
+import type { CoGAnalysis, LineOfEffort, OperationalDesign } from '../design/types.js';
 import { getAgentRegistry } from '../agents/registry.js';
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { listDocuments } from '../strategic/ingestion/document-store.js';

@@ -11,10 +11,9 @@ import type {
   CircuitState,
   CircuitBreakerEventRow,
   CircuitEventType,
-  ValidationAgentScoreRow,
 } from './validation-types.js';
 import { validationStore } from './validation-store.js';
-import { getThresholdForAgent, type ResolvedThreshold } from './threshold-config.js';
+import { getThresholdForAgent } from './threshold-config.js';
 import { getAgentRegistry } from '../agents/registry.js';
 import { aiStaffStore } from '../ai-staff/index.js';
 

@@ -125,7 +125,7 @@ export async function extractEntitiesFromEvent(event: OSINTEvent): Promise<Extra
     const obj = parsed as Record<string, unknown>;
 
     // Parse locations — handle both string[] and structured object[] formats
-    let locations: GeoLocation[] = [];
+    const locations: GeoLocation[] = [];
     if (Array.isArray(obj.locations)) {
       for (const loc of obj.locations as unknown[]) {
         if (typeof loc === 'string') {

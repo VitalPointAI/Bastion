@@ -17,7 +17,6 @@
  * overrideReason for full audit trail.
  */
 
-import { z } from 'zod';
 import { SpecialistBase } from '../specialist-base.js';
 import type { SpecialistConfig } from '../specialist-base.js';
 import { NATORatingSchema } from '../schemas.js';

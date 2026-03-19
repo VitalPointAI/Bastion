@@ -33,7 +33,6 @@ import { StrategicImportService } from '../exercise/strategic-import-service.js'
 import { inferTagsFromPath } from '../exercise/package-parser.js';
 import type { AgentTeamConfig } from '../exercise/types.js';
 import { STAFF_ROLE_CONFIG, PRODUCT_TYPE_REGISTRY } from '../exercise/types.js';
-import { configService } from '../strategic/config/service.js';
 import { resolveProviderConfig } from '../strategic/config/resolve-api-key.js';
 import type { ProviderConfig } from '../strategic/extraction/providers/types.js';
 import { OpenAICompatibleProvider } from '../strategic/extraction/providers/openai-provider.js';

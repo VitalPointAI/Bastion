@@ -202,7 +202,7 @@ function wrapNode(
       return {
         specialistResults: {
           [specialistId]: {
-            specialistId: specialistId as any,
+            specialistId: specialistId as SpecialistId,
             status: 'error' as const,
             output: null,
             duration,
@@ -323,7 +323,6 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
   // ------- Document Classifier Node -------
   graph.addNode('classifier', wrapNode(SpecialistId.DOCUMENT_CLASSIFIER, onProgress, async (state) => {
     const startTime = Date.now();
-    const textToClassify = state.convertedText ?? state.documentText;
 
     // Use the classifier's createNode() which wraps the LangGraph agent
     // But for direct invocation, we call the classify method pattern

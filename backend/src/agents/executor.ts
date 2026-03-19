@@ -187,11 +187,8 @@ export class AgentExecutor {
     // 8. Execute capability handler via LangGraph wrapper
     const startTime = Date.now();
     let output: Record<string, unknown>;
-    let execSuccess = false;
-
     try {
       output = await this.executeHandler(capability, context, input);
-      execSuccess = true;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       return this.errorResult(`Capability execution failed: ${message}`);
@@ -200,7 +197,7 @@ export class AgentExecutor {
     const duration = Date.now() - startTime;
 
     // 9. Update health metrics in AgentStore (fire-and-forget)
-    this.updateHealthMetrics(agentId, execSuccess, duration);
+    this.updateHealthMetrics(agentId, true, duration);
 
     // 10. Determine if human approval is needed
     const requiresHumanApproval = effectiveAutonomy === AutonomyLevel.NotAutonomous;
@@ -225,7 +222,7 @@ export class AgentExecutor {
       skill: capability,
       input,
       duration,
-      success: execSuccess,
+      success: true,
     }).catch((err) => {
       console.warn(`[AgentExecutor] DB action log failed for ${agentId}:`, err instanceof Error ? err.message : err);
     });

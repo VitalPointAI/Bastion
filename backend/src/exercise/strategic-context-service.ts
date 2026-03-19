@@ -11,7 +11,7 @@
  */
 
 import { getPool } from '../lib/database.js';
-import type { ProblemSetSubscriptionStore, CachedDoc } from '../problem-set/problem-set-subscription-store.js';
+import type { ProblemSetSubscriptionStore } from '../problem-set/problem-set-subscription-store.js';
 import type { ContainerStore } from '../strategic/containers/store.js';
 import type { GraphSummaryService, GraphSummary } from './graph-summary-service.js';
 import { listDocuments } from '../strategic/ingestion/document-store.js';

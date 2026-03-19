@@ -1119,7 +1119,6 @@ export class InheritanceStore {
     if (updates.acknowledgedAt !== undefined) {
       setClauses.push(`acknowledged_at = $${paramIndex}`);
       params.push(updates.acknowledgedAt);
-      paramIndex++;
     }
 
     const result = await pool.query(

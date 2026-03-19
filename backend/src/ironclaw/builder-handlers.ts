@@ -59,6 +59,7 @@ const agentCreate: ActionHandler = async (payload, userDid) => {
   const { getAgentRegistry } = await import('../agents/registry.js');
   const registry = getAgentRegistry();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used in typeof expressions for type assertions
   const { AgentPhase, AutonomyLevel, AgentCapability, ProposalKind } = await import('../agents/types.js');
 
   const manifest = {
