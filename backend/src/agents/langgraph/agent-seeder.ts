@@ -740,13 +740,7 @@ export async function seedLangGraphAgents(): Promise<SeedResult[]> {
     console.error('[AgentSeeder] Inactive stub agent seeding failed:', error);
   }
 
-  // Seed all 108 JPP staff agents from agent-library.ts
-  try {
-    const { seedStaffAgents } = await import('./staff-agent-seeder.js');
-    await seedStaffAgents();
-  } catch (error) {
-    console.error('[AgentSeeder] Staff agent seeding failed:', error);
-  }
+  // Staff officers removed in Phase 51 — Ironclaw replaces that role
 
   // Log summary
   const successful = results.filter(r => r.registered);

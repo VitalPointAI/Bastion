@@ -21,7 +21,6 @@ import type { ProductVersionStore } from './product-version-store.js';
 import type { AIContextStore } from './ai-context-store.js';
 import type { StrategicContextService, StrategicEnvironmentContext } from './strategic-context-service.js';
 import type { StaffAgentDef, ReviewFeedback } from './types.js';
-import { getDefaultAgentsForRole } from './agent-library.js';
 import { getPool } from '../lib/database.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -101,8 +100,8 @@ function assembleContextNode(stores: StoreContext) {
   return async (state: AIRoleStateType): Promise<Partial<AIRoleStateType>> => {
     const { scenarioId, roleKey, runId } = state;
 
-    // Load default agent team for this role
-    const agentTeam = getDefaultAgentsForRole(roleKey);
+    // Staff officers removed — load agents assigned to this role from DB (if any)
+    const agentTeam: StaffAgentDef[] = [];
 
     // Load shared context from AIContextStore
     const sharedContext = await stores.aiContextStore.readAll(scenarioId);

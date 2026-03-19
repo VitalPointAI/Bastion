@@ -44,7 +44,7 @@ import { AIContextStore } from '../exercise/ai-context-store.js';
 import { AICoordinationStore } from '../exercise/ai-coordination-store.js';
 import { TriggerRouter, registerAIRoleWorker } from '../exercise/trigger-router.js';
 import { LangGraphAgentRunner } from '../exercise/ai-role-runner.js';
-import { getDefaultAgentsForRole } from '../exercise/agent-library.js';
+// Agent library removed in Phase 51 — staff officers replaced by Ironclaw
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
 import type { ReviewFeedback } from '../exercise/types.js';
 import { aarStore } from '../exercise/aar-store.js';
@@ -1963,13 +1963,9 @@ exerciseRouter.get('/scenarios/:id/roles/:roleKey/channel', async (req: Request,
  * GET /api/exercise/scenarios/:id/roles/:roleKey/agents
  * List default agents for a role (from agent library).
  */
-exerciseRouter.get('/scenarios/:id/roles/:roleKey/agents', async (req: Request, res: Response) => {
-  try {
-    const agents = getDefaultAgentsForRole(req.params.roleKey as string);
-    res.json({ agents });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to get agents' });
-  }
+exerciseRouter.get('/scenarios/:id/roles/:roleKey/agents', async (_req: Request, res: Response) => {
+  // Staff officer library removed in Phase 51 — agents now managed via admin dashboard
+  res.json({ agents: [] });
 });
 
 /**

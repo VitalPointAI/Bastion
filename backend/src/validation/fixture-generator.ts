@@ -8,8 +8,9 @@
 import { readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_AGENT_LIBRARY } from '../exercise/agent-library.js';
+// Agent library removed in Phase 51 — fixture generation now works from DB agents
 import type { StaffAgentDef } from '../exercise/types.js';
+const DEFAULT_AGENT_LIBRARY: StaffAgentDef[] = [];
 import type {
   TestFixture,
   TestScenario,

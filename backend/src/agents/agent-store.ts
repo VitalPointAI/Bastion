@@ -22,6 +22,15 @@ export class AgentStore {
    * queries (e.g. filter by status, sort by success_rate).
    */
   async registerAgent(agent: StandardAgent): Promise<void> {
+    // Enforce DID — every agent must have a DID for smart contract authorization
+    if (!agent.agentDID) {
+      const { createAgentDID } = await import('./agent-did.js');
+      const didResult = await createAgentDID(agent.agentId);
+      agent.agentDID = didResult.did;
+      if ('agentBlindedKey' in agent) (agent as unknown as Record<string, unknown>).agentBlindedKey = didResult.blindedKey;
+      if ('agentPublicKey' in agent) (agent as unknown as Record<string, unknown>).agentPublicKey = didResult.publicKey;
+    }
+
     const pool = getPool();
     await pool.query(
       `INSERT INTO agents_v2 (

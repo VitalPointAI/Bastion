@@ -107,9 +107,7 @@ export { createAIRoleGraph, runAIRoleGraph } from './ai-role-graph.js';
 export type { StoreContext as AIRoleStoreContext } from './ai-role-graph.js';
 export { TriggerRouter, registerAIRoleWorker } from './trigger-router.js';
 
-// ─── Agent Library ────────────────────────────────────────────────────────────
-
-export { getDefaultAgentsForRole, DEFAULT_AGENT_LIBRARY } from './agent-library.js';
+// Agent Library removed in Phase 51 — staff officers replaced by Ironclaw
 
 // ─── Package Parser & Extraction Service ──────────────────────────────────────
 
