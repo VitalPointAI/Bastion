@@ -745,6 +745,16 @@ Plans:
 - [ ] 51-06-PLAN.md — Ironclaw upgrade, context-awareness, delegation commands
 - [ ] 51-07-PLAN.md — AIStaffContext removal, Ironclaw sole interface, verification
 
+### Phase 52: Agent Skills & MCP
+
+**Goal:** Standalone MCP server for agent tool execution, reusable skills registry with DB storage and admin UI, Ironclaw skill/tool/team builder via action cards, and field write-back handler for applying AI suggestions to problem set fields
+**Requirements**: REQ-52-01 through REQ-52-04
+**Depends on:** Phase 51
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 52 to break down)
+
 ---
 
 **MCP Tools (deterministic operations - added to MCP server):**
