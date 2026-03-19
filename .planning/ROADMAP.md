@@ -762,13 +762,18 @@ Plans:
 
 ### Phase 53: DID Governance Architecture & Bug Fixes
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Extend DID documents with governance policy, build RACI-aware decision pipeline with on-chain recording, rename Direct tab to Decide with proactive decision surfacing, fix bugs and wire MCP tools
+**Requirements**: REQ-53-01 through REQ-53-08
 **Depends on:** Phase 52
-**Plans:** 0 plans
+**Plans:** 6 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 53 to break down)
+- [ ] 53-01: Bug fixes, UX improvements, MCP wiring (Wave 1)
+- [ ] 53-02: RACI matrix schema + decision types + stores (Wave 2)
+- [ ] 53-03: DID governance schema extension + ActionPipeline refactor (Wave 2)
+- [ ] 53-04: Decision service + REST API + RACI delegation endpoints (Wave 3)
+- [ ] 53-05: Decide tab UI + Ironclaw proactive decision surfacing (Wave 4)
+- [ ] 53-06: DAO proposal integration + on-chain encrypted decisions (Wave 5)
 
 ---
 
