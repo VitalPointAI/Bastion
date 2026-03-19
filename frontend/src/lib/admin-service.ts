@@ -924,6 +924,85 @@ class AdminService {
       `/api/admin/activity/stats?${params}`
     );
   }
+
+  // ============================================================================
+  // Phase 52: Skill Registry Methods
+  // ============================================================================
+
+  /**
+   * List all skills.
+   */
+  async listSkills(): Promise<import('../types/admin').AgentSkillDef[]> {
+    const response = await this.fetch<{ skills: import('../types/admin').AgentSkillDef[] }>('/api/admin/skills');
+    return response.skills;
+  }
+
+  /**
+   * Get a skill by ID (includes full schema and assignments).
+   */
+  async getSkill(skillId: string): Promise<import('../types/admin').AgentSkillDef> {
+    return this.fetch<import('../types/admin').AgentSkillDef>(`/api/admin/skills/${encodeURIComponent(skillId)}`);
+  }
+
+  /**
+   * Create a new skill.
+   */
+  async createSkill(input: import('../types/admin').AgentSkillInput): Promise<import('../types/admin').AgentSkillDef> {
+    return this.fetch<import('../types/admin').AgentSkillDef>('/api/admin/skills', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  /**
+   * Update a skill.
+   */
+  async updateSkill(skillId: string, updates: import('../types/admin').AgentSkillUpdate): Promise<import('../types/admin').AgentSkillDef> {
+    return this.fetch<import('../types/admin').AgentSkillDef>(`/api/admin/skills/${encodeURIComponent(skillId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Delete a skill.
+   */
+  async deleteSkill(skillId: string): Promise<void> {
+    await this.fetch<unknown>(`/api/admin/skills/${encodeURIComponent(skillId)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Assign a skill to an agent.
+   */
+  async assignSkillToAgent(skillId: string, agentId: string): Promise<void> {
+    await this.fetch<unknown>(`/api/admin/skills/${encodeURIComponent(skillId)}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ agentId }),
+    });
+  }
+
+  /**
+   * Unassign a skill from an agent.
+   */
+  async unassignSkillFromAgent(skillId: string, agentId: string): Promise<void> {
+    await this.fetch<unknown>(
+      `/api/admin/skills/${encodeURIComponent(skillId)}/assign/${encodeURIComponent(agentId)}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /**
+   * Get agents assigned to a skill.
+   */
+  async getSkillAgents(skillId: string): Promise<import('../types/admin').SkillAssignment[]> {
+    const response = await this.fetch<{
+      skillId: string;
+      assignments: import('../types/admin').SkillAssignment[];
+    }>(`/api/admin/skills/${encodeURIComponent(skillId)}/agents`);
+    return response.assignments;
+  }
 }
 
 /**

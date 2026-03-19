@@ -2667,4 +2667,253 @@ router.get('/activity/stats', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================================
+// Skills Registry Endpoints (Phase 52)
+// ============================================================================
+
+import { getSkillRegistry } from '../agents/skill-registry.js';
+
+/**
+ * GET /api/admin/skills - List all skills
+ */
+router.get('/skills', async (req: Request, res: Response) => {
+  try {
+    const registry = getSkillRegistry();
+    await registry.ensureInitialized();
+
+    const skills = registry.listSkills();
+    const skillIds = skills.map((s) => s.skillId);
+    const counts = await registry.getAssignmentCounts(skillIds);
+
+    const skillsWithCounts = skills.map((s) => ({
+      skillId: s.skillId,
+      name: s.name,
+      description: s.description,
+      version: s.version,
+      isEnabled: s.isEnabled,
+      createdBy: s.createdBy,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+      assignedAgentCount: counts.get(s.skillId) ?? 0,
+    }));
+
+    res.json({ skills: skillsWithCounts });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[skills] List failed:', message);
+    res.status(500).json({ error: 'Failed to list skills' });
+  }
+});
+
+/**
+ * GET /api/admin/skills/:id - Get a single skill by ID
+ */
+router.get('/skills/:id', async (req: Request, res: Response) => {
+  try {
+    const skillId = req.params.id as string;
+    const registry = getSkillRegistry();
+    await registry.ensureInitialized();
+
+    const skill = registry.getSkill(skillId);
+    if (!skill) {
+      res.status(404).json({ error: `Skill ${skillId} not found` });
+      return;
+    }
+
+    const assignments = await registry.getAgentsForSkill(skillId);
+    res.json({ ...skill, assignments });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[skills] Get failed:', message);
+    res.status(500).json({ error: 'Failed to get skill' });
+  }
+});
+
+/**
+ * POST /api/admin/skills - Create a new skill
+ */
+router.post('/skills', async (req: Request, res: Response) => {
+  try {
+    const adminDid = (req as Request & { adminDid: string }).adminDid;
+    const { name, description, inputSchema, outputSchema, version, toolIds, systemPromptFragment, metadata } = req.body as Record<string, unknown>;
+
+    if (!name || typeof name !== 'string') {
+      res.status(400).json({ error: 'name is required' });
+      return;
+    }
+    if (!description || typeof description !== 'string') {
+      res.status(400).json({ error: 'description is required' });
+      return;
+    }
+    if (!inputSchema || typeof inputSchema !== 'object') {
+      res.status(400).json({ error: 'inputSchema is required and must be a JSON Schema object' });
+      return;
+    }
+
+    // Generate skill ID from name (slugify)
+    const skillId = `skill-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${Date.now()}`;
+
+    const registry = getSkillRegistry();
+    await registry.ensureInitialized();
+
+    const skill = await registry.createSkill({
+      skillId,
+      name,
+      description,
+      version: typeof version === 'string' ? version : '1.0.0',
+      createdBy: adminDid,
+      isEnabled: true,
+      inputSchema: inputSchema as Record<string, unknown>,
+      outputSchema: outputSchema as Record<string, unknown> | undefined,
+      toolIds: Array.isArray(toolIds) ? (toolIds as string[]) : undefined,
+      systemPromptFragment: typeof systemPromptFragment === 'string' ? systemPromptFragment : undefined,
+      metadata: metadata as Record<string, unknown> | undefined,
+    });
+
+    res.status(201).json(skill);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[skills] Create failed:', message);
+    res.status(500).json({ error: 'Failed to create skill' });
+  }
+});
+
+/**
+ * PUT /api/admin/skills/:id - Update a skill
+ */
+router.put('/skills/:id', async (req: Request, res: Response) => {
+  try {
+    const skillId = req.params.id as string;
+    const registry = getSkillRegistry();
+    await registry.ensureInitialized();
+
+    const existing = registry.getSkill(skillId);
+    if (!existing) {
+      res.status(404).json({ error: `Skill ${skillId} not found` });
+      return;
+    }
+
+    const { name, description, version, isEnabled, inputSchema, outputSchema, toolIds, systemPromptFragment, metadata } = req.body as Record<string, unknown>;
+
+    const updates: import('../agents/skill-store.js').SkillUpdate = {};
+    if (name !== undefined) updates.name = name as string;
+    if (description !== undefined) updates.description = description as string;
+    if (version !== undefined) updates.version = version as string;
+    if (isEnabled !== undefined) updates.isEnabled = isEnabled as boolean;
+    if (inputSchema !== undefined) updates.inputSchema = inputSchema as Record<string, unknown>;
+    if (outputSchema !== undefined) updates.outputSchema = outputSchema as Record<string, unknown>;
+    if (toolIds !== undefined) updates.toolIds = toolIds as string[];
+    if (systemPromptFragment !== undefined) updates.systemPromptFragment = systemPromptFragment as string;
+    if (metadata !== undefined) updates.metadata = metadata as Record<string, unknown>;
+
+    const updated = await registry.updateSkill(skillId, updates);
+    res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[skills] Update failed:', message);
+    res.status(500).json({ error: 'Failed to update skill' });
+  }
+});
+
+/**
+ * DELETE /api/admin/skills/:id - Delete a skill
+ */
+router.delete('/skills/:id', async (req: Request, res: Response) => {
+  try {
+    const skillId = req.params.id as string;
+    const registry = getSkillRegistry();
+    await registry.ensureInitialized();
+
+    const existing = registry.getSkill(skillId);
+    if (!existing) {
+      res.status(404).json({ error: `Skill ${skillId} not found` });
+      return;
+    }
+
+    await registry.deleteSkill(skillId);
+    res.json({ deleted: true, skillId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[skills] Delete failed:', message);
+    res.status(500).json({ error: 'Failed to delete skill' });
+  }
+});
+
+/**
+ * POST /api/admin/skills/:id/assign - Assign skill to an agent
+ * Body: { agentId: string }
+ */
+router.post('/skills/:id/assign', async (req: Request, res: Response) => {
+  try {
+    const skillId = req.params.id as string;
+    const adminDid = (req as Request & { adminDid: string }).adminDid;
+    const { agentId } = req.body as { agentId?: string };
+
+    if (!agentId) {
+      res.status(400).json({ error: 'agentId is required' });
+      return;
+    }
+
+    const registry = getSkillRegistry();
+    await registry.ensureInitialized();
+
+    const existing = registry.getSkill(skillId);
+    if (!existing) {
+      res.status(404).json({ error: `Skill ${skillId} not found` });
+      return;
+    }
+
+    await registry.assignSkillToAgent(skillId, agentId, adminDid);
+    res.status(201).json({ assigned: true, skillId, agentId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[skills] Assign failed:', message);
+    res.status(500).json({ error: 'Failed to assign skill' });
+  }
+});
+
+/**
+ * DELETE /api/admin/skills/:id/assign/:agentId - Unassign skill from an agent
+ */
+router.delete('/skills/:id/assign/:agentId', async (req: Request, res: Response) => {
+  try {
+    const skillId = req.params.id as string;
+    const agentId = req.params.agentId as string;
+
+    const registry = getSkillRegistry();
+    await registry.ensureInitialized();
+
+    await registry.unassignSkillFromAgent(skillId, agentId);
+    res.json({ unassigned: true, skillId, agentId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[skills] Unassign failed:', message);
+    res.status(500).json({ error: 'Failed to unassign skill' });
+  }
+});
+
+/**
+ * GET /api/admin/skills/:id/agents - List agents assigned to a skill
+ */
+router.get('/skills/:id/agents', async (req: Request, res: Response) => {
+  try {
+    const skillId = req.params.id as string;
+    const registry = getSkillRegistry();
+    await registry.ensureInitialized();
+
+    const existing = registry.getSkill(skillId);
+    if (!existing) {
+      res.status(404).json({ error: `Skill ${skillId} not found` });
+      return;
+    }
+
+    const assignments = await registry.getAgentsForSkill(skillId);
+    res.json({ skillId, assignments });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[skills] Get agents failed:', message);
+    res.status(500).json({ error: 'Failed to get skill agents' });
+  }
+});
+
 export default router;

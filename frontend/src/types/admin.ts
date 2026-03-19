@@ -843,3 +843,64 @@ export interface ActivityResponse {
   entries: ActivityEntry[];
   total: number;
 }
+
+// ============================================================================
+// Phase 52: Skill Registry Types
+// ============================================================================
+
+/**
+ * Skill assignment — which agent has a skill assigned.
+ */
+export interface SkillAssignment {
+  skillId: string;
+  agentId: string;
+  assignedAt: string;
+  assignedBy: string;
+}
+
+/**
+ * Skill definition returned by the admin API.
+ */
+export interface AgentSkillDef {
+  skillId: string;
+  name: string;
+  description: string;
+  version: string;
+  isEnabled: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  /** Number of agents this skill is assigned to (list endpoint only) */
+  assignedAgentCount?: number;
+  /** Full JSON Schema for skill input parameters */
+  inputSchema?: Record<string, unknown>;
+  /** Full JSON Schema for skill output (optional) */
+  outputSchema?: Record<string, unknown>;
+  /** MCP tool IDs this skill composes */
+  toolIds?: string[];
+  /** System prompt fragment injected when skill is active */
+  systemPromptFragment?: string;
+  /** Arbitrary skill-specific metadata */
+  metadata?: Record<string, unknown>;
+  /** Agent assignments (detail endpoint only) */
+  assignments?: SkillAssignment[];
+}
+
+/**
+ * Input for creating a skill.
+ */
+export interface AgentSkillInput {
+  name: string;
+  description: string;
+  version?: string;
+  inputSchema: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+  toolIds?: string[];
+  systemPromptFragment?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Partial update for a skill.
+ */
+export type AgentSkillUpdate = Partial<AgentSkillInput> & { isEnabled?: boolean };
