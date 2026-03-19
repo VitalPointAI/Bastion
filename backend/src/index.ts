@@ -68,6 +68,7 @@ import docIntelligenceRouter from './api/doc-intelligence.js';
 import brainRouter from './api/brain.js';
 import brainSubspacesRouter from './api/brain-subspaces.js';
 import ingestRouter from './api/ingest.js';
+import decisionsRouter from './api/decisions.js';
 
 dotenv.config();
 
@@ -254,6 +255,7 @@ app.use('/api/design', designRouter);
 app.use('/api/cop', copRouter);
 app.use('/api/strategic-context', strategicContextRouter);
 app.use('/api/gates', gateRoutes);
+app.use('/api/decisions', decisionsRouter);
 app.use('/api/ai-staff', requireAuth, aiStaffRouter);
 app.use('/api/ironclaw', requireAuth, ironclawRouter);
 app.use('/api/validation', requireAuth, validationRouter);
