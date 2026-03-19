@@ -130,14 +130,16 @@ export const decisionApiService = {
     if (filters?.status) params.set('status', filters.status);
     if (filters?.decision_type) params.set('decision_type', filters.decision_type);
     const qs = params.toString() ? `?${params.toString()}` : '';
-    return apiRequest<Decision[]>(`/api/decisions/${psId}${qs}`);
+    const res = await apiRequest<{ decisions: Decision[] }>(`/api/decisions/${psId}${qs}`);
+    return res.decisions ?? [];
   },
 
   /**
    * Get pending decisions for a specific position (RACI-filtered).
    */
   async getPendingForPosition(psId: string, position: string): Promise<Decision[]> {
-    return apiRequest<Decision[]>(`/api/decisions/${psId}/pending/${position}`);
+    const res = await apiRequest<{ decisions: Decision[] }>(`/api/decisions/${psId}/pending/${position}`);
+    return res.decisions ?? [];
   },
 
   /**
@@ -175,7 +177,8 @@ export const decisionApiService = {
    * Get the RACI matrix for a problem set.
    */
   async getRACIMatrix(psId: string): Promise<RACIAssignment[]> {
-    return apiRequest<RACIAssignment[]>(`/api/decisions/${psId}/raci`);
+    const res = await apiRequest<{ assignments: RACIAssignment[] }>(`/api/decisions/${psId}/raci`);
+    return res.assignments ?? [];
   },
 
   /**
