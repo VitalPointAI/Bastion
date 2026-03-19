@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 53-01-PLAN.md
-last_updated: "2026-03-19T14:00:00.000Z"
-last_activity: "2026-03-19 - Completed 53-01: Ironclaw drag fix (bottom-dy), MCP toolBridge wiring, /api/ironclaw/status endpoint, IronclawDrawer version display"
+stopped_at: Completed 53-02-PLAN.md
+last_updated: "2026-03-19T15:05:50.164Z"
+last_activity: "2026-03-19 - Completed 53-03: DID governance schema extended, ActionPipeline per-agent risk resolution via agentGovernanceCache"
 progress:
-  total_phases: 68
-  completed_phases: 48
-  total_plans: 435
-  completed_plans: 435
+  total_phases: 69
+  completed_phases: 49
+  total_plans: 441
+  completed_plans: 440
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 53 of 68 (DID Governance Architecture & Bug Fixes) — IN PROGRESS
-Plan: 1 of 6 in current phase — COMPLETE
-Status: Plan 53-01 complete — Fixed Ironclaw drag Y-axis inversion, wired MCP executeTool to toolBridge.handleToolCall(), added GET /api/ironclaw/status endpoint, IronclawDrawer shows version badge fetched from status endpoint.
-Last activity: 2026-03-19 - Completed 53-01: IronclawButton drag fix, MCP tool pipeline wired, /status endpoint, IronclawDrawer version display
+Plan: 3 of 6 in current phase — COMPLETE
+Status: Plan 53-03 complete — Extended DIDDocument with AgentGovernancePolicy field, AiAgent DID creation includes governance section, ActionPipeline has per-agent governance cache with getEffectiveRisk() enforcing risk-only-elevate semantics.
+Last activity: 2026-03-19 - Completed 53-03: DID governance schema extended, ActionPipeline per-agent risk resolution via agentGovernanceCache
 
 Progress: ████████████████████████████████ 424 plans complete
 
@@ -229,6 +229,13 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 53 Plan 03 (DID Governance Schema + ActionPipeline):**
+- Governance overrides live in ActionPipeline cache, not ActionRegistry — registry locks at startup and cannot accept per-agent changes afterward
+- Risk can only be elevated via governance overrides, never downgraded — enforced in getEffectiveRisk()
+- Phase 53 MVP uses setGovernancePolicy() for direct cache population — full DID resolution path deferred (requires agent userSecret)
+- Governance data encrypted inside DID document blob — no smart contract changes
+- Backward compatible: existing agents without governance field use ACTION_RISK defaults
 
 **Phase 52 Plan 01 (MCP Server Container):**
 - Used low-level Server API (not McpServer) — BASTION_TOOLS uses raw JSON Schema, not Zod; avoids conversion layer
@@ -944,6 +951,7 @@ Recent decisions affecting current work:
 - [Phase 50]: Old DocIntelligencePanel + OSINT modal deprecated behind Advanced collapsible, not deleted (UNIV-18)
 - [Phase 52-agent-skills-mcp]: Skill handlers use dynamic imports for graceful degradation when Plan 52-02 not yet executed
 - [Phase 52-agent-skills-mcp]: BUILDER_HANDLERS dispatch map: idempotent via existence checks, not ON CONFLICT, across mixed storage backends
+- [Phase 53]: RACI seedDefaults uses ON CONFLICT DO NOTHING to preserve user overrides of JP 5-0 defaults
 
 ### Roadmap Evolution
 
@@ -1661,7 +1669,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-19T13:32:35.302Z
-Stopped at: Completed 52-03-PLAN.md
+Last session: 2026-03-19T15:05:50.152Z
+Stopped at: Completed 53-02-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
