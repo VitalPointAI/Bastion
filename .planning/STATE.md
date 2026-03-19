@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 52-03-PLAN.md
-last_updated: "2026-03-19T13:32:35.313Z"
-last_activity: "2026-03-19 - Completed 52-01: MCP server (mcp-server.ts, mcp-router.ts, index.ts), Docker compose services (dev + prod), @modelcontextprotocol/sdk installed"
+stopped_at: Completed 53-01-PLAN.md
+last_updated: "2026-03-19T14:00:00.000Z"
+last_activity: "2026-03-19 - Completed 53-01: Ironclaw drag fix (bottom-dy), MCP toolBridge wiring, /api/ironclaw/status endpoint, IronclawDrawer version display"
 progress:
   total_phases: 68
   completed_phases: 48
@@ -25,12 +25,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 52 of 66 (Agent Skills & MCP) — IN PROGRESS
-Plan: 2 of 6 in current phase — COMPLETE
-Status: Plan 52-02 complete — PostgreSQL skills registry (038-skills.sql, SkillStore, SkillRegistry write-through cache), full admin API (8 CRUD+assignment endpoints), SkillRegistryPanel replacing SkillsPlaceholder in AgentHub, adminService skill methods.
-Last activity: 2026-03-19 - Completed 52-02: Skills DB migration, SkillStore, SkillRegistry, admin API endpoints, SkillRegistryPanel UI
+Phase: 53 of 68 (DID Governance Architecture & Bug Fixes) — IN PROGRESS
+Plan: 1 of 6 in current phase — COMPLETE
+Status: Plan 53-01 complete — Fixed Ironclaw drag Y-axis inversion, wired MCP executeTool to toolBridge.handleToolCall(), added GET /api/ironclaw/status endpoint, IronclawDrawer shows version badge fetched from status endpoint.
+Last activity: 2026-03-19 - Completed 53-01: IronclawButton drag fix, MCP tool pipeline wired, /status endpoint, IronclawDrawer version display
 
-Progress: ████████████████████████████████ 423 plans complete
+Progress: ████████████████████████████████ 424 plans complete
 
 ## Performance Metrics
 
