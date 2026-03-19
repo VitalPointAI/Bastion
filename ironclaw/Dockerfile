@@ -1,45 +1,27 @@
 # Ironclaw Agent Sidecar
-# Builds from source to pick up latest features (Anthropic OAuth).
-# Multi-stage build: Rust builder → slim runtime image.
+# Downloads prebuilt release binary from GitHub — no Rust compile needed.
+# Build time: ~10 seconds vs ~10 minutes from source.
 #
-# IRONCLAW_COMMIT pins the upstream SHA. Update this when you want a newer
-# build — the Docker layer cache (and GHA build cache) will skip the Rust
-# compile when the SHA hasn't changed.
+# IRONCLAW_VERSION pins the release tag. Update this to pull a newer release.
 
-FROM rust:1.87-bookworm AS builder
-
-# ironclaw main now requires rust >= 1.92 (edition 2024).
-# Upgrade toolchain since the Docker image ships 1.87.
-RUN rustup update stable && rustup default stable
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config libssl-dev git \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /build
-
-# Pin to specific commit so Docker/GHA cache is stable across deploys.
-# Bump this SHA to pull in new upstream changes.
-ARG IRONCLAW_COMMIT=56b72188974e042c379f9b74384a82bd0f5e8449
-RUN git clone https://github.com/nearai/ironclaw.git . \
-    && git checkout ${IRONCLAW_COMMIT}
-
-# Extract version from Cargo.toml for runtime reporting
-RUN grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/' > /tmp/ironclaw-version
-
-RUN cargo build --release \
-    && strip target/release/ironclaw
-
-# --- Runtime stage ---
 FROM debian:bookworm-slim
+
+ARG IRONCLAW_VERSION=0.20.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates libssl3 curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /build/target/release/ironclaw /usr/local/bin/ironclaw
-COPY --from=builder /tmp/ironclaw-version /tmp/ironclaw-version
-RUN chmod +x /usr/local/bin/ironclaw
+# Download prebuilt binary from GitHub release
+RUN curl -fsSL "https://github.com/nearai/ironclaw/releases/download/v${IRONCLAW_VERSION}/ironclaw-x86_64-unknown-linux-gnu.tar.gz" \
+    -o /tmp/ironclaw.tar.gz \
+    && tar -xzf /tmp/ironclaw.tar.gz -C /tmp \
+    && find /tmp -name ironclaw -type f -exec mv {} /usr/local/bin/ironclaw \; \
+    && chmod +x /usr/local/bin/ironclaw \
+    && rm -rf /tmp/ironclaw*
+
+# Write version for runtime reporting
+RUN echo "${IRONCLAW_VERSION}" > /tmp/ironclaw-version
 
 # Token-sync entrypoint: reads refreshed OAuth tokens from shared volume
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
