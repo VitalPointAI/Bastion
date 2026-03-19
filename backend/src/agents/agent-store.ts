@@ -56,6 +56,36 @@ export class AgentStore {
         agent.validationScore ?? null,
       ]
     );
+
+    // Auto-generate test fixture for validation pipeline (fire-and-forget)
+    this.generateFixtureForAgent(agent).catch((err) => {
+      console.warn(`[AgentStore] Fixture generation failed for ${agent.agentId}:`, err instanceof Error ? err.message : err);
+    });
+  }
+
+  /** Generate a test fixture file for a newly registered agent */
+  private async generateFixtureForAgent(agent: StandardAgent): Promise<void> {
+    try {
+      const { generateFixture } = await import('../validation/fixture-generator.js');
+      const { writeFile, mkdir } = await import('node:fs/promises');
+      const { join } = await import('node:path');
+      const { fileURLToPath } = await import('node:url');
+
+      const __dirname = fileURLToPath(new URL('.', import.meta.url));
+      const fixturesDir = join(__dirname, '..', 'validation', 'fixtures');
+      await mkdir(fixturesDir, { recursive: true });
+
+      const fixturePath = join(fixturesDir, `${agent.agentId}.json`);
+      // Only generate if fixture doesn't exist yet
+      const { access } = await import('node:fs/promises');
+      try { await access(fixturePath); return; } catch { /* doesn't exist — generate */ }
+
+      const fixture = generateFixture(agent);
+      await writeFile(fixturePath, JSON.stringify(fixture, null, 2), 'utf-8');
+      console.log(`[AgentStore] Generated fixture for ${agent.agentId}`);
+    } catch {
+      // Non-critical — fixture generation is best-effort
+    }
   }
 
   /**

@@ -48,6 +48,24 @@ export const ACTION_RISK: Record<string, ActionRiskLevel> = {
   'agent.assign_to_problem_set': ActionRiskLevel.medium,
   'agent.unassign_from_problem_set': ActionRiskLevel.low,
   'agent.form_team_for_task': ActionRiskLevel.medium,
+  // Agent/tool/team CRUD — Ironclaw can build and configure agents
+  'agent.create': ActionRiskLevel.medium,
+  'agent.update': ActionRiskLevel.medium,
+  'agent.delete': ActionRiskLevel.high,
+  'agent.activate': ActionRiskLevel.medium,
+  'agent.deactivate': ActionRiskLevel.medium,
+  'tool.create': ActionRiskLevel.medium,
+  'tool.update': ActionRiskLevel.medium,
+  'tool.delete': ActionRiskLevel.high,
+  'tool.assign_to_agent': ActionRiskLevel.medium,
+  'team.create': ActionRiskLevel.medium,
+  'team.update': ActionRiskLevel.medium,
+  'team.delete': ActionRiskLevel.high,
+  'team.add_member': ActionRiskLevel.medium,
+  'team.remove_member': ActionRiskLevel.medium,
+  // Field write-back — Ironclaw can suggest and apply field values
+  'field.write': ActionRiskLevel.medium,
+  'field.write_sensitive': ActionRiskLevel.high,
 } as const;
 
 // ---------------------------------------------------------------------------

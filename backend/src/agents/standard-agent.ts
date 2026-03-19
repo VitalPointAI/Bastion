@@ -128,6 +128,8 @@ export interface StandardAgent extends AgentManifest {
   avgResponseTimeMs?: number;
   /** Validation quality score (0 to 1) from output validators */
   validationScore?: number;
+  /** Avatar URL — auto-generated SVG data URI if not set */
+  avatarUrl?: string;
 }
 
 // ============================================================================

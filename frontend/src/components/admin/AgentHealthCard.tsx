@@ -13,6 +13,7 @@
  */
 
 import type { StandardAgentWithHealth } from '../../types/admin';
+import { getAgentAvatarUrl } from '../../lib/agent-avatar';
 
 interface AgentHealthCardProps {
   agent: StandardAgentWithHealth;
@@ -62,10 +63,14 @@ export function AgentHealthCard({ agent, onClick }: AgentHealthCardProps) {
       style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
       <div className="agent-health-card__header">
-        <span
-          className="agent-health-card__status-dot"
-          style={{ backgroundColor: statusColor }}
-          title={agent.status}
+        <img
+          src={getAgentAvatarUrl(agent)}
+          alt={agent.name}
+          className="agent-health-card__avatar"
+          style={{
+            width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+            border: `2px solid ${statusColor}`,
+          }}
         />
         <span className="agent-health-card__name" title={agent.agentId}>
           {agent.name}

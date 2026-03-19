@@ -50,6 +50,24 @@ const CANONICAL_DESCRIPTIONS: Record<string, string> = {
   'agent.assign_to_problem_set': 'Assign an agent to a problem set',
   'agent.unassign_from_problem_set': 'Unassign an agent from a problem set',
   'agent.form_team_for_task': 'Activate a team to work on a specific task',
+  // Agent/tool/team CRUD
+  'agent.create': 'Create a new AI agent with specified capabilities and clearance',
+  'agent.update': 'Update an existing agent\'s configuration',
+  'agent.delete': 'Permanently delete an agent and all its data (HIGH RISK)',
+  'agent.activate': 'Activate an agent (requires passing health gate)',
+  'agent.deactivate': 'Deactivate an agent — stops it from being invoked',
+  'tool.create': 'Register a new MCP tool in the tool registry',
+  'tool.update': 'Update an existing tool\'s configuration',
+  'tool.delete': 'Remove a tool from the registry (HIGH RISK)',
+  'tool.assign_to_agent': 'Assign a tool to an agent for use during execution',
+  'team.create': 'Create a new agent team with workflow configuration',
+  'team.update': 'Update an existing team\'s members or workflow',
+  'team.delete': 'Permanently delete a team (HIGH RISK)',
+  'team.add_member': 'Add an agent to an existing team',
+  'team.remove_member': 'Remove an agent from a team',
+  // Field write-back
+  'field.write': 'Apply a suggested value to a problem set field',
+  'field.write_sensitive': 'Update a sensitive field (e.g., mission statement, ROE) — requires explicit approval',
 };
 
 export class ActionRegistry {
