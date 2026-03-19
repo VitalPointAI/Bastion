@@ -748,12 +748,17 @@ Plans:
 ### Phase 52: Agent Skills & MCP
 
 **Goal:** Standalone MCP server for agent tool execution, reusable skills registry with DB storage and admin UI, Ironclaw skill/tool/team builder via action cards, and field write-back handler for applying AI suggestions to problem set fields
-**Requirements**: REQ-52-01 through REQ-52-04
+**Requirements**: REQ-52-01 through REQ-52-05
 **Depends on:** Phase 51
-**Plans:** 0 plans
+**Plans:** 6 plans (3 waves)
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 52 to break down)
+- [ ] 52-01: MCP server Docker container with tool serving (Wave 1)
+- [ ] 52-02: Skills registry — DB, store, admin UI panel (Wave 1)
+- [ ] 52-03: Ironclaw builder handlers for action card execution (Wave 1)
+- [ ] 52-04: Field write-back pipeline — suggestion parsing, accept API (Wave 1)
+- [ ] 52-05: Orchestration loop backend — task types, store, orchestrator (Wave 2)
+- [ ] 52-06: Orchestration loop frontend — task panel, drawer, system prompt (Wave 3)
 
 ---
 
