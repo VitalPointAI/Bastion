@@ -116,12 +116,13 @@ export function IronclawDrawer({
     return () => window.removeEventListener('resize', update);
   }, [isOpen]);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive or drawer opens
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (isOpen && messagesEndRef.current) {
+      // Use instant scroll on open, smooth scroll for new messages
+      messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
     }
-  }, [messages, isLoading]);
+  }, [isOpen, messages, isLoading]);
 
   // Auto-resize textarea
   const resizeTextarea = useCallback(() => {
