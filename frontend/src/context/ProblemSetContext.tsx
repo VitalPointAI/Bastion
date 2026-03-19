@@ -276,7 +276,17 @@ export function ProblemSetProvider({ children }: { children: ReactNode }) {
     if (memberships.length === 0) return;
 
     try {
-      const lastSeenMap = readLastSeenMap();
+      const fullMap = readLastSeenMap();
+      // Filter to only current membership IDs — removes stale/deleted problem sets
+      const memberIds = new Set(memberships.map((m) => m.problemSetId));
+      const lastSeenMap: Record<string, string> = {};
+      for (const [id, ts] of Object.entries(fullMap)) {
+        if (memberIds.has(id)) lastSeenMap[id] = ts;
+      }
+      // Persist cleaned map so stale entries don't accumulate
+      if (Object.keys(lastSeenMap).length !== Object.keys(fullMap).length) {
+        writeLastSeenMap(lastSeenMap);
+      }
       const counts = await problemSetService.getNotificationCounts(lastSeenMap, userDID);
       setNotificationCounts(counts);
     } catch {
