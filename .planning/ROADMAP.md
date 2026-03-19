@@ -753,7 +753,7 @@ Plans:
 **Plans:** 3/6 plans executed
 
 Plans:
-- [ ] 52-01: MCP server Docker container with tool serving (Wave 1)
+- [x] 52-01: MCP server Docker container with tool serving (Wave 1)
 - [ ] 52-02: Skills registry — DB, store, admin UI panel (Wave 1)
 - [ ] 52-03: Ironclaw builder handlers for action card execution (Wave 1)
 - [ ] 52-04: Field write-back pipeline — suggestion parsing, accept API (Wave 1)

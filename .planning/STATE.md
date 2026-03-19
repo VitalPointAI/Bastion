@@ -10,7 +10,7 @@ progress:
   total_phases: 68
   completed_phases: 48
   total_plans: 435
-  completed_plans: 434
+  completed_plans: 435
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 52 of 66 (Agent Skills & MCP) — IN PROGRESS
-Plan: 1 of 6 in current phase — COMPLETE
-Status: Plan 52-01 complete — bastion-mcp Docker container with MCP SSE transport (port 3334), all 10 BASTION_TOOLS registered via MCP protocol using low-level Server API, DID-based authorization with allowlist, high-risk tool protection, Phase 52 MVP stub executor.
-Last activity: 2026-03-19 - Completed 52-01: MCP server (mcp-server.ts, mcp-router.ts, index.ts), Docker compose services (dev + prod), @modelcontextprotocol/sdk installed
+Plan: 2 of 6 in current phase — COMPLETE
+Status: Plan 52-02 complete — PostgreSQL skills registry (038-skills.sql, SkillStore, SkillRegistry write-through cache), full admin API (8 CRUD+assignment endpoints), SkillRegistryPanel replacing SkillsPlaceholder in AgentHub, adminService skill methods.
+Last activity: 2026-03-19 - Completed 52-02: Skills DB migration, SkillStore, SkillRegistry, admin API endpoints, SkillRegistryPanel UI
 
 Progress: ████████████████████████████████ 423 plans complete
 
