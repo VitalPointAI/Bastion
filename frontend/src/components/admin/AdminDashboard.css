@@ -3153,6 +3153,48 @@ body:has(.admin-dashboard),
   font-size: 0.78rem;
 }
 
+/* Agent filter bar */
+.agent-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.agent-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agent-filter-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.agent-filter-count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Sortable table header */
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable-th:hover {
+  color: #f59e0b;
+}
+
 @media (max-width: 768px) {
   .agent-overview-stats {
     grid-template-columns: repeat(2, 1fr);

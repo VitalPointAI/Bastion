@@ -547,6 +547,8 @@ export class ValidationStore {
         lr.started_at AS last_run_at,
         COALESCE(lr.total_scenarios, 0) AS scenario_count
       FROM latest l
+      -- Only include agents that still exist in agents_v2
+      INNER JOIN agents_v2 a ON a.agent_id = l.agent_id
       LEFT JOIN trends t ON t.agent_id = l.agent_id AND t.category = l.category
       LEFT JOIN last_run lr ON lr.agent_id = l.agent_id
       ORDER BY l.agent_id, l.category

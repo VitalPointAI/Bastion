@@ -13,13 +13,14 @@
  * - Auto-poll health data every 30 seconds
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { adminService } from '../../lib/admin-service';
 import { AgentHealthCard } from './AgentHealthCard';
 import { AgentMemoryViewer } from './AgentMemoryViewer';
+import { getAgentAvatarUrl } from '../../lib/agent-avatar';
 import { AgentTestHarness } from './AgentTestHarness';
 import { CharacterBuilderPanel } from './CharacterBuilderPanel';
 import { FormField } from './common/FormField';
@@ -197,6 +198,12 @@ export function AgentDashboardPanel() {
     agent: StandardAgentWithHealth;
   } | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+
+  // Filter & sort state
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterClearance, setFilterClearance] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'status' | 'successRate'>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -391,6 +398,47 @@ export function AgentDashboardPanel() {
       setConfirmAction(null);
     }
   };
+
+  // ============================================================================
+  // Filtered & sorted agents (must be before any early returns — hooks rule)
+  // ============================================================================
+
+  const activeAgents = agents.filter((a) => a.status === 'active');
+  const inactiveAgents = agents.filter((a) => a.status !== 'active');
+
+  const filteredAgents = useMemo(() => {
+    let result = [...agents];
+    if (filterStatus !== 'all') result = result.filter((a) => a.status === filterStatus);
+    if (filterClearance !== 'all') result = result.filter((a) => a.clearance === filterClearance);
+    result.sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === 'name') cmp = a.name.localeCompare(b.name);
+      else if (sortBy === 'status') cmp = a.status.localeCompare(b.status);
+      else if (sortBy === 'successRate') cmp = (a.successRate ?? -1) - (b.successRate ?? -1);
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return result;
+  }, [agents, filterStatus, filterClearance, sortBy, sortDir]);
+
+  const toggleSort = (col: 'name' | 'status' | 'successRate') => {
+    if (sortBy === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortBy(col); setSortDir('asc'); }
+  };
+  const sortIcon = (col: string) => sortBy === col ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+
+  function getHealthDot(agent: StandardAgentWithHealth): { color: string; label: string } {
+    if (agent.validationScore !== null && agent.validationScore !== undefined) {
+      if (agent.validationScore >= 0.9) return { color: '#22c55e', label: 'Healthy' };
+      if (agent.validationScore >= 0.7) return { color: '#f59e0b', label: 'Degraded' };
+      return { color: '#ef4444', label: 'Unhealthy' };
+    }
+    if (agent.successRate !== null && agent.successRate !== undefined) {
+      if (agent.successRate >= 0.9) return { color: '#22c55e', label: 'Healthy' };
+      if (agent.successRate >= 0.7) return { color: '#f59e0b', label: 'Degraded' };
+      return { color: '#ef4444', label: 'Unhealthy' };
+    }
+    return { color: '#475569', label: 'No data' };
+  }
 
   // ============================================================================
   // Render loading
@@ -711,9 +759,6 @@ export function AgentDashboardPanel() {
   // Render combined agents view — stats + table
   // ============================================================================
 
-  const activeAgents = agents.filter((a) => a.status === 'active');
-  const inactiveAgents = agents.filter((a) => a.status !== 'active');
-
   return (
     <div className="config-panel config-panel--flush">
       {/* Actions row */}
@@ -771,87 +816,129 @@ export function AgentDashboardPanel() {
         </div>
       )}
 
+      {/* Filter bar */}
+      <div className="agent-filter-bar">
+        <div className="agent-filter-group">
+          <label className="agent-filter-label">Status</label>
+          <select className="form-select form-select--sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="degraded">Degraded</option>
+            <option value="error">Error</option>
+          </select>
+        </div>
+        <div className="agent-filter-group">
+          <label className="agent-filter-label">Clearance</label>
+          <select className="form-select form-select--sm" value={filterClearance} onChange={(e) => setFilterClearance(e.target.value)}>
+            <option value="all">All</option>
+            {CLEARANCE_LEVELS.map((lvl) => (
+              <option key={lvl} value={lvl}>{lvl}</option>
+            ))}
+          </select>
+        </div>
+        <span className="agent-filter-count">{filteredAgents.length} of {agents.length} agents</span>
+      </div>
+
       {/* Agent Table — full width, dense */}
-      {agents.length === 0 ? (
+      {filteredAgents.length === 0 ? (
         <div className="table-empty-state">
-          <p>No agents configured. Click "Create Agent" to add one.</p>
+          <p>{agents.length === 0 ? 'No agents configured. Click "Create Agent" to add one.' : 'No agents match the current filters.'}</p>
         </div>
       ) : (
         <div className="table-container">
           <table className="admin-table admin-table--dense">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Success Rate</th>
-                <th>Last Invocation</th>
+                <th style={{ width: 32 }}></th>
+                <th className="sortable-th" onClick={() => toggleSort('name')}>Name{sortIcon('name')}</th>
+                <th className="sortable-th" onClick={() => toggleSort('status')}>Status{sortIcon('status')}</th>
+                <th>Health</th>
+                <th className="sortable-th" onClick={() => toggleSort('successRate')}>Success Rate{sortIcon('successRate')}</th>
                 <th>Clearance</th>
                 <th>Tools</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {agents.map((agent) => (
-                <tr key={agent.agentId}>
-                  <td>
-                    <button
-                      className="link-button"
-                      onClick={() => openDetail(agent)}
-                    >
-                      {agent.name}
-                    </button>
-                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{agent.agentId}</div>
-                  </td>
-                  <td>
-                    <span className={`status-badge status-badge--${agent.status}`}>
-                      {agent.status}
-                    </span>
-                  </td>
-                  <td>
-                    {agent.successRate !== null
-                      ? `${Math.round(agent.successRate * 100)}%`
-                      : '—'}
-                  </td>
-                  <td>
-                    {agent.lastInvocation
-                      ? new Date(agent.lastInvocation).toLocaleString()
-                      : '—'}
-                  </td>
-                  <td>{agent.clearance}</td>
-                  <td>{(agent.tools || []).length}</td>
-                  <td>
-                    <div className="table-actions">
+              {filteredAgents.map((agent) => {
+                const health = getHealthDot(agent);
+                return (
+                  <tr key={agent.agentId}>
+                    <td style={{ padding: '4px 6px' }}>
+                      <img
+                        src={getAgentAvatarUrl(agent)}
+                        alt={agent.name}
+                        style={{ width: 28, height: 28, borderRadius: 6 }}
+                      />
+                    </td>
+                    <td>
                       <button
-                        className="btn btn--sm btn--secondary"
-                        onClick={() => openEdit(agent)}
+                        className="link-button"
+                        onClick={() => openDetail(agent)}
                       >
-                        Edit
+                        {agent.name}
                       </button>
-                      {agent.status === 'active' ? (
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{agent.agentId}</div>
+                    </td>
+                    <td>
+                      <span className={`status-badge status-badge--${agent.status}`}>
+                        {agent.status}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        title={health.label}
+                        style={{
+                          display: 'inline-block',
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          backgroundColor: health.color,
+                        }}
+                      />
+                    </td>
+                    <td>
+                      {agent.successRate !== null
+                        ? `${Math.round(agent.successRate * 100)}%`
+                        : '—'}
+                    </td>
+                    <td>{agent.clearance}</td>
+                    <td>{(agent.tools || []).length}</td>
+                    <td>
+                      <div className="table-actions">
                         <button
-                          className="btn btn--sm btn--warning"
-                          onClick={() => setConfirmAction({ type: 'deactivate', agent })}
+                          className="btn btn--sm btn--secondary"
+                          onClick={() => openEdit(agent)}
                         >
-                          Deactivate
+                          Edit
                         </button>
-                      ) : (
+                        {agent.status === 'active' ? (
+                          <button
+                            className="btn btn--sm btn--warning"
+                            onClick={() => setConfirmAction({ type: 'deactivate', agent })}
+                          >
+                            Deactivate
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn--sm btn--success"
+                            onClick={() => setConfirmAction({ type: 'activate', agent })}
+                          >
+                            Activate
+                          </button>
+                        )}
                         <button
-                          className="btn btn--sm btn--success"
-                          onClick={() => setConfirmAction({ type: 'activate', agent })}
+                          className="btn btn--sm btn--danger"
+                          onClick={() => setConfirmAction({ type: 'delete', agent })}
                         >
-                          Activate
+                          Delete
                         </button>
-                      )}
-                      <button
-                        className="btn btn--sm btn--danger"
-                        onClick={() => setConfirmAction({ type: 'delete', agent })}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
