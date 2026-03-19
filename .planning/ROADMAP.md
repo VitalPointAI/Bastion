@@ -765,7 +765,7 @@ Plans:
 **Goal:** Extend DID documents with governance policy, build RACI-aware decision pipeline with on-chain recording, rename Direct tab to Decide with proactive decision surfacing, fix bugs and wire MCP tools
 **Requirements**: REQ-53-01 through REQ-53-08
 **Depends on:** Phase 52
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 - [ ] 53-01: Bug fixes, UX improvements, MCP wiring (Wave 1)
