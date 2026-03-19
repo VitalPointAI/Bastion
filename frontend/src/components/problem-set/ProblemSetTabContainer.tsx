@@ -9,7 +9,7 @@
  * - Understand: renders UnderstandTab (JP 5-0 Step 1 — mission analysis, intel, OE)
  * - Design: renders DesignTab (JP 5-0 Operational Art — approaches, CoGs, objectives)
  * - Plan: renders PlanTab (JP 5-0 Step 3 — COA development, war-gaming, comparison)
- * - Direct: renders DirectTab (JP 5-0 execution — orders, directives, governance)
+ * - Decide: renders DecideTab (JP 5-0 decision dashboard — RACI-aware, approve/reject/defer/info)
  * - COP: renders unified COPTab (map + AI layers + actor graph + activity feeds)
  * - Assess: renders AssessTab (JP 5-0 continuous — MOEs, MOPs, reframing)
  *
@@ -34,7 +34,7 @@ import { TabNotificationDropdown } from './TabNotificationDropdown';
 import { UnderstandTab } from '../tabs/UnderstandTab';
 import { DesignTab } from '../tabs/DesignTab';
 import { PlanTab } from '../tabs/PlanTab';
-import { DirectTab } from '../tabs/DirectTab';
+import { DecideTab } from '../tabs/DecideTab';
 import { COPTab } from '../cop/COPTab';
 import { AssessEchelonRouter } from '../assess/AssessEchelonRouter';
 import { copService } from '../../lib/cop-service';
@@ -45,14 +45,14 @@ import { ResourcesTab } from '../resources/ResourcesTab';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
-const PROBLEM_SET_TABS = ['understand', 'design', 'plan', 'direct', 'cop', 'assess', 'resources'] as const;
+const PROBLEM_SET_TABS = ['understand', 'design', 'plan', 'decide', 'cop', 'assess', 'resources'] as const;
 type ProblemSetTab = typeof PROBLEM_SET_TABS[number];
 
 const TAB_LABELS: Record<ProblemSetTab, string> = {
   understand: 'Understand',
   design: 'Design',
   plan: 'Plan',
-  direct: 'Direct',
+  decide: 'Decide',
   cop: 'COP',
   assess: 'Assess',
   resources: 'Resources',
@@ -61,7 +61,7 @@ const TAB_LABELS: Record<ProblemSetTab, string> = {
 // ─── Role → tab access map ────────────────────────────────────────────────────
 
 // All roles see all tabs (Phase 24 decision — can restore per-role gating later)
-const ALL_TABS_LIST: ProblemSetTab[] = ['understand', 'design', 'plan', 'direct', 'cop', 'assess', 'resources'];
+const ALL_TABS_LIST: ProblemSetTab[] = ['understand', 'design', 'plan', 'decide', 'cop', 'assess', 'resources'];
 const DEFAULT_TAB_ACCESS: Record<string, ProblemSetTab[]> = {
   commander: ALL_TABS_LIST,
   xo: ALL_TABS_LIST,
@@ -83,7 +83,7 @@ const FALLBACK_TABS: ProblemSetTab[] = ['cop', 'assess'];
 // ─── Old URL redirects ────────────────────────────────────────────────────────
 
 const OLD_TAB_REDIRECTS: Record<string, ProblemSetTab> = {
-  'decide': 'direct',
+  'direct': 'decide',
   'campaign': 'plan',
   'overview': 'cop',
   'monitor': 'cop',
@@ -291,8 +291,8 @@ export function ProblemSetTabContainer() {
         return <DesignTab problemSetId={displayId} />;
       case 'plan':
         return <PlanTab problemSetId={displayId} daoId={activeProblemSet?.daoId} />;
-      case 'direct':
-        return <DirectTab problemSetId={displayId} daoId={activeProblemSet?.daoId} />;
+      case 'decide':
+        return <DecideTab problemSetId={displayId} daoId={activeProblemSet?.daoId} />;
       case 'cop':
         return <COPTab problemSetId={displayId} />;
       case 'assess':
