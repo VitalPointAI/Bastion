@@ -7,7 +7,7 @@
 -- RACI matrix assignments per problem set ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS raci_assignments (
   id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  problem_set_id       UUID        NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
+  problem_set_id       TEXT        NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
   decision_type        TEXT        NOT NULL,
   position             TEXT        NOT NULL,
   raci_role            TEXT        NOT NULL CHECK (raci_role IN ('R', 'A', 'C', 'I')),
@@ -41,7 +41,7 @@ CREATE INDEX IF NOT EXISTS idx_raci_delegations_to         ON raci_delegations(t
 -- Decision records ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS decisions (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  problem_set_id   UUID        NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
+  problem_set_id   TEXT        NOT NULL REFERENCES problem_sets(id) ON DELETE CASCADE,
   decision_type    TEXT        NOT NULL,
   title            TEXT        NOT NULL,
   description      TEXT        NOT NULL DEFAULT '',
