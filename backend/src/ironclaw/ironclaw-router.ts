@@ -19,6 +19,8 @@ import { problemSetMemberStore } from '../problem-set/problem-set-member-store.j
 import { problemSetStore } from '../problem-set/problem-set-store.js';
 import { designStore } from '../design/design-store.js';
 import type { TrustDecision } from './ironclaw-types.js';
+import { getTaskStore } from './task-store.js';
+import { getTaskOrchestrator } from './task-orchestrator.js';
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -585,3 +587,128 @@ ironclawRouter.post(
     }
   },
 );
+
+// ---------------------------------------------------------------------------
+// Task Orchestration Endpoints (Plan 05)
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /tasks/:problemSetId
+ * List tasks for a problem set, optionally filtered by status.
+ */
+ironclawRouter.get('/tasks/:problemSetId', async (req: Request, res: Response) => {
+  const problemSetId = req.params.problemSetId as string;
+  const status = req.query.status as string | undefined;
+
+  try {
+    const store = getTaskStore();
+    const tasks = await store.getTasksForProblemSet(
+      problemSetId,
+      status as import('./task-types.js').TaskStatus | undefined,
+    );
+    res.json(tasks);
+  } catch (err) {
+    console.error('[ironclaw-router] List tasks error:', err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : 'Internal server error',
+    });
+  }
+});
+
+/**
+ * GET /tasks/detail/:taskId
+ * Get a single task with current step progress.
+ */
+ironclawRouter.get('/tasks/detail/:taskId', async (req: Request, res: Response) => {
+  const taskId = req.params.taskId as string;
+
+  try {
+    const store = getTaskStore();
+    const task = await store.getTask(taskId);
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+    res.json(task);
+  } catch (err) {
+    console.error('[ironclaw-router] Get task error:', err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : 'Internal server error',
+    });
+  }
+});
+
+/**
+ * POST /tasks/:taskId/approve/:suggestionId
+ * Approve a task suggestion.
+ */
+ironclawRouter.post(
+  '/tasks/:taskId/approve/:suggestionId',
+  async (req: Request, res: Response) => {
+    const taskId = req.params.taskId as string;
+    const suggestionId = req.params.suggestionId as string;
+
+    try {
+      const orchestrator = getTaskOrchestrator();
+      await orchestrator.handleApproval(taskId, suggestionId, 'approved');
+      res.json({ approved: true });
+    } catch (err) {
+      console.error('[ironclaw-router] Task approve error:', err);
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Internal server error',
+      });
+    }
+  },
+);
+
+/**
+ * POST /tasks/:taskId/dismiss/:suggestionId
+ * Dismiss a task suggestion.
+ */
+ironclawRouter.post(
+  '/tasks/:taskId/dismiss/:suggestionId',
+  async (req: Request, res: Response) => {
+    const taskId = req.params.taskId as string;
+    const suggestionId = req.params.suggestionId as string;
+
+    try {
+      const orchestrator = getTaskOrchestrator();
+      await orchestrator.handleApproval(taskId, suggestionId, 'dismissed');
+      res.json({ dismissed: true });
+    } catch (err) {
+      console.error('[ironclaw-router] Task dismiss error:', err);
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Internal server error',
+      });
+    }
+  },
+);
+
+/**
+ * POST /tasks/:taskId/refine
+ * Submit refinement feedback for a task.
+ * Body: { feedback: string, suggestionId?: string }
+ */
+ironclawRouter.post('/tasks/:taskId/refine', async (req: Request, res: Response) => {
+  const taskId = req.params.taskId as string;
+  const { feedback, suggestionId } = req.body as {
+    feedback?: string;
+    suggestionId?: string;
+  };
+
+  if (!feedback || typeof feedback !== 'string' || !feedback.trim()) {
+    res.status(400).json({ error: 'feedback is required and must be a non-empty string' });
+    return;
+  }
+
+  try {
+    const orchestrator = getTaskOrchestrator();
+    await orchestrator.handleRefinement(taskId, feedback.trim(), suggestionId);
+    res.json({ refining: true });
+  } catch (err) {
+    console.error('[ironclaw-router] Task refine error:', err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : 'Internal server error',
+    });
+  }
+});

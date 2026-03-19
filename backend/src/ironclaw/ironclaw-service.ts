@@ -20,8 +20,10 @@ import type {
   IronclawChatMessage,
   ActionCardData,
   SuggestionPayload,
+  StepProgressData,
 } from './ironclaw-types.js';
 import { SENSITIVE_FIELDS } from './ironclaw-types.js';
+import { getTaskOrchestrator } from './task-orchestrator.js';
 
 // ---------------------------------------------------------------------------
 // Message Context
@@ -222,6 +224,50 @@ export class IronclawService {
         // Flag sensitive fields so the frontend can show a Decision Gate notice
         ...(targetField && SENSITIVE_FIELDS.has(targetField) ? { risk: 'high' as const } : {}),
       };
+    }
+
+    // Detect task_request (orchestration loop trigger)
+    if (parsed?.task_request) {
+      const tr = parsed.task_request as Record<string, unknown>;
+      const orchestrator = getTaskOrchestrator();
+      const task = await orchestrator.createTask({
+        problemSetId,
+        userDid: 'did:system:ironclaw-service', // session user not in scope here
+        title: (tr.title as string) ?? 'Untitled Task',
+        description: (tr.description as string) ?? undefined,
+        targetFields: (tr.target_fields as Record<string, string>) ?? {},
+        agentHints: (tr.agent_hints as string[]) ?? [],
+      });
+
+      // Emit initial progress message
+      const stepProgress: StepProgressData = {
+        action_id: task.taskId,
+        steps: task.steps.map((s) => ({
+          label: s.label,
+          status: s.status,
+          started_at: null,
+          completed_at: null,
+        })),
+        current_step: 0,
+        started_at: new Date().toISOString(),
+      };
+
+      await ironclawStore.addMessage({
+        problem_set_id: problemSetId,
+        content: `Task created: ${task.title}. Dispatching agents...`,
+        sender: 'ironclaw',
+        specialist_id: null,
+        specialist_display_name: null,
+        delegated_by: null,
+        action_card: null,
+        step_progress: stepProgress,
+        suggestion: null,
+      });
+
+      // Dispatch agents in background (non-blocking)
+      orchestrator.dispatchTask(task.taskId).catch((err) =>
+        console.error(`[ironclaw] Task dispatch failed: ${task.taskId}`, err),
+      );
     }
 
     if (!messageContent && !actionCard) return;
