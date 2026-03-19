@@ -94,9 +94,11 @@ export function IronclawDrawer({
 
   // Fetch version from /api/ironclaw/status on mount
   useEffect(() => {
-    fetch('/api/ironclaw/status')
-      .then((r) => r.json())
-      .then((d: { currentVersion?: string | null }) => setVersion(d.currentVersion ?? null))
+    fetch('/api/ironclaw/status', { credentials: 'include' })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { currentVersion?: string | null } | null) => {
+        if (d) setVersion(d.currentVersion ?? 'unknown');
+      })
       .catch(() => {});
   }, []);
 
