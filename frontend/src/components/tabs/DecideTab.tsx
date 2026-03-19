@@ -184,6 +184,7 @@ export function DecideTab({ problemSetId, daoId: _daoId }: DecideTabProps) {
         summary={summary}
         loading={loading}
         error={error}
+        problemSetId={problemSetId}
         onActOnDecision={actOnDecision}
         onFilterChange={setFilters}
       />

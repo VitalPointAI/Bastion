@@ -8,7 +8,8 @@
  */
 
 import { useState } from 'react';
-import type { Decision, DecisionSummary, ActOnDecisionParams } from '../../lib/decision-service.js';
+import type { Decision, DecisionSummary, ActOnDecisionParams, DecisionAuditTrail, DAOVote } from '../../lib/decision-service.js';
+import { decisionApiService } from '../../lib/decision-service.js';
 import { PendingDecisionModal } from './PendingDecisionModal.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -106,12 +107,75 @@ function SummaryCard({ status, count, isActive, onClick }: SummaryCardProps) {
 
 interface DecisionCardProps {
   decision: Decision;
+  problemSetId: string;
   onAction: (decision: Decision, action: ActOnDecisionParams['action']) => void;
 }
 
-function DecisionCard({ decision, onAction }: DecisionCardProps) {
+function VoteRecord({ votes }: { votes: DAOVote[] }) {
+  if (votes.length === 0) {
+    return (
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #94a3b8)', fontStyle: 'italic' }}>
+        No votes recorded yet.
+      </div>
+    );
+  }
+
+  const VOTE_COLOR: Record<string, string> = {
+    Approve: '#10b981',
+    Reject: '#ef4444',
+    Abstain: '#94a3b8',
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+      {votes.map((v, i) => (
+        <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.75rem' }}>
+          <span style={{
+            color: VOTE_COLOR[v.vote_type] ?? '#94a3b8',
+            fontWeight: 600,
+            minWidth: '50px',
+          }}>
+            {v.vote_type}
+          </span>
+          <span style={{ color: 'var(--text-secondary, #94a3b8)', fontFamily: 'monospace' }}>
+            {v.voter.length > 20 ? `${v.voter.substring(0, 8)}…${v.voter.substring(v.voter.length - 6)}` : v.voter}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DecisionCard({ decision, problemSetId, onAction }: DecisionCardProps) {
   const statusCfg = STATUS_CONFIG[decision.status] ?? STATUS_CONFIG['pending'];
   const isPending = decision.status === 'pending';
+  const isDecided = ['approved', 'rejected', 'deferred'].includes(decision.status);
+  const hasOnChain = decision.dao_proposal_id != null;
+
+  const [showAudit, setShowAudit] = useState(false);
+  const [auditTrail, setAuditTrail] = useState<DecisionAuditTrail | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
+
+  async function handleToggleAudit() {
+    if (showAudit) {
+      setShowAudit(false);
+      return;
+    }
+    setShowAudit(true);
+    if (auditTrail) return; // already loaded
+
+    setAuditLoading(true);
+    setAuditError(null);
+    try {
+      const trail = await decisionApiService.getAuditTrail(problemSetId, decision.id);
+      setAuditTrail(trail);
+    } catch (err) {
+      setAuditError(err instanceof Error ? err.message : 'Failed to load audit trail');
+    } finally {
+      setAuditLoading(false);
+    }
+  }
 
   return (
     <div
@@ -137,21 +201,61 @@ function DecisionCard({ decision, onAction }: DecisionCardProps) {
             </div>
           )}
         </div>
-        {/* Status badge */}
-        <span
-          style={{
-            fontSize: '0.7rem',
-            fontWeight: 600,
-            color: statusCfg.color,
-            background: statusCfg.bgColor,
-            border: `1px solid ${statusCfg.borderColor}`,
-            borderRadius: '9999px',
-            padding: '0.125rem 0.5rem',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {statusCfg.label}
-        </span>
+        {/* Badges row: status + on-chain */}
+        <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center', flexShrink: 0 }}>
+          {/* On-chain badge (decided decisions with dao_proposal_id) */}
+          {isDecided && hasOnChain && (
+            <button
+              onClick={handleToggleAudit}
+              title="View on-chain audit trail"
+              style={{
+                fontSize: '0.65rem',
+                fontWeight: 600,
+                color: '#7c3aed',
+                background: 'rgba(124, 58, 237, 0.1)',
+                border: '1px solid rgba(124, 58, 237, 0.35)',
+                borderRadius: '9999px',
+                padding: '0.125rem 0.5rem',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              On-Chain #{decision.dao_proposal_id}
+            </button>
+          )}
+          {/* Pending: show "Awaiting on-chain recording" if no proposal yet */}
+          {isPending && !hasOnChain && (
+            <span
+              title="DAO proposal is being recorded on-chain"
+              style={{
+                fontSize: '0.65rem',
+                color: '#94a3b8',
+                background: 'rgba(148, 163, 184, 0.08)',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                borderRadius: '9999px',
+                padding: '0.125rem 0.5rem',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Awaiting on-chain
+            </span>
+          )}
+          {/* Status badge */}
+          <span
+            style={{
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              color: statusCfg.color,
+              background: statusCfg.bgColor,
+              border: `1px solid ${statusCfg.borderColor}`,
+              borderRadius: '9999px',
+              padding: '0.125rem 0.5rem',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {statusCfg.label}
+          </span>
+        </div>
       </div>
 
       {/* Meta row */}
@@ -164,6 +268,51 @@ function DecisionCard({ decision, onAction }: DecisionCardProps) {
         )}
         <span>{formatTimeSince(decision.created_at)}</span>
       </div>
+
+      {/* On-chain audit trail (expanded) */}
+      {showAudit && (
+        <div
+          style={{
+            marginTop: '0.25rem',
+            padding: '0.625rem 0.75rem',
+            background: 'rgba(124, 58, 237, 0.05)',
+            border: '1px solid rgba(124, 58, 237, 0.2)',
+            borderRadius: '0.375rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+          }}
+        >
+          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#7c3aed' }}>
+            On-Chain Audit Trail
+          </div>
+          {auditLoading && (
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #94a3b8)' }}>Loading...</div>
+          )}
+          {auditError && (
+            <div style={{ fontSize: '0.75rem', color: '#ef4444' }}>{auditError}</div>
+          )}
+          {auditTrail && !auditLoading && (
+            <>
+              <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-secondary, #94a3b8)' }}>
+                <span>Proposal ID: <strong style={{ color: '#7c3aed' }}>#{auditTrail.daoProposal?.id ?? decision.dao_proposal_id}</strong></span>
+                {auditTrail.daoProposal && (
+                  <span>Status: <strong>{auditTrail.daoProposal.status}</strong></span>
+                )}
+                <span style={{ fontSize: '0.65rem', color: 'rgba(148,163,184,0.7)' }}>
+                  [encrypted on-chain]
+                </span>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Voting Record
+                </div>
+                <VoteRecord votes={auditTrail.votes} />
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Action buttons — only for pending decisions */}
       {isPending && (
@@ -241,6 +390,7 @@ interface DecisionDashboardProps {
   summary: DecisionSummary | null;
   loading: boolean;
   error: string | null;
+  problemSetId: string;
   onActOnDecision: (decisionId: string, params: ActOnDecisionParams) => Promise<void>;
   onFilterChange: (filters: { status?: string; decision_type?: string }) => void;
 }
@@ -250,6 +400,7 @@ export function DecisionDashboard({
   summary,
   loading,
   error,
+  problemSetId,
   onActOnDecision,
   onFilterChange,
 }: DecisionDashboardProps) {
@@ -396,6 +547,7 @@ export function DecisionDashboard({
             <DecisionCard
               key={decision.id}
               decision={decision}
+              problemSetId={problemSetId}
               onAction={handleActionClick}
             />
           ))}

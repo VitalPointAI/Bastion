@@ -121,6 +121,24 @@ router.post('/:problemSetId', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/decisions/:problemSetId/:decisionId/audit
+ * Get the full audit trail for a decision: decision + linked DAO proposal + votes.
+ * Must be defined before /:decisionId to avoid route collision.
+ */
+router.get('/:problemSetId/:decisionId/audit', async (req: Request, res: Response) => {
+  try {
+    const decisionId = req.params.decisionId as string;
+    const auditTrail = await decisionService.getDecisionAuditTrail(decisionId);
+    res.json(auditTrail);
+  } catch (err) {
+    console.error('[decisions] GET /:problemSetId/:decisionId/audit error:', err);
+    const message = err instanceof Error ? err.message : 'Failed to fetch decision audit trail';
+    const status = message.includes('not found') ? 404 : 500;
+    res.status(status).json({ error: message });
+  }
+});
+
+/**
  * PATCH /api/decisions/:problemSetId/:decisionId
  * Act on a decision: approve, reject, defer, or request info.
  * Body: { action: 'approved'|'rejected'|'deferred'|'info_requested', actor_position }

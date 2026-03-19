@@ -29,8 +29,37 @@ export interface Decision {
   decided_at?: string;
   context?: Record<string, unknown>;
   comment?: string;
+  dao_proposal_id?: number | null;
   created_at: string;
   updated_at: string;
+}
+
+// ─── Audit Trail Types ────────────────────────────────────────────────────────
+
+export interface DAOProposal {
+  id: number;
+  kind: string;
+  proposer: string;
+  description: string;
+  classification: string;
+  status: string;
+  votes_approve: number;
+  votes_reject: number;
+  created_at: string;
+  voting_deadline: string;
+}
+
+export interface DAOVote {
+  voter: string;
+  vote_type: 'Approve' | 'Reject' | 'Abstain';
+  weight: number;
+  timestamp: string;
+}
+
+export interface DecisionAuditTrail {
+  decision: Decision;
+  daoProposal: DAOProposal | null;
+  votes: DAOVote[];
 }
 
 export interface DecisionSummary {
@@ -160,5 +189,12 @@ export const decisionApiService = {
       method: 'PUT',
       body: JSON.stringify(params),
     });
+  },
+
+  /**
+   * Get the on-chain audit trail for a decision: decision + DAO proposal + votes.
+   */
+  async getAuditTrail(psId: string, decisionId: string): Promise<DecisionAuditTrail> {
+    return apiRequest<DecisionAuditTrail>(`/api/decisions/${psId}/${decisionId}/audit`);
   },
 };
