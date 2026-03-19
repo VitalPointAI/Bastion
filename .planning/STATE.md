@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 51-05-PLAN.md
-last_updated: "2026-03-18T22:35:00Z"
-last_activity: "2026-03-18 - Completed 51-05: TeamDesignerPanel DnD team composer, team admin API assign/unassign/test endpoints, TeamStore integration, problem set assignment dropdown, per-agent test trace viewer"
+stopped_at: Completed 52-03-PLAN.md
+last_updated: "2026-03-19T13:32:35.313Z"
+last_activity: "2026-03-19 - Completed 52-01: MCP server (mcp-server.ts, mcp-router.ts, index.ts), Docker compose services (dev + prod), @modelcontextprotocol/sdk installed"
 progress:
-  total_phases: 66
-  completed_phases: 47
-  total_plans: 419
-  completed_plans: 425
+  total_phases: 68
+  completed_phases: 48
+  total_plans: 435
+  completed_plans: 434
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 51 of 66 (Unified Agent Architecture) — IN PROGRESS
-Plan: 5 of 8 in current phase — COMPLETE
-Status: Plan 51-05 complete — TeamDesignerPanel with @dnd-kit drag-and-drop composition, leader designation, workflow editor (sequential/parallel/pipeline/supervised), problem set assignment, per-agent test trace. Team admin API with assign/unassign/test endpoints. Note: git commits blocked by environment permissions — changes in working directory require manual commit.
-Last activity: 2026-03-18 - Completed 51-05: TeamDesignerPanel, team API assign/unassign/test, TeamTestResult types, adminService methods
+Phase: 52 of 66 (Agent Skills & MCP) — IN PROGRESS
+Plan: 1 of 6 in current phase — COMPLETE
+Status: Plan 52-01 complete — bastion-mcp Docker container with MCP SSE transport (port 3334), all 10 BASTION_TOOLS registered via MCP protocol using low-level Server API, DID-based authorization with allowlist, high-risk tool protection, Phase 52 MVP stub executor.
+Last activity: 2026-03-19 - Completed 52-01: MCP server (mcp-server.ts, mcp-router.ts, index.ts), Docker compose services (dev + prod), @modelcontextprotocol/sdk installed
 
 Progress: ████████████████████████████████ 423 plans complete
 
@@ -214,6 +214,8 @@ Progress: ███████████████████████�
 | Phase 50 P04 | 301 | 2 tasks | 5 files |
 | Phase 50 P07 | 12 | 2 tasks | 6 files |
 | Phase 51-unified-agent-architecture P01 | 5min | 2 tasks | 6 files |
+| Phase 52-agent-skills-mcp P01 | 8 | 2 tasks | 7 files |
+| Phase 52-agent-skills-mcp P03 | 20 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -227,6 +229,13 @@ Progress: ███████████████████████�
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 52 Plan 01 (MCP Server Container):**
+- Used low-level Server API (not McpServer) — BASTION_TOOLS uses raw JSON Schema, not Zod; avoids conversion layer
+- DID allowlist: null in dev mode (open to any DID), explicit Set from MCP_ALLOWED_DIDS in prod
+- High-risk tools always require explicit allowlist entry regardless of dev mode
+- Phase 52 MVP stub executor — real domain service wiring deferred to subsequent plans
+- prod docker-compose.prod.yml reuses GHCR backend image with command override (no separate Docker image)
 
 **Phase 51 Plan 01 (StandardAgent Foundation):**
 - StandardAgent extends AgentManifest rather than replacing it — all existing agent consumers (registry.ts, agent routes) remain unbroken
@@ -933,6 +942,8 @@ Recent decisions affecting current work:
 - [Phase 50]: SSE forwarding via callback rather than second EventSource — one connection for whole sidebar
 - [Phase 50]: Unified feed merges IngestItem[] + IngestionEvent[] sorted newest-first by timestamp
 - [Phase 50]: Old DocIntelligencePanel + OSINT modal deprecated behind Advanced collapsible, not deleted (UNIV-18)
+- [Phase 52-agent-skills-mcp]: Skill handlers use dynamic imports for graceful degradation when Plan 52-02 not yet executed
+- [Phase 52-agent-skills-mcp]: BUILDER_HANDLERS dispatch map: idempotent via existence checks, not ON CONFLICT, across mixed storage backends
 
 ### Roadmap Evolution
 
@@ -1649,7 +1660,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-18T16:23:53.720Z
-Stopped at: Completed 50-04-PLAN.md
+Last session: 2026-03-19T13:32:35.302Z
+Stopped at: Completed 52-03-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02

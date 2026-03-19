@@ -750,7 +750,7 @@ Plans:
 **Goal:** Standalone MCP server for agent tool execution, reusable skills registry with DB storage and admin UI, Ironclaw skill/tool/team builder via action cards, and field write-back handler for applying AI suggestions to problem set fields
 **Requirements**: REQ-52-01 through REQ-52-05
 **Depends on:** Phase 51
-**Plans:** 6 plans (3 waves)
+**Plans:** 3/6 plans executed
 
 Plans:
 - [ ] 52-01: MCP server Docker container with tool serving (Wave 1)
