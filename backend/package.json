@@ -23,6 +23,7 @@
     "@langchain/langgraph": "^1.1.0",
     "@langchain/langgraph-checkpoint-postgres": "^1.0.0",
     "@langchain/openai": "^1.2.2",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@near-js/accounts": "^2.5.1",
     "@near-js/crypto": "^2.5.1",
     "@near-js/keystores": "^2.5.1",
