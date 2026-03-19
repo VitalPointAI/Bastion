@@ -144,7 +144,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
 
   // ── Phase 45: Subspace system ───────────────────────────────────────────────
   const {
-    subspaces: _subspaces,
+    subspaces,
     activeSubspaceId,
     setActiveSubspaceId,
     subspaceData,
@@ -522,7 +522,6 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
             if (contextMenu.node) handleNodeDoubleClick(contextMenu.node);
           }}
           onCreateSubspaceFromSelection={() => {
-            // If right-clicked on a node and nothing multi-selected, use just that node
             const ids = selectedNodeIds.length > 0
               ? selectedNodeIds
               : contextMenu.node ? [contextMenu.node.id] : [];
@@ -531,8 +530,16 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
               createManualSubspace(name, ids);
             }
           }}
-          onCreateSmartSubspace={() => {
-            // Placeholder — smart subspace creation is a future feature
+          subspaces={subspaces}
+          activeSubspaceId={activeSubspaceId}
+          onSubspaceSelect={(id) => {
+            setActiveSubspaceId(id);
+            if (id) {
+              const sub = subspaces.find((s) => s.id === id);
+              drillIntoSubspace(id, sub?.name ?? id);
+            } else {
+              drillUp(0);
+            }
           }}
         />
       )}

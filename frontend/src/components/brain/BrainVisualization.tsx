@@ -710,9 +710,10 @@ export function BrainVisualization({
           linkThreeObjectExtend={true}
           linkPositionUpdate={linkPositionUpdate as unknown as (obj: object, coords: object, link: object) => void}
           onNodeClick={handleNodeClickWithDoubleDetect}
-          onNodeRightClick={(node: NodeObject, event: MouseEvent) => {
+          onNodeRightClick={(node: NodeObject | undefined, event: MouseEvent) => {
             event.preventDefault();
-            onNodeRightClick?.(node as BrainNode, event);
+            if (node) onNodeRightClick?.(node as BrainNode, event);
+            else onBackgroundRightClick?.(event);
           }}
           onBackgroundClick={(_event: MouseEvent) => {
             // No-op — let BrainController handle background clicks if needed
