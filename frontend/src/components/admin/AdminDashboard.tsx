@@ -12,7 +12,6 @@ import { adminService } from '../../lib/admin-service';
 import { useUser } from '../../context/UserContext';
 import { LLMConfigPanel } from './LLMConfigPanel';
 import { AgentHub } from './AgentHub';
-import { ToolRegistryPanel } from './ToolRegistryPanel';
 import { WorkflowConfigPanel } from './WorkflowConfigPanel';
 import { OSINTSourcePanel } from './OSINTSourcePanel';
 import { AuditLogPanel } from './AuditLogPanel';
@@ -26,8 +25,7 @@ interface AdminDashboardProps {
 
 type AdminView =
   | 'llm'
-  | 'agents'
-  | 'tools'
+  | 'agent-hub'
   | 'workflow'
   | 'osint'
   | 'audit'
@@ -36,8 +34,7 @@ type AdminView =
 
 const ADMIN_ITEMS: SidebarItem[] = [
   { id: 'llm', label: 'LLM Provider', tooltip: 'Configure LLM provider settings' },
-  { id: 'agents', label: 'Agents', tooltip: 'Agent management, teams, activity, and health' },
-  { id: 'tools', label: 'Tools', tooltip: 'MCP tool registry' },
+  { id: 'agent-hub', label: 'Agent Hub', tooltip: 'Agents, tools, skills, teams, activity, and health' },
   { id: 'workflow', label: 'Workflow', tooltip: 'Workflow configuration' },
   { id: 'osint', label: 'OSINT Sources', tooltip: 'Open source intelligence feeds' },
   { id: 'audit', label: 'Audit Log', tooltip: 'System audit trail' },
@@ -156,8 +153,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           onSelectItem={(id) => setSelectedView(id as AdminView)}
         >
           {selectedView === 'llm' && <LLMConfigPanel />}
-          {selectedView === 'agents' && <AgentHub />}
-          {selectedView === 'tools' && <ToolRegistryPanel />}
+          {selectedView === 'agent-hub' && <AgentHub />}
           {selectedView === 'workflow' && <WorkflowConfigPanel />}
           {selectedView === 'osint' && <OSINTSourcePanel />}
           {selectedView === 'audit' && <AuditLogPanel />}
