@@ -13,6 +13,7 @@
 
 import { actionPipeline } from './action-pipeline.js';
 import { actionRegistry } from './action-registry.js';
+import { executeApprovedAction } from './builder-handlers.js';
 import type { ActionResult } from './action-pipeline.js';
 import type { IronclawAction, ActionRiskLevel } from './ironclaw-types.js';
 import { PROTECTED_CONFIG_KEYS } from './ironclaw-types.js';
@@ -329,7 +330,20 @@ export class ToolBridge {
     };
 
     // 4. Route through action pipeline
-    return actionPipeline.processAction(action, userDid);
+    const result = await actionPipeline.processAction(action, userDid);
+
+    // 5. Execute builder CRUD when action pipeline approves
+    if (result.status === 'executed') {
+      const execResult = await executeApprovedAction(action.type, action.payload, userDid);
+      if (execResult.success) {
+        result.result = execResult.result;
+      } else {
+        result.status = 'denied';
+        result.error = `Execution failed: ${execResult.error}`;
+      }
+    }
+
+    return result;
   }
 
   /**
