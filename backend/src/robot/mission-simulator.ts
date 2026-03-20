@@ -310,7 +310,12 @@ function simulationTick(session: SimSession): void {
         }
       } else {
         // Move toward target
-        const step = Math.min(robot.speed * 0.5, dist); // 0.5s per tick
+        // Speed scaling: room coords map to ~130m per unit on the ground.
+        // Speed 0-255 maps to 0-10 m/s (36 km/h max — realistic urban UGV).
+        // Per 500ms tick: (speed/255) * 10 m/s * 0.5s / 130 m/unit
+        const metersPerTick = (robot.speed / 255) * 10 * 0.5;
+        const roomUnitsPerTick = metersPerTick / 130;
+        const step = Math.min(roomUnitsPerTick, dist);
         robot.position.x += (dx / dist) * step;
         robot.position.y += (dy / dist) * step;
         robot.heading = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;

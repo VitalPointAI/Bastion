@@ -335,10 +335,19 @@ export class RobotMissionService {
     );
 
     // Create governance gate when mission enters awaiting_auth
+    // Skip if an autonomous orchestrator sequence is managing this mission
+    // (the orchestrator creates its own gates — don't duplicate)
     if (state === RobotMissionState.awaiting_auth) {
-      this.createAuthGate(robot_id, mission_id).catch((err) =>
-        console.error('[RobotMissionService] Failed to create auth gate:', err),
+      const { getAutonomousOrchestrator } = await import('./autonomous-mission-orchestrator.js');
+      const orchestrator = getAutonomousOrchestrator();
+      const isManaged = orchestrator.listSequences().some(
+        (s: { missions: Record<string, string> }) => Object.values(s.missions).includes(mission_id),
       );
+      if (!isManaged) {
+        this.createAuthGate(robot_id, mission_id).catch((err) =>
+          console.error('[RobotMissionService] Failed to create auth gate:', err),
+        );
+      }
     }
 
     // Write mission_complete event to brain graph on terminal states (non-blocking)
