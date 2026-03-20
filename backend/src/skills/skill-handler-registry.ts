@@ -48,13 +48,16 @@ export function getHandler(handlerId: string): SkillHandler | undefined {
 
 /**
  * Execute a skill by handler ID.
+ * Falls back to the dynamic LLM-based handler if no built-in handler exists.
  */
 export async function executeSkill(handlerId: string, args: Record<string, unknown>): Promise<string> {
   const handler = handlers.get(handlerId);
-  if (!handler) {
-    throw new Error(`No handler registered for "${handlerId}"`);
-  }
-  return handler(args);
+  if (handler) return handler(args);
+
+  // Fall back to dynamic handler — looks up the skill definition in the
+  // SkillRegistry and uses its systemPromptFragment + inputSchema to
+  // construct an LLM call that interprets the skill on the fly.
+  return executeDynamicSkill(handlerId, args);
 }
 
 /**
@@ -114,3 +117,200 @@ const tacToolHandlerMap: Record<string, string> = {
   'select_observation_post': 'tactical/selectOP',
   'identify_kill_zone': 'tactical/identifyKillZone',
 };
+
+// ---------------------------------------------------------------------------
+// Dynamic skill handler — LLM-interpreted execution for runtime-created skills
+// ---------------------------------------------------------------------------
+
+/**
+ * Execute a skill that has no built-in handler by using the skill's
+ * systemPromptFragment and inputSchema to construct an LLM call.
+ * This enables Ironclaw-created skills to be immediately executable
+ * without a server restart.
+ */
+async function executeDynamicSkill(handlerId: string, args: Record<string, unknown>): Promise<string> {
+  // Look up the skill in the registry by handler ID (stored in metadata.handler)
+  const { getSkillRegistry } = await import('../agents/skill-registry.js');
+  const registry = getSkillRegistry();
+  const allSkills = await registry.listSkills();
+
+  const skill = allSkills.find(
+    (s) => (s.metadata as Record<string, unknown>)?.handler === handlerId,
+  );
+
+  if (!skill) {
+    throw new Error(`No skill found with handler "${handlerId}" — register a handler or create a skill .md file`);
+  }
+
+  const promptFragment = skill.systemPromptFragment ?? skill.description;
+  const inputSchemaStr = JSON.stringify(skill.inputSchema, null, 2);
+
+  // Use LLM to interpret the skill
+  const { createLLMForAgent } = await import('../agents/langgraph/llm-factory.js');
+  const { HumanMessage, SystemMessage } = await import('@langchain/core/messages');
+
+  let llm;
+  try {
+    llm = await createLLMForAgent({ agentId: 'skill-executor' });
+  } catch {
+    throw new Error(`Cannot execute dynamic skill "${skill.name}" — no LLM available`);
+  }
+
+  const response = await llm.invoke([
+    new SystemMessage(
+      `You are executing a skill called "${skill.name}".\n\n` +
+      `Skill description: ${skill.description}\n\n` +
+      `Context:\n${promptFragment}\n\n` +
+      `Input schema:\n${inputSchemaStr}\n\n` +
+      `Execute this skill with the provided arguments and return a JSON result.`,
+    ),
+    new HumanMessage(
+      `Execute with arguments:\n${JSON.stringify(args, null, 2)}`,
+    ),
+  ]);
+
+  const text = typeof response.content === 'string'
+    ? response.content
+    : (response.content as Array<{ type: string; text?: string }>).find((b) => b.type === 'text')?.text ?? '';
+
+  return text;
+}
+
+// ---------------------------------------------------------------------------
+// Runtime skill registration — write .md file + register in DB + add handler
+// ---------------------------------------------------------------------------
+
+export interface RuntimeSkillDefinition {
+  skillId: string;
+  name: string;
+  description: string;
+  category: string;
+  tags: string[];
+  version?: string;
+  inputSchema: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+  systemPromptFragment: string;
+  overview?: string;
+  tacticalContext?: string;
+  constraints?: string;
+}
+
+/**
+ * Register a new skill at runtime:
+ * 1. Writes the .md file to backend/src/skills/{category}/
+ * 2. Registers in the SkillRegistry (DB)
+ * 3. Registers a dynamic handler (no restart needed)
+ *
+ * Called by Ironclaw's skill.create builder handler.
+ */
+export async function registerRuntimeSkill(
+  def: RuntimeSkillDefinition,
+  createdBy: string,
+): Promise<{ skillId: string; filePath: string }> {
+  const { writeFileSync, mkdirSync, existsSync } = await import('fs');
+  const { join, dirname } = await import('path');
+  const { fileURLToPath } = await import('url');
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const skillsDir = __dirname; // backend/src/skills/
+
+  // Derive handler ID and file path
+  const handlerId = `${def.category}/${toCamelCase(def.name)}`;
+  const categoryDir = join(skillsDir, def.category);
+  const fileName = `${def.name.replace(/_/g, '-')}.md`;
+  const filePath = join(categoryDir, fileName);
+
+  // Build .md content
+  const inputSchemaYaml = jsonToYamlIndented(def.inputSchema, 2);
+  const outputSchemaYaml = def.outputSchema ? jsonToYamlIndented(def.outputSchema, 2) : '';
+
+  let mdContent = `---
+skillId: ${def.skillId}
+name: ${def.name}
+description: ${def.description}
+version: ${def.version ?? '1.0.0'}
+category: ${def.category}
+tags: [${def.tags.join(', ')}]
+inputSchema:
+${inputSchemaYaml}outputSchema:
+${outputSchemaYaml || '  type: object\n'}systemPromptFragment: |
+${def.systemPromptFragment.split('\n').map((l) => `  ${l}`).join('\n')}
+handler: ${handlerId}
+---
+
+## Overview
+${def.overview ?? def.description}
+`;
+
+  if (def.tacticalContext) {
+    mdContent += `\n## Tactical Context\n${def.tacticalContext}\n`;
+  }
+  if (def.constraints) {
+    mdContent += `\n## Constraints\n${def.constraints}\n`;
+  }
+
+  // 1. Write .md file
+  if (!existsSync(categoryDir)) {
+    mkdirSync(categoryDir, { recursive: true });
+  }
+  writeFileSync(filePath, mdContent, 'utf-8');
+  console.log(`[SkillHandlerRegistry] Wrote skill file: ${fileName}`);
+
+  // 2. Register in DB
+  const { getSkillRegistry } = await import('../agents/skill-registry.js');
+  const registry = getSkillRegistry();
+  await registry.createSkill({
+    skillId: def.skillId,
+    name: def.name,
+    description: def.description,
+    version: def.version ?? '1.0.0',
+    isEnabled: true,
+    inputSchema: def.inputSchema,
+    outputSchema: def.outputSchema,
+    systemPromptFragment: def.systemPromptFragment,
+    toolIds: [],
+    metadata: {
+      category: def.category,
+      tags: def.tags,
+      handler: handlerId,
+      sourceFile: `${def.category}/${fileName}`,
+      createdAt: new Date().toISOString(),
+    },
+    createdBy,
+  });
+
+  // 3. Dynamic handler registered automatically via executeDynamicSkill fallback
+  // No explicit registration needed — executeSkill() will find it in the registry
+
+  console.log(`[SkillHandlerRegistry] Runtime skill registered: ${def.skillId} → ${handlerId}`);
+  return { skillId: def.skillId, filePath: `${def.category}/${fileName}` };
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function toCamelCase(snakeStr: string): string {
+  return snakeStr.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
+function jsonToYamlIndented(obj: Record<string, unknown>, indent: number): string {
+  const pad = ' '.repeat(indent);
+  const lines: string[] = [];
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      lines.push(`${pad}${key}:`);
+      lines.push(jsonToYamlIndented(value as Record<string, unknown>, indent + 2));
+    } else if (Array.isArray(value)) {
+      lines.push(`${pad}${key}: [${value.map((v) => typeof v === 'string' ? v : JSON.stringify(v)).join(', ')}]`);
+    } else if (typeof value === 'string') {
+      lines.push(`${pad}${key}: ${value}`);
+    } else {
+      lines.push(`${pad}${key}: ${JSON.stringify(value)}`);
+    }
+  }
+
+  return lines.join('\n') + '\n';
+}

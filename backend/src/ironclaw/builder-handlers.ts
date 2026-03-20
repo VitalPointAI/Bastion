@@ -329,29 +329,49 @@ const skillCreate: ActionHandler = async (payload, userDid) => {
   const name = requireField<string>(payload, 'name');
   const description = requireField<string>(payload, 'description');
 
-  let getSkillRegistry: ((...args: unknown[]) => unknown) | undefined;
+  // Use registerRuntimeSkill to write .md file + register in DB + enable dynamic handler
   try {
-    const mod = await import('../agents/skill-registry.js');
-    getSkillRegistry = mod.getSkillRegistry as typeof getSkillRegistry;
-  } catch {
-    throw new Error(
-      'skill.create failed: skill-registry module not available — ensure Plan 52-02 has been executed',
+    const { registerRuntimeSkill } = await import('../skills/skill-handler-registry.js');
+    const result = await registerRuntimeSkill(
+      {
+        skillId,
+        name,
+        description,
+        category: (payload['category'] as string) ?? 'general',
+        tags: (payload['tags'] as string[]) ?? [],
+        version: (payload['version'] as string) ?? '1.0.0',
+        inputSchema: (payload['inputSchema'] as Record<string, unknown>) ?? (payload['parameters'] as Record<string, unknown>) ?? { type: 'object', properties: {} },
+        outputSchema: (payload['outputSchema'] as Record<string, unknown>) ?? undefined,
+        systemPromptFragment: (payload['systemPromptFragment'] as string) ?? description,
+        overview: payload['overview'] as string | undefined,
+        tacticalContext: payload['tacticalContext'] as string | undefined,
+        constraints: payload['constraints'] as string | undefined,
+      },
+      userDid,
     );
-  }
-
-  const registry = (getSkillRegistry as () => { createSkill: (input: Record<string, unknown>, createdBy: string) => Promise<{ skillId: string }> })();
-  const skill = await registry.createSkill(
-    {
+    return { skillId: result.skillId, filePath: result.filePath, status: 'created' };
+  } catch (err) {
+    // Fallback to DB-only registration if .md write fails
+    console.warn('[skill.create] registerRuntimeSkill failed, falling back to DB-only:', err);
+    const { getSkillRegistry } = await import('../agents/skill-registry.js');
+    const registry = getSkillRegistry();
+    const skill = await registry.createSkill({
       skillId,
       name,
       description,
       version: (payload['version'] as string) ?? '1.0.0',
-      tags: (payload['tags'] as string[]) ?? [],
-      parameters: payload['parameters'] as Record<string, unknown> | undefined,
-    },
-    userDid,
-  );
-  return { skillId: skill.skillId, status: 'created' };
+      isEnabled: true,
+      inputSchema: (payload['inputSchema'] as Record<string, unknown>) ?? {},
+      systemPromptFragment: (payload['systemPromptFragment'] as string) ?? description,
+      metadata: {
+        category: (payload['category'] as string) ?? 'general',
+        tags: (payload['tags'] as string[]) ?? [],
+        handler: `${(payload['category'] as string) ?? 'general'}/${name.replace(/_([a-z])/g, (_: string, c: string) => c.toUpperCase())}`,
+      },
+      createdBy: userDid,
+    });
+    return { skillId: skill.skillId, status: 'created_db_only' };
+  }
 };
 
 const skillUpdate: ActionHandler = async (payload, _userDid) => {
