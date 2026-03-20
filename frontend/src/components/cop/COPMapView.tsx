@@ -28,6 +28,7 @@ import { createMilSymbolIcon } from '../mission/map/MilSymbolMarker.js';
 import { SandboxedSVG } from './SandboxedSVG.js';
 import { COPResourceLayer } from './COPResourceLayer.js';
 import { COPRobotLayer } from './COPRobotLayer.js';
+import { latLngToMGRS } from '../../lib/mgrs-coordinator.js';
 import { SwarmCOPLayer } from './SwarmCOPLayer.js';
 import type { RegisteredResource } from '../../lib/resource-registry-service.js';
 
@@ -236,6 +237,11 @@ export function COPMapView({
         zoom={DEFAULT_ZOOM}
         className="cop-map"
         scrollWheelZoom={true}
+        minZoom={2}
+        maxZoom={19}
+        maxBounds={[[-85, -180], [85, 180]]}
+        maxBoundsViscosity={1.0}
+        worldCopyJump={false}
       >
         <TileLayer
           attribution={LIGHT_TILE_ATTRIBUTION}
@@ -283,6 +289,9 @@ export function COPMapView({
         {/* Swarm formation layer (Phase 48) — renders behind robot dots */}
         <SwarmCOPLayer />
 
+        {/* MGRS coordinate display on mouse hover */}
+        <MGRSCoordinateDisplay />
+
         {/* Expose flyTo for external map control (gate notifications, zoom to action) */}
         {onMapReady && <MapFlyToController onMapReady={onMapReady} />}
       </MapContainer>
@@ -306,6 +315,53 @@ function MapFlyToController({ onMapReady }: { onMapReady: (flyTo: (lat: number, 
   }, [map, onMapReady]);
 
   return null;
+}
+
+// ─── MGRS Coordinate Display ─────────────────────────────────────────────────
+
+function MGRSCoordinateDisplay() {
+  const map = useMap();
+  const [mgrs, setMgrs] = useState('');
+  const [latLng, setLatLng] = useState('');
+
+  useEffect(() => {
+    function handleMouseMove(e: L.LeafletMouseEvent) {
+      const { lat, lng } = e.latlng;
+      try {
+        setMgrs(latLngToMGRS(lat, lng, 4));
+        setLatLng(`${lat.toFixed(5)}°N ${lng.toFixed(5)}°E`);
+      } catch {
+        setMgrs('');
+        setLatLng(`${lat.toFixed(5)} ${lng.toFixed(5)}`);
+      }
+    }
+
+    map.on('mousemove', handleMouseMove);
+    return () => { map.off('mousemove', handleMouseMove); };
+  }, [map]);
+
+  if (!mgrs && !latLng) return null;
+
+  return (
+    <div style={{
+      position: 'absolute',
+      bottom: 24,
+      left: 10,
+      zIndex: 1000,
+      background: 'rgba(0, 0, 0, 0.75)',
+      color: '#e2e8f0',
+      padding: '4px 8px',
+      borderRadius: 4,
+      fontSize: '0.7rem',
+      fontFamily: "'Fira Code', monospace",
+      pointerEvents: 'none',
+      display: 'flex',
+      gap: '12px',
+    }}>
+      {mgrs && <span style={{ color: '#93c5fd' }}>{mgrs}</span>}
+      {latLng && <span style={{ color: '#94a3b8' }}>{latLng}</span>}
+    </div>
+  );
 }
 
 // ─── LayerContent (renders symbols, control measures, annotations) ──────────

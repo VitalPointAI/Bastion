@@ -54,6 +54,7 @@
     "jsdom": "^28.1.0",
     "json-rules-engine": "^7.3.1",
     "lib0": "^0.2.117",
+    "mgrs": "^2.1.0",
     "milsymbol": "^3.0.3",
     "multer": "^2.0.2",
     "multicast-dns": "^7.2.5",

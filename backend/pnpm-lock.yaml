@@ -125,6 +125,9 @@ importers:
       lib0:
         specifier: ^0.2.117
         version: 0.2.117
+      mgrs:
+        specifier: ^2.1.0
+        version: 2.1.0
       milsymbol:
         specifier: ^3.0.3
         version: 3.0.3
@@ -4926,6 +4929,9 @@ packages:
     resolution: {integrity: sha512-BgsXevY1MBac/3ZYv/RfNFf/4iuW9X7f4H8ZNkiH+r667HD9sVujxcmu4jvEzGCAm4/WyKdZCuyhAcyhTHOucQ==}
     engines: {node: '>=20.19.4'}
     hasBin: true
+
+  mgrs@2.1.0:
+    resolution: {integrity: sha512-/pjuM02PUAhp4dazfccTSKBGTGPFkRz9LKwGJKusc/B20apcGG/CYnRHx0kXmLXy4m5O3p6y6nOVxEnErPpFvQ==}
 
   micromatch@4.0.8:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
@@ -13259,6 +13265,8 @@ snapshots:
       - supports-color
       - utf-8-validate
     optional: true
+
+  mgrs@2.1.0: {}
 
   micromatch@4.0.8:
     dependencies:

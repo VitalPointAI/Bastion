@@ -26,6 +26,7 @@
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
     "leaflet-realtime": "^2.2.0",
+    "mgrs": "^2.1.0",
     "milsymbol": "^3.0.3",
     "pinata": "^2.5.2",
     "react": "^19.2.0",

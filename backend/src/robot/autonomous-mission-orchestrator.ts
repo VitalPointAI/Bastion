@@ -21,6 +21,7 @@ import { getRobotMissionService } from './robot-mission-service.js';
 import { gateService } from '../gates/gate-service.js';
 import { GateType, GateEnforcement, GateStatus } from '../gates/gate-types.js';
 import { getMessageBus } from '../messaging/message-bus.js';
+import { roomToGridRef } from '../coordinates/mgrs-coordinator.js';
 import { generateTacticalPlan, type TacticalPlan, type ThreatInfo } from './tactical-ai-service.js';
 import { EventEmitter } from 'events';
 
@@ -152,7 +153,9 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       problem_set_id: config.problemSetId,
     });
 
-    this.logPhase(state, `Leader ${config.leaderId} deployed for autonomous reconnaissance`);
+    const reconSW = roomToGridRef(config.reconArea.x_min, config.reconArea.y_min);
+    const reconNE = roomToGridRef(config.reconArea.x_max, config.reconArea.y_max);
+    this.logPhase(state, `Leader ${config.leaderId} — conduct recce screen between grid ${reconSW} and grid ${reconNE}`);
     this.logPhase(state, 'Followers holding at base pending leader assessment');
     this.publishUpdate(state);
 
@@ -190,7 +193,8 @@ class AutonomousMissionOrchestrator extends EventEmitter {
 
     // Record threat
     state.detectedThreats.push(threat);
-    this.logPhase(state, `CONTACT: ${threat.classDesc} detected at (${threat.detectedAt.x.toFixed(1)}, ${threat.detectedAt.y.toFixed(1)}) conf=${(threat.confidence * 100).toFixed(0)}%`);
+    const threatGrid = roomToGridRef(threat.detectedAt.x, threat.detectedAt.y);
+    this.logPhase(state, `CONTACT: ${threat.classDesc} detected at grid ${threatGrid} conf=${(threat.confidence * 100).toFixed(0)}%`);
 
     // Capture leader's current position at detection time (telemetry may be unavailable later)
     if (!(state as unknown as { leaderDetectionPos?: unknown }).leaderDetectionPos) {
@@ -375,7 +379,8 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       problem_set_id: state.config.problemSetId,
     });
 
-    this.logPhase(state, `Leader moving to overwatch at (${plan.overwatch.position.x}, ${plan.overwatch.position.y}) while awaiting approval`);
+    const owGrid = roomToGridRef(plan.overwatch.position.x, plan.overwatch.position.y);
+    this.logPhase(state, `Leader moving to overwatch at grid ${owGrid} while awaiting approval`);
     this.publishUpdate(state);
 
     // Poll for gate resolution
@@ -428,7 +433,8 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       });
 
       const fp = plan.firingPositions[i];
-      this.logPhase(state, `${followerId} advancing to (${fp?.position.x}, ${fp?.position.y}) via road route`);
+      const fpGrid = fp ? roomToGridRef(fp.position.x, fp.position.y) : 'unknown';
+      this.logPhase(state, `${followerId} — take tactical route to grid ${fpGrid}, assume firing position`);
     }
 
     this.publishUpdate(state);
