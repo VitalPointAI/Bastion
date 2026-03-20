@@ -227,48 +227,67 @@ function generateFallbackPlan(
   },
   homeBase: { x: number; y: number },
 ): TacticalPlan {
-  // Use navigation skill directly for route computation
-  const navTools = createNavigationTools();
-  const tacTools = createTacticalTools();
+  // Use known road intersections from the Zhongzheng District map.
+  // Positions must be valid road intersections — no off-grid computation.
+  // Threats advance south on Zhongxiao West Rd (y≈4.4).
+  // Overwatch at elevated Changyang Parking Tower (2.1, 2.9).
+  // Firing positions on perpendicular streets south of the kill zone.
+  const owPos = { x: 2.1, y: 2.9 };
 
-  // Determine threat center
-  const threatCenter = {
-    x: threats.reduce((s, t) => s + t.detectedAt.x, 0) / (threats.length || 1),
-    y: threats.reduce((s, t) => s + t.detectedAt.y, 0) / (threats.length || 1),
-  };
+  const firingIntersections = [
+    { x: 1.4, y: 2.0, reasoning: 'Xiangyang Rd / Nanyang St — west flanking corridor north toward Zhongxiao' },
+    { x: 3.4, y: 3.3, reasoning: 'Chengde Rd / Kaifeng St — east flanking corridor north toward Zhongxiao' },
+    { x: 0.3, y: 2.6, reasoning: 'Hengyang Rd / Hankou St — reserve/deep flanking position' },
+  ];
 
-  // Use skills synchronously via their func
-  // For the fallback, compute positions using skill logic directly
-  const _navTools = navTools;
-  const _tacTools = tacTools;
-
-  // Simple fallback: place overwatch 1.5 units south of threats, firing positions flanking
-  const owPos = { x: threatCenter.x, y: threatCenter.y - 1.5 };
-  const fpSpacing = 1.0;
-  const firingPositions = friendlyPositions.followers.map((_, i) => ({
-    position: {
-      x: threatCenter.x + (i === 0 ? -fpSpacing : fpSpacing),
-      y: threatCenter.y - 1.0,
-    },
-    reasoning: `Flanking position ${i + 1} — ${i === 0 ? 'west' : 'east'} of threat axis`,
-  }));
+  const fps = friendlyPositions.followers.map((_, i) => {
+    const fp = firingIntersections[i] ?? firingIntersections[0];
+    return {
+      position: { x: fp.x, y: fp.y },
+      reasoning: fp.reasoning,
+    };
+  });
 
   return {
-    assessment: `${threats.length} hostile armored vehicle(s) detected. Fallback plan: flanking ambush from prepared positions south of threat axis.`,
+    assessment: `${threats.length} hostile armored vehicle(s) detected advancing on Zhongxiao West Rd. Fallback plan: flanking ambush from intersections south of threat axis. Overwatch at Changyang Parking Tower.`,
     overwatch: {
       position: owPos,
-      reasoning: 'Position south of threat area — clear observation with standoff distance.',
+      reasoning: 'Changyang Parking Tower — elevated multi-storey structure with clear sight lines north to Zhongxiao West Rd threat axis.',
     },
-    firingPositions,
+    firingPositions: fps,
     routes: {
-      leaderToOverwatch: [owPos],
-      followerRoutes: firingPositions.map((fp) => [homeBase, fp.position]),
+      leaderToOverwatch: [
+        { x: homeBase.x, y: 2.6 },  // E on Hankou St
+        { x: 2.5, y: 2.6 },          // Guanqian/Hankou intersection
+        { x: 2.1, y: 2.9 },          // Overwatch
+      ],
+      followerRoutes: fps.map((fp, i) => {
+        if (i === 0) {
+          // Bravo: south on Hengyang, east on Wuchang, north on Xiangyang
+          return [
+            { x: 0.3, y: 1.7 },     // Hengyang/Wuchang
+            { x: 1.4, y: 1.7 },     // Xiangyang/Wuchang
+            fp.position,
+          ];
+        }
+        // Charlie: south on Hengyang, east on Hankou, north on Chengde
+        return [
+          { x: 0.3, y: 2.6 },       // Hengyang/Hankou
+          { x: 2.5, y: 2.6 },       // Guanqian/Hankou
+          { x: 2.5, y: 3.3 },       // Guanqian/Kaifeng
+          fp.position,
+        ];
+      }),
       withdrawalRoutes: {
-        leader: [homeBase],
-        followers: firingPositions.map(() => [homeBase]),
+        leader: [
+          { x: 2.5, y: 2.6 },       // Back to Guanqian/Hankou
+          { x: 0.3, y: 2.6 },       // West on Hankou
+          homeBase,
+        ],
+        followers: fps.map(() => [homeBase]),
       },
     },
     engagementRecommendation: threats.length > 3 ? 'observe' : 'engage',
-    planConfidence: 0.6,
+    planConfidence: 0.75,
   };
 }

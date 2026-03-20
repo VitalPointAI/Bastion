@@ -106,6 +106,16 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     overrides?: Partial<AutoConfig>,
   ): Promise<{ sequenceId: string; state: AutoState }> {
     const config: AutoConfig = { ...AUTO_DEFAULTS, ...overrides };
+
+    // Stop any existing active sequences to prevent duplicates
+    for (const [seqId, existing] of this.sequences) {
+      if (existing.phase !== 'complete' && existing.phase !== 'withdraw') {
+        existing.phase = 'complete' as AutoPhase;
+        this.sequences.delete(seqId);
+        console.log(`[AutonomousOrchestrator] Stopped existing sequence ${seqId.slice(0, 8)} before starting new one`);
+      }
+    }
+
     const id = randomUUID();
 
     const state: AutoState = {
@@ -892,11 +902,14 @@ class AutonomousMissionOrchestrator extends EventEmitter {
           const classKey = det.class_desc.toLowerCase().replace(/[^a-z0-9 -]/g, '');
           if (!threatClasses.includes(classKey)) continue;
 
+          // Use estimated enemy position if available (placed at range by simulator),
+          // otherwise fall back to robot's position
+          const enemyPos = (det as { estimated_position?: { x: number; y: number } }).estimated_position ?? robotPos;
           const threat: ThreatInfo = {
             entityId: `DET-${classKey}-${Date.now()}`,
             classDesc: det.class_desc,
             confidence: det.confidence,
-            detectedAt: { x: robotPos.x, y: robotPos.y },
+            detectedAt: { x: enemyPos.x, y: enemyPos.y },
           };
 
           for (const [seqId, state] of this.sequences) {
