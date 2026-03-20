@@ -469,8 +469,6 @@ server.listen(port, async () => {
     // Wire gate EventEmitter → WebSocket bridge
     const { gateService: gs } = await import('./gates/gate-service.js');
     gs.on('gate:event', (event: Record<string, unknown>) => {
-      // Wrap in the message-bus format that the frontend expects:
-      // { type: 'message', data: { messageType: 'gate.created', payload: { ... } } }
       const { type: eventType, ...eventPayload } = event;
       const wsMessage = JSON.stringify({
         type: 'message',
@@ -479,6 +477,7 @@ server.listen(port, async () => {
           payload: eventPayload,
         },
       });
+      console.log(`[WS Bridge] Gate event: ${eventType} (${eventPayload.gate_id}) → ${gateWsClients.size} clients, urgency=${eventPayload.urgency}, lethal=${eventPayload.is_lethal}`);
       for (const client of gateWsClients) {
         if (client.readyState === 1) {
           client.send(wsMessage);

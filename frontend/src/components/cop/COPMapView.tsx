@@ -13,6 +13,15 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Polygon, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// Fix Leaflet default icon paths (broken in Vite/webpack builds)
+// Without this, any Marker without a custom icon shows a broken image
+delete (L.Icon.Default.prototype as Record<string, unknown>)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: undefined,
+  iconRetinaUrl: undefined,
+  shadowUrl: undefined,
+});
 import { LIGHT_TILE_URL, LIGHT_TILE_ATTRIBUTION, LIGHT_TILE_SUBDOMAINS } from '../../lib/map-tiles';
 import './COPMapView.css';
 

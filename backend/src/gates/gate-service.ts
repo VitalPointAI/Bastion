@@ -557,6 +557,7 @@ export class GateService extends EventEmitter {
       const isResourceAllocation = gate.target_item_type === 'resource_allocation';
 
       // Emit directly for WebSocket bridge (bypasses message bus ABAC)
+      console.log(`[GateService] Emitting gate:event: ${eventType} gate=${gate.id.slice(0, 8)} lethal=${isLethal} urgency=${isLethal ? 'critical' : isResourceAllocation ? 'high' : 'standard'}`);
       this.emit('gate:event', {
         type: eventType,
         gate_id: gate.id,
