@@ -17,6 +17,7 @@
 
 import { createNavigationTools } from '../robot/skills/navigation-skill.js';
 import { createTacticalTools } from '../robot/skills/tactical-skills.js';
+import { createSymbologyTools } from '../robot/skills/symbology-skill.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -101,6 +102,18 @@ export function initializeBuiltinHandlers(): void {
     }
   }
 
+  // Symbology tools
+  const symTools = createSymbologyTools();
+  for (const tool of symTools) {
+    const handlerId = symToolHandlerMap[tool.name];
+    if (handlerId) {
+      registerHandler(handlerId, async (args) => {
+        const result = await tool.invoke(args);
+        return typeof result === 'string' ? result : JSON.stringify(result);
+      });
+    }
+  }
+
   console.log(`[SkillHandlerRegistry] Initialized ${handlers.size} built-in handlers`);
 }
 
@@ -109,6 +122,10 @@ const navToolHandlerMap: Record<string, string> = {
   'get_map_info': 'navigation/getMapInfo',
   'plan_route': 'navigation/planRoute',
   'plan_screening_route': 'navigation/planScreeningRoute',
+};
+
+const symToolHandlerMap: Record<string, string> = {
+  'classify_and_symbolize': 'symbology/classifyAndSymbolize',
 };
 
 const tacToolHandlerMap: Record<string, string> = {

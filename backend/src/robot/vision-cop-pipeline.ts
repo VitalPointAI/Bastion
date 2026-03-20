@@ -13,6 +13,7 @@
 
 import { randomUUID } from 'crypto';
 import type { RobotVisionMsg } from './robot-types.js';
+import { classifyKnownVehicle } from './skills/symbology-skill.js';
 import type { COPLayerSpec, COPSymbolSpec, COPAnnotationSpec, Affiliation } from '../cop/layers/layer-types.js';
 import { getConfidenceTier } from '../graph/provenance-types.js';
 import { SOURCE_WEIGHTS } from '../graph/confidence-calculator.js';
@@ -148,6 +149,8 @@ interface COPSymbol {
 
 /**
  * Process vision detections and return COP symbols for threats.
+ * Uses the symbology skill for classification — deterministic for known
+ * vehicles, LLM fallback for unknowns.
  */
 export function extractThreatSymbols(
   msg: RobotVisionMsg,
@@ -156,18 +159,39 @@ export function extractThreatSymbols(
   const symbols: COPSymbol[] = [];
 
   for (const detection of msg.detections) {
+    const position = robotPosition ?? { lat: 0, lng: 0 };
+
+    // Use symbology skill for classification
+    const result = classifyKnownVehicle(
+      detection.class_desc,
+      detection.confidence,
+      1,
+      position,
+    );
+
+    if (result) {
+      symbols.push({
+        entityId: `DET-${randomUUID().slice(0, 8)}`,
+        designation: result.designation,
+        type: result.symbol_set,
+        echelon: result.echelon,
+        affiliation: result.affiliation,
+        sidc: result.sidc,
+        position,
+        sourceDocumentId: msg.mission_id ?? msg.robot_id,
+        sourceAuthority: detection.confidence,
+        detectedBy: msg.robot_id,
+        detectedAt: new Date().toISOString(),
+        confidence: detection.confidence,
+      });
+      continue;
+    }
+
+    // Fallback for completely unknown classes — use static map
     const classKey = detection.class_desc.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
     const threat = THREAT_CLASS_MAP[classKey];
     if (!threat) continue;
 
-    // Use robot's position as the detection location
-    // (future: triangulate from camera angle + distance estimation)
-    const position = robotPosition ?? { lat: 0, lng: 0 };
-
-    // Build MIL-STD-2525D SIDC (20 characters)
-    // Pos 1-2: Version (10), Pos 3-4: Standard Identity, Pos 5-6: Symbol Set,
-    // Pos 7: Status (0=present), Pos 8: HQ/TF/FD (0=none),
-    // Pos 9-10: Echelon (00=unspecified), Pos 11-16: Entity, Pos 17-20: Modifiers
     const identityCode = AFFILIATION_CODE[threat.affiliation] ?? '01';
     const sidc = `10${identityCode}${threat.symbolSet}0000${threat.entity}0000`;
 
