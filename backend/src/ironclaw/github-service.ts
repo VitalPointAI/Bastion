@@ -533,6 +533,77 @@ export class GitHubService {
     );
   }
 
+  // -------------------------------------------------------------------------
+  // Direct file commit to master (skill .md files only)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Allowed path prefix for direct commits. Only skill definition files
+   * can be committed directly — all other paths are blocked.
+   */
+  private static readonly DIRECT_COMMIT_ALLOWED_PREFIX = 'backend/src/skills/';
+
+  /**
+   * Create or update a single file directly on master via the GitHub Contents API.
+   * Scoped to backend/src/skills/ — refuses to write anywhere else.
+   *
+   * Used by registerRuntimeSkill so Ironclaw-created skills are git-tracked
+   * without needing git CLI access or a PR workflow.
+   */
+  async commitFileToMaster(
+    filePath: string,
+    content: string,
+    commitMessage: string,
+  ): Promise<{ sha: string; path: string }> {
+    const octokit = this.requireOctokit();
+
+    // Path safety: only allow writes under the skills directory
+    if (!filePath.startsWith(GitHubService.DIRECT_COMMIT_ALLOWED_PREFIX)) {
+      throw new Error(
+        `Direct commits restricted to ${GitHubService.DIRECT_COMMIT_ALLOWED_PREFIX}. ` +
+        `Attempted path: ${filePath}`,
+      );
+    }
+
+    // Only .md files
+    if (!filePath.endsWith('.md')) {
+      throw new Error('Direct commits restricted to .md files only');
+    }
+
+    // Check if file already exists (need its SHA for updates)
+    let existingSha: string | undefined;
+    try {
+      const { data } = await octokit.rest.repos.getContent({
+        owner: this.owner,
+        repo: this.repo,
+        path: filePath,
+        ref: 'master',
+      });
+      if (!Array.isArray(data) && data.type === 'file') {
+        existingSha = data.sha;
+      }
+    } catch (err) {
+      // 404 = file doesn't exist yet, which is fine
+      if ((err as { status?: number }).status !== 404) throw err;
+    }
+
+    // Create or update the file
+    const { data } = await octokit.rest.repos.createOrUpdateFileContents({
+      owner: this.owner,
+      repo: this.repo,
+      path: filePath,
+      message: commitMessage,
+      content: Buffer.from(content, 'utf-8').toString('base64'),
+      sha: existingSha,
+      branch: 'master',
+    });
+
+    const resultSha = data.commit.sha ?? '';
+    console.log(`[GitHubService] Committed ${filePath} to master (${resultSha.slice(0, 8)})`);
+
+    return { sha: resultSha, path: filePath };
+  }
+
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }

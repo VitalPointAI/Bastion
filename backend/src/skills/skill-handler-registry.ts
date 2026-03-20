@@ -250,12 +250,34 @@ ${def.overview ?? def.description}
     mdContent += `\n## Constraints\n${def.constraints}\n`;
   }
 
-  // 1. Write .md file
-  if (!existsSync(categoryDir)) {
-    mkdirSync(categoryDir, { recursive: true });
+  // 1. Write .md file locally (best effort — may be read-only in Docker)
+  try {
+    if (!existsSync(categoryDir)) {
+      mkdirSync(categoryDir, { recursive: true });
+    }
+    writeFileSync(filePath, mdContent, 'utf-8');
+    console.log(`[SkillHandlerRegistry] Wrote skill file locally: ${fileName}`);
+  } catch (localErr) {
+    console.warn(`[SkillHandlerRegistry] Local .md write failed (read-only fs?): ${localErr}`);
   }
-  writeFileSync(filePath, mdContent, 'utf-8');
-  console.log(`[SkillHandlerRegistry] Wrote skill file: ${fileName}`);
+
+  // 1b. Commit .md file to GitHub (git-tracked source of truth)
+  const gitPath = `backend/src/skills/${def.category}/${fileName}`;
+  try {
+    const { githubService } = await import('../ironclaw/github-service.js');
+    if (githubService.isConfigured()) {
+      await githubService.commitFileToMaster(
+        gitPath,
+        mdContent,
+        `feat(skills): add ${def.name} skill [automated]\n\nCreated by ${createdBy} via Ironclaw skill.create`,
+      );
+      console.log(`[SkillHandlerRegistry] Committed ${gitPath} to GitHub master`);
+    } else {
+      console.warn('[SkillHandlerRegistry] GitHub not configured — .md file not committed');
+    }
+  } catch (gitErr) {
+    console.warn(`[SkillHandlerRegistry] GitHub commit failed (non-blocking): ${gitErr}`);
+  }
 
   // 2. Register in DB
   const { getSkillRegistry } = await import('../agents/skill-registry.js');
