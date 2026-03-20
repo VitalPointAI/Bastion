@@ -19,7 +19,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 export interface GateNotification {
   id: string;
   gateId: string;
-  eventType: 'gate.created' | 'gate.approved' | 'gate.rejected';
+  eventType: 'gate.created' | 'gate.updated' | 'gate.approved' | 'gate.rejected';
   urgency: 'critical' | 'high' | 'standard';
   isLethal: boolean;
   title: string;
