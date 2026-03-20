@@ -147,7 +147,7 @@ class FakeWebSocket {
           svc.handleSimulatedStateUpdate(this.robotId, mission.mission_id, 'executing');
         }, 500);
 
-        console.log(`[Simulator] ${this.robotId} received mission ${mission.command} (${mission.mission_id.slice(0, 8)})`);
+        console.log(`[Simulator] ${this.robotId} received mission ${mission.command} (${mission.mission_id.slice(0, 8)}) — ${robot.waypoints.length} waypoints, current pos (${robot.position.x.toFixed(2)}, ${robot.position.y.toFixed(2)}), first wp ${robot.waypoints[0] ? `(${robot.waypoints[0].x.toFixed(2)}, ${robot.waypoints[0].y.toFixed(2)})` : 'none'}`);
       }
 
       if (msg.type === 'robot:auth_response') {
