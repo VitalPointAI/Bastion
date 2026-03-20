@@ -193,6 +193,19 @@ export class LangGraphAgentWrapper {
           const usage = response.usage_metadata as { input_tokens?: number; output_tokens?: number };
           inputTokens = usage.input_tokens || 0;
           outputTokens = usage.output_tokens || 0;
+
+          // Record cost (fire-and-forget)
+          if (inputTokens > 0 || outputTokens > 0) {
+            import('../cost/cost-store.js').then(({ costStore }) => {
+              costStore.recordLLMCost({
+                agentId: this.agentId,
+                modelId: this.providerConfig.model ?? 'unknown',
+                inputTokens,
+                outputTokens,
+                operation: 'agent_invocation',
+              }).catch(() => {});
+            }).catch(() => {});
+          }
         }
       } catch (error) {
         // Record error in trace

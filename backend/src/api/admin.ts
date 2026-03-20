@@ -2926,4 +2926,80 @@ router.get('/skills/:id/agents', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================================
+// Cost Tracking
+// ============================================================================
+
+import { costStore, type CostType } from '../cost/cost-store.js';
+
+/**
+ * GET /api/admin/costs/summary
+ * Aggregated cost summary with breakdowns by type, agent, model, and day.
+ */
+router.get('/costs/summary', async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate, problemSetId } = req.query as {
+      startDate?: string;
+      endDate?: string;
+      problemSetId?: string;
+    };
+    const summary = await costStore.getSummary({ startDate, endDate, problemSetId });
+    res.json(summary);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[costs] Summary failed:', message);
+    res.status(500).json({ error: 'Failed to get cost summary' });
+  }
+});
+
+/**
+ * GET /api/admin/costs/ledger
+ * Query individual cost ledger entries with pagination.
+ */
+router.get('/costs/ledger', async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate, costType, agentId, actorDid, problemSetId, limit, offset } = req.query as {
+      startDate?: string;
+      endDate?: string;
+      costType?: CostType;
+      agentId?: string;
+      actorDid?: string;
+      problemSetId?: string;
+      limit?: string;
+      offset?: string;
+    };
+    const result = await costStore.query({
+      startDate,
+      endDate,
+      costType,
+      agentId,
+      actorDid,
+      problemSetId,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
+    res.json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[costs] Ledger query failed:', message);
+    res.status(500).json({ error: 'Failed to query cost ledger' });
+  }
+});
+
+/**
+ * GET /api/admin/costs/pricing
+ * Get current model pricing table.
+ */
+router.get('/costs/pricing', async (_req: Request, res: Response) => {
+  try {
+    const pool = (await import('../lib/database.js')).getPool();
+    const result = await pool.query('SELECT * FROM model_pricing ORDER BY provider, model_id');
+    res.json({ models: result.rows });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[costs] Pricing query failed:', message);
+    res.status(500).json({ error: 'Failed to get pricing' });
+  }
+});
+
 export default router;

@@ -1092,3 +1092,65 @@ export function formatAuditTimestamp(timestamp: string): string {
     minute: '2-digit',
   });
 }
+
+// ============================================================================
+// Cost Tracking Types & Methods
+// ============================================================================
+
+export interface CostSummary {
+  totalCostUsd: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalEntries: number;
+  byType: Array<{ costType: string; costUsd: number; count: number }>;
+  byAgent: Array<{ agentId: string; costUsd: number; count: number }>;
+  byModel: Array<{ modelId: string; costUsd: number; inputTokens: number; outputTokens: number }>;
+  byDay: Array<{ date: string; costUsd: number; count: number }>;
+}
+
+export interface CostLedgerEntry {
+  id: string;
+  created_at: string;
+  cost_type: string;
+  actor_did: string | null;
+  agent_id: string | null;
+  model_id: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cost_usd: number;
+  operation: string | null;
+}
+
+export async function getCostSummary(params?: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<CostSummary> {
+  const qs = new URLSearchParams();
+  if (params?.startDate) qs.set('startDate', params.startDate);
+  if (params?.endDate) qs.set('endDate', params.endDate);
+  const url = `${adminService['baseUrl']}/costs/summary${qs.toString() ? `?${qs}` : ''}`;
+  const res = await fetch(url, { credentials: 'include' });
+  if (!res.ok) throw new Error(`Cost summary failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getCostLedger(params?: {
+  startDate?: string;
+  endDate?: string;
+  costType?: string;
+  agentId?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ entries: CostLedgerEntry[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params?.startDate) qs.set('startDate', params.startDate);
+  if (params?.endDate) qs.set('endDate', params.endDate);
+  if (params?.costType) qs.set('costType', params.costType);
+  if (params?.agentId) qs.set('agentId', params.agentId);
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.offset) qs.set('offset', String(params.offset));
+  const url = `${adminService['baseUrl']}/costs/ledger${qs.toString() ? `?${qs}` : ''}`;
+  const res = await fetch(url, { credentials: 'include' });
+  if (!res.ok) throw new Error(`Cost ledger failed: ${res.status}`);
+  return res.json();
+}

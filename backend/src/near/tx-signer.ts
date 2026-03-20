@@ -171,6 +171,17 @@ export async function signAndSubmitFunctionCall(
       };
     }
 
+    // Record NEAR cost (fire-and-forget)
+    import('../cost/cost-store.js').then(({ costStore }) => {
+      costStore.recordNEARCost({
+        costType: deposit > 0 ? 'near_storage' : 'near_gas',
+        actorDid: `did:near:${signingAccountId.slice(0, 16)}`,
+        deposit,
+        gasBurned: gas,
+        operation: `${contractId}::${methodName}`,
+      }).catch(() => {});
+    }).catch(() => {});
+
     return {
       success: true,
       txHash: result.transaction?.hash,

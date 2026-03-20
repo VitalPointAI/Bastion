@@ -17,6 +17,7 @@ import { AgentHub } from './AgentHub';
 import { WorkflowConfigPanel } from './WorkflowConfigPanel';
 import { AuditLogPanel } from './AuditLogPanel';
 import { FundingPanel } from './FundingPanel';
+import { CostTrackingPanel } from './CostTrackingPanel';
 import { RegistrationControlPanel } from './RegistrationControlPanel';
 import './AdminDashboard.css';
 
@@ -30,6 +31,7 @@ type AdminView =
   | 'workflow'
   | 'audit'
   | 'funding'
+  | 'costs'
   | 'registration';
 
 const ADMIN_ITEMS: SidebarItem[] = [
@@ -38,6 +40,7 @@ const ADMIN_ITEMS: SidebarItem[] = [
   { id: 'workflow', label: 'Workflow', tooltip: 'Workflow configuration' },
   { id: 'audit', label: 'Audit Log', tooltip: 'System audit trail' },
   { id: 'funding', label: 'Funding', tooltip: 'NEAR account funding management' },
+  { id: 'costs', label: 'Costs', tooltip: 'Expenditure tracking — LLM and NEAR costs' },
   { id: 'registration', label: 'Registration', tooltip: 'Domain whitelist & email blacklist' },
 ];
 
@@ -175,6 +178,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           {selectedView === 'workflow' && <WorkflowConfigPanel />}
           {selectedView === 'audit' && <AuditLogPanel />}
           {selectedView === 'funding' && <FundingPanel />}
+          {selectedView === 'costs' && <CostTrackingPanel />}
           {selectedView === 'registration' && <RegistrationControlPanel />}
         </TabLayout>
       </div>
