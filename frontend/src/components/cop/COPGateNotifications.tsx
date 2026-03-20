@@ -56,7 +56,7 @@ export function COPGateNotifications({ onZoomToAction, problemSetId }: COPGateNo
   const handleViewInDirect = useCallback((id: string) => {
     dismissNotification(id);
     if (problemSetId) {
-      navigate(`/problem-set/${problemSetId}/direct`);
+      navigate(`/problem-set/${problemSetId}/decide`);
     }
   }, [dismissNotification, problemSetId, navigate]);
 
@@ -86,6 +86,7 @@ export function COPGateNotifications({ onZoomToAction, problemSetId }: COPGateNo
         <ToastStack
           notifications={toastNotifications}
           onApprove={approveGate}
+          onReject={rejectGate}
           onDismiss={dismissNotification}
           onViewInDirect={handleViewInDirect}
         />
@@ -308,11 +309,13 @@ function LethalAuthModal({
 function ToastStack({
   notifications,
   onApprove,
+  onReject,
   onDismiss,
   onViewInDirect,
 }: {
   notifications: GateNotification[];
   onApprove: (gateId: string) => Promise<void>;
+  onReject: (gateId: string) => Promise<void>;
   onDismiss: (id: string) => void;
   onViewInDirect: (id: string) => void;
 }) {
@@ -328,7 +331,7 @@ function ToastStack({
       maxWidth: '340px',
     }}>
       {notifications.slice(0, 3).map((n) => (
-        <Toast key={n.id} notification={n} onApprove={onApprove} onDismiss={onDismiss} onViewInDirect={onViewInDirect} />
+        <Toast key={n.id} notification={n} onApprove={onApprove} onReject={onReject} onDismiss={onDismiss} onViewInDirect={onViewInDirect} />
       ))}
     </div>
   );
@@ -337,11 +340,13 @@ function ToastStack({
 function Toast({
   notification,
   onApprove,
+  onReject,
   onDismiss,
   onViewInDirect,
 }: {
   notification: GateNotification;
   onApprove: (gateId: string) => Promise<void>;
+  onReject: (gateId: string) => Promise<void>;
   onDismiss: (id: string) => void;
   onViewInDirect: (id: string) => void;
 }) {
@@ -354,6 +359,11 @@ function Toast({
     setActing(true);
     await onApprove(notification.gateId);
   }, [notification.gateId, onApprove]);
+
+  const handleReject = useCallback(async () => {
+    setActing(true);
+    await onReject(notification.gateId);
+  }, [notification.gateId, onReject]);
 
   return (
     <div style={{
@@ -427,6 +437,22 @@ function Toast({
           Approve
         </button>
         <button
+          onClick={handleReject}
+          disabled={acting}
+          style={{
+            padding: '4px 12px',
+            borderRadius: '4px',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            color: '#fca5a5',
+            fontSize: '0.625rem',
+            fontWeight: 600,
+            cursor: acting ? 'not-allowed' : 'pointer',
+          }}
+        >
+          Reject
+        </button>
+        <button
           onClick={() => onViewInDirect(notification.id)}
           style={{
             padding: '4px 12px',
@@ -438,7 +464,7 @@ function Toast({
             cursor: 'pointer',
           }}
         >
-          View in Direct
+          View in Decide
         </button>
       </div>
     </div>

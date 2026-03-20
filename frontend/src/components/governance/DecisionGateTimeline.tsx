@@ -27,10 +27,12 @@ const GATE_TYPE_LABELS: Record<string, string> = {
   order_release: 'Order Release',
   reframing: 'Reframing Decision',
   design_revision: 'Design Revision Proposal',
+  robot_action_auth: 'Robot Action Authorization',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  [GateStatus.submitted]: 'Submitted',
+  [GateStatus.pending]: 'Pending',
+  [GateStatus.submitted]: 'Awaiting Decision',
   [GateStatus.approved]: 'Approved',
   [GateStatus.rejected]: 'Rejected',
   [GateStatus.escalated]: 'Escalated',
@@ -101,10 +103,9 @@ export function DecisionGateTimeline({ tabId, onEntryClick }: DecisionGateTimeli
   const [expanded, setExpanded] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
-  // Filter to gates that have been acted on (not pending)
+  // Show all gates including pending/submitted (decision history)
   const actedGates = useMemo(() => {
     return gates
-      .filter((g) => g.status !== GateStatus.pending)
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   }, [gates]);
 

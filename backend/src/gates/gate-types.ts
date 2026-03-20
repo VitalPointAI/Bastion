@@ -31,6 +31,7 @@ export const GateTab = {
   design: 'design',
   plan: 'plan',
   direct: 'direct',
+  decide: 'decide',
   assess: 'assess',
 } as const;
 
@@ -150,9 +151,9 @@ export const GATE_DEFAULTS: Record<GateType, { enforcement: GateEnforcement; tab
   [GateType.objective_approval]: { enforcement: GateEnforcement.hard_block, tab: GateTab.understand },
   [GateType.operational_approach]: { enforcement: GateEnforcement.hard_block, tab: GateTab.design },
   [GateType.coa_selection]: { enforcement: GateEnforcement.hard_block, tab: GateTab.plan },
-  [GateType.order_release]: { enforcement: GateEnforcement.hard_block, tab: GateTab.direct },
+  [GateType.order_release]: { enforcement: GateEnforcement.hard_block, tab: GateTab.decide },
   [GateType.reframing]: { enforcement: GateEnforcement.soft_warning, tab: GateTab.assess },
-  [GateType.device_onboard]: { enforcement: GateEnforcement.hard_block, tab: GateTab.direct },
-  [GateType.device_allowlist]: { enforcement: GateEnforcement.hard_block, tab: GateTab.direct },
-  [GateType.robot_action_auth]: { enforcement: GateEnforcement.hard_block, tab: GateTab.direct },
+  [GateType.device_onboard]: { enforcement: GateEnforcement.hard_block, tab: GateTab.decide },
+  [GateType.device_allowlist]: { enforcement: GateEnforcement.hard_block, tab: GateTab.decide },
+  [GateType.robot_action_auth]: { enforcement: GateEnforcement.hard_block, tab: GateTab.decide },
 };
