@@ -202,7 +202,8 @@ function computeRoute(
     }
 
     if (current === endKey) {
-      // Reconstruct path — exclude start intersection (robot is already near it)
+      // Reconstruct full path including start intersection
+      // Robot moves: current position → start intersection → ... → end intersection → destination
       const path: Array<{ x: number; y: number }> = [];
       let c = endKey;
       while (c !== startKey) {
@@ -210,7 +211,9 @@ function computeRoute(
         path.unshift({ x: ix.x, y: ix.y });
         c = cameFrom.get(c)!;
       }
-      // Only add exact destination if it differs from the last waypoint
+      // Include start intersection (robot needs to get to the road first)
+      path.unshift({ x: start.x, y: start.y });
+      // Add exact destination if it differs from the last waypoint
       const last = path[path.length - 1];
       if (!last || distance(last, to) > 0.1) {
         path.push(to);

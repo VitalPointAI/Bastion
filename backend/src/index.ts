@@ -348,55 +348,24 @@ server.on('upgrade', (request, socket, head) => {
 });
 
 // ── Gate lifecycle WebSocket bridge ────────────────────────────────────────
-// Forward gate events from message bus to browser WebSocket clients.
-// Frontend subscribes via useCOPGateNotifications → ws://host/ws/messages
-{
-  const gateWsClients = new Set<import('ws').WebSocket>();
+// Forward gate events directly from GateService EventEmitter to browser WS clients.
+// Uses EventEmitter (not message bus) to avoid ABAC filtering on system events.
+const gateWsClients = new Set<import('ws').WebSocket>();
 
-  wsServers.messages.on('connection', (ws: import('ws').WebSocket) => {
-    ws.on('message', (data: Buffer) => {
-      try {
-        const msg = JSON.parse(data.toString());
-        if (msg.type === 'subscribe' && msg.channel === 'gate:lifecycle') {
-          gateWsClients.add(ws);
-        }
-      } catch { /* ignore */ }
-    });
-
-    ws.on('close', () => {
-      gateWsClients.delete(ws);
-    });
+wsServers.messages.on('connection', (ws: import('ws').WebSocket) => {
+  ws.on('message', (data: Buffer) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      if (msg.type === 'subscribe' && msg.channel === 'gate:lifecycle') {
+        gateWsClients.add(ws);
+      }
+    } catch { /* ignore */ }
   });
 
-  // Subscribe to gate:lifecycle channel on the message bus and broadcast to WS clients
-  (async () => {
-    try {
-      const { getMessageBus } = await import('./messaging/message-bus.js');
-      const bus = getMessageBus();
-      const bridgeDid = 'did:near:system-ws-gate-bridge';
-
-      bus.subscribe(bridgeDid, {
-        channels: ['gate:lifecycle'],
-        callback: async (envelope) => {
-          const payload = JSON.stringify({
-            type: envelope.messageType,
-            channel: 'gate:lifecycle',
-            ...(envelope.payload as Record<string, unknown>),
-          });
-          for (const client of gateWsClients) {
-            if (client.readyState === 1) {
-              client.send(payload);
-            }
-          }
-        },
-      });
-
-      console.log('[WS Bridge] Gate lifecycle → WebSocket bridge active');
-    } catch (err) {
-      console.warn('[WS Bridge] Failed to set up gate lifecycle bridge:', err);
-    }
-  })();
-}
+  ws.on('close', () => {
+    gateWsClients.delete(ws);
+  });
+});
 
 server.listen(port, async () => {
   console.log(`Backend listening on port ${port}`);
@@ -496,6 +465,18 @@ server.listen(port, async () => {
   try {
     await gateStore.ensureTable();
     console.log('Decision gates table initialized');
+
+    // Wire gate EventEmitter → WebSocket bridge
+    const { gateService: gs } = await import('./gates/gate-service.js');
+    gs.on('gate:event', (event: Record<string, unknown>) => {
+      const payload = JSON.stringify({ ...event, channel: 'gate:lifecycle' });
+      for (const client of gateWsClients) {
+        if (client.readyState === 1) {
+          client.send(payload);
+        }
+      }
+    });
+    console.log('[WS Bridge] Gate lifecycle → WebSocket bridge active');
   } catch (error) {
     console.error('Failed to initialize decision gates:', error);
   }

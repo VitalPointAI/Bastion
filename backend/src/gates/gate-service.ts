@@ -5,6 +5,7 @@
  * Business logic layer between routes and store.
  */
 
+import { EventEmitter } from 'events';
 import { gateStore, GateStore } from './gate-store.js';
 import {
   GateType,
@@ -41,8 +42,10 @@ export interface GatePermissions {
 // GateService
 // ---------------------------------------------------------------------------
 
-export class GateService {
-  constructor(private store: GateStore) {}
+export class GateService extends EventEmitter {
+  constructor(private store: GateStore) {
+    super();
+  }
 
   /**
    * Create a new decision gate with defaults applied.
@@ -552,6 +555,21 @@ export class GateService {
       const context = gate.decision_context as Record<string, unknown> | null;
       const isLethal = context?.escalation_type === 'lethal_force';
       const isResourceAllocation = gate.target_item_type === 'resource_allocation';
+
+      // Emit directly for WebSocket bridge (bypasses message bus ABAC)
+      this.emit('gate:event', {
+        type: eventType,
+        gate_id: gate.id,
+        gate_type: gate.gate_type,
+        status: gate.status,
+        urgency: isLethal ? 'critical' : isResourceAllocation ? 'high' : 'standard',
+        is_lethal: isLethal,
+        title: gate.target_item_title,
+        problem_set_id: gate.problem_set_id,
+        target_item_id: gate.target_item_id,
+        target_item_type: gate.target_item_type,
+        enforcement: gate.enforcement,
+      });
 
       // Determine urgency: lethal > resource_allocation > standard
       const urgency = isLethal ? 'critical' : isResourceAllocation ? 'high' : 'standard';
