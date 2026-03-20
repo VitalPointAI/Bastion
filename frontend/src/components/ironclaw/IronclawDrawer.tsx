@@ -221,14 +221,7 @@ export function IronclawDrawer({
               />
             </svg>
             <div>
-              <div className="flex items-baseline gap-1">
-                <h2 className="text-sm font-semibold text-white" title={version ? `Version: ${version}` : undefined}>Ironclaw</h2>
-                {version && (
-                  <span style={{ fontSize: '0.625rem', color: 'var(--text-secondary, #94a3b8)', marginLeft: '0.25rem', fontWeight: 400 }}>
-                    v{version}
-                  </span>
-                )}
-              </div>
+              <h2 className="text-sm font-semibold text-white" title={version ? `Ironclaw v${version}` : undefined}>Ironclaw</h2>
               <p className="text-[10px] text-gray-400">Chief of Staff</p>
             </div>
             {/* Connection status */}

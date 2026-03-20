@@ -309,7 +309,7 @@ export function OrbatModal({ members, problemSetId, onClose, onSelectMember }: O
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-700 shrink-0">
           <div className="flex items-center gap-4">
             <h2 className="text-base font-semibold text-white">ORBAT — Order of Battle</h2>
 
@@ -524,7 +524,7 @@ export function OrbatModal({ members, problemSetId, onClose, onSelectMember }: O
         </div>
 
         {/* Footer legend */}
-        <div className="flex items-center gap-6 px-5 py-2 border-t border-gray-700 text-[11px] text-gray-500 flex-shrink-0">
+        <div className="flex items-center gap-6 px-5 py-2 border-t border-gray-700 text-[11px] text-gray-500 shrink-0">
           <span className="flex items-center gap-1.5">
             <svg width="24" height="2"><line x1="0" y1="1" x2="24" y2="1" stroke="#60a5fa" strokeWidth="2" /></svg>
             Direct report

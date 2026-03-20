@@ -653,12 +653,14 @@ export function AgentDashboardPanel() {
         )}
 
         {/* Character sub-tab */}
-        {view === 'edit' && editTarget && editSubTab === 'character' ? (
+        {view === 'edit' && editTarget && editSubTab === 'character' && (
           <div className="management-tab-panel">
             <CharacterBuilderPanel agentId={editTarget.agentId} />
           </div>
-        ) : (
+        )}
 
+        {/* General form (hidden when character sub-tab is active) */}
+        {!(view === 'edit' && editTarget && editSubTab === 'character') && (
         <form onSubmit={handleSubmit(onSubmit)} className="agent-create-form">
           <div className="config-section">
             <h3>Basic Information</h3>
