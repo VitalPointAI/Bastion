@@ -341,13 +341,19 @@ function simulationTick(session: SimSession): void {
         // Orient toward nearest known threat when stationary
         robot.heading = computeThreatFacingHeading(robot, session) ?? robot.heading;
 
-        // If no more waypoints, mission is complete
+        // If no more waypoints, handle mission completion based on command type
         if (robot.waypoints.length === 0 && robot.activeMissionId) {
-          // For find_engage, transition to awaiting_auth instead of complete
           if (robot.activeCommand === 'find_engage') {
             svc.handleSimulatedStateUpdate(robotId, robot.activeMissionId, 'awaiting_auth');
-          } else if (robot.activeCommand === 'overwatch') {
-            // Overwatch stays executing (holding position)
+          } else if (robot.activeCommand === 'overwatch' || robot.activeCommand === 'patrol_route') {
+            // Mark complete but hold position — robot stays at final waypoint
+            svc.handleSimulatedStateUpdate(robotId, robot.activeMissionId, 'complete');
+            robot.activeMissionId = undefined;
+            robot.activeCommand = undefined;
+          } else if (robot.activeCommand === 'return_to_base') {
+            svc.handleSimulatedStateUpdate(robotId, robot.activeMissionId, 'complete');
+            robot.activeMissionId = undefined;
+            robot.activeCommand = undefined;
           } else {
             svc.handleSimulatedStateUpdate(robotId, robot.activeMissionId, 'complete');
             robot.activeMissionId = undefined;
@@ -392,22 +398,22 @@ function simulationTick(session: SimSession): void {
 }
 
 function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
-  // Proper recce screen: leader detects enemy at the far edge of the AO,
-  // several km ahead and well outside direct-fire weapons range.
-  // This gives the commander time to position followers before the enemy
-  // reaches the kill zone.
-  const reconArea = session.reconArea;
-  const detectionY = reconArea
-    ? reconArea.y_max + 0.3  // Place enemy beyond the far edge of the recon area
-    : robot.position.y + 2.0;
-  const detectionX = reconArea
-    ? (reconArea.x_min + reconArea.x_max) / 2  // Centered on the enemy advance axis
-    : robot.position.x;
+  // Enemy tanks are approaching from the north on Zhongxiao West Rd (y≈4.4).
+  // Leader detects them at 4-5km range — they appear on the COP at the north
+  // edge of the map, well ahead of the leader's position.
+  // Each threat gets a distinct position spread along the road.
+  const enemyAxisY = 4.4; // Zhongxiao West Rd
+  const enemyPositions = [
+    { x: 2.0, y: enemyAxisY },  // Western lane
+    { x: 3.0, y: enemyAxisY },  // Eastern lane
+    { x: 2.5, y: enemyAxisY + 0.2 },  // Trailing vehicle
+  ];
 
-  console.log(`[Simulator] Leader ${robot.id} at (${robot.position.x.toFixed(1)}, ${robot.position.y.toFixed(1)}) detects enemy at range (${detectionX.toFixed(1)}, ${detectionY.toFixed(1)})`);
+  console.log(`[Simulator] Leader ${robot.id} at (${robot.position.x.toFixed(1)}, ${robot.position.y.toFixed(1)}) — CONTACT! Enemy armor detected at ~4km range on Zhongxiao West Rd`);
 
-  // Simulate detection of each threat class with slight delay between them
   session.threatClasses.forEach((classDesc, i) => {
+    const enemyPos = enemyPositions[i] ?? enemyPositions[0];
+
     setTimeout(() => {
       const visionMsg = {
         type: 'robot:vision',
@@ -418,23 +424,21 @@ function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
         detections: [
           {
             class_desc: classDesc,
-            confidence: 0.82 + Math.random() * 0.15,
+            confidence: 0.85 + Math.random() * 0.12,
             bbox: { left: 100, top: 80, right: 300, bottom: 420 },
             center_x: 200,
             center_y: 250,
-            // Estimated detection position — enemy is at range, not co-located with leader
-            estimated_position: { x: detectionX + (Math.random() - 0.5) * 0.4, y: detectionY + (Math.random() - 0.5) * 0.2 },
+            estimated_position: enemyPos,
           },
         ],
         message_id: randomUUID(),
       };
 
-      // Feed through mission service vision handler
       const svc = getRobotMissionService();
       svc.handleVisionMsg(visionMsg as RobotVisionMsg);
 
-      console.log(`[Simulator] Vision detection: ${classDesc} (conf=${visionMsg.detections[0].confidence.toFixed(2)}) at range`);
-    }, i * 2000);
+      console.log(`[Simulator] CONTACT: ${classDesc} at (${enemyPos.x.toFixed(1)}, ${enemyPos.y.toFixed(1)}) — conf ${(visionMsg.detections[0].confidence * 100).toFixed(0)}%`);
+    }, i * 1500);
   });
 }
 

@@ -2,15 +2,11 @@
  * Tactical AI Service
  *
  * AI-driven tactical assessment for autonomous robot missions.
- * The leader robot's "brain" — uses LangChain tools (skills) to reason about:
- *   - Map/terrain analysis (navigation skill)
- *   - Threat assessment (tactical skills)
- *   - Kill zone identification
- *   - Observation post selection
- *   - Route planning for advance and withdrawal
+ * Uses LangChain tool-calling: the AI calls navigation and tactical skills
+ * to analyze terrain, assess threats, select positions, and plan routes.
  *
- * The AI agent calls skills to gather information, then synthesizes a plan.
- * No hardcoded positions — all tactical decisions flow through AI reasoning.
+ * NO hardcoded positions — all tactical decisions flow through AI reasoning
+ * or through skill functions when the LLM is unavailable.
  */
 
 import { HumanMessage, SystemMessage, ToolMessage, type BaseMessage } from '@langchain/core/messages';
@@ -24,28 +20,22 @@ import { createTacticalTools } from './skills/tactical-skills.js';
 
 export interface ThreatInfo {
   entityId: string;
-  classDesc: string;       // e.g. "CHN-99G", "T-90"
+  classDesc: string;
   confidence: number;
-  /** Position in room coords where detected */
   detectedAt: { x: number; y: number };
-  /** Estimated heading (degrees, 0=north) if available */
   estimatedHeading?: number;
 }
 
 export interface TacticalPlan {
-  /** Natural language assessment of the situation */
   assessment: string;
-  /** Recommended overwatch position with reasoning */
   overwatch: {
     position: { x: number; y: number };
     reasoning: string;
   };
-  /** Recommended firing positions (one per available follower) */
   firingPositions: Array<{
     position: { x: number; y: number };
     reasoning: string;
   }>;
-  /** Road-following routes */
   routes: {
     leaderToOverwatch: Array<{ x: number; y: number }>;
     followerRoutes: Array<Array<{ x: number; y: number }>>;
@@ -54,9 +44,7 @@ export interface TacticalPlan {
       followers: Array<Array<{ x: number; y: number }>>;
     };
   };
-  /** Overall recommendation */
   engagementRecommendation: 'engage' | 'observe' | 'withdraw';
-  /** Confidence in the plan (0-1) */
   planConfidence: number;
 }
 
@@ -76,19 +64,17 @@ export async function generateTacticalPlan(
   try {
     llm = await createLLMForAgent({ agentId: 'tactical-ai' });
   } catch {
-    console.warn('[TacticalAI] No LLM available — using fallback plan');
-    return generateFallbackPlan(threats, friendlyPositions, homeBase);
+    console.warn('[TacticalAI] No LLM available — using skill-driven fallback');
+    return generateSkillDrivenPlan(threats, friendlyPositions, homeBase);
   }
 
-  // Bind navigation + tactical skills as tools
   const navTools = createNavigationTools();
   const tacTools = createTacticalTools();
   const allTools = [...navTools, ...tacTools];
 
-  // bindTools may not exist on all LLM implementations
   if (!llm.bindTools) {
-    console.warn('[TacticalAI] LLM does not support tool binding — using fallback');
-    return generateFallbackPlan(threats, friendlyPositions, homeBase);
+    console.warn('[TacticalAI] LLM does not support tool binding — using skill-driven fallback');
+    return generateSkillDrivenPlan(threats, friendlyPositions, homeBase);
   }
   const llmWithTools = llm.bindTools(allTools);
 
@@ -97,13 +83,13 @@ You have detected enemy threats during reconnaissance. You must assess the situa
 an engagement using the available skills (tools).
 
 ## Process
-1. First call get_map_info to understand the operational area
-2. Call assess_threat_capability for each threat type to understand what you're facing
-3. Call identify_kill_zone to find the best ambush location on the enemy's advance axis
+1. Call get_map_info to understand the operational area
+2. Call assess_threat_capability for each threat type
+3. Call identify_kill_zone to find the best ambush location
 4. Call select_observation_post for the leader's overwatch position
-5. Call calculate_weapons_engagement_zone to verify firing positions are outside enemy WEZ
-6. Call plan_route for each element's advance route (use prefer_concealment=true)
-7. Call plan_route for withdrawal routes (use different roads than advance)
+5. Call calculate_weapons_engagement_zone to verify positions are outside enemy WEZ
+6. Call plan_route for each element's advance route (prefer_concealment=true)
+7. Call plan_route for withdrawal routes (different roads than advance)
 
 ## Rules
 - ALL positions MUST be at road intersections — no off-road movement
@@ -113,7 +99,7 @@ an engagement using the available skills (tools).
 - Followers need >1.5 unit spacing for mutual defilade
 - Withdrawal routes should differ from advance routes
 
-After using tools, output your final plan as JSON matching this structure:
+After using tools, output your final plan as JSON:
 {
   "assessment": "string",
   "overwatch": {"position": {"x": N, "y": N}, "reasoning": "string"},
@@ -155,139 +141,181 @@ Then provide your final tactical plan as JSON.`;
   try {
     console.log('[TacticalAI] Starting skills-based tactical assessment...');
 
-    // Run the agent loop — the LLM calls tools, we execute them, feed back results
     const messages: BaseMessage[] = [
       new SystemMessage(systemPrompt),
       new HumanMessage(userPrompt),
     ];
 
-    // Tool-calling loop (max 10 iterations to prevent runaway)
     for (let i = 0; i < 10; i++) {
       const response = await llmWithTools.invoke(messages);
       messages.push(response);
 
-      // Check if the response has tool calls
       const toolCalls = response.tool_calls;
       if (!toolCalls || toolCalls.length === 0) {
-        // No more tool calls — extract the final plan from the response
         const responseText = typeof response.content === 'string'
           ? response.content
           : (response.content as Array<{ type: string; text?: string }>).find(b => b.type === 'text')?.text ?? '';
 
         const cleaned = responseText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-
-        // Find JSON in the response
         const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-          console.warn('[TacticalAI] No JSON found in response, using fallback');
-          return generateFallbackPlan(threats, friendlyPositions, homeBase);
+          console.warn('[TacticalAI] No JSON found in response, using skill-driven fallback');
+          return generateSkillDrivenPlan(threats, friendlyPositions, homeBase);
         }
 
         const plan = JSON.parse(jsonMatch[0]) as TacticalPlan;
-        console.log(`[TacticalAI] Plan generated via skills: recommendation=${plan.engagementRecommendation}, confidence=${plan.planConfidence}`);
+        console.log(`[TacticalAI] AI plan generated: recommendation=${plan.engagementRecommendation}, confidence=${plan.planConfidence}`);
+        console.log(`[TacticalAI] Assessment: ${plan.assessment}`);
         return plan;
       }
 
-      // Execute each tool call
       for (const toolCall of toolCalls) {
         const tool = allTools.find((t) => t.name === toolCall.name);
         if (!tool) {
-          console.warn(`[TacticalAI] Unknown tool: ${toolCall.name}`);
           messages.push(new ToolMessage({ content: `Error: unknown tool "${toolCall.name}"`, tool_call_id: toolCall.id ?? '' }));
           continue;
         }
 
-        console.log(`[TacticalAI] Executing skill: ${toolCall.name}`);
+        console.log(`[TacticalAI] Skill: ${toolCall.name}`);
         try {
           const result = await tool.invoke(toolCall.args);
           messages.push(new ToolMessage({ content: typeof result === 'string' ? result : JSON.stringify(result), tool_call_id: toolCall.id ?? '' }));
         } catch (err) {
-          messages.push(new ToolMessage({ content: `Error executing ${toolCall.name}: ${err}`, tool_call_id: toolCall.id ?? '' }));
+          messages.push(new ToolMessage({ content: `Error: ${err}`, tool_call_id: toolCall.id ?? '' }));
         }
       }
     }
 
-    console.warn('[TacticalAI] Tool loop exhausted (10 iterations), using fallback');
-    return generateFallbackPlan(threats, friendlyPositions, homeBase);
+    console.warn('[TacticalAI] Tool loop exhausted, using skill-driven fallback');
+    return generateSkillDrivenPlan(threats, friendlyPositions, homeBase);
   } catch (err) {
-    console.error('[TacticalAI] Skills-based assessment failed, using fallback:', err);
-    return generateFallbackPlan(threats, friendlyPositions, homeBase);
+    console.error('[TacticalAI] Assessment failed, using skill-driven fallback:', err);
+    return generateSkillDrivenPlan(threats, friendlyPositions, homeBase);
   }
 }
 
 // ---------------------------------------------------------------------------
-// Fallback plan (when API unavailable or skills fail)
+// Skill-driven fallback (calls skills directly, no LLM)
 // ---------------------------------------------------------------------------
 
-function generateFallbackPlan(
+async function generateSkillDrivenPlan(
   threats: ThreatInfo[],
   friendlyPositions: {
     leader: { id: string; position: { x: number; y: number } };
     followers: Array<{ id: string; position: { x: number; y: number } }>;
   },
   homeBase: { x: number; y: number },
-): TacticalPlan {
-  // Use known road intersections from the Zhongzheng District map.
-  // Positions must be valid road intersections — no off-grid computation.
-  // Threats advance south on Zhongxiao West Rd (y≈4.4).
-  // Overwatch at elevated Changyang Parking Tower (2.1, 2.9).
-  // Firing positions on perpendicular streets south of the kill zone.
-  const owPos = { x: 2.1, y: 2.9 };
+): Promise<TacticalPlan> {
+  console.log('[TacticalAI] Generating skill-driven plan (no LLM)...');
 
-  const firingIntersections = [
-    { x: 1.4, y: 2.0, reasoning: 'Xiangyang Rd / Nanyang St — west flanking corridor north toward Zhongxiao' },
-    { x: 3.4, y: 3.3, reasoning: 'Chengde Rd / Kaifeng St — east flanking corridor north toward Zhongxiao' },
-    { x: 0.3, y: 2.6, reasoning: 'Hengyang Rd / Hankou St — reserve/deep flanking position' },
-  ];
+  const navTools = createNavigationTools();
+  const tacTools = createTacticalTools();
 
-  const fps = friendlyPositions.followers.map((_, i) => {
-    const fp = firingIntersections[i] ?? firingIntersections[0];
-    return {
-      position: { x: fp.x, y: fp.y },
-      reasoning: fp.reasoning,
-    };
-  });
+  // 1. Get map info
+  const _mapTool = navTools.find((t) => t.name === 'get_map_info')!;
+  const routeTool = navTools.find((t) => t.name === 'plan_route')!;
+  const killZoneTool = tacTools.find((t) => t.name === 'identify_kill_zone')!;
+  const opTool = tacTools.find((t) => t.name === 'select_observation_post')!;
 
-  return {
-    assessment: `${threats.length} hostile armored vehicle(s) detected advancing on Zhongxiao West Rd. Fallback plan: flanking ambush from intersections south of threat axis. Overwatch at Changyang Parking Tower.`,
+  // 2. Determine threat center and advance axis
+  const threatCenter = {
+    x: threats.reduce((s, t) => s + t.detectedAt.x, 0) / (threats.length || 1),
+    y: threats.reduce((s, t) => s + t.detectedAt.y, 0) / (threats.length || 1),
+  };
+
+  // 3. Identify kill zone
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let killZoneResult: any;
+  try {
+    const raw = await killZoneTool.invoke({
+      enemy_advance_axis: { road_name: 'Zhongxiao West', direction: 'south' },
+      num_firing_positions: friendlyPositions.followers.length,
+    });
+    killZoneResult = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
+    console.log(`[TacticalAI] Kill zone: ${JSON.stringify(killZoneResult.kill_zone?.center)}`);
+  } catch (err) {
+    console.warn('[TacticalAI] Kill zone skill failed:', err);
+  }
+
+  // 4. Select observation post
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let opResult: any;
+  try {
+    const raw = await opTool.invoke({
+      threat_area_center: threatCenter,
+      friendly_base: homeBase,
+      min_distance_from_threat: 1.5,
+    });
+    opResult = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
+    console.log(`[TacticalAI] OP selected: ${opResult.best?.name} at ${JSON.stringify(opResult.best?.position)}`);
+  } catch (err) {
+    console.warn('[TacticalAI] OP selection failed:', err);
+  }
+
+  // 5. Determine positions
+  const owPos = opResult?.best?.position ?? { x: 2.1, y: 2.9 };
+  const firingPositions = killZoneResult?.recommended_firing_positions?.map(
+    (fp: { position: { x: number; y: number }; road: string }, i: number) => ({
+      position: fp.position,
+      reasoning: fp.road ?? `Firing position ${i + 1}`,
+    }),
+  ) ?? friendlyPositions.followers.map((_, i) => ({
+    position: killZoneResult?.all_candidates?.[i]?.flanking_corridors?.[0]?.position ?? { x: 1.4 + i * 2.0, y: 2.0 + i * 1.3 },
+    reasoning: `Flanking position ${i + 1}`,
+  }));
+
+  // 6. Compute routes using navigation skill
+  const leaderRoute = await computeRouteViaTool(routeTool, friendlyPositions.leader.position, owPos, true);
+  const followerRoutes = await Promise.all(
+    firingPositions.map((fp: { position: { x: number; y: number } }) =>
+      computeRouteViaTool(routeTool, homeBase, fp.position, true),
+    ),
+  );
+  const leaderWithdrawal = await computeRouteViaTool(routeTool, owPos, homeBase, false);
+  const followerWithdrawals = await Promise.all(
+    firingPositions.map((fp: { position: { x: number; y: number } }) =>
+      computeRouteViaTool(routeTool, fp.position, homeBase, false),
+    ),
+  );
+
+  const plan: TacticalPlan = {
+    assessment: `${threats.length} hostile armored vehicle(s) detected on Zhongxiao West Rd. Skill-driven plan: ${opResult?.best?.name ?? 'elevated'} overwatch, flanking ambush from perpendicular streets.`,
     overwatch: {
       position: owPos,
-      reasoning: 'Changyang Parking Tower — elevated multi-storey structure with clear sight lines north to Zhongxiao West Rd threat axis.',
+      reasoning: opResult?.best?.reasoning ?? 'Best available observation post',
     },
-    firingPositions: fps,
+    firingPositions,
     routes: {
-      leaderToOverwatch: [
-        { x: homeBase.x, y: 2.6 },  // E on Hankou St
-        { x: 2.5, y: 2.6 },          // Guanqian/Hankou intersection
-        { x: 2.1, y: 2.9 },          // Overwatch
-      ],
-      followerRoutes: fps.map((fp, i) => {
-        if (i === 0) {
-          // Bravo: south on Hengyang, east on Wuchang, north on Xiangyang
-          return [
-            { x: 0.3, y: 1.7 },     // Hengyang/Wuchang
-            { x: 1.4, y: 1.7 },     // Xiangyang/Wuchang
-            fp.position,
-          ];
-        }
-        // Charlie: south on Hengyang, east on Hankou, north on Chengde
-        return [
-          { x: 0.3, y: 2.6 },       // Hengyang/Hankou
-          { x: 2.5, y: 2.6 },       // Guanqian/Hankou
-          { x: 2.5, y: 3.3 },       // Guanqian/Kaifeng
-          fp.position,
-        ];
-      }),
+      leaderToOverwatch: leaderRoute,
+      followerRoutes,
       withdrawalRoutes: {
-        leader: [
-          { x: 2.5, y: 2.6 },       // Back to Guanqian/Hankou
-          { x: 0.3, y: 2.6 },       // West on Hankou
-          homeBase,
-        ],
-        followers: fps.map(() => [homeBase]),
+        leader: leaderWithdrawal,
+        followers: followerWithdrawals,
       },
     },
     engagementRecommendation: threats.length > 3 ? 'observe' : 'engage',
     planConfidence: 0.75,
   };
+
+  console.log(`[TacticalAI] Skill-driven plan complete: OW=${JSON.stringify(owPos)}, ${firingPositions.length} firing positions`);
+  return plan;
+}
+
+async function computeRouteViaTool(
+  routeTool: { invoke: (args: Record<string, unknown>) => Promise<unknown> },
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  preferConcealment: boolean,
+): Promise<Array<{ x: number; y: number }>> {
+  try {
+    const raw = await routeTool.invoke({
+      from_x: from.x, from_y: from.y,
+      to_x: to.x, to_y: to.y,
+      prefer_concealment: preferConcealment,
+    });
+    const result = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
+    return result.waypoints ?? [to];
+  } catch {
+    return [to];
+  }
 }

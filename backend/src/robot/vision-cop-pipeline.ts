@@ -159,7 +159,20 @@ export function extractThreatSymbols(
   const symbols: COPSymbol[] = [];
 
   for (const detection of msg.detections) {
-    const position = robotPosition ?? { lat: 0, lng: 0 };
+    // Use estimated_position (enemy at range) if available, otherwise robot's position
+    const estPos = (detection as { estimated_position?: { x: number; y: number } }).estimated_position;
+    let position: { lat: number; lng: number };
+    if (estPos) {
+      // Convert room coordinates to geo (same calibration as frontend COPRobotLayer)
+      const CAL_SOUTH = 25.0420, CAL_NORTH = 25.0480, CAL_WEST = 121.5120, CAL_EAST = 121.5180;
+      const ROOM_W = 5, ROOM_H = 5;
+      position = {
+        lat: CAL_SOUTH + (estPos.y / ROOM_H) * (CAL_NORTH - CAL_SOUTH),
+        lng: CAL_WEST + (estPos.x / ROOM_W) * (CAL_EAST - CAL_WEST),
+      };
+    } else {
+      position = robotPosition ?? { lat: 0, lng: 0 };
+    }
 
     // Use symbology skill for classification
     const result = classifyKnownVehicle(
