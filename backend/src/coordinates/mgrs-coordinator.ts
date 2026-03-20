@@ -23,7 +23,8 @@
  *   const coord3 = Coordinator.fromLatLng(25.045, 121.515);
  */
 
-import { forward, inverse, toPoint } from 'mgrs';
+import mgrs from 'mgrs';
+const { forward, toPoint } = mgrs;
 
 // ---------------------------------------------------------------------------
 // Calibration constants
