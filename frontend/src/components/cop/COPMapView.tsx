@@ -182,28 +182,33 @@ export function COPMapView({
   const [loading, setLoading] = useState(true);
 
   // Fetch layers on mount and when problemSetId changes
-  const fetchLayers = useCallback(async () => {
-    setLoading(true);
+  const fetchLayers = useCallback(async (isPolling = false) => {
+    if (!isPolling) setLoading(true);
     try {
-      // Fetch all layers for this workspace (draft, published, cop, review)
       const allLayers = await copService.queryLayers(problemSetId);
-      setLayers(allLayers);
+      // Only update state if data actually changed (prevents unnecessary re-renders/flicker)
+      setLayers((prev) => {
+        const prevJson = JSON.stringify(prev);
+        const newJson = JSON.stringify(allLayers);
+        if (prevJson === newJson) return prev;
+        return allLayers;
+      });
       onLayersLoaded?.(allLayers);
     } catch (err) {
       console.error('[COPMapView] Failed to fetch layers:', err);
     } finally {
-      setLoading(false);
+      if (!isPolling) setLoading(false);
     }
   }, [problemSetId, onLayersLoaded]);
 
   useEffect(() => {
-    fetchLayers();
+    fetchLayers(false);
   }, [fetchLayers, refreshKey]);
 
   // Auto-refresh layers every 10s to pick up vision detections and destroyed markers
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchLayers();
+      fetchLayers(true);
     }, 10000);
     return () => clearInterval(interval);
   }, [fetchLayers]);

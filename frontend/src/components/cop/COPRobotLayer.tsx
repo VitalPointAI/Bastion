@@ -296,7 +296,11 @@ export function COPRobotLayer({
       const res = await fetch('/api/robot/robots');
       if (res.ok) {
         const data = (await res.json()) as RobotInfo[];
-        setRobots(data);
+        // Only update state if data changed — prevents flicker from unnecessary re-renders
+        setRobots((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+          return data;
+        });
       }
     } catch (err) {
       console.warn('[COPRobotLayer] Failed to fetch robots:', err);

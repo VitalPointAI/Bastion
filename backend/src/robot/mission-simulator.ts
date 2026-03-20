@@ -136,7 +136,7 @@ class FakeWebSocket {
           ];
         }
 
-        robot.speed = (mission.params.speed ?? 100) / 255 * 0.5; // Scale to ~0.5 m/s max (tactical crawl speed, ~1.8 km/h on map)
+        robot.speed = mission.params.speed ?? 100; // Raw 0-255 value — scaled in simulationTick
 
         // Send accepted state
         const svc = getRobotMissionService();
