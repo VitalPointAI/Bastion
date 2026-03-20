@@ -336,11 +336,30 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const owMissionId = randomUUID();
     state.missions['overwatch_leader'] = owMissionId;
 
-    // Use the AI plan's road-following route to overwatch
+    // Compute route from leader's CURRENT position to overwatch at dispatch time
+    // (not the pre-computed route from plan time — the robot has moved since then)
     const owPos = plan.overwatch.position;
-    const owWaypoints = plan.routes.leaderToOverwatch.length > 0
-      ? plan.routes.leaderToOverwatch
-      : [owPos]; // Fallback: go direct if AI didn't provide route
+    const leaderNow = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId)?.latest_telemetry?.position
+      ?? (state as unknown as { leaderDetectionPos?: { x: number; y: number } }).leaderDetectionPos
+      ?? state.config.homeBase;
+
+    let owWaypoints: Array<{ x: number; y: number }>;
+    try {
+      const { createNavigationTools } = await import('./skills/navigation-skill.js');
+      const navTools = createNavigationTools();
+      const routeTool = navTools.find((t) => t.name === 'plan_route')!;
+      const raw = await routeTool.invoke({
+        from_x: leaderNow.x, from_y: leaderNow.y,
+        to_x: owPos.x, to_y: owPos.y,
+        prefer_concealment: true,
+      });
+      const result = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
+      owWaypoints = result.waypoints ?? [owPos];
+    } catch {
+      owWaypoints = [owPos];
+    }
+
+    this.logPhase(state, `Leader route: ${owWaypoints.length} waypoints from (${leaderNow.x.toFixed(1)}, ${leaderNow.y.toFixed(1)}) to overwatch`);
 
     await svc.dispatchMission({
       mission_id: owMissionId,

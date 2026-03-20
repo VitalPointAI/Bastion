@@ -315,7 +315,7 @@ function ToastStack({
 }: {
   notifications: GateNotification[];
   onApprove: (gateId: string) => Promise<void>;
-  onReject: (gateId: string) => Promise<void>;
+  onReject: (gateId: string, reason: string) => Promise<void>;
   onDismiss: (id: string) => void;
   onViewInDirect: (id: string) => void;
 }) {
@@ -346,7 +346,7 @@ function Toast({
 }: {
   notification: GateNotification;
   onApprove: (gateId: string) => Promise<void>;
-  onReject: (gateId: string) => Promise<void>;
+  onReject: (gateId: string, reason: string) => Promise<void>;
   onDismiss: (id: string) => void;
   onViewInDirect: (id: string) => void;
 }) {
@@ -362,7 +362,7 @@ function Toast({
 
   const handleReject = useCallback(async () => {
     setActing(true);
-    await onReject(notification.gateId);
+    await onReject(notification.gateId, 'Rejected by commander');
   }, [notification.gateId, onReject]);
 
   return (
