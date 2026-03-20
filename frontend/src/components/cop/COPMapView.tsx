@@ -110,7 +110,7 @@ function createMilSymbolIconWithBadge(
   tier: 'high' | 'medium' | 'low',
   confidencePct: number,
 ): L.DivIcon {
-  const baseIcon = createMilSymbolIcon(sidc, { uniqueDesignation: designation });
+  const baseIcon = createMilSymbolIcon(sidc);
   const [w, h] = baseIcon.options.iconSize as [number, number];
 
   const badgeColor =

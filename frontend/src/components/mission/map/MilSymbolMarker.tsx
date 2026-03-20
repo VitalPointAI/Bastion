@@ -29,11 +29,10 @@ export function createMilSymbolIcon(
     size?: number;
   }
 ): L.DivIcon {
-  // Create symbol using milsymbol
+  // Create symbol using milsymbol — no text labels on the map icon
+  // (designation and formation details are shown in the popup on click)
   const symbol = new ms.Symbol(sidc, {
     size: options?.size || 30,
-    uniqueDesignation: options?.uniqueDesignation,
-    higherFormation: options?.higherFormation,
   });
 
   // Get SVG string
