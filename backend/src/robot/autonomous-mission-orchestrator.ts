@@ -192,6 +192,16 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     state.detectedThreats.push(threat);
     this.logPhase(state, `CONTACT: ${threat.classDesc} detected at (${threat.detectedAt.x.toFixed(1)}, ${threat.detectedAt.y.toFixed(1)}) conf=${(threat.confidence * 100).toFixed(0)}%`);
 
+    // Capture leader's current position at detection time (telemetry may be unavailable later)
+    if (!(state as unknown as { leaderDetectionPos?: unknown }).leaderDetectionPos) {
+      const svc = getRobotMissionService();
+      const leader = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId);
+      if (leader?.latest_telemetry?.position) {
+        (state as unknown as { leaderDetectionPos: { x: number; y: number } }).leaderDetectionPos =
+          { ...leader.latest_telemetry.position };
+      }
+    }
+
     // Only trigger assessment on first detection in recon phase
     if (state.phase !== 'recon') {
       this.logPhase(state, `Additional threat logged (${state.detectedThreats.length} total)`);
@@ -216,7 +226,12 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const svc = getRobotMissionService();
     const robots = svc.getConnectedRobots();
     const leaderRobot = robots.find((r) => r.robot_id === state.config.leaderId);
-    const leaderPos = leaderRobot?.latest_telemetry?.position ?? state.config.homeBase;
+
+    // Use the leader's current telemetry position, or the position where the
+    // first threat was detected (captured during handleThreatDetection), or home base
+    const leaderPos = leaderRobot?.latest_telemetry?.position
+      ?? (state as unknown as { leaderDetectionPos?: { x: number; y: number } }).leaderDetectionPos
+      ?? state.config.homeBase;
 
     this.logPhase(state, `Analyzing ${state.detectedThreats.length} threat(s) against area map...`);
 
