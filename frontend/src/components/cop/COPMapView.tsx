@@ -16,7 +16,7 @@ import 'leaflet/dist/leaflet.css';
 
 // Fix Leaflet default icon paths (broken in Vite/webpack builds)
 // Without this, any Marker without a custom icon shows a broken image
-delete (L.Icon.Default.prototype as Record<string, unknown>)._getIconUrl;
+delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconUrl: undefined,
   iconRetinaUrl: undefined,
