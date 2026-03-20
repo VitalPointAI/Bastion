@@ -430,6 +430,17 @@ server.listen(port, async () => {
     console.error('Failed to seed LangGraph agents:', error);
   }
 
+  // Load .md skill definitions and register handlers
+  try {
+    const { loadAndRegisterSkills } = await import('./skills/skill-loader.js');
+    const { initializeBuiltinHandlers } = await import('./skills/skill-handler-registry.js');
+    await loadAndRegisterSkills();
+    initializeBuiltinHandlers();
+    console.log('Skills loaded from .md files and handlers registered');
+  } catch (error) {
+    console.error('Failed to load skills:', error);
+  }
+
   // Initialize decision gates table
   try {
     await gateStore.ensureTable();
