@@ -517,6 +517,7 @@ export class OnboardingPipeline {
     }
 
     if (this.boss) {
+      await this.boss.createQueue(IRONCLAW_QUEUE);
       await this.boss.send(IRONCLAW_QUEUE, {
         deviceId,
         fingerprint,

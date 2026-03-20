@@ -59,6 +59,11 @@ COPY database/ ./database/
 # Copy migration SQL files (migration-runner.ts reads from dist/db/migrations/)
 COPY src/db/migrations/ ./dist/db/migrations/
 
+# Copy skill definition .md files (skill-loader.ts reads from dist/skills/*/)
+# Uses a two-step approach: copy all, then the .md files are alongside compiled .js
+COPY src/skills/navigation/*.md ./dist/skills/navigation/
+COPY src/skills/tactical/*.md ./dist/skills/tactical/
+
 # Set ownership
 RUN chown -R nodejs:nodejs /app
 

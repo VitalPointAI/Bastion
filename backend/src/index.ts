@@ -550,6 +550,7 @@ server.listen(port, async () => {
   try {
     const { getSharedBoss } = await import('./lib/database.js');
     const boss = await getSharedBoss();
+    await boss.createQueue('strategic-cache-refresh');
     await boss.work('strategic-cache-refresh', async (jobs: unknown[]) => {
       for (const job of jobs) {
         const { publisherProblemSetId } = (job as { data: { publisherProblemSetId: string } }).data;

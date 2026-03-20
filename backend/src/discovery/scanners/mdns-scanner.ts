@@ -21,6 +21,8 @@ export class MDNSScanner extends BaseScanner {
   private bonjour: unknown = null;
 
   get isAvailable(): boolean {
+    // mDNS/Bonjour requires host network access — doesn't work in Docker containers
+    if (process.env.NODE_ENV === 'production') return false;
     return process.platform === 'linux' || process.platform === 'darwin';
   }
 
@@ -62,9 +64,15 @@ export class MDNSScanner extends BaseScanner {
     if (this._paused) return;
 
     try {
-      // Dynamic import to avoid issues if package not installed
-      const { default: Bonjour } = await import('bonjour-service');
-      const instance = new Bonjour();
+      // Dynamic import — bonjour-service may not work in Docker containers
+      const bonjourModule = await import('bonjour-service');
+      const BonjourClass = bonjourModule.default ?? bonjourModule.Bonjour ?? bonjourModule;
+      if (typeof BonjourClass !== 'function') {
+        // Module loaded but constructor not available (e.g., Docker/Alpine)
+        return;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const instance = new (BonjourClass as new () => unknown)() as { find: (opts: unknown) => { on: (event: string, cb: (svc: any) => void) => void; stop: () => void }; destroy: () => void };
       this.bonjour = instance;
 
       for (const serviceType of SERVICE_TYPES) {
