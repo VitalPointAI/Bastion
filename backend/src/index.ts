@@ -469,10 +469,19 @@ server.listen(port, async () => {
     // Wire gate EventEmitter → WebSocket bridge
     const { gateService: gs } = await import('./gates/gate-service.js');
     gs.on('gate:event', (event: Record<string, unknown>) => {
-      const payload = JSON.stringify({ ...event, channel: 'gate:lifecycle' });
+      // Wrap in the message-bus format that the frontend expects:
+      // { type: 'message', data: { messageType: 'gate.created', payload: { ... } } }
+      const { type: eventType, ...eventPayload } = event;
+      const wsMessage = JSON.stringify({
+        type: 'message',
+        data: {
+          messageType: eventType,
+          payload: eventPayload,
+        },
+      });
       for (const client of gateWsClients) {
         if (client.readyState === 1) {
-          client.send(payload);
+          client.send(wsMessage);
         }
       }
     });

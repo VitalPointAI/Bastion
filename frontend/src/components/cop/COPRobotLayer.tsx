@@ -181,9 +181,11 @@ function SmoothRobotMarker({
     // Update tooltip
     marker.setTooltipContent(buildTooltip(robot));
 
-    // Set up interpolation from current position to new target
-    const currentLatLng = marker.getLatLng();
-    prevPos.current = { lat: currentLatLng.lat, lng: currentLatLng.lng };
+    // Interpolate from the PREVIOUS telemetry position to the new one.
+    // Using the marker's displayed position (getLatLng) causes snap-back
+    // because the marker may be mid-interpolation and not at the target yet.
+    // Instead, use the previous target as the start of the next interpolation.
+    prevPos.current = targetPos.current ?? { lat, lng };
     targetPos.current = { lat, lng };
     startTime.current = performance.now();
 
