@@ -15,12 +15,13 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Fix Leaflet default icon paths (broken in Vite/webpack builds)
-// Without this, any Marker without a custom icon shows a broken image
+// Provide a transparent 1px PNG so Leaflet doesn't throw on missing iconUrl
+const TRANSPARENT_1PX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAAlwSFlzAAAWJQAAFiUBSVIk8AAAAA0lEQVQI12P4z8BQDwAEgAF/QualzQAAAABJRU5ErkJggg==';
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconUrl: undefined,
-  iconRetinaUrl: undefined,
-  shadowUrl: undefined,
+  iconUrl: TRANSPARENT_1PX,
+  iconRetinaUrl: TRANSPARENT_1PX,
+  shadowUrl: TRANSPARENT_1PX,
 });
 import { LIGHT_TILE_URL, LIGHT_TILE_ATTRIBUTION, LIGHT_TILE_SUBDOMAINS } from '../../lib/map-tiles';
 import './COPMapView.css';
