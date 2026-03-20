@@ -14,14 +14,12 @@ import { MapContainer, TileLayer, Marker, Polyline, Polygon, Popup, useMap } fro
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix Leaflet default icon paths (broken in Vite/webpack builds)
-// Provide a transparent 1px PNG so Leaflet doesn't throw on missing iconUrl
-const TRANSPARENT_1PX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAAlwSFlzAAAWJQAAFiUBSVIk8AAAAA0lEQVQI12P4z8BQDwAEgAF/QualzQAAAABJRU5ErkJggg==';
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: TRANSPARENT_1PX,
-  iconRetinaUrl: TRANSPARENT_1PX,
-  shadowUrl: TRANSPARENT_1PX,
+// Annotation marker icon (small blue circle for SVG annotation positions)
+const ANNOTATION_ICON = L.divIcon({
+  className: 'milsymbol-marker',
+  html: '<div style="width:12px;height:12px;border-radius:50%;background:rgba(59,130,246,0.6);border:2px solid rgba(59,130,246,0.9);"></div>',
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
 });
 import { LIGHT_TILE_URL, LIGHT_TILE_ATTRIBUTION, LIGHT_TILE_SUBDOMAINS } from '../../lib/map-tiles';
 import './COPMapView.css';
@@ -548,6 +546,7 @@ function AnnotationOverlay({ annotation, opacity, onEntityClick }: AnnotationOve
     <Marker
       position={toLatLng(annotation.position)}
       opacity={opacity}
+      icon={ANNOTATION_ICON}
     >
       <Popup maxWidth={400}>
         <div>

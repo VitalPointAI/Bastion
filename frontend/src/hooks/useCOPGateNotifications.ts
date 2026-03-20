@@ -217,9 +217,12 @@ export function useCOPGateNotifications(): UseCOPGateNotificationsResult {
   // ─── Derived state ────────────────────────────────────────────────────
 
   const active = notifications.filter((n) => !n.dismissed);
-  const criticalGate = active.find((n) => n.isLethal && n.eventType === 'gate.created') ?? null;
+  // Critical: lethal authorization (can arrive as gate.created or gate.updated depending on
+  // whether the lethal context was added after initial creation)
+  const criticalGate = active.find((n) => n.isLethal && (n.eventType === 'gate.created' || n.eventType === 'gate.updated')) ?? null;
+  // Toast: non-lethal high-urgency gates (resource allocation, etc.)
   const toastNotifications = active.filter(
-    (n) => n.eventType === 'gate.created' && !n.isLethal && n.urgency !== 'standard',
+    (n) => (n.eventType === 'gate.created' || n.eventType === 'gate.updated') && !n.isLethal && n.urgency !== 'standard',
   );
 
   return {
