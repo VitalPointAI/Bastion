@@ -1128,7 +1128,7 @@ export async function getCostSummary(params?: {
   const qs = new URLSearchParams();
   if (params?.startDate) qs.set('startDate', params.startDate);
   if (params?.endDate) qs.set('endDate', params.endDate);
-  const url = `${adminService['baseUrl']}/costs/summary${qs.toString() ? `?${qs}` : ''}`;
+  const url = `${API_BASE}/api/admin/costs/summary${qs.toString() ? `?${qs}` : ''}`;
   const res = await fetch(url, { credentials: 'include' });
   if (!res.ok) throw new Error(`Cost summary failed: ${res.status}`);
   return res.json();
@@ -1149,7 +1149,7 @@ export async function getCostLedger(params?: {
   if (params?.agentId) qs.set('agentId', params.agentId);
   if (params?.limit) qs.set('limit', String(params.limit));
   if (params?.offset) qs.set('offset', String(params.offset));
-  const url = `${adminService['baseUrl']}/costs/ledger${qs.toString() ? `?${qs}` : ''}`;
+  const url = `${API_BASE}/api/admin/costs/ledger${qs.toString() ? `?${qs}` : ''}`;
   const res = await fetch(url, { credentials: 'include' });
   if (!res.ok) throw new Error(`Cost ledger failed: ${res.status}`);
   return res.json();

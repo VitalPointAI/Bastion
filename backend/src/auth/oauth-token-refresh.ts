@@ -131,8 +131,14 @@ export async function getValidOAuthToken(): Promise<string | null> {
     return null;
   }
 
+  // If no expiry info, treat the token as valid (manually set token)
+  if (!oauth.tokenExpiresAt) {
+    await syncTokenToFile(oauth.accessToken);
+    return oauth.accessToken;
+  }
+
   // If token is still valid, sync it to shared volume and return
-  if (oauth.tokenExpiresAt && !isTokenExpiringSoon(oauth.tokenExpiresAt)) {
+  if (!isTokenExpiringSoon(oauth.tokenExpiresAt)) {
     await syncTokenToFile(oauth.accessToken);
     return oauth.accessToken;
   }
