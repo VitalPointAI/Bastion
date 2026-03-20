@@ -347,11 +347,8 @@ function Toast({
 }) {
   const [acting, setActing] = useState(false);
 
-  // Auto-dismiss after 30 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => onDismiss(notification.id), 30000);
-    return () => clearTimeout(timer);
-  }, [notification.id, onDismiss]);
+  // Decision notifications persist until the approval authority acts on them.
+  // No auto-dismiss — these require explicit action.
 
   const handleApprove = useCallback(async () => {
     setActing(true);

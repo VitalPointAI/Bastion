@@ -791,10 +791,11 @@ export class RobotMissionService {
       },
     });
 
-    // Re-fetch gate with context and re-publish so frontend gets the lethal flag
+    // Re-fetch gate with context and re-publish as update so frontend gets the lethal flag
+    // (gate.created was already published by createGate — don't duplicate it)
     const updatedGate = await gateService.getGateById(gate.id);
     if (updatedGate) {
-      gateService['publishGateEvent']('gate.created', updatedGate);
+      gateService['publishGateEvent']('gate.updated', updatedGate);
     }
 
     console.log(

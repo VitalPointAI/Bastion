@@ -39,35 +39,35 @@ const THREAT_CLASS_MAP: Record<string, {
   // MBTs — symbol set 15 (land equipment), entity 120101 (tank)
   't-90': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'T-90 Main Battle Tank', symbolSet: '15', entity: '120101',
+    designation: 'T-90 Main Battle Tank', symbolSet: '15', entity: '120100',
   },
   't90': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'T-90 Main Battle Tank', symbolSet: '15', entity: '120101',
+    designation: 'T-90 Main Battle Tank', symbolSet: '15', entity: '120100',
   },
   'chn-99g': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '15', entity: '120101',
+    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '15', entity: '120100',
   },
   'chn99g': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '15', entity: '120101',
+    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '15', entity: '120100',
   },
   't72': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'T-72 Main Battle Tank', symbolSet: '15', entity: '120101',
+    designation: 'T-72 Main Battle Tank', symbolSet: '15', entity: '120100',
   },
   'ztz99': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'ZTZ-99 Main Battle Tank', symbolSet: '15', entity: '120101',
+    designation: 'ZTZ-99 Main Battle Tank', symbolSet: '15', entity: '120100',
   },
   'type99': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99 Main Battle Tank', symbolSet: '15', entity: '120101',
+    designation: 'Type 99 Main Battle Tank', symbolSet: '15', entity: '120100',
   },
   't-99': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99 Main Battle Tank', symbolSet: '15', entity: '120101',
+    designation: 'Type 99 Main Battle Tank', symbolSet: '15', entity: '120100',
   },
   // IFVs/APCs — symbol set 15 (land equipment), entity 120200 (APC/IFV)
   'zbd-04': {
@@ -89,7 +89,7 @@ const THREAT_CLASS_MAP: Record<string, {
   // Generic classes
   'tank': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Unknown Tank', symbolSet: '15', entity: '120101',
+    designation: 'Unknown Tank', symbolSet: '15', entity: '120100',
   },
   'military vehicle': {
     category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
