@@ -274,6 +274,50 @@ export function stopSimulation(sessionId: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// Threat-facing heading computation
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute a heading that orients the robot toward the nearest known threat.
+ * Uses the autonomous orchestrator's detected threats if available.
+ * Returns null if no threats are known.
+ */
+function computeThreatFacingHeading(robot: SimRobot, _session: SimSession): number | null {
+  try {
+    // Dynamic import to avoid circular dependency at module load
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getAutonomousOrchestrator } = require('./autonomous-mission-orchestrator.js');
+    const orchestrator = getAutonomousOrchestrator();
+    const sequences = orchestrator.listSequences();
+
+    // Find threats from any active sequence
+    for (const seq of sequences) {
+      if (seq.detectedThreats && seq.detectedThreats.length > 0) {
+        // Find nearest threat
+        let nearest = seq.detectedThreats[0];
+        let nearestDist = Infinity;
+        for (const threat of seq.detectedThreats) {
+          const dx = threat.detectedAt.x - robot.position.x;
+          const dy = threat.detectedAt.y - robot.position.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < nearestDist) {
+            nearestDist = d;
+            nearest = threat;
+          }
+        }
+
+        const dx = nearest.detectedAt.x - robot.position.x;
+        const dy = nearest.detectedAt.y - robot.position.y;
+        return (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+      }
+    }
+  } catch {
+    // Orchestrator not available — fall through
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Simulation tick — move robots, send telemetry, trigger detections
 // ---------------------------------------------------------------------------
 
@@ -293,7 +337,9 @@ function simulationTick(session: SimSession): void {
       if (dist < 0.1) {
         // Reached waypoint
         robot.waypoints.shift();
-        robot.heading = 0;
+
+        // Orient toward nearest known threat when stationary
+        robot.heading = computeThreatFacingHeading(robot, session) ?? robot.heading;
 
         // If no more waypoints, mission is complete
         if (robot.waypoints.length === 0 && robot.activeMissionId) {
