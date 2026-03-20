@@ -311,15 +311,11 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const owMissionId = randomUUID();
     state.missions['overwatch_leader'] = owMissionId;
 
-    // Build road-following route from recon area to overwatch position
-    // Leader is near the end of recon sweep (Chengde/Kaifeng area)
+    // Use the AI plan's road-following route to overwatch
     const owPos = plan.overwatch.position;
-    const owWaypoints = [
-      { x: 3.4, y: 3.3 },  // Chengde/Kaifeng (near last recon waypoint)
-      { x: 2.5, y: 3.3 },  // W on Kaifeng to Guanqian Rd
-      { x: 2.5, y: owPos.y },  // S/N on Guanqian to overwatch latitude
-      owPos,                 // Final overwatch position
-    ];
+    const owWaypoints = plan.routes.leaderToOverwatch.length > 0
+      ? plan.routes.leaderToOverwatch
+      : [owPos]; // Fallback: go direct if AI didn't provide route
 
     await svc.dispatchMission({
       mission_id: owMissionId,
