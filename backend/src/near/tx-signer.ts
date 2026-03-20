@@ -140,17 +140,15 @@ export async function signAndSubmitFunctionCall(
   try {
     const { signingAccountId, keyPairString } = deriveSigningKeyPair(userSecret);
 
-    // Auto-fund the signing account if it doesn't exist yet (skip if already funded this session)
-    if (!fundedAccounts.has(signingAccountId)) {
-      const funded = await isSigningAccountFunded(userSecret);
-      if (!funded) {
-        const fundResult = await fundSigningAccount(signingAccountId);
-        if (!fundResult.success) {
-          return { success: false, error: `Failed to fund signing account: ${fundResult.error}` };
-        }
-        console.log(`[tx-signer] Auto-funded signing account ${signingAccountId}`);
+    // Auto-fund the signing account if it doesn't exist or balance is too low
+    const funded = await isSigningAccountFunded(userSecret);
+    if (!funded) {
+      fundedAccounts.delete(signingAccountId); // Clear cache so we re-check next time too
+      const fundResult = await fundSigningAccount(signingAccountId);
+      if (!fundResult.success) {
+        return { success: false, error: `Failed to fund signing account: ${fundResult.error}` };
       }
-      fundedAccounts.add(signingAccountId);
+      console.log(`[tx-signer] Auto-funded signing account ${signingAccountId}`);
     }
 
     const signer = KeyPairSigner.fromSecretKey(keyPairString);
@@ -280,6 +278,9 @@ export async function anchorCredentialOnChain(
 /**
  * Check if the user's signing account exists on-chain (is funded).
  */
+/** Minimum balance required for a DID operation (storage deposit + gas) */
+const MIN_OPERATIONAL_BALANCE = BigInt('20000000000000000000000'); // 0.02 NEAR
+
 export async function isSigningAccountFunded(userSecret: Uint8Array): Promise<boolean> {
   const signingAccountId = getSigningAccountId(userSecret);
   try {
@@ -297,8 +298,16 @@ export async function isSigningAccountFunded(userSecret: Uint8Array): Promise<bo
         },
       }),
     });
-    const result = await response.json() as { error?: unknown };
-    return !result.error;
+    const result = await response.json() as { error?: unknown; result?: { amount?: string } };
+    if (result.error) return false;
+
+    // Check if balance is sufficient for operations, not just that the account exists
+    const balance = BigInt(result.result?.amount ?? '0');
+    if (balance < MIN_OPERATIONAL_BALANCE) {
+      console.log(`[tx-signer] Account ${signingAccountId.slice(0, 12)}... balance ${balance} below minimum ${MIN_OPERATIONAL_BALANCE} — needs re-funding`);
+      return false;
+    }
+    return true;
   } catch {
     return false;
   }
