@@ -54,6 +54,8 @@ interface AutoConfig {
   issuedBy: string;
   /** DAO contract ID for NEAR proposals */
   daoId: string;
+  /** Whether this is a simulated mission (virtual robots) or real hardware */
+  simulate: boolean;
 }
 
 interface AutoState {
@@ -93,6 +95,7 @@ const AUTO_DEFAULTS: AutoConfig = {
   advanceSpeed: 120,
   issuedBy: 'did:near:bastion.testnet',
   daoId: 'bastion-dao.testnet',
+  simulate: true,
 };
 
 // ---------------------------------------------------------------------------
@@ -902,9 +905,16 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         // Add kill zone and arcs of fire to COP
         await this.addKillZoneOverlay(state);
 
-        // Start enemy tank movement toward the kill zone
-        // Lethal auth is requested when tanks approach the kill zone
-        this.startEnemyApproach(seqId);
+        if (state.config.simulate) {
+          // SIMULATION: artificially move enemy symbols south toward kill zone
+          this.startEnemyApproach(seqId);
+        } else {
+          // REAL MISSION: enemy positions update ONLY from live vision detections.
+          // The leader robot's camera reports new positions as the enemy moves.
+          // Subscribe to vision events for position updates and engagement decisions.
+          this.logPhase(state, 'REAL MISSION — monitoring leader vision feed for enemy movement');
+          this.startRealEnemyTracking(seqId);
+        }
       }
     }, 2000);
 
@@ -987,6 +997,152 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     } catch (err) {
       this.logPhase(state, `Failed to add kill zone overlay: ${err}`);
     }
+  }
+
+  // ── Real enemy tracking (live vision feed) ────────────────────────
+
+  /**
+   * REAL MISSION: Track enemy positions from live vision detections.
+   * Enemy symbols on the COP update ONLY when the leader robot's camera
+   * reports new detections. Engagement is evaluated on each new detection.
+   */
+  private startRealEnemyTracking(seqId: string): void {
+    const state = this.sequences.get(seqId);
+    if (!state) return;
+
+    const plan = state.tacticalPlan;
+    const fps = plan?.firingPositions ?? [];
+    const fpY = fps.length > 0 ? fps[0].position.y : 3.3;
+    const fpXs = fps.map((fp) => fp.position.x);
+    const kzCenter = {
+      x: fpXs.length >= 2 ? (Math.min(...fpXs) + Math.max(...fpXs)) / 2 : 2.5,
+      y: fpY,
+    };
+    let lethalRequested = false;
+
+    // Subscribe to vision events from the leader robot via the same channel
+    // the orchestrator uses for initial detection (robot:vision)
+    const messageBus = getMessageBus();
+    const subDid = `did:near:auto-tracking-${seqId.slice(0, 8)}`;
+
+    messageBus.subscribe(subDid, {
+      channels: ['robot:vision'],
+      messageTypes: ['robot.vision.detection'],
+      callback: async (envelope) => {
+        if (!this.sequences.has(seqId)) return;
+        if (state.phase === 'engage' || state.phase === 'withdraw' || state.phase === 'complete') return;
+
+        const payload = envelope.payload as Record<string, unknown>;
+        const robotId = payload.robot_id as string;
+
+        // Only process detections from the leader robot
+        if (robotId !== state.config.leaderId) return;
+
+        const detections = payload.detections as Array<{
+          class_desc: string;
+          confidence: number;
+          estimated_position?: { x: number; y: number };
+        }> | undefined;
+
+        if (!detections || detections.length === 0) return;
+
+        // Update threat positions from new vision data
+        for (const det of detections) {
+          const existingThreat = state.detectedThreats.find((t) =>
+            t.classDesc.toLowerCase() === det.class_desc.toLowerCase(),
+          );
+          if (existingThreat && det.estimated_position) {
+            // Update existing threat's position
+            existingThreat.detectedAt = { ...det.estimated_position };
+            const grid = roomToGridRef(det.estimated_position.x, det.estimated_position.y);
+            this.logPhase(state, `Leader reports ${det.class_desc} at grid ${grid} (updated position)`);
+          }
+        }
+
+        // Update COP symbols with new positions
+        try {
+          const { roomToLatLng: r2ll } = await import('../coordinates/mgrs-coordinator.js');
+          const { layerStore } = await import('../cop/layers/layer-store.js');
+          const layers = await layerStore.queryLayers({ workspaceId: state.config.problemSetId });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const adversaryLayer = (layers as any[]).find((l) => {
+            const meta = l.spec?.metadata;
+            return meta?.generatedBy === 'vision-detection-pipeline';
+          });
+
+          if (adversaryLayer?.spec?.symbols) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const updatedSymbols = adversaryLayer.spec.symbols.map((sym: any, idx: number) => {
+              const threat = state.detectedThreats[idx];
+              if (threat) {
+                const newPos = r2ll(threat.detectedAt.x, threat.detectedAt.y);
+                return { ...sym, position: { lat: newPos.lat, lng: newPos.lng } };
+              }
+              return sym;
+            });
+            await layerStore.updateLayerSpec(adversaryLayer.id, {
+              ...adversaryLayer.spec,
+              symbols: updatedSymbols,
+            });
+          }
+        } catch {
+          // Non-fatal — COP update failed
+        }
+
+        // Evaluate engagement using the skill
+        const closestThreatY = Math.min(...state.detectedThreats.map((t) => t.detectedAt.y));
+        const distToKillZone = closestThreatY - (fpY + 0.3);
+        const isLethalAuthorized = (state as unknown as { lethalAuthorized?: boolean }).lethalAuthorized;
+
+        try {
+          const { createTacticalTools } = await import('./skills/tactical-skills.js');
+          const tacTools = createTacticalTools();
+          const engageTool = tacTools.find((t) => t.name === 'evaluate_engagement');
+
+          if (engageTool) {
+            const closestThreat = state.detectedThreats.reduce((best, t) =>
+              t.detectedAt.y < best.detectedAt.y ? t : best, state.detectedThreats[0]);
+
+            const raw = await engageTool.invoke({
+              target_position: closestThreat.detectedAt,
+              kill_zone_center: kzCenter,
+              kill_zone_radius: 0.5,
+              weapons_authorized: isLethalAuthorized ?? false,
+              firing_positions: fps.map((fp) => fp.position),
+              target_heading: 180,
+            });
+            const result = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
+
+            if (result.decision === 'hold' && !lethalRequested) {
+              lethalRequested = true;
+              const threatGrid = roomToGridRef(closestThreat.detectedAt.x, closestThreatY);
+              this.logPhase(state, `${result.reasoning} — requesting lethal authorization at grid ${threatGrid}`);
+              await this.attemptEngagement(seqId);
+            } else if (result.decision === 'fire') {
+              this.logPhase(state, `ENGAGE: ${result.reasoning}`);
+              await this.executeEngagement(seqId);
+            }
+          }
+        } catch (err) {
+          console.error('[AutoMission] Real engagement skill error:', err);
+        }
+
+        // Fallback distance checks
+        if (!lethalRequested && distToKillZone < 0.8) {
+          lethalRequested = true;
+          this.logPhase(state, 'Enemy approaching kill zone — requesting lethal authorization');
+          await this.attemptEngagement(seqId);
+        }
+        if (isLethalAuthorized && distToKillZone <= 0) {
+          this.logPhase(state, 'ENEMY IN KILL ZONE — ENGAGING');
+          await this.executeEngagement(seqId);
+        }
+
+        this.publishUpdate(state);
+      },
+    });
+
+    this.logPhase(state, 'Subscribed to leader vision feed — tracking enemy movement in real-time');
   }
 
   // ── Enemy tank approach simulation ────────────────────────────────

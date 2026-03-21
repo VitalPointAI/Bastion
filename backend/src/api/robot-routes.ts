@@ -514,7 +514,10 @@ robotRouter.post('/scenarios/autonomous', async (req, res) => {
     }
 
     const orchestrator = getAutonomousOrchestrator();
-    const { sequenceId, state } = await orchestrator.startAutonomousMission(overrides);
+    const { sequenceId, state } = await orchestrator.startAutonomousMission({
+      ...overrides,
+      simulate,
+    });
 
     res.json({
       sequenceId,
