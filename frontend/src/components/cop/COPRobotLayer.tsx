@@ -108,10 +108,6 @@ function latLngToRoom(lat: number, lng: number): { x: number; y: number } {
 
 const POLL_INTERVAL = 3000;
 
-interface SmoothTarget {
-  lat: number;
-  lng: number;
-}
 
 function buildTooltip(robot: RobotInfo): string {
   const stateColor = STATE_COLORS[robot.state] || DEFAULT_COLOR;
@@ -141,10 +137,6 @@ function SmoothRobotMarker({
 }) {
   const map = useMap();
   const markerRef = useRef<L.Marker | null>(null);
-  const prevPos = useRef<SmoothTarget | null>(null);
-  const targetPos = useRef<SmoothTarget | null>(null);
-  const animFrame = useRef<number | null>(null);
-  const startTime = useRef<number>(0);
 
   const pos = robot.latest_telemetry!.position;
   const [lat, lng] = roomToLatLng(pos.x, pos.y);
@@ -160,58 +152,21 @@ function SmoothRobotMarker({
     marker.bindTooltip(buildTooltip(robot), { direction: 'bottom', offset: [0, 14] });
 
     markerRef.current = marker;
-    prevPos.current = { lat, lng };
-    targetPos.current = { lat, lng };
 
     return () => {
-      if (animFrame.current) cancelAnimationFrame(animFrame.current);
       map.removeLayer(marker);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);
 
-  // When position updates, start smooth interpolation
+  // Update marker position and icon on each poll
   useEffect(() => {
     const marker = markerRef.current;
     if (!marker) return;
 
-    // Update icon for state changes
     marker.setIcon(createRobotIcon(iconState));
-
-    // Update tooltip
     marker.setTooltipContent(buildTooltip(robot));
-
-    // Interpolate from the PREVIOUS telemetry position to the new one.
-    // Using the marker's displayed position (getLatLng) causes snap-back
-    // because the marker may be mid-interpolation and not at the target yet.
-    // Instead, use the previous target as the start of the next interpolation.
-    prevPos.current = targetPos.current ?? { lat, lng };
-    targetPos.current = { lat, lng };
-    startTime.current = performance.now();
-
-    if (animFrame.current) cancelAnimationFrame(animFrame.current);
-
-    function animate() {
-      const marker = markerRef.current;
-      const prev = prevPos.current;
-      const target = targetPos.current;
-      if (!marker || !prev || !target) return;
-
-      const elapsed = performance.now() - startTime.current;
-      const t = Math.min(elapsed / POLL_INTERVAL, 1); // 0..1 over poll interval
-      // Ease-out for smooth deceleration
-      const eased = 1 - (1 - t) * (1 - t);
-
-      const newLat = prev.lat + (target.lat - prev.lat) * eased;
-      const newLng = prev.lng + (target.lng - prev.lng) * eased;
-      marker.setLatLng([newLat, newLng]);
-
-      if (t < 1) {
-        animFrame.current = requestAnimationFrame(animate);
-      }
-    }
-
-    animFrame.current = requestAnimationFrame(animate);
+    marker.setLatLng([lat, lng]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng, iconState, robot.state, robot.current_mission_id]);
 
