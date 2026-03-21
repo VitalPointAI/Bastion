@@ -384,16 +384,30 @@ class MissionExecutor:
             )
 
         try:
-            for idx, wp in enumerate(waypoints):
+            # Continue sweeping until a threat is detected or mission is cancelled.
+            # The sweep path repeats (reverse direction each pass) to maintain
+            # continuous coverage of the area until the enemy is found.
+            sweep_count = 0
+            while not stop_event.is_set():
+                sweep_count += 1
+                path = waypoints if sweep_count % 2 == 1 else list(reversed(waypoints))
                 log_ctx.info(
-                    "mission_executor.recon_area.waypoint",
-                    index=idx,
-                    total=len(waypoints),
-                    x=wp.x,
-                    y=wp.y,
+                    "mission_executor.recon_area.sweep_pass",
+                    sweep=sweep_count,
+                    waypoints=len(path),
                 )
-                await self._driver.drive_to_point(wp.x, wp.y, speed)
-                await self._emit_telemetry(mission.mission_id)
+                for idx, wp in enumerate(path):
+                    if stop_event.is_set():
+                        break
+                    log_ctx.info(
+                        "mission_executor.recon_area.waypoint",
+                        index=idx,
+                        total=len(path),
+                        x=wp.x,
+                        y=wp.y,
+                    )
+                    await self._driver.drive_to_point(wp.x, wp.y, speed)
+                    await self._emit_telemetry(mission.mission_id)
         finally:
             stop_event.set()
             if vision_task:
