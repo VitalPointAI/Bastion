@@ -136,20 +136,51 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     this.sequences.set(id, state);
     this.subscribeToVisionEvents();
 
-    // Dispatch recon mission to leader
+    // Set initial positions for all robots (home base on the map)
     const svc = getRobotMissionService();
+    for (const robotId of [config.leaderId, ...config.followerIds]) {
+      const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
+      if (robot) {
+        robot.latest_telemetry = {
+          position: { ...config.homeBase },
+          heading: 0,
+          battery: 100,
+        };
+        // Forward to COP so robots appear at home base immediately
+        svc.updateSimulatedTelemetry(robotId, config.homeBase, 0, 100);
+      }
+    }
+
+    // Use the plan_screening_route skill to compute the recon route
+    // No hardcoded waypoints — AI plans the route using map knowledge
     const reconMissionId = randomUUID();
     state.missions['recon_leader'] = reconMissionId;
+
+    const { createNavigationTools } = await import('./skills/navigation-skill.js');
+    const navTools = createNavigationTools();
+    const screenTool = navTools.find((t) => t.name === 'plan_screening_route')!;
+
+    const raw = await screenTool.invoke({
+      start_x: config.homeBase.x,
+      start_y: config.homeBase.y,
+      screen_line_y: config.reconArea.y_max,
+      ao_x_min: config.reconArea.x_min,
+      ao_x_max: config.reconArea.x_max,
+    });
+    const screenResult = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
+    const reconWaypoints = screenResult.waypoints as Array<{ x: number; y: number }>;
+
+    this.logPhase(state, `AI planned screening route: ${reconWaypoints.length} waypoints covering ${screenResult.roads_covered?.length ?? 0} roads`);
 
     await svc.dispatchMission({
       mission_id: reconMissionId,
       robot_id: config.leaderId,
-      command: 'recon_area',
+      command: 'patrol_route',
       params: {
-        area: config.reconArea,
+        waypoints: reconWaypoints,
         speed: config.reconSpeed,
+        start_position: config.homeBase,
         autonomy_policy: { max_speed: 255, restricted_actions: [] },
-        profile_name: 'stealth_recon',
       },
       issued_by: config.issuedBy,
       timestamp: new Date().toISOString(),

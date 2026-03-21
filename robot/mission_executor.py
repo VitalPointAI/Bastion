@@ -371,6 +371,12 @@ class MissionExecutor:
         area = mission.params.area
         speed = mission.params.speed
 
+        # Set initial position from mission params if provided
+        start_pos = getattr(mission.params, 'start_position', None)
+        if start_pos and hasattr(self._driver, 'set_position'):
+            self._driver.set_position(start_pos.get('x', 0), start_pos.get('y', 0))
+            log_ctx.info("mission_executor.recon_area.start_position", x=start_pos.get('x'), y=start_pos.get('y'))
+
         waypoints = generate_sweep_path(area)
 
         await self._transition(mission.mission_id, MissionState.executing)

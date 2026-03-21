@@ -87,6 +87,11 @@ class RVRDriver:
         self._heading: float = 0.0  # degrees, 0 = north
         self._battery_pct: int = 100
 
+    def set_position(self, x: float, y: float) -> None:
+        """Set the robot's current position (used to sync with map coordinates)."""
+        self._position = (x, y)
+        log.info("rvr_driver.position_set", x=x, y=y)
+
         if simulate:
             log.info("rvr_driver.simulate_mode", serial_port=serial_port)
 
