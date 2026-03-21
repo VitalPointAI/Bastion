@@ -513,6 +513,13 @@ robotRouter.post('/scenarios/autonomous', async (req, res) => {
       });
     }
 
+    // Clean up simulated robots before starting any mission to prevent
+    // simulated robots from conflicting with real robot connections
+    if (!simulate) {
+      const svc = getRobotMissionService();
+      svc.cleanupSimulatedRobots();
+    }
+
     const orchestrator = getAutonomousOrchestrator();
     const { sequenceId, state } = await orchestrator.startAutonomousMission({
       ...overrides,

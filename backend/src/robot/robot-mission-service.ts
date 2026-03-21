@@ -1678,6 +1678,20 @@ Return ONLY valid JSON, no markdown.`;
    * Returns a promise that resolves once the resource registry bridge completes
    * (needed so dispatchMission pre-flight validation can find the resource).
    */
+  /**
+   * Remove all simulated robots from the connected robots map.
+   * Called before starting a real mission to prevent conflicts.
+   */
+  cleanupSimulatedRobots(): void {
+    const simDids = ['did:near:sim-robot-alpha', 'did:near:sim-robot-bravo', 'did:near:sim-robot-charlie'];
+    for (const [id, robot] of this.connectedRobots) {
+      if (simDids.includes(robot.did) || robot.did.startsWith('did:near:sim-robot-')) {
+        this.connectedRobots.delete(id);
+        console.log(`[RobotMissionService] Cleaned up simulated robot: ${id} (${robot.did})`);
+      }
+    }
+  }
+
   async registerSimulatedRobot(
     robotId: string,
     did: string,
