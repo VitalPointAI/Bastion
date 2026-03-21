@@ -1065,13 +1065,19 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       const isLethalAuthorized = (state as unknown as { lethalAuthorized?: boolean }).lethalAuthorized;
 
       // Use the engagement evaluation skill to decide what to do
-      try {
-        const { createTacticalTools } = await import('./skills/tactical-skills.js');
-        const tacTools = createTacticalTools();
-        const engageTool = tacTools.find((t) => t.name === 'evaluate_engagement');
-        if (engageTool) {
+      const { createTacticalTools } = await import('./skills/tactical-skills.js');
+      const tacTools = createTacticalTools();
+      const engageTool = tacTools.find((t) => t.name === 'evaluate_engagement');
+
+      if (engageTool) {
+        try {
           const fps = state.tacticalPlan?.firingPositions ?? [];
-          const kzCenter = { x: (fps[0]?.position.x ?? 2.5 + (fps[1]?.position.x ?? 2.5)) / 2, y: fpY };
+          const fpXs = fps.map((fp) => fp.position.x);
+          const kzCenter = {
+            x: fpXs.length >= 2 ? (Math.min(...fpXs) + Math.max(...fpXs)) / 2 : 2.5,
+            y: fpY,
+          };
+
           const closestThreat = state.detectedThreats.reduce((best, t) =>
             t.detectedAt.y < best.detectedAt.y ? t : best, state.detectedThreats[0]);
 
@@ -1081,12 +1087,11 @@ class AutonomousMissionOrchestrator extends EventEmitter {
             kill_zone_radius: 0.5,
             weapons_authorized: isLethalAuthorized ?? false,
             firing_positions: fps.map((fp) => fp.position),
-            target_heading: 180, // Moving south
+            target_heading: 180,
           });
           const result = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
 
-          if (result.decision === 'hold' && !lethalRequested && distToKillZone < 0.8) {
-            // Request authorization while holding
+          if (result.decision === 'hold' && !lethalRequested) {
             lethalRequested = true;
             const threatGrid = roomToGridRef(closestThreat.detectedAt.x, closestThreatY);
             this.logPhase(state, `${result.reasoning} — requesting lethal authorization at grid ${threatGrid}`);
@@ -1096,17 +1101,21 @@ class AutonomousMissionOrchestrator extends EventEmitter {
             this.logPhase(state, `ENGAGE: ${result.reasoning}`);
             await this.executeEngagement(seqId);
           }
+        } catch (err) {
+          console.error('[AutoMission] Engagement skill error:', err);
         }
-      } catch {
-        // Skill evaluation failed — use simple distance check as last resort
-        if (distToKillZone < 0.5 && !lethalRequested) {
-          lethalRequested = true;
-          await this.attemptEngagement(seqId);
-        }
-        if (distToKillZone <= 0 && isLethalAuthorized) {
-          clearInterval(approachInterval);
-          await this.executeEngagement(seqId);
-        }
+      }
+
+      // Fallback: if skill didn't fire, use distance check
+      if (!lethalRequested && distToKillZone < 0.8) {
+        lethalRequested = true;
+        this.logPhase(state, 'Enemy approaching kill zone — requesting lethal authorization');
+        await this.attemptEngagement(seqId);
+      }
+      if (isLethalAuthorized && distToKillZone <= 0) {
+        clearInterval(approachInterval);
+        this.logPhase(state, 'ENEMY IN KILL ZONE — ENGAGING');
+        await this.executeEngagement(seqId);
       }
 
       // Safety: stop after 5 minutes
