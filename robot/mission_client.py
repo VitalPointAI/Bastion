@@ -413,6 +413,19 @@ async def receive_loop(
                 log.info("mission_client.manual_stop")
                 asyncio.create_task(_driver.safe_stop())
 
+            elif msg_type == "mission:cancel":
+                log.info("mission_client.mission_cancel")
+                # Stop the robot immediately
+                asyncio.create_task(_driver.safe_stop())
+                # Cancel the active mission task
+                if executor.current_mission:
+                    await executor._transition(
+                        executor.current_mission.mission_id,
+                        "failed",
+                        {"reason": "Mission cancelled by commander"},
+                    )
+                    executor.current_mission = None
+
             elif msg_type == "swarm:add_resource":
                 log.info("mission_client.received.swarm_add_resource", robot_id=msg.get("robot_id"))
                 if _swarm is not None:

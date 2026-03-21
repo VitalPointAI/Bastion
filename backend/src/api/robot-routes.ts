@@ -552,6 +552,19 @@ robotRouter.post('/scenarios/:sequenceId/stop', async (req, res) => {
     // Mark as complete to stop all intervals and polling
     (state as unknown as Record<string, unknown>).phase = 'complete';
     (state as unknown as Record<string, unknown>).phaseStartedAt = new Date().toISOString();
+
+    // Send stop command to all robots in the sequence
+    const svc = getRobotMissionService();
+    const allRobots = [state.config.leaderId, ...state.config.followerIds];
+    for (const robotId of allRobots) {
+      const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
+      if (robot?.ws && robot.ws.readyState === 1) {
+        try {
+          robot.ws.send(JSON.stringify({ type: 'mission:cancel', robot_id: robotId }));
+        } catch { /* non-fatal */ }
+      }
+    }
+
     res.json({ status: 'stopped', sequenceId: req.params.sequenceId });
     return;
   }
