@@ -188,17 +188,25 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
       if (simSessionId) {
         await fetch(`/api/robot/simulations/${simSessionId}/stop`, { method: 'POST' });
       }
+      // Stop the autonomous orchestrator sequence
+      if (sequenceId) {
+        await fetch(`/api/robot/scenarios/${sequenceId}/stop`, { method: 'POST' }).catch(() => {});
+      }
       setSimSessionId(null);
       setSequenceId(null);
       setStatus(null);
       setSimPaused(false);
     } catch { /* silent */ }
-  }, [simSessionId]);
+  }, [simSessionId, sequenceId]);
 
   const handleSimReset = useCallback(async () => {
     try {
       if (simSessionId) {
         await fetch(`/api/robot/simulations/${simSessionId}/reset`, { method: 'POST' });
+      }
+      // Stop any active autonomous orchestrator sequence
+      if (sequenceId) {
+        await fetch(`/api/robot/scenarios/${sequenceId}/stop`, { method: 'POST' }).catch(() => {});
       }
       // Also clear seeded strategic COP layers and vision detections
       await fetch('/api/robot/scenarios/clear-strategic-cop', {

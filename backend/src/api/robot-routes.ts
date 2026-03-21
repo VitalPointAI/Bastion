@@ -541,6 +541,34 @@ robotRouter.post('/scenarios/autonomous', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /scenarios/:sequenceId/stop — Stop an active mission sequence
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/:sequenceId/stop', async (req, res) => {
+  const autoOrch = getAutonomousOrchestrator();
+  const state = autoOrch.getState(req.params.sequenceId);
+
+  if (state) {
+    // Mark as complete to stop all intervals and polling
+    (state as unknown as Record<string, unknown>).phase = 'complete';
+    (state as unknown as Record<string, unknown>).phaseStartedAt = new Date().toISOString();
+    res.json({ status: 'stopped', sequenceId: req.params.sequenceId });
+    return;
+  }
+
+  // Also check scripted orchestrator
+  const scriptedOrch = getMissionSequenceOrchestrator();
+  const scriptedState = scriptedOrch.getState(req.params.sequenceId);
+  if (scriptedState) {
+    (scriptedState as unknown as Record<string, unknown>).phase = 'complete';
+    res.json({ status: 'stopped', sequenceId: req.params.sequenceId });
+    return;
+  }
+
+  res.status(404).json({ error: 'Sequence not found' });
+});
+
+// ---------------------------------------------------------------------------
 // POST /scenarios/:sequenceId/return-to-base — Commander orders withdrawal (shadow mode)
 // ---------------------------------------------------------------------------
 
