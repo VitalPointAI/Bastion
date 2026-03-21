@@ -31,6 +31,10 @@ import type {
   RobotProfileRequestMsg,
   SwarmTelemetryMsg,
   SwarmMemberHeartbeat,
+  ResourceRequestMsg,
+  ResourceGrantedMsg,
+  ResourceDeniedMsg,
+  ResourceCommandMsg,
 } from './robot-types.js';
 import { robotStore } from './robot-store.js';
 import { gateService, expeditedAuthorize } from '../gates/gate-service.js';
@@ -100,6 +104,9 @@ export class RobotMissionService {
 
   /** In-memory map of currently connected bridges, keyed by bridge_id */
   connectedBridges = new Map<string, ConnectedBridge>();
+
+  /** Resource allocations: leader_robot_id → Set of granted follower robot_ids */
+  private resourceAllocations = new Map<string, Set<string>>();
 
   /** Message IDs seen in the dedup window, value is receipt timestamp (epoch ms) */
   private seenMessageIds = new Map<string, number>();
@@ -229,6 +236,14 @@ export class RobotMissionService {
         });
         break;
       }
+      case RobotWsMessageType.resource_request:
+        this.handleResourceRequest(ws, msg as ResourceRequestMsg).catch((err) =>
+          console.error('[RobotMissionService] handleResourceRequest error:', err),
+        );
+        break;
+      case RobotWsMessageType.resource_command:
+        this.handleResourceCommand(ws, msg as ResourceCommandMsg);
+        break;
       case RobotWsMessageType.swarm_telemetry:
         this.handleSwarmTelemetry(msg as SwarmTelemetryMsg).catch((err) =>
           console.error('[RobotMissionService] handleSwarmTelemetry error:', err),
@@ -430,6 +445,9 @@ export class RobotMissionService {
 
   handleRobotDisconnect(robotId: string): void {
     if (!robotId) return;
+
+    // Release any resources this robot was controlling
+    this.releaseResources(robotId);
 
     // Get robot DID before removing from map (needed for resource status update)
     const robot = this.connectedRobots.get(robotId);
@@ -735,6 +753,258 @@ export class RobotMissionService {
 
     // Safety timeout: stop polling after 10 minutes
     setTimeout(() => clearInterval(interval), 10 * 60 * 1000);
+  }
+
+  // -------------------------------------------------------------------------
+  // Resource allocation (request → gate → grant/deny → command relay)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Handle a resource request from a robot. Creates a governance gate for
+   * human approval. On approval, finds matching connected robots and grants
+   * them to the requesting leader.
+   */
+  private async handleResourceRequest(_ws: WebSocket, msg: ResourceRequestMsg): Promise<void> {
+    const { robot_id, mission_id, required_capabilities, count, reason, preferred_robots } = msg;
+
+    console.log(
+      `[RobotMissionService] Resource request from ${robot_id}: ` +
+      `need ${count} robots with [${required_capabilities.join(',')}] for mission ${mission_id}`,
+    );
+
+    // Find available connected robots that match the requirements
+    const candidates: Array<{ robot_id: string; capabilities: string[] }> = [];
+    for (const [rid, robot] of this.connectedRobots) {
+      // Skip the requesting robot itself
+      if (rid === robot_id) continue;
+      // Skip robots already on a mission
+      if (robot.current_mission_id) continue;
+      // Skip robots already allocated to another leader
+      let alreadyAllocated = false;
+      for (const [, allocated] of this.resourceAllocations) {
+        if (allocated.has(rid)) { alreadyAllocated = true; break; }
+      }
+      if (alreadyAllocated) continue;
+
+      // Check capabilities match (if specified)
+      if (required_capabilities.length > 0) {
+        const hasAll = required_capabilities.every(
+          (cap) => robot.capabilities?.includes(cap),
+        );
+        if (!hasAll) continue;
+      }
+
+      candidates.push({ robot_id: rid, capabilities: robot.capabilities || [] });
+    }
+
+    // Prefer specifically requested robots
+    if (preferred_robots && preferred_robots.length > 0) {
+      const preferred = candidates.filter((c) => preferred_robots.includes(c.robot_id));
+      if (preferred.length >= count) {
+        candidates.length = 0;
+        candidates.push(...preferred.slice(0, count));
+      }
+    }
+
+    if (candidates.length === 0) {
+      const denyMsg: ResourceDeniedMsg = {
+        type: RobotWsMessageType.resource_denied,
+        robot_id,
+        mission_id,
+        reason: 'No available robots matching requirements',
+        timestamp: new Date().toISOString(),
+      };
+      const robot = this.connectedRobots.get(robot_id);
+      if (robot) this.safeSend(robot.ws, denyMsg);
+      return;
+    }
+
+    const selectedCandidates = candidates.slice(0, count);
+
+    // Look up mission for problem_set_id
+    const mission = await robotStore.getMission(mission_id).catch(() => null);
+    const problemSetId = mission?.problem_set_id || 'default';
+
+    // Create a gate for human approval
+    const candidateNames = selectedCandidates.map((c) => c.robot_id).join(', ');
+    const gate = await gateService.createGate({
+      problem_set_id: problemSetId,
+      gate_type: GateType.robot_resource_allocation,
+      target_item_id: mission_id,
+      target_item_type: 'robot_mission',
+      target_item_title: `Resource Allocation — ${robot_id} requests ${count} robot(s): [${candidateNames}] — ${reason}`,
+      enforcement: GateEnforcement.hard_block,
+      mode: 'operational',
+    });
+
+    console.log(`[RobotMissionService] Resource allocation gate ${gate.id} created for mission ${mission_id}`);
+
+    // Poll gate for resolution
+    this.pollResourceAllocationGate(gate.id, robot_id, mission_id, selectedCandidates);
+  }
+
+  /**
+   * Poll a resource allocation gate and grant/deny resources when resolved.
+   */
+  private pollResourceAllocationGate(
+    gateId: string,
+    leaderId: string,
+    missionId: string,
+    candidates: Array<{ robot_id: string; capabilities: string[] }>,
+  ): void {
+    const interval = setInterval(async () => {
+      try {
+        const gate = await gateService.getGateById(gateId);
+        if (!gate) {
+          clearInterval(interval);
+          return;
+        }
+
+        if (gate.status === 'approved') {
+          clearInterval(interval);
+          this.grantResources(leaderId, missionId, candidates);
+        } else if (gate.status === 'rejected') {
+          clearInterval(interval);
+          const robot = this.connectedRobots.get(leaderId);
+          if (robot) {
+            const denyMsg: ResourceDeniedMsg = {
+              type: RobotWsMessageType.resource_denied,
+              robot_id: leaderId,
+              mission_id: missionId,
+              reason: `Resource allocation denied by ${gate.decided_by || 'gate'}`,
+              timestamp: new Date().toISOString(),
+            };
+            this.safeSend(robot.ws, denyMsg);
+          }
+        }
+      } catch (err) {
+        console.error(`[RobotMissionService] Resource allocation gate poll error for ${gateId}:`, err);
+        clearInterval(interval);
+      }
+    }, 2000);
+
+    setTimeout(() => clearInterval(interval), 10 * 60 * 1000);
+  }
+
+  /**
+   * Grant resources to a leader robot. Tracks the allocation and notifies
+   * both the leader and the allocated followers.
+   */
+  private grantResources(
+    leaderId: string,
+    missionId: string,
+    granted: Array<{ robot_id: string; capabilities: string[] }>,
+  ): void {
+    // Track allocation
+    if (!this.resourceAllocations.has(leaderId)) {
+      this.resourceAllocations.set(leaderId, new Set());
+    }
+    const alloc = this.resourceAllocations.get(leaderId)!;
+    for (const g of granted) {
+      alloc.add(g.robot_id);
+    }
+
+    // Notify leader
+    const leader = this.connectedRobots.get(leaderId);
+    if (leader) {
+      const grantMsg: ResourceGrantedMsg = {
+        type: RobotWsMessageType.resource_granted,
+        robot_id: leaderId,
+        mission_id: missionId,
+        granted_robots: granted,
+        timestamp: new Date().toISOString(),
+      };
+      this.safeSend(leader.ws, grantMsg);
+    }
+
+    console.log(
+      `[RobotMissionService] Resources granted to ${leaderId}: [${granted.map((g) => g.robot_id).join(', ')}]`,
+    );
+  }
+
+  /**
+   * Handle a command from a leader robot to a granted follower.
+   * Validates the allocation exists and relays the command.
+   */
+  private handleResourceCommand(_ws: WebSocket, msg: ResourceCommandMsg): void {
+    const { from_robot_id, target_robot_id, mission_id, command } = msg;
+
+    // Validate allocation
+    const alloc = this.resourceAllocations.get(from_robot_id);
+    if (!alloc || !alloc.has(target_robot_id)) {
+      console.warn(
+        `[RobotMissionService] Resource command rejected: ${from_robot_id} does not control ${target_robot_id}`,
+      );
+      return;
+    }
+
+    // Find target robot and relay the command
+    const target = this.connectedRobots.get(target_robot_id);
+    if (!target) {
+      console.warn(`[RobotMissionService] Resource command target ${target_robot_id} not connected`);
+      return;
+    }
+
+    // Translate the resource command into a direct command for the target robot
+    const { action, params } = command;
+    let relayMsg: Record<string, unknown>;
+
+    switch (action) {
+      case 'drive':
+        relayMsg = {
+          type: RobotWsMessageType.manual_nudge,
+          robot_id: target_robot_id,
+          heading: params.heading ?? 0,
+          speed: params.speed ?? 100,
+          duration_sec: params.duration_sec ?? 1.0,
+        };
+        break;
+      case 'drive_to_point':
+        relayMsg = {
+          type: RobotWsMessageType.manual_navigate,
+          robot_id: target_robot_id,
+          target_x: params.x ?? 0,
+          target_y: params.y ?? 0,
+          speed: params.speed ?? 100,
+        };
+        break;
+      case 'stop':
+        relayMsg = {
+          type: RobotWsMessageType.manual_stop,
+          robot_id: target_robot_id,
+        };
+        break;
+      case 'set_leds':
+        relayMsg = {
+          type: 'robot:set_leds',
+          robot_id: target_robot_id,
+          r: params.r ?? 0,
+          g: params.g ?? 0,
+          b: params.b ?? 0,
+        };
+        break;
+      default:
+        console.warn(`[RobotMissionService] Unknown resource command action: ${action}`);
+        return;
+    }
+
+    this.safeSend(target.ws, relayMsg);
+    console.log(
+      `[RobotMissionService] Relayed ${action} from ${from_robot_id} → ${target_robot_id}`,
+    );
+  }
+
+  /**
+   * Release all resources allocated to a leader. Called on mission complete or disconnect.
+   */
+  releaseResources(leaderId: string): void {
+    const alloc = this.resourceAllocations.get(leaderId);
+    if (alloc && alloc.size > 0) {
+      console.log(
+        `[RobotMissionService] Releasing resources from ${leaderId}: [${[...alloc].join(', ')}]`,
+      );
+      this.resourceAllocations.delete(leaderId);
+    }
   }
 
   // -------------------------------------------------------------------------

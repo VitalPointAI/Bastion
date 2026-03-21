@@ -387,6 +387,16 @@ async def receive_loop(
                 log.info("mission_client.received.auth_response", approved=approved)
                 await executor.handle_auth_response(approved)
 
+            elif msg_type == "resource:granted":
+                granted = msg.get("granted_robots", [])
+                log.info("mission_client.resource_granted", robots=[r["robot_id"] for r in granted])
+                await executor.handle_resource_granted(granted)
+
+            elif msg_type == "resource:denied":
+                reason = msg.get("reason", "unknown")
+                log.info("mission_client.resource_denied", reason=reason)
+                await executor.handle_resource_denied(reason)
+
             elif msg_type == "robot:profile_response":
                 log.info("mission_client.profile_response", profile=msg.get("profile"))
 
@@ -509,6 +519,9 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
             vision_config=_vision_config,
             camera=_camera,
         )
+
+        # Set WS send function for resource requests
+        executor._ws_send_fn = lambda msg: _ws_send(ws, msg)
 
         # Attach swarm coordinator if available
         if _swarm is not None:

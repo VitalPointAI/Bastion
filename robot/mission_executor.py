@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import base64
 from datetime import datetime
-from typing import Any, Awaitable, Callable, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 import structlog
 
@@ -85,6 +85,12 @@ class MissionExecutor:
         # Event set when an authorization response arrives from Bastion
         self._auth_event: asyncio.Event = asyncio.Event()
         self._auth_approved: bool = False
+
+        # Resource allocation: event + granted robot list
+        self._resource_event: asyncio.Event = asyncio.Event()
+        self._granted_robots: List[Dict[str, Any]] = []
+        self._resource_denied: bool = False
+        self._ws_send_fn: Optional[Any] = None  # Set by mission_client
 
     # ------------------------------------------------------------------
     # Public API
@@ -236,6 +242,102 @@ class MissionExecutor:
         self._auth_approved = approved
         self._auth_event.set()
         log.info("mission_executor.auth_response", approved=approved)
+
+    async def handle_resource_granted(self, granted_robots: List[Dict[str, Any]]) -> None:
+        """Called when Bastion grants requested resources."""
+        self._granted_robots = granted_robots
+        self._resource_denied = False
+        self._resource_event.set()
+        log.info(
+            "mission_executor.resources_granted",
+            robots=[r["robot_id"] for r in granted_robots],
+        )
+
+    async def handle_resource_denied(self, reason: str) -> None:
+        """Called when Bastion denies a resource request."""
+        self._granted_robots = []
+        self._resource_denied = True
+        self._resource_event.set()
+        log.info("mission_executor.resources_denied", reason=reason)
+
+    async def request_resources(
+        self,
+        mission_id: str,
+        count: int = 2,
+        capabilities: Optional[List[str]] = None,
+        reason: str = "Mission requires additional resources",
+        preferred_robots: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Request resources from Bastion and wait for approval.
+
+        Sends a resource:request message and blocks until the gate is resolved.
+        Returns list of granted robot dicts [{robot_id, capabilities}] or empty
+        list if denied.
+        """
+        if not self._ws_send_fn:
+            log.warning("mission_executor.request_resources.no_ws")
+            return []
+
+        self._resource_event.clear()
+        self._granted_robots = []
+        self._resource_denied = False
+
+        request_msg = {
+            "type": "resource:request",
+            "robot_id": self._robot_id,
+            "mission_id": mission_id,
+            "required_capabilities": capabilities or [],
+            "count": count,
+            "reason": reason,
+            "preferred_robots": preferred_robots or [],
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+        await self._ws_send_fn(request_msg)
+        log.info(
+            "mission_executor.resource_request_sent",
+            mission_id=mission_id,
+            count=count,
+            reason=reason,
+        )
+
+        # Wait for response (no timeout — gate decides timing)
+        await self._resource_event.wait()
+
+        if self._resource_denied:
+            log.info("mission_executor.resource_request.denied")
+            return []
+
+        return self._granted_robots
+
+    async def command_resource(
+        self,
+        target_robot_id: str,
+        mission_id: str,
+        action: str,
+        params: Dict[str, Any],
+    ) -> None:
+        """Send a command to a granted resource via Bastion relay."""
+        if not self._ws_send_fn:
+            return
+
+        cmd_msg = {
+            "type": "resource:command",
+            "from_robot_id": self._robot_id,
+            "target_robot_id": target_robot_id,
+            "mission_id": mission_id,
+            "command": {
+                "action": action,
+                "params": params,
+            },
+        }
+        await self._ws_send_fn(cmd_msg)
+        log.info(
+            "mission_executor.resource_command",
+            target=target_robot_id,
+            action=action,
+        )
 
     async def abort(self) -> None:
         """Cancel the running mission task and stop the robot immediately."""

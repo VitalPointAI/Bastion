@@ -18,6 +18,7 @@ export const GateType = {
   device_onboard: 'device_onboard',
   device_allowlist: 'device_allowlist',
   robot_action_auth: 'robot_action_auth',
+  robot_resource_allocation: 'robot_resource_allocation',
 } as const;
 
 export type GateType = (typeof GateType)[keyof typeof GateType];
@@ -156,4 +157,5 @@ export const GATE_DEFAULTS: Record<GateType, { enforcement: GateEnforcement; tab
   [GateType.device_onboard]: { enforcement: GateEnforcement.hard_block, tab: GateTab.decide },
   [GateType.device_allowlist]: { enforcement: GateEnforcement.hard_block, tab: GateTab.decide },
   [GateType.robot_action_auth]: { enforcement: GateEnforcement.hard_block, tab: GateTab.decide },
+  [GateType.robot_resource_allocation]: { enforcement: GateEnforcement.hard_block, tab: GateTab.decide },
 };

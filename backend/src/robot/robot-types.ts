@@ -66,6 +66,12 @@ export const RobotWsMessageType = {
   manual_nudge: 'robot:manual_nudge',
   manual_navigate: 'robot:manual_navigate',
   manual_stop: 'robot:manual_stop',
+  // Resource allocation message types
+  resource_request: 'resource:request',
+  resource_granted: 'resource:granted',
+  resource_denied: 'resource:denied',
+  resource_released: 'resource:released',
+  resource_command: 'resource:command',
   // Swarm message types (Phase 46)
   swarm_telemetry: 'swarm:telemetry',
   swarm_add_resource: 'swarm:add_resource',
@@ -222,6 +228,59 @@ export interface AuthResponseMsg {
   approved: boolean;
   decided_by: string;
   timestamp: string;
+}
+
+/** Robot → Bastion: request additional resources for a mission */
+export interface ResourceRequestMsg {
+  type: typeof RobotWsMessageType.resource_request;
+  robot_id: string;
+  mission_id: string;
+  /** What capabilities are needed from the requested resources */
+  required_capabilities: string[];
+  /** How many resources requested */
+  count: number;
+  /** Why resources are needed (shown in gate prompt) */
+  reason: string;
+  /** Optional: specific robot IDs to request */
+  preferred_robots?: string[];
+  timestamp: string;
+}
+
+/** Bastion → Robot: resources have been granted */
+export interface ResourceGrantedMsg {
+  type: typeof RobotWsMessageType.resource_granted;
+  robot_id: string;
+  mission_id: string;
+  /** List of granted robot IDs the leader can now command */
+  granted_robots: Array<{
+    robot_id: string;
+    capabilities: string[];
+  }>;
+  timestamp: string;
+}
+
+/** Bastion → Robot: resource request denied */
+export interface ResourceDeniedMsg {
+  type: typeof RobotWsMessageType.resource_denied;
+  robot_id: string;
+  mission_id: string;
+  reason: string;
+  timestamp: string;
+}
+
+/** Robot → Bastion: command a granted resource (relayed by backend) */
+export interface ResourceCommandMsg {
+  type: typeof RobotWsMessageType.resource_command;
+  /** The leader robot sending the command */
+  from_robot_id: string;
+  /** The target robot to receive the command */
+  target_robot_id: string;
+  mission_id: string;
+  /** The actual command to execute */
+  command: {
+    action: string;  // 'drive', 'drive_to_point', 'stop', 'set_leds'
+    params: Record<string, unknown>;
+  };
 }
 
 /** Bastion → Robot: general acknowledgment */
