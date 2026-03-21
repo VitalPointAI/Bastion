@@ -1034,10 +1034,14 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         });
 
         if (adversaryLayer?.spec?.symbols) {
+          // Match each COP symbol to its corresponding threat and update position.
+          // Use index-based matching since symbols were created in the same order as threats.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const updatedSymbols = adversaryLayer.spec.symbols.map((sym: any) => {
-            const threat = state.detectedThreats.find((t) =>
-              sym.designation?.includes(t.classDesc),
+          const updatedSymbols = adversaryLayer.spec.symbols.map((sym: any, idx: number) => {
+            // Match by index (symbols created in detection order) or by designation substring
+            const threat = state.detectedThreats[idx] ?? state.detectedThreats.find((t) =>
+              sym.designation?.toLowerCase().includes(t.classDesc.toLowerCase()) ||
+              t.classDesc.toLowerCase().includes(sym.designation?.toLowerCase()?.split(' ')[0] ?? ''),
             );
             if (threat) {
               const newPos = roomToLatLng(threat.detectedAt.x, threat.detectedAt.y);
