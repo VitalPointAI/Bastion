@@ -53,10 +53,10 @@ CREATE INDEX IF NOT EXISTS idx_cost_ledger_ps ON cost_ledger(problem_set_id);
 CREATE TABLE IF NOT EXISTS cost_daily_summary (
   date DATE NOT NULL,
   cost_type TEXT NOT NULL,
-  agent_id TEXT,
+  agent_id TEXT NOT NULL DEFAULT '__all__',
   total_cost_usd NUMERIC(12, 6) NOT NULL DEFAULT 0,
   total_input_tokens BIGINT DEFAULT 0,
   total_output_tokens BIGINT DEFAULT 0,
   entry_count INTEGER DEFAULT 0,
-  PRIMARY KEY (date, cost_type, COALESCE(agent_id, '__all__'))
+  PRIMARY KEY (date, cost_type, agent_id)
 );
