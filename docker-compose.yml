@@ -193,6 +193,7 @@ services:
       retries: 3
     volumes:
       - token-sync:/shared/tokens    # Write refreshed OAuth tokens for Ironclaw
+      - ${HOME}/.claude:/home/nodejs/.claude:ro  # Claude Code OAuth credentials
     networks:
       - bastion-network
       # Backend bridges both networks: bastion-network (DB access) + ironclaw-network (agent access)

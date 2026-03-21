@@ -84,7 +84,7 @@ export async function resolveLLMConfig(
 
   // Determine provider and model
   const provider: LLMProvider = agentConfig?.provider || globalConfig.provider;
-  const model = agentConfig?.model || globalConfig.models.analysis;
+  let model = agentConfig?.model || globalConfig.models.analysis;
 
   // Determine temperature and max tokens
   const temperature =
@@ -96,30 +96,56 @@ export async function resolveLLMConfig(
     agentConfig?.maxTokens ??
     4096;
 
-  // Get API key — prefer OAuth token over static API key for Anthropic
-  // Priority: env var ANTHROPIC_OAUTH_TOKEN > config store OAuth > config store API key
+  // Resolve Anthropic auth — read OAuth token from credential file (same as Ironclaw),
+  // env var, or config store. Credential file is refreshed by `claude login`.
   let apiKey = globalConfig.apiKey;
   let isOAuthToken = false;
 
   if (provider === 'anthropic') {
-    // 1. Check env var first (same source as Ironclaw — always fresh)
-    const envOAuthToken = process.env.ANTHROPIC_OAUTH_TOKEN;
-    if (envOAuthToken?.startsWith('sk-ant-oat')) {
-      apiKey = envOAuthToken;
-      isOAuthToken = true;
+    let oauthToken: string | null = null;
+
+    // 1. Claude Code credential file (~/.claude/.credentials.json)
+    //    Same source Ironclaw reads — always has the freshest token
+    try {
+      const { readFileSync } = await import('fs');
+      const { homedir } = await import('os');
+      const credPath = `${homedir()}/.claude/.credentials.json`;
+      const creds = JSON.parse(readFileSync(credPath, 'utf-8'));
+      const fileToken = creds?.claudeAiOauth?.accessToken;
+      if (fileToken?.startsWith('sk-ant-oat')) {
+        oauthToken = fileToken;
+      }
+    } catch {
+      // Credential file not available
     }
-    // 2. Fall back to config store OAuth
-    else if (globalConfig.oauth?.connected && globalConfig.oauth?.accessToken) {
-      const { getValidOAuthToken } = await import('../../auth/oauth-token-refresh.js');
-      const oauthToken = await getValidOAuthToken();
-      if (oauthToken?.startsWith('sk-ant-oat')) {
-        apiKey = oauthToken;
-        isOAuthToken = true;
+
+    // 2. ANTHROPIC_OAUTH_TOKEN env var
+    if (!oauthToken) {
+      const envToken = process.env.ANTHROPIC_OAUTH_TOKEN;
+      if (envToken?.startsWith('sk-ant-oat')) {
+        oauthToken = envToken;
       }
     }
-    // 3. Fall back to env var API key
-    if (!isOAuthToken && process.env.ANTHROPIC_API_KEY) {
-      apiKey = process.env.ANTHROPIC_API_KEY;
+
+    // 3. Config store OAuth
+    if (!oauthToken && globalConfig.oauth?.connected && globalConfig.oauth?.accessToken) {
+      const { getValidOAuthToken } = await import('../../auth/oauth-token-refresh.js');
+      const configToken = await getValidOAuthToken();
+      if (configToken?.startsWith('sk-ant-oat')) {
+        oauthToken = configToken;
+      }
+    }
+
+    if (oauthToken) {
+      apiKey = oauthToken;
+      isOAuthToken = true;
+      // OAuth tokens may have model tier restrictions — use a compatible model
+      // if the configured model is a 1M context variant that OAuth can't access
+      if (model.includes('-4-6') || model.includes('-4-5-20250929') || model.includes('-4-20250514')) {
+        const oauthModel = 'claude-haiku-4-5-20251001';
+        console.log(`[LLM Factory] OAuth active — switching model from ${model} to ${oauthModel} (OAuth tier)`);
+        model = oauthModel;
+      }
     }
   }
   const baseUrl = globalConfig.baseUrl;
