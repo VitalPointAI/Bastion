@@ -4,6 +4,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { readFileSync } from 'fs';
+import { homedir } from 'os';
 import type {
   LLMProvider,
   LLMCompletionRequest,
@@ -18,11 +20,21 @@ export class AnthropicProvider implements LLMProvider {
   private model: string;
 
   constructor(config: ProviderConfig) {
-    const key = config.apiKey || process.env.ANTHROPIC_API_KEY;
+    // Resolve key: config > credential file > env var
+    let key = config.apiKey;
+    if (!key) {
+      try {
+        const creds = JSON.parse(readFileSync(`${homedir()}/.claude/.credentials.json`, 'utf-8'));
+        if (creds?.claudeAiOauth?.accessToken?.startsWith('sk-ant-oat')) {
+          key = creds.claudeAiOauth.accessToken;
+        }
+      } catch { /* credential file not available */ }
+    }
+    if (!key) key = process.env.ANTHROPIC_OAUTH_TOKEN || process.env.ANTHROPIC_API_KEY;
     const isOAuth = key?.startsWith('sk-ant-oat');
 
     if (!key) {
-      throw new Error('Anthropic API key required: set apiKey in config or ANTHROPIC_API_KEY env var');
+      throw new Error('Anthropic API key required: set OAuth token or apiKey');
     }
 
     if (isOAuth) {
@@ -34,7 +46,7 @@ export class AnthropicProvider implements LLMProvider {
     } else {
       this.client = new Anthropic({ apiKey: key });
     }
-    this.model = config.model || 'claude-sonnet-4-20250514';
+    this.model = config.model || 'claude-haiku-4-5-20251001';
   }
 
   async complete(request: LLMCompletionRequest): Promise<LLMCompletionResponse> {

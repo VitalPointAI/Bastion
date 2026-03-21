@@ -26,17 +26,36 @@ export async function resolveProviderConfig(
 
   let apiKey = llmConfig.apiKey || undefined;
 
-  // For Anthropic, prefer OAuth token over static API key
-  if (providerType === 'anthropic' && llmConfig.oauth?.connected && llmConfig.oauth?.accessToken) {
+  // For Anthropic, resolve OAuth token from credential file > env > config store
+  if (providerType === 'anthropic') {
+    let oauthToken: string | undefined;
+
+    // 1. Claude Code credential file
     try {
-      const { getValidOAuthToken } = await import('../../auth/oauth-token-refresh.js');
-      const oauthToken = await getValidOAuthToken();
-      if (oauthToken) {
-        apiKey = oauthToken;
+      const { readFileSync } = await import('fs');
+      const { homedir } = await import('os');
+      const creds = JSON.parse(readFileSync(`${homedir()}/.claude/.credentials.json`, 'utf-8'));
+      if (creds?.claudeAiOauth?.accessToken?.startsWith('sk-ant-oat')) {
+        oauthToken = creds.claudeAiOauth.accessToken;
       }
-    } catch (err) {
-      console.warn('[resolveProviderConfig] OAuth token refresh failed, falling back to apiKey:', err);
+    } catch { /* not available */ }
+
+    // 2. Env var
+    if (!oauthToken) {
+      const envToken = process.env.ANTHROPIC_OAUTH_TOKEN;
+      if (envToken?.startsWith('sk-ant-oat')) oauthToken = envToken;
     }
+
+    // 3. Config store
+    if (!oauthToken && llmConfig.oauth?.connected && llmConfig.oauth?.accessToken) {
+      try {
+        const { getValidOAuthToken } = await import('../../auth/oauth-token-refresh.js');
+        const configToken = await getValidOAuthToken();
+        if (configToken?.startsWith('sk-ant-oat')) oauthToken = configToken;
+      } catch { /* fallback */ }
+    }
+
+    if (oauthToken) apiKey = oauthToken;
   }
 
   return {

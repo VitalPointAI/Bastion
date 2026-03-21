@@ -557,10 +557,10 @@ router.get('/llm-models', async (req: Request, res: Response) => {
 function getDefaultModelsForProvider(provider: string): { id: string; name: string }[] {
   const defaults: Record<string, { id: string; name: string }[]> = {
     'anthropic': [
-      { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4' },
-      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
-      { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' },
-      { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
+      { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5 (OAuth compatible)' },
+      { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku (OAuth compatible)' },
+      { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (API key only)' },
+      { id: 'claude-opus-4-20250514', name: 'Claude Opus 4 (API key only)' },
     ],
     'openai': [
       { id: 'gpt-4o', name: 'GPT-4o' },

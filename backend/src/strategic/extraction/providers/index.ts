@@ -39,7 +39,7 @@ export function createProvider(config: ProviderConfig): LLMProvider {
 export const DEFAULT_CONFIGS: Record<ProviderType, Partial<ProviderConfig>> = {
   anthropic: {
     type: 'anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
   },
   openai: {
     type: 'openai',

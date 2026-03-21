@@ -476,12 +476,12 @@ ${state.objectives.map((o, i) => `${i + 1}. ${o}`).join('\n')}
         return { type: 'openai', model: 'gpt-4o' };
       }
       if (charProvider.toLowerCase().includes('anthropic')) {
-        return { type: 'anthropic', model: 'claude-sonnet-4-20250514' };
+        return { type: 'anthropic', model: 'claude-haiku-4-5-20251001' };
       }
     }
 
     // Default to Anthropic
-    return { type: 'anthropic', model: 'claude-sonnet-4-20250514' };
+    return { type: 'anthropic', model: 'claude-haiku-4-5-20251001' };
   }
 
   /**

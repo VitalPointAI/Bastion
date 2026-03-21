@@ -154,12 +154,39 @@ export async function getValidOAuthToken(): Promise<string | null> {
 export function startTokenRefreshTimer(): void {
   if (refreshTimer) return;
 
-  // Sync current token to shared volume on startup
+  // Sync OAuth token to shared volume on startup (for Ironclaw)
+  // Read from credential file first (freshest), then env, then config store
   (async () => {
     try {
-      const config = await configService.getLLMConfig();
-      if (config.oauth?.connected && config.oauth?.accessToken) {
-        await syncTokenToFile(config.oauth.accessToken);
+      let token: string | null = null;
+
+      // 1. Claude Code credential file
+      try {
+        const { readFileSync } = await import('fs');
+        const { homedir } = await import('os');
+        const creds = JSON.parse(readFileSync(`${homedir()}/.claude/.credentials.json`, 'utf-8'));
+        if (creds?.claudeAiOauth?.accessToken?.startsWith('sk-ant-oat')) {
+          token = creds.claudeAiOauth.accessToken;
+        }
+      } catch { /* not available */ }
+
+      // 2. Env var
+      if (!token) {
+        const envToken = process.env.ANTHROPIC_OAUTH_TOKEN;
+        if (envToken?.startsWith('sk-ant-oat')) token = envToken;
+      }
+
+      // 3. Config store
+      if (!token) {
+        const config = await configService.getLLMConfig();
+        if (config.oauth?.accessToken?.startsWith('sk-ant-oat')) {
+          token = config.oauth.accessToken;
+        }
+      }
+
+      if (token) {
+        await syncTokenToFile(token);
+        console.log('[OAuth] Token synced to shared volume for Ironclaw');
       }
     } catch { /* ignore startup sync errors */ }
   })();

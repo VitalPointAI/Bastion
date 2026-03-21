@@ -201,10 +201,10 @@ export const CONFIG_KEYS = {
 export const DEFAULT_LLM_CONFIG: LLMProviderConfig = {
   provider: 'anthropic',
   models: {
-    extraction: 'claude-sonnet-4-20250514',
-    analysis: 'claude-sonnet-4-20250514',
-    summarization: 'claude-sonnet-4-20250514',
-    redTeam: 'claude-sonnet-4-20250514',
+    extraction: 'claude-haiku-4-5-20251001',
+    analysis: 'claude-haiku-4-5-20251001',
+    summarization: 'claude-haiku-4-5-20251001',
+    redTeam: 'claude-haiku-4-5-20251001',
   },
   apiKey: '',
   maxRequestsPerMinute: 60,
