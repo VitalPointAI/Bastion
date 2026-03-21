@@ -397,6 +397,27 @@ export async function updateAdversaryCOPLayer(
     };
 
     if (layerId) {
+      // MERGE new symbols with existing ones — don't replace
+      const existingLayer = await layerStore.queryLayers({ workspaceId }).then(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (layers: any[]) => layers.find((l) => l.id === layerId),
+      );
+      if (existingLayer?.spec?.symbols) {
+        // Add new symbols, skip duplicates by entityId
+        const existingIds = new Set(existingLayer.spec.symbols.map((s: { entityId: string }) => s.entityId));
+        const merged = [
+          ...existingLayer.spec.symbols,
+          ...copSymbols.filter((s) => !existingIds.has(s.entityId)),
+        ];
+        spec.symbols = merged;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const existingAnnotations = (existingLayer.spec.customAnnotations ?? []) as any[];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const newAnnotations = (copAnnotations as any[]).filter((a) =>
+          !existingAnnotations.some((ea: any) => ea.entityId === a.entityId),
+        );
+        spec.customAnnotations = [...existingAnnotations, ...newAnnotations];
+      }
       await layerStore.updateLayerSpec(layerId, spec);
     } else {
       await layerStore.createLayer({
