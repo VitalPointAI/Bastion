@@ -414,6 +414,7 @@ export async function updateAdversaryCOPLayer(
         const existingAnnotations = (existingLayer.spec.customAnnotations ?? []) as any[];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const newAnnotations = (copAnnotations as any[]).filter((a) =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           !existingAnnotations.some((ea: any) => ea.entityId === a.entityId),
         );
         spec.customAnnotations = [...existingAnnotations, ...newAnnotations];
