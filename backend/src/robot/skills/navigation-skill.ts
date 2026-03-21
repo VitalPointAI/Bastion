@@ -121,6 +121,43 @@ function distance(a: { x: number; y: number }, b: { x: number; y: number }): num
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
+/**
+ * Find the best starting intersection for a route from `from` toward `to`.
+ * Prefers intersections that are in the general direction of the destination
+ * over the absolute nearest one, to avoid visual snap-back.
+ * Falls back to nearest if no forward intersection is close enough.
+ */
+function findStartIntersection(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  intersections: Intersection[],
+): Intersection {
+  const nearest = findNearestIntersection(from, intersections);
+  const nearestDist = distance(from, nearest);
+
+  // If nearest is very close (< 0.15 units ≈ 20m), just use it
+  if (nearestDist < 0.15) return nearest;
+
+  // Look for intersections that are close AND in the direction of the destination
+  const distFromToDest = distance(from, to);
+  let bestForward: Intersection | null = null;
+  let bestForwardDist = Infinity;
+
+  for (const ix of intersections) {
+    const d = distance(from, ix);
+    if (d > nearestDist * 2) continue; // Don't go too far from nearest
+
+    // Check if this intersection is "forward" — closer to destination than `from` is
+    const ixToDest = distance(ix, to);
+    if (ixToDest < distFromToDest && d < bestForwardDist) {
+      bestForward = ix;
+      bestForwardDist = d;
+    }
+  }
+
+  return bestForward ?? nearest;
+}
+
 function findNearestIntersection(
   point: { x: number; y: number },
   intersections: Intersection[],
@@ -144,7 +181,9 @@ function computeRoute(
   intersections: Intersection[],
   options?: { avoidPositions?: Array<{ x: number; y: number }>; preferConcealment?: boolean },
 ): Array<{ x: number; y: number }> {
-  const start = findNearestIntersection(from, intersections);
+  // Find start intersection — prefer one that's toward the destination
+  // to avoid visual snap-back to a nearer intersection behind the robot
+  const start = findStartIntersection(from, to, intersections);
   const end = findNearestIntersection(to, intersections);
 
   if (distance(start, end) < 0.2) return [to];
