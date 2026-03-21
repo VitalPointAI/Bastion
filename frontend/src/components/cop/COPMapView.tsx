@@ -36,6 +36,7 @@ import { createMilSymbolIcon } from '../mission/map/MilSymbolMarker.js';
 import { SandboxedSVG } from './SandboxedSVG.js';
 import { COPResourceLayer } from './COPResourceLayer.js';
 import { COPRobotLayer } from './COPRobotLayer.js';
+import { KillZoneOverlay } from './KillZoneOverlay.js';
 import { latLngToMGRS } from '../../lib/mgrs-coordinator.js';
 import { SwarmCOPLayer } from './SwarmCOPLayer.js';
 import type { RegisteredResource } from '../../lib/resource-registry-service.js';
@@ -293,6 +294,9 @@ export function COPMapView({
           onRobotClick={onRobotClick}
           selectedRobotId={selectedRobotId}
         />
+
+        {/* Kill zone and arcs of fire (autonomous mission) */}
+        <KillZoneOverlay />
 
         {/* Swarm formation layer (Phase 48) — renders behind robot dots */}
         <SwarmCOPLayer />

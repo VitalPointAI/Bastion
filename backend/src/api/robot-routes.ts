@@ -483,6 +483,7 @@ robotRouter.get('/scenarios', (_req, res) => {
     ...autoSequences.map((s) => ({
       id: s.id, type: 'autonomous' as const, phase: s.phase, startedAt: s.startedAt,
       phaseStartedAt: s.phaseStartedAt, detectedThreats: s.detectedThreats.length, logEntries: s.log.length,
+      killZone: (s as unknown as { killZone?: unknown }).killZone ?? null,
     })),
   ];
 
