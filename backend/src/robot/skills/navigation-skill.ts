@@ -144,6 +144,9 @@ function computeRoute(
   intersections: Intersection[],
   options?: { avoidPositions?: Array<{ x: number; y: number }>; preferConcealment?: boolean },
 ): Array<{ x: number; y: number }> {
+  // If origin and destination are close, go direct — no pathfinding needed
+  if (distance(from, to) < 0.5) return [to];
+
   const start = findNearestIntersection(from, intersections);
   const end = findNearestIntersection(to, intersections);
 
