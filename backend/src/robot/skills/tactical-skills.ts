@@ -476,5 +476,75 @@ export function createTacticalTools(): DynamicStructuredTool[] {
     },
   });
 
-  return [calculateWEZTool, selectOPTool, identifyKillZoneTool, assessThreatTool];
+  const evaluateEngagementTool = new DynamicStructuredTool({
+    name: 'evaluate_engagement',
+    description: 'Evaluate whether to engage a target based on its position relative to the kill zone, authorization status, and tactical conditions. Returns fire/hold/track decision.',
+    schema: z.object({
+      target_position: z.object({ x: z.number(), y: z.number() }),
+      kill_zone_center: z.object({ x: z.number(), y: z.number() }),
+      kill_zone_radius: z.number().optional().describe('Kill zone radius (default 0.5)'),
+      weapons_authorized: z.boolean(),
+      firing_positions: z.array(z.object({ x: z.number(), y: z.number() })).optional(),
+      target_heading: z.number().optional(),
+    }),
+    func: async ({ target_position, kill_zone_center, kill_zone_radius, weapons_authorized, firing_positions, target_heading }) => {
+      const radius = kill_zone_radius ?? 0.5;
+      const distToKZ = dist(target_position, kill_zone_center);
+      const inKillZone = distToKZ <= radius;
+
+      // Check fields of fire from firing positions
+      let clearFieldsOfFire = true;
+      if (firing_positions) {
+        for (const fp of firing_positions) {
+          const distToTarget = dist(fp, target_position);
+          if (distToTarget < 0.3) {
+            clearFieldsOfFire = false; // Too close — friendly danger
+          }
+        }
+      }
+
+      // Determine if target is approaching or departing the kill zone
+      let approaching = true;
+      if (target_heading !== undefined) {
+        // If target is heading away from the kill zone center, it's departing
+        const dx = kill_zone_center.x - target_position.x;
+        const dy = kill_zone_center.y - target_position.y;
+        const bearingToKZ = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+        const headingDiff = Math.abs(bearingToKZ - target_heading);
+        approaching = headingDiff < 90 || headingDiff > 270;
+      }
+
+      let decision: 'fire' | 'hold' | 'track';
+      let reasoning: string;
+
+      if (!weapons_authorized) {
+        decision = 'track';
+        reasoning = 'Weapons not authorized — track target and await authorization';
+      } else if (inKillZone && clearFieldsOfFire) {
+        decision = 'fire';
+        reasoning = `Target in kill zone (${distToKZ.toFixed(2)} units from center, within ${radius} radius). Weapons authorized. Clear fields of fire. ENGAGE.`;
+      } else if (approaching && distToKZ < radius * 2) {
+        decision = 'hold';
+        reasoning = `Target approaching kill zone (${distToKZ.toFixed(2)} units from center). Hold fire — let target enter kill zone for maximum effect.`;
+      } else if (!approaching) {
+        decision = 'track';
+        reasoning = 'Target moving away from kill zone — track and report';
+      } else {
+        decision = 'hold';
+        reasoning = `Target at ${distToKZ.toFixed(2)} units from kill zone — too far for effective engagement. Hold position.`;
+      }
+
+      return JSON.stringify({
+        decision,
+        reasoning,
+        target_in_kill_zone: inKillZone,
+        distance_to_kill_zone: Math.round(distToKZ * 100) / 100,
+        approaching,
+        weapons_authorized,
+        clear_fields_of_fire: clearFieldsOfFire,
+      });
+    },
+  });
+
+  return [calculateWEZTool, selectOPTool, identifyKillZoneTool, assessThreatTool, evaluateEngagementTool];
 }

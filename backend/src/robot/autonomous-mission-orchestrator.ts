@@ -752,9 +752,20 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const allRobots = [state.config.leaderId, ...state.config.followerIds];
 
     for (const robotId of allRobots) {
-      // Get robot's current position for route computation
+      // Get robot's current position — try telemetry first, then use the
+      // position the robot was dispatched to (from the tactical plan)
       const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
-      const currentPos = robot?.latest_telemetry?.position ?? state.config.homeBase;
+      let currentPos = robot?.latest_telemetry?.position;
+      if (!currentPos && plan) {
+        // Use the position the robot was sent to
+        if (robotId === state.config.leaderId) {
+          currentPos = plan.overwatch.position;
+        } else {
+          const fpIdx = state.config.followerIds.indexOf(robotId);
+          currentPos = plan.firingPositions[fpIdx]?.position;
+        }
+      }
+      if (!currentPos) currentPos = state.config.homeBase;
 
       // Compute route from current position to consolidation point
       let route: Array<{ x: number; y: number }>;
@@ -1047,14 +1058,51 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       const closestThreatY = Math.min(...state.detectedThreats.map((t) => t.detectedAt.y));
       const distToKillZone = closestThreatY - killZoneEntryY;
 
-      if (distToKillZone < 0.5 && !lethalRequested) {
-        // Tanks approaching kill zone — request lethal authorization
-        lethalRequested = true;
-        clearInterval(approachInterval);
-        const avgX = state.detectedThreats.reduce((s, t) => s + t.detectedAt.x, 0) / state.detectedThreats.length;
-        const threatGrid = roomToGridRef(avgX, closestThreatY);
-        this.logPhase(state, `Enemy approaching kill zone at grid ${threatGrid} — requesting lethal authorization`);
-        await this.attemptEngagement(seqId);
+      const isLethalAuthorized = (state as unknown as { lethalAuthorized?: boolean }).lethalAuthorized;
+
+      // Use the engagement evaluation skill to decide what to do
+      try {
+        const { createTacticalTools } = await import('./skills/tactical-skills.js');
+        const tacTools = createTacticalTools();
+        const engageTool = tacTools.find((t) => t.name === 'evaluate_engagement');
+        if (engageTool) {
+          const fps = state.tacticalPlan?.firingPositions ?? [];
+          const kzCenter = { x: (fps[0]?.position.x ?? 2.5 + (fps[1]?.position.x ?? 2.5)) / 2, y: fpY };
+          const closestThreat = state.detectedThreats.reduce((best, t) =>
+            t.detectedAt.y < best.detectedAt.y ? t : best, state.detectedThreats[0]);
+
+          const raw = await engageTool.invoke({
+            target_position: closestThreat.detectedAt,
+            kill_zone_center: kzCenter,
+            kill_zone_radius: 0.5,
+            weapons_authorized: isLethalAuthorized ?? false,
+            firing_positions: fps.map((fp) => fp.position),
+            target_heading: 180, // Moving south
+          });
+          const result = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
+
+          if (result.decision === 'hold' && !lethalRequested && distToKillZone < 0.8) {
+            // Request authorization while holding
+            lethalRequested = true;
+            const threatGrid = roomToGridRef(closestThreat.detectedAt.x, closestThreatY);
+            this.logPhase(state, `${result.reasoning} — requesting lethal authorization at grid ${threatGrid}`);
+            await this.attemptEngagement(seqId);
+          } else if (result.decision === 'fire') {
+            clearInterval(approachInterval);
+            this.logPhase(state, `ENGAGE: ${result.reasoning}`);
+            await this.executeEngagement(seqId);
+          }
+        }
+      } catch {
+        // Skill evaluation failed — use simple distance check as last resort
+        if (distToKillZone < 0.5 && !lethalRequested) {
+          lethalRequested = true;
+          await this.attemptEngagement(seqId);
+        }
+        if (distToKillZone <= 0 && isLethalAuthorized) {
+          clearInterval(approachInterval);
+          await this.executeEngagement(seqId);
+        }
       }
 
       // Safety: stop after 5 minutes
@@ -1085,8 +1133,11 @@ class AutonomousMissionOrchestrator extends EventEmitter {
             this.logPhase(state, 'ResourceAllocation APPROVED by DAO');
             await this.positionFollowers(seqId);
           } else {
-            this.logPhase(state, 'StrikeAuthorization APPROVED by commander');
-            await this.executeEngagement(seqId);
+            this.logPhase(state, 'StrikeAuthorization APPROVED — weapons free, awaiting targets in kill zone');
+            // Don't engage immediately — set flag so engagement triggers
+            // when enemy tanks actually enter the kill zone
+            (state as unknown as { lethalAuthorized: boolean }).lethalAuthorized = true;
+            this.publishUpdate(state);
           }
         } else if (gate.status === 'rejected') {
           clearInterval(interval);

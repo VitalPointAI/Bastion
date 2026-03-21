@@ -133,6 +133,7 @@ const tacToolHandlerMap: Record<string, string> = {
   'calculate_weapons_engagement_zone': 'tactical/calculateWEZ',
   'select_observation_post': 'tactical/selectOP',
   'identify_kill_zone': 'tactical/identifyKillZone',
+  'evaluate_engagement': 'tactical/evaluateEngagement',
 };
 
 // ---------------------------------------------------------------------------
