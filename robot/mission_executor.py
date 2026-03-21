@@ -261,9 +261,23 @@ class MissionExecutor:
     # Vision loop helper
     # ------------------------------------------------------------------
 
-    async def _vision_loop(self, mission_id: str, stop_event: asyncio.Event) -> None:
-        """Run detection loop at profile-determined cadence. Sends VisionMsg on detections."""
+    async def _vision_loop(
+        self, mission_id: str, stop_event: asyncio.Event,
+        obstacle_event: Optional[asyncio.Event] = None,
+    ) -> None:
+        """Run detection loop at profile-determined cadence. Sends VisionMsg on detections.
+
+        If *obstacle_event* is provided, large centered detections set the event
+        so the patrol behaviour can stop and perform an avoidance manoeuvre.
+        """
         cadence_sec = (self._vision_config.vision_cadence_ms / 1000.0) if self._vision_config else 0.5
+        # Obstacle thresholds (pixel-space):
+        # – bbox occupies > 30 % of frame width → "close"
+        # – centre_x within ±20 % of frame centre → "ahead"
+        FRAME_W = 640  # assumed capture width
+        OBS_WIDTH_FRAC = 0.30
+        OBS_CENTRE_TOL = 0.20 * FRAME_W  # ±128 px
+
         while not stop_event.is_set():
             try:
                 detections = await self._vision_engine.detect_once(self._camera)
@@ -289,6 +303,25 @@ class MissionExecutor:
                         count=len(detections),
                         classes=[d.class_desc if hasattr(d, 'class_desc') else str(d) for d in detections],
                     )
+
+                # Obstacle check — signal patrol to dodge if something big is ahead
+                if obstacle_event and detections:
+                    for det in detections:
+                        bbox = det.bbox if hasattr(det, 'bbox') else {}
+                        left = bbox.get("left", 0)
+                        right = bbox.get("right", 0)
+                        box_w = right - left
+                        cx = det.center_x if hasattr(det, 'center_x') and det.center_x else (left + right) / 2
+
+                        if box_w > FRAME_W * OBS_WIDTH_FRAC and abs(cx - FRAME_W / 2) < OBS_CENTRE_TOL:
+                            log.info(
+                                "mission_executor.obstacle_detected",
+                                class_desc=det.class_desc,
+                                box_w=box_w,
+                                cx=cx,
+                            )
+                            obstacle_event.set()
+                            break
             except Exception as exc:
                 log.warning("mission_executor.vision_loop.error", error=str(exc))
             await asyncio.sleep(cadence_sec)
@@ -352,11 +385,71 @@ class MissionExecutor:
                 {"result": "engagement_denied"},
             )
 
+    async def _drive_with_avoidance(
+        self,
+        target_x: float,
+        target_y: float,
+        speed: int,
+        obstacle_event: asyncio.Event,
+    ) -> None:
+        """Drive toward (target_x, target_y) with obstacle avoidance.
+
+        Breaks the journey into ~0.3 m segments. Between segments the
+        ``obstacle_event`` is checked. If set, the robot stops, backs up
+        slightly, turns 45-90° away from the obstacle, clears the event,
+        and re-targets the waypoint. Always makes forward progress toward
+        the goal.
+        """
+        import math
+
+        MAX_AVOIDANCE = 3  # max consecutive avoidance manoeuvres per waypoint
+        avoidance_count = 0
+
+        while True:
+            cx, cy = self._driver.position
+            dx = target_x - cx
+            dy = target_y - cy
+            dist = math.sqrt(dx**2 + dy**2)
+
+            if dist < 0.1:
+                break  # close enough
+
+            # Drive a short segment (max 0.3 m or remaining distance)
+            seg_dist = min(dist, 0.3)
+            heading = math.degrees(math.atan2(dx, dy)) % 360
+            speed_ms = max(0.1, (speed / 255) * 1.0)
+            seg_duration = seg_dist / speed_ms
+
+            # Drive the segment
+            await self._driver.drive(speed=speed, heading=heading, duration_sec=seg_duration)
+
+            # Check for obstacle between segments
+            if obstacle_event.is_set() and avoidance_count < MAX_AVOIDANCE:
+                avoidance_count += 1
+                obstacle_event.clear()
+                log.info(
+                    "mission_executor.avoiding_obstacle",
+                    attempt=avoidance_count,
+                    heading=heading,
+                )
+
+                # Back up slightly
+                reverse_heading = (heading + 180) % 360
+                await self._driver.drive(speed=60, heading=reverse_heading, duration_sec=0.5)
+
+                # Turn away (alternate left/right)
+                turn_offset = 60 if avoidance_count % 2 == 1 else -60
+                avoidance_heading = (heading + turn_offset) % 360
+                await self._driver.drive(speed=speed, heading=avoidance_heading, duration_sec=0.8)
+
+                # Re-evaluate distance to target on next loop iteration
+
     async def _execute_patrol_route(self, mission: MissionJSON) -> None:
         """
-        Patrol-route behavior.
+        Patrol-route behavior with obstacle avoidance.
 
-        Drives to each waypoint in sequence, emitting telemetry on arrival.
+        Drives to each waypoint in sequence. The vision loop detects obstacles
+        and signals the drive to stop and manoeuvre around them.
         """
         log_ctx = log.bind(mission_id=mission.mission_id)
         waypoints = mission.params.waypoints
@@ -366,10 +459,11 @@ class MissionExecutor:
         await self._driver.set_leds(0, 200, 0)  # green: patrolling
 
         stop_event = asyncio.Event()
+        obstacle_event = asyncio.Event()
         vision_task = None
         if self._vision_engine:
             vision_task = asyncio.ensure_future(
-                self._vision_loop(mission.mission_id, stop_event)
+                self._vision_loop(mission.mission_id, stop_event, obstacle_event)
             )
 
         try:
@@ -381,7 +475,10 @@ class MissionExecutor:
                     x=wp.x,
                     y=wp.y,
                 )
-                await self._driver.drive_to_point(wp.x, wp.y, speed)
+                if self._vision_engine:
+                    await self._drive_with_avoidance(wp.x, wp.y, speed, obstacle_event)
+                else:
+                    await self._driver.drive_to_point(wp.x, wp.y, speed)
                 await self._emit_telemetry(mission.mission_id)
         finally:
             stop_event.set()
@@ -393,7 +490,7 @@ class MissionExecutor:
 
     async def _execute_recon_area(self, mission: MissionJSON) -> None:
         """
-        Recon-area behavior.
+        Recon-area behavior with obstacle avoidance.
 
         Generates a boustrophedon sweep path over the specified area and drives
         each waypoint while running a concurrent vision detection loop.
@@ -410,16 +507,15 @@ class MissionExecutor:
         await self._driver.set_leds(0, 0, 200)  # blue: recon
 
         stop_event = asyncio.Event()
+        obstacle_event = asyncio.Event()
         vision_task = None
         if self._vision_engine:
             vision_task = asyncio.ensure_future(
-                self._vision_loop(mission.mission_id, stop_event)
+                self._vision_loop(mission.mission_id, stop_event, obstacle_event)
             )
 
         try:
             # Continue sweeping until a threat is detected or mission is cancelled.
-            # The sweep path repeats (reverse direction each pass) to maintain
-            # continuous coverage of the area until the enemy is found.
             sweep_count = 0
             while not stop_event.is_set():
                 sweep_count += 1
@@ -439,7 +535,10 @@ class MissionExecutor:
                         x=wp.x,
                         y=wp.y,
                     )
-                    await self._driver.drive_to_point(wp.x, wp.y, speed)
+                    if self._vision_engine:
+                        await self._drive_with_avoidance(wp.x, wp.y, speed, obstacle_event)
+                    else:
+                        await self._driver.drive_to_point(wp.x, wp.y, speed)
                     await self._emit_telemetry(mission.mission_id)
         finally:
             stop_event.set()

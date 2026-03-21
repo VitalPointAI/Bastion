@@ -1185,6 +1185,23 @@ export class RobotMissionService {
       console.log(`[RobotMissionService] Vision keyframe from ${msg.robot_id}: ~${sizeKb} KB`);
     }
 
+    // Directly notify the autonomous orchestrator of vision detections.
+    // This bypasses the message bus (which routes through DB + ABAC + pg-boss)
+    // to ensure reliable, low-latency threat detection during missions.
+    if (msg.detections.length > 0) {
+      import('./autonomous-mission-orchestrator.js').then(({ getAutonomousOrchestrator }) => {
+        getAutonomousOrchestrator().handleVisionDetection(
+          msg.robot_id,
+          msg.detections.map((d) => ({
+            class_desc: d.class_desc,
+            confidence: d.confidence,
+            center_x: d.center_x,
+            center_y: d.center_y,
+          })),
+        );
+      }).catch(() => { /* orchestrator not available */ });
+    }
+
     // Process threat detections → COP layer + knowledge graph (non-blocking)
     if (msg.detections.length > 0) {
       const robotTelemetry = robot?.latest_telemetry;

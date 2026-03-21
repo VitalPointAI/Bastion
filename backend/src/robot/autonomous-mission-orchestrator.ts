@@ -205,6 +205,39 @@ class AutonomousMissionOrchestrator extends EventEmitter {
   }
 
   /**
+   * Direct notification from robot-mission-service when vision detections arrive.
+   * Bypasses the message bus for reliable, low-latency threat detection.
+   */
+  handleVisionDetection(
+    robotId: string,
+    detections: Array<{ class_desc: string; confidence: number; center_x?: number; center_y?: number; estimated_position?: { x: number; y: number } }>,
+  ): void {
+    if (!detections || detections.length === 0) return;
+
+    const svc = getRobotMissionService();
+    const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
+    const robotPos = robot?.latest_telemetry?.position ?? { x: 2.5, y: 2.5 };
+
+    for (const det of detections) {
+      // Use estimated enemy position if available, otherwise robot's position
+      const enemyPos = det.estimated_position ?? robotPos;
+      const threat: ThreatInfo = {
+        entityId: `DET-${det.class_desc.replace(/\s+/g, '-')}-${Date.now()}`,
+        classDesc: det.class_desc,
+        confidence: det.confidence,
+        detectedAt: { x: enemyPos.x, y: enemyPos.y },
+      };
+
+      for (const [seqId, state] of this.sequences) {
+        if (state.config.leaderId === robotId && (state.phase === 'recon' || state.phase === 'assess')) {
+          console.log(`[AutonomousOrchestrator] DIRECT threat notification: ${det.class_desc} conf=${det.confidence.toFixed(2)} from ${robotId}, phase=${state.phase}`);
+          this.handleThreatDetection(seqId, threat);
+        }
+      }
+    }
+  }
+
+  /**
    * Commander orders return to base (used in shadow mode).
    */
   async orderReturnToBase(sequenceId: string): Promise<boolean> {
@@ -245,6 +278,19 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       this.logPhase(state, `Additional threat logged (${state.detectedThreats.length} total)`);
       this.publishUpdate(state);
       return;
+    }
+
+    // Cancel the recon patrol immediately — the leader must stop searching
+    const reconMissionId = state.missions['recon_leader'];
+    if (reconMissionId) {
+      const svc = getRobotMissionService();
+      const leaderRobot = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId);
+      if (leaderRobot?.ws && leaderRobot.ws.readyState === 1) {
+        try {
+          leaderRobot.ws.send(JSON.stringify({ type: 'mission:cancel', robot_id: state.config.leaderId }));
+          this.logPhase(state, 'Recon patrol CANCELLED — leader stopping to assess threat');
+        } catch { /* non-fatal */ }
+      }
     }
 
     // Wait briefly for additional detections to accumulate
@@ -1372,9 +1418,6 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         const detections = payload.detections as Array<{ class_desc: string; confidence: number; center_x?: number; center_y?: number }> | undefined;
         if (!detections || detections.length === 0) return;
 
-        const threatClasses = ['t-90', 't90', 'chn-99g', 'chn99g', 'tank', 'military vehicle',
-          'armored vehicle', 't-99', 'zbd-04', 'zbd04', 'btr-82', 'btr82', 'type99', 'ztz99'];
-
         const robotId = payload.robot_id as string;
 
         // Get robot position for threat location
@@ -1383,14 +1426,16 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         const robotPos = robot?.latest_telemetry?.position ?? { x: 2.5, y: 2.5 };
 
         for (const det of detections) {
-          const classKey = det.class_desc.toLowerCase().replace(/[^a-z0-9 -]/g, '');
-          if (!threatClasses.includes(classKey)) continue;
+          // Treat ANY detection with confidence > 0.3 as a potential threat.
+          // Custom YOLO models have unpredictable class names; the model was
+          // specifically trained on tanks so any detection is relevant.
+          if (det.confidence < 0.3) continue;
 
           // Use estimated enemy position if available (placed at range by simulator),
           // otherwise fall back to robot's position
           const enemyPos = (det as { estimated_position?: { x: number; y: number } }).estimated_position ?? robotPos;
           const threat: ThreatInfo = {
-            entityId: `DET-${classKey}-${Date.now()}`,
+            entityId: `DET-${det.class_desc.replace(/[^a-zA-Z0-9-]/g, '')}-${Date.now()}`,
             classDesc: det.class_desc,
             confidence: det.confidence,
             detectedAt: { x: enemyPos.x, y: enemyPos.y },
