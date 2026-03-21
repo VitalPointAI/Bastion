@@ -80,6 +80,7 @@ class MissionExecutor:
 
         self.current_mission: Optional[MissionJSON] = None
         self.current_state: Optional[MissionState] = None
+        self._mission_task: Optional[asyncio.Task] = None
 
         # Event set when an authorization response arrives from Bastion
         self._auth_event: asyncio.Event = asyncio.Event()
@@ -237,7 +238,15 @@ class MissionExecutor:
         log.info("mission_executor.auth_response", approved=approved)
 
     async def abort(self) -> None:
-        """Immediately stop the robot and send a failed state transition."""
+        """Cancel the running mission task and stop the robot immediately."""
+        # Cancel the running mission task — this triggers CancelledError
+        # which the execute_mission dispatcher catches and transitions to failed.
+        if self._mission_task and not self._mission_task.done():
+            self._mission_task.cancel()
+            try:
+                await self._mission_task
+            except (asyncio.CancelledError, Exception):
+                pass
         await self._driver.safe_stop()
         if self.current_mission:
             await self._transition(
@@ -245,6 +254,7 @@ class MissionExecutor:
                 MissionState.failed,
                 {"reason": "Mission aborted"},
             )
+            self.current_mission = None
         log.info("mission_executor.aborted")
 
     # ------------------------------------------------------------------

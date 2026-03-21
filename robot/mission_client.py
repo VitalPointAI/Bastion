@@ -369,8 +369,9 @@ async def receive_loop(
                         log.warning("mission_client.pre_flight_rejected", reason=rejection)
                         await executor._transition(mission.mission_id, "rejected", {"reason": rejection})
                         continue
-                    # Run mission in a background task so receive loop stays responsive
-                    asyncio.create_task(
+                    # Run mission in a background task so receive loop stays responsive.
+                    # Store the task ref so abort() can cancel it on mission:cancel.
+                    executor._mission_task = asyncio.create_task(
                         executor.execute_mission(mission),
                         name=f"mission-{mission.mission_id}",
                     )
@@ -411,20 +412,18 @@ async def receive_loop(
 
             elif msg_type == "robot:manual_stop":
                 log.info("mission_client.manual_stop")
-                asyncio.create_task(_driver.safe_stop())
+                # If a mission is active, abort it (cancels task + stops motors).
+                # Otherwise just stop the motors directly.
+                if executor.current_mission:
+                    await executor.abort()
+                else:
+                    asyncio.create_task(_driver.safe_stop())
 
             elif msg_type == "mission:cancel":
                 log.info("mission_client.mission_cancel")
-                # Stop the robot immediately
-                asyncio.create_task(_driver.safe_stop())
-                # Cancel the active mission task
-                if executor.current_mission:
-                    await executor._transition(
-                        executor.current_mission.mission_id,
-                        "failed",
-                        {"reason": "Mission cancelled by commander"},
-                    )
-                    executor.current_mission = None
+                # Abort cancels the running asyncio task (stopping drive loops),
+                # stops the motors, and transitions the mission to failed.
+                await executor.abort()
 
             elif msg_type == "swarm:add_resource":
                 log.info("mission_client.received.swarm_add_resource", robot_id=msg.get("robot_id"))

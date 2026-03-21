@@ -119,7 +119,13 @@ class VisionEngine:
             from ultralytics import YOLO
 
             self._model = YOLO(model)
-            log.info("vision_engine.yolo_loaded", model=model)
+            log.info(
+                "vision_engine.yolo_loaded",
+                model=model,
+                threshold=threshold,
+                imgsz=imgsz,
+                classes=getattr(self._model, 'names', None),
+            )
         except (ImportError, ModuleNotFoundError):
             log.warning(
                 "ultralytics not available — falling back to MockVisionEngine",
@@ -142,35 +148,31 @@ class VisionEngine:
         """
         Synchronous: capture a frame from *camera* and run YOLO inference.
 
+        Image processing matches test_detect.py exactly:
+        1. CUDA → numpy via jetson_utils.cudaToNumpy
+        2. RGB → BGR via cv2.cvtColor (unconditional)
+        3. Flip 180° via cv2.flip (unconditional)
+
         This method is designed to be called via ``asyncio.to_thread`` so that
         blocking GPU inference does not stall the event loop.
         """
         img = camera.Capture()
         if img is None:
+            log.debug("vision_engine.capture_returned_none")
             return []
 
-        # Convert CUDA image to numpy, fix color channels, flip for upside-down camera
         import cv2
 
-        # Step 1: CUDA to numpy
+        # Convert CUDA image to numpy — same as test_detect.py
         try:
             import jetson_utils
             img_np = jetson_utils.cudaToNumpy(img)
         except ImportError:
             img_np = img  # Already numpy (e.g. from OpenCV capture)
 
-        # Step 2: RGB to BGR (jetson_utils returns RGB, YOLO expects BGR)
-        try:
-            if hasattr(img_np, 'shape') and len(img_np.shape) == 3 and img_np.shape[2] >= 3:
-                img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-        except Exception as e:
-            log.warning("vision_engine.color_convert_failed", error=str(e))
-
-        # Step 3: Flip 180° (camera mounted upside down)
-        try:
-            img_np = cv2.flip(img_np, -1)
-        except Exception as e:
-            log.warning("vision_engine.flip_failed", error=str(e))
+        # RGB → BGR then flip 180° — unconditional, matching test_detect.py
+        img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        img_np = cv2.flip(img_np, -1)
 
         raw_results = self._model(img_np, conf=self._threshold, imgsz=self._imgsz, verbose=False)
         results: List[DetectionResult] = []
@@ -232,17 +234,20 @@ class VisionEngine:
             img = camera.Capture()
             if img is None:
                 return None
-            # Flip 180° for upside-down camera, then compress
             try:
-                import jetson_utils
                 import cv2
-                img_np = jetson_utils.cudaToNumpy(img)
+                # Same pipeline as _capture_and_detect: CUDA→numpy, RGB→BGR, flip
+                try:
+                    import jetson_utils
+                    img_np = jetson_utils.cudaToNumpy(img)
+                except ImportError:
+                    img_np = img
+                img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
                 img_np = cv2.flip(img_np, -1)
-                # Convert RGB to BGR for cv2 encoding
-                img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-                _, jpeg = cv2.imencode('.jpg', img_bgr, [cv2.IMWRITE_JPEG_QUALITY, quality])
+                _, jpeg = cv2.imencode('.jpg', img_np, [cv2.IMWRITE_JPEG_QUALITY, quality])
                 return jpeg.tobytes()
-            except (ImportError, Exception):
+            except Exception as exc:
+                log.warning("vision_engine.keyframe_encode_failed", error=str(exc))
                 return camera.capture_jpeg(img_cuda=img, quality=quality)
 
         return await asyncio.to_thread(_do_capture)

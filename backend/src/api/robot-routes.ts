@@ -553,7 +553,9 @@ robotRouter.post('/scenarios/:sequenceId/stop', async (req, res) => {
     (state as unknown as Record<string, unknown>).phase = 'complete';
     (state as unknown as Record<string, unknown>).phaseStartedAt = new Date().toISOString();
 
-    // Send stop command to all robots in the sequence
+    // Send cancel + stop to all robots in the sequence.
+    // mission:cancel triggers executor.abort() which cancels the running task.
+    // robot:manual_stop is a fallback that also calls abort if a mission is active.
     const svc = getRobotMissionService();
     const allRobots = [state.config.leaderId, ...state.config.followerIds];
     for (const robotId of allRobots) {
@@ -561,7 +563,10 @@ robotRouter.post('/scenarios/:sequenceId/stop', async (req, res) => {
       if (robot?.ws && robot.ws.readyState === 1) {
         try {
           robot.ws.send(JSON.stringify({ type: 'mission:cancel', robot_id: robotId }));
+          robot.ws.send(JSON.stringify({ type: 'robot:manual_stop', robot_id: robotId }));
         } catch { /* non-fatal */ }
+      } else {
+        console.warn(`[robot-routes] stop: robot ${robotId} not connected (ws state: ${robot?.ws?.readyState})`);
       }
     }
 

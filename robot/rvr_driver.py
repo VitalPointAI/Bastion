@@ -92,9 +92,6 @@ class RVRDriver:
         self._position = (x, y)
         log.info("rvr_driver.position_set", x=x, y=y)
 
-        if simulate:
-            log.info("rvr_driver.simulate_mode", serial_port=serial_port)
-
     # ------------------------------------------------------------------
     # Helper: run blocking SDK call in executor
     # ------------------------------------------------------------------
