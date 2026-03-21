@@ -15,6 +15,16 @@ import os
 import sys
 import cv2
 
+# Load .env from robot directory
+_env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith('#') and '=' in _line:
+                _k, _v = _line.split('=', 1)
+                os.environ.setdefault(_k.strip(), _v.strip())
+
 # Configuration from env or defaults
 MODEL = os.environ.get("MODEL", os.environ.get("VISION_MODEL", "best.engine"))
 THRESHOLD = float(os.environ.get("THRESHOLD", os.environ.get("VISION_THRESHOLD", "0.3")))
@@ -38,24 +48,42 @@ except ImportError:
 model = YOLO(MODEL)
 print(f"Model loaded. Classes: {model.names}")
 
-# Open camera
-cap = cv2.VideoCapture(CAMERA)
-if not cap.isOpened():
-    # Try GStreamer pipeline for Jetson CSI camera
-    gst = f"nvarguscamerasrc sensor-id={CAMERA} ! video/x-raw(memory:NVMM),width=640,height=480,framerate=30/1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! video/x-raw,format=BGR ! appsink"
-    cap = cv2.VideoCapture(gst, cv2.CAP_GSTREAMER)
+# Open camera via jetson_utils (works with Jetson CSI cameras)
+try:
+    import jetson_utils
+    import numpy as np
+    cam = jetson_utils.videoSource(f'csi://{CAMERA}', argv=['--input-flip=rotate-180'])
+    use_jetson = True
+    print("Using jetson_utils CSI camera")
+except (ImportError, Exception):
+    use_jetson = False
+    cap = cv2.VideoCapture(CAMERA)
     if not cap.isOpened():
         print(f"ERROR: Cannot open camera {CAMERA}")
         sys.exit(1)
-    print("Using GStreamer CSI camera")
-else:
     print("Using V4L2 camera")
 
 frame_count = 0
 while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("Failed to grab frame")
+    try:
+        if use_jetson:
+            cuda_img = cam.Capture()
+            if cuda_img is None:
+                print("Failed to grab frame")
+                break
+            # Convert CUDA image to numpy array for OpenCV/YOLO
+            frame = jetson_utils.cudaToNumpy(cuda_img)
+            # jetson_utils returns RGB, YOLO expects BGR
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            # Flip 180 degrees (camera is mounted upside down)
+            frame = cv2.flip(frame, -1)
+        else:
+            ret, frame = cap.read()
+            if not ret:
+                print("Failed to grab frame")
+                break
+    except Exception as e:
+        print(f"Camera error: {e}")
         break
 
     frame_count += 1
@@ -89,6 +117,9 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-cap.release()
+if use_jetson:
+    cam.Close()
+else:
+    cap.release()
 cv2.destroyAllWindows()
 print("Done")

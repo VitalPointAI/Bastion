@@ -85,9 +85,11 @@ class Camera:
             return
 
         try:
-            import jetson.utils  # noqa: F401  — Jetson hardware only
+            import jetson_utils  # noqa: F401  — Jetson hardware only
 
-            self._source = jetson.utils.videoSource(f"csi://{sensor_id}")
+            self._source = jetson_utils.videoSource(
+                f"csi://{sensor_id}", argv=['--input-flip=rotate-180']
+            )
         except (ImportError, ModuleNotFoundError):
             log.warning(
                 "jetson.utils not available — falling back to MockCamera",
@@ -141,14 +143,14 @@ class Camera:
 
         # Real Jetson path — requires jetson.utils and OpenCV
         try:
-            import jetson.utils  # noqa: F401
+            import jetson_utils  # noqa: F401
             import numpy as np  # noqa: F401
             import cv2  # noqa: F401
 
             frame = img_cuda if img_cuda is not None else self.Capture()
             if frame is None:
                 return None
-            img_np = jetson.utils.cudaToNumpy(frame)
+            img_np = jetson_utils.cudaToNumpy(frame)
             h, w = img_np.shape[:2]
             if w > max_width:
                 scale = max_width / w

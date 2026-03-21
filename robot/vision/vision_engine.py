@@ -151,8 +151,8 @@ class VisionEngine:
 
         # Convert CUDA image to numpy if needed
         try:
-            import jetson.utils
-            img_np = jetson.utils.cudaToNumpy(img)
+            import jetson_utils
+            img_np = jetson_utils.cudaToNumpy(img)
         except (ImportError, Exception):
             img_np = img  # Already numpy (e.g. from OpenCV capture)
 
