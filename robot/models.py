@@ -74,7 +74,7 @@ class MissionJSON(BaseModel):
     params: MissionParams
     issued_by: str
     timestamp: datetime
-    auth_token: str
+    auth_token: Optional[str] = None
 
 
 class StateUpdateMsg(BaseModel):
