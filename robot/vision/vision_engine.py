@@ -152,7 +152,10 @@ class VisionEngine:
         # Convert CUDA image to numpy if needed
         try:
             import jetson_utils
+            import cv2
             img_np = jetson_utils.cudaToNumpy(img)
+            # Camera is mounted upside down — flip 180° to match training orientation
+            img_np = cv2.flip(img_np, -1)
         except (ImportError, Exception):
             img_np = img  # Already numpy (e.g. from OpenCV capture)
 
@@ -214,7 +217,20 @@ class VisionEngine:
         # Run blocking capture + compression in thread pool
         def _do_capture() -> Optional[bytes]:
             img = camera.Capture()
-            return camera.capture_jpeg(img_cuda=img, quality=quality)
+            if img is None:
+                return None
+            # Flip 180° for upside-down camera, then compress
+            try:
+                import jetson_utils
+                import cv2
+                img_np = jetson_utils.cudaToNumpy(img)
+                img_np = cv2.flip(img_np, -1)
+                # Convert RGB to BGR for cv2 encoding
+                img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+                _, jpeg = cv2.imencode('.jpg', img_bgr, [cv2.IMWRITE_JPEG_QUALITY, quality])
+                return jpeg.tobytes()
+            except (ImportError, Exception):
+                return camera.capture_jpeg(img_cuda=img, quality=quality)
 
         return await asyncio.to_thread(_do_capture)
 
