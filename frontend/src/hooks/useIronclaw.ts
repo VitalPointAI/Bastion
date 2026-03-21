@@ -161,17 +161,34 @@ export function useIronclaw(
 
         // Skip user messages (already added optimistically) and deduplicate
         if (chatMsg.sender === 'user') return;
+
+        // Filter out empty messages and <think> tag artifacts
+        const cleanContent = (chatMsg.content ?? '')
+          .replace(/<think>[\s\S]*?<\/think>/g, '')
+          .replace(/<\/?think>/g, '')
+          .trim();
+
+        // Skip if message has no visible content (thinking artifacts, empty intermediates)
+        // unless it has an actionCard or suggestion (those are meaningful without text)
+        if (!cleanContent && !chatMsg.actionCard && !chatMsg.suggestion && !chatMsg.stepProgress) {
+          // Still a valid response — don't clear loading (Ironclaw is still working)
+          return;
+        }
+
+        // Update content to stripped version
+        chatMsg.content = cleanContent || chatMsg.content;
+
         setMessages((prev) => {
           if (prev.some((m) => m.id === chatMsg.id)) return prev;
           return [...prev, chatMsg];
         });
 
-        // Mark unread if drawer is closed
+        // Mark unread if drawer is closed — only for real messages
         if (!isOpenRef.current) {
           setHasUnread(true);
         }
 
-        // Clear loading -- response arrived from Ironclaw
+        // Clear loading -- real response arrived from Ironclaw
         setIsLoading(false);
       } catch {
         // Non-JSON or unexpected message -- ignore

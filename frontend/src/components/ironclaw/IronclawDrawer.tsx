@@ -5,7 +5,7 @@
  * z-index 950. Slides in from right with overlay backdrop.
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type {
   IronclawChatMessage,
   IronclawTaskData,
@@ -392,16 +392,7 @@ export function IronclawDrawer({
           })}
 
           {/* Loading indicator */}
-          {isLoading && (
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-              <span className="text-xs text-gray-400">Ironclaw is thinking...</span>
-            </div>
-          )}
+          {isLoading && <ThinkingIndicator />}
 
           <div ref={messagesEndRef} />
         </div>
@@ -498,5 +489,59 @@ export function IronclawDrawer({
         </div>
       </div>
     </>
+  );
+}
+
+// ── Thinking Indicator ──────────────────────────────────────────────────────
+
+const THINKING_PHRASES = [
+  'Analyzing situation...',
+  'Assessing threat posture...',
+  'Evaluating courses of action...',
+  'Reviewing intelligence...',
+  'Considering operational factors...',
+  'Cross-referencing doctrine...',
+  'Synthesizing assessment...',
+  'Developing recommendation...',
+  'Checking mission parameters...',
+  'Correlating indicators...',
+  'Reviewing commander\'s intent...',
+  'Applying operational art...',
+  'Evaluating risk factors...',
+  'Coordinating staff input...',
+  'Processing information...',
+  'Examining decision space...',
+  'Analyzing center of gravity...',
+  'Reviewing decisive points...',
+  'Assessing force ratios...',
+  'Formulating response...',
+];
+
+function ThinkingIndicator() {
+  const [phraseIndex, setPhraseIndex] = useState(() => Math.floor(Math.random() * THINKING_PHRASES.length));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhraseIndex((prev) => (prev + 1) % THINKING_PHRASES.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const phrase = useMemo(() => THINKING_PHRASES[phraseIndex], [phraseIndex]);
+
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <div className="flex gap-1">
+        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+      </div>
+      <span
+        className="text-xs text-amber-400/80 italic"
+        style={{ transition: 'opacity 0.3s', minWidth: 160 }}
+      >
+        {phrase}
+      </span>
+    </div>
   );
 }
