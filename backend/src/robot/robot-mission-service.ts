@@ -334,16 +334,11 @@ export class RobotMissionService {
       console.warn('[RobotMissionService] Failed to log activity:', err),
     );
 
-    // Create governance gate when mission enters awaiting_auth
-    // Skip if an autonomous orchestrator sequence is managing this mission
-    // (the orchestrator creates its own gates — don't duplicate)
+    // Gate creation for awaiting_auth is handled by the autonomous orchestrator
+    // when it manages the mission. For non-orchestrated missions (standalone
+    // robot commands), the mission service creates the gate.
     if (state === RobotMissionState.awaiting_auth) {
-      const { getAutonomousOrchestrator } = await import('./autonomous-mission-orchestrator.js');
-      const orchestrator = getAutonomousOrchestrator();
-      const isManaged = orchestrator.listSequences().some(
-        (s: { missions: Record<string, string> }) => Object.values(s.missions).includes(mission_id),
-      );
-      if (!isManaged) {
+      if (!await this.isOrchestratorManaged(mission_id)) {
         this.createAuthGate(robot_id, mission_id).catch((err) =>
           console.error('[RobotMissionService] Failed to create auth gate:', err),
         );
@@ -1793,21 +1788,28 @@ Return ONLY valid JSON, no markdown.`;
     // Log to activity feed
     this.logMissionActivity(robot_id, mission_id, stateEnum).catch(() => {});
 
-    // Create governance gate when entering awaiting_auth
-    // Skip if managed by autonomous orchestrator (it creates its own gates)
+    // Gate creation for awaiting_auth — deferred to the single check
     if (stateEnum === RobotMissionState.awaiting_auth) {
-      try {
-        const { getAutonomousOrchestrator } = await import('./autonomous-mission-orchestrator.js');
-        const orch = getAutonomousOrchestrator();
-        const managed = orch.listSequences().some(
-          (s: { missions: Record<string, string> }) => Object.values(s.missions).includes(mission_id),
-        );
-        if (!managed) {
-          this.createAuthGate(robot_id, mission_id).catch(() => {});
-        }
-      } catch {
+      if (!await this.isOrchestratorManaged(mission_id)) {
         this.createAuthGate(robot_id, mission_id).catch(() => {});
       }
+    }
+  }
+
+  /**
+   * Check if a mission is managed by the autonomous orchestrator.
+   * When managed, the orchestrator handles all gate decisions — the mission
+   * service should NOT create its own gates.
+   */
+  private async isOrchestratorManaged(missionId: string): Promise<boolean> {
+    try {
+      const { getAutonomousOrchestrator } = await import('./autonomous-mission-orchestrator.js');
+      const orchestrator = getAutonomousOrchestrator();
+      return orchestrator.listSequences().some(
+        (s: { missions: Record<string, string> }) => Object.values(s.missions).includes(missionId),
+      );
+    } catch {
+      return false;
     }
   }
 }
