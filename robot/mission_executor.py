@@ -180,6 +180,17 @@ class MissionExecutor:
         await self._transition(mission.mission_id, MissionState.accepted)
         log_ctx.info("mission_executor.accepted")
 
+        # Set initial position from mission params if provided (applies to all commands)
+        start_pos = getattr(mission.params, 'start_position', None)
+        if start_pos is None and hasattr(mission.params, '__dict__'):
+            # Also check as dict key (Pydantic model may not have the attribute)
+            start_pos = getattr(mission.params, '__dict__', {}).get('start_position')
+        if start_pos and hasattr(self._driver, 'set_position'):
+            x = start_pos.get('x', 0) if isinstance(start_pos, dict) else getattr(start_pos, 'x', 0)
+            y = start_pos.get('y', 0) if isinstance(start_pos, dict) else getattr(start_pos, 'y', 0)
+            self._driver.set_position(x, y)
+            log_ctx.info("mission_executor.start_position_set", x=x, y=y)
+
         # Dispatch to behavior
         try:
             if mission.command == "find_engage":
@@ -370,12 +381,6 @@ class MissionExecutor:
         log_ctx = log.bind(mission_id=mission.mission_id)
         area = mission.params.area
         speed = mission.params.speed
-
-        # Set initial position from mission params if provided
-        start_pos = getattr(mission.params, 'start_position', None)
-        if start_pos and hasattr(self._driver, 'set_position'):
-            self._driver.set_position(start_pos.get('x', 0), start_pos.get('y', 0))
-            log_ctx.info("mission_executor.recon_area.start_position", x=start_pos.get('x'), y=start_pos.get('y'))
 
         waypoints = generate_sweep_path(area)
 
