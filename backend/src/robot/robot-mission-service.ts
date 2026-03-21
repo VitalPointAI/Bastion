@@ -1479,7 +1479,7 @@ export class RobotMissionService {
         ? roomToGeo(robotTelemetry.position.x, robotTelemetry.position.y)
         : null;
 
-      // Resolve workspace: prefer problem_set_id on message, fall back to DB lookup
+      // Resolve workspace: prefer problem_set_id on message, fall back to DB/orchestrator
       const resolveWorkspace = async (): Promise<string | undefined> => {
         // Direct from simulator (avoids DB dependency)
         const directPsId = (msg as unknown as Record<string, unknown>).problem_set_id as string | undefined;
@@ -1487,8 +1487,17 @@ export class RobotMissionService {
         // Fall back to DB lookup via mission record
         if (msg.mission_id) {
           const mission = await robotStore.getMission(msg.mission_id).catch(() => null);
-          return mission?.problem_set_id || undefined;
+          if (mission?.problem_set_id) return mission.problem_set_id;
         }
+        // Fall back to active autonomous sequence for this robot
+        try {
+          const { getAutonomousOrchestrator } = await import('./autonomous-mission-orchestrator.js');
+          const sequences = getAutonomousOrchestrator().listSequences();
+          const active = sequences.find(
+            (s) => s.config.leaderId === msg.robot_id && s.phase !== 'complete',
+          );
+          if (active?.config.problemSetId) return active.config.problemSetId;
+        } catch { /* orchestrator not available */ }
         return undefined;
       };
 
