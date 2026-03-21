@@ -68,22 +68,24 @@ async function encryptSensitiveFields(
     return { value };
   }
 
+  // Encode each sensitive field as "nonce:ciphertext" so each field carries
+  // its own nonce. The config-level nonce column stores a sentinel value
+  // indicating per-field nonces are in use.
   const encrypted = { ...value as Record<string, unknown> };
-  let nonce: string | undefined;
 
   for (const [key, val] of Object.entries(encrypted)) {
     if (shouldEncrypt(key) && typeof val === 'string' && val.length > 0) {
       const result = await encryptData(val, encryptionKey);
-      encrypted[key] = result.encrypted;
-      nonce = result.nonce; // Use same nonce for all fields (simplified)
+      // Store as "nonce:ciphertext" so decryption can extract the per-field nonce
+      encrypted[key] = `${result.nonce}:${result.encrypted}`;
     } else if (typeof val === 'object' && val !== null) {
       const nested = await encryptSensitiveFields(val, encryptionKey);
       encrypted[key] = nested.value;
-      if (nested.nonce) nonce = nested.nonce;
     }
   }
 
-  return { value: encrypted, nonce };
+  // Sentinel nonce indicating per-field nonces are embedded in each value
+  return { value: encrypted, nonce: 'per-field' };
 }
 
 /**
@@ -103,12 +105,23 @@ async function decryptSensitiveFields(
   }
 
   const decrypted = { ...value as Record<string, unknown> };
+  const isPerField = nonce === 'per-field';
 
   for (const [key, val] of Object.entries(decrypted)) {
     if (shouldEncrypt(key) && typeof val === 'string' && val.length > 0) {
       try {
-        const result = await decryptData(val, encryptionKey, nonce);
-        decrypted[key] = result.toString('utf-8');
+        if (isPerField && val.includes(':')) {
+          // Per-field nonce format: "nonce:ciphertext"
+          const colonIdx = val.indexOf(':');
+          const fieldNonce = val.slice(0, colonIdx);
+          const fieldCiphertext = val.slice(colonIdx + 1);
+          const result = await decryptData(fieldCiphertext, encryptionKey, fieldNonce);
+          decrypted[key] = result.toString('utf-8');
+        } else {
+          // Legacy: single shared nonce for all fields
+          const result = await decryptData(val, encryptionKey, nonce);
+          decrypted[key] = result.toString('utf-8');
+        }
       } catch {
         // Value might not be encrypted, keep original
         decrypted[key] = val;
