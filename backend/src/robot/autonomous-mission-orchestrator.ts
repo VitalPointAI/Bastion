@@ -734,6 +734,10 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const plan = state.tacticalPlan;
     const svc = getRobotMissionService();
 
+    // Clear kill zone overlay
+    (state as unknown as { killZone?: unknown }).killZone = null;
+    this.publishUpdate(state);
+
     // Post-engagement: consolidate near the overwatch position, do NOT RTB.
     // All elements move to the overwatch position and hold for further orders.
     const consolidationPoint = plan?.overwatch.position ?? state.config.homeBase;
@@ -901,36 +905,39 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     try {
       const { roomToLatLng } = await import('../coordinates/mgrs-coordinator.js');
 
-      // Kill zone center is on the enemy advance axis
-      const threatCenter = {
-        x: state.detectedThreats.reduce((s, t) => s + t.detectedAt.x, 0) / state.detectedThreats.length,
-        y: state.detectedThreats.reduce((s, t) => s + t.detectedAt.y, 0) / state.detectedThreats.length,
-      };
+      // Kill zone: where the firing corridors converge on the enemy advance axis.
+      // Centered between the firing positions' X coordinates, at the Y of the
+      // cross-street where the firing positions are located (where fires cross).
+      const fps = plan.firingPositions;
+      const fpXs = fps.map((fp) => fp.position.x);
+      const fpYs = fps.map((fp) => fp.position.y);
+      const kzCenterX = (Math.min(...fpXs) + Math.max(...fpXs)) / 2;
+      // Kill zone Y is on the enemy advance axis at the same latitude as the
+      // cross-street where the firing positions are (where their fires cross the axis)
+      const kzCenterY = fps.length > 0 ? fpYs[0] : 4.4;
 
-      // Kill zone: rectangular area along the advance axis where fires converge
-      const kzHalfWidth = 0.8;
+      const kzHalfWidth = Math.max(0.5, (Math.max(...fpXs) - Math.min(...fpXs)) / 2);
       const kzHalfDepth = 0.3;
       const kzCorners = [
-        roomToLatLng(threatCenter.x - kzHalfWidth, threatCenter.y - kzHalfDepth),
-        roomToLatLng(threatCenter.x + kzHalfWidth, threatCenter.y - kzHalfDepth),
-        roomToLatLng(threatCenter.x + kzHalfWidth, threatCenter.y + kzHalfDepth),
-        roomToLatLng(threatCenter.x - kzHalfWidth, threatCenter.y + kzHalfDepth),
+        roomToLatLng(kzCenterX - kzHalfWidth, kzCenterY - kzHalfDepth),
+        roomToLatLng(kzCenterX + kzHalfWidth, kzCenterY - kzHalfDepth),
+        roomToLatLng(kzCenterX + kzHalfWidth, kzCenterY + kzHalfDepth),
+        roomToLatLng(kzCenterX - kzHalfWidth, kzCenterY + kzHalfDepth),
       ];
 
-      // Build arcs of fire from each firing position to the kill zone
+      // Build arcs of fire from each firing position ACROSS the kill zone
       const arcLines: Array<Array<{ lat: number; lng: number }>> = [];
+      const kzCenterLatLng = roomToLatLng(kzCenterX, kzCenterY);
       for (const fp of plan.firingPositions) {
         const fpLatLng = roomToLatLng(fp.position.x, fp.position.y);
-        const kzLatLng = roomToLatLng(threatCenter.x, threatCenter.y);
         arcLines.push([
           { lat: fpLatLng.lat, lng: fpLatLng.lng },
-          { lat: kzLatLng.lat, lng: kzLatLng.lng },
+          { lat: kzCenterLatLng.lat, lng: kzCenterLatLng.lng },
         ]);
       }
 
       // Overwatch line of sight
       const owLatLng = roomToLatLng(plan.overwatch.position.x, plan.overwatch.position.y);
-      const kzCenterLatLng = roomToLatLng(threatCenter.x, threatCenter.y);
       arcLines.push([
         { lat: owLatLng.lat, lng: owLatLng.lng },
         { lat: kzCenterLatLng.lat, lng: kzCenterLatLng.lng },
@@ -973,16 +980,14 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const state = this.sequences.get(seqId);
     if (!state) return;
 
-    // Enemy tanks start at their detected positions and move south
-    // toward the kill zone. Each tick moves them closer.
-    // When they're about to enter the kill zone, request lethal auth.
-    const threatCenter = {
-      x: state.detectedThreats.reduce((s, t) => s + t.detectedAt.x, 0) / state.detectedThreats.length,
-      y: state.detectedThreats.reduce((s, t) => s + t.detectedAt.y, 0) / state.detectedThreats.length,
-    };
-
-    // Kill zone entry Y: where threats enter weapons range
-    const killZoneY = threatCenter.y - 0.3; // Just south of the kill zone center
+    // Enemy tanks start at their detected positions (y≈4.4) and move south
+    // toward the kill zone (where the firing corridors cross the advance axis).
+    // Lethal auth is requested when tanks are about to enter the kill zone.
+    const plan = state.tacticalPlan;
+    const fps = plan?.firingPositions ?? [];
+    const fpY = fps.length > 0 ? fps[0].position.y : 3.3;
+    // Kill zone entry: just north of where the firing positions' corridors cross
+    const killZoneEntryY = fpY + 0.3;
     let lethalRequested = false;
     let tickCount = 0;
 
@@ -1008,9 +1013,10 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         const { layerStore } = await import('../cop/layers/layer-store.js');
         const layers = await layerStore.queryLayers({ workspaceId: state.config.problemSetId });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const adversaryLayer = (layers as any[]).find((l) =>
-          l.name?.includes('Adversary') || l.name?.includes('Vision'),
-        );
+        const adversaryLayer = (layers as any[]).find((l) => {
+          const meta = l.spec?.metadata;
+          return meta?.generatedBy === 'vision-detection-pipeline';
+        });
 
         if (adversaryLayer?.spec?.symbols) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1035,13 +1041,14 @@ class AutonomousMissionOrchestrator extends EventEmitter {
 
       // Check if tanks are approaching the kill zone
       const closestThreatY = Math.min(...state.detectedThreats.map((t) => t.detectedAt.y));
-      const distToKillZone = closestThreatY - killZoneY;
+      const distToKillZone = closestThreatY - killZoneEntryY;
 
       if (distToKillZone < 0.5 && !lethalRequested) {
         // Tanks approaching kill zone — request lethal authorization
         lethalRequested = true;
         clearInterval(approachInterval);
-        const threatGrid = roomToGridRef(threatCenter.x, closestThreatY);
+        const avgX = state.detectedThreats.reduce((s, t) => s + t.detectedAt.x, 0) / state.detectedThreats.length;
+        const threatGrid = roomToGridRef(avgX, closestThreatY);
         this.logPhase(state, `Enemy approaching kill zone at grid ${threatGrid} — requesting lethal authorization`);
         await this.attemptEngagement(seqId);
       }

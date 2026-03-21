@@ -398,15 +398,14 @@ function simulationTick(session: SimSession): void {
 }
 
 function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
-  // Enemy tanks are approaching from the north on Zhongxiao West Rd (y≈4.4).
-  // Leader detects them at 4-5km range — they appear on the COP at the north
-  // edge of the map, well ahead of the leader's position.
-  // Each threat gets a distinct position spread along the road.
-  const enemyAxisY = 4.4; // Zhongxiao West Rd
+  // Enemy tanks detected at the NORTH EDGE of the map (y≈4.8), approaching south.
+  // They will advance toward the kill zone which is set up further south.
+  // Detection at range means the COP shows them well north of friendly positions.
+  const enemyStartY = 4.8; // North edge — detected at max range
   const enemyPositions = [
-    { x: 2.0, y: enemyAxisY },  // Western lane
-    { x: 3.0, y: enemyAxisY },  // Eastern lane
-    { x: 2.5, y: enemyAxisY + 0.2 },  // Trailing vehicle
+    { x: 2.0, y: enemyStartY },  // Western lane
+    { x: 3.0, y: enemyStartY },  // Eastern lane
+    { x: 2.5, y: enemyStartY + 0.1 },  // Trailing vehicle
   ];
 
   console.log(`[Simulator] Leader ${robot.id} at (${robot.position.x.toFixed(1)}, ${robot.position.y.toFixed(1)}) — CONTACT! Enemy armor detected at ~4km range on Zhongxiao West Rd`);
