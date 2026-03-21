@@ -211,6 +211,12 @@ class RVRDriver:
             else:
                 log.warning("rvr_driver.drive.no_rvr", msg="SDK not initialized, skipping")
             await asyncio.sleep(duration_sec)
+            # Update dead-reckoning position (same formula as simulate mode)
+            speed_ms = (speed / 255) * 1.0
+            rad = math.radians(heading)
+            dx = math.sin(rad) * speed_ms * duration_sec
+            dy = math.cos(rad) * speed_ms * duration_sec
+            self._position = (self._position[0] + dx, self._position[1] + dy)
             await self.safe_stop()
         except Exception as exc:  # noqa: BLE001
             log.error("rvr_driver.drive.error", error=str(exc))
