@@ -97,14 +97,29 @@ export async function resolveLLMConfig(
     4096;
 
   // Get API key — prefer OAuth token over static API key for Anthropic
+  // Priority: env var ANTHROPIC_OAUTH_TOKEN > config store OAuth > config store API key
   let apiKey = globalConfig.apiKey;
   let isOAuthToken = false;
-  if (provider === 'anthropic' && globalConfig.oauth?.connected && globalConfig.oauth?.accessToken) {
-    const { getValidOAuthToken } = await import('../../auth/oauth-token-refresh.js');
-    const oauthToken = await getValidOAuthToken();
-    if (oauthToken) {
-      apiKey = oauthToken;
+
+  if (provider === 'anthropic') {
+    // 1. Check env var first (same source as Ironclaw — always fresh)
+    const envOAuthToken = process.env.ANTHROPIC_OAUTH_TOKEN;
+    if (envOAuthToken?.startsWith('sk-ant-oat')) {
+      apiKey = envOAuthToken;
       isOAuthToken = true;
+    }
+    // 2. Fall back to config store OAuth
+    else if (globalConfig.oauth?.connected && globalConfig.oauth?.accessToken) {
+      const { getValidOAuthToken } = await import('../../auth/oauth-token-refresh.js');
+      const oauthToken = await getValidOAuthToken();
+      if (oauthToken?.startsWith('sk-ant-oat')) {
+        apiKey = oauthToken;
+        isOAuthToken = true;
+      }
+    }
+    // 3. Fall back to env var API key
+    if (!isOAuthToken && process.env.ANTHROPIC_API_KEY) {
+      apiKey = process.env.ANTHROPIC_API_KEY;
     }
   }
   const baseUrl = globalConfig.baseUrl;
