@@ -154,6 +154,8 @@ class VisionEngine:
             import jetson_utils
             import cv2
             img_np = jetson_utils.cudaToNumpy(img)
+            # jetson_utils returns RGB, YOLO expects BGR
+            img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
             # Camera is mounted upside down — flip 180° to match training orientation
             img_np = cv2.flip(img_np, -1)
         except (ImportError, Exception):
