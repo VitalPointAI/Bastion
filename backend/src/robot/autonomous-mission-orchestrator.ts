@@ -730,30 +730,43 @@ class AutonomousMissionOrchestrator extends EventEmitter {
   private async executeWithdrawal(state: AutoState): Promise<void> {
     state.phase = 'withdraw';
     state.phaseStartedAt = new Date().toISOString();
-    this.logPhase(state, 'WITHDRAW — All elements returning to home base');
 
-    const svc = getRobotMissionService();
     const plan = state.tacticalPlan;
-    const home = state.config.homeBase;
+    const svc = getRobotMissionService();
+
+    // Post-engagement: consolidate near the overwatch position, do NOT RTB.
+    // All elements move to the overwatch position and hold for further orders.
+    const consolidationPoint = plan?.overwatch.position ?? state.config.homeBase;
+    const consolidationGrid = roomToGridRef(consolidationPoint.x, consolidationPoint.y);
+
+    this.logPhase(state, `CONSOLIDATE — All elements consolidate at grid ${consolidationGrid} and await further orders`);
 
     const allRobots = [state.config.leaderId, ...state.config.followerIds];
 
-    for (let i = 0; i < allRobots.length; i++) {
-      const robotId = allRobots[i];
-      let route: Array<{ x: number; y: number }>;
+    for (const robotId of allRobots) {
+      // Get robot's current position for route computation
+      const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
+      const currentPos = robot?.latest_telemetry?.position ?? state.config.homeBase;
 
-      if (plan?.routes.withdrawalRoutes) {
-        if (i === 0) {
-          route = plan.routes.withdrawalRoutes.leader;
-        } else {
-          route = plan.routes.withdrawalRoutes.followers[i - 1] ?? [home];
-        }
-      } else {
-        route = [home];
+      // Compute route from current position to consolidation point
+      let route: Array<{ x: number; y: number }>;
+      try {
+        const { createNavigationTools } = await import('./skills/navigation-skill.js');
+        const navTools = createNavigationTools();
+        const routeTool = navTools.find((t) => t.name === 'plan_route')!;
+        const raw = await routeTool.invoke({
+          from_x: currentPos.x, from_y: currentPos.y,
+          to_x: consolidationPoint.x, to_y: consolidationPoint.y,
+          prefer_concealment: false,
+        });
+        const result = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
+        route = result.waypoints ?? [consolidationPoint];
+      } catch {
+        route = [consolidationPoint];
       }
 
       const missionId = randomUUID();
-      state.missions[`withdraw_${robotId}`] = missionId;
+      state.missions[`consolidate_${robotId}`] = missionId;
 
       await svc.dispatchMission({
         mission_id: missionId,
@@ -769,7 +782,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         problem_set_id: state.config.problemSetId,
       });
 
-      this.logPhase(state, `${robotId} withdrawing to home base`);
+      this.logPhase(state, `${robotId} — move to consolidation point grid ${consolidationGrid}`);
     }
 
     this.publishUpdate(state);
@@ -782,17 +795,17 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       }
 
       const robots = svc.getConnectedRobots();
-      const allHome = allRobots.every((rid) => {
+      const allConsolidated = allRobots.every((rid) => {
         const robot = robots.find((r) => r.robot_id === rid);
         if (!robot) return false;
-        return robot.current_mission_id !== state.missions[`withdraw_${rid}`];
+        return robot.current_mission_id !== state.missions[`consolidate_${rid}`];
       });
 
-      if (allHome) {
+      if (allConsolidated) {
         clearInterval(checkInterval);
         state.phase = 'complete';
         state.phaseStartedAt = new Date().toISOString();
-        this.logPhase(state, 'COMPLETE — All elements at home base');
+        this.logPhase(state, 'CONSOLIDATED — All elements at consolidation point, awaiting further orders');
         this.logPhase(state, `Mission summary: ${state.detectedThreats.length} threats detected, ${state.lethalGateId ? 'engagement authorized' : 'no engagement'}`);
         this.publishUpdate(state);
       }

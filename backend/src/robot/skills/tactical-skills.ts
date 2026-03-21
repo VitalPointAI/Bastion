@@ -234,6 +234,7 @@ export function createTacticalTools(): DynamicStructuredTool[] {
     }),
     func: async ({ enemy_advance_axis, num_firing_positions }) => {
       const map = getActiveMap();
+      const direction = enemy_advance_axis.direction;
 
       // Find the advance axis road
       const axisRoad = map.roads.find(
@@ -244,49 +245,96 @@ export function createTacticalTools(): DynamicStructuredTool[] {
         return JSON.stringify({ error: `Road "${enemy_advance_axis.road_name}" not found in map data` });
       }
 
-      // The kill zone is a segment of the advance axis road
-      // Best kill zones are where perpendicular streets provide flanking fire corridors
+      // Perpendicular roads provide firing corridors across the kill zone.
+      // If enemy moves on an E-W road, N-S streets are the firing corridors.
+      // Firing positions should be on these perpendicular streets where they
+      // can fire ALONG the street INTO the kill zone as the enemy crosses.
       const perpRoads = map.roads.filter((r) => r.axis !== axisRoad.axis);
 
-      // Score each intersection along the axis road
+      // Determine which side of the kill zone to place firing positions
+      // based on enemy direction of travel:
+      // - Enemy moving south → fire positions SOUTH of axis (fire north into kill zone)
+      // - Enemy moving north → fire positions NORTH of axis
+      // - Enemy moving east → fire positions EAST of axis
+      // - Enemy moving west → fire positions WEST of axis
+      // Positions are "ahead" of the enemy — they fire INTO the enemy's path
+      const isEnemyApproachingFromNorth = direction === 'south';
+      const isEnemyApproachingFromSouth = direction === 'north';
+      const isEnemyApproachingFromEast = direction === 'west';
+      const isEnemyApproachingFromWest = direction === 'east';
+
       const killZoneCandidates: Array<{
         center: { x: number; y: number };
         cross_street: string;
-        flanking_corridors: Array<{ direction: string; road: string; position: { x: number; y: number } }>;
+        flanking_corridors: Array<{ direction: string; road: string; position: { x: number; y: number }; firing_direction: string }>;
         score: number;
       }> = [];
 
       for (const perp of perpRoads) {
+        // Kill zone center: intersection of axis road and perpendicular road
         const center = axisRoad.axis === 'ew'
           ? { x: perp.position, y: axisRoad.position }
           : { x: axisRoad.position, y: perp.position };
 
-        // Find flanking positions: intersections along the perpendicular road
-        // away from the kill zone center
-        const flankingCorridors: Array<{ direction: string; road: string; position: { x: number; y: number } }> = [];
+        // Find firing positions on the perpendicular road where the follower
+        // has a clear field of fire along that road into the kill zone.
+        // The firing position is 1-2 blocks back from the kill zone on the
+        // OPPOSITE side from where the enemy is coming from.
+        const flankingCorridors: Array<{ direction: string; road: string; position: { x: number; y: number }; firing_direction: string }> = [];
 
-        // Look for intersections 1-2 blocks back from the kill zone on perpendicular streets
-        const otherEw = map.roads.filter(
-          (r) => r.axis === 'ew' && Math.abs(r.position - axisRoad.position) > 0.8 &&
-          r.position < axisRoad.position, // Behind the kill zone (south side for south-moving enemy)
-        );
+        if (axisRoad.axis === 'ew') {
+          // Axis is E-W, perpendicular roads are N-S
+          // Firing positions are on cross-streets (E-W) on the side AWAY from enemy approach
+          const crossStreets = map.roads.filter((r) => {
+            if (r.axis !== 'ew') return false;
+            const gap = Math.abs(r.position - axisRoad.position);
+            if (gap < 0.5 || gap > 2.5) return false; // 1-2 blocks away
 
-        for (const ew of otherEw) {
-          flankingCorridors.push({
-            direction: axisRoad.axis === 'ew' ? 'north' : 'west',
-            road: `${perp.name} / ${ew.name}`,
-            position: { x: perp.position, y: ew.position },
+            // Position on the correct side based on enemy direction
+            if (isEnemyApproachingFromNorth) return r.position < axisRoad.position; // South side
+            if (isEnemyApproachingFromSouth) return r.position > axisRoad.position; // North side
+            return true;
           });
+
+          for (const cs of crossStreets) {
+            const firingDir = cs.position < axisRoad.position ? 'north' : 'south';
+            flankingCorridors.push({
+              direction: firingDir,
+              road: `${perp.name} / ${cs.name}`,
+              position: { x: perp.position, y: cs.position },
+              firing_direction: `Fire ${firingDir} along ${perp.name} into kill zone on ${axisRoad.name}`,
+            });
+          }
+        } else {
+          // Axis is N-S, perpendicular roads are E-W
+          const crossStreets = map.roads.filter((r) => {
+            if (r.axis !== 'ns') return false;
+            const gap = Math.abs(r.position - axisRoad.position);
+            if (gap < 0.5 || gap > 2.5) return false;
+
+            if (isEnemyApproachingFromWest) return r.position > axisRoad.position;
+            if (isEnemyApproachingFromEast) return r.position < axisRoad.position;
+            return true;
+          });
+
+          for (const cs of crossStreets) {
+            const firingDir = cs.position < axisRoad.position ? 'east' : 'west';
+            flankingCorridors.push({
+              direction: firingDir,
+              road: `${perp.name} / ${cs.name}`,
+              position: { x: cs.position, y: perp.position },
+              firing_direction: `Fire ${firingDir} along ${perp.name} into kill zone on ${axisRoad.name}`,
+            });
+          }
         }
 
         let score = 0;
-        // More flanking corridors = better kill zone
         score += Math.min(flankingCorridors.length, 4) * 10;
-        // Narrow cross-street is better (channelizes enemy)
         if (perp.roadClass === 'residential') score += 5;
-        // Center of AO is better than edges
         const centeredness = 1 - Math.abs(center.x - 2.5) / 2.5;
         score += centeredness * 10;
+        // Bonus for corridors with clear firing direction
+        score += flankingCorridors.length > 0 ? 15 : 0;
 
         killZoneCandidates.push({
           center,
@@ -309,11 +357,14 @@ export function createTacticalTools(): DynamicStructuredTool[] {
         } : null,
         recommended_firing_positions: firingPositions,
         all_candidates: killZoneCandidates.slice(0, 5),
+        enemy_direction: direction,
         tactical_notes: [
-          `Enemy advancing ${enemy_advance_axis.direction} on ${axisRoad.name} (${axisRoad.lanes}-lane ${axisRoad.roadClass})`,
-          `Position firing elements on perpendicular streets ${axisRoad.axis === 'ew' ? 'south' : 'west'} of the kill zone`,
+          `Enemy advancing ${direction} on ${axisRoad.name} (${axisRoad.lanes}-lane ${axisRoad.roadClass})`,
+          `Firing positions placed on the ${isEnemyApproachingFromNorth ? 'SOUTH' : isEnemyApproachingFromSouth ? 'NORTH' : isEnemyApproachingFromWest ? 'EAST' : 'WEST'} side of the kill zone — firing INTO the enemy's path`,
+          'Each position has a clear firing corridor along a perpendicular street into the kill zone',
           'Ensure firing corridors do not cross each other (mutual defilade)',
           `Space firing positions at least 1.5 room units apart`,
+          'Followers hold position and engage targets as they enter the kill zone — do NOT advance toward the enemy',
         ],
       });
     },
