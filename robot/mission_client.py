@@ -359,6 +359,40 @@ async def receive_loop(
                 log.info("mission_client.received.mission_assign", payload_keys=list(msg.keys()))
                 try:
                     mission = MissionJSON.model_validate(msg.get("mission") or msg.get("payload") or msg)
+
+                    # Check if this mission is for a BLE follower, not this robot
+                    target_robot = getattr(mission, 'robot_id', None) or msg.get("robot_id")
+                    if target_robot and target_robot != cfg.ROBOT_ID and _ble_followers:
+                        # Relay to BLE follower
+                        follower = next(
+                            (f for f in _ble_followers.followers if f.robot_id == target_robot),
+                            None,
+                        )
+                        if follower and follower.driver.connected:
+                            log.info(
+                                "mission_client.relay_to_follower",
+                                target=target_robot,
+                                command=mission.command,
+                            )
+                            # For patrol_route, drive the follower through waypoints
+                            if mission.command == "patrol_route" and mission.params.waypoints:
+                                async def _drive_follower(f, wps, spd):
+                                    for wp in wps:
+                                        await f.driver.drive_to_point(wp.x, wp.y, spd)
+                                asyncio.create_task(
+                                    _drive_follower(follower, mission.params.waypoints, mission.params.speed),
+                                    name=f"follower-{target_robot}-{mission.mission_id}",
+                                )
+                            elif mission.command == "find_engage" and mission.params.target_location:
+                                tgt = mission.params.target_location
+                                asyncio.create_task(
+                                    follower.driver.drive_to_point(tgt.x, tgt.y, mission.params.speed),
+                                    name=f"follower-{target_robot}-{mission.mission_id}",
+                                )
+                        else:
+                            log.warning("mission_client.follower_not_found", target=target_robot)
+                        continue
+
                     # Pre-flight validation before dispatching to hardware
                     rejection = validate_mission(
                         mission,
