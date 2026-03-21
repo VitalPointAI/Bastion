@@ -127,9 +127,9 @@ export function DecisionGateProvider({ children, problemSetId }: DecisionGatePro
   const actingAs = userRoleInActive || 'unknown';
 
   // Fetch all gates for this problem set
-  const refreshGates = useCallback(async () => {
+  const refreshGates = useCallback(async (showLoading = false) => {
     if (!problemSetId) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     setError(null);
     try {
       const fetched = await gateService.fetchGatesForProblemSet(problemSetId);
@@ -156,13 +156,17 @@ export function DecisionGateProvider({ children, problemSetId }: DecisionGatePro
       const message = err instanceof Error ? err.message : 'Failed to fetch gates';
       setError(message);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [problemSetId]);
 
-  // Fetch on mount and when problemSetId changes
+  // Fetch on mount and when problemSetId changes, then poll every 10s
   useEffect(() => {
-    refreshGates();
+    refreshGates(true);
+    const interval = setInterval(() => {
+      refreshGates(false);
+    }, 10000);
+    return () => clearInterval(interval);
   }, [refreshGates]);
 
   // Pre-group gates by tab
