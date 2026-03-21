@@ -104,10 +104,12 @@ class VisionEngine:
         model: str = "yolov8n.pt",
         threshold: float = 0.5,
         simulate: bool = False,
+        imgsz: int = 320,
     ) -> None:
         self._mock: Optional[MockVisionEngine] = None
         self._model = None
         self._threshold = threshold
+        self._imgsz = imgsz
 
         if simulate:
             self._mock = MockVisionEngine()
@@ -154,7 +156,7 @@ class VisionEngine:
         except (ImportError, Exception):
             img_np = img  # Already numpy (e.g. from OpenCV capture)
 
-        raw_results = self._model(img_np, conf=self._threshold, verbose=False)
+        raw_results = self._model(img_np, conf=self._threshold, imgsz=self._imgsz, verbose=False)
         results: List[DetectionResult] = []
 
         for r in raw_results:

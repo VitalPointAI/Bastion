@@ -579,6 +579,7 @@ async def run() -> None:
             model=cfg.VISION_MODEL,
             threshold=cfg.VISION_THRESHOLD,
             simulate=cfg.SIMULATE,
+            imgsz=cfg.VISION_IMGSZ,
         )
         _vision_config = VisionConfig(
             enabled=True,
