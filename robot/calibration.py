@@ -104,7 +104,6 @@ DEFAULT_PROFILES: Dict[str, CalibrationProfile] = {
             maxLat=_COP_NORTH,
             minLng=_COP_WEST,
             maxLng=_COP_EAST,
-            maxLng=_DEMO_CENTER_LNG + _LNG_SPAN * 0.4,
         ),
     ),
 }
