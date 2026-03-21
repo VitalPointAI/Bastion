@@ -233,11 +233,15 @@ class AutonomousMissionOrchestrator extends EventEmitter {
 
     // Use the leader's current telemetry position, or the position where the
     // first threat was detected (captured during handleThreatDetection), or home base
-    const leaderPos = leaderRobot?.latest_telemetry?.position
-      ?? (state as unknown as { leaderDetectionPos?: { x: number; y: number } }).leaderDetectionPos
-      ?? state.config.homeBase;
+    const leaderTelemetry = leaderRobot?.latest_telemetry?.position;
+    const leaderDetection = (state as unknown as { leaderDetectionPos?: { x: number; y: number } }).leaderDetectionPos;
+    const leaderPos = leaderTelemetry ?? leaderDetection ?? state.config.homeBase;
 
-    this.logPhase(state, `Analyzing ${state.detectedThreats.length} threat(s) against area map...`);
+    if (!leaderTelemetry && !leaderDetection) {
+      this.logPhase(state, 'WARNING: Leader position unavailable — using home base (route may be incorrect)');
+    }
+
+    this.logPhase(state, `Analyzing ${state.detectedThreats.length} threat(s) — leader at (${leaderPos.x.toFixed(1)}, ${leaderPos.y.toFixed(1)})`);
 
     try {
       const plan = await generateTacticalPlan(

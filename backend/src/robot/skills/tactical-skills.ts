@@ -304,21 +304,37 @@ export function createTacticalTools(): DynamicStructuredTool[] {
               .find((r) => Math.abs(r.position - axisRoad.position) >= 0.5);
 
             if (crossStreet) {
-              // Western firing position: fires EAST along the cross-street
-              flankingCorridors.push({
-                direction: 'east',
-                road: `${westRoad.name} / ${crossStreet.name}`,
-                position: { x: westRoad.position, y: crossStreet.position },
-                firing_direction: `Fire east along ${crossStreet.name} across kill zone`,
-              });
+              // L-SHAPED AMBUSH: Both positions on the SAME side (south/west),
+              // separated along the axis, firing in the SAME direction toward
+              // the kill zone. No crossing fires through friendly positions.
 
-              // Eastern firing position: fires WEST along the cross-street
-              flankingCorridors.push({
-                direction: 'west',
-                road: `${eastRoad.name} / ${crossStreet.name}`,
-                position: { x: eastRoad.position, y: crossStreet.position },
-                firing_direction: `Fire west along ${crossStreet.name} across kill zone`,
-              });
+              // Find two cross-streets south of the axis for separation
+              const crossStreets = map.roads
+                .filter((r) => r.axis === 'ew' && r.position < axisRoad.position)
+                .sort((a, b) => b.position - a.position) // closest to axis first
+                .filter((r) => Math.abs(r.position - axisRoad.position) >= 0.5)
+                .slice(0, 2);
+
+              // Position 1: west road, closest cross-street — fires NORTH into kill zone
+              if (crossStreets[0]) {
+                flankingCorridors.push({
+                  direction: 'north',
+                  road: `${westRoad.name} / ${crossStreets[0].name}`,
+                  position: { x: westRoad.position, y: crossStreets[0].position },
+                  firing_direction: `Fire north along ${westRoad.name} into kill zone`,
+                });
+              }
+
+              // Position 2: east road, same or next cross-street — fires NORTH into kill zone
+              const cs2 = crossStreets[1] ?? crossStreets[0];
+              if (cs2) {
+                flankingCorridors.push({
+                  direction: 'north',
+                  road: `${eastRoad.name} / ${cs2.name}`,
+                  position: { x: eastRoad.position, y: cs2.position },
+                  firing_direction: `Fire north along ${eastRoad.name} into kill zone`,
+                });
+              }
             }
           } else {
             // Enemy on N-S road. E-W perpendicular roads provide flanking corridors.

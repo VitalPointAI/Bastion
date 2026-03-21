@@ -1794,8 +1794,20 @@ Return ONLY valid JSON, no markdown.`;
     this.logMissionActivity(robot_id, mission_id, stateEnum).catch(() => {});
 
     // Create governance gate when entering awaiting_auth
+    // Skip if managed by autonomous orchestrator (it creates its own gates)
     if (stateEnum === RobotMissionState.awaiting_auth) {
-      this.createAuthGate(robot_id, mission_id).catch(() => {});
+      try {
+        const { getAutonomousOrchestrator } = await import('./autonomous-mission-orchestrator.js');
+        const orch = getAutonomousOrchestrator();
+        const managed = orch.listSequences().some(
+          (s: { missions: Record<string, string> }) => Object.values(s.missions).includes(mission_id),
+        );
+        if (!managed) {
+          this.createAuthGate(robot_id, mission_id).catch(() => {});
+        }
+      } catch {
+        this.createAuthGate(robot_id, mission_id).catch(() => {});
+      }
     }
   }
 }
