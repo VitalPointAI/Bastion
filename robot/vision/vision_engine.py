@@ -149,17 +149,28 @@ class VisionEngine:
         if img is None:
             return []
 
-        # Convert CUDA image to numpy if needed
+        # Convert CUDA image to numpy, fix color channels, flip for upside-down camera
+        import cv2
+
+        # Step 1: CUDA to numpy
         try:
             import jetson_utils
-            import cv2
             img_np = jetson_utils.cudaToNumpy(img)
-            # jetson_utils returns RGB, YOLO expects BGR
-            img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-            # Camera is mounted upside down — flip 180° to match training orientation
-            img_np = cv2.flip(img_np, -1)
-        except (ImportError, Exception):
+        except ImportError:
             img_np = img  # Already numpy (e.g. from OpenCV capture)
+
+        # Step 2: RGB to BGR (jetson_utils returns RGB, YOLO expects BGR)
+        try:
+            if hasattr(img_np, 'shape') and len(img_np.shape) == 3 and img_np.shape[2] >= 3:
+                img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        except Exception as e:
+            log.warning("vision_engine.color_convert_failed", error=str(e))
+
+        # Step 3: Flip 180° (camera mounted upside down)
+        try:
+            img_np = cv2.flip(img_np, -1)
+        except Exception as e:
+            log.warning("vision_engine.flip_failed", error=str(e))
 
         raw_results = self._model(img_np, conf=self._threshold, imgsz=self._imgsz, verbose=False)
         results: List[DetectionResult] = []
