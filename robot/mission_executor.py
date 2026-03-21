@@ -394,15 +394,13 @@ class MissionExecutor:
     ) -> None:
         """Drive toward (target_x, target_y) with obstacle avoidance.
 
-        Breaks the journey into ~0.3 m segments. Between segments the
-        ``obstacle_event`` is checked. If set, the robot stops, backs up
-        slightly, turns 45-90° away from the obstacle, clears the event,
-        and re-targets the waypoint. Always makes forward progress toward
-        the goal.
+        Uses ``drive_to_point`` for normal movement (no stop-start overhead).
+        Between waypoints the ``obstacle_event`` is checked. If set, the robot
+        stops, backs up, turns away, clears the event, and re-targets.
         """
         import math
 
-        MAX_AVOIDANCE = 3  # max consecutive avoidance manoeuvres per waypoint
+        MAX_AVOIDANCE = 3
         avoidance_count = 0
 
         while True:
@@ -414,26 +412,20 @@ class MissionExecutor:
             if dist < 0.1:
                 break  # close enough
 
-            # Drive a short segment (max 0.3 m or remaining distance)
-            seg_dist = min(dist, 0.3)
-            heading = math.degrees(math.atan2(dx, dy)) % 360
-            speed_ms = max(0.1, (speed / 255) * 1.0)
-            seg_duration = seg_dist / speed_ms
+            # Drive toward the target in one shot (no stop-start choppiness)
+            await self._driver.drive_to_point(target_x, target_y, speed)
 
-            # Drive the segment
-            await self._driver.drive(speed=speed, heading=heading, duration_sec=seg_duration)
-
-            # Check for obstacle between segments
+            # After arriving (or the drive completing), check obstacle flag
             if obstacle_event.is_set() and avoidance_count < MAX_AVOIDANCE:
                 avoidance_count += 1
                 obstacle_event.clear()
                 log.info(
                     "mission_executor.avoiding_obstacle",
                     attempt=avoidance_count,
-                    heading=heading,
                 )
 
                 # Back up slightly
+                heading = self._driver.heading
                 reverse_heading = (heading + 180) % 360
                 await self._driver.drive(speed=60, heading=reverse_heading, duration_sec=0.5)
 
@@ -442,7 +434,11 @@ class MissionExecutor:
                 avoidance_heading = (heading + turn_offset) % 360
                 await self._driver.drive(speed=speed, heading=avoidance_heading, duration_sec=0.8)
 
-                # Re-evaluate distance to target on next loop iteration
+                # Loop back to re-target the waypoint from new position
+                continue
+
+            # drive_to_point sets position to target on completion, so we're done
+            break
 
     async def _execute_patrol_route(self, mission: MissionJSON) -> None:
         """
