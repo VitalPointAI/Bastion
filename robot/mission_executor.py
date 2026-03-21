@@ -355,16 +355,28 @@ class MissionExecutor:
         await self._transition(mission.mission_id, MissionState.executing)
         await self._driver.set_leds(0, 200, 0)  # green: patrolling
 
-        for idx, wp in enumerate(waypoints):
-            log_ctx.info(
-                "mission_executor.patrol_route.waypoint",
-                index=idx,
-                total=len(waypoints),
-                x=wp.x,
-                y=wp.y,
+        stop_event = asyncio.Event()
+        vision_task = None
+        if self._vision_engine:
+            vision_task = asyncio.ensure_future(
+                self._vision_loop(mission.mission_id, stop_event)
             )
-            await self._driver.drive_to_point(wp.x, wp.y, speed)
-            await self._emit_telemetry(mission.mission_id)
+
+        try:
+            for idx, wp in enumerate(waypoints):
+                log_ctx.info(
+                    "mission_executor.patrol_route.waypoint",
+                    index=idx,
+                    total=len(waypoints),
+                    x=wp.x,
+                    y=wp.y,
+                )
+                await self._driver.drive_to_point(wp.x, wp.y, speed)
+                await self._emit_telemetry(mission.mission_id)
+        finally:
+            stop_event.set()
+            if vision_task:
+                vision_task.cancel()
 
         await self._transition(mission.mission_id, MissionState.complete)
         log_ctx.info("mission_executor.patrol_route.complete")
