@@ -474,6 +474,8 @@ export type RobotWsMessage =
   | BridgeRobotRelayMsg
   | RobotVisionMsg
   | RobotProfileRequestMsg
+  | ResourceRequestMsg
+  | ResourceCommandMsg
   | SwarmTelemetryMsg;
 
 // ---------------------------------------------------------------------------
