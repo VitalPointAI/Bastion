@@ -384,16 +384,18 @@ class MissionExecutor:
             try:
                 detections = await self._vision_engine.detect_once(self._camera)
 
-                # Always send keyframe (live camera feed with bounding boxes)
-                # so the operator sees realtime detection in the detail panel
+                # Always send annotated keyframe (live camera feed with bounding boxes)
+                # so the operator sees realtime detection in the detail panel.
+                # Keyframe is generated from the same frame used for detection —
+                # no separate capture, no config gate.
                 if self._send_vision_fn:
                     keyframe = None
-                    if self._vision_config and self._vision_config.keyframe_enabled:
-                        jpeg = await self._vision_engine.get_keyframe_jpeg(
-                            self._camera, self._vision_config.keyframe_quality
-                        )
-                        if jpeg:
-                            keyframe = base64.b64encode(jpeg).decode()
+                    quality = self._vision_config.keyframe_quality if self._vision_config else 50
+                    jpeg = await self._vision_engine.get_keyframe_jpeg(
+                        self._camera, quality
+                    )
+                    if jpeg:
+                        keyframe = base64.b64encode(jpeg).decode()
                     vision_msg = VisionMsg(
                         robot_id=self._robot_id,
                         mission_id=mission_id,

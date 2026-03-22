@@ -265,37 +265,35 @@ async def vision_feed_loop(
     robot_id: str,
 ) -> None:
     """
-    Periodically capture a JPEG keyframe from the camera and send it as a
-    VisionMsg regardless of whether there are active detections or a mission
-    running.  This enables the robot detail panel on the COP to show a live
-    camera feed at all times.
+    Periodically run detection and send an annotated JPEG keyframe as a
+    VisionMsg regardless of whether there is an active mission. This enables
+    the robot detail panel on the COP to show a live camera feed with
+    bounding boxes at all times.
 
-    Only runs when ``VISION_ENABLED`` and ``KEYFRAME_ENABLED`` are both true.
+    Runs whenever VISION_ENABLED is true (no separate keyframe gate).
+    Detection runs first so the keyframe is annotated with bounding boxes.
     """
-    if not _vision_engine or not _camera or not _vision_config:
+    if not _vision_engine or not _camera:
         return
-    if not _vision_config.keyframe_enabled:
-        return
+
+    quality = _vision_config.keyframe_quality if _vision_config else 50
 
     log.info("mission_client.vision_feed_loop.start", interval_sec=VISION_FEED_INTERVAL_SEC)
     try:
         while not _shutdown_event.is_set():
             try:
-                jpeg = await _vision_engine.get_keyframe_jpeg(
-                    _camera, _vision_config.keyframe_quality
+                # Detect first — this stores the frame and detections internally.
+                # Then get_keyframe_jpeg draws bounding boxes on the SAME frame.
+                detections = await _vision_engine.detect_once(_camera)
+                jpeg = await _vision_engine.get_keyframe_jpeg(_camera, quality)
+                keyframe_b64 = base64.b64encode(jpeg).decode() if jpeg else None
+                msg = VisionMsg(
+                    robot_id=robot_id,
+                    timestamp=datetime.utcnow(),
+                    detections=detections or [],
+                    keyframe_jpeg_b64=keyframe_b64,
                 )
-                if jpeg:
-                    keyframe_b64 = base64.b64encode(jpeg).decode()
-                    # Also run a quick detection pass so the feed overlay
-                    # can show bounding boxes / class labels in real time
-                    detections = await _vision_engine.detect_once(_camera)
-                    msg = VisionMsg(
-                        robot_id=robot_id,
-                        timestamp=datetime.utcnow(),
-                        detections=detections or [],
-                        keyframe_jpeg_b64=keyframe_b64,
-                    )
-                    await _send_vision(ws, msg)
+                await _send_vision(ws, msg)
             except (ConnectionClosed, RuntimeError):
                 log.warning("mission_client.vision_feed_loop.ws_closed")
                 break
