@@ -523,7 +523,10 @@ class MissionExecutor:
                     y=wp_y,
                 )
 
-                await self._driver.drive_to_point(wp_x, wp_y, speed)
+                if self._vision_engine and obstacle_event is not None:
+                    await self._drive_with_avoidance(wp_x, wp_y, speed, obstacle_event)
+                else:
+                    await self._driver.drive_to_point(wp_x, wp_y, speed)
                 await self._emit_telemetry(mission.mission_id)
 
             # Command followers for this phase if available
