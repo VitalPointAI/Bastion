@@ -134,6 +134,7 @@ async def generate_tactical_plan(
         client_kwargs: Dict[str, Any] = {}
         if is_oauth:
             client_kwargs["auth_token"] = api_key
+            client_kwargs["default_headers"] = {"anthropic-beta": "oauth-2025-04-20"}
         else:
             client_kwargs["api_key"] = api_key
 
