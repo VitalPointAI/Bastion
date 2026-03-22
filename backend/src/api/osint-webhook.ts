@@ -241,4 +241,87 @@ osintWebhookRouter.post('/feeds/poll-now', async (_req, res) => {
   }
 });
 
+// ============================================================================
+// POST /backfill-descriptions - Re-enrich all actor nodes with thin descriptions
+// ============================================================================
+
+osintWebhookRouter.post('/backfill-descriptions', async (_req, res) => {
+  try {
+    const { executeReadQuery, executeWriteQuery } = await import('../graph/neo4j-client.js');
+    const { performWebSearch } = await import('../doc-intelligence/web-search.js');
+    const { createLLMForAgent } = await import('../agents/langgraph/llm-factory.js');
+
+    // Find actors with missing or thin descriptions
+    const result = await executeReadQuery(`
+      MATCH (a:Actor)
+      WHERE a.attributes IS NOT NULL
+        AND a.type <> 'event'
+      RETURN a.id AS id, a.name AS name, a.type AS type, a.attributes AS attributes
+      LIMIT 500
+    `, {});
+
+    let enriched = 0;
+    let skipped = 0;
+
+    for (const record of result.records ?? []) {
+      const id = record.get('id') as string;
+      const name = record.get('name') as string;
+      const type = record.get('type') as string;
+      const attrsRaw = record.get('attributes') as string;
+
+      let attrs: Record<string, unknown> = {};
+      try { attrs = JSON.parse(attrsRaw); } catch { continue; }
+
+      const existingDesc = (attrs.description as string) ?? '';
+      if (existingDesc.length > 30) { skipped++; continue; }
+
+      // Web search + LLM enrichment
+      try {
+        const searchResults = await performWebSearch(`${name} ${type} who what`, 3);
+        const searchContext = searchResults
+          .map(r => `${r.title}: ${r.snippet}`)
+          .join('\n')
+          .slice(0, 2000);
+
+        const llm = await createLLMForAgent({
+          agentId: 'backfill-enrichment',
+          overrides: { temperature: 0, maxTokens: 256 },
+        });
+
+        const llmResult = await Promise.race([
+          llm.invoke([
+            { role: 'system', content: 'Write a concise 1-3 sentence description of this entity for a knowledge graph. Include what it is, its significance, and any known affiliations. Return ONLY the description text.' },
+            { role: 'user', content: `Entity: ${name}\nType: ${type}\n\nWeb search results:\n${searchContext}` },
+          ]),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 15_000)),
+        ]);
+
+        const description = (typeof llmResult.content === 'string'
+          ? llmResult.content
+          : JSON.stringify(llmResult.content)
+        ).trim();
+
+        if (description.length > 10) {
+          attrs.description = description;
+          await executeWriteQuery(
+            `MATCH (a:Actor {id: $id}) SET a.attributes = $attributes`,
+            { id, attributes: JSON.stringify(attrs) },
+          );
+          enriched++;
+          console.log(`[Backfill] Enriched "${name}": ${description.slice(0, 60)}...`);
+        }
+      } catch (err) {
+        console.warn(`[Backfill] Failed for "${name}":`, err instanceof Error ? err.message : err);
+      }
+    }
+
+    const msg = `Backfill complete: ${enriched} enriched, ${skipped} already had descriptions`;
+    console.log(`[Backfill] ${msg}`);
+    res.json({ enriched, skipped, message: msg });
+  } catch (error) {
+    console.error('[Backfill] Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default osintWebhookRouter;

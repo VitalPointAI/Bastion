@@ -292,7 +292,7 @@ function OSINTFeedItem({ feed, onToggle, onDelete }: OSINTFeedItemProps) {
           title={feed.active ? 'Pause feed' : 'Resume feed'}
           aria-label={feed.active ? `Pause ${feed.sourceName}` : `Resume ${feed.sourceName}`}
         >
-          {feed.active ? '\u23F8' : '\u25B6'}
+          {feed.active ? '⏸' : '▶'}
         </button>
         <button
           className="drawer-delete-btn"
@@ -300,7 +300,7 @@ function OSINTFeedItem({ feed, onToggle, onDelete }: OSINTFeedItemProps) {
           title="Remove source"
           aria-label={`Remove ${feed.sourceName}`}
         >
-          \u2715
+          ✕
         </button>
       </div>
     </div>

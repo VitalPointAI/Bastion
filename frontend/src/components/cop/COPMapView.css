@@ -65,3 +65,14 @@
   pointer-events: auto;
   cursor: pointer;
 }
+
+/* Animated OSINT directional arrows — flowing dash effect */
+@keyframes cop-arrow-flow {
+  0% { stroke-dashoffset: 24; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.cop-osint-arrow {
+  stroke-dasharray: 8 4;
+  animation: cop-arrow-flow 1s linear infinite;
+}

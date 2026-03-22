@@ -511,6 +511,87 @@ function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThr
           );
         })}
 
+      {/* Animated directional arrows for OSINT events with origin→target */}
+      {(spec.symbols ?? [])
+        .filter((s) => s.originPosition && s.targetPosition)
+        .filter((s) => matchesPerspective(s, perspective))
+        .map((symbol) => {
+          const origin = symbol.originPosition!;
+          const target = symbol.targetPosition!;
+          // Category-based color
+          const arrowColor =
+            symbol.affiliation === 'enemy' ? '#ef4444' :
+            symbol.affiliation === 'friendly' ? '#3b82f6' :
+            '#f59e0b';
+
+          return (
+            <Polyline
+              key={`${layer.id}-arrow-${symbol.entityId}`}
+              positions={[
+                [origin.lat, origin.lng],
+                [target.lat, target.lng],
+              ]}
+              pathOptions={{
+                color: arrowColor,
+                weight: 2,
+                opacity: opacity * 0.7,
+                dashArray: '8 4',
+                className: 'cop-osint-arrow',
+              }}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <h4 className="font-semibold">{symbol.designation}</h4>
+                  <p className="text-gray-500 text-xs">
+                    {symbol.ccoClass?.replace(/_/g, ' ')} — directional event
+                  </p>
+                </div>
+              </Popup>
+            </Polyline>
+          );
+        })}
+
+      {/* Arrowhead markers at target end of directional OSINT events */}
+      {(spec.symbols ?? [])
+        .filter((s) => s.originPosition && s.targetPosition)
+        .filter((s) => matchesPerspective(s, perspective))
+        .map((symbol) => {
+          const origin = symbol.originPosition!;
+          const target = symbol.targetPosition!;
+          // Compute arrow angle for the arrowhead
+          const dx = target.lng - origin.lng;
+          const dy = target.lat - origin.lat;
+          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+          const arrowColor =
+            symbol.affiliation === 'enemy' ? '#ef4444' :
+            symbol.affiliation === 'friendly' ? '#3b82f6' :
+            '#f59e0b';
+
+          const arrowheadIcon = L.divIcon({
+            className: 'osint-arrowhead',
+            html: `<div style="
+              width:0;height:0;
+              border-left:6px solid transparent;
+              border-right:6px solid transparent;
+              border-bottom:10px solid ${arrowColor};
+              transform:rotate(${90 - angle}deg);
+              opacity:0.8;
+            "></div>`,
+            iconSize: [12, 10],
+            iconAnchor: [6, 5],
+          });
+
+          return (
+            <Marker
+              key={`${layer.id}-arrowhead-${symbol.entityId}`}
+              position={[target.lat, target.lng]}
+              icon={arrowheadIcon}
+              opacity={opacity * 0.8}
+              interactive={false}
+            />
+          );
+        })}
+
       {/* Control measures (polylines, polygons) */}
       {(spec.controlMeasures ?? [])
         .filter((cm) => isInPhase(cm, currentPhase))

@@ -58,6 +58,10 @@ export interface COPSymbolSpec {
   ccoClass: string;
   /** Optional custom icon HTML — bypasses milsymbol rendering when set (e.g. OSINT events) */
   iconHtml?: string;
+  /** Origin location for directional OSINT events (e.g. "Russia attacks Ukraine" → origin=Russia) */
+  originPosition?: LatLng;
+  /** Target location for directional OSINT events (arrow endpoint) */
+  targetPosition?: LatLng;
   /** Agent confidence in placement (0-1) */
   confidence: number;
   /** Source authority for conflict resolution ranking */

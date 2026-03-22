@@ -12,6 +12,7 @@
 
 import type { OSINTEvent } from '../graph/osint/types.js';
 import type { COPLayerSpec, COPSymbolSpec, COPAnnotationSpec, Affiliation } from '../cop/layers/layer-types.js';
+import { extractLocation } from './osint-graph-sync.js';
 import { getConfidenceTier } from '../graph/provenance-types.js';
 
 // ── Affiliation heuristics ─────────────────────────────────────────────────
@@ -104,6 +105,54 @@ function classifyEvent(text: string): OSINTCategory {
 
   // Default: generic intelligence report
   return { type: 'intel_report', label: 'Intelligence Reports', icon: '📰', color: '#6b7280' };
+}
+
+// ── Directional location extraction ──────────────────────────────────────
+
+/**
+ * Detect origin→target directionality in OSINT event text.
+ * Patterns like "X attacks/sanctions/threatens/invades Y" produce
+ * animated arrows on the COP from origin to target.
+ */
+function extractDirectionalLocations(
+  text: string,
+  extractLocationFn: (t: string) => { latitude: number; longitude: number } | null,
+): { origin: { lat: number; lng: number } | null; target: { lat: number; lng: number } | null } {
+  const none = { origin: null, target: null };
+  if (!text || text.length < 20) return none;
+
+  // Directional verbs: "X <verb> Y" where X is origin and Y is target
+  const dirPatterns = [
+    /(.{3,40})\s+(?:attack(?:s|ed)?|strike(?:s|d)?|bomb(?:s|ed)?|shell(?:s|ed)?|invade[sd]?)\s+(.{3,40})/i,
+    /(.{3,40})\s+(?:sanction(?:s|ed)?|embargo(?:s|ed)?|block(?:s|ed)?)\s+(.{3,40})/i,
+    /(.{3,40})\s+(?:threaten(?:s|ed)?|warn(?:s|ed)?|confront(?:s|ed)?)\s+(.{3,40})/i,
+    /(.{3,40})\s+(?:send(?:s)?|deploy(?:s|ed)?|dispatch(?:es|ed)?|ship(?:s|ped)?)\s+.*?\s+(?:to)\s+(.{3,40})/i,
+    /(.{3,40})\s+(?:export(?:s|ed)?|deliver(?:s|ed)?|suppl(?:y|ies|ied))\s+.*?\s+(?:to)\s+(.{3,40})/i,
+    /(.{3,40})\s+(?:launch(?:es|ed)?)\s+.*?\s+(?:at|toward(?:s)?|against)\s+(.{3,40})/i,
+    /(.{3,40})\s+(?:aid(?:s|ed)?|assist(?:s|ed)?|support(?:s|ed)?)\s+(.{3,40})/i,
+  ];
+
+  for (const pattern of dirPatterns) {
+    const match = text.match(pattern);
+    if (!match) continue;
+
+    const originLoc = extractLocationFn(match[1]);
+    const targetLoc = extractLocationFn(match[2]);
+
+    if (originLoc && targetLoc) {
+      // Ensure they're actually different locations
+      const dist = Math.abs(originLoc.latitude - targetLoc.latitude) +
+                   Math.abs(originLoc.longitude - targetLoc.longitude);
+      if (dist > 1) {
+        return {
+          origin: { lat: originLoc.latitude, lng: originLoc.longitude },
+          target: { lat: targetLoc.latitude, lng: targetLoc.longitude },
+        };
+      }
+    }
+  }
+
+  return none;
 }
 
 // ── Icon HTML generator ──────────────────────────────────────────────────
@@ -216,6 +265,13 @@ export async function updateOSINTCOPLayer(
           category.color,
           affiliation,
         );
+
+        // Extract directional origin→target for animated arrows
+        const dir = extractDirectionalLocations(text, (t) => extractLocation(t));
+        if (dir.origin && dir.target) {
+          symbolSpec.originPosition = dir.origin;
+          symbolSpec.targetPosition = dir.target;
+        }
 
         symbols.push(symbolSpec);
 
