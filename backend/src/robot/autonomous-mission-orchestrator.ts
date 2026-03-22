@@ -111,6 +111,20 @@ class AutonomousMissionOrchestrator extends EventEmitter {
   ): Promise<{ sequenceId: string; state: AutoState }> {
     const config: AutoConfig = { ...AUTO_DEFAULTS, ...overrides };
 
+    // Auto-discover follower IDs from connected robots when not simulating
+    // and no explicit follower IDs were provided
+    if (!config.simulate && (!overrides?.followerIds || overrides.followerIds.length === 0)) {
+      const svc = getRobotMissionService();
+      const connected = svc.getConnectedRobots();
+      const followers = connected
+        .filter((r) => r.robot_id !== config.leaderId)
+        .map((r) => r.robot_id);
+      if (followers.length > 0) {
+        config.followerIds = followers;
+        console.log(`[AutonomousOrchestrator] Auto-discovered ${followers.length} followers: ${followers.join(', ')}`);
+      }
+    }
+
     // Stop any existing active sequences to prevent duplicates
     for (const [seqId, existing] of this.sequences) {
       if (existing.phase !== 'complete' && existing.phase !== 'withdraw') {
