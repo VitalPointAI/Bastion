@@ -95,10 +95,12 @@ export function classifyKnownVehicle(
   const entry = KNOWN_VEHICLES[key];
   if (!entry) return null;
 
-  // Adjust affiliation based on confidence
+  // Use the vehicle's defined affiliation — for known threat vehicles
+  // (T-90, CHN-99G, etc.) the affiliation stays hostile regardless of
+  // confidence. The model was specifically trained on these classes.
+  // Only downgrade to unknown for very low confidence generic detections.
   let affiliation = entry.affiliation;
-  if (confidence < 0.5) affiliation = 'unknown';
-  else if (confidence < 0.7 && affiliation === 'hostile') affiliation = 'suspect';
+  if (confidence < 0.3) affiliation = 'unknown';
 
   const identityCode = IDENTITY_CODES[affiliation] ?? '01';
 

@@ -110,6 +110,8 @@ class VisionEngine:
         self._model = None
         self._threshold = threshold
         self._imgsz = imgsz
+        self._last_frame = None  # Last captured BGR numpy frame
+        self._last_detections: List[DetectionResult] = []  # Last detection results
 
         if simulate:
             self._mock = MockVisionEngine()
@@ -144,6 +146,25 @@ class VisionEngine:
     # Synchronous inference helper (runs in thread pool)
     # ------------------------------------------------------------------
 
+    def _prepare_frame(self, camera):
+        """Capture and preprocess a single frame. Returns numpy BGR image or None."""
+        img = camera.Capture()
+        if img is None:
+            log.debug("vision_engine.capture_returned_none")
+            return None
+
+        import cv2
+
+        try:
+            import jetson_utils
+            img_np = jetson_utils.cudaToNumpy(img)
+        except ImportError:
+            img_np = img
+
+        img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        img_np = cv2.flip(img_np, -1)
+        return img_np
+
     def _capture_and_detect(self, camera) -> List[DetectionResult]:
         """
         Synchronous: capture a frame from *camera* and run YOLO inference.
@@ -156,23 +177,12 @@ class VisionEngine:
         This method is designed to be called via ``asyncio.to_thread`` so that
         blocking GPU inference does not stall the event loop.
         """
-        img = camera.Capture()
-        if img is None:
-            log.debug("vision_engine.capture_returned_none")
+        img_np = self._prepare_frame(camera)
+        if img_np is None:
             return []
 
-        import cv2
-
-        # Convert CUDA image to numpy — same as test_detect.py
-        try:
-            import jetson_utils
-            img_np = jetson_utils.cudaToNumpy(img)
-        except ImportError:
-            img_np = img  # Already numpy (e.g. from OpenCV capture)
-
-        # RGB → BGR then flip 180° — unconditional, matching test_detect.py
-        img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-        img_np = cv2.flip(img_np, -1)
+        # Store the last frame for annotated keyframe generation
+        self._last_frame = img_np
 
         raw_results = self._model(img_np, conf=self._threshold, imgsz=self._imgsz, verbose=False)
         results: List[DetectionResult] = []
@@ -195,6 +205,9 @@ class VisionEngine:
                         center_y=(y1 + y2) / 2.0,
                     )
                 )
+
+        # Store detections so get_annotated_keyframe can draw them
+        self._last_detections = results
         return results
 
     # ------------------------------------------------------------------
@@ -218,9 +231,10 @@ class VisionEngine:
         self, camera=None, quality: int = 50
     ) -> Optional[bytes]:
         """
-        Capture and compress a JPEG keyframe.
+        Return an annotated JPEG keyframe with bounding boxes drawn on detections.
 
-        Returns bytes on success, or None if capture/compression fails.
+        Uses the last frame captured by ``_capture_and_detect`` so the keyframe
+        matches exactly what was analyzed. If no frame is cached, captures a fresh one.
         In simulate mode, delegates to :class:`MockVisionEngine`.
         """
         if self._mock is not None:
@@ -229,28 +243,38 @@ class VisionEngine:
         if camera is None:
             return None
 
-        # Run blocking capture + compression in thread pool
-        def _do_capture() -> Optional[bytes]:
-            img = camera.Capture()
-            if img is None:
-                return None
-            try:
-                import cv2
-                # Same pipeline as _capture_and_detect: CUDA→numpy, RGB→BGR, flip
-                try:
-                    import jetson_utils
-                    img_np = jetson_utils.cudaToNumpy(img)
-                except ImportError:
-                    img_np = img
-                img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-                img_np = cv2.flip(img_np, -1)
-                _, jpeg = cv2.imencode('.jpg', img_np, [cv2.IMWRITE_JPEG_QUALITY, quality])
-                return jpeg.tobytes()
-            except Exception as exc:
-                log.warning("vision_engine.keyframe_encode_failed", error=str(exc))
-                return camera.capture_jpeg(img_cuda=img, quality=quality)
+        def _do_annotate() -> Optional[bytes]:
+            import cv2
 
-        return await asyncio.to_thread(_do_capture)
+            frame = self._last_frame
+            if frame is None:
+                # No cached frame — capture a fresh one
+                frame = self._prepare_frame(camera)
+            if frame is None:
+                return None
+
+            # Draw bounding boxes for each detection
+            annotated = frame.copy()
+            for det in self._last_detections:
+                bbox = det.bbox
+                x1, y1 = int(bbox["left"]), int(bbox["top"])
+                x2, y2 = int(bbox["right"]), int(bbox["bottom"])
+                label = f"{det.class_desc} {det.confidence:.0%}"
+
+                # Red box + label for hostile vehicles
+                color = (0, 0, 255)  # BGR red
+                cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
+
+                # Label background
+                (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                cv2.rectangle(annotated, (x1, y1 - th - 6), (x1 + tw + 4, y1), color, -1)
+                cv2.putText(annotated, label, (x1 + 2, y1 - 4),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+            _, jpeg = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, quality])
+            return jpeg.tobytes()
+
+        return await asyncio.to_thread(_do_annotate)
 
     @property
     def is_mock(self) -> bool:

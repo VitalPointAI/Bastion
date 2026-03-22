@@ -383,7 +383,10 @@ class MissionExecutor:
         while not stop_event.is_set():
             try:
                 detections = await self._vision_engine.detect_once(self._camera)
-                if detections and self._send_vision_fn:
+
+                # Always send keyframe (live camera feed with bounding boxes)
+                # so the operator sees realtime detection in the detail panel
+                if self._send_vision_fn:
                     keyframe = None
                     if self._vision_config and self._vision_config.keyframe_enabled:
                         jpeg = await self._vision_engine.get_keyframe_jpeg(
@@ -399,12 +402,13 @@ class MissionExecutor:
                         keyframe_jpeg_b64=keyframe,
                     )
                     await self._send_vision_fn(vision_msg)
-                    log.info(
-                        "mission_executor.vision_loop.detection",
-                        mission_id=mission_id,
-                        count=len(detections),
-                        classes=[d.class_desc if hasattr(d, 'class_desc') else str(d) for d in detections],
-                    )
+                    if detections:
+                        log.info(
+                            "mission_executor.vision_loop.detection",
+                            mission_id=mission_id,
+                            count=len(detections),
+                            classes=[d.class_desc if hasattr(d, 'class_desc') else str(d) for d in detections],
+                        )
 
                 # Obstacle check — signal patrol to dodge if something big is ahead
                 if obstacle_event and detections:
