@@ -86,6 +86,7 @@ class RVRDriver:
         self._position: Tuple[float, float] = (0.0, 0.0)  # (x, y) room meters
         self._heading: float = 0.0  # degrees, 0 = north
         self._battery_pct: int = 100
+        self._pause_event: Optional[asyncio.Event] = None  # Set by executor for pause support
 
     def set_position(self, x: float, y: float) -> None:
         """Set the robot's current position (used to sync with map coordinates)."""
@@ -210,7 +211,30 @@ class RVRDriver:
                 )
             else:
                 log.warning("rvr_driver.drive.no_rvr", msg="SDK not initialized, skipping")
-            await asyncio.sleep(duration_sec)
+
+            # Interruptible sleep — check pause event every 0.1s so pause/cancel
+            # takes effect immediately instead of waiting for full duration.
+            elapsed = 0.0
+            step = 0.1
+            while elapsed < duration_sec:
+                remaining = min(step, duration_sec - elapsed)
+                await asyncio.sleep(remaining)
+                elapsed += remaining
+                # If paused, stop motors and wait for resume
+                if self._pause_event and not self._pause_event.is_set():
+                    await self.safe_stop()
+                    log.info("rvr_driver.drive.paused", elapsed=round(elapsed, 1))
+                    await self._pause_event.wait()
+                    log.info("rvr_driver.drive.resumed")
+                    # Re-send drive command to continue
+                    if self._rvr and elapsed < duration_sec:
+                        await self._run(
+                            self._rvr.drive_with_heading,
+                            speed=int(speed),
+                            heading=int(heading),
+                            flags=0,
+                        )
+
             # Update dead-reckoning position (same formula as simulate mode)
             speed_ms = (speed / 255) * 1.0
             rad = math.radians(heading)

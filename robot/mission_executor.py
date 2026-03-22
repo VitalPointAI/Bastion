@@ -83,6 +83,8 @@ class MissionExecutor:
         self._mission_task: Optional[asyncio.Task] = None
         self._paused: asyncio.Event = asyncio.Event()
         self._paused.set()  # Not paused by default (event is "set" = running)
+        # Share pause event with driver so drive() can check it mid-sleep
+        driver._pause_event = self._paused
 
         # Event set when an authorization response arrives from Bastion
         self._auth_event: asyncio.Event = asyncio.Event()
