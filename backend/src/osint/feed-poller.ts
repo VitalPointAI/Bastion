@@ -64,6 +64,29 @@ import type { OSINTFeedConfig } from '../jpp/osint-feed-store.js';
 
 const rssParser = new RSSParser();
 
+// ─── LLM concurrency limiter ────────────────────────────────────────────────
+// Prevent 2500 concurrent LLM calls from saturating the server CPU.
+// Queue LLM enrichment tasks and run at most N at a time.
+const LLM_CONCURRENCY = 3;
+let llmActiveCount = 0;
+const llmQueue: Array<() => Promise<void>> = [];
+
+function enqueueLLMTask(task: () => Promise<void>): void {
+  llmQueue.push(task);
+  drainLLMQueue();
+}
+
+function drainLLMQueue(): void {
+  while (llmActiveCount < LLM_CONCURRENCY && llmQueue.length > 0) {
+    const task = llmQueue.shift()!;
+    llmActiveCount++;
+    task().finally(() => {
+      llmActiveCount--;
+      drainLLMQueue();
+    });
+  }
+}
+
 // ─── Feed poll state tracking ────────────────────────────────────────────────
 
 async function ensurePollStateTable(): Promise<void> {
@@ -385,9 +408,11 @@ class FeedPoller {
           console.warn(`[FeedPoller] Basic graph sync failed for "${item.title}":`, err),
         );
 
-        // Then attempt LLM-enriched extraction on top (non-blocking, best-effort)
-        extractAndSyncToGraph(storedEvent).catch(() => {
-          // Non-fatal — basic sync already created the node above
+        // Then attempt LLM-enriched extraction (throttled to avoid CPU saturation)
+        enqueueLLMTask(async () => {
+          await extractAndSyncToGraph(storedEvent).catch(() => {
+            // Non-fatal — basic sync already created the node above
+          });
         });
       } catch (err) {
         console.error(`[FeedPoller] Failed to store event "${item.title}":`, err);
