@@ -63,6 +63,12 @@ class MissionParams(BaseModel):
     """Bounding box for sweep missions: {x_min, y_min, x_max, y_max} in room-relative meters."""
     reference_image_b64: Optional[str] = None
     """Base64-encoded reference image for visual_search missions."""
+    description: Optional[str] = None
+    """Free-text mission description / commander's intent for tactical planner."""
+    terrain_context: Optional[str] = None
+    """Terrain or environmental context for tactical planning."""
+    start_position: Optional[Dict[str, float]] = None
+    """Start position override {x, y} in room-relative meters."""
 
 
 class MissionJSON(BaseModel):

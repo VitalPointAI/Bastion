@@ -401,6 +401,20 @@ class MissionExecutor:
             mgr = self._swarm._ble_followers
             followers = [f"follower-{i}" for i in range(mgr.connected_count)]
 
+        # Extract context fields for the planner
+        terrain_context = params_dict.pop("terrain_context", None)
+        description = params_dict.pop("description", None)
+
+        # Build combined context string
+        context_str = None
+        if description or terrain_context:
+            parts = []
+            if description:
+                parts.append(f"Commander's intent: {description}")
+            if terrain_context:
+                parts.append(f"Terrain: {terrain_context}")
+            context_str = ". ".join(parts)
+
         # Try LLM tactical planning
         plan = await generate_tactical_plan(
             command=mission.command,
@@ -408,6 +422,7 @@ class MissionExecutor:
             mission_id=mission.mission_id,
             robot_id=self._robot_id,
             available_followers=followers if followers else None,
+            terrain_context=context_str,
         )
 
         if plan is None:

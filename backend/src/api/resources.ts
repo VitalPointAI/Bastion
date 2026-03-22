@@ -738,6 +738,12 @@ const COMMAND_CAPABILITY_MAP: Record<string, string> = {
 };
 
 /** Full mission command schemas — parameter definitions for each robot command */
+// Common mission params appended to all mission command schemas
+const COMMON_MISSION_PARAMS: CommandDefinition['params'] = [
+  { name: 'description', type: 'string', label: "Commander's Intent", description: 'Free-text mission description for tactical planner (e.g. "Conduct screening operation between grid A and B")' },
+  { name: 'terrain_context', type: 'string', label: 'Terrain/Context', description: 'Environmental context (e.g. "Urban area, narrow corridors, limited visibility")' },
+];
+
 const MISSION_COMMAND_SCHEMAS: Record<string, Omit<CommandDefinition, 'command'>> = {
   find_engage: {
     label: 'Find & Engage',
@@ -746,15 +752,18 @@ const MISSION_COMMAND_SCHEMAS: Record<string, Omit<CommandDefinition, 'command'>
     params: [
       { name: 'target_location', type: 'location', label: 'Target Location', required: true, description: 'Room-relative coordinates (meters)' },
       { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+      ...COMMON_MISSION_PARAMS,
     ],
   },
   patrol_route: {
     label: 'Patrol Route',
-    description: 'Follow waypoints in a patrol pattern',
+    description: 'Patrol an area — AI planner generates the route from intent',
     group: 'mission',
     params: [
-      { name: 'waypoints', type: 'waypoints', label: 'Waypoints', required: true, description: 'Ordered patrol points' },
+      { name: 'area', type: 'area', label: 'Patrol Area', description: 'Bounding box to patrol (optional — planner generates route)' },
+      { name: 'waypoints', type: 'waypoints', label: 'Waypoints', description: 'Specific waypoints (optional — overrides planner)' },
       { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+      ...COMMON_MISSION_PARAMS,
     ],
   },
   recon_area: {
@@ -762,8 +771,9 @@ const MISSION_COMMAND_SCHEMAS: Record<string, Omit<CommandDefinition, 'command'>
     description: 'Sweep a bounded area with ISR sensors',
     group: 'mission',
     params: [
-      { name: 'area', type: 'area', label: 'Area Bounds', required: true, description: 'Bounding box in room-relative meters' },
+      { name: 'area', type: 'area', label: 'Area Bounds', description: 'Bounding box in room-relative meters' },
       { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+      ...COMMON_MISSION_PARAMS,
     ],
   },
   visual_search: {
@@ -773,6 +783,7 @@ const MISSION_COMMAND_SCHEMAS: Record<string, Omit<CommandDefinition, 'command'>
     params: [
       { name: 'reference_image_b64', type: 'file', label: 'Reference Image', required: true, description: 'Image of the target object' },
       { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+      ...COMMON_MISSION_PARAMS,
     ],
   },
   overwatch: {
@@ -780,9 +791,10 @@ const MISSION_COMMAND_SCHEMAS: Record<string, Omit<CommandDefinition, 'command'>
     description: 'Hold position and observe target location',
     group: 'mission',
     params: [
-      { name: 'target_location', type: 'location', label: 'Observation Point', required: true },
+      { name: 'target_location', type: 'location', label: 'Observation Point' },
       { name: 'duration_sec', type: 'number', label: 'Duration (seconds)', min: 10, max: 600, step: 10, default: 60 },
       { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+      ...COMMON_MISSION_PARAMS,
     ],
   },
   resupply_route: {
@@ -792,6 +804,7 @@ const MISSION_COMMAND_SCHEMAS: Record<string, Omit<CommandDefinition, 'command'>
     params: [
       { name: 'waypoints', type: 'waypoints', label: 'Route Waypoints', required: true },
       { name: 'speed', type: 'number', label: 'Speed', min: 0, max: 255, step: 1, default: 50 },
+      ...COMMON_MISSION_PARAMS,
     ],
   },
   swarm_patrol: {

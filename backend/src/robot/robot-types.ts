@@ -127,7 +127,13 @@ export const MissionJSONSchema = z.object({
     }).optional(),
     /** Base64-encoded reference image for target matching (ORB feature matching) */
     reference_image_b64: z.string().optional(),
-  }),
+    /** Free-text mission description / commander's intent for tactical planner */
+    description: z.string().optional(),
+    /** Terrain or environmental context for tactical planning */
+    terrain_context: z.string().optional(),
+    /** Start position override (room-relative coordinates) */
+    start_position: z.object({ x: z.number(), y: z.number() }).optional(),
+  }).passthrough(),
   /** DID of the entity issuing the mission (e.g. DAO account) */
   issued_by: z.string().min(1),
   /** ISO timestamp of mission creation */
