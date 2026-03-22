@@ -174,41 +174,31 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
     } catch { /* silent */ }
   }, [sequenceId]);
 
-  const handleSimPause = useCallback(async () => {
-    if (!simSessionId) return;
+  const handlePause = useCallback(async () => {
+    if (!sequenceId) return;
     const endpoint = simPaused ? 'resume' : 'pause';
     try {
-      const res = await fetch(`/api/robot/simulations/${simSessionId}/${endpoint}`, { method: 'POST' });
+      // Pause/resume the autonomous orchestrator sequence
+      const res = await fetch(`/api/robot/scenarios/${sequenceId}/${endpoint}`, { method: 'POST' });
       if (res.ok) setSimPaused(!simPaused);
-    } catch { /* silent */ }
-  }, [simSessionId, simPaused]);
-
-  const handleSimStop = useCallback(async () => {
-    try {
+      // Also pause/resume simulation if running
       if (simSessionId) {
-        await fetch(`/api/robot/simulations/${simSessionId}/stop`, { method: 'POST' });
+        await fetch(`/api/robot/simulations/${simSessionId}/${endpoint}`, { method: 'POST' }).catch(() => {});
       }
-      // Stop the autonomous orchestrator sequence
+    } catch { /* silent */ }
+  }, [sequenceId, simSessionId, simPaused]);
+
+  const handleReset = useCallback(async () => {
+    try {
+      // Stop the autonomous orchestrator sequence (cancels mission + stops robot)
       if (sequenceId) {
         await fetch(`/api/robot/scenarios/${sequenceId}/stop`, { method: 'POST' }).catch(() => {});
       }
-      setSimSessionId(null);
-      setSequenceId(null);
-      setStatus(null);
-      setSimPaused(false);
-    } catch { /* silent */ }
-  }, [simSessionId, sequenceId]);
-
-  const handleSimReset = useCallback(async () => {
-    try {
+      // Stop simulation session if running
       if (simSessionId) {
-        await fetch(`/api/robot/simulations/${simSessionId}/reset`, { method: 'POST' });
+        await fetch(`/api/robot/simulations/${simSessionId}/reset`, { method: 'POST' }).catch(() => {});
       }
-      // Stop any active autonomous orchestrator sequence
-      if (sequenceId) {
-        await fetch(`/api/robot/scenarios/${sequenceId}/stop`, { method: 'POST' }).catch(() => {});
-      }
-      // Also clear seeded strategic COP layers and vision detections
+      // Clear seeded strategic COP layers and vision detections
       await fetch('/api/robot/scenarios/clear-strategic-cop', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -221,7 +211,7 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
       setSimPaused(false);
       setSeedStatus(null);
     } catch { /* silent */ }
-  }, [simSessionId, problemSetId, onLayersChanged]);
+  }, [sequenceId, simSessionId, problemSetId, onLayersChanged]);
 
   const phase = (status?.phase ?? 'idle') as Phase;
   const phaseCfg = PHASE_CONFIG[phase] ?? PHASE_CONFIG.idle;
@@ -285,49 +275,7 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
           {/* Phase progress bar */}
           {isActive && <PhaseProgressBar phase={phase} missionType={missionType} />}
 
-          {/* Simulation controls — show for any active sequence (sim or physical) */}
-          {isActive && (
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
-              <button
-                onClick={handleSimPause}
-                disabled={!simSessionId}
-                style={{
-                  flex: 1, padding: '4px 8px', borderRadius: '4px',
-                  border: '1px solid #374151', fontSize: '0.5625rem', fontWeight: 600,
-                  backgroundColor: simPaused ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
-                  color: simPaused ? '#86efac' : '#fde047',
-                  cursor: simSessionId ? 'pointer' : 'not-allowed', textTransform: 'uppercase' as const,
-                  opacity: simSessionId ? 1 : 0.4,
-                }}
-              >
-                {simPaused ? 'Resume' : 'Pause'}
-              </button>
-              <button
-                onClick={handleSimStop}
-                style={{
-                  flex: 1, padding: '4px 8px', borderRadius: '4px',
-                  border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.5625rem', fontWeight: 600,
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5',
-                  cursor: 'pointer', textTransform: 'uppercase' as const,
-                }}
-              >
-                Stop
-              </button>
-              <button
-                onClick={handleSimReset}
-                style={{
-                  flex: 1, padding: '4px 8px', borderRadius: '4px',
-                  border: '1px solid #374151', fontSize: '0.5625rem', fontWeight: 600,
-                  backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#a5b4fc',
-                  cursor: 'pointer', textTransform: 'uppercase' as const,
-                }}
-              >
-                Reset
-              </button>
-            </div>
-          )}
-
-          {/* Simulate toggle + Launch buttons */}
+          {/* Mission type selector + simulate toggle (shown when no active mission) */}
           {(!sequenceId || phase === 'complete' || phase === 'idle') && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
               <label style={{
@@ -346,38 +294,83 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
               <span style={{ fontSize: '0.5rem', color: '#4b5563' }}>
                 {simulate ? '(virtual robots)' : '(physical robots)'}
               </span>
+              {/* Mission type selector */}
+              <select
+                value={missionType}
+                onChange={(e) => setMissionType(e.target.value as MissionType)}
+                style={{
+                  marginLeft: 'auto', padding: '2px 6px', borderRadius: '4px',
+                  border: '1px solid #374151', fontSize: '0.5625rem', fontWeight: 600,
+                  backgroundColor: 'rgba(17, 24, 39, 0.9)', color: '#c4b5fd',
+                  cursor: 'pointer', textTransform: 'uppercase' as const,
+                }}
+              >
+                <option value="autonomous">Autonomous</option>
+                <option value="scripted">Scripted</option>
+              </select>
             </div>
           )}
+
+          {/* START / PAUSE / RESET — always visible */}
+          <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+            {/* START */}
+            <button
+              onClick={() => handleLaunch(missionType)}
+              disabled={launching || seeding || (isActive && !simPaused)}
+              style={{
+                flex: 1, padding: '6px 8px', borderRadius: '4px',
+                border: `1px solid ${isActive && !simPaused ? '#374151' : 'rgba(34, 197, 94, 0.4)'}`,
+                fontSize: '0.5625rem', fontWeight: 600,
+                backgroundColor: isActive && !simPaused
+                  ? 'rgba(75, 85, 99, 0.1)' : 'rgba(34, 197, 94, 0.15)',
+                color: isActive && !simPaused ? '#6b7280' : '#86efac',
+                cursor: isActive && !simPaused ? 'not-allowed' : 'pointer',
+                textTransform: 'uppercase' as const, letterSpacing: '0.3px',
+                opacity: isActive && !simPaused ? 0.4 : 1,
+              }}
+            >
+              {launching ? 'Deploying...' : 'Start'}
+            </button>
+
+            {/* PAUSE / RESUME */}
+            <button
+              onClick={handlePause}
+              disabled={!isActive}
+              style={{
+                flex: 1, padding: '6px 8px', borderRadius: '4px',
+                border: `1px solid ${!isActive ? '#374151' : simPaused ? 'rgba(34, 197, 94, 0.3)' : 'rgba(234, 179, 8, 0.3)'}`,
+                fontSize: '0.5625rem', fontWeight: 600,
+                backgroundColor: simPaused ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
+                color: simPaused ? '#86efac' : '#fde047',
+                cursor: isActive ? 'pointer' : 'not-allowed',
+                textTransform: 'uppercase' as const, letterSpacing: '0.3px',
+                opacity: isActive ? 1 : 0.4,
+              }}
+            >
+              {simPaused ? 'Resume' : 'Pause'}
+            </button>
+
+            {/* RESET */}
+            <button
+              onClick={handleReset}
+              disabled={!sequenceId && !simSessionId}
+              style={{
+                flex: 1, padding: '6px 8px', borderRadius: '4px',
+                border: `1px solid ${!sequenceId ? '#374151' : 'rgba(239, 68, 68, 0.3)'}`,
+                fontSize: '0.5625rem', fontWeight: 600,
+                backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5',
+                cursor: sequenceId || simSessionId ? 'pointer' : 'not-allowed',
+                textTransform: 'uppercase' as const, letterSpacing: '0.3px',
+                opacity: sequenceId || simSessionId ? 1 : 0.4,
+              }}
+            >
+              Reset
+            </button>
+          </div>
+
+          {/* Seed COP button */}
           {(!sequenceId || phase === 'complete' || phase === 'idle') && (
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-              <button
-                onClick={() => handleLaunch('autonomous')}
-                disabled={launching || seeding}
-                style={{
-                  flex: 1, padding: '8px 8px', borderRadius: '6px',
-                  border: '1px solid rgba(139, 92, 246, 0.4)',
-                  backgroundColor: launching ? 'rgba(88, 28, 135, 0.3)' : 'rgba(139, 92, 246, 0.15)',
-                  color: '#c4b5fd', fontSize: '0.6875rem', fontWeight: 600,
-                  cursor: launching ? 'not-allowed' : 'pointer',
-                  textTransform: 'uppercase' as const, letterSpacing: '0.3px',
-                }}
-              >
-                {launching && missionType === 'autonomous' ? 'Deploying...' : 'Autonomous'}
-              </button>
-              <button
-                onClick={() => handleLaunch('scripted')}
-                disabled={launching || seeding}
-                style={{
-                  flex: 1, padding: '8px 8px', borderRadius: '6px',
-                  border: '1px solid rgba(239, 68, 68, 0.4)',
-                  backgroundColor: launching ? 'rgba(127, 29, 29, 0.3)' : 'rgba(239, 68, 68, 0.15)',
-                  color: '#fca5a5', fontSize: '0.6875rem', fontWeight: 600,
-                  cursor: launching ? 'not-allowed' : 'pointer',
-                  textTransform: 'uppercase' as const, letterSpacing: '0.3px',
-                }}
-              >
-                {launching && missionType === 'scripted' ? 'Deploying...' : 'Scripted'}
-              </button>
+            <div style={{ marginBottom: '8px' }}>
               <button
                 onClick={async () => {
                   setSeeding(true);
@@ -404,13 +397,12 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
                 }}
                 disabled={seeding || launching}
                 style={{
-                  padding: '8px 8px', borderRadius: '6px',
-                  border: '1px solid rgba(34, 197, 94, 0.4)',
-                  backgroundColor: seeding ? 'rgba(22, 101, 52, 0.3)' : 'rgba(34, 197, 94, 0.15)',
-                  color: '#86efac', fontSize: '0.6875rem', fontWeight: 600,
+                  width: '100%', padding: '6px 8px', borderRadius: '4px',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  backgroundColor: seeding ? 'rgba(22, 101, 52, 0.3)' : 'rgba(34, 197, 94, 0.08)',
+                  color: '#86efac', fontSize: '0.5625rem', fontWeight: 600,
                   cursor: seeding ? 'not-allowed' : 'pointer',
                   textTransform: 'uppercase' as const, letterSpacing: '0.3px',
-                  whiteSpace: 'nowrap' as const,
                 }}
               >
                 {seeding ? 'Seeding...' : seedStatus ?? 'Seed COP'}

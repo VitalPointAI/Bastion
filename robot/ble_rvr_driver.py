@@ -397,6 +397,10 @@ class BLERVRDriver:
 
             await asyncio.sleep(duration_sec)
             await self.safe_stop()
+        except asyncio.CancelledError:
+            log.info("ble_rvr.drive.cancelled", name=self._name)
+            await self.safe_stop()
+            raise
         except Exception as exc:
             log.error("ble_rvr.drive.error", name=self._name, error=str(exc))
             await self.safe_stop()

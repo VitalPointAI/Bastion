@@ -553,21 +553,19 @@ robotRouter.post('/scenarios/:sequenceId/stop', async (req, res) => {
     (state as unknown as Record<string, unknown>).phase = 'complete';
     (state as unknown as Record<string, unknown>).phaseStartedAt = new Date().toISOString();
 
-    // Send cancel + stop to all robots in the sequence.
-    // mission:cancel triggers executor.abort() which cancels the running task.
-    // robot:manual_stop is a fallback that also calls abort if a mission is active.
+    // Send cancel to the leader robot — mission:cancel on the robot side
+    // now also stops all BLE followers (cancels their tasks + stops motors).
+    // We only need to reach the leader; followers are controlled through it.
     const svc = getRobotMissionService();
-    const allRobots = [state.config.leaderId, ...state.config.followerIds];
-    for (const robotId of allRobots) {
-      const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
-      if (robot?.ws && robot.ws.readyState === 1) {
-        try {
-          robot.ws.send(JSON.stringify({ type: 'mission:cancel', robot_id: robotId }));
-          robot.ws.send(JSON.stringify({ type: 'robot:manual_stop', robot_id: robotId }));
-        } catch { /* non-fatal */ }
-      } else {
-        console.warn(`[robot-routes] stop: robot ${robotId} not connected (ws state: ${robot?.ws?.readyState})`);
-      }
+    const leader = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId);
+    if (leader?.ws && leader.ws.readyState === 1) {
+      try {
+        leader.ws.send(JSON.stringify({ type: 'mission:cancel', robot_id: state.config.leaderId }));
+        leader.ws.send(JSON.stringify({ type: 'robot:manual_stop', robot_id: state.config.leaderId }));
+        console.log(`[robot-routes] stop: sent cancel+stop to leader ${state.config.leaderId}`);
+      } catch { /* non-fatal */ }
+    } else {
+      console.warn(`[robot-routes] stop: leader ${state.config.leaderId} not connected (ws state: ${leader?.ws?.readyState})`);
     }
 
     res.json({ status: 'stopped', sequenceId: req.params.sequenceId });
@@ -584,6 +582,55 @@ robotRouter.post('/scenarios/:sequenceId/stop', async (req, res) => {
   }
 
   res.status(404).json({ error: 'Sequence not found' });
+});
+
+// ---------------------------------------------------------------------------
+// POST /scenarios/:sequenceId/pause — Pause an active autonomous mission
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/:sequenceId/pause', async (req, res) => {
+  const autoOrch = getAutonomousOrchestrator();
+  const state = autoOrch.getState(req.params.sequenceId);
+
+  if (!state || state.phase === 'complete') {
+    res.status(404).json({ error: 'No active sequence found' });
+    return;
+  }
+
+  // Send manual_stop to leader (stops motors + BLE followers) but DON'T
+  // mark as complete — mission state is preserved for resume.
+  const svc = getRobotMissionService();
+  const leader = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId);
+  if (leader?.ws && leader.ws.readyState === 1) {
+    try {
+      leader.ws.send(JSON.stringify({ type: 'robot:manual_stop', robot_id: state.config.leaderId }));
+      console.log(`[robot-routes] pause: sent manual_stop to leader ${state.config.leaderId}`);
+    } catch { /* non-fatal */ }
+  }
+
+  // Store the paused phase so we can display it
+  (state as unknown as Record<string, unknown>).paused = true;
+  (state as unknown as Record<string, unknown>).pausedPhase = state.phase;
+
+  res.json({ status: 'paused', sequenceId: req.params.sequenceId, phase: state.phase });
+});
+
+// ---------------------------------------------------------------------------
+// POST /scenarios/:sequenceId/resume — Resume a paused autonomous mission
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/:sequenceId/resume', async (req, res) => {
+  const autoOrch = getAutonomousOrchestrator();
+  const state = autoOrch.getState(req.params.sequenceId);
+
+  if (!state || state.phase === 'complete') {
+    res.status(404).json({ error: 'No active sequence found' });
+    return;
+  }
+
+  (state as unknown as Record<string, unknown>).paused = false;
+
+  res.json({ status: 'resumed', sequenceId: req.params.sequenceId, phase: state.phase });
 });
 
 // ---------------------------------------------------------------------------

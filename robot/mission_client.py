@@ -468,6 +468,16 @@ async def receive_loop(
                 # Abort cancels the running asyncio task (stopping drive loops),
                 # stops the motors, and transitions the mission to failed.
                 await executor.abort()
+                # Also stop all BLE follower tasks and motors
+                if _ble_followers:
+                    for follower in _ble_followers.followers:
+                        if follower.driver.connected:
+                            log.info("mission_client.cancel_follower", robot_id=follower.robot_id)
+                            await follower.driver.safe_stop()
+                    # Cancel any running follower asyncio tasks
+                    for task in asyncio.all_tasks():
+                        if task.get_name().startswith("follower-"):
+                            task.cancel()
 
             elif msg_type == "swarm:add_resource":
                 log.info("mission_client.received.swarm_add_resource", robot_id=msg.get("robot_id"))

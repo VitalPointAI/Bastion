@@ -218,6 +218,12 @@ class RVRDriver:
             dy = math.cos(rad) * speed_ms * duration_sec
             self._position = (self._position[0] + dx, self._position[1] + dy)
             await self.safe_stop()
+        except asyncio.CancelledError:
+            # Task was cancelled (mission abort) — stop motors and re-raise
+            # so cancellation propagates up through drive_to_point → patrol loop
+            log.info("rvr_driver.drive.cancelled")
+            await self.safe_stop()
+            raise
         except Exception as exc:  # noqa: BLE001
             log.error("rvr_driver.drive.error", error=str(exc))
             await self.safe_stop()
