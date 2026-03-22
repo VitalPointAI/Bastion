@@ -56,6 +56,8 @@ export interface COPSymbolSpec {
   linkedEntities: string[];
   /** CCO class URI for ontology validation */
   ccoClass: string;
+  /** Optional custom icon HTML — bypasses milsymbol rendering when set (e.g. OSINT events) */
+  iconHtml?: string;
   /** Agent confidence in placement (0-1) */
   confidence: number;
   /** Source authority for conflict resolution ranking */

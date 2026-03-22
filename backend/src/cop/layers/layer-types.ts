@@ -44,6 +44,8 @@ export interface COPSymbolSpec {
   movementPath?: Array<{ phase: number; position: LatLng }>;
   linkedEntities: string[];
   ccoClass: string;
+  /** Optional custom icon HTML — bypasses milsymbol rendering when set (e.g. OSINT events) */
+  iconHtml?: string;
   confidence: number;
   sourceAuthority: string;
   /** Confidence tier computed from confidence score — drives visual encoding */

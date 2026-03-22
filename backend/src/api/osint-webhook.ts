@@ -225,4 +225,20 @@ osintWebhookRouter.delete('/feeds/:feedId', async (req, res) => {
   }
 });
 
+// ============================================================================
+// POST /feeds/poll-now - Trigger immediate poll of all active feeds
+// ============================================================================
+
+osintWebhookRouter.post('/feeds/poll-now', async (_req, res) => {
+  try {
+    const { feedPoller } = await import('../osint/feed-poller.js');
+    const result = await feedPoller.pollAllNow();
+    console.log(`[OSINT Feeds] Manual poll: ${result.feedsPolled} feeds, ${result.itemsStored} new items`);
+    res.json(result);
+  } catch (error) {
+    console.error('[OSINT Feeds] Error polling feeds:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default osintWebhookRouter;

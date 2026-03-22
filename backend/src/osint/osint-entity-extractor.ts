@@ -18,6 +18,7 @@
 import { randomUUID } from 'crypto';
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { geocodingService, type GeoLocation } from '../lib/geocoding-service.js';
+import { performWebSearch } from '../doc-intelligence/web-search.js';
 import type { OSINTEvent } from '../graph/osint/types.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -49,6 +50,70 @@ interface ExtractionResult {
   relationships: ExtractedRelationship[];
   tensions: ExtractedTension[];
   locations: GeoLocation[];
+}
+
+// ── Actor Description Enrichment ──────────────────────────────────────────
+
+/** Cache enriched descriptions to avoid repeated lookups for the same actor */
+const enrichmentCache = new Map<string, string>();
+
+/**
+ * Enrich an actor's description using web search + LLM summarization.
+ * Returns a 1-3 sentence description of who/what the actor is.
+ */
+async function enrichActorDescription(
+  actorName: string,
+  actorType: string,
+  contextSnippet: string,
+): Promise<string> {
+  const cacheKey = actorName.toLowerCase().trim();
+  if (enrichmentCache.has(cacheKey)) return enrichmentCache.get(cacheKey)!;
+
+  try {
+    // 1. Web search for context about this actor
+    const searchQuery = actorType === 'nation'
+      ? `${actorName} country geopolitical overview`
+      : `${actorName} ${actorType} who what`;
+    const searchResults = await performWebSearch(searchQuery, 3);
+    const searchContext = searchResults
+      .map(r => `${r.title}: ${r.snippet}`)
+      .join('\n')
+      .slice(0, 2000);
+
+    // 2. LLM summarization into a concise description
+    const { createLLMForAgent: createLLM } = await import('../agents/langgraph/llm-factory.js');
+    const llm = await createLLM({
+      agentId: 'actor-enrichment',
+      overrides: { temperature: 0, maxTokens: 256 },
+    });
+
+    const result = await Promise.race([
+      llm.invoke([
+        { role: 'system', content: `You are a military intelligence analyst. Write a concise 1-3 sentence description of this entity for a knowledge graph node. Include what it is, its significance, and any known affiliations or capabilities. Be factual and specific. Return ONLY the description text, no quotes or labels.` },
+        { role: 'user', content: `Entity: ${actorName}\nType: ${actorType}\nContext from OSINT report: ${contextSnippet.slice(0, 500)}\n\nWeb search results:\n${searchContext}` },
+      ]),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Enrichment timed out')), 15_000),
+      ),
+    ]);
+
+    const description = (typeof result.content === 'string'
+      ? result.content
+      : JSON.stringify(result.content)
+    ).trim();
+
+    if (description.length > 10) {
+      enrichmentCache.set(cacheKey, description);
+      return description;
+    }
+  } catch (err) {
+    console.warn(`[OSINT-Enrich] Failed to enrich "${actorName}":`, err instanceof Error ? err.message : err);
+  }
+
+  // Fallback: use whatever context we have
+  const fallback = `${actorType === 'nation' ? 'Nation' : actorType.charAt(0).toUpperCase() + actorType.slice(1)} referenced in OSINT reporting.`;
+  enrichmentCache.set(cacheKey, fallback);
+  return fallback;
 }
 
 // ── LLM Extraction ─────────────────────────────────────────────────────────
@@ -186,6 +251,17 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
         `UPDATE osint_events SET location = $1 WHERE id = $2`,
         [JSON.stringify(primaryLocation), event.id],
       );
+
+      // Update event in-memory so COP refresh picks up the new location
+      event.location = primaryLocation;
+
+      // Trigger COP layer refresh now that we have a location
+      if (event.workspaceId) {
+        const { updateOSINTCOPLayer } = await import('./osint-cop-pipeline.js');
+        updateOSINTCOPLayer(event.workspaceId, [event]).catch(err =>
+          console.warn(`[OSINT-Extract] COP refresh after location backfill failed:`, err),
+        );
+      }
     } catch (err) {
       console.warn(`[OSINT-Extract] Failed to update event location:`, err);
     }
@@ -216,6 +292,13 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
       };
       const graphType = typeMap[actor.type] ?? 'organization';
 
+      // Enrich description if LLM extraction gave us nothing useful
+      let description = actor.description ?? '';
+      if (description.length < 20) {
+        const contextSnippet = `${event.title}\n${(event.description ?? '').slice(0, 300)}`;
+        description = await enrichActorDescription(actor.name, actor.type, contextSnippet);
+      }
+
       await executeWriteQuery(`
         MERGE (a:Actor {id: $id})
         ON CREATE SET
@@ -230,6 +313,12 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
           a.updatedAt = $now
         ON MATCH SET
           a.updatedAt = $now,
+          a.attributes = CASE
+            WHEN size($description) > size(
+              COALESCE((a.attributes), '{}')
+            ) THEN $attributes
+            ELSE a.attributes
+          END,
           a.sourceDocumentIds = CASE
             WHEN NOT $docId IN a.sourceDocumentIds
             THEN a.sourceDocumentIds + $docId
@@ -240,9 +329,10 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
         name: actor.name,
         type: graphType,
         aliases: actor.aliases ?? [],
+        description,
         attributes: JSON.stringify({
           source: 'osint',
-          description: actor.description ?? '',
+          description,
           extractedFrom: event.id,
         }),
         workspaceId: event.workspaceId ?? null,

@@ -12,9 +12,10 @@ import RSSParser from 'rss-parser';
 import { osintFeedStore } from '../jpp/osint-feed-store.js';
 import { osintEventStore } from '../graph/osint/event-store.js';
 import { notifyCOPChange } from '../cop/index.js';
-import { extractLocation } from './osint-graph-sync.js';
+import { extractLocation, syncOSINTEventToGraph } from './osint-graph-sync.js';
 import { extractAndSyncToGraph } from './osint-entity-extractor.js';
 import { updateOSINTCOPLayer } from './osint-cop-pipeline.js';
+import { geocodingService } from '../lib/geocoding-service.js';
 import { getPool } from '../lib/database.js';
 import type { OSINTEventInput, OSINTEvent } from '../graph/osint/types.js';
 import type { OSINTFeedConfig } from '../jpp/osint-feed-store.js';
@@ -85,9 +86,21 @@ async function fetchRSSFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
       }
     }
 
-    // Extract geo-location from title + description
+    // Extract geo-location: fast keyword lookup first, LLM fallback
     const fullText = `${item.title ?? ''} ${item.contentSnippet ?? item.content ?? item.summary ?? ''}`;
-    const location = extractLocation(fullText) ?? undefined;
+    let location = extractLocation(fullText) ?? undefined;
+
+    // LLM geocoding fallback for items without a keyword match
+    if (!location) {
+      try {
+        const llmLoc = await geocodingService.extractPrimaryLocation(fullText);
+        if (llmLoc && llmLoc.latitude !== 0 && llmLoc.longitude !== 0) {
+          location = llmLoc;
+        }
+      } catch {
+        // Non-fatal: proceed without location
+      }
+    }
 
     events.push({
       title: item.title ?? 'Untitled',
@@ -127,12 +140,27 @@ async function fetchAPIFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
   const body = await res.json() as unknown[];
   const items = Array.isArray(body) ? body : (body as Record<string, unknown>).items as unknown[] ?? [];
 
-  return items.map((item: unknown) => {
+  const results: OSINTEventInput[] = [];
+  for (const item of items) {
     const obj = item as Record<string, unknown>;
     const title = (obj.title as string) ?? 'Untitled';
     const description = (obj.description as string) ?? (obj.summary as string) ?? '';
-    const location = extractLocation(`${title} ${description}`) ?? undefined;
-    return {
+    const fullText = `${title} ${description}`;
+    let location = extractLocation(fullText) ?? undefined;
+
+    // LLM geocoding fallback
+    if (!location) {
+      try {
+        const llmLoc = await geocodingService.extractPrimaryLocation(fullText);
+        if (llmLoc && llmLoc.latitude !== 0 && llmLoc.longitude !== 0) {
+          location = llmLoc;
+        }
+      } catch {
+        // Non-fatal
+      }
+    }
+
+    results.push({
       title,
       description,
       sourceType: 'news' as const,
@@ -144,8 +172,9 @@ async function fetchAPIFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
       tags: Array.isArray(obj.tags) ? obj.tags as string[] : [],
       rawContent: (obj.content as string) ?? '',
       metadata: { feedId: feed.id },
-    };
-  });
+    });
+  }
+  return results;
 }
 
 // ─── Feed Poller Service ─────────────────────────────────────────────────────
@@ -219,8 +248,23 @@ class FeedPoller {
     }
   }
 
-  /** Poll a single feed for new items */
-  private async pollFeed(feed: OSINTFeedConfig): Promise<void> {
+  /** Poll all active feeds immediately. Returns count of new items stored. */
+  async pollAllNow(): Promise<{ feedsPolled: number; itemsStored: number }> {
+    const feeds = await osintFeedStore.getActiveFeeds();
+    let totalStored = 0;
+    for (const feed of feeds) {
+      try {
+        const count = await this.pollFeed(feed);
+        totalStored += count;
+      } catch (err) {
+        console.warn(`[FeedPoller] Manual poll failed for "${feed.sourceName}":`, err);
+      }
+    }
+    return { feedsPolled: feeds.length, itemsStored: totalStored };
+  }
+
+  /** Poll a single feed for new items. Returns count of items stored. */
+  private async pollFeed(feed: OSINTFeedConfig): Promise<number> {
     const since = await getLastFetchedAt(feed.id);
 
     let items: OSINTEventInput[];
@@ -231,18 +275,18 @@ class FeedPoller {
         items = await fetchAPIFeed(feed, since);
       } else {
         // Simulated or webhook feeds don't poll
-        return;
+        return 0;
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(`[FeedPoller] Fetch failed for "${feed.sourceName}": ${msg}`);
       await updatePollState(feed.id, null, 0, msg);
-      return;
+      return 0;
     }
 
     if (items.length === 0) {
       await updatePollState(feed.id, null, 0);
-      return;
+      return 0;
     }
 
     console.log(`[FeedPoller] "${feed.sourceName}" returned ${items.length} new items`);
@@ -271,9 +315,15 @@ class FeedPoller {
         storedEvents.push(storedEvent);
         lastGuid = (item.metadata as Record<string, unknown>)?.guid as string ?? item.sourceUrl ?? null;
 
-        // Extract entities via LLM and sync to knowledge graph (non-blocking)
+        // Always create a basic graph node (no LLM needed, guaranteed to succeed)
+        syncOSINTEventToGraph(storedEvent).catch(err =>
+          console.warn(`[FeedPoller] Basic graph sync failed for "${item.title}":`, err),
+        );
+
+        // Then attempt LLM-enriched extraction (actors, relationships, tensions)
+        // If this fails, the basic node above still exists in the graph
         extractAndSyncToGraph(storedEvent).catch(err =>
-          console.error(`[FeedPoller] Entity extraction/graph sync failed for "${item.title}":`, err),
+          console.warn(`[FeedPoller] LLM entity extraction failed for "${item.title}":`, err),
         );
       } catch (err) {
         console.error(`[FeedPoller] Failed to store event "${item.title}":`, err);
@@ -293,6 +343,8 @@ class FeedPoller {
       // 2. Also trigger full LLM COP generation (best-effort, slower)
       notifyCOPChange(feed.problemSetId, `osint-feed-${feed.sourceName}`);
     }
+
+    return stored;
   }
 }
 

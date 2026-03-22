@@ -54,6 +54,7 @@ import { aiStaffRouter, aiStaffStore } from './ai-staff/index.js';
 import { ironclawRouter, ironclawStore } from './ironclaw/index.js';
 import { validationRouter } from './validation/validation-router.js';
 import { registerValidationJobs } from './validation/validation-scheduler.js';
+import { registerOSINTCleanupJob } from './osint/osint-cleanup-scheduler.js';
 import { requireAuth } from './auth/auth-instance.js';
 import { discoveryRouter, setupDiscoveryWS, getDiscoveryService } from './discovery/index.js';
 import { setupInheritanceWebSocket } from './inheritance/inheritance-ws.js';
@@ -544,6 +545,13 @@ server.listen(port, async () => {
     console.log('Validation scheduler registered');
   } catch (error) {
     console.error('Failed to register validation scheduler:', error);
+  }
+
+  // Register OSINT graph cleanup scheduler
+  try {
+    await registerOSINTCleanupJob();
+  } catch (error) {
+    console.error('Failed to register OSINT cleanup scheduler:', error);
   }
 
   // Start OAuth token auto-refresh timer

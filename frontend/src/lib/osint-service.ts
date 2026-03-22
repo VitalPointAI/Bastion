@@ -134,6 +134,16 @@ export const osintService = {
     return res.json();
   },
 
+  /** Trigger immediate poll of all active feeds. */
+  async pollNow(): Promise<{ feedsPolled: number; itemsStored: number }> {
+    const res = await fetch(`${API_BASE}/api/osint/feeds/poll-now`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(`Failed to poll feeds: ${res.statusText}`);
+    return res.json();
+  },
+
   /** Get OSINT events relevant to specific objectives. */
   async getEventsByRelevance(
     problemSetId: string,

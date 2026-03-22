@@ -273,18 +273,27 @@ export function COPLayerControls({
                     const opacity = layerOpacity[layer.id] ?? 100;
                     const symbols = layer.spec?.symbols ?? [];
                     const symbolCount = symbols.length;
-                    // Determine affiliation for force disposition layers
-                    let affiliationPrefix = '';
-                    if (layer.layerType === 'force_disposition' && symbolCount > 0) {
-                      const hasFriendly = symbols.some((s) => s.affiliation === 'friendly');
-                      const hasEnemy = symbols.some((s) => s.affiliation === 'enemy' || (s as unknown as Record<string, unknown>).affiliation === 'hostile');
-                      if (hasFriendly && !hasEnemy) affiliationPrefix = 'Friendly ';
-                      else if (hasEnemy && !hasFriendly) affiliationPrefix = 'Adversary ';
-                      else if (hasFriendly && hasEnemy) affiliationPrefix = 'Combined ';
+                    // Use displayName from metadata if available (e.g. OSINT category layers)
+                    const meta = layer.spec?.metadata as Record<string, unknown> | undefined;
+                    const displayName = meta?.displayName as string | undefined;
+
+                    let label: string;
+                    if (displayName) {
+                      label = `${displayName}${symbolCount > 0 ? ` (${symbolCount})` : ''}`;
+                    } else {
+                      // Determine affiliation for force disposition layers
+                      let affiliationPrefix = '';
+                      if (layer.layerType === 'force_disposition' && symbolCount > 0) {
+                        const hasFriendly = symbols.some((s) => s.affiliation === 'friendly');
+                        const hasEnemy = symbols.some((s) => s.affiliation === 'enemy' || (s as unknown as Record<string, unknown>).affiliation === 'hostile');
+                        if (hasFriendly && !hasEnemy) affiliationPrefix = 'Friendly ';
+                        else if (hasEnemy && !hasFriendly) affiliationPrefix = 'Adversary ';
+                        else if (hasFriendly && hasEnemy) affiliationPrefix = 'Combined ';
+                      }
+                      label = `${affiliationPrefix}${LAYER_TYPE_LABELS[layer.layerType] ?? layer.layerType}${
+                        symbolCount > 0 ? ` (${symbolCount})` : ''
+                      }`;
                     }
-                    const label = `${affiliationPrefix}${LAYER_TYPE_LABELS[layer.layerType] ?? layer.layerType}${
-                      symbolCount > 0 ? ` (${symbolCount})` : ''
-                    }`;
 
                     return (
                       <div key={layer.id}>

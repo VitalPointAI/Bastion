@@ -289,7 +289,7 @@ names: {classes}
 # Training
 # ---------------------------------------------------------------------------
 
-def run_training(epochs: int = 100, imgsz: int = 640, batch: int = 8):
+def run_training(epochs: int = 100, imgsz: int = 640, batch: int = 8, resume: bool = False):
     """Fine-tune YOLOv8n on the custom dataset."""
     try:
         from ultralytics import YOLO
@@ -297,26 +297,37 @@ def run_training(epochs: int = 100, imgsz: int = 640, batch: int = 8):
         print("Error: ultralytics not installed. Run: pip install ultralytics")
         sys.exit(1)
 
-    if not YAML_PATH.exists():
-        print("Error: dataset.yaml not found. Run --augment first.")
-        sys.exit(1)
+    last_pt = SCRIPT_DIR / "runs" / "detect" / "bastion-tanks" / "weights" / "last.pt"
 
-    model = YOLO("yolov8n.pt")  # Start from pretrained nano model
-    results = model.train(
-        data=str(YAML_PATH),
-        epochs=epochs,
-        imgsz=imgsz,
-        batch=batch,
-        name="bastion-tanks",
-        project=str(SCRIPT_DIR / "runs" / "detect"),
-        exist_ok=True,  # Overwrite previous runs instead of incrementing
-        patience=20,
-        save=True,
-        plots=True,
-        device=0,  # GPU (use 'cpu' if no GPU)
-        amp=False,  # Disable AMP — Orin Nano OOMs during AMP check
-        workers=2,  # Reduce workers for low-memory devices
-    )
+    if resume:
+        if not last_pt.exists():
+            print(f"Error: No checkpoint found at {last_pt}")
+            print("Cannot resume — run --train first to start training.")
+            sys.exit(1)
+        print(f"  Resuming from checkpoint: {last_pt}")
+        model = YOLO(str(last_pt))
+        results = model.train(resume=True)
+    else:
+        if not YAML_PATH.exists():
+            print("Error: dataset.yaml not found. Run --augment first.")
+            sys.exit(1)
+
+        model = YOLO("yolov8n.pt")  # Start from pretrained nano model
+        results = model.train(
+            data=str(YAML_PATH),
+            epochs=epochs,
+            imgsz=imgsz,
+            batch=batch,
+            name="bastion-tanks",
+            project=str(SCRIPT_DIR / "runs" / "detect"),
+            exist_ok=True,  # Overwrite previous runs instead of incrementing
+            patience=20,
+            save=True,
+            plots=True,
+            device=0,  # GPU (use 'cpu' if no GPU)
+            amp=False,  # Disable AMP — Orin Nano OOMs during AMP check
+            workers=2,  # Reduce workers for low-memory devices
+        )
 
     best_path = SCRIPT_DIR / "runs" / "detect" / "bastion-tanks" / "weights" / "best.pt"
     if best_path.exists():
@@ -367,6 +378,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=100, help="Training epochs (default: 100)")
     parser.add_argument("--batch", type=int, default=8, help="Batch size (default: 8)")
     parser.add_argument("--imgsz", type=int, default=640, help="Image size (default: 640)")
+    parser.add_argument("--resume", action="store_true", help="Resume training from last checkpoint")
     parser.add_argument("--all", action="store_true", help="Run augment + train + export")
     args = parser.parse_args()
 
@@ -390,6 +402,10 @@ def main():
         print("\n=== Augmentation ===")
         run_augmentation(classes)
         create_dataset_split(classes)
+
+    if args.resume:
+        print("\n=== Resuming Training ===")
+        run_training(resume=True)
 
     if args.train or args.all:
         print("\n=== Training ===")

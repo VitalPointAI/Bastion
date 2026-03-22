@@ -316,6 +316,8 @@ export function IngestionDrawer({ problemSetId, isOpen, onOpen, onClose }: Inges
   const [docsLoading, setDocsLoading] = useState(false);
   const [osintFeeds, setOsintFeeds] = useState<OSINTFeedConfig[]>([]);
   const [osintLoading, setOsintLoading] = useState(false);
+  const [polling, setPolling] = useState(false);
+  const [pollResult, setPollResult] = useState<string | null>(null);
 
   // Auto-close timer ref — cancelled if new content arrives
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -463,6 +465,22 @@ export function IngestionDrawer({ problemSetId, isOpen, onOpen, onClose }: Inges
       setOsintFeeds((prev) => prev.filter((f) => f.id !== feedId));
     } catch {
       // Non-fatal
+    }
+  }, []);
+
+  // ── Poll all feeds now ───────────────────────────────────────────────────
+  const handlePollNow = useCallback(async () => {
+    setPolling(true);
+    setPollResult(null);
+    try {
+      const result = await osintService.pollNow();
+      setPollResult(`Polled ${result.feedsPolled} feeds — ${result.itemsStored} new items`);
+      setTimeout(() => setPollResult(null), 5000);
+    } catch (err) {
+      setPollResult(`Poll failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+      setTimeout(() => setPollResult(null), 5000);
+    } finally {
+      setPolling(false);
     }
   }, []);
 
@@ -688,6 +706,23 @@ export function IngestionDrawer({ problemSetId, isOpen, onOpen, onClose }: Inges
             defaultOpen={osintFeeds.length > 0}
             id="drawer-osint-feeds"
           >
+            {/* Poll Now button + result */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px 8px' }}>
+              <button
+                className="btn btn--sm btn--secondary"
+                onClick={handlePollNow}
+                disabled={polling || osintFeeds.length === 0}
+                title="Fetch new items from all active feeds immediately"
+                style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+              >
+                {polling ? 'Polling...' : 'Poll Now'}
+              </button>
+              {pollResult && (
+                <span style={{ fontSize: '0.7rem', color: pollResult.startsWith('Poll failed') ? '#ef4444' : '#22c55e' }}>
+                  {pollResult}
+                </span>
+              )}
+            </div>
             <div className="ingestion-drawer-feeds-list">
               {osintLoading && (
                 <div className="ingestion-drawer-loading">Loading feeds...</div>
