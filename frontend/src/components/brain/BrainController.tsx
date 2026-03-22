@@ -86,7 +86,7 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   }, []);
 
   // ── Data hooks ──────────────────────────────────────────────────────────────
-  const { data, loading: dataLoading, refetch } = useBrainData(problemSetId);
+  const { data, totalNodes, totalEdges, isTruncated, loadMore, loading: dataLoading, refetch } = useBrainData(problemSetId);
   void dataLoading; // Loading state used by parent or future spinner
   void refetch;
 
@@ -448,6 +448,32 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
               nhopWarning={nhopWarning}
               onExpand={focusNodeId ? () => expandNHop(focusNodeId) : undefined}
             />
+            {/* Progressive loading status bar */}
+            {totalNodes > 0 && (
+              <div style={{
+                position: 'absolute', bottom: 8, right: 12, zIndex: 20,
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'rgba(0,0,0,0.75)', padding: '4px 10px',
+                borderRadius: 6, fontSize: '0.7rem', color: '#94a3b8',
+                fontFamily: "'Fira Code', monospace",
+              }}>
+                <span>{data.nodes.length} / {totalNodes} nodes</span>
+                <span style={{ color: '#475569' }}>|</span>
+                <span>{data.edges.length} / {totalEdges} edges</span>
+                {isTruncated && (
+                  <button
+                    onClick={loadMore}
+                    style={{
+                      marginLeft: 4, padding: '2px 8px', fontSize: '0.65rem',
+                      background: '#1e40af', color: '#e2e8f0', border: 'none',
+                      borderRadius: 4, cursor: 'pointer',
+                    }}
+                  >
+                    Load More
+                  </button>
+                )}
+              </div>
+            )}
             <ParticleOverlay
               particlesRef={particlesRef}
               width={centerSize.w}

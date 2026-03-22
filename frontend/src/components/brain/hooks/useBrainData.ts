@@ -140,10 +140,23 @@ function computeConfidenceTier(confidence: number): 'high' | 'medium' | 'low' {
   return 'low';
 }
 
+/** Default max nodes to show initially. Expand via loadMore(). */
+const INITIAL_NODE_LIMIT = 300;
+
+/** How many additional nodes to load per "load more" click */
+const LOAD_MORE_BATCH = 200;
+
 // ─── Return type ──────────────────────────────────────────────────────────────
 
 export interface UseBrainDataReturn {
   data: BrainGraphData;
+  /** Full (untruncated) node/edge counts */
+  totalNodes: number;
+  totalEdges: number;
+  /** Whether the displayed data is truncated */
+  isTruncated: boolean;
+  /** Load more nodes into the visible set */
+  loadMore: () => void;
   loading: boolean;
   error: string | null;
   refetch: () => void;
@@ -279,12 +292,42 @@ async function safeFetch<T>(url: string): Promise<T | null> {
  * @param atTime - Optional ISO timestamp for temporal (historical) queries
  */
 export function useBrainData(problemSetId: string, atTime?: string | null): UseBrainDataReturn {
-  const [data, setData] = useState<BrainGraphData>({ nodes: [], edges: [] });
+  const [fullData, setFullData] = useState<BrainGraphData>({ nodes: [], edges: [] });
+  const [visibleLimit, setVisibleLimit] = useState(INITIAL_NODE_LIMIT);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
-  const refetch = useCallback(() => setTick((t) => t + 1), []);
+  const refetch = useCallback(() => {
+    setVisibleLimit(INITIAL_NODE_LIMIT);
+    setTick((t) => t + 1);
+  }, []);
+
+  const loadMore = useCallback(() => {
+    setVisibleLimit((prev) => prev + LOAD_MORE_BATCH);
+  }, []);
+
+  // Truncate to top N by centrality for progressive loading
+  const data = useMemo<BrainGraphData>(() => {
+    const allNodes = fullData.nodes;
+    if (allNodes.length <= visibleLimit) return fullData;
+
+    // Sort by centrality (highest first), take top N
+    const sorted = [...allNodes].sort((a, b) => (b.centrality ?? 0) - (a.centrality ?? 0));
+    const visibleNodes = sorted.slice(0, visibleLimit);
+    const visibleIds = new Set(visibleNodes.map((n) => n.id));
+
+    // Filter edges to only reference visible nodes
+    const visibleEdges = fullData.edges.filter(
+      (e) => visibleIds.has(e.source) && visibleIds.has(e.target),
+    );
+
+    return { nodes: visibleNodes, edges: visibleEdges };
+  }, [fullData, visibleLimit]);
+
+  const totalNodes = fullData.nodes.length;
+  const totalEdges = fullData.edges.length;
+  const isTruncated = totalNodes > visibleLimit;
 
   useEffect(() => {
     if (!problemSetId) return;
@@ -338,7 +381,7 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
               isContradiction: edge.isContradiction as boolean | undefined,
             };
           });
-          setData({ nodes: snapshotNodes, edges: snapshotEdges });
+          setFullData({ nodes: snapshotNodes, edges: snapshotEdges });
         })
         .catch((err: unknown) => {
           if (cancelled) return;
@@ -522,7 +565,7 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
           node.centrality = centrality.get(node.id) ?? 0;
         }
 
-        setData({ nodes, edges });
+        setFullData({ nodes, edges });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -537,5 +580,5 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
     };
   }, [problemSetId, tick, atTime]);
 
-  return { data, loading, error, refetch };
+  return { data, totalNodes, totalEdges, isTruncated, loadMore, loading, error, refetch };
 }

@@ -582,7 +582,31 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
       });
     }
 
-    const nodes = actors.map(actor => ({
+    // ── Server-side OSINT event clustering ────────────────────────────────
+    // Group OSINT event nodes by source into aggregate "cluster" nodes.
+    // This reduces 1000+ individual OSINT event nodes into ~20 clusters.
+    // Non-OSINT actors pass through unchanged.
+    const osintEventsBySource = new Map<string, typeof actors>();
+    const nonOsintActors: typeof actors = [];
+
+    for (const actor of actors) {
+      // OSINT event nodes are stored with type 'event' (outside ActorType union)
+      // and IDs starting with 'OSINT-'
+      if ((actor.type as string) === 'event' && actor.id.startsWith('OSINT-')) {
+        const attrs = typeof actor.attributes === 'string'
+          ? JSON.parse(actor.attributes) as Record<string, unknown>
+          : (actor.attributes ?? {}) as Record<string, unknown>;
+        const sourceName = (attrs.sourceName as string) ?? 'Unknown';
+        const group = osintEventsBySource.get(sourceName) ?? [];
+        group.push(actor);
+        osintEventsBySource.set(sourceName, group);
+      } else {
+        nonOsintActors.push(actor);
+      }
+    }
+
+    // Build nodes — non-OSINT actors as-is, OSINT events as clusters
+    const nodes = nonOsintActors.map(actor => ({
       id: actor.id,
       label: actor.name,
       type: actor.type,
@@ -592,15 +616,75 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
       workspaceId: actor.workspaceId,
     }));
 
-    // Get relationships as edges by querying each actor's relationships
+    // Create cluster nodes for OSINT event groups
+    const clusterMemberIds = new Set<string>();
+    for (const [sourceName, eventActors] of osintEventsBySource) {
+      if (eventActors.length <= 3) {
+        // Small groups: keep as individual nodes
+        for (const actor of eventActors) {
+          nodes.push({
+            id: actor.id,
+            label: actor.name,
+            type: actor.type,
+            jsonldType: 'cco:InformationBearingEntity',
+            confidence: actor.confidence ?? 0.65,
+            confidenceTier: getConfidenceTierForValue(actor.confidence ?? 0.65),
+            workspaceId: actor.workspaceId,
+          });
+        }
+      } else {
+        // Cluster: create one summary node
+        const clusterId = `cluster:osint:${sourceName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+        nodes.push({
+          id: clusterId,
+          label: `${sourceName} (${eventActors.length} events)`,
+          type: 'organization' as const, // Clusters render as entity nodes in the graph
+          jsonldType: 'cco:InformationBearingEntity',
+          confidence: 0.65,
+          confidenceTier: 'medium' as const,
+          workspaceId: workspaceId,
+        });
+        // Track which member IDs are clustered (for edge remapping)
+        for (const actor of eventActors) {
+          clusterMemberIds.add(actor.id);
+        }
+      }
+    }
+
+    // Get relationships as edges — remap clustered OSINT events to their cluster node
+    // Build a memberIdToClusterId lookup
+    const memberToCluster = new Map<string, string>();
+    for (const [sourceName, eventActors] of osintEventsBySource) {
+      if (eventActors.length > 3) {
+        const clusterId = `cluster:osint:${sourceName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+        for (const actor of eventActors) {
+          memberToCluster.set(actor.id, clusterId);
+        }
+      }
+    }
+
+    const nodeIdSet = new Set(nodes.map(n => n.id));
     const edgeSet = new Map<string, { source: string; target: string; type: string; strength: number }>();
-    for (const actor of actors) {
+
+    // Only query relationships for non-clustered actors to avoid 1000+ queries
+    const actorsToQuery = actors.filter(a => !clusterMemberIds.has(a.id));
+    for (const actor of actorsToQuery) {
       const rels = await relationshipStore.getActorRelationships(actor.id, 'out');
       for (const rel of rels) {
-        if (!edgeSet.has(rel.id)) {
-          edgeSet.set(rel.id, {
-            source: rel.sourceActorId,
-            target: rel.targetActorId,
+        // Remap source/target if they're clustered OSINT events
+        const source = memberToCluster.get(rel.sourceActorId) ?? rel.sourceActorId;
+        const target = memberToCluster.get(rel.targetActorId) ?? rel.targetActorId;
+
+        // Skip edges where both ends are the same cluster
+        if (source === target) continue;
+        // Skip edges to nodes not in the visible set
+        if (!nodeIdSet.has(source) || !nodeIdSet.has(target)) continue;
+
+        const edgeKey = `${source}-${target}-${rel.type}`;
+        if (!edgeSet.has(edgeKey)) {
+          edgeSet.set(edgeKey, {
+            source,
+            target,
             type: rel.type,
             strength: rel.strength,
           });

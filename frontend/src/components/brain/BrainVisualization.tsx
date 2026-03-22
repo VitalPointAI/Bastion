@@ -335,6 +335,9 @@ export function BrainVisualization({
   // Track simulation halted state to prevent idle CPU drain
   const simulationHaltedRef = useRef(false);
 
+  // Large graph flag — used by nodeThreeObject to skip expensive decorations
+  const isLargeGraphRef = useRef(false);
+
   // ── ResizeObserver ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!containerRef.current) return;
@@ -501,13 +504,16 @@ export function BrainVisualization({
         group.add(ring);
       }
 
-      // Confidence-tier stroke ring: high=solid cyan, medium=dashed amber, low=dotted red
-      if (!isSelected && brainNode.confidenceTier) {
-        const tierColors: Record<string, string> = { high: '#34d399', medium: '#fbbf24', low: '#f87171' };
-        const tierColor = tierColors[brainNode.confidenceTier] ?? '#888888';
-        const tierOpacity = brainNode.confidenceTier === 'high' ? 0.5 : brainNode.confidenceTier === 'medium' ? 0.65 : 0.8;
-        const tierRing = new THREE.Mesh(getRingGeometry(scale * 1.1), getRingMaterial(tierColor, tierOpacity));
-        group.add(tierRing);
+      // Skip decorative rings for large graphs — significant per-node overhead
+      if (!isLargeGraphRef.current) {
+        // Confidence-tier stroke ring: high=solid cyan, medium=dashed amber, low=dotted red
+        if (!isSelected && brainNode.confidenceTier) {
+          const tierColors: Record<string, string> = { high: '#34d399', medium: '#fbbf24', low: '#f87171' };
+          const tierColor = tierColors[brainNode.confidenceTier] ?? '#888888';
+          const tierOpacity = brainNode.confidenceTier === 'high' ? 0.5 : brainNode.confidenceTier === 'medium' ? 0.65 : 0.8;
+          const tierRing = new THREE.Mesh(getRingGeometry(scale * 1.1), getRingMaterial(tierColor, tierOpacity));
+          group.add(tierRing);
+        }
       }
 
       if (brainNode.isGap) {
@@ -516,15 +522,19 @@ export function BrainVisualization({
         group.add(wire);
       }
 
-      const displayLabel = getDisplayLabel(brainNode);
-      const sprite = getCachedSprite(brainNode.id, displayLabel, isDimmed);
-      sprite.position.set(0, NODE_SIZE * scale + 4, 0);
-      group.add(sprite);
+      // For large graphs, only show labels on high-centrality nodes to reduce sprite count
+      const showLabel = !isLargeGraphRef.current || (brainNode.centrality ?? 0) > 0.3 || isSelected;
+      if (showLabel) {
+        const displayLabel = getDisplayLabel(brainNode);
+        const sprite = getCachedSprite(brainNode.id, displayLabel, isDimmed);
+        sprite.position.set(0, NODE_SIZE * scale + 4, 0);
+        group.add(sprite);
+      }
 
       cache.set(brainNode.id, { group, key: cacheKey });
       return group;
     },
-    [], // Stable callback — uses refs for selection state
+    [], // Stable callback — uses refs for mutable state
   );
 
   // Selection changes are handled by the cacheKey in nodeThreeObject —
@@ -563,9 +573,11 @@ export function BrainVisualization({
   // This constant is used as the baseline opacity for non-ghost links.
   const LINK_OPACITY = 0.6;
 
-  // ── Link labels — skip for performance when graph is large ────────────────
+  // ── Performance thresholds based on graph size ──────────────────────────────
   const nodeCount = graphPayload.nodes.length;
   const linkCount = graphPayload.links.length;
+  const isLargeGraph = nodeCount > 300;
+  useEffect(() => { isLargeGraphRef.current = isLargeGraph; }, [isLargeGraph]);
   const showLinkLabels = linkCount < 100; // Only show link labels for small graphs
 
   const linkSpriteCacheRef = useRef(new Map<string, THREE.Object3D>());
@@ -667,6 +679,13 @@ export function BrainVisualization({
 
   // ── Adaptive simulation parameters based on graph size ─────────────────────
   const simParams = useMemo(() => {
+    if (nodeCount > 1000) {
+      // Very large graphs: settle fast, minimal simulation
+      return { warmupTicks: 20, cooldownTicks: 30, cooldownTime: 2000, alphaDecay: 0.15, velocityDecay: 0.6 };
+    }
+    if (nodeCount > 500) {
+      return { warmupTicks: 30, cooldownTicks: 40, cooldownTime: 3000, alphaDecay: 0.12, velocityDecay: 0.55 };
+    }
     if (nodeCount > 200) {
       return { warmupTicks: 40, cooldownTicks: 50, cooldownTime: 4000, alphaDecay: 0.08, velocityDecay: 0.5 };
     }
