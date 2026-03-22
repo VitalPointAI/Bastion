@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from typing import List, Optional
 
 try:
@@ -112,6 +113,7 @@ class VisionEngine:
         self._imgsz = imgsz
         self._last_frame = None  # Last captured BGR numpy frame
         self._last_detections: List[DetectionResult] = []  # Last detection results
+        self._lock = threading.Lock()  # Prevent concurrent camera/model access
 
         if simulate:
             self._mock = MockVisionEngine()
@@ -175,40 +177,42 @@ class VisionEngine:
         3. Flip 180° via cv2.flip (unconditional)
 
         This method is designed to be called via ``asyncio.to_thread`` so that
-        blocking GPU inference does not stall the event loop.
+        blocking GPU inference does not stall the event loop. A threading lock
+        prevents concurrent camera/model access from multiple async loops.
         """
-        img_np = self._prepare_frame(camera)
-        if img_np is None:
-            return []
+        with self._lock:
+            img_np = self._prepare_frame(camera)
+            if img_np is None:
+                return []
 
-        # Store the last frame for annotated keyframe generation
-        self._last_frame = img_np
+            # Store the last frame for annotated keyframe generation
+            self._last_frame = img_np
 
-        raw_results = self._model(img_np, conf=self._threshold, imgsz=self._imgsz, verbose=False)
-        results: List[DetectionResult] = []
+            raw_results = self._model(img_np, conf=self._threshold, imgsz=self._imgsz, verbose=False)
+            results: List[DetectionResult] = []
 
-        for r in raw_results:
-            for box in r.boxes:
-                x1, y1, x2, y2 = box.xyxy[0].tolist()
-                cls_id = int(box.cls[0])
-                results.append(
-                    DetectionResult(
-                        class_desc=self._model.names[cls_id],
-                        confidence=float(box.conf[0]),
-                        bbox={
-                            "left": x1,
-                            "top": y1,
-                            "right": x2,
-                            "bottom": y2,
-                        },
-                        center_x=(x1 + x2) / 2.0,
-                        center_y=(y1 + y2) / 2.0,
+            for r in raw_results:
+                for box in r.boxes:
+                    x1, y1, x2, y2 = box.xyxy[0].tolist()
+                    cls_id = int(box.cls[0])
+                    results.append(
+                        DetectionResult(
+                            class_desc=self._model.names[cls_id],
+                            confidence=float(box.conf[0]),
+                            bbox={
+                                "left": x1,
+                                "top": y1,
+                                "right": x2,
+                                "bottom": y2,
+                            },
+                            center_x=(x1 + x2) / 2.0,
+                            center_y=(y1 + y2) / 2.0,
+                        )
                     )
-                )
 
-        # Store detections so get_annotated_keyframe can draw them
-        self._last_detections = results
-        return results
+            # Store detections so get_keyframe_jpeg can draw them
+            self._last_detections = results
+            return results
 
     # ------------------------------------------------------------------
     # Public async API

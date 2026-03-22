@@ -281,6 +281,13 @@ async def vision_feed_loop(
     log.info("mission_client.vision_feed_loop.start", interval_sec=VISION_FEED_INTERVAL_SEC)
     try:
         while not _shutdown_event.is_set():
+            # Skip when a mission is active — the mission's own _vision_loop
+            # handles detection and keyframes. Two loops competing for the
+            # same camera corrupts the shared _last_frame/_last_detections state.
+            if _executor and _executor.current_mission:
+                await asyncio.sleep(VISION_FEED_INTERVAL_SEC)
+                continue
+
             try:
                 # Detect first — this stores the frame and detections internally.
                 # Then get_keyframe_jpeg draws bounding boxes on the SAME frame.
