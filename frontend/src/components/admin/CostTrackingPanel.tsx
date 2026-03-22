@@ -13,15 +13,17 @@ import {
   type CostLedgerEntry,
 } from '../../lib/admin-service';
 
-function formatUsd(amount: number): string {
-  if (amount < 0.01 && amount > 0) return '<$0.01';
-  return `$${amount.toFixed(2)}`;
+function formatUsd(amount: number | string): string {
+  const n = Number(amount) || 0;
+  if (n < 0.01 && n > 0) return '<$0.01';
+  return `$${n.toFixed(2)}`;
 }
 
-function formatTokens(count: number): string {
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
-  return String(count);
+function formatTokens(count: number | string): string {
+  const n = Number(count) || 0;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(Math.round(n));
 }
 
 function formatDate(iso: string): string {
