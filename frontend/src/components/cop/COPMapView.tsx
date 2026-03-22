@@ -77,6 +77,8 @@ interface COPMapViewProps {
 /** Check if symbol passes perspective filter */
 function matchesPerspective(symbol: COPSymbolSpec, perspective: Perspective): boolean {
   if (perspective === 'combined') return true;
+  // OSINT symbols are intelligence — always show regardless of perspective
+  if (symbol.assertedVia === 'osint_feed_pipeline') return true;
   if (perspective === 'friendly') return symbol.affiliation === 'friendly';
   // adversary perspective shows enemy symbols
   return symbol.affiliation === 'enemy';
