@@ -609,18 +609,17 @@ robotRouter.post('/scenarios/:sequenceId/pause', async (req, res) => {
     return;
   }
 
-  // Send manual_stop to leader (stops motors + BLE followers) but DON'T
-  // mark as complete — mission state is preserved for resume.
+  // Send mission:pause to leader — stops motors but keeps the mission task
+  // alive so it can be resumed. Does NOT call abort().
   const svc = getRobotMissionService();
   const leader = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId);
   if (leader?.ws && leader.ws.readyState === 1) {
     try {
-      leader.ws.send(JSON.stringify({ type: 'robot:manual_stop', robot_id: state.config.leaderId }));
-      console.log(`[robot-routes] pause: sent manual_stop to leader ${state.config.leaderId}`);
+      leader.ws.send(JSON.stringify({ type: 'mission:pause', robot_id: state.config.leaderId }));
+      console.log(`[robot-routes] pause: sent mission:pause to leader ${state.config.leaderId}`);
     } catch { /* non-fatal */ }
   }
 
-  // Store the paused phase so we can display it
   (state as unknown as Record<string, unknown>).paused = true;
   (state as unknown as Record<string, unknown>).pausedPhase = state.phase;
 
@@ -638,6 +637,16 @@ robotRouter.post('/scenarios/:sequenceId/resume', async (req, res) => {
   if (!state || state.phase === 'complete') {
     res.status(404).json({ error: 'No active sequence found' });
     return;
+  }
+
+  // Send mission:resume to leader — unblocks the paused drive loop
+  const svc = getRobotMissionService();
+  const leader = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId);
+  if (leader?.ws && leader.ws.readyState === 1) {
+    try {
+      leader.ws.send(JSON.stringify({ type: 'mission:resume', robot_id: state.config.leaderId }));
+      console.log(`[robot-routes] resume: sent mission:resume to leader ${state.config.leaderId}`);
+    } catch { /* non-fatal */ }
   }
 
   (state as unknown as Record<string, unknown>).paused = false;

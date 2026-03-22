@@ -81,6 +81,8 @@ class MissionExecutor:
         self.current_mission: Optional[MissionJSON] = None
         self.current_state: Optional[MissionState] = None
         self._mission_task: Optional[asyncio.Task] = None
+        self._paused: asyncio.Event = asyncio.Event()
+        self._paused.set()  # Not paused by default (event is "set" = running)
 
         # Event set when an authorization response arrives from Bastion
         self._auth_event: asyncio.Event = asyncio.Event()
@@ -288,6 +290,17 @@ class MissionExecutor:
             target=target_robot_id,
             action=action,
         )
+
+    async def pause(self) -> None:
+        """Pause the mission — stop motors but keep the mission task alive."""
+        self._paused.clear()  # Block drive loops from proceeding
+        await self._driver.safe_stop()
+        log.info("mission_executor.paused")
+
+    async def resume(self) -> None:
+        """Resume a paused mission — unblock drive loops."""
+        self._paused.set()
+        log.info("mission_executor.resumed")
 
     async def abort(self) -> None:
         """Cancel the running mission task and stop the robot immediately."""
@@ -593,6 +606,9 @@ class MissionExecutor:
         avoidance_count = 0
 
         while True:
+            # Wait if paused — blocks here until resume() is called
+            await self._paused.wait()
+
             cx, cy = self._driver.position
             dx = target_x - cx
             dy = target_y - cy

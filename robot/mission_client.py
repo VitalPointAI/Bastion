@@ -457,6 +457,19 @@ async def receive_loop(
                 except Exception as exc:
                     log.error("mission_client.manual_navigate.error", error=str(exc))
 
+            elif msg_type == "mission:pause":
+                log.info("mission_client.mission_pause")
+                await executor.pause()
+                # Also stop BLE followers
+                if _ble_followers:
+                    for follower in _ble_followers.followers:
+                        if follower.driver.connected:
+                            await follower.driver.safe_stop()
+
+            elif msg_type == "mission:resume":
+                log.info("mission_client.mission_resume")
+                await executor.resume()
+
             elif msg_type == "robot:manual_stop":
                 log.info("mission_client.manual_stop")
                 # If a mission is active, abort it (cancels task + stops motors).
