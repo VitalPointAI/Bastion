@@ -315,16 +315,16 @@ class FeedPoller {
         storedEvents.push(storedEvent);
         lastGuid = (item.metadata as Record<string, unknown>)?.guid as string ?? item.sourceUrl ?? null;
 
-        // Always create a basic graph node (no LLM needed, guaranteed to succeed)
-        syncOSINTEventToGraph(storedEvent).catch(err =>
-          console.warn(`[FeedPoller] Basic graph sync failed for "${item.title}":`, err),
-        );
-
-        // Then attempt LLM-enriched extraction (actors, relationships, tensions)
-        // If this fails, the basic node above still exists in the graph
-        extractAndSyncToGraph(storedEvent).catch(err =>
-          console.warn(`[FeedPoller] LLM entity extraction failed for "${item.title}":`, err),
-        );
+        // LLM-enriched extraction (actors, relationships, tensions, locations)
+        // Falls back to basic graph node creation if LLM fails
+        extractAndSyncToGraph(storedEvent)
+          .catch(() => {
+            // LLM extraction failed — fall back to basic graph sync (no LLM needed)
+            return syncOSINTEventToGraph(storedEvent);
+          })
+          .catch(err =>
+            console.warn(`[FeedPoller] Graph sync failed for "${item.title}":`, err),
+          );
       } catch (err) {
         console.error(`[FeedPoller] Failed to store event "${item.title}":`, err);
       }
