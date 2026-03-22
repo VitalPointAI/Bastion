@@ -345,8 +345,14 @@ class MissionExecutor:
         OBS_WIDTH_FRAC = 0.30
         OBS_CENTRE_TOL = 0.20 * FRAME_W  # ±128 px
 
+        log.info("mission_executor.vision_loop.started", mission_id=mission_id,
+                 has_camera=self._camera is not None,
+                 has_engine=self._vision_engine is not None)
+
         while not stop_event.is_set():
             try:
+                # Yield to event loop before blocking sync detection
+                await asyncio.sleep(0)
                 detections = await self._vision_engine.detect_once(self._camera)
 
                 # Send annotated keyframe — detect_once already encoded the JPEG
@@ -497,6 +503,11 @@ class MissionExecutor:
                     vision_task = asyncio.ensure_future(
                         self._vision_loop(mission.mission_id, stop_event, obstacle_event)
                     )
+                    log_ctx.info("tactical_planner.vision_task_created", vision_mode=vision_mode)
+            else:
+                log_ctx.warning("tactical_planner.vision_skipped",
+                                has_engine=self._vision_engine is not None,
+                                vision_mode=vision_mode)
 
             # Drive waypoints
             for wp_idx, wp in enumerate(waypoints):
