@@ -13,7 +13,7 @@
  * in the UI, but the REST routes still use the legacy term).
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type {
   BrainNode,
   BrainEdge,
