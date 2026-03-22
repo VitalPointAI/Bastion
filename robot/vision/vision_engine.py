@@ -242,7 +242,10 @@ class VisionEngine:
         if self._mock is not None:
             return await self._mock.detect_once(camera)
 
+        log.info("vision_engine.detect_once.start")
         results, jpeg = self._detect_and_encode(camera)
+        log.info("vision_engine.detect_once.done", detections=len(results),
+                 jpeg_size=len(jpeg) if jpeg else 0)
         self._last_jpeg = jpeg
         return results
 
