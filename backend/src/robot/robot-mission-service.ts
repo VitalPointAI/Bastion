@@ -498,11 +498,35 @@ export class RobotMissionService {
       }
     }
 
+    // Fallback: relay through the leader robot's connection (BLE followers)
+    // Alpha's mission_client checks robot_id on mission:assign and relays
+    // to BLE followers if it doesn't match alpha's own ID.
+    let relayThroughLeader: { ws: import('ws').WebSocket; leaderId: string } | undefined;
     if (!robot && !bridgeForRobot) {
-      return {
-        success: false,
-        error: `Robot ${mission.robot_id} is not connected (direct or via bridge)`,
-      };
+      // Check if any active autonomous sequence has this robot as a follower
+      try {
+        const { getAutonomousOrchestrator } = await import('./autonomous-mission-orchestrator.js');
+        const sequences = getAutonomousOrchestrator().listSequences();
+        for (const seq of sequences) {
+          if (seq.phase !== 'complete' && seq.config.followerIds.includes(mission.robot_id)) {
+            const leader = this.connectedRobots.get(seq.config.leaderId);
+            if (leader) {
+              relayThroughLeader = { ws: leader.ws, leaderId: seq.config.leaderId };
+              console.log(
+                `[RobotMissionService] Relaying mission for ${mission.robot_id} through leader ${seq.config.leaderId} (BLE follower)`,
+              );
+              break;
+            }
+          }
+        }
+      } catch { /* orchestrator not available */ }
+
+      if (!relayThroughLeader) {
+        return {
+          success: false,
+          error: `Robot ${mission.robot_id} is not connected (direct or via bridge)`,
+        };
+      }
     }
 
     // Resolve behavior profile before dispatch
@@ -592,6 +616,13 @@ export class RobotMissionService {
       });
       console.log(
         `[RobotMissionService] Dispatched mission ${mission.mission_id} to robot ${mission.robot_id} via bridge ${bridgeForRobot.bridge_id}`,
+      );
+    } else if (relayThroughLeader) {
+      // Relay through leader robot's WS — alpha's mission_client checks robot_id
+      // and forwards to BLE followers automatically
+      this.safeSend(relayThroughLeader.ws, assignMsg);
+      console.log(
+        `[RobotMissionService] Dispatched mission ${mission.mission_id} to follower ${mission.robot_id} via leader ${relayThroughLeader.leaderId} (BLE relay)`,
       );
     }
 

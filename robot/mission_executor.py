@@ -765,7 +765,8 @@ class MissionExecutor:
         """
         Overwatch behavior.
 
-        Drives to target position, holds, and continuously monitors with vision.
+        Drives to target position, orients toward threat (if face_target provided),
+        holds, and continuously monitors with vision.
         Completes on duration_sec timeout or external abort.
         """
         log_ctx = log.bind(mission_id=mission.mission_id)
@@ -774,6 +775,15 @@ class MissionExecutor:
         duration_sec = mission.params.duration_sec
 
         await self._driver.drive_to_point(target.x, target.y, speed)
+
+        # Orient toward the threat so camera faces the enemy
+        face_target = getattr(mission.params, 'face_target', None)
+        if face_target and isinstance(face_target, dict):
+            ft_x = face_target.get('x', target.x)
+            ft_y = face_target.get('y', target.y)
+            log_ctx.info("mission_executor.overwatch.face_toward", x=ft_x, y=ft_y)
+            await self._driver.face_toward(ft_x, ft_y)
+
         await self._emit_telemetry(mission.mission_id)
 
         await self._transition(mission.mission_id, MissionState.executing)

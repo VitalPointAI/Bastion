@@ -420,42 +420,29 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     this.logPhase(state, `DAO ResourceAllocation proposal submitted (gate ${resourceGate.id.slice(0, 8)})`);
     this.logPhase(state, 'Requesting commander approval for follower deployment');
 
-    // 2. Concurrently move leader to AI-chosen overwatch via road-following route
+    // 2. Concurrently move leader to AI-chosen overwatch position
+    // Use the 'overwatch' command — drives to position, orients toward threat,
+    // holds with continuous vision monitoring
     const owMissionId = randomUUID();
     state.missions['overwatch_leader'] = owMissionId;
 
-    // Compute route from leader's CURRENT position to overwatch at dispatch time
-    // (not the pre-computed route from plan time — the robot has moved since then)
     const owPos = plan.overwatch.position;
-    const leaderNow = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId)?.latest_telemetry?.position
-      ?? (state as unknown as { leaderDetectionPos?: { x: number; y: number } }).leaderDetectionPos
-      ?? state.config.homeBase;
 
-    let owWaypoints: Array<{ x: number; y: number }>;
-    try {
-      const { createNavigationTools } = await import('./skills/navigation-skill.js');
-      const navTools = createNavigationTools();
-      const routeTool = navTools.find((t) => t.name === 'plan_route')!;
-      const raw = await routeTool.invoke({
-        from_x: leaderNow.x, from_y: leaderNow.y,
-        to_x: owPos.x, to_y: owPos.y,
-        prefer_concealment: true,
-      });
-      const result = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
-      owWaypoints = result.waypoints ?? [owPos];
-    } catch {
-      owWaypoints = [owPos];
-    }
-
-    this.logPhase(state, `Leader route: ${owWaypoints.length} waypoints from (${leaderNow.x.toFixed(1)}, ${leaderNow.y.toFixed(1)}) to overwatch`);
+    // Face toward the closest detected threat so camera keeps eyes on the enemy
+    const closestThreat = state.detectedThreats.reduce((best, t) =>
+      t.detectedAt.y > best.detectedAt.y ? t : best, state.detectedThreats[0]);
+    const faceTarget = closestThreat
+      ? { x: closestThreat.detectedAt.x, y: closestThreat.detectedAt.y }
+      : undefined;
 
     await svc.dispatchMission({
       mission_id: owMissionId,
       robot_id: state.config.leaderId,
-      command: 'patrol_route',
+      command: 'overwatch',
       params: {
-        waypoints: owWaypoints,
+        target_location: owPos,
         speed: state.config.reconSpeed,
+        face_target: faceTarget,
         autonomy_policy: { max_speed: 255, restricted_actions: [] },
       },
       issued_by: state.config.issuedBy,
@@ -463,8 +450,8 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       problem_set_id: state.config.problemSetId,
     });
 
-    const owGrid = roomToGridRef(plan.overwatch.position.x, plan.overwatch.position.y);
-    this.logPhase(state, `Leader moving to overwatch at grid ${owGrid} while awaiting approval`);
+    const owGrid = roomToGridRef(owPos.x, owPos.y);
+    this.logPhase(state, `Leader moving to overwatch at grid ${owGrid}, orienting toward threat`);
     this.publishUpdate(state);
 
     // Poll for gate resolution

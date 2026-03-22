@@ -263,6 +263,34 @@ class RVRDriver:
         # Update dead-reckoning position to target after drive completes
         self._position = (x, y)
 
+    async def face_toward(self, x: float, y: float) -> None:
+        """
+        Rotate in place to face a target position without driving forward.
+
+        Sends a zero-speed drive command at the computed heading so the robot
+        orients its camera toward the target.
+        """
+        cx, cy = self._position
+        dx = x - cx
+        dy = y - cy
+        distance = math.sqrt(dx**2 + dy**2)
+        if distance < 0.01:
+            return  # target is at our position
+
+        heading = math.degrees(math.atan2(dx, dy)) % 360
+        log.info("rvr_driver.face_toward", target_x=x, target_y=y, heading=round(heading, 1))
+
+        self._heading = heading
+        if not self._simulate and self._rvr:
+            # Brief drive at speed 0 with heading sets orientation
+            await self._run(
+                self._rvr.drive_with_heading,
+                speed=0,
+                heading=int(heading),
+                flags=0,
+            )
+            await asyncio.sleep(0.5)  # allow time to rotate
+
     # ------------------------------------------------------------------
     # LEDs
     # ------------------------------------------------------------------
