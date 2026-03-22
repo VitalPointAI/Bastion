@@ -568,7 +568,19 @@ robotRouter.post('/scenarios/:sequenceId/stop', async (req, res) => {
       console.warn(`[robot-routes] stop: leader ${state.config.leaderId} not connected (ws state: ${leader?.ws?.readyState})`);
     }
 
-    res.json({ status: 'stopped', sequenceId: req.params.sequenceId });
+    // Reset all robot positions back to home base on the COP
+    const homeBase = state.config.homeBase;
+    const allRobots = [state.config.leaderId, ...state.config.followerIds];
+    for (const robotId of allRobots) {
+      const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
+      if (robot) {
+        robot.latest_telemetry = { position: { ...homeBase }, heading: 0, battery: 100 };
+        robot.current_mission_id = undefined;
+        svc.updateSimulatedTelemetry(robotId, homeBase, 0, 100);
+      }
+    }
+
+    res.json({ status: 'stopped', sequenceId: req.params.sequenceId, homeBase });
     return;
   }
 

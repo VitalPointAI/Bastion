@@ -205,13 +205,15 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
         body: JSON.stringify({ problemSetId }),
       }).catch(() => { /* non-fatal */ });
       onLayersChanged?.();
+      // Zoom back out to world view
+      onZoomToAO?.(25, 121, 3);
       setSimSessionId(null);
       setSequenceId(null);
       setStatus(null);
       setSimPaused(false);
       setSeedStatus(null);
     } catch { /* silent */ }
-  }, [sequenceId, simSessionId, problemSetId, onLayersChanged]);
+  }, [sequenceId, simSessionId, problemSetId, onLayersChanged, onZoomToAO]);
 
   const phase = (status?.phase ?? 'idle') as Phase;
   const phaseCfg = PHASE_CONFIG[phase] ?? PHASE_CONFIG.idle;
