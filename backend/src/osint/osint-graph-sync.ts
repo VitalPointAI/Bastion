@@ -8,11 +8,11 @@
  * Also extracts geo-location data from event content for COP symbol placement.
  */
 
-import { randomUUID } from 'crypto';
+// randomUUID removed — using deterministic relationship IDs now
 import type { OSINTEvent } from '../graph/osint/types.js';
 import { SOURCE_WEIGHTS } from '../graph/confidence-calculator.js';
 import { ACTOR_TYPE_TO_CCO_MAP } from '../graph/raft/types.js';
-import { entityResolutionService } from '../graph/resolution/resolution-service.js';
+// Entity resolution import removed — runs on its own schedule, not during bulk OSINT ingestion
 
 const BASTION_CONTEXT = 'https://bastion.vitalpoint.ai/ontology/context.jsonld';
 const OSINT_ASSERTED_BY = 'system:osint-feed-poller';
@@ -441,12 +441,12 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
         halfLifeDays: 90,
       });
 
-      // Create RELATES_TO edge from actor → event
-      const relId = `REL-${randomUUID()}`;
+      // Create RELATES_TO edge from actor → event (deterministic ID to avoid constraint violations)
+      const relId = `REL-osint-${actorId}-${eventNodeId}`;
       await executeWriteQuery(`
         MATCH (a:Actor {id: $actorId})
         MATCH (e:Actor {id: $eventId})
-        MERGE (a)-[r:RELATES_TO {type: 'mentioned_in'}]->(e)
+        MERGE (a)-[r:RELATES_TO]->(e)
         ON CREATE SET
           r.id = $relId,
           r.type = 'mentioned_in',
@@ -484,16 +484,8 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
       });
     }
 
-    // Trigger entity resolution after OSINT writes to check for duplicates
-    try {
-      const resolution = await entityResolutionService.findDuplicates(event.workspaceId ?? undefined);
-      if (resolution.autoMerge.length > 0) {
-        await entityResolutionService.autoMergeDuplicates(resolution);
-      }
-    } catch (resolutionErr) {
-      // Non-fatal: entity resolution failure should not block OSINT sync
-      console.warn('[OSINT→Graph] Entity resolution failed after sync:', resolutionErr);
-    }
+    // Entity resolution skipped during OSINT ingestion — runs on its own schedule
+    // to avoid cascading Neo4j constraint violations during bulk writes
   } catch (err) {
     // Non-fatal: log but don't block feed polling
     console.warn(`[OSINT→Graph] Failed to sync event "${event.title}" to graph:`, err);
