@@ -316,7 +316,7 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
             {/* START */}
             <button
               onClick={() => handleLaunch(missionType)}
-              disabled={launching || seeding || (isActive && !simPaused)}
+              disabled={launching || seeding || !!(isActive && !simPaused)}
               style={{
                 flex: 1, padding: '6px 8px', borderRadius: '4px',
                 border: `1px solid ${isActive && !simPaused ? '#374151' : 'rgba(34, 197, 94, 0.4)'}`,
