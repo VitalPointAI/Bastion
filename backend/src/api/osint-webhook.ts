@@ -226,6 +226,67 @@ osintWebhookRouter.delete('/feeds/:feedId', async (req, res) => {
 });
 
 // ============================================================================
+// POST /feeds/reingest - Clear all events + poll state, re-ingest from scratch
+// ============================================================================
+
+osintWebhookRouter.post('/feeds/reingest', async (req, res) => {
+  try {
+    const problemSetId = (req.body as Record<string, unknown>)?.problemSetId as string | undefined;
+    const pool = await import('../lib/database.js').then(m => m.getPool());
+
+    // 1. Delete existing OSINT events (optionally scoped to problem set)
+    let eventsDeleted: number;
+    if (problemSetId) {
+      const r = await pool.query('DELETE FROM osint_events WHERE workspace_id = $1', [problemSetId]);
+      eventsDeleted = r.rowCount ?? 0;
+    } else {
+      const r = await pool.query('DELETE FROM osint_events');
+      eventsDeleted = r.rowCount ?? 0;
+    }
+
+    // 2. Clear poll state so feeds re-fetch everything
+    await pool.query('DELETE FROM osint_feed_poll_state');
+
+    // 3. Clear OSINT COP layers so they rebuild fresh
+    await pool.query(
+      `DELETE FROM cop_layers WHERE spec::text LIKE '%osint-feed-pipeline%'`,
+    ).catch(() => { /* table may not exist */ });
+
+    // 4. Clean up OSINT nodes from Neo4j
+    try {
+      const { executeWriteQuery } = await import('../graph/neo4j-client.js');
+      await executeWriteQuery(`
+        MATCH (a:Actor)
+        WHERE a.id STARTS WITH 'OSINT-' OR a.id STARTS WITH 'ACT-osint-'
+        DETACH DELETE a
+      `, {});
+    } catch {
+      // Neo4j may not be available
+    }
+
+    console.log(`[OSINT Reingest] Cleared ${eventsDeleted} events, poll state, COP layers, and graph nodes`);
+
+    // 5. Trigger fresh poll
+    const { feedPoller } = await import('../osint/feed-poller.js');
+    // Don't await — let it run in background
+    feedPoller.pollAllNow().then(result => {
+      console.log(`[OSINT Reingest] Re-poll complete: ${result.feedsPolled} feeds, ${result.itemsStored} new items`);
+    }).catch(err => {
+      console.error('[OSINT Reingest] Re-poll failed:', err);
+    });
+
+    res.json({
+      message: 'Reingest started — cleared old data, polling all feeds now',
+      eventsDeleted,
+      pollStarted: true,
+    });
+  } catch (error) {
+    console.error('[OSINT Reingest] Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
 // POST /feeds/poll-now - Trigger immediate poll of all active feeds
 // ============================================================================
 
