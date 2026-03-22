@@ -618,6 +618,14 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
             except asyncio.CancelledError:
                 pass
 
+        # Abort the executor's active mission — its internal vision loop
+        # holds the camera lock and uses the (now dead) WS callbacks.
+        # Without this, the vision loop becomes a zombie on reconnect.
+        if executor.current_mission:
+            log.info("mission_client.aborting_stale_mission",
+                     mission_id=executor.current_mission.mission_id)
+            await executor.abort()
+
         log.info("mission_client.connection_closed")
 
 

@@ -391,7 +391,12 @@ class MissionExecutor:
                             obstacle_event.set()
                             break
             except Exception as exc:
-                log.warning("mission_executor.vision_loop.error", error=str(exc))
+                err_str = str(exc)
+                # WebSocket connection errors — stop the loop, don't spam forever
+                if 'close frame' in err_str or 'closed' in err_str or 'ConnectionClosed' in type(exc).__name__:
+                    log.warning("mission_executor.vision_loop.ws_closed", error=err_str)
+                    break
+                log.warning("mission_executor.vision_loop.error", error=err_str)
             await asyncio.sleep(cadence_sec)
 
     # ------------------------------------------------------------------
