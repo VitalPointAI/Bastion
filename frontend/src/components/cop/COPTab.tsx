@@ -613,7 +613,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
           position: 'absolute',
           bottom: temporalPhases.length > 0 ? '60px' : '8px',
           left: '8px',
-          right: sidebarOpen ? '328px' : '8px',
+          right: sidebarOpen ? '392px' : '8px',
           zIndex: 900,
           backgroundColor: 'rgba(17, 24, 39, 0.95)',
           border: '1px solid #374151',
@@ -691,7 +691,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
 
       {/* Sidebar */}
       {sidebarOpen && (
-        <div className="flex border-l border-gray-700 bg-gray-800 w-80 shrink-0">
+        <div className="flex border-l border-gray-700 bg-gray-800 w-96 shrink-0">
           {/* Vertical icon nav */}
           <div className="flex flex-col border-r border-gray-700 bg-gray-850 py-1 shrink-0">
             {SIDEBAR_NAV.map((item) => (

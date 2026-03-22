@@ -72,7 +72,15 @@ async function fetchRSSFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
   const events: OSINTEventInput[] = [];
 
   for (const item of parsed.items ?? []) {
-    const pubDate = item.isoDate ? new Date(item.isoDate) : item.pubDate ? new Date(item.pubDate) : new Date();
+    // Robust date parsing — many feeds have malformed dates
+    let pubDate = new Date();
+    if (item.isoDate) {
+      const d = new Date(item.isoDate);
+      if (!isNaN(d.getTime())) pubDate = d;
+    } else if (item.pubDate) {
+      const d = new Date(item.pubDate);
+      if (!isNaN(d.getTime())) pubDate = d;
+    }
 
     // Skip items older than last fetch
     if (since && pubDate <= since) continue;
@@ -86,19 +94,24 @@ async function fetchRSSFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
       }
     }
 
-    // Extract geo-location: fast keyword lookup first, LLM fallback
+    // Extract geo-location: fast keyword lookup, then Nominatim fallback
+    // (no LLM — too slow for bulk feed ingestion)
     const fullText = `${item.title ?? ''} ${item.contentSnippet ?? item.content ?? item.summary ?? ''}`;
     let location = extractLocation(fullText) ?? undefined;
 
-    // LLM geocoding fallback for items without a keyword match
+    // Nominatim fallback: extract first capitalized proper noun as place name
     if (!location) {
       try {
-        const llmLoc = await geocodingService.extractPrimaryLocation(fullText);
-        if (llmLoc && llmLoc.latitude !== 0 && llmLoc.longitude !== 0) {
-          location = llmLoc;
+        // Try to geocode the most prominent place name via Nominatim
+        const placeMatch = fullText.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2})\b/);
+        if (placeMatch) {
+          const geocoded = await geocodingService.geocode(placeMatch[1]);
+          if (geocoded && geocoded.latitude !== 0 && geocoded.longitude !== 0) {
+            location = geocoded;
+          }
         }
       } catch {
-        // Non-fatal: proceed without location
+        // Non-fatal
       }
     }
 
@@ -148,12 +161,15 @@ async function fetchAPIFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
     const fullText = `${title} ${description}`;
     let location = extractLocation(fullText) ?? undefined;
 
-    // LLM geocoding fallback
+    // Nominatim geocoding fallback (no LLM — too slow for bulk ingestion)
     if (!location) {
       try {
-        const llmLoc = await geocodingService.extractPrimaryLocation(fullText);
-        if (llmLoc && llmLoc.latitude !== 0 && llmLoc.longitude !== 0) {
-          location = llmLoc;
+        const placeMatch = fullText.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2})\b/);
+        if (placeMatch) {
+          const geocoded = await geocodingService.geocode(placeMatch[1]);
+          if (geocoded && geocoded.latitude !== 0 && geocoded.longitude !== 0) {
+            location = geocoded;
+          }
         }
       } catch {
         // Non-fatal
@@ -166,7 +182,7 @@ async function fetchAPIFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
       sourceType: 'news' as const,
       sourceUrl: (obj.url as string) ?? (obj.link as string),
       sourceName: feed.sourceName,
-      publishedAt: obj.publishedAt ? new Date(obj.publishedAt as string) : new Date(),
+      publishedAt: (() => { const d = obj.publishedAt ? new Date(obj.publishedAt as string) : new Date(); return isNaN(d.getTime()) ? new Date() : d; })(),
       location,
       actors: Array.isArray(obj.actors) ? obj.actors as string[] : [],
       tags: Array.isArray(obj.tags) ? obj.tags as string[] : [],

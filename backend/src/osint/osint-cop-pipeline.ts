@@ -110,23 +110,16 @@ function classifyEvent(text: string): OSINTCategory {
 // ── Icon HTML generator ──────────────────────────────────────────────────
 
 /**
- * Build a styled HTML marker for a non-military OSINT event.
- * Renders as a colored circle with an emoji icon inside.
+ * Build a small styled HTML marker for a non-military OSINT event.
+ * Small 18px dot with emoji — one per event, WorldMonitor-style density.
  */
-function buildOSINTIconHtml(icon: string, color: string, affiliation: Affiliation): string {
-  // Border color encodes affiliation (like milsymbol frame colors)
-  const borderColor =
-    affiliation === 'enemy' ? '#dc2626' :
-    affiliation === 'friendly' ? '#2563eb' :
-    affiliation === 'neutral' ? '#16a34a' :
-    '#9ca3af';
-
+function buildOSINTIconHtml(icon: string, color: string, _affiliation: Affiliation): string {
   return `<div style="
     display:flex;align-items:center;justify-content:center;
-    width:32px;height:32px;border-radius:50%;
-    background:${color};border:2.5px solid ${borderColor};
-    font-size:16px;line-height:1;
-    box-shadow:0 1px 4px rgba(0,0,0,0.3);
+    width:18px;height:18px;border-radius:50%;
+    background:${color};border:1.5px solid rgba(255,255,255,0.4);
+    font-size:10px;line-height:1;
+    box-shadow:0 1px 3px rgba(0,0,0,0.4);
     cursor:pointer;
   ">${icon}</div>`;
 }

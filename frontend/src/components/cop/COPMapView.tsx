@@ -114,29 +114,16 @@ function getTierOpacityModifier(tier: 'high' | 'medium' | 'low'): number {
  */
 function createOSINTIcon(
   iconHtml: string,
-  tier: 'high' | 'medium' | 'low',
-  confidencePct: number,
+  _tier: 'high' | 'medium' | 'low',
+  _confidencePct: number,
 ): L.DivIcon {
-  const size = 32;
-
-  const badgeColor =
-    tier === 'high' ? '#22c55e' :
-    tier === 'medium' ? '#f59e0b' :
-    '#ef4444';
-
-  const badge =
-    tier !== 'high' || confidencePct < 100
-      ? `<div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);
-           background:${badgeColor};color:#fff;font-size:9px;font-weight:700;
-           padding:1px 4px;border-radius:9px;white-space:nowrap;pointer-events:none;
-           font-family:'Fira Code',monospace;line-height:1.4;">${confidencePct}%</div>`
-      : '';
-
+  // Small markers — no confidence badge for OSINT events (too noisy at scale)
+  const size = 18;
   return L.divIcon({
     className: 'osint-marker',
-    html: `<div style="position:relative;display:inline-block;">${iconHtml}${badge}</div>`,
-    iconSize: [size, size + 14],
-    iconAnchor: [size / 2, size / 2 + 14],
+    html: iconHtml,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
