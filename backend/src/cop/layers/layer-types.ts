@@ -46,6 +46,12 @@ export interface COPSymbolSpec {
   ccoClass: string;
   /** Optional custom icon HTML — bypasses milsymbol rendering when set (e.g. OSINT events) */
   iconHtml?: string;
+  /** Brief description / summary */
+  description?: string;
+  /** URL to the original source article */
+  sourceUrl?: string;
+  /** Actor names / entities linked to this event */
+  actors?: string[];
   /** Origin location for directional OSINT events */
   originPosition?: LatLng;
   /** Target location for directional OSINT events (arrow endpoint) */

@@ -243,6 +243,11 @@ export async function updateOSINTCOPLayer(
         const entityId = `OSINT-${evt.id.slice(0, 12)}`;
         const confidence = 0.65;
 
+        // Truncate description for popup (first 200 chars)
+        const descSnippet = (evt.description ?? '').length > 200
+          ? (evt.description ?? '').slice(0, 197) + '...'
+          : (evt.description ?? '');
+
         const symbolSpec: COPSymbolSpec = {
           entityId,
           designation: evt.title ?? 'OSINT Report',
@@ -251,6 +256,9 @@ export async function updateOSINTCOPLayer(
           position: { lat: loc.latitude, lng: loc.longitude },
           linkedEntities: [],
           ccoClass: category.type,
+          description: descSnippet,
+          sourceUrl: evt.sourceUrl,
+          actors: evt.actors ?? [],
           confidence,
           sourceAuthority: `${evt.sourceName ?? 'OSINT'} (${evt.sourceType ?? 'feed'})`,
           confidenceTier: getConfidenceTier(confidence),

@@ -440,13 +440,6 @@ function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThr
                 confidencePct,
               );
 
-          // SVG stroke style based on confidence tier
-          // high = solid, medium = dashed, low = dotted/ghost
-          const strokeDasharray =
-            tier === 'medium' ? '5,3' :
-            tier === 'low' ? '2,2' :
-            undefined;
-
           // Confidence badge color (amber for medium, red for low)
           const badgeColor =
             tier === 'medium' ? '#f59e0b' :
@@ -463,48 +456,77 @@ function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThr
                 click: () => onEntityClick?.(symbol.entityId),
               }}
             >
-              <Popup>
-                <div className="text-sm">
-                  <h4 className="font-semibold">{symbol.designation}</h4>
-                  {symbol.iconHtml ? (
-                    <p className="text-gray-600 text-xs">
-                      Category: {symbol.ccoClass?.replace(/_/g, ' ')}
-                    </p>
-                  ) : (
-                    <p className="text-gray-600 text-xs">SIDC: {symbol.sidc}</p>
-                  )}
-                  <p className="text-gray-600 text-xs">
-                    Affiliation: {symbol.affiliation}
-                  </p>
-                  {/* Confidence tier badge */}
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="text-gray-500 text-xs">
-                      Confidence: {Math.round((symbol.confidence ?? 1) * 100)}%
+              <Popup maxWidth={320}>
+                <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 300 }}>
+                  {/* Title */}
+                  <h4 style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>
+                    {symbol.designation}
+                  </h4>
+
+                  {/* Category + Affiliation badges */}
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 6 }}>
+                    {symbol.iconHtml && (
+                      <span style={{
+                        fontSize: 10, padding: '1px 6px', borderRadius: 3,
+                        background: '#1e293b', color: '#94a3b8',
+                      }}>
+                        {symbol.ccoClass?.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                    <span style={{
+                      fontSize: 10, padding: '1px 6px', borderRadius: 3,
+                      background: symbol.affiliation === 'enemy' ? '#7f1d1d' :
+                                  symbol.affiliation === 'friendly' ? '#1e3a5f' : '#374151',
+                      color: symbol.affiliation === 'enemy' ? '#fca5a5' :
+                             symbol.affiliation === 'friendly' ? '#93c5fd' : '#9ca3af',
+                    }}>
+                      {symbol.affiliation}
                     </span>
                     {badgeColor && (
-                      <span
-                        className="text-xs px-1 rounded text-white font-bold"
-                        style={{ backgroundColor: badgeColor }}
-                      >
-                        {tier.toUpperCase()}
+                      <span style={{
+                        fontSize: 10, padding: '1px 6px', borderRadius: 3,
+                        background: badgeColor, color: '#fff', fontWeight: 600,
+                      }}>
+                        {Math.round((symbol.confidence ?? 1) * 100)}%
                       </span>
                     )}
                   </div>
-                  {/* Provenance summary when available */}
-                  {symbol.provenanceSummary && (
-                    <p className="text-gray-400 text-xs mt-1">{symbol.provenanceSummary}</p>
+
+                  {/* Description */}
+                  {symbol.description && (
+                    <p style={{ margin: '0 0 6px', fontSize: 11, color: '#4b5563', lineHeight: 1.4 }}>
+                      {symbol.description}
+                    </p>
                   )}
-                  {/* Stroke encoding hint for dashed/ghost symbols */}
-                  {strokeDasharray && (
-                    <svg width="40" height="8" className="mt-1">
-                      <line
-                        x1="0" y1="4" x2="40" y2="4"
-                        stroke={badgeColor}
-                        strokeWidth="2"
-                        strokeDasharray={strokeDasharray}
-                      />
-                    </svg>
+
+                  {/* Actors / Linkages */}
+                  {symbol.actors && symbol.actors.length > 0 && (
+                    <div style={{ marginBottom: 6 }}>
+                      <span style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>Linked actors: </span>
+                      <span style={{ fontSize: 10, color: '#374151' }}>
+                        {symbol.actors.slice(0, 5).join(', ')}
+                        {symbol.actors.length > 5 ? ` +${symbol.actors.length - 5} more` : ''}
+                      </span>
+                    </div>
                   )}
+
+                  {/* Source */}
+                  <div style={{ fontSize: 10, color: '#9ca3af', borderTop: '1px solid #e5e7eb', paddingTop: 4, marginTop: 2 }}>
+                    <span>{symbol.sourceAuthority}</span>
+                    {symbol.sourceUrl && (
+                      <>
+                        {' — '}
+                        <a
+                          href={symbol.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#3b82f6', textDecoration: 'underline' }}
+                        >
+                          View source
+                        </a>
+                      </>
+                    )}
+                  </div>
                 </div>
               </Popup>
             </Marker>
