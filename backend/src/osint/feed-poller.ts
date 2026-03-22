@@ -18,6 +18,48 @@ import { updateOSINTCOPLayer } from './osint-cop-pipeline.js';
 import { geocodingService } from '../lib/geocoding-service.js';
 import { getPool } from '../lib/database.js';
 import type { OSINTEventInput, OSINTEvent } from '../graph/osint/types.js';
+
+// ─── Translation ────────────────────────────────────────────────────────────
+
+/** Quick heuristic: text is likely non-English if >30% of chars are non-ASCII-letter */
+function looksNonEnglish(text: string): boolean {
+  if (!text || text.length < 20) return false;
+  const nonAscii = text.replace(/[\x20-\x7E]/g, '').length;
+  return nonAscii / text.length > 0.3;
+}
+
+/** Translate non-English text to English via LLM. Returns original on failure. */
+async function translateToEnglish(title: string, description: string): Promise<{ title: string; description: string }> {
+  try {
+    const { createLLMForAgent } = await import('../agents/langgraph/llm-factory.js');
+    const llm = await createLLMForAgent({
+      agentId: 'osint-translator',
+      overrides: { temperature: 0, maxTokens: 512 },
+    });
+
+    const result = await Promise.race([
+      llm.invoke([
+        { role: 'system', content: 'Translate the following news headline and summary to English. Return ONLY a JSON object: {"title": "...", "description": "..."}. Keep it concise.' },
+        { role: 'user', content: `Title: ${title}\nDescription: ${description.slice(0, 500)}` },
+      ]),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10_000)),
+    ]);
+
+    const content = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+    const cleaned = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0]) as { title?: string; description?: string };
+      return {
+        title: parsed.title ?? title,
+        description: parsed.description ?? description,
+      };
+    }
+  } catch {
+    // Non-fatal — use original
+  }
+  return { title, description };
+}
 import type { OSINTFeedConfig } from '../jpp/osint-feed-store.js';
 
 const rssParser = new RSSParser();
@@ -94,15 +136,22 @@ async function fetchRSSFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
       }
     }
 
+    // Translate non-English items
+    let title = item.title ?? 'Untitled';
+    let description = item.contentSnippet ?? item.content ?? item.summary ?? '';
+    if (looksNonEnglish(title) || looksNonEnglish(description)) {
+      const translated = await translateToEnglish(title, description);
+      title = translated.title;
+      description = translated.description;
+    }
+
     // Extract geo-location: fast keyword lookup, then Nominatim fallback
-    // (no LLM — too slow for bulk feed ingestion)
-    const fullText = `${item.title ?? ''} ${item.contentSnippet ?? item.content ?? item.summary ?? ''}`;
+    const fullText = `${title} ${description}`;
     let location = extractLocation(fullText) ?? undefined;
 
     // Nominatim fallback: extract first capitalized proper noun as place name
     if (!location) {
       try {
-        // Try to geocode the most prominent place name via Nominatim
         const placeMatch = fullText.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2})\b/);
         if (placeMatch) {
           const geocoded = await geocodingService.geocode(placeMatch[1]);
@@ -116,8 +165,8 @@ async function fetchRSSFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
     }
 
     events.push({
-      title: item.title ?? 'Untitled',
-      description: item.contentSnippet ?? item.content ?? item.summary ?? '',
+      title,
+      description,
       sourceType: 'news',
       sourceUrl: item.link,
       sourceName: feed.sourceName,

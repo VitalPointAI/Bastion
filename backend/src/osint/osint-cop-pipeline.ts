@@ -39,72 +39,71 @@ interface OSINTCategory {
   type: string;
   /** Human-readable layer display name */
   label: string;
-  /** True = use milsymbol SIDC, false = use descriptive icon */
-  military: boolean;
-  /** SIDC parts for military categories */
-  symbolSet?: string;
-  entity?: string;
-  /** Icon emoji for non-military categories */
-  icon?: string;
+  /** Icon emoji */
+  icon: string;
   /** Background color for the icon marker */
-  color?: string;
+  color: string;
 }
 
 function classifyEvent(text: string): OSINTCategory {
   const lower = text.toLowerCase();
 
-  // ── Military categories → rendered as MIL-STD-2525D symbols ──
-  if (/naval|warship|fleet|carrier|destroyer|frigate|submarine|amphibious/.test(lower))
-    return { type: 'naval', label: 'Naval Activity', military: true, symbolSet: '30', entity: '120000' };
-  if (/aircraft|fighter|bomber|drone|uav|sortie|airspace|no.fly/.test(lower))
-    return { type: 'air', label: 'Air Activity', military: true, symbolSet: '01', entity: '110000' };
-  if (/tank|armor|mechaniz|infantry|brigade|battalion|regiment|division|corps(?:\s|$)/.test(lower))
-    return { type: 'ground', label: 'Ground Forces', military: true, symbolSet: '10', entity: '121100' };
-  if (/missile|rocket|icbm|ballistic|launch/.test(lower))
-    return { type: 'missile', label: 'Missile / Launch', military: true, symbolSet: '10', entity: '110300' };
+  // All OSINT uses descriptive icons — MIL-STD-2525D reserved for operational/tactical overlays
 
-  // ── Non-military categories → rendered with descriptive icons ──
+  // ── Military/defense reporting ──
+  if (/naval|warship|fleet|carrier|destroyer|frigate|submarine|amphibious/.test(lower))
+    return { type: 'naval', label: 'Naval Activity', icon: '⚓', color: '#1e3a5f' };
+  if (/aircraft|fighter|bomber|drone|uav|sortie|airspace|no.fly/.test(lower))
+    return { type: 'air', label: 'Air Activity', icon: '✈️', color: '#1e40af' };
+  if (/tank|armor|mechaniz|infantry|brigade|battalion|regiment|division|corps(?:\s|$)/.test(lower))
+    return { type: 'ground', label: 'Ground Forces', icon: '🎖️', color: '#365314' };
+  if (/missile|rocket|icbm|ballistic/.test(lower))
+    return { type: 'missile', label: 'Missile / Launch', icon: '🚀', color: '#7f1d1d' };
+  if (/military|defense|defence|armed\s?force|pentagon|ministry.*defen/.test(lower))
+    return { type: 'defense', label: 'Defense', icon: '🛡️', color: '#1e3a5f' };
+
+  // ── Non-military categories ──
   if (/cyber|hack|malware|intrusion|ransomware|data\s?breach/.test(lower))
-    return { type: 'cyber', label: 'Cyber Threats', military: false, icon: '💻', color: '#7c3aed' };
+    return { type: 'cyber', label: 'Cyber Threats', icon: '💻', color: '#7c3aed' };
   if (/piracy|pirate|hijack|smuggl|traffick|cartel|criminal/.test(lower))
-    return { type: 'criminal', label: 'Criminal Activity', military: false, icon: '🏴‍☠️', color: '#1f2937' };
+    return { type: 'criminal', label: 'Criminal Activity', icon: '🏴‍☠️', color: '#1f2937' };
   if (/terror|extremis|insurg|militant|jihad/.test(lower))
-    return { type: 'terrorism', label: 'Terrorism', military: false, icon: '💥', color: '#dc2626' };
+    return { type: 'terrorism', label: 'Terrorism', icon: '💥', color: '#dc2626' };
   if (/explosion|ied|detona|blast/.test(lower))
-    return { type: 'explosion', label: 'Explosions', military: false, icon: '💥', color: '#ea580c' };
+    return { type: 'explosion', label: 'Explosions', icon: '💥', color: '#ea580c' };
   if (/protest|riot|unrest|demonstrat|uprising|civil\s?unrest/.test(lower))
-    return { type: 'civil_unrest', label: 'Civil Unrest', military: false, icon: '✊', color: '#d97706' };
+    return { type: 'civil_unrest', label: 'Civil Unrest', icon: '✊', color: '#d97706' };
   if (/fire|wildfire|forest\s?fire|blaze|burn/.test(lower))
-    return { type: 'fire', label: 'Fires', military: false, icon: '🔥', color: '#dc2626' };
+    return { type: 'fire', label: 'Fires', icon: '🔥', color: '#dc2626' };
   if (/earthquake|seismic|tremor|quake/.test(lower))
-    return { type: 'earthquake', label: 'Earthquakes', military: false, icon: '🌍', color: '#92400e' };
+    return { type: 'earthquake', label: 'Earthquakes', icon: '🌍', color: '#92400e' };
   if (/flood|tsunami|typhoon|hurricane|cyclone|storm/.test(lower))
-    return { type: 'natural_disaster', label: 'Natural Disasters', military: false, icon: '🌊', color: '#0369a1' };
+    return { type: 'natural_disaster', label: 'Natural Disasters', icon: '🌊', color: '#0369a1' };
   if (/humanitarian|refugee|displaced|famine|aid\s?worker/.test(lower))
-    return { type: 'humanitarian', label: 'Humanitarian', military: false, icon: '🏥', color: '#dc2626' };
+    return { type: 'humanitarian', label: 'Humanitarian', icon: '🏥', color: '#dc2626' };
   if (/nuclear|wmd|chemical\s?weapon|biological\s?weapon|radiolog/.test(lower))
-    return { type: 'wmd', label: 'WMD / Nuclear', military: false, icon: '☢️', color: '#facc15' };
+    return { type: 'wmd', label: 'WMD / Nuclear', icon: '☢️', color: '#facc15' };
   if (/ship|vessel|maritime|tanker|cargo|shipping|sea\s?lane/.test(lower))
-    return { type: 'maritime', label: 'Maritime', military: false, icon: '🚢', color: '#0284c7' };
+    return { type: 'maritime', label: 'Maritime', icon: '🚢', color: '#0284c7' };
   if (/port|harbor|dock|wharf/.test(lower))
-    return { type: 'ports', label: 'Ports', military: false, icon: '⚓', color: '#0369a1' };
+    return { type: 'ports', label: 'Ports', icon: '⚓', color: '#0369a1' };
   if (/sanction|embargo|export\s?control|tariff|trade\s?war/.test(lower))
-    return { type: 'sanctions', label: 'Sanctions', military: false, icon: '🚫', color: '#b91c1c' };
+    return { type: 'sanctions', label: 'Sanctions', icon: '🚫', color: '#b91c1c' };
   if (/trade|econom|gdp|inflation|recession|market/.test(lower))
-    return { type: 'economic', label: 'Economic', military: false, icon: '📊', color: '#059669' };
+    return { type: 'economic', label: 'Economic', icon: '📊', color: '#059669' };
   if (/diplom|treaty|summit|negotiat|ambassador|embassy|foreign\s?minister/.test(lower))
-    return { type: 'diplomatic', label: 'Diplomatic', military: false, icon: '🤝', color: '#2563eb' };
+    return { type: 'diplomatic', label: 'Diplomatic', icon: '🤝', color: '#2563eb' };
   if (/election|government|parliament|legislat|political|coup|regime/.test(lower))
-    return { type: 'political', label: 'Political', military: false, icon: '🏛️', color: '#4f46e5' };
+    return { type: 'political', label: 'Political', icon: '🏛️', color: '#4f46e5' };
   if (/energy|oil|gas|pipeline|opec|petroleum|lng/.test(lower))
-    return { type: 'energy', label: 'Energy', military: false, icon: '⛽', color: '#ca8a04' };
+    return { type: 'energy', label: 'Energy', icon: '⛽', color: '#ca8a04' };
   if (/space|satellite|orbit|rocket\s?launch/.test(lower))
-    return { type: 'space', label: 'Space', military: false, icon: '🛰️', color: '#1e3a5f' };
+    return { type: 'space', label: 'Space', icon: '🛰️', color: '#1e3a5f' };
   if (/gps\s?jam|signal\s?jam|electronic\s?warfare|spoofing/.test(lower))
-    return { type: 'ew', label: 'Electronic Warfare', military: false, icon: '📡', color: '#7c3aed' };
+    return { type: 'ew', label: 'Electronic Warfare', icon: '📡', color: '#7c3aed' };
 
   // Default: generic intelligence report
-  return { type: 'intel_report', label: 'Intelligence Reports', military: false, icon: '📰', color: '#6b7280' };
+  return { type: 'intel_report', label: 'Intelligence Reports', icon: '📰', color: '#6b7280' };
 }
 
 // ── Icon HTML generator ──────────────────────────────────────────────────
@@ -123,16 +122,6 @@ function buildOSINTIconHtml(icon: string, color: string, _affiliation: Affiliati
     cursor:pointer;
   ">${icon}</div>`;
 }
-
-// ── SIDC construction for military categories ────────────────────────────
-
-// MIL-STD-2525D identity codes are 2 digits (positions 3-4)
-const AFFILIATION_CODE: Record<string, string> = {
-  enemy: '06',
-  unknown: '01',
-  neutral: '04',
-  friendly: '03',
-};
 
 // ── Pipeline ───────────────────────────────────────────────────────────────
 
@@ -220,17 +209,13 @@ export async function updateOSINTCOPLayer(
           provenanceSummary: `${evt.sourceName ?? 'OSINT'} feed — ${evt.title ?? 'report'}`,
         };
 
-        if (category.military) {
-          const affiliationCode = AFFILIATION_CODE[affiliation] ?? '01';
-          symbolSpec.sidc = `10${affiliationCode}${category.symbolSet}0000${category.entity}0000`;
-        } else {
-          symbolSpec.sidc = '10010000000000000000';
-          symbolSpec.iconHtml = buildOSINTIconHtml(
-            category.icon ?? '📰',
-            category.color ?? '#6b7280',
-            affiliation,
-          );
-        }
+        // All OSINT uses descriptive icons — no SIDC
+        symbolSpec.sidc = '10010000000000000000'; // placeholder, not rendered
+        symbolSpec.iconHtml = buildOSINTIconHtml(
+          category.icon,
+          category.color,
+          affiliation,
+        );
 
         symbols.push(symbolSpec);
 
