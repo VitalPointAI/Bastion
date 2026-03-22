@@ -31,7 +31,7 @@ import { COP_AGENT_DEFINITIONS } from './agents/agent-definitions.js';
 import { setHandlerDependencies } from './api/cop-handlers.js';
 import { objectiveStore } from '../strategic/objectives/index.js';
 import { fetchAllSemanticEntities } from './agents/semantic-entity-query.js';
-import { osintEventStore } from '../graph/osint/event-store.js';
+// osintEventStore import removed — OSINT events handled by osint-cop-pipeline, not the LLM coordinator
 
 // ─── Module State ────────────────────────────────────────────────────────────
 
@@ -131,30 +131,10 @@ function wireGenerationTrigger(_triggerHandler: TriggerHandler): void {
         console.warn('[COP] Failed to fetch graph entities:', err instanceof Error ? err.message : err);
       }
 
-      // Fetch OSINT events as additional documents for sub-agents
-      try {
-        const { events: osintEvents } = await osintEventStore.listEvents({
-          workspaceId: data.workspaceId,
-          limit: 100,
-        });
-        const osintDocs = osintEvents.map(evt => {
-          const loc = evt.location as { name?: string; latitude?: number; longitude?: number } | null;
-          const locStr = loc?.latitude && loc?.longitude
-            ? `\nLocation: ${loc.name ?? 'unknown'} (${loc.latitude}, ${loc.longitude})`
-            : '';
-          return {
-            id: evt.id,
-            content: `[OSINT ${evt.sourceType?.toUpperCase() ?? 'INTEL'}] ${evt.title}\n${evt.description ?? ''}\nSource: ${evt.sourceName ?? 'unknown'}\nActors: ${(evt.actors ?? []).join(', ')}\nTags: ${(evt.tags ?? []).join(', ')}${locStr}`,
-            type: 'osint',
-          };
-        });
-        if (osintDocs.length > 0) {
-          documents = [...documents, ...osintDocs];
-          console.log(`[COP] Added ${osintDocs.length} OSINT events as documents for sub-agents`);
-        }
-      } catch (err) {
-        console.warn('[COP] Failed to fetch OSINT events:', err instanceof Error ? err.message : err);
-      }
+      // OSINT events are NOT fed to the LLM COP coordinator — they have their
+      // own pipeline (osint-cop-pipeline.ts) that renders descriptive icons.
+      // Feeding them here caused the coordinator to generate MIL-STD-2525D
+      // military symbols from news articles, which is incorrect.
 
       const layers = await runCOPGeneration(
         data.workspaceId,
