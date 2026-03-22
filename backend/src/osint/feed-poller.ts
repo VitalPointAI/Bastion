@@ -380,16 +380,15 @@ class FeedPoller {
         storedEvents.push(storedEvent);
         lastGuid = (item.metadata as Record<string, unknown>)?.guid as string ?? item.sourceUrl ?? null;
 
-        // LLM-enriched extraction (actors, relationships, tensions, locations)
-        // Falls back to basic graph node creation if LLM fails
-        extractAndSyncToGraph(storedEvent)
-          .catch(() => {
-            // LLM extraction failed — fall back to basic graph sync (no LLM needed)
-            return syncOSINTEventToGraph(storedEvent);
-          })
-          .catch(err =>
-            console.warn(`[FeedPoller] Graph sync failed for "${item.title}":`, err),
-          );
+        // Always create basic graph node (no LLM, guaranteed to work)
+        syncOSINTEventToGraph(storedEvent).catch(err =>
+          console.warn(`[FeedPoller] Basic graph sync failed for "${item.title}":`, err),
+        );
+
+        // Then attempt LLM-enriched extraction on top (non-blocking, best-effort)
+        extractAndSyncToGraph(storedEvent).catch(() => {
+          // Non-fatal — basic sync already created the node above
+        });
       } catch (err) {
         console.error(`[FeedPoller] Failed to store event "${item.title}":`, err);
       }
