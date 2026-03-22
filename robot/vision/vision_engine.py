@@ -176,55 +176,54 @@ class VisionEngine:
         """
         import cv2
 
-        with self._lock:
-            img_np = self._prepare_frame(camera)
-            if img_np is None:
-                return [], None
+        img_np = self._prepare_frame(camera)
+        if img_np is None:
+            return [], None
 
-            # Run YOLO inference at training resolution (imgsz handles resize)
-            raw_results = self._model(img_np, conf=self._threshold, imgsz=self._imgsz, verbose=False)
-            results: List[DetectionResult] = []
+        # Run YOLO inference at training resolution (imgsz handles resize)
+        raw_results = self._model(img_np, conf=self._threshold, imgsz=self._imgsz, verbose=False)
+        results: List[DetectionResult] = []
 
-            for r in raw_results:
-                for box in r.boxes:
-                    x1, y1, x2, y2 = box.xyxy[0].tolist()
-                    cls_id = int(box.cls[0])
-                    results.append(
-                        DetectionResult(
-                            class_desc=self._model.names[cls_id],
-                            confidence=float(box.conf[0]),
-                            bbox={
-                                "left": x1, "top": y1,
-                                "right": x2, "bottom": y2,
-                            },
-                            center_x=(x1 + x2) / 2.0,
-                            center_y=(y1 + y2) / 2.0,
-                        )
+        for r in raw_results:
+            for box in r.boxes:
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
+                cls_id = int(box.cls[0])
+                results.append(
+                    DetectionResult(
+                        class_desc=self._model.names[cls_id],
+                        confidence=float(box.conf[0]),
+                        bbox={
+                            "left": x1, "top": y1,
+                            "right": x2, "bottom": y2,
+                        },
+                        center_x=(x1 + x2) / 2.0,
+                        center_y=(y1 + y2) / 2.0,
                     )
+                )
 
-            # Draw bounding boxes directly on the frame (no copy if no detections)
-            if results:
-                for det in results:
-                    bx = det.bbox
-                    ix1, iy1 = int(bx["left"]), int(bx["top"])
-                    ix2, iy2 = int(bx["right"]), int(bx["bottom"])
-                    label = f"{det.class_desc} {det.confidence:.0%}"
-                    color = (0, 0, 255)  # BGR red
-                    cv2.rectangle(img_np, (ix1, iy1), (ix2, iy2), color, 2)
-                    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-                    cv2.rectangle(img_np, (ix1, iy1 - th - 6), (ix1 + tw + 4, iy1), color, -1)
-                    cv2.putText(img_np, label, (ix1 + 2, iy1 - 4),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        # Draw bounding boxes directly on the frame (no copy if no detections)
+        if results:
+            for det in results:
+                bx = det.bbox
+                ix1, iy1 = int(bx["left"]), int(bx["top"])
+                ix2, iy2 = int(bx["right"]), int(bx["bottom"])
+                label = f"{det.class_desc} {det.confidence:.0%}"
+                color = (0, 0, 255)  # BGR red
+                cv2.rectangle(img_np, (ix1, iy1), (ix2, iy2), color, 2)
+                (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                cv2.rectangle(img_np, (ix1, iy1 - th - 6), (ix1 + tw + 4, iy1), color, -1)
+                cv2.putText(img_np, label, (ix1 + 2, iy1 - 4),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
-            # Resize for WebSocket transport — send at inference size, not full res
-            h, w = img_np.shape[:2]
-            target_w = self._imgsz
-            if w > target_w:
-                scale = target_w / w
-                img_np = cv2.resize(img_np, (target_w, int(h * scale)))
+        # Resize for WebSocket transport — send at inference size, not full res
+        h, w = img_np.shape[:2]
+        target_w = self._imgsz
+        if w > target_w:
+            scale = target_w / w
+            img_np = cv2.resize(img_np, (target_w, int(h * scale)))
 
-            _, jpeg = cv2.imencode('.jpg', img_np, [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality])
-            return results, jpeg.tobytes()
+        _, jpeg = cv2.imencode('.jpg', img_np, [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality])
+        return results, jpeg.tobytes()
 
     # ------------------------------------------------------------------
     # Public async API
@@ -235,13 +234,15 @@ class VisionEngine:
         Run one detection pass and return the results.
 
         In simulate mode, delegates to :class:`MockVisionEngine`.
-        In real mode, offloads blocking inference to a thread via
-        ``asyncio.to_thread`` to keep the event loop responsive.
+        In real mode, runs synchronously in the event loop — TensorRT engines
+        are bound to the CUDA context of the loading thread and break when
+        called from asyncio.to_thread's thread pool (~18ms inference on Orin
+        Nano does not noticeably block the event loop).
         """
         if self._mock is not None:
             return await self._mock.detect_once(camera)
 
-        results, jpeg = await asyncio.to_thread(self._detect_and_encode, camera)
+        results, jpeg = self._detect_and_encode(camera)
         self._last_jpeg = jpeg
         return results
 
