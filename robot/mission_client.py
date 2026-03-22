@@ -276,8 +276,6 @@ async def vision_feed_loop(
     if not _vision_engine or not _camera:
         return
 
-    quality = _vision_config.keyframe_quality if _vision_config else 50
-
     log.info("mission_client.vision_feed_loop.start", interval_sec=VISION_FEED_INTERVAL_SEC)
     try:
         while not _shutdown_event.is_set():
@@ -289,10 +287,10 @@ async def vision_feed_loop(
                 continue
 
             try:
-                # Detect first — this stores the frame and detections internally.
-                # Then get_keyframe_jpeg draws bounding boxes on the SAME frame.
+                # Single-pass: detect_once captures, detects, annotates, and
+                # encodes JPEG in one thread call. get_keyframe_jpeg returns it.
                 detections = await _vision_engine.detect_once(_camera)
-                jpeg = await _vision_engine.get_keyframe_jpeg(_camera, quality)
+                jpeg = await _vision_engine.get_keyframe_jpeg(_camera)
                 keyframe_b64 = base64.b64encode(jpeg).decode() if jpeg else None
                 msg = VisionMsg(
                     robot_id=robot_id,

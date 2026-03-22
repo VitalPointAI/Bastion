@@ -167,27 +167,21 @@ class VisionEngine:
         img_np = cv2.flip(img_np, -1)
         return img_np
 
-    def _capture_and_detect(self, camera) -> List[DetectionResult]:
+    def _detect_and_encode(self, camera, jpeg_quality: int = 50):
         """
-        Synchronous: capture a frame from *camera* and run YOLO inference.
+        Single synchronous pass: capture → detect → annotate → JPEG encode.
 
-        Image processing matches test_detect.py exactly:
-        1. CUDA → numpy via jetson_utils.cudaToNumpy
-        2. RGB → BGR via cv2.cvtColor (unconditional)
-        3. Flip 180° via cv2.flip (unconditional)
-
-        This method is designed to be called via ``asyncio.to_thread`` so that
-        blocking GPU inference does not stall the event loop. A threading lock
-        prevents concurrent camera/model access from multiple async loops.
+        Returns (detections, jpeg_bytes). Everything runs in one thread call
+        to avoid extra thread dispatch overhead and frame/detection state races.
         """
+        import cv2
+
         with self._lock:
             img_np = self._prepare_frame(camera)
             if img_np is None:
-                return []
+                return [], None
 
-            # Store the last frame for annotated keyframe generation
-            self._last_frame = img_np
-
+            # Run YOLO inference at training resolution (imgsz handles resize)
             raw_results = self._model(img_np, conf=self._threshold, imgsz=self._imgsz, verbose=False)
             results: List[DetectionResult] = []
 
@@ -200,19 +194,37 @@ class VisionEngine:
                             class_desc=self._model.names[cls_id],
                             confidence=float(box.conf[0]),
                             bbox={
-                                "left": x1,
-                                "top": y1,
-                                "right": x2,
-                                "bottom": y2,
+                                "left": x1, "top": y1,
+                                "right": x2, "bottom": y2,
                             },
                             center_x=(x1 + x2) / 2.0,
                             center_y=(y1 + y2) / 2.0,
                         )
                     )
 
-            # Store detections so get_keyframe_jpeg can draw them
-            self._last_detections = results
-            return results
+            # Draw bounding boxes directly on the frame (no copy if no detections)
+            if results:
+                for det in results:
+                    bx = det.bbox
+                    ix1, iy1 = int(bx["left"]), int(bx["top"])
+                    ix2, iy2 = int(bx["right"]), int(bx["bottom"])
+                    label = f"{det.class_desc} {det.confidence:.0%}"
+                    color = (0, 0, 255)  # BGR red
+                    cv2.rectangle(img_np, (ix1, iy1), (ix2, iy2), color, 2)
+                    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                    cv2.rectangle(img_np, (ix1, iy1 - th - 6), (ix1 + tw + 4, iy1), color, -1)
+                    cv2.putText(img_np, label, (ix1 + 2, iy1 - 4),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+            # Resize for WebSocket transport — send at inference size, not full res
+            h, w = img_np.shape[:2]
+            target_w = self._imgsz
+            if w > target_w:
+                scale = target_w / w
+                img_np = cv2.resize(img_np, (target_w, int(h * scale)))
+
+            _, jpeg = cv2.imencode('.jpg', img_np, [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality])
+            return results, jpeg.tobytes()
 
     # ------------------------------------------------------------------
     # Public async API
@@ -229,56 +241,23 @@ class VisionEngine:
         if self._mock is not None:
             return await self._mock.detect_once(camera)
 
-        return await asyncio.to_thread(self._capture_and_detect, camera)
+        results, jpeg = await asyncio.to_thread(self._detect_and_encode, camera)
+        self._last_jpeg = jpeg
+        return results
 
     async def get_keyframe_jpeg(
         self, camera=None, quality: int = 50
     ) -> Optional[bytes]:
         """
-        Return an annotated JPEG keyframe with bounding boxes drawn on detections.
+        Return the annotated JPEG from the last detect_once call.
 
-        Uses the last frame captured by ``_capture_and_detect`` so the keyframe
-        matches exactly what was analyzed. If no frame is cached, captures a fresh one.
-        In simulate mode, delegates to :class:`MockVisionEngine`.
+        Must be called after detect_once — returns the pre-encoded JPEG with
+        bounding boxes already drawn. No separate capture or thread dispatch.
         """
         if self._mock is not None:
             return await self._mock.get_keyframe_jpeg(camera, quality=quality)
 
-        if camera is None:
-            return None
-
-        def _do_annotate() -> Optional[bytes]:
-            import cv2
-
-            frame = self._last_frame
-            if frame is None:
-                # No cached frame — capture a fresh one
-                frame = self._prepare_frame(camera)
-            if frame is None:
-                return None
-
-            # Draw bounding boxes for each detection
-            annotated = frame.copy()
-            for det in self._last_detections:
-                bbox = det.bbox
-                x1, y1 = int(bbox["left"]), int(bbox["top"])
-                x2, y2 = int(bbox["right"]), int(bbox["bottom"])
-                label = f"{det.class_desc} {det.confidence:.0%}"
-
-                # Red box + label for hostile vehicles
-                color = (0, 0, 255)  # BGR red
-                cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-
-                # Label background
-                (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-                cv2.rectangle(annotated, (x1, y1 - th - 6), (x1 + tw + 4, y1), color, -1)
-                cv2.putText(annotated, label, (x1 + 2, y1 - 4),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-
-            _, jpeg = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, quality])
-            return jpeg.tobytes()
-
-        return await asyncio.to_thread(_do_annotate)
+        return getattr(self, '_last_jpeg', None)
 
     @property
     def is_mock(self) -> bool:
