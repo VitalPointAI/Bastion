@@ -183,8 +183,14 @@ export function extractThreatSymbols(
     );
 
     if (result) {
+      // Deterministic entity ID based on class + position bucket (0.0005° ≈ 50m)
+      // Same target at the same location → same entityId → dedup works
+      const latBucket = Math.round(position.lat / 0.0005) * 0.0005;
+      const lngBucket = Math.round(position.lng / 0.0005) * 0.0005;
+      const detEntityId = `DET-${detection.class_desc}-${latBucket.toFixed(4)}-${lngBucket.toFixed(4)}`;
+
       symbols.push({
-        entityId: `DET-${randomUUID().slice(0, 8)}`,
+        entityId: detEntityId,
         designation: result.designation,
         type: result.symbol_set,
         echelon: result.echelon,
