@@ -339,11 +339,12 @@ class MissionExecutor:
         """
         cadence_sec = (self._vision_config.vision_cadence_ms / 1000.0) if self._vision_config else 0.5
         # Obstacle thresholds (pixel-space):
-        # – bbox occupies > 30 % of frame width → "close"
-        # – centre_x within ±20 % of frame centre → "ahead"
-        FRAME_W = 640  # assumed capture width
-        OBS_WIDTH_FRAC = 0.30
-        OBS_CENTRE_TOL = 0.20 * FRAME_W  # ±128 px
+        # YOLO returns bbox coords in original frame resolution (1280x720).
+        # – bbox occupies > 25% of frame width → "close"
+        # – centre_x within ±25% of frame centre → "ahead"
+        FRAME_W = 1280  # camera capture width
+        OBS_WIDTH_FRAC = 0.25
+        OBS_CENTRE_TOL = 0.25 * FRAME_W
 
         log.info("mission_executor.vision_loop.started", mission_id=mission_id,
                  has_camera=self._camera is not None,
@@ -379,6 +380,7 @@ class MissionExecutor:
                         )
 
                 # Obstacle check — signal patrol to dodge if something big is ahead
+                # 1. YOLO-detected object filling center of frame
                 if obstacle_event and detections:
                     for det in detections:
                         bbox = det.bbox if hasattr(det, 'bbox') else {}
@@ -396,6 +398,42 @@ class MissionExecutor:
                             )
                             obstacle_event.set()
                             break
+
+                # 2. Generic proximity check — detect walls/obstacles the YOLO
+                #    model wasn't trained on by checking edge density in the
+                #    center strip of the raw frame. Close surfaces produce high
+                #    edge density or very uniform color.
+                if obstacle_event and not obstacle_event.is_set():
+                    try:
+                        import cv2
+                        import numpy as np
+                        jpeg_bytes = await self._vision_engine.get_keyframe_jpeg(self._camera)
+                        if jpeg_bytes:
+                            arr = np.frombuffer(jpeg_bytes, dtype=np.uint8)
+                            frame = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
+                            if frame is not None:
+                                h, w = frame.shape
+                                # Center strip: middle 40% width, middle 60% height
+                                cx_start = int(w * 0.3)
+                                cx_end = int(w * 0.7)
+                                cy_start = int(h * 0.2)
+                                cy_end = int(h * 0.8)
+                                center = frame[cy_start:cy_end, cx_start:cx_end]
+                                # Laplacian variance — very high = textured wall close up
+                                # very low = blank wall close up. Both indicate proximity.
+                                lap_var = cv2.Laplacian(center, cv2.CV_64F).var()
+                                color_std = float(np.std(center))
+                                # Close wall: low color variance (uniform) OR extremely
+                                # high edge density (texture fills frame)
+                                if color_std < 15 or lap_var > 2000:
+                                    log.info(
+                                        "mission_executor.proximity_obstacle",
+                                        color_std=round(color_std, 1),
+                                        lap_var=round(lap_var, 1),
+                                    )
+                                    obstacle_event.set()
+                    except Exception:
+                        pass  # Non-fatal — proximity check is best-effort
             except Exception as exc:
                 err_str = str(exc)
                 # WebSocket connection errors — stop the loop, don't spam forever
