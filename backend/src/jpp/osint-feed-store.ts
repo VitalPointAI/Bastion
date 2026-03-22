@@ -119,6 +119,17 @@ class OSINTFeedStore {
   }
 
   /**
+   * Get a single feed config by ID
+   */
+  async getFeed(id: string): Promise<OSINTFeedConfig | null> {
+    await this.ensureTable();
+    const pool = getPool();
+    const result = await pool.query('SELECT * FROM osint_feed_config WHERE id = $1', [id]);
+    if (result.rows.length === 0) return null;
+    return this.rowToFeedConfig(result.rows[0]);
+  }
+
+  /**
    * Get all active feed configs for a problem set
    */
   async getFeedsByProblemSet(problemSetId: string): Promise<OSINTFeedConfig[]> {
