@@ -126,7 +126,7 @@ class MissionExecutor:
             )
             return
 
-        # Reject if params are missing for the command
+        # find_engage always requires a target location (gate-based flow)
         if mission.command == "find_engage" and mission.params.target_location is None:
             log_ctx.warning("mission_executor.missing_target_location")
             await self._transition(
@@ -135,51 +135,7 @@ class MissionExecutor:
                 {"reason": "find_engage requires params.target_location"},
             )
             return
-
-        if mission.command == "patrol_route" and not mission.params.waypoints:
-            log_ctx.warning("mission_executor.missing_waypoints")
-            await self._transition(
-                mission.mission_id,
-                MissionState.rejected,
-                {"reason": "patrol_route requires params.waypoints (non-empty list)"},
-            )
-            return
-
-        if mission.command == "recon_area" and not mission.params.area:
-            log_ctx.warning("mission_executor.missing_area")
-            await self._transition(
-                mission.mission_id,
-                MissionState.rejected,
-                {"reason": "recon_area requires params.area (x_min, y_min, x_max, y_max)"},
-            )
-            return
-
-        if mission.command == "visual_search" and not mission.params.reference_image_b64:
-            log_ctx.warning("mission_executor.missing_reference_image")
-            await self._transition(
-                mission.mission_id,
-                MissionState.rejected,
-                {"reason": "visual_search requires params.reference_image_b64"},
-            )
-            return
-
-        if mission.command == "overwatch" and mission.params.target_location is None:
-            log_ctx.warning("mission_executor.missing_target_location")
-            await self._transition(
-                mission.mission_id,
-                MissionState.rejected,
-                {"reason": "overwatch requires params.target_location"},
-            )
-            return
-
-        if mission.command == "resupply_route" and not mission.params.waypoints:
-            log_ctx.warning("mission_executor.missing_waypoints")
-            await self._transition(
-                mission.mission_id,
-                MissionState.rejected,
-                {"reason": "resupply_route requires params.waypoints (non-empty list)"},
-            )
-            return
+        # Other missions: tactical planner will generate waypoints if not provided
 
         # Accept the mission
         self.current_mission = mission
@@ -198,22 +154,16 @@ class MissionExecutor:
             self._driver.set_position(x, y)
             log_ctx.info("mission_executor.start_position_set", x=x, y=y)
 
-        # Dispatch to behavior
+        # Dispatch to behavior — tactical planner generates the plan, then
+        # _execute_tactical_plan drives the phases. Swarm missions use their
+        # own dispatcher. find_engage keeps its gate-based flow.
         try:
-            if mission.command == "find_engage":
-                await self._execute_find_engage(mission)
-            elif mission.command == "patrol_route":
-                await self._execute_patrol_route(mission)
-            elif mission.command == "recon_area":
-                await self._execute_recon_area(mission)
-            elif mission.command == "visual_search":
-                await self._execute_visual_search(mission)
-            elif mission.command == "overwatch":
-                await self._execute_overwatch(mission)
-            elif mission.command == "resupply_route":
-                await self._execute_resupply_route(mission)
-            elif mission.command in ("swarm_patrol", "swarm_recon", "swarm_advance"):
+            if mission.command in ("swarm_patrol", "swarm_recon", "swarm_advance"):
                 await self._execute_swarm_mission(mission)
+            elif mission.command == "find_engage":
+                await self._execute_find_engage(mission)
+            else:
+                await self._execute_with_tactical_plan(mission)
         except asyncio.CancelledError:
             log_ctx.warning("mission_executor.cancelled")
             await self._transition(
@@ -430,7 +380,128 @@ class MissionExecutor:
             await asyncio.sleep(cadence_sec)
 
     # ------------------------------------------------------------------
-    # Behaviors
+    # Tactical plan execution
+    # ------------------------------------------------------------------
+
+    async def _execute_with_tactical_plan(self, mission: MissionJSON) -> None:
+        """Generate a tactical plan via LLM, then execute its phases.
+
+        Falls back to geometric planning if the LLM is unavailable.
+        """
+        from tactical_planner import generate_tactical_plan, fallback_plan
+
+        log_ctx = log.bind(mission_id=mission.mission_id, command=mission.command)
+
+        # Build params dict for the planner
+        params_dict = mission.params.model_dump(exclude_none=True)
+
+        # Get available followers
+        followers = []
+        if self._swarm and hasattr(self._swarm, '_ble_followers') and self._swarm._ble_followers:
+            mgr = self._swarm._ble_followers
+            followers = [f"follower-{i}" for i in range(mgr.connected_count)]
+
+        # Try LLM tactical planning
+        plan = await generate_tactical_plan(
+            command=mission.command,
+            params=params_dict,
+            mission_id=mission.mission_id,
+            robot_id=self._robot_id,
+            available_followers=followers if followers else None,
+        )
+
+        if plan is None:
+            log_ctx.info("tactical_planner.fallback", reason="LLM unavailable")
+            plan = fallback_plan(mission.command, params_dict)
+
+        phases = plan.get("phases", [])
+        if not phases:
+            log_ctx.warning("tactical_planner.no_phases")
+            await self._transition(mission.mission_id, MissionState.failed, {"reason": "Planner generated no phases"})
+            return
+
+        log_ctx.info(
+            "tactical_planner.executing",
+            phase_count=len(phases),
+            roe=plan.get("rules_of_engagement", ""),
+        )
+
+        await self._transition(mission.mission_id, MissionState.executing)
+
+        # Execute each phase
+        stop_event = asyncio.Event()
+        vision_task = None
+
+        for phase_idx, phase in enumerate(phases):
+            phase_name = phase.get("name", f"Phase {phase_idx + 1}")
+            waypoints = phase.get("waypoints", [])
+            speed = phase.get("speed", 100)
+            vision_mode = phase.get("vision_mode", "continuous")
+            leds = phase.get("leds", {})
+            halt_on_detection = phase.get("halt_on_detection", False)
+
+            log_ctx.info(
+                "tactical_planner.phase_start",
+                phase=phase_name,
+                phase_idx=phase_idx,
+                waypoints=len(waypoints),
+                speed=speed,
+            )
+
+            # Set LEDs for this phase
+            if leds:
+                await self._driver.set_leds(
+                    leds.get("r", 0), leds.get("g", 0), leds.get("b", 0),
+                )
+
+            # Start vision loop if needed
+            if self._vision_engine and vision_mode != "off":
+                if vision_task is None or vision_task.done():
+                    stop_event.clear()
+                    obstacle_event = asyncio.Event()
+                    vision_task = asyncio.ensure_future(
+                        self._vision_loop(mission.mission_id, stop_event, obstacle_event)
+                    )
+
+            # Drive waypoints
+            for wp_idx, wp in enumerate(waypoints):
+                wp_x = wp.get("x", 0) if isinstance(wp, dict) else getattr(wp, "x", 0)
+                wp_y = wp.get("y", 0) if isinstance(wp, dict) else getattr(wp, "y", 0)
+
+                log_ctx.info(
+                    "tactical_planner.waypoint",
+                    phase=phase_name,
+                    wp_idx=wp_idx,
+                    total=len(waypoints),
+                    x=wp_x,
+                    y=wp_y,
+                )
+
+                await self._driver.drive_to_point(wp_x, wp_y, speed)
+                await self._emit_telemetry(mission.mission_id)
+
+            # Command followers for this phase if available
+            follower_positions = phase.get("follower_positions", [])
+            if follower_positions and self._ws_send_fn:
+                for fp in follower_positions:
+                    target_id = fp.get("robot_id", "")
+                    fx = fp.get("x", fp.get("offset_x", 0))
+                    fy = fp.get("y", fp.get("offset_y", 0))
+                    await self.command_resource(
+                        target_id, mission.mission_id,
+                        "drive_to_point", {"x": fx, "y": fy, "speed": speed},
+                    )
+
+        # Cleanup
+        if vision_task and not vision_task.done():
+            stop_event.set()
+            vision_task.cancel()
+
+        await self._transition(mission.mission_id, MissionState.complete)
+        log_ctx.info("tactical_planner.mission_complete")
+
+    # ------------------------------------------------------------------
+    # Behaviors (legacy — used by find_engage and swarm)
     # ------------------------------------------------------------------
 
     async def _execute_find_engage(self, mission: MissionJSON) -> None:
