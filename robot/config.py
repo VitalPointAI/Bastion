@@ -162,6 +162,24 @@ SWARM_ROLE: str = _optional("SWARM_ROLE", "auto")
 BLE_FOLLOWERS: str = _optional("BLE_FOLLOWERS", "")
 """Comma-separated BLE MAC addresses of follower RVR+ units (e.g. 'D4:86:01:19:88:77,ED:E5:09:52:A6:33')."""
 
+BLE_FOLLOWER_NAMES: str = _optional("BLE_FOLLOWER_NAMES", "")
+"""Comma-separated callsigns for BLE followers, positionally matching BLE_FOLLOWERS (e.g. 'bravo,charlie')."""
+
+
+def get_ble_callsign(address: str) -> str:
+    """Map a BLE MAC address to its callsign from BLE_FOLLOWER_NAMES.
+
+    Returns the callsign if configured, otherwise a sanitized address-based ID.
+    """
+    addresses = [a.strip().upper() for a in BLE_FOLLOWERS.split(",") if a.strip()]
+    names = [n.strip() for n in BLE_FOLLOWER_NAMES.split(",") if n.strip()]
+    addr_upper = address.strip().upper()
+    for i, addr in enumerate(addresses):
+        if addr == addr_upper and i < len(names):
+            return names[i]
+    # Fallback: sanitized address
+    return f"ble-{addr_upper.replace(':', '')[-4:].lower()}"
+
 
 # ---------------------------------------------------------------------------
 # DID persistence helpers

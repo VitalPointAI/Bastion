@@ -23,6 +23,7 @@ from typing import Dict, List, Optional, Tuple
 import structlog
 
 from ble_rvr_driver import BLERVRDriver, scan_for_rvr_plus
+from config import get_ble_callsign
 
 log = structlog.get_logger(__name__)
 
@@ -33,7 +34,7 @@ class BLEFollower:
     def __init__(self, driver: BLERVRDriver, slot_index: int = -1) -> None:
         self.driver = driver
         self.slot_index = slot_index
-        self.robot_id = f"ble-{driver.name}"
+        self.robot_id = get_ble_callsign(driver.address)
 
 
 class BLEFollowerManager:
