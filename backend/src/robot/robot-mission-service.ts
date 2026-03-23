@@ -108,6 +108,9 @@ export class RobotMissionService {
   /** Resource allocations: leader_robot_id → Set of granted follower robot_ids */
   private resourceAllocations = new Map<string, Set<string>>();
 
+  /** Throttle DB heartbeat writes — tracks last write timestamp per robot */
+  private _heartbeatTimestamps = new Map<string, number>();
+
   /** Message IDs seen in the dedup window, value is receipt timestamp (epoch ms) */
   private seenMessageIds = new Map<string, number>();
 
@@ -403,12 +406,18 @@ export class RobotMissionService {
       console.warn(`[RobotMissionService] telemetry for unknown robot: ${robot_id} (known: ${[...this.connectedRobots.keys()].join(',')})`);
     }
 
-    // Persist heartbeat timestamp
-    try {
-      await robotStore.updateConnectionHeartbeat(robot_id);
-    } catch (err) {
-      // Non-fatal — telemetry is high-frequency, don't crash on transient DB error
-      console.warn('[RobotMissionService] Failed to update heartbeat:', err);
+    // Persist heartbeat timestamp (throttled — at most once per 30s per robot)
+    const now = Date.now();
+    const lastHb = this._heartbeatTimestamps?.get(robot_id) ?? 0;
+    if (now - lastHb > 30_000) {
+      if (!this._heartbeatTimestamps) this._heartbeatTimestamps = new Map();
+      this._heartbeatTimestamps.set(robot_id, now);
+      try {
+        await robotStore.updateConnectionHeartbeat(robot_id);
+      } catch (err) {
+        // Non-fatal — telemetry is high-frequency, don't crash on transient DB error
+        console.warn('[RobotMissionService] Failed to update heartbeat:', err);
+      }
     }
 
     // Forward position to ResourceTelemetryService for COP resource layer
