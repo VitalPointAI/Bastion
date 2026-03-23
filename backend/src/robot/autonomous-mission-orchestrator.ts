@@ -610,6 +610,11 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       state.missions[`advance_${followerId}`] = missionId;
       followerMissions.push(missionId);
 
+      // Face toward the nearest detected threat after arriving at firing position
+      const faceTarget = state.detectedThreats.length > 0
+        ? state.detectedThreats[0].detectedAt
+        : undefined;
+
       const missionPayload = {
         mission_id: missionId,
         robot_id: followerId,
@@ -617,6 +622,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         params: {
           waypoints: route,
           speed: state.config.advanceSpeed,
+          face_target: killZoneCenter,
           autonomy_policy: { max_speed: 255, restricted_actions: [] },
         },
         issued_by: state.config.issuedBy,

@@ -16,7 +16,7 @@ import type {
 } from '../../lib/design-service.ts';
 import { LOELane } from './LOELane.tsx';
 import { useIronclawContext } from '../../context/IronclawContext.tsx';
-import { useDesignInterview } from '../../hooks/useDesignInterview.ts';
+import { useDesignInterview, getRoleColor } from '../../hooks/useDesignInterview.ts';
 import { DesignInterviewProgress } from './DesignInterviewProgress.tsx';
 import { DesignInterviewGate } from './DesignInterviewGate.tsx';
 
@@ -77,6 +77,7 @@ export function LOETimelineSection({
 }: LOETimelineSectionProps) {
   const { sendMessage, toggleDrawer } = useIronclawContext();
   const designInterview = useDesignInterview(problemSetId);
+  const { participants, isCollaborative, isMyTurn } = designInterview;
   const [loes, setLoes] = useState<LineOfEffort[]>(initialLOEs);
   const [phases, setPhases] = useState<Phase[]>(DEFAULT_PHASES);
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
@@ -235,14 +236,28 @@ export function LOETimelineSection({
           <p className="text-sm text-gray-400">Decisive Points and Phasing</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Guide Me button */}
+          {/* Participant awareness bar — shown when collaborative interview is active */}
+          {designInterview.isActive && isCollaborative && (
+            <div className="flex items-center gap-1.5 mr-1" title="Active participants">
+              {Array.from(participants.entries()).map(([did, role]) => (
+                <div key={did} className="flex flex-col items-center" title={role}>
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: getRoleColor(role) }}
+                  />
+                  <span className="text-gray-500" style={{ fontSize: '9px', lineHeight: '1.2' }}>{role}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Guide Me button — pulses when it's this user's turn */}
           <button
             onClick={handleGuideMe}
             disabled={designInterview.isLoading}
-            className="text-blue-400 hover:text-blue-300 border border-blue-500/30 rounded px-3 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title="Start guided Lines of Effort interview with Ironclaw"
+            className={`text-blue-400 hover:text-blue-300 border border-blue-500/30 rounded px-3 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors${isMyTurn ? ' ring-2 ring-blue-400 animate-pulse' : ''}`}
+            title={isMyTurn ? "Ironclaw is directing a question to you" : "Start guided Lines of Effort interview with Ironclaw"}
           >
-            Guide Me
+            {isMyTurn ? 'Your Turn' : 'Guide Me'}
           </button>
           <button
             onClick={() => {
