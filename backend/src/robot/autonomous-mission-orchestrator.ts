@@ -177,6 +177,23 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       this.logPhase(state, `Position reset: all robots at home base (${config.homeBase.x}, ${config.homeBase.y}), heading 0° (north)`);
     }
 
+    // Clear adversary COP layer from previous run
+    try {
+      const { layerStore } = await import('../cop/layers/layer-store.js');
+      const layers = await layerStore.queryLayers({
+        workspaceId: config.problemSetId,
+        layerType: 'force_disposition',
+      });
+      for (const layer of layers) {
+        const meta = layer.spec?.metadata as Record<string, unknown> | undefined;
+        if (meta?.generatedBy === 'vision-detection-pipeline') {
+          await layerStore.deleteLayer(layer.id);
+          this.logPhase(state, 'Cleared previous adversary detection layer');
+          break;
+        }
+      }
+    } catch { /* non-fatal */ }
+
     // Brief pause for yaw reset to take effect on hardware
     await new Promise((r) => setTimeout(r, 1000));
 
