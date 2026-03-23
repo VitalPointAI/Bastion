@@ -298,7 +298,8 @@ class RVRDriver:
         Rotate in place to face a target position without driving forward.
 
         Sends a zero-speed drive command at the computed heading so the robot
-        orients its camera toward the target.
+        orients its camera toward the target.  Sleep time is proportional to
+        the angle delta so large rotations complete before the next command.
         """
         cx, cy = self._position
         dx = x - cx
@@ -308,18 +309,36 @@ class RVRDriver:
             return  # target is at our position
 
         heading = math.degrees(math.atan2(dx, dy)) % 360
-        log.info("rvr_driver.face_toward", target_x=x, target_y=y, heading=round(heading, 1))
+
+        # Compute shortest rotation angle for proportional sleep
+        angle_delta = abs(heading - self._heading)
+        if angle_delta > 180:
+            angle_delta = 360 - angle_delta
+        # Min 0.5s, scale up for larger turns (≈1.5s for a full 180°)
+        rotate_time = max(0.5, (angle_delta / 180) * 1.5)
+
+        log.info("rvr_driver.face_toward", target_x=x, target_y=y,
+                 heading=round(heading, 1), old_heading=round(self._heading, 1),
+                 angle_delta=round(angle_delta, 1), rotate_sec=round(rotate_time, 2))
 
         self._heading = heading
         if not self._simulate and self._rvr:
-            # Brief drive at speed 0 with heading sets orientation
+            # Drive at speed 0 with heading to rotate in place
             await self._run(
                 self._rvr.drive_with_heading,
                 speed=0,
                 heading=int(heading),
                 flags=0,
             )
-            await asyncio.sleep(0.5)  # allow time to rotate
+            await asyncio.sleep(rotate_time)
+            # Re-send heading to confirm final orientation
+            await self._run(
+                self._rvr.drive_with_heading,
+                speed=0,
+                heading=int(heading),
+                flags=0,
+            )
+            await asyncio.sleep(0.3)
 
     # ------------------------------------------------------------------
     # LEDs

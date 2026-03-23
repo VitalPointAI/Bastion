@@ -53,24 +53,40 @@ const DEFAULT_COLOR = '#6b7280'; // idle/connected
 
 // ─── Icon factory ───────────────────────────────────────────────────────────
 
-function createRobotIcon(state: string): L.DivIcon {
+function createRobotIcon(state: string, heading?: number): L.DivIcon {
   const color = STATE_COLORS[state] || DEFAULT_COLOR;
   const isPulsing = state === 'awaiting_auth';
 
+  // Heading indicator arrow — rotated to show facing direction
+  const headingArrow = heading != null
+    ? `<div style="
+        position: absolute; top: -8px; left: 50%; transform: translateX(-50%) rotate(${heading}deg);
+        transform-origin: center 20px;
+        width: 0; height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-bottom: 10px solid ${color};
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+      "></div>`
+    : '';
+
   return L.divIcon({
     className: 'cop-robot-marker',
-    html: `<div style="
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      background: ${color};
-      border: 2px solid rgba(255,255,255,0.8);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center;
-      ${isPulsing ? 'animation: robot-pulse 1.5s ease-in-out infinite;' : ''}
-    ">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="none">
-        <path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7v1H3v-1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2zM7.5 13a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm9 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM5 19v1a1 1 0 001 1h12a1 1 0 001-1v-1H5z"/>
-      </svg>
+    html: `<div style="position: relative;">
+      ${headingArrow}
+      <div style="
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        background: ${color};
+        border: 2px solid rgba(255,255,255,0.8);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        display: flex; align-items: center; justify-content: center;
+        ${isPulsing ? 'animation: robot-pulse 1.5s ease-in-out infinite;' : ''}
+      ">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="none">
+          <path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7v1H3v-1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2zM7.5 13a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm9 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM5 19v1a1 1 0 001 1h12a1 1 0 001-1v-1H5z"/>
+        </svg>
+      </div>
     </div>
     <style>
       @keyframes robot-pulse {
@@ -78,8 +94,8 @@ function createRobotIcon(state: string): L.DivIcon {
         50% { opacity: 0.6; transform: scale(1.15); }
       }
     </style>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    iconSize: [24, 34],
+    iconAnchor: [12, 22],
   });
 }
 
@@ -139,13 +155,14 @@ function SmoothRobotMarker({
   const markerRef = useRef<L.Marker | null>(null);
 
   const pos = robot.latest_telemetry!.position;
+  const heading = robot.latest_telemetry!.heading;
   const [lat, lng] = roomToLatLng(pos.x, pos.y);
   const missionState = robot.current_mission_id ? 'executing' : 'idle';
   const iconState = robot.state === 'connected' ? missionState : robot.state;
 
   useEffect(() => {
     // Create marker on mount
-    const icon = createRobotIcon(iconState);
+    const icon = createRobotIcon(iconState, heading);
     const marker = L.marker([lat, lng], { icon }).addTo(map);
     marker.on('click', () => onRobotClick?.(robot.robot_id));
 
@@ -159,16 +176,16 @@ function SmoothRobotMarker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);
 
-  // Update marker position and icon on each poll
+  // Update marker position, heading, and icon on each poll
   useEffect(() => {
     const marker = markerRef.current;
     if (!marker) return;
 
-    marker.setIcon(createRobotIcon(iconState));
+    marker.setIcon(createRobotIcon(iconState, heading));
     marker.setTooltipContent(buildTooltip(robot));
     marker.setLatLng([lat, lng]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lat, lng, iconState, robot.state, robot.current_mission_id]);
+  }, [lat, lng, heading, iconState, robot.state, robot.current_mission_id]);
 
   return null; // Marker is managed imperatively via Leaflet
 }

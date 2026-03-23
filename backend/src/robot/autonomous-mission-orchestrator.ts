@@ -517,7 +517,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       state.missions[`advance_${followerId}`] = missionId;
       followerMissions.push(missionId);
 
-      await svc.dispatchMission({
+      const missionPayload = {
         mission_id: missionId,
         robot_id: followerId,
         command: 'patrol_route',
@@ -529,11 +529,24 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         issued_by: state.config.issuedBy,
         timestamp: new Date().toISOString(),
         problem_set_id: state.config.problemSetId,
-      });
+      };
+
+      // Dispatch with retry — followers may still be connecting over BLE
+      let dispatched = await svc.dispatchMission(missionPayload);
+      if (!dispatched.success) {
+        this.logPhase(state, `${followerId} dispatch failed (${dispatched.error}), retrying in 2s...`);
+        await new Promise((r) => setTimeout(r, 2000));
+        dispatched = await svc.dispatchMission({ ...missionPayload, timestamp: new Date().toISOString() });
+        if (!dispatched.success) {
+          this.logPhase(state, `${followerId} dispatch retry failed: ${dispatched.error}`);
+        }
+      }
 
       const fp = plan.firingPositions[i];
       const fpGrid = fp ? roomToGridRef(fp.position.x, fp.position.y) : 'unknown';
-      this.logPhase(state, `${followerId} — take tactical route to grid ${fpGrid}, assume firing position`);
+      if (dispatched.success) {
+        this.logPhase(state, `${followerId} — take tactical route to grid ${fpGrid}, assume firing position`);
+      }
     }
 
     this.publishUpdate(state);

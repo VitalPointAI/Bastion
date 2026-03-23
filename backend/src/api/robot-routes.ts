@@ -246,6 +246,126 @@ robotRouter.post('/robots/:robotId/stop', (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /test/follower-control — Pre-mission test: verify alpha can control followers
+//
+// Dispatches a short patrol_route (0.3m forward, then back) to each follower
+// via the BLE relay path through the leader. Polls telemetry for 10s to
+// confirm each follower actually moved.  Returns pass/fail per robot.
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/test/follower-control', async (req, res) => {
+  const svc = getRobotMissionService();
+  const robots = svc.getConnectedRobots();
+
+  const leaderId = (req.body.leader_id as string) ?? 'alpha';
+  const followerIds: string[] = (req.body.follower_ids as string[]) ?? ['bravo', 'charlie'];
+  const testDistanceM = 0.3;   // small nudge — 30 cm
+  const pollTimeoutMs = 10000; // wait up to 10s for movement
+
+  // 1. Connectivity check
+  const leader = robots.find(r => r.robot_id === leaderId);
+  if (!leader) {
+    res.status(400).json({ error: `Leader '${leaderId}' not connected`, connected: robots.map(r => r.robot_id) });
+    return;
+  }
+
+  const results: Record<string, {
+    connected: boolean;
+    dispatched: boolean;
+    dispatch_error?: string;
+    moved: boolean;
+    start_pos?: { x: number; y: number };
+    end_pos?: { x: number; y: number };
+  }> = {};
+
+  for (const fid of followerIds) {
+    const follower = robots.find(r => r.robot_id === fid);
+    const startPos = follower?.latest_telemetry?.position ?? null;
+
+    results[fid] = {
+      connected: !!follower,
+      dispatched: false,
+      moved: false,
+      start_pos: startPos ?? undefined,
+    };
+
+    // Build a short out-and-back route — move 0.3m north from current pos, then return
+    const baseX = startPos?.x ?? 1.0;
+    const baseY = startPos?.y ?? 1.0;
+    const waypoints = [
+      { x: baseX, y: baseY + testDistanceM },
+      { x: baseX, y: baseY },               // return to start
+    ];
+
+    const missionId = randomUUID();
+    const dispatchResult = await svc.dispatchMission({
+      mission_id: missionId,
+      robot_id: fid,
+      command: 'patrol_route',
+      params: {
+        waypoints,
+        speed: 80,
+        autonomy_policy: { max_speed: 255, restricted_actions: [] },
+      },
+      issued_by: 'test:follower-control',
+      timestamp: new Date().toISOString(),
+      problem_set_id: req.body.problem_set_id ?? 'test',
+    });
+
+    results[fid].dispatched = dispatchResult.success;
+    if (!dispatchResult.success) {
+      results[fid].dispatch_error = dispatchResult.error;
+    }
+  }
+
+  // 2. Poll telemetry for movement confirmation
+  const pollStart = Date.now();
+  const confirmed = new Set<string>();
+
+  while (Date.now() - pollStart < pollTimeoutMs && confirmed.size < followerIds.length) {
+    await new Promise(r => setTimeout(r, 1000));
+    const updated = svc.getConnectedRobots();
+
+    for (const fid of followerIds) {
+      if (confirmed.has(fid) || !results[fid].dispatched) continue;
+      const r = updated.find(rob => rob.robot_id === fid);
+      if (!r?.latest_telemetry?.position) continue;
+
+      const start = results[fid].start_pos;
+      const now = r.latest_telemetry.position;
+      results[fid].end_pos = { x: now.x, y: now.y };
+
+      if (start) {
+        const dx = now.x - start.x;
+        const dy = now.y - start.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 0.05) { // moved more than 5cm
+          results[fid].moved = true;
+          confirmed.add(fid);
+        }
+      }
+    }
+  }
+
+  const allPassed = followerIds.every(fid => results[fid].dispatched);
+  const allMoved = followerIds.every(fid => results[fid].moved);
+
+  res.json({
+    leader: leaderId,
+    leader_connected: true,
+    followers: results,
+    all_dispatched: allPassed,
+    all_moved: allMoved,
+    verdict: allMoved ? 'PASS' : allPassed ? 'PARTIAL — dispatched but no movement detected' : 'FAIL — dispatch failed',
+    hint: !allPassed
+      ? 'Check BLE follower connectivity: are bravo/charlie connected via BLE to alpha?'
+      : !allMoved
+        ? 'Commands dispatched but robots did not move. Check mission_client logs for relay errors.'
+        : undefined,
+  });
+});
+
+// ---------------------------------------------------------------------------
 // POST /missions/:missionId/auth — Manual auth response (backup for gate flow)
 // ---------------------------------------------------------------------------
 

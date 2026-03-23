@@ -155,6 +155,7 @@ interface COPSymbol {
 export function extractThreatSymbols(
   msg: RobotVisionMsg,
   robotPosition: { lat: number; lng: number } | null,
+  robotHeading?: number,
 ): COPSymbol[] {
   const symbols: COPSymbol[] = [];
 
@@ -170,8 +171,20 @@ export function extractThreatSymbols(
         lat: CAL_SOUTH + (estPos.y / ROOM_H) * (CAL_NORTH - CAL_SOUTH),
         lng: CAL_WEST + (estPos.x / ROOM_W) * (CAL_EAST - CAL_WEST),
       };
+    } else if (robotPosition) {
+      // No estimated_position — offset threat ~1.5m in the robot's facing
+      // direction so it doesn't overlap the robot marker on the COP map.
+      const heading = robotHeading ?? 0;
+      const OFFSET_METERS = 1.5;
+      const DEG_PER_METER_LAT = 1 / 111000;
+      const DEG_PER_METER_LNG = 1 / (111000 * Math.cos((robotPosition.lat * Math.PI) / 180));
+      const rad = (heading * Math.PI) / 180;
+      position = {
+        lat: robotPosition.lat + Math.cos(rad) * OFFSET_METERS * DEG_PER_METER_LAT,
+        lng: robotPosition.lng + Math.sin(rad) * OFFSET_METERS * DEG_PER_METER_LNG,
+      };
     } else {
-      position = robotPosition ?? { lat: 0, lng: 0 };
+      position = { lat: 0, lng: 0 };
     }
 
     // Use symbology skill for classification
@@ -183,10 +196,11 @@ export function extractThreatSymbols(
     );
 
     if (result) {
-      // Deterministic entity ID based on class + position bucket (0.0005° ≈ 50m)
-      // Same target at the same location → same entityId → dedup works
-      const latBucket = Math.round(position.lat / 0.0005) * 0.0005;
-      const lngBucket = Math.round(position.lng / 0.0005) * 0.0005;
+      // Deterministic entity ID based on class + position bucket (0.001° ≈ 100m)
+      // Coarser bucket avoids boundary duplicates in small rooms (~0.8m resolution)
+      const BUCKET = 0.001;
+      const latBucket = Math.round(position.lat / BUCKET) * BUCKET;
+      const lngBucket = Math.round(position.lng / BUCKET) * BUCKET;
       const detEntityId = `DET-${detection.class_desc}-${latBucket.toFixed(4)}-${lngBucket.toFixed(4)}`;
 
       symbols.push({
@@ -230,7 +244,22 @@ export function extractThreatSymbols(
     });
   }
 
-  return symbols;
+  // Self-dedup within this batch: if two detections in the same frame land in
+  // adjacent buckets they'll have different entityIds but represent the same
+  // target.  Merge them using the spatial isSameThreat check.
+  const deduped: COPSymbol[] = [];
+  for (const sym of symbols) {
+    const matchIdx = deduped.findIndex(e => isSameThreat(e, sym));
+    if (matchIdx >= 0) {
+      // Keep the higher-confidence detection
+      if (sym.confidence > deduped[matchIdx].confidence) {
+        deduped[matchIdx] = sym;
+      }
+    } else {
+      deduped.push(sym);
+    }
+  }
+  return deduped;
 }
 
 // ── Multi-Robot Corroboration ──────────────────────────────────────────────
@@ -409,12 +438,45 @@ export async function updateAdversaryCOPLayer(
         (layers: any[]) => layers.find((l) => l.id === layerId),
       );
       if (existingLayer?.spec?.symbols) {
-        // Add new symbols, skip duplicates by entityId
-        const existingIds = new Set(existingLayer.spec.symbols.map((s: { entityId: string }) => s.entityId));
-        const merged = [
-          ...existingLayer.spec.symbols,
-          ...copSymbols.filter((s) => !existingIds.has(s.entityId)),
-        ];
+        // Merge new symbols: match by entityId OR spatial proximity (isSameThreat)
+        // to prevent bucket-boundary duplicates across frames
+        const existingSyms = existingLayer.spec.symbols as COPSymbolSpec[];
+        const merged = [...existingSyms];
+        for (const incoming of copSymbols) {
+          const exactMatch = merged.findIndex(
+            (s: { entityId: string }) => s.entityId === incoming.entityId,
+          );
+          if (exactMatch >= 0) {
+            // Update existing symbol with latest confidence/position
+            merged[exactMatch] = { ...merged[exactMatch], ...incoming };
+            continue;
+          }
+          // Spatial proximity check — same type within ~50m
+          const spatialMatch = merged.findIndex((s) => {
+            if (s.ccoClass !== incoming.ccoClass) return false;
+            if (s.affiliation !== incoming.affiliation) return false;
+            const dLat = Math.abs(s.position.lat - incoming.position.lat);
+            const dLng = Math.abs(s.position.lng - incoming.position.lng);
+            const distM = Math.sqrt(dLat ** 2 + dLng ** 2) * 111000;
+            return distM < 50;
+          });
+          if (spatialMatch >= 0) {
+            // Corroborate — fuse confidence and update position to latest
+            const existing = merged[spatialMatch];
+            const fusedConf = fuseDetectionConfidence([
+              { confidence: existing.confidence ?? 0.5 },
+              { confidence: incoming.confidence ?? 0.5 },
+            ]);
+            merged[spatialMatch] = {
+              ...existing,
+              confidence: fusedConf,
+              confidenceTier: getConfidenceTier(fusedConf),
+              position: incoming.position,
+            };
+            continue;
+          }
+          merged.push(incoming);
+        }
         spec.symbols = merged;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const existingAnnotations = (existingLayer.spec.customAnnotations ?? []) as any[];
@@ -656,10 +718,11 @@ export async function processVisionDetections(
   msg: RobotVisionMsg,
   workspaceId: string | undefined,
   robotPosition: { lat: number; lng: number } | null,
+  robotHeading?: number,
 ): Promise<void> {
   if (!msg.detections || msg.detections.length === 0) return;
 
-  const symbols = extractThreatSymbols(msg, robotPosition);
+  const symbols = extractThreatSymbols(msg, robotPosition, robotHeading);
   if (symbols.length === 0) return;
 
   console.log(`[Vision Pipeline] ${symbols.length} threat(s) detected by ${msg.robot_id}, workspace=${workspaceId ?? 'default'}`);

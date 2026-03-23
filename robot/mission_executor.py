@@ -945,7 +945,14 @@ class MissionExecutor:
             ft_y = face_target.get('y', target.y)
             log_ctx.info("mission_executor.overwatch.face_toward", x=ft_x, y=ft_y)
             await self._driver.face_toward(ft_x, ft_y)
+        elif face_target:
+            # Handle object-style face_target (may come as SimpleNamespace from JSON)
+            ft_x = getattr(face_target, 'x', target.x)
+            ft_y = getattr(face_target, 'y', target.y)
+            log_ctx.info("mission_executor.overwatch.face_toward", x=ft_x, y=ft_y)
+            await self._driver.face_toward(ft_x, ft_y)
 
+        # Emit telemetry after facing so heading is reflected on COP
         await self._emit_telemetry(mission.mission_id)
 
         await self._transition(mission.mission_id, MissionState.executing)

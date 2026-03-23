@@ -365,23 +365,43 @@ async def receive_loop(
 
                     # Check if this mission is for a BLE follower, not this robot
                     target_robot = getattr(mission, 'robot_id', None) or msg.get("robot_id")
-                    if target_robot and target_robot != cfg.ROBOT_ID and _ble_followers:
+                    if target_robot and target_robot != cfg.ROBOT_ID:
                         # Relay to BLE follower
+                        if not _ble_followers:
+                            log.warning(
+                                "mission_client.relay_failed.no_ble_manager",
+                                target=target_robot,
+                                command=mission.command,
+                                hint="BLE follower manager not initialized",
+                            )
+                            continue
                         follower = next(
                             (f for f in _ble_followers.followers if f.robot_id == target_robot),
                             None,
                         )
+                        if not follower:
+                            # Try matching by suffix (e.g. "bravo" in "ble-bravo")
+                            follower = next(
+                                (f for f in _ble_followers.followers
+                                 if target_robot in f.robot_id or f.robot_id in target_robot),
+                                None,
+                            )
                         if follower and follower.driver.connected:
                             log.info(
                                 "mission_client.relay_to_follower",
                                 target=target_robot,
+                                follower_id=follower.robot_id,
                                 command=mission.command,
+                                connected=follower.driver.connected,
                             )
                             # For patrol_route, drive the follower through waypoints
                             if mission.command == "patrol_route" and mission.params.waypoints:
                                 async def _drive_follower(f, wps, spd):
                                     for wp in wps:
+                                        log.info("mission_client.follower_driving",
+                                                 follower=f.robot_id, x=wp.x, y=wp.y, speed=spd)
                                         await f.driver.drive_to_point(wp.x, wp.y, spd)
+                                    log.info("mission_client.follower_route_complete", follower=f.robot_id)
                                 asyncio.create_task(
                                     _drive_follower(follower, mission.params.waypoints, mission.params.speed),
                                     name=f"follower-{target_robot}-{mission.mission_id}",
@@ -393,7 +413,16 @@ async def receive_loop(
                                     name=f"follower-{target_robot}-{mission.mission_id}",
                                 )
                         else:
-                            log.warning("mission_client.follower_not_found", target=target_robot)
+                            connected = follower.driver.connected if follower else "N/A"
+                            available = [f.robot_id for f in _ble_followers.followers]
+                            log.warning(
+                                "mission_client.follower_not_found",
+                                target=target_robot,
+                                follower_matched=follower.robot_id if follower else None,
+                                ble_connected=connected,
+                                available_followers=available,
+                                ble_count=_ble_followers.connected_count,
+                            )
                         continue
 
                     # Pre-flight validation before dispatching to hardware

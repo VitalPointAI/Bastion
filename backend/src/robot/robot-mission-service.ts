@@ -958,7 +958,7 @@ export class RobotMissionService {
    * Validates the allocation exists and relays the command.
    */
   private handleResourceCommand(_ws: WebSocket, msg: ResourceCommandMsg): void {
-    const { from_robot_id, target_robot_id, mission_id, command } = msg;
+    const { from_robot_id, target_robot_id, mission_id: _mission_id, command } = msg;
 
     // Validate allocation
     const alloc = this.resourceAllocations.get(from_robot_id);
@@ -1509,6 +1509,7 @@ export class RobotMissionService {
       const robotPosition = robotTelemetry?.position
         ? roomToGeo(robotTelemetry.position.x, robotTelemetry.position.y)
         : null;
+      const robotHeading = robotTelemetry?.heading;
 
       // Resolve workspace: prefer problem_set_id on message, fall back to DB/orchestrator
       const resolveWorkspace = async (): Promise<string | undefined> => {
@@ -1535,7 +1536,7 @@ export class RobotMissionService {
       resolveWorkspace().then((workspaceId) => {
         console.log(`[RobotMissionService] Vision pipeline: workspace=${workspaceId ?? 'default'}, position=${robotPosition ? `${robotPosition.lat.toFixed(4)},${robotPosition.lng.toFixed(4)}` : 'null'}`);
         import('./vision-cop-pipeline.js').then(({ processVisionDetections }) => {
-          processVisionDetections(msg, workspaceId, robotPosition).catch(err =>
+          processVisionDetections(msg, workspaceId, robotPosition, robotHeading).catch(err =>
             console.error('[RobotMissionService] Vision pipeline error:', err),
           );
         }).catch((err) => {
