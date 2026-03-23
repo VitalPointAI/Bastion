@@ -105,6 +105,8 @@ const AUTO_DEFAULTS: AutoConfig = {
 class AutonomousMissionOrchestrator extends EventEmitter {
   private sequences: Map<string, AutoState> = new Map();
   private visionSubscribed = false;
+  /** Active interval/timeout handles — cleared on reset */
+  private _activeTimers: Array<ReturnType<typeof setInterval>> = [];
 
   async startAutonomousMission(
     overrides?: Partial<AutoConfig>,
@@ -128,7 +130,13 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     // ── FULL RESET: clean slate before new scenario ─────────────────────
     const svc = getRobotMissionService();
 
-    // 1. Stop all existing sequences
+    // 1. Kill all active timers (gate polls, shadow mode, follower monitors, etc.)
+    for (const timer of this._activeTimers) {
+      clearInterval(timer);
+    }
+    this._activeTimers = [];
+
+    // 2. Stop all existing sequences
     for (const [seqId, existing] of this.sequences) {
       if (existing.phase !== 'complete') {
         existing.phase = 'complete' as AutoPhase;
@@ -915,6 +923,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       this.logPhase(s, 'Shadow mode: enemy still in sector — maintaining observation');
       this.publishUpdate(s);
     }, 15000);
+    this._trackTimer(shadowInterval);
 
     // Safety: stop shadow reporting after 10 minutes
     setTimeout(() => clearInterval(shadowInterval), 10 * 60 * 1000);
@@ -1020,6 +1029,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         this.publishUpdate(state);
       }
     }, 2000);
+    this._trackTimer(checkInterval);
 
     setTimeout(() => clearInterval(checkInterval), 5 * 60 * 1000);
   }
@@ -1105,6 +1115,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         }
       }
     }, 2000);
+    this._trackTimer(checkInterval);
 
     setTimeout(() => clearInterval(checkInterval), 5 * 60 * 1000);
   }
@@ -1469,6 +1480,13 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         await this.attemptEngagement(seqId);
       }
     }, 2000);
+    this._trackTimer(approachInterval);
+  }
+
+  /** Track a timer so it gets cleared on reset */
+  private _trackTimer(timer: ReturnType<typeof setInterval>): ReturnType<typeof setInterval> {
+    this._activeTimers.push(timer);
+    return timer;
   }
 
   private pollGate(seqId: string, gateId: string, gateType: 'resource' | 'lethal'): void {
@@ -1477,6 +1495,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       if (!state) { clearInterval(interval); return; }
 
       // Check phase is still waiting for this gate
+
       if (gateType === 'resource' && state.phase !== 'plan_submitted') { clearInterval(interval); return; }
       if (gateType === 'lethal' && state.phase !== 'authorize') { clearInterval(interval); return; }
 
@@ -1511,6 +1530,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         console.error(`[AutonomousOrchestrator] Gate poll error:`, err);
       }
     }, 2000);
+    this._trackTimer(interval);
 
     setTimeout(() => clearInterval(interval), 10 * 60 * 1000);
   }
