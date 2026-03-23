@@ -62,7 +62,7 @@ for r in robots:
 echo ""
 
 # ── Step 2: Dispatch follower control test ──────────────────────────────────
-echo -e "${cyan}[2/3]${nc} Dispatching test movements to bravo & charlie (0.3m nudge via BLE relay)..."
+echo -e "${cyan}[2/3]${nc} Dispatching independent movements — bravo→east(90°), charlie→west(270°)..."
 echo "  Waiting up to 10 seconds for movement confirmation..."
 echo ""
 

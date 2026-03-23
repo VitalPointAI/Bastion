@@ -259,9 +259,10 @@ robotRouter.post('/test/follower-control', async (req, res) => {
 
   const leaderId = (req.body.leader_id as string) ?? 'alpha';
   const followerIds: string[] = (req.body.follower_ids as string[]) ?? ['bravo', 'charlie'];
-  const nudgeHeading = 0;       // north
+  // Different headings per follower to prove independent control
+  const followerHeadings: Record<string, number> = { bravo: 90, charlie: 270 }; // east / west
   const nudgeSpeed = 80;
-  const nudgeDurationSec = 1.5; // ~0.3m at speed 80
+  const nudgeDurationSec = 1.5;
   const pollTimeoutMs = 8000;
 
   // 1. Connectivity check
@@ -298,7 +299,7 @@ robotRouter.post('/test/follower-control', async (req, res) => {
     const nudgeResult = svc.sendManualCommand(leaderId, {
       type: 'robot:manual_nudge',
       robot_id: fid,
-      heading: nudgeHeading,
+      heading: followerHeadings[fid] ?? 0,
       speed: nudgeSpeed,
       duration_sec: nudgeDurationSec,
     });
