@@ -93,6 +93,15 @@ class RVRDriver:
         self._position = (x, y)
         log.info("rvr_driver.position_set", x=x, y=y)
 
+    async def reset_yaw(self) -> None:
+        """Reset the IMU yaw so the current facing direction becomes heading 0."""
+        if self._simulate:
+            log.info("rvr_driver.reset_yaw", simulate=True)
+            return
+        if self._rvr:
+            await self._run(self._rvr.reset_yaw)
+            log.info("rvr_driver.reset_yaw.ok")
+
     # ------------------------------------------------------------------
     # Helper: run blocking SDK call in executor
     # ------------------------------------------------------------------

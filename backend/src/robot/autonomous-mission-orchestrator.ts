@@ -150,7 +150,8 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     this.sequences.set(id, state);
     this.subscribeToVisionEvents();
 
-    // Set initial positions for all robots (home base on the map)
+    // Reset all robots to home base — both backend telemetry AND robot-side dead reckoning.
+    // This ensures heading 0 = current facing direction and position matches the map.
     const svc = getRobotMissionService();
     for (const robotId of [config.leaderId, ...config.followerIds]) {
       const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
@@ -164,6 +165,20 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         svc.updateSimulatedTelemetry(robotId, config.homeBase, 0, 100);
       }
     }
+
+    // Send position reset to the leader (which also resets BLE followers)
+    const leader = svc.getConnectedRobots().find((r) => r.robot_id === config.leaderId);
+    if (leader) {
+      svc.sendManualCommand(config.leaderId, {
+        type: 'robot:reset_position',
+        position: { x: config.homeBase.x, y: config.homeBase.y },
+        heading: 0,
+      });
+      this.logPhase(state, `Position reset: all robots at home base (${config.homeBase.x}, ${config.homeBase.y}), heading 0° (north)`);
+    }
+
+    // Brief pause for yaw reset to take effect on hardware
+    await new Promise((r) => setTimeout(r, 1000));
 
     // Use the plan_screening_route skill to compute the recon route
     // No hardcoded waypoints — AI plans the route using map knowledge

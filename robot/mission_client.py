@@ -524,6 +524,29 @@ async def receive_loop(
                 else:
                     asyncio.create_task(_driver.safe_stop())
 
+            elif msg_type == "robot:reset_position":
+                # Reset dead-reckoned position and heading for a fresh scenario run.
+                # Expects { position: { x, y }, heading: 0 } from the backend.
+                pos = msg.get("position", {})
+                px = float(pos.get("x", 0.0))
+                py = float(pos.get("y", 0.0))
+                hdg = float(msg.get("heading", 0.0))
+                _driver.set_position(px, py)
+                _driver._heading = hdg
+                log.info("mission_client.position_reset", x=px, y=py, heading=hdg)
+                # Reset yaw on the hardware so heading 0 = current facing direction
+                await _driver.reset_yaw()
+                # Reset BLE followers too
+                if _ble_followers:
+                    from ble_rvr_driver import DID_DRIVE, CID_RESET_YAW, TARGET_ST
+                    for follower in _ble_followers.followers:
+                        if follower.driver.connected:
+                            follower.driver.position = (px, py)
+                            follower.driver._heading = hdg
+                            await follower.driver._send_packet(DID_DRIVE, CID_RESET_YAW, b"", TARGET_ST)
+                            log.info("mission_client.follower_position_reset",
+                                     follower=follower.robot_id, x=px, y=py)
+
             elif msg_type == "mission:cancel":
                 log.info("mission_client.mission_cancel")
                 # Abort cancels the running asyncio task (stopping drive loops),
