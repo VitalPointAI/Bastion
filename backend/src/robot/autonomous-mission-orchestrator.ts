@@ -272,13 +272,14 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const state = this.sequences.get(seqId);
     if (!state) return;
 
-    // ── Dedup: skip if same class at same approximate grid position ──
+    // ── Dedup: skip if same class at same approximate position ──
     const isDuplicate = state.detectedThreats.some((existing) => {
       if (existing.classDesc !== threat.classDesc) return false;
-      // ~0.3m tolerance — same grid square means same physical target
+      // 1.0m tolerance — in a room-scale environment, same class within 1m
+      // is the same physical target (dead reckoning drift causes position jitter)
       const dx = Math.abs(existing.detectedAt.x - threat.detectedAt.x);
       const dy = Math.abs(existing.detectedAt.y - threat.detectedAt.y);
-      return dx < 0.3 && dy < 0.3;
+      return dx < 1.0 && dy < 1.0;
     });
 
     if (isDuplicate) {
