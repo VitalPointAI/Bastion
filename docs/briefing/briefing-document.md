@@ -126,6 +126,22 @@ Throughout all demonstration phases, three governance invariants held:
 
 ---
 
+## 5.4 Known Limitations and Open Questions
+
+We believe in addressing these questions proactively rather than waiting for them to be raised.
+
+**LLM Reliability.** BASTION's AI agents use large language models for intelligence extraction, planning analysis, and staff role functions. LLMs are non-deterministic — the same document may produce slightly different extraction results across runs — and they carry an inherent hallucination risk: the generation of plausible but factually incorrect analysis. Human review gates at every consequential decision point are the primary mitigation, but they reduce the risk rather than eliminating it. Every AI output in BASTION should be understood as an intelligence estimate requiring analyst validation, not as ground truth.
+
+**Blockchain-Tempo Tension.** On-chain coalition governance provides cryptographic accountability but introduces latency that does not exist in conventional C2 systems. Two-second transaction finality is acceptable for strategic deliberate decisions; it is architectural overhead for time-critical tactical decisions. The five-tier graduated authority model addresses this by routing most tactical actions through conventional authorization rather than blockchain consensus — only decisions explicitly requiring coalition verification touch the chain synchronously. The tension between governance accountability and decision speed is fundamental to the design and is managed, not eliminated.
+
+**DDIL Resilience.** BASTION's architecture is designed for DDIL environments: edge nodes cache mission parameters, the UDP swarm mesh coordinates independently of cloud, and stale data is marked with time-since-update indicators. However, there is an important distinction between "designed for DDIL" and "validated under sustained DDIL." Extended disconnection scenarios — hours of cloud unavailability, followed by reconnection reconciliation between diverged edge and cloud states — have not been empirically stress-tested in this prototype. The DDIL resilience is a design intent with partial validation, not a demonstrated capability under worst-case conditions.
+
+**Research Prototype Maturity.** BASTION was built by a single developer with AI assistance over approximately ten weeks. All testing has been single-user. The architecture is designed for team development (clear service boundaries, API contracts, plugin architecture), but it has not been validated under concurrent multi-user planning loads, adversarial penetration testing, or security audit. The contribution is the architecture and integration demonstration; production deployment readiness requires security audit, load testing, and multi-user validation that a research prototype cannot provide.
+
+**Scale Validation.** Physical demonstration used three robotic platforms and a single simulated coalition instance. Extrapolation to operational swarm sizes (tens to hundreds of platforms), multi-coalition concurrent instances, and agent coordination at scale remains an empirical open question. The architecture is designed to support these scales; the demonstration validates feasibility, not scalability bounds.
+
+---
+
 ## 6. Path Forward / Future Work
 
 ### 6.1 Near-Term Development (Next 6 Phases)
