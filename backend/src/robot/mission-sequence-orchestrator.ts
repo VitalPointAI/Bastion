@@ -800,7 +800,8 @@ class MissionSequenceOrchestrator extends EventEmitter {
             (state.phase === 'recon' || state.phase === 'contact')
           ) {
             for (const threat of threats) {
-              const entityId = `DET-${threat.class_desc.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+              // Stable entityId from class name only — Date.now() made every detection unique, defeating dedup
+              const entityId = `DET-${threat.class_desc.toLowerCase().replace(/\s+/g, '-')}`;
               this.handleThreatDetection(seqId, entityId, threat.class_desc);
             }
           }

@@ -272,6 +272,20 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const state = this.sequences.get(seqId);
     if (!state) return;
 
+    // ── Dedup: skip if same class at same approximate grid position ──
+    const isDuplicate = state.detectedThreats.some((existing) => {
+      if (existing.classDesc !== threat.classDesc) return false;
+      // ~0.3m tolerance — same grid square means same physical target
+      const dx = Math.abs(existing.detectedAt.x - threat.detectedAt.x);
+      const dy = Math.abs(existing.detectedAt.y - threat.detectedAt.y);
+      return dx < 0.3 && dy < 0.3;
+    });
+
+    if (isDuplicate) {
+      // Already know about this target — silently skip
+      return;
+    }
+
     // Record threat
     state.detectedThreats.push(threat);
     const threatGrid = roomToGridRef(threat.detectedAt.x, threat.detectedAt.y);
