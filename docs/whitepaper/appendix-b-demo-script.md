@@ -1,5 +1,7 @@
 # Appendix B: Demonstration Script (~20 minutes)
 
+> **See also:** `docs/briefing/demo-script-30min.md` for the expanded 30-minute version with full doctrinal tab walkthrough, robot vision, swarm telemetry, and Decide tab governance demonstration.
+
 This appendix provides a detailed demonstration script for the BASTION platform, designed for a ~20 minute presentation that showcases all three human authority positions (in-the-loop, on-the-loop, out-of-the-loop) and the cross-level coordination that connects strategic objectives to tactical execution.
 
 **Narrative Approach:** This script weaves technical demonstration with problem-focused narrative. At key moments, "injects" highlight specific problems BASTION solves versus conventional C2 architecture. The goal is not just to show *what* the system does, but *why* it matters.
@@ -63,12 +65,12 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 > "In conventional coalition operations, a strategic directive might take days to translate into tactical action. Why? The document must be manually analyzed by staff officers. Extracted objectives must be coordinated through national channels. Each partner must staff recommendations through their own approval chains. By the time everyone agrees, the operational window may have closed."
 
-> "BASTION solves this through AI-augmented decentralized autonomous organizations. Over the next twenty minutes, you'll see strategic intent flow through a doctrine-aligned workflow — Understand, Design, Plan, Direct, COP, Assess — mirroring JP 5-0 rather than imposing arbitrary software categories. You'll see 131 AI agents accelerate coordination while preserving human authority."
+> "BASTION solves this through AI-augmented decentralized autonomous organizations. Over the next twenty minutes, you'll see strategic intent flow through a doctrine-aligned workflow — Understand, Design, Plan, Decide, COP, Assess — mirroring JP 5-0 rather than imposing arbitrary software categories. You'll see 131 AI agents accelerate coordination while preserving human authority."
 
 *Action:* Display the six doctrinal tabs with the Understand tab active
 
 *Show:*
-- Six tabs: Understand / Design / Plan / Direct / COP / Assess
+- Six tabs: Understand / Design / Plan / Decide / COP / Assess
 - Coalition partners (USA, GBR, CAN) with voting weights
 - Training mode banner and EXERCISE watermark
 - Agent status panel showing healthy agents
