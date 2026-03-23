@@ -351,7 +351,22 @@ export class RobotMissionService {
       console.error('[RobotMissionService] Failed to update mission state:', err);
     }
 
-    console.log(`[RobotMissionService] Mission ${mission_id} → ${state}${reason ? ` (${reason})` : ''}`);
+    console.log(`[RobotMissionService] Mission ${mission_id} → ${state} (robot: ${robot_id})${reason ? ` (${reason})` : ''}`);
+
+    // Notify autonomous orchestrator of follower arrival (BLE followers
+    // report state_update through alpha but may not be in connectedRobots)
+    if (state === RobotMissionState.complete || (state as string) === 'complete') {
+      try {
+        const { getAutonomousOrchestrator } = await import('./autonomous-mission-orchestrator.js');
+        const seqs = getAutonomousOrchestrator().listSequences();
+        for (const seq of seqs) {
+          if (seq.phase === 'positioning' && seq.missions[`advance_${robot_id}`] === mission_id) {
+            (seq as unknown as Record<string, unknown>)[`${robot_id}_arrived`] = true;
+            console.log(`[RobotMissionService] Marked ${robot_id} as arrived at firing position`);
+          }
+        }
+      } catch { /* orchestrator not available */ }
+    }
 
     // Log to activity feed for COP visibility
     this.logMissionActivity(robot_id, mission_id, state, reason).catch((err) =>

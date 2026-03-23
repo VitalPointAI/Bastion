@@ -1099,9 +1099,25 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       const robots = svc.getConnectedRobots();
 
       const allArrived = state.config.followerIds.every((fid) => {
+        const missionId = state.missions[`advance_${fid}`];
+
+        // Check if the mission service received a 'complete' state_update
+        // for this follower's advance mission (sent by alpha on BLE route completion)
         const robot = robots.find((r) => r.robot_id === fid);
-        if (!robot) return false;
-        return robot.current_mission_id !== state.missions[`advance_${fid}`];
+        if (robot && robot.current_mission_id !== missionId) {
+          return true;
+        }
+
+        // Check mission store for completed state (BLE followers report via state_update)
+        // This is set by handleStateUpdate when alpha reports follower route complete
+        const completedKey = `${fid}_arrived`;
+        if ((state as unknown as Record<string, unknown>)[completedKey]) return true;
+
+        // Timeout fallback — don't block scenario forever
+        const elapsed = Date.now() - new Date(state.phaseStartedAt).getTime();
+        if (elapsed > 90_000) return true; // 90s timeout
+
+        return false;
       });
 
       if (allArrived) {

@@ -432,6 +432,32 @@ class BLERVRDriver:
         await self.drive(speed=speed, heading=heading, duration_sec=duration)
         self._position = (x, y)
 
+    async def face_toward(self, x: float, y: float) -> None:
+        """Rotate in place to face a target position."""
+        if not self._connected:
+            return
+        cx, cy = self._position
+        dx = x - cx
+        dy = y - cy
+        distance = math.sqrt(dx**2 + dy**2)
+        if distance < 0.01:
+            return
+
+        heading = math.degrees(math.atan2(dx, dy)) % 360
+        angle_delta = abs(heading - self._heading)
+        if angle_delta > 180:
+            angle_delta = 360 - angle_delta
+        rotate_time = max(0.5, (angle_delta / 180) * 1.5)
+
+        log.info("ble_rvr.face_toward", name=self._name,
+                 target_x=x, target_y=y, heading=round(heading, 1),
+                 old_heading=round(self._heading, 1))
+
+        self._heading = heading
+        data = struct.pack(">BHB", 0, int(heading) % 360, 0)
+        await self._send_packet(DID_DRIVE, CID_DRIVE_WITH_HEADING, data, TARGET_ST)
+        await asyncio.sleep(rotate_time)
+
     # ------------------------------------------------------------------
     # LEDs
     # ------------------------------------------------------------------

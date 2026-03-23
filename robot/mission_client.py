@@ -398,7 +398,8 @@ async def receive_loop(
                             # For patrol_route, drive the follower through waypoints
                             if mission.command == "patrol_route" and mission.params.waypoints:
                                 face = getattr(mission.params, 'face_target', None)
-                                async def _drive_follower(f, wps, spd, face_tgt=None):
+                                mid = mission.mission_id
+                                async def _drive_follower(f, wps, spd, face_tgt, m_id, _ws=ws):
                                     for wp in wps:
                                         log.info("mission_client.follower_driving",
                                                  follower=f.robot_id, x=wp.x, y=wp.y, speed=spd)
@@ -411,8 +412,22 @@ async def receive_loop(
                                                  follower=f.robot_id, target_x=fx, target_y=fy)
                                         await f.driver.face_toward(fx, fy)
                                     log.info("mission_client.follower_route_complete", follower=f.robot_id)
+                                    # Report arrival to Bastion so the orchestrator
+                                    # knows the follower is in position
+                                    try:
+                                        await send_stamped(_ws, {
+                                            "type": "robot:state_update",
+                                            "robot_id": f.robot_id,
+                                            "mission_id": m_id,
+                                            "state": "complete",
+                                        })
+                                        log.info("mission_client.follower_arrival_reported",
+                                                 follower=f.robot_id, mission_id=m_id)
+                                    except Exception as exc:
+                                        log.warning("mission_client.follower_arrival_report_failed",
+                                                    error=str(exc))
                                 asyncio.create_task(
-                                    _drive_follower(follower, mission.params.waypoints, mission.params.speed, face),
+                                    _drive_follower(follower, mission.params.waypoints, mission.params.speed, face, mid),
                                     name=f"follower-{target_robot}-{mission.mission_id}",
                                 )
                             elif mission.command == "find_engage" and mission.params.target_location:
