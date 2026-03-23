@@ -71,5 +71,14 @@
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
     "vitest": "^4.0.16"
+  },
+  "pnpm": {
+    "overrides": {
+      "minimatch": ">=7.4.6",
+      "undici": ">=7.24.0",
+      "flatted": ">=3.3.3",
+      "socket.io-parser": ">=4.2.4",
+      "h3": ">=1.15.3"
+    }
   }
 }

@@ -100,5 +100,20 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.17"
+  },
+  "pnpm": {
+    "overrides": {
+      "tar": ">=7.4.3",
+      "minimatch": ">=7.4.6",
+      "undici": ">=7.24.0",
+      "multer": ">=2.0.2",
+      "flatted": ">=3.4.2",
+      "socket.io-parser": ">=4.2.4",
+      "h3": ">=1.15.3",
+      "fast-xml-parser": ">=5.5.7",
+      "yauzl": ">=3.2.1",
+      "ip": ">=2.0.1",
+      "file-type": ">=20.5.0"
+    }
   }
 }
