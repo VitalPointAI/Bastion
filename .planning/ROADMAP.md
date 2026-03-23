@@ -790,6 +790,21 @@ Plans:
 - [x] 54-05-PLAN.md — Demo briefing deliverables (slide deck, script, briefing doc) (Wave 1)
 - [x] 54-06-PLAN.md — Docs site full refresh + 5 new capability pages (Wave 1)
 - [x] 54-07-PLAN.md — DOCX export + API reference + stale reference sweep (Wave 2)
+### Phase 55: Ironclaw guided design interview for operational approach development
+
+**Goal:** Build a LangGraph-powered guided interview system where Ironclaw walks users through developing an operational approach in the Design tab, covering Problem Framing, CoG Analysis, LOEs, and Operational Approach with challenge-first questioning, red-team probing, knowledge graph references, and 4 new visualization/analysis skills
+**Requirements**: TBD
+**Depends on:** Phase 54
+**Plans:** 6 plans
+
+Plans:
+- [ ] 55-01-PLAN.md — Backend design interview types, prompts, store, and LangGraph StateGraph service (Wave 1)
+- [ ] 55-02-PLAN.md — 4 Ironclaw design skills (overlay-producer, resource-allocator, campaign-visualizer, risk-visualizer) and handler registration (Wave 1)
+- [ ] 55-03-PLAN.md — REST API routes, MCP tool registration, action handler, Express mount (Wave 2)
+- [ ] 55-04-PLAN.md — Frontend useDesignInterview hook, progress bar, and review gate components (Wave 2)
+- [ ] 55-05-PLAN.md — Guide Me buttons in Design sections, proactive suggestion trigger (Wave 3)
+- [ ] 55-06-PLAN.md — Multi-user collaborative interview via Yjs with role-directed questioning (Wave 3)
+
 ---
 
 **MCP Tools (deterministic operations - added to MCP server):**
