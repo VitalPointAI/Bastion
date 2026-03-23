@@ -21,6 +21,8 @@ INPUT_FILES=(
   "02-background-daos.md"
   "02-background-military.md"
   "02-background-ai.md"
+  "02-background-robotics.md"
+  "02-background-knowledge-graphs.md"
   "03-methodology.md"
   "04-results.md"
   "05-discussion.md"
