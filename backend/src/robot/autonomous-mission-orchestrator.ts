@@ -293,20 +293,30 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     for (const det of detections) {
       // Ignore low-confidence detections — these are typically false positives
       // from the YOLO model misclassifying random objects as vehicles
-      if (det.confidence < 0.6) continue;
+      if (det.confidence < 0.75) continue;
 
       // Use estimated enemy position if available, otherwise robot's position
       const enemyPos = det.estimated_position ?? robotPos;
-      const threat: ThreatInfo = {
-        entityId: `DET-${det.class_desc.replace(/\s+/g, '-')}-${Date.now()}`,
-        classDesc: det.class_desc,
-        confidence: det.confidence,
-        detectedAt: { x: enemyPos.x, y: enemyPos.y },
-      };
 
       for (const [seqId, state] of this.sequences) {
         if (state.config.leaderId === robotId && (state.phase === 'recon' || state.phase === 'assess')) {
-          console.log(`[AutonomousOrchestrator] DIRECT threat notification: ${det.class_desc} conf=${det.confidence.toFixed(2)} from ${robotId}, phase=${state.phase}`);
+          // Ignore detections in first 10 seconds — camera settling, robot hasn't moved yet
+          const seqAge = Date.now() - new Date(state.startedAt).getTime();
+          if (seqAge < 10_000) continue;
+
+          // Ignore detections near home base — likely furniture/other robots, not threats
+          const hb = state.config.homeBase;
+          const distFromBase = Math.sqrt((enemyPos.x - hb.x) ** 2 + (enemyPos.y - hb.y) ** 2);
+          if (distFromBase < 1.0) continue;
+
+          const threat: ThreatInfo = {
+            entityId: `DET-${det.class_desc.replace(/\s+/g, '-')}-${Date.now()}`,
+            classDesc: det.class_desc,
+            confidence: det.confidence,
+            detectedAt: { x: enemyPos.x, y: enemyPos.y },
+          };
+
+          console.log(`[AutonomousOrchestrator] DIRECT threat notification: ${det.class_desc} conf=${det.confidence.toFixed(2)} at (${enemyPos.x.toFixed(1)},${enemyPos.y.toFixed(1)}) from ${robotId}, phase=${state.phase}`);
           this.handleThreatDetection(seqId, threat);
         }
       }
