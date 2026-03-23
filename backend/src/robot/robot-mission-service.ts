@@ -114,6 +114,9 @@ export class RobotMissionService {
   /** Throttle DB heartbeat writes — tracks last write timestamp per robot */
   private _heartbeatTimestamps = new Map<string, number>();
 
+  /** Suppress repeated "unknown robot" telemetry warnings */
+  private _unknownTelemetryLogged?: Set<string>;
+
   /** Message IDs seen in the dedup window, value is receipt timestamp (epoch ms) */
   private seenMessageIds = new Map<string, number>();
 
@@ -401,26 +404,19 @@ export class RobotMissionService {
       return;
     }
 
-    let robot = this.connectedRobots.get(robot_id);
+    const robot = this.connectedRobots.get(robot_id);
     if (robot) {
       robot.last_heartbeat = Date.now();
       robot.latest_telemetry = { position, heading, battery };
     } else {
-      // Auto-register BLE followers that send telemetry via their leader.
-      // The leader's telemetry loop forwards follower positions, but the
-      // registration message may not have arrived yet (race condition).
-      console.log(`[RobotMissionService] Auto-registering unknown robot from telemetry: ${robot_id}`);
-      const connected: ConnectedRobot = {
-        robot_id,
-        did: `did:ble:${robot_id}`,
-        ws,
-        state: 'connected' as const,
-        capabilities: ['patrol', 'find_engage'],
-        last_heartbeat: Date.now(),
-        latest_telemetry: { position, heading, battery },
-      };
-      this.connectedRobots.set(robot_id, connected);
-      robot = connected;
+      // BLE followers (bravo/charlie) send telemetry through alpha's WS.
+      // Don't auto-register — they must only be dispatched via BLE relay
+      // through the leader. Just log once per robot to avoid spam.
+      if (!this._unknownTelemetryLogged?.has(robot_id)) {
+        if (!this._unknownTelemetryLogged) this._unknownTelemetryLogged = new Set();
+        this._unknownTelemetryLogged.add(robot_id);
+        console.log(`[RobotMissionService] Telemetry from unregistered robot: ${robot_id} (BLE follower — will register via leader)`);
+      }
     }
 
     // Persist heartbeat timestamp (throttled — at most once per 30s per robot)

@@ -433,11 +433,11 @@ class MissionExecutor:
         # Build params dict for the planner
         params_dict = mission.params.model_dump(exclude_none=True)
 
-        # Get available followers
+        # Get available followers by their actual callsigns (bravo, charlie)
         followers = []
         if self._swarm and hasattr(self._swarm, '_ble_followers') and self._swarm._ble_followers:
             mgr = self._swarm._ble_followers
-            followers = [f"follower-{i}" for i in range(mgr.connected_count)]
+            followers = [f.robot_id for f in mgr.followers if f.driver.connected]
 
         # Extract context fields for the planner
         terrain_context = params_dict.pop("terrain_context", None)
