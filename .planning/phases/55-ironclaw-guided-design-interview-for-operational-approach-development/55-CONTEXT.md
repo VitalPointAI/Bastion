@@ -55,6 +55,33 @@ Build a LangGraph-powered guided interview system where Ironclaw walks users (in
 - Role-directed questioning: Ironclaw knows each participant's JPP staff role and directs questions to the most relevant role when applicable (J2 for intel, J3 for ops concepts, J5 for planning)
 - Any participant can still chime in on any question — role direction is guidance, not strict gating
 
+### Ironclaw Skills & Visualization Tools
+- Build new Ironclaw skills (registered in skill-handler-registry) that support the design interview outputs:
+
+#### Overlay Producer
+- Generates SVG overlays depicting the operational approach on the area of operations map
+- Concise visual representation: phases, axes of advance, LOEs mapped to geography, decisive points, boundaries
+- Overlays render on the existing Leaflet/COP map infrastructure (COPMapView, COASketchMap patterns)
+- Ironclaw can produce these during or after the interview as the approach takes shape
+
+#### Resource Allocator
+- Provides realistic understanding of apportioned forces available for each phase of the operation
+- Queries the Resource Registry (Phase 27) for available/apportioned assets
+- Maps forces to operational phases — shows what's realistically available per phase vs what's needed
+- Surfaces shortfalls and allocation conflicts proactively during the interview
+
+#### Campaign Plan Visualizer
+- Generates a comprehensive visual "placemat" depicting the entire operational plan
+- Includes: CoGs, LOEs, objectives, problem framing, phases, transitions, decision points — all in one concise visual
+- Output formats: SVG overlays for in-app rendering, detailed markdown image specs that an image AI can use to generate polished visual elements
+- Think of the classic one-page campaign overview briefing chart — that's the target output
+
+#### Risk Visualizer
+- Visualizes operational risks with mitigation measures and residual risk levels
+- Maps risks to phases/LOEs/decision points — shows where risk concentrates in the operational approach
+- Displays mitigation strategies alongside each risk with residual risk after mitigation applied
+- Visual format: risk matrix, risk-over-time timeline, or risk-by-phase heatmap — concise enough for a briefing slide
+
 ### Claude's Discretion
 - Exact LangGraph graph topology and state schema design
 - Doctrinal coverage criteria thresholds per section (how many CCs, CRs, etc. constitute "sufficient")
@@ -64,6 +91,10 @@ Build a LangGraph-powered guided interview system where Ironclaw walks users (in
 - Lock/notification behavior when multiple users are editing simultaneously
 - Exact timing of Design tab field population (per-answer vs per-section-completion)
 - Interview progress indicator design
+- SVG overlay rendering approach (D3-generated vs template-based vs LLM-generated SVG)
+- Campaign placemat layout and information density
+- Markdown image spec format for image AI generation
+- Resource allocator query strategy and shortfall threshold definitions
 
 </decisions>
 
@@ -75,6 +106,9 @@ Build a LangGraph-powered guided interview system where Ironclaw walks users (in
 - Background research on KG gaps is a self-healing knowledge pattern — the interview itself improves the problem set's intelligence baseline
 - Role-directed questions in collaborative mode mirror real Joint Planning Group dynamics where the J2 briefs intel, J3 briefs ops concepts, etc.
 - Proactive suggestions with high confidence should use the existing confidence bounds pattern (0-1 with lower/upper) already in the agent system
+- The visualization skills (overlay producer, campaign placemat, risk visualizer) transform abstract design artifacts into briefing-ready visuals — the kind of one-pagers a commander expects to see
+- Resource allocator closes the gap between aspirational planning and realistic force availability — surfacing shortfalls during design rather than discovering them during planning
+- Markdown image specs for image AI generation enables polished visual outputs beyond what SVG alone can produce (e.g., styled briefing graphics, annotated maps)
 
 </specifics>
 
@@ -107,6 +141,10 @@ Build a LangGraph-powered guided interview system where Ironclaw walks users (in
 - ScopingInterview completion check → interview prerequisite gate
 - Yjs WebSocket provider → collaborative interview state sync
 - Design tab → Plan tab auto-sync (Phase 49): Interview-populated Design data flows to JPP steps automatically
+- Skill handler registry → new design skills: overlay-producer, resource-allocator, campaign-visualizer, risk-visualizer registered as Ironclaw skills
+- COPMapView / COASketchMap → overlay producer: SVG overlays render on existing Leaflet map infrastructure
+- Resource Registry (Phase 27) → resource allocator: Query apportioned forces per phase
+- Existing D3/SVG patterns (EffectChainDiagram, CoG trees, LOE timelines) → campaign placemat and risk visualizer rendering
 
 </code_context>
 
