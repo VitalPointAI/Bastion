@@ -43,6 +43,7 @@ from pre_flight import validate_mission
 from rvr_driver import RVRDriver
 from swarm.coordinator import SwarmCoordinator
 from swarm.models import SwarmAddResource, SwarmRemoveResource, SwarmRole, SwarmTelemetry
+from ble_rvr_driver import scan_for_rvr_plus
 from swarm.ble_follower_manager import BLEFollowerManager
 from vision.camera import Camera
 from vision.models import VisionConfig, VisionMsg
@@ -596,52 +597,74 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
         log.info("mission_client.registered", robot_id=cfg.ROBOT_ID)
 
         # Connect and register BLE followers in the background (non-blocking).
-        # Each follower is registered with Bastion as soon as its BLE link is up,
-        # so the service is online and accepting commands for alpha immediately.
+        # Scans for advertising devices first so we never hog the BLE adapter
+        # with blind connection retries that block drive commands to other robots.
         async def _connect_ble_followers_bg():
             if not _ble_followers:
                 return
-            addresses = [a.strip() for a in cfg.BLE_FOLLOWERS.split(",") if a.strip()]
-            leader_did = reg_msg.get("did", "")
+            addresses = [a.strip().upper() for a in cfg.BLE_FOLLOWERS.split(",") if a.strip()]
+            pending = {addr: i for i, addr in enumerate(addresses)}
+            max_rounds = 12  # ~2 minutes of retrying (10s scan + pause per round)
 
-            async def _connect_and_register(addr: str, idx: int):
-                name = f"ble-{addr[-5:].replace(':', '')}"
-                success = await _ble_followers.connect_by_address(
-                    address=addr, name=name, slot_index=idx + 1,
-                )
-                if success:
-                    log.info("mission_client.ble_follower_connected",
-                             address=addr, name=name, slot=idx + 1)
-                    # Find the follower and register it with Bastion
-                    follower = next(
-                        (f for f in _ble_followers.followers if f.driver.address.upper() == addr.upper()),
-                        None,
+            for round_num in range(1, max_rounds + 1):
+                if not pending:
+                    break
+
+                # Scan for devices currently advertising — only try to connect to those
+                log.info("mission_client.ble_scan_round", round=round_num,
+                         pending=list(pending.keys()))
+                discovered = await scan_for_rvr_plus(timeout=8.0)
+                discovered_addrs = {d["address"].upper() for d in discovered}
+
+                # Connect to each pending follower that is currently advertising
+                for addr in list(pending.keys()):
+                    if addr not in discovered_addrs:
+                        continue
+
+                    idx = pending[addr]
+                    name = f"ble-{addr[-5:].replace(':', '')}"
+                    success = await _ble_followers.connect_by_address(
+                        address=addr, name=name, slot_index=idx + 1,
                     )
-                    if follower and follower.driver.connected:
-                        follower_reg = {
-                            "type": "robot:register",
-                            "robot_id": follower.robot_id,
-                            "did": f"did:ble:{follower.driver.address.replace(':', '')}",
-                            "capabilities": ["patrol", "find_engage"],
-                            "parent_robot_id": cfg.ROBOT_ID,
-                        }
-                        await send_stamped(ws, follower_reg)
-                        log.info("mission_client.follower_registered",
-                                 robot_id=follower.robot_id,
-                                 address=follower.driver.address)
-                else:
-                    log.warning("mission_client.ble_follower_failed", address=addr)
+                    if success:
+                        log.info("mission_client.ble_follower_connected",
+                                 address=addr, name=name, slot=idx + 1)
+                        follower = next(
+                            (f for f in _ble_followers.followers
+                             if f.driver.address.upper() == addr),
+                            None,
+                        )
+                        if follower and follower.driver.connected:
+                            follower_reg = {
+                                "type": "robot:register",
+                                "robot_id": follower.robot_id,
+                                "did": f"did:ble:{follower.driver.address.replace(':', '')}",
+                                "capabilities": ["patrol", "find_engage"],
+                                "parent_robot_id": cfg.ROBOT_ID,
+                            }
+                            await send_stamped(ws, follower_reg)
+                            log.info("mission_client.follower_registered",
+                                     robot_id=follower.robot_id,
+                                     address=follower.driver.address)
+                            if _swarm:
+                                _swarm.set_ble_followers(_ble_followers)
+                        del pending[addr]
+                    else:
+                        log.warning("mission_client.ble_follower_connect_failed",
+                                    address=addr, round=round_num)
 
-            # Connect all followers in parallel
-            tasks = [_connect_and_register(addr, i) for i, addr in enumerate(addresses)]
-            await asyncio.gather(*tasks, return_exceptions=True)
+                if pending:
+                    log.info("mission_client.ble_waiting_for_followers",
+                             pending=list(pending.keys()), next_scan_in="10s")
+                    await asyncio.sleep(10)
+
+            if pending:
+                log.warning("mission_client.ble_followers_gave_up",
+                            not_connected=list(pending.keys()))
 
             log.info("mission_client.ble_followers_ready",
                      connected=_ble_followers.connected_count,
                      total=len(addresses))
-
-            if _ble_followers.connected_count > 0 and _swarm:
-                _swarm.set_ble_followers(_ble_followers)
 
         if _ble_followers is not None:
             asyncio.create_task(_connect_ble_followers_bg(), name="ble-follower-connect")
