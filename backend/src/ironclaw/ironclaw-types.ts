@@ -69,6 +69,8 @@ export const ACTION_RISK: Record<string, ActionRiskLevel> = {
   'skill.delete': ActionRiskLevel.high,
   'skill.assign': ActionRiskLevel.low,
   'skill.unassign': ActionRiskLevel.low,
+  // Design interview — section updates from guided interview
+  'design.update_section': ActionRiskLevel.medium,
   // Field write-back — Ironclaw can suggest and apply field values
   'field.write': ActionRiskLevel.medium,
   'field.write_sensitive': ActionRiskLevel.high,

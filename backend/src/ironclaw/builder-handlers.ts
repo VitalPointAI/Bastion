@@ -459,6 +459,38 @@ const skillUnassign: ActionHandler = async (payload, _userDid) => {
 };
 
 // ---------------------------------------------------------------------------
+// Design Interview Handlers
+// ---------------------------------------------------------------------------
+
+const designUpdateSection: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = requireField<string>(payload, 'problem_set_id');
+  const section = requireField<string>(payload, 'section');
+  const data = requireField<Record<string, unknown>>(payload, 'data');
+
+  const { designStore } = await import('../design/design-store.js');
+  const result = await designStore.updateSection(problemSetId, section, data);
+
+  // Publish WebSocket event for real-time frontend updates
+  try {
+    const { getMessageBus } = await import('../messaging/message-bus.js');
+    const bus = getMessageBus();
+    await bus.publish({
+      sourceDid: 'system:ironclaw',
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: `ironclaw.${problemSetId}`,
+      messageType: 'design.section_updated',
+      payload: { section, data, source: 'interview' },
+    });
+  } catch (err) {
+    // Non-blocking: log but don't fail the action
+    console.warn('[builder-handlers] Failed to publish design.section_updated WS event:', err);
+  }
+
+  return { problemSetId, section, status: 'updated', design: result };
+};
+
+// ---------------------------------------------------------------------------
 // Dispatch Map
 // ---------------------------------------------------------------------------
 
@@ -484,6 +516,8 @@ export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   'team.delete': teamDelete,
   'team.add_member': teamAddMember,
   'team.remove_member': teamRemoveMember,
+  // Design interview (1)
+  'design.update_section': designUpdateSection,
   // Skill CRUD (5)
   'skill.create': skillCreate,
   'skill.update': skillUpdate,

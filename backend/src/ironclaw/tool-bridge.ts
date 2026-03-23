@@ -156,6 +156,25 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'high',
   },
   {
+    name: 'bastion.design.update_section',
+    description: 'Update a specific section of the operational design from interview output',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        section: {
+          type: 'string',
+          enum: ['problem-framing', 'cog-analysis', 'lines-of-effort', 'operational-approach'],
+          description: 'Design section to update',
+        },
+        data: { type: 'object', description: 'Section data to merge/replace' },
+        partial: { type: 'boolean', description: 'True for incremental updates, false for full section replacement' },
+      },
+      required: ['problem_set_id', 'section', 'data'],
+    },
+    riskLevel: 'medium',
+  },
+  {
     name: 'bastion.system.update_config',
     description: 'Update system-level configuration',
     inputSchema: {
