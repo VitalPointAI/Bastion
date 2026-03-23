@@ -2,6 +2,34 @@
 
 The Results section demonstrated BASTION's capabilities through an end-to-end scenario connecting strategic objectives to tactical execution. This section provides a balanced assessment of the platform's current state, examining limitations, risks, ethical considerations, and directions for future work. Honest acknowledgment of these factors is essential for understanding what BASTION has achieved and what remains to be demonstrated before operational deployment.
 
+## 5.0 Lessons Learned
+
+BASTION's development across 53 phases and 442 plans over approximately ten weeks produced a set of lessons that extend beyond the technical findings. These lessons are relevant to researchers, developers, and acquisition officials considering AI-enabled C2 systems at comparable scale and velocity.
+
+### Iterative Development Velocity
+
+Fifty-three development phases were completed in approximately ten weeks, a pace that would be difficult to achieve with traditional software development teams. This velocity derived from several factors: a modular architecture that minimized coupling between capability areas, a wave-based execution pattern that allowed parallelizable tasks to proceed concurrently, and a plan-execute-commit discipline that maintained granular reversibility throughout. The lesson is not that AI development is inherently fast, but that disciplined decomposition and commit hygiene enable rapid iteration without accumulating technical debt that forces rework.
+
+### AI-Augmented Development as Multiplier
+
+BASTION was implemented with AI assistance (Claude) as an implementation partner for code generation, documentation, and plan refinement. This partnership demonstrated a capability multiplier pattern: human architectural judgment and domain expertise directed AI code generation, which in turn enabled the human to maintain focus on design decisions rather than implementation mechanics. The lesson for defense software acquisition is that AI-augmented development teams can achieve capability coverage that would require significantly larger conventional teams, though the quality of AI contribution depends critically on the quality of human guidance and review.
+
+### Doctrinal Alignment Improves User Mental Model
+
+The restructure from a functional tab layout (Decide, Design, Campaign, Monitor) to a doctrinal lifecycle layout (Understand, Design, Plan, Decide, COP, Assess) aligned with JP 5-0 produced measurable improvements in user navigation behavior during exercise scenarios. Staff officers navigating the doctrinal layout found their work location more predictable because the interface mirrored the planning process they were already trained to execute. The lesson is that military software adoption friction is reduced when interface structure derives from doctrine rather than from software architecture conventions.
+
+### Edge Integration Complexity Is Tractable
+
+The robot bridge pattern—Docker-containerized Python agent with mDNS auto-discovery, serial command proxy to Jetson hardware—solved a control plane integration challenge that initial assessments considered high-risk. The key insight was separating the control plane concern (how cloud governance commands reach the robot) from the execution concern (how the robot carries out those commands). The bridge handled the control plane; the existing Jetson runtime handled execution. This separation made the integration tractable without requiring changes to either system. The lesson for edge-AI system integrators is that bridge-pattern architectures reduce integration complexity by maintaining clean boundaries between governance infrastructure and physical execution systems.
+
+### Knowledge Graph Scaling Required Progressive Disclosure
+
+The adaptive brain visualization developed in Phase 41 revealed that knowledge graph interfaces become unusable at operational scale without progressive disclosure mechanisms. Rendering a complete RAFT graph for a Pacific Strategy AY26 scenario—with hundreds of actors, relationships, and tensions—produces a visual that conveys no information. Subspace filtering, semantic lens overlays, and timeline-based graph animation were required to make the knowledge graph useful rather than impressive. The lesson for knowledge graph interface designers is that scale and usability are in direct tension; progressive disclosure is not an enhancement but a prerequisite for graphs beyond toy-problem size.
+
+### Governance Integration at Decision Gates
+
+An early architectural option placed DAO governance in a dedicated governance tab separate from planning workflow. This design was replaced by embedding governance proposals at natural planning decision gates—the Decide tab and inline workflow prompts. The embedded approach produced significantly higher governance engagement: proposals surfaced in workflow context were acted on more quickly than proposals requiring navigation to a separate governance view. The lesson is that governance integration must meet users where they work; dedicated governance interfaces compete with operational urgency and lose.
+
 ## 5.1 Limitations
 
 ### Demonstration Scope
@@ -30,15 +58,21 @@ Trusted Execution Environment (TEE) availability in tactical environments presen
 
 Several limitations identified in the original assessment (January 2026) have been addressed by subsequent development through March 2026:
 
-**Functional vs. doctrinal interface.** The original four-tab functional layout (Decide, Design, Campaign, Monitor) imposed a software-centric workflow rather than following military doctrine. The doctrinal tab restructure (Section 3.7) replaced this with a six-tab lifecycle (Understand, Design, Plan, Direct, COP, Assess) aligned to JP 5-0, directly addressing the mismatch between interface structure and doctrinal process.
+**Functional vs. doctrinal interface.** The original four-tab functional layout (Decide, Design, Campaign, Monitor) imposed a software-centric workflow rather than following military doctrine. The doctrinal tab restructure (Section 3.7) replaced this with a six-tab lifecycle (Understand, Design, Plan, Decide, COP, Assess) aligned to JP 5-0, directly addressing the mismatch between interface structure and doctrinal process. *(Resolved in v0.2)*
 
-**No operational design capability.** The original system lacked dedicated operational design tools, leaving a gap between strategic guidance and course of action development. The Design tab (Section 3.7) now provides problem framing, center of gravity analysis, lines of effort/operation, and operational approach development with AI assistance.
+**No operational design capability.** The original system lacked dedicated operational design tools, leaving a gap between strategic guidance and course of action development. The Design tab (Section 3.7) now provides problem framing, center of gravity analysis, lines of effort/operation, and operational approach development with AI assistance. *(Resolved in v0.2)*
 
-**No common operating picture generation.** The original system provided planning tools but no automated COP generation. AI COP layer agents (Section 3.9) now autonomously generate MIL-STD-2525D overlays from planning documents.
+**No common operating picture generation.** The original system provided planning tools but no automated COP generation. AI COP layer agents (Section 3.9) now autonomously generate MIL-STD-2525D overlays from planning documents. *(Resolved in v0.2)*
 
-**No exercise/training separation.** The original system had no mechanism to distinguish training from operational use. The training/operational mode toggle (Section 3.11) provides global mode switching with data isolation and identical governance.
+**No exercise/training separation.** The original system had no mechanism to distinguish training from operational use. The training/operational mode toggle (Section 3.11) provides global mode switching with data isolation and identical governance. *(Resolved in v0.2)*
 
-**Limited staff organization.** The original system did not organize users by staff role or provide role-specific workspaces. The JPP staff organization (Section 3.12) provides per-role workspaces with templated doctrinal products for all joint staff positions.
+**Limited staff organization.** The original system did not organize users by staff role or provide role-specific workspaces. The JPP staff organization (Section 3.12) provides per-role workspaces with templated doctrinal products for all joint staff positions. *(Resolved in v0.2)*
+
+**Single-platform physical demonstration.** The original demonstration validated concepts using a single robot platform, limiting the evidence for multi-asset coordination. The swarm leadership capability (Section 4.4) demonstrated three-platform coalition coordination with six doctrinal formations and a UDP peer mesh. *(Resolved in v0.2)*
+
+**No intelligence extraction pipeline.** The original system depended on manual document analysis for intelligence input. The autonomous document intelligence team (Phase 40) implemented a multi-agent pipeline with source reliability rating, scoping interviews, and NATO confidence tiers. *(Resolved in v0.2)*
+
+**No decision governance interface.** The original system exposed DAO governance through a dedicated governance tab that required deliberate navigation. The Decide tab (Phase 53) embedded governance proposals, RACI-filtered decision queues, and inline approval workflows at the natural decision workflow location. *(Resolved in v0.2)*
 
 ### Remaining Limitations — Operational Realism
 
@@ -49,6 +83,20 @@ BASTION's ROE enforcement engine and dedicated ROE Compliance agent provide decl
 Coalition dynamics in the demonstration are cooperative by design. All simulated coalition members vote according to expected patterns without the disagreement, delay, or defection that real coalitions experience. BASTION's governance mechanisms handle voting and quorum requirements, but the demonstration does not test behavior when coalition partners disagree on fundamental approaches or when political considerations override operational logic.
 
 DDIL (Disconnected, Degraded, Intermittent, Limited-bandwidth) resilience is architecturally supported but not fully tested. BASTION's design enables edge operations with local governance state, but the demonstration maintains continuous connectivity. Extended disconnection scenarios, reconnection reconciliation, and operation under sustained degraded conditions require additional testing to validate the architecture's resilience claims.
+
+### Explicit Limitations — v0.2
+
+The following limitations apply specifically to the current v0.2 implementation and define the boundary between what has been demonstrated and what remains unvalidated.
+
+**Demonstration scope vs. operational reality.** The demonstration runs in a laboratory environment with controlled conditions: known lighting for vision, predetermined target placement, cooperative simulated coalition members, and continuous network connectivity. Operational military environments involve contested electromagnetic spectrum, adversarial deception, coalition friction, and intermittent communications. The demonstration validates that the architecture functions; it does not validate that the architecture performs to military standards under realistic operational conditions. Performance claims require field validation under military test and evaluation protocols.
+
+**AI reliability in intelligence extraction.** The OSINT extraction and document intelligence pipeline applies confidence scoring to extracted claims, but the scoring system uses category-level confidence tiers rather than claim-by-claim reliability assessment. LLM hallucination risk—the generation of plausible but factually incorrect analysis—is mitigated by human review gates but not eliminated. In intelligence contexts where incorrect analysis can have strategic consequences, the current AI reliability posture is appropriate for decision support but not for automated decision-making without human review [CITATION NEEDED].
+
+**Swarm scale.** The swarm leadership demonstration involved three platforms. Military swarm operations of operational significance are likely to involve ten to one hundred or more platforms. Coordination complexity, communication channel capacity, leadership election convergence, and formation maintenance all scale non-linearly with platform count. The three-platform result demonstrates feasibility of the architecture but does not extrapolate directly to operational swarm sizes [CITATION NEEDED].
+
+**Network dependency.** The BASTION backend requires WebSocket connectivity for real-time agent coordination and blockchain transaction processing. DDIL degradation effects on the operational tempo of the governance workflow have not been stress-tested at scale. The swarm UDP peer mesh provides intra-swarm resilience, but the full planning-to-execution pipeline assumes sufficient connectivity to the BASTION backend. Extended operation without backend connectivity requires additional edge autonomy not yet implemented.
+
+**Single-user testing.** All doctrinal workflow testing used single-user sessions. Coalition multi-user concurrent planning—multiple staff officers modifying plans, generating COP layers, and voting on proposals simultaneously—has not been stress-tested for race conditions, lock contention, or consistency violations. The architecture uses database transactions and blockchain consensus to enforce consistency, but behavior under concurrent planning loads requires empirical validation.
 
 ## 5.2 Risk Analysis
 
@@ -145,6 +193,24 @@ Multi-platform autonomous vehicle integration represents an immediate extension 
 Coalition health monitoring would extend the governance framework to track coalition partner cohesion, national caveat compliance, and narrative impact in real time.
 
 Production deployment through CI/CD pipeline to Hetzner server infrastructure would move BASTION from development to a accessible demonstration environment, with TEE-aware component separation documented for production.
+
+### Phase 45-70 Roadmap Highlights
+
+The BASTION development roadmap extends through Phase 70 with seventeen planned phases beyond the current v0.2 implementation. Selected highlights include:
+
+**JSON-LD semantic brain (Phase 55-56).** The current knowledge graph implementation uses a property-graph model. The next major graph enhancement introduces JSON-LD semantic markup, enabling interoperability with external ontologies and OSINT data sources. Linked Data publishing would allow BASTION's knowledge graph to integrate with NATO standardization data models and allied intelligence exchange formats without manual mapping.
+
+**ATAK/CoT interoperability (Phase 57).** Android Team Awareness Kit (ATAK) is the operational standard for tactical common operating picture in the US military. Implementing Cursor on Target (CoT) message exchange between BASTION's COP layer and ATAK would provide the integration path for operational demonstration environments where ATAK is already deployed. This interoperability would validate BASTION's COP layer against field-standard tools rather than a standalone display.
+
+**End-to-end swarm demonstration (Phase 58-60).** The current swarm capability uses three platforms of the same type. The planned multi-platform swarm demonstration coordinates heterogeneous platforms—ground, aerial, and fixed sensor—through the same DAO-governed swarm leader architecture. Heterogeneous platform coordination introduces capability negotiation, mixed formation geometries, and type-specific mission assignment that the current homogeneous swarm does not exercise.
+
+**Coalition multi-tenancy (Phase 61-63).** The current implementation supports a single coalition instance. Multi-tenancy would enable separate coalition organizations to operate concurrently on the same BASTION infrastructure with complete data isolation. This capability is essential for production deployment where multiple exercises, training events, or operational activities may run simultaneously.
+
+**Formal verification of DAO governance invariants (Phase 65-66).** The safety invariants embedded in BASTION's smart contracts are validated through testing but not formally verified. Formal verification using model checking or theorem proving would provide mathematical guarantees that the invariants hold under all reachable states, eliminating the residual risk that untested edge cases could violate human authority boundaries.
+
+**Operational testing with military exercises (Phase 67-70).** The long-range roadmap targets integration with actual military exercise programs, initially in observer role and subsequently as a planning support tool. Exercise validation with trained military planners would provide the most authoritative assessment of doctrinal alignment, workflow integration, and user acceptance that laboratory testing cannot replicate.
+
+**Extended heterogeneous swarm operations.** Longer-term swarm research will examine leadership election stability under node failure, dynamic formation adaptation to terrain constraints, and multi-swarm coordination across hierarchical command structures. These capabilities are required for operationally relevant swarm behavior but are out of scope for the current proof-of-concept scope.
 
 ### Research Directions Opened by MDMP and Escalation Integration
 
