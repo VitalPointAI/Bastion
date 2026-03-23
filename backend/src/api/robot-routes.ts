@@ -307,7 +307,7 @@ robotRouter.post('/test/follower-control', async (req, res) => {
         speed: 80,
         autonomy_policy: { max_speed: 255, restricted_actions: [] },
       },
-      issued_by: 'test:follower-control',
+      issued_by: 'did:bastion:test-follower-control',
       timestamp: new Date().toISOString(),
       problem_set_id: req.body.problem_set_id ?? 'test',
     });
