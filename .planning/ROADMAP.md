@@ -784,7 +784,7 @@ Plans:
 
 Plans:
 - [ ] 54-01-PLAN.md — Whitepaper front matter + new background sections (Wave 1)
-- [ ] 54-02-PLAN.md — Methodology section expansion with 12 new subsections (Wave 1)
+- [x] 54-02-PLAN.md — Methodology section expansion with 12 new subsections (Wave 1)
 - [ ] 54-03-PLAN.md — Results, discussion, and conclusion updates (Wave 1)
 - [ ] 54-04-PLAN.md — SITREP full update + figure specs (Wave 1)
 - [ ] 54-05-PLAN.md — Demo briefing deliverables (slide deck, script, briefing doc) (Wave 1)
