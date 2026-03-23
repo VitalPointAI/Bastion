@@ -20,6 +20,11 @@ const sidebars = {
         'capabilities/direct-tab',
         'capabilities/cop-tab',
         'capabilities/assess-tab',
+        'capabilities/resources-tab',
+        'capabilities/knowledge-graph',
+        'capabilities/robot-bridge',
+        'capabilities/robot-vision',
+        'capabilities/swarm-behavior',
       ],
     },
     {
