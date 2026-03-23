@@ -13,9 +13,16 @@
 #
 set -euo pipefail
 
-HOST="${1:-localhost}"
-PORT="${API_PORT:-3001}"
-BASE="http://${HOST}:${PORT}/api/robot"
+HOST="${1:-bastion.vitalpoint.ai}"
+PORT="${API_PORT:-}"
+
+if [ -n "$PORT" ]; then
+  BASE="http://${HOST}:${PORT}/api/robot"
+elif [ "$HOST" = "localhost" ] || [ "$HOST" = "127.0.0.1" ]; then
+  BASE="http://${HOST}:3001/api/robot"
+else
+  BASE="https://${HOST}/api/robot"
+fi
 
 cyan='\033[0;36m'
 green='\033[0;32m'
