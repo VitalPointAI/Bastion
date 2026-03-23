@@ -527,22 +527,18 @@ export async function updateAdversaryCOPLayer(
 /**
  * Add detected threats to the Neo4j knowledge graph as hostile actor nodes.
  */
-// Throttle graph updates per robot — at most once every 5 seconds per robot
-const _graphUpdateTimestamps = new Map<string, number>();
-const GRAPH_UPDATE_INTERVAL_MS = 5000;
-
+/**
+ * Write confirmed threat detections to the Neo4j knowledge graph.
+ *
+ * NOT called per-frame — only for confirmed/corroborated threats
+ * (e.g. after autonomous orchestrator validates a detection).
+ */
 export async function updateKnowledgeGraph(
   workspaceId: string,
   symbols: COPSymbol[],
   robotId: string,
 ): Promise<void> {
   if (symbols.length === 0) return;
-
-  // Throttle: skip if we updated this robot's graph entry recently
-  const now = Date.now();
-  const lastUpdate = _graphUpdateTimestamps.get(robotId) ?? 0;
-  if (now - lastUpdate < GRAPH_UPDATE_INTERVAL_MS) return;
-  _graphUpdateTimestamps.set(robotId, now);
 
   try {
     const { executeWriteQuery } = await import('../graph/neo4j-client.js');
@@ -737,12 +733,12 @@ export async function processVisionDetections(
 
   console.log(`[Vision Pipeline] ${symbols.length} threat(s) detected by ${msg.robot_id}, workspace=${workspaceId ?? 'default'}`);
 
-  // Run COP update first (critical), then graph (best-effort)
+  // COP layer update — lightweight (in-memory + PostgreSQL)
   const wsId = workspaceId ?? 'default';
   await updateAdversaryCOPLayer(wsId, symbols);
 
-  // Graph update is best-effort — don't let it block or mask COP errors
-  updateKnowledgeGraph(wsId, symbols, msg.robot_id).catch((err) =>
-    console.warn('[Vision Pipeline] Graph update failed (non-fatal):', err),
-  );
+  // Knowledge graph is NOT updated per-frame. Graph writes happen only for
+  // confirmed threats (via the autonomous orchestrator or manual confirmation).
+  // Continuous per-frame writes exhausted the Neo4j connection pool and caused
+  // cascading timeouts that crashed WebSocket connections.
 }
