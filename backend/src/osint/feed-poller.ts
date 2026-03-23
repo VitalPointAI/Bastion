@@ -168,15 +168,10 @@ async function fetchRSSFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
       description = translated.description;
     }
 
-    // Extract geo-location from article text, then infer from feed source name
+    // Extract geo-location from article text only — no location = no COP placement
+    // The LLM entity extractor backfills locations for events it processes
     const fullText = `${title} ${description}`;
-    let location = extractLocation(fullText) ?? undefined;
-
-    // Fallback: infer location from the feed's source name
-    // e.g. "BBC Middle East" → Middle East, "BBC Africa" → Africa
-    if (!location) {
-      location = extractLocation(feed.sourceName) ?? undefined;
-    }
+    const location = extractLocation(fullText) ?? undefined;
 
     events.push({
       title,
@@ -222,12 +217,7 @@ async function fetchAPIFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
     const title = (obj.title as string) ?? 'Untitled';
     const description = (obj.description as string) ?? (obj.summary as string) ?? '';
     const fullText = `${title} ${description}`;
-    let location = extractLocation(fullText) ?? undefined;
-
-    // Fallback: infer location from feed source name
-    if (!location) {
-      location = extractLocation(feed.sourceName) ?? undefined;
-    }
+    const location = extractLocation(fullText) ?? undefined;
 
     results.push({
       title,

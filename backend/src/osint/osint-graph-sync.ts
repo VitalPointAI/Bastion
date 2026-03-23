@@ -266,18 +266,6 @@ const KNOWN_LOCATIONS: Record<string, { lat: number; lng: number; region?: strin
   'north sea': { lat: 56.0, lng: 3.0, region: 'Europe' },
   'baltic sea': { lat: 58.0, lng: 20.0, region: 'Europe' },
 
-  // ── Regional keywords (for feed source name fallback) ──
-  'africa': { lat: 0.0, lng: 20.0, region: 'Africa' },
-  'asia': { lat: 30.0, lng: 100.0, region: 'Indo-Pacific' },
-  'europe': { lat: 50.0, lng: 10.0, region: 'Europe' },
-  'middle east': { lat: 29.0, lng: 42.0, region: 'Middle East' },
-  'latin america': { lat: -10.0, lng: -60.0, region: 'Americas' },
-  'americas': { lat: 20.0, lng: -80.0, region: 'Americas' },
-  'world': { lat: 30.0, lng: 0.0 },
-  'global': { lat: 30.0, lng: 0.0 },
-  'international': { lat: 30.0, lng: 0.0 },
-  'russian': { lat: 61.52, lng: 105.32, region: 'Europe', country: 'Russia' },
-  'nigerian': { lat: 9.08, lng: 8.68, region: 'Africa', country: 'Nigeria' },
 };
 
 /**
