@@ -89,6 +89,7 @@ export interface RegistryStats {
 class ResourceRegistryService {
   private userDID: string | null = null;
   private positionListeners: Set<(positions: Record<string, TelemetryFrame>) => void> = new Set();
+  private removalListeners: Set<(resourceId: string) => void> = new Set();
   private wsCleanup: (() => void) | null = null;
 
   /**
@@ -324,7 +325,27 @@ class ResourceRegistryService {
     return () => {
       this.positionListeners.delete(callback);
       // Clean up WebSocket if no more listeners
-      if (this.positionListeners.size === 0 && this.wsCleanup) {
+      if (this.positionListeners.size === 0 && this.removalListeners.size === 0 && this.wsCleanup) {
+        this.wsCleanup();
+        this.wsCleanup = null;
+      }
+    };
+  }
+
+  /**
+   * Subscribe to resource removal events (robot disconnected / turned off).
+   * Returns an unsubscribe function.
+   */
+  subscribeToRemovals(callback: (resourceId: string) => void): () => void {
+    this.removalListeners.add(callback);
+
+    if (this.positionListeners.size === 0 && this.removalListeners.size === 1) {
+      this.connectPositionWebSocket();
+    }
+
+    return () => {
+      this.removalListeners.delete(callback);
+      if (this.positionListeners.size === 0 && this.removalListeners.size === 0 && this.wsCleanup) {
         this.wsCleanup();
         this.wsCleanup = null;
       }
@@ -356,6 +377,10 @@ class ResourceRegistryService {
               const positions = msg.positions as Record<string, TelemetryFrame>;
               for (const listener of this.positionListeners) {
                 listener(positions);
+              }
+            } else if (msg.type === 'resource:position_removed' && msg.resourceId) {
+              for (const listener of this.removalListeners) {
+                listener(msg.resourceId as string);
               }
             }
           } catch {

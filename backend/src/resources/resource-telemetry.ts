@@ -157,6 +157,27 @@ export class ResourceTelemetryService {
       );
     }
   }
+
+  /**
+   * Remove a resource's position and broadcast removal to all subscribers.
+   * Called when a robot disconnects so it disappears from the COP.
+   */
+  removeResource(resourceId: string): void {
+    this.pendingPositions.delete(resourceId);
+
+    const payload = JSON.stringify({
+      type: 'resource:position_removed',
+      resourceId,
+    });
+
+    for (const ws of this.subscribers) {
+      if (ws.readyState === 1) {
+        ws.send(payload);
+      }
+    }
+
+    console.log(`[ResourceTelemetry] Removed resource position: ${resourceId}`);
+  }
 }
 
 // ---- Singleton ----

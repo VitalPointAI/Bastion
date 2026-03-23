@@ -741,6 +741,22 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
                      total=len(addresses))
 
         if _ble_followers is not None:
+            # Re-register already-connected followers SYNCHRONOUSLY before starting
+            # the receive loop. This ensures the backend knows about bravo/charlie
+            # before any mission:assign messages arrive.
+            for follower in _ble_followers.followers:
+                if follower.driver.connected:
+                    follower_reg = {
+                        "type": "robot:register",
+                        "robot_id": follower.robot_id,
+                        "did": f"did:ble:{follower.driver.address.replace(':', '')}",
+                        "capabilities": ["patrol", "find_engage"],
+                        "parent_robot_id": cfg.ROBOT_ID,
+                    }
+                    await send_stamped(ws, follower_reg)
+                    log.info("mission_client.follower_registered_sync",
+                             robot_id=follower.robot_id)
+            # Background task handles scanning for NEW followers not yet connected
             asyncio.create_task(_connect_ble_followers_bg(), name="ble-follower-connect")
 
         # Build executor with bound WS callbacks and vision components

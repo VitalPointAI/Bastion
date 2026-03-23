@@ -203,6 +203,21 @@ export function COPResourceLayer({
     return unsubscribe;
   }, [handlePositionUpdate]);
 
+  // Remove robots from COP when they disconnect
+  const handleResourceRemoval = useCallback(
+    (resourceId: string) => {
+      setResources((prev) =>
+        prev.filter((r) => r.id !== resourceId && r.did !== resourceId)
+      );
+    },
+    []
+  );
+
+  useEffect(() => {
+    const unsubscribe = resourceRegistryService.subscribeToRemovals(handleResourceRemoval);
+    return unsubscribe;
+  }, [handleResourceRemoval]);
+
   // Don't render if not visible
   if (!visible) return null;
 

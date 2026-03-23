@@ -405,41 +405,9 @@ class MissionExecutor:
                             obstacle_event.set()
                             break
 
-                # 2. Generic proximity check — detect walls/obstacles the YOLO
-                #    model wasn't trained on by checking edge density in the
-                #    center strip of the raw frame. Close surfaces produce high
-                #    edge density or very uniform color.
-                if obstacle_event and not obstacle_event.is_set():
-                    try:
-                        import cv2
-                        import numpy as np
-                        jpeg_bytes = await self._vision_engine.get_keyframe_jpeg(self._camera)
-                        if jpeg_bytes:
-                            arr = np.frombuffer(jpeg_bytes, dtype=np.uint8)
-                            frame = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
-                            if frame is not None:
-                                h, w = frame.shape
-                                # Center strip: middle 40% width, middle 60% height
-                                cx_start = int(w * 0.3)
-                                cx_end = int(w * 0.7)
-                                cy_start = int(h * 0.2)
-                                cy_end = int(h * 0.8)
-                                center = frame[cy_start:cy_end, cx_start:cx_end]
-                                # Laplacian variance — very high = textured wall close up
-                                # very low = blank wall close up. Both indicate proximity.
-                                lap_var = cv2.Laplacian(center, cv2.CV_64F).var()
-                                color_std = float(np.std(center))
-                                # Close wall: low color variance (uniform) OR extremely
-                                # high edge density (texture fills frame)
-                                if color_std < 15 or lap_var > 2000:
-                                    log.info(
-                                        "mission_executor.proximity_obstacle",
-                                        color_std=round(color_std, 1),
-                                        lap_var=round(lap_var, 1),
-                                    )
-                                    obstacle_event.set()
-                    except Exception:
-                        pass  # Non-fatal — proximity check is best-effort
+                # Note: Generic proximity/edge-density obstacle detection removed.
+                # It produced too many false positives from floor patterns and walls,
+                # causing the robot to spin. Only YOLO detections trigger avoidance.
             except Exception as exc:
                 err_str = str(exc)
                 # WebSocket connection errors — stop the loop, don't spam forever

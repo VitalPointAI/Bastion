@@ -259,10 +259,16 @@ class BLERVRDriver:
                 ok = await self._send_packet(DID_IO, CID_SET_ALL_LEDS, led, TARGET_ST)
                 if not ok:
                     log.warning("ble_rvr.keepalive.failed", name=self._name)
+                    self._connected = False
+                    log.error("ble_rvr.connection_lost", name=self._name,
+                              reason="keepalive failed")
+                    break
             except asyncio.CancelledError:
                 break
             except Exception as exc:
                 log.warning("ble_rvr.keepalive.error", name=self._name, error=str(exc))
+                self._connected = False
+                break
 
     async def _send_packet(self, did: int, cid: int, data: bytes = b"",
                            target: int = TARGET_ST) -> bool:

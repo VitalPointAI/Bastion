@@ -135,6 +135,8 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       clearInterval(timer);
     }
     this._activeTimers = [];
+    // Also kill gate poll intervals tracked by the mission service
+    svc.clearGatePolls();
 
     // 2. Stop all existing sequences
     for (const [seqId, existing] of this.sequences) {
@@ -1557,10 +1559,9 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         const robotPos = robot?.latest_telemetry?.position ?? { x: 2.5, y: 2.5 };
 
         for (const det of detections) {
-          // Treat ANY detection with confidence > 0.3 as a potential threat.
-          // Custom YOLO models have unpredictable class names; the model was
-          // specifically trained on tanks so any detection is relevant.
-          if (det.confidence < 0.3) continue;
+          // Trust the robot-side VISION_THRESHOLD (.env) as the primary filter.
+          // Only apply a modest server-side floor to catch obviously spurious data.
+          if (det.confidence < 0.5) continue;
 
           // Use estimated enemy position if available (placed at range by simulator),
           // otherwise fall back to robot's position

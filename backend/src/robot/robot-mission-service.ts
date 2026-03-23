@@ -108,6 +108,9 @@ export class RobotMissionService {
   /** Resource allocations: leader_robot_id → Set of granted follower robot_ids */
   private resourceAllocations = new Map<string, Set<string>>();
 
+  /** Active gate poll intervals — tracked so they can be killed on scenario reset */
+  private _gatePollIntervals: ReturnType<typeof setInterval>[] = [];
+
   /** Throttle DB heartbeat writes — tracks last write timestamp per robot */
   private _heartbeatTimestamps = new Map<string, number>();
 
@@ -398,12 +401,26 @@ export class RobotMissionService {
       return;
     }
 
-    const robot = this.connectedRobots.get(robot_id);
+    let robot = this.connectedRobots.get(robot_id);
     if (robot) {
       robot.last_heartbeat = Date.now();
       robot.latest_telemetry = { position, heading, battery };
     } else {
-      console.warn(`[RobotMissionService] telemetry for unknown robot: ${robot_id} (known: ${[...this.connectedRobots.keys()].join(',')})`);
+      // Auto-register BLE followers that send telemetry via their leader.
+      // The leader's telemetry loop forwards follower positions, but the
+      // registration message may not have arrived yet (race condition).
+      console.log(`[RobotMissionService] Auto-registering unknown robot from telemetry: ${robot_id}`);
+      const connected: ConnectedRobot = {
+        robot_id,
+        did: `did:ble:${robot_id}`,
+        ws,
+        state: 'connected' as const,
+        capabilities: ['patrol', 'find_engage'],
+        last_heartbeat: Date.now(),
+        latest_telemetry: { position, heading, battery },
+      };
+      this.connectedRobots.set(robot_id, connected);
+      robot = connected;
     }
 
     // Persist heartbeat timestamp (throttled — at most once per 30s per robot)
@@ -464,6 +481,27 @@ export class RobotMissionService {
 
     this.connectedRobots.delete(robotId);
 
+    // Remove from COP — broadcast position removal to frontend subscribers
+    const telemetrySvc = getResourceTelemetryService();
+    if (robotDid) {
+      telemetrySvc.removeResource(robotDid);
+    }
+    // Also remove by robot_id (BLE followers may use robot_id as resource key)
+    telemetrySvc.removeResource(robotId);
+
+    // If this was a leader robot, also clean up its BLE followers
+    const followerIds: string[] = [];
+    for (const [rid, r] of this.connectedRobots) {
+      if (r.ws === robot?.ws && rid !== robotId) {
+        followerIds.push(rid);
+      }
+    }
+    for (const fid of followerIds) {
+      console.log(`[RobotMissionService] Cleaning up BLE follower: ${fid} (leader ${robotId} disconnected)`);
+      this.connectedRobots.delete(fid);
+      telemetrySvc.removeResource(fid);
+    }
+
     robotStore.removeConnection(robotId).catch((err) =>
       console.error('[RobotMissionService] Failed to mark robot disconnected:', err),
     );
@@ -475,7 +513,7 @@ export class RobotMissionService {
       );
     }
 
-    console.log(`[RobotMissionService] Robot disconnected: ${robotId}`);
+    console.log(`[RobotMissionService] Robot disconnected: ${robotId}${followerIds.length > 0 ? ` (+followers: ${followerIds.join(', ')})` : ''}`);
   }
 
   // -------------------------------------------------------------------------
@@ -897,14 +935,17 @@ export class RobotMissionService {
         const gate = await gateService.getGateById(gateId);
         if (!gate) {
           clearInterval(interval);
+          this._gatePollIntervals = this._gatePollIntervals.filter((i) => i !== interval);
           return;
         }
 
         if (gate.status === 'approved') {
           clearInterval(interval);
+          this._gatePollIntervals = this._gatePollIntervals.filter((i) => i !== interval);
           this.grantResources(leaderId, missionId, candidates);
         } else if (gate.status === 'rejected') {
           clearInterval(interval);
+          this._gatePollIntervals = this._gatePollIntervals.filter((i) => i !== interval);
           const robot = this.connectedRobots.get(leaderId);
           if (robot) {
             const denyMsg: ResourceDeniedMsg = {
@@ -920,10 +961,15 @@ export class RobotMissionService {
       } catch (err) {
         console.error(`[RobotMissionService] Resource allocation gate poll error for ${gateId}:`, err);
         clearInterval(interval);
+        this._gatePollIntervals = this._gatePollIntervals.filter((i) => i !== interval);
       }
     }, 2000);
 
-    setTimeout(() => clearInterval(interval), 10 * 60 * 1000);
+    this._gatePollIntervals.push(interval);
+    setTimeout(() => {
+      clearInterval(interval);
+      this._gatePollIntervals = this._gatePollIntervals.filter((i) => i !== interval);
+    }, 10 * 60 * 1000);
   }
 
   /**
@@ -1966,6 +2012,21 @@ Return ONLY valid JSON, no markdown.`;
 
   getConnectedRobots(): ConnectedRobot[] {
     return Array.from(this.connectedRobots.values());
+  }
+
+  /**
+   * Kill all active gate poll intervals. Called on scenario reset to prevent
+   * stale decision notifications from lingering after a scenario ends.
+   */
+  clearGatePolls(): void {
+    for (const interval of this._gatePollIntervals) {
+      clearInterval(interval);
+    }
+    const count = this._gatePollIntervals.length;
+    this._gatePollIntervals = [];
+    if (count > 0) {
+      console.log(`[RobotMissionService] Cleared ${count} active gate poll(s)`);
+    }
   }
 
   async getMissionStatus(
