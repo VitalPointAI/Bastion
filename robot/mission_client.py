@@ -642,13 +642,42 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
         log.info("mission_client.registered", robot_id=cfg.ROBOT_ID)
 
         # Connect and register BLE followers in the background (non-blocking).
-        # Scans for advertising devices first so we never hog the BLE adapter
-        # with blind connection retries that block drive commands to other robots.
+        # First re-registers any already-connected followers (e.g. after WS reconnect),
+        # then scans for new ones that haven't connected yet.
         async def _connect_ble_followers_bg():
             if not _ble_followers:
                 return
+
+            # Re-register already-connected followers immediately (WS reconnect case)
+            already_connected = 0
+            for follower in _ble_followers.followers:
+                if follower.driver.connected:
+                    follower_reg = {
+                        "type": "robot:register",
+                        "robot_id": follower.robot_id,
+                        "did": f"did:ble:{follower.driver.address.replace(':', '')}",
+                        "capabilities": ["patrol", "find_engage"],
+                        "parent_robot_id": cfg.ROBOT_ID,
+                    }
+                    await send_stamped(ws, follower_reg)
+                    log.info("mission_client.follower_re_registered",
+                             robot_id=follower.robot_id,
+                             address=follower.driver.address)
+                    already_connected += 1
+            if already_connected > 0:
+                log.info("mission_client.ble_followers_re_registered", count=already_connected)
+                if _swarm:
+                    _swarm.set_ble_followers(_ble_followers)
+
             addresses = [a.strip().upper() for a in cfg.BLE_FOLLOWERS.split(",") if a.strip()]
-            pending = {addr: i for i, addr in enumerate(addresses)}
+            # Only scan for followers that aren't already connected
+            connected_addrs = {f.driver.address.upper() for f in _ble_followers.followers if f.driver.connected}
+            pending = {addr: i for i, addr in enumerate(addresses) if addr not in connected_addrs}
+
+            if not pending:
+                log.info("mission_client.ble_all_followers_already_connected")
+                return
+
             max_rounds = 12  # ~2 minutes of retrying (10s scan + pause per round)
 
             for round_num in range(1, max_rounds + 1):
