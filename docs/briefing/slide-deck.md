@@ -577,7 +577,58 @@ Agent outputs → Human review gates → Approved outputs
 
 ---
 
-<!-- SLIDE 27: CONCLUSION — RESEARCH QUESTION ANSWERED -->
+<!-- SLIDE 27: DESIGN TRADEOFFS -->
+
+# Design Tradeoffs: What We Chose and What We Sacrificed
+
+| Decision | What Was Gained | What Was Sacrificed |
+|----------|----------------|---------------------|
+| NEAR blockchain (public chain) | Cryptographic coalition trust, independent verification | Latency overhead, OpSec exposure of metadata, third-party infrastructure dependency |
+| LLM agents | Capability breadth, natural language understanding, doctrinal adaptability | Determinism, formal verifiability, hallucination risk |
+| DAO governance over RBAC | Cross-coalition trust without central authority | Consensus overhead, key management complexity, tempo latency |
+| Hybrid storage (SQL + graph + chain) | Right tool for each data type | Consistency complexity across systems, synchronization risk |
+| JP 5-0 alignment over NATO/custom | Immediate familiarity for US joint staff | Coalition breadth, NATO partner friction |
+
+**Honest summary:** Every decision was made deliberately. Every sacrifice was accepted for a reason.
+
+> **[SPEAKER NOTES]** This slide earns credibility with audiences that know these tradeoffs exist and are waiting to see if you'll acknowledge them. Walk through each row briefly. The blockchain choice: we chose public chain because the coalition trust argument depends on no single party controlling the infrastructure — that benefit requires accepting the latency cost. The LLM choice: capability breadth was worth the reliability cost because every LLM output sits behind a human review gate. DAO governance: the overhead is real and the mitigation (five-tier model routing most decisions off-chain) is real. Hybrid storage: the consistency challenge is manageable with compensating transactions but is not zero. JP 5-0 alignment: the right decision for the demonstrated use case; a production coalition system would need configurable doctrinal workflow per partner nation.
+
+---
+
+<!-- SLIDE 28: RED TEAM — WHY THIS MIGHT NOT WORK -->
+
+# Red Team: Why This Approach Might Not Work
+
+| Concern | Severity | Key Mitigation | What Remains |
+|---------|----------|----------------|--------------|
+| LLM hallucination in intelligence | **Critical** | Multi-agent cross-validation, human review gates | Subtle fabrications may survive all checks |
+| LLM non-determinism | Significant | Audit logging, human review, temperature=0 | Bit-for-bit reproducibility not achievable |
+| Blockchain tempo overhead | Significant | Five-tier model (most decisions off-chain) | Coalition consensus decisions inherently slower |
+| DDIL failure cascade | Significant | Edge caching, staleness indicators | Extended disconnection not stress-tested |
+| Adversarial LLM manipulation | Significant | Multi-source cross-validation, sanitization | Coordinated adversarial inputs not solved |
+| Scale and complexity debt | Significant | Modular architecture, standardized templates | Testing coverage cannot match feature growth |
+
+**The bottom line:** We've thought about this carefully. The mitigations are real. The residual risks are real.
+
+> **[SPEAKER NOTES]** This is the credibility slide. Researchers and acquisition officials who probe these questions are doing their jobs — they should probe these questions. Showing that you've already done the red-team analysis, named the severity, identified mitigations, and been honest about residual risk demonstrates intellectual maturity that builds trust. Note the Critical severity on LLM hallucination: that is the highest risk in the system, and the mitigation is human review, not a technical fix. The DDIL gap between designed-for and tested-under is also important to name directly. These are not failures of the architecture; they are honest characterizations of what a research prototype has and hasn't proven.
+
+---
+
+<!-- SLIDE 29: HONEST ASSESSMENT -->
+
+# Honest Assessment
+
+- **This is a research prototype, not a production system.** The demonstration validates that the architecture is coherent and that the integration chain works end-to-end. It does not validate performance under operational conditions, concurrent multi-user loads, or adversarial stress.
+
+- **The contribution is the architecture and design patterns, not implementation maturity.** The value of BASTION is the governance framework, the graduated autonomy model, the AI-DAO integration, and the physical validation of the end-to-end chain — not the specific code that implements them.
+
+- **Operational deployment requires work that a research prototype cannot provide.** Security audit of smart contracts and API endpoints. Load testing under realistic concurrent planning scenarios. Multi-user validation. Penetration testing of the bridge and edge components. Field testing with trained military users. Partner nation participation in governance exercises. These are the gates between research demonstration and operational system.
+
+> **[SPEAKER NOTES]** This slide earns trust with skeptical reviewers. Acknowledge upfront what this is and what it isn't. The instinct is to market the capability; the better instinct is to define the research contribution precisely so that the audience evaluates the right thing. BASTION demonstrates that AI-DAO integration for military C2 is architecturally feasible, that the governance invariants hold under demonstration conditions, and that the physical chain from strategic governance to tactical autonomous execution works. That is a meaningful contribution. Claiming it is more than that would undermine the contribution.
+
+---
+
+<!-- SLIDE 30: CONCLUSION — RESEARCH QUESTION ANSWERED -->
 
 # Conclusion: Research Question Answered
 
@@ -601,7 +652,7 @@ Agent outputs → Human review gates → Approved outputs
 
 ---
 
-<!-- SLIDE 28: KEY CONTRIBUTIONS -->
+<!-- SLIDE 31: KEY CONTRIBUTIONS -->
 
 # Key Contributions
 
@@ -620,7 +671,7 @@ Agent outputs → Human review gates → Approved outputs
 
 ---
 
-<!-- SLIDE 29: WHAT THIS MEANS FOR COALITION C2 -->
+<!-- SLIDE 32: WHAT THIS MEANS FOR COALITION C2 -->
 
 # Implications for Coalition Command and Control
 
@@ -641,7 +692,7 @@ Graduated autonomy is not a policy choice that can be overridden under operation
 
 ---
 
-<!-- SLIDE 30: Q&A -->
+<!-- SLIDE 33: Q&A -->
 
 # Questions?
 
