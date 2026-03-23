@@ -57,6 +57,35 @@ Uses **Strange's CG-CC-CR-CV model** for structured center of gravity analysis:
 - Captures the logic of the approach: why this sequence of actions should achieve
   the desired end state.
 
+### AI-Assisted Design Recommendations
+
+Embedded throughout the Design tab, an AI Design Assistant provides (Reference:
+Phase 25):
+
+- Candidate center of gravity nominations from the knowledge graph with supporting
+  rationale.
+- Historical analogues for proposed operational approaches.
+- Doctrinal compliance checks against JP 5-0 design methodology.
+- Gap analysis: lines of effort or objectives without supporting tasks or resources.
+- Risk flags: assumptions that appear unsupported by current intelligence.
+
+All recommendations are advisory — staff review and either accept, modify, or
+reject each suggestion before it enters the design.
+
+### Fork-and-Merge Revision System
+
+Operational design often requires parallel exploration of competing approaches
+(Reference: Phase 49):
+
+- **Fork**: Create a design branch to explore an alternative operational approach
+  without overwriting the primary design.
+- **Merge**: When an alternative approach is selected, merge it back into the main
+  design with a full audit trail of what changed and why.
+- **DAO-governed merge**: Merging an alternative approach into the authoritative
+  design requires approval through the DAO governance layer, ensuring senior
+  leadership endorses the change.
+- All forks are visible to the planning team and can be compared side by side.
+
 ### Design-to-Plan Handoff
 
 - Formal transition point from operational design to detailed planning.
@@ -64,6 +93,7 @@ Uses **Strange's CG-CC-CR-CV model** for structured center of gravity analysis:
   LOEs/LOOs, and assumptions.
 - Creates the initial mission analysis inputs for the Plan tab's JPP workflow.
 - Tracks approval status — the handoff requires commander endorsement.
+- Handoff is recorded on-chain for auditability and coalition visibility.
 
 ---
 

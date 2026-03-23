@@ -73,6 +73,58 @@ The Plan tab enforces **18 governance gates across 9 MDMP phases**:
 Each gate requires explicit approval from the authorized role before the workflow
 advances. Gate status is visible to all staff.
 
+### Echelon-Aware Planning Routing
+
+BASTION routes planning workflows to the appropriate doctrinal framework based on
+echelon (Reference: Phases 33-36):
+
+| Echelon | Framework | Key Output |
+|---|---|---|
+| **Strategic** | Guidance-based | Commander's intent, strategic guidance |
+| **Operational** | JPP 7-Step | Campaign plan, operational approach |
+| **Tactical** | MDMP | OPORD, tactical child problem sets |
+
+- Problem sets inherit context from parent echelons (strategic objectives flow
+  down to operational planning; operational constraints bound tactical MDMP).
+- Tactical child problem sets are created directly from operational OPORD tasks,
+  maintaining inheritance propagation through the echelon chain.
+- Each echelon sees only the level of detail appropriate to its mission and
+  authority.
+
+### OPORD Generation and Distribution
+
+- AI-assisted OPORD generation from the approved COA and planning data.
+- Enforces the five-paragraph format: Situation, Mission, Execution, Sustainment,
+  Command and Signal.
+- Paragraph-by-paragraph editing with AI fill from structured planning products.
+- Classification handling: every order paragraph inherits the highest classification
+  of its source material.
+- Distribution list management: controls who receives which paragraphs based on
+  information barriers and need-to-know.
+- OPORD serves as the seed for mission creation in the Plan tab and COP update in
+  the COP tab.
+
+### Mission Creation from OPORD
+
+- Tasks from the approved OPORD's Execution paragraph are converted into structured
+  missions.
+- Each mission links to: assigned unit, supporting resources, timeline, success
+  criteria, and MOE/MOP measures.
+- Missions created here feed the COP tab (position and status symbols) and the
+  Assess tab (measure tracking).
+- Tactical child problem sets can be spawned from individual OPORD tasks, allowing
+  subordinate echelons to conduct their own MDMP within the parent plan's boundaries.
+
+### Ends-Ways-Means Linkage
+
+- Explicit traceability from **Ends** (objectives), **Ways** (courses of action
+  and tasks), and **Means** (resources).
+- Every task traces back to an objective; every resource allocation traces to a
+  task.
+- Broken linkages (tasks without objectives, or objectives without supporting tasks)
+  are flagged as planning gaps.
+- Visual linkage map available for commander review and briefings.
+
 ### Assumption Registry
 
 - Centralized log of all planning assumptions.
@@ -145,7 +197,7 @@ Design Tab
   +-------------------------------+
         |
         v
-  Direct Tab (Order Generation)
+  Decide Tab (Decision Dashboard, Order Generation)
 ```
 
 ### Inputs
@@ -162,7 +214,7 @@ Design Tab
 - Completed plans
 - Validated assumptions
 - Wargame results and decision records
-- Draft orders ready for formatting in the Direct tab
+- Draft orders and decisions queued in the Decide tab
 
 ---
 

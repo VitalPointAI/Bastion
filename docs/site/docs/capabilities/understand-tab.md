@@ -33,12 +33,74 @@ picture through the RAFT knowledge graph.
   military, economic, etc.) and phase.
 - Packages seed the knowledge graph in bulk, accelerating initial understanding.
 
+### Autonomous Document Intelligence Team
+
+The Understand tab runs a **10-specialist AI agent team** that processes uploaded
+documents in parallel (Reference: Phase 40):
+
+| Agent | Specialty |
+|---|---|
+| **Strategic Synthesis** | Cross-document theme extraction and overarching narrative |
+| **Entity Resolution** | Deduplication and merging of entity references across sources |
+| **OSINT Monitor** | Continuous monitoring for new relevant information |
+| **Validity Assessment** | Confidence scoring and unsupported-claim flagging |
+| **Conflict Detection** | Contradiction identification between sources |
+| **RAFT Extraction** | Knowledge graph construction from documents |
+| **RAFT Reasoning** | Graph traversal for non-obvious inference |
+| **PMESII Analyst** | PMESII-PT dimension population and gap analysis |
+| **Source Reliability** | NATO source reliability rating application |
+| **Objective Extractor** | Stated and implied objective identification with traceability |
+
+Agents operate in parallel on uploaded documents; their outputs are aggregated
+before staff review, dramatically reducing initial intelligence fusion time.
+
+### ExtractionTheater Live Pipeline Visualization
+
+- Real-time view of the document intelligence pipeline as it runs.
+- Shows which agents are active, what document sections they are processing, and
+  what entities have been extracted so far.
+- Allows staff to intervene early if extraction is going in the wrong direction.
+- Completion state displays a structured summary of all extracted elements before
+  any enter the knowledge graph.
+
+### Brain Visualization (Knowledge Graph Canvas)
+
+- Adaptive force-directed neural canvas rendering the full knowledge graph for the
+  current problem set (Reference: Phase 41).
+- Nodes are color-coded by type: actors (blue), locations (green), events (orange),
+  objectives (yellow), documents (grey).
+- Edges show relationship type and directional strength.
+- **Brain Timeline** allows temporal filtering — view the graph at any point in its
+  extraction history.
+- **Subspace** concept manages graph scale: large problem sets can be divided into
+  focused subgraphs for specific staff sections.
+- JSON-LD semantic triples underpin the graph, enabling ontology alignment and
+  interoperability with external intelligence systems.
+
+### Scoping Interview
+
+- Structured AI-facilitated interview before document upload to scope the problem set.
+- Captures: mission type, geographic focus, doctrinal framework, classification level.
+- Interview outputs pre-configure extraction filters and agent team parameters.
+- Reduces false extractions and focuses the document intelligence pipeline on
+  relevant entities and relationships.
+
 ### RAFT Graph Visualization
 
 - Interactive force-directed graph of extracted entities and relationships.
 - Nodes represent actors, objectives, capabilities, and constraints.
 - Edges represent relationships such as supports, opposes, enables, and constrains.
 - Filter by entity type, domain, or confidence score.
+
+### NATO Source Reliability Ratings
+
+- Each intelligence input is rated on the **NATO Admiralty Code**:
+  - **Source Reliability**: A (Completely Reliable) through F (Reliability Cannot Be Judged)
+  - **Information Accuracy**: 1 (Confirmed) through 6 (Truth Cannot Be Judged)
+- Ratings are applied by the Source Reliability agent and can be overridden by J2.
+- Confidence scores in the knowledge graph incorporate both the source reliability
+  and information accuracy ratings.
+- Ratings are visible on all extracted entities to support staff judgment.
 
 ### PMESII-PT Analysis
 
@@ -63,18 +125,23 @@ picture through the RAFT knowledge graph.
 
 ## AI Agents
 
+The Understand tab deploys a **10-specialist autonomous document intelligence team**
+(see Components section above). All agents operate under human oversight through the
+ExtractionTheater pipeline visualization. Extracted outputs require staff review
+before they become authoritative inputs to downstream tabs.
+
+Key agent functions:
+
 | Agent | Function |
 |---|---|
-| **Strategic Fusion** | Synthesizes across multiple documents to identify overarching themes and connections. |
+| **Strategic Synthesis** | Synthesizes across multiple documents to identify overarching themes and connections. |
 | **Entity Resolution** | Deduplicates and merges entity references across documents (e.g., recognizing "PRC" and "China" as the same actor). |
 | **OSINT Monitor** | Watches for updates and new information relevant to the current problem set. |
 | **Validity Assessment** | Scores confidence levels and flags unsupported claims. |
 | **Conflict Detection** | Identifies contradictions between sources or between extracted elements. |
 | **RAFT Extraction** | Parses documents to build the Retrieval-Augmented Fine-Tuning knowledge graph. |
 | **RAFT Reasoning** | Traverses the knowledge graph to surface non-obvious connections and inferences. |
-
-All agents operate under human oversight. Extracted outputs require staff review
-before they become authoritative inputs to downstream tabs.
+| **Source Reliability** | Applies NATO Admiralty Code ratings to all intelligence inputs. |
 
 ---
 

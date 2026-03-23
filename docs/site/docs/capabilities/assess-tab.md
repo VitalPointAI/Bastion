@@ -71,6 +71,29 @@ Tracks two complementary types of measures:
 - **Risk Matrix** — Current risk levels by category with trend indicators.
 - All dashboards are configurable and support drill-down to source data.
 
+### Training Assessment Loop
+
+In Training Mode, the Assess tab extends its campaign assessment functions to
+cover unit training readiness (Reference: Phase 37):
+
+- **After-Action Review (AAR) Capture**: Structured AAR forms attached to training
+  events record: what was planned, what happened, why, and what to sustain or
+  improve.
+- **METL Proficiency Tracking**: Each Mission Essential Task List (METL) task is
+  rated T (Trained), P (Needs Practice), or U (Untrained) based on training event
+  results.
+- **Upward Aggregation**: Individual task ratings aggregate to unit-level METL
+  ratings, then upward through the echelon hierarchy to collective training
+  readiness at the operational level.
+- **Training Readiness Dashboard**: Visual summary of METL status across units,
+  training events calendar, and trend charts showing proficiency trajectory.
+- **Assessment-to-Planning Loop**: METL gaps identified in the Assess tab feed
+  back into training plan development in the Plan tab, closing the training
+  management cycle.
+
+Training assessments operate entirely within Training Mode — operational assessment
+data and training assessment data are isolated to preserve data integrity.
+
 ---
 
 ## Doctrinal Assessment Loop
@@ -106,7 +129,7 @@ Assessment findings may indicate the need to revisit earlier phases:
 - **Return to Design** — When the operational approach is not producing the desired
   effects, and the problem needs to be reframed rather than merely re-planned.
 - **Plan adjustment** — When execution deviations require plan modification but the
-  overall approach remains valid (handled via FRAGO in the Direct tab).
+  overall approach remains valid (handled via FRAGO through the Decide tab).
 
 Reframing decisions are human decisions — AI surfaces the indicators, but the
 commander decides whether and where to reframe.
@@ -139,7 +162,7 @@ commander decides whether and where to reframe.
 
 ```
 COP (Execution Status)
-Direct Tab (Orders, Resource Status)
+Decide Tab (Orders, Resource Status)
 Plan Tab (Assumptions, MOE/MOP Definitions)
 Staff Sections (Running Estimates)
         |
@@ -161,7 +184,7 @@ Staff Sections (Running Estimates)
 ### Inputs
 
 - Execution status from COP
-- Orders and resource status from Direct tab
+- Orders and resource status from Decide tab
 - MOE/MOP definitions and assumptions from Plan tab
 - Staff running estimates
 - Intelligence updates from Understand tab

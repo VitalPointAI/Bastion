@@ -80,6 +80,29 @@ visible only to the review team.
 - Click a resource symbol to see allocation details, maintenance status, and
   owning unit.
 
+### Swarm Telemetry Integration
+
+Autonomous robot swarms report their position and status to the COP in real time
+(Reference: Phase 46):
+
+- All swarm members are rendered as symbols on the COP map using their current GPS
+  or estimated position.
+- The swarm leader (vision-equipped RVR+) appears with a distinct symbol indicating
+  its leadership role.
+- Formation type (wedge, line, column, echelon) is annotated on the COP.
+- Member status: active, offline, low-battery, or lost-contact are shown per symbol.
+- Swarm routes and waypoints are overlaid as control measures.
+- Telemetry updates at the same polling interval as the robot bridge heartbeat.
+
+### Entity-Data Linkages
+
+- COP symbols are connected to live data sources through the RAFT knowledge graph
+  and resource registry (Reference: Phase 21).
+- Changes to linked entities — name, status, composition, location — propagate
+  automatically to the COP symbol without manual update.
+- Intelligence assessments and order status both flow into entity data, keeping the
+  COP synchronized with the plan.
+
 ---
 
 ## AI Agents
@@ -117,7 +140,7 @@ published without staff approval.
 
 ```
 Planning Documents (Plan Tab)
-Orders (Direct Tab)
+Orders (Decide Tab)
 Resource Registry
 Intelligence (Understand Tab)
         |
@@ -141,7 +164,7 @@ Intelligence (Understand Tab)
 ### Inputs
 
 - Planning documents and approved plans (from Plan tab)
-- Formatted orders (from Direct tab)
+- Formatted orders (from Decide tab)
 - Resource registry with readiness data
 - Intelligence assessments and entity data (from Understand tab)
 - Geographic reference data
