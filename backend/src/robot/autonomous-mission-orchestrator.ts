@@ -498,6 +498,17 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const plan = state.tacticalPlan;
     const svc = getRobotMissionService();
 
+    // Re-discover followers — some may have connected since scenario start
+    const connected = svc.getConnectedRobots();
+    const currentFollowers = connected
+      .filter((r) => r.robot_id !== state.config.leaderId)
+      .map((r) => r.robot_id);
+    if (currentFollowers.length > state.config.followerIds.length) {
+      const newOnes = currentFollowers.filter((f) => !state.config.followerIds.includes(f));
+      state.config.followerIds = currentFollowers;
+      this.logPhase(state, `Late-joining follower(s) discovered: ${newOnes.join(', ')} (${currentFollowers.length} total)`);
+    }
+
     this.logPhase(state, 'Resources APPROVED — deploying followers to AI-planned positions');
 
     // Log DID authorization check
