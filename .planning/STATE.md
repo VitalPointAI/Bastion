@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: "Completed 55-02: 4 design skills (overlay-producer, resource-allocator, campaign-visualizer, risk-visualizer) with SVG handlers registered in initializeBuiltinHandlers"
-last_updated: "2026-03-23T22:19:43.522Z"
-last_activity: "2026-03-23 - Completed 55-01: design interview types, prompts, store, and LangGraph StateGraph service"
+stopped_at: "Completed 55-06: Yjs collaborative design interview with participant awareness indicators"
+last_updated: "2026-03-23T23:45:00.000Z"
+last_activity: "2026-03-23 - Completed 55-06: multi-user Yjs collaborative interview with role-directed question indicators"
 progress:
   total_phases: 71
   completed_phases: 51
@@ -27,9 +27,9 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 ## Current Position
 
 Phase: 55 of 71 (Ironclaw Guided Design Interview for Operational Approach Development) — IN PROGRESS
-Plan: 1 of N in current phase — COMPLETE
-Status: Plan 55-01 complete — LangGraph design interview engine built: 4-section doctrinal interview (Problem Framing → CoG Analysis → LOEs → Operational Approach), JP 5-0 coverage criteria enforcement, challenge-then-recommend prompts, section review gates, KG gap detection with fire-and-forget background research dispatch.
-Last activity: 2026-03-23 - Completed 55-01: design interview types, prompts, store, and LangGraph StateGraph service
+Plan: 6 of N in current phase — COMPLETE
+Status: Plan 55-06 complete — Yjs collaborative design interview: useDesignInterview hook now syncs interview state via design-interview-{problemSetId} Yjs document, tracks participantRoles Y.Map, includes role snapshot in API calls, all 4 Design sections show participant dot bars and "Your Turn" pulse indicator.
+Last activity: 2026-03-23 - Completed 55-06: Yjs multi-user collaborative interview with role-directed question indicators
 
 Progress: [██████████] 100% 442 plans complete
 
@@ -221,6 +221,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 53-did-governance-architecture-bug-fixes P05 | 12 | 2 tasks | 11 files |
 | Phase 53 P06 | 6 | 2 tasks | 6 files |
 | Phase 55-ironclaw-guided-design-interview-for-operational-approach-development P02 | 15 | 2 tasks | 6 files |
+| Phase 55-ironclaw-guided-design-interview-for-operational-approach-development P06 | 25 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -234,6 +235,11 @@ Progress: [██████████] 100% 442 plans complete
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 55 Plan 06 (Yjs Collaborative Design Interview):**
+- useDesignInterview always connects to Yjs regardless of isActive — cannot conditionally call hooks; participant UI only renders when isCollaborative && isActive
+- isMyTurn computed in hook using userRoleInActive from ProblemSetContext; sections receive it from hook return (avoids sections needing userDID)
+- Stable anonDidRef prevents random DID regeneration on each render for unauthenticated users
 
 **Phase 55 Plan 01 (Design Interview Backend):**
 - Dynamic import for Researcher in dispatchBackgroundResearch avoids circular dependency at module load time
