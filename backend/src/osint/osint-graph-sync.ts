@@ -8,14 +8,9 @@
  * Also extracts geo-location data from event content for COP symbol placement.
  */
 
-// randomUUID removed — using deterministic relationship IDs now
 import type { OSINTEvent } from '../graph/osint/types.js';
 import { SOURCE_WEIGHTS } from '../graph/confidence-calculator.js';
-import { ACTOR_TYPE_TO_CCO_MAP } from '../graph/raft/types.js';
-// Entity resolution import removed — runs on its own schedule, not during bulk OSINT ingestion
 
-const BASTION_CONTEXT = 'https://bastion.vitalpoint.ai/ontology/context.jsonld';
-const OSINT_ASSERTED_BY = 'system:osint-feed-poller';
 const OSINT_SOURCE_WEIGHT = SOURCE_WEIGHTS['osint']; // 0.65
 
 // ── Geo-location extraction ────────────────────────────────────────────────
@@ -270,6 +265,19 @@ const KNOWN_LOCATIONS: Record<string, { lat: number; lng: number; region?: strin
   'atlantic ocean': { lat: 30.0, lng: -40.0, region: 'Americas' },
   'north sea': { lat: 56.0, lng: 3.0, region: 'Europe' },
   'baltic sea': { lat: 58.0, lng: 20.0, region: 'Europe' },
+
+  // ── Regional keywords (for feed source name fallback) ──
+  'africa': { lat: 0.0, lng: 20.0, region: 'Africa' },
+  'asia': { lat: 30.0, lng: 100.0, region: 'Indo-Pacific' },
+  'europe': { lat: 50.0, lng: 10.0, region: 'Europe' },
+  'middle east': { lat: 29.0, lng: 42.0, region: 'Middle East' },
+  'latin america': { lat: -10.0, lng: -60.0, region: 'Americas' },
+  'americas': { lat: 20.0, lng: -80.0, region: 'Americas' },
+  'world': { lat: 30.0, lng: 0.0 },
+  'global': { lat: 30.0, lng: 0.0 },
+  'international': { lat: 30.0, lng: 0.0 },
+  'russian': { lat: 61.52, lng: 105.32, region: 'Europe', country: 'Russia' },
+  'nigerian': { lat: 9.08, lng: 8.68, region: 'Africa', country: 'Nigeria' },
 };
 
 /**
@@ -313,88 +321,27 @@ export function extractLocation(text: string): {
 // ── Knowledge Graph Sync ───────────────────────────────────────────────────
 
 /**
- * Sync an OSINT event into the Neo4j knowledge graph as Actor nodes + edges.
+ * Lightweight OSINT → knowledge graph sync.
  *
- * Creates:
- * - An "osint_event" actor node for the event itself
- * - Actor nodes for each mentioned actor (if not already existing)
- * - RELATES_TO edges from actors → event
+ * Only creates actor nodes for explicitly mentioned actors (people, orgs,
+ * countries). Does NOT create individual event nodes — those bloat the graph
+ * to 8000+ nodes. The LLM entity extractor handles richer extraction.
  */
 export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
   try {
-    const { executeWriteQuery } = await import('../graph/neo4j-client.js');
+    // Skip events with no actors — nothing to add to the graph
+    if (!event.actors || event.actors.length === 0) return;
 
+    const { executeWriteQuery } = await import('../graph/neo4j-client.js');
     const now = new Date().toISOString();
     const validFrom = event.publishedAt?.toISOString() ?? now;
-    const eventNodeId = `OSINT-${event.id}`;
-    const derivedFrom = JSON.stringify([event.id, event.sourceUrl ?? ''].filter(Boolean));
 
-    // Create or update the OSINT event as a node with JSON-LD provenance
-    await executeWriteQuery(`
-      MERGE (e:Actor {id: $id})
-      ON CREATE SET
-        e.name = $name,
-        e.type = 'event',
-        e.aliases = $aliases,
-        e.attributes = $attributes,
-        e.workspaceId = $workspaceId,
-        e.sourceDocumentIds = $sourceDocIds,
-        e.containerIds = [],
-        e.createdAt = $now,
-        e.updatedAt = $now,
-        e.jsonldType = $jsonldType,
-        e.jsonldContext = $jsonldContext,
-        e.assertedBy = $assertedBy,
-        e.assertedVia = $assertedVia,
-        e.derivedFrom = $derivedFrom,
-        e.confidence = $confidence,
-        e.sourceWeight = $sourceWeight,
-        e.validFrom = $validFrom,
-        e.validTo = null,
-        e.halfLifeDays = $halfLifeDays
-      ON MATCH SET
-        e.attributes = $attributes,
-        e.updatedAt = $now,
-        e.derivedFrom = $derivedFrom,
-        e.confidence = $confidence
-    `, {
-      id: eventNodeId,
-      name: event.title,
-      aliases: [event.sourceName ?? '', ...(event.tags ?? [])].filter(Boolean),
-      attributes: JSON.stringify({
-        nodeType: 'osint_event',
-        sourceType: event.sourceType,
-        sourceUrl: event.sourceUrl,
-        sourceName: event.sourceName,
-        publishedAt: event.publishedAt?.toISOString(),
-        description: (event.description ?? '').slice(0, 500),
-        location: event.location,
-        tags: event.tags,
-      }),
-      workspaceId: event.workspaceId ?? null,
-      sourceDocIds: [event.id],
-      now,
-      // JSON-LD provenance fields
-      jsonldType: ACTOR_TYPE_TO_CCO_MAP['organization'] ?? 'cco:Organization',
-      jsonldContext: BASTION_CONTEXT,
-      assertedBy: OSINT_ASSERTED_BY,
-      assertedVia: 'osint',
-      derivedFrom,
-      confidence: OSINT_SOURCE_WEIGHT,
-      sourceWeight: OSINT_SOURCE_WEIGHT,
-      validFrom,
-      // OSINT events: political content decays in ~90 days
-      halfLifeDays: 90,
-    });
-
-    // Create actor nodes for mentioned actors and link to event
-    for (const actorName of (event.actors ?? [])) {
+    // Only create actor nodes — not event nodes
+    for (const actorName of event.actors) {
       if (!actorName || actorName.length < 2) continue;
 
       const actorId = `ACT-osint-${actorName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
-      const actorDerivedFrom = JSON.stringify([event.id, event.sourceUrl ?? ''].filter(Boolean));
 
-      // Merge actor (create if not exists) with JSON-LD provenance
       await executeWriteQuery(`
         MERGE (a:Actor {id: $id})
         ON CREATE SET
@@ -403,89 +350,28 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
           a.aliases = [],
           a.attributes = $attributes,
           a.workspaceId = $workspaceId,
-          a.sourceDocumentIds = $sourceDocIds,
+          a.sourceDocumentIds = [$docId],
           a.containerIds = [],
           a.createdAt = $now,
           a.updatedAt = $now,
-          a.jsonldType = $jsonldType,
-          a.jsonldContext = $jsonldContext,
-          a.assertedBy = $assertedBy,
-          a.assertedVia = $assertedVia,
-          a.derivedFrom = $derivedFrom,
+          a.assertedVia = 'osint',
           a.confidence = $confidence,
-          a.sourceWeight = $sourceWeight,
           a.validFrom = $validFrom,
           a.validTo = null,
-          a.halfLifeDays = $halfLifeDays
+          a.halfLifeDays = 90
         ON MATCH SET
-          a.sourceDocumentIds = a.sourceDocumentIds + $eventId,
           a.updatedAt = $now
       `, {
         id: actorId,
         name: actorName,
         attributes: JSON.stringify({ source: 'osint', firstSeen: now }),
         workspaceId: event.workspaceId ?? null,
-        sourceDocIds: [event.id],
-        eventId: event.id,
-        now,
-        // JSON-LD provenance fields
-        jsonldType: ACTOR_TYPE_TO_CCO_MAP['organization'] ?? 'cco:Organization',
-        jsonldContext: BASTION_CONTEXT,
-        assertedBy: OSINT_ASSERTED_BY,
-        assertedVia: 'osint',
-        derivedFrom: actorDerivedFrom,
-        confidence: OSINT_SOURCE_WEIGHT,
-        sourceWeight: OSINT_SOURCE_WEIGHT,
-        validFrom,
-        // Political actors from OSINT: 90-day half-life
-        halfLifeDays: 90,
-      });
-
-      // Create RELATES_TO edge from actor → event (deterministic ID to avoid constraint violations)
-      const relId = `REL-osint-${actorId}-${eventNodeId}`;
-      await executeWriteQuery(`
-        MATCH (a:Actor {id: $actorId})
-        MATCH (e:Actor {id: $eventId})
-        MERGE (a)-[r:RELATES_TO]->(e)
-        ON CREATE SET
-          r.id = $relId,
-          r.type = 'mentioned_in',
-          r.strength = $strength,
-          r.description = $desc,
-          r.evidence = $evidence,
-          r.sourceDocumentIds = [$docId],
-          r.createdAt = $now,
-          r.updatedAt = $now,
-          r.jsonldType = 'cco:ActOfRelating',
-          r.jsonldContext = $jsonldContext,
-          r.assertedBy = $assertedBy,
-          r.assertedVia = 'osint',
-          r.derivedFrom = $derivedFrom,
-          r.confidence = $confidence,
-          r.sourceWeight = $sourceWeight,
-          r.validFrom = $validFrom,
-          r.validTo = null,
-          r.halfLifeDays = 90
-      `, {
-        actorId,
-        eventId: eventNodeId,
-        relId,
-        strength: OSINT_SOURCE_WEIGHT,
-        desc: `${actorName} mentioned in OSINT: ${event.title}`,
-        evidence: event.sourceUrl ?? '',
         docId: event.id,
         now,
-        jsonldContext: BASTION_CONTEXT,
-        assertedBy: OSINT_ASSERTED_BY,
-        derivedFrom,
         confidence: OSINT_SOURCE_WEIGHT,
-        sourceWeight: OSINT_SOURCE_WEIGHT,
         validFrom,
       });
     }
-
-    // Entity resolution skipped during OSINT ingestion — runs on its own schedule
-    // to avoid cascading Neo4j constraint violations during bulk writes
   } catch (err) {
     // Non-fatal: log but don't block feed polling
     console.warn(`[OSINT→Graph] Failed to sync event "${event.title}" to graph:`, err);

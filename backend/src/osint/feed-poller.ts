@@ -15,7 +15,7 @@ import { notifyCOPChange } from '../cop/index.js';
 import { extractLocation, syncOSINTEventToGraph } from './osint-graph-sync.js';
 import { extractAndSyncToGraph } from './osint-entity-extractor.js';
 import { updateOSINTCOPLayer } from './osint-cop-pipeline.js';
-import { geocodingService } from '../lib/geocoding-service.js';
+// geocodingService removed — using keyword lookup + feed source name fallback (no external API calls)
 import { getPool } from '../lib/database.js';
 import type { OSINTEventInput, OSINTEvent } from '../graph/osint/types.js';
 
@@ -168,23 +168,14 @@ async function fetchRSSFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
       description = translated.description;
     }
 
-    // Extract geo-location: fast keyword lookup, then Nominatim fallback
+    // Extract geo-location from article text, then infer from feed source name
     const fullText = `${title} ${description}`;
     let location = extractLocation(fullText) ?? undefined;
 
-    // Nominatim fallback: extract first capitalized proper noun as place name
+    // Fallback: infer location from the feed's source name
+    // e.g. "BBC Middle East" → Middle East, "BBC Africa" → Africa
     if (!location) {
-      try {
-        const placeMatch = fullText.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2})\b/);
-        if (placeMatch) {
-          const geocoded = await geocodingService.geocode(placeMatch[1]);
-          if (geocoded && geocoded.latitude !== 0 && geocoded.longitude !== 0) {
-            location = geocoded;
-          }
-        }
-      } catch {
-        // Non-fatal
-      }
+      location = extractLocation(feed.sourceName) ?? undefined;
     }
 
     events.push({
@@ -233,19 +224,9 @@ async function fetchAPIFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
     const fullText = `${title} ${description}`;
     let location = extractLocation(fullText) ?? undefined;
 
-    // Nominatim geocoding fallback (no LLM — too slow for bulk ingestion)
+    // Fallback: infer location from feed source name
     if (!location) {
-      try {
-        const placeMatch = fullText.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2})\b/);
-        if (placeMatch) {
-          const geocoded = await geocodingService.geocode(placeMatch[1]);
-          if (geocoded && geocoded.latitude !== 0 && geocoded.longitude !== 0) {
-            location = geocoded;
-          }
-        }
-      } catch {
-        // Non-fatal
-      }
+      location = extractLocation(feed.sourceName) ?? undefined;
     }
 
     results.push({
