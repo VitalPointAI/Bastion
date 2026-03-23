@@ -2,9 +2,9 @@
 
 ## Version Control
 
-**Current Version:** v0.1 (Draft)
-**Last Updated:** 2026-01-24
-**Status:** Initial draft for advisor review
+**Current Version:** v0.2 (Draft)
+**Last Updated:** 2026-03-23
+**Status:** Major update reflecting capabilities through Phase 53
 
 ---
 
@@ -21,13 +21,15 @@ Assemble sections in this order:
 | 5 | `02-background-daos.md` | 2.1 Background: DAOs and Web3 |
 | 6 | `02-background-military.md` | 2.2 Background: Military Coordination |
 | 7 | `02-background-ai.md` | 2.3 Background: AI in Defense |
-| 8 | `03-methodology.md` | 3. Methodology |
-| 9 | `04-results.md` | 4. Results |
-| 10 | `05-discussion.md` | 5. Discussion |
-| 11 | `06-conclusion.md` | 6. Conclusion |
-| 12 | `07-references.md` | 7. References (Zotero-generated) |
-| 13 | `appendix-a-sitrep.md` | Appendix A: SITREP |
-| 14 | `appendix-b-demo-script.md` | Appendix B: Demo Script |
+| 8 | `02-background-robotics.md` | 2.4 Background: Edge Computing and Military Robotics |
+| 9 | `02-background-knowledge-graphs.md` | 2.5 Background: Knowledge Graphs and Semantic Intelligence |
+| 10 | `03-methodology.md` | 3. Methodology |
+| 11 | `04-results.md` | 4. Results |
+| 12 | `05-discussion.md` | 5. Discussion |
+| 13 | `06-conclusion.md` | 6. Conclusion |
+| 14 | `07-references.md` | 7. References (Zotero-generated) |
+| 15 | `appendix-a-sitrep.md` | Appendix A: SITREP |
+| 16 | `appendix-b-demo-script.md` | Appendix B: Demo Script |
 
 ---
 
@@ -82,6 +84,8 @@ Assemble sections in this order:
      02-background-daos.md \
      02-background-military.md \
      02-background-ai.md \
+     02-background-robotics.md \
+     02-background-knowledge-graphs.md \
      03-methodology.md \
      04-results.md \
      05-discussion.md \
@@ -197,7 +201,7 @@ Exports are saved to `docs/whitepaper/exports/`:
 | Version | Date | Changes |
 |---------|------|---------|
 | v0.1 | 2026-01-24 | Initial draft - all sections complete |
-| v0.2 | 2026-03-08 | Major update: 131 agents, doctrinal tabs, COP, IPB, resource DIDs, training mode, 8 contributions |
+| v0.2 | 2026-03-23 | Major update: 131+ agents, doctrinal tabs, COP, IPB, resource DIDs, training mode, robot integration, knowledge graphs, swarm behaviors, 8 contributions |
 
 ---
 
@@ -214,6 +218,8 @@ docs/whitepaper/
 ├── 02-background-daos.md      # DAOs, blockchain, Web3
 ├── 02-background-military.md  # C2, JADC2, coalitions
 ├── 02-background-ai.md        # AI in defense, human-machine teaming
+├── 02-background-robotics.md  # Edge computing, UGVs, DDIL, swarm robotics
+├── 02-background-knowledge-graphs.md  # Knowledge graphs, JSON-LD, entity resolution
 ├── 03-methodology.md          # Architecture, design decisions
 ├── 04-results.md              # E2E flow, physical demonstration
 ├── 05-discussion.md           # Limitations, risks, ethics, future work
