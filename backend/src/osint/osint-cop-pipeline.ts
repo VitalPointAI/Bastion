@@ -46,10 +46,16 @@ interface OSINTCategory {
   color: string;
 }
 
-function classifyEvent(text: string): OSINTCategory {
+function classifyEvent(text: string, sourceName?: string): OSINTCategory {
   const lower = text.toLowerCase();
+  const sourceL = (sourceName ?? '').toLowerCase();
 
   // All OSINT uses descriptive icons — MIL-STD-2525D reserved for operational/tactical overlays
+
+  // ── Source-level classification (overrides content) ──
+  // Feeds like Ransomware.live don't include "ransomware" in item text
+  if (/ransomware|hacker\s?news|dark\s?reading|krebs|schneier/.test(sourceL))
+    return { type: 'cyber', label: 'Cyber Threats', icon: '💻', color: '#7c3aed' };
 
   // ── Military/defense reporting ──
   if (/naval|warship|fleet|carrier|destroyer|frigate|submarine|amphibious/.test(lower))
@@ -64,7 +70,8 @@ function classifyEvent(text: string): OSINTCategory {
     return { type: 'defense', label: 'Defense', icon: '🛡️', color: '#1e3a5f' };
 
   // ── Non-military categories ──
-  if (/cyber|hack|malware|intrusion|ransomware|data\s?breach/.test(lower))
+  // "victim" + "published" is a ransomware pattern even without the word ransomware
+  if (/cyber|hack|malware|intrusion|ransomware|data\s?breach|victim.*publish|publish.*victim/.test(lower))
     return { type: 'cyber', label: 'Cyber Threats', icon: '💻', color: '#7c3aed' };
   if (/piracy|pirate|hijack|smuggl|traffick|cartel|criminal/.test(lower))
     return { type: 'criminal', label: 'Criminal Activity', icon: '🏴‍☠️', color: '#1f2937' };
@@ -220,7 +227,7 @@ export async function updateOSINTCOPLayer(
 
     for (const evt of geoEvents) {
       const text = `${evt.title ?? ''} ${evt.description ?? ''}`;
-      const category = classifyEvent(text);
+      const category = classifyEvent(text, evt.sourceName);
       const group = eventsByCategory.get(category.type) ?? [];
       group.push({ evt, category });
       eventsByCategory.set(category.type, group);
