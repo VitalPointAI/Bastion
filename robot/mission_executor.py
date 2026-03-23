@@ -141,6 +141,12 @@ class MissionExecutor:
             return
         # Other missions: tactical planner will generate waypoints if not provided
 
+        # Abort any currently running mission before accepting a new one
+        if self.current_mission:
+            log_ctx.info("mission_executor.aborting_previous",
+                         prev_mission=self.current_mission.mission_id)
+            await self.abort()
+
         # Accept the mission
         self.current_mission = mission
         self.current_state = MissionState.accepted

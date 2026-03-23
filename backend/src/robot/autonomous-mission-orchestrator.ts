@@ -265,6 +265,10 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const robotPos = robot?.latest_telemetry?.position ?? { x: 2.5, y: 2.5 };
 
     for (const det of detections) {
+      // Ignore low-confidence detections — these are typically false positives
+      // from the YOLO model misclassifying random objects as vehicles
+      if (det.confidence < 0.6) continue;
+
       // Use estimated enemy position if available, otherwise robot's position
       const enemyPos = det.estimated_position ?? robotPos;
       const threat: ThreatInfo = {
