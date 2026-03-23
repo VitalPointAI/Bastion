@@ -622,7 +622,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         params: {
           waypoints: route,
           speed: state.config.advanceSpeed,
-          face_target: killZoneCenter,
+          face_target: faceTarget,
           autonomy_policy: { max_speed: 255, restricted_actions: [] },
         },
         issued_by: state.config.issuedBy,

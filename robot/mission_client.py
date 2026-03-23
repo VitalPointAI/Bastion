@@ -397,14 +397,22 @@ async def receive_loop(
                             )
                             # For patrol_route, drive the follower through waypoints
                             if mission.command == "patrol_route" and mission.params.waypoints:
-                                async def _drive_follower(f, wps, spd):
+                                face = getattr(mission.params, 'face_target', None)
+                                async def _drive_follower(f, wps, spd, face_tgt=None):
                                     for wp in wps:
                                         log.info("mission_client.follower_driving",
                                                  follower=f.robot_id, x=wp.x, y=wp.y, speed=spd)
                                         await f.driver.drive_to_point(wp.x, wp.y, spd)
+                                    # Orient toward threat after reaching firing position
+                                    if face_tgt:
+                                        fx = face_tgt.x if hasattr(face_tgt, 'x') else face_tgt.get('x', 0)
+                                        fy = face_tgt.y if hasattr(face_tgt, 'y') else face_tgt.get('y', 0)
+                                        log.info("mission_client.follower_facing_target",
+                                                 follower=f.robot_id, target_x=fx, target_y=fy)
+                                        await f.driver.face_toward(fx, fy)
                                     log.info("mission_client.follower_route_complete", follower=f.robot_id)
                                 asyncio.create_task(
-                                    _drive_follower(follower, mission.params.waypoints, mission.params.speed),
+                                    _drive_follower(follower, mission.params.waypoints, mission.params.speed, face),
                                     name=f"follower-{target_robot}-{mission.mission_id}",
                                 )
                             elif mission.command == "find_engage" and mission.params.target_location:
