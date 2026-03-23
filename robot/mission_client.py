@@ -468,11 +468,26 @@ async def receive_loop(
 
             elif msg_type == "robot:manual_nudge":
                 try:
+                    target_robot = msg.get("robot_id", cfg.ROBOT_ID)
                     heading = float(msg.get("heading", 0))
                     speed = int(msg.get("speed", 100))
                     duration = float(msg.get("duration_sec", 1.0))
-                    log.info("mission_client.manual_nudge", heading=heading, speed=speed, duration=duration)
-                    asyncio.create_task(_driver.drive(speed, heading, duration))
+                    log.info("mission_client.manual_nudge", target=target_robot, heading=heading, speed=speed, duration=duration)
+
+                    # Route to BLE follower if target is not this robot
+                    if target_robot != cfg.ROBOT_ID and _ble_followers:
+                        follower = next(
+                            (f for f in _ble_followers.followers if f.robot_id == target_robot),
+                            None,
+                        )
+                        if follower and follower.driver.connected:
+                            asyncio.create_task(follower.driver.drive(speed, heading, duration))
+                        else:
+                            log.warning("mission_client.manual_nudge.follower_not_found",
+                                        target=target_robot,
+                                        available=[f.robot_id for f in _ble_followers.followers] if _ble_followers else [])
+                    else:
+                        asyncio.create_task(_driver.drive(speed, heading, duration))
                 except Exception as exc:
                     log.error("mission_client.manual_nudge.error", error=str(exc))
 
