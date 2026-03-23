@@ -54,6 +54,8 @@ All strategic decisions require explicit human approval. AI assists with analysi
 
 [NARRATOR: "Ten specialist AI agents autonomously process this document — scoping the content, extracting entities, resolving them against the existing graph, and scoring confidence. A task that would consume an entire staff section's morning, completed in seconds."]
 
+[NARRATOR: "One honest note on AI extraction: the brain treats every AI-generated entity as an intelligence estimate, not a fact. NATO confidence ratings and multi-agent cross-validation are our defense against hallucination — but human analyst review remains the final gate. We accelerate the process; we don't remove the analyst."]
+
 ---
 
 ### [2:00-5:00] Design Tab — Center of Gravity and Operational Approach
@@ -97,6 +99,8 @@ All strategic decisions require explicit human approval. AI assists with analysi
 [INJECT: Cast votes from all three coalition members. Show blockchain transaction confirmation.]
 
 [NARRATOR: "Coalition partners don't need to trust each other's word. They verify. Every commitment is on-chain."]
+
+[NARRATOR: "A quick note on tempo: this two-second consensus finality is appropriate for strategic resource allocation. For time-critical tactical actions, we don't touch the blockchain at all — pre-authorized actions execute immediately through conventional authorization, and the blockchain audit record follows asynchronously. Governance and speed are in fundamental tension. The five-tier authority model is how we manage that tension rather than pretending it doesn't exist."]
 
 ---
 
@@ -198,6 +202,8 @@ Autonomous systems execute within policy constraints. Strike authorization is th
 
 [NARRATOR: "The LLM-based intent translator parsed the mission command and mapped it to a visual_search mission type with specific area polygon, sweep pattern, and detection triggers. If the LLM is unavailable, a template fallback provides deterministic translation. Resilience at every layer."]
 
+[NARRATOR: "On DDIL resilience — if cloud connectivity drops right now, the robot continues its authorized mission with the parameters it downloaded before execution. The UDP peer mesh keeps the swarm coordinated independently of cloud. But I want to be honest: extended disconnection — hours, not minutes — is an architectural assumption we've designed for but haven't fully stress-tested. We know how the system should behave; we haven't run it through sustained worst-case disconnection and reconciliation scenarios."]
+
 ---
 
 ## Act 3.5: COP and Governance (4 minutes)
@@ -265,6 +271,8 @@ Autonomous systems execute within policy constraints. Strike authorization is th
 [INJECT: Show blockchain audit trail — complete decision chain from strategic to tactical.]
 
 [NARRATOR: "Every claim is verifiable in the system's records. Thank you. I'm prepared for questions."]
+
+[NARRATOR: "One closing note on honest assessment: BASTION is a research prototype. The contribution is the architecture — DAO governance, graduated human authority, AI-DAO integration, edge-to-cloud physical validation. It is not a claim of production readiness. Operational deployment requires field testing, security audit, multi-user stress testing, and partner nation validation that a ten-week research effort cannot provide. We built the blueprint and demonstrated that it holds together end-to-end. The building hasn't been stress-tested."]
 
 ---
 
