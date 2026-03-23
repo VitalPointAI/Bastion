@@ -60,6 +60,8 @@ interface IronclawDrawerProps {
   pendingDecisions?: Decision[];
   /** Act on a pending decision from the drawer */
   onActOnDecision?: (decisionId: string, params: ActOnDecisionParams) => Promise<void>;
+  /** Called when user accepts a 'start_design_interview' suggestion action */
+  onStartDesignInterview?: () => Promise<void>;
 }
 
 export function IronclawDrawer({
@@ -82,6 +84,7 @@ export function IronclawDrawer({
   onRefineTask,
   pendingDecisions,
   onActOnDecision,
+  onStartDesignInterview,
 }: IronclawDrawerProps) {
   const [inputValue, setInputValue] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -372,11 +375,23 @@ export function IronclawDrawer({
           {messages.map((msg) => {
             // Render suggestion cards as IronclawSuggestion
             if (msg.suggestion && onAcceptSuggestion && onDismissSuggestion) {
+              const handleAccept = async (id: string) => {
+                // Handle start_design_interview action discriminator specially
+                // Backend sets target_field = 'start_design_interview' for design guide cards
+                const targetField = (msg.suggestion as unknown as { target_field?: string })?.target_field
+                  ?? msg.suggestion?.targetField;
+                if (targetField === 'start_design_interview' && onStartDesignInterview) {
+                  await onStartDesignInterview();
+                  // Keep drawer open — interview starts in this same drawer
+                }
+                onAcceptSuggestion(id);
+              };
+
               return (
                 <IronclawSuggestion
                   key={msg.id}
                   suggestion={msg.suggestion}
-                  onAccept={onAcceptSuggestion}
+                  onAccept={handleAccept}
                   onDismiss={onDismissSuggestion}
                 />
               );

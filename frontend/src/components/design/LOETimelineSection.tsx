@@ -16,6 +16,9 @@ import type {
 } from '../../lib/design-service.ts';
 import { LOELane } from './LOELane.tsx';
 import { useIronclawContext } from '../../context/IronclawContext.tsx';
+import { useDesignInterview } from '../../hooks/useDesignInterview.ts';
+import { DesignInterviewProgress } from './DesignInterviewProgress.tsx';
+import { DesignInterviewGate } from './DesignInterviewGate.tsx';
 
 // Suppress unused import warnings — types needed for documentation
 void (undefined as unknown as LOECoGLink);
@@ -36,7 +39,7 @@ interface Phase {
   name: string;
 }
 
-interface LOETimelineSectionProps {
+export interface LOETimelineSectionProps {
   problemSetId: string;
   initialLOEs: LineOfEffort[];
   cogAnalysis: CoGAnalysis;
@@ -67,12 +70,13 @@ function collectVulnerabilities(node: CoGNode | null): CoGNode[] {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function LOETimelineSection({
-  problemSetId: _problemSetId,
+  problemSetId,
   initialLOEs,
   cogAnalysis,
   onUpdate,
 }: LOETimelineSectionProps) {
   const { sendMessage, toggleDrawer } = useIronclawContext();
+  const designInterview = useDesignInterview(problemSetId);
   const [loes, setLoes] = useState<LineOfEffort[]>(initialLOEs);
   const [phases, setPhases] = useState<Phase[]>(DEFAULT_PHASES);
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
@@ -202,8 +206,26 @@ export function LOETimelineSection({
   const svgWidth = LABEL_WIDTH + phases.length * PHASE_WIDTH + PADDING;
   const svgHeight = HEADER_HEIGHT + loes.length * LANE_HEIGHT + PADDING;
 
+  // Determine if gate should show for this section
+  const showGate = designInterview.awaitingConfirm &&
+    designInterview.interviewState?.currentSection === 'loes';
+
+  // Handle Guide Me button click
+  const handleGuideMe = useCallback(async () => {
+    const mode = loes.length > 0 ? 'revision' : 'new';
+    await designInterview.startInterview(mode);
+    toggleDrawer();
+  }, [loes, designInterview, toggleDrawer]);
+
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden gap-4">
+      {/* Interview progress indicator — shown when interview is active */}
+      {designInterview.interviewState && (
+        <div className="shrink-0">
+          <DesignInterviewProgress interviewState={designInterview.interviewState} />
+        </div>
+      )}
+
       {/* Section Header */}
       <div className="flex items-center justify-between shrink-0">
         <div>
@@ -212,16 +234,43 @@ export function LOETimelineSection({
           </h2>
           <p className="text-sm text-gray-400">Decisive Points and Phasing</p>
         </div>
-        <button
-          onClick={() => {
-            sendMessage("Analyze: " + JSON.stringify({ loes, cogAnalysis }));
-            toggleDrawer();
-          }}
-          className="px-3 py-1.5 text-xs font-medium rounded bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
-        >
-          Ask Ironclaw to Analyze
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Guide Me button */}
+          <button
+            onClick={handleGuideMe}
+            disabled={designInterview.isLoading}
+            className="text-blue-400 hover:text-blue-300 border border-blue-500/30 rounded px-3 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Start guided Lines of Effort interview with Ironclaw"
+          >
+            Guide Me
+          </button>
+          <button
+            onClick={() => {
+              sendMessage("Analyze: " + JSON.stringify({ loes, cogAnalysis }));
+              toggleDrawer();
+            }}
+            className="px-3 py-1.5 text-xs font-medium rounded bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+          >
+            Ask Ironclaw to Analyze
+          </button>
+        </div>
       </div>
+
+      {/* Review gate — shown when LOE section awaits confirmation */}
+      {showGate && designInterview.lastMessage && (
+        <div className="shrink-0">
+          <DesignInterviewGate
+            section="loes"
+            summary={designInterview.lastMessage}
+            onConfirm={designInterview.confirmSection}
+            onRevise={(feedback) => {
+              toggleDrawer();
+              designInterview.sendMessage(feedback);
+            }}
+            isLoading={designInterview.isLoading}
+          />
+        </div>
+      )}
 
       <div className="flex gap-0 flex-1 min-h-0">
         {/* Main timeline area */}

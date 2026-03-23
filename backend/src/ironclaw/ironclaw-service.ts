@@ -9,6 +9,7 @@
  * thread_id (keyed by problem set) for conversation continuity.
  */
 
+import { randomUUID } from 'crypto';
 import { ironclawClient } from './ironclaw-client.js';
 import { ironclawStore } from './ironclaw-store.js';
 import { actionRegistry } from './action-registry.js';
@@ -24,6 +25,7 @@ import type {
 } from './ironclaw-types.js';
 import { SENSITIVE_FIELDS } from './ironclaw-types.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
+import { designStore } from '../design/design-store.js';
 
 // ---------------------------------------------------------------------------
 // Message Context
@@ -107,6 +109,83 @@ async function publishToChannel(
 
 export class IronclawService {
   /**
+   * In-memory set of problem set IDs for which a design suggestion has already
+   * been shown this server session. Prevents re-showing on every message.
+   */
+  private designSuggestionShown = new Set<string>();
+
+  /**
+   * Check if user is on the Design tab with incomplete sections,
+   * and publish a proactive guide_me suggestion if so.
+   * Only publishes once per server session per problem set.
+   */
+  private async checkDesignTabSuggestion(
+    problemSetId: string,
+    context: MessageContext,
+  ): Promise<void> {
+    if (context.currentTab !== 'design') return;
+    if (this.designSuggestionShown.has(problemSetId)) return;
+
+    try {
+      // Query design status
+      const design = await designStore.getByProblemSetId(problemSetId);
+      const { status } = design;
+
+      const allComplete =
+        status.problemFraming === 'complete' &&
+        status.cogAnalysis === 'complete' &&
+        status.linesOfEffort === 'complete' &&
+        status.operationalApproach === 'complete';
+
+      if (allComplete) return;
+
+      // Check if any sections have partial data (revision vs new mode)
+      const anyStarted =
+        status.problemFraming !== 'not-started' ||
+        status.cogAnalysis !== 'not-started' ||
+        status.linesOfEffort !== 'not-started' ||
+        status.operationalApproach !== 'not-started';
+
+      const description = anyStarted
+        ? "I see you've started your operational design. Want me to review what you have and help fill in the gaps?"
+        : "I can walk you through operational design step by step — covering problem framing, center of gravity analysis, lines of effort, and your operational approach. Want to start?";
+
+      const suggestionPayload: SuggestionPayload = {
+        id: randomUUID(),
+        content: `**Develop Operational Approach**\n\n${description}`,
+        agent_id: 'ironclaw',
+        agent_display_name: 'Ironclaw',
+        target_field: 'start_design_interview',  // action discriminator for frontend
+        target_field_label: 'Design Interview',
+        field_value: null,
+      };
+
+      // Rate-limit: mark as shown before publishing
+      this.designSuggestionShown.add(problemSetId);
+
+      // Persist as a suggestion message and publish via WebSocket as ironclaw.response
+      // so the existing useIronclaw hook picks it up and displays in the drawer.
+      const chatMsg = await ironclawStore.addMessage({
+        problem_set_id: problemSetId,
+        content: suggestionPayload.content,
+        sender: 'ironclaw',
+        specialist_id: null,
+        specialist_display_name: null,
+        delegated_by: null,
+        action_card: null,
+        step_progress: null,
+        suggestion: suggestionPayload,
+      });
+
+      await publishToChannel(problemSetId, 'ironclaw.response', chatMsg);
+
+    } catch (err) {
+      // Non-blocking — log but don't break message flow
+      console.error('[ironclaw] Design tab suggestion check failed:', err);
+    }
+  }
+
+  /**
    * Handle an incoming user message:
    * 1. Get or create session (for thread_id tracking)
    * 2. Persist user message
@@ -141,6 +220,13 @@ export class IronclawService {
 
     // Log inbound user message to activity audit trail
     getActivityLogger().logIronclawMessage('inbound', 'ironclaw', content, problemSetId);
+
+    // Proactive design tab suggestion (fire-and-forget — non-blocking)
+    if (context) {
+      this.checkDesignTabSuggestion(problemSetId, context).catch((err) =>
+        console.error('[ironclaw] Design suggestion check error:', err)
+      );
+    }
 
     // 3. Build context-prefixed message for Ironclaw (if context provided)
     // The prefix helps Ironclaw tailor responses to the current UI state.
