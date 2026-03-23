@@ -125,15 +125,86 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       }
     }
 
-    // Stop any existing active sequences to prevent duplicates
+    // ── FULL RESET: clean slate before new scenario ─────────────────────
+    const svc = getRobotMissionService();
+
+    // 1. Stop all existing sequences
     for (const [seqId, existing] of this.sequences) {
-      if (existing.phase !== 'complete' && existing.phase !== 'withdraw') {
+      if (existing.phase !== 'complete') {
         existing.phase = 'complete' as AutoPhase;
-        this.sequences.delete(seqId);
-        console.log(`[AutonomousOrchestrator] Stopped existing sequence ${seqId.slice(0, 8)} before starting new one`);
+        console.log(`[AutonomousOrchestrator] Stopped existing sequence ${seqId.slice(0, 8)}`);
+      }
+    }
+    this.sequences.clear();
+
+    // 2. Send stop + reset to the leader robot (aborts missions, stops motors,
+    //    resets position/heading/yaw for alpha AND all BLE followers)
+    const leader = svc.getConnectedRobots().find((r) => r.robot_id === config.leaderId);
+    if (leader) {
+      svc.sendManualCommand(config.leaderId, {
+        type: 'robot:manual_stop',
+        robot_id: config.leaderId,
+      });
+      // Brief pause for stop to take effect before reset
+      await new Promise((r) => setTimeout(r, 500));
+      svc.sendManualCommand(config.leaderId, {
+        type: 'robot:reset_position',
+        position: { x: config.homeBase.x, y: config.homeBase.y },
+        heading: 0,
+      });
+    }
+
+    // 3. Reset backend telemetry for all robots to home base
+    for (const robotId of [config.leaderId, ...config.followerIds]) {
+      const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
+      if (robot) {
+        robot.latest_telemetry = {
+          position: { ...config.homeBase },
+          heading: 0,
+          battery: robot.latest_telemetry?.battery ?? 100,
+        };
+        svc.updateSimulatedTelemetry(robotId, config.homeBase, 0, robot.latest_telemetry.battery);
       }
     }
 
+    // 4. Clear adversary COP layer from previous run
+    try {
+      const { layerStore } = await import('../cop/layers/layer-store.js');
+      const layers = await layerStore.queryLayers({
+        workspaceId: config.problemSetId,
+        layerType: 'force_disposition',
+      });
+      for (const layer of layers) {
+        const meta = layer.spec?.metadata as Record<string, unknown> | undefined;
+        if (meta?.generatedBy === 'vision-detection-pipeline') {
+          await layerStore.deleteLayer(layer.id);
+          break;
+        }
+      }
+    } catch { /* non-fatal */ }
+
+    // 5. Cancel pending/submitted decision gates from previous runs
+    try {
+      const gates = await gateService['store'].findByFilter({
+        problem_set_id: config.problemSetId,
+        gate_type: GateType.robot_action_auth,
+      });
+      let cleared = 0;
+      for (const gate of gates) {
+        if (gate.status === 'pending' || gate.status === 'submitted') {
+          await gateService['store'].update(gate.id, { status: 'rejected' as GateStatus });
+          cleared++;
+        }
+      }
+      if (cleared > 0) {
+        console.log(`[AutonomousOrchestrator] Cleared ${cleared} pending decision gate(s)`);
+      }
+    } catch { /* non-fatal */ }
+
+    // Brief pause for hardware resets to take effect
+    await new Promise((r) => setTimeout(r, 1500));
+
+    // ── CREATE FRESH STATE ────────────────────────────────────────────
     const id = randomUUID();
 
     const state: AutoState = {
@@ -150,52 +221,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     this.sequences.set(id, state);
     this.subscribeToVisionEvents();
 
-    // Reset all robots to home base — both backend telemetry AND robot-side dead reckoning.
-    // This ensures heading 0 = current facing direction and position matches the map.
-    const svc = getRobotMissionService();
-    for (const robotId of [config.leaderId, ...config.followerIds]) {
-      const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
-      if (robot) {
-        robot.latest_telemetry = {
-          position: { ...config.homeBase },
-          heading: 0,
-          battery: 100,
-        };
-        // Forward to COP so robots appear at home base immediately
-        svc.updateSimulatedTelemetry(robotId, config.homeBase, 0, 100);
-      }
-    }
-
-    // Send position reset to the leader (which also resets BLE followers)
-    const leader = svc.getConnectedRobots().find((r) => r.robot_id === config.leaderId);
-    if (leader) {
-      svc.sendManualCommand(config.leaderId, {
-        type: 'robot:reset_position',
-        position: { x: config.homeBase.x, y: config.homeBase.y },
-        heading: 0,
-      });
-      this.logPhase(state, `Position reset: all robots at home base (${config.homeBase.x}, ${config.homeBase.y}), heading 0° (north)`);
-    }
-
-    // Clear adversary COP layer from previous run
-    try {
-      const { layerStore } = await import('../cop/layers/layer-store.js');
-      const layers = await layerStore.queryLayers({
-        workspaceId: config.problemSetId,
-        layerType: 'force_disposition',
-      });
-      for (const layer of layers) {
-        const meta = layer.spec?.metadata as Record<string, unknown> | undefined;
-        if (meta?.generatedBy === 'vision-detection-pipeline') {
-          await layerStore.deleteLayer(layer.id);
-          this.logPhase(state, 'Cleared previous adversary detection layer');
-          break;
-        }
-      }
-    } catch { /* non-fatal */ }
-
-    // Brief pause for yaw reset to take effect on hardware
-    await new Promise((r) => setTimeout(r, 1000));
+    this.logPhase(state, `RESET COMPLETE — all robots at home base (${config.homeBase.x}, ${config.homeBase.y}), heading 0° north`);
 
     // Use the plan_screening_route skill to compute the recon route
     // No hardcoded waypoints — AI plans the route using map knowledge
