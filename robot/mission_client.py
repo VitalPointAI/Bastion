@@ -525,18 +525,40 @@ async def receive_loop(
                     asyncio.create_task(_driver.safe_stop())
 
             elif msg_type == "robot:reset_position":
-                # Reset dead-reckoned position and heading for a fresh scenario run.
-                # Expects { position: { x, y }, heading: 0 } from the backend.
+                # Full reset for a fresh scenario run — abort all missions, stop all
+                # motors, reset positions and yaw. Guarantees a clean slate.
+                log.info("mission_client.full_reset_start")
+
+                # 1. Abort any running mission on alpha
+                if executor.current_mission:
+                    log.info("mission_client.reset_aborting_mission",
+                             mission_id=executor.current_mission.mission_id)
+                    await executor.abort()
+                else:
+                    await _driver.safe_stop()
+
+                # 2. Stop all BLE followers and cancel their tasks
+                if _ble_followers:
+                    for follower in _ble_followers.followers:
+                        if follower.driver.connected:
+                            await follower.driver.safe_stop()
+                    for task in asyncio.all_tasks():
+                        if task.get_name().startswith("follower-"):
+                            task.cancel()
+                    log.info("mission_client.reset_followers_stopped")
+
+                # 3. Reset dead-reckoned positions and heading
                 pos = msg.get("position", {})
                 px = float(pos.get("x", 0.0))
                 py = float(pos.get("y", 0.0))
                 hdg = float(msg.get("heading", 0.0))
                 _driver.set_position(px, py)
                 _driver._heading = hdg
-                log.info("mission_client.position_reset", x=px, y=py, heading=hdg)
-                # Reset yaw on the hardware so heading 0 = current facing direction
+
+                # 4. Reset yaw on hardware so heading 0 = current facing direction
                 await _driver.reset_yaw()
-                # Reset BLE followers too
+
+                # 5. Reset BLE follower positions and yaw
                 if _ble_followers:
                     from ble_rvr_driver import DID_DRIVE, CID_RESET_YAW, TARGET_ST
                     for follower in _ble_followers.followers:
@@ -544,8 +566,8 @@ async def receive_loop(
                             follower.driver.position = (px, py)
                             follower.driver._heading = hdg
                             await follower.driver._send_packet(DID_DRIVE, CID_RESET_YAW, b"", TARGET_ST)
-                            log.info("mission_client.follower_position_reset",
-                                     follower=follower.robot_id, x=px, y=py)
+
+                log.info("mission_client.full_reset_complete", x=px, y=py, heading=hdg)
 
             elif msg_type == "mission:cancel":
                 log.info("mission_client.mission_cancel")
