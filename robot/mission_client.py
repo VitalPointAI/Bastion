@@ -595,22 +595,56 @@ async def connect_and_run(driver: RVRDriver, ws_url: str) -> None:
         await send_stamped(ws, reg_msg)
         log.info("mission_client.registered", robot_id=cfg.ROBOT_ID)
 
-        # Register BLE followers as sub-resources of the leader
-        if _ble_followers and _ble_followers.connected_count > 0:
+        # Connect and register BLE followers in the background (non-blocking).
+        # Each follower is registered with Bastion as soon as its BLE link is up,
+        # so the service is online and accepting commands for alpha immediately.
+        async def _connect_ble_followers_bg():
+            if not _ble_followers:
+                return
+            addresses = [a.strip() for a in cfg.BLE_FOLLOWERS.split(",") if a.strip()]
             leader_did = reg_msg.get("did", "")
-            for follower in _ble_followers.followers:
-                if follower.driver.connected:
-                    follower_reg = {
-                        "type": "robot:register",
-                        "robot_id": follower.robot_id,
-                        "did": f"did:ble:{follower.driver.address.replace(':', '')}",
-                        "capabilities": ["patrol", "find_engage"],
-                        "parent_robot_id": cfg.ROBOT_ID,
-                    }
-                    await send_stamped(ws, follower_reg)
-                    log.info("mission_client.follower_registered",
-                             robot_id=follower.robot_id,
-                             address=follower.driver.address)
+
+            async def _connect_and_register(addr: str, idx: int):
+                name = f"ble-{addr[-5:].replace(':', '')}"
+                success = await _ble_followers.connect_by_address(
+                    address=addr, name=name, slot_index=idx + 1,
+                )
+                if success:
+                    log.info("mission_client.ble_follower_connected",
+                             address=addr, name=name, slot=idx + 1)
+                    # Find the follower and register it with Bastion
+                    follower = next(
+                        (f for f in _ble_followers.followers if f.driver.address.upper() == addr.upper()),
+                        None,
+                    )
+                    if follower and follower.driver.connected:
+                        follower_reg = {
+                            "type": "robot:register",
+                            "robot_id": follower.robot_id,
+                            "did": f"did:ble:{follower.driver.address.replace(':', '')}",
+                            "capabilities": ["patrol", "find_engage"],
+                            "parent_robot_id": cfg.ROBOT_ID,
+                        }
+                        await send_stamped(ws, follower_reg)
+                        log.info("mission_client.follower_registered",
+                                 robot_id=follower.robot_id,
+                                 address=follower.driver.address)
+                else:
+                    log.warning("mission_client.ble_follower_failed", address=addr)
+
+            # Connect all followers in parallel
+            tasks = [_connect_and_register(addr, i) for i, addr in enumerate(addresses)]
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+            log.info("mission_client.ble_followers_ready",
+                     connected=_ble_followers.connected_count,
+                     total=len(addresses))
+
+            if _ble_followers.connected_count > 0 and _swarm:
+                _swarm.set_ble_followers(_ble_followers)
+
+        if _ble_followers is not None:
+            asyncio.create_task(_connect_ble_followers_bg(), name="ble-follower-connect")
 
         # Build executor with bound WS callbacks and vision components
         executor = MissionExecutor(
@@ -758,7 +792,7 @@ async def run() -> None:
             simulate=cfg.SIMULATE,
         )
 
-        # Connect to BLE followers if configured and we're the leader
+        # Prepare BLE follower manager (connections happen in background after WS is up)
         if swarm_role == SwarmRole.leader and cfg.BLE_FOLLOWERS:
             addresses = [a.strip() for a in cfg.BLE_FOLLOWERS.split(",") if a.strip()]
             if addresses:
@@ -766,25 +800,9 @@ async def run() -> None:
                     exclude_addresses=[],
                     max_followers=len(addresses),
                 )
-                for i, addr in enumerate(addresses):
-                    name = f"ble-{addr[-5:].replace(':', '')}"
-                    success = await _ble_followers.connect_by_address(
-                        address=addr, name=name, slot_index=i + 1,
-                    )
-                    if success:
-                        log.info("mission_client.ble_follower_connected",
-                                 address=addr, name=name, slot=i + 1)
-                    else:
-                        log.warning("mission_client.ble_follower_failed",
-                                    address=addr)
-
-                log.info("mission_client.ble_followers_ready",
-                         connected=_ble_followers.connected_count,
-                         total=len(addresses))
-
-                # Wire follower drivers into swarm coordinator
-                if _ble_followers.connected_count > 0:
-                    _swarm.set_ble_followers(_ble_followers)
+                log.info("mission_client.ble_followers_deferred",
+                         count=len(addresses),
+                         hint="BLE connections will start after WebSocket is established")
 
     # Discover bridge via mDNS before entering the connection loop
     bridge_url: Optional[str] = await discover_bridge()
