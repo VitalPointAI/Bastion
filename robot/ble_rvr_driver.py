@@ -32,7 +32,7 @@ SOP = 0x8D
 EOP = 0xD8
 
 # Flags
-FLAGS_CMD = 0x3A  # requests_response(0x02) + is_activity(0x08) + has_target(0x10) + has_source(0x20)
+FLAGS_CMD = 0x38  # is_activity(0x08) + has_target(0x10) + has_source(0x20) — no response requested
 
 # Targets
 TARGET_NORDIC = 0x01   # Nordic BLE processor (power, connection)
