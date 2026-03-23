@@ -50,6 +50,13 @@ flowchart TB
     TDAO -.->|"Status &<br/>Results"| ODAO
     ODAO -.->|"Proposals &<br/>Reports"| SDAO
 
+    subgraph Bridge["Edge / Robot Layer (Phase 43-46)"]
+        direction LR
+        DB["Docker Bridge<br/>━━━━━━━━━━━<br/>mDNS Scanner<br/>Command Proxy<br/>Telemetry Relay"]
+        RA["Python Robot Agent<br/>(Jetson Orin Nano)<br/>━━━━━━━━━━━<br/>detectNet Vision<br/>ORB Feature Match<br/>Sphero RVR+ Control"]
+        SW["Swarm Peers<br/>(RVR+ Units)<br/>━━━━━━━━━━━<br/>UDP Broadcast<br/>Formation Geometry<br/>Leader Vision Share"]
+    end
+
     %% Blockchain Securing All
     SDAO --- SC
     ODAO --- SC
@@ -57,21 +64,34 @@ flowchart TB
     SC --- AL
     SC --- PS
 
+    %% Robot Bridge Connections
+    TDAO ==>|"Mission Orders<br/>(WebSocket)"| DB
+    DB -.->|"mDNS Discovery"| RA
+    DB -->|"Command Proxy"| RA
+    RA -->|"Telemetry & Detections"| DB
+    DB -->|"Telemetry Relay<br/>(WebSocket)"| TDAO
+    RA -.->|"UDP Broadcast<br/>Peer Mesh"| SW
+    SW -.->|"Formation Status"| RA
+
     %% Styling
     classDef daoStyle fill:#1a365d,stroke:#3182ce,stroke-width:2px,color:#fff
     classDef humanStyle fill:#2c5282,stroke:#63b3ed,stroke-width:2px,color:#fff
     classDef aiStyle fill:#553c9a,stroke:#9f7aea,stroke-width:2px,color:#fff
     classDef blockchainStyle fill:#234e52,stroke:#38b2ac,stroke-width:2px,color:#fff
+    classDef bridgeStyle fill:#744210,stroke:#d69e2e,stroke-width:2px,color:#fff
+    classDef robotStyle fill:#1a4731,stroke:#38a169,stroke-width:2px,color:#fff
 
     class SDAO,ODAO,TDAO daoStyle
     class SH,OH,TH humanStyle
     class SA,OA,TA aiStyle
     class SC,AL,PS blockchainStyle
+    class DB bridgeStyle
+    class RA,SW robotStyle
 ```
 
 ## Figure Caption
 
-**Figure 1: BASTION High-Level Architecture.** The three-tier DAO structure connects strategic resource allocation to tactical execution through operational AI agent coordination. Solid arrows indicate decision flow direction (strategic guidance flowing downward); dashed lines represent feedback loops (e.g., tactical resource expenditure triggering strategic replenishment requests, mission results informing operational assessment). Human authority positions are indicated at each level: Human-in-the-Loop (HITL) for strategic decisions, HITL or Human-on-the-Loop (HOTL) at operational level based on decision type, and HOTL or Human-out-of-the-Loop (HOOTL) at tactical level for pre-approved mission types. AI agents augment decision-making at all levels without replacing human authority for consequential decisions. The NEAR Protocol blockchain secures all transactions through smart contracts, maintaining immutable audit logs and enforcing encoded policy constraints.
+**Figure 1: BASTION High-Level Architecture (v0.2).** The three-tier DAO structure connects strategic resource allocation to tactical execution through operational AI agent coordination. A new edge/robot layer (added Phase 43-46) sits below the Tactical DAO, comprising a Docker-based local network bridge and Python robot agent running on NVIDIA Jetson Orin Nano with Sphero RVR+ platforms coordinating in doctrinal swarm formations. Solid arrows indicate decision flow direction (strategic guidance flowing downward, mission orders routing through the bridge to robots); dashed lines represent feedback loops and peer-to-peer swarm mesh (UDP broadcast for formation geometry). Human authority positions are indicated at each level: Human-in-the-Loop (HITL) for strategic decisions, HITL or Human-on-the-Loop (HOTL) at operational level based on decision type, and HOTL or Human-out-of-the-Loop (HOOTL) at tactical level for pre-approved mission types. AI agents augment decision-making at all levels without replacing human authority for consequential decisions. The NEAR Protocol blockchain secures all transactions through smart contracts, maintaining immutable audit logs and enforcing encoded policy constraints.
 
 ## Architecture Elements
 
@@ -96,6 +116,19 @@ NEAR Protocol provides the secure foundation:
 - **Smart Contracts**: Encode governance rules and policy constraints
 - **Audit Log**: Immutable record of all decisions and actions
 - **Policy Store**: Machine-readable policy encoding for automatic compliance
+
+### Edge / Robot Layer (Phase 43-46 Addition)
+
+The v0.2 architecture adds a physical execution layer below the Tactical DAO:
+
+- **Docker Bridge** (`robot/bridge/`): Runs on any Linux host with Docker. Scans the local WiFi network using mDNS (`_bastion._tcp.local`), discovers robot agents, and maintains a command proxy and telemetry relay channel to BASTION cloud over WebSocket. Acts as the secure boundary between the cloud and physically deployed assets.
+- **Python Robot Agent** (`robot/agent/`): Runs on NVIDIA Jetson Orin Nano aboard each Sphero RVR+. Connects outbound via WebSocket for command reception and telemetry push. Vision pipeline: CSI camera → detectNet object detection → ORB feature matching → COP detection events. Supports mission profiles for `recon_area`, `visual_search`, `overwatch`, and `resupply_route` mission types.
+- **Swarm Peers**: Up to N Sphero RVR+ units coordinate via UDP broadcast peer mesh. The vision-equipped leader shares detections with followers. Six doctrinal formations supported: line, wedge, column, echelon-left, echelon-right, vee. Four doctrinal movement techniques: traveling, traveling overwatch, bounding overwatch, successive bounds.
+
+Connection types in diagram:
+- Solid arrows (`-->`) = WebSocket (command/telemetry)
+- Dashed arrows (`-.->`) = mDNS discovery or UDP broadcast (swarm mesh)
+- Double arrows (`==>`) = Mission order flow (DAO-authorized)
 
 ### Human Authority Positions
 

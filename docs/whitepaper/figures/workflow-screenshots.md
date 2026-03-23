@@ -151,6 +151,200 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 
 ---
 
+### Screenshot 7: Understand Tab — Brain Visualization with Document Intelligence Pipeline
+
+**File:** `screenshots/07-understand-brain-visualization.png`
+
+**Purpose:** Demonstrate the adaptive brain visualization centerpiece and the autonomous document intelligence team pipeline feeding it.
+
+**Shows:**
+- Three-column layout: ingestion sidebar (left), brain neural canvas (center), detail panel (right)
+- Brain canvas with shape-coded nodes: circles for entities, diamonds for objectives, squares for documents, hexagons for concepts
+- Nodes colored by actor category: ally=blue, adversary=red, neutral=gray, partner=green
+- Confidence-based glow: bright glow on high-confidence nodes, dim on low-confidence, dashed outline for intelligence gaps
+- Ingestion sidebar showing the autonomous document intelligence team processing a PDF with SSE particle animation flowing from sidebar into brain
+- Right panel open on a selected "People's Liberation Army" adversary node showing: identity card, confidence 0.78 (NATO B-2 rating), connected relations, source documents
+
+**Key Annotations:**
+1. Brain canvas: force-directed neural graph with visible clustering (container mode)
+2. Shape-coded nodes visible: entity circles (PLA, ROC, USS Ronald Reagan), objective diamonds, document squares
+3. Ingestion sidebar: "Processing: INDOPACOM Campaign Plan 2026" with ExtractionTheater live activity feed
+4. NATO rating badge: "B-2" (Usually Reliable / Probably True) on selected entity
+5. Intelligence gap indicator: hollow/dashed node labeled "PLA Southern Theater Command (unverified)"
+6. BrainToolbar: clustering mode toggle showing "Container" active, search bar, timeline scrubber at current date
+
+**Capture State:**
+- Problem set: Pacific Strategy AY26, Taiwan contingency phase
+- Brain showing 40-60 nodes in container clustering mode
+- At least one adversary entity selected with detail panel open
+- Ingestion sidebar showing 2-3 documents being processed
+- Brain timeline scrubber visible at bottom
+
+**Caption:** "Figure 7: Understand Tab showing the adaptive brain visualization centerpiece with document intelligence pipeline. The neural graph canvas visualizes 50+ strategic environment entities with shape-coding, confidence glow, and NATO source reliability ratings. Annotations indicate: (1) neural brain canvas in container clustering mode, (2) shape-coded and category-colored nodes, (3) ExtractionTheater ingestion sidebar, (4) NATO B-2 reliability rating on selected entity, (5) intelligence gap indicator (dashed/hollow), (6) BrainToolbar with clustering, search, and timeline controls."
+
+---
+
+### Screenshot 8: Design Tab — Center of Gravity Analysis and Lines of Effort
+
+**File:** `screenshots/08-design-tab-cog-analysis.png`
+
+**Purpose:** Demonstrate the operational design workspace with Strange's CoG framework and lines of effort definition.
+
+**Shows:**
+- Design tab active in the Understand/Design/Plan/Decide/COP/Assess tab bar
+- Center of Gravity (CoG) analysis panel with dual-pane layout: Friendly CoG (left), Adversary CoG (right)
+- Each CoG pane showing: CoG identification, Critical Capabilities (CC) list, Critical Requirements (CR) list, Critical Vulnerabilities (CV) list
+- Lines of Effort canvas below: horizontal swim-lane view with LOE titles, linked objectives, and decisive points
+- AI Design Assistant sidebar with recommendation cards and "Challenge Assumption" button active
+
+**Key Annotations:**
+1. CoG analysis panel: Strange's CC-CR-CV framework for both Friendly (blue) and Adversary (red) forces
+2. Adversary CoG: "PLA Power Projection Capability" with 3 Critical Capabilities and 2 Critical Vulnerabilities highlighted
+3. Lines of Effort: LOE-1 "Diplomatic Isolation", LOE-2 "Sea Control", LOE-3 "Airspace Dominance" with objective links
+4. Decisive point marker on LOE-2: "Strait of Taiwan Choke Point — D+4"
+5. AI Design Assistant panel: "Challenge Assumption" card active showing contested framing
+6. Design-to-Plan handoff indicator: checkmark showing Design outputs queued for Plan tab Step 2 Mission Analysis
+
+**Capture State:**
+- Both friendly and adversary CoG sections populated with Pacific Strategy AY26 data
+- 3 LOEs defined with timeline and objective links visible
+- AI assistant panel open with at least one recommendation card
+- Design-to-Plan indicator showing outputs ready
+
+**Caption:** "Figure 8: Design Tab showing operational design workspace with Center of Gravity analysis and Lines of Effort. Annotations indicate: (1) CC-CR-CV framework for both forces, (2) adversary CoG with highlighted vulnerabilities, (3) three Lines of Effort in swim-lane view, (4) decisive point on Sea Control LOE, (5) AI Design Assistant challenge-assumption card, (6) Design-to-Plan handoff indicator."
+
+---
+
+### Screenshot 9: Decide Tab — Decision Dashboard with RACI Matrix and PendingDecisionModal
+
+**File:** `screenshots/09-decide-tab-decision-dashboard.png`
+
+**Purpose:** Demonstrate the Decide tab's decision dashboard, RACI-filtered approval queue, and pending decision modal.
+
+**Shows:**
+- Decide tab active in the tab bar (previously named Direct, renamed in Phase 53)
+- DecisionDashboard: full-width card list of pending and recent decisions
+- Ironclaw proactive decision surfacing banner at top: "2 decisions require your attention" with 60-second polling badge
+- PendingDecisionModal open for a COA Approval Gate: decision title, context summary, authority level (HUMAN_ONLY badge), action buttons (Approve / Reject / Defer / View Details)
+- RACI matrix view collapsed below showing role assignments
+- DAO governance integration indicator showing proposal will be submitted on approval
+
+**Key Annotations:**
+1. Ironclaw banner: "2 decisions require your attention — COA Approval Gate, OPORD Release Gate" with auto-refresh timer
+2. Decision card: "COA Approval Gate — INDOPACOM Campaign Plan AY26" marked HUMAN_ONLY authority in red
+3. RACI column: Responsible = J3 Operations, Accountable = Commander, Consulted = J2/J5, Informed = Staff
+4. PendingDecisionModal: decision summary, RACI assignment, authority tier badge, approve/reject/defer buttons
+5. DAO proposal indicator: "On approval: DAO proposal will be created and submitted for coalition vote"
+6. Filter controls: "Showing: My decisions | All | Pending | Approved | Deferred"
+
+**Capture State:**
+- At least 2 pending decisions visible in dashboard
+- PendingDecisionModal open for a COA Approval Gate decision
+- HUMAN_ONLY authority tier visible
+- DAO integration badge visible on modal
+
+**Caption:** "Figure 9: Decide Tab showing decision dashboard with RACI-filtered approval queue and PendingDecisionModal. Ironclaw proactively surfaces pending decisions every 60 seconds. Annotations indicate: (1) Ironclaw decision surfacing banner, (2) HUMAN_ONLY authority decision card, (3) RACI role assignment matrix, (4) PendingDecisionModal with approve/reject/defer actions, (5) DAO proposal integration indicator, (6) filter controls for decision queue."
+
+---
+
+### Screenshot 10: Resources Tab — Inventory, Discovery Panel, and Resource Groups
+
+**File:** `screenshots/10-resources-tab-inventory.png`
+
+**Purpose:** Demonstrate the consolidated Resources tab with inventory, device discovery, and group management views.
+
+**Shows:**
+- Resources tab active (7th tab in problem set tab bar, between COP and Assess)
+- ResourcesTab sub-navigation: Inventory | Discovery | Network | Groups tabs
+- Inventory view active: ResourceCatalog showing equipment (Sphero RVR+ ×3, Jetson Orin Nano ×2), personnel, and consumables
+- Resource cards with DID badges (`did:near:resource-...`), status indicators (FMC/PMC/NMC), plugin type icons
+- Discovery panel collapsed in sidebar showing recent discovery: "RVR+ Alpha discovered via mDNS — 192.168.1.45"
+- Registry statistics row at top: 12 total resources, 6 autonomous, 3 FMC, 2 PMC, 1 NMC
+
+**Key Annotations:**
+1. Sub-navigation tabs: Inventory active, Discovery / Network / Groups available
+2. Resource card: "RVR+ Alpha (Sphero RVR+)" with DID badge, FMC status, AutonomousVehiclePlugin icon
+3. Discovery event: "RVR+ Bravo discovered via mDNS — awaiting DAO acceptance gate"
+4. Registry statistics header: total resources, DID count, status breakdown
+5. Plugin type icons: autonomous vehicle, sensor, weapon system, comms, logistics
+6. Capability search bar with filter tags (category, status, capability, geographic)
+
+**Capture State:**
+- Inventory sub-view active with 4-6 resource cards visible
+- At least one robot resource with DID badge and FMC status
+- Discovery sidebar showing a recent discovery event
+- Registry statistics row populated
+
+**Caption:** "Figure 10: Resources Tab showing consolidated inventory, device discovery, and resource groups. Annotations indicate: (1) sub-navigation tabs (Inventory/Discovery/Network/Groups), (2) resource card with DID badge and status, (3) mDNS discovery event awaiting DAO acceptance, (4) registry statistics header, (5) resource plugin type icons, (6) capability search and filter bar."
+
+---
+
+### Screenshot 11: COP Tab — MIL-STD-2525D SVG Overlays with Friendly and Adversary Layers
+
+**File:** `screenshots/11-cop-tab-milstd-overlays.png`
+
+**Purpose:** Demonstrate the Common Operating Picture tab with AI-generated MIL-STD-2525D SVG overlays, perspective toggle, and layer governance.
+
+**Shows:**
+- COP tab active showing a Leaflet.js map centered on Taiwan Strait / Western Pacific
+- Friendly layer active (blue): US/allied naval forces with standard MIL-STD-2525D symbols — warships (surface combatant symbols), air assets (fixed-wing symbols), ground forces near Taiwan
+- Adversary layer visible (red): PLA forces with MLCOA positioning near Fujian Province coast
+- Layer panel on right: layer list with publish status, version numbers, agent attribution
+- Phase slider at bottom: "Phase 2 — Crisis" active with playback controls
+- Perspective toggle: "Friendly" highlighted, "Adversary" available
+
+**Key Annotations:**
+1. Map canvas: Western Pacific with Taiwan Strait visible, standard military grid reference system overlay
+2. Friendly symbols: USS Ronald Reagan Strike Group in MIL-STD-2525D naval surface track symbols (blue rectangle with warship silhouette)
+3. Adversary symbols: PLA Rocket Force units near coast in red threat track symbols
+4. Layer governance panel: "Friendly Layer v3 — Published by Ironclaw Agent | 2026-03-19 14:32"
+5. Phase slider: Phase 2 (Crisis) active, Phase 3 (Conflict D+4) available, playback button
+6. Perspective toggle: switching between friendly and adversary COP views
+
+**Capture State:**
+- Map showing Taiwan Strait / Western Pacific
+- Both friendly and adversary entities visible
+- Layer panel showing published layers with version numbers
+- Phase slider at Phase 2 (Crisis)
+- Hover detail panel visible on one entity showing SIDC, unit name, status
+
+**Caption:** "Figure 11: COP Tab showing AI-generated MIL-STD-2525D SVG overlays with friendly (blue) and adversary (red) layers for Pacific Strategy AY26 Taiwan contingency. Annotations indicate: (1) Western Pacific map canvas with MGRS overlay, (2) friendly naval force symbols in MIL-STD-2525D format, (3) adversary PLA threat track symbols, (4) layer governance panel with publish status and agent attribution, (5) exercise phase slider at Phase 2 (Crisis), (6) friendly/adversary perspective toggle."
+
+---
+
+### Screenshot 12: Swarm Telemetry View — Three Platforms in Wedge Formation
+
+**File:** `screenshots/12-swarm-telemetry-wedge.png`
+
+**Purpose:** Demonstrate the swarm telemetry COP layer showing three Sphero RVR+ platforms in wedge formation with leader vision sharing and formation geometry.
+
+**Shows:**
+- COP tab with swarm telemetry layer active
+- Top-down view of 3 RVR+ positions in wedge formation: RVR+ Alpha (leader, front center, star icon), RVR+ Bravo (rear-left), RVR+ Charlie (rear-right)
+- Formation polygon overlay: translucent wedge shape connecting the three position markers
+- Swarm Telemetry Panel (right sidebar): per-robot status cards showing battery, heading, speed, mission state; leader vision feed thumbnail
+- Detection event overlay: colored circle on map indicating "Person detected — 0.91 confidence" from leader's camera
+- DAO authorization badge: "Mission: visual_search — DAO-authorized, HOTL active"
+
+**Key Annotations:**
+1. Leader marker: RVR+ Alpha with star icon, position at formation apex, current heading arrow
+2. Formation polygon: translucent wedge overlay connecting all three RVR+ positions
+3. Follower positions: RVR+ Bravo and Charlie with standard autonomous vehicle symbols
+4. Detection event: "Person detected — confidence: 0.91" circle marker from detectNet output
+5. Swarm Telemetry Panel: per-robot battery/heading/speed, leader vision thumbnail from CSI camera
+6. DAO authorization badge: "visual_search mission — HOTL active" with human override button
+
+**Capture State:**
+- Three RVR+ positions visible on map in wedge formation
+- Formation polygon rendered
+- Detection event marker visible near formation
+- Swarm Telemetry Panel open with all three robots showing status
+- Leader camera thumbnail visible in panel
+
+**Caption:** "Figure 12: COP Tab swarm telemetry layer showing three Sphero RVR+ platforms in wedge formation during a visual_search mission. Annotations indicate: (1) swarm leader (RVR+ Alpha) with star icon and heading arrow, (2) formation polygon overlay defining wedge geometry, (3) follower positions (RVR+ Bravo and Charlie), (4) detectNet detection event (0.91 confidence) from leader camera, (5) Swarm Telemetry Panel with per-robot status and leader vision thumbnail, (6) DAO authorization badge with HOTL human override button."
+
+---
+
 ## Annotation Guidelines
 
 ### Visual Style
@@ -276,5 +470,6 @@ Before submission, verify each screenshot:
 
 ---
 
-*Document version: 1.0*
-*Last updated: 2026-01-24*
+*Document version: 2.0*
+*Last updated: 2026-03-23*
+*Added: Figures 7-12 for v0.2 capabilities (Understand/Brain, Design/CoG, Decide, Resources, COP/Overlays, Swarm Telemetry)*
