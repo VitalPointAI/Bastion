@@ -43,6 +43,16 @@ import type { RegisteredResource } from '../../lib/resource-registry-service.js'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
+// Design overlay data from overlay_producer skill
+export interface DesignOverlayData {
+  /** Root SVG markup string */
+  svg: string;
+  /** Named layers that can be toggled independently */
+  layers: Array<{ name: string; svg: string }>;
+  /** Optional geo-bounds [sw_lat, sw_lng, ne_lat, ne_lng] for overlay placement */
+  ao_bounds?: [number, number, number, number];
+}
+
 interface COPMapViewProps {
   problemSetId: string;
   layerVisibility: Record<string, boolean>;
@@ -70,6 +80,8 @@ interface COPMapViewProps {
   onMapReady?: (flyTo: (lat: number, lng: number, zoom: number) => void) => void;
   /** Increment to trigger layer re-fetch (e.g. after seeding COP data) */
   refreshKey?: number;
+  /** Design overlay SVG from overlay_producer skill (design.overlay_produced event) */
+  designOverlay?: DesignOverlayData | null;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -208,6 +220,7 @@ export function COPMapView({
   selectedRobotId,
   onMapReady,
   refreshKey,
+  designOverlay,
 }: COPMapViewProps) {
   const [layers, setLayers] = useState<COPLayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -322,6 +335,11 @@ export function COPMapView({
         {/* Swarm formation layer (Phase 48) — renders behind robot dots */}
         <SwarmCOPLayer />
 
+        {/* Design overlay layer — SVG output from overlay_producer skill */}
+        {designOverlay && (
+          <DesignOverlayLayer overlay={designOverlay} />
+        )}
+
         {/* MGRS coordinate display on mouse hover */}
         <MGRSCoordinateDisplay />
 
@@ -330,6 +348,81 @@ export function COPMapView({
       </MapContainer>
     </div>
   );
+}
+
+// ─── DesignOverlayLayer ──────────────────────────────────────────────────────
+
+/**
+ * Renders overlay_producer SVG output on the Leaflet map.
+ * Uses a custom Leaflet pane at zIndex 450 (above tiles, below markers).
+ * Each named layer gets its own SVG element for independent toggling.
+ */
+function DesignOverlayLayer({ overlay }: { overlay: DesignOverlayData }) {
+  const map = useMap();
+  const overlayRef = useRef<L.SVGOverlay | null>(null);
+  const paneRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Create the design-overlay pane if it doesn't exist
+    if (!map.getPane('design-overlay')) {
+      map.createPane('design-overlay');
+      const pane = map.getPane('design-overlay');
+      if (pane) {
+        pane.style.zIndex = '450';
+        pane.style.opacity = '0.7';
+        paneRef.current = pane;
+      }
+    }
+
+    // Determine bounds for overlay placement
+    // Use ao_bounds if provided, else fall back to current map bounds
+    let bounds: L.LatLngBoundsExpression;
+    if (overlay.ao_bounds) {
+      const [swLat, swLng, neLat, neLng] = overlay.ao_bounds;
+      bounds = [[swLat, swLng], [neLat, neLng]];
+    } else {
+      const mapBounds = map.getBounds();
+      bounds = [
+        [mapBounds.getSouth(), mapBounds.getWest()],
+        [mapBounds.getNorth(), mapBounds.getEast()],
+      ];
+    }
+
+    // Parse and validate the SVG string
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(overlay.svg, 'image/svg+xml');
+    const svgElement = svgDoc.querySelector('svg');
+
+    if (!svgElement) {
+      console.warn('[DesignOverlayLayer] Invalid SVG string — no <svg> element found');
+      return;
+    }
+
+    // Clean up previous overlay
+    if (overlayRef.current) {
+      overlayRef.current.remove();
+      overlayRef.current = null;
+    }
+
+    // Create SVG overlay on the design-overlay pane
+    const svgOverlay = L.svgOverlay(svgElement as SVGSVGElement, bounds, {
+      opacity: 0.75,
+      interactive: false,
+      pane: 'design-overlay',
+    });
+
+    svgOverlay.addTo(map);
+    overlayRef.current = svgOverlay;
+
+    return () => {
+      if (overlayRef.current) {
+        overlayRef.current.remove();
+        overlayRef.current = null;
+      }
+    };
+  }, [map, overlay]);
+
+  return null;
 }
 
 // ─── MapFlyToController (exposes flyTo for external control) ─────────────────
