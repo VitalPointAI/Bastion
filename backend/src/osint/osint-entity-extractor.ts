@@ -15,7 +15,7 @@
  *   - Locations mentioned (with coordinates if extractable)
  */
 
-import { randomUUID } from 'crypto';
+// randomUUID removed — using deterministic relationship IDs
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { geocodingService, type GeoLocation } from '../lib/geocoding-service.js';
 import { performWebSearch } from '../doc-intelligence/web-search.js';
@@ -309,6 +309,9 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
           a.workspaceId = $workspaceId,
           a.sourceDocumentIds = [$docId],
           a.containerIds = [],
+          a.assertedVia = 'osint',
+          a.confidence = 0.65,
+          a.halfLifeDays = 90,
           a.createdAt = $now,
           a.updatedAt = $now
         ON MATCH SET
@@ -343,76 +346,10 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
       stats.actorsCreated++;
     }
 
-    // 2. Create OSINT event node (links actors to the source)
-    const eventNodeId = `OSINT-${event.id}`;
-    const loc = event.location as { name?: string; latitude?: number; longitude?: number } | null;
+    // Event nodes are NOT created in the graph — they live in PostgreSQL.
+    // Only actor nodes + inter-actor relationships go into Neo4j.
 
-    await executeWriteQuery(`
-      MERGE (e:Actor {id: $id})
-      ON CREATE SET
-        e.name = $name,
-        e.type = 'event',
-        e.aliases = $tags,
-        e.attributes = $attributes,
-        e.workspaceId = $workspaceId,
-        e.sourceDocumentIds = [$docId],
-        e.containerIds = [],
-        e.createdAt = $now,
-        e.updatedAt = $now
-      ON MATCH SET
-        e.attributes = $attributes,
-        e.updatedAt = $now
-    `, {
-      id: eventNodeId,
-      name: event.title,
-      tags: event.tags ?? [],
-      attributes: JSON.stringify({
-        nodeType: 'osint_event',
-        sourceType: event.sourceType,
-        sourceUrl: event.sourceUrl,
-        sourceName: event.sourceName,
-        publishedAt: event.publishedAt?.toISOString(),
-        description: (event.description ?? '').slice(0, 500),
-        location: loc,
-        actorCount: extraction.actors.length,
-        relationshipCount: extraction.relationships.length,
-        tensionCount: extraction.tensions.length,
-      }),
-      workspaceId: event.workspaceId ?? null,
-      docId: event.id,
-      now,
-    });
-
-    // 3. Link actors to event
-    for (const actor of extraction.actors) {
-      const actorId = actorIdMap.get(actor.name);
-      if (!actorId) continue;
-
-      await executeWriteQuery(`
-        MATCH (a:Actor {id: $actorId})
-        MATCH (e:Actor {id: $eventId})
-        MERGE (a)-[r:RELATES_TO {type: 'mentioned_in'}]->(e)
-        ON CREATE SET
-          r.id = $relId,
-          r.type = 'mentioned_in',
-          r.strength = 0.5,
-          r.description = $desc,
-          r.evidence = $evidence,
-          r.sourceDocumentIds = [$docId],
-          r.createdAt = $now,
-          r.updatedAt = $now
-      `, {
-        actorId,
-        eventId: eventNodeId,
-        relId: `REL-${randomUUID()}`,
-        desc: `${actor.name} mentioned in: ${event.title}`,
-        evidence: event.sourceUrl ?? '',
-        docId: event.id,
-        now,
-      });
-    }
-
-    // 4. Create relationship edges between actors
+    // 2. Create relationship edges between actors
     for (const rel of extraction.relationships) {
       const sourceId = actorIdMap.get(rel.source);
       const targetId = actorIdMap.get(rel.target);
@@ -443,7 +380,7 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
         sourceId,
         targetId,
         relType: rel.type,
-        relId: `REL-${randomUUID()}`,
+        relId: `REL-${sourceId}-${targetId}-${rel.type}`,
         strength: Math.max(0, Math.min(1, rel.strength)),
         desc: rel.description,
         evidence: event.sourceUrl ?? '',
@@ -492,7 +429,7 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
           `, {
             aId,
             bId,
-            relId: `REL-${randomUUID()}`,
+            relId: `REL-tension-${aId}-${bId}`,
             intensity: Math.max(0, Math.min(1, tension.intensity)),
             desc: tension.description,
             evidence: event.sourceUrl ?? '',
