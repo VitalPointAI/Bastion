@@ -132,7 +132,7 @@ Coalition partner adoption barriers may limit BASTION's effectiveness for multi-
 
 ### Complexity Growth Risks
 
-The expansion from 23 to 131 AI agents, from 5 to 12 smart contract modules, and from ~100 to ~417 REST endpoints introduces risks associated with system complexity growth.
+The expansion from 23 to 131 AI agents, from 5 to 14 smart contract modules, and from ~100 to ~572 REST endpoints introduces risks associated with system complexity growth.
 
 **AI agent proliferation management.** As the agent count grows, maintaining quality, consistency, and appropriate oversight across all agents becomes increasingly challenging. Each agent requires prompt engineering, testing, and monitoring. Interactions between agents may produce emergent behaviors that are difficult to predict or audit. The JPP staff role agents (102 agents) share a common architecture but each carries role-specific doctrinal knowledge that must be validated against actual military publications.
 

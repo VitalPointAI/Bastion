@@ -31,7 +31,7 @@ For each phase, your section tells you:
 | **Understand** | Mission Analysis / JIPOE | Strategic documents, training packages, data sharing, team roster, AI context preview |
 | **Design** | Operational Design | Problem framing, CoG analysis, Lines of Effort, Operational Approach + AI narrative synthesis |
 | **Plan** | COA Development | Mission creation, MDMP workflow, war-gaming, governance gates |
-| **Direct** | Orders / Execution | Governance, proposals & voting, escalation |
+| **Decide** | Orders / Execution | Governance, proposals & voting, escalation |
 | **COP** | Common Operating Picture | AI-generated map layers, perspective toggle (friendly/adversary/combined), phase slider |
 | **Assess** | Assessment | MOE/MOP tracking (future) |
 
@@ -108,7 +108,7 @@ For each phase, your section tells you:
 
 **BASTION tasks:**
 1. **Plan tab** — Review and approve COAs. Use MDMP governance gates to formally approve plans before execution.
-2. **Direct tab** — Issue directives via proposals. Use governance voting to formalize decisions.
+2. **Decide tab** — Issue directives via proposals. Use governance voting to formalize decisions.
 3. **COP tab** — Monitor the fight. Use the adversary perspective toggle to see your own force laydown. Use the phase slider to track temporal progression.
 4. **Design tab** — Revisit the operational approach if the situation changes. Reframe the problem if assumptions are invalidated.
 
@@ -190,7 +190,7 @@ For each phase, your section tells you:
 **BASTION tasks:**
 1. **Plan tab** — Manage active missions. Track task completion. Transition sequel plans to current operations.
 2. **COP tab** — Maintain the Red Force common operating picture. Ensure all subcenters are updating their sectors.
-3. **Direct tab** — Draft fragmentary orders (FRAGOs) for Commander approval when the plan needs adjustment.
+3. **Decide tab** — Draft fragmentary orders (FRAGOs) for Commander approval when the plan needs adjustment.
 4. **Design tab** — If the operational approach needs reframing based on battlefield reality, update Lines of Effort and decisive points.
 
 **Deliverables:**
@@ -270,7 +270,7 @@ For each phase, your section tells you:
 **BASTION tasks:**
 1. **Plan tab** — Execute the land component plan. Track landing operations, beachhead expansion, objective seizure.
 2. **COP tab** — Update ground force positions on the COP. Use the phase slider to project ground maneuver over time.
-3. **Direct tab** — Submit requests for fire support and logistics resupply through governance proposals.
+3. **Decide tab** — Submit requests for fire support and logistics resupply through governance proposals.
 
 **Deliverables:**
 - [ ] Landing operation plan with H-hour sequence
@@ -350,7 +350,7 @@ For each phase, your section tells you:
 **BASTION tasks:**
 1. **Plan tab** — Execute the maritime component plan. Track blockade enforcement, submarine patrol areas, surface engagements.
 2. **COP tab** — Maintain the maritime picture. Use combined/adversary perspective toggle to track both friendly and enemy naval forces.
-3. **Direct tab** — Coordinate maritime fire support requests and anti-submarine warfare (ASW) tasking.
+3. **Decide tab** — Coordinate maritime fire support requests and anti-submarine warfare (ASW) tasking.
 
 **Deliverables:**
 - [ ] Blockade enforcement plan with maritime exclusion zone
@@ -431,7 +431,7 @@ For each phase, your section tells you:
 **BASTION tasks:**
 1. **Plan tab** — Execute and update the ATO cycle. Track sortie generation, attrition, and mission effectiveness.
 2. **COP tab** — Maintain the air picture. Ensure CAP stations, strike packages, and IADS coverage are displayed.
-3. **Direct tab** — Submit air tasking changes and airspace coordination measures.
+3. **Decide tab** — Submit air tasking changes and airspace coordination measures.
 
 **Deliverables:**
 - [ ] ATO execution tracker
@@ -513,7 +513,7 @@ For each phase, your section tells you:
 **BASTION tasks:**
 1. **Plan tab** — Execute missile salvos per timeline. Track BDA and adjust subsequent salvos.
 2. **COP tab** — Display missile engagement zones, target status (hit/miss/reattack), and A2/AD coverage arcs.
-3. **Direct tab** — Coordinate fire missions with Commander approval for escalatory targets.
+3. **Decide tab** — Coordinate fire missions with Commander approval for escalatory targets.
 
 **Deliverables:**
 - [ ] Missile expenditure tracker (rounds fired vs. remaining)
@@ -598,7 +598,7 @@ For each phase, your section tells you:
 **BASTION tasks:**
 1. **COP tab** — Primary workspace. Maintain the intelligence picture. Update adversary force positions, track attrition, update threat assessments.
 2. **Plan tab** — Track enabler mission execution. Update logistics consumption data.
-3. **Direct tab** — Submit intelligence assessments and logistics status reports through governance.
+3. **Decide tab** — Submit intelligence assessments and logistics status reports through governance.
 
 **Deliverables:**
 - [ ] Rolling intelligence update (INTSUM)
@@ -679,7 +679,7 @@ For each phase, your section tells you:
 - Monitor for diplomatic opportunities to lock in gains
 
 **BASTION tasks:**
-1. **Direct tab** — Submit strategic communication plans and negotiation position papers through governance.
+1. **Decide tab** — Submit strategic communication plans and negotiation position papers through governance.
 2. **Design tab** — Update the political end state as the situation evolves. If the war isn't going to plan, what are acceptable negotiated outcomes?
 3. **COP tab** — Monitor the strategic situation to identify moments of leverage for negotiation.
 

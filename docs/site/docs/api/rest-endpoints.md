@@ -1,6 +1,6 @@
 # REST API Reference
 
-> Comprehensive endpoint catalog — approximately 417 REST endpoints
+> Comprehensive endpoint catalog — approximately 572 REST endpoints
 
 ## Overview
 
