@@ -1,10 +1,10 @@
 ---
 title: "Decision Overmatch: Accelerating Military Advantage with AI-Augmented Decentralized Autonomous Organizations"
 author: Aaron Luhning
-version: 0.1
-date: 2026-01-24
+version: 0.2
+date: 2026-03-23
 status: Draft
-keywords: DAO, blockchain, military, C2, AI agents, coalition operations, NEAR Protocol
+keywords: DAO, blockchain, military, C2, AI agents, coalition operations, NEAR Protocol, edge computing, robotics, knowledge graphs
 ---
 
 <br><br><br><br><br><br>
@@ -25,9 +25,9 @@ keywords: DAO, blockchain, military, C2, AI agents, coalition operations, NEAR P
 
 <br><br><br>
 
-**Version 0.1**
+**v0.2**
 
-January 2026
+March 2026
 
 <br><br><br><br><br><br>
 
@@ -43,7 +43,7 @@ January 2026
 
 ## Abstract
 
-*[Abstract to be written after all content sections are complete. The abstract will provide a concise summary of the problem, approach, key findings, and contributions in approximately 250-300 words.]*
+*[See 00-abstract.md for current abstract.]*
 
 <br><br>
 
@@ -53,7 +53,8 @@ January 2026
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 0.1 | 2026-01-24 | Initial draft - Introduction section |
+| 0.1 | 2026-01-24 | Initial draft - all sections complete |
+| 0.2 | 2026-03-23 | Major update: robot bridge/vision/swarm, knowledge graph brain visualization, Decide tab, resource DIDs, training assessment, 8 contributions, 50+ phases documented |
 
 ---
 

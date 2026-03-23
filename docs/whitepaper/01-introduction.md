@@ -82,9 +82,17 @@ This research makes the following contributions:
 
 - **Multi-level coordination framework spanning strategic, operational, and tactical levels:** BASTION provides a unified governance approach that functions consistently across military echelons, enabling seamless coordination from strategic resource allocation through tactical execution.
 
-- **Physical proof-of-concept demonstration:** Beyond theoretical analysis, this research includes a working demonstration using edge computing hardware and robotic platforms that validates the architecture's viability for real-world deployment.
+- **Physical proof-of-concept demonstration with edge AI and robotics:** Beyond theoretical analysis, this research includes a working demonstration using NVIDIA Jetson Orin Nano edge computing and Sphero RVR+ robotic platforms. The demonstration validates robot vision-enabled threat detection, doctrinal swarm formations (wedge, line, column, echelon, vee, staggered column), and DAO-coordinated mission assignment — proving the architecture's viability across software and hardware domains.
 
-## 1.8 Paper Organization
+- **Semantic knowledge graph with adaptive brain visualization:** BASTION's JSON-LD knowledge graph captures entities, relationships, and confidence-scored intelligence chains across hierarchical problem sets. An adaptive neural canvas renders this graph as an interactive brain visualization, enabling analysts to explore semantic intelligence networks and temporal knowledge evolution.
+
+- **Blockchain-anchored resource identity and training/operational governance parity:** A resource registry with Decentralized Identifiers (did:near:resource-{id}) treats military assets as first-class blockchain entities. A global training/operational mode toggle provides identical DAO governance in both exercise and operational contexts, enabling authentic "train as you fight" doctrine.
+
+## 1.8 Development Scope and Version Note
+
+This paper reflects BASTION capabilities as of Phase 53 (March 2026), encompassing over 50 completed development phases since the initial architecture described in v0.1 (January 2026). Significant capabilities added between v0.1 and v0.2 include: the Decide tab with governance-gated decision dashboard and RACI matrix, the operational design workspace with Center of Gravity analysis, robot bridge integration with vision and swarm capabilities, adaptive knowledge graph brain visualization, resource DID registry with plugin architecture, training/operational mode toggle, and hierarchical problem set inheritance with automatic context propagation. These capabilities are documented in the methodology and results sections; this version note provides temporal context for readers comparing this version to future releases.
+
+## 1.9 Paper Organization
 
 The remainder of this paper is organized as follows:
 
