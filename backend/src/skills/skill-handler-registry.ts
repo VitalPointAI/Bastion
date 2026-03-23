@@ -18,6 +18,7 @@
 import { createNavigationTools } from '../robot/skills/navigation-skill.js';
 import { createTacticalTools } from '../robot/skills/tactical-skills.js';
 import { createSymbologyTools } from '../robot/skills/symbology-skill.js';
+import { createDesignTools } from './design-skills.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -114,6 +115,18 @@ export function initializeBuiltinHandlers(): void {
     }
   }
 
+  // Design tools
+  const designTools = createDesignTools();
+  for (const tool of designTools) {
+    const handlerId = designToolHandlerMap[tool.name];
+    if (handlerId) {
+      registerHandler(handlerId, async (args) => {
+        const result = await tool.invoke(args);
+        return typeof result === 'string' ? result : JSON.stringify(result);
+      });
+    }
+  }
+
   console.log(`[SkillHandlerRegistry] Initialized ${handlers.size} built-in handlers`);
 }
 
@@ -134,6 +147,13 @@ const tacToolHandlerMap: Record<string, string> = {
   'select_observation_post': 'tactical/selectOP',
   'identify_kill_zone': 'tactical/identifyKillZone',
   'evaluate_engagement': 'tactical/evaluateEngagement',
+};
+
+const designToolHandlerMap: Record<string, string> = {
+  'overlay_producer': 'design/overlayProducer',
+  'resource_allocator': 'design/resourceAllocator',
+  'campaign_visualizer': 'design/campaignVisualizer',
+  'risk_visualizer': 'design/riskVisualizer',
 };
 
 // ---------------------------------------------------------------------------
