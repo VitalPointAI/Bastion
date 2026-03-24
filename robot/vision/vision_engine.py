@@ -184,9 +184,23 @@ class VisionEngine:
         raw_results = self._model(img_np, conf=self._threshold, imgsz=self._imgsz, verbose=False)
         results: List[DetectionResult] = []
 
+        # Get frame dimensions for area filtering
+        frame_h, frame_w = img_np.shape[:2]
+        frame_area = frame_w * frame_h
+
         for r in raw_results:
             for box in r.boxes:
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
+                box_area = (x2 - x1) * (y2 - y1)
+
+                # Reject detections covering >40% of frame — these are false
+                # positives where the model classifies the entire scene as a target.
+                # A real target in a room will be a small fraction of the frame.
+                if box_area > frame_area * 0.4:
+                    log.debug("vision_engine.reject_oversized_box",
+                              area_pct=round(box_area / frame_area * 100, 1))
+                    continue
+
                 cls_id = int(box.cls[0])
                 results.append(
                     DetectionResult(
