@@ -322,7 +322,7 @@ export function AIContextSnapshotModal({
       })
       .catch(() => setFetchedSummary('Unable to synthesize narrative.'))
       .finally(() => setSummaryLoading(false));
-  }, [isOpen, problemSetId, currentSummary]);
+  }, [isOpen, problemSetId, currentSummary, visibleNodes, visibleEdges]);
 
   // Reset title when modal opens
   useEffect(() => {

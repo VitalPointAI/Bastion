@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef, type KeyboardEvent } from 'react';
-import type { BrainNode, BrainNodeType, ActorCategory } from './types.js';
+import type { BrainNode, BrainNodeType } from './types.js';
 import './BrainSearch.css';
 
 // ─── API base ─────────────────────────────────────────────────────────────────

@@ -34,6 +34,7 @@ export interface BrainToolbarProps {
   onSearchResults: (matchingNodeIds: string[]) => void;
   onNodeFocus?: (nodeId: string) => void;
   onSnapshotClick?: () => void;
+  onStrategicEnvClick?: () => void;
   gapCount?: number;
   onGapClick?: () => void;
 }
@@ -52,6 +53,7 @@ export function BrainToolbar({
   onSearchResults,
   onNodeFocus,
   onSnapshotClick,
+  onStrategicEnvClick,
   gapCount,
   onGapClick,
 }: BrainToolbarProps) {
@@ -77,14 +79,24 @@ export function BrainToolbar({
 
       {/* Right: action buttons */}
       <div className="brain-toolbar-actions">
+        {/* Strategic Environment Assessment */}
+        <button
+          type="button"
+          className="brain-toolbar-btn"
+          onClick={onStrategicEnvClick}
+          title="Synthesize strategic environment assessment from problem set knowledge"
+        >
+          <span className="brain-toolbar-btn-icon">&#x1F30D;</span>
+          <span className="brain-toolbar-btn-label">STRATENV</span>
+        </button>
+
         {/* AI Snapshot button */}
         <button
           type="button"
           className="brain-toolbar-btn"
           onClick={onSnapshotClick}
-          title="Save AI context snapshot"
+          title="Save AI context snapshot of current view"
         >
-          {/* Camera icon (unicode) */}
           <span className="brain-toolbar-btn-icon">&#x1F4F7;</span>
           <span className="brain-toolbar-btn-label">AI Snapshot</span>
         </button>

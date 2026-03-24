@@ -219,6 +219,9 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
 
   // ── Modal / panel state ─────────────────────────────────────────────────────
   const [snapshotModalOpen, setSnapshotModalOpen] = useState(false);
+  const [stratEnvModalOpen, setStratEnvModalOpen] = useState(false);
+  const [stratEnvNarrative, setStratEnvNarrative] = useState<string | null>(null);
+  const [stratEnvLoading, setStratEnvLoading] = useState(false);
   const [gapPanelOpen, setGapPanelOpen] = useState(false);
 
   // ── IngestionDrawer state (Phase 50 Plan 07) ────────────────────────────────
@@ -408,6 +411,26 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
             onSearchResults={handleSearchResults}
             onNodeFocus={handleNodeFocus}
             onSnapshotClick={() => setSnapshotModalOpen(true)}
+            onStrategicEnvClick={async () => {
+              setStratEnvModalOpen(true);
+              setStratEnvLoading(true);
+              try {
+                const res = await fetch(`/api/design/${problemSetId}/synthesize-current-state`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                });
+                if (res.ok) {
+                  const data = await res.json() as { currentState?: string; hint?: string };
+                  setStratEnvNarrative(data.currentState || data.hint || 'No data available.');
+                } else {
+                  setStratEnvNarrative('Failed to synthesize strategic environment.');
+                }
+              } catch {
+                setStratEnvNarrative('Failed to synthesize strategic environment.');
+              } finally {
+                setStratEnvLoading(false);
+              }
+            }}
             gapCount={gapCount}
             onGapClick={() => { setGapPanelOpen((prev) => !prev); setSelectedNodeId(null); setSelectedNodeIds([]); }}
           />
@@ -522,6 +545,59 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
           />
         }
       />
+
+      {/* Strategic Environment Assessment Modal */}
+      {stratEnvModalOpen && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60" onClick={() => setStratEnvModalOpen(false)}>
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-[640px] max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700">
+              <div>
+                <h3 className="text-sm font-semibold text-white">Strategic Environment Assessment</h3>
+                <p className="text-[10px] text-gray-400">Synthesized from knowledge graph — actors, relationships, tensions, objectives</p>
+              </div>
+              <button onClick={() => setStratEnvModalOpen(false)} className="text-gray-400 hover:text-white p-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              {stratEnvLoading ? (
+                <div className="flex items-center justify-center py-12 text-gray-400">
+                  <svg className="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Synthesizing strategic environment...
+                </div>
+              ) : (
+                <div className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">
+                  {stratEnvNarrative}
+                </div>
+              )}
+            </div>
+            <div className="px-5 py-3 border-t border-slate-700 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  if (stratEnvNarrative) navigator.clipboard.writeText(stratEnvNarrative);
+                }}
+                className="text-xs px-3 py-1.5 rounded bg-slate-700 hover:bg-slate-600 text-gray-300 transition-colors"
+              >
+                Copy to clipboard
+              </button>
+              <button
+                onClick={() => setStratEnvModalOpen(false)}
+                className="text-xs px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {snapshotModalOpen && (
         <AIContextSnapshotModal
