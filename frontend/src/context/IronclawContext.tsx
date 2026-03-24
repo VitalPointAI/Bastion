@@ -25,6 +25,7 @@ import { useLocation } from 'react-router-dom';
 
 import type { IronclawChatMessage, IronclawTaskData, SuggestionData, TrustDecision } from '../types/ironclaw.ts';
 import { useIronclaw } from '../hooks/useIronclaw.ts';
+import { useDesignInterview } from '../hooks/useDesignInterview.ts';
 import { useProblemSet } from './ProblemSetContext.tsx';
 import { useUser } from './UserContext.tsx';
 import { IronclawButton } from '../components/ironclaw/IronclawButton.tsx';
@@ -130,6 +131,9 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     problemSetId: activeProblemSetId ?? undefined,
     userRole: userRoleInActive ?? undefined,
   });
+
+  // Design interview state — active when user clicks "Guide Me" on Design tab
+  const designInterview = useDesignInterview(activeProblemSetId ?? 'none');
 
   // ─── Pending Decisions State (proactive surfacing) ────────────────────────
   const [pendingDecisions, setPendingDecisions] = useState<Decision[]>([]);
@@ -333,6 +337,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
           await decisionApiService.actOnDecision(activeProblemSetId, decisionId, params);
           refreshPendingDecisions();
         } : undefined}
+        interview={designInterview}
       />
     </IronclawContext.Provider>
   );

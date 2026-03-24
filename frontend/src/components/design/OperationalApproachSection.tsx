@@ -56,7 +56,7 @@ export function OperationalApproachSection({
   designData,
   onUpdate,
 }: OperationalApproachSectionProps) {
-  const { sendMessage, toggleDrawer } = useIronclawContext();
+  const { toggleDrawer } = useIronclawContext();
   const designInterview = useDesignInterview(problemSetId);
   const { participants, isCollaborative, isMyTurn } = designInterview;
   const [approach, setApproach] = useState<OperationalApproach>(() => ({

@@ -182,7 +182,6 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
         });
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reconnect only on identity/doc changes
   }, [connected, problemSetId, yjsUser.did, yjsUser.role, getMap]);
 
   // ---------------------------------------------------------------------------

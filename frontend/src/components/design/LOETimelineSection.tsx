@@ -75,7 +75,7 @@ export function LOETimelineSection({
   cogAnalysis,
   onUpdate,
 }: LOETimelineSectionProps) {
-  const { sendMessage, toggleDrawer } = useIronclawContext();
+  const { toggleDrawer } = useIronclawContext();
   const designInterview = useDesignInterview(problemSetId);
   const { participants, isCollaborative, isMyTurn } = designInterview;
   const [loes, setLoes] = useState<LineOfEffort[]>(initialLOEs);

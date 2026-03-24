@@ -22,7 +22,7 @@ export interface CoGAnalysisSectionProps {
 
 
 export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGAnalysisSectionProps) {
-  const { sendMessage, toggleDrawer } = useIronclawContext();
+  const { toggleDrawer } = useIronclawContext();
   const designInterview = useDesignInterview(problemSetId);
   const { participants, isCollaborative, isMyTurn } = designInterview;
   const [cogAnalysis, setCogAnalysis] = useState<CoGAnalysis>(initialData);

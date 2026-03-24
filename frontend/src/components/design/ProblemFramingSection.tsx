@@ -104,7 +104,7 @@ function DynamicList({
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: ProblemFramingSectionProps) {
-  const { sendMessage: ironclawSendMessage, toggleDrawer } = useIronclawContext();
+  const { toggleDrawer } = useIronclawContext();
   const designInterview = useDesignInterview(problemSetId);
   const { participants, isCollaborative, isMyTurn } = designInterview;
   const [formData, setFormData] = useState<ProblemFramingData>(() => ({
