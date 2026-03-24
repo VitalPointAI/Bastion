@@ -322,6 +322,12 @@ export function createNavigationTools(): DynamicStructuredTool[] {
       let goingEast = true;
 
       for (const ew of ewRoads) {
+        // First waypoint on each E-W road: approach from the start X
+        // so the robot goes north first before zigzagging east-west
+        if (route.length === 0) {
+          // Go straight north to the first road at the start X position
+          route.push({ x: _start_x, y: ew.position });
+        }
         if (goingEast) {
           for (const ns of nsRoads) {
             route.push({ x: ns.position, y: ew.position });
