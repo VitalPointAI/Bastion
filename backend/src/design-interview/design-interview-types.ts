@@ -140,10 +140,10 @@ export const DesignInterviewStateAnnotation = Annotation.Root({
     default: () => false,
   }),
 
-  /** Phase: 'start' for initial question, 'continue' for processing answer */
-  phase: Annotation<'start' | 'continue'>({
+  /** Phase: 'start' for initial question, 'continue' for processing answer, 'confirm' for section advance */
+  phase: Annotation<'start' | 'continue' | 'confirm'>({
     reducer: (_prev, next) => next,
-    default: () => 'start' as 'start' | 'continue',
+    default: () => 'start' as 'start' | 'continue' | 'confirm',
   }),
 
   /**

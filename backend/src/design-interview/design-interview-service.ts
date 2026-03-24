@@ -121,6 +121,9 @@ function routeEntry(state: DesignInterviewState): string {
   if (state.phase === 'start') {
     return 'ask_question';
   }
+  if (state.phase === 'confirm') {
+    return 'advance_section';
+  }
   return 'process_answer';
 }
 
@@ -796,6 +799,7 @@ async function buildDesignInterviewGraph() {
     .addConditionalEdges('__start__', routeEntry, {
       ask_question: 'ask_question',
       process_answer: 'process_answer',
+      advance_section: 'advance_section',
     })
     // ask_question always ends (interrupt-resume)
     .addEdge('ask_question', '__end__')
@@ -935,28 +939,15 @@ export class DesignInterviewService {
       configurable: { thread_id: `design-interview-${problemSetId}` },
     };
 
-    // Invoke with a synthetic "confirmed" message and route through advance_section
-    // Use phase='continue' but override awaitingSectionConfirm to false
+    // Route through advance_section via the 'confirm' phase entry
     const result = await graph.invoke(
       {
-        messages: [new HumanMessage('Confirmed. Please continue.')],
-        phase: 'continue' as const,
+        phase: 'confirm' as const,
         awaitingSectionConfirm: false,
       },
       config,
     );
 
-    // Run advance_section to move to next section
-    const advanceResult = await graph.invoke(
-      {
-        phase: 'start' as const,
-      },
-      {
-        configurable: { thread_id: `design-interview-${problemSetId}-advance` },
-      },
-    );
-
-    // The main thread gets the advance inline via process_answer detecting confirmed state
     const lastMessage = result.messages[result.messages.length - 1];
 
     return {
