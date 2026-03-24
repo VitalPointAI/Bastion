@@ -171,10 +171,10 @@ function extractDirectionalLocations(
 function buildOSINTIconHtml(icon: string, color: string, _affiliation: Affiliation): string {
   return `<div style="
     display:flex;align-items:center;justify-content:center;
-    width:18px;height:18px;border-radius:50%;
-    background:${color};border:1.5px solid rgba(255,255,255,0.4);
-    font-size:10px;line-height:1;
-    box-shadow:0 1px 3px rgba(0,0,0,0.4);
+    width:22px;height:22px;border-radius:50%;
+    background:rgba(255,255,255,0.92);border:2.5px solid ${color};
+    font-size:13px;line-height:1;
+    box-shadow:0 1px 4px rgba(0,0,0,0.5);
     cursor:pointer;
   ">${icon}</div>`;
 }
@@ -325,6 +325,21 @@ export async function updateOSINTCOPLayer(
       };
 
       if (layerId) {
+        // Merge new symbols into existing layer instead of overwriting
+        const existingLayer = await layerStore.getLayer(layerId);
+        if (existingLayer?.spec?.symbols) {
+          const symbolMap = new Map<string, COPSymbolSpec>();
+          for (const s of existingLayer.spec.symbols) {
+            symbolMap.set(s.entityId, s);
+          }
+          for (const s of symbols) {
+            const prev = symbolMap.get(s.entityId);
+            if (!prev || s.confidence > prev.confidence) {
+              symbolMap.set(s.entityId, s);
+            }
+          }
+          spec.symbols = [...symbolMap.values()];
+        }
         await layerStore.updateLayerSpec(layerId, spec);
       } else {
         await layerStore.createLayer({
