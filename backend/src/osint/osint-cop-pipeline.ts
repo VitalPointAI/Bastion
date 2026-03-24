@@ -99,7 +99,7 @@ function classifyEvent(text: string, sourceName?: string): OSINTCategory {
     return { type: 'sanctions', label: 'Sanctions', icon: '🚫', color: '#b91c1c' };
   if (/trade|econom|gdp|inflation|recession|market/.test(lower))
     return { type: 'economic', label: 'Economic', icon: '📊', color: '#059669' };
-  if (/diplom|treaty|summit|negotiat|ambassador|embassy|foreign\s?minister/.test(lower))
+  if (/diplom|treaty|summit|negotiat|ambassador|embassy|foreign\s?minister|bilateral|relations\s?in\s?focus|state\s?visit|hosts?\s/.test(lower))
     return { type: 'diplomatic', label: 'Diplomatic', icon: '🤝', color: '#2563eb' };
   if (/election|government|parliament|legislat|political|coup|regime/.test(lower))
     return { type: 'political', label: 'Political', icon: '🏛️', color: '#4f46e5' };
