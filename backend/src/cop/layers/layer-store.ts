@@ -294,6 +294,22 @@ export class LayerStore implements ILayerStore {
 
     if (existing.rows.length > 0) {
       const existingId = existing.rows[0].id as string;
+      // Merge new symbols into existing layer instead of overwriting.
+      // Dedup by entityId, keeping the higher-confidence version.
+      const existingLayer = await this.getLayer(existingId);
+      if (existingLayer?.spec?.symbols && input.spec.symbols) {
+        const symbolMap = new Map<string, (typeof input.spec.symbols)[number]>();
+        for (const s of existingLayer.spec.symbols) {
+          symbolMap.set(s.entityId, s);
+        }
+        for (const s of input.spec.symbols) {
+          const prev = symbolMap.get(s.entityId);
+          if (!prev || s.confidence > prev.confidence) {
+            symbolMap.set(s.entityId, s);
+          }
+        }
+        input.spec.symbols = [...symbolMap.values()];
+      }
       return this.updateLayerSpec(existingId, input.spec);
     }
 
