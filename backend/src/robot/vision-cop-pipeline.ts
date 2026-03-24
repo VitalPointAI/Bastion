@@ -554,10 +554,12 @@ export async function updateKnowledgeGraph(
         : 'jc3:Equipment'; // tanks, vehicles, aircraft, naval
 
       // Create/update hostile actor node with JSON-LD provenance
+      // MERGE on name to prevent duplicates across detection sources
+      if (!symbol.designation?.trim()) continue;
       await executeWriteQuery(`
-        MERGE (a:Actor {id: $id})
+        MERGE (a:Actor {name: $name})
         ON CREATE SET
-          a.name = $name,
+          a.id = $id,
           a.type = 'military',
           a.aliases = [],
           a.attributes = $attributes,
@@ -620,9 +622,9 @@ export async function updateKnowledgeGraph(
       const robotActorId = `ACT-robot-${robotId.replace(/[^a-z0-9-]/gi, '-').toLowerCase()}`;
 
       await executeWriteQuery(`
-        MERGE (r:Actor {id: $robotId})
+        MERGE (r:Actor {name: $robotName})
         ON CREATE SET
-          r.name = $robotName,
+          r.id = $robotId,
           r.type = 'autonomous_system',
           r.aliases = [],
           r.attributes = '{}',
@@ -652,8 +654,8 @@ export async function updateKnowledgeGraph(
       });
 
       await executeWriteQuery(`
-        MATCH (r:Actor {id: $robotId})
-        MATCH (t:Actor {id: $threatId})
+        MATCH (r:Actor {name: $robotName})
+        MATCH (t:Actor {name: $threatName})
         MERGE (r)-[rel:RELATES_TO {type: 'detected'}]->(t)
         ON CREATE SET
           rel.id = $relId,
@@ -678,8 +680,8 @@ export async function updateKnowledgeGraph(
           rel.strength = $confidence,
           rel.updatedAt = $now
       `, {
-        robotId: robotActorId,
-        threatId: actorId,
+        robotName: robotId,
+        threatName: symbol.designation,
         relId: `REL-${randomUUID()}`,
         confidence: symbol.confidence,
         desc: `${robotId} detected ${symbol.designation} at ${symbol.detectedAt}`,

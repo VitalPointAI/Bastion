@@ -274,12 +274,13 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
     // Map actor names to stable IDs
     const actorIdMap = new Map<string, string>();
 
-    // 1. Create/merge actor nodes
+    // 1. Create/merge actor nodes — MERGE on name to prevent duplicates
     for (const actor of extraction.actors) {
-      if (!actor.name || actor.name.length < 2) continue;
+      const trimmedName = (actor.name ?? '').trim();
+      if (!trimmedName || trimmedName.length < 2) continue;
 
-      const stableId = `ACT-${actor.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
-      actorIdMap.set(actor.name, stableId);
+      const stableId = `ACT-${trimmedName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+      actorIdMap.set(trimmedName, stableId);
 
       // Determine actor type mapping
       const typeMap: Record<string, string> = {
@@ -296,13 +297,13 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
       let description = actor.description ?? '';
       if (description.length < 20) {
         const contextSnippet = `${event.title}\n${(event.description ?? '').slice(0, 300)}`;
-        description = await enrichActorDescription(actor.name, actor.type, contextSnippet);
+        description = await enrichActorDescription(trimmedName, actor.type, contextSnippet);
       }
 
       await executeWriteQuery(`
-        MERGE (a:Actor {id: $id})
+        MERGE (a:Actor {name: $name})
         ON CREATE SET
-          a.name = $name,
+          a.id = $id,
           a.type = $type,
           a.aliases = $aliases,
           a.attributes = $attributes,
@@ -329,7 +330,7 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
           END
       `, {
         id: stableId,
-        name: actor.name,
+        name: trimmedName,
         type: graphType,
         aliases: actor.aliases ?? [],
         description,

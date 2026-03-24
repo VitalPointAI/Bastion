@@ -324,16 +324,17 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
     const now = new Date().toISOString();
     const validFrom = event.publishedAt?.toISOString() ?? now;
 
-    // Only create actor nodes — not event nodes
+    // Only create actor nodes — not event nodes. MERGE on name to prevent duplicates.
     for (const actorName of event.actors) {
-      if (!actorName || actorName.length < 2) continue;
+      const trimmed = (actorName ?? '').trim();
+      if (!trimmed || trimmed.length < 2) continue;
 
-      const actorId = `ACT-osint-${actorName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+      const actorId = `ACT-osint-${trimmed.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
 
       await executeWriteQuery(`
-        MERGE (a:Actor {id: $id})
+        MERGE (a:Actor {name: $name})
         ON CREATE SET
-          a.name = $name,
+          a.id = $id,
           a.type = 'organization',
           a.aliases = [],
           a.attributes = $attributes,
@@ -348,10 +349,15 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
           a.validTo = null,
           a.halfLifeDays = 90
         ON MATCH SET
-          a.updatedAt = $now
+          a.updatedAt = $now,
+          a.sourceDocumentIds = CASE
+            WHEN NOT $docId IN a.sourceDocumentIds
+            THEN a.sourceDocumentIds + $docId
+            ELSE a.sourceDocumentIds
+          END
       `, {
         id: actorId,
-        name: actorName,
+        name: trimmed,
         attributes: JSON.stringify({ source: 'osint', firstSeen: now }),
         workspaceId: event.workspaceId ?? null,
         docId: event.id,
