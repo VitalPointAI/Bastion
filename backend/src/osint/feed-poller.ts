@@ -24,8 +24,15 @@ import type { OSINTEventInput, OSINTEvent } from '../graph/osint/types.js';
 /** Quick heuristic: text is likely non-English if >30% of chars are non-ASCII-letter */
 function looksNonEnglish(text: string): boolean {
   if (!text || text.length < 20) return false;
+  // Non-ASCII characters (Chinese, Arabic, Cyrillic, etc.)
   const nonAscii = text.replace(/[\x20-\x7E]/g, '').length;
-  return nonAscii / text.length > 0.3;
+  if (nonAscii / text.length > 0.15) return true;
+  // Latin-script languages (Spanish, French, Portuguese, etc.)
+  // detected by accented characters or common non-English patterns
+  if (/[àáâãäåæçèéêëìíîïðñòóôõöùúûüýþÿ]/i.test(text)) return true;
+  // Common non-English word patterns
+  if (/\b(las|los|del|una|des|les|der|die|das|und|que|por|para|como|con|más|también|según|está)\b/i.test(text)) return true;
+  return false;
 }
 
 /** Translate non-English text to English via LLM. Returns original on failure. */
