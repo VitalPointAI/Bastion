@@ -58,17 +58,22 @@ function buildActorOptions(nodes: BrainNode[]): Array<{ value: string; label: st
   return [{ value: '', label: 'All Actors' }, ...sorted];
 }
 
-const DIME_THEME_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: '', label: 'All Themes' },
-  { value: 'diplomatic', label: 'Diplomatic' },
-  { value: 'information', label: 'Information' },
-  { value: 'military', label: 'Military' },
-  { value: 'economic', label: 'Economic' },
-  { value: 'infrastructure', label: 'Infrastructure' },
-  { value: 'legal', label: 'Legal' },
-  { value: 'intelligence', label: 'Intelligence' },
-  { value: 'financial', label: 'Financial' },
-];
+// DIME theme options built dynamically from actual node data
+function buildThemeOptions(nodes: BrainNode[]): Array<{ value: string; label: string }> {
+  const themes = new Map<string, number>();
+  for (const n of nodes) {
+    if (n.dimeCategory) {
+      themes.set(n.dimeCategory, (themes.get(n.dimeCategory) ?? 0) + 1);
+    }
+  }
+  const sorted = [...themes.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([theme]) => ({
+      value: theme,
+      label: theme.charAt(0).toUpperCase() + theme.slice(1),
+    }));
+  return [{ value: '', label: 'All Themes' }, ...sorted];
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -308,7 +313,7 @@ export function BrainSearch({
             value={selectedTheme}
             onChange={(e) => setSelectedTheme(e.target.value)}
           >
-            {DIME_THEME_OPTIONS.map((opt) => (
+            {buildThemeOptions(nodes).map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>

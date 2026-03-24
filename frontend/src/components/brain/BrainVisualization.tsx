@@ -478,10 +478,10 @@ export function BrainVisualization({
       const selId = selectedIdRef.current;
       const selIds = selectedIdsRef.current;
       const isSelected = brainNode.id === selId || (selIds?.includes(brainNode.id) ?? false);
-      const isDimmed = false; // Dimming applied asynchronously via neighborhood effect
-      const targetOpacity = brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
+      const isDimmed = brainNode.isSearchDimmed ?? false;
+      const targetOpacity = isDimmed ? 0.08 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
 
-      const cacheKey = `${color}|${isSelected ? 1 : 0}|${brainNode.isGap ? 1 : 0}|${brainNode.confidence}|${brainNode.centrality ?? 0}|${brainNode.confidenceTier ?? ''}`;
+      const cacheKey = `${color}|${isSelected ? 1 : 0}|${isDimmed ? 1 : 0}|${brainNode.isGap ? 1 : 0}|${brainNode.confidence}|${brainNode.centrality ?? 0}|${brainNode.confidenceTier ?? ''}`;
       const cached = cache.get(brainNode.id);
 
       if (cached && cached.key === cacheKey) {

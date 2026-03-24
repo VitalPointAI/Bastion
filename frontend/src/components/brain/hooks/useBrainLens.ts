@@ -271,6 +271,15 @@ export function useBrainLens(problemSetId: string): UseBrainLensReturn {
           return false;
         }
 
+        // Filter by DIME category (empty = show all)
+        if (
+          lens.dimeCategoryFilters.length > 0 &&
+          node.dimeCategory !== undefined &&
+          !lens.dimeCategoryFilters.includes(node.dimeCategory)
+        ) {
+          return false;
+        }
+
         // Filter gap nodes
         if (!lens.showGapNodes && node.isGap) {
           return false;

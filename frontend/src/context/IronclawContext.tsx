@@ -255,6 +255,9 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     return () => { fieldWriteListeners.current.delete(listener); };
   }, []);
 
+  // Track handled suggestion IDs so they disappear from the message list
+  const [handledSuggestionIds, setHandledSuggestionIds] = useState<Set<string>>(new Set());
+
   // Suggestion handlers — find suggestion in messages, dispatch field write if targeted
   const acceptSuggestion = useCallback((id: string) => {
     const msg = ironclaw.messages.find((m) => m.suggestion?.id === id);
@@ -281,10 +284,12 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         console.error('[ironclaw] Failed to apply suggestion:', err);
       });
     }
+    // Remove card from view
+    setHandledSuggestionIds((prev) => new Set(prev).add(id));
   }, [ironclaw.messages, activeProblemSetId]);
 
-  const dismissSuggestion = useCallback((_id: string) => {
-    // TODO: notify backend of dismissal if needed
+  const dismissSuggestion = useCallback((id: string) => {
+    setHandledSuggestionIds((prev) => new Set(prev).add(id));
   }, []);
 
   const contextValue: IronclawContextValue = {
@@ -316,7 +321,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
       <IronclawDrawer
         isOpen={ironclaw.isOpen}
         onClose={ironclaw.closeDrawer}
-        messages={ironclaw.messages}
+        messages={ironclaw.messages.filter((m) => !m.suggestion?.id || !handledSuggestionIds.has(m.suggestion.id))}
         onSendMessage={ironclaw.sendMessage}
         onActionDecision={ironclaw.handleActionDecision}
         onAcceptSuggestion={acceptSuggestion}
@@ -333,6 +338,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         onDismissTaskSuggestion={dismissTaskSuggestion}
         onRefineTask={refineTask}
         pendingDecisions={pendingDecisions}
+        onStartDesignInterview={async () => { await designInterview.startInterview('new'); }}
         onActOnDecision={activeProblemSetId ? async (decisionId, params) => {
           await decisionApiService.actOnDecision(activeProblemSetId, decisionId, params);
           refreshPendingDecisions();

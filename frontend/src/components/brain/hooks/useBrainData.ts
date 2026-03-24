@@ -193,8 +193,14 @@ function toDimeCategory(actorType?: string, description?: string): string | unde
     return 'diplomatic';
   if (/econom|trade|finance|bank|gdp|market|tariff|sanction|commerce|investment|currency/.test(combined))
     return 'economic';
-  if (/media|propaganda|cyber|information|intelligence|sigint|osint|news|press|broadcast|social.media/.test(combined))
+  if (/media|propaganda|cyber|information|news|press|broadcast|social.media/.test(combined))
     return 'information';
+  if (/intelligen|sigint|osint|humint|geoint|imint|masint|elint|recon|surveil|espionage/.test(combined))
+    return 'intelligence';
+  if (/infrastructure|power.grid|transport|port|airport|rail|bridge|road|pipeline|utility|energy/.test(combined))
+    return 'infrastructure';
+  if (/legal|law|court|tribunal|jurisdiction|prosecution|regulation|treaty.law|convention/.test(combined))
+    return 'legal';
 
   // Infer from actor category
   if (/state|nation|government|regime/.test(t)) return 'diplomatic';
