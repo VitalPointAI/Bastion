@@ -531,6 +531,8 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
           nodeCount={processedData.nodes.length}
           edgeCount={processedData.edges.length}
           currentTimeScale={selectedTime ?? undefined}
+          visibleNodes={processedData.nodes}
+          visibleEdges={processedData.edges}
         />
       )}
 

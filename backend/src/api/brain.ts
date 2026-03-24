@@ -422,6 +422,58 @@ If no nodes match, return empty matchingNodeIds with a helpful interpretation.`;
   }
 });
 
+// ── Synthesize narrative from current graph view ────────────────────────────
+
+router.post('/:problemSetId/synthesize-view', async (req: Request, res: Response) => {
+  try {
+    const { nodes, edges, nodeCount, edgeCount } = req.body as {
+      nodes: Array<{ label: string; type: string; category?: string; dime?: string; desc?: string }>;
+      edges: Array<{ source: string; target: string; label?: string; type?: string }>;
+      nodeCount: number;
+      edgeCount: number;
+    };
+
+    if (!nodes || nodes.length === 0) {
+      res.json({ narrative: 'No nodes in current view to synthesize.' });
+      return;
+    }
+
+    // Build context from visible graph
+    const actorList = nodes.map((n) => `- ${n.label} (${n.type}${n.category ? `, ${n.category}` : ''}${n.dime ? `, ${n.dime}` : ''}${n.desc ? `: ${n.desc}` : ''})`).join('\n');
+    const edgeList = edges.map((e) => `- ${e.source} → ${e.target}${e.label ? `: ${e.label}` : ''}${e.type ? ` [${e.type}]` : ''}`).join('\n');
+
+    const { createLLMForAgent } = await import('../agents/langgraph/llm-factory.js');
+    const llm = await createLLMForAgent({ agentId: 'brain-synthesis' });
+
+    const result = await llm.invoke([
+      {
+        role: 'system',
+        content: `You are a senior intelligence analyst writing a narrative assessment of the current operational environment based on a knowledge graph visualization. Write a clear, flowing executive briefing (3-5 paragraphs) that describes:
+
+1. The key actors and their roles in the environment
+2. Important relationships and alliances
+3. Tensions and potential flashpoints
+4. The overall strategic picture these elements create
+
+Write in third person present tense. Be specific — name actors and describe their connections. This is a snapshot of the analyst's current understanding, not a planning document. Total graph: ${nodeCount} nodes, ${edgeCount} relationships.`,
+      },
+      {
+        role: 'user',
+        content: `## Actors in Current View\n${actorList}\n\n## Relationships in Current View\n${edgeList}`,
+      },
+    ]);
+
+    const narrative = typeof result.content === 'string'
+      ? result.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
+      : JSON.stringify(result.content);
+
+    res.json({ narrative });
+  } catch (error) {
+    console.error('[brain] synthesize-view failed:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
 export const nlSearchHandler = router;
 
 export default router;

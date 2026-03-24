@@ -42,13 +42,21 @@ const NODE_TYPE_OPTIONS: Array<{ value: '' | BrainNodeType; label: string }> = [
   { value: 'concept', label: 'Concept' },
 ];
 
-const ACTOR_CATEGORY_OPTIONS: Array<{ value: '' | ActorCategory; label: string }> = [
-  { value: '', label: 'All Actors' },
-  { value: 'ally', label: 'Ally' },
-  { value: 'adversary', label: 'Adversary' },
-  { value: 'neutral', label: 'Neutral' },
-  { value: 'partner', label: 'Partner' },
-];
+// Actor filter options are built dynamically from the current graph nodes
+function buildActorOptions(nodes: BrainNode[]): Array<{ value: string; label: string }> {
+  const actors = new Map<string, number>();
+  for (const n of nodes) {
+    if (n.type === 'entity' && n.label) {
+      actors.set(n.label, (actors.get(n.label) ?? 0) + 1);
+    }
+  }
+  // Sort by connection count (most connected first), limit to 50
+  const sorted = [...actors.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 50)
+    .map(([name]) => ({ value: name, label: name }));
+  return [{ value: '', label: 'All Actors' }, ...sorted];
+}
 
 const DIME_THEME_OPTIONS: Array<{ value: string; label: string }> = [
   { value: '', label: 'All Themes' },
@@ -77,7 +85,7 @@ export function BrainSearch({
   // Filter mode state
   const [query, setQuery] = useState('');
   const [selectedType, setSelectedType] = useState<'' | BrainNodeType>('');
-  const [selectedCategory, setSelectedCategory] = useState<'' | ActorCategory>('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedTheme, setSelectedTheme] = useState('');
 
   // Ask mode state
@@ -93,14 +101,15 @@ export function BrainSearch({
   // ── Filter mode: compute matching IDs on input change ─────────────────────
 
   const applyFilters = useCallback(
-    (text: string, type: '' | BrainNodeType, category: '' | ActorCategory, theme: string) => {
+    (text: string, type: '' | BrainNodeType, category: string, theme: string) => {
       const lower = text.toLowerCase();
       const matches = nodes.filter((n) => {
         if (text && !n.label.toLowerCase().includes(lower) && !n.id.toLowerCase().includes(lower)) {
           return false;
         }
         if (type && n.type !== type) return false;
-        if (category && n.actorCategory !== category) return false;
+        // Actor filter: match by actor name (dynamic dropdown)
+        if (category && n.label !== category) return false;
         if (theme && n.dimeCategory !== theme) return false;
         return true;
       });
@@ -200,7 +209,7 @@ export function BrainSearch({
     const lower = query.toLowerCase();
     if (query && !n.label.toLowerCase().includes(lower) && !n.id.toLowerCase().includes(lower)) return false;
     if (selectedType && n.type !== selectedType) return false;
-    if (selectedCategory && n.actorCategory !== selectedCategory) return false;
+    if (selectedCategory && n.label !== selectedCategory) return false;
     if (selectedTheme && n.dimeCategory !== selectedTheme) return false;
     return true;
   }).length;
@@ -287,9 +296,9 @@ export function BrainSearch({
           <select
             className="brain-search-select"
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value as '' | ActorCategory)}
+            onChange={(e) => setSelectedCategory(e.target.value)}
           >
-            {ACTOR_CATEGORY_OPTIONS.map((opt) => (
+            {buildActorOptions(nodes).map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>

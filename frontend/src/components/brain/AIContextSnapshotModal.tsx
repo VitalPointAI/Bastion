@@ -27,6 +27,10 @@ interface AIContextSnapshotModalProps {
   nodeCount: number;
   edgeCount: number;
   currentTimeScale?: Date;
+  /** Currently visible nodes from the brain graph */
+  visibleNodes?: Array<{ id: string; label: string; type: string; actorCategory?: string; dimeCategory?: string; description?: string }>;
+  /** Currently visible edges from the brain graph */
+  visibleEdges?: Array<{ source: string; target: string; label?: string; type?: string }>;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -251,6 +255,8 @@ export function AIContextSnapshotModal({
   nodeCount,
   edgeCount,
   currentTimeScale,
+  visibleNodes,
+  visibleEdges,
 }: AIContextSnapshotModalProps): React.ReactElement | null {
   const { snapshots, loading: snapshotsLoading, saveSnapshot, deleteSnapshot } = useBrainSnapshots(problemSetId);
 
@@ -267,34 +273,55 @@ export function AIContextSnapshotModal({
 
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Fetch context summary if not provided as prop
+  // Synthesize narrative from visible nodes/edges via LLM
   useEffect(() => {
     if (!isOpen || currentSummary) return;
 
     setSummaryLoading(true);
-    fetch(`${BACKEND_URL}/api/strategic-context/preview/${encodeURIComponent(problemSetId)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to load context: ${res.status}`);
-        return res.json() as Promise<{ context?: Record<string, unknown> | string | null }>;
-      })
+
+    // Send visible graph data to backend for LLM synthesis
+    const nodes = visibleNodes ?? [];
+    const edges = visibleEdges ?? [];
+
+    if (nodes.length === 0) {
+      // Fallback to strategic context preview if no nodes
+      fetch(`${BACKEND_URL}/api/strategic-context/preview/${encodeURIComponent(problemSetId)}`)
+        .then((res) => res.ok ? res.json() as Promise<{ context?: Record<string, unknown> | string | null }> : null)
+        .then((data) => {
+          if (!data?.context) {
+            setFetchedSummary('No context available — add strategic documents or subscribe to a parent problem set.');
+          } else if (typeof data.context === 'string') {
+            setFetchedSummary(data.context);
+          } else {
+            setFetchedSummary(buildExecutiveBriefing(data.context as Record<string, unknown>));
+          }
+        })
+        .catch(() => setFetchedSummary('Unable to load context summary.'))
+        .finally(() => setSummaryLoading(false));
+      return;
+    }
+
+    // Synthesize from current graph view
+    fetch(`${BACKEND_URL}/api/brain/${encodeURIComponent(problemSetId)}/synthesize-view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nodes: nodes.slice(0, 50).map((n) => ({ label: n.label, type: n.type, category: n.actorCategory, dime: n.dimeCategory, desc: n.description })),
+        edges: edges.slice(0, 50).map((e) => ({ source: e.source, target: e.target, label: e.label, type: e.type })),
+        nodeCount: nodes.length,
+        edgeCount: edges.length,
+      }),
+    })
+      .then((res) => res.ok ? res.json() as Promise<{ narrative: string }> : null)
       .then((data) => {
-        if (!data.context) {
-          setFetchedSummary('No context available — add strategic documents or subscribe to a parent problem set.');
-        } else if (typeof data.context === 'string') {
-          setFetchedSummary(data.context);
+        if (data?.narrative) {
+          setFetchedSummary(data.narrative);
         } else {
-          // Build an executive briefing from the structured context
-          const ctx = data.context as Record<string, unknown>;
-          const briefing = buildExecutiveBriefing(ctx);
-          setFetchedSummary(briefing);
+          setFetchedSummary('Unable to synthesize narrative from current graph view.');
         }
       })
-      .catch(() => {
-        setFetchedSummary('Unable to load context summary. The strategic context service may not be available.');
-      })
-      .finally(() => {
-        setSummaryLoading(false);
-      });
+      .catch(() => setFetchedSummary('Unable to synthesize narrative.'))
+      .finally(() => setSummaryLoading(false));
   }, [isOpen, problemSetId, currentSummary]);
 
   // Reset title when modal opens
