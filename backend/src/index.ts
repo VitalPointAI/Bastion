@@ -321,7 +321,7 @@ server.on('upgrade', (request, socket, head) => {
     wsServers.orchestration.handleUpgrade(request, socket, head, (ws) => {
       wsServers.orchestration.emit('connection', ws, request);
     });
-  } else if (pathname === '/ws/collab') {
+  } else if (pathname === '/ws/collab' || pathname.startsWith('/ws/collab/')) {
     wsServers.collab.handleUpgrade(request, socket, head, (ws) => {
       wsServers.collab.emit('connection', ws, request);
     });
