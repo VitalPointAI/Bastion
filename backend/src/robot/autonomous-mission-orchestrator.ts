@@ -85,12 +85,15 @@ interface AutoState {
 // Defaults
 // ---------------------------------------------------------------------------
 
+// Room layout: 5m x 5m, (0,0) = SW corner, heading 0 = north (toward doorway)
+// Tank at ~(5, 2.5) — east wall, mid-height
+// Robots start arrayed L-R near SW corner: alpha(0.5,0.5), bravo(1.5,0.5), charlie(2.5,0.5)
 const AUTO_DEFAULTS: AutoConfig = {
   leaderId: 'alpha',
   followerIds: ['bravo', 'charlie'],
   problemSetId: 'default',
-  homeBase: { x: 0.3, y: 0.5 },
-  reconArea: { x_min: 0.5, y_min: 2.5, x_max: 4.5, y_max: 4.8 },
+  homeBase: { x: 0.5, y: 0.5 },
+  reconArea: { x_min: 1.0, y_min: 1.0, x_max: 4.5, y_max: 4.5 },
   reconSpeed: 80,
   advanceSpeed: 120,
   issuedBy: 'did:near:bastion.testnet',

@@ -376,6 +376,13 @@ async def receive_loop(
                                 hint="BLE follower manager not initialized",
                             )
                             continue
+                        # Log all known followers for debugging relay matching
+                        known = [(f.robot_id, f.driver.connected, f.driver.address)
+                                 for f in _ble_followers.followers]
+                        log.info("mission_client.relay_lookup",
+                                 target=target_robot,
+                                 known_followers=known,
+                                 count=len(known))
                         follower = next(
                             (f for f in _ble_followers.followers if f.robot_id == target_robot),
                             None,
