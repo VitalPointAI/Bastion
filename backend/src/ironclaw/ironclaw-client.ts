@@ -47,6 +47,7 @@ export class IronclawClient {
     const body = JSON.stringify({
       content,
       thread_id: threadId,
+      user: threadId,  // Match thread owner to thread_id so Ironclaw doesn't reject
       secret: this.secret,
       wait_for_response: true,
     });
@@ -78,6 +79,7 @@ export class IronclawClient {
     const body = JSON.stringify({
       content,
       thread_id: threadId,
+      user: threadId,
       secret: this.secret,
       wait_for_response: false,
     });

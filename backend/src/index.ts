@@ -508,6 +508,14 @@ server.listen(port, async () => {
     console.error('Failed to initialize Ironclaw tables:', error);
   }
 
+  // Start Ironclaw self-update service (checks GitHub releases every 6 hours)
+  try {
+    const { selfUpdateService } = await import('./ironclaw/self-update-service.js');
+    await selfUpdateService.start();
+  } catch (error) {
+    console.warn('Ironclaw self-update service failed to start (non-fatal):', error);
+  }
+
   // Initialize COP module (schema, tables, triggers, agent definitions)
   try {
     await initCOP();
