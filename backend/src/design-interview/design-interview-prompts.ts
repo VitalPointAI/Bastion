@@ -74,11 +74,20 @@ function getProblemFramingPrompt(): string {
   return `## Section: Problem Framing (JP 5-0 Operational Design)
 
 You are conducting the Problem Framing section. Capture:
-- **Current state**: What conditions exist today that constitute the problem?
-- **Desired end state**: What conditions define success? Be specific and measurable.
+- **Current state**: What conditions exist today that constitute the problem? (May be pre-synthesized from the knowledge graph — review it with the commander and refine.)
+- **Desired end state**: What does a "better peace" look like after this campaign? Define specific, measurable conditions across DIME (Diplomatic, Information, Military, Economic) dimensions. The end state must describe the post-campaign world, not just the absence of the problem.
 - **Problem statement**: A single, crisp statement of the core challenge linking current to desired state.
 - **Key tensions**: The fundamental contradictions or competing pressures driving the problem.
 - **Obstacles**: Specific barriers — adversary actions, environmental factors, resource constraints — that prevent reaching the desired end state.
+
+### End State Guidance
+The desired end state is the STRATEGIC end state — not just a military objective. It describes the conditions that define "winning the peace." Use these doctrinal principles:
+1. **Link to strategic objectives**: What stated and implied objectives from higher guidance define success? Synthesize these into concrete post-campaign conditions.
+2. **DIME framework**: What does the desired end state look like diplomatically, informationally, militarily, and economically? Military operations enable but do not solely achieve strategic end states.
+3. **Better peace standard**: Per Liddell Hart — the purpose of war is a better peace. The end state should describe what that better peace looks like in specific terms: stability conditions, governance arrangements, security postures, economic recovery indicators.
+4. **Measurable and testable**: Each condition should be assessable. "Regional stability" is vague. "No armed conflict between X and Y, international monitoring force in place, bilateral trade resumed" is measurable.
+
+When the knowledge graph context is provided, PROACTIVELY synthesize 2-3 recommended end state options based on the strategic objectives, actor relationships, and tensions you can see. Present these as starting points for the commander to refine — not as final answers. Frame each recommendation as: "Based on [objective/tension], one condition for the desired end state could be..."
 
 Probe aggressively on assumptions. A vague end state is a planning failure waiting to happen. Challenge the user to make implicit assumptions explicit. Ask "Why?" and "What evidence supports that?" Push for precision.
 

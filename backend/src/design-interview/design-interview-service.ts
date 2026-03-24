@@ -160,10 +160,59 @@ async function askQuestion(
     };
   }
 
+  // Fetch KG context for grounding questions in real intelligence
+  let kgContext: string | undefined;
+  try {
+    const { executeReadQuery } = await import('../graph/neo4j-client.js');
+    const ws = state.problemSetId;
+
+    const [actorRes, tensionRes, objRes] = await Promise.all([
+      executeReadQuery(`MATCH (a:Actor) WHERE a.workspaceId = $ws OR a.workspaceId IS NULL OPTIONAL MATCH (a)-[r]-() WITH a, count(r) AS rels ORDER BY rels DESC LIMIT 20 RETURN a.name AS name, a.type AS type, rels`, { ws }),
+      executeReadQuery(`MATCH (a:Actor)-[t:TENSION]->(b:Actor) RETURN a.name AS a1, b.name AS a2, t.description AS desc, t.intensity AS intensity LIMIT 15`, {}),
+      executeReadQuery(`MATCH (a:Actor)-[r:RELATES_TO]->(b:Actor) RETURN a.name AS src, b.name AS tgt, r.type AS type, r.description AS desc LIMIT 20`, {}),
+    ]);
+
+    const parts: string[] = [];
+    if (actorRes.records.length > 0) {
+      parts.push('### Key Actors');
+      actorRes.records.forEach((r) => parts.push(`- ${r.get('name')} (${r.get('type')}, ${r.get('rels')} connections)`));
+    }
+    if (objRes.records.length > 0) {
+      parts.push('\n### Key Relationships');
+      objRes.records.forEach((r) => parts.push(`- ${r.get('src')} → ${r.get('tgt')}: ${r.get('type') ?? ''}${r.get('desc') ? ` — ${r.get('desc')}` : ''}`));
+    }
+    if (tensionRes.records.length > 0) {
+      parts.push('\n### Active Tensions');
+      tensionRes.records.forEach((r) => parts.push(`- ${r.get('a1')} vs ${r.get('a2')}: ${r.get('desc') ?? 'unspecified'}${r.get('intensity') ? ` [intensity: ${r.get('intensity')}]` : ''}`));
+    }
+
+    // Also fetch strategic objectives if available
+    try {
+      const { getPool } = await import('../lib/database.js');
+      const objResult = await getPool().query(
+        `SELECT description, primary_instrument, priority FROM strategic_objectives
+         WHERE document_id IN (SELECT id FROM documents WHERE workspace_id = $1)
+         ORDER BY priority ASC LIMIT 15`,
+        [ws],
+      );
+      if (objResult.rows.length > 0) {
+        parts.push('\n### Strategic Objectives');
+        objResult.rows.forEach((obj: Record<string, unknown>) => {
+          parts.push(`- [${obj.primary_instrument ?? 'unknown'}/${obj.priority ?? 'MEDIUM'}] ${obj.description}`);
+        });
+      }
+    } catch { /* objectives not available */ }
+
+    if (parts.length > 0) kgContext = parts.join('\n');
+  } catch (err) {
+    console.warn('[DesignInterview] KG context fetch failed (non-fatal):', err);
+  }
+
   // Normal question: generate next probe for current section
   const systemPrompt = getDesignInterviewSystemPrompt(
     currentSection,
     derivedDesign as Partial<OperationalDesign>,
+    kgContext,
   );
 
   let invocationMessages: BaseMessage[];
