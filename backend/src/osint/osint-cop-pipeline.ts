@@ -13,6 +13,7 @@
 import type { OSINTEvent } from '../graph/osint/types.js';
 import type { COPLayerSpec, COPSymbolSpec, COPAnnotationSpec, Affiliation } from '../cop/layers/layer-types.js';
 import { extractLocation } from './osint-graph-sync.js';
+import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { getConfidenceTier } from '../graph/provenance-types.js';
 
 // ── Affiliation heuristics ─────────────────────────────────────────────────
@@ -46,9 +47,89 @@ interface OSINTCategory {
   color: string;
 }
 
-function classifyEvent(text: string, sourceName?: string): OSINTCategory {
+/** All known category definitions — used by both LLM and keyword classifiers */
+const CATEGORIES: Record<string, OSINTCategory> = {
+  cyber:            { type: 'cyber', label: 'Cyber Threats', icon: '💻', color: '#7c3aed' },
+  naval:            { type: 'naval', label: 'Naval Activity', icon: '⚓', color: '#1e3a5f' },
+  air:              { type: 'air', label: 'Air Activity', icon: '✈️', color: '#1e40af' },
+  ground:           { type: 'ground', label: 'Ground Forces', icon: '🎖️', color: '#365314' },
+  missile:          { type: 'missile', label: 'Missile / Launch', icon: '🚀', color: '#7f1d1d' },
+  defense:          { type: 'defense', label: 'Defense', icon: '🛡️', color: '#1e3a5f' },
+  criminal:         { type: 'criminal', label: 'Criminal Activity', icon: '🏴‍☠️', color: '#1f2937' },
+  terrorism:        { type: 'terrorism', label: 'Terrorism', icon: '💥', color: '#dc2626' },
+  explosion:        { type: 'explosion', label: 'Explosions', icon: '💥', color: '#ea580c' },
+  civil_unrest:     { type: 'civil_unrest', label: 'Civil Unrest', icon: '✊', color: '#d97706' },
+  fire:             { type: 'fire', label: 'Fires', icon: '🔥', color: '#dc2626' },
+  earthquake:       { type: 'earthquake', label: 'Earthquakes', icon: '🌍', color: '#92400e' },
+  natural_disaster: { type: 'natural_disaster', label: 'Natural Disasters', icon: '🌊', color: '#0369a1' },
+  humanitarian:     { type: 'humanitarian', label: 'Humanitarian', icon: '🏥', color: '#dc2626' },
+  wmd:              { type: 'wmd', label: 'WMD / Nuclear', icon: '☢️', color: '#facc15' },
+  maritime:         { type: 'maritime', label: 'Maritime', icon: '🚢', color: '#0284c7' },
+  ports:            { type: 'ports', label: 'Ports', icon: '⚓', color: '#0369a1' },
+  sanctions:        { type: 'sanctions', label: 'Sanctions', icon: '🚫', color: '#b91c1c' },
+  economic:         { type: 'economic', label: 'Economic', icon: '📊', color: '#059669' },
+  diplomatic:       { type: 'diplomatic', label: 'Diplomatic', icon: '🤝', color: '#2563eb' },
+  political:        { type: 'political', label: 'Political', icon: '🏛️', color: '#4f46e5' },
+  energy:           { type: 'energy', label: 'Energy', icon: '⛽', color: '#ca8a04' },
+  space:            { type: 'space', label: 'Space', icon: '🛰️', color: '#1e3a5f' },
+  ew:               { type: 'ew', label: 'Electronic Warfare', icon: '📡', color: '#7c3aed' },
+  intel_report:     { type: 'intel_report', label: 'Intelligence Reports', icon: '📰', color: '#6b7280' },
+};
+
+/** LLM classification cache — avoids re-classifying identical text */
+const classifyCache = new Map<string, string>();
+
+/**
+ * Classify an OSINT event using the LLM, falling back to keyword matching.
+ */
+async function classifyEventLLM(text: string, sourceName?: string): Promise<OSINTCategory> {
+  // Check cache first
+  const cacheKey = text.slice(0, 200);
+  const cached = classifyCache.get(cacheKey);
+  if (cached && CATEGORIES[cached]) return CATEGORIES[cached];
+
+  try {
+    const llm = await createLLMForAgent({ agentId: 'osint-classifier' });
+    const categoryList = Object.entries(CATEGORIES)
+      .filter(([k]) => k !== 'intel_report')
+      .map(([k, v]) => `${k}: ${v.label}`)
+      .join('\n');
+
+    const result = await llm.invoke([
+      {
+        role: 'system',
+        content: `You are an intelligence analyst classifier. Given an OSINT event, respond with ONLY the single best category type from the list below. No explanation, no punctuation — just the category key.\n\nCategories:\n${categoryList}`,
+      },
+      {
+        role: 'user',
+        content: `Source: ${sourceName ?? 'unknown'}\n\n${text.slice(0, 500)}`,
+      },
+    ]);
+
+    const response = (typeof result.content === 'string' ? result.content : '').trim().toLowerCase().replace(/[^a-z_]/g, '');
+    if (CATEGORIES[response]) {
+      classifyCache.set(cacheKey, response);
+      // Keep cache bounded
+      if (classifyCache.size > 2000) {
+        const first = classifyCache.keys().next().value;
+        if (first) classifyCache.delete(first);
+      }
+      return CATEGORIES[response];
+    }
+  } catch (err) {
+    // LLM unavailable — fall through to keyword classifier
+    console.debug('[OSINT-Classify] LLM classification failed, using keyword fallback:', err instanceof Error ? err.message : err);
+  }
+
+  // Fallback to keyword classifier
+  return classifyEventKeyword(text, sourceName);
+}
+
+/** Keyword-based classifier (fallback when LLM is unavailable) */
+function classifyEventKeyword(text: string, sourceName?: string): OSINTCategory {
   const lower = text.toLowerCase();
   const sourceL = (sourceName ?? '').toLowerCase();
+  const cat = (key: string) => CATEGORIES[key];
 
   // All OSINT uses descriptive icons — MIL-STD-2525D reserved for operational/tactical overlays
 
@@ -227,7 +308,7 @@ export async function updateOSINTCOPLayer(
 
     for (const evt of geoEvents) {
       const text = `${evt.title ?? ''} ${evt.description ?? ''}`;
-      const category = classifyEvent(text, evt.sourceName);
+      const category = await classifyEventLLM(text, evt.sourceName);
       const group = eventsByCategory.get(category.type) ?? [];
       group.push({ evt, category });
       eventsByCategory.set(category.type, group);
