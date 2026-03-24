@@ -106,7 +106,7 @@ VISION_MODEL: str = _optional("VISION_MODEL", "yolov8n.pt")
 VISION_THRESHOLD: float = float(_optional("VISION_THRESHOLD", "0.5"))
 """Minimum detection confidence threshold (0.0 - 1.0)."""
 
-VISION_IMGSZ: int = int(_optional("VISION_IMGSZ", "320"))
+VISION_IMGSZ: int = int(_optional("VISION_IMGSZ", "640"))
 """Inference image size in pixels. Must match the size the model was trained on."""
 
 CAMERA_SENSOR_ID: int = int(_optional("CAMERA_SENSOR_ID", "0"))
