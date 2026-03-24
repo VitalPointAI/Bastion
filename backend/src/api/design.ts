@@ -13,6 +13,7 @@ import { getAgentRegistry } from '../agents/registry.js';
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { listDocuments } from '../strategic/ingestion/document-store.js';
 import { ObjectiveStore } from '../strategic/objectives/store.js';
+import { problemSetStore } from '../problem-set/problem-set-store.js';
 import { notifyCOPChange } from '../cop/index.js';
 import { router as revisionRouter } from './design-revisions.js';
 
@@ -322,6 +323,142 @@ router.post('/:problemSetId/analyze', async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[design] POST /${req.params.problemSetId}/analyze failed:`, message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ─── Current State Synthesis from Knowledge Graph ─────────────────────────
+
+/**
+ * POST /:problemSetId/synthesize-current-state
+ *
+ * Queries the knowledge graph for actors, relationships, and tensions
+ * scoped to this problem set's workspace, then uses LLM to synthesize
+ * a narrative "current state" assessment for Problem Framing.
+ */
+router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
+  const problemSetId = req.params.problemSetId as string;
+
+  try {
+    const { executeReadQuery } = await import('../graph/neo4j-client.js');
+
+    // 1. Fetch actors with relationship counts
+    const actorResult = await executeReadQuery(`
+      MATCH (a:Actor)
+      WHERE a.workspaceId = $ws OR a.workspaceId IS NULL
+      OPTIONAL MATCH (a)-[r]-()
+      WITH a, count(r) AS rels
+      ORDER BY rels DESC
+      LIMIT 40
+      RETURN a.name AS name, a.type AS type, a.attributes AS attributes,
+             a.confidence AS confidence, rels
+    `, { ws: problemSetId });
+
+    // 2. Fetch relationships between actors
+    const relResult = await executeReadQuery(`
+      MATCH (a:Actor)-[r:RELATES_TO]->(b:Actor)
+      WHERE (a.workspaceId = $ws OR a.workspaceId IS NULL)
+      RETURN a.name AS source, b.name AS target, r.type AS relType,
+             r.description AS desc, r.strength AS strength
+      LIMIT 50
+    `, { ws: problemSetId });
+
+    // 3. Fetch tensions
+    const tensionResult = await executeReadQuery(`
+      MATCH (a:Actor)-[t:TENSION]->(b:Actor)
+      WHERE (a.workspaceId = $ws OR a.workspaceId IS NULL)
+      RETURN a.name AS actor1, b.name AS actor2, t.description AS desc,
+             t.intensity AS intensity, t.domain AS domain
+      LIMIT 30
+    `, { ws: problemSetId });
+
+    // 4. Build context string from graph data
+    const actors = actorResult.records.map((r) => ({
+      name: r.get('name'),
+      type: r.get('type'),
+      confidence: r.get('confidence'),
+      relationships: typeof r.get('rels')?.toInt === 'function' ? r.get('rels').toInt() : r.get('rels'),
+    }));
+
+    const relationships = relResult.records.map((r) => ({
+      source: r.get('source'),
+      target: r.get('target'),
+      type: r.get('relType'),
+      description: r.get('desc'),
+    }));
+
+    const tensions = tensionResult.records.map((r) => ({
+      actor1: r.get('actor1'),
+      actor2: r.get('actor2'),
+      description: r.get('desc'),
+      intensity: r.get('intensity'),
+      domain: r.get('domain'),
+    }));
+
+    if (actors.length === 0) {
+      res.json({
+        currentState: '',
+        hint: 'No actors found in knowledge graph. Ingest OSINT feeds or upload documents first.',
+      });
+      return;
+    }
+
+    // 5. Get strategic context from documents
+    const strategicContext = await getStrategicContext(problemSetId);
+
+    // 6. Get problem set scope info
+    const ps = await problemSetStore.getProblemSet(problemSetId);
+    const scopeContext = ps
+      ? `Problem Set: ${ps.name}\nMission: ${(ps as unknown as Record<string, unknown>).missionStatement ?? 'Not defined'}\nEchelon: ${(ps as unknown as Record<string, unknown>).echelon ?? 'Not specified'}`
+      : '';
+
+    // 7. Synthesize via LLM
+    const { createLLMForAgent } = await import('../agents/langgraph/llm-factory.js');
+    const llm = await createLLMForAgent({ agentId: 'design-synthesis' });
+
+    const kgSummary = [
+      `## Key Actors (${actors.length})`,
+      ...actors.slice(0, 25).map((a) => `- ${a.name} (${a.type}, ${a.relationships} connections)`),
+      '',
+      `## Key Relationships (${relationships.length})`,
+      ...relationships.slice(0, 25).map((r) => `- ${r.source} → ${r.target}: ${r.type}${r.description ? ` — ${r.description}` : ''}`),
+      '',
+      `## Active Tensions (${tensions.length})`,
+      ...tensions.slice(0, 15).map((t) => `- ${t.actor1} vs ${t.actor2}: ${t.description ?? 'unspecified'}${t.domain ? ` (${t.domain})` : ''}${t.intensity ? ` [intensity: ${t.intensity}]` : ''}`),
+    ].join('\n');
+
+    const result = await llm.invoke([
+      {
+        role: 'system',
+        content: `You are a senior military strategic analyst writing a "Current State" assessment for an operational design problem framing exercise (per JP 5-0).
+
+Write a concise, professional narrative (3-5 paragraphs) that synthesizes the provided knowledge graph data and strategic documents into a coherent assessment of the current operational environment. Cover:
+1. Key actors and their roles/capabilities
+2. Relationships and alliances that shape the environment
+3. Active tensions and potential flashpoints
+4. How these factors create the conditions requiring military planning
+
+Write in third person, present tense. Be specific — name actors and cite relationships. Do not use bullet points — write flowing prose suitable for a military planning document.`,
+      },
+      {
+        role: 'user',
+        content: `${scopeContext}\n\n${strategicContext}\n\n## Knowledge Graph Intelligence\n${kgSummary}`,
+      },
+    ]);
+
+    const synthesized = typeof result.content === 'string'
+      ? result.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
+      : JSON.stringify(result.content);
+
+    res.json({
+      currentState: synthesized,
+      actorCount: actors.length,
+      relationshipCount: relationships.length,
+      tensionCount: tensions.length,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[design] synthesize-current-state failed:`, message);
     res.status(500).json({ error: message });
   }
 });

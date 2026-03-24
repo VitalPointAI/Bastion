@@ -223,6 +223,18 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
+    name: 'bastion.design.synthesize_current_state',
+    description: 'Synthesize the Current State assessment for Problem Framing from knowledge graph actors, relationships, tensions, and strategic documents. Populates the Current State field with a narrative assessment.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+      },
+      required: ['problem_set_id'],
+    },
+    riskLevel: 'medium',
+  },
+  {
     name: 'bastion.system.update_config',
     description: 'Update system-level configuration',
     inputSchema: {

@@ -74,6 +74,8 @@ const CANONICAL_DESCRIPTIONS: Record<string, string> = {
   // Field write-back
   'field.write': 'Apply a suggested value to a problem set field',
   'field.write_sensitive': 'Update a sensitive field (e.g., mission statement, ROE) — requires explicit approval',
+  // Design synthesis
+  'bastion.design.synthesize_current_state': 'Synthesize Current State assessment from knowledge graph data',
   // Knowledge graph (read-only)
   'bastion.graph.search_actors': 'Search the knowledge graph for actors by name or type',
   'bastion.graph.get_actor': 'Get full details of a specific actor node with relationships',

@@ -112,6 +112,8 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
     problemStatement: initialData.problemStatement || generateProblemStatement(initialData),
   }));
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const synthesizeAttempted = useRef(false);
 
   // Track focus state to avoid overwriting user edits with interview-sourced data
   const inputFocusedRef = useRef(false);
@@ -130,6 +132,34 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
     // Only depend on the fields that affect the statement
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.currentState, formData.desiredEndState, formData.obstacles.length, formData.constraints.length]);
+
+  // Auto-synthesize current state from knowledge graph when field is empty
+  const synthesizeCurrentState = useCallback(async () => {
+    setIsSynthesizing(true);
+    try {
+      const res = await fetch(`/api/design/${problemSetId}/synthesize-current-state`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) return;
+      const data = await res.json() as { currentState?: string };
+      if (data.currentState) {
+        setFormData((prev) => ({ ...prev, currentState: data.currentState! }));
+      }
+    } catch {
+      // Non-fatal
+    } finally {
+      setIsSynthesizing(false);
+    }
+  }, [problemSetId]);
+
+  // Auto-trigger synthesis on first load if currentState is empty
+  useEffect(() => {
+    if (!formData.currentState && !synthesizeAttempted.current) {
+      synthesizeAttempted.current = true;
+      synthesizeCurrentState();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounced auto-save
   useEffect(() => {
@@ -272,7 +302,12 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
 
         {/* Current State */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-300 mb-1">Current State</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-sm font-medium text-gray-300">Current State</label>
+            {isSynthesizing && (
+              <span className="text-[10px] text-blue-400 animate-pulse">Synthesizing from knowledge graph...</span>
+            )}
+          </div>
           <textarea
             value={formData.currentState}
             onChange={(e) => updateField('currentState', e.target.value)}

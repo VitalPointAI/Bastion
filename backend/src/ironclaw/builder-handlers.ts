@@ -493,6 +493,45 @@ const designUpdateSection: ActionHandler = async (payload, _userDid) => {
 // ---------------------------------------------------------------------------
 // Dispatch Map
 // ---------------------------------------------------------------------------
+// Design Synthesis Handler
+// ---------------------------------------------------------------------------
+
+const designSynthesizeCurrentState: ActionHandler = async (payload) => {
+  const problemSetId = payload.problem_set_id as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  // Call the synthesis endpoint internally
+  const res = await fetch(`http://localhost:${process.env.PORT ?? 3001}/api/design/${problemSetId}/synthesize-current-state`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    return { success: false, error: `Synthesis failed: ${err}` };
+  }
+
+  const data = await res.json() as Record<string, unknown>;
+  const currentState = data.currentState as string;
+
+  if (!currentState) {
+    return { success: false, error: (data.hint as string) ?? 'No data to synthesize' };
+  }
+
+  // Auto-save to design store
+  const { designStore } = await import('../design/design-store.js');
+  await designStore.updateSection(problemSetId, 'problem-framing', { currentState });
+
+  return {
+    success: true,
+    result: {
+      message: `Current State synthesized from ${data.actorCount} actors, ${data.relationshipCount} relationships, ${data.tensionCount} tensions.`,
+      currentState: currentState.slice(0, 200) + '...',
+    },
+  };
+};
+
+// ---------------------------------------------------------------------------
 // Knowledge Graph Handlers
 // ---------------------------------------------------------------------------
 
@@ -615,6 +654,8 @@ export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   'skill.delete': skillDelete,
   'skill.assign': skillAssign,
   'skill.unassign': skillUnassign,
+  // Design synthesis
+  'bastion.design.synthesize_current_state': designSynthesizeCurrentState,
   // Knowledge graph (4)
   'bastion.graph.search_actors': graphSearchActors,
   'bastion.graph.get_actor': graphGetActor,

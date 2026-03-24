@@ -179,6 +179,32 @@ function toActorCategory(raw?: string): ActorCategory | undefined {
 }
 
 /**
+ * Derive DIME category from actor type/description for theme filtering.
+ * Maps actor types to Diplomatic, Information, Military, Economic categories.
+ */
+function toDimeCategory(actorType?: string, description?: string): string | undefined {
+  const t = (actorType ?? '').toLowerCase();
+  const d = (description ?? '').toLowerCase();
+  const combined = `${t} ${d}`;
+
+  if (/military|army|navy|air.force|marine|defense|defence|armed|soldier|battalion|brigade|regiment|division|weapon|tank|missile/.test(combined))
+    return 'military';
+  if (/diplomat|embassy|ambassador|treaty|foreign.minister|consulate|bilateral|multilateral/.test(combined))
+    return 'diplomatic';
+  if (/econom|trade|finance|bank|gdp|market|tariff|sanction|commerce|investment|currency/.test(combined))
+    return 'economic';
+  if (/media|propaganda|cyber|information|intelligence|sigint|osint|news|press|broadcast|social.media/.test(combined))
+    return 'information';
+
+  // Infer from actor category
+  if (/state|nation|government|regime/.test(t)) return 'diplomatic';
+  if (/organization|ngo|igo|un\b/.test(t)) return 'diplomatic';
+  if (/non.state|militia|insurgent|terrorist|paramilitary/.test(t)) return 'military';
+
+  return undefined;
+}
+
+/**
  * Compute a proxy confidence score for an actor node.
  *
  * Research pitfall 7: actors don't have a first-class confidence field —
@@ -431,20 +457,22 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
           const detail = actorMap.get(rawNode.id);
           const category = toActorCategory(detail?.actor_category ?? rawNode.type);
           const conf = detail ? actorConfidence(detail) : 0.3;
+          const actorDesc = detail?.actor_type
+            ? `${detail.actor_type}${detail.attributes?.role ? ` — ${detail.attributes.role}` : ''}`
+            : undefined;
           nodes.push({
             id: rawNode.id,
             label: detail?.name ?? rawNode.label ?? rawNode.name ?? rawNode.id,
             type: 'entity',
             actorCategory: category,
+            dimeCategory: toDimeCategory(detail?.actor_type ?? rawNode.type, actorDesc),
             confidence: conf,
             confidenceTier: computeConfidenceTier(conf),
             sourceDocumentIds: detail?.sourceDocumentIds,
             validityScore: detail?.validity_score,
             aliases: detail?.aliases,
             role: detail?.attributes?.role as string | undefined,
-            description: detail?.actor_type
-              ? `${detail.actor_type}${detail.attributes?.role ? ` — ${detail.attributes.role}` : ''}`
-              : undefined,
+            description: actorDesc,
             createdAt: new Date().toISOString(),
           });
           nodeIds.add(rawNode.id);
@@ -454,11 +482,15 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
         for (const actor of actorsResp?.actors ?? []) {
           if (nodeIds.has(actor.id)) continue;
           const conf = actorConfidence(actor);
+          const aDesc = actor.actor_type
+            ? `${actor.actor_type}${actor.attributes?.role ? ` — ${actor.attributes.role}` : ''}`
+            : undefined;
           nodes.push({
             id: actor.id,
             label: actor.name ?? actor.id,
             type: 'entity',
             actorCategory: toActorCategory(actor.actor_category),
+            dimeCategory: toDimeCategory(actor.actor_type, aDesc),
             confidence: conf,
             confidenceTier: computeConfidenceTier(conf),
             sourceDocumentIds: actor.sourceDocumentIds,
