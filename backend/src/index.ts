@@ -516,6 +516,21 @@ server.listen(port, async () => {
     console.warn('Ironclaw self-update service failed to start (non-fatal):', error);
   }
 
+  // Start Ironclaw intelligence gap filler (searches for missing KG relationships)
+  try {
+    const { gapFillerService } = await import('./ironclaw/gap-filler-service.js');
+    // Monitor the default problem set — additional ones activated via API
+    const { getPool } = await import('./lib/database.js');
+    const psResult = await getPool().query(
+      `SELECT id FROM problem_sets WHERE parent_id IS NULL ORDER BY created_at DESC LIMIT 1`,
+    );
+    if (psResult.rows[0]) {
+      gapFillerService.start(psResult.rows[0].id as string);
+    }
+  } catch (error) {
+    console.warn('Ironclaw gap filler failed to start (non-fatal):', error);
+  }
+
   // Initialize COP module (schema, tables, triggers, agent definitions)
   try {
     await initCOP();
