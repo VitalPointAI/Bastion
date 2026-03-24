@@ -124,15 +124,6 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
           >
             {isMyTurn ? 'Your Turn' : 'Guide Me'}
           </button>
-          <button
-            onClick={() => {
-              sendMessage("Analyze: " + JSON.stringify(cogAnalysis));
-              toggleDrawer();
-            }}
-            className="px-3 py-1.5 text-xs font-medium rounded bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
-          >
-            Ask Ironclaw to Analyze
-          </button>
         </div>
       </div>
 
