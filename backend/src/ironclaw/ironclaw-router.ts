@@ -197,10 +197,11 @@ ironclawRouter.get(
   async (req: Request, res: Response) => {
     const problemSetId = req.params.problemSetId as string;
     const limitParam = req.query.limit;
+    const threadId = req.query.threadId as string | undefined;
     const limit = limitParam ? Number(limitParam as string) : undefined;
 
     try {
-      const history = await ironclawService.getHistory(problemSetId, limit);
+      const history = await ironclawService.getHistory(problemSetId, limit, threadId);
       res.json(history);
     } catch (err) {
       console.error('[ironclaw-router] History endpoint error:', err);
@@ -723,5 +724,56 @@ ironclawRouter.post('/tasks/:taskId/refine', async (req: Request, res: Response)
     res.status(500).json({
       error: err instanceof Error ? err.message : 'Internal server error',
     });
+  }
+});
+
+// =========================================================================
+// Thread management — compartmentalized conversations
+// =========================================================================
+
+/** GET /:problemSetId/threads — List threads for the current user */
+ironclawRouter.get('/:problemSetId/threads', async (req: Request, res: Response) => {
+  try {
+    const userDid = getUserDid(req);
+    const threads = await ironclawStore.listThreads(req.params.problemSetId as string, userDid);
+    res.json(threads);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+/** POST /:problemSetId/threads — Create a new thread */
+ironclawRouter.post('/:problemSetId/threads', async (req: Request, res: Response) => {
+  try {
+    const userDid = getUserDid(req);
+    const { name } = req.body as { name?: string };
+    const thread = await ironclawStore.createThread(
+      req.params.problemSetId as string, userDid, name ?? 'New Thread',
+    );
+    res.json(thread);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+/** POST /:problemSetId/threads/:threadId/rename — Rename a thread */
+ironclawRouter.post('/:problemSetId/threads/:threadId/rename', async (req: Request, res: Response) => {
+  try {
+    const { name } = req.body as { name: string };
+    if (!name?.trim()) { res.status(400).json({ error: 'name is required' }); return; }
+    await ironclawStore.renameThread(req.params.threadId as string, name.trim());
+    res.json({ renamed: true });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+/** DELETE /:problemSetId/threads/:threadId — Delete a thread and its messages */
+ironclawRouter.delete('/:problemSetId/threads/:threadId', async (req: Request, res: Response) => {
+  try {
+    await ironclawStore.deleteThread(req.params.threadId as string);
+    res.json({ deleted: true });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
   }
 });

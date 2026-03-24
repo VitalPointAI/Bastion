@@ -65,6 +65,13 @@ interface IronclawDrawerProps {
   onStartDesignInterview?: () => Promise<void>;
   /** Design interview state — when active, drawer switches to interview mode */
   interview?: UseDesignInterviewResult;
+  /** Thread management */
+  threads?: Array<{ id: string; name: string; message_count: number; last_message_at: string | null; created_at: string }>;
+  currentThreadId?: string | null;
+  onSelectThread?: (threadId: string) => Promise<void>;
+  onCreateThread?: (name: string) => Promise<void>;
+  onRenameThread?: (threadId: string, name: string) => Promise<void>;
+  onDeleteThread?: (threadId: string) => Promise<void>;
 }
 
 export function IronclawDrawer({
@@ -89,6 +96,11 @@ export function IronclawDrawer({
   onActOnDecision,
   onStartDesignInterview,
   interview,
+  threads,
+  currentThreadId,
+  onSelectThread,
+  onCreateThread,
+  onDeleteThread,
 }: IronclawDrawerProps) {
   const [inputValue, setInputValue] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -285,6 +297,50 @@ export function IronclawDrawer({
                 </>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Thread selector bar */}
+        {!isGlobalMode && threads && threads.length > 0 && !interview?.isActive && (
+          <div className="flex items-center gap-1 px-3 py-1.5 border-b border-slate-700/60 bg-slate-800/30 overflow-x-auto">
+            {threads.slice(0, 5).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => onSelectThread?.(t.id)}
+                className={`text-[10px] px-2 py-1 rounded whitespace-nowrap transition-colors ${
+                  t.id === currentThreadId
+                    ? 'bg-blue-600/30 border border-blue-500/50 text-blue-300'
+                    : 'bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-300'
+                }`}
+                title={`${t.message_count} messages`}
+              >
+                {t.name}
+              </button>
+            ))}
+            <button
+              onClick={() => {
+                const name = prompt('Thread name:');
+                if (name?.trim()) onCreateThread?.(name.trim());
+              }}
+              className="text-[10px] px-1.5 py-1 rounded bg-slate-800 border border-slate-700
+                text-slate-500 hover:text-slate-300 hover:bg-slate-700 transition-colors shrink-0"
+              title="New thread"
+            >
+              +
+            </button>
+            {currentThreadId && (
+              <button
+                onClick={() => {
+                  if (confirm('Delete this thread and all its messages?')) {
+                    onDeleteThread?.(currentThreadId);
+                  }
+                }}
+                className="text-[10px] px-1.5 py-1 rounded text-slate-600 hover:text-red-400 transition-colors shrink-0"
+                title="Delete current thread"
+              >
+                &times;
+              </button>
+            )}
           </div>
         )}
 

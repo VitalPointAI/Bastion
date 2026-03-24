@@ -36,6 +36,14 @@ export interface MessageContext {
 
 // ─── Public interface ────────────────────────────────────────────────────────
 
+export interface IronclawThread {
+  id: string;
+  name: string;
+  message_count: number;
+  last_message_at: string | null;
+  created_at: string;
+}
+
 export interface UseIronclawResult {
   messages: IronclawChatMessage[];
   isOpen: boolean;
@@ -47,6 +55,13 @@ export interface UseIronclawResult {
   toggleDrawer: () => void;
   sendMessage: (content: string, mentionedAgent?: string) => Promise<void>;
   handleActionDecision: (actionId: string, decision: TrustDecision) => Promise<void>;
+  // Thread management
+  threads: IronclawThread[];
+  currentThreadId: string | null;
+  selectThread: (threadId: string) => Promise<void>;
+  createThread: (name: string) => Promise<void>;
+  renameThread: (threadId: string, name: string) => Promise<void>;
+  deleteThread: (threadId: string) => Promise<void>;
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
@@ -60,6 +75,8 @@ export function useIronclaw(
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+  const [threads, setThreads] = useState<IronclawThread[]>([]);
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
 
   // Keep messageContext in a ref so sendMessage doesn't need to re-bind when context changes.
   // This avoids rebuilding the callback (and WebSocket subscriptions) on every render.
@@ -365,6 +382,67 @@ export function useIronclaw(
     [problemSetId],
   );
 
+  // ─── Thread management ──────────────────────────────────────────────────
+
+  // Load threads when problem set changes
+  useEffect(() => {
+    if (!problemSetId) { setThreads([]); setCurrentThreadId(null); return; }
+    ironclawApi.listThreads(problemSetId).then((list) => {
+      if (!mountedRef.current) return;
+      setThreads(list);
+      if (list.length > 0 && !currentThreadId) {
+        setCurrentThreadId(list[0].id);
+      }
+    }).catch(() => { /* threads not available yet */ });
+  }, [problemSetId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const selectThread = useCallback(async (threadId: string) => {
+    setCurrentThreadId(threadId);
+    if (!problemSetId) return;
+    try {
+      const { messages: history } = await ironclawApi.getHistory(problemSetId, undefined, threadId);
+      setMessages(history);
+    } catch (err) {
+      console.error('[useIronclaw] selectThread failed:', err);
+    }
+  }, [problemSetId]);
+
+  const createThread = useCallback(async (name: string) => {
+    if (!problemSetId) return;
+    try {
+      const thread = await ironclawApi.createThread(problemSetId, name);
+      setThreads((prev) => [{ ...thread, message_count: 0, last_message_at: null }, ...prev]);
+      setCurrentThreadId(thread.id);
+      setMessages([]);
+    } catch (err) {
+      console.error('[useIronclaw] createThread failed:', err);
+    }
+  }, [problemSetId]);
+
+  const renameThread = useCallback(async (threadId: string, name: string) => {
+    if (!problemSetId) return;
+    try {
+      await ironclawApi.renameThread(problemSetId, threadId, name);
+      setThreads((prev) => prev.map((t) => t.id === threadId ? { ...t, name } : t));
+    } catch (err) {
+      console.error('[useIronclaw] renameThread failed:', err);
+    }
+  }, [problemSetId]);
+
+  const deleteThread = useCallback(async (threadId: string) => {
+    if (!problemSetId) return;
+    try {
+      await ironclawApi.deleteThread(problemSetId, threadId);
+      setThreads((prev) => prev.filter((t) => t.id !== threadId));
+      if (currentThreadId === threadId) {
+        setCurrentThreadId(null);
+        setMessages([]);
+      }
+    } catch (err) {
+      console.error('[useIronclaw] deleteThread failed:', err);
+    }
+  }, [problemSetId, currentThreadId]);
+
   return {
     messages,
     isOpen,
@@ -376,5 +454,11 @@ export function useIronclaw(
     toggleDrawer,
     sendMessage,
     handleActionDecision,
+    threads,
+    currentThreadId,
+    selectThread,
+    createThread,
+    renameThread,
+    deleteThread,
   };
 }

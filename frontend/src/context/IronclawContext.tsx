@@ -338,6 +338,11 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
           refreshPendingDecisions();
         } : undefined}
         interview={designInterview}
+        threads={ironclaw.threads}
+        currentThreadId={ironclaw.currentThreadId}
+        onSelectThread={ironclaw.selectThread}
+        onCreateThread={ironclaw.createThread}
+        onDeleteThread={ironclaw.deleteThread}
       />
     </IronclawContext.Provider>
   );

@@ -148,6 +148,36 @@ export class IronclawStore {
         ON ironclaw_chat (problem_set_id, created_at)
     `);
 
+    // Threads table — allows users to compartmentalize conversations
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ironclaw_threads (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        problem_set_id TEXT NOT NULL,
+        user_did TEXT NOT NULL,
+        name TEXT NOT NULL DEFAULT 'General',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ironclaw_threads_ps_user
+        ON ironclaw_threads (problem_set_id, user_did)
+    `);
+
+    // Add thread_id column to chat messages (nullable for backward compat)
+    await pool.query(`
+      ALTER TABLE ironclaw_chat ADD COLUMN IF NOT EXISTS thread_id UUID
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ironclaw_chat_thread
+        ON ironclaw_chat (thread_id)
+    `);
+
+    // Add suggestion column if missing
+    await pool.query(`
+      ALTER TABLE ironclaw_chat ADD COLUMN IF NOT EXISTS suggestion JSONB
+    `);
+
     // Trust preferences table (with TTL expiration)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ironclaw_trust_preferences (
@@ -246,13 +276,14 @@ export class IronclawStore {
 
   async addMessage(
     msg: Omit<IronclawChatMessage, 'id' | 'created_at'>,
+    threadId?: string,
   ): Promise<IronclawChatMessage> {
     const pool = getPool();
     const result = await pool.query(
       `INSERT INTO ironclaw_chat
         (problem_set_id, content, sender, specialist_id, specialist_display_name,
-         delegated_by, action_card, step_progress, suggestion)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         delegated_by, action_card, step_progress, suggestion, thread_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         msg.problem_set_id,
@@ -264,13 +295,24 @@ export class IronclawStore {
         msg.action_card ? JSON.stringify(msg.action_card) : null,
         msg.step_progress ? JSON.stringify(msg.step_progress) : null,
         msg.suggestion ? JSON.stringify(msg.suggestion) : null,
+        threadId ?? null,
       ],
     );
     return rowToChatMessage(result.rows[0]);
   }
 
-  async getHistory(problemSetId: string, limit = 100): Promise<IronclawChatMessage[]> {
+  async getHistory(problemSetId: string, limit = 100, threadId?: string): Promise<IronclawChatMessage[]> {
     const pool = getPool();
+    if (threadId) {
+      const result = await pool.query(
+        `SELECT * FROM ironclaw_chat
+         WHERE problem_set_id = $1 AND thread_id = $2
+         ORDER BY created_at ASC
+         LIMIT $3`,
+        [problemSetId, threadId, limit],
+      );
+      return result.rows.map(rowToChatMessage);
+    }
     const result = await pool.query(
       `SELECT * FROM ironclaw_chat
        WHERE problem_set_id = $1
@@ -279,6 +321,62 @@ export class IronclawStore {
       [problemSetId, limit],
     );
     return result.rows.map(rowToChatMessage);
+  }
+
+  // =========================================================================
+  // Thread CRUD
+  // =========================================================================
+
+  async createThread(problemSetId: string, userDid: string, name = 'General'): Promise<{ id: string; name: string; created_at: string }> {
+    const pool = getPool();
+    const result = await pool.query(
+      `INSERT INTO ironclaw_threads (problem_set_id, user_did, name)
+       VALUES ($1, $2, $3) RETURNING id, name, created_at`,
+      [problemSetId, userDid, name],
+    );
+    return result.rows[0] as { id: string; name: string; created_at: string };
+  }
+
+  async listThreads(problemSetId: string, userDid: string): Promise<Array<{ id: string; name: string; message_count: number; last_message_at: string | null; created_at: string }>> {
+    const pool = getPool();
+    const result = await pool.query(
+      `SELECT t.id, t.name, t.created_at,
+              COUNT(c.id)::int AS message_count,
+              MAX(c.created_at) AS last_message_at
+       FROM ironclaw_threads t
+       LEFT JOIN ironclaw_chat c ON c.thread_id = t.id
+       WHERE t.problem_set_id = $1 AND t.user_did = $2
+       GROUP BY t.id
+       ORDER BY COALESCE(MAX(c.created_at), t.created_at) DESC`,
+      [problemSetId, userDid],
+    );
+    return result.rows as Array<{ id: string; name: string; message_count: number; last_message_at: string | null; created_at: string }>;
+  }
+
+  async renameThread(threadId: string, name: string): Promise<void> {
+    const pool = getPool();
+    await pool.query(
+      `UPDATE ironclaw_threads SET name = $1, updated_at = NOW() WHERE id = $2`,
+      [name, threadId],
+    );
+  }
+
+  async deleteThread(threadId: string): Promise<void> {
+    const pool = getPool();
+    await pool.query('DELETE FROM ironclaw_chat WHERE thread_id = $1', [threadId]);
+    await pool.query('DELETE FROM ironclaw_threads WHERE id = $1', [threadId]);
+  }
+
+  async getOrCreateDefaultThread(problemSetId: string, userDid: string): Promise<{ id: string; name: string }> {
+    const pool = getPool();
+    const existing = await pool.query(
+      `SELECT id, name FROM ironclaw_threads
+       WHERE problem_set_id = $1 AND user_did = $2
+       ORDER BY created_at ASC LIMIT 1`,
+      [problemSetId, userDid],
+    );
+    if (existing.rows.length > 0) return existing.rows[0] as { id: string; name: string };
+    return this.createThread(problemSetId, userDid, 'General');
   }
 
   // =========================================================================

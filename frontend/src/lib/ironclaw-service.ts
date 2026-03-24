@@ -128,9 +128,11 @@ class IronclawApi {
   async getHistory(
     problemSetId: string | null,
     limit?: number,
+    threadId?: string,
   ): Promise<{ messages: IronclawChatMessage[]; channel?: string }> {
     const params = new URLSearchParams();
     if (limit !== undefined) params.append('limit', String(limit));
+    if (threadId) params.append('threadId', threadId);
     const qs = params.toString();
 
     const basePath = problemSetId
@@ -193,6 +195,34 @@ class IronclawApi {
       `/api/ironclaw/trust-preferences/${encodeURIComponent(preferenceId)}`,
       { method: 'DELETE' },
     );
+  }
+
+  // ==========================================================================
+  // Threads — compartmentalized conversations
+  // ==========================================================================
+
+  async listThreads(problemSetId: string): Promise<Array<{ id: string; name: string; message_count: number; last_message_at: string | null; created_at: string }>> {
+    return this.fetch(`/api/ironclaw/${encodeURIComponent(problemSetId)}/threads`);
+  }
+
+  async createThread(problemSetId: string, name: string): Promise<{ id: string; name: string; created_at: string }> {
+    return this.fetch(`/api/ironclaw/${encodeURIComponent(problemSetId)}/threads`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async renameThread(problemSetId: string, threadId: string, name: string): Promise<void> {
+    await this.fetch(`/api/ironclaw/${encodeURIComponent(problemSetId)}/threads/${threadId}/rename`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async deleteThread(problemSetId: string, threadId: string): Promise<void> {
+    await this.fetch(`/api/ironclaw/${encodeURIComponent(problemSetId)}/threads/${threadId}`, {
+      method: 'DELETE',
+    });
   }
 
   // ==========================================================================

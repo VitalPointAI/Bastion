@@ -401,8 +401,9 @@ export class IronclawService {
   async getHistory(
     problemSetId: string,
     limit?: number,
+    threadId?: string,
   ): Promise<IronclawChatMessage[]> {
-    return ironclawStore.getHistory(problemSetId, limit);
+    return ironclawStore.getHistory(problemSetId, limit, threadId);
   }
 
   /**
