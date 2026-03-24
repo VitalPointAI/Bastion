@@ -53,7 +53,9 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
  */
 function getCacheKey(config: ResolvedLLMConfig): string {
   const authType = config.isOAuthToken ? 'oauth' : 'apikey';
-  return `${config.provider}:${config.model}:${config.temperature}:${config.maxTokens}:${authType}`;
+  // Include token fingerprint so refreshed tokens create new instances
+  const tokenFp = config.apiKey ? config.apiKey.slice(-8) : 'none';
+  return `${config.provider}:${config.model}:${config.temperature}:${config.maxTokens}:${authType}:${tokenFp}`;
 }
 
 /**

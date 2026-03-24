@@ -257,14 +257,11 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     // Step 4: Apply gap marking
     const withGaps = markGapNodes(lensFiltered);
 
-    // Step 5: Apply search dimming
+    // Step 5: Apply search filter — hide non-matching nodes entirely
     const searchSet = searchMatchIds ? new Set(searchMatchIds) : null;
     const withSearch =
       searchSet !== null
-        ? withGaps.map((n) => ({
-            ...n,
-            isSearchDimmed: !searchSet.has(n.id),
-          }))
+        ? withGaps.filter((n) => searchSet.has(n.id))
         : withGaps;
 
     // Step 6: Filter edges to only include those between visible nodes
@@ -361,8 +358,9 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     setGapPanelOpen(false);
   }, []);
 
-  const handleSearchResults = useCallback((matchingIds: string[]) => {
-    setSearchMatchIds(matchingIds.length === 0 ? null : matchingIds);
+  const handleSearchResults = useCallback((matchingIds: string[] | null) => {
+    // null = no active filter (show all), [] = filter active but 0 matches (show none)
+    setSearchMatchIds(matchingIds);
   }, []);
 
   const processedNodesRef = useRef(processedData.nodes);

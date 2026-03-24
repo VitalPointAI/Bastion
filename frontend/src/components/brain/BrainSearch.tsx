@@ -28,7 +28,7 @@ interface NlSearchResponse {
 export interface BrainSearchProps {
   nodes: BrainNode[];
   problemSetId?: string;
-  onSearchResults: (matchingNodeIds: string[]) => void;
+  onSearchResults: (matchingNodeIds: string[] | null) => void;
   onNodeFocus?: (nodeId: string) => void;
 }
 
@@ -107,6 +107,12 @@ export function BrainSearch({
 
   const applyFilters = useCallback(
     (text: string, type: '' | BrainNodeType, category: string, theme: string) => {
+      // No filters active — signal null (show all)
+      if (!text && !type && !category && !theme) {
+        onSearchResults(null);
+        return nodes.length;
+      }
+
       const lower = text.toLowerCase();
       const matches = nodes.filter((n) => {
         if (text && !n.label.toLowerCase().includes(lower) && !n.id.toLowerCase().includes(lower)) {
