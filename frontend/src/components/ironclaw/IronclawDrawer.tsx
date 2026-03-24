@@ -300,8 +300,8 @@ export function IronclawDrawer({
           </div>
         )}
 
-        {/* Thread selector bar */}
-        {!isGlobalMode && threads && threads.length > 0 && !interview?.isActive && (
+        {/* Thread selector bar — always show in problem set mode so user can create first thread */}
+        {!isGlobalMode && threads && (
           <div className="flex items-center gap-1 px-3 py-1.5 border-b border-slate-700/60 bg-slate-800/30 overflow-x-auto">
             {threads.slice(0, 5).map((t) => (
               <button
@@ -422,6 +422,32 @@ export function IronclawDrawer({
           </div>
         )}
 
+        {/* Pinned suggestion cards (e.g., Guide Me) — above scroll area so they don't get buried */}
+        {(() => {
+          const pinnedSuggestions = messages.filter(
+            (m) => m.suggestion && (
+              (m.suggestion as unknown as { target_field?: string })?.target_field === 'start_design_interview'
+              || m.suggestion?.targetField === 'start_design_interview'
+            ),
+          );
+          if (pinnedSuggestions.length === 0 || !onAcceptSuggestion || !onDismissSuggestion) return null;
+          return (
+            <div className="px-3 py-2 border-b border-slate-700/60 bg-slate-800/40">
+              {pinnedSuggestions.map((msg) => (
+                <IronclawSuggestion
+                  key={msg.id}
+                  suggestion={msg.suggestion!}
+                  onAccept={async (id) => {
+                    if (onStartDesignInterview) await onStartDesignInterview();
+                    onAcceptSuggestion(id);
+                  }}
+                  onDismiss={onDismissSuggestion}
+                />
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Message list — switches to interview mode when active */}
         <div className="ironclaw-messages flex-1 overflow-y-auto px-4 py-3">
 
@@ -533,13 +559,13 @@ export function IronclawDrawer({
               )}
 
               {messages.map((msg) => {
+                // Skip pinned suggestions (rendered above scroll area)
+                const targetField = (msg.suggestion as unknown as { target_field?: string })?.target_field
+                  ?? msg.suggestion?.targetField;
+                if (targetField === 'start_design_interview') return null;
+
                 if (msg.suggestion && onAcceptSuggestion && onDismissSuggestion) {
                   const handleAccept = async (id: string) => {
-                    const targetField = (msg.suggestion as unknown as { target_field?: string })?.target_field
-                      ?? msg.suggestion?.targetField;
-                    if (targetField === 'start_design_interview' && onStartDesignInterview) {
-                      await onStartDesignInterview();
-                    }
                     onAcceptSuggestion(id);
                   };
 
