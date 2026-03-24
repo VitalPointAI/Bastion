@@ -493,10 +493,101 @@ const designUpdateSection: ActionHandler = async (payload, _userDid) => {
 // ---------------------------------------------------------------------------
 // Dispatch Map
 // ---------------------------------------------------------------------------
+// Knowledge Graph Handlers
+// ---------------------------------------------------------------------------
+
+const graphSearchActors: ActionHandler = async (payload) => {
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+  const query = (payload.query as string) ?? '';
+  const type = payload.type as string | undefined;
+  const limit = Math.min(Number(payload.limit) || 20, 100);
+
+  let cypher = `MATCH (a:Actor) WHERE toLower(a.name) CONTAINS toLower($query)`;
+  if (type) cypher += ` AND a.type = $type`;
+  cypher += ` OPTIONAL MATCH (a)-[r]-(related) RETURN a, count(r) AS relCount ORDER BY relCount DESC LIMIT $limit`;
+
+  const result = await executeReadQuery(cypher, { query, type: type ?? '', limit });
+  const actors = result.records.map((rec) => {
+    const a = rec.get('a').properties;
+    return { ...a, relationshipCount: rec.get('relCount').toInt() };
+  });
+  return { success: true, result: actors };
+}
+
+const graphGetActor: ActionHandler = async (payload) => {
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+  const name = (payload.name as string) ?? '';
+
+  const result = await executeReadQuery(`
+    MATCH (a:Actor {name: $name})
+    OPTIONAL MATCH (a)-[r]-(related)
+    RETURN a, collect(DISTINCT {
+      name: related.name,
+      type: type(r),
+      relProps: properties(r),
+      nodeType: related.type
+    }) AS relationships
+  `, { name });
+
+  if (result.records.length === 0) {
+    return { success: false, error: `Actor "${name}" not found` };
+  }
+
+  const rec = result.records[0];
+  const actor = rec.get('a').properties;
+  const rels = rec.get('relationships');
+  return { success: true, result: { ...actor, relationships: rels } };
+}
+
+const graphQuery: ActionHandler = async (payload) => {
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+  const cypher = (payload.cypher as string) ?? '';
+
+  // Safety: block any write operations
+  const normalized = cypher.toUpperCase().replace(/\s+/g, ' ');
+  if (/\b(CREATE|DELETE|SET|REMOVE|MERGE|DROP|DETACH)\b/.test(normalized)) {
+    return { success: false, error: 'Write operations are not allowed. Use MATCH/RETURN only.' };
+  }
+
+  const result = await executeReadQuery(cypher, {});
+  const records = result.records.map((rec) => {
+    const obj: Record<string, unknown> = {};
+    for (const key of rec.keys) {
+      const val = rec.get(key);
+      obj[key as string] = val?.properties ?? (typeof val?.toInt === 'function' ? val.toInt() : val);
+    }
+    return obj;
+  });
+  return { success: true, result: records };
+}
+
+const graphStats: ActionHandler = async () => {
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+
+  const [totalNodes, totalRels, types, topActors] = await Promise.all([
+    executeReadQuery('MATCH (n) RETURN count(n) AS count', {}),
+    executeReadQuery('MATCH ()-[r]-() RETURN count(r) AS count', {}),
+    executeReadQuery('MATCH (n) RETURN DISTINCT labels(n) AS labels, count(n) AS count ORDER BY count DESC', {}),
+    executeReadQuery('MATCH (a:Actor) OPTIONAL MATCH (a)-[r]-() RETURN a.name AS name, a.type AS type, count(r) AS rels ORDER BY rels DESC LIMIT 15', {}),
+  ]);
+
+  return {
+    success: true,
+    result: {
+      totalNodes: totalNodes.records[0]?.get('count')?.toInt() ?? 0,
+      totalRelationships: totalRels.records[0]?.get('count')?.toInt() ?? 0,
+      nodeTypes: types.records.map((r) => ({ labels: r.get('labels'), count: r.get('count').toInt() })),
+      topActors: topActors.records.map((r) => ({ name: r.get('name'), type: r.get('type'), relationships: r.get('rels').toInt() })),
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Handler registry
+// ---------------------------------------------------------------------------
 
 /**
  * Maps action type strings to their handler functions.
- * All 19 action types: 14 existing (agent×5, tool×4, team×5) + 5 skill.
  */
 export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   // Agent CRUD (5)
@@ -524,6 +615,11 @@ export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   'skill.delete': skillDelete,
   'skill.assign': skillAssign,
   'skill.unassign': skillUnassign,
+  // Knowledge graph (4)
+  'bastion.graph.search_actors': graphSearchActors,
+  'bastion.graph.get_actor': graphGetActor,
+  'bastion.graph.query': graphQuery,
+  'bastion.graph.stats': graphStats,
 };
 
 // ---------------------------------------------------------------------------

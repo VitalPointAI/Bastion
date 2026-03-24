@@ -174,6 +174,54 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     },
     riskLevel: 'medium',
   },
+  // ── Knowledge Graph Tools ──
+  {
+    name: 'bastion.graph.search_actors',
+    description: 'Search the knowledge graph for actors (nations, organizations, individuals, military units) by name or type. Returns matching nodes with their properties, relationships, and source documents.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Name or partial name to search for' },
+        type: { type: 'string', description: 'Filter by actor type: state, organization, individual, military, non_state' },
+        limit: { type: 'number', description: 'Max results (default 20)' },
+      },
+      required: ['query'],
+    },
+    riskLevel: 'low',
+  },
+  {
+    name: 'bastion.graph.get_actor',
+    description: 'Get full details of a specific actor node including all relationships, tensions, source documents, and linked entities.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Exact actor name' },
+      },
+      required: ['name'],
+    },
+    riskLevel: 'low',
+  },
+  {
+    name: 'bastion.graph.query',
+    description: 'Run a read-only Cypher query against the knowledge graph. Use for complex queries like finding paths between actors, counting relationships, or analyzing the graph structure.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        cypher: { type: 'string', description: 'Read-only Cypher query (MATCH/RETURN only, no CREATE/DELETE/SET)' },
+      },
+      required: ['cypher'],
+    },
+    riskLevel: 'low',
+  },
+  {
+    name: 'bastion.graph.stats',
+    description: 'Get knowledge graph statistics: total nodes, relationships, node types, and top actors by relationship count.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+    riskLevel: 'low',
+  },
   {
     name: 'bastion.system.update_config',
     description: 'Update system-level configuration',
