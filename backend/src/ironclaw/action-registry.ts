@@ -76,6 +76,13 @@ const CANONICAL_DESCRIPTIONS: Record<string, string> = {
   'field.write_sensitive': 'Update a sensitive field (e.g., mission statement, ROE) — requires explicit approval',
   // Design synthesis
   'bastion.design.synthesize_current_state': 'Synthesize Current State assessment from knowledge graph data',
+  // Map overlay tools
+  'bastion.design.map.add_symbol': 'Add a military symbol to the operational approach map',
+  'bastion.design.map.move_symbol': 'Move a map symbol to a new position',
+  'bastion.design.map.remove_symbol': 'Remove a symbol from the map',
+  'bastion.design.map.update_symbol': 'Update properties of a map symbol',
+  'bastion.design.map.add_control_measure': 'Add a control measure to the map',
+  'bastion.design.map.add_overlay_graphic': 'Add an annotation graphic to the map',
   // Knowledge graph (read-only)
   'bastion.graph.search_actors': 'Search the knowledge graph for actors by name or type',
   'bastion.graph.get_actor': 'Get full details of a specific actor node with relationships',

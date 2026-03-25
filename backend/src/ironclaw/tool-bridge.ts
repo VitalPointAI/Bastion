@@ -247,6 +247,117 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     },
     riskLevel: 'high',
   },
+  // ── Map Overlay Tools ──
+  {
+    name: 'bastion.design.map.add_symbol',
+    description: 'Add a military symbol to the operational approach map overlay',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        sidc: { type: 'string', description: 'MIL-STD-2525D SIDC code identifying the symbol type' },
+        designation: { type: 'string', description: 'Unit or element designation (e.g. "1st MarDiv")' },
+        lat: { type: 'number', description: 'Latitude in decimal degrees' },
+        lng: { type: 'number', description: 'Longitude in decimal degrees' },
+        mgrs: { type: 'string', description: 'MGRS grid coordinate (alternative to lat/lng)' },
+        echelon: { type: 'string', description: 'Echelon size (e.g. battalion, brigade, division)' },
+      },
+      required: ['problem_set_id', 'sidc'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.design.map.move_symbol',
+    description: 'Move an existing symbol to a new position on the map',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        symbol_id: { type: 'string', description: 'ID of the symbol to move' },
+        lat: { type: 'number', description: 'New latitude in decimal degrees' },
+        lng: { type: 'number', description: 'New longitude in decimal degrees' },
+        mgrs: { type: 'string', description: 'New MGRS grid coordinate (alternative to lat/lng)' },
+      },
+      required: ['problem_set_id', 'symbol_id'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.design.map.remove_symbol',
+    description: 'Remove a symbol from the operational approach map',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        symbol_id: { type: 'string', description: 'ID of the symbol to remove' },
+      },
+      required: ['problem_set_id', 'symbol_id'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.design.map.update_symbol',
+    description: 'Update properties of an existing symbol',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        symbol_id: { type: 'string', description: 'ID of the symbol to update' },
+        sidc: { type: 'string', description: 'New MIL-STD-2525D SIDC code' },
+        designation: { type: 'string', description: 'New unit or element designation' },
+        echelon: { type: 'string', description: 'New echelon size' },
+      },
+      required: ['problem_set_id', 'symbol_id'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.design.map.add_control_measure',
+    description: 'Add a control measure (phase line, boundary, objective, etc.) to the map',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        type: {
+          type: 'string',
+          enum: ['phase_line', 'boundary', 'axis_of_advance', 'objective', 'engagement_area', 'nai', 'fscm', 'flot', 'other'],
+          description: 'Control measure type',
+        },
+        label: { type: 'string', description: 'Label for the control measure (e.g. "PL RED", "OBJ ALPHA")' },
+        coordinates: {
+          type: 'array',
+          items: { type: 'object', properties: { lat: { type: 'number' }, lng: { type: 'number' } } },
+          description: 'Array of {lat, lng} coordinate objects defining the measure geometry',
+        },
+        affiliation: {
+          type: 'string',
+          enum: ['friendly', 'enemy', 'neutral'],
+          description: 'Force affiliation of the control measure',
+        },
+      },
+      required: ['problem_set_id', 'type', 'label', 'coordinates'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.design.map.add_overlay_graphic',
+    description: 'Add an annotation graphic to the map overlay',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        graphic_type: { type: 'string', description: 'Type of annotation graphic (e.g. "arrow", "circle", "text")' },
+        label: { type: 'string', description: 'Label or annotation text for the graphic' },
+        coordinates: {
+          type: 'array',
+          items: { type: 'object', properties: { lat: { type: 'number' }, lng: { type: 'number' } } },
+          description: 'Array of {lat, lng} coordinate objects defining the graphic geometry',
+        },
+      },
+      required: ['problem_set_id', 'graphic_type', 'label', 'coordinates'],
+    },
+    riskLevel: 'medium',
+  },
 ];
 
 // ---------------------------------------------------------------------------

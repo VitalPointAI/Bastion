@@ -71,6 +71,13 @@ export const ACTION_RISK: Record<string, ActionRiskLevel> = {
   'skill.unassign': ActionRiskLevel.low,
   // Design interview — section updates from guided interview
   'design.update_section': ActionRiskLevel.medium,
+  // Map overlay — Ironclaw map editing via natural language
+  'design.map.add_symbol': ActionRiskLevel.medium,
+  'design.map.move_symbol': ActionRiskLevel.medium,
+  'design.map.remove_symbol': ActionRiskLevel.medium,
+  'design.map.update_symbol': ActionRiskLevel.medium,
+  'design.map.add_control_measure': ActionRiskLevel.medium,
+  'design.map.add_overlay_graphic': ActionRiskLevel.medium,
   // Field write-back — Ironclaw can suggest and apply field values
   'field.write': ActionRiskLevel.medium,
   'field.write_sensitive': ActionRiskLevel.high,
