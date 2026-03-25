@@ -73,6 +73,7 @@ None
 - [ ] **Phase 48: Robot Swarm Behaviour End-to-End Demo** - Complete BASTION strategy-to-autonomous-execution pipeline demo with Taiwan defense scenario, 3-robot coalition swarm, AI objective extraction, DAO-authorized missions, swarm recon, COP detections, lethal escalation gates, brain graph timeline playback (INSERTED)
 - [x] **Phase 49: Align Design Tab with Plan Tab** - Remove duplicate operational design from Plan tab, establish Design tab as single source of truth for operational design artifacts, wire Design outputs as automatic starting point for campaign planning, restructure Strategic Guidance to remove Operational Approach step and add Alignment step, build generic fork-and-merge revision system for Plan-to-Design change proposals through DAO governance (INSERTED) (completed 2026-03-17)
 - [ ] **Phase 50: Universal Intelligence Input & Auto-Classification** - Replace fragmented ingestion sidebar (separate document upload, OSINT modal, filter tags) with a single universal input area that accepts any content type (files, URLs, pasted text, structured data) and automatically discerns source type, classifies content, routes to appropriate specialist agents, and extracts intelligence — all orchestrated by the lead agent with robust error handling, retry logic, and user-facing status; eliminates manual source-type selection and reduces ingestion to a single drag/drop/paste/type interaction (INSERTED)
+- [ ] **Phase 56: Visual Operational Approach Editor — Map-Based Military Symbology** - Interactive Leaflet map with MIL-STD-2525D military symbology overlay for operational approach development; dual editing: Ironclaw chat-driven (natural language → tool calls → map updates) and direct manipulation (drag-and-drop symbols, draw control measures, click-to-edit properties); milsymbol.js rendering; MGRS coordinate support; Ironclaw registered skills (add/move/remove/update symbols, add control measures and overlay graphics); Yjs collaborative sync; overlay persisted as part of OperationalDesign data model (INSERTED)
 
 ## Phase Details
 
@@ -804,6 +805,24 @@ Plans:
 - [ ] 55-04-PLAN.md — Frontend useDesignInterview hook, progress bar, and review gate components (Wave 2)
 - [ ] 55-05-PLAN.md — Guide Me buttons in Design sections, proactive suggestion trigger (Wave 3)
 - [ ] 55-06-PLAN.md — Multi-user collaborative interview via Yjs with role-directed questioning (Wave 3)
+
+### Phase 56: Visual Operational Approach Editor — Map-Based Military Symbology
+
+**Goal:** Build an interactive map-based operational approach editor in the Design tab where commanders can visually compose their operational approach using MIL-STD-2525D military symbology. Supports dual editing: Ironclaw chat-driven (natural language commands → tool calls → real-time map updates) and direct manipulation (drag-and-drop symbols, draw control measures, click-to-edit properties). Overlay state persists as part of the OperationalDesign data model and syncs collaboratively via Yjs.
+**Requirements**: TBD
+**Depends on:** Phase 55
+**Plans:** Not yet planned
+
+Key capabilities:
+- Leaflet map centered on problem set AO with editable SVG overlay layer
+- milsymbol.js (MIL-STD-2525D/APP-6D) rendering of unit symbols from SIDC codes
+- MGRS coordinate support (mgrs npm package) for placement and display
+- Ironclaw registered tools: add_symbol, move_symbol, remove_symbol, update_symbol, add_control_measure, add_overlay_graphic
+- Direct manipulation: drag-and-drop symbol repositioning, click-to-edit properties (unit type, echelon, label), mouse/touch drawing of control measures (phase lines, boundaries, axes of advance, objectives)
+- Control measures: engagement areas, named areas of interest, fire support coordination measures, forward line of troops
+- Both editing modes feed same overlay state — Ironclaw stays aware of manual edits, manual users see Ironclaw edits in real-time
+- Yjs collaborative sync for multi-user editing
+- Overlay stored as structured JSON in OperationalDesign.operationalApproach.mapOverlay
 
 ---
 
