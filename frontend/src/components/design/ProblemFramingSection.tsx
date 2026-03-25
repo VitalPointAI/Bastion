@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback, type TextareaHTMLAttributes } from 'react';
+import Markdown from 'react-markdown';
 import type { ProblemFramingData } from '../../lib/design-service.ts';
 
 /** Auto-expanding textarea that grows to fit content */
@@ -19,6 +20,86 @@ function AutoTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   }, []);
   useEffect(() => { resize(); }, [props.value, resize]);
   return <textarea ref={ref} {...props} onInput={(e) => { resize(); props.onInput?.(e); }} style={{ ...props.style, overflow: 'hidden', minHeight: '60px' }} />;
+}
+
+/** Content field with loading indicator, rich-text/markdown toggle */
+function ContentField({
+  label, value, onChange, onFocus, onBlur, placeholder, isLoading,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  onFocus: () => void;
+  onBlur: () => void;
+  placeholder: string;
+  isLoading?: boolean;
+}) {
+  const [viewMode, setViewMode] = useState<'rich' | 'markdown'>('rich');
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Switch to edit mode on click in rich view
+  const handleRichClick = () => {
+    setIsEditing(true);
+    setViewMode('markdown');
+  };
+
+  return (
+    <div className="mb-4">
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-sm font-medium text-gray-300">{label}</label>
+        <div className="flex items-center gap-2">
+          {isLoading && (
+            <span className="text-[10px] text-blue-400 animate-pulse flex items-center gap-1">
+              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Generating...
+            </span>
+          )}
+          {value && (
+            <div className="flex text-[10px] border border-slate-600 rounded overflow-hidden">
+              <button
+                type="button"
+                onClick={() => { setViewMode('rich'); setIsEditing(false); }}
+                className={`px-1.5 py-0.5 ${viewMode === 'rich' && !isEditing ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-slate-200'}`}
+              >Rich</button>
+              <button
+                type="button"
+                onClick={() => { setViewMode('markdown'); setIsEditing(true); }}
+                className={`px-1.5 py-0.5 ${viewMode === 'markdown' || isEditing ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-slate-200'}`}
+              >Markdown</button>
+            </div>
+          )}
+        </div>
+      </div>
+      {isLoading && !value && (
+        <div className="w-full bg-gray-700/50 border border-gray-600 rounded-md p-3 text-sm animate-pulse">
+          <div className="h-3 bg-gray-600 rounded w-3/4 mb-2" />
+          <div className="h-3 bg-gray-600 rounded w-1/2" />
+        </div>
+      )}
+      {viewMode === 'rich' && value && !isEditing ? (
+        <div
+          onClick={handleRichClick}
+          className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-2 text-sm
+            cursor-text min-h-[60px] prose prose-sm prose-invert max-w-none
+            prose-p:my-1.5 prose-li:my-0.5 prose-strong:text-blue-300 hover:border-blue-500/50 transition-colors"
+        >
+          <Markdown>{value}</Markdown>
+        </div>
+      ) : (
+        <AutoTextarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => { onFocus(); setIsEditing(true); }}
+          onBlur={() => { onBlur(); if (viewMode === 'rich') setIsEditing(false); }}
+          placeholder={placeholder}
+          className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+        />
+      )}
+    </div>
+  );
 }
 import { useIronclawContext } from '../../context/IronclawContext.tsx';
 import { useDesignInterview, getRoleColor } from '../../hooks/useDesignInterview.ts';
@@ -136,6 +217,7 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
   }));
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
   const synthesizeAttempted = useRef(false);
 
   // Track focus state to avoid overwriting user edits with interview-sourced data
@@ -153,6 +235,7 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
       const fieldKey = FIELD_MAP[targetField];
       if (fieldKey && typeof value === 'string') {
         setFormData((prev) => ({ ...prev, [fieldKey]: value }));
+        setGeneratingFields((prev) => { const next = new Set(prev); next.delete(fieldKey); return next; });
       }
       // Handle array fields (keyTensions, obstacles)
       if (targetField === 'keyTensions' || targetField === 'key_tensions') {
@@ -164,14 +247,23 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
         setFormData((prev) => ({ ...prev, obstacles: items }));
       }
     };
+    // Listen for "generating" signal (interview is processing, fields incoming)
+    const handleGenerating = (e: Event) => {
+      const fields = (e as CustomEvent).detail?.fields as string[] | undefined;
+      if (fields) {
+        setGeneratingFields(new Set(fields.map((f) => FIELD_MAP[f] ?? f)));
+      }
+    };
     // Listen to both the context bus and custom event
     const unsubContext = onFieldWrite((event) => {
       handleFieldWrite(new CustomEvent('', { detail: event }));
     });
     window.addEventListener('ironclaw:field-write', handleFieldWrite);
+    window.addEventListener('ironclaw:generating', handleGenerating);
     return () => {
       unsubContext();
       window.removeEventListener('ironclaw:field-write', handleFieldWrite);
+      window.removeEventListener('ironclaw:generating', handleGenerating);
     };
   }, [onFieldWrite]);
 
@@ -353,35 +445,26 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
         )}
 
         {/* Current State */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-sm font-medium text-gray-300">Current State</label>
-            {isSynthesizing && (
-              <span className="text-[10px] text-blue-400 animate-pulse">Synthesizing from knowledge graph...</span>
-            )}
-          </div>
-          <AutoTextarea
-            value={formData.currentState}
-            onChange={(e) => updateField('currentState', e.target.value)}
-            onFocus={() => { inputFocusedRef.current = true; }}
-            onBlur={() => { inputFocusedRef.current = false; applyPendingUpdate(); }}
-            placeholder="Describe the current operational environment..."
-            className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
+        <ContentField
+          label="Current State"
+          value={formData.currentState}
+          onChange={(v) => updateField('currentState', v)}
+          onFocus={() => { inputFocusedRef.current = true; }}
+          onBlur={() => { inputFocusedRef.current = false; applyPendingUpdate(); }}
+          placeholder="Describe the current operational environment..."
+          isLoading={isSynthesizing || generatingFields.has('currentState')}
+        />
 
         {/* Desired End State */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-300 mb-1">Desired End State</label>
-          <AutoTextarea
-            value={formData.desiredEndState}
-            onChange={(e) => updateField('desiredEndState', e.target.value)}
-            onFocus={() => { inputFocusedRef.current = true; }}
-            onBlur={() => { inputFocusedRef.current = false; applyPendingUpdate(); }}
-            placeholder="Describe the desired conditions..."
-            className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
+        <ContentField
+          label="Desired End State"
+          value={formData.desiredEndState}
+          onChange={(v) => updateField('desiredEndState', v)}
+          onFocus={() => { inputFocusedRef.current = true; }}
+          onBlur={() => { inputFocusedRef.current = false; applyPendingUpdate(); }}
+          placeholder="Describe the desired conditions..."
+          isLoading={generatingFields.has('desiredEndState')}
+        />
 
         {/* Problem Statement (auto-generated, read-only) */}
         <div className="mb-4">

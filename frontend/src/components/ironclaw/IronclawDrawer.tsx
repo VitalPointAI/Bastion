@@ -240,13 +240,15 @@ export function IronclawDrawer({
 
   return (
     <>
-      {/* Overlay backdrop */}
-      <div
-        className="ironclaw-overlay fixed inset-0 bg-black/30"
-        style={{ zIndex: 949 }}
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      {/* Overlay backdrop — hidden on push-layout tabs (design/plan) where content is pushed, not covered */}
+      {!(currentTab && ['design', 'plan'].includes(currentTab)) && (
+        <div
+          className="ironclaw-overlay fixed inset-0 bg-black/30"
+          style={{ zIndex: 949 }}
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Drawer panel — top offset clears the app-header */}
       <div
@@ -519,9 +521,9 @@ export function IronclawDrawer({
                       </svg>
                     </div>
                     <div className="text-sm text-gray-200 leading-relaxed prose prose-sm prose-invert max-w-none
-                      prose-p:my-1.5 prose-li:my-0.5 prose-ul:my-1 prose-ol:my-1 prose-strong:text-blue-300
-                      prose-headings:text-blue-200 prose-headings:mt-3 prose-headings:mb-1">
-                      <Markdown>{interview.lastMessage}</Markdown>
+                      prose-p:my-2 prose-li:my-0.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-strong:text-blue-300
+                      prose-headings:text-blue-200 prose-headings:mt-3 prose-headings:mb-1.5">
+                      <Markdown>{interview.lastMessage.replace(/\n(?!\n)/g, '  \n')}</Markdown>
                     </div>
                   </div>
                 </div>
