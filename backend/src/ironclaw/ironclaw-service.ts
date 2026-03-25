@@ -26,6 +26,7 @@ import type {
 import { SENSITIVE_FIELDS } from './ironclaw-types.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
 import { designStore } from '../design/design-store.js';
+import { memoryRetrievalService } from './ironclaw-memory-service.js';
 
 // ---------------------------------------------------------------------------
 // Message Context
@@ -231,9 +232,13 @@ export class IronclawService {
     // 3. Build context-prefixed message for Ironclaw (if context provided)
     // The prefix helps Ironclaw tailor responses to the current UI state.
     // The original content is persisted; only the enriched version is sent to the AI.
-    const messageForAi = context
-      ? `[Context: tab=${context.currentTab ?? 'unknown'}, problemSet=${context.problemSetId ?? 'none'}, role=${context.userRole ?? 'user'}]\n${content}`
-      : content;
+    const contextPrefix = context
+      ? `[Context: tab=${context.currentTab ?? 'unknown'}, problemSet=${context.problemSetId ?? 'none'}, role=${context.userRole ?? 'user'}]`
+      : '';
+    // Inject personalized memory block (timeout-protected — max 200ms, never blocks)
+    const memoryBlock = await memoryRetrievalService.assembleMemoryBlock(userDid, problemSetId);
+    const preamble = [memoryBlock, contextPrefix].filter(Boolean).join('\n');
+    const messageForAi = preamble ? `${preamble}\n${content}` : content;
 
     // 4. Send to Ironclaw webhook (synchronous — waits for response)
     const result = await ironclawClient.sendMessage(
@@ -479,8 +484,12 @@ export class IronclawService {
     // Publish to user's global WebSocket channel
     await publishToChannel(globalChannelId(userDid), 'ironclaw.user-message', userMsg);
 
-    // 3. Send to Ironclaw webhook
-    const result = await ironclawClient.sendMessage(session.id, content);
+    // 3. Inject personalized memory block (timeout-protected — max 200ms, never blocks)
+    const memoryBlock = await memoryRetrievalService.assembleMemoryBlock(userDid, null);
+    const messageForAi = memoryBlock ? `${memoryBlock}\n${content}` : content;
+
+    // 4. Send to Ironclaw webhook
+    const result = await ironclawClient.sendMessage(session.id, messageForAi);
 
     // 4. Process the response (uses global channel)
     if (result.response) {

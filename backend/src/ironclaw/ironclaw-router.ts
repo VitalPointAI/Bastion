@@ -21,6 +21,7 @@ import type { TrustDecision } from './ironclaw-types.js';
 import { getTaskStore } from './task-store.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
 import { selfUpdateService } from './self-update-service.js';
+import { memoryRetrievalService } from './ironclaw-memory-service.js';
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -255,6 +256,19 @@ ironclawRouter.post(
         problemSetId,
         decision as TrustDecision,
       );
+
+      // Record outcome for adaptive preference learning (fire-and-forget)
+      if (result.status === 'executed') {
+        const actionType = result.action_card?.action_type ?? result.result?.action_type as string ?? 'unknown';
+        memoryRetrievalService
+          .recordOutcome(userDid, problemSetId, 'suggestion_accepted', { action_type: actionType })
+          .catch((err) => console.error('[ironclaw-memory] outcome record failed:', err));
+      } else if (decision === 'no') {
+        const actionType = result.action_card?.action_type ?? 'unknown';
+        memoryRetrievalService
+          .recordOutcome(userDid, problemSetId, 'suggestion_rejected', { action_type: actionType })
+          .catch((err) => console.error('[ironclaw-memory] outcome record failed:', err));
+      }
 
       // If decision resulted in execution, publish to WebSocket
       if (result.status === 'executed') {
