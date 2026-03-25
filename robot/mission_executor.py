@@ -172,6 +172,8 @@ class MissionExecutor:
                 await self._execute_swarm_mission(mission)
             elif mission.command == "find_engage":
                 await self._execute_find_engage(mission)
+            elif mission.command == "overwatch":
+                await self._execute_overwatch(mission)
             else:
                 await self._execute_with_tactical_plan(mission)
         except asyncio.CancelledError:
