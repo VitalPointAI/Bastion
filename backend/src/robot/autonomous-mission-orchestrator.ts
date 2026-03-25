@@ -56,6 +56,14 @@ interface AutoConfig {
   daoId: string;
   /** Whether this is a simulated mission (virtual robots) or real hardware */
   simulate: boolean;
+  /** Static observation post mode — leader holds position instead of patrolling */
+  observationPost?: {
+    position: { x: number; y: number };
+    /** Heading in degrees (0=N, 90=E, 180=S, 270=W) to face from the OP */
+    facingHeading: number;
+  };
+  /** Commander-specified kill zone center (room coords) — overrides AI-planned positions */
+  killZoneCenter?: { x: number; y: number };
 }
 
 interface AutoState {
@@ -86,8 +94,9 @@ interface AutoState {
 // ---------------------------------------------------------------------------
 
 // Room layout: 5m x 5m, (0,0) = SW corner, heading 0 = north (toward doorway)
-// Tank at ~(5, 2.5) — east wall, mid-height
-// Robots start arrayed L-R near SW corner: alpha(0.5,0.5), bravo(1.5,0.5), charlie(2.5,0.5)
+// Alpha OP at east side (4.4, 3.4) = Grid 5042 7086, facing NW toward kill zone
+// Kill zone at west side (1.0, 3.3) = Grid 5001 7086
+// Bravo/Charlie start near SW: bravo(1.5,0.5), charlie(2.5,0.5)
 const AUTO_DEFAULTS: AutoConfig = {
   leaderId: 'alpha',
   followerIds: ['bravo', 'charlie'],
@@ -99,6 +108,13 @@ const AUTO_DEFAULTS: AutoConfig = {
   issuedBy: 'did:near:bastion.testnet',
   daoId: 'bastion-dao.testnet',
   simulate: true,
+  // Static OP: alpha holds at Grid 5042 7086, facing NW (315°) toward kill zone
+  observationPost: {
+    position: { x: 4.4, y: 3.4 },
+    facingHeading: 315,
+  },
+  // Kill zone center: Grid 5001 7086 — follower firing positions around this point
+  killZoneCenter: { x: 1.0, y: 3.3 },
 };
 
 // ---------------------------------------------------------------------------
@@ -257,46 +273,91 @@ class AutonomousMissionOrchestrator extends EventEmitter {
 
     this.logPhase(state, `RESET COMPLETE — all robots at home base (${config.homeBase.x}, ${config.homeBase.y}), heading 0° north`);
 
-    // Use the plan_screening_route skill to compute the recon route
-    // No hardcoded waypoints — AI plans the route using map knowledge
     const reconMissionId = randomUUID();
     state.missions['recon_leader'] = reconMissionId;
 
-    const { createNavigationTools } = await import('./skills/navigation-skill.js');
-    const navTools = createNavigationTools();
-    const screenTool = navTools.find((t) => t.name === 'plan_screening_route')!;
+    if (config.observationPost) {
+      // ── STATIC OP MODE ──
+      // Leader moves to a commander-specified observation post and holds,
+      // scanning for threats with continuous vision. No patrol route needed.
+      const op = config.observationPost;
+      const opGrid = roomToGridRef(op.position.x, op.position.y);
+      const headingName = op.facingHeading < 45 || op.facingHeading >= 315 ? 'North'
+        : op.facingHeading < 135 ? 'East'
+        : op.facingHeading < 225 ? 'South' : 'West';
+      const facingDesc = op.facingHeading === 315 ? 'North West'
+        : op.facingHeading === 45 ? 'North East'
+        : op.facingHeading === 225 ? 'South West'
+        : op.facingHeading === 135 ? 'South East' : headingName;
 
-    const raw = await screenTool.invoke({
-      start_x: config.homeBase.x,
-      start_y: config.homeBase.y,
-      screen_line_y: config.reconArea.y_max,
-      ao_x_min: config.reconArea.x_min,
-      ao_x_max: config.reconArea.x_max,
-    });
-    const screenResult = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
-    const reconWaypoints = screenResult.waypoints as Array<{ x: number; y: number }>;
+      // Compute a face_target point ~3m in the facing direction from the OP
+      const rad = (op.facingHeading * Math.PI) / 180;
+      const faceTarget = {
+        x: op.position.x + Math.sin(rad) * 3.0,
+        y: op.position.y + Math.cos(rad) * 3.0,
+      };
 
-    this.logPhase(state, `AI planned screening route: ${reconWaypoints.length} waypoints covering ${screenResult.roads_covered?.length ?? 0} roads`);
+      await svc.dispatchMission({
+        mission_id: reconMissionId,
+        robot_id: config.leaderId,
+        command: 'overwatch',
+        params: {
+          target_location: op.position,
+          speed: config.reconSpeed,
+          face_target: faceTarget,
+          autonomy_policy: { max_speed: 255, restricted_actions: [] },
+        },
+        issued_by: config.issuedBy,
+        timestamp: new Date().toISOString(),
+        problem_set_id: config.problemSetId,
+      });
 
-    await svc.dispatchMission({
-      mission_id: reconMissionId,
-      robot_id: config.leaderId,
-      command: 'patrol_route',
-      params: {
-        waypoints: reconWaypoints,
-        speed: config.reconSpeed,
-        start_position: config.homeBase,
-        autonomy_policy: { max_speed: 255, restricted_actions: [] },
-      },
-      issued_by: config.issuedBy,
-      timestamp: new Date().toISOString(),
-      problem_set_id: config.problemSetId,
-    });
+      this.logPhase(state, `Leader ${config.leaderId} — establish observation post at grid ${opGrid}, facing ${facingDesc}`);
+      if (config.killZoneCenter) {
+        const kzGrid = roomToGridRef(config.killZoneCenter.x, config.killZoneCenter.y);
+        this.logPhase(state, `Kill zone designated: grid ${kzGrid}`);
+      }
+      this.logPhase(state, 'Followers holding at base pending leader assessment');
+    } else {
+      // ── PATROL RECON MODE (original) ──
+      // Use the plan_screening_route skill to compute the recon route
+      const { createNavigationTools } = await import('./skills/navigation-skill.js');
+      const navTools = createNavigationTools();
+      const screenTool = navTools.find((t) => t.name === 'plan_screening_route')!;
 
-    const reconSW = roomToGridRef(config.reconArea.x_min, config.reconArea.y_min);
-    const reconNE = roomToGridRef(config.reconArea.x_max, config.reconArea.y_max);
-    this.logPhase(state, `Leader ${config.leaderId} — conduct recce screen between grid ${reconSW} and grid ${reconNE}`);
-    this.logPhase(state, 'Followers holding at base pending leader assessment');
+      const raw = await screenTool.invoke({
+        start_x: config.homeBase.x,
+        start_y: config.homeBase.y,
+        screen_line_y: config.reconArea.y_max,
+        ao_x_min: config.reconArea.x_min,
+        ao_x_max: config.reconArea.x_max,
+      });
+      const screenResult = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
+      const reconWaypoints = screenResult.waypoints as Array<{ x: number; y: number }>;
+
+      this.logPhase(state, `AI planned screening route: ${reconWaypoints.length} waypoints covering ${screenResult.roads_covered?.length ?? 0} roads`);
+
+      await svc.dispatchMission({
+        mission_id: reconMissionId,
+        robot_id: config.leaderId,
+        command: 'patrol_route',
+        params: {
+          waypoints: reconWaypoints,
+          speed: config.reconSpeed,
+          start_position: config.homeBase,
+          autonomy_policy: { max_speed: 255, restricted_actions: [] },
+        },
+        issued_by: config.issuedBy,
+        timestamp: new Date().toISOString(),
+        problem_set_id: config.problemSetId,
+      });
+
+      const reconSW = roomToGridRef(config.reconArea.x_min, config.reconArea.y_min);
+      const reconNE = roomToGridRef(config.reconArea.x_max, config.reconArea.y_max);
+      this.logPhase(state, `Leader ${config.leaderId} — conduct recce screen between grid ${reconSW} and grid ${reconNE}`);
+      this.logPhase(state, 'Followers holding at base pending leader assessment');
+    }
+
     this.publishUpdate(state);
 
     return { sequenceId: id, state };
@@ -465,17 +526,22 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       return;
     }
 
-    // Cancel the recon patrol immediately — the leader must stop searching
-    const reconMissionId = state.missions['recon_leader'];
-    if (reconMissionId) {
-      const svc = getRobotMissionService();
-      const leaderRobot = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId);
-      if (leaderRobot?.ws && leaderRobot.ws.readyState === 1) {
-        try {
-          leaderRobot.ws.send(JSON.stringify({ type: 'mission:cancel', robot_id: state.config.leaderId }));
-          this.logPhase(state, 'Recon patrol CANCELLED — leader stopping to assess threat');
-        } catch { /* non-fatal */ }
+    // In patrol recon mode, cancel the patrol — leader must stop to assess.
+    // In OP mode, leader stays at observation post (overwatch continues).
+    if (!state.config.observationPost) {
+      const reconMissionId = state.missions['recon_leader'];
+      if (reconMissionId) {
+        const svc = getRobotMissionService();
+        const leaderRobot = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId);
+        if (leaderRobot?.ws && leaderRobot.ws.readyState === 1) {
+          try {
+            leaderRobot.ws.send(JSON.stringify({ type: 'mission:cancel', robot_id: state.config.leaderId }));
+            this.logPhase(state, 'Recon patrol CANCELLED — leader stopping to assess threat');
+          } catch { /* non-fatal */ }
+        }
       }
+    } else {
+      this.logPhase(state, 'Leader maintaining observation post — assessing threat');
     }
 
     // Wait briefly for additional detections to accumulate
@@ -509,26 +575,72 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     this.logPhase(state, `Analyzing ${state.detectedThreats.length} threat(s) — leader at (${leaderPos.x.toFixed(1)}, ${leaderPos.y.toFixed(1)})`);
 
     try {
-      const plan = await generateTacticalPlan(
-        state.detectedThreats,
-        {
-          leader: { id: state.config.leaderId, position: leaderPos },
-          followers: state.config.followerIds.map((fid) => ({
-            id: fid,
-            position: state.config.homeBase,
-          })),
-        },
-        state.config.homeBase,
-      );
+      let plan: TacticalPlan;
+
+      if (state.config.observationPost && state.config.killZoneCenter) {
+        // ── COMMANDER-DIRECTED PLAN ──
+        // OP and kill zone are specified — build plan from commander's intent.
+        // Position followers flanking the kill zone center.
+        const kz = state.config.killZoneCenter;
+        const op = state.config.observationPost.position;
+        const kzGrid = roomToGridRef(kz.x, kz.y);
+
+        // Place followers flanking the kill zone: offset ±1.0m on x-axis
+        const fp1 = { x: kz.x - 1.0, y: kz.y - 0.5 };
+        const fp2 = { x: kz.x + 1.0, y: kz.y - 0.5 };
+
+        plan = {
+          assessment: `${state.detectedThreats.length} hostile armored vehicle(s) detected moving south. Commander directs kill zone at grid ${kzGrid}. Leader maintains OP, followers to assume flanking firing positions.`,
+          overwatch: {
+            position: op,
+            reasoning: 'Commander-designated observation post',
+          },
+          firingPositions: [
+            { position: fp1, reasoning: `Left flank of kill zone grid ${kzGrid}` },
+            { position: fp2, reasoning: `Right flank of kill zone grid ${kzGrid}` },
+          ],
+          routes: {
+            leaderToOverwatch: [op],
+            followerRoutes: [
+              [{ x: state.config.homeBase.x, y: kz.y - 1.0 }, fp1],
+              [{ x: state.config.homeBase.x + 2.0, y: kz.y - 1.0 }, fp2],
+            ],
+            withdrawalRoutes: {
+              leader: [state.config.homeBase],
+              followers: [[state.config.homeBase], [state.config.homeBase]],
+            },
+          },
+          engagementRecommendation: 'engage',
+          planConfidence: 0.90,
+        };
+
+        this.logPhase(state, `Commander-directed plan: kill zone grid ${kzGrid}, flanking firing positions`);
+      } else {
+        // ── AI TACTICAL PLAN ──
+        plan = await generateTacticalPlan(
+          state.detectedThreats,
+          {
+            leader: { id: state.config.leaderId, position: leaderPos },
+            followers: state.config.followerIds.map((fid) => ({
+              id: fid,
+              position: state.config.homeBase,
+            })),
+          },
+          state.config.homeBase,
+        );
+      }
 
       state.tacticalPlan = plan;
-      this.logPhase(state, `AI ASSESSMENT: ${plan.assessment}`);
+      this.logPhase(state, `ASSESSMENT: ${plan.assessment}`);
       this.logPhase(state, `Recommendation: ${plan.engagementRecommendation.toUpperCase()} (confidence: ${(plan.planConfidence * 100).toFixed(0)}%)`);
-      this.logPhase(state, `Overwatch: (${plan.overwatch.position.x}, ${plan.overwatch.position.y}) — ${plan.overwatch.reasoning}`);
+
+      const owGrid = roomToGridRef(plan.overwatch.position.x, plan.overwatch.position.y);
+      this.logPhase(state, `Overwatch: grid ${owGrid} — ${plan.overwatch.reasoning}`);
 
       for (let i = 0; i < plan.firingPositions.length; i++) {
         const fp = plan.firingPositions[i];
-        this.logPhase(state, `Firing pos ${i + 1}: (${fp.position.x}, ${fp.position.y}) — ${fp.reasoning}`);
+        const fpGrid = roomToGridRef(fp.position.x, fp.position.y);
+        this.logPhase(state, `Firing pos ${i + 1}: grid ${fpGrid} — ${fp.reasoning}`);
       }
 
       this.publishUpdate(state);
@@ -605,38 +717,40 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     this.logPhase(state, `DAO ResourceAllocation proposal submitted (gate ${resourceGate.id.slice(0, 8)})`);
     this.logPhase(state, 'Requesting commander approval for follower deployment');
 
-    // 2. Concurrently move leader to AI-chosen overwatch position
-    // Use the 'overwatch' command — drives to position, orients toward threat,
-    // holds with continuous vision monitoring
-    const owMissionId = randomUUID();
-    state.missions['overwatch_leader'] = owMissionId;
+    // 2. Move leader to overwatch — skip if already at OP (observation post mode)
+    if (state.config.observationPost) {
+      this.logPhase(state, 'Leader maintaining observation post — continuous vision monitoring');
+    } else {
+      const owMissionId = randomUUID();
+      state.missions['overwatch_leader'] = owMissionId;
 
-    const owPos = plan.overwatch.position;
+      const owPos = plan.overwatch.position;
 
-    // Face toward the closest detected threat so camera keeps eyes on the enemy
-    const closestThreat = state.detectedThreats.reduce((best, t) =>
-      t.detectedAt.y > best.detectedAt.y ? t : best, state.detectedThreats[0]);
-    const faceTarget = closestThreat
-      ? { x: closestThreat.detectedAt.x, y: closestThreat.detectedAt.y }
-      : undefined;
+      // Face toward the closest detected threat so camera keeps eyes on the enemy
+      const closestThreat = state.detectedThreats.reduce((best, t) =>
+        t.detectedAt.y > best.detectedAt.y ? t : best, state.detectedThreats[0]);
+      const faceTarget = closestThreat
+        ? { x: closestThreat.detectedAt.x, y: closestThreat.detectedAt.y }
+        : undefined;
 
-    await svc.dispatchMission({
-      mission_id: owMissionId,
-      robot_id: state.config.leaderId,
-      command: 'overwatch',
-      params: {
-        target_location: owPos,
-        speed: state.config.reconSpeed,
-        face_target: faceTarget,
-        autonomy_policy: { max_speed: 255, restricted_actions: [] },
-      },
-      issued_by: state.config.issuedBy,
-      timestamp: new Date().toISOString(),
-      problem_set_id: state.config.problemSetId,
-    });
+      await svc.dispatchMission({
+        mission_id: owMissionId,
+        robot_id: state.config.leaderId,
+        command: 'overwatch',
+        params: {
+          target_location: owPos,
+          speed: state.config.reconSpeed,
+          face_target: faceTarget,
+          autonomy_policy: { max_speed: 255, restricted_actions: [] },
+        },
+        issued_by: state.config.issuedBy,
+        timestamp: new Date().toISOString(),
+        problem_set_id: state.config.problemSetId,
+      });
 
-    const owGrid = roomToGridRef(owPos.x, owPos.y);
-    this.logPhase(state, `Leader moving to overwatch at grid ${owGrid}, orienting toward threat`);
+      const owGrid = roomToGridRef(owPos.x, owPos.y);
+      this.logPhase(state, `Leader moving to overwatch at grid ${owGrid}, orienting toward threat`);
+    }
     this.publishUpdate(state);
 
     // Poll for gate resolution
