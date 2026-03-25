@@ -322,7 +322,28 @@ async function processAnswer(
     console.warn('[DesignInterviewService] KG gap detection error (non-blocking):', err);
   }
 
-  // ── Step 3: Generate red-team challenge (append as AI follow-up) ──────────
+  // ── Step 3: Check for current state divergence ────────────────────────────
+  // If the current state was significantly updated, review downstream sections
+  // for potential divergence with the new context
+
+  const prevPf = (derivedDesign as Record<string, unknown>)?.problemFraming as Record<string, unknown> | undefined;
+  const newPf = updatedDesign.problemFraming as Record<string, unknown> | undefined;
+  const currentStateChanged = newPf?.currentState && prevPf?.currentState
+    && newPf.currentState !== prevPf.currentState;
+
+  let divergenceNote = '';
+  if (currentStateChanged && currentSection === 'problem-framing') {
+    // Check if downstream sections have content that might conflict
+    const hasDownstream = (updatedDesign as Record<string, unknown>).cogAnalysis
+      || (updatedDesign as Record<string, unknown>).linesOfEffort
+      || (updatedDesign as Record<string, unknown>).operationalApproach;
+
+    if (hasDownstream) {
+      divergenceNote = '\n\n**Note:** The current state assessment has been updated. I will review the downstream sections (CoG Analysis, LOEs, Operational Approach) for potential divergence with this new context and flag any inconsistencies when we reach those sections.';
+    }
+  }
+
+  // ── Step 4: Generate red-team challenge (append as AI follow-up) ──────────
 
   const redTeamPromptText = getRedTeamPrompt(
     currentSection,
@@ -334,6 +355,11 @@ async function processAnswer(
     new SystemMessage(redTeamPromptText),
     ...conversationMessages,
   ]);
+
+  // Append divergence note to response if applicable
+  if (divergenceNote && typeof redTeamResponse.content === 'string') {
+    redTeamResponse.content += divergenceNote;
+  }
 
   return {
     derivedDesign: updatedDesign as Partial<OperationalDesign>,
@@ -1024,23 +1050,36 @@ function extractMeta(state: DesignInterviewState, prevDerivedDesign?: Partial<Op
   if (d) {
     const prev = (prevDerivedDesign ?? {}) as Record<string, unknown>;
 
-    // Problem Framing fields
+    // Problem Framing fields — only write substantive values (skip placeholders/empty)
     const pf = d.problemFraming as Record<string, unknown> | undefined;
     const prevPf = prev.problemFraming as Record<string, unknown> | undefined;
+
+    const isSubstantive = (v: unknown): boolean => {
+      if (!v || typeof v !== 'string') return false;
+      const lower = v.toLowerCase().trim();
+      // Filter out placeholder/status text that shouldn't overwrite real content
+      return lower.length > 10
+        && !lower.startsWith('not yet')
+        && !lower.startsWith('not articulated')
+        && !lower.includes('requires specification')
+        && !lower.includes('requires definition')
+        && !lower.includes('to be determined');
+    };
+
     if (pf) {
-      if (pf.currentState && pf.currentState !== prevPf?.currentState) {
+      if (isSubstantive(pf.currentState) && pf.currentState !== prevPf?.currentState) {
         fieldWrites.push({ targetField: 'currentState', value: pf.currentState as string });
       }
-      if (pf.desiredEndState && pf.desiredEndState !== prevPf?.desiredEndState) {
+      if (isSubstantive(pf.desiredEndState) && pf.desiredEndState !== prevPf?.desiredEndState) {
         fieldWrites.push({ targetField: 'desiredEndState', value: pf.desiredEndState as string });
       }
-      if (pf.problemStatement && pf.problemStatement !== prevPf?.problemStatement) {
+      if (isSubstantive(pf.problemStatement) && pf.problemStatement !== prevPf?.problemStatement) {
         fieldWrites.push({ targetField: 'problemStatement', value: pf.problemStatement as string });
       }
-      if (Array.isArray(pf.keyTensions) && JSON.stringify(pf.keyTensions) !== JSON.stringify(prevPf?.keyTensions)) {
+      if (Array.isArray(pf.keyTensions) && pf.keyTensions.length > 0 && JSON.stringify(pf.keyTensions) !== JSON.stringify(prevPf?.keyTensions)) {
         fieldWrites.push({ targetField: 'keyTensions', value: pf.keyTensions as string[] });
       }
-      if (Array.isArray(pf.obstacles) && JSON.stringify(pf.obstacles) !== JSON.stringify(prevPf?.obstacles)) {
+      if (Array.isArray(pf.obstacles) && pf.obstacles.length > 0 && JSON.stringify(pf.obstacles) !== JSON.stringify(prevPf?.obstacles)) {
         fieldWrites.push({ targetField: 'obstacles', value: pf.obstacles as string[] });
       }
     }

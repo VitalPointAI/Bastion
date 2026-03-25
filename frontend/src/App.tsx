@@ -116,8 +116,8 @@ function AppContent() {
       <main
         className="app-main"
         style={{
-          marginRight: ironclawOpen && PUSH_LAYOUT_TABS.has(currentTab) ? '420px' : 0,
-          transition: 'margin-right 300ms ease-out',
+          paddingRight: ironclawOpen && PUSH_LAYOUT_TABS.has(currentTab) ? '420px' : 0,
+          transition: 'padding-right 300ms ease-out',
         }}
       >
         {isJoinCode ? (

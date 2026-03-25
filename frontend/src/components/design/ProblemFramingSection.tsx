@@ -84,9 +84,10 @@ function ContentField({
           onClick={handleRichClick}
           className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-2 text-sm
             cursor-text min-h-[60px] prose prose-sm prose-invert max-w-none
-            prose-p:my-1.5 prose-li:my-0.5 prose-strong:text-blue-300 hover:border-blue-500/50 transition-colors"
+            prose-p:my-3 prose-li:my-0.5 prose-ul:my-2 prose-ol:my-2 prose-strong:text-blue-300
+            prose-headings:mt-4 prose-headings:mb-2 hover:border-blue-500/50 transition-colors"
         >
-          <Markdown>{value}</Markdown>
+          <Markdown>{value.replace(/\n(?!\n)/g, '  \n')}</Markdown>
         </div>
       ) : (
         <AutoTextarea
