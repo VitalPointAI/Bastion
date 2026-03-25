@@ -662,8 +662,8 @@ export class DiscoveryService {
   ): void {
     if (!this.messageBus) return;
 
-    this.messageBus
-      .publish({
+    this.messageBus.ensureInitialized()
+      .then(() => this.messageBus!.publish({
         sourceDid: 'did:near:system-discovery',
         sourceType: 'system' as never,
         destinationType: 'broadcast' as never,
@@ -671,7 +671,7 @@ export class DiscoveryService {
         messageType: channel,
         payload,
         priority: 'normal' as never,
-      })
+      }))
       .catch((err: unknown) => {
         console.warn(
           `[DiscoveryService] Failed to publish scan event ${channel}:`,
