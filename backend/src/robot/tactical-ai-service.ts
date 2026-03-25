@@ -59,6 +59,8 @@ export async function generateTacticalPlan(
     followers: Array<{ id: string; position: { x: number; y: number } }>;
   },
   homeBase: { x: number; y: number },
+  /** Optional commander's intent — constrains the plan (e.g. fixed OP, designated kill zone) */
+  commanderIntent?: string,
 ): Promise<TacticalPlan> {
   let llm;
   try {
@@ -123,6 +125,10 @@ After using tools, output your final plan as JSON:
       `Follower "${f.id}" at (${f.position.x.toFixed(1)}, ${f.position.y.toFixed(1)})`),
   ].join('\n');
 
+  const intentSection = commanderIntent
+    ? `\n### Commander's Intent\n${commanderIntent}\nYou MUST incorporate the commander's intent into your plan. Use the specified positions/constraints as the basis for your tactical assessment.\n`
+    : '';
+
   const userPrompt = `## SITREP
 
 ### Enemy Threats Detected
@@ -133,7 +139,7 @@ ${friendlyDesc}
 
 ### Home Base
 (${homeBase.x.toFixed(1)}, ${homeBase.y.toFixed(1)})
-
+${intentSection}
 ### Mission
 Use your skills to assess threats, identify the kill zone, select positions, and plan routes.
 Then provide your final tactical plan as JSON.`;

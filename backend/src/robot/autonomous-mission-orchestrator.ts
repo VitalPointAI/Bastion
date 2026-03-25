@@ -575,60 +575,35 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     this.logPhase(state, `Analyzing ${state.detectedThreats.length} threat(s) — leader at (${leaderPos.x.toFixed(1)}, ${leaderPos.y.toFixed(1)})`);
 
     try {
-      let plan: TacticalPlan;
-
-      if (state.config.observationPost && state.config.killZoneCenter) {
-        // ── COMMANDER-DIRECTED PLAN ──
-        // OP and kill zone are specified — build plan from commander's intent.
-        // Position followers flanking the kill zone center.
-        const kz = state.config.killZoneCenter;
-        const op = state.config.observationPost.position;
-        const kzGrid = roomToGridRef(kz.x, kz.y);
-
-        // Place followers flanking the kill zone: offset ±1.0m on x-axis
-        const fp1 = { x: kz.x - 1.0, y: kz.y - 0.5 };
-        const fp2 = { x: kz.x + 1.0, y: kz.y - 0.5 };
-
-        plan = {
-          assessment: `${state.detectedThreats.length} hostile armored vehicle(s) detected moving south. Commander directs kill zone at grid ${kzGrid}. Leader maintains OP, followers to assume flanking firing positions.`,
-          overwatch: {
-            position: op,
-            reasoning: 'Commander-designated observation post',
-          },
-          firingPositions: [
-            { position: fp1, reasoning: `Left flank of kill zone grid ${kzGrid}` },
-            { position: fp2, reasoning: `Right flank of kill zone grid ${kzGrid}` },
-          ],
-          routes: {
-            leaderToOverwatch: [op],
-            followerRoutes: [
-              [{ x: state.config.homeBase.x, y: kz.y - 1.0 }, fp1],
-              [{ x: state.config.homeBase.x + 2.0, y: kz.y - 1.0 }, fp2],
-            ],
-            withdrawalRoutes: {
-              leader: [state.config.homeBase],
-              followers: [[state.config.homeBase], [state.config.homeBase]],
-            },
-          },
-          engagementRecommendation: 'engage',
-          planConfidence: 0.90,
-        };
-
-        this.logPhase(state, `Commander-directed plan: kill zone grid ${kzGrid}, flanking firing positions`);
-      } else {
-        // ── AI TACTICAL PLAN ──
-        plan = await generateTacticalPlan(
-          state.detectedThreats,
-          {
-            leader: { id: state.config.leaderId, position: leaderPos },
-            followers: state.config.followerIds.map((fid) => ({
-              id: fid,
-              position: state.config.homeBase,
-            })),
-          },
-          state.config.homeBase,
-        );
+      // Build commander's intent string if OP/kill zone are specified
+      let commanderIntent: string | undefined;
+      if (state.config.observationPost || state.config.killZoneCenter) {
+        const parts: string[] = [];
+        if (state.config.observationPost) {
+          const op = state.config.observationPost;
+          const opGrid = roomToGridRef(op.position.x, op.position.y);
+          parts.push(`Leader is holding at observation post grid ${opGrid} (${op.position.x.toFixed(1)}, ${op.position.y.toFixed(1)}) facing heading ${op.facingHeading}°. The overwatch position MUST be the leader's current OP position — do NOT move the leader.`);
+        }
+        if (state.config.killZoneCenter) {
+          const kz = state.config.killZoneCenter;
+          const kzGrid = roomToGridRef(kz.x, kz.y);
+          parts.push(`Establish kill zone centered on grid ${kzGrid} (${kz.x.toFixed(1)}, ${kz.y.toFixed(1)}). Position followers with flanking firing arcs into the kill zone to interdict and destroy enemy armor moving south. Followers should have interlocking fields of fire across the kill zone.`);
+        }
+        commanderIntent = parts.join(' ');
       }
+
+      const plan = await generateTacticalPlan(
+        state.detectedThreats,
+        {
+          leader: { id: state.config.leaderId, position: leaderPos },
+          followers: state.config.followerIds.map((fid) => ({
+            id: fid,
+            position: state.config.homeBase,
+          })),
+        },
+        state.config.homeBase,
+        commanderIntent,
+      );
 
       state.tacticalPlan = plan;
       this.logPhase(state, `ASSESSMENT: ${plan.assessment}`);
