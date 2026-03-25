@@ -13,6 +13,22 @@ import { DesignInterviewService } from '../design-interview/design-interview-ser
 const router = Router();
 const designInterviewService = new DesignInterviewService();
 
+/** Extract text from AI message content (handles string, array of content blocks, etc.) */
+function extractMessageText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((block: unknown) => {
+        if (typeof block === 'string') return block;
+        if (block && typeof block === 'object' && 'text' in block) return (block as { text: string }).text;
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+  }
+  return String(content ?? '');
+}
+
 /**
  * POST /:problemSetId/start — Start a new design interview
  */
@@ -24,9 +40,7 @@ router.post('/:problemSetId/start', async (req: Request, res: Response) => {
     const result = await designInterviewService.startInterview(problemSetId, mode);
 
     res.json({
-      message: typeof result.message.content === 'string'
-        ? result.message.content
-        : JSON.stringify(result.message.content),
+      message: extractMessageText(result.message.content),
       state: result.meta,
     });
   } catch (err) {
@@ -51,9 +65,7 @@ router.post('/:problemSetId/continue', async (req: Request, res: Response) => {
     const result = await designInterviewService.continueInterview(problemSetId, message);
 
     res.json({
-      message: typeof result.message.content === 'string'
-        ? result.message.content
-        : JSON.stringify(result.message.content),
+      message: extractMessageText(result.message.content),
       state: result.meta,
     });
   } catch (err) {
@@ -72,9 +84,7 @@ router.post('/:problemSetId/confirm-section', async (req: Request, res: Response
     const result = await designInterviewService.confirmSection(problemSetId);
 
     res.json({
-      message: typeof result.message.content === 'string'
-        ? result.message.content
-        : JSON.stringify(result.message.content),
+      message: extractMessageText(result.message.content),
       state: result.meta,
     });
   } catch (err) {

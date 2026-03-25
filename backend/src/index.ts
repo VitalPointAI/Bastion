@@ -522,7 +522,7 @@ server.listen(port, async () => {
     // Monitor the default problem set — additional ones activated via API
     const { getPool } = await import('./lib/database.js');
     const psResult = await getPool().query(
-      `SELECT id FROM problem_sets WHERE parent_id IS NULL ORDER BY created_at DESC LIMIT 1`,
+      `SELECT id FROM problem_sets WHERE parent_problem_set_id IS NULL ORDER BY created_at DESC LIMIT 1`,
     );
     if (psResult.rows[0]) {
       gapFillerService.start(psResult.rows[0].id as string);
