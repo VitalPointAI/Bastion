@@ -29,6 +29,7 @@ export interface IronclawChatMessage {
   actionCard?: ActionCardData;
   stepProgress?: StepProgressData;
   suggestion?: SuggestionData;
+  threadId?: string;
   createdAt: string;
 }
 

@@ -85,6 +85,18 @@ export function useIronclaw(
     messageContextRef.current = messageContext;
   }, [messageContext]);
 
+  // Track current tab for thread refs (avoids rebinding callbacks)
+  const currentTabRef = useRef<string | undefined>(messageContext?.currentTab);
+  useEffect(() => {
+    currentTabRef.current = messageContext?.currentTab;
+  }, [messageContext?.currentTab]);
+
+  // Track the active tab thread ID in a ref for sendMessage
+  const currentThreadIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    currentThreadIdRef.current = currentThreadId;
+  }, [currentThreadId]);
+
   // Refs for WebSocket lifecycle
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -178,6 +190,14 @@ export function useIronclaw(
 
         // Skip user messages (already added optimistically) and deduplicate
         if (chatMsg.sender === 'user') return;
+
+        // Filter by thread — only show messages for the currently active tab thread
+        const incomingThreadId = (incoming.thread_id ?? incoming.threadId) as string | null | undefined;
+        if (currentThreadIdRef.current && incomingThreadId && incomingThreadId !== currentThreadIdRef.current) {
+          // Message belongs to a different tab's thread — skip display but clear loading
+          setIsLoading(false);
+          return;
+        }
 
         // Filter out empty messages and <think> tag artifacts
         const cleanContent = (chatMsg.content ?? '')
@@ -343,7 +363,10 @@ export function useIronclaw(
       setIsLoading(true);
 
       try {
-        await ironclawApi.sendMessage(problemSetId, content, mentionedAgent, messageContextRef.current);
+        await ironclawApi.sendMessage(
+          problemSetId, content, mentionedAgent,
+          messageContextRef.current, currentThreadIdRef.current ?? undefined,
+        );
         // Response will arrive via WebSocket -- isLoading cleared on ws message
       } catch (err) {
         console.error('[useIronclaw] sendMessage failed:', err);
@@ -384,20 +407,44 @@ export function useIronclaw(
 
   // ─── Thread management ──────────────────────────────────────────────────
 
-  // Load threads when problem set changes
+  // Auto-resolve tab thread when tab or problem set changes
+  // Each tab gets its own conversation thread so COP chat stays on COP, etc.
+  const currentTab = messageContext?.currentTab;
   useEffect(() => {
-    if (!problemSetId) { setThreads([]); setCurrentThreadId(null); return; }
-    ironclawApi.listThreads(problemSetId).then((list) => {
-      if (!mountedRef.current) return;
-      setThreads(list);
-      if (list.length > 0 && !currentThreadId) {
-        setCurrentThreadId(list[0].id);
+    if (!problemSetId || !currentTab) { setThreads([]); setCurrentThreadId(null); return; }
+
+    let cancelled = false;
+
+    // Resolve tab thread, load its history, and refresh thread list
+    (async () => {
+      try {
+        const thread = await ironclawApi.getTabThread(problemSetId, currentTab);
+        if (cancelled) return;
+        setCurrentThreadId(thread.id);
+
+        // Load history for this tab's thread
+        const { messages: history } = await ironclawApi.getHistory(problemSetId, undefined, thread.id);
+        if (cancelled) return;
+        setMessages(history);
+      } catch {
+        // Tab thread not available — fall back to unthreaded
+        if (cancelled) return;
+        setCurrentThreadId(null);
       }
-    }).catch(() => { /* threads not available yet */ });
-  }, [problemSetId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+      // Also refresh the thread list for the thread selector
+      try {
+        const list = await ironclawApi.listThreads(problemSetId);
+        if (!cancelled) setThreads(list);
+      } catch { /* threads not available */ }
+    })();
+
+    return () => { cancelled = true; };
+  }, [problemSetId, currentTab]);
 
   const selectThread = useCallback(async (threadId: string) => {
     setCurrentThreadId(threadId);
+    currentThreadIdRef.current = threadId;
     if (!problemSetId) return;
     try {
       const { messages: history } = await ironclawApi.getHistory(problemSetId, undefined, threadId);

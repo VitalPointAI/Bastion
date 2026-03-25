@@ -201,6 +201,7 @@ export interface IronclawChatMessage {
   action_card: ActionCardData | null;
   step_progress: StepProgressData | null;
   suggestion: SuggestionPayload | null;
+  thread_id?: string | null;
   created_at: string;
 }
 

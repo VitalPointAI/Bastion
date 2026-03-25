@@ -60,6 +60,7 @@ function snakeToCamelMessage(row: Record<string, unknown>): IronclawChatMessage 
     suggestion: row.suggestion
       ? (row.suggestion as IronclawChatMessage['suggestion'])
       : undefined,
+    threadId: (row.thread_id ?? row.threadId) as string | undefined,
     createdAt: (row.created_at ?? row.createdAt ?? new Date().toISOString()) as string,
   };
 }
@@ -111,6 +112,7 @@ class IronclawApi {
     content: string,
     mentionedAgent?: string,
     context?: MessageContext,
+    threadId?: string,
   ): Promise<void> {
     const path = problemSetId
       ? `/api/ironclaw/${encodeURIComponent(problemSetId)}/message`
@@ -118,8 +120,18 @@ class IronclawApi {
 
     await this.fetch<void>(path, {
       method: 'POST',
-      body: JSON.stringify({ content, mentionedAgent, context }),
+      body: JSON.stringify({ content, mentionedAgent, context, threadId }),
     });
+  }
+
+  /**
+   * Get or create a tab-scoped thread for the given problem set and tab.
+   */
+  async getTabThread(
+    problemSetId: string,
+    tabName: string,
+  ): Promise<{ id: string; name: string }> {
+    return this.fetch(`/api/ironclaw/${encodeURIComponent(problemSetId)}/threads/tab/${encodeURIComponent(tabName)}`);
   }
 
   /**

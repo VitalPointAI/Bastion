@@ -154,9 +154,10 @@ ironclawRouter.post(
   '/:problemSetId/message',
   async (req: Request, res: Response) => {
     const problemSetId = req.params.problemSetId as string;
-    const { content, context } = req.body as {
+    const { content, context, threadId } = req.body as {
       content?: string;
       context?: MessageContext;
+      threadId?: string;
     };
 
     if (!content || typeof content !== 'string' || !content.trim()) {
@@ -169,7 +170,7 @@ ironclawRouter.post(
     try {
       // Fire-and-forget: response delivered via WebSocket
       ironclawService
-        .handleMessage(problemSetId, userDid, content.trim(), context)
+        .handleMessage(problemSetId, userDid, content.trim(), context, threadId)
         .catch((err) => {
           console.error(
             `[ironclaw-router] handleMessage error (ps=${problemSetId}):`,
@@ -807,6 +808,21 @@ ironclawRouter.post('/tasks/:taskId/refine', async (req: Request, res: Response)
 // =========================================================================
 // Thread management — compartmentalized conversations
 // =========================================================================
+
+/** GET /:problemSetId/threads/tab/:tabName — Get or create tab-scoped thread */
+ironclawRouter.get('/:problemSetId/threads/tab/:tabName', async (req: Request, res: Response) => {
+  try {
+    const userDid = getUserDid(req);
+    const thread = await ironclawStore.getOrCreateTabThread(
+      req.params.problemSetId as string,
+      userDid,
+      req.params.tabName as string,
+    );
+    res.json(thread);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
 
 /** GET /:problemSetId/threads — List threads for the current user */
 ironclawRouter.get('/:problemSetId/threads', async (req: Request, res: Response) => {

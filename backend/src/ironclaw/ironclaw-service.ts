@@ -105,6 +105,40 @@ async function publishToChannel(
 }
 
 // ---------------------------------------------------------------------------
+// Tab-specific behavioral guidance
+// ---------------------------------------------------------------------------
+
+/**
+ * Return tab-specific guidance that tells Ironclaw how to behave
+ * in the context of the user's current tab. This scopes the conversation
+ * so COP discussions stay operational, Design stays doctrinal, etc.
+ */
+function getTabGuidance(tab: string): string {
+  switch (tab) {
+    case 'cop':
+      return '[TAB GUIDANCE: The commander is viewing the Common Operating Picture. Focus on current operations, events, force disposition, and situational awareness. Discuss what is happening NOW — not planning or design.]';
+    case 'design':
+      return '[TAB GUIDANCE: The commander is on the Design tab developing operational design. Focus on problem framing, CoG analysis, lines of effort, and operational approach per JP 5-0.]';
+    case 'plan':
+      return '[TAB GUIDANCE: The commander is on the Plan tab. Focus on campaign planning, COA development, phasing, and mission orders.]';
+    case 'understand':
+      return '[TAB GUIDANCE: The commander is on the Understand tab. Focus on intelligence, IPB, strategic environment assessment, and knowledge graph content.]';
+    case 'direct':
+      return '[TAB GUIDANCE: The commander is on the Direct tab. Focus on execution guidance, orders, and directing operations.]';
+    case 'assess':
+      return '[TAB GUIDANCE: The commander is on the Assess tab. Focus on assessment, MOEs/MOPs, campaign progress, and whether operations are achieving objectives.]';
+    case 'decide':
+      return '[TAB GUIDANCE: The commander is on the Decide tab. Focus on pending decisions, decision gates, risk assessment, and governance.]';
+    case 'brain':
+      return '[TAB GUIDANCE: The commander is viewing the Knowledge Graph. Focus on entities, relationships, intelligence connections, and graph content.]';
+    case 'train':
+      return '[TAB GUIDANCE: The commander is in Training mode. Focus on exercise scenarios, training objectives, and after-action review.]';
+    default:
+      return '';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // IronclawService
 // ---------------------------------------------------------------------------
 
@@ -199,11 +233,13 @@ export class IronclawService {
     userDid: string,
     content: string,
     context?: MessageContext,
+    threadId?: string,
   ): Promise<void> {
     // 1. Get or create local session — uses problemSetId as thread_id
     const session = await ironclawStore.getOrCreateSession(problemSetId, userDid);
 
     // 2. Persist user message (original content, without context prefix)
+    // When a tab-scoped threadId is provided, messages are scoped to that thread
     const userMsg = await ironclawStore.addMessage({
       problem_set_id: problemSetId,
       content,
@@ -214,7 +250,7 @@ export class IronclawService {
       action_card: null,
       step_progress: null,
       suggestion: null,
-    });
+    }, threadId);
 
     // Publish user message to WebSocket
     await publishToChannel(problemSetId, 'ironclaw.user-message', userMsg);
@@ -232,8 +268,9 @@ export class IronclawService {
     // 3. Build context-prefixed message for Ironclaw (if context provided)
     // The prefix helps Ironclaw tailor responses to the current UI state.
     // The original content is persisted; only the enriched version is sent to the AI.
+    const tabGuidance = context?.currentTab ? getTabGuidance(context.currentTab) : '';
     const contextPrefix = context
-      ? `[Context: tab=${context.currentTab ?? 'unknown'}, problemSet=${context.problemSetId ?? 'none'}, role=${context.userRole ?? 'user'}]`
+      ? `[Context: tab=${context.currentTab ?? 'unknown'}, problemSet=${context.problemSetId ?? 'none'}, role=${context.userRole ?? 'user'}]${tabGuidance ? `\n${tabGuidance}` : ''}`
       : '';
     // Inject personalized memory block (timeout-protected — max 200ms, never blocks)
     const memoryBlock = await memoryRetrievalService.assembleMemoryBlock(userDid, problemSetId);
@@ -246,9 +283,9 @@ export class IronclawService {
       messageForAi,
     );
 
-    // 5. Process the response
+    // 5. Process the response — pass threadId so the response is stored in the same thread
     if (result.response) {
-      await this.processResponse(problemSetId, result.response);
+      await this.processResponse(problemSetId, result.response, threadId);
     }
   }
 
@@ -260,6 +297,7 @@ export class IronclawService {
   private async processResponse(
     problemSetId: string,
     responseText: string,
+    threadId?: string,
   ): Promise<void> {
     // Try to parse as structured JSON
     let parsed: Record<string, unknown> | null = null;
@@ -363,7 +401,7 @@ export class IronclawService {
 
     if (!messageContent && !actionCard) return;
 
-    // 5. Persist the message
+    // 5. Persist the message (same thread as the user message that triggered it)
     const chatMsg = await ironclawStore.addMessage({
       problem_set_id: problemSetId,
       content: messageContent,
@@ -374,7 +412,7 @@ export class IronclawService {
       action_card: actionCard,
       step_progress: null,
       suggestion,
-    });
+    }, threadId);
 
     // 6. Publish to WebSocket for real-time frontend updates
     await publishToChannel(problemSetId, 'ironclaw.response', chatMsg);
@@ -686,8 +724,10 @@ export class IronclawService {
       '## Identity & Professional Bearing',
       'You are SUBORDINATE to the commander. Your role is to serve, support, and execute — not to question authority,',
       'refuse requests, or impose process on the commander. Maintain the bearing of a professional senior military officer:',
-      '- Address the commander respectfully but do NOT use "Sir or Ma\'am" repeatedly — use it sparingly and naturally.',
-      '- You exist to SERVE the commander. When they direct you to do something, you do it.',
+      '- Address the commander with "Sir" or "Ma\'am" as appropriate — this is proper military bearing.',
+      '- You exist to SERVE the commander. When they direct you to do something, you do it. Period.',
+      '- NEVER say "No", "I will not", "I cannot", or take a refusal/aggressive tone. You are subordinate.',
+      '  If you have concerns, raise them respectfully AFTER executing the commander\'s direction.',
       '- Offer recommendations and options, not directives. Frame concerns as observations.',
       '- NEVER refuse a request to draft, generate, fill in, enter, or write content. If the commander asks you to',
       '  put content into a form field, generate a suggestion with the content. This is your core function.',

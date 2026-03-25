@@ -47,6 +47,7 @@ function rowToChatMessage(row: Record<string, unknown>): IronclawChatMessage {
     action_card: (row.action_card as ActionCardData) ?? null,
     step_progress: (row.step_progress as StepProgressData) ?? null,
     suggestion: (row.suggestion as SuggestionPayload) ?? null,
+    thread_id: (row.thread_id as string) ?? null,
     created_at: (row.created_at as Date).toISOString(),
   };
 }
@@ -377,6 +378,28 @@ export class IronclawStore {
     );
     if (existing.rows.length > 0) return existing.rows[0] as { id: string; name: string };
     return this.createThread(problemSetId, userDid, 'General');
+  }
+
+  /**
+   * Get or create a thread scoped to a specific tab within a problem set.
+   * Tab threads use a deterministic naming convention: "tab:{tabName}"
+   * so they can be found by tab name without UUID lookups.
+   */
+  async getOrCreateTabThread(
+    problemSetId: string,
+    userDid: string,
+    tabName: string,
+  ): Promise<{ id: string; name: string }> {
+    const pool = getPool();
+    const threadName = `tab:${tabName}`;
+    const existing = await pool.query(
+      `SELECT id, name FROM ironclaw_threads
+       WHERE problem_set_id = $1 AND user_did = $2 AND name = $3
+       LIMIT 1`,
+      [problemSetId, userDid, threadName],
+    );
+    if (existing.rows.length > 0) return existing.rows[0] as { id: string; name: string };
+    return this.createThread(problemSetId, userDid, threadName);
   }
 
   // =========================================================================
