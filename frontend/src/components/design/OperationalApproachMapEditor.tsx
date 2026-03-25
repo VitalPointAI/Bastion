@@ -507,7 +507,7 @@ export function OperationalApproachMapEditor({
     if (symbols !== prevSymbolsRef.current || controlMeasures !== prevMeasuresRef.current) {
       prevSymbolsRef.current = symbols;
       prevMeasuresRef.current = controlMeasures;
-      onOverlayChange({ symbols, controlMeasures });
+      onOverlayChange({ symbols, controlMeasures, lastUpdatedBy: 'user', lastUpdatedAt: new Date().toISOString() });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only sync on Yjs array identity change
   }, [symbols, controlMeasures]);
