@@ -586,15 +586,37 @@ async def receive_loop(
                             task.cancel()
                     log.info("mission_client.reset_followers_stopped")
 
-                # 3. Reset dead-reckoned positions and heading
+                # 3. Turn to face the reset heading BEFORE resetting yaw.
+                # reset_yaw() zeroes the IMU at the current physical orientation.
+                # If the robot ended up facing NW after a mission, we must turn
+                # back to heading 0 (north) first so the yaw reset is correct.
                 pos = msg.get("position", {})
                 px = float(pos.get("x", 0.0))
                 py = float(pos.get("y", 0.0))
                 hdg = float(msg.get("heading", 0.0))
+
+                # Drive at speed 0 to rotate back to heading 0 before yaw reset
+                current_heading = _driver._heading
+                if abs(current_heading) > 5 and not _driver._simulate and _driver._rvr:
+                    log.info("mission_client.reset_turning_to_zero",
+                             current_heading=round(current_heading, 1))
+                    await _driver._run(
+                        _driver._rvr.drive_with_heading,
+                        speed=0,
+                        heading=0,
+                        flags=0,
+                    )
+                    # Wait proportional to turn angle
+                    angle_delta = abs(current_heading)
+                    if angle_delta > 180:
+                        angle_delta = 360 - angle_delta
+                    turn_time = max(0.5, (angle_delta / 180) * 1.5)
+                    await asyncio.sleep(turn_time)
+
                 _driver.set_position(px, py)
                 _driver._heading = hdg
 
-                # 4. Reset yaw on hardware so heading 0 = current facing direction
+                # 4. Reset yaw on hardware — now facing north, so yaw 0 = north
                 await _driver.reset_yaw()
 
                 # 5. Reset BLE follower positions and yaw
