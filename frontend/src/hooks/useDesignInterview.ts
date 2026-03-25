@@ -35,11 +35,17 @@ export interface DesignInterviewMeta {
   fieldWrites?: Array<{ targetField: string; value: string | string[] }>;
 }
 
+export interface ChatHistoryEntry {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface UseDesignInterviewResult {
   interviewState: DesignInterviewMeta | null;
   isActive: boolean;
   isLoading: boolean;
   lastMessage: string | null;
+  chatHistory: ChatHistoryEntry[];
   error: string | null;
   startInterview: (mode?: 'new' | 'revision') => Promise<void>;
   sendMessage: (message: string) => Promise<void>;
@@ -85,6 +91,7 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
   const [interviewState, setInterviewState] = useState<DesignInterviewMeta | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [lastMessage, setLastMessage] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [directedRole, setDirectedRole] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Map<string, string>>(new Map());
@@ -242,9 +249,19 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
       try {
         const res = await fetch(`/api/design-interview/${problemSetId}/state`);
         if (!res.ok) return;
-        const data = await res.json() as { state: DesignInterviewMeta | null };
+        const data = await res.json() as {
+          state: DesignInterviewMeta | null;
+          lastMessage?: string | null;
+          chatHistory?: ChatHistoryEntry[];
+        };
         if (mountedRef.current && data.state) {
           setInterviewState(data.state);
+          if (data.lastMessage) {
+            setLastMessage(data.lastMessage);
+          }
+          if (data.chatHistory && data.chatHistory.length > 0) {
+            setChatHistory(data.chatHistory);
+          }
         }
       } catch {
         // Silent — no interview to resume
@@ -290,6 +307,7 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
       if (mountedRef.current) {
         setInterviewState(data.state);
         setLastMessage(data.message);
+        setChatHistory([{ role: 'assistant', content: data.message }]);
         setDirectedRole(data.directedRole ?? null);
         syncStateToYjs(data.state, data.message, data.directedRole ?? null);
       }
@@ -303,6 +321,8 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
   const sendMessage = useCallback(async (message: string) => {
     setIsLoading(true);
     setError(null);
+    // Optimistic: show user message immediately
+    setChatHistory(prev => [...prev, { role: 'user', content: message }]);
     try {
       const res = await fetch(`/api/design-interview/${problemSetId}/continue`, {
         method: 'POST',
@@ -320,6 +340,7 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
       if (mountedRef.current) {
         setInterviewState(data.state);
         setLastMessage(data.message);
+        setChatHistory(prev => [...prev, { role: 'assistant', content: data.message }]);
         setDirectedRole(data.directedRole ?? null);
         syncStateToYjs(data.state, data.message, data.directedRole ?? null);
 
@@ -355,6 +376,7 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
       if (mountedRef.current) {
         setInterviewState(data.state);
         setLastMessage(data.message);
+        setChatHistory(prev => [...prev, { role: 'assistant', content: data.message }]);
         setDirectedRole(data.directedRole ?? null);
         syncStateToYjs(data.state, data.message, data.directedRole ?? null);
       }
@@ -378,6 +400,7 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
       if (mountedRef.current) {
         setInterviewState(null);
         setLastMessage(null);
+        setChatHistory([]);
         setDirectedRole(null);
         // Clear Yjs state map
         const stateMap = getMap<unknown>('interviewState');
@@ -430,6 +453,7 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
           const data = await res.json() as { critique: string | null };
           if (data.critique && mountedRef.current) {
             setLastMessage(data.critique);
+            setChatHistory(prev => [...prev, { role: 'assistant', content: data.critique! }]);
           }
         } catch {
           // Non-fatal — don't disrupt the editing workflow
@@ -449,6 +473,7 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
     isActive,
     isLoading,
     lastMessage,
+    chatHistory,
     error,
     startInterview,
     sendMessage,

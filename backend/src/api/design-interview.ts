@@ -102,7 +102,28 @@ router.get('/:problemSetId/state', async (req: Request, res: Response) => {
 
     const result = await designInterviewService.getInterviewState(problemSetId);
 
-    res.json({ state: result?.meta ?? null });
+    if (!result) {
+      res.json({ state: null, lastMessage: null, chatHistory: [] });
+      return;
+    }
+
+    // Extract simplified chat history from LangGraph messages for resume
+    const chatHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    for (const msg of result.messages) {
+      if (msg.type === 'system') continue;
+      const text = extractMessageText(msg.content);
+      if (!text) continue;
+      chatHistory.push({
+        role: msg.type === 'human' ? 'user' : 'assistant',
+        content: text,
+      });
+    }
+
+    // Last AI message for immediate display
+    const lastAiMsg = [...result.messages].reverse().find(m => m.type === 'ai');
+    const lastMessage = lastAiMsg ? extractMessageText(lastAiMsg.content) : null;
+
+    res.json({ state: result.meta, lastMessage, chatHistory });
   } catch (err) {
     console.error('[design-interview] state error:', err);
     res.status(500).json({ error: (err as Error).message });

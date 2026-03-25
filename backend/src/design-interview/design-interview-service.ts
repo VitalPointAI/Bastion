@@ -305,6 +305,28 @@ async function processAnswer(
     console.warn('[DesignInterviewService] Failed to extract structured data from answer');
   }
 
+  // ── Step 1b: Detect "draft for me" meta-instructions ──────────────────────
+  // When the user asks Ironclaw to draft/generate/fill in content rather than
+  // providing substantive answers, extraction finds nothing. Detect this pattern
+  // and generate content for the requested field(s) using available context.
+  const draftRequestFields = detectDraftRequest(userAnswerText, currentSection);
+  if (draftRequestFields.length > 0) {
+    try {
+      const generated = await generateDraftContent(
+        llm,
+        currentSection,
+        draftRequestFields,
+        updatedDesign as Partial<OperationalDesign>,
+        conversationMessages,
+      );
+      if (generated) {
+        updatedDesign = deepMerge(updatedDesign, generated);
+      }
+    } catch (err) {
+      console.warn('[DesignInterviewService] Draft generation failed (non-blocking):', err);
+    }
+  }
+
   // ── Step 2: KG gap detection and background research dispatch ─────────────
   // CRITICAL: Fire-and-forget, never awaited (Pitfall 5)
   // The interview MUST continue regardless of research dispatch success/failure
@@ -445,6 +467,99 @@ function detectKGGaps(
   }
 
   return gaps.slice(0, 3); // Cap at 3 research topics per turn
+}
+
+// ============================================================================
+// Draft Request Detection & Generation
+// ============================================================================
+
+/** Field names that can be mapped from user intent to structured data keys */
+const DRAFT_FIELD_PATTERNS: Array<{ pattern: RegExp; fields: string[] }> = [
+  { pattern: /\b(?:end\s*state|desired\s*(?:end\s*)?state|desired\s*conditions?)\b/i, fields: ['desiredEndState'] },
+  { pattern: /\b(?:current\s*state|current\s*conditions?|situation|environment)\b/i, fields: ['currentState'] },
+  { pattern: /\b(?:problem\s*statement)\b/i, fields: ['problemStatement'] },
+  { pattern: /\b(?:tensions?|key\s*tensions?)\b/i, fields: ['keyTensions'] },
+  { pattern: /\b(?:obstacles?|barriers?)\b/i, fields: ['obstacles'] },
+  // Catch-all for section-level drafts
+  { pattern: /\b(?:all|everything|whole\s*section|entire\s*section)\b/i, fields: ['desiredEndState', 'problemStatement', 'keyTensions', 'obstacles'] },
+];
+
+/** Action verbs that indicate the user wants Ironclaw to generate content */
+const DRAFT_ACTION_PATTERN = /\b(?:draft|generate|write|create|fill\s*(?:in|out)|suggest|propose|come\s*up\s*with|provide|give\s*me|enter|put\s*in|start\s*with)\b/i;
+
+/**
+ * Detect whether the user's message is a meta-instruction asking Ironclaw
+ * to draft/generate content rather than providing domain answers.
+ * Returns the list of field keys the user wants drafted.
+ */
+function detectDraftRequest(
+  userMessage: string,
+  _section: DesignInterviewSection,
+): string[] {
+  // Must contain a draft-action verb
+  if (!DRAFT_ACTION_PATTERN.test(userMessage)) return [];
+
+  const requestedFields: string[] = [];
+  for (const { pattern, fields } of DRAFT_FIELD_PATTERNS) {
+    if (pattern.test(userMessage)) {
+      for (const f of fields) {
+        if (!requestedFields.includes(f)) requestedFields.push(f);
+      }
+    }
+  }
+
+  return requestedFields;
+}
+
+/**
+ * Generate draft content for requested fields using available context.
+ * Returns a partial design object suitable for deep-merging into derivedDesign.
+ */
+async function generateDraftContent(
+  llm: Awaited<ReturnType<typeof getInterviewLLM>>,
+  section: DesignInterviewSection,
+  fields: string[],
+  derivedDesign: Partial<OperationalDesign>,
+  conversationMessages: BaseMessage[],
+): Promise<Record<string, unknown> | null> {
+  const fieldList = fields.join(', ');
+  const existingDesign = JSON.stringify(derivedDesign, null, 2).substring(0, 2000);
+
+  const prompt = `You are Ironclaw, an AI chief of staff. The commander has asked you to draft content for the following field(s): ${fieldList}.
+
+Use ALL available context — the conversation history, the current design data, and your doctrinal knowledge — to produce the best possible draft.
+
+Current design state:
+${existingDesign}
+
+Generate substantive, doctrinally sound content for each requested field. Return ONLY valid JSON matching the extraction schema for ${section}. No markdown code fences, no explanation.
+
+${buildExtractionPrompt(section, derivedDesign).split('\n\n').slice(1).join('\n\n')}`;
+
+  const response = await llm.invoke([
+    new SystemMessage(prompt),
+    ...conversationMessages,
+    new HumanMessage(`Draft the following fields now: ${fieldList}. Use the conversation context and available intelligence to produce the best starting point.`),
+  ]);
+
+  const content = extractTextContent(response.content);
+  try {
+    let parsed: Record<string, unknown> | null = null;
+    try {
+      parsed = JSON.parse(content.trim()) as Record<string, unknown>;
+    } catch {
+      const jsonMatch =
+        content.match(/```(?:json)?\s*([\s\S]*?)```/) ||
+        content.match(/(\{[\s\S]*\})/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[1]) as Record<string, unknown>;
+      }
+    }
+    return parsed;
+  } catch {
+    console.warn('[DesignInterviewService] Failed to parse draft generation response');
+    return null;
+  }
 }
 
 /**
