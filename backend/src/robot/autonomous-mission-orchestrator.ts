@@ -312,8 +312,17 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       });
 
       this.logPhase(state, `Leader ${config.leaderId} — establish observation post at grid ${opGrid}, facing ${facingDesc}`);
-      this.logPhase(state, 'Scanning for threats — kill zone and firing positions to be determined on contact');
-      this.logPhase(state, 'Followers holding at base pending leader assessment');
+      this.logPhase(state, 'Intel reports enemy armor advancing south — proactively planning kill zone');
+      this.logPhase(state, 'Followers holding at base pending tactical assessment');
+
+      // ── PROACTIVE PLANNING ──
+      // Intel says tanks are advancing south. Alpha plans the kill zone and
+      // requests followers immediately — don't wait for visual detection.
+      // Detection will trigger lethal authorization later.
+      this.publishUpdate(state);
+
+      // Give alpha a few seconds to reach the OP before planning
+      setTimeout(() => this.proactiveTacticalAssessment(id), 5000);
     } else {
       // ── PATROL RECON MODE (original) ──
       // Use the plan_screening_route skill to compute the recon route
@@ -397,7 +406,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       const enemyPos = det.estimated_position ?? robotPos;
 
       for (const [seqId, state] of this.sequences) {
-        if (state.config.leaderId === robotId && (state.phase === 'recon' || state.phase === 'assess')) {
+        if (state.config.leaderId === robotId && (state.phase === 'recon' || state.phase === 'assess' || state.phase === 'positioning' || state.phase === 'plan_submitted')) {
           // Ignore detections in first 10 seconds — camera settling, robot hasn't moved yet
           const seqAge = now - new Date(state.startedAt).getTime();
           if (seqAge < 10_000) continue;
@@ -471,7 +480,84 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     return true;
   }
 
-  // ── Phase: ASSESS (AI tactical reasoning) ──────────────────────────────
+  // ── Proactive tactical assessment (OP mode — plan before contact) ─────
+
+  private async proactiveTacticalAssessment(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state || state.phase !== 'recon') return;
+
+    const config = state.config;
+    const op = config.observationPost!;
+    const leaderPos = op.position;
+
+    // Create an intel-based threat estimate — tanks advancing south through the AO.
+    // This is used to seed the AI planner. Actual detection updates positions later.
+    const intelThreat: ThreatInfo = {
+      entityId: 'INTEL-armor-south',
+      classDesc: 'Enemy armor (intel)',
+      confidence: 0.6, // intel-based, not visually confirmed
+      detectedAt: {
+        // Estimate enemy approach from the north, centered in the AO
+        x: (config.reconArea.x_min + config.reconArea.x_max) / 2,
+        y: config.reconArea.y_max,
+      },
+      estimatedHeading: 180, // moving south
+    };
+
+    state.phase = 'assess';
+    state.phaseStartedAt = new Date().toISOString();
+    this.logPhase(state, 'ASSESS phase — planning kill zone based on intelligence');
+    this.logPhase(state, `Intel: enemy armor advancing south, estimated approach from grid ${roomToGridRef(intelThreat.detectedAt.x, intelThreat.detectedAt.y)}`);
+    this.publishUpdate(state);
+
+    try {
+      // Build commander's intent — OP is fixed, AI determines kill zone
+      const opGrid = roomToGridRef(op.position.x, op.position.y);
+      const commanderIntent = [
+        `Leader is holding at observation post grid ${opGrid} (${op.position.x.toFixed(1)}, ${op.position.y.toFixed(1)}) facing heading ${op.facingHeading}°. The overwatch position MUST be the leader's current OP position — do NOT move the leader.`,
+        'Intelligence reports enemy armor advancing south through the area of operations.',
+        'Assess the likely avenue of approach and determine the optimal kill zone location to interdict enemy armor moving south.',
+        'Position followers with flanking firing arcs and interlocking fields of fire across the kill zone.',
+      ].join(' ');
+
+      const plan = await generateTacticalPlan(
+        [intelThreat],
+        {
+          leader: { id: config.leaderId, position: leaderPos },
+          followers: config.followerIds.map((fid) => ({
+            id: fid,
+            position: config.homeBase,
+          })),
+        },
+        config.homeBase,
+        commanderIntent,
+      );
+
+      state.tacticalPlan = plan;
+      this.logPhase(state, `ASSESSMENT: ${plan.assessment}`);
+      this.logPhase(state, `Recommendation: ${plan.engagementRecommendation.toUpperCase()} (confidence: ${(plan.planConfidence * 100).toFixed(0)}%)`);
+
+      const owGrid = roomToGridRef(plan.overwatch.position.x, plan.overwatch.position.y);
+      this.logPhase(state, `Overwatch: grid ${owGrid} — ${plan.overwatch.reasoning}`);
+
+      for (let i = 0; i < plan.firingPositions.length; i++) {
+        const fp = plan.firingPositions[i];
+        const fpGrid = roomToGridRef(fp.position.x, fp.position.y);
+        this.logPhase(state, `Firing pos ${i + 1}: grid ${fpGrid} — ${fp.reasoning}`);
+      }
+
+      this.publishUpdate(state);
+
+      // Request follower resources and position them immediately
+      await this.submitResourceRequestAndMoveToOverwatch(seqId);
+    } catch (err) {
+      this.logPhase(state, `Tactical assessment failed: ${err}`);
+      state.error = String(err);
+      this.publishUpdate(state);
+    }
+  }
+
+  // ── Phase: ASSESS (AI tactical reasoning — reactive to detection) ─────
 
   private async handleThreatDetection(
     seqId: string,
@@ -513,6 +599,16 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         (state as unknown as { leaderDetectionPos: { x: number; y: number } }).leaderDetectionPos =
           { ...leader.latest_telemetry.position };
       }
+    }
+
+    // ── OP MODE: followers already in position → detection triggers lethal auth ──
+    if (state.config.observationPost && state.phase === 'positioning') {
+      this.logPhase(state, `VISUAL CONFIRMATION: ${threat.classDesc} at grid ${threatGrid} — matches intelligence`);
+      this.logPhase(state, 'Kill zone is set, followers in position — requesting lethal authorization');
+      this.publishUpdate(state);
+      // Skip directly to engagement attempt (which will trigger DID policy block → lethal auth)
+      await this.attemptEngagement(seqId);
+      return;
     }
 
     // Only trigger assessment on first detection in recon phase
@@ -1808,7 +1904,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
           };
 
           for (const [seqId, state] of this.sequences) {
-            if (state.config.leaderId === robotId && (state.phase === 'recon' || state.phase === 'assess')) {
+            if (state.config.leaderId === robotId && (state.phase === 'recon' || state.phase === 'assess' || state.phase === 'positioning' || state.phase === 'plan_submitted')) {
               this.handleThreatDetection(seqId, threat);
             }
           }
