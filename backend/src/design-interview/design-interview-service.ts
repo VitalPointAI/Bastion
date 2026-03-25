@@ -311,6 +311,7 @@ async function processAnswer(
   // and generate content for the requested field(s) using available context.
   const draftRequestFields = detectDraftRequest(userAnswerText, currentSection);
   if (draftRequestFields.length > 0) {
+    console.log(`[DesignInterviewService] Draft request detected for fields: ${draftRequestFields.join(', ')} (section: ${currentSection})`);
     try {
       const generated = await generateDraftContent(
         llm,
@@ -321,6 +322,13 @@ async function processAnswer(
       );
       if (generated) {
         updatedDesign = deepMerge(updatedDesign, generated);
+        console.log('[DesignInterviewService] Draft merged. updatedDesign keys:', Object.keys(updatedDesign));
+        const pfAfter = updatedDesign.problemFraming as Record<string, unknown> | undefined;
+        if (pfAfter) {
+          console.log('[DesignInterviewService] problemFraming keys after merge:', Object.keys(pfAfter));
+        }
+      } else {
+        console.warn('[DesignInterviewService] Draft generation returned null');
       }
     } catch (err) {
       console.warn('[DesignInterviewService] Draft generation failed (non-blocking):', err);
@@ -365,28 +373,56 @@ async function processAnswer(
     }
   }
 
-  // ── Step 4: Generate red-team challenge (append as AI follow-up) ──────────
+  // ── Step 4: Generate response ──────────────────────────────────────────────
+  // When a draft was generated, acknowledge it instead of red-teaming a meta-instruction.
+  // Otherwise, generate the standard red-team challenge.
 
-  const redTeamPromptText = getRedTeamPrompt(
-    currentSection,
-    userAnswerText,
-    updatedDesign as Partial<OperationalDesign>,
-  );
+  let responseMessage: AIMessage;
 
-  const redTeamResponse = await llm.invoke([
-    new SystemMessage(redTeamPromptText),
-    ...conversationMessages,
-  ]);
+  if (draftRequestFields.length > 0) {
+    // Draft was requested — generate an acknowledgment + review prompt
+    const draftAckPrompt = `You are Ironclaw, an AI chief of staff guiding a design interview.
+
+The commander just asked you to draft content for: ${draftRequestFields.join(', ')}.
+You have generated a draft and placed it in the form fields on the left panel.
+
+Current design state:
+${JSON.stringify(updatedDesign, null, 2).substring(0, 2000)}
+
+Respond with a BRIEF (2-3 sentences) message that:
+1. Confirms you've drafted the content and placed it in the form
+2. Summarizes what you wrote in one sentence
+3. Asks the commander to review, edit, and refine it
+
+Be concise, professional, and conversational. Do NOT repeat the full drafted text — just reference it.`;
+
+    responseMessage = await llm.invoke([
+      new SystemMessage(draftAckPrompt),
+      ...conversationMessages,
+    ]) as AIMessage;
+  } else {
+    // Standard flow: red-team challenge
+    const redTeamPromptText = getRedTeamPrompt(
+      currentSection,
+      userAnswerText,
+      updatedDesign as Partial<OperationalDesign>,
+    );
+
+    responseMessage = await llm.invoke([
+      new SystemMessage(redTeamPromptText),
+      ...conversationMessages,
+    ]) as AIMessage;
+  }
 
   // Append divergence note to response if applicable
-  if (divergenceNote && typeof redTeamResponse.content === 'string') {
-    redTeamResponse.content += divergenceNote;
+  if (divergenceNote && typeof responseMessage.content === 'string') {
+    responseMessage.content += divergenceNote;
   }
 
   return {
     derivedDesign: updatedDesign as Partial<OperationalDesign>,
     pendingResearch: updatedPendingResearch,
-    messages: [redTeamResponse],
+    messages: [responseMessage],
   };
 }
 
@@ -555,6 +591,32 @@ ${buildExtractionPrompt(section, derivedDesign).split('\n\n').slice(1).join('\n\
         parsed = JSON.parse(jsonMatch[1]) as Record<string, unknown>;
       }
     }
+
+    if (!parsed) {
+      console.warn('[DesignInterviewService] Draft generation returned no parseable JSON. Raw:', content.substring(0, 500));
+      return null;
+    }
+
+    // Normalize: if LLM returned flat field names without the section wrapper,
+    // wrap them so deepMerge places content at the correct level.
+    // e.g. { "desiredEndState": "..." } → { "problemFraming": { "desiredEndState": "..." } }
+    const SECTION_WRAPPER_KEY: Record<string, string> = {
+      'problem-framing': 'problemFraming',
+      'cog-analysis': 'cogAnalysis',
+      'loes': 'linesOfEffort',
+      'operational-approach': 'operationalApproach',
+    };
+    const wrapperKey = SECTION_WRAPPER_KEY[section];
+    if (wrapperKey && !parsed[wrapperKey]) {
+      // Check if any of the requested fields exist at top level (flat response)
+      const hasTopLevelField = fields.some((f) => f in parsed!);
+      if (hasTopLevelField) {
+        console.log(`[DesignInterviewService] Draft response missing '${wrapperKey}' wrapper — normalizing flat fields`);
+        parsed = { [wrapperKey]: parsed };
+      }
+    }
+
+    console.log('[DesignInterviewService] Draft generated for fields:', fields, 'keys:', Object.keys(parsed));
     return parsed;
   } catch {
     console.warn('[DesignInterviewService] Failed to parse draft generation response');
@@ -1197,6 +1259,17 @@ function extractMeta(state: DesignInterviewState, prevDerivedDesign?: Partial<Op
       if (Array.isArray(pf.obstacles) && pf.obstacles.length > 0 && JSON.stringify(pf.obstacles) !== JSON.stringify(prevPf?.obstacles)) {
         fieldWrites.push({ targetField: 'obstacles', value: pf.obstacles as string[] });
       }
+    }
+  }
+
+  if (fieldWrites.length > 0) {
+    console.log('[DesignInterviewService] Field writes generated:', fieldWrites.map(fw => fw.targetField));
+  } else if (prevDerivedDesign) {
+    // Log when we expected field writes but got none (draft was requested)
+    const pf = d?.problemFraming as Record<string, unknown> | undefined;
+    const prevPf = (prevDerivedDesign as Record<string, unknown>)?.problemFraming as Record<string, unknown> | undefined;
+    if (pf?.desiredEndState) {
+      console.log('[DesignInterviewService] desiredEndState exists but no fieldWrite. Current:', String(pf.desiredEndState).substring(0, 80), '| Prev:', String(prevPf?.desiredEndState ?? '(none)').substring(0, 80));
     }
   }
 
