@@ -859,13 +859,26 @@ class AutonomousMissionOrchestrator extends EventEmitter {
 
     for (let i = 0; i < state.config.followerIds.length; i++) {
       const followerId = state.config.followerIds[i];
-      const rawRoute = plan.routes.followerRoutes[i];
+      const rawRoute = plan.routes?.followerRoutes?.[i];
       // LLM may return a single coordinate object instead of an array — normalize
-      const route = Array.isArray(rawRoute)
+      let route = Array.isArray(rawRoute)
         ? rawRoute
         : rawRoute && typeof rawRoute === 'object'
           ? [rawRoute as { x: number; y: number }]
           : [plan.firingPositions[i]?.position ?? state.config.homeBase];
+
+      // Filter out waypoints with missing/null coordinates (LLM can return garbage)
+      route = route.filter((wp: { x?: number; y?: number }) =>
+        typeof wp?.x === 'number' && typeof wp?.y === 'number' && isFinite(wp.x) && isFinite(wp.y),
+      );
+      // If all waypoints were invalid, fall back to firing position or home base
+      if (route.length === 0) {
+        const fallback = plan.firingPositions[i]?.position ?? state.config.homeBase;
+        route = [fallback];
+        this.logPhase(state, `WARNING: ${followerId} route was empty/invalid — using fallback position`);
+      }
+
+      console.log(`[AutoMission] ${followerId} route: ${JSON.stringify(route)}`);
       const missionId = randomUUID();
 
       state.missions[`advance_${followerId}`] = missionId;
