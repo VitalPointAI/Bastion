@@ -111,9 +111,9 @@ const AUTO_DEFAULTS: AutoConfig = {
 // Require multiple detections before confirming a threat to filter false positives.
 // Key: "class|gridX|gridY" (1m grid), Value: { count, firstSeen, lastSeen, bestConf, bestPos }
 
-const CONFIRM_MIN_DETECTIONS = 3;   // need 3 detections
-const CONFIRM_WINDOW_MS = 8_000;    // within 8 seconds
-const CONFIRM_MIN_CONFIDENCE = 0.50; // each detection must be ≥50%
+const CONFIRM_MIN_DETECTIONS = 2;   // need 2 detections (real targets visible briefly while moving)
+const CONFIRM_WINDOW_MS = 30_000;   // within 30 seconds (robot may pass tank slowly)
+const CONFIRM_MIN_CONFIDENCE = 0.45; // slightly above YOLO threshold (0.4) to filter noise
 
 interface PendingDetection {
   count: number;

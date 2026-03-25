@@ -196,7 +196,19 @@ Respond ONLY with the JSON plan, no markdown or explanation."""
             if text.endswith("```"):
                 text = text[:-3].strip()
 
-        plan = json.loads(text)
+        # Extract JSON object — LLM may include trailing text after the closing brace
+        import re
+        json_match = re.search(r'\{[\s\S]*\}', text)
+        if json_match:
+            text = json_match.group(0)
+
+        try:
+            plan = json.loads(text)
+        except json.JSONDecodeError:
+            # Try fixing common LLM JSON issues: trailing commas, comments
+            cleaned = re.sub(r',\s*([}\]])', r'\1', text)  # trailing commas
+            cleaned = re.sub(r'//[^\n]*', '', cleaned)       # line comments
+            plan = json.loads(cleaned)  # let it raise if still invalid
 
         log.info(
             "tactical_planner.plan_generated",
