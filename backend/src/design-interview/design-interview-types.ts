@@ -164,6 +164,11 @@ export const DesignInterviewStateAnnotation = Annotation.Root({
  * Lightweight metadata returned alongside AI messages.
  * Used for UI progress indicators and state restore.
  */
+export interface FieldWrite {
+  targetField: string;
+  value: string | string[];
+}
+
 export interface DesignInterviewMeta {
   currentSection: DesignInterviewSection;
   sectionCoverage: Record<string, SectionCoverage>;
@@ -171,4 +176,6 @@ export interface DesignInterviewMeta {
   isComplete: boolean;
   interviewMode: InterviewMode;
   awaitingSectionConfirm: boolean;
+  /** Field writes to apply to the design form — populated when derivedDesign changes */
+  fieldWrites?: FieldWrite[];
 }

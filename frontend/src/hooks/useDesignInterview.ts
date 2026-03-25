@@ -32,6 +32,7 @@ export interface DesignInterviewMeta {
   questionsAsked: number;
   isComplete: boolean;
   interviewMode: 'new' | 'revision';
+  fieldWrites?: Array<{ targetField: string; value: string | string[] }>;
 }
 
 export interface UseDesignInterviewResult {
@@ -321,6 +322,15 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
         setLastMessage(data.message);
         setDirectedRole(data.directedRole ?? null);
         syncStateToYjs(data.state, data.message, data.directedRole ?? null);
+
+        // Dispatch field writes to design forms
+        if (data.state.fieldWrites?.length) {
+          for (const fw of data.state.fieldWrites) {
+            window.dispatchEvent(new CustomEvent('ironclaw:field-write', {
+              detail: { targetField: fw.targetField, value: fw.value },
+            }));
+          }
+        }
       }
     } catch (err) {
       if (mountedRef.current) setError((err as Error).message);

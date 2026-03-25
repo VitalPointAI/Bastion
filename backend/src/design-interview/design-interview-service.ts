@@ -909,6 +909,10 @@ export class DesignInterviewService {
       configurable: { thread_id: `design-interview-${problemSetId}` },
     };
 
+    // Snapshot derivedDesign before invocation to diff field changes
+    const snapshot = await graph.getState(config);
+    const prevDerivedDesign = (snapshot?.values as DesignInterviewState | undefined)?.derivedDesign;
+
     const result = await graph.invoke(
       {
         messages: [new HumanMessage(userMessage)],
@@ -921,7 +925,7 @@ export class DesignInterviewService {
 
     return {
       message: lastMessage as AIMessage,
-      meta: extractMeta(result as DesignInterviewState),
+      meta: extractMeta(result as DesignInterviewState, prevDerivedDesign as Partial<OperationalDesign> | undefined),
     };
   }
 
@@ -1012,7 +1016,36 @@ export class DesignInterviewService {
 // Utility: Extract meta from state
 // ============================================================================
 
-function extractMeta(state: DesignInterviewState): DesignInterviewMeta {
+function extractMeta(state: DesignInterviewState, prevDerivedDesign?: Partial<OperationalDesign>): DesignInterviewMeta {
+  // Generate field writes from derivedDesign changes
+  const fieldWrites: Array<{ targetField: string; value: string | string[] }> = [];
+  const d = state.derivedDesign as Record<string, unknown> | undefined;
+
+  if (d) {
+    const prev = (prevDerivedDesign ?? {}) as Record<string, unknown>;
+
+    // Problem Framing fields
+    const pf = d.problemFraming as Record<string, unknown> | undefined;
+    const prevPf = prev.problemFraming as Record<string, unknown> | undefined;
+    if (pf) {
+      if (pf.currentState && pf.currentState !== prevPf?.currentState) {
+        fieldWrites.push({ targetField: 'currentState', value: pf.currentState as string });
+      }
+      if (pf.desiredEndState && pf.desiredEndState !== prevPf?.desiredEndState) {
+        fieldWrites.push({ targetField: 'desiredEndState', value: pf.desiredEndState as string });
+      }
+      if (pf.problemStatement && pf.problemStatement !== prevPf?.problemStatement) {
+        fieldWrites.push({ targetField: 'problemStatement', value: pf.problemStatement as string });
+      }
+      if (Array.isArray(pf.keyTensions) && JSON.stringify(pf.keyTensions) !== JSON.stringify(prevPf?.keyTensions)) {
+        fieldWrites.push({ targetField: 'keyTensions', value: pf.keyTensions as string[] });
+      }
+      if (Array.isArray(pf.obstacles) && JSON.stringify(pf.obstacles) !== JSON.stringify(prevPf?.obstacles)) {
+        fieldWrites.push({ targetField: 'obstacles', value: pf.obstacles as string[] });
+      }
+    }
+  }
+
   return {
     currentSection: state.currentSection,
     sectionCoverage: state.sectionCoverage,
@@ -1020,6 +1053,7 @@ function extractMeta(state: DesignInterviewState): DesignInterviewMeta {
     isComplete: state.isComplete,
     interviewMode: state.interviewMode,
     awaitingSectionConfirm: state.awaitingSectionConfirm,
+    fieldWrites: fieldWrites.length > 0 ? fieldWrites : undefined,
   };
 }
 

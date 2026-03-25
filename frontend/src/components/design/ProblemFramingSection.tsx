@@ -116,8 +116,18 @@ function DynamicList({
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
+// Design field names that map to ProblemFramingData keys
+const FIELD_MAP: Record<string, keyof ProblemFramingData> = {
+  currentState: 'currentState',
+  current_state: 'currentState',
+  desiredEndState: 'desiredEndState',
+  desired_end_state: 'desiredEndState',
+  problemStatement: 'problemStatement',
+  problem_statement: 'problemStatement',
+};
+
 export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: ProblemFramingSectionProps) {
-  const { toggleDrawer } = useIronclawContext();
+  const { toggleDrawer, onFieldWrite } = useIronclawContext();
   const designInterview = useDesignInterview(problemSetId);
   const { participants, isCollaborative, isMyTurn } = designInterview;
   const [formData, setFormData] = useState<ProblemFramingData>(() => ({
@@ -135,6 +145,35 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
+
+  // Subscribe to Ironclaw field write events — drafts go directly into form fields
+  useEffect(() => {
+    const handleFieldWrite = (e: Event) => {
+      const { targetField, value } = (e as CustomEvent).detail as { targetField: string; value: string | string[] };
+      const fieldKey = FIELD_MAP[targetField];
+      if (fieldKey && typeof value === 'string') {
+        setFormData((prev) => ({ ...prev, [fieldKey]: value }));
+      }
+      // Handle array fields (keyTensions, obstacles)
+      if (targetField === 'keyTensions' || targetField === 'key_tensions') {
+        const items = Array.isArray(value) ? value : (value as string).split('\n').filter(Boolean);
+        setFormData((prev) => ({ ...prev, keyTensions: items }));
+      }
+      if (targetField === 'obstacles') {
+        const items = Array.isArray(value) ? value : (value as string).split('\n').filter(Boolean);
+        setFormData((prev) => ({ ...prev, obstacles: items }));
+      }
+    };
+    // Listen to both the context bus and custom event
+    const unsubContext = onFieldWrite((event) => {
+      handleFieldWrite(new CustomEvent('', { detail: event }));
+    });
+    window.addEventListener('ironclaw:field-write', handleFieldWrite);
+    return () => {
+      unsubContext();
+      window.removeEventListener('ironclaw:field-write', handleFieldWrite);
+    };
+  }, [onFieldWrite]);
 
   // Auto-generate problem statement when relevant fields change
   useEffect(() => {
