@@ -137,13 +137,27 @@ class OSINTFeedStore {
     const pool = getPool();
 
     const result = await pool.query(
-      `SELECT * FROM osint_feed_config
-       WHERE problem_set_id = $1
-       ORDER BY active DESC, created_at DESC`,
+      `SELECT c.*,
+              ps.last_fetched_at AS poll_last_fetched_at,
+              ps.last_error AS poll_last_error,
+              ps.items_fetched AS poll_items_fetched,
+              ps.consecutive_failures AS poll_consecutive_failures
+       FROM osint_feed_config c
+       LEFT JOIN osint_feed_poll_state ps ON ps.feed_id = c.id
+       WHERE c.problem_set_id = $1
+       ORDER BY c.active DESC, c.created_at DESC`,
       [problemSetId]
     );
 
-    return result.rows.map(row => this.rowToFeedConfig(row));
+    return result.rows.map(row => ({
+      ...this.rowToFeedConfig(row),
+      pollStatus: {
+        lastFetchedAt: row.poll_last_fetched_at ?? null,
+        lastError: row.poll_last_error ?? null,
+        itemsFetched: row.poll_items_fetched ?? 0,
+        consecutiveFailures: row.poll_consecutive_failures ?? 0,
+      },
+    }));
   }
 
   /**

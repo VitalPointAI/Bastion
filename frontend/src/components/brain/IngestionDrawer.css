@@ -592,6 +592,21 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+.drawer-osint-status-dot.error {
+  background: #ef4444;
+  animation: pulse-error 2s infinite;
+}
+
+@keyframes pulse-error {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.drawer-osint-feed-item.feed-offline {
+  opacity: 0.7;
+  border-left: 2px solid #ef4444;
+}
+
 .drawer-osint-feed-info {
   flex: 1;
   min-width: 0;

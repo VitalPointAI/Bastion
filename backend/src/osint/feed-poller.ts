@@ -105,9 +105,14 @@ async function ensurePollStateTable(): Promise<void> {
       last_item_guid TEXT,
       items_fetched INTEGER DEFAULT 0,
       last_error TEXT,
+      consecutive_failures INTEGER DEFAULT 0,
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  // Add column if table already exists without it
+  await pool.query(`
+    ALTER TABLE osint_feed_poll_state ADD COLUMN IF NOT EXISTS consecutive_failures INTEGER DEFAULT 0
+  `).catch(() => { /* column may already exist */ });
 }
 
 async function getLastFetchedAt(feedId: string): Promise<Date | null> {
@@ -123,13 +128,14 @@ async function getLastFetchedAt(feedId: string): Promise<Date | null> {
 async function updatePollState(feedId: string, lastGuid: string | null, itemCount: number, error?: string): Promise<void> {
   const pool = getPool();
   await pool.query(
-    `INSERT INTO osint_feed_poll_state (feed_id, last_fetched_at, last_item_guid, items_fetched, last_error, updated_at)
-     VALUES ($1, NOW(), $2, $3, $4, NOW())
+    `INSERT INTO osint_feed_poll_state (feed_id, last_fetched_at, last_item_guid, items_fetched, last_error, consecutive_failures, updated_at)
+     VALUES ($1, NOW(), $2, $3, $4, CASE WHEN $4 IS NOT NULL THEN 1 ELSE 0 END, NOW())
      ON CONFLICT (feed_id) DO UPDATE SET
        last_fetched_at = NOW(),
        last_item_guid = COALESCE($2, osint_feed_poll_state.last_item_guid),
        items_fetched = osint_feed_poll_state.items_fetched + $3,
        last_error = $4,
+       consecutive_failures = CASE WHEN $4 IS NOT NULL THEN osint_feed_poll_state.consecutive_failures + 1 ELSE 0 END,
        updated_at = NOW()`,
     [feedId, lastGuid, itemCount, error ?? null],
   );

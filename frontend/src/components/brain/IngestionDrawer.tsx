@@ -265,16 +265,21 @@ interface OSINTFeedItemProps {
 }
 
 function OSINTFeedItem({ feed, onToggle, onDelete }: OSINTFeedItemProps) {
+  const hasError = feed.pollStatus?.lastError && (feed.pollStatus?.consecutiveFailures ?? 0) > 0;
+  const isOffline = (feed.pollStatus?.consecutiveFailures ?? 0) >= 3;
+
   return (
-    <div className="drawer-osint-feed-item">
+    <div className={`drawer-osint-feed-item ${isOffline ? 'feed-offline' : ''}`}>
       <div
-        className={`drawer-osint-status-dot ${feed.active ? 'active' : 'inactive'}`}
-        title={feed.active ? 'Active' : 'Paused'}
-        aria-label={feed.active ? 'Active feed' : 'Paused feed'}
+        className={`drawer-osint-status-dot ${isOffline ? 'error' : feed.active ? 'active' : 'inactive'}`}
+        title={isOffline ? `Offline — ${feed.pollStatus?.consecutiveFailures} consecutive failures` : feed.active ? 'Active' : 'Paused'}
+        aria-label={isOffline ? 'Feed offline' : feed.active ? 'Active feed' : 'Paused feed'}
       />
       <div className="drawer-osint-feed-info">
         <div className="drawer-osint-feed-name" title={feed.sourceName}>
           {feed.sourceName}
+          {isOffline && <span style={{ color: '#ef4444', fontSize: '0.65rem', marginLeft: '0.375rem', fontWeight: 600 }}>OFFLINE</span>}
+          {hasError && !isOffline && <span style={{ color: '#f59e0b', fontSize: '0.65rem', marginLeft: '0.375rem' }}>RETRYING</span>}
         </div>
         <div className="drawer-osint-feed-meta">
           <span className="drawer-meta-badge">{osintService.sourceTypeLabel(feed.sourceType)}</span>
@@ -284,6 +289,11 @@ function OSINTFeedItem({ feed, onToggle, onDelete }: OSINTFeedItemProps) {
             </span>
           )}
         </div>
+        {hasError && (
+          <div style={{ fontSize: '0.6rem', color: '#ef4444', marginTop: '0.125rem' }} title={feed.pollStatus?.lastError ?? ''}>
+            {feed.pollStatus?.lastError?.substring(0, 60)}{(feed.pollStatus?.lastError?.length ?? 0) > 60 ? '...' : ''}
+          </div>
+        )}
       </div>
       <div className="drawer-osint-feed-actions">
         <button

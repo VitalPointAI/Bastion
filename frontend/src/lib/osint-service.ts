@@ -12,6 +12,13 @@ const API_BASE = import.meta.env.VITE_API_URL ?? '';
 export type FeedSourceType = 'argus_webhook' | 'rss' | 'api' | 'simulated';
 export type RelevanceMode = 'entity_objective' | 'ai_semantic';
 
+export interface FeedPollStatus {
+  lastFetchedAt: string | null;
+  lastError: string | null;
+  itemsFetched: number;
+  consecutiveFailures: number;
+}
+
 export interface OSINTFeedConfig {
   id: string;
   problemSetId: string;
@@ -23,6 +30,7 @@ export interface OSINTFeedConfig {
   active: boolean;
   config: Record<string, unknown>;
   createdAt: string;
+  pollStatus?: FeedPollStatus;
 }
 
 export interface CreateFeedInput {
