@@ -154,7 +154,9 @@ jobs:
             # Pull latest images
             docker compose -f docker-compose.prod.yml pull
 
-            # Restart services with new images (never use down -v!)
+            # Stop services that need recreation, then bring up with new images (never use down -v!)
+            docker compose -f docker-compose.prod.yml stop ironclaw mcp backend frontend || true
+            docker compose -f docker-compose.prod.yml rm -f ironclaw mcp backend frontend || true
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Sync host nginx config (TLS termination layer)
