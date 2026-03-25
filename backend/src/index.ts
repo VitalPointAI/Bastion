@@ -52,7 +52,7 @@ import { gateRoutes } from './gates/gate-routes.js';
 import { gateStore } from './gates/gate-store.js';
 import { runMigrations } from './db/migration-runner.js';
 import { aiStaffRouter, aiStaffStore } from './ai-staff/index.js';
-import { ironclawRouter, ironclawStore } from './ironclaw/index.js';
+import { ironclawRouter, ironclawStore, initIronclawMemory } from './ironclaw/index.js';
 import { validationRouter } from './validation/validation-router.js';
 import { registerValidationJobs } from './validation/validation-scheduler.js';
 import { registerOSINTCleanupJob } from './osint/osint-cleanup-scheduler.js';
@@ -577,6 +577,13 @@ server.listen(port, async () => {
     await registerOSINTCleanupJob();
   } catch (error) {
     console.error('Failed to register OSINT cleanup scheduler:', error);
+  }
+
+  // Initialize Ironclaw memory stores and daily cleanup job (Phase 57)
+  try {
+    await initIronclawMemory();
+  } catch (error) {
+    console.error('Failed to initialize Ironclaw memory:', error);
   }
 
   // Start OAuth token auto-refresh timer
