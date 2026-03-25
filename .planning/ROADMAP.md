@@ -74,6 +74,7 @@ None
 - [x] **Phase 49: Align Design Tab with Plan Tab** - Remove duplicate operational design from Plan tab, establish Design tab as single source of truth for operational design artifacts, wire Design outputs as automatic starting point for campaign planning, restructure Strategic Guidance to remove Operational Approach step and add Alignment step, build generic fork-and-merge revision system for Plan-to-Design change proposals through DAO governance (INSERTED) (completed 2026-03-17)
 - [ ] **Phase 50: Universal Intelligence Input & Auto-Classification** - Replace fragmented ingestion sidebar (separate document upload, OSINT modal, filter tags) with a single universal input area that accepts any content type (files, URLs, pasted text, structured data) and automatically discerns source type, classifies content, routes to appropriate specialist agents, and extracts intelligence — all orchestrated by the lead agent with robust error handling, retry logic, and user-facing status; eliminates manual source-type selection and reduces ingestion to a single drag/drop/paste/type interaction (INSERTED)
 - [ ] **Phase 56: Visual Operational Approach Editor — Map-Based Military Symbology** - Interactive Leaflet map with MIL-STD-2525D military symbology overlay for operational approach development; dual editing: Ironclaw chat-driven (natural language → tool calls → map updates) and direct manipulation (drag-and-drop symbols, draw control measures, click-to-edit properties); milsymbol.js rendering; MGRS coordinate support; Ironclaw registered skills (add/move/remove/update symbols, add control measures and overlay graphics); Yjs collaborative sync; overlay persisted as part of OperationalDesign data model (INSERTED)
+- [ ] **Phase 57: Ironclaw Persistent Memory & Adaptive Relationship** - Long-term memory system that makes Ironclaw a true AI staff officer: per-user preference memory (working style, critique tolerance, strengths/weaknesses, communication style), interaction outcome tracking (suggestions accepted/rejected, edit patterns post-critique, valued vs dismissed input), problem set context memory (decisions, rationale, assumptions across sessions), and adaptive behavior engine that adjusts proactivity, critique frequency, draft-offering, and communication style based on accumulated interaction patterns; stored in ironclaw-postgres; memory retrieval integrated into all Ironclaw prompts for personalized, evolving relationship with each user (INSERTED)
 
 ## Phase Details
 
@@ -823,6 +824,47 @@ Key capabilities:
 - Both editing modes feed same overlay state — Ironclaw stays aware of manual edits, manual users see Ironclaw edits in real-time
 - Yjs collaborative sync for multi-user editing
 - Overlay stored as structured JSON in OperationalDesign.operationalApproach.mapOverlay
+
+### Phase 57: Ironclaw Persistent Memory & Adaptive Relationship
+
+**Goal:** Build a long-term memory and adaptive behavior system that transforms Ironclaw from a stateless AI assistant into a true AI staff officer that learns, remembers, and evolves its relationship with each user across sessions. Memory is stored in ironclaw-postgres and retrieved contextually for every interaction.
+**Requirements**: TBD
+**Depends on:** Phase 55
+**Plans:** Not yet planned
+
+Key capabilities:
+
+**Per-User Preference Memory (user_did scoped):**
+- Working style: draft-first vs blank-page, level of detail preferred, pace
+- Critique tolerance: how much red-teaming they respond well to
+- Domain strengths/weaknesses: where they need more support vs where they're expert
+- Communication style: formal vs informal, verbose vs terse, how they prefer recommendations framed
+
+**Interaction Outcome Tracking:**
+- Suggestions accepted vs rejected (with context)
+- Edit patterns post-critique: did the user incorporate the feedback?
+- Questions asked: what topics does the user seek help with most?
+- Repeated corrections: what does the user consistently override?
+
+**Problem Set Context Memory (problem_set_id scoped):**
+- Decisions made and rationale provided
+- Assumptions validated or invalidated across sessions
+- Key discussion threads and their conclusions
+- Cross-session continuity: "Last session we identified X, picking up from there..."
+
+**Adaptive Behavior Engine:**
+- Adjusts proactivity level based on user response patterns
+- Modulates critique frequency: reduce if consistently ignored, increase if valued
+- Offers drafts proactively for users who prefer draft-first workflows
+- Personalizes communication style per user
+- Learns which types of observations the user finds most valuable
+- Memory retrieval integrated into all Ironclaw system prompts
+
+**Memory Lifecycle:**
+- Memories decay/age with configurable TTL
+- User can review/edit/delete Ironclaw's memories about them
+- Memories are scoped: user-level (portable) vs problem-set-level (contextual)
+- Privacy-aware: no cross-user memory leakage
 
 ---
 
