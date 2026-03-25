@@ -352,6 +352,27 @@ class BLERVRDriver:
 
         log.info("ble_rvr.wake.ok", name=self._name)
 
+    async def ensure_awake(self) -> None:
+        """Re-send anti-DOS + wake to ensure the RVR+ is listening before driving.
+
+        Sphero RVRs can go back to sleep despite keepalive if the BLE link
+        is noisy or if they missed a keepalive cycle. This is cheap to call
+        and guarantees the motors will respond to the next drive command.
+        """
+        if not self._connected or not self._child:
+            log.warning("ble_rvr.ensure_awake.not_connected", name=self._name)
+            return
+        try:
+            await self._send_raw(ANTIDOS_HEX, HANDLE_CMD)
+            await asyncio.sleep(0.2)
+            seq = self._next_seq()
+            wake_pkt = _build_packet(DID_POWER, CID_WAKE, seq, target=TARGET_NORDIC)
+            await self._send_raw(wake_pkt.hex(), HANDLE_CMD)
+            await asyncio.sleep(0.5)
+            log.info("ble_rvr.ensure_awake.ok", name=self._name)
+        except Exception as exc:
+            log.warning("ble_rvr.ensure_awake.error", name=self._name, error=str(exc))
+
     async def close(self) -> None:
         """Disconnect from the RVR+."""
         if self._keepalive_task:

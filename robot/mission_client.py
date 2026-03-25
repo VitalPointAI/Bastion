@@ -416,6 +416,8 @@ async def receive_loop(
                                 face = getattr(mission.params, 'face_target', None)
                                 mid = mission.mission_id
                                 async def _drive_follower(f, wps, spd, face_tgt, m_id, _ws=ws):
+                                    # Wake the follower before driving — ensures motors respond
+                                    await f.driver.ensure_awake()
                                     for wp in wps:
                                         log.info("mission_client.follower_driving",
                                                  follower=f.robot_id, x=wp.x, y=wp.y, speed=spd)
@@ -448,8 +450,11 @@ async def receive_loop(
                                 )
                             elif mission.command == "find_engage" and mission.params.target_location:
                                 tgt = mission.params.target_location
+                                async def _engage_follower(f, tx, ty, spd):
+                                    await f.driver.ensure_awake()
+                                    await f.driver.drive_to_point(tx, ty, spd)
                                 asyncio.create_task(
-                                    follower.driver.drive_to_point(tgt.x, tgt.y, mission.params.speed),
+                                    _engage_follower(follower, tgt.x, tgt.y, mission.params.speed),
                                     name=f"follower-{target_robot}-{mission.mission_id}",
                                 )
                         else:
