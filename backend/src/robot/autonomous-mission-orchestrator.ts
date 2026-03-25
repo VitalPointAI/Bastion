@@ -443,6 +443,11 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const threatGrid = roomToGridRef(threat.detectedAt.x, threat.detectedAt.y);
     this.logPhase(state, `CONTACT: ${threat.classDesc} detected at grid ${threatGrid} conf=${(threat.confidence * 100).toFixed(0)}%`);
 
+    // Now that the threat is confirmed, create the COP symbol
+    this.createConfirmedCOPSymbol(state, threat).catch((e: unknown) =>
+      console.warn('[AutoMission] Failed to create confirmed COP symbol:', e),
+    );
+
     // Capture leader's current position at detection time (telemetry may be unavailable later)
     if (!(state as unknown as { leaderDetectionPos?: unknown }).leaderDetectionPos) {
       const svc = getRobotMissionService();
@@ -1119,6 +1124,53 @@ class AutonomousMissionOrchestrator extends EventEmitter {
   }
 
   // ── Shared helpers ─────────────────────────────────────────────────────
+
+  /**
+   * Check if any active autonomous sequence involves this robot.
+   * Used by the vision pipeline to defer COP symbol creation to the orchestrator.
+   */
+  hasActiveSequenceForRobot(robotId: string): boolean {
+    for (const state of this.sequences.values()) {
+      if (state.phase === 'complete') continue;
+      if (state.config.leaderId === robotId) return true;
+      if (state.config.followerIds.includes(robotId)) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Create COP symbol for a confirmed threat (after passing the detection buffer).
+   * Called from handleThreatDetection — only confirmed sightings get symbols.
+   */
+  private async createConfirmedCOPSymbol(state: AutoState, threat: ThreatInfo): Promise<void> {
+    try {
+      const { updateAdversaryCOPLayer, extractThreatSymbols } = await import('./vision-cop-pipeline.js');
+      const { roomToLatLng } = await import('../coordinates/mgrs-coordinator.js');
+
+      const pos = roomToLatLng(threat.detectedAt.x, threat.detectedAt.y);
+
+      // Build a minimal VisionMsg to reuse extractThreatSymbols
+      const fakeMsg = {
+        type: 'robot:vision' as const,
+        robot_id: state.config.leaderId,
+        timestamp: new Date().toISOString(),
+        detections: [{
+          class_desc: threat.classDesc,
+          confidence: threat.confidence,
+          bbox: { left: 0, top: 0, right: 0, bottom: 0 },
+          estimated_position: threat.detectedAt,
+        }],
+      };
+
+      const symbols = extractThreatSymbols(fakeMsg, pos);
+      if (symbols.length > 0) {
+        await updateAdversaryCOPLayer(state.config.problemSetId || 'default', symbols);
+        this.logPhase(state, `COP symbol created for confirmed ${threat.classDesc}`);
+      }
+    } catch (err: unknown) {
+      console.warn('[AutoMission] COP symbol creation failed:', err);
+    }
+  }
 
   private async markThreatsDestroyed(state: AutoState): Promise<void> {
     try {

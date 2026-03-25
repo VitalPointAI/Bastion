@@ -730,6 +730,17 @@ export async function processVisionDetections(
 ): Promise<void> {
   if (!msg.detections || msg.detections.length === 0) return;
 
+  // When an autonomous mission sequence is active for this robot, defer COP
+  // symbol creation to the orchestrator's confirmation buffer. This prevents
+  // unconfirmed single-frame detections from appearing on the COP as symbols.
+  try {
+    const { getAutonomousOrchestrator } = await import('./autonomous-mission-orchestrator.js');
+    if (getAutonomousOrchestrator().hasActiveSequenceForRobot(msg.robot_id)) {
+      // Orchestrator handles COP writes after detection confirmation
+      return;
+    }
+  } catch { /* orchestrator not available — proceed normally */ }
+
   const symbols = extractThreatSymbols(msg, robotPosition, robotHeading);
   if (symbols.length === 0) return;
 
