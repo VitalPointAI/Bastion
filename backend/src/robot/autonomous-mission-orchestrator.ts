@@ -607,7 +607,13 @@ class AutonomousMissionOrchestrator extends EventEmitter {
 
     for (let i = 0; i < state.config.followerIds.length; i++) {
       const followerId = state.config.followerIds[i];
-      const route = plan.routes.followerRoutes[i] ?? [plan.firingPositions[i]?.position ?? state.config.homeBase];
+      const rawRoute = plan.routes.followerRoutes[i];
+      // LLM may return a single coordinate object instead of an array — normalize
+      const route = Array.isArray(rawRoute)
+        ? rawRoute
+        : rawRoute && typeof rawRoute === 'object'
+          ? [rawRoute as { x: number; y: number }]
+          : [plan.firingPositions[i]?.position ?? state.config.homeBase];
       const missionId = randomUUID();
 
       state.missions[`advance_${followerId}`] = missionId;

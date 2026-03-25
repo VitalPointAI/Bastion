@@ -164,6 +164,18 @@ Then provide your final tactical plan as JSON.`;
         }
 
         const plan = JSON.parse(jsonMatch[0]) as TacticalPlan;
+
+        // Normalize followerRoutes — LLM may return an object keyed by name/index
+        // instead of an array, or individual routes as single waypoint objects
+        if (plan.routes?.followerRoutes && !Array.isArray(plan.routes.followerRoutes)) {
+          plan.routes.followerRoutes = Object.values(plan.routes.followerRoutes) as Array<Array<{ x: number; y: number }>>;
+        }
+        if (Array.isArray(plan.routes?.followerRoutes)) {
+          plan.routes.followerRoutes = plan.routes.followerRoutes.map((r: unknown) =>
+            Array.isArray(r) ? r : (r && typeof r === 'object' ? [r as { x: number; y: number }] : []),
+          );
+        }
+
         console.log(`[TacticalAI] AI plan generated: recommendation=${plan.engagementRecommendation}, confidence=${plan.planConfidence}`);
         console.log(`[TacticalAI] Assessment: ${plan.assessment}`);
         return plan;
