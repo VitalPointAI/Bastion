@@ -812,7 +812,7 @@ Plans:
 **Goal:** Build an interactive map-based operational approach editor in the Design tab where commanders can visually compose their operational approach using MIL-STD-2525D military symbology. Supports dual editing: Ironclaw chat-driven (natural language commands → tool calls → real-time map updates) and direct manipulation (drag-and-drop symbols, draw control measures, click-to-edit properties). Overlay state persists as part of the OperationalDesign data model and syncs collaboratively via Yjs.
 **Requirements**: [MAP-01, MAP-02, MAP-03, MAP-04, MAP-05, MAP-06, MAP-07]
 **Depends on:** Phase 55
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 - [ ] 56-01-PLAN.md — MapOverlay types, DB migration, store methods, API endpoint, frontend service (Wave 1)
