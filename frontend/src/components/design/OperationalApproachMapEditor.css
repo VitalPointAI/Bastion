@@ -151,3 +151,185 @@
   background: none;
   border: none;
 }
+
+/* ─── Symbol Picker panel (Phase 56 Plan 05) ─────────────────────────────── */
+.symbol-picker {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--bg-primary, #111827);
+  border-left: 1px solid var(--border, #374151);
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.symbol-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.symbol-picker-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.symbol-picker-close {
+  padding: 3px 7px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.symbol-picker-search {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.symbol-picker-filters {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.symbol-picker-filter-btn {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.symbol-picker-filter-btn:hover {
+  background: #4b5563;
+  color: #e5e7eb;
+}
+
+.symbol-picker-filter-btn--active {
+  background: #1d4ed8;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.symbol-picker-catalog {
+  flex: 1;
+  min-height: 0;
+}
+
+.symbol-picker-empty {
+  font-size: 12px;
+  color: #6b7280;
+  padding: 8px 0;
+}
+
+.symbol-category {
+  font-weight: 600;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.symbol-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.symbol-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  text-align: left;
+  width: 100%;
+}
+
+.symbol-card:hover {
+  background: var(--bg-hover, #1f2937);
+  border-color: #374151;
+}
+
+.symbol-card-img {
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.symbol-card-label {
+  font-size: 11px;
+  color: #d1d5db;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.symbol-card-placeholder {
+  width: 32px;
+  height: 32px;
+  background: #374151;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.symbol-card-placeholder--lg {
+  width: 40px;
+  height: 40px;
+}
+
+/* ─── Custom SIDC section ────────────────────────────────────────────────── */
+.symbol-picker-custom {
+  border-top: 1px solid var(--border, #374151);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.symbol-picker-custom-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.symbol-picker-add-btn {
+  width: 100%;
+}
+
+/* ─── Placement mode banner ──────────────────────────────────────────────── */
+.placement-banner {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  background: var(--bg-primary, #111827);
+  border: 1px solid var(--border, #374151);
+  padding: 8px 16px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  pointer-events: all;
+}
+
+.placement-banner-text {
+  font-size: 12px;
+  color: #e5e7eb;
+}
