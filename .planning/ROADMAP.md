@@ -810,9 +810,16 @@ Plans:
 ### Phase 56: Visual Operational Approach Editor — Map-Based Military Symbology
 
 **Goal:** Build an interactive map-based operational approach editor in the Design tab where commanders can visually compose their operational approach using MIL-STD-2525D military symbology. Supports dual editing: Ironclaw chat-driven (natural language commands → tool calls → real-time map updates) and direct manipulation (drag-and-drop symbols, draw control measures, click-to-edit properties). Overlay state persists as part of the OperationalDesign data model and syncs collaboratively via Yjs.
-**Requirements**: TBD
+**Requirements**: [MAP-01, MAP-02, MAP-03, MAP-04, MAP-05, MAP-06, MAP-07]
 **Depends on:** Phase 55
-**Plans:** Not yet planned
+**Plans:** 5 plans
+
+Plans:
+- [ ] 56-01-PLAN.md — MapOverlay types, DB migration, store methods, API endpoint, frontend service (Wave 1)
+- [ ] 56-02-PLAN.md — OperationalApproachMapEditor component with symbol display and direct manipulation (Wave 2)
+- [ ] 56-03-PLAN.md — Ironclaw map tools registration and handler implementation (Wave 2)
+- [ ] 56-04-PLAN.md — Yjs collaborative sync for real-time map overlay editing (Wave 3)
+- [ ] 56-05-PLAN.md — MapSymbolPicker panel with click-to-place flow (Wave 3)
 
 Key capabilities:
 - Leaflet map centered on problem set AO with editable SVG overlay layer
