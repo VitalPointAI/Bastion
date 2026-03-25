@@ -327,10 +327,18 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
     };
   }, [formData, onUpdate]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateField = useCallback((field: keyof ProblemFramingData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  }, []);
+  const updateField = useCallback((field: keyof ProblemFramingData, value: unknown) => {
+    setFormData((prev) => {
+      // Emit field-changed event for Ironclaw observation (only for string fields, only during interview)
+      if (typeof value === 'string' && designInterview.isActive) {
+        const prevValue = typeof prev[field] === 'string' ? prev[field] as string : '';
+        window.dispatchEvent(new CustomEvent('ironclaw:field-changed', {
+          detail: { field, value, previousValue: prevValue },
+        }));
+      }
+      return { ...prev, [field]: value };
+    });
+  }, [designInterview.isActive]);
 
   // Handle Guide Me button click
   const handleGuideMe = useCallback(async () => {

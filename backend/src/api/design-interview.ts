@@ -125,4 +125,73 @@ router.delete('/:problemSetId', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /:problemSetId/review-edits — Review user's field edits and provide critique
+ * Called automatically when user pauses editing during an active interview
+ */
+router.post('/:problemSetId/review-edits', async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.problemSetId as string;
+    const { edits } = req.body as {
+      edits: Array<{ field: string; previousValue: string; newValue: string }>;
+    };
+
+    if (!edits?.length) {
+      res.json({ critique: null });
+      return;
+    }
+
+    // Get current interview state for context
+    const state = await designInterviewService.getInterviewState(problemSetId);
+    if (!state) {
+      res.json({ critique: null });
+      return;
+    }
+
+    // Build a concise diff summary
+    const editSummary = edits.map((e) => {
+      const prev = e.previousValue?.substring(0, 200) || '(empty)';
+      const next = e.newValue?.substring(0, 200) || '(empty)';
+      return `**${e.field}**: "${prev}" → "${next}"`;
+    }).join('\n');
+
+    // Use LLM to evaluate the edits
+    const { createLLMForAgent } = await import('../agents/langgraph/llm-factory.js');
+    const llm = await createLLMForAgent({ agentId: 'ironclaw', overrides: { temperature: 0.3, maxTokens: 512 } });
+
+    const result = await llm.invoke([
+      {
+        role: 'system',
+        content: `You are Ironclaw, an AI chief of staff observing the commander's edits to an operational design document (${state.meta.currentSection} section).
+
+Your role is to provide BRIEF, THOUGHTFUL observations on the edits. You are NOT interrupting — the commander is working, and you are offering a quick professional observation.
+
+Guidelines:
+- If the edit is solid and improves the document, say nothing. Return exactly: NO_COMMENT
+- Only comment if you see something genuinely worth raising: a logical gap, an assumption that needs testing, a missed connection to other sections, or a doctrinal concern
+- Keep it to 1-2 sentences maximum. Be tactful and constructive.
+- Frame as an observation, not a directive: "One consideration with this change..." or "This pairs well with the CoG analysis — worth noting that..."
+- Do NOT repeat the edit back to the user. They know what they wrote.
+- Return NO_COMMENT if the edit is routine, minor, or doesn't warrant input.`,
+      },
+      {
+        role: 'user',
+        content: `The commander just made these edits:\n${editSummary}`,
+      },
+    ]);
+
+    const critique = extractMessageText(result.content).trim();
+    if (critique === 'NO_COMMENT' || critique.length < 5) {
+      res.json({ critique: null });
+      return;
+    }
+
+    res.json({ critique });
+  } catch (err) {
+    console.error('[design-interview] review-edits error:', err);
+    // Non-fatal — don't block the user's editing workflow
+    res.json({ critique: null });
+  }
+});
+
 export default router;

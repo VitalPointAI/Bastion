@@ -392,6 +392,58 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
     }
   }, [problemSetId, getMap]);
 
+  // ── Field observation: watch user edits and provide proactive critique ──────
+  const pendingEditsRef = useRef<Array<{ field: string; previousValue: string; newValue: string }>>([]);
+  const editTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFieldValuesRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleFieldChanged = (e: Event) => {
+      const { field, value } = (e as CustomEvent).detail as { field: string; value: string };
+      const prev = lastFieldValuesRef.current[field] ?? '';
+
+      // Skip trivial changes (< 10 chars difference or same value)
+      if (value === prev || Math.abs(value.length - prev.length) < 10) {
+        lastFieldValuesRef.current[field] = value;
+        return;
+      }
+
+      pendingEditsRef.current.push({ field, previousValue: prev, newValue: value });
+      lastFieldValuesRef.current[field] = value;
+
+      // Reset debounce timer — wait 8 seconds after last edit
+      if (editTimerRef.current) clearTimeout(editTimerRef.current);
+      editTimerRef.current = setTimeout(async () => {
+        const edits = [...pendingEditsRef.current];
+        pendingEditsRef.current = [];
+        if (edits.length === 0 || !mountedRef.current) return;
+
+        try {
+          const res = await fetch(`/api/design-interview/${problemSetId}/review-edits`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ edits }),
+          });
+          if (!res.ok) return;
+          const data = await res.json() as { critique: string | null };
+          if (data.critique && mountedRef.current) {
+            setLastMessage(data.critique);
+          }
+        } catch {
+          // Non-fatal — don't disrupt the editing workflow
+        }
+      }, 8000);
+    };
+
+    window.addEventListener('ironclaw:field-changed', handleFieldChanged);
+    return () => {
+      window.removeEventListener('ironclaw:field-changed', handleFieldChanged);
+      if (editTimerRef.current) clearTimeout(editTimerRef.current);
+    };
+  }, [isActive, problemSetId]);
+
   return {
     interviewState,
     isActive,
