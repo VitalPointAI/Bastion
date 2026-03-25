@@ -16,7 +16,7 @@ import { JoinByCodePage } from './components/problem-set/JoinByCodePage'
 import { ProblemSetTabContainer } from './components/problem-set/ProblemSetTabContainer'
 import { ProblemSetMemberManager } from './components/problem-set/ProblemSetMemberManager'
 import { ProblemSetSettings } from './components/problem-set/ProblemSetSettings'
-import { IronclawProvider } from './context/IronclawContext'
+import { IronclawProvider, useIronclawContext } from './context/IronclawContext'
 import './App.css'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '';
@@ -69,10 +69,14 @@ function WorkspaceRedirect() {
 
 // ─── AppContent ──────────────────────────────────────────────────────────────
 
+// Tabs that have form inputs where the drawer should push content instead of overlaying
+const PUSH_LAYOUT_TABS = new Set(['design', 'plan']);
+
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isTraining, requestModeSwitch } = useMode();
+  const { isOpen: ironclawOpen, currentTab } = useIronclawContext();
 
   const isAdmin = location.pathname.startsWith('/admin');
   const isProblemSet = location.pathname.startsWith('/problem-set');
@@ -109,7 +113,13 @@ function AppContent() {
         <UserStatusBar />
       </header>
 
-      <main className="app-main">
+      <main
+        className="app-main"
+        style={{
+          marginRight: ironclawOpen && PUSH_LAYOUT_TABS.has(currentTab) ? '420px' : 0,
+          transition: 'margin-right 300ms ease-out',
+        }}
+      >
         {isJoinCode ? (
           <JoinByCodePage />
         ) : isAdmin ? (

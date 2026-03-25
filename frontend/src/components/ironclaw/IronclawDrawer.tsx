@@ -16,6 +16,7 @@ import { IronclawMessage } from './IronclawMessage.tsx';
 import { IronclawSuggestion } from './IronclawSuggestion.tsx';
 import { IronclawTaskPanel } from './IronclawTaskPanel.tsx';
 import type { Decision, ActOnDecisionParams } from '../../lib/decision-service.ts';
+import Markdown from 'react-markdown';
 import './IronclawDrawer.css';
 
 // Hardcoded initial specialist list
@@ -517,8 +518,10 @@ export function IronclawDrawer({
                           d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
                     </div>
-                    <div className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">
-                      {interview.lastMessage}
+                    <div className="text-sm text-gray-200 leading-relaxed prose prose-sm prose-invert max-w-none
+                      prose-p:my-1.5 prose-li:my-0.5 prose-ul:my-1 prose-ol:my-1 prose-strong:text-blue-300
+                      prose-headings:text-blue-200 prose-headings:mt-3 prose-headings:mb-1">
+                      <Markdown>{interview.lastMessage}</Markdown>
                     </div>
                   </div>
                 </div>
