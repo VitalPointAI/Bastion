@@ -11,9 +11,15 @@
  * - leaflet-draw control for polyline/polygon control measures
  * - Memoized milsymbol icon creation for performance with 50+ symbols
  * - All interactions call map-overlay-service and propagate state upward
+ *
+ * Phase 56 Plan 04: Yjs collaborative real-time sync
+ * - Y.Map('mapSymbols') and Y.Map('controlMeasures') on existing design-interview doc
+ * - Mutations write to Yjs first (real-time), then API (persistence)
+ * - Y.Map.observe callbacks update local React state
+ * - Ironclaw WebSocket events bridged into Yjs via design.map_updated events
  */
 
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -34,6 +40,8 @@ import type { MapOverlay, MapSymbol, ControlMeasure } from '../../lib/design-ser
 import * as mapOverlayService from '../../lib/map-overlay-service.ts';
 import { latLngToMGRS } from '../../lib/mgrs-coordinator.ts';
 import { DARK_TILE_URL, DARK_TILE_ATTRIBUTION, DARK_TILE_SUBDOMAINS } from '../../lib/map-tiles.ts';
+import { useDesignInterview } from '../../hooks/useDesignInterview.ts';
+import { MapSymbolPicker } from './MapSymbolPicker.tsx';
 import './OperationalApproachMapEditor.css';
 
 // Fix default Leaflet marker icons (webpack/vite asset resolution)
@@ -83,6 +91,38 @@ function buildMilIcon(sidc: string, designation: string, size = 30): L.DivIcon {
 
 function MapClickClear({ onClear }: { onClear: () => void }) {
   useMapEvents({ click: onClear });
+  return null;
+}
+
+// ─── Placement mode click handler ──────────────────────────────────────────────
+
+interface PlacementClickHandlerProps {
+  pendingSymbol: { sidc: string; designation: string; affiliation: MapSymbol['affiliation'] } | null;
+  onPlace: (lat: number, lng: number) => void;
+}
+
+function PlacementClickHandler({ pendingSymbol, onPlace }: PlacementClickHandlerProps) {
+  const map = useMapEvents({
+    click: (e) => {
+      if (pendingSymbol) {
+        onPlace(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
+
+  // Apply crosshair cursor when in placement mode
+  useEffect(() => {
+    const container = map.getContainer();
+    if (pendingSymbol) {
+      container.style.cursor = 'crosshair';
+    } else {
+      container.style.cursor = '';
+    }
+    return () => {
+      container.style.cursor = '';
+    };
+  }, [map, pendingSymbol]);
+
   return null;
 }
 
@@ -165,9 +205,11 @@ interface SymbolEditPanelProps {
   onSaved: (overlay: MapOverlay) => void;
   onDeleted: (overlay: MapOverlay) => void;
   onClose: () => void;
+  /** Yjs map for optimistic real-time updates before API response */
+  symbolsMap?: import('yjs').Map<MapSymbol> | null;
 }
 
-function SymbolEditPanel({ symbol, problemSetId, onSaved, onDeleted, onClose }: SymbolEditPanelProps) {
+function SymbolEditPanel({ symbol, problemSetId, onSaved, onDeleted, onClose, symbolsMap }: SymbolEditPanelProps) {
   const [designation, setDesignation] = useState(symbol.designation);
   const [sidc, setSidc] = useState(symbol.sidc);
   const [affiliation, setAffiliation] = useState(symbol.affiliation);
@@ -186,6 +228,10 @@ function SymbolEditPanel({ symbol, problemSetId, onSaved, onDeleted, onClose }: 
 
   const handleSave = async () => {
     setSaving(true);
+    // Optimistic Yjs write — propagates to all clients immediately
+    if (symbolsMap) {
+      symbolsMap.set(symbol.id, { ...symbol, designation, sidc, affiliation });
+    }
     try {
       const updated = await mapOverlayService.updateSymbol(problemSetId, symbol.id, {
         designation,
@@ -196,6 +242,10 @@ function SymbolEditPanel({ symbol, problemSetId, onSaved, onDeleted, onClose }: 
       onClose();
     } catch (err) {
       console.error('[OperationalApproachMapEditor] Failed to update symbol:', err);
+      // Revert optimistic Yjs write on failure
+      if (symbolsMap) {
+        symbolsMap.set(symbol.id, symbol);
+      }
     } finally {
       setSaving(false);
     }
@@ -203,12 +253,20 @@ function SymbolEditPanel({ symbol, problemSetId, onSaved, onDeleted, onClose }: 
 
   const handleDelete = async () => {
     setDeleting(true);
+    // Optimistic Yjs delete — propagates to all clients immediately
+    if (symbolsMap) {
+      symbolsMap.delete(symbol.id);
+    }
     try {
       const updated = await mapOverlayService.removeSymbol(problemSetId, symbol.id);
       onDeleted(updated);
       onClose();
     } catch (err) {
       console.error('[OperationalApproachMapEditor] Failed to delete symbol:', err);
+      // Revert optimistic Yjs delete on failure
+      if (symbolsMap) {
+        symbolsMap.set(symbol.id, symbol);
+      }
     } finally {
       setDeleting(false);
     }
@@ -292,6 +350,14 @@ export function OperationalApproachMapEditor({
 }: OperationalApproachMapEditorProps) {
   const [selectedSymbol, setSelectedSymbol] = useState<MapSymbol | null>(null);
 
+  // Symbol picker (Plan 05)
+  const [showPicker, setShowPicker] = useState(false);
+  const [pendingSymbol, setPendingSymbol] = useState<{
+    sidc: string;
+    designation: string;
+    affiliation: MapSymbol['affiliation'];
+  } | null>(null);
+
   // Pending draw layer — waiting for user to fill in label/type/affiliation form
   const pendingDrawRef = useRef<{
     layer: L.Layer;
@@ -311,6 +377,41 @@ export function OperationalApproachMapEditor({
     }
     return iconCache.current.get(key)!;
   }, []);
+
+  // ESC key cancels placement mode
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPendingSymbol(null);
+        setShowPicker(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // Place symbol on map at clicked position
+  const handlePlaceSymbol = useCallback(
+    async (lat: number, lng: number) => {
+      if (!pendingSymbol) return;
+      try {
+        const updated = await mapOverlayService.addSymbol(problemSetId, {
+          sidc: pendingSymbol.sidc,
+          designation: pendingSymbol.designation,
+          affiliation: pendingSymbol.affiliation,
+          lat,
+          lng,
+          createdBy: 'user',
+        });
+        onOverlayChange(updated);
+      } catch (err) {
+        console.error('[OperationalApproachMapEditor] Failed to add symbol:', err);
+      } finally {
+        setPendingSymbol(null);
+      }
+    },
+    [pendingSymbol, problemSetId, onOverlayChange]
+  );
 
   // Derive map initial state from aoBounds
   const mapCenter: L.LatLngExpression = aoBounds
@@ -411,7 +512,21 @@ export function OperationalApproachMapEditor({
 
   return (
     <div className="map-editor-container-wrapper">
-      <div className="map-editor-container">
+
+      {/* ─── Toolbar above map ─── */}
+      <div className="map-editor-toolbar">
+        <button
+          className={`map-editor-btn ${showPicker ? 'map-editor-btn--primary' : ''}`}
+          onClick={() => {
+            setShowPicker((v) => !v);
+            setPendingSymbol(null);
+          }}
+        >
+          + Add Symbol
+        </button>
+      </div>
+
+      <div className="map-editor-container" style={{ position: 'relative' }}>
         <MapContainer
           key={problemSetId}
           center={mapCenter}
@@ -426,8 +541,11 @@ export function OperationalApproachMapEditor({
             maxZoom={18}
           />
 
-          {/* Clear symbol selection on map background click */}
-          <MapClickClear onClear={() => setSelectedSymbol(null)} />
+          {/* Clear symbol selection on map background click (only when not in placement mode) */}
+          {!pendingSymbol && <MapClickClear onClear={() => setSelectedSymbol(null)} />}
+
+          {/* Placement mode click handler */}
+          <PlacementClickHandler pendingSymbol={pendingSymbol} onPlace={handlePlaceSymbol} />
 
           {/* ─── Military symbol markers ─── */}
           {mapOverlay.symbols.map((symbol) => (
@@ -508,6 +626,32 @@ export function OperationalApproachMapEditor({
             />
           </FeatureGroup>
         </MapContainer>
+
+        {/* ─── Placement mode banner ─── */}
+        {pendingSymbol && (
+          <div className="placement-banner">
+            <span className="placement-banner-text">
+              Click on the map to place <strong>{pendingSymbol.designation}</strong>
+            </span>
+            <button
+              className="map-editor-btn"
+              onClick={() => setPendingSymbol(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {/* ─── Symbol picker panel ─── */}
+        {showPicker && (
+          <MapSymbolPicker
+            onSelectSymbol={(sidc, designation, affiliation) => {
+              setPendingSymbol({ sidc, designation, affiliation });
+              setShowPicker(false);
+            }}
+            onClose={() => setShowPicker(false)}
+          />
+        )}
       </div>
 
       {/* ─── Draw form: label/type/affiliation for new control measure ─── */}

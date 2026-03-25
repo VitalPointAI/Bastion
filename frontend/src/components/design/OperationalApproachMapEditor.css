@@ -9,6 +9,14 @@
   margin-top: 8px;
 }
 
+/* ─── Toolbar (above map, Plan 05) ───────────────────────────────────────── */
+.map-editor-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
 /* ─── Map container ──────────────────────────────────────────────────────── */
 .map-editor-container {
   height: 500px;
