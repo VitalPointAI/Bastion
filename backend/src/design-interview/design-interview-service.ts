@@ -229,9 +229,22 @@ async function askQuestion(
       ),
     ];
   } else {
+    // Resume or continuation: include conversation history with a continuation cue
+    // so the LLM picks up exactly where the interview left off.
+    const coverage = evaluateSectionCoverage(currentSection, derivedDesign as Partial<OperationalDesign>);
+    const metCount = coverage.metCriteria.length;
+    const totalCount = coverage.criteria.length;
+    const unmet = coverage.criteria.filter(c => !coverage.metCriteria.includes(c));
+
     invocationMessages = [
       new SystemMessage(systemPrompt),
       ...conversationMessages,
+      new HumanMessage(
+        `Continue the interview from where we left off. We are in the ${currentSection.replace(/-/g, ' ')} section. ` +
+        `${metCount}/${totalCount} criteria captured so far.` +
+        (unmet.length > 0 ? ` Still needed: ${unmet.join(', ')}.` : ' All criteria met — proceed to section review.') +
+        ` Ask the next question that advances the section. Do NOT re-introduce yourself or repeat prior questions.`,
+      ),
     ];
   }
 
@@ -387,7 +400,7 @@ The commander just asked you to draft content for: ${draftRequestFields.join(', 
 You have generated a draft and placed it in the form fields on the left panel.
 
 Current design state:
-${JSON.stringify(updatedDesign, null, 2).substring(0, 2000)}
+${JSON.stringify(updatedDesign, null, 2).substring(0, 4000)}
 
 Respond with a BRIEF (2-3 sentences) message that:
 1. Confirms you've drafted the content and placed it in the form
@@ -559,7 +572,7 @@ async function generateDraftContent(
   conversationMessages: BaseMessage[],
 ): Promise<Record<string, unknown> | null> {
   const fieldList = fields.join(', ');
-  const existingDesign = JSON.stringify(derivedDesign, null, 2).substring(0, 2000);
+  const existingDesign = JSON.stringify(derivedDesign, null, 2).substring(0, 4000);
 
   const prompt = `You are Ironclaw, an AI chief of staff. The commander has asked you to draft content for the following field(s): ${fieldList}.
 
@@ -834,7 +847,7 @@ function buildExtractionPrompt(
 ): string {
   const base = `You are extracting structured operational design data from a conversation.
 Return ONLY valid JSON that can be deep-merged into an OperationalDesign object.
-Current partial design: ${JSON.stringify(derivedDesign, null, 2).substring(0, 2000)}`;
+Current partial design: ${JSON.stringify(derivedDesign, null, 2).substring(0, 4000)}`;
 
   switch (section) {
     case 'problem-framing':
