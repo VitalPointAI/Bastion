@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 57-02-PLAN.md
-last_updated: "2026-03-25T13:53:30.783Z"
-last_activity: "2026-03-23 - Completed 55-06: Yjs multi-user collaborative interview with role-directed question indicators"
+stopped_at: Completed 57-03-PLAN.md
+last_updated: "2026-03-25T14:30:00.000Z"
+last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
   total_phases: 73
   completed_phases: 53
@@ -26,10 +26,10 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 55 of 71 (Ironclaw Guided Design Interview for Operational Approach Development) — IN PROGRESS
-Plan: 6 of N in current phase — COMPLETE
-Status: Plan 55-06 complete — Yjs collaborative design interview: useDesignInterview hook now syncs interview state via design-interview-{problemSetId} Yjs document, tracks participantRoles Y.Map, includes role snapshot in API calls, all 4 Design sections show participant dot bars and "Your Turn" pulse indicator.
-Last activity: 2026-03-23 - Completed 55-06: Yjs multi-user collaborative interview with role-directed question indicators
+Phase: 57 of 73 (Ironclaw Persistent Memory and Adaptive Relationship) — IN PROGRESS
+Plan: 3 of N in current phase — COMPLETE
+Status: Plan 57-03 complete — Three auth-scoped REST endpoints (GET /memory, DELETE /memory/:key, DELETE /memory/all) with auth isolation tests, IronclawMemoryPanel React component with human-readable memory display, individual/bulk delete with optimistic UI, and Memory tab integrated into IronclawDrawer.
+Last activity: 2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation
 
 Progress: [██████████] 100% 442 plans complete
 
@@ -229,6 +229,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 56-visual-operational-approach-editor P04 | 8 | 1 tasks | 2 files |
 | Phase 57-ironclaw-persistent-memory-and-adaptive-relationship P01 | 3 | 1 tasks | 5 files |
 | Phase 57-ironclaw-persistent-memory-and-adaptive-relationship P02 | 164 | 2 tasks | 4 files |
+| Phase 57-ironclaw-persistent-memory-and-adaptive-relationship P03 | 25 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -242,6 +243,11 @@ Progress: [██████████] 100% 442 plans complete
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 57 Plan 03 (Memory Management REST API and IronclawMemoryPanel):**
+- DELETE /memory/all registered before DELETE /memory/:key — Express literal route match must precede wildcard /:key
+- Auth isolation tests use mock-based approach: mock getUserDid + store methods, verify store always called with authenticated DID
+- Optimistic delete chosen for perceived responsiveness; state reverts if API call fails
 
 **Phase 55 Plan 06 (Yjs Collaborative Design Interview):**
 - useDesignInterview always connects to Yjs regardless of isActive — cannot conditionally call hooks; participant UI only renders when isCollaborative && isActive
