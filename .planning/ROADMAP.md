@@ -828,9 +828,15 @@ Key capabilities:
 ### Phase 57: Ironclaw Persistent Memory & Adaptive Relationship
 
 **Goal:** Build a long-term memory and adaptive behavior system that transforms Ironclaw from a stateless AI assistant into a true AI staff officer that learns, remembers, and evolves its relationship with each user across sessions. Memory is stored in ironclaw-postgres and retrieved contextually for every interaction.
-**Requirements**: TBD
+**Requirements**: [MEM-01, MEM-02, MEM-03, MEM-04, MEM-05, MEM-06, MEM-07, MEM-08, MEM-09, MEM-10, MEM-11]
 **Depends on:** Phase 55
-**Plans:** Not yet planned
+**Plans:** 4 plans
+
+Plans:
+- [ ] 57-01-PLAN.md — Types, migrations, and memory stores (TDD)
+- [ ] 57-02-PLAN.md — Memory retrieval service, adaptive engine, and IronclawService wiring (TDD)
+- [ ] 57-03-PLAN.md — REST API endpoints and frontend Memory Panel
+- [ ] 57-04-PLAN.md — Cleanup job, startup init, and outcome recording hooks
 
 Key capabilities:
 
