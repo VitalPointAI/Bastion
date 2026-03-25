@@ -94,9 +94,9 @@ interface AutoState {
 // ---------------------------------------------------------------------------
 
 // Room layout: 5m x 5m, (0,0) = SW corner, heading 0 = north (toward doorway)
-// Alpha OP at east side (4.4, 3.4) = Grid 5042 7086, facing NW toward kill zone
-// Kill zone at west side (1.0, 3.3) = Grid 5001 7086
+// Alpha OP at east side (4.4, 3.4) = Grid 5042 7086, facing NW
 // Bravo/Charlie start near SW: bravo(1.5,0.5), charlie(2.5,0.5)
+// Kill zone and firing positions determined by AI after alpha detects threats
 const AUTO_DEFAULTS: AutoConfig = {
   leaderId: 'alpha',
   followerIds: ['bravo', 'charlie'],
@@ -108,13 +108,12 @@ const AUTO_DEFAULTS: AutoConfig = {
   issuedBy: 'did:near:bastion.testnet',
   daoId: 'bastion-dao.testnet',
   simulate: true,
-  // Static OP: alpha holds at Grid 5042 7086, facing NW (315°) toward kill zone
+  // Static OP: alpha holds at Grid 5042 7086, facing NW (315°)
+  // After detecting threats, AI determines kill zone and firing positions
   observationPost: {
     position: { x: 4.4, y: 3.4 },
     facingHeading: 315,
   },
-  // Kill zone center: Grid 5001 7086 — follower firing positions around this point
-  killZoneCenter: { x: 1.0, y: 3.3 },
 };
 
 // ---------------------------------------------------------------------------
@@ -313,10 +312,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       });
 
       this.logPhase(state, `Leader ${config.leaderId} — establish observation post at grid ${opGrid}, facing ${facingDesc}`);
-      if (config.killZoneCenter) {
-        const kzGrid = roomToGridRef(config.killZoneCenter.x, config.killZoneCenter.y);
-        this.logPhase(state, `Kill zone designated: grid ${kzGrid}`);
-      }
+      this.logPhase(state, 'Scanning for threats — kill zone and firing positions to be determined on contact');
       this.logPhase(state, 'Followers holding at base pending leader assessment');
     } else {
       // ── PATROL RECON MODE (original) ──
@@ -575,19 +571,18 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     this.logPhase(state, `Analyzing ${state.detectedThreats.length} threat(s) — leader at (${leaderPos.x.toFixed(1)}, ${leaderPos.y.toFixed(1)})`);
 
     try {
-      // Build commander's intent string if OP/kill zone are specified
+      // Build commander's intent string if OP is specified
       let commanderIntent: string | undefined;
-      if (state.config.observationPost || state.config.killZoneCenter) {
+      if (state.config.observationPost) {
+        const op = state.config.observationPost;
+        const opGrid = roomToGridRef(op.position.x, op.position.y);
         const parts: string[] = [];
-        if (state.config.observationPost) {
-          const op = state.config.observationPost;
-          const opGrid = roomToGridRef(op.position.x, op.position.y);
-          parts.push(`Leader is holding at observation post grid ${opGrid} (${op.position.x.toFixed(1)}, ${op.position.y.toFixed(1)}) facing heading ${op.facingHeading}°. The overwatch position MUST be the leader's current OP position — do NOT move the leader.`);
-        }
+        parts.push(`Leader is holding at observation post grid ${opGrid} (${op.position.x.toFixed(1)}, ${op.position.y.toFixed(1)}) facing heading ${op.facingHeading}°. The overwatch position MUST be the leader's current OP position — do NOT move the leader.`);
+        parts.push('Assess the detected threats and determine the optimal kill zone location. Position followers with flanking firing arcs to interdict and destroy enemy armor. Followers should have interlocking fields of fire across the kill zone.');
         if (state.config.killZoneCenter) {
           const kz = state.config.killZoneCenter;
           const kzGrid = roomToGridRef(kz.x, kz.y);
-          parts.push(`Establish kill zone centered on grid ${kzGrid} (${kz.x.toFixed(1)}, ${kz.y.toFixed(1)}). Position followers with flanking firing arcs into the kill zone to interdict and destroy enemy armor moving south. Followers should have interlocking fields of fire across the kill zone.`);
+          parts.push(`Commander designates kill zone vicinity grid ${kzGrid} (${kz.x.toFixed(1)}, ${kz.y.toFixed(1)}).`);
         }
         commanderIntent = parts.join(' ');
       }
