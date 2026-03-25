@@ -678,10 +678,17 @@ export class RobotMissionService {
     } else if (relayThroughLeader) {
       // Relay through leader robot's WS — alpha's mission_client checks robot_id
       // and forwards to BLE followers automatically
-      this.safeSend(relayThroughLeader.ws, assignMsg);
-      console.log(
-        `[RobotMissionService] Dispatched mission ${mission.mission_id} to follower ${mission.robot_id} via leader ${relayThroughLeader.leaderId} (BLE relay)`,
-      );
+      const sent = this.safeSend(relayThroughLeader.ws, assignMsg);
+      if (sent) {
+        console.log(
+          `[RobotMissionService] Dispatched mission ${mission.mission_id} to follower ${mission.robot_id} via leader ${relayThroughLeader.leaderId} (BLE relay)`,
+        );
+      } else {
+        console.error(
+          `[RobotMissionService] FAILED to relay mission ${mission.mission_id} for ${mission.robot_id} — leader ${relayThroughLeader.leaderId} WS not open`,
+        );
+        return { success: false, error: `Leader ${relayThroughLeader.leaderId} WS not open for relay` };
+      }
     }
 
     // Write mission_dispatched event to brain graph (non-blocking)
@@ -2057,13 +2064,17 @@ Return ONLY valid JSON, no markdown.`;
   // Helpers
   // -------------------------------------------------------------------------
 
-  private safeSend(ws: WebSocket, payload: unknown): void {
+  private safeSend(ws: WebSocket, payload: unknown): boolean {
     try {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(payload));
+        return true;
       }
+      console.warn(`[RobotMissionService] safeSend dropped — WS not open (readyState=${ws.readyState})`);
+      return false;
     } catch (err) {
       console.error('[RobotMissionService] safeSend error:', err);
+      return false;
     }
   }
 
