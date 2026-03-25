@@ -181,7 +181,7 @@ Respond ONLY with the JSON plan, no markdown or explanation."""
 
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=2048,
+            max_tokens=4096,
             system=TACTICAL_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}],
         )
@@ -212,7 +212,10 @@ Respond ONLY with the JSON plan, no markdown or explanation."""
         return None
     except json.JSONDecodeError as exc:
         log.error("tactical_planner.invalid_json", error=str(exc), mission_id=mission_id)
-        return None
+        raise RuntimeError(
+            f"Tactical planner LLM returned invalid JSON (likely truncated response). "
+            f"Error: {exc}"
+        ) from exc
     except Exception as exc:
         error_str = str(exc)
         log.error("tactical_planner.error", error=error_str, mission_id=mission_id)
