@@ -223,8 +223,12 @@ class RVRDriver:
 
             # Interruptible sleep — check pause event every 0.1s so pause/cancel
             # takes effect immediately instead of waiting for full duration.
+            # Re-send drive command every 1.5s to prevent RVR drive timeout
+            # (Sphero RVR stops after ~2s without a new drive command).
             elapsed = 0.0
             step = 0.1
+            last_drive_send = 0.0
+            DRIVE_REFRESH_SEC = 1.5
             while elapsed < duration_sec:
                 remaining = min(step, duration_sec - elapsed)
                 await asyncio.sleep(remaining)
@@ -235,14 +239,16 @@ class RVRDriver:
                     log.info("rvr_driver.drive.paused", elapsed=round(elapsed, 1))
                     await self._pause_event.wait()
                     log.info("rvr_driver.drive.resumed")
-                    # Re-send drive command to continue
-                    if self._rvr and elapsed < duration_sec:
-                        await self._run(
-                            self._rvr.drive_with_heading,
-                            speed=int(speed),
-                            heading=int(heading),
-                            flags=0,
-                        )
+                    last_drive_send = elapsed  # force re-send on resume
+                # Re-send drive command to keep RVR motors alive
+                if self._rvr and (elapsed - last_drive_send) >= DRIVE_REFRESH_SEC and elapsed < duration_sec:
+                    await self._run(
+                        self._rvr.drive_with_heading,
+                        speed=int(speed),
+                        heading=int(heading),
+                        flags=0,
+                    )
+                    last_drive_send = elapsed
 
             # Update dead-reckoning position (same formula as simulate mode)
             speed_ms = (speed / 255) * 1.0
