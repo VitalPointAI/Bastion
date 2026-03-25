@@ -5,8 +5,21 @@
  * auto-generated problem statement, and AI panel integration.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type TextareaHTMLAttributes } from 'react';
 import type { ProblemFramingData } from '../../lib/design-service.ts';
+
+/** Auto-expanding textarea that grows to fit content */
+function AutoTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const resize = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(el.scrollHeight, 60)}px`;
+  }, []);
+  useEffect(() => { resize(); }, [props.value, resize]);
+  return <textarea ref={ref} {...props} onInput={(e) => { resize(); props.onInput?.(e); }} style={{ ...props.style, overflow: 'hidden', minHeight: '60px' }} />;
+}
 import { useIronclawContext } from '../../context/IronclawContext.tsx';
 import { useDesignInterview, getRoleColor } from '../../hooks/useDesignInterview.ts';
 import { DesignInterviewProgress } from './DesignInterviewProgress.tsx';
@@ -308,28 +321,26 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
               <span className="text-[10px] text-blue-400 animate-pulse">Synthesizing from knowledge graph...</span>
             )}
           </div>
-          <textarea
+          <AutoTextarea
             value={formData.currentState}
             onChange={(e) => updateField('currentState', e.target.value)}
             onFocus={() => { inputFocusedRef.current = true; }}
             onBlur={() => { inputFocusedRef.current = false; applyPendingUpdate(); }}
             placeholder="Describe the current operational environment..."
-            rows={3}
-            className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-y"
+            className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 
         {/* Desired End State */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-300 mb-1">Desired End State</label>
-          <textarea
+          <AutoTextarea
             value={formData.desiredEndState}
             onChange={(e) => updateField('desiredEndState', e.target.value)}
             onFocus={() => { inputFocusedRef.current = true; }}
             onBlur={() => { inputFocusedRef.current = false; applyPendingUpdate(); }}
             placeholder="Describe the desired conditions..."
-            rows={3}
-            className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-y"
+            className="w-full bg-gray-700 border border-gray-600 text-gray-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 

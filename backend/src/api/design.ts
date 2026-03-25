@@ -406,6 +406,16 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
     // 5. Get strategic context from documents
     const strategicContext = await getStrategicContext(problemSetId);
 
+    // 5b. Get scoping interview context (what was discussed during problem scoping)
+    let scopingContext = '';
+    try {
+      const { getProblemSetContext } = await import('../doc-intelligence/interview/interview-store.js');
+      const scopingData = await getProblemSetContext(problemSetId);
+      if (scopingData) {
+        scopingContext = `## Problem Scoping Interview Summary\n${scopingData}`;
+      }
+    } catch { /* scoping interview may not exist yet */ }
+
     // 6. Get problem set scope info
     const ps = await problemSetStore.getProblemSet(problemSetId);
     const scopeContext = ps
@@ -442,7 +452,7 @@ Write in third person, present tense. Be specific — name actors and cite relat
       },
       {
         role: 'user',
-        content: `${scopeContext}\n\n${strategicContext}\n\n## Knowledge Graph Intelligence\n${kgSummary}`,
+        content: `${scopeContext}\n\n${scopingContext}\n\n${strategicContext}\n\n## Knowledge Graph Intelligence\n${kgSummary}`,
       },
     ]);
 
