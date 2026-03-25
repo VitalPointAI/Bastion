@@ -105,11 +105,32 @@ const AUTO_DEFAULTS: AutoConfig = {
 // Orchestrator
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Detection confirmation buffer
+// ---------------------------------------------------------------------------
+// Require multiple detections before confirming a threat to filter false positives.
+// Key: "class|gridX|gridY" (1m grid), Value: { count, firstSeen, lastSeen, bestConf, bestPos }
+
+const CONFIRM_MIN_DETECTIONS = 3;   // need 3 detections
+const CONFIRM_WINDOW_MS = 8_000;    // within 8 seconds
+const CONFIRM_MIN_CONFIDENCE = 0.50; // each detection must be ≥50%
+
+interface PendingDetection {
+  count: number;
+  firstSeen: number;
+  lastSeen: number;
+  bestConfidence: number;
+  bestPosition: { x: number; y: number };
+  classDesc: string;
+}
+
 class AutonomousMissionOrchestrator extends EventEmitter {
   private sequences: Map<string, AutoState> = new Map();
   private visionSubscribed = false;
   /** Active interval/timeout handles — cleared on reset */
   private _activeTimers: Array<ReturnType<typeof setInterval>> = [];
+  /** Detection confirmation buffer — prevents false positives from triggering response */
+  private _pendingDetections: Map<string, PendingDetection> = new Map();
 
   async startAutonomousMission(
     overrides?: Partial<AutoConfig>,
@@ -302,10 +323,18 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const svc = getRobotMissionService();
     const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
     const robotPos = robot?.latest_telemetry?.position ?? { x: 2.5, y: 2.5 };
+    const now = Date.now();
+
+    // Expire stale pending detections
+    for (const [key, pending] of this._pendingDetections) {
+      if (now - pending.lastSeen > CONFIRM_WINDOW_MS) {
+        this._pendingDetections.delete(key);
+      }
+    }
 
     for (const det of detections) {
-      // Confidence filtering is handled by VISION_THRESHOLD on the robot (.env).
-      // If a detection reaches here, it already passed the robot-side filter.
+      // Orchestrator-side confidence gate — robot threshold is lower for feed display
+      if (det.confidence < CONFIRM_MIN_CONFIDENCE) continue;
 
       // Use estimated enemy position if available, otherwise robot's position
       const enemyPos = det.estimated_position ?? robotPos;
@@ -313,7 +342,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       for (const [seqId, state] of this.sequences) {
         if (state.config.leaderId === robotId && (state.phase === 'recon' || state.phase === 'assess')) {
           // Ignore detections in first 10 seconds — camera settling, robot hasn't moved yet
-          const seqAge = Date.now() - new Date(state.startedAt).getTime();
+          const seqAge = now - new Date(state.startedAt).getTime();
           if (seqAge < 10_000) continue;
 
           // Ignore detections near home base — likely furniture/other robots, not threats
@@ -321,15 +350,53 @@ class AutonomousMissionOrchestrator extends EventEmitter {
           const distFromBase = Math.sqrt((enemyPos.x - hb.x) ** 2 + (enemyPos.y - hb.y) ** 2);
           if (distFromBase < 1.0) continue;
 
-          const threat: ThreatInfo = {
-            entityId: `DET-${det.class_desc.replace(/\s+/g, '-')}-${Date.now()}`,
-            classDesc: det.class_desc,
-            confidence: det.confidence,
-            detectedAt: { x: enemyPos.x, y: enemyPos.y },
-          };
+          // ── Detection confirmation buffer ──
+          // Require multiple sightings before treating as confirmed threat.
+          // Key by class + 1m grid cell so nearby detections cluster together.
+          const gridX = Math.floor(enemyPos.x);
+          const gridY = Math.floor(enemyPos.y);
+          const pendingKey = `${seqId}|${det.class_desc}|${gridX}|${gridY}`;
 
-          console.log(`[AutonomousOrchestrator] DIRECT threat notification: ${det.class_desc} conf=${det.confidence.toFixed(2)} at (${enemyPos.x.toFixed(1)},${enemyPos.y.toFixed(1)}) from ${robotId}, phase=${state.phase}`);
-          this.handleThreatDetection(seqId, threat);
+          const existing = this._pendingDetections.get(pendingKey);
+          if (existing) {
+            existing.count++;
+            existing.lastSeen = now;
+            if (det.confidence > existing.bestConfidence) {
+              existing.bestConfidence = det.confidence;
+              existing.bestPosition = { x: enemyPos.x, y: enemyPos.y };
+            }
+          } else {
+            this._pendingDetections.set(pendingKey, {
+              count: 1,
+              firstSeen: now,
+              lastSeen: now,
+              bestConfidence: det.confidence,
+              bestPosition: { x: enemyPos.x, y: enemyPos.y },
+              classDesc: det.class_desc,
+            });
+          }
+
+          const pending = this._pendingDetections.get(pendingKey)!;
+          console.log(
+            `[AutonomousOrchestrator] Detection: ${det.class_desc} conf=${det.confidence.toFixed(2)} at (${enemyPos.x.toFixed(1)},${enemyPos.y.toFixed(1)}) — sighting ${pending.count}/${CONFIRM_MIN_DETECTIONS} in ${((now - pending.firstSeen) / 1000).toFixed(1)}s`,
+          );
+
+          if (pending.count >= CONFIRM_MIN_DETECTIONS) {
+            // Confirmed threat — promote to real detection
+            this._pendingDetections.delete(pendingKey);
+
+            const threat: ThreatInfo = {
+              entityId: `DET-${det.class_desc.replace(/\s+/g, '-')}-${now}`,
+              classDesc: pending.classDesc,
+              confidence: pending.bestConfidence,
+              detectedAt: { ...pending.bestPosition },
+            };
+
+            console.log(
+              `[AutonomousOrchestrator] CONFIRMED threat: ${threat.classDesc} conf=${threat.confidence.toFixed(2)} at (${threat.detectedAt.x.toFixed(1)},${threat.detectedAt.y.toFixed(1)}) after ${pending.count} sightings`,
+            );
+            this.handleThreatDetection(seqId, threat);
+          }
         }
       }
     }

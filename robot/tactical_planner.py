@@ -24,24 +24,36 @@ import structlog
 
 log = structlog.get_logger(__name__)
 
+# OAuth token pushed by the backend over WebSocket on robot registration.
+# Set by mission_client.py when it receives a config:credentials message.
+_pushed_oauth_token: Optional[str] = None
+
 
 def _resolve_api_key() -> Optional[str]:
     """Resolve Anthropic API key using the same chain as the backend.
 
+    0. Token pushed by backend over WebSocket (freshest — backend has mounted creds)
     1. Claude Code credential file (~/.claude/.credentials.json)
     2. ANTHROPIC_OAUTH_TOKEN env var
     3. ANTHROPIC_API_KEY env var
     """
-    # 1. Claude Code credentials
-    try:
-        creds_path = Path.home() / ".claude" / ".credentials.json"
-        if creds_path.exists():
-            creds = json.loads(creds_path.read_text())
-            token = creds.get("claudeAiOauth", {}).get("accessToken", "")
-            if token.startswith("sk-ant-oat"):
-                return token
-    except Exception:
-        pass
+    # 0. Token pushed by backend on robot registration (always fresh)
+    if _pushed_oauth_token and _pushed_oauth_token.startswith("sk-ant-oat"):
+        return _pushed_oauth_token
+
+    # 1. Claude Code credentials — check current user home
+    creds_paths = [
+        Path.home() / ".claude" / ".credentials.json",
+    ]
+    for creds_path in creds_paths:
+        try:
+            if creds_path.exists():
+                creds = json.loads(creds_path.read_text())
+                token = creds.get("claudeAiOauth", {}).get("accessToken", "")
+                if token.startswith("sk-ant-oat"):
+                    return token
+        except Exception:
+            pass
 
     # 2. Env var (OAuth)
     token = os.environ.get("ANTHROPIC_OAUTH_TOKEN", "")
@@ -202,7 +214,15 @@ Respond ONLY with the JSON plan, no markdown or explanation."""
         log.error("tactical_planner.invalid_json", error=str(exc), mission_id=mission_id)
         return None
     except Exception as exc:
-        log.error("tactical_planner.error", error=str(exc), mission_id=mission_id)
+        error_str = str(exc)
+        log.error("tactical_planner.error", error=error_str, mission_id=mission_id)
+        # Auth errors should NOT silently fall back — the cron job should keep
+        # the OAuth token fresh. Raise so the mission fails visibly.
+        if "401" in error_str or "authentication" in error_str.lower() or "expired" in error_str.lower():
+            raise RuntimeError(
+                f"Tactical planner OAuth token expired — refresh credentials "
+                f"(~/.claude/.credentials.json) and retry. Error: {error_str}"
+            ) from exc
         return None
 
 

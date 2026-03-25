@@ -350,7 +350,16 @@ async def receive_loop(
 
             msg_type = msg.get("type", "")
 
-            if msg_type == "robot:registered":
+            if msg_type == "config:credentials":
+                # Backend pushes fresh OAuth token so tactical planner can use LLM
+                token = msg.get("oauth_token", "")
+                if token.startswith("sk-ant-oat"):
+                    import tactical_planner
+                    tactical_planner._pushed_oauth_token = token
+                    log.info("mission_client.oauth_token_received",
+                             token_prefix=token[:15] + "...")
+
+            elif msg_type == "robot:registered":
                 # Server confirmed registration and may return a DID
                 did = msg.get("did")
                 if did:

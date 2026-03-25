@@ -58,6 +58,7 @@ import {
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { readFileSync, existsSync } from 'fs';
+import { homedir } from 'os';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -318,6 +319,10 @@ export class RobotMissionService {
       message: `Registered as ${robot_id}`,
     };
     this.safeSend(ws, ack);
+
+    // Push current OAuth token so the robot's tactical planner can use LLM mode.
+    // The robot runs on a separate machine and may not have fresh credentials.
+    this.pushOAuthTokenToRobot(ws, robot_id);
   }
 
   // -------------------------------------------------------------------------
@@ -2063,6 +2068,28 @@ Return ONLY valid JSON, no markdown.`;
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
+
+  /**
+   * Push the current OAuth token to the robot so its tactical planner
+   * can use LLM mode. The robot stores this in memory and uses it for
+   * Anthropic API calls. Sent as a config:credentials message.
+   */
+  private pushOAuthTokenToRobot(ws: WebSocket, robotId: string): void {
+    try {
+      const credsPath = `${homedir()}/.claude/.credentials.json`;
+      const creds = JSON.parse(readFileSync(credsPath, 'utf-8'));
+      const token = creds?.claudeAiOauth?.accessToken;
+      if (token?.startsWith('sk-ant-oat')) {
+        this.safeSend(ws, {
+          type: 'config:credentials',
+          oauth_token: token,
+        });
+        console.log(`[RobotMissionService] Pushed OAuth token to robot ${robotId}`);
+      }
+    } catch {
+      // Credentials not available — robot will use its own fallback chain
+    }
+  }
 
   private safeSend(ws: WebSocket, payload: unknown): boolean {
     try {
