@@ -22,6 +22,7 @@ import { getTaskStore } from './task-store.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
 import { selfUpdateService } from './self-update-service.js';
 import { memoryRetrievalService } from './ironclaw-memory-service.js';
+import { ironclawUserMemoryStore } from './ironclaw-memory-store.js';
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -366,6 +367,61 @@ ironclawRouter.delete(
     }
   },
 );
+
+// ---------------------------------------------------------------------------
+// Memory Management Endpoints (Plan 03)
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /memory
+ * List all active memories for the authenticated user.
+ */
+ironclawRouter.get('/memory', async (req: Request, res: Response) => {
+  const userDid = getUserDid(req);
+  try {
+    const memories = await ironclawUserMemoryStore.getActiveMemories(userDid);
+    res.json({ memories });
+  } catch (err) {
+    console.error('[ironclaw-router] GET /memory error:', err);
+    res.status(500).json({ error: 'Failed to retrieve memories' });
+  }
+});
+
+/**
+ * DELETE /memory/all
+ * Delete ALL memories for the authenticated user.
+ * Registered BEFORE /memory/:key to avoid Express matching 'all' as a key param.
+ */
+ironclawRouter.delete('/memory/all', async (req: Request, res: Response) => {
+  const userDid = getUserDid(req);
+  try {
+    await ironclawUserMemoryStore.deleteAllUserMemories(userDid);
+    res.json({ deleted: 'all' });
+  } catch (err) {
+    console.error('[ironclaw-router] DELETE /memory/all error:', err);
+    res.status(500).json({ error: 'Failed to delete memories' });
+  }
+});
+
+/**
+ * DELETE /memory/:key
+ * Delete a specific memory entry by key for the authenticated user.
+ */
+ironclawRouter.delete('/memory/:key', async (req: Request, res: Response) => {
+  const userDid = getUserDid(req);
+  const memoryKey = req.params.key as string;
+  if (!memoryKey) {
+    res.status(400).json({ error: 'memory key is required' });
+    return;
+  }
+  try {
+    await ironclawUserMemoryStore.deleteUserMemory(userDid, memoryKey);
+    res.json({ deleted: memoryKey });
+  } catch (err) {
+    console.error('[ironclaw-router] DELETE /memory/:key error:', err);
+    res.status(500).json({ error: 'Failed to delete memory' });
+  }
+});
 
 /**
  * Extract user role from request attributes (set by zeroTrust middleware).
