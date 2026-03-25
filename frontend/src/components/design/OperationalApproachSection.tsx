@@ -13,11 +13,14 @@ import type {
   OperationalApproach,
   OperationalDesign,
   CoGNode,
+  MapOverlay,
 } from '../../lib/design-service.ts';
 import { useIronclawContext } from '../../context/IronclawContext.tsx';
 import { useDesignInterview, getRoleColor } from '../../hooks/useDesignInterview.ts';
 import { DesignInterviewProgress } from './DesignInterviewProgress.tsx';
 import { DesignInterviewGate } from './DesignInterviewGate.tsx';
+import { OperationalApproachMapEditor } from './OperationalApproachMapEditor.tsx';
+import { getMapOverlay } from '../../lib/map-overlay-service.ts';
 
 export interface OperationalApproachSectionProps {
   problemSetId: string;
@@ -66,6 +69,22 @@ export function OperationalApproachSection({
     narrative: initialData.narrative ?? '',
   }));
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // Map overlay state — loaded separately from the main design data
+  const [mapOverlay, setMapOverlay] = useState<MapOverlay>({
+    symbols: [],
+    controlMeasures: [],
+    lastUpdatedBy: 'user',
+    lastUpdatedAt: new Date().toISOString(),
+  });
+
+  useEffect(() => {
+    getMapOverlay(problemSetId)
+      .then(setMapOverlay)
+      .catch(() => {
+        // Silently fall back to empty overlay if none exists yet
+      });
+  }, [problemSetId]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -576,6 +595,24 @@ export function OperationalApproachSection({
           placeholder="Describe the overall operational approach -- how the lines of effort combine to achieve the desired end state through the identified phases..."
           rows={8}
           className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-3 text-sm text-gray-200 placeholder-gray-500 resize-y"
+        />
+      </div>
+
+      {/* ─── Map Overlay ─────────────────────────────────────────────────────── */}
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-5">
+        <h3 className="text-base font-medium text-gray-200 mb-1">Map Overlay</h3>
+        <p className="text-sm text-gray-400 mb-3">
+          Visualize and edit military symbols and control measures for this operational approach.
+        </p>
+        <hr className="border-gray-700 mb-4" />
+        <OperationalApproachMapEditor
+          problemSetId={problemSetId}
+          mapOverlay={mapOverlay}
+          onOverlayChange={(overlay) => {
+            setMapOverlay(overlay);
+            onUpdate({ ...approach, mapOverlay: overlay });
+          }}
+          aoBounds={mapOverlay.aoBounds}
         />
       </div>
 
