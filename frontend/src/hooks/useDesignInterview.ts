@@ -58,6 +58,8 @@ export interface UseDesignInterviewResult {
   directedRole: string | null;        // role targeted by current question
   currentUserRole: string | null;     // local user's role in this problem set
   isMyTurn: boolean;                  // true if directed question targets current user's role
+  // Yjs document access (Plan 04 — map overlay sync)
+  getMap: <T>(name: string) => import('yjs').Map<T> | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -485,5 +487,9 @@ export function useDesignInterview(problemSetId: string): UseDesignInterviewResu
     directedRole,
     currentUserRole,
     isMyTurn,
+    // Expose Yjs getMap so consumers (e.g. OperationalApproachMapEditor) can
+    // access additional Y.Maps on the same design-interview document without
+    // opening a new WebSocket connection (Plan 56-04).
+    getMap,
   };
 }

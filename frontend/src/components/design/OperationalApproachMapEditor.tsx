@@ -390,6 +390,128 @@ export function OperationalApproachMapEditor({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  // ─── Yjs collaborative sync (Plan 56-04) ────────────────────────────────
+
+  // Reuse the existing design-interview Yjs document — no new WebSocket connection.
+  // useDesignInterview with the same problemSetId reuses the same Yjs doc.
+  const { getMap } = useDesignInterview(problemSetId);
+
+  // Y.Map instances on the shared design-interview document
+  const symbolsMap = useMemo(
+    () => getMap<MapSymbol>('mapSymbols'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getMap identity changes when doc connects
+    [getMap]
+  );
+  const measuresMap = useMemo(
+    () => getMap<ControlMeasure>('controlMeasures'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getMap identity changes when doc connects
+    [getMap]
+  );
+
+  // Local React state backed by Yjs — these drive the rendered map
+  const [symbols, setSymbols] = useState<MapSymbol[]>(mapOverlay.symbols);
+  const [controlMeasures, setControlMeasures] = useState<ControlMeasure[]>(mapOverlay.controlMeasures);
+
+  // Seed Y.Maps from the initial mapOverlay prop if empty (first client populates from DB)
+  useEffect(() => {
+    if (!symbolsMap || symbolsMap.size > 0) return;
+    for (const sym of mapOverlay.symbols) {
+      symbolsMap.set(sym.id, sym);
+    }
+  }, [symbolsMap, mapOverlay.symbols]);
+
+  useEffect(() => {
+    if (!measuresMap || measuresMap.size > 0) return;
+    for (const cm of mapOverlay.controlMeasures) {
+      measuresMap.set(cm.id, cm);
+    }
+  }, [measuresMap, mapOverlay.controlMeasures]);
+
+  // Observe symbolsMap — update React state whenever Yjs state changes (local or remote)
+  useEffect(() => {
+    if (!symbolsMap) return;
+    const handler = () => setSymbols(Array.from(symbolsMap.values()));
+    symbolsMap.observe(handler);
+    handler(); // Initial sync on mount
+    return () => symbolsMap.unobserve(handler);
+  }, [symbolsMap]);
+
+  // Observe measuresMap — update React state whenever Yjs state changes (local or remote)
+  useEffect(() => {
+    if (!measuresMap) return;
+    const handler = () => setControlMeasures(Array.from(measuresMap.values()));
+    measuresMap.observe(handler);
+    handler(); // Initial sync on mount
+    return () => measuresMap.unobserve(handler);
+  }, [measuresMap]);
+
+  // Bridge Ironclaw WebSocket events (design.map_updated) into Yjs so all clients
+  // see Ironclaw-originated map changes in real-time. The backend publishes these
+  // events via the message bus; a window CustomEvent 'design:map_updated' is
+  // dispatched by the WebSocket subscription layer for this problem set.
+  useEffect(() => {
+    if (!symbolsMap || !measuresMap) return;
+
+    const handleMapUpdated = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        action: string;
+        symbol?: MapSymbol;
+        symbolId?: string;
+        lat?: number;
+        lng?: number;
+        updates?: Partial<MapSymbol>;
+        measure?: ControlMeasure;
+        measureId?: string;
+      }>).detail;
+
+      switch (detail.action) {
+        case 'add':
+          if (detail.symbol) symbolsMap.set(detail.symbol.id, detail.symbol);
+          break;
+        case 'move': {
+          const existing = detail.symbolId ? symbolsMap.get(detail.symbolId) : undefined;
+          if (existing && detail.lat !== undefined && detail.lng !== undefined) {
+            symbolsMap.set(detail.symbolId!, { ...existing, lat: detail.lat, lng: detail.lng });
+          }
+          break;
+        }
+        case 'remove':
+          if (detail.symbolId) symbolsMap.delete(detail.symbolId);
+          break;
+        case 'update': {
+          const existing = detail.symbolId ? symbolsMap.get(detail.symbolId) : undefined;
+          if (existing && detail.updates) {
+            symbolsMap.set(detail.symbolId!, { ...existing, ...detail.updates });
+          }
+          break;
+        }
+        case 'add_control_measure':
+          if (detail.measure) measuresMap.set(detail.measure.id, detail.measure);
+          break;
+        case 'remove_control_measure':
+          if (detail.measureId) measuresMap.delete(detail.measureId);
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('design:map_updated', handleMapUpdated);
+    return () => window.removeEventListener('design:map_updated', handleMapUpdated);
+  }, [symbolsMap, measuresMap]);
+
+  // Keep parent overlay in sync with Yjs-backed state (only when arrays change identity)
+  const prevSymbolsRef = useRef<MapSymbol[]>(symbols);
+  const prevMeasuresRef = useRef<ControlMeasure[]>(controlMeasures);
+  useEffect(() => {
+    if (symbols !== prevSymbolsRef.current || controlMeasures !== prevMeasuresRef.current) {
+      prevSymbolsRef.current = symbols;
+      prevMeasuresRef.current = controlMeasures;
+      onOverlayChange({ symbols, controlMeasures });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only sync on Yjs array identity change
+  }, [symbols, controlMeasures]);
+
   // Place symbol on map at clicked position
   const handlePlaceSymbol = useCallback(
     async (lat: number, lng: number) => {
@@ -403,6 +525,12 @@ export function OperationalApproachMapEditor({
           lng,
           createdBy: 'user',
         });
+        // Sync authoritative IDs from the API response into Yjs so remote clients see the symbol
+        if (symbolsMap) {
+          for (const sym of updated.symbols) {
+            symbolsMap.set(sym.id, sym);
+          }
+        }
         onOverlayChange(updated);
       } catch (err) {
         console.error('[OperationalApproachMapEditor] Failed to add symbol:', err);
@@ -410,7 +538,7 @@ export function OperationalApproachMapEditor({
         setPendingSymbol(null);
       }
     },
-    [pendingSymbol, problemSetId, onOverlayChange]
+    [pendingSymbol, problemSetId, onOverlayChange, symbolsMap]
   );
 
   // Derive map initial state from aoBounds
@@ -427,16 +555,25 @@ export function OperationalApproachMapEditor({
   const handleSymbolDragEnd = useCallback(
     async (symbol: MapSymbol, e: L.DragEndEvent) => {
       const { lat, lng } = (e.target as L.Marker).getLatLng();
+      // Write to Yjs first — propagates to all clients immediately
+      if (symbolsMap) {
+        symbolsMap.set(symbol.id, { ...symbol, lat, lng });
+      }
+      // Invalidate icon cache entry so the marker re-renders at new position cleanly
+      iconCache.current.delete(`${symbol.sidc}--${symbol.designation}`);
       try {
+        // Persist to API (authoritative storage) in the background
         const updated = await mapOverlayService.moveSymbol(problemSetId, symbol.id, lat, lng);
         onOverlayChange(updated);
-        // Invalidate icon cache entry so the marker re-renders at new position cleanly
-        iconCache.current.delete(`${symbol.sidc}--${symbol.designation}`);
       } catch (err) {
         console.error('[OperationalApproachMapEditor] Failed to move symbol:', err);
+        // Revert Yjs optimistic update on failure
+        if (symbolsMap) {
+          symbolsMap.set(symbol.id, symbol);
+        }
       }
     },
-    [problemSetId, onOverlayChange]
+    [problemSetId, onOverlayChange, symbolsMap]
   );
 
   // ─── Draw handlers ───────────────────────────────────────────────────────
@@ -472,6 +609,12 @@ export function OperationalApproachMapEditor({
           geometry: { type: pending.geoType, coordinates: pending.coords },
           createdBy: 'user',
         });
+        // Sync authoritative IDs from the API response into Yjs so remote clients see it
+        if (measuresMap) {
+          for (const cm of updated.controlMeasures) {
+            measuresMap.set(cm.id, cm);
+          }
+        }
         onOverlayChange(updated);
       } catch (err) {
         console.error('[OperationalApproachMapEditor] Failed to add control measure:', err);
@@ -484,7 +627,7 @@ export function OperationalApproachMapEditor({
         setShowDrawForm(false);
       }
     },
-    [problemSetId, onOverlayChange]
+    [problemSetId, onOverlayChange, measuresMap]
   );
 
   const handleDrawFormCancel = useCallback(() => {
@@ -547,8 +690,8 @@ export function OperationalApproachMapEditor({
           {/* Placement mode click handler */}
           <PlacementClickHandler pendingSymbol={pendingSymbol} onPlace={handlePlaceSymbol} />
 
-          {/* ─── Military symbol markers ─── */}
-          {mapOverlay.symbols.map((symbol) => (
+          {/* ─── Military symbol markers (rendered from Yjs-backed state) ─── */}
+          {symbols.map((symbol) => (
             <Marker
               key={symbol.id}
               position={[symbol.lat, symbol.lng]}
@@ -577,8 +720,8 @@ export function OperationalApproachMapEditor({
             </Marker>
           ))}
 
-          {/* ─── Control measures ─── */}
-          {mapOverlay.controlMeasures.map((measure) => {
+          {/* ─── Control measures (rendered from Yjs-backed state) ─── */}
+          {controlMeasures.map((measure) => {
             const coords: L.LatLngExpression[] = measure.geometry.coordinates.map(
               (c) => [c.lat, c.lng] as L.LatLngExpression
             );
@@ -668,6 +811,7 @@ export function OperationalApproachMapEditor({
           key={selectedSymbol.id}
           symbol={selectedSymbol}
           problemSetId={problemSetId}
+          symbolsMap={symbolsMap}
           onSaved={(overlay) => {
             onOverlayChange(overlay);
             // Re-find symbol by id from updated overlay to keep panel in sync
