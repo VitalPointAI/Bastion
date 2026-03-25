@@ -75,6 +75,55 @@ export interface LineOfEffort {
   order: number;
 }
 
+// ─── Map Overlay (Phase 56) ──────────────────────────────────────────────────
+
+export interface MapSymbol {
+  id: string;
+  sidc: string;                      // MIL-STD-2525D SIDC code
+  designation: string;               // e.g. "1st MarDiv"
+  affiliation: 'friendly' | 'enemy' | 'neutral' | 'unknown';
+  lat: number;
+  lng: number;
+  echelon?: string;
+  label?: string;
+  additionalInfo?: Record<string, string>;
+  createdBy: 'ironclaw' | 'user';
+  createdAt: string;
+}
+
+export interface ControlMeasure {
+  id: string;
+  type:
+    | 'phase_line'
+    | 'boundary'
+    | 'axis_of_advance'
+    | 'objective'
+    | 'engagement_area'
+    | 'nai'                          // Named Area of Interest
+    | 'fscm'                         // Fire Support Coordination Measure
+    | 'flot'                         // Forward Line of Troops
+    | 'other';
+  label: string;
+  affiliation: 'friendly' | 'enemy' | 'neutral';
+  geometry: {
+    type: 'line' | 'polygon' | 'point';
+    coordinates: Array<{ lat: number; lng: number }>;
+  };
+  createdBy: 'ironclaw' | 'user';
+  createdAt: string;
+}
+
+export interface MapOverlay {
+  symbols: MapSymbol[];
+  controlMeasures: ControlMeasure[];
+  aoBounds?: {
+    southwest: { lat: number; lng: number };
+    northeast: { lat: number; lng: number };
+  };
+  lastUpdatedBy: 'ironclaw' | 'user';
+  lastUpdatedAt: string;
+}
+
 // ─── Operational Approach ────────────────────────────────────────────────────
 
 export interface OperationalApproach {
@@ -82,6 +131,7 @@ export interface OperationalApproach {
   transitions: Array<{ fromPhaseId: string; toPhaseId: string; conditions: string[] }>;
   decisionPoints: Array<{ id: string; label: string; phaseId: string; criteria: string[] }>;
   narrative: string;
+  mapOverlay?: MapOverlay;           // Phase 56: Visual Operational Approach Editor
 }
 
 // ─── Design-to-Plan Handoff ──────────────────────────────────────────────────
