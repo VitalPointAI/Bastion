@@ -15,6 +15,7 @@ import type { UseDesignInterviewResult } from '../../hooks/useDesignInterview.ts
 import { IronclawMessage } from './IronclawMessage.tsx';
 import { IronclawSuggestion } from './IronclawSuggestion.tsx';
 import { IronclawTaskPanel } from './IronclawTaskPanel.tsx';
+import { IronclawMemoryPanel } from './IronclawMemoryPanel.tsx';
 import type { Decision, ActOnDecisionParams } from '../../lib/decision-service.ts';
 import Markdown from 'react-markdown';
 import './IronclawDrawer.css';
@@ -114,6 +115,8 @@ export function IronclawDrawer({
   const [version, setVersion] = useState<string | null>(null);
   const prevMessageCountRef = useRef(0);
   const userScrolledUpRef = useRef(false);
+  /** Controls which content area is shown: 'chat' or 'memory' */
+  const [drawerTab, setDrawerTab] = useState<'chat' | 'memory'>('chat');
 
   // Fetch version from /api/ironclaw/status on mount
   useEffect(() => {
@@ -322,8 +325,42 @@ export function IronclawDrawer({
           </div>
         )}
 
+        {/* Drawer tab bar — Chat | Memory */}
+        <div className="flex border-b border-slate-700/60 bg-slate-800/30">
+          <button
+            onClick={() => setDrawerTab('chat')}
+            className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
+              drawerTab === 'chat'
+                ? 'border-blue-500 text-blue-300'
+                : 'border-transparent text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            {/* Chat bubble icon */}
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Chat
+          </button>
+          <button
+            onClick={() => setDrawerTab('memory')}
+            className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
+              drawerTab === 'memory'
+                ? 'border-blue-500 text-blue-300'
+                : 'border-transparent text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            {/* Brain / memory icon */}
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            Memory
+          </button>
+        </div>
+
         {/* Thread selector bar — always show in problem set mode so user can create first thread */}
-        {!isGlobalMode && threads && (
+        {!isGlobalMode && threads && drawerTab === 'chat' && (
           <div className="flex items-center gap-1 px-3 py-1.5 border-b border-slate-700/60 bg-slate-800/30 overflow-x-auto">
             {threads.slice(0, 5).map((t) => (
               <button
@@ -365,6 +402,16 @@ export function IronclawDrawer({
             )}
           </div>
         )}
+
+        {/* Memory tab content */}
+        {drawerTab === 'memory' && (
+          <div className="flex-1 overflow-y-auto">
+            <IronclawMemoryPanel />
+          </div>
+        )}
+
+        {/* Chat tab content — all chat-specific UI */}
+        {drawerTab === 'chat' && <>
 
         {/* Pending decisions panel — proactively surfaced by Ironclaw */}
         {pendingDecisions && pendingDecisions.length > 0 && (
@@ -745,6 +792,8 @@ export function IronclawDrawer({
             </button>
           </div>
         </div>
+
+        </> /* end drawerTab === 'chat' */}
       </div>
     </>
   );

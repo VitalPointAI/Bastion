@@ -12,6 +12,7 @@ import type {
   IronclawChatMessage,
   TrustDecision,
   TrustPreference,
+  IronclawMemoryEntry,
 } from '../types/ironclaw.ts';
 import type { MessageContext } from '../hooks/useIronclaw.ts';
 
@@ -223,6 +224,31 @@ class IronclawApi {
     await this.fetch(`/api/ironclaw/${encodeURIComponent(problemSetId)}/threads/${threadId}`, {
       method: 'DELETE',
     });
+  }
+
+  // ==========================================================================
+  // Memory Management (Plan 03)
+  // ==========================================================================
+
+  /**
+   * Get all active memories for the authenticated user.
+   */
+  async getMemories(): Promise<{ memories: IronclawMemoryEntry[] }> {
+    return this.fetch('/api/ironclaw/memory');
+  }
+
+  /**
+   * Delete a specific memory entry by key.
+   */
+  async deleteMemory(key: string): Promise<{ deleted: string }> {
+    return this.fetch(`/api/ironclaw/memory/${encodeURIComponent(key)}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Delete all memories for the authenticated user.
+   */
+  async deleteAllMemories(): Promise<{ deleted: string }> {
+    return this.fetch('/api/ironclaw/memory/all', { method: 'DELETE' });
   }
 
   // ==========================================================================
