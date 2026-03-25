@@ -491,6 +491,301 @@ const designUpdateSection: ActionHandler = async (payload, _userDid) => {
 };
 
 // ---------------------------------------------------------------------------
+// Map Overlay Handlers
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive MIL-STD-2525D affiliation from SIDC code character 2.
+ * Returns 'friendly', 'enemy', 'neutral', or 'unknown'.
+ */
+function getSIDCAffiliation(sidc: string): 'friendly' | 'enemy' | 'neutral' | 'unknown' {
+  const code = sidc.charAt(1)?.toUpperCase();
+  if (code === 'F' || code === 'A' || code === 'D' || code === 'M') return 'friendly';
+  if (code === 'H' || code === 'S' || code === 'J') return 'enemy';
+  if (code === 'N' || code === 'L') return 'neutral';
+  return 'unknown';
+}
+
+/**
+ * Convert MGRS string to { lat, lng } decimal degrees.
+ * Returns null if conversion fails.
+ */
+async function mgrsToLatLng(mgrsStr: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const { toPoint } = await import('mgrs');
+    const [lng, lat] = toPoint(mgrsStr);
+    return { lat, lng };
+  } catch (err) {
+    console.warn('[builder-handlers] MGRS conversion failed:', err);
+    return null;
+  }
+}
+
+const designMapAddSymbol: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = requireField<string>(payload, 'problem_set_id');
+  const sidc = requireField<string>(payload, 'sidc');
+
+  let lat = payload['lat'] as number | undefined;
+  let lng = payload['lng'] as number | undefined;
+
+  // Convert MGRS to lat/lng if provided
+  if (payload['mgrs'] && (lat === undefined || lng === undefined)) {
+    const coords = await mgrsToLatLng(payload['mgrs'] as string);
+    if (coords) {
+      lat = coords.lat;
+      lng = coords.lng;
+    }
+  }
+
+  if (lat === undefined || lng === undefined) {
+    throw new Error('Position required: provide lat/lng or mgrs');
+  }
+
+  const { randomUUID } = await import('crypto');
+  const { designStore } = await import('../design/design-store.js');
+
+  const symbol = {
+    id: randomUUID(),
+    sidc,
+    designation: (payload['designation'] as string) ?? '',
+    affiliation: getSIDCAffiliation(sidc),
+    lat,
+    lng,
+    echelon: payload['echelon'] as string | undefined,
+    createdBy: 'ironclaw' as const,
+    createdAt: new Date().toISOString(),
+  };
+
+  await designStore.addMapSymbol(problemSetId, symbol);
+
+  // Publish real-time WebSocket event
+  try {
+    const { getMessageBus } = await import('../messaging/message-bus.js');
+    const bus = getMessageBus();
+    await bus.publish({
+      sourceDid: 'system:ironclaw',
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: `ironclaw.${problemSetId}`,
+      messageType: 'design.map_updated',
+      payload: { symbol, action: 'add' },
+    });
+  } catch (err) {
+    console.warn('[builder-handlers] Failed to publish design.map_updated (add) WS event:', err);
+  }
+
+  return { success: true, symbolId: symbol.id };
+};
+
+const designMapMoveSymbol: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = requireField<string>(payload, 'problem_set_id');
+  const symbolId = requireField<string>(payload, 'symbol_id');
+
+  let lat = payload['lat'] as number | undefined;
+  let lng = payload['lng'] as number | undefined;
+
+  if (payload['mgrs'] && (lat === undefined || lng === undefined)) {
+    const coords = await mgrsToLatLng(payload['mgrs'] as string);
+    if (coords) {
+      lat = coords.lat;
+      lng = coords.lng;
+    }
+  }
+
+  if (lat === undefined || lng === undefined) {
+    throw new Error('Position required: provide lat/lng or mgrs');
+  }
+
+  const { designStore } = await import('../design/design-store.js');
+  await designStore.moveMapSymbol(problemSetId, symbolId, lat, lng);
+
+  try {
+    const { getMessageBus } = await import('../messaging/message-bus.js');
+    const bus = getMessageBus();
+    await bus.publish({
+      sourceDid: 'system:ironclaw',
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: `ironclaw.${problemSetId}`,
+      messageType: 'design.map_updated',
+      payload: { symbolId, action: 'move', lat, lng },
+    });
+  } catch (err) {
+    console.warn('[builder-handlers] Failed to publish design.map_updated (move) WS event:', err);
+  }
+
+  return { success: true };
+};
+
+const designMapRemoveSymbol: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = requireField<string>(payload, 'problem_set_id');
+  const symbolId = requireField<string>(payload, 'symbol_id');
+
+  const { designStore } = await import('../design/design-store.js');
+  await designStore.removeMapSymbol(problemSetId, symbolId);
+
+  try {
+    const { getMessageBus } = await import('../messaging/message-bus.js');
+    const bus = getMessageBus();
+    await bus.publish({
+      sourceDid: 'system:ironclaw',
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: `ironclaw.${problemSetId}`,
+      messageType: 'design.map_updated',
+      payload: { symbolId, action: 'remove' },
+    });
+  } catch (err) {
+    console.warn('[builder-handlers] Failed to publish design.map_updated (remove) WS event:', err);
+  }
+
+  return { success: true };
+};
+
+const designMapUpdateSymbol: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = requireField<string>(payload, 'problem_set_id');
+  const symbolId = requireField<string>(payload, 'symbol_id');
+
+  // Build partial update from only provided fields
+  const updates: Record<string, unknown> = {};
+  if (payload['sidc'] !== undefined) {
+    updates['sidc'] = payload['sidc'];
+    updates['affiliation'] = getSIDCAffiliation(payload['sidc'] as string);
+  }
+  if (payload['designation'] !== undefined) updates['designation'] = payload['designation'];
+  if (payload['echelon'] !== undefined) updates['echelon'] = payload['echelon'];
+
+  if (Object.keys(updates).length === 0) {
+    throw new Error('No update fields provided: supply at least one of sidc, designation, echelon');
+  }
+
+  const { designStore } = await import('../design/design-store.js');
+  await designStore.updateMapSymbol(problemSetId, symbolId, updates as Parameters<typeof designStore.updateMapSymbol>[2]);
+
+  try {
+    const { getMessageBus } = await import('../messaging/message-bus.js');
+    const bus = getMessageBus();
+    await bus.publish({
+      sourceDid: 'system:ironclaw',
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: `ironclaw.${problemSetId}`,
+      messageType: 'design.map_updated',
+      payload: { symbolId, action: 'update', updates },
+    });
+  } catch (err) {
+    console.warn('[builder-handlers] Failed to publish design.map_updated (update) WS event:', err);
+  }
+
+  return { success: true };
+};
+
+const designMapAddControlMeasure: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = requireField<string>(payload, 'problem_set_id');
+  const type = requireField<string>(payload, 'type');
+  const label = requireField<string>(payload, 'label');
+  const coordinates = requireField<Array<{ lat: number; lng: number }>>(payload, 'coordinates');
+
+  if (!Array.isArray(coordinates) || coordinates.length === 0) {
+    throw new Error('coordinates must be a non-empty array of {lat, lng} objects');
+  }
+
+  // Infer geometry type from coordinate count and measure type
+  let geometryType: 'point' | 'line' | 'polygon';
+  if (coordinates.length === 1) {
+    geometryType = 'point';
+  } else if (type === 'engagement_area' || type === 'objective') {
+    geometryType = 'polygon';
+  } else {
+    geometryType = 'line';
+  }
+
+  const { randomUUID } = await import('crypto');
+  const { designStore } = await import('../design/design-store.js');
+
+  const measure = {
+    id: randomUUID(),
+    type: type as 'phase_line' | 'boundary' | 'axis_of_advance' | 'objective' | 'engagement_area' | 'nai' | 'fscm' | 'flot' | 'other',
+    label,
+    affiliation: ((payload['affiliation'] as string) ?? 'friendly') as 'friendly' | 'enemy' | 'neutral',
+    geometry: {
+      type: geometryType,
+      coordinates,
+    },
+    createdBy: 'ironclaw' as const,
+    createdAt: new Date().toISOString(),
+  };
+
+  await designStore.addControlMeasure(problemSetId, measure);
+
+  try {
+    const { getMessageBus } = await import('../messaging/message-bus.js');
+    const bus = getMessageBus();
+    await bus.publish({
+      sourceDid: 'system:ironclaw',
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: `ironclaw.${problemSetId}`,
+      messageType: 'design.map_updated',
+      payload: { measure, action: 'add_control_measure' },
+    });
+  } catch (err) {
+    console.warn('[builder-handlers] Failed to publish design.map_updated (add_control_measure) WS event:', err);
+  }
+
+  return { success: true, measureId: measure.id };
+};
+
+const designMapAddOverlayGraphic: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = requireField<string>(payload, 'problem_set_id');
+  const graphicType = requireField<string>(payload, 'graphic_type');
+  const label = requireField<string>(payload, 'label');
+  const coordinates = requireField<Array<{ lat: number; lng: number }>>(payload, 'coordinates');
+
+  if (!Array.isArray(coordinates) || coordinates.length === 0) {
+    throw new Error('coordinates must be a non-empty array of {lat, lng} objects');
+  }
+
+  const geometryType: 'point' | 'line' | 'polygon' = coordinates.length === 1 ? 'point' : 'line';
+
+  const { randomUUID } = await import('crypto');
+  const { designStore } = await import('../design/design-store.js');
+
+  // Store as type 'other' control measure with graphic_type prefix in label
+  const measure = {
+    id: randomUUID(),
+    type: 'other' as const,
+    label: `[${graphicType}] ${label}`,
+    affiliation: 'friendly' as const,
+    geometry: {
+      type: geometryType,
+      coordinates,
+    },
+    createdBy: 'ironclaw' as const,
+    createdAt: new Date().toISOString(),
+  };
+
+  await designStore.addControlMeasure(problemSetId, measure);
+
+  try {
+    const { getMessageBus } = await import('../messaging/message-bus.js');
+    const bus = getMessageBus();
+    await bus.publish({
+      sourceDid: 'system:ironclaw',
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: `ironclaw.${problemSetId}`,
+      messageType: 'design.map_updated',
+      payload: { measure, action: 'add_overlay_graphic', graphicType },
+    });
+  } catch (err) {
+    console.warn('[builder-handlers] Failed to publish design.map_updated (add_overlay_graphic) WS event:', err);
+  }
+
+  return { success: true, measureId: measure.id };
+};
+
+// ---------------------------------------------------------------------------
 // Dispatch Map
 // ---------------------------------------------------------------------------
 // Design Synthesis Handler
@@ -648,6 +943,13 @@ export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   'team.remove_member': teamRemoveMember,
   // Design interview (1)
   'design.update_section': designUpdateSection,
+  // Map overlay (6)
+  'design.map.add_symbol': designMapAddSymbol,
+  'design.map.move_symbol': designMapMoveSymbol,
+  'design.map.remove_symbol': designMapRemoveSymbol,
+  'design.map.update_symbol': designMapUpdateSymbol,
+  'design.map.add_control_measure': designMapAddControlMeasure,
+  'design.map.add_overlay_graphic': designMapAddOverlayGraphic,
   // Skill CRUD (5)
   'skill.create': skillCreate,
   'skill.update': skillUpdate,
