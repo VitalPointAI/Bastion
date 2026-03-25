@@ -661,7 +661,14 @@ ironclawRouter.post(
       // 4. Dispatch field write
       await dispatchFieldWrite(problemSetId, targetField, String(fieldValue));
 
-      // 5. Success
+      // 5. Record outcome for adaptive preference learning (fire-and-forget)
+      memoryRetrievalService
+        .recordOutcome(userDid, problemSetId, 'suggestion_accepted', {
+          suggestion_type: targetField,
+        })
+        .catch((err) => console.error('[ironclaw-memory] outcome record failed:', err));
+
+      // 6. Success
       res.json({ applied: true, field: targetField });
     } catch (err) {
       console.error('[ironclaw-router] Suggestion accept error:', err);
