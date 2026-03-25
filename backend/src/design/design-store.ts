@@ -16,6 +16,9 @@ import type {
   LineOfEffort,
   OperationalApproach,
   SectionStatus,
+  MapSymbol,
+  ControlMeasure,
+  MapOverlay,
 } from './types.js';
 
 // ─── Table Initialization ────────────────────────────────────────────────────
@@ -327,6 +330,132 @@ class DesignStore {
     );
 
     return { success: true, pushedAt: pushedAt.toISOString() };
+  }
+
+  // ─── Map Overlay Methods (Phase 56) ─────────────────────────────────────
+
+  /**
+   * Get the current map overlay for a problem set.
+   * Returns an empty overlay if no data exists.
+   */
+  async getMapOverlay(problemSetId: string): Promise<MapOverlay> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    const result = await pool.query(
+      'SELECT map_overlay FROM operational_designs WHERE problem_set_id = $1',
+      [problemSetId]
+    );
+    if (!result.rows[0]) {
+      return { symbols: [], controlMeasures: [], lastUpdatedBy: 'user', lastUpdatedAt: new Date().toISOString() };
+    }
+    const overlay = result.rows[0].map_overlay as MapOverlay | null;
+    if (!overlay) {
+      return { symbols: [], controlMeasures: [], lastUpdatedBy: 'user', lastUpdatedAt: new Date().toISOString() };
+    }
+    return overlay;
+  }
+
+  /**
+   * Full replacement of the map overlay.
+   */
+  async setMapOverlay(problemSetId: string, overlay: MapOverlay): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    const now = new Date().toISOString();
+    const updated: MapOverlay = { ...overlay, lastUpdatedAt: now };
+    await pool.query(
+      `UPDATE operational_designs
+       SET map_overlay = $1,
+           updated_at = NOW()
+       WHERE problem_set_id = $2`,
+      [JSON.stringify(updated), problemSetId]
+    );
+  }
+
+  /**
+   * Add a symbol to the map overlay.
+   */
+  async addMapSymbol(problemSetId: string, symbol: MapSymbol): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    const now = new Date().toISOString();
+    await pool.query(
+      `UPDATE operational_designs
+       SET map_overlay = jsonb_set(
+             jsonb_set(
+               COALESCE(map_overlay, '{"symbols":[],"controlMeasures":[]}'::jsonb),
+               '{symbols}',
+               (COALESCE(map_overlay->'symbols', '[]'::jsonb)) || $1::jsonb
+             ),
+             '{lastUpdatedAt}', $2::jsonb
+           ),
+           updated_at = NOW()
+       WHERE problem_set_id = $3`,
+      [JSON.stringify(symbol), JSON.stringify(now), problemSetId]
+    );
+  }
+
+  /**
+   * Move a symbol to a new lat/lng.
+   */
+  async moveMapSymbol(problemSetId: string, symbolId: string, lat: number, lng: number): Promise<void> {
+    const overlay = await this.getMapOverlay(problemSetId);
+    const symbols = overlay.symbols.map(s =>
+      s.id === symbolId ? { ...s, lat, lng } : s
+    );
+    await this.setMapOverlay(problemSetId, { ...overlay, symbols, lastUpdatedAt: new Date().toISOString() });
+  }
+
+  /**
+   * Remove a symbol from the map overlay.
+   */
+  async removeMapSymbol(problemSetId: string, symbolId: string): Promise<void> {
+    const overlay = await this.getMapOverlay(problemSetId);
+    const symbols = overlay.symbols.filter(s => s.id !== symbolId);
+    await this.setMapOverlay(problemSetId, { ...overlay, symbols, lastUpdatedAt: new Date().toISOString() });
+  }
+
+  /**
+   * Update properties of an existing symbol.
+   */
+  async updateMapSymbol(problemSetId: string, symbolId: string, updates: Partial<MapSymbol>): Promise<void> {
+    const overlay = await this.getMapOverlay(problemSetId);
+    const symbols = overlay.symbols.map(s =>
+      s.id === symbolId ? { ...s, ...updates, id: s.id } : s
+    );
+    await this.setMapOverlay(problemSetId, { ...overlay, symbols, lastUpdatedAt: new Date().toISOString() });
+  }
+
+  /**
+   * Add a control measure to the map overlay.
+   */
+  async addControlMeasure(problemSetId: string, measure: ControlMeasure): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    const now = new Date().toISOString();
+    await pool.query(
+      `UPDATE operational_designs
+       SET map_overlay = jsonb_set(
+             jsonb_set(
+               COALESCE(map_overlay, '{"symbols":[],"controlMeasures":[]}'::jsonb),
+               '{controlMeasures}',
+               (COALESCE(map_overlay->'controlMeasures', '[]'::jsonb)) || $1::jsonb
+             ),
+             '{lastUpdatedAt}', $2::jsonb
+           ),
+           updated_at = NOW()
+       WHERE problem_set_id = $3`,
+      [JSON.stringify(measure), JSON.stringify(now), problemSetId]
+    );
+  }
+
+  /**
+   * Remove a control measure from the map overlay.
+   */
+  async removeControlMeasure(problemSetId: string, measureId: string): Promise<void> {
+    const overlay = await this.getMapOverlay(problemSetId);
+    const controlMeasures = overlay.controlMeasures.filter(m => m.id !== measureId);
+    await this.setMapOverlay(problemSetId, { ...overlay, controlMeasures, lastUpdatedAt: new Date().toISOString() });
   }
 }
 

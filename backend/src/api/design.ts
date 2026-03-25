@@ -8,7 +8,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { designStore } from '../design/design-store.js';
-import type { CoGAnalysis, LineOfEffort, OperationalDesign } from '../design/types.js';
+import type { CoGAnalysis, LineOfEffort, OperationalDesign, MapSymbol, ControlMeasure } from '../design/types.js';
 import { getAgentRegistry } from '../agents/registry.js';
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { listDocuments } from '../strategic/ingestion/document-store.js';
@@ -599,5 +599,86 @@ Based on your expertise, what insights, risks, blind spots, or alternative consi
   const results = await Promise.all(promises);
   return results.filter((r): r is AgentContribution => r !== null);
 }
+
+// ─── Map Overlay Endpoints (Phase 56) ──────────────────────────────────────
+
+/**
+ * GET /api/design/:problemSetId/map-overlay
+ * Returns the current MapOverlay JSON.
+ */
+router.get('/:problemSetId/map-overlay', async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.problemSetId as string;
+    const overlay = await designStore.getMapOverlay(problemSetId);
+    res.json(overlay);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[design] GET /${req.params.problemSetId}/map-overlay failed:`, message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * PATCH /api/design/:problemSetId/map-overlay
+ * Performs an action on the map overlay.
+ * Body: { action: 'add_symbol' | 'move_symbol' | 'remove_symbol' | 'update_symbol' | 'add_control_measure' | 'remove_control_measure' | 'set_overlay', data: object }
+ * Returns the updated MapOverlay.
+ */
+router.patch('/:problemSetId/map-overlay', async (req: Request, res: Response) => {
+  try {
+    const problemSetId = req.params.problemSetId as string;
+    const { action, data } = req.body as { action: string; data: Record<string, unknown> };
+
+    if (!action) {
+      res.status(400).json({ error: 'Missing required field: action' });
+      return;
+    }
+
+    switch (action) {
+      case 'add_symbol': {
+        await designStore.addMapSymbol(problemSetId, data as unknown as MapSymbol);
+        break;
+      }
+      case 'move_symbol': {
+        const { symbolId, lat, lng } = data as { symbolId: string; lat: number; lng: number };
+        await designStore.moveMapSymbol(problemSetId, symbolId, lat, lng);
+        break;
+      }
+      case 'remove_symbol': {
+        const { symbolId } = data as { symbolId: string };
+        await designStore.removeMapSymbol(problemSetId, symbolId);
+        break;
+      }
+      case 'update_symbol': {
+        const { symbolId, ...updates } = data as { symbolId: string } & Partial<MapSymbol>;
+        await designStore.updateMapSymbol(problemSetId, symbolId, updates);
+        break;
+      }
+      case 'add_control_measure': {
+        await designStore.addControlMeasure(problemSetId, data as unknown as ControlMeasure);
+        break;
+      }
+      case 'remove_control_measure': {
+        const { measureId } = data as { measureId: string };
+        await designStore.removeControlMeasure(problemSetId, measureId);
+        break;
+      }
+      case 'set_overlay': {
+        await designStore.setMapOverlay(problemSetId, data as unknown as Parameters<typeof designStore.setMapOverlay>[1]);
+        break;
+      }
+      default:
+        res.status(400).json({ error: `Unknown map overlay action: ${action}` });
+        return;
+    }
+
+    const updated = await designStore.getMapOverlay(problemSetId);
+    res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[design] PATCH /${req.params.problemSetId}/map-overlay failed:`, message);
+    res.status(500).json({ error: message });
+  }
+});
 
 export default router;
