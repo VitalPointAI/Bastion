@@ -16,6 +16,17 @@
  *
  * Usage:
  *   <BrainVisualization data={brainData} onNodeClick={handleNodeClick} />
+ *
+ * Performance tiers:
+ *   - Small (<200 nodes): individual nodeThreeObject with full decorations
+ *   - Large (200-1000):  InstancedMesh rendering with reduced decorations
+ *   - LOD system: distance-based rendering (points → meshes → full labels)
+ *
+ * Advanced features:
+ *   - Focus explosion: click-to-center with neighbor ring fan-out
+ *   - Curved edges: bezier tubes with relationship labels in focus mode
+ *   - Semantic cluster hulls: transparent convex hull overlays per group
+ *   - Heat map mode: centrality-based node coloring with emissive glow
  */
 
 import { useRef, useMemo, useCallback, useEffect, useState, type MutableRefObject } from 'react';
@@ -24,6 +35,13 @@ import * as THREE from 'three';
 import SpriteText from 'three-spritetext';
 import type { BrainNode, BrainGraphData, ClusterMode, DrillLevel } from './types.js';
 import { CATEGORY_COLORS, BRAIN_BG_COLOR } from './types.js';
+import { useFocusExplosion } from './hooks/useFocusExplosion.js';
+import { useBrainHulls } from './hooks/useBrainHulls.js';
+import { createInstancedMeshGroup, INSTANCED_THRESHOLD, type InstancedMeshGroup } from './renderers/instancedRenderer.js';
+import { createCurvedEdge, disposeCurvedEdgeGroup, getEdgeColor } from './renderers/curvedEdgeRenderer.js';
+import { createHullMeshGroup, type HullMeshGroup } from './renderers/hullRenderer.js';
+import { getHeatColorHex, getHeatEmissiveIntensity } from './renderers/heatMapRenderer.js';
+import { createPointCloud, createLODController, type PointCloudData, type LODController } from './renderers/lodSystem.js';
 import './BrainVisualization.css';
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
@@ -53,6 +71,14 @@ export interface BrainVisualizationProps {
   nhopWarning?: boolean;
   /** Called when user clicks the N-hop expand button at Level 3 */
   onExpand?: () => void;
+  /** When true, color nodes by centrality heat map instead of actor category */
+  heatMapMode?: boolean;
+  /** Toggle heat map mode */
+  onToggleHeatMap?: () => void;
+  /** When true, show semantic cluster hulls */
+  showHulls?: boolean;
+  /** Toggle hull visibility */
+  onToggleHulls?: () => void;
 }
 
 // ─── Internal types ────────────────────────────────────────────────────────────
@@ -149,7 +175,8 @@ function getRingGeometry(scale: number): THREE.RingGeometry {
   return geo;
 }
 
-function getNodeColor(node: BrainNode): string {
+function getNodeColor(node: BrainNode, useHeatMap = false): string {
+  if (useHeatMap) return getHeatColorHex(node.centrality ?? 0);
   if (node.isGap) return '#ffaa00';
   if (node.isFuturePrediction) return '#aa66ff';
   if (node.actorCategory) return CATEGORY_COLORS[node.actorCategory] ?? '#888888';
@@ -316,9 +343,14 @@ export function BrainVisualization({
   expandedHops = 0,
   nhopWarning = false,
   onExpand,
+  heatMapMode = false,
+  onToggleHeatMap,
+  showHulls = false,
+  onToggleHulls,
 }: BrainVisualizationProps) {
-  void _clusterMode;
   void _onLassoSelect; // Lasso not applicable in 3D — use click selection
+  void onToggleHeatMap; // Toggle buttons rendered in toolbar, not here
+  void onToggleHulls;   // Toggle buttons rendered in toolbar, not here
 
   const internalFgRef = useRef<ForceGraphMethods | undefined>(undefined);
   const fgRef = externalFgRef ?? internalFgRef;
@@ -337,6 +369,47 @@ export function BrainVisualization({
 
   // Large graph flag — used by nodeThreeObject to skip expensive decorations
   const isLargeGraphRef = useRef(false);
+
+  // ── Focus explosion hook ──────────────────────────────────────────────────
+  const {
+    focusState,
+    enterFocus,
+    exitFocus,
+    isFocusDimmed,
+    getFocusOpacity: _getFocusOpacity,
+    tick: focusTick,
+  } = useFocusExplosion(data.nodes, data.edges, fgRef);
+  void _getFocusOpacity; // Used indirectly via isFocusDimmed in nodeThreeObject
+
+  // ── Semantic cluster hulls ────────────────────────────────────────────────
+  const { hulls, computeHulls } = useBrainHulls(data.nodes, _clusterMode);
+
+  // ── Instanced rendering refs ──────────────────────────────────────────────
+  const instancedGroupRef = useRef<InstancedMeshGroup | null>(null);
+  const instancedAddedRef = useRef(false);
+
+  // ── Hull renderer ref ─────────────────────────────────────────────────────
+  const hullMeshGroupRef = useRef<HullMeshGroup | null>(null);
+  const hullAddedRef = useRef(false);
+
+  // ── Point cloud (LOD far tier) ref ────────────────────────────────────────
+  const pointCloudRef = useRef<PointCloudData | null>(null);
+  const pointCloudAddedRef = useRef(false);
+
+  // ── LOD controller ref ────────────────────────────────────────────────────
+  const lodControllerRef = useRef<LODController | null>(null);
+
+  // ── Curved edge cache (only in focus mode) ────────────────────────────────
+  const curvedEdgeGroupRef = useRef<THREE.Group | null>(null);
+  const curvedEdgeAddedRef = useRef(false);
+
+  // ── Heat map mode ref (for use in callbacks without stale closures) ───────
+  const heatMapModeRef = useRef(heatMapMode);
+  useEffect(() => { heatMapModeRef.current = heatMapMode; }, [heatMapMode]);
+
+  // ── Focus state ref (for use in nodeThreeObject without stale closures) ───
+  const focusStateRef = useRef(focusState);
+  useEffect(() => { focusStateRef.current = focusState; }, [focusState]);
 
   // ── ResizeObserver ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -472,16 +545,19 @@ export function BrainVisualization({
         return group;
       }
 
-      const color = getNodeColor(brainNode);
+      const useHeat = heatMapModeRef.current;
+      const color = getNodeColor(brainNode, useHeat);
 
       // Compute selection state (dimming is handled by the neighborhood effect)
       const selId = selectedIdRef.current;
       const selIds = selectedIdsRef.current;
       const isSelected = brainNode.id === selId || (selIds?.includes(brainNode.id) ?? false);
       const isDimmed = brainNode.isSearchDimmed ?? false;
-      const targetOpacity = isDimmed ? 0.08 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
+      const isFDimmed = focusStateRef.current.isActive && focusStateRef.current.focusedNodeId !== brainNode.id && !focusStateRef.current.neighborIds.has(brainNode.id);
+      const effectiveDimmed = isDimmed || isFDimmed;
+      const targetOpacity = effectiveDimmed ? 0.08 : brainNode.isGap ? 0.5 : brainNode.isFuturePrediction ? 0.4 : 0.85;
 
-      const cacheKey = `${color}|${isSelected ? 1 : 0}|${isDimmed ? 1 : 0}|${brainNode.isGap ? 1 : 0}|${brainNode.confidence}|${brainNode.centrality ?? 0}|${brainNode.confidenceTier ?? ''}`;
+      const cacheKey = `${color}|${isSelected ? 1 : 0}|${effectiveDimmed ? 1 : 0}|${brainNode.isGap ? 1 : 0}|${brainNode.confidence}|${brainNode.centrality ?? 0}|${brainNode.confidenceTier ?? ''}|${useHeat ? 'H' : ''}|${isFDimmed ? 'F' : ''}`;
       const cached = cache.get(brainNode.id);
 
       if (cached && cached.key === cacheKey) {
@@ -490,7 +566,21 @@ export function BrainVisualization({
 
       // Rebuild the THREE.Group only when node data actually changes
       const geometry = getGeometry(brainNode.type);
-      const material = getMaterial(color, targetOpacity);
+      let material: THREE.Material;
+      if (useHeat && getHeatEmissiveIntensity(brainNode.centrality ?? 0) > 0) {
+        // Use MeshStandardMaterial for emissive glow on high-centrality nodes
+        const heatColor = new THREE.Color(color);
+        const emissiveI = getHeatEmissiveIntensity(brainNode.centrality ?? 0);
+        material = new THREE.MeshStandardMaterial({
+          color: heatColor,
+          transparent: true,
+          opacity: targetOpacity,
+          emissive: heatColor,
+          emissiveIntensity: emissiveI * 0.8,
+        });
+      } else {
+        material = getMaterial(color, targetOpacity);
+      }
       const group = new THREE.Group();
       const mesh = new THREE.Mesh(geometry, material);
 
@@ -523,10 +613,11 @@ export function BrainVisualization({
       }
 
       // For large graphs, only show labels on high-centrality nodes to reduce sprite count
-      const showLabel = !isLargeGraphRef.current || (brainNode.centrality ?? 0) > 0.3 || isSelected;
+      // In focus mode, hide labels on dimmed nodes entirely
+      const showLabel = !isFDimmed && (!isLargeGraphRef.current || (brainNode.centrality ?? 0) > 0.3 || isSelected);
       if (showLabel) {
         const displayLabel = getDisplayLabel(brainNode);
-        const sprite = getCachedSprite(brainNode.id, displayLabel, isDimmed);
+        const sprite = getCachedSprite(brainNode.id, displayLabel, effectiveDimmed);
         sprite.position.set(0, NODE_SIZE * scale + 4, 0);
         group.add(sprite);
       }
@@ -543,20 +634,6 @@ export function BrainVisualization({
   // causes a full rebuild of all THREE.Group objects and GC spikes.
 
   // ── Link styling ──────────────────────────────────────────────────────────
-  const linkColor = useCallback(
-    (link: object) => {
-      if (!link) return 'rgba(100, 160, 255, 0.3)';
-      const fgLink = link as FGLink;
-      // Ghost links (Phase 45 — cross-boundary edges to ghost stub nodes)
-      if ((fgLink as { isGhostLink?: boolean }).isGhostLink) return 'rgba(100, 160, 255, 0.1)';
-      if (fgLink.isConflict || fgLink.isContradiction) return 'rgba(255, 68, 68, 0.8)';
-      const strength = fgLink.strength ?? 0.3;
-      const alpha = 0.1 + strength * 0.4;
-      return `rgba(100, 160, 255, ${alpha})`;
-    },
-    [],
-  );
-
   const linkWidth = useCallback(
     (link: object) => {
       if (!link) return 0.5;
@@ -625,6 +702,16 @@ export function BrainVisualization({
 
   const handleNodeClick = (node: NodeObject) => {
     onNodeClick?.(node as BrainNode);
+
+    // If focus mode is active and clicking a non-neighbor/non-focused node, exit focus
+    if (focusState.isActive) {
+      const nid = (node as FGNode).id;
+      if (nid !== focusState.focusedNodeId && !focusState.neighborIds.has(nid)) {
+        exitFocus();
+        return;
+      }
+    }
+
     // Aim camera at clicked node
     const fg = fgRef.current;
     if (fg && node.x != null && node.y != null) {
@@ -640,13 +727,27 @@ export function BrainVisualization({
 
   // ── Double-click detection via click timing ────────────────────────────────
   // react-force-graph-3d has no onNodeDoubleClick — detect via two rapid clicks.
+  // Double-click enters focus explosion mode OR drills down if already focused.
   const lastClickRef = useRef<{ nodeId: string; time: number } | null>(null);
   const DOUBLE_CLICK_MS = 300;
 
   const handleNodeDoubleClick = (node: NodeObject) => {
     // Skip double-click on ghost stubs — they are boundary hints, not drillable
     if ((node as { isGhostStub?: boolean }).isGhostStub) return;
-    onNodeDoubleClick?.(node as BrainNode);
+
+    const brainNode = node as BrainNode;
+
+    // If focus mode is active, double-click exits it
+    if (focusState.isActive) {
+      exitFocus();
+      return;
+    }
+
+    // Enter focus explosion mode (fan neighbors in ring)
+    enterFocus(brainNode.id);
+
+    // Also fire the parent double-click handler for drill-down
+    onNodeDoubleClick?.(brainNode);
   };
 
   const handleNodeClickWithDoubleDetect = (node: NodeObject) => {
@@ -695,6 +796,332 @@ export function BrainVisualization({
     return { warmupTicks: 80, cooldownTicks: 100, cooldownTime: 8000, alphaDecay: 0.06, velocityDecay: 0.4 };
   }, [nodeCount]);
 
+  // ── InstancedMesh integration for large graphs ────────────────────────────
+  const useInstanced = nodeCount >= INSTANCED_THRESHOLD;
+
+  useEffect(() => {
+    const fgInstance = fgRef.current;
+    if (!useInstanced || !graphReady) {
+      // Dispose and remove instanced group if switching back to small graph
+      if (instancedGroupRef.current) {
+        if (fgInstance) {
+          try {
+            const scene = fgInstance.scene?.();
+            if (scene) scene.remove(instancedGroupRef.current.group);
+          } catch { /* scene unavailable */ }
+        }
+        instancedGroupRef.current.dispose();
+        instancedGroupRef.current = null;
+        instancedAddedRef.current = false;
+      }
+      return;
+    }
+
+    // Create instanced mesh group
+    const imgr = createInstancedMeshGroup(data.nodes);
+    instancedGroupRef.current = imgr;
+
+    // Add to scene when ForceGraph is ready
+    const addToScene = () => {
+      const fg = fgRef.current;
+      if (!fg) return;
+      try {
+        const scene = fg.scene?.();
+        if (scene && !instancedAddedRef.current) {
+          scene.add(imgr.group);
+          instancedAddedRef.current = true;
+        }
+      } catch { /* scene not ready yet */ }
+    };
+
+    // Try immediately, and retry after short delay if scene not ready
+    addToScene();
+    const timer = setTimeout(addToScene, 500);
+
+    return () => {
+      clearTimeout(timer);
+      if (instancedGroupRef.current) {
+        if (fgInstance) {
+          try {
+            const scene = fgInstance.scene?.();
+            if (scene) scene.remove(instancedGroupRef.current.group);
+          } catch { /* already cleaned */ }
+        }
+        instancedGroupRef.current.dispose();
+        instancedGroupRef.current = null;
+        instancedAddedRef.current = false;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useInstanced, graphReady, data.nodes]);
+
+  // ── Hull mesh integration ────────────────────────────────────────────────
+  useEffect(() => {
+    const fgInstance = fgRef.current;
+    if (!showHulls || !graphReady) {
+      if (hullMeshGroupRef.current) {
+        if (fgInstance) {
+          try {
+            const scene = fgInstance.scene?.();
+            if (scene) scene.remove(hullMeshGroupRef.current.group);
+          } catch { /* scene unavailable */ }
+        }
+        hullMeshGroupRef.current.dispose();
+        hullMeshGroupRef.current = null;
+        hullAddedRef.current = false;
+      }
+      return;
+    }
+
+    const hmg = createHullMeshGroup();
+    hmg.update(hulls);
+    hullMeshGroupRef.current = hmg;
+
+    const addToScene = () => {
+      const fg = fgRef.current;
+      if (!fg) return;
+      try {
+        const scene = fg.scene?.();
+        if (scene && !hullAddedRef.current) {
+          scene.add(hmg.group);
+          hullAddedRef.current = true;
+        }
+      } catch { /* scene not ready */ }
+    };
+
+    addToScene();
+    const timer = setTimeout(addToScene, 500);
+
+    return () => {
+      clearTimeout(timer);
+      if (hullMeshGroupRef.current) {
+        if (fgInstance) {
+          try {
+            const scene = fgInstance.scene?.();
+            if (scene) scene.remove(hullMeshGroupRef.current.group);
+          } catch { /* already cleaned */ }
+        }
+        hullMeshGroupRef.current.dispose();
+        hullMeshGroupRef.current = null;
+        hullAddedRef.current = false;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showHulls, graphReady, hulls]);
+
+  // ── Point cloud + LOD controller initialization ──────────────────────────
+  useEffect(() => {
+    if (!graphReady) return;
+    const fgInstance = fgRef.current;
+
+    // Initialize LOD controller
+    if (!lodControllerRef.current) {
+      lodControllerRef.current = createLODController();
+    }
+
+    // Initialize point cloud for far-distance LOD
+    if (!pointCloudRef.current) {
+      const pc = createPointCloud(Math.max(nodeCount, 2000));
+      pointCloudRef.current = pc;
+      pc.setVisible(false); // Hidden by default — LOD ticker enables it
+
+      const addToScene = () => {
+        const fg = fgRef.current;
+        if (!fg) return;
+        try {
+          const scene = fg.scene?.();
+          if (scene && !pointCloudAddedRef.current) {
+            scene.add(pc.points);
+            pointCloudAddedRef.current = true;
+          }
+        } catch { /* scene not ready */ }
+      };
+
+      addToScene();
+      const timer = setTimeout(addToScene, 500);
+      return () => { clearTimeout(timer); };
+    }
+
+    return () => {
+      if (pointCloudRef.current) {
+        if (fgInstance) {
+          try {
+            const scene = fgInstance.scene?.();
+            if (scene) scene.remove(pointCloudRef.current.points);
+          } catch { /* already cleaned */ }
+        }
+        pointCloudRef.current.dispose();
+        pointCloudRef.current = null;
+        pointCloudAddedRef.current = false;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graphReady]);
+
+  // ── Curved edge group for focus mode ────────────────────────────────────
+  useEffect(() => {
+    const fgInstance = fgRef.current;
+    if (!focusState.isActive || !graphReady) {
+      // Remove curved edges when not in focus mode
+      if (curvedEdgeGroupRef.current) {
+        if (fgInstance) {
+          try {
+            const scene = fgInstance.scene?.();
+            if (scene) scene.remove(curvedEdgeGroupRef.current);
+          } catch { /* scene unavailable */ }
+        }
+        disposeCurvedEdgeGroup(curvedEdgeGroupRef.current);
+        curvedEdgeGroupRef.current = null;
+        curvedEdgeAddedRef.current = false;
+      }
+      return;
+    }
+
+    // Build curved edges for focus neighborhood
+    const ceg = new THREE.Group();
+    const centerNode = data.nodes.find(n => n.id === focusState.focusedNodeId);
+    if (centerNode) {
+      for (const neighbor of focusState.neighbors) {
+        const srcPos = {
+          x: centerNode.x ?? 0,
+          y: (centerNode as unknown as { y?: number }).y ?? 0,
+          z: (centerNode as unknown as { z?: number }).z ?? 0,
+        };
+        const tgtPos = {
+          x: neighbor.node.x ?? 0,
+          y: (neighbor.node as unknown as { y?: number }).y ?? 0,
+          z: (neighbor.node as unknown as { z?: number }).z ?? 0,
+        };
+        const curved = createCurvedEdge(srcPos, tgtPos, neighbor.edge.type, true);
+        ceg.add(curved);
+      }
+    }
+
+    curvedEdgeGroupRef.current = ceg;
+
+    const addToScene = () => {
+      const fg = fgRef.current;
+      if (!fg) return;
+      try {
+        const scene = fg.scene?.();
+        if (scene && !curvedEdgeAddedRef.current) {
+          scene.add(ceg);
+          curvedEdgeAddedRef.current = true;
+        }
+      } catch { /* scene not ready */ }
+    };
+
+    addToScene();
+    const timer = setTimeout(addToScene, 200);
+
+    return () => {
+      clearTimeout(timer);
+      if (curvedEdgeGroupRef.current) {
+        if (fgInstance) {
+          try {
+            const scene = fgInstance.scene?.();
+            if (scene) scene.remove(curvedEdgeGroupRef.current);
+          } catch { /* already cleaned */ }
+        }
+        disposeCurvedEdgeGroup(curvedEdgeGroupRef.current);
+        curvedEdgeGroupRef.current = null;
+        curvedEdgeAddedRef.current = false;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusState.isActive, focusState.focusedNodeId, focusState.neighbors, graphReady]);
+
+  // ── Per-frame animation loop for focus explosion, LOD, instanced updates ──
+  useEffect(() => {
+    if (!graphReady) return;
+
+    let rafId: number;
+    let hullTickCounter = 0;
+
+    const animate = () => {
+      // 1. Focus explosion animation tick
+      focusTick();
+
+      // 2. LOD tier update
+      const lod = lodControllerRef.current;
+      if (lod) {
+        const tier = lod.update(fgRef);
+
+        // Show/hide point cloud based on LOD tier
+        if (pointCloudRef.current) {
+          pointCloudRef.current.setVisible(tier === 'far');
+          if (tier === 'far') {
+            // Update point cloud positions
+            const useHeat = heatMapModeRef.current;
+            const pointData = data.nodes.map(n => ({
+              x: n.x ?? 0,
+              y: (n as unknown as { y?: number }).y ?? 0,
+              z: (n as unknown as { z?: number }).z ?? 0,
+              color: getNodeColor(n, useHeat),
+            }));
+            pointCloudRef.current.update(pointData);
+          }
+        }
+      }
+
+      // 3. Update instanced mesh transforms (when using instanced rendering)
+      if (instancedGroupRef.current && useInstanced) {
+        instancedGroupRef.current.update(
+          data.nodes,
+          selectedNodeId,
+          selectedNodeIds,
+          focusState.isActive ? isFocusDimmed : undefined,
+        );
+      }
+
+      // 4. Update hull positions (throttled — every 10 frames)
+      if (showHulls && hullMeshGroupRef.current) {
+        hullTickCounter++;
+        if (hullTickCounter % 10 === 0) {
+          const freshHulls = computeHulls();
+          hullMeshGroupRef.current.update(freshHulls);
+        }
+      }
+
+      rafId = requestAnimationFrame(animate);
+    };
+
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graphReady, useInstanced, showHulls, focusState.isActive, data.nodes]);
+
+  // ── Edge coloring by relationship type in focus mode ──────────────────────
+  const linkColorEnhanced = useCallback(
+    (link: object) => {
+      if (!link) return 'rgba(100, 160, 255, 0.3)';
+      const fgLink = link as FGLink;
+
+      // In focus mode, use relationship-type-based colors
+      if (focusStateRef.current.isActive) {
+        const src = typeof fgLink.source === 'object' ? (fgLink.source as FGNode).id : fgLink.source;
+        const tgt = typeof fgLink.target === 'object' ? (fgLink.target as FGNode).id : fgLink.target;
+        const isFocusEdge =
+          (src === focusStateRef.current.focusedNodeId || tgt === focusStateRef.current.focusedNodeId) &&
+          (focusStateRef.current.neighborIds.has(src) || focusStateRef.current.neighborIds.has(tgt));
+
+        if (isFocusEdge) {
+          return getEdgeColor(fgLink.type);
+        }
+        // Non-focus edges are nearly invisible
+        return 'rgba(100, 160, 255, 0.03)';
+      }
+
+      // Fall back to default coloring
+      if ((fgLink as { isGhostLink?: boolean }).isGhostLink) return 'rgba(100, 160, 255, 0.1)';
+      if (fgLink.isConflict || fgLink.isContradiction) return 'rgba(255, 68, 68, 0.8)';
+      const strength = fgLink.strength ?? 0.3;
+      const alpha = 0.1 + strength * 0.4;
+      return `rgba(100, 160, 255, ${alpha})`;
+    },
+    [],
+  );
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const w = width ?? containerSize.w;
@@ -732,7 +1159,7 @@ export function BrainVisualization({
           linkTarget="target"
           nodeThreeObject={nodeThreeObject}
           nodeLabel={nodeLabel}
-          linkColor={linkColor}
+          linkColor={linkColorEnhanced}
           linkWidth={linkWidth}
           linkOpacity={LINK_OPACITY}
           linkThreeObject={linkThreeObject}
@@ -745,7 +1172,8 @@ export function BrainVisualization({
             else onBackgroundRightClick?.(event);
           }}
           onBackgroundClick={(_event: MouseEvent) => {
-            // No-op — let BrainController handle background clicks if needed
+            // Exit focus mode on background click
+            if (focusState.isActive) exitFocus();
           }}
           onEngineStop={handleEngineStop}
           enableNodeDrag={true}
@@ -761,6 +1189,84 @@ export function BrainVisualization({
           Loading graph...
         </div>
       )}
+
+      {/* Focus mode indicator + ESC hint */}
+      {focusState.isActive && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 12,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'rgba(0,0,0,0.8)',
+            border: '1px solid rgba(56, 189, 248, 0.4)',
+            borderRadius: 8,
+            padding: '6px 14px',
+            zIndex: 25,
+            fontSize: '12px',
+            color: '#94a3b8',
+            fontFamily: "'Fira Code', monospace",
+          }}
+        >
+          <span style={{ color: '#38bdf8' }}>Focus Mode</span>
+          <span style={{ color: '#475569' }}>|</span>
+          <span>Press <kbd style={{ background: '#1e293b', padding: '1px 5px', borderRadius: 3, border: '1px solid #334155', fontSize: '11px' }}>ESC</kbd> or double-click to exit</span>
+        </div>
+      )}
+
+      {/* Heat map + Hull toggle buttons */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          display: 'flex',
+          gap: 4,
+          zIndex: 20,
+        }}
+      >
+        {onToggleHeatMap && (
+          <button
+            type="button"
+            onClick={onToggleHeatMap}
+            title={heatMapMode ? 'Disable heat map' : 'Enable centrality heat map'}
+            style={{
+              padding: '4px 10px',
+              fontSize: '11px',
+              background: heatMapMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.06)',
+              border: `1px solid ${heatMapMode ? 'rgba(239, 68, 68, 0.5)' : 'rgba(255,255,255,0.15)'}`,
+              borderRadius: 6,
+              color: heatMapMode ? '#fca5a5' : '#94a3b8',
+              cursor: 'pointer',
+              fontFamily: "'Fira Code', monospace",
+            }}
+          >
+            {heatMapMode ? '● Heat' : '○ Heat'}
+          </button>
+        )}
+        {onToggleHulls && (
+          <button
+            type="button"
+            onClick={onToggleHulls}
+            title={showHulls ? 'Hide cluster hulls' : 'Show cluster hulls'}
+            style={{
+              padding: '4px 10px',
+              fontSize: '11px',
+              background: showHulls ? 'rgba(147, 130, 255, 0.2)' : 'rgba(255,255,255,0.06)',
+              border: `1px solid ${showHulls ? 'rgba(147, 130, 255, 0.5)' : 'rgba(255,255,255,0.15)'}`,
+              borderRadius: 6,
+              color: showHulls ? '#c4b5fd' : '#94a3b8',
+              cursor: 'pointer',
+              fontFamily: "'Fira Code', monospace",
+            }}
+          >
+            {showHulls ? '● Hulls' : '○ Hulls'}
+          </button>
+        )}
+      </div>
 
       {/* Phase 45 — N-hop expand button at Level 3 (node detail) */}
       {showExpandButton && (

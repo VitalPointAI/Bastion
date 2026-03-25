@@ -229,6 +229,12 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
   const handleDrawerOpen = useCallback(() => setDrawerOpen(true), []);
   const handleDrawerClose = useCallback(() => setDrawerOpen(false), []);
 
+  // ── Heat map + hull visualization toggles ──────────────────────────────────
+  const [heatMapMode, setHeatMapMode] = useState(false);
+  const [showHulls, setShowHulls] = useState(false);
+  const handleToggleHeatMap = useCallback(() => setHeatMapMode((prev) => !prev), []);
+  const handleToggleHulls = useCallback(() => setShowHulls((prev) => !prev), []);
+
   const rightPanelOpen = selectedNodeId !== null || selectedNodeIds.length > 0 || gapPanelOpen;
 
   // ── Processed graph data (memoized to avoid full graph rebuild per render) ──
@@ -468,6 +474,10 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
               expandedHops={expandedHops}
               nhopWarning={nhopWarning}
               onExpand={focusNodeId ? () => expandNHop(focusNodeId) : undefined}
+              heatMapMode={heatMapMode}
+              onToggleHeatMap={handleToggleHeatMap}
+              showHulls={showHulls}
+              onToggleHulls={handleToggleHulls}
             />
             {/* Progressive loading status bar */}
             {totalNodes > 0 && (
