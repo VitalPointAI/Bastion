@@ -107,9 +107,12 @@ export function IronclawDrawer({
   const [mentionFilter, setMentionFilter] = useState('');
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [topOffset, setTopOffset] = useState(56);
   const [version, setVersion] = useState<string | null>(null);
+  const prevMessageCountRef = useRef(0);
+  const userScrolledUpRef = useRef(false);
 
   // Fetch version from /api/ironclaw/status on mount
   useEffect(() => {
@@ -137,13 +140,29 @@ export function IronclawDrawer({
     return () => window.removeEventListener('resize', update);
   }, [isOpen]);
 
-  // Auto-scroll to bottom when new messages arrive or drawer opens
+  // Track whether user has scrolled up from bottom
   useEffect(() => {
-    if (isOpen && messagesEndRef.current) {
-      // Use instant scroll on open, smooth scroll for new messages
-      messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      // Consider "at bottom" if within 80px of bottom
+      userScrolledUpRef.current = scrollHeight - scrollTop - clientHeight > 80;
+    };
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Auto-scroll only when a NEW message arrives and user hasn't scrolled up
+  useEffect(() => {
+    const newCount = messages.length;
+    const isNewMessage = newCount > prevMessageCountRef.current;
+    prevMessageCountRef.current = newCount;
+
+    if (isOpen && messagesEndRef.current && (isNewMessage || isLoading) && !userScrolledUpRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [isOpen, messages, isLoading]);
+  }, [isOpen, messages.length, isLoading]);
 
   // Auto-resize textarea
   const resizeTextarea = useCallback(() => {
@@ -422,34 +441,35 @@ export function IronclawDrawer({
           </div>
         )}
 
-        {/* Pinned suggestion cards (e.g., Guide Me) — above scroll area so they don't get buried */}
+        {/* Pinned action/suggestion cards — above scroll area so they don't get buried */}
         {(() => {
-          const pinnedSuggestions = messages.filter(
-            (m) => m.suggestion && (
-              (m.suggestion as unknown as { target_field?: string })?.target_field === 'start_design_interview'
-              || m.suggestion?.targetField === 'start_design_interview'
-            ),
-          );
+          const pinnedSuggestions = messages.filter((m) => m.suggestion);
           if (pinnedSuggestions.length === 0 || !onAcceptSuggestion || !onDismissSuggestion) return null;
           return (
-            <div className="px-3 py-2 border-b border-slate-700/60 bg-slate-800/40">
-              {pinnedSuggestions.map((msg) => (
-                <IronclawSuggestion
-                  key={msg.id}
-                  suggestion={msg.suggestion!}
-                  onAccept={async (id) => {
-                    if (onStartDesignInterview) await onStartDesignInterview();
-                    onAcceptSuggestion(id);
-                  }}
-                  onDismiss={onDismissSuggestion}
-                />
-              ))}
+            <div className="px-3 py-2 border-b border-slate-700/60 bg-slate-800/40 flex flex-col gap-2 max-h-[40vh] overflow-y-auto">
+              {pinnedSuggestions.map((msg) => {
+                const targetField = (msg.suggestion as unknown as { target_field?: string })?.target_field
+                  ?? msg.suggestion?.targetField;
+                return (
+                  <IronclawSuggestion
+                    key={msg.id}
+                    suggestion={msg.suggestion!}
+                    onAccept={async (id) => {
+                      if (targetField === 'start_design_interview' && onStartDesignInterview) {
+                        await onStartDesignInterview();
+                      }
+                      onAcceptSuggestion(id);
+                    }}
+                    onDismiss={onDismissSuggestion}
+                  />
+                );
+              })}
             </div>
           );
         })()}
 
         {/* Message list — switches to interview mode when active */}
-        <div className="ironclaw-messages flex-1 overflow-y-auto px-4 py-3">
+        <div ref={messagesContainerRef} className="ironclaw-messages flex-1 overflow-y-auto px-4 py-3">
 
           {/* ── INTERVIEW MODE ── */}
           {interview?.isActive ? (
@@ -579,25 +599,8 @@ export function IronclawDrawer({
               )}
 
               {messages.map((msg) => {
-                // Skip pinned suggestions (rendered above scroll area)
-                const targetField = (msg.suggestion as unknown as { target_field?: string })?.target_field
-                  ?? msg.suggestion?.targetField;
-                if (targetField === 'start_design_interview') return null;
-
-                if (msg.suggestion && onAcceptSuggestion && onDismissSuggestion) {
-                  const handleAccept = async (id: string) => {
-                    onAcceptSuggestion(id);
-                  };
-
-                  return (
-                    <IronclawSuggestion
-                      key={msg.id}
-                      suggestion={msg.suggestion}
-                      onAccept={handleAccept}
-                      onDismiss={onDismissSuggestion}
-                    />
-                  );
-                }
+                // Skip all suggestions — they're pinned above the scroll area
+                if (msg.suggestion) return null;
 
                 return (
                   <IronclawMessage
