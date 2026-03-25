@@ -31,7 +31,7 @@ export interface BrainToolbarProps {
   onDeleteLens?: (id: string) => void;
   /** Called to clone a lens (optional) */
   onCloneLens?: (id: string) => void;
-  onSearchResults: (matchingNodeIds: string[]) => void;
+  onSearchResults: (matchingNodeIds: string[] | null) => void;
   onNodeFocus?: (nodeId: string) => void;
   onSnapshotClick?: () => void;
   onStrategicEnvClick?: () => void;
