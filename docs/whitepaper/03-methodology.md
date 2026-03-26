@@ -412,7 +412,7 @@ Real-time notifications delivered via WebSocket alert staff members when product
 
 ### AI Staff Agent Integration
 
-Each staff role has access to AI agent teams that automate routine doctrinal tasks within the role's functional area. The 102 JPP staff role agents in BASTION's agent library provide role-specific knowledge of doctrinal publications, product formats, and coordination requirements. Strategic direction import from the Design tab ensures that staff workspaces receive operational design outputs as context for their planning products, maintaining alignment between design intent and staff products.
+Each staff role has access to AI agent teams that automate routine doctrinal tasks within the role's functional area. Rather than dedicating one AI agent per staff role, Ironclaw — BASTION's Chief of Staff agent — provides role-aware coordination across all staff functions, drawing on doctrinal publications, product formats, and coordination requirements as needed. Strategic direction import from the Design tab ensures that staff workspaces receive operational design outputs as context for their planning products, maintaining alignment between design intent and staff products.
 
 ## 3.13 Component Integration
 
@@ -442,7 +442,7 @@ BASTION's contribution lies not in inventing new technologies but in integrating
 
 ### Cross-Reference to Results
 
-The following section (Section 4, Results) demonstrates these architectural components in an end-to-end scenario. The minimum viable product (MVP) system implements the three-tier DAO structure, deploys 131 AI agents across governance, planning, intelligence, and staff functions, and demonstrates the human authority integration described here. The MDMP governance framework (Section 3.5), escalation modeling capabilities (Section 3.6), doctrinal lifecycle interface (Section 3.7), COP generation (Section 3.9), resource registry (Section 3.10), and training mode architecture (Section 3.11) collectively provide a comprehensive military planning and execution environment that extends well beyond the initial demonstration scope.
+The following section (Section 4, Results) demonstrates these architectural components in an end-to-end scenario. The minimum viable product (MVP) system implements the three-tier DAO structure, deploys 16 AI agents across governance, planning, intelligence, and staff coordination functions, and demonstrates the human authority integration described here. The MDMP governance framework (Section 3.5), escalation modeling capabilities (Section 3.6), doctrinal lifecycle interface (Section 3.7), COP generation (Section 3.9), resource registry (Section 3.10), and training mode architecture (Section 3.11) collectively provide a comprehensive military planning and execution environment that extends well beyond the initial demonstration scope.
 
 The Results section shows how the theoretical architecture described here translates into functioning software and hardware, providing evidence that BASTION's integration approach is not merely conceptual but practically achievable. Quantitative metrics from the implementation validate the system's ability to accelerate coordination while maintaining appropriate human control.
 

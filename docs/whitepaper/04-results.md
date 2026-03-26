@@ -251,9 +251,10 @@ The training/operational mode toggle validated the "train as you fight" capabili
 | Completed phases | 15 | 58 |
 | Total phases | 24 | 75 |
 | Completed plans | 117 | 469+ |
-| AI agents (specialized) | 23 | 31+ |
-| AI agents (staff coordination) | — | 102 |
-| AI agents (total) | 23 | 131+ |
+| AI agents (LangGraph analysis) | 23 | 8 |
+| AI agents (COP layer) | — | 7 |
+| AI agents (Chief of Staff) | — | 1 (Ironclaw) |
+| AI agents (total deployed) | 23 | 16 |
 | Smart contract modules | 5 | 14 |
 | REST API endpoints | ~100 | ~572+ |
 | Doctrinal tabs | 4 (functional) | 6 (doctrinal lifecycle) |
@@ -284,7 +285,7 @@ The demonstration and extended implementation validate each element of this ques
 
 **Effective C2.** The complete flow from strategic objective through tactical execution demonstrates command and control across echelons. Strategic intent cascades through the doctrinal lifecycle tabs—from Understand through Design, Plan, Decide, to COP and Assess—mirroring the JP 5-0 process. The six-tab doctrinal interface ensures that C2 processes follow established doctrine rather than arbitrary software workflows. Upward reporting from tactical to strategic completes the C2 cycle. The cross-DAO replenishment request shows that the C2 structure adapts to operational developments without requiring manual reconfiguration.
 
-**Accelerated Decision-Making.** AI augmentation at each level accelerates coordination. Document analysis extracts objectives in minutes rather than hours. The operational design workspace with AI-assisted problem framing and CoG analysis accelerates the design phase. 131 AI agents across governance, planning, intelligence, and staff functions generate options continuously. COP layer agents produce operational picture updates autonomously from planning documents. The replenishment proposal is generated automatically upon threshold detection. Human decision-makers focus on judgment calls rather than administrative coordination.
+**Accelerated Decision-Making.** AI augmentation at each level accelerates coordination. Document analysis extracts objectives in minutes rather than hours. The operational design workspace with AI-assisted problem framing and CoG analysis accelerates the design phase. 16 deployed AI agents across governance, planning, intelligence, and staff coordination functions generate options continuously. COP layer agents produce operational picture updates autonomously from planning documents. The replenishment proposal is generated automatically upon threshold detection. Human decision-makers focus on judgment calls rather than administrative coordination.
 
 **Optimized Resource Management.** The resource registry with DID-based identity provides visibility into asset availability, allocation, and consumption across the coalition. Plugin-based resource types enable standardized management of heterogeneous military assets. Replenishment triggers when inventory reaches defined thresholds rather than on arbitrary schedules. Real-time readiness tracking (FMC/PMC/NMC) provides immediate force capability assessment. DAO-governed allocation ensures that resource assignment decisions receive appropriate coalition oversight.
 

@@ -35,7 +35,7 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | 12.1 | Coalition Health Monitoring | Not Started | — | Coalition health agent, national caveat tracking |
 | 13 | Research Whitepaper | Complete | 2026-01-24 | Academic whitepaper v0.1, SITREP, demo script, export pipeline |
 | 14 | Friendly & Adversary IPB Complete Cycle | Complete | 2026-02-28 | Dual-perspective IPB, COA scoring, commander decision matrix, order generation |
-| 15 | JPP Staff Organization Workspaces | Complete | 2026-02-28 | Per-role workspaces, cross-staff notifications, 102 staff AI agents |
+| 15 | JPP Staff Organization Workspaces | Complete | 2026-02-28 | Per-role workspaces, cross-staff notifications, staff AI coordination |
 | 16 | AI Assigned Staff Workspaces | Not Started | — | AI-assigned staff roles, full agent team execution |
 | 17 | Deployment — CI/CD Pipeline & Hetzner Server | Not Started | — | GitHub Actions CI/CD, Hetzner deployment |
 | 21 | AI COP Layer Agent Team | Complete | 2026-03-05 | MIL-STD-2525D SVG overlays, entity linker, layer governance, perspective toggle |
@@ -87,9 +87,10 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | Total phases | 75 |
 | Completed phases | 58 |
 | Total plans | 469+ |
-| AI agents (specialized, active) | 19 |
-| AI agents (JPP staff roles) | 31 |
-| AI agents (total registered) | 50+ |
+| AI agents (LangGraph analysis) | 8 |
+| AI agents (COP layer) | 7 |
+| AI agents (Chief of Staff) | 1 (Ironclaw) |
+| AI agents (total deployed) | 16 |
 | Smart contract modules | 14 |
 | REST API endpoints | ~572+ |
 | Doctrinal tabs | 6 (Understand/Design/Plan/Decide/COP/Assess) |
@@ -207,7 +208,7 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Strategic DAO | Ready | Full voting/proposal flow with coalition weights |
-| AI Agent Coordination | Ready | LangGraph orchestration, 50+ agents, unified architecture |
+| AI Agent Coordination | Ready | LangGraph orchestration, 16 deployed agents, unified architecture |
 | Document Ingestion | Ready | 10-specialist autonomous team with NATO reliability ratings |
 | RAFT Graph Analysis | Ready | Neo4j graph with fusion agents, brain visualization |
 | Brain Visualization | Ready | Neural canvas, clustering modes, timeline scrubber |

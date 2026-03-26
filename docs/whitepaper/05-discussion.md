@@ -146,9 +146,9 @@ Coalition partner adoption barriers may limit BASTION's effectiveness for multi-
 
 ### Complexity Growth Risks
 
-The expansion from 23 to 131 AI agents, from 5 to 14 smart contract modules, and from ~100 to ~572 REST endpoints introduces risks associated with system complexity growth.
+The expansion from 23 to 16 deployed AI agents (a reduction in agent count but increase in per-agent capability), from 5 to 14 smart contract modules, and from ~100 to ~572 REST endpoints introduces risks associated with system complexity growth.
 
-**AI agent proliferation management.** As the agent count grows, maintaining quality, consistency, and appropriate oversight across all agents becomes increasingly challenging. Each agent requires prompt engineering, testing, and monitoring. Interactions between agents may produce emergent behaviors that are difficult to predict or audit. The JPP staff role agents (102 agents) share a common architecture but each carries role-specific doctrinal knowledge that must be validated against actual military publications.
+**AI agent coordination management.** With 16 deployed agents (8 LangGraph analysis specialists, 7 COP layer agents, and Ironclaw as Chief of Staff), maintaining quality, consistency, and appropriate oversight requires disciplined prompt engineering, testing, and monitoring for each agent. Interactions between agents may produce emergent behaviors that are difficult to predict or audit. The consolidation from a one-agent-per-staff-role model to Ironclaw as a single customizable coordinator reduces proliferation risk but concentrates coordination responsibility in a single agent whose behavior must be carefully validated.
 
 **Plugin architecture extensibility.** The resource registry's plugin architecture (Section 3.10) demonstrates that new resource types can be added without modifying core code. However, this extensibility introduces a maintenance surface: each plugin's schema, state machine, capabilities, data handler, and COP renderer must be maintained and tested independently. As the plugin library grows, integration testing across plugin combinations becomes increasingly important.
 
@@ -200,9 +200,9 @@ What was sacrificed is significant. A public blockchain exposes metadata about g
 
 ### 5.4.2 LLM-Based Agents vs. Rule-Based Automation vs. No AI
 
-BASTION fields 131+ AI agents using large language models (primarily Claude) for intelligence extraction, planning analysis, course of action development, operational design support, and staff role functions. The alternatives — rule-based automation (expert systems, decision trees) or simply providing humans with better-organized tools — were explicitly considered.
+BASTION fields 16 deployed AI agents using large language models (primarily Claude) for intelligence extraction, planning analysis, course of action development, operational design support, and staff coordination functions. The alternatives — rule-based automation (expert systems, decision trees) or simply providing humans with better-organized tools — were explicitly considered.
 
-LLMs were chosen because military planning problems are expressed in natural language, have irregular structure, and require reasoning about novel situations that rule-based systems cannot anticipate. A rule-based intelligence extractor can identify entities matching a predefined schema; it cannot adapt when a document presents relationship information in an unfamiliar format. LLMs generalize across domain variation in a way that rule-based systems do not, and the breadth of staff functions BASTION supports (31 specialized roles from J1 through component commanders) would require prohibitive rule-set engineering for each role.
+LLMs were chosen because military planning problems are expressed in natural language, have irregular structure, and require reasoning about novel situations that rule-based systems cannot anticipate. A rule-based intelligence extractor can identify entities matching a predefined schema; it cannot adapt when a document presents relationship information in an unfamiliar format. LLMs generalize across domain variation in a way that rule-based systems do not, and the breadth of staff functions BASTION supports — coordinated through Ironclaw's Chief of Staff role spanning J1 through component commander contexts — would require prohibitive rule-set engineering for each functional area.
 
 What was sacrificed is acknowledged throughout this discussion section: LLMs are non-deterministic, can hallucinate, are sensitive to prompt construction, and cannot be formally verified. Every LLM agent in BASTION operates behind a human review gate precisely because these costs are real. The capability breadth of LLMs justified their use; the governance framework manages the costs. A system that required no human review of AI outputs would not be acceptable given current LLM reliability. BASTION does not make that claim. (See Section 3.3 for the graduated autonomy framework that manages AI reliability risk, and Section 5.5.1 below for the adversarial analysis of LLM determinism specifically.)
 
@@ -312,7 +312,7 @@ Strong research acknowledges the strongest arguments against its own conclusions
 
 ### 5.5.6 Single Developer / AI-Augmented Development Validity
 
-**Adversarial Argument:** A system built by one developer with AI assistance in approximately ten weeks cannot have the robustness, security, or reliability required for military C2. The testing is limited to single-user scenarios. The architecture has never faced adversarial stress testing, concurrent user loads, or operational tempo. The impressive feature count — 131+ agents, ~572 endpoints, 12+ smart contracts — may mask shallow implementations that break under conditions the developer did not test.
+**Adversarial Argument:** A system built by one developer with AI assistance in approximately ten weeks cannot have the robustness, security, or reliability required for military C2. The testing is limited to single-user scenarios. The architecture has never faced adversarial stress testing, concurrent user loads, or operational tempo. The impressive feature count — 16 deployed agents, ~572 endpoints, 14 smart contracts — may mask shallow implementations that break under conditions the developer did not test.
 
 **Severity:** Moderate.
 
@@ -342,11 +342,11 @@ Strong research acknowledges the strongest arguments against its own conclusions
 
 ### 5.5.9 Scale and Complexity Debt
 
-**Adversarial Argument:** 131 AI agents, approximately 572 REST endpoints, 12 smart contract modules — this is a complexity surface that grows faster than testing and validation can cover. Each new agent is a new attack surface. Each new endpoint is a new vulnerability. Agent-to-agent interactions are combinatorially complex and cannot be exhaustively tested. The system may be too complex to secure, too complex to audit, and too complex to maintain. Complexity is the enemy of security.
+**Adversarial Argument:** 16 AI agents, approximately 572 REST endpoints, 14 smart contract modules — this is a complexity surface that grows faster than testing and validation can cover. Each agent is an attack surface. Each endpoint is a vulnerability. Agent-to-agent interactions are combinatorially complex and cannot be exhaustively tested. The system may be too complex to secure, too complex to audit, and too complex to maintain. Complexity is the enemy of security.
 
 **Severity:** Significant.
 
-**Mitigation Options:** Modular architecture with clear service boundaries limits interaction surface between components. The standardized agent template provides common architecture across all 131 agents, reducing per-agent variation. The plugin architecture enables extensibility without modifying the core platform. Automated API endpoint testing covers regression behavior. Smart contract unit and integration testing validates governance invariants.
+**Mitigation Options:** Modular architecture with clear service boundaries limits interaction surface between components. The standardized agent template provides common architecture across all 16 agents, reducing per-agent variation. The plugin architecture enables extensibility without modifying the core platform. Automated API endpoint testing covers regression behavior. Smart contract unit and integration testing validates governance invariants.
 
 **Residual Risk:** Complexity is the primary long-term risk for BASTION's continued development. Testing coverage cannot keep pace with feature growth at research prototype velocity — the current test coverage is functional but not comprehensive. Agent-to-agent interaction effects are combinatorially complex and not exhaustively tested; emergent behaviors from agent coordination under novel inputs may not have been encountered. A production program would require dedicated testing, security audit, and maintenance teams proportional to the system's complexity surface. The research contribution is demonstrating that this level of integration is architecturally achievable; sustainable maintainability requires the organizational investment that a research prototype does not have.
 

@@ -74,7 +74,7 @@ BASTION's answer to both problems can be stated in nine words: AI accelerates. D
 
 That is the thesis. Let me unpack what each element actually means in practice.
 
-AI accelerates: We have deployed 131 specialized agents that operate continuously. They process incoming intelligence, extract entities and relationships, cross-reference sources, flag conflicts, draft assessment products, and surface decisions that require human attention. They do not decide. They accelerate — compressing the coordination overhead that currently consumes most of a staff officer's time. The human gets to spend their cognitive resources on judgment rather than formatting.
+AI accelerates: We have deployed 16 specialized AI agents — 8 LangGraph analysis specialists, 7 COP layer agents, and Ironclaw, a single customizable Chief of Staff that replaces the traditional staff officer model. They operate continuously, processing incoming intelligence, extracting entities and relationships, cross-referencing sources, flagging conflicts, drafting assessment products, and surfacing decisions that require human attention. They do not decide. They accelerate — compressing the coordination overhead that currently consumes most of a staff officer's time. The human gets to spend their cognitive resources on judgment rather than formatting.
 
 DAOs enforce: Decentralized Autonomous Organizations — smart contracts running on NEAR blockchain — are the governance layer. When I say "enforce," I mean the word precisely. Smart contract code executes automatically. It cannot be overridden by an operator who decides the situation warrants an exception. When the contract says "this action requires Tier 3 authorization," that requirement is not a note in an order — it is a gate that will not open without the required signature. The enforcement is mathematical.
 
@@ -88,7 +88,7 @@ This is a prototype. It demonstrates that this architecture works. It also demon
 
 Here is the map. Before we go through each capability section, I want to give you a picture of how these components relate to each other. This diagram is intentionally simplified — the whitepaper has the full architecture. This version is a cognitive map, not a technical reference.
 
-At the top: the intelligence layer. The Knowledge Graph — built on Neo4j and a semantic data format called JSON-LD — is the "brain" of the system. Every piece of intelligence, every entity, every relationship BASTION knows about lives here. The Agent Hub — 131 specialized AI agents — reads from and writes to that brain continuously.
+At the top: the intelligence layer. The Knowledge Graph — built on Neo4j and a semantic data format called JSON-LD — is the "brain" of the system. Every piece of intelligence, every entity, every relationship BASTION knows about lives here. The Agent Hub — 16 deployed AI agents — reads from and writes to that brain continuously.
 
 In the middle: the platform itself. Six tabs aligned to JP 5-0 doctrine provide the interface. Understand, Design, Plan, Decide, COP, Assess. Your planning workflow, made software.
 
@@ -352,7 +352,7 @@ Each of these has a solution pathway. None of them invalidates the proof of conc
 
 Five doctrinal shifts follow from the BASTION approach.
 
-First: staff augmentation, not replacement. BASTION fields 131 AI agents covering 19 AI capability roles and 31 JPP staff officer roles. That is not a replacement for human staff — it is additional capacity. The intelligence analyst who currently spends eight hours manually correlating OSINT reports can redirect those eight hours toward judgment tasks that require human contextual understanding. The AI handles correlation. The human handles interpretation. Staff size is not reduced; staff effectiveness is multiplied.
+First: staff augmentation, not replacement. BASTION fields 16 deployed AI agents — 8 LangGraph analysis specialists, 7 COP layer agents, and Ironclaw as Chief of Staff. That is not a replacement for human staff — it is additional capacity. Rather than mapping one agent per staff role, Ironclaw serves as a single customizable coordinator that adapts to each user's role and context. The intelligence analyst who currently spends eight hours manually correlating OSINT reports can redirect those eight hours toward judgment tasks that require human contextual understanding. The AI handles correlation. The human handles interpretation. Staff size is not reduced; staff effectiveness is multiplied.
 
 Second: planning timelines compress. The Joint Planning Process — from mission analysis through the operations order — currently takes days at minimum, weeks in complex coalition scenarios. BASTION's document intelligence pipeline, knowledge graph synthesis, and Ironclaw-guided operational design process can compress the information-gathering and analysis phases significantly. Early testing suggests that phases which take two to three days manually can complete in hours with AI augmentation. This is not a claim about quality — a faster analysis is not always a better analysis — but it is a claim about optionality. Compressed timelines give commanders more decision space.
 
@@ -388,7 +388,7 @@ One: a DAO-governed military C2 architecture. The first working implementation o
 
 Two: a five-tier authority delegation model. A formally specified hierarchy of authority levels — from strategic command to autonomous system — with each tier's permissions encoded in smart contracts and enforced without manual intervention.
 
-Three: AI agent orchestration for military planning at scale. A 131-agent architecture covering 19 AI capability roles and 31 Joint Planning Process staff officer roles, orchestrated through LangGraph workflows, demonstrating that AI staff augmentation can span the full JPP cycle.
+Three: AI agent orchestration for military planning at scale. A 16-agent architecture — 8 LangGraph analysis specialists, 7 COP layer agents, and Ironclaw as Chief of Staff — orchestrated through LangGraph workflows, demonstrating that a focused agent team with a single customizable coordinator can span the full JPP cycle more effectively than mapping one agent per staff role.
 
 Four: a knowledge graph for strategic intelligence accumulation. A graph-based intelligence environment that accumulates entity-relationship data across documents and sources, enabling the synthesis that current manual methods cannot achieve at comparable speed.
 
@@ -462,9 +462,9 @@ Technical implementation: Neo4j graph database with JSON-LD schema, isolated per
 
 ### Slide A3: Agent Architecture Deep-Dive
 
-BASTION has 131 named AI agents. That number is not arbitrary — it maps to the actual organizational structure of a joint planning staff as defined in JP 5-0. Every directorate, every functional role, every specialized planning function has a corresponding AI agent.
+BASTION has 16 deployed AI agents. That number reflects a deliberate architectural decision: rather than mapping one agent per staff role — which would create 100+ agents with high coordination overhead — we built a focused team where each agent has a clear, non-overlapping responsibility.
 
-The taxonomy breaks into three groups. First, the core directorate agents: these are always-on, tied to the six major staff directorates — Intelligence, Operations, Logistics, Plans, Communications, and Command. Second, the 102 JPP staff role agents: these are on-demand specialists that activate when a specific planning task requires their expertise. Third, Ironclaw — the Chief of Staff agent that coordinates all the others and maintains the persistent awareness that the directorate agents lack.
+The taxonomy breaks into three groups. First, the 8 LangGraph analysis specialists: these handle intelligence extraction, entity resolution, COA development, and other analytical functions through stateful workflows. Second, the 7 COP layer agents: these parse documents and intelligence to generate MIL-STD-2525D military symbology overlays for the Common Operating Picture. Third, Ironclaw — the Chief of Staff agent that coordinates all the others, maintains persistent memory across sessions, and adapts to each user's role and problem set context. Ironclaw replaces the traditional model of dedicated staff officer agents with a single customizable coordinator.
 
 Orchestration uses LangGraph — a Python framework for building stateful agent workflows as directed graphs. Each workflow is a directed acyclic graph of agent steps. Some steps execute in parallel when outputs are independent. Human decision gates are explicit nodes in the graph — the workflow does not proceed past a gate until the human approves.
 
@@ -666,7 +666,7 @@ The robot is executing a wedge formation. Before that command reached the robot,
 
 Everything you have seen today is documented in full technical depth in the companion whitepaper. The deck gives you the story. The whitepaper gives you the proof.
 
-Six chapters: introduction and methodology, background literature, full system architecture, technology selection rationale, evaluation findings, and doctrinal implications. The appendices include the actual smart contract code, the complete 131-agent taxonomy, and the full knowledge graph schema.
+Six chapters: introduction and methodology, background literature, full system architecture, technology selection rationale, evaluation findings, and doctrinal implications. The appendices include the actual smart contract code, the complete agent architecture taxonomy, and the full knowledge graph schema.
 
 Citations follow Chicago 18th edition footnote format throughout. This is the academic record — every architectural claim is sourced, every design decision has a citation chain back to the relevant literature.
 
