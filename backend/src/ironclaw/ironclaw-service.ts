@@ -346,6 +346,30 @@ export class IronclawService {
       ? (parsed.content as string) ?? (parsed.text as string) ?? responseText
       : responseText;
 
+    // Fallback: detect text-based approval requests from the LLM.
+    // When the agent outputs "Waiting for approval: <action_type>" as plain text
+    // instead of structured tool_call JSON, create an action card so the user
+    // gets proper approve/deny buttons instead of inactionable text.
+    if (!actionCard) {
+      const approvalMatch = messageContent.match(
+        /Waiting for approval:\s*(\S+)/i,
+      );
+      if (approvalMatch) {
+        const fallbackActionType = approvalMatch[1];
+        const fallbackId = `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        actionCard = {
+          action_id: fallbackId,
+          action_type: fallbackActionType,
+          description: actionRegistry.getDescription(fallbackActionType),
+          risk_level: actionRegistry.getRiskLevel(fallbackActionType),
+          options: ['yes', 'no'] as ActionCardData['options'],
+        };
+        console.warn(
+          `[ironclaw-service] Fallback action card created for text-based approval request: ${fallbackActionType}`,
+        );
+      }
+    }
+
     // Detect suggestion (field write-back proposal)
     let suggestion: SuggestionPayload | null = null;
     if (parsed?.suggestion) {
