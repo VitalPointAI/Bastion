@@ -38,25 +38,25 @@ created: 2026-03-26
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 58-01-01 | 01 | 1 | REQ-58-01 | unit | `cd contracts/did-registry && cargo test test_check_employment_no_caveats` | ❌ W0 | ⬜ pending |
-| 58-01-02 | 01 | 1 | REQ-58-01 | unit | `cd contracts/did-registry && cargo test test_check_employment_roe_tier_exceeded` | ❌ W0 | ⬜ pending |
-| 58-01-03 | 01 | 1 | REQ-58-01 | unit | `cd contracts/did-registry && cargo test test_check_employment_time_window` | ❌ W0 | ⬜ pending |
-| 58-01-04 | 01 | 1 | REQ-58-01 | unit | `cd contracts/did-registry && cargo test test_check_employment_releasability` | ❌ W0 | ⬜ pending |
-| 58-02-01 | 02 | 1 | REQ-58-02 | unit | `cd contracts/did-registry && cargo test test_update_caveats_unauthorized` | ❌ W0 | ⬜ pending |
-| 58-02-02 | 02 | 1 | REQ-58-02 | unit | `cd contracts/did-registry && cargo test test_update_caveats_admin` | ❌ W0 | ⬜ pending |
-| 58-03-01 | 03 | 1 | REQ-58-03 | unit | `cd contracts/did-registry && cargo test test_store_and_retrieve_caveats` | ❌ W0 | ⬜ pending |
-| 58-03-02 | 03 | 1 | REQ-58-03 | unit | `cd contracts/did-registry && cargo test test_existing_did_unaffected` | ❌ W0 | ⬜ pending |
-| 58-04-01 | 04 | 2 | REQ-58-04 | manual | Visual inspection in browser | N/A | ⬜ pending |
-| 58-05-01 | 05 | 3 | REQ-58-05 | smoke | `near contract call-function as-read-only did-registry.testnet get_caveats ...` | ❌ W0 | ⬜ pending |
+| 58-01-01 | 01 | 1 | REQ-58-01 | unit | `cd contracts/did-registry && cargo test test_check_employment_no_caveats` | W0 | pending |
+| 58-01-02 | 01 | 1 | REQ-58-01 | unit | `cd contracts/did-registry && cargo test test_check_employment_roe_tier_exceeded` | W0 | pending |
+| 58-01-03 | 01 | 1 | REQ-58-01 | unit | `cd contracts/did-registry && cargo test test_check_employment_time_window` | W0 | pending |
+| 58-01-04 | 01 | 1 | REQ-58-01 | unit | `cd contracts/did-registry && cargo test test_check_employment_releasability` | W0 | pending |
+| 58-02-01 | 01 | 1 | REQ-58-02 | unit | `cd contracts/did-registry && cargo test test_update_caveats_unauthorized` | W0 | pending |
+| 58-02-02 | 01 | 1 | REQ-58-02 | unit | `cd contracts/did-registry && cargo test test_update_caveats_admin` | W0 | pending |
+| 58-03-01 | 01 | 1 | REQ-58-03 | unit | `cd contracts/did-registry && cargo test test_store_and_retrieve_caveats` | W0 | pending |
+| 58-03-02 | 01 | 1 | REQ-58-03 | unit | `cd contracts/did-registry && cargo test test_existing_did_unaffected` | W0 | pending |
+| 58-04-01 | 03 | 3 | REQ-58-04 | manual | Visual inspection in browser | N/A | pending |
+| 58-05-01 | 03 | 3 | REQ-58-05 | smoke | `bash scripts/test-caveat-enforcement.sh` | Created in Plan 03 Task 2 | pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: pending / green / red / flaky*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `contracts/did-registry/src/lib.rs` tests — add `test_check_employment_*`, `test_update_caveats_*`, `test_store_and_retrieve_caveats`, `test_existing_did_unaffected` to the existing `#[cfg(test)]` block
-- [ ] Smoke test script: `scripts/test-caveat-enforcement.sh` — calls `check_employment_authorized` via RPC against testnet
+- [ ] `contracts/did-registry/src/lib.rs` tests — add `test_check_employment_*`, `test_update_caveats_*`, `test_store_and_retrieve_caveats`, `test_existing_did_unaffected` to the existing `#[cfg(test)]` block (created in Plan 01 TDD RED phase)
+- [ ] Smoke test script: `scripts/test-caveat-enforcement.sh` — created in Plan 03 Task 2; calls `check_employment_authorized` via RPC against testnet
 
 ---
 
