@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 58-02-PLAN.md
-last_updated: "2026-03-26T12:32:56.585Z"
+stopped_at: "Completed 58-03 Tasks 1+2, at checkpoint:human-verify Task 3"
+last_updated: "2026-03-26T13:03:21.325Z"
 last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
   total_phases: 74
-  completed_phases: 54
+  completed_phases: 55
   total_plans: 467
-  completed_plans: 468
+  completed_plans: 469
   percent: 100
 ---
 
@@ -233,6 +233,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 57 P04 | 4 | 2 tasks | 4 files |
 | Phase 58-on-chain-resource-did-caveats-with-contract-enforcement P01 | 5 | 3 tasks | 1 files |
 | Phase 58-on-chain-resource-did-caveats-with-contract-enforcement P02 | 5 | 2 tasks | 6 files |
+| Phase 58-on-chain-resource-did-caveats-with-contract-enforcement P03 | 45 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -1008,6 +1009,8 @@ Recent decisions affecting current work:
 - [Phase 58-on-chain-resource-did-caveats-with-contract-enforcement]: Separate LookupMap for ResourceCaveats avoids Borsh schema invalidation on existing DIDEntry records
 - [Phase 58-on-chain-resource-did-caveats-with-contract-enforcement]: OldDIDRegistry + #[init(ignore_state)] migrate() enables safe 3->4 field Borsh state migration on testnet
 - [Phase 58-on-chain-resource-did-caveats-with-contract-enforcement]: System HKDF secret signs resource caveat on-chain transactions; on-chain sync is fire-and-forget with DB as authoritative source of truth
+- [Phase 58]: NEAR WASM MVP compatibility: wasm-opt --mvp-features --signext-lowering required for all contracts (Rust LLVM >= 14 emits multi-byte LEB128 reserved byte in call_indirect)
+- [Phase 58]: Removed schemars from did-registry contract (f64 code paths in JsonSchema derive rejected by NEAR testnet)
 
 ### Roadmap Evolution
 
@@ -1728,7 +1731,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-26T12:32:56.574Z
-Stopped at: Completed 58-02-PLAN.md
+Last session: 2026-03-26T13:03:21.312Z
+Stopped at: Completed 58-03 Tasks 1+2, at checkpoint:human-verify Task 3
 Resume file: None
 Next action: Continue Phase 40 plan 02
