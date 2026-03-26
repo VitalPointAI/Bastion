@@ -896,7 +896,7 @@ Plans:
 **Goal:** Produce comprehensive slide-by-slide specifications with image generation prompts, full scripted narratives, and demo cue points for a BASTION briefing deck (25 core + 17 annex slides), plus update the companion whitepaper v0.3 with Phase 55-58 content and Chicago 18th edition footnotes, compiled to docx and pdf.
 **Requirements:** [DECK-01: Opening/problem/architecture slides, DECK-02: Understanding/planning capability slides, DECK-03: Governing decisions slides, DECK-04: Execution/trust/architecture synthesis slides, DECK-05: Closing reflection slides (tradeoffs/limitations/doctrinal impact), DECK-06: Final slides (contributions/answer/Q&A), DECK-07: Annex deep-dive slides, DECK-08: Annex demo/overview slides, WP-01: Whitepaper Phase 55-58 methodology content, WP-02: Whitepaper discussion/limitations update, WP-03: SITREP/references/assembly update, WP-04: Whitepaper docx/pdf compilation]
 **Depends on:** Phase 58
-**Plans:** 2/5 plans executed
+**Plans:** 3/5 plans executed
 
 Plans:
 - [ ] 59-01-PLAN.md -- Core slides 1-13: opening, problem, architecture, understanding/planning/governing capabilities
