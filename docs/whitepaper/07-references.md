@@ -60,6 +60,17 @@ Based on [CITATION NEEDED] placeholders throughout document:
 - [ ] Reference on military AI decision support systems
 - [ ] Reference on DAO governance mechanisms and commercial applications
 
+### Phase 55-58 New Sources
+
+- [ ] W3C Recommendation: "Decentralized Identifiers (DIDs) v1.0" — World Wide Web Consortium, July 19, 2022, https://www.w3.org/TR/did-core/
+  - Chicago 18th bibliography: `World Wide Web Consortium. "Decentralized Identifiers (DIDs) v1.0." W3C Recommendation. July 19, 2022. https://www.w3.org/TR/did-core/.`
+- [ ] MIL-STD-2525D Joint Military Symbology — Department of Defense, 2014
+  - Chicago 18th bibliography: `Department of Defense. *Joint Military Symbology*. MIL-STD-2525D. Washington, DC: Department of Defense, 2014.`
+- [ ] JP 5-0 Joint Planning (2020 edition) — already listed above under Government/Military Documents; ensure 2020 edition is captured
+  - Chicago 18th bibliography: `Joint Chiefs of Staff. *Joint Planning*. JP 5-0. Washington, DC: Joint Chiefs of Staff, 2020.`
+- [ ] NATO STANAG 2511: Intelligence Source Reliability and Information Credibility Ratings (Admiralty Code) — NATO standardization document
+  - Chicago 18th bibliography: `North Atlantic Treaty Organization. *Allied Intelligence Publication 2.1: Intelligence Reporting*. STANAG 2511. Brussels: NATO Standardization Office, 2016.`
+
 ---
 
 ## Generating Bibliography

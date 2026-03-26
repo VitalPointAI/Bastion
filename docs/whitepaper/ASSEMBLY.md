@@ -2,9 +2,9 @@
 
 ## Version Control
 
-**Current Version:** v0.2 (Draft)
-**Last Updated:** 2026-03-23
-**Status:** Major update reflecting capabilities through Phase 53
+**Current Version:** v0.3 (Draft)
+**Last Updated:** 2026-03-26
+**Status:** Major update reflecting capabilities through Phase 58
 
 ---
 
@@ -202,6 +202,7 @@ Exports are saved to `docs/whitepaper/exports/`:
 |---------|------|---------|
 | v0.1 | 2026-01-24 | Initial draft - all sections complete |
 | v0.2 | 2026-03-23 | Major update: 131+ agents, doctrinal tabs, COP, IPB, resource DIDs, training mode, robot integration, knowledge graphs, swarm behaviors, 8 contributions |
+| v0.3 | 2026-03-26 | Added Phase 55-58 content: Ironclaw guided design interview (Section 3.21), visual operational approach editor (Section 3.22), Ironclaw persistent memory (Section 3.23), on-chain resource DID caveats (Section 3.24). Phase 55-58 results added to Section 4.6. Discussion updated with v0.3 limitations and future work for each new capability. SITREP updated through Phase 58. Chicago 18th edition footnotes formalized for Phases 55-58 citations. |
 
 ---
 

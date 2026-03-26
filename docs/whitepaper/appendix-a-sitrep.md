@@ -4,7 +4,7 @@ This appendix provides the current implementation status of the BASTION platform
 
 ## A.1 Phase-by-Phase Status
 
-Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), and Phase 53 (DID Governance Architecture & Bug Fixes) represent significant milestones in the platform's evolution. The table below provides the complete status record through Phase 53.
+Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phase 53 (DID Governance Architecture & Bug Fixes), and Phase 58 (On-Chain Resource DID Caveats) represent significant milestones in the platform's evolution. The table below provides the complete status record through Phase 58.
 
 | Phase | Name | Status | Completed | Capability Summary |
 |-------|------|--------|-----------|-------------------|
@@ -74,24 +74,32 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), and 
 | 51 | Unified Agent Architecture | Complete | 2026-03-17 | StandardAgent base class, agent admin dashboard, team designer |
 | 52 | Agent Skills & MCP | Complete | 2026-03-18 | Standalone MCP server, skills registry, Ironclaw builder action cards |
 | 53 | DID Governance Architecture & Bug Fixes | Complete | 2026-03-19 | Decide tab, decision dashboard, RACI matrix, PendingDecisionModal, Ironclaw 60s polling |
+| 54 | Briefing Deck: Research Validation & Slide Specs | Complete | 2026-03-26 | Slide-by-slide image specifications and visual briefing standards |
+| 55 | Ironclaw Guided Design Interview | Complete | 2026-03-25 | LangGraph JP 5-0 structured interview: 4 sections, coverage criteria, section confirmation, KG gap dispatch |
+| 56 | Visual Operational Approach Editor | Complete | 2026-03-25 | MapOverlay data model, MIL-STD-2525D symbols + control measures, AI-directed placement, COP integration |
+| 57 | Ironclaw Persistent Memory | Complete | 2026-03-25 | Dual-scope memory (user + context), REST API, IronclawMemoryPanel, auth-scoped isolation |
+| 58 | On-Chain Resource DID Caveats | Complete | 2026-03-26 | ResourceCaveats struct, check_employment_authorized(), did.bastion.testnet deployment, 4/4 smoke tests |
 
 ## A.2 Current Status
 
 | Metric | Value |
 |--------|-------|
-| Total phases | 70 |
-| Completed phases | 50 |
-| Total plans | 441+ |
+| Total phases | 75 |
+| Completed phases | 58 |
+| Total plans | 469+ |
 | AI agents (specialized, active) | 19 |
 | AI agents (JPP staff roles) | 31 |
 | AI agents (total registered) | 50+ |
 | Smart contract modules | 14 |
-| REST API endpoints | ~572 |
+| REST API endpoints | ~572+ |
 | Doctrinal tabs | 6 (Understand/Design/Plan/Decide/COP/Assess) |
 | Resource type plugins | 5 |
 | Robot platform supported | Sphero RVR+ / NVIDIA Jetson Orin Nano |
 | Swarm formations | 6 doctrinal formations |
 | Document intelligence specialists | 10 |
+| Design interview sections | 4 (JP 5-0 operational design) |
+| Memory scopes | 2 (user-scoped 90d TTL, context-scoped 180d TTL) |
+| Caveat dimensions | 5 (classification, releasability, ROE tier, geo bounds, time windows) |
 
 **Development Stack:**
 
@@ -228,6 +236,10 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), and 
 | Swarm Coordination | Ready | 6 formations, UDP peer mesh, DAO-driven membership, COP aggregation |
 | Agent Skills & MCP | Ready | Standalone MCP server, skills registry, Ironclaw builder |
 | DID Governance | Ready | DID documents with governance policy, RACI-aware decision pipeline |
+| Design Interview | Ready | LangGraph JP 5-0 guided interview, 4 sections, section confirmation, KG gap dispatch |
+| Visual Approach Editor | Ready | MapOverlay with MIL-STD-2525D symbols and control measures, AI-directed placement |
+| Ironclaw Memory | Ready | Dual-scope persistent memory, REST API, management panel with auth isolation |
+| Resource Caveats | Ready | ResourceCaveats on-chain enforcement, check_employment_authorized() on did.bastion.testnet |
 | Physical Demo Hardware | Ready | Sphero RVR+ + Jetson Orin Nano operational |
 | End-to-End Pipeline | Partial | Robot detection → COP → DAO → swarm mission demonstrated; JSON-LD brain + COP fix pending Phase 47 |
 | Coalition Governance | Partial | DAO governance ready; coalition multi-tenancy (Phase 12) not started |
@@ -238,8 +250,8 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), and 
 2. Phase 48: Robot Swarm Behaviour End-to-End Demo (pipeline integration test)
 3. Phase 17: Deployment — CI/CD pipeline for production hosting
 
-**Demo-Ready Status:** The platform is ready for academic and military-stakeholder demonstration through Phase 53. The complete strategy-to-autonomous-execution pipeline is demonstrable with Pacific Strategy AY26 scenario data, physical robot swarm, and full DAO governance with human authority positions at all three tiers.
+**Demo-Ready Status:** The platform is ready for academic and military-stakeholder demonstration through Phase 58. The complete strategy-to-autonomous-execution pipeline is demonstrable with Pacific Strategy AY26 scenario data, physical robot swarm, full DAO governance with human authority positions at all three tiers, and Phase 55-58 additions: guided design interview, visual operational approach editor, Ironclaw persistent memory, and on-chain resource caveat enforcement.
 
 ---
 
-*SITREP current as of March 2026, reflecting Phase 53 completion. Implementation status tracked in `.planning/STATE.md` and `.planning/ROADMAP.md`.*
+*SITREP current as of March 2026, reflecting Phase 58 completion. Implementation status tracked in `.planning/STATE.md` and `.planning/ROADMAP.md`.*
