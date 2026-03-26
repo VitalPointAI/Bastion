@@ -3,10 +3,90 @@
  *
  * Client for resource management API endpoints.
  * Handles equipment, personnel, and consumables for mission force structures.
+ *
+ * Phase 58 Plan 03: Added caveat API helpers (updateResourceCaveats, checkEmploymentAuth).
  */
 
 // Use environment variable or empty string for relative URLs (Vite proxy)
 export const API_BASE = import.meta.env.VITE_BACKEND_API_URL || '';
+
+// ============================================================================
+// Phase 58: Resource Caveats Types (frontend-side mirrors of backend types)
+// ============================================================================
+
+export type CaveatClassification = 'UNCLASSIFIED' | 'SECRET' | 'TOPSECRET' | 'TS_SCI';
+
+/** Geographic bounding box. Degrees * 1_000_000 (integers) to match on-chain i64. */
+export interface GeoBounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+export interface TimeWindow {
+  startMs: number;
+  endMs: number;
+}
+
+export interface ResourceCaveats {
+  classification: CaveatClassification;
+  releasability: string[];
+  geoBounds?: GeoBounds;
+  roeTier: number;
+  timeWindows: TimeWindow[];
+  employmentConstraints: string[];
+  updatedAt?: string;
+  onChainSyncedAt?: string;
+}
+
+export interface EmploymentAuthResult {
+  authorized: boolean;
+  reasons: string[];
+}
+
+// ============================================================================
+// Phase 58: Caveat API helpers
+// ============================================================================
+
+/**
+ * Update caveats for a resource via the backend API.
+ * Requires commander/XO role in the problem set.
+ */
+export async function updateResourceCaveats(
+  resourceId: string,
+  problemSetId: string,
+  caveats: ResourceCaveats,
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/api/resources/${encodeURIComponent(resourceId)}/caveats`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ problemSetId, caveats }),
+  });
+  if (!res.ok) throw new Error(`Failed to update caveats: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Check employment authorization for a resource via the backend API.
+ * Proxies to the on-chain check_employment_authorized method.
+ */
+export async function checkEmploymentAuth(
+  resourceId: string,
+  params: { roeTier?: number; nationCode?: string; bounds?: string },
+): Promise<EmploymentAuthResult> {
+  const qs = new URLSearchParams();
+  if (params.roeTier !== undefined) qs.set('roeTier', String(params.roeTier));
+  if (params.nationCode) qs.set('nationCode', params.nationCode);
+  if (params.bounds) qs.set('bounds', params.bounds);
+  const res = await fetch(
+    `${API_BASE}/api/resources/${encodeURIComponent(resourceId)}/employment-check?${qs}`,
+    { credentials: 'include' },
+  );
+  if (!res.ok) throw new Error(`Failed to check employment auth: ${res.status}`);
+  return res.json();
+}
 
 /**
  * Resource types
