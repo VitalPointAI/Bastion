@@ -884,7 +884,7 @@ Key capabilities:
 **Goal:** Extend the DID registry smart contract with structured caveat fields (classification, releasability, geographic bounds, ROE tier, time windows, employment constraints) and contract-level enforcement via `check_employment_authorized()` view method. Add role-based permissions so resource owners and problem set admins can update caveats. Backend: extend Resource types, wire registration to store DIDs on-chain with caveats, add `updateResourceCaveats` and `checkEmploymentAuth` endpoints, migrate existing resources on-chain. Frontend: add Security & Caveats editor to ResourceDetailPanel — permission-gated to owner/admin. Deploy updated contract to testnet. Demo story: blockchain is the single source of truth for how resources can be employed.
 **Requirements**: Smart contract caveat enforcement, role-based caveat management, on-chain resource DID registration, frontend caveat editor, testnet deployment
 **Depends on:** Phase 27 (Resource Registry)
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 58-01-PLAN.md -- Smart contract caveat extension (TDD: ResourceCaveats struct, update/check/get methods, unit tests)

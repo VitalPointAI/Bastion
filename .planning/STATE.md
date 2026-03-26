@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 58-01-PLAN.md
-last_updated: "2026-03-26T12:24:05.789Z"
+stopped_at: Completed 58-02-PLAN.md
+last_updated: "2026-03-26T12:32:56.585Z"
 last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
   total_phases: 74
   completed_phases: 54
   total_plans: 467
-  completed_plans: 467
+  completed_plans: 468
   percent: 100
 ---
 
@@ -232,6 +232,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 57-ironclaw-persistent-memory-and-adaptive-relationship P03 | 25 | 3 tasks | 7 files |
 | Phase 57 P04 | 4 | 2 tasks | 4 files |
 | Phase 58-on-chain-resource-did-caveats-with-contract-enforcement P01 | 5 | 3 tasks | 1 files |
+| Phase 58-on-chain-resource-did-caveats-with-contract-enforcement P02 | 5 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -1006,6 +1007,7 @@ Recent decisions affecting current work:
 - [Phase 57]: initIronclawMemory exported from ironclaw/index.ts for startup table init and daily pg-boss cleanup job (0 3 * * *)
 - [Phase 58-on-chain-resource-did-caveats-with-contract-enforcement]: Separate LookupMap for ResourceCaveats avoids Borsh schema invalidation on existing DIDEntry records
 - [Phase 58-on-chain-resource-did-caveats-with-contract-enforcement]: OldDIDRegistry + #[init(ignore_state)] migrate() enables safe 3->4 field Borsh state migration on testnet
+- [Phase 58-on-chain-resource-did-caveats-with-contract-enforcement]: System HKDF secret signs resource caveat on-chain transactions; on-chain sync is fire-and-forget with DB as authoritative source of truth
 
 ### Roadmap Evolution
 
@@ -1726,7 +1728,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-26T12:23:49.497Z
-Stopped at: Completed 58-01-PLAN.md
+Last session: 2026-03-26T12:32:56.574Z
+Stopped at: Completed 58-02-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
