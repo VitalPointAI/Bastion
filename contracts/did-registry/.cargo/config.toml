@@ -1,0 +1,6 @@
+[target.wasm32-unknown-unknown]
+# Restrict WASM features to those supported by NEAR's testnet validator.
+# NEAR's wasmer does not support multivalue, reference-types, or sign-ext proposals.
+rustflags = [
+  "-C", "target-feature=-multivalue,-reference-types,-sign-ext,-bulk-memory",
+]

@@ -2,7 +2,6 @@ use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 use near_sdk::store::LookupMap;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, near, AccountId, BorshStorageKey, PanicOnDefault};
-use schemars::JsonSchema;
 
 /// Storage keys for collections
 #[derive(BorshStorageKey, BorshDeserialize, BorshSerialize)]
@@ -12,7 +11,7 @@ enum StorageKey {
 }
 
 /// Geographic bounding box using integer coordinates (degrees * 1_000_000, no floats)
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 #[borsh(crate = "near_sdk::borsh")]
 pub struct GeoBounds {
@@ -23,7 +22,7 @@ pub struct GeoBounds {
 }
 
 /// Time window expressed as millisecond timestamps
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 #[borsh(crate = "near_sdk::borsh")]
 pub struct TimeWindow {
@@ -32,7 +31,7 @@ pub struct TimeWindow {
 }
 
 /// Structured employment caveats stored on-chain per DID (separate LookupMap)
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 #[borsh(crate = "near_sdk::borsh")]
 pub struct ResourceCaveats {
@@ -42,13 +41,12 @@ pub struct ResourceCaveats {
     pub roe_tier: u8,
     pub time_windows: Vec<TimeWindow>,
     pub employment_constraints: Vec<String>,
-    #[schemars(with = "String")]
     pub updated_by: AccountId,
     pub updated_at: u64,
 }
 
 /// Input context for employment authorization check (JSON only, not stored)
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct EmploymentContext {
     pub requesting_account: String,
@@ -59,7 +57,7 @@ pub struct EmploymentContext {
 }
 
 /// Result of an employment authorization check (JSON only, not stored)
-#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct EmploymentAuthResult {
     pub authorized: bool,
@@ -67,7 +65,7 @@ pub struct EmploymentAuthResult {
 }
 
 /// On-chain encrypted DID entry
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 #[borsh(crate = "near_sdk::borsh")]
 pub struct DIDEntry {
@@ -75,7 +73,6 @@ pub struct DIDEntry {
     pub encrypted_entity_type: Vec<u8>,
     pub nonce: Vec<u8>,
     pub entity_type_nonce: Vec<u8>,
-    #[schemars(with = "String")]
     pub owner: AccountId,
     pub created_at: u64,
     pub updated_at: u64,
