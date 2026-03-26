@@ -7,7 +7,7 @@
 
 import { randomUUID } from 'crypto';
 import { getPool } from '../lib/database.js';
-import type { Resource, ResourceCategory, ResourceStatus } from './types.js';
+import type { Resource, ResourceCategory, ResourceStatus, ResourceCaveats } from './types.js';
 
 export async function initResourceTable(): Promise<void> {
   const pool = getPool();
@@ -401,6 +401,89 @@ export class ResourceStore {
       [missionId, bounds.south, bounds.north, bounds.west, bounds.east]
     );
     return result.rows.map((row) => this.rowToResource(row));
+  }
+
+  // ============================================================================
+  // Phase 58 Plan 02: Caveat CRUD
+  // ============================================================================
+
+  /**
+   * Write caveat columns for an existing resource row.
+   * Maps TS camelCase fields to DB snake_case columns.
+   */
+  async updateResourceCaveats(id: string, caveats: ResourceCaveats): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    await pool.query(
+      `UPDATE resources SET
+        caveat_classification = $1,
+        caveat_releasability = $2,
+        caveat_geo_bounds = $3,
+        caveat_roe_tier = $4,
+        caveat_time_windows = $5,
+        caveat_employment_constraints = $6,
+        caveat_updated_at = NOW(),
+        updated_at = NOW()
+       WHERE id = $7`,
+      [
+        caveats.classification,
+        caveats.releasability,
+        caveats.geoBounds ? JSON.stringify(caveats.geoBounds) : null,
+        caveats.roeTier,
+        JSON.stringify(caveats.timeWindows),
+        caveats.employmentConstraints,
+        id,
+      ]
+    );
+  }
+
+  /**
+   * Read caveat columns for a resource. Returns null when no caveat_classification is set.
+   */
+  async getResourceCaveats(id: string): Promise<ResourceCaveats | null> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    const result = await pool.query(
+      `SELECT caveat_classification, caveat_releasability, caveat_geo_bounds,
+              caveat_roe_tier, caveat_time_windows, caveat_employment_constraints,
+              caveat_updated_at, caveat_on_chain_synced_at
+         FROM resources WHERE id = $1`,
+      [id]
+    );
+    if (result.rows.length === 0) return null;
+    const row = result.rows[0];
+    if (!row.caveat_classification) return null;
+
+    return {
+      classification: row.caveat_classification,
+      releasability: row.caveat_releasability ?? [],
+      geoBounds: row.caveat_geo_bounds
+        ? (typeof row.caveat_geo_bounds === 'string'
+          ? JSON.parse(row.caveat_geo_bounds)
+          : row.caveat_geo_bounds)
+        : undefined,
+      roeTier: row.caveat_roe_tier ?? 1,
+      timeWindows: row.caveat_time_windows
+        ? (typeof row.caveat_time_windows === 'string'
+          ? JSON.parse(row.caveat_time_windows)
+          : row.caveat_time_windows)
+        : [],
+      employmentConstraints: row.caveat_employment_constraints ?? [],
+      updatedAt: row.caveat_updated_at ? new Date(row.caveat_updated_at) : undefined,
+      onChainSyncedAt: row.caveat_on_chain_synced_at ? new Date(row.caveat_on_chain_synced_at) : undefined,
+    };
+  }
+
+  /**
+   * Set caveat_on_chain_synced_at to NOW() after a successful on-chain write.
+   */
+  async markCaveatOnChainSynced(id: string): Promise<void> {
+    await this.ensureInitialized();
+    const pool = getPool();
+    await pool.query(
+      'UPDATE resources SET caveat_on_chain_synced_at = NOW() WHERE id = $1',
+      [id]
+    );
   }
 
   /**

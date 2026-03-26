@@ -73,6 +73,68 @@ export interface ResourceManifest {
   capabilities: string[];
 }
 
+// ============================================================================
+// Phase 58 Plan 02: Resource Caveats
+// ============================================================================
+
+/**
+ * Classification levels for resource caveats.
+ */
+export type CaveatClassification = 'UNCLASSIFIED' | 'SECRET' | 'TOPSECRET' | 'TS_SCI';
+
+/**
+ * Geographic bounding box for caveat enforcement.
+ * Coordinates are degrees * 1_000_000 (integers) to match on-chain i64 representation.
+ */
+export interface GeoBounds {
+  north: number; // degrees * 1_000_000 (integer)
+  south: number;
+  east: number;
+  west: number;
+}
+
+/**
+ * Time window during which resource employment is authorized.
+ */
+export interface TimeWindow {
+  startMs: number; // Unix timestamp ms
+  endMs: number;
+}
+
+/**
+ * Full set of caveats applied to a resource.
+ * These constrain when, where, and by whom the resource may be employed.
+ */
+export interface ResourceCaveats {
+  classification: CaveatClassification;
+  releasability: string[];        // nation codes, empty = unrestricted
+  geoBounds?: GeoBounds;
+  roeTier: number;                // 1-5
+  timeWindows: TimeWindow[];
+  employmentConstraints: string[];
+  updatedAt?: Date;
+  onChainSyncedAt?: Date;
+}
+
+/**
+ * Context provided when checking whether employment of a resource is authorized.
+ */
+export interface EmploymentContext {
+  requestingAccount: string;
+  location?: GeoBounds;
+  timestampMs: number;
+  roeTierRequired: number;
+  nationCode?: string;
+}
+
+/**
+ * Result of an employment authorization check.
+ */
+export interface EmploymentAuthResult {
+  authorized: boolean;
+  reasons: string[];
+}
+
 /**
  * Resource group for organizing resources into units, formations, etc.
  */
