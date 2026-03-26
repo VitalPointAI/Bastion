@@ -89,8 +89,29 @@ export class TaskOrchestrator {
       },
     ];
 
-    // Select agents: use hints if provided, else pick from registry
+    // Select agents: use team members if team specified, hints, or registry
     let assignedAgents = params.agentHints ?? [];
+    let assignedTeam: string | null = params.teamId ?? null;
+
+    if (assignedTeam) {
+      // Team assignment: pull team members as assigned agents
+      try {
+        const { getTeamStore } = await import('../agents/team-store.js');
+        const teamStore = getTeamStore();
+        const team = await teamStore.getTeam(assignedTeam);
+        if (team && Array.isArray(team.members)) {
+          assignedAgents = team.members.map((m: { agentId: string }) => m.agentId);
+          console.log(`[task-orchestrator] Team ${assignedTeam} assigned with ${assignedAgents.length} members`);
+        } else {
+          console.warn(`[task-orchestrator] Team ${assignedTeam} not found or has no members`);
+          assignedTeam = null;
+        }
+      } catch (err) {
+        console.warn('[task-orchestrator] Team lookup failed:', err);
+        assignedTeam = null;
+      }
+    }
+
     if (assignedAgents.length === 0) {
       try {
         const registry = getAgentRegistry();
@@ -112,7 +133,7 @@ export class TaskOrchestrator {
       description: params.description ?? null,
       status: 'created',
       assignedAgents,
-      assignedTeam: null,
+      assignedTeam,
       threadId: null,
       steps,
       currentStep: 0,
@@ -433,6 +454,33 @@ export class TaskOrchestrator {
     };
 
     await publishToChannel(task.problemSetId, 'ironclaw.step-progress', progressData);
+  }
+
+  /**
+   * Create and dispatch a task assigned to a specific team.
+   * Called by the bastion.team.assign_task MCP tool handler.
+   */
+  async assignTaskToTeam(
+    teamId: string,
+    taskDescription: string,
+    problemSetId: string,
+    userDid: string,
+  ): Promise<IronclawTask> {
+    const task = await this.createTask({
+      problemSetId,
+      userDid,
+      title: taskDescription.slice(0, 80),
+      description: taskDescription,
+      targetFields: { 'task.output': 'Task Output' },
+      teamId,
+    });
+
+    // Fire-and-forget dispatch
+    void this.dispatchTask(task.taskId).catch((err) =>
+      console.error(`[task-orchestrator] Team task dispatch failed:`, err),
+    );
+
+    return task;
   }
 }
 

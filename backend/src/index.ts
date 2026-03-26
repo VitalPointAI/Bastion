@@ -516,6 +516,14 @@ server.listen(port, async () => {
     console.warn('Ironclaw self-update service failed to start (non-fatal):', error);
   }
 
+  // Start Ironclaw audit anchor service (batch Merkle root anchoring every hour)
+  try {
+    const { auditAnchorService } = await import('./ironclaw/audit-anchor-service.js');
+    await auditAnchorService.start();
+  } catch (error) {
+    console.warn('Ironclaw audit anchor service failed to start (non-fatal):', error);
+  }
+
   // Start Ironclaw intelligence gap filler (searches for missing KG relationships)
   try {
     const { gapFillerService } = await import('./ironclaw/gap-filler-service.js');

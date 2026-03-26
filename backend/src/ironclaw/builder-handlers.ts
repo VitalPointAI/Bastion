@@ -51,6 +51,24 @@ function requireField<T>(
 // Agent Handlers
 // ---------------------------------------------------------------------------
 
+const agentList: ActionHandler = async (_payload, _userDid) => {
+  const { getAgentStore } = await import('../agents/agent-store.js');
+  const store = getAgentStore();
+  const agents = await store.listAgents();
+  return {
+    agents: agents.map((a) => ({
+      agentId: a.agentId,
+      name: a.name,
+      description: a.description,
+      status: a.status,
+      capabilities: a.capabilities,
+      successRate: a.successRate,
+      lastInvocation: a.lastInvocation,
+    })),
+    count: agents.length,
+  };
+};
+
 const agentCreate: ActionHandler = async (payload, userDid) => {
   const agentId = requireField<string>(payload, 'agentId');
   const name = requireField<string>(payload, 'name');
@@ -917,6 +935,29 @@ const graphStats: ActionHandler = async () => {
 }
 
 // ---------------------------------------------------------------------------
+// Team Task Assignment Handler
+// ---------------------------------------------------------------------------
+
+const teamAssignTask: ActionHandler = async (payload, userDid) => {
+  const teamId = requireField<string>(payload, 'team_id');
+  const taskDescription = requireField<string>(payload, 'task_description');
+  const problemSetId = requireField<string>(payload, 'problem_set_id');
+
+  const { getTaskOrchestrator } = await import('./task-orchestrator.js');
+  const orchestrator = getTaskOrchestrator();
+
+  const task = await orchestrator.assignTaskToTeam(teamId, taskDescription, problemSetId, userDid);
+
+  return {
+    taskId: task.taskId,
+    teamId,
+    status: task.status,
+    stepCount: task.steps.length,
+    assignedAgents: task.assignedAgents,
+  };
+};
+
+// ---------------------------------------------------------------------------
 // Handler registry
 // ---------------------------------------------------------------------------
 
@@ -924,23 +965,28 @@ const graphStats: ActionHandler = async () => {
  * Maps action type strings to their handler functions.
  */
 export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
-  // Agent CRUD (5)
+  // Agent CRUD (5) — both short and bastion-prefixed names for MCP compatibility
   'agent.create': agentCreate,
   'agent.update': agentUpdate,
   'agent.delete': agentDelete,
   'agent.activate': agentActivate,
   'agent.deactivate': agentDeactivate,
+  'bastion.agent.create': agentCreate,
+  'bastion.agent.list': agentList,
   // Tool CRUD (4)
   'tool.create': toolCreate,
   'tool.update': toolUpdate,
   'tool.delete': toolDelete,
   'tool.assign_to_agent': toolAssignToAgent,
-  // Team CRUD (5)
+  // Team CRUD (5) — both short and bastion-prefixed names for MCP compatibility
   'team.create': teamCreate,
   'team.update': teamUpdate,
   'team.delete': teamDelete,
   'team.add_member': teamAddMember,
   'team.remove_member': teamRemoveMember,
+  'bastion.team.create': teamCreate,
+  'bastion.team.add_member': teamAddMember,
+  'bastion.team.assign_task': teamAssignTask,
   // Design interview (1)
   'design.update_section': designUpdateSection,
   // Map overlay (6)
@@ -950,12 +996,13 @@ export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   'design.map.update_symbol': designMapUpdateSymbol,
   'design.map.add_control_measure': designMapAddControlMeasure,
   'design.map.add_overlay_graphic': designMapAddOverlayGraphic,
-  // Skill CRUD (5)
+  // Skill CRUD (5) — both short and bastion-prefixed names for MCP compatibility
   'skill.create': skillCreate,
   'skill.update': skillUpdate,
   'skill.delete': skillDelete,
   'skill.assign': skillAssign,
   'skill.unassign': skillUnassign,
+  'bastion.skill.create': skillCreate,
   // Design synthesis
   'bastion.design.synthesize_current_state': designSynthesizeCurrentState,
   // Knowledge graph (4)

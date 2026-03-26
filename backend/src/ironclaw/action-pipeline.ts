@@ -18,6 +18,7 @@
 import { gateService } from '../gates/index.js';
 import { ironclawStore } from './ironclaw-store.js';
 import { actionRegistry } from './action-registry.js';
+import { auditAnchorService } from './audit-anchor-service.js';
 import type { IronclawAction, ActionCardData, TrustDecision, ActionRiskLevel } from './ironclaw-types.js';
 import type { AgentGovernancePolicy } from '../identity/types.js';
 
@@ -135,6 +136,7 @@ export class ActionPipeline {
         emergency: false,
         justification: null,
       });
+      this._triggerBatchCheck();
       return { status: 'rate_limited', retry_after: rateCheck.retryAfter };
     }
 
@@ -173,6 +175,7 @@ export class ActionPipeline {
         emergency: false,
         justification: null,
       });
+      this._triggerBatchCheck();
 
       return { status: 'gate_created', gate_id: gate.id };
     }
@@ -192,6 +195,7 @@ export class ActionPipeline {
         emergency: false,
         justification: null,
       });
+      this._triggerBatchCheck();
 
       return { status: 'executed' };
     }
@@ -237,6 +241,7 @@ export class ActionPipeline {
         emergency: false,
         justification: null,
       });
+      this._triggerBatchCheck();
       return { status: 'denied' };
     }
 
@@ -259,6 +264,7 @@ export class ActionPipeline {
       emergency: false,
       justification: null,
     });
+    this._triggerBatchCheck();
 
     return { status: 'executed' };
   }
@@ -278,7 +284,7 @@ export class ActionPipeline {
     justification: string,
     agentDid?: string,
   ): Promise<ActionResult> {
-    await ironclawStore.logAction({
+    const logEntry = await ironclawStore.logAction({
       problem_set_id: action.problem_set_id,
       user_did: userDid,
       action_type: action.type,
@@ -292,7 +298,24 @@ export class ActionPipeline {
       justification,
     });
 
+    // Emergency actions get immediate audit anchoring (not batched)
+    if (logEntry) {
+      void auditAnchorService.anchorEmergencyAction(logEntry).catch((err) =>
+        console.error('[action-pipeline] Emergency anchor failed:', err),
+      );
+    }
+
     return { status: 'executed' };
+  }
+  /**
+   * Fire-and-forget batch anchor check after each logged action.
+   * If the batch threshold is reached, triggers Merkle root computation
+   * and anchor record creation.
+   */
+  private _triggerBatchCheck(): void {
+    void auditAnchorService.checkAndAnchor(false).catch((err) =>
+      console.error('[action-pipeline] Batch anchor check failed:', err),
+    );
   }
 }
 

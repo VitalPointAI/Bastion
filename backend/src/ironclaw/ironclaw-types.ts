@@ -296,4 +296,5 @@ export const RATE_LIMITS = {
   medium: { max: 10, window_seconds: 60 },
   high: { max: 3, window_seconds: 60 },
   code_pr: { max: 5, window_seconds: 3600 },
+  skill_create: { max: 5, window_seconds: 3600 },
 } as const;

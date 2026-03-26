@@ -110,6 +110,8 @@ export interface CreateTaskParams {
   description?: string;
   targetFields: Record<string, string>;
   agentHints?: string[];
+  /** Assign task to a team instead of individual agents. */
+  teamId?: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -109,6 +109,20 @@ async function getInterviewLLM() {
 }
 
 // ============================================================================
+// Shared: KG Context Fetch (delegates to unified KGContextService)
+// ============================================================================
+
+/**
+ * Fetch knowledge graph context for grounding interview questions and drafts.
+ * Delegates to the unified KGContextService which uses GraphSummaryService
+ * (centrality analysis, community detection, caching) under the hood.
+ */
+async function fetchKGContext(problemSetId: string): Promise<string | null> {
+  const { kgContextService } = await import('../ironclaw/kg-context-service.js');
+  return kgContextService.getFullContext(problemSetId);
+}
+
+// ============================================================================
 // Graph Node: routeEntry
 // ============================================================================
 
@@ -166,47 +180,7 @@ async function askQuestion(
   // Fetch KG context for grounding questions in real intelligence
   let kgContext: string | undefined;
   try {
-    const { executeReadQuery } = await import('../graph/neo4j-client.js');
-    const ws = state.problemSetId;
-
-    const [actorRes, tensionRes, objRes] = await Promise.all([
-      executeReadQuery(`MATCH (a:Actor) WHERE a.workspaceId = $ws OR a.workspaceId IS NULL OPTIONAL MATCH (a)-[r]-() WITH a, count(r) AS rels ORDER BY rels DESC LIMIT 20 RETURN a.name AS name, a.type AS type, rels`, { ws }),
-      executeReadQuery(`MATCH (a:Actor)-[t:TENSION]->(b:Actor) RETURN a.name AS a1, b.name AS a2, t.description AS desc, t.intensity AS intensity LIMIT 15`, {}),
-      executeReadQuery(`MATCH (a:Actor)-[r:RELATES_TO]->(b:Actor) RETURN a.name AS src, b.name AS tgt, r.type AS type, r.description AS desc LIMIT 20`, {}),
-    ]);
-
-    const parts: string[] = [];
-    if (actorRes.records.length > 0) {
-      parts.push('### Key Actors');
-      actorRes.records.forEach((r) => parts.push(`- ${r.get('name')} (${r.get('type')}, ${r.get('rels')} connections)`));
-    }
-    if (objRes.records.length > 0) {
-      parts.push('\n### Key Relationships');
-      objRes.records.forEach((r) => parts.push(`- ${r.get('src')} → ${r.get('tgt')}: ${r.get('type') ?? ''}${r.get('desc') ? ` — ${r.get('desc')}` : ''}`));
-    }
-    if (tensionRes.records.length > 0) {
-      parts.push('\n### Active Tensions');
-      tensionRes.records.forEach((r) => parts.push(`- ${r.get('a1')} vs ${r.get('a2')}: ${r.get('desc') ?? 'unspecified'}${r.get('intensity') ? ` [intensity: ${r.get('intensity')}]` : ''}`));
-    }
-
-    // Also fetch strategic objectives if available
-    try {
-      const { getPool } = await import('../lib/database.js');
-      const objResult = await getPool().query(
-        `SELECT description, primary_instrument, priority FROM strategic_objectives
-         WHERE document_id IN (SELECT id FROM documents WHERE workspace_id = $1)
-         ORDER BY priority ASC LIMIT 15`,
-        [ws],
-      );
-      if (objResult.rows.length > 0) {
-        parts.push('\n### Strategic Objectives');
-        objResult.rows.forEach((obj: Record<string, unknown>) => {
-          parts.push(`- [${obj.primary_instrument ?? 'unknown'}/${obj.priority ?? 'MEDIUM'}] ${obj.description}`);
-        });
-      }
-    } catch { /* objectives not available */ }
-
-    if (parts.length > 0) kgContext = parts.join('\n');
+    kgContext = await fetchKGContext(state.problemSetId) ?? undefined;
   } catch (err) {
     console.warn('[DesignInterview] KG context fetch failed (non-fatal):', err);
   }
@@ -332,6 +306,7 @@ async function processAnswer(
         draftRequestFields,
         updatedDesign as Partial<OperationalDesign>,
         conversationMessages,
+        problemSetId,
       );
       if (generated) {
         updatedDesign = deepMerge(updatedDesign, generated);
@@ -534,7 +509,9 @@ const DRAFT_FIELD_PATTERNS: Array<{ pattern: RegExp; fields: string[] }> = [
 ];
 
 /** Action verbs that indicate the user wants Ironclaw to generate content */
-const DRAFT_ACTION_PATTERN = /\b(?:draft|generate|write|create|fill\s*(?:in|out)|suggest|propose|come\s*up\s*with|provide|give\s*me|enter|put\s*in|start\s*with)\b/i;
+const DRAFT_ACTION_PATTERN = /\b(?:draft|generate|write|create|fill\s*(?:in|out)|suggest|propose|come\s*up\s*with|provide|give\s*me|enter|put\s*in|start\s*with|update|refresh|populate|set|build|develop)\b/i;
+// NOTE: Expanded verb list (update, refresh, populate, set, build, develop) ensures
+// commands like "update the current state" are recognized as draft requests.
 
 /**
  * Detect whether the user's message is a meta-instruction asking Ironclaw
@@ -570,17 +547,31 @@ async function generateDraftContent(
   fields: string[],
   derivedDesign: Partial<OperationalDesign>,
   conversationMessages: BaseMessage[],
+  problemSetId?: string,
 ): Promise<Record<string, unknown> | null> {
   const fieldList = fields.join(', ');
   const existingDesign = JSON.stringify(derivedDesign, null, 2).substring(0, 4000);
 
+  // Fetch KG context to ground drafts in real intelligence
+  let kgSection = '';
+  if (problemSetId) {
+    try {
+      const kgContext = await fetchKGContext(problemSetId);
+      if (kgContext) {
+        kgSection = `\n\nKnowledge Graph Intelligence:\n${kgContext}\n`;
+      }
+    } catch {
+      // Non-fatal — draft can still use conversation context
+    }
+  }
+
   const prompt = `You are Ironclaw, an AI chief of staff. The commander has asked you to draft content for the following field(s): ${fieldList}.
 
-Use ALL available context — the conversation history, the current design data, and your doctrinal knowledge — to produce the best possible draft.
+Use ALL available context — the conversation history, the current design data, knowledge graph intelligence, and your doctrinal knowledge — to produce the best possible draft.
 
 Current design state:
 ${existingDesign}
-
+${kgSection}
 Generate substantive, doctrinally sound content for each requested field. Return ONLY valid JSON matching the extraction schema for ${section}. No markdown code fences, no explanation.
 
 ${buildExtractionPrompt(section, derivedDesign).split('\n\n').slice(1).join('\n\n')}`;

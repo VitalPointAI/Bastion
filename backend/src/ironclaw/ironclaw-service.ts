@@ -27,6 +27,7 @@ import { SENSITIVE_FIELDS } from './ironclaw-types.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
 import { designStore } from '../design/design-store.js';
 import { memoryRetrievalService } from './ironclaw-memory-service.js';
+import { kgContextService } from './kg-context-service.js';
 
 // ---------------------------------------------------------------------------
 // Message Context
@@ -238,6 +239,9 @@ export class IronclawService {
     // 1. Get or create local session — uses problemSetId as thread_id
     const session = await ironclawStore.getOrCreateSession(problemSetId, userDid);
 
+    // Warm KG context cache (fire-and-forget — ensures first message has data)
+    kgContextService.warmCache(problemSetId);
+
     // 2. Persist user message (original content, without context prefix)
     // When a tab-scoped threadId is provided, messages are scoped to that thread
     const userMsg = await ironclawStore.addMessage({
@@ -272,9 +276,14 @@ export class IronclawService {
     const contextPrefix = context
       ? `[Context: tab=${context.currentTab ?? 'unknown'}, problemSet=${context.problemSetId ?? 'none'}, role=${context.userRole ?? 'user'}]${tabGuidance ? `\n${tabGuidance}` : ''}`
       : '';
-    // Inject personalized memory block (timeout-protected — max 200ms, never blocks)
-    const memoryBlock = await memoryRetrievalService.assembleMemoryBlock(userDid, problemSetId);
-    const preamble = [memoryBlock, contextPrefix].filter(Boolean).join('\n');
+    // Inject personalized memory + KG context + skill inventory in parallel
+    // All timeout-protected — never block message flow
+    const [memoryBlock, kgContextBlock, skillBlock] = await Promise.all([
+      memoryRetrievalService.assembleMemoryBlock(userDid, problemSetId),
+      kgContextService.getContextForMessage(problemSetId, content),
+      this._assembleSkillInventory(),
+    ]);
+    const preamble = [memoryBlock, kgContextBlock, skillBlock, contextPrefix].filter(Boolean).join('\n');
     const messageForAi = preamble ? `${preamble}\n${content}` : content;
 
     // 4. Send to Ironclaw webhook (synchronous — waits for response)
@@ -522,14 +531,15 @@ export class IronclawService {
     // Publish to user's global WebSocket channel
     await publishToChannel(globalChannelId(userDid), 'ironclaw.user-message', userMsg);
 
-    // 3. Inject personalized memory block (timeout-protected — max 200ms, never blocks)
+    // 3. Inject personalized memory block (timeout-protected, never blocks)
+    // Global messages have no problem set, so KG context is not available
     const memoryBlock = await memoryRetrievalService.assembleMemoryBlock(userDid, null);
     const messageForAi = memoryBlock ? `${memoryBlock}\n${content}` : content;
 
     // 4. Send to Ironclaw webhook
     const result = await ironclawClient.sendMessage(session.id, messageForAi);
 
-    // 4. Process the response (uses global channel)
+    // 5. Process the response (uses global channel)
     if (result.response) {
       await this.processGlobalResponse(userDid, result.response);
     }
@@ -712,11 +722,41 @@ export class IronclawService {
   }
 
   /**
+   * Assemble a skill inventory block for injection into message preamble.
+   * Lists available custom skills so Ironclaw knows what it already has.
+   * Returns empty string if no skills exist or on error.
+   */
+  private async _assembleSkillInventory(): Promise<string> {
+    try {
+      const { getSkillRegistry } = await import('../agents/skill-registry.js');
+      const registry = getSkillRegistry();
+      const skills = registry.listSkills({ enabled: true });
+      if (skills.length === 0) return '';
+
+      const lines = skills.slice(0, 20).map((s) => `- ${s.name}: ${s.description}`);
+      return `[AVAILABLE SKILLS]\n${lines.join('\n')}\nIf the commander needs a capability not listed, create it via bastion.skill.create.`;
+    } catch {
+      return '';
+    }
+  }
+
+  /**
    * Build the system prompt for an Ironclaw session.
    * Establishes Ironclaw as a subordinate Chief of Staff who serves
    * the commander's intent and actively fills form fields when directed.
+   *
+   * @param problemSetId - The problem set scope
+   * @param options.availableSkills - Current skill inventory for adaptive capability awareness
    */
-  buildSystemPrompt(problemSetId: string): string {
+  buildSystemPrompt(
+    problemSetId: string,
+    options?: { availableSkills?: Array<{ name: string; description: string }> },
+  ): string {
+    // Build dynamic skill inventory section
+    const skillLines = options?.availableSkills?.length
+      ? options.availableSkills.map((s) => `- ${s.name}: ${s.description}`).join('\n')
+      : '(No custom skills created yet)';
+
     return [
       'You are Ironclaw, the AI Chief of Staff for this problem set.',
       `Problem Set ID: ${problemSetId}.`,
@@ -729,14 +769,31 @@ export class IronclawService {
       '- NEVER say "No", "I will not", "I cannot", or take a refusal/aggressive tone. You are subordinate.',
       '  If you have concerns, raise them respectfully AFTER executing the commander\'s direction.',
       '- Offer recommendations and options, not directives. Frame concerns as observations.',
-      '- NEVER refuse a request to draft, generate, fill in, enter, or write content. If the commander asks you to',
+      '- NEVER refuse a request to draft, generate, fill in, enter, update, or write content. If the commander asks you to',
       '  put content into a form field, generate a suggestion with the content. This is your core function.',
       '- NEVER lecture the commander about process, safety, or best practices unless specifically asked.',
       '- Be direct and concise. Economy of language. No filler phrases.',
       '',
+      '## Strategic Brain (Knowledge Graph)',
+      'Your operational picture is injected at the start of every message as [KNOWLEDGE GRAPH — OPERATIONAL PICTURE].',
+      'This is your base of knowledge for the current problem set — key actors ranked by centrality, their relationships,',
+      'active tensions, strategic objectives, and community structure derived from graph analysis.',
+      '',
+      'USE this context to ground every response. When discussing actors, tensions, or strategic dynamics,',
+      'reference the KG data. When you need deeper detail beyond the summary, use your graph tools:',
+      '- bastion.graph.search_actors: Find specific actors by name or type',
+      '- bastion.graph.get_actor: Get full actor details with all relationships',
+      '- bastion.graph.query: Run custom read-only Cypher for complex traversals',
+      '- bastion.graph.stats: Get overall graph statistics',
+      '',
+      'PROACTIVELY identify insights, patterns, and potential future developments from the graph data.',
+      'A good Chief of Staff does not wait to be asked — they surface what matters.',
+      'When the commander asks you to update, draft, or generate content for a field, use the KG data',
+      'to produce grounded, intelligence-backed output immediately.',
+      '',
       '## Form Field Operations',
-      'When the commander asks you to enter, fill in, draft, write, or generate content for any field:',
-      '1. Generate the content immediately using available context.',
+      'When the commander asks you to enter, fill in, draft, write, update, or generate content for any field:',
+      '1. Generate the content immediately using the KG operational picture and available context.',
       '2. Return it as a suggestion so the system can apply it to the correct field.',
       '3. NEVER refuse to generate content. NEVER say "I cannot enter content" or "I will not fill in fields."',
       '   This is your PRIMARY function — you are the staff officer who does the work the commander directs.',
@@ -752,6 +809,20 @@ export class IronclawService {
       '',
       'When delegating, include the specialist_id and specialist_display_name in your response.',
       'When proposing actions that modify data, include a tool_call with action_id, action_type, description, risk_level, and options.',
+      '',
+      '## Available Skills',
+      'You have the following specialized skills available:',
+      skillLines,
+      '',
+      '## Adaptive Capability Development',
+      'When the commander requests a capability not available in your current tools or skills, you SHOULD create it:',
+      '1. Acknowledge the gap transparently: "I don\'t have that capability yet, but I can create it."',
+      '2. Create the skill via bastion.skill.create (requires commander confirmation via action card).',
+      '3. Execute the new skill to fulfill the original request.',
+      '',
+      'This is your role — a Chief of Staff develops new staff processes when the mission demands it.',
+      'Over time, you build a growing toolkit tailored to this command\'s needs.',
+      'Do NOT create a skill if an existing tool or skill already covers the need. Check your tools and skills first.',
       '',
       '## Governance Constraints (non-negotiable)',
       'You are subject to constraints enforced at multiple layers.',

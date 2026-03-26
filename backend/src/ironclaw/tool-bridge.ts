@@ -358,6 +358,102 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     },
     riskLevel: 'medium',
   },
+
+  // -------------------------------------------------------------------------
+  // Skill Management
+  // -------------------------------------------------------------------------
+  {
+    name: 'bastion.skill.create',
+    description: 'Create a new reusable skill that persists across sessions',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Skill name (snake_case)' },
+        description: { type: 'string', description: 'What this skill does' },
+        category: { type: 'string', description: 'Category (e.g. planning, intelligence, logistics)' },
+        systemPromptFragment: { type: 'string', description: 'System prompt instructions for executing this skill' },
+        inputSchema: { type: 'object', description: 'JSON Schema for skill input parameters' },
+      },
+      required: ['name', 'description', 'category', 'systemPromptFragment'],
+    },
+    riskLevel: 'medium',
+  },
+
+  // -------------------------------------------------------------------------
+  // Agent Management
+  // -------------------------------------------------------------------------
+  {
+    name: 'bastion.agent.create',
+    description: 'Create and register a new AI agent',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Agent display name' },
+        description: { type: 'string', description: 'Agent role and capabilities' },
+        capabilities: { type: 'array', items: { type: 'string' }, description: 'List of capability tags' },
+        problem_set_id: { type: 'string', description: 'Problem set to assign agent to' },
+      },
+      required: ['name', 'description'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.agent.list',
+    description: 'List all registered agents with health status',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Filter by problem set (optional)' },
+      },
+    },
+    riskLevel: 'low',
+  },
+
+  // -------------------------------------------------------------------------
+  // Team Management
+  // -------------------------------------------------------------------------
+  {
+    name: 'bastion.team.create',
+    description: 'Create a new agent team for collaborative tasks',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Team name' },
+        description: { type: 'string', description: 'Team mission and scope' },
+        member_ids: { type: 'array', items: { type: 'string' }, description: 'Agent IDs to add as members' },
+        problem_set_id: { type: 'string', description: 'Problem set scope' },
+      },
+      required: ['name', 'description'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.team.add_member',
+    description: 'Add an agent to an existing team',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        team_id: { type: 'string', description: 'Team ID' },
+        agent_id: { type: 'string', description: 'Agent ID to add' },
+      },
+      required: ['team_id', 'agent_id'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.team.assign_task',
+    description: 'Assign a task to an agent team for collaborative execution',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        team_id: { type: 'string', description: 'Team ID' },
+        task_description: { type: 'string', description: 'Description of the task to assign' },
+        problem_set_id: { type: 'string', description: 'Problem set scope' },
+      },
+      required: ['team_id', 'task_description', 'problem_set_id'],
+    },
+    riskLevel: 'medium',
+  },
 ];
 
 // ---------------------------------------------------------------------------
