@@ -276,14 +276,21 @@ export class IronclawService {
     const contextPrefix = context
       ? `[Context: tab=${context.currentTab ?? 'unknown'}, problemSet=${context.problemSetId ?? 'none'}, role=${context.userRole ?? 'user'}]${tabGuidance ? `\n${tabGuidance}` : ''}`
       : '';
-    // Inject personalized memory + KG context + skill inventory in parallel
+    // Inject system prompt + personalized memory + KG context + skill inventory in parallel
     // All timeout-protected — never block message flow
     const [memoryBlock, kgContextBlock, skillBlock] = await Promise.all([
       memoryRetrievalService.assembleMemoryBlock(userDid, problemSetId),
       kgContextService.getContextForMessage(problemSetId, content),
       this._assembleSkillInventory(),
     ]);
-    const preamble = [memoryBlock, kgContextBlock, skillBlock, contextPrefix].filter(Boolean).join('\n');
+    // Build system prompt with current skill inventory
+    const systemPrompt = this.buildSystemPrompt(problemSetId, {
+      availableSkills: await this._getAvailableSkillsList(),
+    });
+    const preamble = [
+      `[SYSTEM INSTRUCTIONS]\n${systemPrompt}\n[/SYSTEM INSTRUCTIONS]`,
+      memoryBlock, kgContextBlock, skillBlock, contextPrefix,
+    ].filter(Boolean).join('\n');
     const messageForAi = preamble ? `${preamble}\n${content}` : content;
 
     // 4. Send to Ironclaw webhook (synchronous — waits for response)
@@ -761,6 +768,22 @@ export class IronclawService {
       return `[AVAILABLE SKILLS]\n${lines.join('\n')}\nIf the commander needs a capability not listed, create it via bastion.skill.create.`;
     } catch {
       return '';
+    }
+  }
+
+  /**
+   * Get available skills as structured list for buildSystemPrompt.
+   */
+  private async _getAvailableSkillsList(): Promise<Array<{ name: string; description: string }>> {
+    try {
+      const { getSkillRegistry } = await import('../agents/skill-registry.js');
+      const registry = getSkillRegistry();
+      return registry.listSkills({ enabled: true }).slice(0, 20).map((s) => ({
+        name: s.name,
+        description: s.description,
+      }));
+    } catch {
+      return [];
     }
   }
 
