@@ -402,8 +402,30 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       // Orchestrator-side confidence gate — robot threshold is lower for feed display
       if (det.confidence < CONFIRM_MIN_CONFIDENCE) continue;
 
-      // Use estimated enemy position if available, otherwise robot's position
-      const enemyPos = det.estimated_position ?? robotPos;
+      // Use estimated enemy position if available. When robot has no range estimation,
+      // estimate threat position by projecting ~2m in the camera's facing direction
+      // from the robot's position. This prevents threats from being plotted on top
+      // of the observing robot.
+      let enemyPos = det.estimated_position;
+      if (!enemyPos) {
+        // Find the active sequence to get facing info
+        let facingRad: number | undefined;
+        for (const [, st] of this.sequences) {
+          if (st.config.leaderId === robotId && st.config.observationPost) {
+            facingRad = (st.config.observationPost.facingHeading * Math.PI) / 180;
+            break;
+          }
+        }
+        if (facingRad != null) {
+          // Project 2m in the facing direction from the robot
+          enemyPos = {
+            x: robotPos.x + Math.sin(facingRad) * 2.0,
+            y: robotPos.y + Math.cos(facingRad) * 2.0,
+          };
+        } else {
+          enemyPos = robotPos;
+        }
+      }
 
       for (const [seqId, state] of this.sequences) {
         if (state.config.leaderId === robotId && (state.phase === 'recon' || state.phase === 'assess' || state.phase === 'positioning' || state.phase === 'plan_submitted')) {
@@ -566,18 +588,43 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const state = this.sequences.get(seqId);
     if (!state) return;
 
-    // ── Dedup: skip if same class at same approximate position ──
+    // ── OP MODE: any confirmed detection while followers are set up triggers engagement ──
+    // Check this BEFORE dedup so even a "duplicate" class still triggers engagement.
+    if (state.config.observationPost &&
+        (state.phase === 'positioning' || state.phase === 'plan_submitted')) {
+      // Record if new (dedup for logging only)
+      const isDuplicate = state.detectedThreats.some((existing) => {
+        if (existing.classDesc !== threat.classDesc) return false;
+        const dx = Math.abs(existing.detectedAt.x - threat.detectedAt.x);
+        const dy = Math.abs(existing.detectedAt.y - threat.detectedAt.y);
+        return dx < 1.0 && dy < 1.0;
+      });
+      if (!isDuplicate) {
+        state.detectedThreats.push(threat);
+        const threatGrid = roomToGridRef(threat.detectedAt.x, threat.detectedAt.y);
+        this.logPhase(state, `CONTACT: ${threat.classDesc} detected at grid ${threatGrid} conf=${(threat.confidence * 100).toFixed(0)}%`);
+        this.createConfirmedCOPSymbol(state, threat).catch((e: unknown) =>
+          console.warn('[AutoMission] Failed to create confirmed COP symbol:', e),
+        );
+      }
+
+      const threatGrid = roomToGridRef(threat.detectedAt.x, threat.detectedAt.y);
+      this.logPhase(state, `VISUAL CONFIRMATION: ${threat.classDesc} at grid ${threatGrid} — matches intelligence`);
+      this.logPhase(state, 'Kill zone is set, followers in position — requesting lethal authorization');
+      this.publishUpdate(state);
+      await this.attemptEngagement(seqId);
+      return;
+    }
+
+    // ── Standard dedup for non-OP flow ──
     const isDuplicate = state.detectedThreats.some((existing) => {
       if (existing.classDesc !== threat.classDesc) return false;
-      // 1.0m tolerance — in a room-scale environment, same class within 1m
-      // is the same physical target (dead reckoning drift causes position jitter)
       const dx = Math.abs(existing.detectedAt.x - threat.detectedAt.x);
       const dy = Math.abs(existing.detectedAt.y - threat.detectedAt.y);
       return dx < 1.0 && dy < 1.0;
     });
 
     if (isDuplicate) {
-      // Already know about this target — silently skip
       return;
     }
 
@@ -599,16 +646,6 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         (state as unknown as { leaderDetectionPos: { x: number; y: number } }).leaderDetectionPos =
           { ...leader.latest_telemetry.position };
       }
-    }
-
-    // ── OP MODE: followers already in position → detection triggers lethal auth ──
-    if (state.config.observationPost && state.phase === 'positioning') {
-      this.logPhase(state, `VISUAL CONFIRMATION: ${threat.classDesc} at grid ${threatGrid} — matches intelligence`);
-      this.logPhase(state, 'Kill zone is set, followers in position — requesting lethal authorization');
-      this.publishUpdate(state);
-      // Skip directly to engagement attempt (which will trigger DID policy block → lethal auth)
-      await this.attemptEngagement(seqId);
-      return;
     }
 
     // Only trigger assessment on first detection in recon phase
@@ -884,10 +921,18 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       state.missions[`advance_${followerId}`] = missionId;
       followerMissions.push(missionId);
 
-      // Face toward the nearest detected threat after arriving at firing position
-      const faceTarget = state.detectedThreats.length > 0
-        ? state.detectedThreats[0].detectedAt
-        : undefined;
+      // Face toward the nearest detected threat, or the intel threat area / kill zone
+      let faceTarget: { x: number; y: number } | undefined;
+      if (state.detectedThreats.length > 0) {
+        faceTarget = state.detectedThreats[0].detectedAt;
+      } else if (state.config.killZoneCenter) {
+        faceTarget = state.config.killZoneCenter;
+      } else if (plan.firingPositions.length > 0) {
+        // Face toward the center of the kill zone (midpoint between firing positions)
+        const avgX = plan.firingPositions.reduce((s, fp) => s + fp.position.x, 0) / plan.firingPositions.length;
+        const avgY = plan.firingPositions.reduce((s, fp) => s + fp.position.y, 0) / plan.firingPositions.length;
+        faceTarget = { x: avgX, y: avgY + 1.0 }; // face north of the kill zone (enemy approach)
+      }
 
       const missionPayload = {
         mission_id: missionId,
