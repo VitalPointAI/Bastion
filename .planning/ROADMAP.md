@@ -891,8 +891,21 @@ Plans:
 - [ ] 58-02-PLAN.md -- Backend infrastructure (DB migration, types, caveat service, tx-signer helpers, API endpoints)
 - [ ] 58-03-PLAN.md -- Frontend caveat editor + testnet deployment + end-to-end verification
 
----
+### Phase 59: Briefing deck slide and image specs
 
+**Goal:** Produce comprehensive slide-by-slide specifications with image generation prompts, full scripted narratives, and demo cue points for a BASTION briefing deck (25 core + 17 annex slides), plus update the companion whitepaper v0.3 with Phase 55-58 content and Chicago 18th edition footnotes, compiled to docx and pdf.
+**Requirements:** [DECK-01: Opening/problem/architecture slides, DECK-02: Understanding/planning capability slides, DECK-03: Governing decisions slides, DECK-04: Execution/trust/architecture synthesis slides, DECK-05: Closing reflection slides (tradeoffs/limitations/doctrinal impact), DECK-06: Final slides (contributions/answer/Q&A), DECK-07: Annex deep-dive slides, DECK-08: Annex demo/overview slides, WP-01: Whitepaper Phase 55-58 methodology content, WP-02: Whitepaper discussion/limitations update, WP-03: SITREP/references/assembly update, WP-04: Whitepaper docx/pdf compilation]
+**Depends on:** Phase 58
+**Plans:** 5 plans
+
+Plans:
+- [ ] 59-01-PLAN.md -- Core slides 1-13: opening, problem, architecture, understanding/planning/governing capabilities
+- [ ] 59-02-PLAN.md -- Core slides 14-25: execution, trust, architecture synthesis, closing reflection, final slides
+- [ ] 59-03-PLAN.md -- Annex slides A1-A17: deep-dives, visual glossary, demo walkthroughs
+- [ ] 59-04-PLAN.md -- Whitepaper update: Phase 55-58 content, Chicago footnotes, SITREP, references
+- [ ] 59-05-PLAN.md -- Whitepaper compilation to docx/pdf + human review checkpoint
+
+---
 **MCP Tools (deterministic operations - added to MCP server):**
 
 **Document & Objective Tools:**
