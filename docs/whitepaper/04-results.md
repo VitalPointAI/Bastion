@@ -216,13 +216,13 @@ The dual-perspective IPB validated that information isolation between Blue and R
 
 The resource DID architecture validated that military assets can be managed as blockchain-verified entities with extensible type definitions. The plugin architecture demonstrated that new resource types can be added (autonomous vehicle, sensor, weapon, comms, logistics) without modifying core platform code. COP integration showed resources rendering as standard military symbols alongside AI-generated layers, providing a unified operational picture. Real-time readiness tracking with FMC/PMC/NMC status gave commanders immediate visibility into force capability without manual status reporting.
 
-### Design Interview to Visual Approach Pipeline
+### Chief of Staff Coordination to Visual Approach Pipeline
 
-The Phase 55-56 capability additions validated an end-to-end pipeline from structured AI-guided design interview through visual operational approach representation. Ironclaw's guided design interview (Section 3.21) captured commander intent across all four doctrinal sections — problem framing, center of gravity analysis, lines of effort, and operational approach — using JP 5-0 coverage criteria as completeness thresholds. Upon section confirmation, derived design objects were persisted and fed directly into the visual operational approach editor (Section 3.22).
+The Phase 55-56 capability additions validated an end-to-end pipeline from Ironclaw's Chief of Staff design coordination through visual operational approach representation. Ironclaw's operational design coordination (Section 3.21) obtained and validated commander intent across all four doctrinal sections — problem framing, center of gravity analysis, lines of effort, and operational approach — using JP 5-0 coverage criteria as completeness thresholds. Upon section confirmation, derived design objects were persisted and fed directly into the visual operational approach editor (Section 3.22).
 
-The visual editor populated a candidate MapOverlay from interview-derived design elements, placing unit symbols and control measures corresponding to the confirmed operational approach onto the operational map layer. The AI-to-visual pipeline demonstrated that commander intent expressed verbally in the interview could be translated to MIL-STD-2525D symbology without requiring manual symbol placement, reducing the manual work of translating design decisions to visual products.
+The visual editor populated a candidate MapOverlay from coordination-derived design elements, placing unit symbols and control measures corresponding to the confirmed operational approach onto the operational map layer. The coordination-to-visual pipeline demonstrated that commander intent obtained through Ironclaw's structured staff coordination could be translated to MIL-STD-2525D symbology without requiring manual symbol placement, reducing the manual work of translating design decisions to visual products.
 
-Knowledge graph gap detection operated in parallel with the interview: five design interview responses triggered background research requests through the document intelligence pipeline when referenced entities were absent from the brain graph, demonstrating automatic gap detection integrated with the design workflow.
+Knowledge graph gap detection operated in parallel with the coordination: five design inputs triggered background research requests through the document intelligence pipeline when referenced entities were absent from the brain graph, demonstrating automatic gap detection integrated with the design workflow.
 
 ### Ironclaw Persistent Memory Results
 
@@ -252,7 +252,7 @@ The training/operational mode toggle validated the "train as you fight" capabili
 | Total phases | 24 | 75 |
 | Completed plans | 117 | 469+ |
 | AI agents (specialized) | 23 | 31+ |
-| AI agents (JPP staff roles) | — | 102 |
+| AI agents (staff coordination) | — | 102 |
 | AI agents (total) | 23 | 131+ |
 | Smart contract modules | 5 | 14 |
 | REST API endpoints | ~100 | ~572+ |
@@ -261,7 +261,7 @@ The training/operational mode toggle validated the "train as you fight" capabili
 | Robot bridge architecture | None | Docker + Python agent, mDNS discovery |
 | Vision pipeline | None | detectNet + ORB on Jetson Orin Nano |
 | Swarm capability | None | 3-platform coalition, 6 formations, UDP mesh |
-| Design interview | None | LangGraph JP 5-0 guided interview, 4 sections |
+| Operational design coordination | None | LangGraph JP 5-0 Chief of Staff coordination, 4 sections |
 | Visual approach editor | None | MapOverlay with MIL-STD-2525D symbols + control measures |
 | Ironclaw memory | None | Dual-scope persistent memory, REST API, management panel |
 | On-chain resource caveats | None | ResourceCaveats contract on did.bastion.testnet |

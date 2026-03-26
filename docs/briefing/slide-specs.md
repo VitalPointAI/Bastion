@@ -518,15 +518,15 @@ Advance to Slide 10 — operational design with AI.
 ## Slide 10: Operational Design with AI
 
 ### Purpose
-Show the Design tab capabilities — specifically the capabilities added in Phases 55 and 56 that are new since the previous Phase 54 briefing deck. Ironclaw-guided design interviews (Phase 55) and the Visual Operational Approach Editor with MIL-STD-2525 symbology (Phase 56) demonstrate AI as a design partner, not just an advisor. This slide carries the most technically advanced content of the planning section.
+Show the Design tab capabilities — specifically the capabilities added in Phases 55 and 56 that are new since the previous Phase 54 briefing deck. Ironclaw acting as Chief of Staff to coordinate, obtain, and validate operational design inputs (Phase 55) and the Visual Operational Approach Editor with MIL-STD-2525 symbology (Phase 56) demonstrate AI as an autonomous staff officer, not just a chatbot. This slide carries the most technically advanced content of the planning section.
 
 ### Visual Layout
-Split layout. Left side (50%): A screenshot description or diagram showing an Ironclaw design interview conversation — a dialogue exchange where Ironclaw is asking structured questions about the operational approach, and the commander/planner is responding. Right side (50%): A description/diagram of the map-based visual approach editor showing MIL-STD-2525 symbols positioned on a map background with vectors showing Lines of Effort.
+Split layout. Left side (50%): A screenshot description or diagram showing Ironclaw functioning as Chief of Staff — coordinating inputs from multiple staff sections, obtaining commander's design decisions, and validating them against doctrine. Right side (50%): A description/diagram of the map-based visual approach editor showing MIL-STD-2525 symbols positioned on a map background with vectors showing Lines of Effort.
 
-Title at top: "AI as Design Partner — Not Just Advisor" in blue (#2563EB), 24pt.
+Title at top: "AI as Chief of Staff — Not a Chatbot" in blue (#2563EB), 24pt.
 
 Below the split: Two callout boxes:
-- Callout left: "Ironclaw Design Interview (Phase 55) — Ironclaw guides commanders through a structured Operational Art interview, capturing design decisions that form the doctrinal foundation of the plan."
+- Callout left: "Ironclaw as Chief of Staff (Phase 55) — Ironclaw coordinates across staff sections, obtains the commander's design decisions, and validates each input against JP 5-0 doctrine before recording it as the foundation of the plan."
 - Callout right: "Visual Approach Editor (Phase 56) — Ironclaw directs MIL-STD-2525D symbol placement on the operational map, translating verbal planning intent into visual operational graphics."
 
 ### Image Prompt
@@ -535,12 +535,13 @@ No AI image — diagram/screenshot description.
 ### Diagram Spec
 Split layout diagram:
 
-LEFT PANEL — Ironclaw Design Interview:
-White background. A conversation interface mockup showing alternating message bubbles:
-- Ironclaw message (blue #2563EB left-aligned bubble): "Before we develop the Lines of Effort, I need to understand your decisive point. What is the single condition, if achieved, that most directly enables mission accomplishment?"
-- Commander response (gray #F1F5F9 right-aligned bubble): "Degrading PLAN air defense coverage in the Taiwan Strait corridor."
-- Ironclaw message: "Understood. I'll record that as the decisive point for this phase. Does this align with your assessment of the adversary's critical vulnerability?"
-- Panel title above: "Ironclaw Design Interview — Phase 55" in small blue text
+LEFT PANEL — Ironclaw as Chief of Staff:
+White background. A staff coordination interface mockup showing Ironclaw managing the operational design process:
+- Ironclaw status bar (blue #2563EB top banner): "Chief of Staff — Operational Design Coordination" with status indicators for each input area (Decisive Point ✓, CoG Assessment ◆, LOE Development ○)
+- Ironclaw action (blue #2563EB left-aligned): "I've obtained the commander's decisive point and validated it against the stated mission. Before developing Lines of Effort, I need to coordinate the adversary CoG assessment. What is the adversary's critical vulnerability that this decisive point exploits?"
+- Commander input (gray #F1F5F9 right-aligned): "Degrading PLAN air defense coverage in the Taiwan Strait corridor."
+- Ironclaw validation (blue): "Validated: this aligns with the J2's threat assessment. Recording as the CoG linkage. Coordinating with J3 for LOE development."
+- Panel title above: "Ironclaw as Chief of Staff — Phase 55" in small blue text
 
 RIGHT PANEL — Visual Approach Editor:
 Map background (simplified, light gray terrain with blue water areas). MIL-STD-2525D symbols positioned on the map:
@@ -555,11 +556,11 @@ Thin gray vertical divider between panels. Both panels within a light gray (#F8F
 ### Speaking Script
 The Design tab is where Operational Art happens in BASTION. But this slide is about two capabilities that distinguish BASTION from any planning tool you have seen — both developed since our last briefing.
 
-The first is the Ironclaw Design Interview. When a commander sits down to develop the Operational Approach — the set of decisions about the decisive point, the adversary's center of gravity, the Lines of Effort that will achieve the objective — Ironclaw does not sit back and wait to be asked questions. Ironclaw guides the interview. It asks the doctrinal questions in sequence: "What is your decisive point?" "What is the adversary's critical vulnerability?" "How does this Line of Effort connect to that vulnerability?" The responses are not just recorded as text — they are captured as structured design decisions that become the doctrinal foundation of the plan. The planning products that follow — warning orders, operations orders — are grounded in explicitly recorded design intent.
+The first is Ironclaw functioning as Chief of Staff for the operational design process. This is not a chatbot. When a commander sits down to develop the Operational Approach — the set of decisions about the decisive point, the adversary's center of gravity, the Lines of Effort that will achieve the objective — Ironclaw takes on the role that a Chief of Staff performs: coordinating inputs across staff sections, obtaining the commander's decisions, and validating every input against JP 5-0 doctrine before recording it. Ironclaw coordinates: "I need the commander's decisive point before I can develop Lines of Effort." Ironclaw obtains: it asks the right doctrinal questions in sequence, ensuring nothing is skipped. Ironclaw validates: "This decisive point aligns with the J2's threat assessment — recording it as the CoG linkage." The responses are not just recorded as text — they are captured as structured design decisions that become the doctrinal foundation of the plan. The planning products that follow — warning orders, operations orders — are grounded in explicitly recorded and validated design intent.
 
 The second is the Visual Operational Approach Editor. Here is the specific capability: Ironclaw can direct MIL-STD-2525D symbol placement on the operational map. A planner describes their intent — "I want three converging Lines of Effort aimed at degrading PLAN air defense coverage" — and Ironclaw translates that verbal intent into visual operational graphics on the map: the correct MIL-STD-2525D symbols positioned at the appropriate locations, with vectors showing direction of movement and lines of effort. The planner reviews, adjusts, confirms.
 
-This is not AI generating a report for a human to read. This is AI acting as a design partner — guiding the process, capturing decisions, and producing visual products that serve as the basis for the operations order. The difference matters for doctrine: a plan with recorded design decisions is auditable, transferable, and defensible in a way that a plan that lives in a commander's head is not.
+This is not AI generating a report for a human to read. This is AI acting as Chief of Staff — coordinating the process, obtaining and validating decisions, and producing visual products that serve as the basis for the operations order. The difference matters for doctrine: a plan with recorded, validated design decisions is auditable, transferable, and defensible in a way that a plan that lives in a commander's head is not.
 
 ### DEMO CUE
 Second screen: Navigate to Design tab — show CoG analysis interface or the operational approach map if populated with the Pacific Strategy AY26 scenario data. If the visual approach editor is accessible, show the map with MIL-STD-2525D symbols positioned. Do not navigate away — this is a natural demo moment for the most visually compelling planning content.
@@ -792,7 +793,7 @@ This document (Part 1 — Slides 1-13) satisfies the following verification crit
 | Architecture/capability slides have diagram specs | PASS — Slides 5, 6, 7, 8, 9, 10, 11, 12, 13 have diagram specs |
 | Document header with color palette | PASS — present at top of document |
 | Narrative arc follows locked decision | PASS — demo opens, problem-first, simplified arch after problem, capability sections by operational function |
-| Phase 55 content present | PASS — Slide 10: Ironclaw Design Interview |
+| Phase 55 content present | PASS — Slide 10: Ironclaw as Chief of Staff |
 | Phase 56 content present | PASS — Slide 10: Visual Operational Approach Editor |
 | Phase 58 content present | PASS — Slides 11, 13: check_employment_authorized(), ResourceCaveats struct |
 | Speaking scripts use plain language with technical terms in parentheses | PASS — e.g., "immutable audit trail (permanent, tamper-proof record on NEAR blockchain)" |

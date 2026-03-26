@@ -75,7 +75,7 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | 52 | Agent Skills & MCP | Complete | 2026-03-18 | Standalone MCP server, skills registry, Ironclaw builder action cards |
 | 53 | DID Governance Architecture & Bug Fixes | Complete | 2026-03-19 | Decide tab, decision dashboard, RACI matrix, PendingDecisionModal, Ironclaw 60s polling |
 | 54 | Briefing Deck: Research Validation & Slide Specs | Complete | 2026-03-26 | Slide-by-slide image specifications and visual briefing standards |
-| 55 | Ironclaw Guided Design Interview | Complete | 2026-03-25 | LangGraph JP 5-0 structured interview: 4 sections, coverage criteria, section confirmation, KG gap dispatch |
+| 55 | Ironclaw Chief of Staff — Operational Design | Complete | 2026-03-25 | LangGraph JP 5-0 staff coordination: 4 sections, coverage criteria, input validation, KG gap dispatch |
 | 56 | Visual Operational Approach Editor | Complete | 2026-03-25 | MapOverlay data model, MIL-STD-2525D symbols + control measures, AI-directed placement, COP integration |
 | 57 | Ironclaw Persistent Memory | Complete | 2026-03-25 | Dual-scope memory (user + context), REST API, IronclawMemoryPanel, auth-scoped isolation |
 | 58 | On-Chain Resource DID Caveats | Complete | 2026-03-26 | ResourceCaveats struct, check_employment_authorized(), did.bastion.testnet deployment, 4/4 smoke tests |
@@ -97,7 +97,7 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | Robot platform supported | Sphero RVR+ / NVIDIA Jetson Orin Nano |
 | Swarm formations | 6 doctrinal formations |
 | Document intelligence specialists | 10 |
-| Design interview sections | 4 (JP 5-0 operational design) |
+| Design coordination sections | 4 (JP 5-0 operational design) |
 | Memory scopes | 2 (user-scoped 90d TTL, context-scoped 180d TTL) |
 | Caveat dimensions | 5 (classification, releasability, ROE tier, geo bounds, time windows) |
 
@@ -236,7 +236,7 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | Swarm Coordination | Ready | 6 formations, UDP peer mesh, DAO-driven membership, COP aggregation |
 | Agent Skills & MCP | Ready | Standalone MCP server, skills registry, Ironclaw builder |
 | DID Governance | Ready | DID documents with governance policy, RACI-aware decision pipeline |
-| Design Interview | Ready | LangGraph JP 5-0 guided interview, 4 sections, section confirmation, KG gap dispatch |
+| Ironclaw Chief of Staff | Ready | LangGraph JP 5-0 staff coordination, 4 sections, input validation, KG gap dispatch |
 | Visual Approach Editor | Ready | MapOverlay with MIL-STD-2525D symbols and control measures, AI-directed placement |
 | Ironclaw Memory | Ready | Dual-scope persistent memory, REST API, management panel with auth isolation |
 | Resource Caveats | Ready | ResourceCaveats on-chain enforcement, check_employment_authorized() on did.bastion.testnet |
@@ -250,7 +250,7 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 2. Phase 48: Robot Swarm Behaviour End-to-End Demo (pipeline integration test)
 3. Phase 17: Deployment — CI/CD pipeline for production hosting
 
-**Demo-Ready Status:** The platform is ready for academic and military-stakeholder demonstration through Phase 58. The complete strategy-to-autonomous-execution pipeline is demonstrable with Pacific Strategy AY26 scenario data, physical robot swarm, full DAO governance with human authority positions at all three tiers, and Phase 55-58 additions: guided design interview, visual operational approach editor, Ironclaw persistent memory, and on-chain resource caveat enforcement.
+**Demo-Ready Status:** The platform is ready for academic and military-stakeholder demonstration through Phase 58. The complete strategy-to-autonomous-execution pipeline is demonstrable with Pacific Strategy AY26 scenario data, physical robot swarm, full DAO governance with human authority positions at all three tiers, and Phase 55-58 additions: Ironclaw Chief of Staff coordination for operational design, visual operational approach editor, Ironclaw persistent memory, and on-chain resource caveat enforcement.
 
 ---
 
