@@ -6,6 +6,7 @@
  */
 
 import { Router, type Request, type Response } from 'express';
+import { z } from 'zod';
 import { resourceStore } from '../resources/resource-store.js';
 import { personnelStore } from '../resources/personnel-store.js';
 import { consumableStore } from '../resources/consumable-store.js';
@@ -13,7 +14,9 @@ import { getResourceRegistry } from '../resources/resource-registry.js';
 import { resourceGroupStore } from '../resources/resource-group-store.js';
 import { getResourceTelemetryService } from '../resources/resource-telemetry.js';
 import { getPluginRegistry } from '../resources/plugins/plugin-registry.js';
-import type { ResourceCategory, ResourceStatus, ConsumableCategory, ResourceManifest } from '../resources/types.js';
+import { requireAuth } from '../auth/auth-instance.js';
+import { caveatService } from '../resources/resource-caveat-service.js';
+import type { ResourceCategory, ResourceStatus, ConsumableCategory, ResourceManifest, EmploymentContext } from '../resources/types.js';
 
 const router = Router();
 
@@ -963,6 +966,85 @@ router.get('/:id/commands', async (req: Request, res: Response) => {
       is_autonomous: resource.isAutonomous,
       commands,
     });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
+// RESOURCE CAVEAT ENDPOINTS (Phase 58 Plan 02)
+// Must appear BEFORE the generic /:id routes so Express does not match
+// 'caveats' or 'employment-check' as a resource ID.
+// =====================
+
+// Zod schema for caveat update body
+const UpdateCaveatsBodySchema = z.object({
+  problemSetId: z.string(),
+  caveats: z.object({
+    classification: z.enum(['UNCLASSIFIED', 'SECRET', 'TOPSECRET', 'TS_SCI']),
+    releasability: z.array(z.string()),
+    geoBounds: z.object({
+      north: z.number(),
+      south: z.number(),
+      east: z.number(),
+      west: z.number(),
+    }).optional(),
+    roeTier: z.number().int().min(1).max(5),
+    timeWindows: z.array(z.object({
+      startMs: z.number(),
+      endMs: z.number(),
+    })),
+    employmentConstraints: z.array(z.string()),
+  }),
+});
+
+// Update resource caveats (authenticated — commander/XO only)
+router.patch('/:id/caveats', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const parsed = UpdateCaveatsBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.error.flatten() });
+    }
+
+    const { problemSetId, caveats } = parsed.data;
+    const callerDid = `did:near:${req.anonUser!.nearAccountId}`;
+
+    await caveatService.updateResourceCaveats(
+      req.params.id as string,
+      problemSetId,
+      callerDid,
+      caveats,
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'FORBIDDEN') {
+      return res.status(403).json({ error: String(error) });
+    }
+    if ((error as NodeJS.ErrnoException).code === 'NOT_FOUND') {
+      return res.status(404).json({ error: String(error) });
+    }
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// Check employment authorization for a resource (authenticated)
+router.get('/:id/employment-check', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const boundsParam = req.query.bounds as string | undefined;
+    const roeTierParam = req.query.roeTier as string | undefined;
+    const nationCodeParam = req.query.nationCode as string | undefined;
+
+    const context: EmploymentContext = {
+      requestingAccount: req.anonUser!.nearAccountId,
+      timestampMs: Date.now(),
+      roeTierRequired: roeTierParam !== undefined ? Number(roeTierParam) : 1,
+      nationCode: nationCodeParam,
+      location: boundsParam ? JSON.parse(boundsParam) as EmploymentContext['location'] : undefined,
+    };
+
+    const result = await caveatService.checkEmploymentAuth(req.params.id as string, context);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }

@@ -26,6 +26,7 @@ import { type KeyPairString } from '@near-js/crypto';
 import { Account } from '@near-js/accounts';
 import { JsonRpcProvider } from '@near-js/providers';
 import { KeyPairSigner } from '@near-js/signers';
+import type { ResourceCaveats, EmploymentContext, EmploymentAuthResult } from '../resources/types.js';
 
 const NEAR_RPC_URL = process.env.NEAR_RPC_URL || 'https://rpc.testnet.fastnear.com';
 const DID_CONTRACT_ID = process.env.DID_CONTRACT_ID || 'did.bastion.testnet';
@@ -321,6 +322,128 @@ export async function isSigningAccountFunded(userSecret: Uint8Array): Promise<bo
     return true;
   } catch {
     return false;
+  }
+}
+
+// ============================================================================
+// Resource Caveat Operations (Phase 58 Plan 02)
+// ============================================================================
+
+/**
+ * Serialize ResourceCaveats from TS camelCase to Rust snake_case for on-chain storage.
+ * GeoBounds integers are already integers (contract uses i64 = degrees * 1_000_000).
+ */
+function serializeCaveatsForChain(caveats: ResourceCaveats, signingAccountId: string): Record<string, unknown> {
+  return {
+    classification: caveats.classification,
+    releasability: caveats.releasability,
+    geo_bounds: caveats.geoBounds
+      ? {
+          north: Math.round(caveats.geoBounds.north),
+          south: Math.round(caveats.geoBounds.south),
+          east: Math.round(caveats.geoBounds.east),
+          west: Math.round(caveats.geoBounds.west),
+        }
+      : null,
+    roe_tier: caveats.roeTier,
+    time_windows: caveats.timeWindows.map((tw) => ({
+      start_ms: tw.startMs,
+      end_ms: tw.endMs,
+    })),
+    employment_constraints: caveats.employmentConstraints,
+    updated_by: signingAccountId,
+    updated_at: Date.now() * 1_000_000, // nanoseconds for NEAR
+  };
+}
+
+/**
+ * Store resource caveats on-chain via the DID registry's update_resource_caveats method.
+ * Signs as the system admin account (resource DIDs are admin-owned, not user-owned).
+ *
+ * @param userSecret - System HKDF-derived secret (NOT a per-user secret)
+ * @param blindedKeyHex - Hex string of the resource's blinded key
+ * @param caveats - Resource caveats to store on-chain
+ */
+export async function storeResourceCaveatsOnChain(
+  userSecret: Uint8Array,
+  blindedKeyHex: string,
+  caveats: ResourceCaveats,
+): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  const { signingAccountId } = deriveSigningKeyPair(userSecret);
+  const blindedKeyBytes = Buffer.from(blindedKeyHex, 'hex');
+  const STORAGE_DEPOSIT = BigInt('5000000000000000000000'); // 0.005 NEAR
+
+  return signAndSubmitFunctionCall(
+    userSecret,
+    DID_CONTRACT_ID,
+    'update_resource_caveats',
+    {
+      blinded_key: Array.from(blindedKeyBytes),
+      caveats: serializeCaveatsForChain(caveats, signingAccountId),
+    },
+    DEFAULT_GAS,
+    STORAGE_DEPOSIT,
+  );
+}
+
+/**
+ * Check whether a resource is authorized for employment via a NEAR RPC view call.
+ * No signing needed — this is a view method.
+ *
+ * @param blindedKeyHex - Hex string of the resource's blinded key
+ * @param context - Employment context (requesting account, location, time, ROE tier, nation)
+ * @returns EmploymentAuthResult — authorized + reasons list
+ */
+export async function checkEmploymentAuthViaRPC(
+  blindedKeyHex: string,
+  context: EmploymentContext,
+): Promise<EmploymentAuthResult> {
+  try {
+    const blindedKeyBytes = Array.from(Buffer.from(blindedKeyHex, 'hex'));
+    const snakeCaseContext = {
+      requesting_account: context.requestingAccount,
+      location: context.location
+        ? {
+            north: Math.round(context.location.north),
+            south: Math.round(context.location.south),
+            east: Math.round(context.location.east),
+            west: Math.round(context.location.west),
+          }
+        : null,
+      timestamp_ms: context.timestampMs,
+      roe_tier_required: context.roeTierRequired,
+      nation_code: context.nationCode ?? null,
+    };
+
+    const response = await fetch(NEAR_RPC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 'employment-check',
+        method: 'query',
+        params: {
+          request_type: 'call_function',
+          finality: 'final',
+          account_id: DID_CONTRACT_ID,
+          method_name: 'check_employment_authorized',
+          args_base64: Buffer.from(
+            JSON.stringify({ blinded_key: blindedKeyBytes, context: snakeCaseContext })
+          ).toString('base64'),
+        },
+      }),
+    });
+
+    const rpcResult = await response.json() as { result?: { result?: number[] } };
+    if (rpcResult.result?.result) {
+      const decoded = JSON.parse(Buffer.from(rpcResult.result.result).toString()) as EmploymentAuthResult;
+      return decoded;
+    }
+    return { authorized: false, reasons: ['RPC call failed: no result'] };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('[tx-signer] checkEmploymentAuthViaRPC failed:', msg);
+    return { authorized: false, reasons: ['RPC call failed'] };
   }
 }
 
