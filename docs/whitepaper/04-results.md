@@ -190,7 +190,7 @@ The data package is designed for rapid reset between demonstration iterations. T
 
 ## 4.6 Extended Capability Results
 
-Beyond the core strategic-to-tactical demonstration, BASTION's implementation validates several additional capabilities that strengthen the research contribution. These results reflect capabilities completed through March 2026 across 53 completed development phases.
+Beyond the core strategic-to-tactical demonstration, BASTION's implementation validates several additional capabilities that strengthen the research contribution. These results reflect capabilities completed through March 2026 across 58 completed development phases.
 
 ### Doctrinal Workflow Validation
 
@@ -216,6 +216,30 @@ The dual-perspective IPB validated that information isolation between Blue and R
 
 The resource DID architecture validated that military assets can be managed as blockchain-verified entities with extensible type definitions. The plugin architecture demonstrated that new resource types can be added (autonomous vehicle, sensor, weapon, comms, logistics) without modifying core platform code. COP integration showed resources rendering as standard military symbols alongside AI-generated layers, providing a unified operational picture. Real-time readiness tracking with FMC/PMC/NMC status gave commanders immediate visibility into force capability without manual status reporting.
 
+### Design Interview to Visual Approach Pipeline
+
+The Phase 55-56 capability additions validated an end-to-end pipeline from structured AI-guided design interview through visual operational approach representation. Ironclaw's guided design interview (Section 3.21) captured commander intent across all four doctrinal sections — problem framing, center of gravity analysis, lines of effort, and operational approach — using JP 5-0 coverage criteria as completeness thresholds. Upon section confirmation, derived design objects were persisted and fed directly into the visual operational approach editor (Section 3.22).
+
+The visual editor populated a candidate MapOverlay from interview-derived design elements, placing unit symbols and control measures corresponding to the confirmed operational approach onto the operational map layer. The AI-to-visual pipeline demonstrated that commander intent expressed verbally in the interview could be translated to MIL-STD-2525D symbology without requiring manual symbol placement, reducing the manual work of translating design decisions to visual products.
+
+Knowledge graph gap detection operated in parallel with the interview: five design interview responses triggered background research requests through the document intelligence pipeline when referenced entities were absent from the brain graph, demonstrating automatic gap detection integrated with the design workflow.
+
+### Ironclaw Persistent Memory Results
+
+The Ironclaw persistent memory architecture (Phase 57 / Section 3.23) validated that session-persistent AI advisory context can be maintained across interactions with appropriate privacy controls. The dual-scope memory system (user-scoped and context-scoped) stored preferences and operational context independently, with the auth-scoped isolation preventing cross-user memory contamination in multi-participant problem sets.
+
+The IronclawMemoryPanel provided visible memory management to users: stored memories could be reviewed in human-readable format and individually deleted. The REST API (three authenticated endpoints) integrated with the existing auth middleware, extending BASTION's auth-scoped data isolation pattern to the memory domain without requiring new authentication infrastructure.
+
+Memory persistence across sessions was validated: observations recorded in one session were retrievable in subsequent sessions within the TTL bounds, enabling Ironclaw to greet returning users with appropriate context continuity rather than beginning each session without prior knowledge.
+
+### On-Chain Resource Caveat Enforcement Results
+
+The on-chain DID caveat system (Phase 58 / Section 3.24) validated that employment restrictions encoded in the NEAR smart contract are automatically enforced before assignment actions reach the resource management layer. The `ResourceCaveats` struct encoding five caveat dimensions — classification, releasability, ROE tier, geographic bounds, and time windows — was deployed to `did.bastion.testnet` and verified through four smoke tests.
+
+The `check_employment_authorized()` view method correctly blocked employment for resources where the requesting nation was not in the releasability set, where the proposed employment time fell outside the authorized time window, and where the proposed geographic position was outside the authorized bounds. Enforcement occurred at the smart contract level without requiring application-layer review, demonstrating that coalition caveat compliance can be verified computationally rather than through manual review.
+
+The five-eyes scenario (Australian satellite imagery with FVEY-only releasability, 72-hour time window, Pacific AOR geographic bounds) demonstrated the full caveat encoding and enforcement cycle: caveat capture in the frontend SecurityCaveatsSection, persistence through the PATCH /api/resources/:id/caveats endpoint, on-chain storage in the DID Registry contract, and automated rejection of out-of-scope employment requests.
+
 ### Training Mode Results
 
 The training/operational mode toggle validated the "train as you fight" capability. Exercises conducted in training mode used identical DAO governance—same voting thresholds, same authority models, same safety matrix enforcement—as operational mode. The persistent amber EXERCISE banner and automatic document watermarking prevented exercise/operational confusion. Reset and checkpoint capabilities enabled exercise iteration, and after-action review capture provided structured debriefing data.
@@ -224,19 +248,23 @@ The training/operational mode toggle validated the "train as you fight" capabili
 
 | Metric | Previous (Jan 2026) | Current (Mar 2026) |
 |--------|---------------------|---------------------|
-| Completed phases | 15 | 53 |
-| Total phases | 24 | 70 |
-| Completed plans | 117 | 442 |
+| Completed phases | 15 | 58 |
+| Total phases | 24 | 75 |
+| Completed plans | 117 | 469+ |
 | AI agents (specialized) | 23 | 31+ |
 | AI agents (JPP staff roles) | — | 102 |
 | AI agents (total) | 23 | 131+ |
-| Smart contract modules | 5 | 12 |
-| REST API endpoints | ~100 | ~500+ |
+| Smart contract modules | 5 | 14 |
+| REST API endpoints | ~100 | ~572+ |
 | Doctrinal tabs | 4 (functional) | 6 (doctrinal lifecycle) |
 | Resource types (plugins) | — | 5 |
 | Robot bridge architecture | None | Docker + Python agent, mDNS discovery |
 | Vision pipeline | None | detectNet + ORB on Jetson Orin Nano |
 | Swarm capability | None | 3-platform coalition, 6 formations, UDP mesh |
+| Design interview | None | LangGraph JP 5-0 guided interview, 4 sections |
+| Visual approach editor | None | MapOverlay with MIL-STD-2525D symbols + control measures |
+| Ironclaw memory | None | Dual-scope persistent memory, REST API, management panel |
+| On-chain resource caveats | None | ResourceCaveats contract on did.bastion.testnet |
 
 ## 4.7 Thesis Validation
 

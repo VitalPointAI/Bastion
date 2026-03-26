@@ -560,7 +560,121 @@ Mission Essential Task List (METL) proficiency is tracked using the standard T/P
 
 Training readiness data aggregates from tactical training events through exercises to strategic training programs using the same hierarchical problem set inheritance architecture described in Section 3.18. A training readiness dashboard presents proficiency trends, upcoming training milestones, and readiness projections for scheduled operational commitments. The Pacific Strategy AY26 scenario package serves as the operational demonstration data package for this capability, providing a complete multi-echelon exercise scenario—spanning six phases from Competition through Negotiation—that exercises the full training assessment pipeline from event capture through strategic readiness aggregation [CITATION NEEDED: military readiness assessment frameworks].
 
+## 3.21 Ironclaw Guided Design Interview (Phase 55)
+
+Operational design is among the most cognitively demanding tasks in military planning. Commanders and staff must engage deeply with problem framing, center of gravity analysis, lines of effort, and operational approach development under time pressure. BASTION extends the operational design workspace with a structured AI-guided interview capability: Ironclaw functions as a design partner that draws out design thinking through directed questioning, challenging assumptions, and capturing commander intent in a structured format.
+
+### Design Interview Architecture
+
+The design interview is implemented as a LangGraph StateGraph with interrupt-resume semantics, mirroring the interview architecture used for OSINT scoping. The graph progresses through four sequential doctrinal sections aligned to JP 5-0 Chapter III: problem framing (5 coverage criteria including environment characterization and tensions identification), center of gravity analysis (5 criteria with a minimum of two adversary critical capabilities for doctrinal completeness), lines of effort/operation (3 criteria), and operational approach (3 criteria including phasing and end state articulation).^1
+
+Each section carries explicit doctrinal coverage criteria derived from JP 5-0 and operational design doctrine. The interview graph uses structural inspection of the derived design object to assess coverage — a deterministic check against field completeness rather than a separate LLM evaluation. This design choice provides consistency and speed over qualitative assessment. Coverage assessment is transparent: if a field is empty or below the minimum count threshold, the section is not marked complete, and Ironclaw continues questioning.
+
+### Design Partner vs. Design Advisor
+
+The design interview positions Ironclaw as a design *partner* rather than a design *advisor*. The distinction is operationally significant. A design advisor presents options and analysis for human review. A design partner actively questions assumptions, challenges framings that appear incomplete, and probes the reasoning behind judgments through red-team follow-up questions embedded in the conversation.
+
+Ironclaw's questioning style applies a challenge-then-recommend pattern: for each section, it asks open-ended questions to elicit commander reasoning, identifies apparent gaps or tensions in responses, and surfaces alternative framings that the commander may not have considered. Red-team probing questions are appended as AI messages in the same graph node as the primary question — a single LLM call that produces both the primary question and the follow-up challenge — rather than a separate graph node. This design minimizes latency while maintaining the adversarial questioning discipline.
+
+### Interview Output and Workflow Integration
+
+When a section achieves coverage, Ironclaw surfaces a section confirmation prompt. Upon confirmation, the section's derived design object is persisted via a dedicated store and the interview advances to the next section. Confirmed sections cannot be automatically overwritten; they become locked design artifacts requiring explicit intent to revise.
+
+Upon interview completion, the derived design output integrates directly with the operational design workspace. The interview captures design decisions in the same structured format as the manual workspace (problem framing canvas, CoG analysis object, LOE definitions, phased operational approach), enabling the design-to-plan handoff to proceed from interview-derived artifacts through the same export path as manually constructed designs.
+
+### Knowledge Graph Gap Detection
+
+The interview incorporates real-time knowledge graph gap detection. When the user's answers reference actors, relationships, or capabilities that have no corresponding entries in the problem set's brain graph, the system flags the gap and dispatches a background research request through the document intelligence pipeline's gap research mechanism. This integration ensures that design interview responses that reveal intelligence gaps are automatically routed to the autonomous research workflow, maintaining analytical continuity between the design interview and intelligence preparation.
+
+## 3.22 Visual Operational Approach Editor (Phase 56)
+
+Operational approach development traditionally produces text-based products: LOE descriptions, phase narratives, decisive point listings. Commanders and staff benefit from visual representations that allow them to see how forces relate to objectives in space and time. BASTION implements a visual operational approach editor that enables AI-directed placement of military symbols on an operational map layer, producing a visual operational approach artifact integrated with the design workspace.
+
+### MapOverlay Data Model
+
+The visual editor stores operational approach graphics as a MapOverlay object composed of two collections: MapSymbol entries for unit symbols and resource icons, and ControlMeasure entries for operational graphics (phase lines, boundaries, axes of advance, named areas of interest, and fire support coordination measures). The MapOverlay is persisted as a JSONB column in the operational_designs table, extending the existing design record without requiring a separate entity table.^2
+
+Each MapSymbol carries a Symbol Identification Code (SIDC) identifying its MIL-STD-2525D representation, along with affiliation, echelon, designation, geographic coordinates, and labeling information.^3 ControlMeasures support three geometry types — lines, polygons, and points — covering the full range of operational graphics prescribe by MIL-STD-2525D Part 2 (Tactical Graphics).
+
+### AI-Directed Symbol Placement
+
+Ironclaw can direct symbol placement through natural language commands interpreted against the MapOverlay schema. When Ironclaw identifies a decisive point, axis of advance, or unit assignment during the design interview, it can project that design element onto the operational map by invoking the map overlay API with a structured symbol placement intent. This AI-directed editing closes the loop between verbal design decisions and visual representation: design elements discussed in the interview appear on the map without requiring the commander to manually translate intent to symbology.
+
+The design interview output and visual approach editor are integrated: the operational approach section of the design interview generates a candidate MapOverlay populated with units, objectives, and control measures derived from the interview responses. Commanders review and refine this AI-generated visual draft rather than constructing it from scratch, preserving commander judgment in the final product while eliminating the initial symbol-placement burden.
+
+### Integration and Validation
+
+The visual operational approach editor integrates with the COP layer architecture (Section 3.9), enabling AI-generated operational approach graphics to be promoted to the shared COP through the same governance review cycle used for intelligence-derived layers. This integration ensures that approach graphics developed in the Design tab can be published to the Decide and COP tabs for command decision and operational picture integration.
+
+## 3.23 Ironclaw Persistent Memory and Adaptive Relationship (Phase 57)
+
+AI staff assistants that cannot remember previous interactions require commanders to re-establish context at every session. BASTION addresses this limitation through a persistent memory architecture for Ironclaw that stores interaction context across sessions, adapts to individual preferences over time, and provides transparent memory management tools.
+
+### Memory Graph Architecture
+
+Ironclaw's memory system implements three distinct storage scopes through dedicated PostgreSQL singleton stores:
+
+**User memory** (`IronclawUserMemoryStore`) stores user-scoped key-value entries with a 90-day time-to-live (TTL). User memory captures individual preferences, communication style observations, recurring decision patterns, and relationship context (e.g., how a specific commander prefers to receive risk assessments, what level of detail they expect in situation summaries). Memory entries use ON CONFLICT DO UPDATE semantics, ensuring that evolving observations replace earlier entries rather than accumulating stale data.
+
+**Context memory** (`IronclawContextMemoryStore`) stores problem-set-scoped memory with a 180-day TTL and a session count increment on each update. Context memory captures tactical context, running planning priorities, and problem-set-specific preferences (e.g., that the current planning effort prioritizes speed over force protection). The session count provides a recency signal that downstream retrieval can use to weight recent observations over older ones.
+
+**Interaction outcomes** (`IronclawOutcomeStore`) records discrete interaction outcomes — decisions made, advice accepted or rejected, recommendations that proved accurate — enabling Ironclaw to track the long-term quality of its advisory relationship with each user.
+
+### Auth-Scoped Memory Isolation
+
+Memory isolation is enforced at the data layer: user memory methods accept only a `userDid` parameter, with no `problemSetId` argument available, ensuring that user-scoped memories cannot inadvertently leak between users. Context memory is scoped to a `(problemSetId, userDid)` composite key, isolating problem-set context by participant. This isolation ensures that a user's interaction history in one problem set does not influence Ironclaw's behavior in a separate problem set, and that one user's memory does not affect another user's experience.
+
+### Memory Management Interface
+
+The memory system includes a REST API and a React management panel (`IronclawMemoryPanel`) that enables users to review, edit, and delete stored memories. Three authenticated endpoints support memory operations: `GET /memory` retrieves the authenticated user's active memories with pagination; `DELETE /memory/:key` removes a specific memory entry; and `DELETE /memory/all` clears all memories for the authenticated user. The management panel presents memories in human-readable format with delete actions, enabling users to correct inaccurate memories and maintain awareness of what Ironclaw knows about them.
+
+This memory transparency is a deliberate design choice. Opaque AI memory — where the system "knows" things about users without their awareness or control — creates legitimate trust concerns in sensitive advisory contexts. By surfacing memory contents and providing deletion controls, BASTION enables the trust calibration that meaningful human-AI collaboration requires.
+
+## 3.24 On-Chain Resource DID Caveats (Phase 58)
+
+National caveats that restrict resource employment must travel with resource identity. A coalition resource whose employment is restricted to Five Eyes partners, limited to a 72-hour window, or confined to a specific geographic area of operations must carry those restrictions in a form that the governance system can verify automatically — not as metadata that could be overlooked, but as on-chain state enforced at the authorization layer.
+
+### ResourceCaveats Struct
+
+BASTION extends its DID Registry smart contract with a `ResourceCaveats` struct that encodes five categories of employment restriction:^4
+
+- **Classification**: the minimum handling classification required to employ the resource
+- **Releasability**: the set of nations or coalitions authorized to employ the resource (e.g., `FVEY` for Five Eyes nations, `NATO` for Atlantic alliance members)
+- **ROE tier**: the rules of engagement tier under which the resource may be employed
+- **Geographic bounds**: the geographic area of operations within which employment is authorized, expressed as degree-precision bounding box coordinates (stored as integer degrees × 1,000,000 for fixed-point arithmetic without floating point)
+- **Time windows**: UTC-epoch time ranges within which employment is authorized, enabling time-limited resource contributions
+
+These five caveat dimensions were derived from analysis of common coalition resource restriction patterns and the information security caveat framework described in Section 3.3. Together they cover the full range of practical employment restrictions that coalition resource contributions carry.
+
+### On-Chain Authorization Verification
+
+The `check_employment_authorized()` view method on the NEAR smart contract evaluates a proposed employment action against the resource's stored caveats without modifying contract state. The method accepts a resource DID, the requesting nation's identifier, the proposed employment time, and the geographic position of the proposed action. It returns a structured authorization result: `authorized` (boolean), `reason` (explanatory string), and `applicable_caveats` (the specific restrictions evaluated).^5
+
+This on-chain verification approach provides several enforcement guarantees that off-chain caveat checking cannot. First, the verification logic is immutable: the caveat check is encoded in the deployed contract and cannot be modified without a governance-approved contract upgrade. Second, the result is cryptographically verifiable: any party can independently verify that the same check would produce the same result for the same inputs by inspecting the contract code. Third, the check is integrated with the resource lifecycle: caveats are updated through the same DAO-governed workflow that manages resource registration, ensuring that caveat changes require appropriate coalition oversight.
+
+### Coalition Enforcement Example
+
+Consider a scenario representative of contemporary Five Eyes intelligence sharing arrangements: Australia contributes satellite imagery to the coalition resource pool with the following caveats — classification SECRET, releasability FVEY, ROE tier ISR_ONLY, geographic bounds Pacific Area of Operations, time window 72 hours from contribution. When a non-FVEY coalition partner attempts to employ this imagery, `check_employment_authorized()` returns `authorized=false` with reason `releasability_restriction: requesting nation not in FVEY set`. The employment is blocked before the request reaches the assignment layer. No human reviewer is required to catch the caveat violation; the smart contract enforces it at the protocol level.
+
+This enforcement pattern addresses the risk identified in Section 2.6: inadvertent caveat violations due to oversight failures in manual review processes. The smart contract eliminates the possibility of oversight failure for encoded caveats. The remaining risk is mis-encoding: if a contributing nation's caveat is incorrectly captured in the `ResourceCaveats` struct, the enforcement will be incorrect. Governance oversight of caveat entry — requiring the contributing nation's representative to confirm encoded caveats before the resource becomes available for coalition assignment — addresses this risk.
+
+### Deployment
+
+The ResourceCaveats extension was deployed to `did.bastion.testnet` on the NEAR testnet as part of Phase 58. Deployment required resolving a WASM compatibility issue between Rust LLVM >= 14's call_indirect encoding and NEAR's wasmer validator, addressed through post-processing with `wasm-opt --mvp-features --signext-lowering`. The contract is validated through four smoke tests exercising the core view methods: `check_employment_authorized`, `get_caveats`, `is_paused`, and `get_admin`.
+
 ---
 
-*This section has described BASTION's architecture, the MDMP governance integration, the escalation and competition modeling capabilities, the doctrinal lifecycle interface, IPB cycle, COP generation, resource registry, training mode, staff organization, robot integration, knowledge graph, swarm leadership, document intelligence pipeline, hierarchical problem set inheritance, operational design workspace, and training assessment architecture. The following Results section demonstrates these principles in practice through the implementation and physical proof-of-concept.*
+^1 Joint Chiefs of Staff, *Joint Planning*, JP 5-0 (Washington, DC: Joint Chiefs of Staff, 2020).
+
+^2 PostgreSQL documentation: JSONB provides a binary-format JSON storage type with indexed access and JSONB operators. BASTION uses the SQL `||` concatenation operator for array element appends and a read-modify-write pattern for element updates.
+
+^3 Department of Defense, *Joint Military Symbology*, MIL-STD-2525D (Washington, DC: Department of Defense, 2014).
+
+^4 World Wide Web Consortium, "Decentralized Identifiers (DIDs) v1.0," W3C Recommendation, July 19, 2022, https://www.w3.org/TR/did-core/.
+
+^5 The `check_employment_authorized()` call is a NEAR view method (read-only, no gas cost for calls, no state modification). It can be called by any party without a signed transaction, enabling pre-authorization checks without blockchain fees or latency.
+
+---
+
+*This section has described BASTION's architecture, the MDMP governance integration, the escalation and competition modeling capabilities, the doctrinal lifecycle interface, IPB cycle, COP generation, resource registry, training mode, staff organization, robot integration, knowledge graph, swarm leadership, document intelligence pipeline, hierarchical problem set inheritance, operational design workspace, training assessment architecture, and the Phase 55-58 capability additions: guided design interview, visual operational approach editor, Ironclaw persistent memory, and on-chain resource DID caveats. The following Results section demonstrates these principles in practice through the implementation and physical proof-of-concept.*
 
