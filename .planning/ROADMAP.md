@@ -879,6 +879,18 @@ Key capabilities:
 - Memories are scoped: user-level (portable) vs problem-set-level (contextual)
 - Privacy-aware: no cross-user memory leakage
 
+### Phase 58: On-Chain Resource DID Caveats with Contract Enforcement
+
+**Goal:** Extend the DID registry smart contract with structured caveat fields (classification, releasability, geographic bounds, ROE tier, time windows, employment constraints) and contract-level enforcement via `check_employment_authorized()` view method. Add role-based permissions so resource owners and problem set admins can update caveats. Backend: extend Resource types, wire registration to store DIDs on-chain with caveats, add `updateResourceCaveats` and `checkEmploymentAuth` endpoints, migrate existing resources on-chain. Frontend: add Security & Caveats editor to ResourceDetailPanel — permission-gated to owner/admin. Deploy updated contract to testnet. Demo story: blockchain is the single source of truth for how resources can be employed.
+**Requirements**: Smart contract caveat enforcement, role-based caveat management, on-chain resource DID registration, frontend caveat editor, testnet deployment
+**Depends on:** Phase 27 (Resource Registry)
+**Plans:** 3 plans
+
+Plans:
+- [ ] 58-01-PLAN.md -- Smart contract caveat extension (TDD: ResourceCaveats struct, update/check/get methods, unit tests)
+- [ ] 58-02-PLAN.md -- Backend infrastructure (DB migration, types, caveat service, tx-signer helpers, API endpoints)
+- [ ] 58-03-PLAN.md -- Frontend caveat editor + testnet deployment + end-to-end verification
+
 ---
 
 **MCP Tools (deterministic operations - added to MCP server):**
