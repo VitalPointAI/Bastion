@@ -8,6 +8,62 @@ use schemars::JsonSchema;
 #[derive(BorshStorageKey, BorshDeserialize, BorshSerialize)]
 enum StorageKey {
     Dids,
+    Caveats,
+}
+
+/// Geographic bounding box using integer coordinates (degrees * 1_000_000, no floats)
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, JsonSchema)]
+#[serde(crate = "near_sdk::serde")]
+#[borsh(crate = "near_sdk::borsh")]
+pub struct GeoBounds {
+    pub north: i64,
+    pub south: i64,
+    pub east: i64,
+    pub west: i64,
+}
+
+/// Time window expressed as millisecond timestamps
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, JsonSchema)]
+#[serde(crate = "near_sdk::serde")]
+#[borsh(crate = "near_sdk::borsh")]
+pub struct TimeWindow {
+    pub start_ms: u64,
+    pub end_ms: u64,
+}
+
+/// Structured employment caveats stored on-chain per DID (separate LookupMap)
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, JsonSchema)]
+#[serde(crate = "near_sdk::serde")]
+#[borsh(crate = "near_sdk::borsh")]
+pub struct ResourceCaveats {
+    pub classification: String,
+    pub releasability: Vec<String>,
+    pub geo_bounds: Option<GeoBounds>,
+    pub roe_tier: u8,
+    pub time_windows: Vec<TimeWindow>,
+    pub employment_constraints: Vec<String>,
+    #[schemars(with = "String")]
+    pub updated_by: AccountId,
+    pub updated_at: u64,
+}
+
+/// Input context for employment authorization check (JSON only, not stored)
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[serde(crate = "near_sdk::serde")]
+pub struct EmploymentContext {
+    pub requesting_account: String,
+    pub location: Option<GeoBounds>,
+    pub timestamp_ms: u64,
+    pub roe_tier_required: u8,
+    pub nation_code: Option<String>,
+}
+
+/// Result of an employment authorization check (JSON only, not stored)
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
+#[serde(crate = "near_sdk::serde")]
+pub struct EmploymentAuthResult {
+    pub authorized: bool,
+    pub reasons: Vec<String>,
 }
 
 /// On-chain encrypted DID entry
@@ -26,10 +82,20 @@ pub struct DIDEntry {
     pub active: bool,
 }
 
+/// Old registry shape (3 fields) -- used only in migrate()
+#[derive(BorshDeserialize)]
+#[borsh(crate = "near_sdk::borsh")]
+pub struct OldDIDRegistry {
+    dids: LookupMap<String, DIDEntry>,
+    admin: AccountId,
+    paused: bool,
+}
+
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct DIDRegistry {
     dids: LookupMap<String, DIDEntry>,
+    caveats: LookupMap<String, ResourceCaveats>,
     admin: AccountId,
     paused: bool,
 }
@@ -41,8 +107,22 @@ impl DIDRegistry {
         assert!(!env::state_exists(), "Already initialized");
         Self {
             dids: LookupMap::new(StorageKey::Dids),
+            caveats: LookupMap::new(StorageKey::Caveats),
             admin,
             paused: false,
+        }
+    }
+
+    /// State migration from 3-field (dids, admin, paused) to 4-field (dids, caveats, admin, paused).
+    /// Call ONCE after deploying upgraded WASM to testnet when existing state is present.
+    #[init(ignore_state)]
+    pub fn migrate() -> Self {
+        let old: OldDIDRegistry = env::state_read().expect("Old state must exist for migration");
+        Self {
+            dids: old.dids,
+            caveats: LookupMap::new(StorageKey::Caveats),
+            admin: old.admin,
+            paused: old.paused,
         }
     }
 
@@ -128,6 +208,44 @@ impl DIDRegistry {
         self.dids.insert(key_hex, entry);
     }
 
+    /// Update or set resource employment caveats for a DID.
+    /// Only the DID owner or contract admin may call this.
+    #[payable]
+    pub fn update_resource_caveats(&mut self, blinded_key: Vec<u8>, caveats: ResourceCaveats) {
+        self.assert_not_paused();
+        let key_hex = hex_encode(&blinded_key);
+        let caller = env::predecessor_account_id();
+
+        let entry = self.dids.get(&key_hex)
+            .unwrap_or_else(|| env::panic_str("DID not found"));
+
+        assert!(
+            entry.owner == caller || caller == self.admin,
+            "Only DID owner or admin can update caveats"
+        );
+
+        let storage_before = env::storage_usage();
+
+        let mut updated = caveats;
+        updated.updated_by = caller;
+        updated.updated_at = env::block_timestamp();
+        self.caveats.insert(key_hex, updated);
+
+        // Require sufficient storage deposit
+        let storage_after = env::storage_usage();
+        if storage_after > storage_before {
+            let storage_cost = (storage_after - storage_before) as u128
+                * env::storage_byte_cost().as_yoctonear();
+            let deposit = env::attached_deposit().as_yoctonear();
+            assert!(
+                deposit >= storage_cost,
+                "Insufficient storage deposit. Need {} yoctoNEAR, got {}",
+                storage_cost,
+                deposit
+            );
+        }
+    }
+
     // ========================================================================
     // View methods
     // ========================================================================
@@ -135,6 +253,107 @@ impl DIDRegistry {
     pub fn get_did(&self, blinded_key: Vec<u8>) -> Option<DIDEntry> {
         let key_hex = hex_encode(&blinded_key);
         self.dids.get(&key_hex).cloned()
+    }
+
+    /// Retrieve stored caveats for a DID (returns None if none set).
+    pub fn get_caveats(&self, blinded_key: Vec<u8>) -> Option<ResourceCaveats> {
+        let key_hex = hex_encode(&blinded_key);
+        self.caveats.get(&key_hex).cloned()
+    }
+
+    /// Check whether a resource may be employed given the provided context.
+    /// Returns authorized=true with empty reasons when all constraints are satisfied
+    /// or when no caveats have been stored for the DID.
+    pub fn check_employment_authorized(
+        &self,
+        blinded_key: Vec<u8>,
+        context: EmploymentContext,
+    ) -> EmploymentAuthResult {
+        let key_hex = hex_encode(&blinded_key);
+
+        // DID must exist and be active
+        match self.dids.get(&key_hex) {
+            None => {
+                return EmploymentAuthResult {
+                    authorized: false,
+                    reasons: vec!["DID not found".to_string()],
+                }
+            }
+            Some(entry) if !entry.active => {
+                return EmploymentAuthResult {
+                    authorized: false,
+                    reasons: vec!["DID is inactive".to_string()],
+                }
+            }
+            _ => {}
+        }
+
+        // If no caveats stored, permissive default
+        let caveats = match self.caveats.get(&key_hex) {
+            None => {
+                return EmploymentAuthResult {
+                    authorized: true,
+                    reasons: vec![],
+                }
+            }
+            Some(c) => c,
+        };
+
+        let mut reasons: Vec<String> = vec![];
+
+        // Check releasability
+        if !caveats.releasability.is_empty() {
+            let allowed = match &context.nation_code {
+                Some(code) => caveats.releasability.iter().any(|r| r == code),
+                None => false,
+            };
+            if !allowed {
+                let code = context.nation_code.as_deref().unwrap_or("NONE");
+                reasons.push(format!(
+                    "Nation {} not in releasability list {:?}",
+                    code, caveats.releasability
+                ));
+            }
+        }
+
+        // Check ROE tier
+        if context.roe_tier_required > caveats.roe_tier {
+            reasons.push(format!(
+                "Required ROE tier {} exceeds authorized tier {}",
+                context.roe_tier_required, caveats.roe_tier
+            ));
+        }
+
+        // Check time windows
+        if !caveats.time_windows.is_empty() {
+            let in_window = caveats.time_windows.iter().any(|w| {
+                context.timestamp_ms >= w.start_ms && context.timestamp_ms <= w.end_ms
+            });
+            if !in_window {
+                reasons.push(format!(
+                    "Timestamp {} is outside all authorized time windows",
+                    context.timestamp_ms
+                ));
+            }
+        }
+
+        // Check geo bounds
+        if let (Some(bounds), Some(loc)) = (&caveats.geo_bounds, &context.location) {
+            let contained = loc.north <= bounds.north
+                && loc.south >= bounds.south
+                && loc.east <= bounds.east
+                && loc.west >= bounds.west;
+            if !contained {
+                reasons.push(format!(
+                    "Location is outside authorized geographic bounds"
+                ));
+            }
+        }
+
+        EmploymentAuthResult {
+            authorized: reasons.is_empty(),
+            reasons,
+        }
     }
 
     pub fn is_did_active(&self, blinded_key: Vec<u8>) -> bool {
