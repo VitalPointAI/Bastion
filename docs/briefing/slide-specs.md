@@ -772,51 +772,243 @@ Advance to Slide 14 — physical autonomous execution section begins.
 
 ---
 
-## Slides 14-25 and Annex A1-A18
+## Slide 14: Physical Autonomous Execution
 
-> **Note:** Slides 14-25 (Executing Autonomously, Maintaining Trust, Architecture Synthesis, Closing Reflection, and Closing sequence) and Annex slides A1-A18 (deep-dives, glossary, whitepaper overview) are specified in `docs/briefing/slide-specs-part2.md` (Phase 59, Plan 02).
->
-> The narrative arc is continuous — Slide 13 transitions directly to Slide 14 (Physical Autonomous Execution / Robot Integration) without break.
+### Purpose
+Show the three-tier architecture that makes autonomous execution possible — cloud platform, Docker bridge agent, and edge robot — and explain why this architecture exists. The audience has watched the robot operate; now they see the engineering beneath it. This slide closes the loop on the opening demo.
+
+### Visual Layout
+Title "Physical Autonomous Execution" at top. Main content: the three-tier stack diagram (see Diagram Spec). Below the diagram, a single callout box: "DDIL-Resilient: bridge continues executing last-known orders when cloud connectivity is lost." At bottom right, a small annotation: "Phase 43-46 — Docker Bridge + Jetson Vision + Doctrinal Swarm Formations."
+
+### Image Prompt
+No AI image — see Diagram Spec.
+
+### Diagram Spec
+Three horizontally separated tiers connected by vertical bidirectional arrows:
+
+**Tier 1 — Cloud (top):** Rectangle labeled "BASTION Platform" in blue (#2563EB). Sub-labels: "Agent Hub / LangGraph orchestrator," "DAO governance + authority delegation," "Mission orders + rules of engagement." Background: white, blue border.
+
+**Tier 2 — Bridge (middle):** Rectangle labeled "Docker Bridge Agent" in sky blue (#0EA5E9). Sub-labels: "Python autonomy agent," "NEAR wallet (robot identity on-chain)," "DDIL state buffer," "Authority escalation handler." Background: white, sky-blue border.
+
+**Tier 3 — Edge (bottom):** Rectangle labeled "Edge Robot (Jetson + Sphero RVR+)" in slate (#64748B). Sub-labels: "Camera vision pipeline," "Terrain-adaptive locomotion," "Six doctrinal swarm formations," "IMU + odometry." Background: light gray, slate border.
+
+**Arrows:** Bidirectional arrows between Cloud↔Bridge and Bridge↔Edge. The Bridge↔Edge arrow is annotated "DDIL-resilient" in amber (#F59E0B). The Cloud↔Bridge arrow is annotated "Mission orders / DAO attestations." Arrow color: cyan (#06B6D4).
+
+### Speaking Script
+This is what was happening under the hood when you watched that robot execute at the start of this briefing.
+
+The architecture is three tiers. At the top, the BASTION cloud platform — the AI agent hub, the DAO governance layer, the mission planning environment. This is where authority lives. This is where the human commanders make decisions, delegate tasks, and define the boundaries of autonomous action.
+
+In the middle, the Docker bridge agent. This is the crucial translation layer. It runs a Python autonomy agent with its own NEAR blockchain wallet — the robot has an on-chain identity. It holds a buffer of mission state for DDIL-resilient operation. And critically: it contains the authority escalation handler. When the robot encounters a situation that exceeds its delegated authority at that moment, the bridge agent pauses execution and escalates back to the cloud for human decision. That pause — that check-in — is the core control mechanism you saw demonstrated.
+
+Why Docker rather than a purpose-built edge device? This was a deliberate tradeoff. Procurement and policy constraints make hardware-specific edge nodes impractical for a research prototype. Docker provides hardware agnosticism — the bridge agent runs identically on any capable machine. That agnosticism also represents what a fielded system would need: the ability to integrate heterogeneous robotic platforms without custom firmware per device.
+
+At the edge, the robot itself: a Jetson compute module running a camera vision pipeline, a Sphero RVR+ for locomotion, and the capability to execute six doctrinal swarm formations — column, wedge, echelon, line, diamond, and file — derived from actual military small-unit formations. These are not arbitrary movement patterns. They are doctrinal.
+
+The three-tier architecture separates authority from execution. Cloud owns authority. Edge owns execution. Bridge translates between them, handling connectivity interruption and authority escalation as its primary functions.
+
+### DEMO CUE
+Second screen: If robot hardware is available, show the robot bridge status page with discovered robots and bridge connectivity status. If hardware is not present, navigate to the COP tab and show the architecture diagram representation, or reference the pre-recorded demonstration clip. Point out that the BASTION platform remains visible on the second screen as Tier 1 of the architecture the audience is looking at.
+
+### Transition
+Advance to Slide 15 — the AI-generated Common Operating Picture that emerges from this architecture.
 
 ---
 
-## Document Completeness Verification
+## Slide 15: AI Common Operating Picture
 
-This document (Part 1 — Slides 1-13) satisfies the following verification criteria:
+### Purpose
+Show how BASTION generates a Common Operating Picture (COP) from plan documents and intelligence data — not from manual plotting. This challenges one of the most labor-intensive tasks in military operations: maintaining an accurate, current picture of the battlefield.
 
-| Check | Result |
-|-------|--------|
-| Slides 1-13 fully specified | PASS — 13 slides present |
-| Every slide has Speaking Script | PASS — 13 speaking scripts |
-| Every slide has DEMO CUE or explicit "no demo cue" | PASS — 13 demo cue sections |
-| Hero/illustrative slides have image prompts | PASS — Slides 1, 3, 4 have full AI image prompts |
-| Architecture/capability slides have diagram specs | PASS — Slides 5, 6, 7, 8, 9, 10, 11, 12, 13 have diagram specs |
-| Document header with color palette | PASS — present at top of document |
-| Narrative arc follows locked decision | PASS — demo opens, problem-first, simplified arch after problem, capability sections by operational function |
-| Phase 55 content present | PASS — Slide 10: Ironclaw as Chief of Staff |
-| Phase 56 content present | PASS — Slide 10: Visual Operational Approach Editor |
-| Phase 58 content present | PASS — Slides 11, 13: check_employment_authorized(), ResourceCaveats struct |
-| Speaking scripts use plain language with technical terms in parentheses | PASS — e.g., "immutable audit trail (permanent, tamper-proof record on NEAR blockchain)" |
-| Image prompts include all 7 required elements | PASS — subject, style, palette, mood, aspect ratio, elements, avoidances |
-| Demo cues reference actual BASTION screens | PASS — Understand, Design, Plan, Decide, COP, Resources tabs used |
+### Visual Layout
+Title "AI Common Operating Picture" at top. Left two-thirds: the COP map mockup (see Diagram Spec). Right one-third: three key-point callouts in a vertical stack: (1) "Generated from plan text — not manually plotted," (2) "Perspective toggle: friendly / adversary view," (3) "Phase slider: temporal progression through operation." Bottom annotation: "MIL-STD-2525D symbology — the international standard for military mapping."
 
-### Word Count Estimate
+### Image Prompt
+No AI image — see Diagram Spec.
 
-| Slide | Script Length |
-|-------|--------------|
-| Slide 1 | ~220 words |
-| Slide 2 | ~190 words |
-| Slide 3 | ~230 words |
-| Slide 4 | ~220 words |
-| Slide 5 | ~250 words |
-| Slide 6 | ~200 words |
-| Slide 7 | ~260 words |
-| Slide 8 | ~280 words |
-| Slide 9 | ~270 words |
-| Slide 10 | ~270 words |
-| Slide 11 | ~280 words |
-| Slide 12 | ~280 words |
-| Slide 13 | ~270 words |
-| **Total** | **~2,920 words** |
+### Diagram Spec
+Map mockup with the following elements:
 
-Speaking scripts exceed the 2,500-word minimum for slides 1-13.
+**Background:** Light gray (#F8FAFC) map base with simple terrain contour lines in muted gray (#64748B). No geographic labels.
+
+**Friendly forces (blue, #2563EB):** Four to six MIL-STD-2525D unit symbols placed in the southern portion of the map — infantry battalion (rectangle with X), mechanized element (rectangle with wheeled symbol), headquarters (rectangle with star). Unit identifiers shown in small text beneath symbols.
+
+**Adversary forces (red, #DC2626):** Three to four MIL-STD-2525D hostile unit symbols placed in the northern portion — infantry formation, armored element, air defense site. Same format as friendly symbols.
+
+**UI overlay elements:**
+- Top-left: Dropdown labeled "Perspective: Friendly" with a down-arrow (to indicate toggle capability)
+- Bottom: Horizontal slider labeled "Phase" with markers at "Competition," "Crisis," "Day 4," "Day 10," "Day 22," "Negotiation" — slider positioned at "Day 4"
+- Top-right corner: Small label "Generated from: Pacific Strategy AY26 Plan Documents"
+
+**Annotation arrow:** A thin cyan (#06B6D4) arrow pointing from "Pacific Strategy AY26 Plan Documents" label to a representative unit symbol, labeled "Document intelligence → symbol placement."
+
+### Speaking Script
+The Common Operating Picture — the COP — is the single most critical shared display in any military headquarters. Commanders make decisions based on it. Staff briefs from it. The problem is how it gets built: manually. Intelligence analysts read reports, extract unit locations, and plot symbols on a map. Operations staff update those positions as units move. The COP is always behind reality because human curation cannot keep pace with the information environment.
+
+BASTION generates the COP from documents.
+
+The document intelligence pipeline you saw on the previous slides — the one that extracts entities, relationships, and locations from source documents — feeds directly into COP symbol placement. When a plan document describes a PLAN 74th Army Group formation establishing a defensive position at a grid coordinate, that becomes a red unit symbol on the map, positioned at that coordinate, with the relationship data from the knowledge graph attached to it. No manual plotting required.
+
+The COP supports two capabilities that manual systems cannot. First, perspective toggle: with a single click, the same operational environment can be viewed from the friendly force perspective or the adversary perspective. This is not cosmetic. Viewing the battle space from the adversary's likely decision calculus — what would they see as BLUFOR vulnerabilities? — is a core element of the Intelligence Preparation of the Battlefield process. That analytical step currently requires a separate staff effort. In BASTION, it is a toggle.
+
+Second, the phase slider. The Pacific Strategy AY26 scenario has six phases: Competition, Crisis, four Conflict days, and Negotiation. The phase slider allows the COP to display the operational picture as it is projected to evolve across time — showing which units are expected where at each phase boundary. That temporal visualization is not currently achievable in standard COP tools without significant manual re-plotting for each phase.
+
+The COP is not a display. It is an analytical output of the knowledge graph.
+
+### DEMO CUE
+Second screen: Navigate to COP tab. Show the map with MIL-STD-2525D symbol overlays in place. Toggle between friendly and adversary perspective — demonstrate that the symbol sets change (friendly blue becomes red hostile, positional emphasis shifts). Then use the phase slider to advance through operational phases, showing how the force picture evolves. Narrate: "Every symbol on this map was placed by the document intelligence pipeline — no one plotted this manually."
+
+### Transition
+Advance to Slide 16 — how BASTION maintains training-operational parity to ensure governance consistency.
+
+---
+
+## Slide 16: Training-Operational Parity
+
+### Purpose
+"Train as you fight" is a foundational military principle. This slide shows how BASTION enforces identical governance in training and operational modes — preventing governance shortcuts that would undermine the system's reliability under actual operational conditions.
+
+### Visual Layout
+Title "Training-Operational Parity" at top. Main content: split-screen comparison (see Image Prompt). Below the comparison: a single declarative statement in large text — "Same smart contracts. Same DAO governance. Same authority limits. Different banner." Bottom annotation: "Phase 22 — Training/Operational mode toggle with data isolation."
+
+### Image Prompt
+Clean split-screen interface visualization, 16:9, white background (#FFFFFF). Left half labeled "TRAINING MODE" in amber (#F59E0B) bold text, with a prominent amber horizontal accent bar at the top of the interface panel — the EXERCISE banner. Right half labeled "OPERATIONAL MODE" in blue (#2563EB) bold text, with a blue accent bar. Both sides show identical interface panels: a DAO governance vote display with proposal text, vote counts, and authority tier indicator. The interface elements are pixel-for-pixel identical on both sides — same layout, same controls, same data fields. The only visual difference is the amber vs. blue accent bar and the mode label. Style: clean SaaS interface mockup, flat design, no gradients, sharp typography. Mood: disciplined parity — the message is that these are the same system. Aspect ratio: 16:9. Specific elements: amber (#F59E0B) EXERCISE banner prominently visible on training side, identical DAO governance controls on both sides, white backgrounds throughout, no dark panels. Avoid: dark themes, gritty aesthetics, visual complexity that obscures the parity message, any implication that training and operational modes differ in capability.
+
+### Diagram Spec
+No diagram — the Image Prompt is the primary visual for this slide.
+
+### Speaking Script
+"Train as you fight" is not a slogan. It is a reliability requirement. Governance procedures that are practiced inconsistently in training will fail inconsistently under operational stress — precisely when they are most needed.
+
+BASTION enforces training-operational parity through a single design decision: training mode and operational mode share the same smart contracts. There is no "training version" of the DAO governance logic. There is no relaxed authority tier enforcement in exercise. The only difference between TRAINING and OPERATIONAL mode is a banner — an amber EXERCISE label that makes the mode explicit — and data isolation that ensures exercise data does not contaminate the operational record.
+
+Why does this matter? Because procedural muscle memory is built through repetition against the actual system. If trainees learn to approve an authority delegation through a simplified training interface, they have not learned to use BASTION. They have learned to use a training version of BASTION. When they encounter the real system under operational conditions — time pressure, incomplete information, command authority ambiguity — they will encounter the governance controls for the first time under the worst possible circumstances.
+
+BASTION eliminates that gap. The planning officer who approves a robot authority delegation in a JRTC exercise is executing the same smart contract call they would execute in actual operations. The DAO vote they participate in uses the same on-chain governance mechanism. The DID they authenticate with follows the same cryptographic verification path.
+
+Training in BASTION is not simulation. It is rehearsal on the live system.
+
+### DEMO CUE
+Second screen: If BASTION is in training mode, point to the amber EXERCISE banner — it should be visible at the top of the interface. Demonstrate that governance controls (DAO proposals, authority delegation, planning tabs) are identical to what they would be in operational mode. If in operational mode, describe the training mode behavior: "In exercise mode, everything you see here looks the same — with an amber banner across the top confirming the mode."
+
+### Transition
+Advance to Slide 17 — the zero trust architecture that verifies every action in both training and operational contexts.
+
+---
+
+## Slide 17: Verifiable Zero Trust
+
+### Purpose
+Show BASTION's five-layer verification model and the four questions it answers. This is the architectural philosophy slide — not a capability demonstration, but a framework claim. The argument: zero trust in BASTION means mathematical verification, not written policy.
+
+### Visual Layout
+Title "Verifiable Zero Trust" at top. Left two-thirds: the five-layer concentric ring diagram (see Diagram Spec). Right one-third: four question callouts in a vertical stack, each as a numbered question:
+1. Is this data authentic?
+2. Is this device trusted?
+3. Is this operator authorized?
+4. Is this action within bounds?
+
+Below the questions: a single declarative statement — "Trust terminates at math, not policy."
+
+### Image Prompt
+No AI image — see Diagram Spec.
+
+### Diagram Spec
+Five concentric rings, outermost to innermost, on a white background:
+
+**Ring 5 (outermost) — "AI Advisory":** Thin ring in sky blue (#0EA5E9). Label: "AI Advisory — Flags anomalies, recommends actions, monitors compliance."
+
+**Ring 4 — "DAO Governance":** Ring in blue (#2563EB). Label: "DAO Governance — Human decision gates on high-authority actions."
+
+**Ring 3 — "Smart Contract Policy":** Ring in cyan (#06B6D4). Label: "Smart Contract Policy — Encoded rules, immutable enforcement, automatic check."
+
+**Ring 2 — "Blockchain Proof":** Ring in dark blue (#1E3A8A). Label: "Blockchain Proof — Tamper-evident ledger, audit trail, independent verifiability."
+
+**Ring 1 (innermost ring, not center) — "TEE Attestation":** Ring in slate (#475569). Label: "TEE Attestation — Hardware root of trust, device identity verified."
+
+**Center circle — "Verified Action":** Small circle in blue (#2563EB). Label: "Verified Action" in white text.
+
+Ring labels positioned outside each ring, connected by thin leader lines. Overall diagram is clean and minimal — white background, no shadows, flat design. Approximate diameter of full diagram: two-thirds of slide width.
+
+### Speaking Script
+Zero trust is a term that has been adopted so broadly it has nearly lost meaning. In most contexts, "zero trust architecture" means: we wrote a policy that says we do not trust anything, and we have a product that implements that policy through software controls. The trust is still ultimately in the software vendor, the policy author, and the humans who configure and audit the system.
+
+BASTION's zero trust architecture makes a different claim. Trust terminates at mathematics.
+
+The architecture answers four questions for every action in the system. Is this data authentic? The document arrived through the knowledge graph pipeline, and its provenance is recorded on-chain. Is this device trusted? The robot bridge agent holds a NEAR wallet — a cryptographic identity — that was registered on the blockchain when the device was enrolled. A device that cannot prove that identity cannot participate in the mission. Is this operator authorized? Authorization is checked against the DAO's current authority delegation state — on-chain, auditable, not subject to manual override without a governance event. Is this action within bounds? The smart contract's `check_employment_authorized()` function verifies five fields before permitting any resource employment.
+
+These four questions are answered by five verification layers, from the inside out. At the hardware level: TEE attestation — Trusted Execution Environment, a hardware-isolated computation environment that can prove to external parties that code ran without tampering. Then blockchain proof: the tamper-evident ledger that records every governance event and cannot be retroactively modified. Smart contract policy: the encoded rules that execute automatically, without human intervention, every time an action is attempted. DAO governance: the human decision gate for high-authority actions. And AI advisory: the outer layer that monitors for anomalies and flags compliance concerns.
+
+The innermost layer is hardware. The outermost is human judgment. Both are required. Neither alone is sufficient.
+
+### DEMO CUE
+No demo cue for this slide — this is architectural philosophy. Second screen can display any BASTION tab. Consider leaving the COP tab visible from the previous slide to maintain visual continuity with the live system while the philosophical framework is presented.
+
+### Transition
+Advance to Slide 18 — the full architecture synthesis diagram that brings all components together.
+
+---
+
+## Slide 18: Full Architecture Synthesis
+
+### Purpose
+Bookend with Slide 6. The audience first encountered a simplified eight-component architecture overview when they had no context for what each piece did. They have now spent twelve slides learning what each component does and why it matters. This slide presents the complete, detailed architecture — the reward for having followed the argument. It is also the moment to highlight Phase 57: Ironclaw's persistent memory graph, the feature that makes the AI Chief of Staff adaptive rather than merely responsive.
+
+### Visual Layout
+Title "Full Architecture Synthesis" at top. Subtitle in smaller text: "Every component you have encountered — operating together." Main content: the comprehensive architecture diagram (see Diagram Spec). Bottom right annotation: "Phase 57 — Ironclaw Persistent Memory: the learning element." No body text on slide — the diagram carries the content. Speaker delivers script from memory.
+
+### Image Prompt
+No AI image — see Diagram Spec.
+
+### Diagram Spec
+Comprehensive architecture diagram, landscape orientation. All major components represented as labeled rectangles. Data flow arrows connecting components. Color coding as specified.
+
+**Core components (blue, #2563EB):**
+- "Knowledge Graph" — top-left quadrant. Sub-label: "Entity-relationship storage / OSINT + documents / NATO confidence ratings"
+- "Agent Hub" — top-center. Sub-label: "131+ agents / LangGraph orchestrator / 19 AI roles / 31 JPP staff roles"
+- "Planning Workflow" — top-right. Sub-label: "6 tabs: Understand / Design / Plan / Direct / COP / Assess / JP 5-0 aligned"
+
+**Blockchain components (cyan, #06B6D4):**
+- "Smart Contracts" — middle-left. Sub-label: "check_employment_authorized() / Policy enforcement / Immutable audit"
+- "DAO Tiers" — middle-center. Sub-label: "5 authority levels / Coalition-compatible / Human decision gates"
+- "DID Registry" — middle-right. Sub-label: "did:near:resource-{uuid} / ResourceCaveats on-chain / Coalition caveats"
+
+**Execution components (sky blue, #0EA5E9):**
+- "Robot Bridge" — bottom-left. Sub-label: "Docker / Python agent / NEAR wallet / DDIL-resilient"
+- "Edge Robots" — bottom-far-left. Sub-label: "Jetson vision / Sphero RVR+ / 6 doctrinal formations"
+- "COP Engine" — bottom-right. Sub-label: "MIL-STD-2525D / Perspective toggle / Phase slider"
+
+**Special component (highlighted with amber, #F59E0B border):**
+- "Ironclaw — AI Chief of Staff" — overlaid as a spanning banner across the top of the Agent Hub and Planning Workflow components. Sub-label: "Persistent Memory Graph (Phase 57) — adaptive relationship accumulation across interactions." The amber border distinguishes Ironclaw from the standard blue components. An annotation arrow from the "Persistent Memory Graph" label points to the Knowledge Graph, showing the memory graph as a specialized subgraph of the knowledge layer.
+
+**Data flow arrows (light gray, thin lines):**
+- Knowledge Graph ↔ Agent Hub (bidirectional)
+- Agent Hub ↔ Planning Workflow (bidirectional)
+- Agent Hub → Smart Contracts (unidirectional: agent initiates policy checks)
+- Smart Contracts ↔ DAO Tiers (bidirectional: contract enforces, DAO governs)
+- DAO Tiers ↔ DID Registry (bidirectional: identity informs authorization)
+- Agent Hub → Robot Bridge (unidirectional: orders flow down)
+- Robot Bridge ↔ Edge Robots (bidirectional: command and telemetry)
+- Knowledge Graph → COP Engine (unidirectional: data drives display)
+- DID Registry → Smart Contracts (unidirectional: identity feeds enforcement)
+
+**Background:** White (#FFFFFF). Grid lines in very light gray (#F1F5F9) for visual alignment reference.
+
+### Speaking Script
+This is the same diagram you saw on Slide 6 — except now you know what each piece does.
+
+When you saw this architecture overview forty minutes ago, the labels were familiar: AI, blockchain, robots. But the relationships were opaque. Why does the Agent Hub connect to the DAO tier? Why does the DID Registry feed the smart contract? Why is there a bridge between cloud and edge? Those questions have answers now.
+
+What I want to draw your attention to is the highlighted component: Ironclaw, the AI Chief of Staff. Ironclaw spans the Agent Hub and the Planning Workflow — it is present across every capability section we have covered. But in Phase 57, Ironclaw acquired something it previously lacked: persistent memory. Not session memory that resets when a conversation ends. A persistent graph of relationships — staff patterns, commander preferences, recurring intelligence themes, historical decision data — that accumulates across all interactions and persists in the knowledge graph.
+
+This is the difference between a capable assistant and an adaptive partner. Before Phase 57, Ironclaw could answer questions about the current planning session. After Phase 57, Ironclaw remembers that this commander consistently prioritizes logistic support lines over maneuver flexibility — because that pattern appeared in three previous planning sessions. It remembers that a specific intelligence source has historically overstated adversary air defense capability. It adapts its advisory posture based on what it has learned.
+
+The persistent memory graph is annotated here as a specialized subgraph within the Knowledge Graph layer — because that is architecturally what it is. It is the learning element of the system.
+
+Everything else on this diagram has been operational since Phase 43. The memory graph is what makes BASTION more than a tool. It is what makes BASTION a working relationship.
+
+### DEMO CUE
+Second screen: Show BASTION's full platform — any tab, as the architecture is running live. Consider the Understand tab or the Design tab to show the operational context. Point to the second screen: "This entire architecture is running on the screen next to me. Every component on this diagram has an active process on that machine." If Ironclaw's memory panel is accessible, briefly show the Memory tab in the Ironclaw drawer — the persistent graph entries — to ground the Phase 57 reference in a visible interface.
+
+### Transition
+Advance to Slide 19 — the closing reflection begins with an honest accounting of tradeoffs.
