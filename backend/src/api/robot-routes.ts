@@ -661,14 +661,12 @@ robotRouter.post('/scenarios/:sequenceId/stop', async (req, res) => {
   const state = autoOrch.getState(req.params.sequenceId);
 
   if (state) {
-    // Mark as complete to stop all intervals and polling
-    (state as unknown as Record<string, unknown>).phase = 'complete';
-    (state as unknown as Record<string, unknown>).phaseStartedAt = new Date().toISOString();
+    // ── Full orchestrator reset: kill timers, clear sequences/detections ──
+    autoOrch.resetAll();
 
-    // Send cancel to the leader robot — mission:cancel on the robot side
-    // now also stops all BLE followers (cancels their tasks + stops motors).
-    // We only need to reach the leader; followers are controlled through it.
     const svc = getRobotMissionService();
+
+    // Send cancel + stop to the leader robot (also stops BLE followers)
     const leader = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId);
     if (leader?.ws && leader.ws.readyState === 1) {
       try {
@@ -676,11 +674,20 @@ robotRouter.post('/scenarios/:sequenceId/stop', async (req, res) => {
         leader.ws.send(JSON.stringify({ type: 'robot:manual_stop', robot_id: state.config.leaderId }));
         console.log(`[robot-routes] stop: sent cancel+stop to leader ${state.config.leaderId}`);
       } catch { /* non-fatal */ }
-    } else {
-      console.warn(`[robot-routes] stop: leader ${state.config.leaderId} not connected (ws state: ${leader?.ws?.readyState})`);
     }
 
-    // Reset all robot positions back to home base on the COP
+    // ── Reset ALL simulation sessions that are running ──
+    // This ensures the sim tick loop also has robots at home base with no
+    // pending waypoints — prevents the sim from overwriting the reset positions.
+    const allSims = listSimulations();
+    for (const sim of allSims) {
+      if (sim.running) {
+        resetSimulation(sim.id);
+        console.log(`[robot-routes] stop: reset sim session ${sim.id.slice(0, 8)}`);
+      }
+    }
+
+    // ── Reset backend telemetry for ALL robots to home base ──
     const homeBase = state.config.homeBase;
     const allRobots = [state.config.leaderId, ...state.config.followerIds];
     for (const robotId of allRobots) {
@@ -689,6 +696,15 @@ robotRouter.post('/scenarios/:sequenceId/stop', async (req, res) => {
         robot.latest_telemetry = { position: { ...homeBase }, heading: 0, battery: 100 };
         robot.current_mission_id = undefined;
         svc.updateSimulatedTelemetry(robotId, homeBase, 0, 100);
+      }
+    }
+
+    // Also reset any connected robots not in this sequence (catch-all)
+    for (const robot of svc.getConnectedRobots()) {
+      if (!allRobots.includes(robot.robot_id)) {
+        robot.latest_telemetry = { position: { ...homeBase }, heading: 0, battery: 100 };
+        robot.current_mission_id = undefined;
+        svc.updateSimulatedTelemetry(robot.robot_id, homeBase, 0, 100);
       }
     }
 

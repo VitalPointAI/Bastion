@@ -153,6 +153,35 @@ class AutonomousMissionOrchestrator extends EventEmitter {
   /** Detection confirmation buffer — prevents false positives from triggering response */
   private _pendingDetections: Map<string, PendingDetection> = new Map();
 
+  /**
+   * Full reset: kill all timers, stop all sequences, clear pending detections.
+   * Called by both startAutonomousMission (fresh start) and the stop endpoint.
+   */
+  resetAll(): void {
+    const svc = getRobotMissionService();
+
+    // 1. Kill all active timers (gate polls, shadow mode, follower monitors, etc.)
+    for (const timer of this._activeTimers) {
+      clearInterval(timer);
+    }
+    this._activeTimers = [];
+    svc.clearGatePolls();
+
+    // 2. Stop all existing sequences
+    for (const [seqId, existing] of this.sequences) {
+      if (existing.phase !== 'complete') {
+        existing.phase = 'complete' as AutoPhase;
+        console.log(`[AutonomousOrchestrator] Stopped existing sequence ${seqId.slice(0, 8)}`);
+      }
+    }
+    this.sequences.clear();
+
+    // 3. Clear pending detection buffer
+    this._pendingDetections.clear();
+
+    console.log('[AutonomousOrchestrator] Full reset complete — all timers, sequences, detections cleared');
+  }
+
   async startAutonomousMission(
     overrides?: Partial<AutoConfig>,
   ): Promise<{ sequenceId: string; state: AutoState }> {
@@ -173,24 +202,8 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     }
 
     // ── FULL RESET: clean slate before new scenario ─────────────────────
+    this.resetAll();
     const svc = getRobotMissionService();
-
-    // 1. Kill all active timers (gate polls, shadow mode, follower monitors, etc.)
-    for (const timer of this._activeTimers) {
-      clearInterval(timer);
-    }
-    this._activeTimers = [];
-    // Also kill gate poll intervals tracked by the mission service
-    svc.clearGatePolls();
-
-    // 2. Stop all existing sequences
-    for (const [seqId, existing] of this.sequences) {
-      if (existing.phase !== 'complete') {
-        existing.phase = 'complete' as AutoPhase;
-        console.log(`[AutonomousOrchestrator] Stopped existing sequence ${seqId.slice(0, 8)}`);
-      }
-    }
-    this.sequences.clear();
 
     // 2. Send stop + reset to the leader robot (aborts missions, stops motors,
     //    resets position/heading/yaw for alpha AND all BLE followers)
