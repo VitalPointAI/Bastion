@@ -516,6 +516,81 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
             </button>
           )}
 
+          {/* Manual trigger: Tank in Kill Zone — forces first engagement */}
+          {sequenceId && missionType === 'autonomous' && (
+            ['positioning', 'plan_submitted', 'engage_blocked', 'authorize'].includes(phase)
+          ) && (
+            <button
+              onClick={async () => {
+                try {
+                  await fetch(`/api/robot/scenarios/${sequenceId}/force-killzone`, {
+                    method: 'POST',
+                  });
+                } catch { /* silent */ }
+              }}
+              style={{
+                width: '100%', padding: '6px 8px', borderRadius: '4px',
+                border: '1px solid rgba(251, 146, 60, 0.5)',
+                backgroundColor: 'rgba(251, 146, 60, 0.15)',
+                color: '#fdba74', fontSize: '0.5625rem', fontWeight: 600,
+                cursor: 'pointer', textTransform: 'uppercase' as const,
+                letterSpacing: '0.3px', marginBottom: '6px',
+              }}
+            >
+              Tank in Kill Zone — Engage
+            </button>
+          )}
+
+          {/* Manual trigger: First Target Destroyed */}
+          {sequenceId && missionType === 'autonomous' && phase === 'engage' && (
+            <button
+              onClick={async () => {
+                try {
+                  await fetch(`/api/robot/scenarios/${sequenceId}/force-destroyed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ which: 'first' }),
+                  });
+                } catch { /* silent */ }
+              }}
+              style={{
+                width: '100%', padding: '6px 8px', borderRadius: '4px',
+                border: '1px solid rgba(34, 197, 94, 0.5)',
+                backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                color: '#86efac', fontSize: '0.5625rem', fontWeight: 600,
+                cursor: 'pointer', textTransform: 'uppercase' as const,
+                letterSpacing: '0.3px', marginBottom: '6px',
+              }}
+            >
+              Confirm First Target Destroyed
+            </button>
+          )}
+
+          {/* Manual trigger: Second Target Destroyed */}
+          {sequenceId && missionType === 'autonomous' && phase === 'pincer_engage' && (
+            <button
+              onClick={async () => {
+                try {
+                  await fetch(`/api/robot/scenarios/${sequenceId}/force-destroyed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ which: 'second' }),
+                  });
+                } catch { /* silent */ }
+              }}
+              style={{
+                width: '100%', padding: '6px 8px', borderRadius: '4px',
+                border: '1px solid rgba(34, 197, 94, 0.5)',
+                backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                color: '#86efac', fontSize: '0.5625rem', fontWeight: 600,
+                cursor: 'pointer', textTransform: 'uppercase' as const,
+                letterSpacing: '0.3px', marginBottom: '6px',
+              }}
+            >
+              Confirm Second Target Destroyed
+            </button>
+          )}
+
           {/* Shadow mode: Return to Base button */}
           {isShadow && (
             <button

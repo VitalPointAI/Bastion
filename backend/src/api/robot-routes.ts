@@ -805,6 +805,44 @@ robotRouter.post('/scenarios/:sequenceId/force-detect', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /scenarios/:sequenceId/force-killzone — Manual kill zone entry trigger
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/:sequenceId/force-killzone', async (req, res) => {
+  const orchestrator = getAutonomousOrchestrator();
+  const success = await orchestrator.forceKillZoneEntry(req.params.sequenceId);
+
+  if (!success) {
+    res.status(404).json({ error: 'Sequence not found or not in correct phase' });
+    return;
+  }
+
+  res.json({ status: 'killzone_entry_forced' });
+});
+
+// ---------------------------------------------------------------------------
+// POST /scenarios/:sequenceId/force-destroyed — Manual target destroyed trigger
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/:sequenceId/force-destroyed', async (req, res) => {
+  const which = req.body?.which as 'first' | 'second' | undefined;
+  if (!which || !['first', 'second'].includes(which)) {
+    res.status(400).json({ error: 'Body must include { which: "first" | "second" }' });
+    return;
+  }
+
+  const orchestrator = getAutonomousOrchestrator();
+  const success = await orchestrator.forceTargetDestroyed(req.params.sequenceId, which);
+
+  if (!success) {
+    res.status(404).json({ error: 'Sequence not found or not in correct phase' });
+    return;
+  }
+
+  res.json({ status: 'target_destroyed_forced', which });
+});
+
+// ---------------------------------------------------------------------------
 // Simulation control endpoints
 // ---------------------------------------------------------------------------
 

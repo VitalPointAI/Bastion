@@ -399,41 +399,44 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         return false;
       }
 
-      // Place enemy tank at the expected first-engagement position
-      // Two tanks on Zhongxiao West Rd (y≈4.4): one on Chengde (3.4,4.4), one on Chongqing S (1.1,4.4)
-      const firstThreats: ThreatInfo[] = [
-        {
-          entityId: `MANUAL-armor-1-${Date.now()}`,
-          classDesc: 'T-99 MBT (manual)',
-          confidence: 0.90,
-          detectedAt: { x: 3.4, y: 4.4 },
-          estimatedHeading: 180,
-        },
-      ];
+      // Place enemy tank at the expected first-engagement position on Chengde/Zhongxiao
+      // Use a recognized class name so the symbology skill produces a valid SIDC
+      const threat: ThreatInfo = {
+        entityId: `MANUAL-armor-1-${Date.now()}`,
+        classDesc: 't-99',   // must match KNOWN_VEHICLES / THREAT_CLASS_MAP keys
+        confidence: 0.90,
+        detectedAt: { x: 3.4, y: 4.4 },
+        estimatedHeading: 180,
+      };
 
       this.logPhase(state, 'MANUAL DETECTION — Commander forcing first threat detection');
 
-      for (const threat of firstThreats) {
-        // Create COP symbol
-        this.createConfirmedCOPSymbol(state, threat).catch((e: unknown) =>
-          console.warn('[AutoMission] Manual COP symbol creation failed:', e),
-        );
-        // If still in recon, this triggers the full assess → plan flow
-        if (state.phase === 'recon') {
-          await this.handleThreatDetection(sequenceId, threat);
-        } else {
-          // Already past recon — record threat and trigger engagement flow directly
-          state.detectedThreats.push(threat);
-          const grid = roomToGridRef(threat.detectedAt.x, threat.detectedAt.y);
-          this.logPhase(state, `CONTACT: ${threat.classDesc} at grid ${grid} (manual)`);
-          this.publishUpdate(state);
+      // Create COP symbol — await to ensure it completes before proceeding
+      try {
+        await this.createConfirmedCOPSymbol(state, threat);
+      } catch (e: unknown) {
+        console.warn('[AutoMission] Manual COP symbol creation failed:', e);
+      }
 
-          // If followers are in position, trigger engagement
-          if (state.phase === 'positioning' || state.phase === 'plan_submitted') {
-            this.logPhase(state, 'Threat confirmed — requesting lethal authorization');
-            this.publishUpdate(state);
-            await this.attemptEngagement(sequenceId);
-          }
+      // If still in recon, this triggers the full assess → plan flow
+      if (state.phase === 'recon') {
+        await this.handleThreatDetection(sequenceId, threat);
+      } else {
+        // Already past recon — record threat and trigger engagement flow directly
+        state.detectedThreats.push(threat);
+        const grid = roomToGridRef(threat.detectedAt.x, threat.detectedAt.y);
+        this.logPhase(state, `CONTACT: T-99 MBT at grid ${grid} (manual detection)`);
+
+        // Reorient alpha toward the detected threat
+        await this.reorientAlphaToward(state, threat.detectedAt);
+
+        this.publishUpdate(state);
+
+        // If followers are in position, trigger engagement
+        if (state.phase === 'positioning' || state.phase === 'plan_submitted') {
+          this.logPhase(state, 'Threat confirmed — requesting lethal authorization');
+          this.publishUpdate(state);
+          await this.attemptEngagement(sequenceId);
         }
       }
       return true;
@@ -456,6 +459,131 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     }
 
     return false;
+  }
+
+  /**
+   * Commander manually triggers "tank in kill zone" — forces first engagement
+   * when the simulated/real enemy approach hasn't been detected entering the zone.
+   * Valid during: positioning (followers set, waiting for enemy approach) or authorize.
+   */
+  async forceKillZoneEntry(sequenceId: string): Promise<boolean> {
+    const state = this.sequences.get(sequenceId);
+    if (!state) return false;
+
+    if (!['positioning', 'plan_submitted', 'engage_blocked', 'authorize'].includes(state.phase)) {
+      this.logPhase(state, `Kill zone trigger ignored — not in pre-engagement phase (current: ${state.phase})`);
+      this.publishUpdate(state);
+      return false;
+    }
+
+    this.logPhase(state, 'MANUAL TRIGGER — Commander confirms enemy in kill zone');
+
+    // If we don't have threats yet, create one
+    if (state.detectedThreats.length === 0) {
+      const threat: ThreatInfo = {
+        entityId: `MANUAL-kz-${Date.now()}`,
+        classDesc: 't-99',
+        confidence: 0.90,
+        detectedAt: { x: 3.4, y: 4.4 },
+        estimatedHeading: 180,
+      };
+      state.detectedThreats.push(threat);
+      try {
+        await this.createConfirmedCOPSymbol(state, threat);
+      } catch { /* non-fatal */ }
+    }
+
+    // If lethal already authorized, jump straight to engagement
+    const isLethalAuthorized = (state as unknown as { lethalAuthorized?: boolean }).lethalAuthorized;
+    if (isLethalAuthorized || state.phase === 'authorize') {
+      // If still waiting for gate approval, auto-approve the lethal gate
+      if (state.lethalGateId && state.phase === 'authorize') {
+        try {
+          await gateService.approveGate(state.lethalGateId, 'commander-manual-override');
+        } catch { /* gate may already be resolved */ }
+      }
+      this.logPhase(state, 'ENEMY IN KILL ZONE — ENGAGING');
+      this.publishUpdate(state);
+      await this.executeEngagement(sequenceId);
+    } else {
+      // Need lethal auth first — trigger the request
+      this.logPhase(state, 'Enemy confirmed in kill zone — requesting lethal authorization');
+      this.publishUpdate(state);
+      await this.attemptEngagement(sequenceId);
+    }
+
+    return true;
+  }
+
+  /**
+   * Commander manually confirms target destroyed. Advances mission past
+   * engagement → BDA. Works for both first and second engagement.
+   *
+   * which = 'first': forces BDA after first engagement (engage phase)
+   * which = 'second': forces BDA after pincer engagement (pincer_engage phase)
+   */
+  async forceTargetDestroyed(sequenceId: string, which: 'first' | 'second'): Promise<boolean> {
+    const state = this.sequences.get(sequenceId);
+    if (!state) return false;
+
+    if (which === 'first') {
+      if (state.phase !== 'engage') {
+        this.logPhase(state, `Target destroyed (1st) ignored — not in engage phase (current: ${state.phase})`);
+        this.publishUpdate(state);
+        return false;
+      }
+      this.logPhase(state, 'MANUAL CONFIRM — Commander confirms first target DESTROYED');
+      this.publishUpdate(state);
+      await this.executeBDA(sequenceId);
+      return true;
+    }
+
+    if (which === 'second') {
+      if (state.phase !== 'pincer_engage') {
+        this.logPhase(state, `Target destroyed (2nd) ignored — not in pincer engage phase (current: ${state.phase})`);
+        this.publishUpdate(state);
+        return false;
+      }
+      this.logPhase(state, 'MANUAL CONFIRM — Commander confirms second target DESTROYED');
+      this.publishUpdate(state);
+      await this.executeSecondBDA(sequenceId);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Reorient alpha's camera toward a target position.
+   * Dispatches a face_target overwatch command to the leader robot.
+   */
+  private async reorientAlphaToward(state: AutoState, targetPos: { x: number; y: number }): Promise<void> {
+    const svc = getRobotMissionService();
+    const leader = svc.getConnectedRobots().find((r) => r.robot_id === state.config.leaderId);
+    const leaderPos = leader?.latest_telemetry?.position
+      ?? state.config.observationPost?.position
+      ?? state.config.homeBase;
+
+    const missionId = randomUUID();
+    state.missions['reorient_alpha'] = missionId;
+
+    await svc.dispatchMission({
+      mission_id: missionId,
+      robot_id: state.config.leaderId,
+      command: 'overwatch',
+      params: {
+        target_location: leaderPos,
+        speed: 60,
+        face_target: targetPos,
+        autonomy_policy: { max_speed: 255, restricted_actions: [] },
+      },
+      issued_by: state.config.issuedBy,
+      timestamp: new Date().toISOString(),
+      problem_set_id: state.config.problemSetId,
+    });
+
+    const grid = roomToGridRef(targetPos.x, targetPos.y);
+    this.logPhase(state, `Alpha reorienting camera toward grid ${grid}`);
   }
 
   listSequences(): AutoState[] {
@@ -696,6 +824,10 @@ class AutonomousMissionOrchestrator extends EventEmitter {
 
       const threatGrid = roomToGridRef(threat.detectedAt.x, threat.detectedAt.y);
       this.logPhase(state, `VISUAL CONFIRMATION: ${threat.classDesc} at grid ${threatGrid} — matches intelligence`);
+
+      // Reorient alpha toward the confirmed threat
+      this.reorientAlphaToward(state, threat.detectedAt).catch(() => { /* non-fatal */ });
+
       this.logPhase(state, 'Kill zone is set, followers in position — requesting lethal authorization');
       this.publishUpdate(state);
       await this.attemptEngagement(seqId);
@@ -1640,7 +1772,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     // Record second threat
     const threat2: ThreatInfo = {
       entityId: `DET-armor-2-${Date.now()}`,
-      classDesc: 'Enemy armor (second contact)',
+      classDesc: 't-99',   // must match KNOWN_VEHICLES for valid SIDC
       confidence: 0.85,
       detectedAt: { ...target },
     };
