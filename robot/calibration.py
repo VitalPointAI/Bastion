@@ -68,7 +68,7 @@ class CalibrationProfile:
 # Demo location: Taipei, Taiwan (Zhongzheng District) — aligns with COP map
 # Must match backend/frontend calibration: CAL_SOUTH/NORTH/WEST/EAST
 _COP_SOUTH = 25.0420
-_COP_NORTH = 25.0480
+_COP_NORTH = 25.0540  # Extended north for 5m×10m room (was 25.0480 for 5×5)
 _COP_WEST = 121.5120
 _COP_EAST = 121.5180
 
@@ -76,7 +76,7 @@ DEFAULT_PROFILES: Dict[str, CalibrationProfile] = {
     "default": CalibrationProfile(
         name="default",
         room_width=5.0,
-        room_height=5.0,
+        room_height=10.0,  # Extended from 5m to 10m deep
         map_bounds=MapBounds(
             minLat=_COP_SOUTH,
             maxLat=_COP_NORTH,

@@ -8,8 +8,8 @@
  *
  * The operational area (Taipei Zhongzheng District) is calibrated as:
  *   Room (0,0) → (25.0420°N, 121.5120°E)
- *   Room (5,5) → (25.0480°N, 121.5180°E)
- *   Room unit ≈ 130m on the ground
+ *   Room (5,10) → (25.0540°N, 121.5180°E)
+ *   Room: 5m wide × 10m deep, 1 room unit ≈ 130m on the ground
  *
  * MGRS zone: 51R (Taiwan)
  *
@@ -30,18 +30,22 @@ const { forward, toPoint } = mgrs;
 // Calibration constants
 // ---------------------------------------------------------------------------
 
-/** Room coordinate system: 5m × 5m physical room */
+/** Room coordinate system: 5m wide × 10m deep physical room */
 const ROOM_W = 5;
-const ROOM_H = 5;
+const ROOM_H = 10;
 
-/** Geographic bounds of the operational area */
+/** Geographic bounds of the operational area
+ *  Original 5×5 room: south=25.0420, north=25.0480 (0.006° lat range)
+ *  Extended to 5×10: north pushed to 25.0540 (0.012° lat range, double)
+ *  The first 5m (y=0-5) maps to the original AO; the second 5m (y=5-10)
+ *  extends the battlespace north for the second engagement. */
 const CAL_SOUTH = 25.0420;
-const CAL_NORTH = 25.0480;
+const CAL_NORTH = 25.0540;
 const CAL_WEST = 121.5120;
 const CAL_EAST = 121.5180;
 
 /** Derived scale factors */
-const LAT_RANGE = CAL_NORTH - CAL_SOUTH; // 0.006°
+const LAT_RANGE = CAL_NORTH - CAL_SOUTH; // 0.012°
 const LNG_RANGE = CAL_EAST - CAL_WEST;   // 0.006°
 
 // ---------------------------------------------------------------------------

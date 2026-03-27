@@ -16,7 +16,9 @@ type Phase =
   | 'idle' | 'hold' | 'recon' | 'contact' | 'overwatch' | 'advance' | 'set'
   | 'authorize' | 'engage' | 'bda' | 'withdraw' | 'complete'
   // Autonomous-only phases
-  | 'assess' | 'plan_submitted' | 'positioning' | 'engage_blocked' | 'shadow';
+  | 'assess' | 'plan_submitted' | 'positioning' | 'engage_blocked' | 'shadow'
+  // Second engagement phases
+  | 'attack_2' | 'wedge_advance' | 'suppress_flank' | 'pincer_engage' | 'bda_2' | 'rtb';
 
 type MissionType = 'scripted' | 'autonomous';
 
@@ -61,6 +63,12 @@ const PHASE_CONFIG: Record<Phase, { color: string; bg: string; label: string }> 
   bda:             { color: '#a855f7', bg: 'rgba(168,85,247,0.15)',  label: 'BDA' },
   shadow:          { color: '#64748b', bg: 'rgba(100,116,139,0.2)',  label: 'SHADOW' },
   withdraw:        { color: '#6366f1', bg: 'rgba(99,102,241,0.15)',  label: 'WITHDRAW' },
+  attack_2:        { color: '#f43f5e', bg: 'rgba(244,63,94,0.15)',   label: 'ATTACK 2' },
+  wedge_advance:   { color: '#fb923c', bg: 'rgba(251,146,60,0.15)',  label: 'WEDGE ADVANCE' },
+  suppress_flank:  { color: '#ef4444', bg: 'rgba(239,68,68,0.2)',    label: 'SUPPRESS/FLANK' },
+  pincer_engage:   { color: '#dc2626', bg: 'rgba(220,38,38,0.25)',   label: 'PINCER ENGAGE' },
+  bda_2:           { color: '#a855f7', bg: 'rgba(168,85,247,0.15)',  label: 'BDA 2' },
+  rtb:             { color: '#2563eb', bg: 'rgba(37,99,235,0.15)',   label: 'RTB' },
   complete:        { color: '#22c55e', bg: 'rgba(34,197,94,0.15)',   label: 'COMPLETE' },
 };
 
@@ -458,6 +466,56 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
             </div>
           )}
 
+          {/* Manual Detection buttons — shown when alpha may fail to detect */}
+          {sequenceId && missionType === 'autonomous' && (
+            ['recon', 'assess', 'plan_submitted', 'positioning'].includes(phase)
+          ) && (
+            <button
+              onClick={async () => {
+                try {
+                  await fetch(`/api/robot/scenarios/${sequenceId}/force-detect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ which: 'first' }),
+                  });
+                } catch { /* silent */ }
+              }}
+              style={{
+                width: '100%', padding: '6px 8px', borderRadius: '4px',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                color: '#fca5a5', fontSize: '0.5625rem', fontWeight: 600,
+                cursor: 'pointer', textTransform: 'uppercase' as const,
+                letterSpacing: '0.3px', marginBottom: '6px',
+              }}
+            >
+              Force Detection — First Tank
+            </button>
+          )}
+          {sequenceId && missionType === 'autonomous' && phase === 'wedge_advance' && (
+            <button
+              onClick={async () => {
+                try {
+                  await fetch(`/api/robot/scenarios/${sequenceId}/force-detect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ which: 'second' }),
+                  });
+                } catch { /* silent */ }
+              }}
+              style={{
+                width: '100%', padding: '6px 8px', borderRadius: '4px',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                color: '#fca5a5', fontSize: '0.5625rem', fontWeight: 600,
+                cursor: 'pointer', textTransform: 'uppercase' as const,
+                letterSpacing: '0.3px', marginBottom: '6px',
+              }}
+            >
+              Force Detection — Second Tank
+            </button>
+          )}
+
           {/* Shadow mode: Return to Base button */}
           {isShadow && (
             <button
@@ -525,7 +583,8 @@ const SCRIPTED_PHASES: Phase[] = [
 ];
 
 const AUTO_PHASES: Phase[] = [
-  'recon', 'assess', 'plan_submitted', 'positioning', 'engage_blocked', 'authorize', 'engage', 'bda', 'withdraw', 'complete',
+  'recon', 'assess', 'plan_submitted', 'positioning', 'engage_blocked', 'authorize', 'engage', 'bda', 'withdraw',
+  'attack_2', 'wedge_advance', 'suppress_flank', 'pincer_engage', 'bda_2', 'rtb', 'complete',
 ];
 
 function PhaseProgressBar({ phase, missionType }: { phase: Phase; missionType: MissionType }) {

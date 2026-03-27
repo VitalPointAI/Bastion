@@ -26,12 +26,12 @@ interface AOCalibration {
   east: number;
 }
 
-/** Default: Taipei Zhongzheng District */
+/** Default: Taipei Zhongzheng District (5m wide × 10m deep room) */
 const DEFAULT_CALIBRATION: AOCalibration = {
   roomW: 5,
-  roomH: 5,
+  roomH: 10,
   south: 25.0420,
-  north: 25.0480,
+  north: 25.0540,
   west: 121.5120,
   east: 121.5180,
 };

@@ -30,9 +30,9 @@ interface COPGateNotificationsProps {
 
 // ─── Calibration (must match calibration-profiles.json) ─────────────────────
 
-const CAL_SOUTH = 25.0420, CAL_NORTH = 25.0480;
+const CAL_SOUTH = 25.0420, CAL_NORTH = 25.0540;
 const CAL_WEST = 121.5120, CAL_EAST = 121.5180;
-const CAL_ROOM_W = 5, CAL_ROOM_H = 5;
+const CAL_ROOM_W = 5, CAL_ROOM_H = 10;
 
 function roomToLatLng(x: number, y: number): [number, number] {
   return [

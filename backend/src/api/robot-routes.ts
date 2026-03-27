@@ -36,8 +36,8 @@ function loadProfiles(): Record<string, CalibrationProfile> {
     const defaults: Record<string, CalibrationProfile> = {
       default: {
         room_width: 5,
-        room_height: 5,
-        map_bounds: { north: 25.0480, south: 25.0420, east: 121.5180, west: 121.5120 },
+        room_height: 10,
+        map_bounds: { north: 25.0540, south: 25.0420, east: 121.5180, west: 121.5120 },
       },
     };
     if (!existsSync(CALIBRATION_DIR)) mkdirSync(CALIBRATION_DIR, { recursive: true });
@@ -780,6 +780,28 @@ robotRouter.post('/scenarios/:sequenceId/return-to-base', async (req, res) => {
   }
 
   res.json({ status: 'withdrawal_ordered' });
+});
+
+// ---------------------------------------------------------------------------
+// POST /scenarios/:sequenceId/force-detect — Manual threat detection override
+// ---------------------------------------------------------------------------
+
+robotRouter.post('/scenarios/:sequenceId/force-detect', async (req, res) => {
+  const which = req.body?.which as 'first' | 'second' | undefined;
+  if (!which || !['first', 'second'].includes(which)) {
+    res.status(400).json({ error: 'Body must include { which: "first" | "second" }' });
+    return;
+  }
+
+  const orchestrator = getAutonomousOrchestrator();
+  const success = await orchestrator.forceDetection(req.params.sequenceId, which);
+
+  if (!success) {
+    res.status(404).json({ error: 'Sequence not found or not in correct phase for this detection' });
+    return;
+  }
+
+  res.json({ status: 'detection_forced', which });
 });
 
 // ---------------------------------------------------------------------------

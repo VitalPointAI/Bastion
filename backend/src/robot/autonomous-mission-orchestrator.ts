@@ -39,8 +39,14 @@ export type AutoPhase =
   | 'authorize'       // Urgent StrikeAuthorization DAO proposal submitted
   | 'engage'          // Approved: followers firing
   | 'bda'             // Battle damage assessment
-  | 'withdraw'        // All elements returning to base
+  | 'withdraw'        // All elements returning to base / consolidating
   | 'shadow'          // Denied: following enemy at distance
+  | 'attack_2'        // Second attack orders received — briefing
+  | 'wedge_advance'   // Wedge formation advance north toward second target
+  | 'suppress_flank'  // Alpha suppresses, bravo/charlie flanking east/west
+  | 'pincer_engage'   // Flankers engaging from east/west (pincer)
+  | 'bda_2'           // Second battle damage assessment
+  | 'rtb'             // Follower formation return to home base
   | 'complete';
 
 interface AutoConfig {
@@ -370,6 +376,86 @@ class AutonomousMissionOrchestrator extends EventEmitter {
 
   getState(sequenceId: string): AutoState | undefined {
     return this.sequences.get(sequenceId);
+  }
+
+  /**
+   * Commander manually forces a detection when alpha's camera fails to detect.
+   *
+   * Detection 1 ("first"): During OP/recon phases — simulates detecting the first
+   * tank(s) in the original AO (y≈4.4). Triggers the assess → plan → engage flow.
+   *
+   * Detection 2 ("second"): During wedge_advance — simulates detecting the second
+   * tank in the northern sector (y≈8.5). Triggers suppress/flank/pincer flow.
+   */
+  async forceDetection(sequenceId: string, which: 'first' | 'second'): Promise<boolean> {
+    const state = this.sequences.get(sequenceId);
+    if (!state) return false;
+
+    if (which === 'first') {
+      // Valid during recon, assess, plan_submitted, or positioning (before first engagement)
+      if (!['recon', 'assess', 'plan_submitted', 'positioning'].includes(state.phase)) {
+        this.logPhase(state, `Manual detection ignored — not in recon/pre-engagement phase (current: ${state.phase})`);
+        this.publishUpdate(state);
+        return false;
+      }
+
+      // Place enemy tank at the expected first-engagement position
+      // Two tanks on Zhongxiao West Rd (y≈4.4): one on Chengde (3.4,4.4), one on Chongqing S (1.1,4.4)
+      const firstThreats: ThreatInfo[] = [
+        {
+          entityId: `MANUAL-armor-1-${Date.now()}`,
+          classDesc: 'T-99 MBT (manual)',
+          confidence: 0.90,
+          detectedAt: { x: 3.4, y: 4.4 },
+          estimatedHeading: 180,
+        },
+      ];
+
+      this.logPhase(state, 'MANUAL DETECTION — Commander forcing first threat detection');
+
+      for (const threat of firstThreats) {
+        // Create COP symbol
+        this.createConfirmedCOPSymbol(state, threat).catch((e: unknown) =>
+          console.warn('[AutoMission] Manual COP symbol creation failed:', e),
+        );
+        // If still in recon, this triggers the full assess → plan flow
+        if (state.phase === 'recon') {
+          await this.handleThreatDetection(sequenceId, threat);
+        } else {
+          // Already past recon — record threat and trigger engagement flow directly
+          state.detectedThreats.push(threat);
+          const grid = roomToGridRef(threat.detectedAt.x, threat.detectedAt.y);
+          this.logPhase(state, `CONTACT: ${threat.classDesc} at grid ${grid} (manual)`);
+          this.publishUpdate(state);
+
+          // If followers are in position, trigger engagement
+          if (state.phase === 'positioning' || state.phase === 'plan_submitted') {
+            this.logPhase(state, 'Threat confirmed — requesting lethal authorization');
+            this.publishUpdate(state);
+            await this.attemptEngagement(sequenceId);
+          }
+        }
+      }
+      return true;
+    }
+
+    if (which === 'second') {
+      // Valid during wedge_advance
+      if (state.phase !== 'wedge_advance') {
+        this.logPhase(state, `Manual detection ignored — not in wedge advance phase (current: ${state.phase})`);
+        this.publishUpdate(state);
+        return false;
+      }
+
+      this.logPhase(state, 'MANUAL DETECTION — Commander forcing second threat detection');
+      this.publishUpdate(state);
+
+      // Directly trigger the contact → suppress/flank flow
+      await this.contactSecondTarget(sequenceId);
+      return true;
+    }
+
+    return false;
   }
 
   listSequences(): AutoState[] {
@@ -1349,10 +1435,639 @@ class AutonomousMissionOrchestrator extends EventEmitter {
 
       if (allConsolidated) {
         clearInterval(checkInterval);
+        const consolidationGrid = roomToGridRef(consolidationPoint.x, consolidationPoint.y);
+        this.logPhase(state, `CONSOLIDATED — All elements at grid ${consolidationGrid}`);
+        this.publishUpdate(state);
+
+        // Chain into second attack phase after consolidation
+        setTimeout(() => this.issueSecondAttackOrders(state.id), 4000);
+      }
+    }, 2000);
+    this._trackTimer(checkInterval);
+
+    setTimeout(() => clearInterval(checkInterval), 5 * 60 * 1000);
+  }
+
+  // ── SECOND ENGAGEMENT: Attack 2 → Wedge Advance → Pincer → BDA → RTB ──
+
+  /**
+   * Second target coordinates and engagement geometry.
+   *
+   * Room is 5m wide × 10m deep. First engagement is in y=0-5 (original AO).
+   * Second engagement takes place in y=5-10 (extended northern sector).
+   *
+   * After consolidation at the overwatch position, alpha receives orders
+   * to attack a second tank ~2km further north. The team already has resource
+   * authority (bravo/charlie) and lethal authorization from the first
+   * engagement — no new governance gates needed.
+   *
+   * Road grid (room coords, extended sector y=5-10):
+   *   N-S roads continue: Xiangyang x=1.4, Guanqian x=2.5, Chengde x=3.4
+   *   E-W roads (new sector): y=5.5, y=6.5, y=7.5, y=8.5, y=9.0
+   *
+   * Second target: enemy tank on Guanqian Rd at y≈8.5 (~2km north)
+   * Alpha suppress: stops south of target at y≈7.0, fires N
+   * Bravo east flank: Chengde at y≈8.5 (east of target), fires NW
+   * Charlie west flank: Xiangyang at y≈8.5 (west of target), fires NE
+   */
+  private static readonly SECOND_TARGET = { x: 2.5, y: 8.5 };
+  private static readonly ALPHA_SUPPRESS_POS = { x: 2.5, y: 7.0 };
+  private static readonly BRAVO_EAST_FLANK = { x: 3.4, y: 8.5 };
+  private static readonly CHARLIE_WEST_FLANK = { x: 1.4, y: 8.5 };
+
+  /**
+   * Phase: ATTACK_2 — Alpha receives orders for second target.
+   * Authority to use bravo/charlie and lethal auth carry forward.
+   */
+  private async issueSecondAttackOrders(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state) return;
+
+    state.phase = 'attack_2';
+    state.phaseStartedAt = new Date().toISOString();
+
+    const targetGrid = roomToGridRef(
+      AutonomousMissionOrchestrator.SECOND_TARGET.x,
+      AutonomousMissionOrchestrator.SECOND_TARGET.y,
+    );
+
+    this.logPhase(state, 'NEW ORDERS — Intelligence reports second enemy armor at grid ' + targetGrid);
+    this.logPhase(state, 'Alpha retains command authority over bravo and charlie');
+    this.logPhase(state, 'Lethal authorization remains in effect from previous engagement');
+    this.logPhase(state, 'Alpha orders: WEDGE formation — advance north to contact');
+    this.publishUpdate(state);
+
+    // Brief pause for orders to register, then begin wedge advance
+    setTimeout(() => this.beginWedgeAdvance(seqId), 4000);
+  }
+
+  /**
+   * Phase: WEDGE_ADVANCE — All three robots advance north in wedge formation.
+   * Alpha at apex (center-front), bravo right-rear, charlie left-rear.
+   * They advance along road routes until reaching the contact zone.
+   */
+  private async beginWedgeAdvance(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state || state.phase !== 'attack_2') return;
+
+    state.phase = 'wedge_advance';
+    state.phaseStartedAt = new Date().toISOString();
+
+    const svc = getRobotMissionService();
+
+    this.logPhase(state, 'WEDGE ADVANCE — Formation: alpha at apex, bravo right, charlie left');
+    this.logPhase(state, 'Advancing north on Guanqian Road axis toward grid ' +
+      roomToGridRef(AutonomousMissionOrchestrator.SECOND_TARGET.x, AutonomousMissionOrchestrator.SECOND_TARGET.y));
+
+    // ── Alpha (apex/center) route: from consolidation north along Guanqian ──
+    // Consolidation is near overwatch (~2.1, 2.9). Route through first AO (y=0-5)
+    // then into the northern sector (y=5-10) to suppress position (2.5, 7.0)
+    const alphaRoute = [
+      { x: 2.5, y: 2.9 },   // E to Guanqian Rd
+      { x: 2.5, y: 4.4 },   // N on Guanqian to Zhongxiao West Rd
+      { x: 2.5, y: 5.5 },   // N into northern sector
+      { x: 2.5, y: 6.5 },   // N continuing on Guanqian axis
+      { x: 2.5, y: 7.0 },   // N to suppress position
+    ];
+
+    // ── Bravo (right-rear) route: offset right of alpha, slightly behind ──
+    // Route: from consolidation → E to Chengde Rd → N on Chengde
+    const bravoRoute = [
+      { x: 2.5, y: 2.9 },   // E to Guanqian Rd
+      { x: 3.4, y: 2.9 },   // E to Chengde Rd (right of alpha)
+      { x: 3.4, y: 4.4 },   // N on Chengde to Zhongxiao West Rd
+      { x: 3.4, y: 5.5 },   // N into northern sector
+      { x: 3.4, y: 6.5 },   // N on Chengde (right-rear of alpha at 7.0)
+    ];
+
+    // ── Charlie (left-rear) route: offset left of alpha, slightly behind ──
+    // Route: from consolidation → W to Xiangyang Rd → N on Xiangyang
+    const charlieRoute = [
+      { x: 2.1, y: 2.9 },   // At consolidation
+      { x: 1.4, y: 2.9 },   // W to Xiangyang Rd (left of alpha)
+      { x: 1.4, y: 4.4 },   // N on Xiangyang to Zhongxiao West Rd
+      { x: 1.4, y: 5.5 },   // N into northern sector
+      { x: 1.4, y: 6.5 },   // N on Xiangyang (left-rear of alpha at 7.0)
+    ];
+
+    const wedgeRoutes: Record<string, Array<{ x: number; y: number }>> = {
+      [state.config.leaderId]: alphaRoute,
+      [state.config.followerIds[0]]: bravoRoute,
+      [state.config.followerIds[1]]: charlieRoute,
+    };
+
+    const allRobots = [state.config.leaderId, ...state.config.followerIds];
+    const missionIds: string[] = [];
+
+    for (const robotId of allRobots) {
+      const route = wedgeRoutes[robotId] ?? alphaRoute;
+      const missionId = randomUUID();
+      state.missions[`wedge_${robotId}`] = missionId;
+      missionIds.push(missionId);
+
+      await svc.dispatchMission({
+        mission_id: missionId,
+        robot_id: robotId,
+        command: 'patrol_route',
+        params: {
+          waypoints: route,
+          speed: state.config.advanceSpeed,
+          face_target: AutonomousMissionOrchestrator.SECOND_TARGET, // face north toward target
+          autonomy_policy: { max_speed: 255, restricted_actions: [] },
+        },
+        issued_by: state.config.issuedBy,
+        timestamp: new Date().toISOString(),
+        problem_set_id: state.config.problemSetId,
+      });
+
+      const roleLabel = robotId === state.config.leaderId ? 'apex'
+        : robotId === state.config.followerIds[0] ? 'right-rear' : 'left-rear';
+      this.logPhase(state, `${robotId} advancing (${roleLabel}) — wedge formation`);
+    }
+
+    this.publishUpdate(state);
+
+    // Monitor wedge advance completion → contact with second target
+    this.monitorWedgeAdvance(seqId, missionIds);
+  }
+
+  /**
+   * Monitor wedge advance. When all robots reach their wedge positions,
+   * simulate "contact" with the second tank and transition to suppress/flank.
+   */
+  private monitorWedgeAdvance(seqId: string, _missionIds: string[]): void {
+    const checkInterval = setInterval(async () => {
+      const state = this.sequences.get(seqId);
+      if (!state || state.phase !== 'wedge_advance') {
+        clearInterval(checkInterval);
+        return;
+      }
+
+      const svc = getRobotMissionService();
+      const robots = svc.getConnectedRobots();
+      const allRobots = [state.config.leaderId, ...state.config.followerIds];
+
+      const allArrived = allRobots.every((rid) => {
+        const robot = robots.find((r) => r.robot_id === rid);
+        if (!robot) return false;
+        const missionId = state.missions[`wedge_${rid}`];
+        return robot.current_mission_id !== missionId;
+      });
+
+      // Also check timeout fallback
+      const elapsed = Date.now() - new Date(state.phaseStartedAt).getTime();
+      if (allArrived || elapsed > 60_000) {
+        clearInterval(checkInterval);
+        await this.contactSecondTarget(seqId);
+      }
+    }, 2000);
+    this._trackTimer(checkInterval);
+
+    setTimeout(() => clearInterval(checkInterval), 3 * 60 * 1000);
+  }
+
+  /**
+   * Contact with second target. Add COP symbol, then transition to
+   * suppress + flank pincer movement.
+   */
+  private async contactSecondTarget(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state || state.phase !== 'wedge_advance') return;
+
+    const target = AutonomousMissionOrchestrator.SECOND_TARGET;
+    const targetGrid = roomToGridRef(target.x, target.y);
+
+    // Record second threat
+    const threat2: ThreatInfo = {
+      entityId: `DET-armor-2-${Date.now()}`,
+      classDesc: 'Enemy armor (second contact)',
+      confidence: 0.85,
+      detectedAt: { ...target },
+    };
+    state.detectedThreats.push(threat2);
+
+    this.logPhase(state, `CONTACT — Second enemy armor detected at grid ${targetGrid}`);
+    this.logPhase(state, 'Alpha halting — laying suppressing fire north');
+    this.logPhase(state, 'Alpha orders: PINCER — bravo flank east, charlie flank west');
+
+    // Add COP symbol for second threat
+    this.createConfirmedCOPSymbol(state, threat2).catch((e: unknown) =>
+      console.warn('[AutoMission] Failed to create second threat COP symbol:', e),
+    );
+
+    this.publishUpdate(state);
+
+    // Transition to suppress/flank
+    setTimeout(() => this.executeSuppressAndFlank(seqId), 3000);
+  }
+
+  /**
+   * Phase: SUPPRESS_FLANK — Alpha holds position and suppresses.
+   * Bravo moves to east flank, charlie moves to west flank.
+   */
+  private async executeSuppressAndFlank(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state) return;
+
+    state.phase = 'suppress_flank';
+    state.phaseStartedAt = new Date().toISOString();
+
+    const svc = getRobotMissionService();
+    const target = AutonomousMissionOrchestrator.SECOND_TARGET;
+    const suppressPos = AutonomousMissionOrchestrator.ALPHA_SUPPRESS_POS;
+    const bravoFlank = AutonomousMissionOrchestrator.BRAVO_EAST_FLANK;
+    const charlieFlank = AutonomousMissionOrchestrator.CHARLIE_WEST_FLANK;
+
+    this.logPhase(state, `SUPPRESS — Alpha holding at grid ${roomToGridRef(suppressPos.x, suppressPos.y)}, suppressing fire north`);
+
+    // Alpha: overwatch/suppress at current position, facing north toward target
+    const alphaMissionId = randomUUID();
+    state.missions['suppress_alpha'] = alphaMissionId;
+
+    await svc.dispatchMission({
+      mission_id: alphaMissionId,
+      robot_id: state.config.leaderId,
+      command: 'overwatch',
+      params: {
+        target_location: suppressPos,
+        speed: 60,
+        face_target: target, // face north toward enemy
+        autonomy_policy: { max_speed: 255, restricted_actions: [] },
+      },
+      issued_by: state.config.issuedBy,
+      timestamp: new Date().toISOString(),
+      problem_set_id: state.config.problemSetId,
+    });
+
+    // Bravo: flank east → continue north on Chengde to east of target
+    // From current pos (~3.4, 6.5) → N on Chengde to east flank pos
+    const bravoFlankRoute = [
+      { x: 3.4, y: 7.5 },   // N on Chengde past alpha suppress pos
+      { x: 3.4, y: 8.5 },   // N to east flank position (level with target)
+    ];
+
+    const bravoMissionId = randomUUID();
+    state.missions['flank_bravo'] = bravoMissionId;
+
+    await svc.dispatchMission({
+      mission_id: bravoMissionId,
+      robot_id: state.config.followerIds[0],
+      command: 'patrol_route',
+      params: {
+        waypoints: bravoFlankRoute,
+        speed: state.config.advanceSpeed,
+        // Bravo fires NW — face northwest toward target area
+        face_target: { x: target.x - 0.5, y: target.y + 0.5 },
+        autonomy_policy: { max_speed: 255, restricted_actions: [] },
+      },
+      issued_by: state.config.issuedBy,
+      timestamp: new Date().toISOString(),
+      problem_set_id: state.config.problemSetId,
+    });
+
+    this.logPhase(state, `Bravo flanking EAST to grid ${roomToGridRef(bravoFlank.x, bravoFlank.y)} — will engage NW`);
+
+    // Charlie: flank west → continue north on Xiangyang to west of target
+    // From current pos (~1.4, 6.5) → N on Xiangyang to west flank pos
+    const charlieFlankRoute = [
+      { x: 1.4, y: 7.5 },   // N on Xiangyang past alpha suppress pos
+      { x: 1.4, y: 8.5 },   // N to west flank position (level with target)
+    ];
+
+    const charlieMissionId = randomUUID();
+    state.missions['flank_charlie'] = charlieMissionId;
+
+    await svc.dispatchMission({
+      mission_id: charlieMissionId,
+      robot_id: state.config.followerIds[1],
+      command: 'patrol_route',
+      params: {
+        waypoints: charlieFlankRoute,
+        speed: state.config.advanceSpeed,
+        // Charlie fires NE — face northeast toward target area
+        face_target: { x: target.x + 0.5, y: target.y + 0.5 },
+        autonomy_policy: { max_speed: 255, restricted_actions: [] },
+      },
+      issued_by: state.config.issuedBy,
+      timestamp: new Date().toISOString(),
+      problem_set_id: state.config.problemSetId,
+    });
+
+    this.logPhase(state, `Charlie flanking WEST to grid ${roomToGridRef(charlieFlank.x, charlieFlank.y)} — will engage NE`);
+    this.publishUpdate(state);
+
+    // Monitor flankers' arrival → pincer engagement
+    this.monitorFlankerArrival(seqId, [bravoMissionId, charlieMissionId]);
+  }
+
+  /**
+   * Monitor bravo and charlie reaching their flank positions.
+   */
+  private monitorFlankerArrival(seqId: string, _missionIds: string[]): void {
+    const checkInterval = setInterval(async () => {
+      const state = this.sequences.get(seqId);
+      if (!state || state.phase !== 'suppress_flank') {
+        clearInterval(checkInterval);
+        return;
+      }
+
+      const svc = getRobotMissionService();
+      const robots = svc.getConnectedRobots();
+
+      const allFlanked = state.config.followerIds.every((fid) => {
+        const robot = robots.find((r) => r.robot_id === fid);
+        if (!robot) return false;
+        const missionKey = fid === state.config.followerIds[0] ? 'flank_bravo' : 'flank_charlie';
+        const missionId = state.missions[missionKey];
+        return robot.current_mission_id !== missionId;
+      });
+
+      const elapsed = Date.now() - new Date(state.phaseStartedAt).getTime();
+      if (allFlanked || elapsed > 60_000) {
+        clearInterval(checkInterval);
+        await this.executePincerEngagement(seqId);
+      }
+    }, 2000);
+    this._trackTimer(checkInterval);
+
+    setTimeout(() => clearInterval(checkInterval), 3 * 60 * 1000);
+  }
+
+  /**
+   * Phase: PINCER_ENGAGE — Bravo and charlie engage from flanks.
+   * Bravo fires NW, charlie fires NE to prevent friendly fire.
+   * Alpha maintains suppressing fire from the south.
+   */
+  private async executePincerEngagement(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state || state.phase !== 'suppress_flank') return;
+
+    state.phase = 'pincer_engage';
+    state.phaseStartedAt = new Date().toISOString();
+
+    const svc = getRobotMissionService();
+    const bravoFlank = AutonomousMissionOrchestrator.BRAVO_EAST_FLANK;
+    const charlieFlank = AutonomousMissionOrchestrator.CHARLIE_WEST_FLANK;
+
+    this.logPhase(state, 'PINCER ENGAGE — Flankers in position, engaging target');
+    this.logPhase(state, `Bravo engaging from east (grid ${roomToGridRef(bravoFlank.x, bravoFlank.y)}) — firing NORTH-WEST`);
+    this.logPhase(state, `Charlie engaging from west (grid ${roomToGridRef(charlieFlank.x, charlieFlank.y)}) — firing NORTH-EAST`);
+    this.logPhase(state, 'Alpha maintaining suppressing fire from south — deconflicted fire corridors');
+
+    // Dispatch find_engage for bravo (east flank, fires NW)
+    const bravoEngageId = randomUUID();
+    state.missions['pincer_engage_bravo'] = bravoEngageId;
+    await svc.dispatchMission({
+      mission_id: bravoEngageId,
+      robot_id: state.config.followerIds[0],
+      command: 'find_engage',
+      params: {
+        target_location: bravoFlank,
+        speed: 60,
+        autonomy_policy: { max_speed: 255, restricted_actions: [] },
+      },
+      issued_by: state.config.issuedBy,
+      timestamp: new Date().toISOString(),
+      problem_set_id: state.config.problemSetId,
+    });
+
+    // Dispatch find_engage for charlie (west flank, fires NE)
+    const charlieEngageId = randomUUID();
+    state.missions['pincer_engage_charlie'] = charlieEngageId;
+    await svc.dispatchMission({
+      mission_id: charlieEngageId,
+      robot_id: state.config.followerIds[1],
+      command: 'find_engage',
+      params: {
+        target_location: charlieFlank,
+        speed: 60,
+        autonomy_policy: { max_speed: 255, restricted_actions: [] },
+      },
+      issued_by: state.config.issuedBy,
+      timestamp: new Date().toISOString(),
+      problem_set_id: state.config.problemSetId,
+    });
+
+    this.publishUpdate(state);
+
+    // Auto-approve engagement gates — lethal auth carries forward from first engagement
+    setTimeout(() => this.autoApprovePincerGates(seqId), 3000);
+  }
+
+  private async autoApprovePincerGates(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state || state.phase !== 'pincer_engage') return;
+
+    const svc = getRobotMissionService();
+
+    for (const followerId of state.config.followerIds) {
+      const missionKey = followerId === state.config.followerIds[0]
+        ? 'pincer_engage_bravo' : 'pincer_engage_charlie';
+      const missionId = state.missions[missionKey];
+      if (missionId) {
+        try {
+          await svc.handleGateResolution(missionId, true, 'strike-authorized-carry-forward');
+          this.logPhase(state, `Engagement authorized for ${followerId} (lethal auth carried forward)`);
+        } catch (err) {
+          this.logPhase(state, `Auto-approve failed for ${followerId}: ${err}`);
+        }
+      }
+    }
+
+    this.publishUpdate(state);
+
+    // After engagement effects, proceed to second BDA
+    setTimeout(() => this.executeSecondBDA(seqId), 8000);
+  }
+
+  /**
+   * Phase: BDA_2 — Second battle damage assessment.
+   */
+  private async executeSecondBDA(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state || state.phase !== 'pincer_engage') return;
+
+    state.phase = 'bda_2';
+    state.phaseStartedAt = new Date().toISOString();
+
+    // Mark second target destroyed on COP
+    await this.markThreatsDestroyed(state);
+
+    this.logPhase(state, 'BDA REPORT: Second enemy armored vehicle DESTROYED by pincer engagement');
+    this.logPhase(state, 'Bravo and charlie report: target neutralized, no friendly casualties');
+    this.logPhase(state, 'Fire corridors deconflicted — no blue-on-blue incidents');
+    this.logPhase(state, 'Alpha orders: cease fire, form up for return to base');
+
+    // Log to NEAR audit trail
+    const messageBus = getMessageBus();
+    await messageBus.publish({
+      sourceDid: state.config.issuedBy,
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: 'dao:audit_log',
+      messageType: 'dao.audit.bda_report',
+      payload: {
+        sequence_id: state.id,
+        bda_result: 'second_target_destroyed',
+        engagement_type: 'pincer',
+        threat_count: state.detectedThreats.length,
+        dao_id: state.config.daoId,
+        near_tx_type: 'audit_log',
+      },
+    }).catch(() => { /* non-fatal */ });
+
+    this.publishUpdate(state);
+    setTimeout(() => this.executeReturnToBase(seqId), 5000);
+  }
+
+  /**
+   * Phase: RTB — Return to base in follower formation.
+   * Alpha leads, bravo and charlie adopt follower formation behind alpha.
+   * All elements return to home base coordinates.
+   */
+  private async executeReturnToBase(seqId: string): Promise<void> {
+    const state = this.sequences.get(seqId);
+    if (!state || state.phase !== 'bda_2') return;
+
+    state.phase = 'rtb';
+    state.phaseStartedAt = new Date().toISOString();
+
+    const svc = getRobotMissionService();
+    const home = state.config.homeBase;
+    const homeGrid = roomToGridRef(home.x, home.y);
+
+    this.logPhase(state, `RTB — Alpha leads, bravo and charlie in follower formation`);
+    this.logPhase(state, `Destination: home base grid ${homeGrid}`);
+
+    // Alpha leads: from suppress position (2.5, 7.0) → south on Guanqian → home
+    const alphaRtbRoute = [
+      { x: 2.5, y: 5.5 },   // S on Guanqian back into original AO
+      { x: 2.5, y: 4.4 },   // S on Guanqian to Zhongxiao West Rd
+      { x: 2.5, y: 2.6 },   // S on Guanqian to Hankou St
+      { x: 0.5, y: 2.6 },   // W on Hankou toward Hengyang
+      { x: 0.5, y: 0.5 },   // S on Hengyang to home base
+    ];
+
+    const alphaRtbId = randomUUID();
+    state.missions['rtb_alpha'] = alphaRtbId;
+
+    await svc.dispatchMission({
+      mission_id: alphaRtbId,
+      robot_id: state.config.leaderId,
+      command: 'patrol_route',
+      params: {
+        waypoints: alphaRtbRoute,
+        speed: state.config.advanceSpeed,
+        autonomy_policy: { max_speed: 255, restricted_actions: [] },
+      },
+      issued_by: state.config.issuedBy,
+      timestamp: new Date().toISOString(),
+      problem_set_id: state.config.problemSetId,
+    });
+
+    this.logPhase(state, 'Alpha leading RTB south on Guanqian Road');
+
+    // Brief delay before followers start — follower formation means they trail alpha
+    await new Promise((r) => setTimeout(r, 3000));
+
+    // Bravo: from east flank (3.4, 8.5) → converge on alpha's route → follow to home
+    const bravoRtbRoute = [
+      { x: 3.4, y: 7.0 },   // S on Chengde to alpha suppress lat
+      { x: 2.5, y: 7.0 },   // W to Guanqian (converge on alpha's route)
+      { x: 2.5, y: 5.5 },   // S on Guanqian back into original AO
+      { x: 2.5, y: 4.4 },   // S on Guanqian to Zhongxiao West Rd
+      { x: 2.5, y: 2.6 },   // S on Guanqian to Hankou St
+      { x: 0.5, y: 2.6 },   // W on Hankou toward Hengyang
+      { x: 0.5, y: 0.5 },   // S to home base
+    ];
+
+    const bravoRtbId = randomUUID();
+    state.missions['rtb_bravo'] = bravoRtbId;
+
+    await svc.dispatchMission({
+      mission_id: bravoRtbId,
+      robot_id: state.config.followerIds[0],
+      command: 'patrol_route',
+      params: {
+        waypoints: bravoRtbRoute,
+        speed: state.config.advanceSpeed,
+        autonomy_policy: { max_speed: 255, restricted_actions: [] },
+      },
+      issued_by: state.config.issuedBy,
+      timestamp: new Date().toISOString(),
+      problem_set_id: state.config.problemSetId,
+    });
+
+    this.logPhase(state, 'Bravo converging on alpha\'s route — follower formation');
+
+    // Charlie: from west flank (1.4, 8.5) → converge on alpha's route → follow to home
+    const charlieRtbRoute = [
+      { x: 1.4, y: 7.0 },   // S on Xiangyang to alpha suppress lat
+      { x: 2.5, y: 7.0 },   // E to Guanqian (converge on alpha's route)
+      { x: 2.5, y: 5.5 },   // S on Guanqian back into original AO
+      { x: 2.5, y: 4.4 },   // S on Guanqian to Zhongxiao West Rd
+      { x: 2.5, y: 2.6 },   // S on Guanqian to Hankou St
+      { x: 0.5, y: 2.6 },   // W on Hankou toward Hengyang
+      { x: 0.5, y: 0.5 },   // S to home base
+    ];
+
+    const charlieRtbId = randomUUID();
+    state.missions['rtb_charlie'] = charlieRtbId;
+
+    await svc.dispatchMission({
+      mission_id: charlieRtbId,
+      robot_id: state.config.followerIds[1],
+      command: 'patrol_route',
+      params: {
+        waypoints: charlieRtbRoute,
+        speed: state.config.advanceSpeed,
+        autonomy_policy: { max_speed: 255, restricted_actions: [] },
+      },
+      issued_by: state.config.issuedBy,
+      timestamp: new Date().toISOString(),
+      problem_set_id: state.config.problemSetId,
+    });
+
+    this.logPhase(state, 'Charlie converging on alpha\'s route — follower formation');
+    this.publishUpdate(state);
+
+    // Monitor RTB completion
+    this.monitorRTB(seqId);
+  }
+
+  /**
+   * Monitor return to base. When all robots complete RTB, mark mission complete.
+   */
+  private monitorRTB(seqId: string): void {
+    const checkInterval = setInterval(async () => {
+      const state = this.sequences.get(seqId);
+      if (!state || state.phase !== 'rtb') {
+        clearInterval(checkInterval);
+        return;
+      }
+
+      const svc = getRobotMissionService();
+      const robots = svc.getConnectedRobots();
+      const allRobots = [state.config.leaderId, ...state.config.followerIds];
+
+      const allHome = allRobots.every((rid) => {
+        const robot = robots.find((r) => r.robot_id === rid);
+        if (!robot) return false;
+        const rtbKey = rid === state.config.leaderId ? 'rtb_alpha'
+          : rid === state.config.followerIds[0] ? 'rtb_bravo' : 'rtb_charlie';
+        return robot.current_mission_id !== state.missions[rtbKey];
+      });
+
+      const elapsed = Date.now() - new Date(state.phaseStartedAt).getTime();
+      if (allHome || elapsed > 120_000) {
+        clearInterval(checkInterval);
         state.phase = 'complete';
         state.phaseStartedAt = new Date().toISOString();
-        this.logPhase(state, 'CONSOLIDATED — All elements at consolidation point, awaiting further orders');
-        this.logPhase(state, `Mission summary: ${state.detectedThreats.length} threats detected, ${state.lethalGateId ? 'engagement authorized' : 'no engagement'}`);
+        const homeGrid = roomToGridRef(state.config.homeBase.x, state.config.homeBase.y);
+        this.logPhase(state, `COMPLETE — All elements at home base grid ${homeGrid}`);
+        this.logPhase(state, `Mission summary: ${state.detectedThreats.length} threats detected and destroyed`);
+        this.logPhase(state, 'Engagement 1: overwatch + flanking fires. Engagement 2: wedge advance + pincer');
+        this.logPhase(state, '0 friendly casualties, all fire corridors deconflicted');
         this.publishUpdate(state);
       }
     }, 2000);
