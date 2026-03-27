@@ -1500,32 +1500,28 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     (state as unknown as { killZone?: unknown }).killZone = null;
     this.publishUpdate(state);
 
-    // Post-engagement: consolidate near the overwatch position, do NOT RTB.
-    // All elements move to the overwatch position and hold for further orders.
+    // Post-engagement: consolidate near alpha's overwatch position.
+    // Alpha stays put (already at overwatch) — only bravo/charlie move in.
     const consolidationPoint = plan?.overwatch.position ?? state.config.homeBase;
     const consolidationGrid = roomToGridRef(consolidationPoint.x, consolidationPoint.y);
 
-    this.logPhase(state, `CONSOLIDATE — All elements consolidate at grid ${consolidationGrid} and await further orders`);
+    this.logPhase(state, `CONSOLIDATE — Bravo/charlie moving to alpha's position at grid ${consolidationGrid}`);
+    this.logPhase(state, `Alpha holding at overwatch — awaiting further orders`);
 
-    const allRobots = [state.config.leaderId, ...state.config.followerIds];
+    // Alpha stays static — mark as already consolidated
+    state.missions[`consolidate_${state.config.leaderId}`] = 'already-at-position';
 
-    for (const robotId of allRobots) {
-      // Get robot's current position — try telemetry first, then use the
-      // position the robot was dispatched to (from the tactical plan)
-      const robot = svc.getConnectedRobots().find((r) => r.robot_id === robotId);
+    // Only move followers to the consolidation point
+    for (const followerId of state.config.followerIds) {
+      const robot = svc.getConnectedRobots().find((r) => r.robot_id === followerId);
       let currentPos = robot?.latest_telemetry?.position;
       if (!currentPos && plan) {
-        // Use the position the robot was sent to
-        if (robotId === state.config.leaderId) {
-          currentPos = plan.overwatch.position;
-        } else {
-          const fpIdx = state.config.followerIds.indexOf(robotId);
-          currentPos = plan.firingPositions[fpIdx]?.position;
-        }
+        const fpIdx = state.config.followerIds.indexOf(followerId);
+        currentPos = plan.firingPositions[fpIdx]?.position;
       }
       if (!currentPos) currentPos = state.config.homeBase;
 
-      // Compute route from current position to consolidation point
+      // Compute route from firing position to consolidation point
       let route: Array<{ x: number; y: number }>;
       try {
         const { createNavigationTools } = await import('./skills/navigation-skill.js');
@@ -1543,11 +1539,11 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       }
 
       const missionId = randomUUID();
-      state.missions[`consolidate_${robotId}`] = missionId;
+      state.missions[`consolidate_${followerId}`] = missionId;
 
       await svc.dispatchMission({
         mission_id: missionId,
-        robot_id: robotId,
+        robot_id: followerId,
         command: 'patrol_route',
         params: {
           waypoints: route,
@@ -1559,12 +1555,13 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         problem_set_id: state.config.problemSetId,
       });
 
-      this.logPhase(state, `${robotId} — move to consolidation point grid ${consolidationGrid}`);
+      this.logPhase(state, `${followerId} — move to consolidation point grid ${consolidationGrid}`);
     }
 
     this.publishUpdate(state);
 
-    // Monitor withdrawal completion
+    // Monitor withdrawal completion — check alpha + all followers
+    const allRobots = [state.config.leaderId, ...state.config.followerIds];
     const checkInterval = setInterval(async () => {
       if (state.phase !== 'withdraw') {
         clearInterval(checkInterval);
