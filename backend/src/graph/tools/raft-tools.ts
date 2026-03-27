@@ -406,16 +406,20 @@ export async function fetchAdjacencyList(
 export async function fetchAdjacencyListByContainer(
   containerId: string
 ): Promise<Map<string, AdjacencyEntry>> {
+  const now = new Date().toISOString();
   const cypher = `
     MATCH (a:Actor)
     WHERE $containerId IN a.containerIds
+      AND (a.validTo IS NULL OR a.validTo > $now)
     OPTIONAL MATCH (a)-[r:RELATES_TO]-(b:Actor)
     WHERE $containerId IN b.containerIds
+      AND (b.validTo IS NULL OR b.validTo > $now)
+      AND (r.validTo IS NULL OR r.validTo > $now)
     RETURN a.id as actorId, a.name as name, a.type as type,
            collect({neighborId: b.id, strength: abs(r.strength)}) as neighbors
   `;
 
-  const result = await executeReadQuery(cypher, { containerId });
+  const result = await executeReadQuery(cypher, { containerId, now });
   const adjacency = new Map<string, AdjacencyEntry>();
 
   for (const record of result.records) {
@@ -457,14 +461,16 @@ export interface ContainerTension {
 export async function fetchTensionsByContainer(
   containerId: string
 ): Promise<ContainerTension[]> {
+  const now = new Date().toISOString();
   const cypher = `
     MATCH (t:Tension)
     WHERE $containerId IN t.containerIds
+      AND (t.validTo IS NULL OR t.validTo > $now)
     RETURN t.id as id, t.description as description, t.intensity as intensity,
            t.domain as domain, t.actorIds as actorIds
   `;
 
-  const result = await executeReadQuery(cypher, { containerId });
+  const result = await executeReadQuery(cypher, { containerId, now });
 
   return result.records.map(record => ({
     id: record.get('id') as string,

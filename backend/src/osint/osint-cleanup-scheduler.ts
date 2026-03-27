@@ -4,10 +4,17 @@
  * Periodically removes stale OSINT nodes from the knowledge graph
  * and old events from PostgreSQL that have decayed past usefulness.
  *
- * Runs every 12 hours via PgBoss. Criteria for cleanup:
- *   - OSINT event nodes older than 3× their half-life (confidence < 12.5%)
- *   - OSINT actor nodes with no remaining active event references
- *   - PostgreSQL osint_events older than retention period (default 180 days)
+ * Runs every 12 hours via PgBoss. Two sweep passes:
+ *
+ *   1. **General staleness sweep** — applies to ALL graph nodes regardless of source.
+ *      Uses the confidence decay formula: conf(t) = conf_0 * 2^(-t/half_life).
+ *      Nodes whose decayed confidence falls below CONFIDENCE_FLOOR (0.10) are
+ *      soft-deleted (validTo set). This preserves historical state — point-in-time
+ *      queries with atTime can still reconstruct past graph snapshots.
+ *
+ *   2. **OSINT-specific cleanup** — hard-deletes OSINT nodes that have been
+ *      soft-deleted for 30+ days with no remaining edges.
+ *      Deletes old PostgreSQL osint_events past retention (180 days).
  */
 
 import { getSharedBoss } from '../lib/database.js';
@@ -22,11 +29,83 @@ const HALF_LIFE_MULTIPLIER = 3;
 // PostgreSQL event retention: 180 days
 const EVENT_RETENTION_DAYS = 180;
 
+// General staleness sweep: soft-delete any node whose decayed confidence < this floor
+const CONFIDENCE_FLOOR = 0.10;
+
 /**
  * Remove stale OSINT nodes from Neo4j and old events from PostgreSQL.
  */
-async function runCleanup(): Promise<{ nodesRemoved: number; edgesRemoved: number; eventsDeleted: number }> {
-  const stats = { nodesRemoved: 0, edgesRemoved: 0, eventsDeleted: 0 };
+async function runCleanup(): Promise<{ staleSwept: number; nodesRemoved: number; edgesRemoved: number; eventsDeleted: number }> {
+  const stats = { staleSwept: 0, nodesRemoved: 0, edgesRemoved: 0, eventsDeleted: 0 };
+
+  // ── 0. General staleness sweep — all node types ────────────────────────
+  // Uses the confidence decay formula in Cypher to find nodes whose decayed
+  // confidence has fallen below CONFIDENCE_FLOOR. Sets validTo to soft-delete
+  // them (preserving history for point-in-time queries).
+  try {
+    const { executeWriteQuery } = await import('../graph/neo4j-client.js');
+
+    // Sweep Actors
+    const actorSweep = await executeWriteQuery(`
+      MATCH (a:Actor)
+      WHERE a.validTo IS NULL
+        AND a.validFrom IS NOT NULL
+        AND a.confidence IS NOT NULL
+        AND a.halfLifeDays IS NOT NULL
+        AND a.halfLifeDays > 0
+      WITH a,
+           a.confidence * (0.5 ^ (duration.between(datetime(a.validFrom), datetime()).days / toFloat(a.halfLifeDays))) AS decayed
+      WHERE decayed < $floor
+      SET a.validTo = datetime().epochMillis
+      RETURN count(a) AS swept
+    `, { floor: CONFIDENCE_FLOOR });
+
+    const actorSwept = (actorSweep.records?.[0]?.get?.('swept') as number) ?? 0;
+
+    // Sweep RELATES_TO edges
+    const relSweep = await executeWriteQuery(`
+      MATCH ()-[r:RELATES_TO]-()
+      WHERE r.validTo IS NULL
+        AND r.validFrom IS NOT NULL
+        AND r.confidence IS NOT NULL
+        AND r.halfLifeDays IS NOT NULL
+        AND r.halfLifeDays > 0
+      WITH r,
+           r.confidence * (0.5 ^ (duration.between(datetime(r.validFrom), datetime()).days / toFloat(r.halfLifeDays))) AS decayed
+      WHERE decayed < $floor
+      SET r.validTo = datetime().epochMillis
+      RETURN count(r) AS swept
+    `, { floor: CONFIDENCE_FLOOR });
+
+    const relSwept = (relSweep.records?.[0]?.get?.('swept') as number) ?? 0;
+
+    // Sweep Tension nodes
+    const tensionSweep = await executeWriteQuery(`
+      MATCH (t:Tension)
+      WHERE t.validTo IS NULL
+        AND t.validFrom IS NOT NULL
+        AND t.confidence IS NOT NULL
+        AND t.halfLifeDays IS NOT NULL
+        AND t.halfLifeDays > 0
+      WITH t,
+           t.confidence * (0.5 ^ (duration.between(datetime(t.validFrom), datetime()).days / toFloat(t.halfLifeDays))) AS decayed
+      WHERE decayed < $floor
+      SET t.validTo = datetime().epochMillis
+      RETURN count(t) AS swept
+    `, { floor: CONFIDENCE_FLOOR });
+
+    const tensionSwept = (tensionSweep.records?.[0]?.get?.('swept') as number) ?? 0;
+
+    stats.staleSwept = actorSwept + relSwept + tensionSwept;
+    if (stats.staleSwept > 0) {
+      console.log(
+        `[OSINT-Cleanup] Staleness sweep: ${actorSwept} actors, ${relSwept} relationships, ` +
+        `${tensionSwept} tensions soft-deleted (decayed confidence < ${CONFIDENCE_FLOOR})`,
+      );
+    }
+  } catch (err) {
+    console.error('[OSINT-Cleanup] Staleness sweep failed:', err);
+  }
 
   // ── 1. Soft-delete expired Neo4j OSINT nodes ──────────────────────────
   try {
@@ -142,7 +221,7 @@ export async function registerOSINTCleanupJob(): Promise<void> {
     await boss.schedule(QUEUE_NAME, SCHEDULE);
 
     await boss.work(QUEUE_NAME, async () => {
-      console.log('[OSINT-Cleanup] Starting scheduled cleanup run');
+      console.log('[OSINT-Cleanup] Starting scheduled cleanup run (staleness sweep + OSINT cleanup)');
       const stats = await runCleanup();
       console.log(`[OSINT-Cleanup] Complete: ${JSON.stringify(stats)}`);
     });

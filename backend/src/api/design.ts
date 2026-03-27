@@ -342,49 +342,75 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
   try {
     const { executeReadQuery } = await import('../graph/neo4j-client.js');
 
-    // 1. Fetch actors with relationship counts
+    const now = new Date().toISOString();
+
+    // 1. Fetch actors with relationship counts — temporal filter excludes expired nodes
     const actorResult = await executeReadQuery(`
       MATCH (a:Actor)
-      WHERE a.workspaceId = $ws OR a.workspaceId IS NULL
+      WHERE (a.workspaceId = $ws OR a.workspaceId IS NULL)
+        AND (a.validTo IS NULL OR a.validTo > $now)
       OPTIONAL MATCH (a)-[r]-()
+      WHERE (r.validTo IS NULL OR r.validTo > $now)
       WITH a, count(r) AS rels
       ORDER BY rels DESC
       LIMIT 40
       RETURN a.name AS name, a.type AS type, a.attributes AS attributes,
-             a.confidence AS confidence, rels
-    `, { ws: problemSetId });
+             a.confidence AS confidence, rels,
+             a.updatedAt AS updatedAt, a.validFrom AS validFrom,
+             a.halfLifeDays AS halfLifeDays
+    `, { ws: problemSetId, now });
 
-    // 2. Fetch relationships between actors
+    // 2. Fetch relationships between actors — exclude expired
     const relResult = await executeReadQuery(`
       MATCH (a:Actor)-[r:RELATES_TO]->(b:Actor)
       WHERE (a.workspaceId = $ws OR a.workspaceId IS NULL)
+        AND (a.validTo IS NULL OR a.validTo > $now)
+        AND (b.validTo IS NULL OR b.validTo > $now)
+        AND (r.validTo IS NULL OR r.validTo > $now)
       RETURN a.name AS source, b.name AS target, r.type AS relType,
-             r.description AS desc, r.strength AS strength
+             r.description AS desc, r.strength AS strength,
+             r.updatedAt AS updatedAt
       LIMIT 50
-    `, { ws: problemSetId });
+    `, { ws: problemSetId, now });
 
-    // 3. Fetch tensions
+    // 3. Fetch tensions — exclude expired
     const tensionResult = await executeReadQuery(`
       MATCH (a:Actor)-[t:TENSION]->(b:Actor)
       WHERE (a.workspaceId = $ws OR a.workspaceId IS NULL)
+        AND (a.validTo IS NULL OR a.validTo > $now)
+        AND (b.validTo IS NULL OR b.validTo > $now)
+        AND (t.validTo IS NULL OR t.validTo > $now)
       RETURN a.name AS actor1, b.name AS actor2, t.description AS desc,
-             t.intensity AS intensity, t.domain AS domain
+             t.intensity AS intensity, t.domain AS domain,
+             t.updatedAt AS updatedAt
       LIMIT 30
-    `, { ws: problemSetId });
+    `, { ws: problemSetId, now });
 
-    // 4. Build context string from graph data
-    const actors = actorResult.records.map((r) => ({
-      name: r.get('name'),
-      type: r.get('type'),
-      confidence: r.get('confidence'),
-      relationships: typeof r.get('rels')?.toInt === 'function' ? r.get('rels').toInt() : r.get('rels'),
-    }));
+    // 4. Build context string from graph data — include freshness metadata
+    const { computeDecayedConfidence } = await import('../graph/confidence-calculator.js');
+    const nowDate = new Date();
+
+    const actors = actorResult.records.map((r) => {
+      const baseConf = r.get('confidence') ?? 0.65;
+      const validFrom = r.get('validFrom');
+      const halfLife = r.get('halfLifeDays') ?? 90;
+      const lastAsserted = validFrom ? new Date(validFrom) : nowDate;
+      const decayedConf = computeDecayedConfidence(baseConf, lastAsserted, halfLife, nowDate);
+      return {
+        name: r.get('name'),
+        type: r.get('type'),
+        confidence: decayedConf,
+        relationships: typeof r.get('rels')?.toInt === 'function' ? r.get('rels').toInt() : r.get('rels'),
+        updatedAt: r.get('updatedAt'),
+      };
+    });
 
     const relationships = relResult.records.map((r) => ({
       source: r.get('source'),
       target: r.get('target'),
       type: r.get('relType'),
       description: r.get('desc'),
+      updatedAt: r.get('updatedAt'),
     }));
 
     const tensions = tensionResult.records.map((r) => ({
@@ -393,6 +419,7 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
       description: r.get('desc'),
       intensity: r.get('intensity'),
       domain: r.get('domain'),
+      updatedAt: r.get('updatedAt'),
     }));
 
     if (actors.length === 0) {
@@ -426,15 +453,28 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
     const { createLLMForAgent } = await import('../agents/langgraph/llm-factory.js');
     const llm = await createLLMForAgent({ agentId: 'design-synthesis' });
 
+    // Helper: format relative age from updatedAt for LLM context
+    const formatAge = (updatedAt: string | null | undefined): string => {
+      if (!updatedAt) return 'unknown age';
+      const days = Math.floor((nowDate.getTime() - new Date(updatedAt).getTime()) / 86_400_000);
+      if (days <= 1) return 'updated today';
+      if (days <= 7) return `updated ${days}d ago`;
+      if (days <= 30) return `updated ${Math.floor(days / 7)}w ago`;
+      return `updated ${Math.floor(days / 30)}mo ago`;
+    };
+
     const kgSummary = [
       `## Key Actors (${actors.length})`,
-      ...actors.slice(0, 25).map((a) => `- ${a.name} (${a.type}, ${a.relationships} connections)`),
+      ...actors.slice(0, 25).map((a) =>
+        `- ${a.name} (${a.type}, ${a.relationships} connections, confidence: ${a.confidence.toFixed(2)}, ${formatAge(a.updatedAt)})`),
       '',
       `## Key Relationships (${relationships.length})`,
-      ...relationships.slice(0, 25).map((r) => `- ${r.source} → ${r.target}: ${r.type}${r.description ? ` — ${r.description}` : ''}`),
+      ...relationships.slice(0, 25).map((r) =>
+        `- ${r.source} → ${r.target}: ${r.type}${r.description ? ` — ${r.description}` : ''} [${formatAge(r.updatedAt)}]`),
       '',
       `## Active Tensions (${tensions.length})`,
-      ...tensions.slice(0, 15).map((t) => `- ${t.actor1} vs ${t.actor2}: ${t.description ?? 'unspecified'}${t.domain ? ` (${t.domain})` : ''}${t.intensity ? ` [intensity: ${t.intensity}]` : ''}`),
+      ...tensions.slice(0, 15).map((t) =>
+        `- ${t.actor1} vs ${t.actor2}: ${t.description ?? 'unspecified'}${t.domain ? ` (${t.domain})` : ''}${t.intensity ? ` [intensity: ${t.intensity}]` : ''} [${formatAge(t.updatedAt)}]`),
     ].join('\n');
 
     const result = await llm.invoke([
@@ -447,6 +487,12 @@ Write a concise, professional narrative (3-5 paragraphs) that synthesizes the pr
 2. Relationships and alliances that shape the environment
 3. Active tensions and potential flashpoints
 4. How these factors create the conditions requiring military planning
+
+Each knowledge graph entry includes a confidence score (0-1, where decay means older unconfirmed data loses confidence) and a freshness indicator (e.g., "updated 3mo ago"). Apply these rules:
+- Confidence >= 0.50: state as current fact
+- Confidence 0.20-0.49: caveat with "assessed as" or "previously reported" language
+- Do NOT include entries with confidence below 0.20
+- If an entry was last updated more than 90 days ago with low confidence, do not present it as current fact — note that it may be outdated
 
 Write in third person, present tense. Be specific — name actors and cite relationships. Do not use bullet points — write flowing prose suitable for a military planning document.`,
       },

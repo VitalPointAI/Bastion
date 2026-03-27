@@ -350,6 +350,8 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
           a.halfLifeDays = 90
         ON MATCH SET
           a.updatedAt = $now,
+          a.validFrom = $now,
+          a.validTo = null,
           a.sourceDocumentIds = CASE
             WHEN NOT $docId IN a.sourceDocumentIds
             THEN a.sourceDocumentIds + $docId

@@ -317,6 +317,8 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
           a.updatedAt = $now
         ON MATCH SET
           a.updatedAt = $now,
+          a.validFrom = $now,
+          a.validTo = null,
           a.attributes = CASE
             WHEN size($description) > size(
               COALESCE((a.attributes), '{}')
@@ -372,6 +374,8 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
         ON MATCH SET
           r.strength = CASE WHEN $strength > r.strength THEN $strength ELSE r.strength END,
           r.updatedAt = $now,
+          r.validFrom = $now,
+          r.validTo = null,
           r.sourceDocumentIds = CASE
             WHEN NOT $docId IN r.sourceDocumentIds
             THEN r.sourceDocumentIds + $docId
@@ -422,6 +426,8 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
               r.description = $desc,
               r.domain = $domain,
               r.updatedAt = $now,
+              r.validFrom = $now,
+              r.validTo = null,
               r.sourceDocumentIds = CASE
                 WHEN NOT $docId IN r.sourceDocumentIds
                 THEN r.sourceDocumentIds + $docId
