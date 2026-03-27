@@ -634,6 +634,15 @@ server.listen(port, async () => {
     console.error('Failed to register document intelligence team:', error);
   }
 
+  // Register knowledge graph agent team
+  try {
+    const { registerKnowledgeGraphTeam } = await import('./graph/team-setup.js');
+    await registerKnowledgeGraphTeam();
+    console.log('Knowledge graph team registered');
+  } catch (error) {
+    console.error('Failed to register knowledge graph team:', error);
+  }
+
   // Register strategic cache refresh pg-boss worker (Phase 25.3)
   try {
     const { getSharedBoss } = await import('./lib/database.js');

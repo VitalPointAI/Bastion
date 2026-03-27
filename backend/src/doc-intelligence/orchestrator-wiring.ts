@@ -419,12 +419,17 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
     const trustOutput = trustResult?.output as { trustStatus?: string } | null;
     const isFlagged = trustOutput?.trustStatus === 'flagged';
 
+    // Pass NATO rating from trust agent through to graph entities
+    const trustNatoRating = state.qualityRating;
+
     const extractOutput = await factExtractor.extract({
       documentText: textToExtract,
       problemSetContext: state.problemSetContext,
       documentId: state.documentId,
       workspaceId: state.problemSetId,
       skipGraphIngestion: isFlagged,
+      natoSourceReliability: trustNatoRating?.sourceReliability,
+      natoInformationCredibility: trustNatoRating?.informationCredibility,
       onProgress: (stage: string, detail: string) => {
         if (onProgress) {
           onProgress('specialist:progress', {

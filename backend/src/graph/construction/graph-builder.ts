@@ -77,6 +77,10 @@ export interface GraphBuildOptions {
   assertedBy?: string;
   /** Provenance: which ingestion pathway produced these entities */
   assertedVia?: SourceMethod;
+  /** NATO STANAG 2022 source reliability rating (A-F) from doc-intelligence Trust Agent */
+  natoSourceReliability?: string;
+  /** NATO STANAG 2022 information credibility rating (1-6) from doc-intelligence Trust Agent */
+  natoInformationCredibility?: number;
   /** Called when an individual entity is created (for live streaming) */
   onEntityCreated?: (entity: GraphEntityEvent) => void;
   /** Called with running totals after each objective is processed */
@@ -253,6 +257,8 @@ export class GraphBuilder {
         assertedVia,
         derivedFrom: [options.sourceDocumentId],
         validFrom: new Date(),
+        natoSourceReliability: options.natoSourceReliability,
+        natoInformationCredibility: options.natoInformationCredibility,
       };
 
       // Create actor name to ID mapping for relationship creation

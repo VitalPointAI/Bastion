@@ -1019,17 +1019,42 @@ router.get('/agents', async (req: Request, res: Response) => {
     // Also get model configs for backward compat
     const modelConfigs = await configService.listAgentModelConfigs();
 
-    const data = result.rows.map((r) => ({
-      ...r.agent_data,
-      // Health metric columns (typed floats from NUMERIC columns)
-      status: r.status,
-      lastInvocation: r.last_invocation ?? null,
-      successRate: r.success_rate !== null ? parseFloat(r.success_rate) : null,
-      avgResponseTimeMs: r.avg_response_time_ms !== null ? parseFloat(r.avg_response_time_ms) : null,
-      validationScore: r.validation_score !== null ? parseFloat(r.validation_score) : null,
-      // Legacy compat fields
-      customModelConfig: modelConfigs.find((c) => c.agentId === r.agent_id) || null,
-    }));
+    // Get tool and team registries for enrichment
+    const toolRegistry = getToolRegistry();
+    await toolRegistry.ensureInitialized();
+
+    const teamRegistry = getTeamRegistry();
+    await teamRegistry.ensureInitialized();
+
+    const data = result.rows.map((r) => {
+      const agentId = r.agent_id;
+      const agentData = r.agent_data as Record<string, unknown>;
+
+      // Enrich with tools from ToolRegistry (in-memory assignments)
+      // Falls back to agent_data.tools if ToolRegistry has nothing
+      const registryTools = toolRegistry.getToolsForAgent(agentId);
+      const toolIds = registryTools.length > 0
+        ? registryTools.map(t => t.toolId)
+        : (agentData.tools as string[] ?? []);
+
+      // Enrich with team memberships from TeamRegistry
+      const teams = teamRegistry.getTeamsForAgent(agentId);
+
+      return {
+        ...agentData,
+        // Tool and team enrichment
+        tools: toolIds,
+        teams: teams.map(t => ({ teamId: t.teamId, name: t.name })),
+        // Health metric columns (typed floats from NUMERIC columns)
+        status: r.status,
+        lastInvocation: r.last_invocation ?? null,
+        successRate: r.success_rate !== null ? parseFloat(r.success_rate) : null,
+        avgResponseTimeMs: r.avg_response_time_ms !== null ? parseFloat(r.avg_response_time_ms) : null,
+        validationScore: r.validation_score !== null ? parseFloat(r.validation_score) : null,
+        // Legacy compat fields
+        customModelConfig: modelConfigs.find((c) => c.agentId === agentId) || null,
+      };
+    });
 
     res.setHeader('Cache-Control', 'no-cache');
     // Return both shapes: new `data` array + legacy `agents` array for backward compat

@@ -304,13 +304,16 @@ async function seedAgent(
       agentPublicKey: '',
     };
 
-    // Convert to StandardAgent with system prompt and status
+    // Convert to StandardAgent with system prompt, status, and tool IDs
     const sa = toStandardAgent(manifest, {
       systemPrompt,
       clearance: 'Secret',
       skills: [],
       status,
     });
+
+    // Persist tool IDs in agent_data so the admin dashboard can display them
+    (sa as unknown as Record<string, unknown>).tools = tools;
 
     // Upsert via AgentStore (idempotent)
     await store.registerAgent(sa);

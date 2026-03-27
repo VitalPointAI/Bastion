@@ -67,12 +67,6 @@ function getConfidenceColor(confidence: number): string {
   return `rgb(${r}, ${g}, 60)`;
 }
 
-function confidenceTierStyle(tier: 'high' | 'medium' | 'low'): { background: string; color: string } {
-  if (tier === 'high') return { background: '#065f46', color: '#a7f3d0' };
-  if (tier === 'medium') return { background: '#78350f', color: '#fcd34d' };
-  return { background: '#7f1d1d', color: '#fca5a5' };
-}
-
 function formatJsonldType(jsonldType: string): string {
   const localName = jsonldType.includes(':') ? jsonldType.split(':')[1]! : jsonldType;
   return localName.replace(/([A-Z])/g, ' $1').trim();
@@ -132,20 +126,107 @@ function CategoryBadge({ category }: { category?: BrainNode['actorCategory'] }):
   );
 }
 
-function ConfidenceMeter({ value }: { value: number }): React.ReactElement {
-  const pct = Math.round(value * 100);
-  const color = getConfidenceColor(value);
-  return (
-    <div>
-      <div className="confidence-bar">
-        <div
-          className="confidence-fill"
-          style={{ width: `${pct}%`, background: color }}
-        />
+// ── NATO STANAG 2022 Rating Labels ─────────────────────────────────────────
+
+const NATO_RELIABILITY_LABELS: Record<string, string> = {
+  A: 'Completely Reliable',
+  B: 'Usually Reliable',
+  C: 'Fairly Reliable',
+  D: 'Not Usually Reliable',
+  E: 'Unreliable',
+  F: 'Reliability Cannot Be Judged',
+};
+
+const NATO_CREDIBILITY_LABELS: Record<number, string> = {
+  1: 'Confirmed by Other Sources',
+  2: 'Probably True',
+  3: 'Possibly True',
+  4: 'Doubtfully True',
+  5: 'Improbable',
+  6: 'Truth Cannot Be Judged',
+};
+
+function natoReliabilityColor(grade: string): string {
+  switch (grade) {
+    case 'A': return '#22c55e';
+    case 'B': return '#84cc16';
+    case 'C': return '#eab308';
+    case 'D': return '#f97316';
+    case 'E': return '#ef4444';
+    default:  return '#6b7280';
+  }
+}
+
+function natoCredibilityColor(score: number): string {
+  if (score <= 1) return '#22c55e';
+  if (score <= 2) return '#84cc16';
+  if (score <= 3) return '#eab308';
+  if (score <= 4) return '#f97316';
+  if (score <= 5) return '#ef4444';
+  return '#6b7280';
+}
+
+function NATORatingBadge({
+  sourceReliability,
+  informationCredibility,
+}: {
+  sourceReliability?: string | null;
+  informationCredibility?: number | null;
+}): React.ReactElement {
+  if (!sourceReliability && informationCredibility == null) {
+    return (
+      <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
+        No NATO rating assessed
       </div>
-      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.2rem', display: 'block' }}>
-        {pct}% confidence
-      </span>
+    );
+  }
+
+  const relGrade = sourceReliability ?? 'F';
+  const credScore = informationCredibility ?? 6;
+  const relColor = natoReliabilityColor(relGrade);
+  const credColor = natoCredibilityColor(credScore);
+
+  return (
+    <div style={{ display: 'flex', gap: '0.5rem' }}>
+      {/* Source Reliability */}
+      <div style={{
+        flex: 1,
+        background: 'rgba(255,255,255,0.04)',
+        border: `1px solid ${relColor}40`,
+        borderRadius: '0.375rem',
+        padding: '0.5rem',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+          Source Reliability
+        </div>
+        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: relColor, lineHeight: 1 }}>
+          {relGrade}
+        </div>
+        <div style={{ fontSize: '0.65rem', color: relColor, marginTop: '0.2rem' }}>
+          {NATO_RELIABILITY_LABELS[relGrade] ?? 'Unknown'}
+        </div>
+      </div>
+
+      {/* Information Credibility */}
+      <div style={{
+        flex: 1,
+        background: 'rgba(255,255,255,0.04)',
+        border: `1px solid ${credColor}40`,
+        borderRadius: '0.375rem',
+        padding: '0.5rem',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+          Info Credibility
+        </div>
+        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: credColor, lineHeight: 1 }}>
+          {credScore}
+        </div>
+        <div style={{ fontSize: '0.65rem', color: credColor, marginTop: '0.2rem' }}>
+          {NATO_CREDIBILITY_LABELS[credScore] ?? 'Unknown'}
+        </div>
+      </div>
     </div>
   );
 }
@@ -263,22 +344,25 @@ function SingleNodeView({
         </div>
       )}
 
-      {/* Confidence */}
+      {/* NATO STANAG 2022 Rating */}
       <div className="brain-detail-section">
-        <div className="brain-detail-section-title">Confidence</div>
-        <ConfidenceMeter value={node.confidence} />
+        <div className="brain-detail-section-title">NATO Rating (STANAG 2022)</div>
+        <NATORatingBadge
+          sourceReliability={node.natoSourceReliability}
+          informationCredibility={node.natoInformationCredibility}
+        />
       </div>
 
       {/* Provenance — rendered when Phase 47 JSON-LD fields are present */}
-      {(node.confidenceTier || node.assertedVia || node.jsonldType || node.isContradicted) && (
+      {(node.natoSourceReliability || node.assertedVia || node.jsonldType || node.isContradicted) && (
         <div className="brain-detail-section">
           <div className="brain-detail-section-title">Provenance</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', padding: '0.375rem 0.5rem', backgroundColor: '#0b1120', borderRadius: '0.25rem', border: '1px solid #1e293b' }}>
-            {node.confidenceTier && (() => {
-              const s = confidenceTierStyle(node.confidenceTier!);
+            {node.natoSourceReliability && (() => {
+              const relColor = natoReliabilityColor(node.natoSourceReliability!);
               return (
-                <span style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', padding: '0.125rem 0.375rem', borderRadius: '0.25rem', backgroundColor: s.background, color: s.color }}>
-                  {node.confidenceTier}
+                <span style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', padding: '0.125rem 0.375rem', borderRadius: '0.25rem', backgroundColor: `${relColor}20`, color: relColor, border: `1px solid ${relColor}40` }}>
+                  {node.natoSourceReliability}{node.natoInformationCredibility ?? ''}
                 </span>
               );
             })()}

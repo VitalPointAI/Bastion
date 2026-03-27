@@ -55,6 +55,8 @@ function recordToActor(record: Record<string, unknown>): Actor {
     validFrom: (record.validFrom as string) || (record.createdAt as string),
     validTo: (record.validTo as string | null) ?? null,
     halfLifeDays: typeof record.halfLifeDays === 'number' ? record.halfLifeDays : 180,
+    natoSourceReliability: (record.natoSourceReliability as string) || undefined,
+    natoInformationCredibility: typeof record.natoInformationCredibility === 'number' ? record.natoInformationCredibility : undefined,
   };
 }
 
@@ -74,6 +76,8 @@ export class ActorStore {
       derivedFrom?: string[];
       validFrom?: Date;
       halfLifeDays?: number;
+      natoSourceReliability?: string;
+      natoInformationCredibility?: number;
     },
   ): Promise<Actor> {
     const id = `ACT-${randomUUID()}`;
@@ -125,7 +129,9 @@ export class ActorStore {
         sourceWeight: $sourceWeight,
         validFrom: $validFrom,
         validTo: null,
-        halfLifeDays: $halfLifeDays
+        halfLifeDays: $halfLifeDays,
+        natoSourceReliability: $natoSourceReliability,
+        natoInformationCredibility: $natoInformationCredibility
       })
       RETURN a
     `, {
@@ -153,6 +159,8 @@ export class ActorStore {
       sourceWeight,
       validFrom,
       halfLifeDays,
+      natoSourceReliability: provenance?.natoSourceReliability ?? null,
+      natoInformationCredibility: provenance?.natoInformationCredibility ?? null,
     });
 
     const record = result.records[0].get('a').properties;

@@ -31,6 +31,8 @@ interface RawGraphNode {
   label?: string;
   name?: string;
   type?: string;
+  natoSourceReliability?: string | null;
+  natoInformationCredibility?: number | null;
 }
 
 interface RawGraphEdge {
@@ -56,6 +58,8 @@ interface RawActor {
   sourceDocumentIds?: string[];
   relationships?: unknown[];
   validity_score?: number;
+  natoSourceReliability?: string | null;
+  natoInformationCredibility?: number | null;
 }
 
 interface RawActorsResponse {
@@ -399,6 +403,8 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
               halfLifeDays: node.halfLifeDays as number | undefined,
               validityScore: node.validityScore as number | undefined,
               sourceDocumentIds: node.sourceDocumentIds as string[] | undefined,
+              natoSourceReliability: node.natoSourceReliability as string | null | undefined,
+              natoInformationCredibility: node.natoInformationCredibility as number | null | undefined,
             };
           });
           const snapshotEdges: BrainEdge[] = (raw.edges ?? []).map((e: unknown) => {
@@ -480,6 +486,8 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
             role: detail?.attributes?.role as string | undefined,
             description: actorDesc,
             createdAt: new Date().toISOString(),
+            natoSourceReliability: detail?.natoSourceReliability ?? rawNode.natoSourceReliability,
+            natoInformationCredibility: detail?.natoInformationCredibility ?? rawNode.natoInformationCredibility,
           });
           nodeIds.add(rawNode.id);
         }
@@ -507,6 +515,8 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
               ? `${actor.actor_type}${actor.attributes?.role ? ` — ${actor.attributes.role}` : ''}`
               : undefined,
             createdAt: new Date().toISOString(),
+            natoSourceReliability: actor.natoSourceReliability,
+            natoInformationCredibility: actor.natoInformationCredibility,
           });
           nodeIds.add(actor.id);
         }

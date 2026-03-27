@@ -87,6 +87,10 @@ export interface Actor extends JsonLdEntityBase {
   createdAt: Date;
   /** When this record was last updated */
   updatedAt: Date;
+  /** NATO STANAG 2022 source reliability rating (A-F) from doc-intelligence Trust Agent */
+  natoSourceReliability?: string;
+  /** NATO STANAG 2022 information credibility rating (1-6) from doc-intelligence Trust Agent */
+  natoInformationCredibility?: number;
 }
 
 // ============================================================================

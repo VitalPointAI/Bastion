@@ -71,8 +71,12 @@ export interface BrainNode {
   dimeCategory?: string;
 
   // ── Epistemic state fields ────────────────────────────────────────────────
-  /** 0-1 confidence level — drives glow intensity and brightness */
+  /** 0-1 confidence level — drives glow intensity and brightness (internal use) */
   confidence: number;
+  /** NATO STANAG 2022 source reliability rating: A-F */
+  natoSourceReliability?: string | null;
+  /** NATO STANAG 2022 information credibility rating: 1-6 */
+  natoInformationCredibility?: number | null;
   /** When true, renders as hollow/dashed node — represents an intelligence gap */
   isGap?: boolean;
   /** When true, renders as ghosted/translucent — node exists in the future prediction zone */

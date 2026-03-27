@@ -56,6 +56,10 @@ export interface FactExtractorInput {
   onProgress?: (stage: string, detail: string) => void;
   /** Skip graph entity creation and provenance writes (for flagged sources) */
   skipGraphIngestion?: boolean;
+  /** NATO STANAG 2022 source reliability rating (A-F) from Trust Agent */
+  natoSourceReliability?: string;
+  /** NATO STANAG 2022 information credibility rating (1-6) from Trust Agent */
+  natoInformationCredibility?: number;
 }
 
 export interface FactExtractorOutput {
@@ -137,7 +141,7 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
    * and write provenance records.
    */
   async extract(input: FactExtractorInput): Promise<FactExtractorOutput> {
-    const { documentText, problemSetContext, documentId, workspaceId, uploadedBy, onEntityCreated, onProgress, skipGraphIngestion } = input;
+    const { documentText, problemSetContext, documentId, workspaceId, uploadedBy, onEntityCreated, onProgress, skipGraphIngestion, natoSourceReliability, natoInformationCredibility } = input;
 
     this.setProblemSetContext(problemSetContext);
 
@@ -185,6 +189,8 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
         workspaceId,
         assertedBy: uploadedBy ?? 'system:doc-intelligence',
         onEntityCreated,
+        natoSourceReliability,
+        natoInformationCredibility,
       });
 
       // Step 5: Write entity_provenance records
@@ -321,6 +327,8 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
       workspaceId?: string;
       assertedBy?: string;
       onEntityCreated?: (event: GraphEntityEvent) => void;
+      natoSourceReliability?: string;
+      natoInformationCredibility?: number;
     },
   ): Promise<{
     actorsCreated: number;
@@ -347,6 +355,8 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
       // Doc intelligence provenance: every entity from this path is assertedVia 'doc_intelligence'
       assertedVia: 'doc_intelligence',
       assertedBy: options.assertedBy ?? 'system:doc-intelligence',
+      natoSourceReliability: options.natoSourceReliability,
+      natoInformationCredibility: options.natoInformationCredibility,
       onEntityCreated: (event) => {
         if (event.data.id) {
           entityIds.push(event.data.id);

@@ -233,6 +233,9 @@ router.get('/graph-snapshot', async (req: Request, res: Response) => {
         halfLifeDays: node.halfLifeDays ?? node.half_life_days ?? null,
         // Contradiction flag
         isContradicted: contradictedNodeIds.has(String(node.id ?? '')),
+        // NATO STANAG 2022 ratings
+        natoSourceReliability: node.natoSourceReliability ?? null,
+        natoInformationCredibility: typeof node.natoInformationCredibility === 'number' ? node.natoInformationCredibility : null,
       };
     });
 

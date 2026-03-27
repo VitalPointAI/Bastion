@@ -174,6 +174,8 @@ router.get('/actors', async (req: Request, res: Response) => {
       validFrom: actor.validFrom,
       validTo: actor.validTo,
       workspaceId: actor.workspaceId,
+      natoSourceReliability: actor.natoSourceReliability ?? null,
+      natoInformationCredibility: actor.natoInformationCredibility ?? null,
       ...(includeProvenance && {
         provenance: {
           assertedBy: actor.assertedBy,
@@ -216,6 +218,8 @@ router.get('/actors/:id', async (req: Request, res: Response) => {
       workspaceId: actor.workspaceId,
       aliases: actor.aliases,
       attributes: actor.attributes,
+      natoSourceReliability: actor.natoSourceReliability ?? null,
+      natoInformationCredibility: actor.natoInformationCredibility ?? null,
       ...(includeProvenance && {
         provenance: {
           assertedBy: actor.assertedBy,
@@ -539,6 +543,8 @@ router.get('/', async (req: Request, res: Response) => {
       confidence: actor.confidence ?? 0.75,
       confidenceTier: getConfidenceTierForValue(actor.confidence ?? 0.75),
       workspaceId: actor.workspaceId,
+      natoSourceReliability: actor.natoSourceReliability ?? null,
+      natoInformationCredibility: actor.natoInformationCredibility ?? null,
     }));
 
     const edgeSet = new Map<string, { source: string; target: string; type: string; strength: number }>();
@@ -614,6 +620,8 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
       confidence: actor.confidence ?? 0.75,
       confidenceTier: getConfidenceTierForValue(actor.confidence ?? 0.75),
       workspaceId: actor.workspaceId,
+      natoSourceReliability: actor.natoSourceReliability ?? null,
+      natoInformationCredibility: actor.natoInformationCredibility ?? null,
     }));
 
     // Create cluster nodes for OSINT event groups
@@ -630,6 +638,8 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
             confidence: actor.confidence ?? 0.65,
             confidenceTier: getConfidenceTierForValue(actor.confidence ?? 0.65),
             workspaceId: actor.workspaceId,
+            natoSourceReliability: actor.natoSourceReliability ?? null,
+            natoInformationCredibility: actor.natoInformationCredibility ?? null,
           });
         }
       } else {
@@ -643,6 +653,8 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
           confidence: 0.65,
           confidenceTier: 'medium' as const,
           workspaceId: workspaceId,
+          natoSourceReliability: null,
+          natoInformationCredibility: null,
         });
         // Track which member IDs are clustered (for edge remapping)
         for (const actor of eventActors) {
