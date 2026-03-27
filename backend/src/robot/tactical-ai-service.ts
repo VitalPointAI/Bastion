@@ -97,6 +97,7 @@ an engagement using the available skills (tools).
 - ALL positions MUST be at road intersections — no off-road movement
 - Overwatch must have sight lines to the threat area but be outside enemy WEZ
 - Firing positions must FLANK the enemy — never head-on
+- CRITICAL: If the enemy is advancing SOUTH, firing positions MUST be SOUTH of the kill zone (lower Y coordinates) so they fire NORTH into the enemy approach. Followers must NEVER be positioned north of (higher Y than) the kill zone when the enemy approaches from the north.
 - Firing corridors must not cross through the overwatch position
 - Followers need >1.5 unit spacing for mutual defilade
 - Withdrawal routes should differ from advance routes

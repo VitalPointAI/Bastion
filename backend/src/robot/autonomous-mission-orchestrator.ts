@@ -764,8 +764,10 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       const opGrid = roomToGridRef(op.position.x, op.position.y);
       const commanderIntent = [
         `Leader is holding at observation post grid ${opGrid} (${op.position.x.toFixed(1)}, ${op.position.y.toFixed(1)}) facing heading ${op.facingHeading}°. The overwatch position MUST be the leader's current OP position — do NOT move the leader.`,
-        'Intelligence reports enemy armor advancing south through the area of operations.',
+        'Intelligence reports enemy armor advancing SOUTH from the NORTH edge of the AO.',
         'Assess the likely avenue of approach and determine the optimal kill zone location to interdict enemy armor moving south.',
+        'CRITICAL POSITIONING CONSTRAINT: Followers MUST be positioned SOUTH of the kill zone so they fire NORTH into the enemy approach.',
+        'Both followers must be south, east, or west of the kill zone — NEVER north of it, because the enemy is approaching from the north.',
         'Position followers with flanking firing arcs and interlocking fields of fire across the kill zone.',
       ].join(' ');
 
@@ -781,6 +783,10 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         config.homeBase,
         commanderIntent,
       );
+
+      // Validate and correct firing positions — they MUST be south of the kill zone
+      // (lower Y) so they fire north into the enemy approach from the north.
+      this.validateFiringPositionsSouthOfKillZone(state, plan);
 
       state.tacticalPlan = plan;
       this.logPhase(state, `ASSESSMENT: ${plan.assessment}`);
@@ -942,7 +948,7 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         const opGrid = roomToGridRef(op.position.x, op.position.y);
         const parts: string[] = [];
         parts.push(`Leader is holding at observation post grid ${opGrid} (${op.position.x.toFixed(1)}, ${op.position.y.toFixed(1)}) facing heading ${op.facingHeading}°. The overwatch position MUST be the leader's current OP position — do NOT move the leader.`);
-        parts.push('Assess the detected threats and determine the optimal kill zone location. Position followers with flanking firing arcs to interdict and destroy enemy armor. Followers should have interlocking fields of fire across the kill zone.');
+        parts.push('Assess the detected threats and determine the optimal kill zone location. CRITICAL: Followers MUST be positioned SOUTH of the kill zone so they fire NORTH into the enemy approach from the north. Both followers must be south, east, or west of the kill zone — NEVER north of it. Position followers with flanking firing arcs to interdict and destroy enemy armor. Followers should have interlocking fields of fire across the kill zone.');
         if (state.config.killZoneCenter) {
           const kz = state.config.killZoneCenter;
           const kzGrid = roomToGridRef(kz.x, kz.y);
@@ -963,6 +969,9 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         state.config.homeBase,
         commanderIntent,
       );
+
+      // Validate and correct firing positions — they MUST be south of the kill zone
+      this.validateFiringPositionsSouthOfKillZone(state, plan);
 
       state.tacticalPlan = plan;
       this.logPhase(state, `ASSESSMENT: ${plan.assessment}`);
@@ -2828,6 +2837,45 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     });
 
     console.log('[AutonomousOrchestrator] Subscribed to vision detection events');
+  }
+
+  /**
+   * Validate that all firing positions are SOUTH of the kill zone (lower Y).
+   * Enemy approaches from the north — followers must fire north into the approach.
+   * If the LLM placed any position north of the kill zone, mirror it south.
+   */
+  private validateFiringPositionsSouthOfKillZone(state: AutoState, plan: TacticalPlan): void {
+    // Determine the kill zone Y: use the overwatch Y as reference (kill zone is near/north of overwatch)
+    // or use the midpoint between overwatch and the north edge of the recon area
+    const owY = plan.overwatch.position.y;
+    // Kill zone is typically between the overwatch and the enemy approach — use overwatch Y as the line
+    const killZoneY = owY;
+
+    let corrected = false;
+    for (const fp of plan.firingPositions) {
+      if (fp.position.y > killZoneY) {
+        // This position is NORTH of the kill zone — mirror it south
+        const oldY = fp.position.y;
+        // Mirror: same distance south of the kill zone as it was north
+        fp.position.y = killZoneY - (oldY - killZoneY);
+        // Clamp to valid room bounds
+        fp.position.y = Math.max(0.5, fp.position.y);
+        this.logPhase(state, `CORRECTED firing position from y=${oldY.toFixed(1)} to y=${fp.position.y.toFixed(1)} — must be south of kill zone`);
+        corrected = true;
+      }
+    }
+
+    // Also correct follower routes if positions were changed
+    if (corrected && plan.routes?.followerRoutes) {
+      for (let i = 0; i < plan.firingPositions.length; i++) {
+        const fp = plan.firingPositions[i];
+        const route = plan.routes.followerRoutes[i];
+        if (route && route.length > 0) {
+          // Replace the final waypoint with the corrected firing position
+          route[route.length - 1] = { x: fp.position.x, y: fp.position.y };
+        }
+      }
+    }
   }
 
   private logPhase(state: AutoState, msg: string): void {
