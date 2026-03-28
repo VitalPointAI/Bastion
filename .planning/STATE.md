@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: "Completed 60-01: Ironclaw infrastructure foundation (RLS, MCP port, transactional SET LOCAL)"
-last_updated: "2026-03-28T13:55:26.012Z"
+stopped_at: "Completed 60-02: MCP Tool Catalog and DID Auth Middleware"
+last_updated: "2026-03-28T14:03:29.864Z"
 last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
   total_phases: 76
   completed_phases: 56
   total_plans: 479
-  completed_plans: 475
+  completed_plans: 476
   percent: 100
 ---
 
@@ -1030,6 +1030,9 @@ Recent decisions affecting current work:
 - [Phase 59]: Demo scripts (A11-A13) written as presenter-reads-from-slide step lists — eliminates separate demo script document
 - [Phase 60]: SET LOCAL always wrapped in explicit BEGIN/COMMIT via withDIDScope to prevent cross-user contamination in pooled connections
 - [Phase 60]: MCP port changed 3334→4000 to match blueprint http://bastion:4000/mcp convention
+- [Phase 60-rearchitect-ironclaw-integration]: Used PERSONNEL_TOOL_CLEARANCES exported map to co-locate clearance requirements with tool definitions
+- [Phase 60-rearchitect-ironclaw-integration]: resolveDIDClaims stubs from agent_vc_claims table with graceful empty fallback to avoid 60-03 bootstrap dependency
+- [Phase 60-rearchitect-ironclaw-integration]: ALL_TOOLS merged catalog preserves BASTION_TOOLS at front so legacy toolBridge routing remains unchanged
 
 ### Roadmap Evolution
 
@@ -1752,7 +1755,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T13:55:26.001Z
-Stopped at: Completed 60-01: Ironclaw infrastructure foundation (RLS, MCP port, transactional SET LOCAL)
+Last session: 2026-03-28T14:03:17.451Z
+Stopped at: Completed 60-02: MCP Tool Catalog and DID Auth Middleware
 Resume file: None
 Next action: Continue Phase 40 plan 02
