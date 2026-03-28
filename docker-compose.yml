@@ -103,6 +103,8 @@ services:
       AGENT_NAME: ironclaw
       AGENT_USE_PLANNING: "true"
       RUST_LOG: ironclaw=debug
+      # Telegram bot token for /telegram pair command
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       # MCP server registration URL — Bastion tools exposed to Ironclaw
       MCP_BASTION_URL: http://bastion-mcp:4000/mcp
     volumes:
