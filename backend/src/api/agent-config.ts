@@ -40,9 +40,12 @@ function getRequestingDid(req: Request): string | null {
 
 /**
  * Convert a NEAR account ID to a DID.
+ * If already a DID (starts with "did:"), return as-is.
  * e.g. "alice.near" → "did:near:alice.near"
+ *      "did:near:alice.near" → "did:near:alice.near"
  */
 function nearAccountToDid(nearAccount: string): string {
+  if (nearAccount.startsWith('did:')) return nearAccount;
   return `did:near:${nearAccount}`;
 }
 
