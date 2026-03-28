@@ -1,18 +1,20 @@
 /**
  * Telegram Bot Service
  *
- * Handles Telegram pairing for Ironclaw Agent Config.
+ * Bidirectional Telegram ↔ Ironclaw bridge.
  * Uses the Telegram Bot API directly via fetch — no library needed.
  *
- * Flow:
- *   1. User clicks "Start Pairing" → generatePairingCode(did)
- *   2. Service sends 6-digit code to user's Telegram (user must /start the bot first)
- *   3. User enters code in UI → confirmPairingCode(did, code)
- *   4. Service validates and returns chatId for storage in AgentConfig
+ * Features:
+ *   - Pairing: 6-digit code flow to link Telegram chat → Bastion DID
+ *   - Chat: Forward messages from Telegram to Ironclaw, send responses back
+ *   - Notifications: Push alerts from Ironclaw routines to Telegram
  *
- * Limitation: The user must have already sent /start to the bot so we know their
- * chat ID. We use getUpdates polling to discover chat IDs from /start messages.
+ * Paired users can chat with their Ironclaw Chief of Staff directly from
+ * Telegram — same as the Bastion drawer, different channel.
  */
+
+import { ironclawClient } from './ironclaw-client.js';
+import { agentConfigStore } from './agent-config-store.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,6 +54,8 @@ class TelegramBotService {
   private pairingSessions = new Map<string, PairingSession>();
   /** Maps Telegram username (lowercase) → chat ID, learned from /start messages */
   private knownChats = new Map<string, string>();
+  /** Maps Telegram chatId → DID for paired users (loaded from agent_config) */
+  private pairedChats = new Map<string, string>();
   private lastUpdateId = 0;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
@@ -66,10 +70,13 @@ class TelegramBotService {
       console.warn('[TelegramBot] No TELEGRAM_BOT_TOKEN — Telegram pairing disabled');
       return false;
     }
-    console.log('[TelegramBot] Initialized — polling for /start messages');
+    console.log('[TelegramBot] Initialized — polling for messages');
 
-    // Poll for new messages every 5 seconds to learn chat IDs
-    this.pollTimer = setInterval(() => void this.pollUpdates(), 5000);
+    // Load paired chats from database
+    void this.loadPairedChats();
+
+    // Poll for new messages every 3 seconds
+    this.pollTimer = setInterval(() => void this.pollUpdates(), 3000);
     // Cleanup expired pairing sessions
     this.cleanupTimer = setInterval(() => this.cleanupExpired(), CLEANUP_INTERVAL_MS);
 
@@ -125,6 +132,7 @@ class TelegramBotService {
 
   /**
    * Confirm a pairing code. Returns the chat ID if valid.
+   * Registers the chatId → DID mapping for message forwarding.
    */
   confirmPairingCode(did: string, code: string): { ok: boolean; chatId?: string; error?: string } {
     const session = this.pairingSessions.get(did);
@@ -141,8 +149,15 @@ class TelegramBotService {
       return { ok: false, error: 'Invalid code. Please check and try again.' };
     }
 
-    // Success — clean up and return chat ID
+    // Success — register for message forwarding and clean up
+    this.pairedChats.set(session.chatId, did);
     this.pairingSessions.delete(did);
+
+    void this.sendMessage(
+      session.chatId,
+      '✅ *Paired successfully!*\n\nYou can now chat with Ironclaw directly from here. Just type a message.',
+    );
+
     return { ok: true, chatId: session.chatId };
   }
 
@@ -211,16 +226,106 @@ class TelegramBotService {
         }
         this.knownChats.set(username, chatId);
 
-        // Auto-reply to /start
+        // Handle commands
         if (msg.text === '/start') {
           void this.sendMessage(
             chatId,
-            '👋 *Welcome to Bastion Ironclaw Bot*\n\nThis bot delivers notifications from your Ironclaw Chief of Staff.\n\nTo pair your account, go to the Agent Config panel in Bastion and click "Pair Telegram" in the Channels tab.',
+            '👋 *Welcome to Bastion Ironclaw Bot*\n\nThis bot connects you to your Ironclaw Chief of Staff.\n\nTo pair your account, go to the Agent Config panel in Bastion and click "Pair Telegram" in the Channels tab.\n\nOnce paired, you can chat with Ironclaw directly from here.',
           );
+          continue;
+        }
+
+        if (msg.text === '/status') {
+          const paired = this.pairedChats.has(chatId);
+          void this.sendMessage(chatId, paired
+            ? '✅ Your Telegram is paired with Bastion. Send any message to chat with Ironclaw.'
+            : '❌ Not paired. Open Bastion → Agent Config → Channels → Pair Telegram.');
+          continue;
+        }
+
+        // Forward messages from paired users to Ironclaw
+        if (msg.text && !msg.text.startsWith('/')) {
+          void this.handleIncomingMessage(chatId, msg.text);
         }
       }
     } catch {
       // Silent — polling failures are transient
+    }
+  }
+
+  /**
+   * Forward a Telegram message to Ironclaw and send the response back.
+   */
+  private async handleIncomingMessage(chatId: string, text: string): Promise<void> {
+    const did = this.pairedChats.get(chatId);
+    if (!did) {
+      void this.sendMessage(chatId, '❌ Your Telegram is not paired with Bastion. Open Bastion → Agent Config → Channels → Pair Telegram.');
+      return;
+    }
+
+    try {
+      // Send typing indicator
+      void fetch(`${TELEGRAM_API}${this.token}/sendChatAction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
+      });
+
+      // Forward to Ironclaw — use DID as thread ID for conversation continuity
+      const response = await ironclawClient.sendMessage(did, text, did);
+
+      // Send Ironclaw's response back to Telegram
+      const reply = response.response ?? 'No response from Ironclaw.';
+
+      // Telegram has a 4096 char limit — split long messages
+      const chunks = this.splitMessage(reply, 4000);
+      for (const chunk of chunks) {
+        await this.sendMessage(chatId, chunk);
+      }
+    } catch (err) {
+      console.error(`[TelegramBot] Error forwarding message for ${did}:`, err);
+      void this.sendMessage(chatId, '⚠️ Could not reach Ironclaw. Please try again.');
+    }
+  }
+
+  /**
+   * Split a long message into chunks that fit Telegram's 4096 char limit.
+   */
+  private splitMessage(text: string, maxLen: number): string[] {
+    if (text.length <= maxLen) return [text];
+    const chunks: string[] = [];
+    let remaining = text;
+    while (remaining.length > 0) {
+      if (remaining.length <= maxLen) {
+        chunks.push(remaining);
+        break;
+      }
+      // Try to split at a newline
+      let splitAt = remaining.lastIndexOf('\n', maxLen);
+      if (splitAt < maxLen * 0.5) splitAt = maxLen;
+      chunks.push(remaining.slice(0, splitAt));
+      remaining = remaining.slice(splitAt).trimStart();
+    }
+    return chunks;
+  }
+
+  /**
+   * Load paired chatId → DID mappings from agent_config at startup.
+   */
+  private async loadPairedChats(): Promise<void> {
+    try {
+      const { getPool } = await import('../lib/database.js');
+      const result = await getPool().query(
+        "SELECT did, telegram_chat_id FROM agent_config WHERE telegram_enabled = true AND telegram_chat_id IS NOT NULL",
+      );
+      for (const row of result.rows) {
+        this.pairedChats.set(row.telegram_chat_id as string, row.did as string);
+      }
+      if (this.pairedChats.size > 0) {
+        console.log(`[TelegramBot] Loaded ${this.pairedChats.size} paired chat(s)`);
+      }
+    } catch (err) {
+      console.warn('[TelegramBot] Could not load paired chats:', err instanceof Error ? err.message : err);
     }
   }
 
