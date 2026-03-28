@@ -349,8 +349,8 @@ export function AdvancedTab({ config, updateConfig: _updateConfig, isAdmin: isAd
                 <p className="text-xs text-slate-200 font-medium">Update Ironclaw Container</p>
                 <p className="text-[11px] text-slate-500 mt-0.5">
                   {status?.updateAvailable
-                    ? `Version ${status.availableVersion} is ready to install.`
-                    : 'No update available.'}
+                    ? `Version ${status.availableVersion} is ready to install. (Current: v${status.version})`
+                    : `Running v${status?.version ?? 'unknown'} — no update available.`}
                 </p>
               </div>
 
