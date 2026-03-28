@@ -123,8 +123,8 @@ export function IronclawDrawer({
   useEffect(() => {
     fetch('/api/ironclaw/status', { credentials: 'include' })
       .then((r) => r.ok ? r.json() : null)
-      .then((d: { currentVersion?: string | null } | null) => {
-        if (d) setVersion(d.currentVersion ?? 'unknown');
+      .then((d: { version?: string | null; currentVersion?: string | null } | null) => {
+        if (d) setVersion(d.version ?? d.currentVersion ?? 'unknown');
       })
       .catch(() => {});
   }, []);
