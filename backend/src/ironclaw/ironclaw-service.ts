@@ -624,6 +624,16 @@ export class IronclawService {
         const healthy = await this.isHealthy();
         if (healthy) {
           console.log('[ironclaw-service] Startup init complete: ironclaw healthy');
+
+          // Register Bastion MCP tools with Ironclaw so it can query the knowledge graph,
+          // access operations, calendar, resources, and personnel tools
+          try {
+            await ironclawClient.registerMcpServer();
+            console.log('[ironclaw-service] MCP server registered with Ironclaw');
+          } catch (err) {
+            console.warn('[ironclaw-service] MCP registration failed (non-fatal):', err instanceof Error ? err.message : err);
+          }
+
           await this.initializeRoutines();
           return;
         }
