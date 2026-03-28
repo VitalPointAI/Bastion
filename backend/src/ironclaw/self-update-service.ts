@@ -34,6 +34,40 @@ interface UpdateStatus {
   lastChecked: Date | null;
 }
 
+/** Returned by triggerUpdate — simpler than the internal UpdateResult */
+export interface TriggerUpdateResult {
+  success: boolean;
+  version: string;
+  error?: string;
+}
+
+/** Webhook payload from GitHub release event */
+export interface GitHubReleasePayload {
+  tagName: string;
+  releaseNotes: string;
+  htmlUrl: string;
+  publishedAt: string;
+  repoName: string;
+}
+
+/** Full status shape returned to the admin UI */
+export interface IronclawStatus {
+  healthy: boolean;
+  version: string;
+  lastCheck: Date | null;
+  updateAvailable: boolean;
+  availableVersion: string | null;
+}
+
+/** Audit record for a completed container update */
+interface UpdateAuditEntry {
+  timestamp: Date;
+  fromVersion: string;
+  toVersion: string;
+  success: boolean;
+  error?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -57,6 +91,13 @@ export class SelfUpdateService {
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private isUpdating = false;
   private lastChecked: Date | null = null;
+
+  // Webhook-driven update availability tracking
+  private updateAvailable = false;
+  private availableVersion: string | null = null;
+
+  // Audit trail — last 20 update operations
+  private auditLog: UpdateAuditEntry[] = [];
 
   /**
    * Start the self-update service.
@@ -236,18 +277,178 @@ export class SelfUpdateService {
 
   /**
    * Get the current status of the self-update service.
+   * Returns both the internal UpdateStatus fields and the richer IronclawStatus
+   * shape used by the admin UI.
    */
-  async getStatus(): Promise<UpdateStatus> {
+  async getStatus(): Promise<IronclawStatus> {
     // Lazy retry: if version is still unknown, try fetching it
     if (!this.currentVersion) {
       this.currentVersion =
         process.env.IRONCLAW_VERSION ?? (await this.fetchCurrentVersion());
     }
+
+    // Determine health from Ironclaw HTTP health endpoint
+    let healthy = false;
+    try {
+      healthy = await ironclawClient.healthCheck();
+    } catch {
+      healthy = false;
+    }
+
     return {
-      currentVersion: this.currentVersion,
-      isUpdating: this.isUpdating,
-      lastChecked: this.lastChecked,
+      healthy,
+      version: this.currentVersion ?? 'unknown',
+      lastCheck: this.lastChecked,
+      updateAvailable: this.updateAvailable,
+      availableVersion: this.availableVersion,
     };
+  }
+
+  /**
+   * Handle a GitHub release webhook payload.
+   *
+   * Called by the webhook endpoint when a `release.published` event arrives.
+   * Sets the updateAvailable flag so the admin UI can prompt for confirmation.
+   * Does NOT trigger an automatic update.
+   */
+  handleReleaseWebhook(payload: GitHubReleasePayload): void {
+    console.log(
+      `[SelfUpdateService] Webhook: new release ${payload.tagName} from ${payload.repoName}`,
+    );
+    this.availableVersion = payload.tagName;
+    this.updateAvailable = true;
+    this.lastChecked = new Date();
+
+    // Notify admin asynchronously — do not block the webhook response
+    void this.notifyAdmin(
+      `New Ironclaw release available via webhook: ${payload.tagName}. ` +
+        (payload.releaseNotes
+          ? `Release notes: ${payload.releaseNotes.slice(0, RELEASE_NOTES_MAX_LENGTH)}`
+          : 'No release notes.') +
+        ` Details: ${payload.htmlUrl}`,
+    );
+  }
+
+  /**
+   * Trigger an admin-confirmed container update.
+   *
+   * This is the ONLY path by which containers are updated — the admin must
+   * explicitly call this (via the Advanced tab "Update Ironclaw" button).
+   * The webhook path only sets the updateAvailable flag.
+   */
+  async triggerUpdate(): Promise<TriggerUpdateResult> {
+    if (this.isUpdating) {
+      return {
+        success: false,
+        version: this.currentVersion ?? 'unknown',
+        error: 'Update already in progress',
+      };
+    }
+
+    // Use available version from webhook or fall back to a fresh check
+    let targetVersion = this.availableVersion;
+    if (!targetVersion) {
+      const check = await this.checkForUpdate();
+      if (!check.available || !check.latestVersion) {
+        return {
+          success: false,
+          version: this.currentVersion ?? 'unknown',
+          error: 'No update available',
+        };
+      }
+      targetVersion = check.latestVersion;
+    }
+
+    const oldVersion = this.currentVersion ?? 'unknown';
+    this.isUpdating = true;
+
+    try {
+      await this.notifyAdmin(
+        `Admin-initiated Ironclaw update: ${oldVersion} -> ${targetVersion}. Starting...`,
+      );
+
+      console.log('[SelfUpdateService] Admin-confirmed update: pulling container...');
+      await this.execDockerRestart();
+
+      console.log('[SelfUpdateService] Waiting for health check post-update...');
+      const healthy = await this.waitForHealthy();
+
+      if (healthy) {
+        this.currentVersion = targetVersion;
+        this.updateAvailable = false;
+        this.availableVersion = null;
+
+        this.auditLog.push({
+          timestamp: new Date(),
+          fromVersion: oldVersion,
+          toVersion: targetVersion,
+          success: true,
+        });
+        // Trim audit log to last 20 entries
+        if (this.auditLog.length > 20) {
+          this.auditLog = this.auditLog.slice(-20);
+        }
+
+        await this.notifyAdmin(`Ironclaw updated to ${targetVersion}.`);
+        console.log(`[SelfUpdateService] Admin update successful: ${oldVersion} -> ${targetVersion}`);
+
+        return { success: true, version: targetVersion };
+      } else {
+        // Rollback
+        console.warn('[SelfUpdateService] Health check failed post-admin-update, rolling back...');
+        await this.execDockerRollback();
+
+        this.auditLog.push({
+          timestamp: new Date(),
+          fromVersion: oldVersion,
+          toVersion: targetVersion,
+          success: false,
+          error: 'Health check failed — rolled back',
+        });
+        if (this.auditLog.length > 20) {
+          this.auditLog = this.auditLog.slice(-20);
+        }
+
+        await this.notifyAdmin(
+          `Update to ${targetVersion} failed health check. Rolled back to ${oldVersion}.`,
+        );
+
+        return {
+          success: false,
+          version: oldVersion,
+          error: 'Health check failed after update, rolled back',
+        };
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error('[SelfUpdateService] Admin update error:', errorMsg);
+
+      this.auditLog.push({
+        timestamp: new Date(),
+        fromVersion: oldVersion,
+        toVersion: targetVersion,
+        success: false,
+        error: errorMsg,
+      });
+      if (this.auditLog.length > 20) {
+        this.auditLog = this.auditLog.slice(-20);
+      }
+
+      await this.notifyAdmin(
+        `Admin update to ${targetVersion} failed: ${errorMsg}. Manual intervention may be required.`,
+      );
+
+      return { success: false, version: oldVersion, error: errorMsg };
+    } finally {
+      this.isUpdating = false;
+    }
+  }
+
+  /**
+   * Return recent update audit log entries (last N).
+   */
+  getAuditLog(limit = 5): UpdateAuditEntry[] {
+    return this.auditLog.slice(-limit);
   }
 
   // =========================================================================
@@ -261,8 +462,12 @@ export class SelfUpdateService {
     const result = await this.checkForUpdate();
     if (result.available && result.latestVersion) {
       console.log(
-        `[SelfUpdateService] New version available: ${result.latestVersion}`,
+        `[SelfUpdateService] New version available (via poll): ${result.latestVersion}`,
       );
+      // Set updateAvailable so admin UI can show the prompt
+      this.updateAvailable = true;
+      this.availableVersion = result.latestVersion;
+
       // Notify admin about available update but don't auto-apply
       await this.notifyAdmin(
         `New Ironclaw version available: ${result.latestVersion}. ` +

@@ -73,6 +73,7 @@ import ingestRouter from './api/ingest.js';
 import decisionsRouter from './api/decisions.js';
 import { agentConfigRouter } from './api/agent-config.js';
 import { skillPacksRouter } from './api/skill-packs.js';
+import { ironclawAdminRouter } from './api/routes/ironclaw-admin.js';
 
 dotenv.config();
 
@@ -265,6 +266,7 @@ app.use('/api/ai-staff', requireAuth, aiStaffRouter);
 app.use('/api/ironclaw', requireAuth, ironclawRouter);
 app.use('/api/agent-config', requireAuth, agentConfigRouter);
 app.use('/api/skill-packs', skillPacksRouter);
+app.use('/api/admin', ironclawAdminRouter);
 app.use('/api/validation', requireAuth, validationRouter);
 app.use('/api/discovery', discoveryRouter);
 app.use('/api/osint', osintWebhookRouter);
