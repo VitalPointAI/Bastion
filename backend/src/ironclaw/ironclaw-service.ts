@@ -10,7 +10,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import { ironclawClient } from './ironclaw-client.js';
+import { ironclawClient, didToSlug } from './ironclaw-client.js';
 import { ironclawStore } from './ironclaw-store.js';
 import { actionRegistry } from './action-registry.js';
 import { getMessageBus } from '../messaging/message-bus.js';
@@ -22,12 +22,20 @@ import type {
   ActionCardData,
   SuggestionPayload,
   StepProgressData,
+  AgentConfig,
 } from './ironclaw-types.js';
 import { SENSITIVE_FIELDS } from './ironclaw-types.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
 import { designStore } from '../design/design-store.js';
 import { memoryRetrievalService } from './ironclaw-memory-service.js';
 import { kgContextService } from './kg-context-service.js';
+import { agentConfigStore } from './agent-config-store.js';
+import {
+  renderUserMd,
+  renderSoulMd,
+  renderHeartbeatMd,
+  renderAgentsMd,
+} from './identity-renderer.js';
 
 // ---------------------------------------------------------------------------
 // Message Context
@@ -222,6 +230,54 @@ export class IronclawService {
   }
 
   /**
+   * Session-start tracker for identity freshness checks.
+   * Maps userDid → UTC timestamp of their current server session's first message.
+   * Identity is considered "stale" if identityLastSyncedAt predates sessionStartAt.
+   */
+  private sessionStartTimes = new Map<string, Date>();
+
+  /**
+   * Write the four identity files (USER.md, SOUL.md, HEARTBEAT.md, AGENTS.md)
+   * to Ironclaw's workspace for the given user DID.
+   *
+   * Blueprint Section 3.1: "Written by Bastion before each job."
+   *
+   * Files are written to: users/{didSlug}/identity/{FILE}.md
+   * Each write uses a /file write command via the webhook channel.
+   * After all files are written, updates identityLastSyncedAt on the config.
+   */
+  async syncUserIdentity(did: string, config: AgentConfig): Promise<void> {
+    const slug = didToSlug(did);
+    const base = `users/${slug}/identity`;
+
+    const files: Array<{ path: string; content: string }> = [
+      { path: `${base}/USER.md`,      content: renderUserMd(config) },
+      { path: `${base}/SOUL.md`,      content: renderSoulMd(config) },
+      { path: `${base}/HEARTBEAT.md`, content: renderHeartbeatMd(config) },
+      { path: `${base}/AGENTS.md`,    content: renderAgentsMd(config) },
+    ];
+
+    for (const file of files) {
+      try {
+        await ironclawClient.sendMessage(
+          'system',
+          `/file write ${file.path}\n${file.content}`,
+        );
+      } catch (err) {
+        // Log but don't block — identity sync is best-effort at message time
+        console.error(`[ironclaw-service] syncUserIdentity: failed to write ${file.path}:`, err);
+      }
+    }
+
+    // Mark sync timestamp on the config record
+    try {
+      await agentConfigStore.upsert({ ...config, identityLastSyncedAt: new Date() });
+    } catch (err) {
+      console.error('[ironclaw-service] syncUserIdentity: failed to update identityLastSyncedAt:', err);
+    }
+  }
+
+  /**
    * Handle an incoming user message:
    * 1. Get or create session (for thread_id tracking)
    * 2. Persist user message
@@ -236,6 +292,33 @@ export class IronclawService {
     context?: MessageContext,
     threadId?: string,
   ): Promise<void> {
+    // 0. Identity freshness check — sync identity files if stale for this session.
+    // Blueprint Section 3.1: identity files are written before each job.
+    // "Stale" = identityLastSyncedAt is null OR predates session start.
+    try {
+      const sessionStart = this.sessionStartTimes.get(userDid);
+      if (!sessionStart) {
+        // First message this server session — record start time
+        this.sessionStartTimes.set(userDid, new Date());
+      }
+      const config = await agentConfigStore.getByDid(userDid);
+      if (config) {
+        const currentSessionStart = this.sessionStartTimes.get(userDid)!;
+        const isStale =
+          !config.identityLastSyncedAt ||
+          config.identityLastSyncedAt < currentSessionStart;
+        if (isStale) {
+          // Fire-and-forget — never block message flow
+          this.syncUserIdentity(userDid, config).catch((err) =>
+            console.error('[ironclaw-service] syncUserIdentity error:', err),
+          );
+        }
+      }
+    } catch (err) {
+      // Identity sync is best-effort — never break message flow
+      console.error('[ironclaw-service] Identity freshness check failed:', err);
+    }
+
     // 1. Get or create local session — uses problemSetId as thread_id
     const session = await ironclawStore.getOrCreateSession(problemSetId, userDid);
 
@@ -837,6 +920,26 @@ export class IronclawService {
       'A good Chief of Staff does not wait to be asked — they surface what matters.',
       'When the commander asks you to update, draft, or generate content for a field, use the KG data',
       'to produce grounded, intelligence-backed output immediately.',
+      '',
+      '## Cross-Tab Data & Workflow Mapping',
+      'The commander thinks in terms of UI tabs (Understanding, Design, Plan, etc.) but you operate at the DATA layer.',
+      'When the commander says "go to [tab] and get [data]", you DO NOT navigate tabs — you call the tool that',
+      'accesses the same underlying data. You have DIRECT access to the data behind every tab.',
+      '',
+      'Key mappings:',
+      '- "Get the strategic environment / strat env" → call bastion.design.synthesize_current_state.',
+      '  This pulls actors, relationships, tensions, strategic docs, and problem scoping data from the graph',
+      '  and synthesizes it into the Current State field automatically.',
+      '- "Get actor / entity info" → call bastion.graph.get_actor or bastion.graph.search_actors.',
+      '- "What does the graph / brain show?" → call bastion.graph.query or bastion.graph.stats.',
+      '- "Pull data from Understanding / COP / another tab" → query the graph or design store directly.',
+      '  The data is in Neo4j and PostgreSQL, not in the UI.',
+      '',
+      'CRITICAL: When asked to fetch data from another tab or populate a field with external data:',
+      '1. Identify which tool provides that data (see mappings above).',
+      '2. Call the tool immediately — do NOT ask the commander for the data or an API endpoint.',
+      '3. Use the result to generate a suggestion or populate the field.',
+      'You are a staff officer with full database access. ACT like it.',
       '',
       '## Form Field Operations',
       'When the commander asks you to enter, fill in, draft, write, update, or generate content for any field:',
