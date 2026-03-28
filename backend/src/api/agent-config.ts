@@ -16,6 +16,7 @@ import type { Request, Response } from 'express';
 import { agentConfigStore } from '../ironclaw/agent-config-store.js';
 import { ironclawService } from '../ironclaw/ironclaw-service.js';
 import { telegramBotService } from '../ironclaw/telegram-bot-service.js';
+import { getPool } from '../lib/database.js';
 import type { AgentConfig } from '../ironclaw/ironclaw-types.js';
 
 const router = Router();
@@ -44,9 +45,19 @@ function getRequestingDid(req: Request): string | null {
  * e.g. "alice.near" → "did:near:alice.near"
  *      "did:near:alice.near" → "did:near:alice.near"
  */
-function nearAccountToDid(nearAccount: string): string {
-  if (nearAccount.startsWith('did:')) return nearAccount;
-  return `did:near:${nearAccount}`;
+function toDid(input: string): string {
+  if (input.startsWith('did:')) return input;
+  return `did:near:${input}`;
+}
+
+/**
+ * Extract the NEAR account from a DID or return as-is if already an account.
+ * e.g. "did:near:alice.near" → "alice.near"
+ *      "alice.near" → "alice.near"
+ */
+function toNearAccount(input: string): string {
+  if (input.startsWith('did:near:')) return input.replace('did:near:', '');
+  return input;
 }
 
 // ---------------------------------------------------------------------------
@@ -62,7 +73,7 @@ function nearAccountToDid(nearAccount: string): string {
 router.get('/:userId', async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId as string;
-    const targetDid = nearAccountToDid(userId);
+    const targetDid = toDid(userId);
     const requestingDid = getRequestingDid(req);
 
     // Auth check — user can only read their own config
@@ -73,9 +84,24 @@ router.get('/:userId', async (req: Request, res: Response) => {
     // Attempt lookup
     let config = await agentConfigStore.getByDid(targetDid);
 
-    // Create default on first access
+    // Create default on first access — seed display name from user_profiles if available
     if (!config) {
-      config = await agentConfigStore.createDefault(targetDid, userId);
+      const nearAccount = toNearAccount(userId);
+      config = await agentConfigStore.createDefault(targetDid, nearAccount);
+
+      // Try to populate displayName from existing user profile
+      try {
+        const profileResult = await getPool().query(
+          'SELECT display_name FROM user_profiles WHERE near_account_id = $1',
+          [nearAccount],
+        );
+        if (profileResult.rows[0]?.display_name) {
+          config.displayName = profileResult.rows[0].display_name as string;
+          await agentConfigStore.upsert(config);
+        }
+      } catch {
+        // Non-fatal — display name just stays as the default
+      }
     }
 
     return res.status(200).json(config);
@@ -98,7 +124,7 @@ router.get('/:userId', async (req: Request, res: Response) => {
 router.put('/:userId', async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId as string;
-    const targetDid = nearAccountToDid(userId);
+    const targetDid = toDid(userId);
     const requestingDid = getRequestingDid(req);
 
     // Auth check — user can only update their own config
@@ -108,32 +134,17 @@ router.put('/:userId', async (req: Request, res: Response) => {
 
     const body = req.body as Partial<AgentConfig>;
 
-    // Validate required fields
-    const requiredFields: (keyof AgentConfig)[] = [
-      'displayName',
-      'rank',
-      'staffSection',
-      'position',
-      'unit',
-    ];
-    const missingFields = requiredFields.filter((f) => !body[f]);
-    if (missingFields.length > 0) {
-      return res.status(400).json({
-        error: `Missing required fields: ${missingFields.join(', ')}`,
-      });
-    }
-
     // Merge with existing config (or defaults) so partial updates work
     let existing = await agentConfigStore.getByDid(targetDid);
     if (!existing) {
-      existing = await agentConfigStore.createDefault(targetDid, userId);
+      existing = await agentConfigStore.createDefault(targetDid, toNearAccount(userId));
     }
 
     const updated: AgentConfig = {
       ...existing,
       ...body,
       did: targetDid,           // Never override DID from body
-      nearAccount: userId,       // Never override nearAccount from body
+      nearAccount: existing.nearAccount, // Preserve original nearAccount
       identityLastSyncedAt: existing.identityLastSyncedAt,
       createdAt: existing.createdAt,
       updatedAt: new Date(),
@@ -171,7 +182,7 @@ router.put('/:userId', async (req: Request, res: Response) => {
 router.post('/:userId/telegram-pair', async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId as string;
-    const targetDid = nearAccountToDid(userId);
+    const targetDid = toDid(userId);
     const requestingDid = getRequestingDid(req);
 
     if (requestingDid && requestingDid !== targetDid) {
@@ -215,7 +226,7 @@ router.post('/:userId/telegram-pair', async (req: Request, res: Response) => {
 router.post('/:userId/telegram-confirm', async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId as string;
-    const targetDid = nearAccountToDid(userId);
+    const targetDid = toDid(userId);
     const requestingDid = getRequestingDid(req);
 
     if (requestingDid && requestingDid !== targetDid) {
