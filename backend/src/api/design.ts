@@ -390,17 +390,26 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
     const { computeDecayedConfidence } = await import('../graph/confidence-calculator.js');
     const nowDate = new Date();
 
+    // Neo4j integers come back as BigInt — convert to plain number for JSON safety
+    const toNum = (v: unknown): number | null => {
+      if (v == null) return null;
+      if (typeof v === 'bigint') return Number(v);
+      if (typeof v === 'object' && v !== null && 'toInt' in v) return (v as { toInt: () => number }).toInt();
+      if (typeof v === 'number') return v;
+      return null;
+    };
+
     const actors = actorResult.records.map((r) => {
-      const baseConf = r.get('confidence') ?? 0.65;
+      const baseConf = toNum(r.get('confidence')) ?? 0.65;
       const validFrom = r.get('validFrom');
-      const halfLife = r.get('halfLifeDays') ?? 90;
+      const halfLife = toNum(r.get('halfLifeDays')) ?? 90;
       const lastAsserted = validFrom ? new Date(validFrom) : nowDate;
       const decayedConf = computeDecayedConfidence(baseConf, lastAsserted, halfLife, nowDate);
       return {
         name: r.get('name'),
         type: r.get('type'),
         confidence: decayedConf,
-        relationships: typeof r.get('rels')?.toInt === 'function' ? r.get('rels').toInt() : r.get('rels'),
+        relationships: toNum(r.get('rels')) ?? 0,
         updatedAt: r.get('updatedAt'),
       };
     });
@@ -410,6 +419,7 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
       target: r.get('target'),
       type: r.get('relType'),
       description: r.get('desc'),
+      strength: toNum(r.get('strength')),
       updatedAt: r.get('updatedAt'),
     }));
 
@@ -417,7 +427,7 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
       actor1: r.get('actor1'),
       actor2: r.get('actor2'),
       description: r.get('desc'),
-      intensity: r.get('intensity'),
+      intensity: toNum(r.get('intensity')),
       domain: r.get('domain'),
       updatedAt: r.get('updatedAt'),
     }));
