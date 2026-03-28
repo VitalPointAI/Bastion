@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: "Completed 59-03: Briefing deck annex slides A1-A17"
-last_updated: "2026-03-26T18:23:20.500Z"
+stopped_at: "Completed 60-01: Ironclaw infrastructure foundation (RLS, MCP port, transactional SET LOCAL)"
+last_updated: "2026-03-28T13:55:26.012Z"
 last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
-  total_phases: 75
+  total_phases: 76
   completed_phases: 56
-  total_plans: 472
-  completed_plans: 474
+  total_plans: 479
+  completed_plans: 475
   percent: 100
 ---
 
@@ -239,6 +239,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 59 P05 | 1 | 1 tasks | 2 files |
 | Phase 59-briefing-deck-slide-and-image-specs P02 | 7 | 2 tasks | 1 files |
 | Phase 59 P03 | 10 | 2 tasks | 1 files |
+| Phase 60 P01 | 2 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -1027,6 +1028,8 @@ Recent decisions affecting current work:
 - [Phase 59-briefing-deck-slide-and-image-specs]: Slide 24 explicitly quotes Slide 2 research question verbatim to create deliberate bookend across full deck
 - [Phase 59]: 17 annex slides written (A1-A17) — within the 15-20 target from CONTEXT.md
 - [Phase 59]: Demo scripts (A11-A13) written as presenter-reads-from-slide step lists — eliminates separate demo script document
+- [Phase 60]: SET LOCAL always wrapped in explicit BEGIN/COMMIT via withDIDScope to prevent cross-user contamination in pooled connections
+- [Phase 60]: MCP port changed 3334→4000 to match blueprint http://bastion:4000/mcp convention
 
 ### Roadmap Evolution
 
@@ -1075,6 +1078,7 @@ Recent decisions affecting current work:
 - Phase 54 added: Update research whitepaper and docs for demo briefing
 - Phase 55 added: Ironclaw guided design interview for operational approach development
 - Phase 59 added: Briefing deck slide and image specs
+- Phase 60 added: Rearchitect Ironclaw integration - use ironclaw_bastion_blueprint_v1.3.pdf to rearchitect how Ironclaw and Bastion integrate and work together
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
@@ -1748,7 +1752,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-26T18:22:21.177Z
-Stopped at: Completed 59-03: Briefing deck annex slides A1-A17
+Last session: 2026-03-28T13:55:26.001Z
+Stopped at: Completed 60-01: Ironclaw infrastructure foundation (RLS, MCP port, transactional SET LOCAL)
 Resume file: None
 Next action: Continue Phase 40 plan 02
