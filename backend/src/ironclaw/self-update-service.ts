@@ -8,7 +8,8 @@
  */
 
 import { exec } from 'child_process';
-import { writeFileSync } from 'fs';
+import { createWriteStream, writeFileSync, chmodSync } from 'fs';
+import { pipeline } from 'stream/promises';
 import http from 'http';
 import { ironclawClient } from './ironclaw-client.js';
 import { ironclawStore } from './ironclaw-store.js';
@@ -597,26 +598,34 @@ export class SelfUpdateService {
     const version = this.availableVersion ?? 'unknown';
     const containerName = 'bastion-ironclaw';
 
-    // 1. Download the new binary via shell (curl + tar) into the shared volume
+    // 1. Download the tarball via fetch, extract via tar, stage the binary
     console.log(`[SelfUpdateService] Downloading Ironclaw v${version} binary...`);
-    await new Promise<void>((resolve, reject) => {
-      const url = `https://github.com/nearai/ironclaw/releases/download/ironclaw-v${version}/ironclaw-x86_64-unknown-linux-gnu.tar.gz`;
-      const cmd = `mkdir -p /tmp/ironclaw-extract && ` +
-        `curl -fsSL "${url}" -o /tmp/ironclaw-update.tar.gz && ` +
-        `tar -xzf /tmp/ironclaw-update.tar.gz -C /tmp/ironclaw-extract && ` +
-        `find /tmp/ironclaw-extract -name ironclaw -type f -exec cp {} /shared/tokens/ironclaw-update \\; && ` +
-        `chmod +x /shared/tokens/ironclaw-update && ` +
-        `rm -rf /tmp/ironclaw-update.tar.gz /tmp/ironclaw-extract`;
+    const url = `https://github.com/nearai/ironclaw/releases/download/ironclaw-v${version}/ironclaw-x86_64-unknown-linux-gnu.tar.gz`;
+    const tarPath = '/tmp/ironclaw-update.tar.gz';
 
-      exec(cmd, { timeout: 60_000 }, (error, _stdout, stderr) => {
+    const resp = await fetch(url, { redirect: 'follow' });
+    if (!resp.ok || !resp.body) {
+      throw new Error(`Failed to download Ironclaw v${version}: HTTP ${resp.status}`);
+    }
+    await pipeline(resp.body as unknown as NodeJS.ReadableStream, createWriteStream(tarPath));
+
+    // Extract and stage the binary
+    await new Promise<void>((resolve, reject) => {
+      const cmd = `mkdir -p /tmp/ironclaw-extract && ` +
+        `tar -xzf ${tarPath} -C /tmp/ironclaw-extract && ` +
+        `find /tmp/ironclaw-extract -name ironclaw -type f -exec cp {} /shared/tokens/ironclaw-update \\; && ` +
+        `rm -rf ${tarPath} /tmp/ironclaw-extract`;
+
+      exec(cmd, { timeout: 30_000 }, (error, _stdout, stderr) => {
         if (error) {
-          console.error('[SelfUpdateService] Binary download error:', stderr);
-          reject(new Error(`Failed to download Ironclaw v${version}: ${error.message}`));
+          console.error('[SelfUpdateService] Extract error:', stderr);
+          reject(new Error(`Failed to extract Ironclaw v${version}: ${error.message}`));
           return;
         }
         resolve();
       });
     });
+    chmodSync('/shared/tokens/ironclaw-update', 0o755);
 
     // 2. Write version file so entrypoint updates version tracking
     writeFileSync('/shared/tokens/ironclaw-update-version', version);
