@@ -103,6 +103,8 @@ services:
       AGENT_NAME: ironclaw
       AGENT_USE_PLANNING: "true"
       RUST_LOG: ironclaw=debug
+      # MCP server registration URL — Bastion tools exposed to Ironclaw
+      MCP_BASTION_URL: http://bastion-mcp:4000/mcp
     volumes:
       - ironclaw-data:/home/ironclaw/.ironclaw
       - token-sync:/shared/tokens    # OAuth token file from backend
@@ -142,10 +144,10 @@ services:
     container_name: bastion-mcp
     command: node dist/mcp/index.js
     ports:
-      - "3334:3334"
+      - "4000:4000"
     environment:
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/coalition_ops
-      - MCP_PORT=3334
+      - MCP_PORT=4000
       - MCP_SHARED_SECRET=${MCP_SHARED_SECRET:-dev-mcp-secret}
       - NODE_ENV=${NODE_ENV:-development}
     depends_on:
