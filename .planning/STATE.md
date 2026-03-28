@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: "Completed 60-03: Per-user AgentConfig identity system with syncUserIdentity"
-last_updated: "2026-03-28T14:05:51.796Z"
+stopped_at: "Completed 60-04: Agent Config UI with Identity tab, Personality tab, and AgentPreviewChat"
+last_updated: "2026-03-28T14:13:15.957Z"
 last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
   total_phases: 76
   completed_phases: 56
   total_plans: 479
-  completed_plans: 477
+  completed_plans: 478
   percent: 100
 ---
 
@@ -241,6 +241,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 59 P03 | 10 | 2 tasks | 1 files |
 | Phase 60 P01 | 2 | 2 tasks | 4 files |
 | Phase 60-rearchitect-ironclaw-integration P03 | 6 | 2 tasks | 7 files |
+| Phase 60 P04 | 7 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -1036,6 +1037,9 @@ Recent decisions affecting current work:
 - [Phase 60-rearchitect-ironclaw-integration]: ALL_TOOLS merged catalog preserves BASTION_TOOLS at front so legacy toolBridge routing remains unchanged
 - [Phase 60]: clearanceLevel omitted from AgentConfig — resolved from VC claims at runtime per blueprint security model
 - [Phase 60]: syncUserIdentity is fire-and-forget from handleMessage — identity sync never blocks message flow
+- [Phase 60]: Frontend AgentConfig types duplicated from backend per project convention
+- [Phase 60]: PersonalityTab uses radio-card pattern for tone — scannable over dropdown
+- [Phase 60]: Preview panel is collapsible sidebar in AgentConfigPanel — not a separate route
 
 ### Roadmap Evolution
 
@@ -1758,7 +1762,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T14:05:51.785Z
-Stopped at: Completed 60-03: Per-user AgentConfig identity system with syncUserIdentity
+Last session: 2026-03-28T14:13:15.947Z
+Stopped at: Completed 60-04: Agent Config UI with Identity tab, Personality tab, and AgentPreviewChat
 Resume file: None
 Next action: Continue Phase 40 plan 02
