@@ -910,7 +910,7 @@ Plans:
 **Goal:** Transform Ironclaw from shared-thread chatbot to per-user Chief-of-Staff agent with identity-file injection, AgentConfig data model, expanded MCP tool catalog, PostgreSQL RLS workspace isolation, Telegram channel pairing, routine scheduling, and admin-controlled self-update — following ironclaw_bastion_blueprint_v1.3.pdf phases 0-6
 **Requirements:** IC-00-RLS, IC-00-DOCKER, IC-00-MCP-REG, IC-01-MCP-TOOLS, IC-01-DID-AUTH, IC-02-IDENTITY, IC-02-AGENTCONFIG-MODEL, IC-02-AGENTCONFIG-API, IC-02-SYNC, IC-03-UI-PANEL, IC-03-IDENTITY-TAB, IC-03-PERSONALITY-TAB, IC-03-PREVIEW, IC-04-SKILLS, IC-04-SKILLPACKS, IC-04-TELEGRAM, IC-04-CHANNELS, IC-05-ROUTINES, IC-05-HEARTBEAT, IC-05-KNOWLEDGE-SYNC, IC-06-ADVANCED-TAB, IC-06-WEBHOOK-UPDATE, IC-06-WASM-TOOLS
 **Depends on:** Phase 59
-**Plans:** 5/7 plans executed
+**Plans:** 6/7 plans executed
 
 Plans:
 - [ ] 60-01-PLAN.md -- Infrastructure: RLS migration, docker-compose MCP port reconciliation, IronclawClient SET LOCAL

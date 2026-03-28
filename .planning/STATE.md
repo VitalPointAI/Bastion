@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: "Completed 60-05: Skills tab, Channels tab, Telegram pairing"
-last_updated: "2026-03-28T14:26:38.694Z"
+stopped_at: "Completed 60-06: Routines tab, RoutineEditor, knowledge sync"
+last_updated: "2026-03-28T14:33:58.328Z"
 last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
   total_phases: 76
   completed_phases: 56
   total_plans: 479
-  completed_plans: 479
+  completed_plans: 480
   percent: 100
 ---
 
@@ -242,6 +242,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 60 P01 | 2 | 2 tasks | 4 files |
 | Phase 60-rearchitect-ironclaw-integration P03 | 6 | 2 tasks | 7 files |
 | Phase 60 P04 | 7 | 2 tasks | 7 files |
+| Phase 60 P06 | 5 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -1042,6 +1043,8 @@ Recent decisions affecting current work:
 - [Phase 60]: Preview panel is collapsible sidebar in AgentConfigPanel — not a separate route
 - [Phase 60]: Skill catalog served from unauthenticated GET /api/skill-packs to prevent redirect loops before auth
 - [Phase 60]: telegram-confirm parses PAIRED:chatId from Ironclaw response and persists chat ID server-side
+- [Phase 60]: Built-in routine definitions mirrored in frontend (not fetched from API) — static catalog data that only changes on deploy, avoiding unnecessary API calls
+- [Phase 60]: syncUserKnowledge piggybacked on existing sessionStartTimes check — fires on first message of each server session, no new in-memory state needed
 
 ### Roadmap Evolution
 
@@ -1764,7 +1767,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T14:26:33.132Z
-Stopped at: Completed 60-05: Skills tab, Channels tab, Telegram pairing
+Last session: 2026-03-28T14:33:58.317Z
+Stopped at: Completed 60-06: Routines tab, RoutineEditor, knowledge sync
 Resume file: None
 Next action: Continue Phase 40 plan 02
