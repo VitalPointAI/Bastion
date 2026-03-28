@@ -187,6 +187,8 @@ services:
       timeout: 10s
       start_period: 10s
       retries: 3
+    group_add:
+      - "988"  # Docker group GID — grants access to /var/run/docker.sock for Ironclaw self-update
     volumes:
       - token-sync:/shared/tokens    # Write refreshed OAuth tokens for Ironclaw
       - ${HOME}/.claude:/home/nodejs/.claude:ro  # Claude Code OAuth credentials (read by LLM factory)
