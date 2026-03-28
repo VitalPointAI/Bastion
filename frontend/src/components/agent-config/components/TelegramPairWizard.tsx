@@ -46,6 +46,7 @@ const CODE_TIMEOUT_MS = 5 * 60 * 1000;
 export function TelegramPairWizard({ userId, onSuccess, onCancel }: TelegramPairWizardProps) {
   const [step, setStep] = useState<WizardStep>('initiate');
   const [code, setCode] = useState('');
+  const [telegramUsername, setTelegramUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -84,6 +85,12 @@ export function TelegramPairWizard({ userId, onSuccess, onCancel }: TelegramPair
   // ---------------------------------------------------------------------------
 
   const handleInitiate = useCallback(async () => {
+    const trimmedUsername = telegramUsername.trim().replace(/^@/, '');
+    if (!trimmedUsername) {
+      setError('Please enter your Telegram username.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -91,6 +98,7 @@ export function TelegramPairWizard({ userId, onSuccess, onCancel }: TelegramPair
       const res = await fetch(`/api/agent-config/${encodeURIComponent(userId)}/telegram-pair`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramUsername: trimmedUsername }),
       });
 
       if (!res.ok) {
@@ -107,7 +115,7 @@ export function TelegramPairWizard({ userId, onSuccess, onCancel }: TelegramPair
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, telegramUsername]);
 
   // ---------------------------------------------------------------------------
   // Step 2: Confirm code
@@ -237,19 +245,28 @@ export function TelegramPairWizard({ userId, onSuccess, onCancel }: TelegramPair
         <div>
           <h3 className="text-sm font-medium text-slate-200 mb-2">Step 1: Initiate Pairing</h3>
           <p className="text-xs text-slate-400 mb-3">
-            Ironclaw will send a pairing code to your Telegram account via the
-            @BastionIronclawBot. Make sure you have started a conversation with
-            the bot before proceeding.
+            The Bastion bot will send a pairing code to your Telegram account.
+            Make sure you have started a conversation with the bot before proceeding.
           </p>
-          <ol className="text-xs text-slate-400 list-decimal pl-4 mb-4 space-y-1">
+          <ol className="text-xs text-slate-400 list-decimal pl-4 mb-3 space-y-1">
             <li>Open Telegram and search for <span className="font-mono text-slate-300">@BastionIronclawBot</span></li>
             <li>Send the bot the message <span className="font-mono text-slate-300">/start</span></li>
-            <li>Click "Start Pairing" below — the bot will send you a code</li>
+            <li>Enter your Telegram username below and click "Start Pairing"</li>
           </ol>
+          <input
+            type="text"
+            value={telegramUsername}
+            onChange={(e) => setTelegramUsername(e.target.value)}
+            placeholder="@your_telegram_username"
+            className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 mb-3"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && telegramUsername.trim()) void handleInitiate();
+            }}
+          />
           <div className="flex gap-2">
             <button
-              onClick={handleInitiate}
-              disabled={loading}
+              onClick={() => void handleInitiate()}
+              disabled={loading || !telegramUsername.trim()}
               className="flex-1 py-2 bg-blue-700 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors"
             >
               {loading ? 'Sending...' : 'Start Pairing'}

@@ -182,6 +182,7 @@ services:
       - IRONCLAW_URL=http://ironclaw:8080
       - IRONCLAW_VERSION=0.20.0
       - IRONCLAW_SHARED_SECRET=${IRONCLAW_SHARED_SECRET:-dev-shared-secret-change-me}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - SEARXNG_URL=http://searxng:8888
     depends_on:

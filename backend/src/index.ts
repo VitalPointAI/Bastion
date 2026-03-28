@@ -530,6 +530,14 @@ server.listen(port, async () => {
     console.warn('Ironclaw audit anchor service failed to start (non-fatal):', error);
   }
 
+  // Initialize Telegram bot service for Ironclaw agent config pairing
+  try {
+    const { telegramBotService } = await import('./ironclaw/telegram-bot-service.js');
+    telegramBotService.initialize();
+  } catch (error) {
+    console.warn('Telegram bot service failed to start (non-fatal):', error);
+  }
+
   // Start Ironclaw intelligence gap filler (searches for missing KG relationships)
   try {
     const { gapFillerService } = await import('./ironclaw/gap-filler-service.js');
