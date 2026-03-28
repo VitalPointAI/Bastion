@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: "Completed 60-04: Agent Config UI with Identity tab, Personality tab, and AgentPreviewChat"
-last_updated: "2026-03-28T14:13:15.957Z"
+stopped_at: "Completed 60-05: Skills tab, Channels tab, Telegram pairing"
+last_updated: "2026-03-28T14:26:38.694Z"
 last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
   total_phases: 76
   completed_phases: 56
   total_plans: 479
-  completed_plans: 478
+  completed_plans: 479
   percent: 100
 ---
 
@@ -1040,6 +1040,8 @@ Recent decisions affecting current work:
 - [Phase 60]: Frontend AgentConfig types duplicated from backend per project convention
 - [Phase 60]: PersonalityTab uses radio-card pattern for tone — scannable over dropdown
 - [Phase 60]: Preview panel is collapsible sidebar in AgentConfigPanel — not a separate route
+- [Phase 60]: Skill catalog served from unauthenticated GET /api/skill-packs to prevent redirect loops before auth
+- [Phase 60]: telegram-confirm parses PAIRED:chatId from Ironclaw response and persists chat ID server-side
 
 ### Roadmap Evolution
 
@@ -1762,7 +1764,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T14:13:15.947Z
-Stopped at: Completed 60-04: Agent Config UI with Identity tab, Personality tab, and AgentPreviewChat
+Last session: 2026-03-28T14:26:33.132Z
+Stopped at: Completed 60-05: Skills tab, Channels tab, Telegram pairing
 Resume file: None
 Next action: Continue Phase 40 plan 02
