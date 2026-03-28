@@ -36,6 +36,7 @@ import {
   renderHeartbeatMd,
   renderAgentsMd,
 } from './identity-renderer.js';
+import { routineService } from './routine-service.js';
 
 // ---------------------------------------------------------------------------
 // Message Context
@@ -298,8 +299,12 @@ export class IronclawService {
     try {
       const sessionStart = this.sessionStartTimes.get(userDid);
       if (!sessionStart) {
-        // First message this server session — record start time
+        // First message this server session — record start time and sync user knowledge
         this.sessionStartTimes.set(userDid, new Date());
+        // Blueprint Phase 5: sync user-specific knowledge on session start (fire-and-forget)
+        routineService.syncUserKnowledge(userDid).catch((err) =>
+          console.error('[ironclaw-service] syncUserKnowledge error:', err),
+        );
       }
       const config = await agentConfigStore.getByDid(userDid);
       if (config) {
@@ -580,6 +585,32 @@ export class IronclawService {
   }
 
   /**
+   * Initialize and register built-in routines with Ironclaw.
+   *
+   * Blueprint Phase 5: Called once at startup after Ironclaw health check passes.
+   * Registers all cron-based built-in routines so Ironclaw's scheduler knows
+   * to invoke them on schedule.
+   *
+   * Non-blocking on individual routine failures — log and continue.
+   */
+  async initializeRoutines(): Promise<void> {
+    const { BUILT_IN_ROUTINES } = await import('./routine-service.js');
+    for (const routine of BUILT_IN_ROUTINES) {
+      if (!routine.defaultCron) continue;  // Skip event-triggered routines
+      try {
+        await routineService.registerRoutine(routine.id, routine.defaultCron);
+      } catch (err) {
+        // Non-blocking: log but don't fail startup
+        console.warn(
+          `[ironclaw-service] initializeRoutines: failed to register ${routine.id}:`,
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+    console.log('[ironclaw-service] initializeRoutines: built-in routines registered');
+  }
+
+  /**
    * Startup initialization: wait for Ironclaw sidecar health.
    * Retries up to 3 times with 5-second delays since Ironclaw container may
    * start slower than the backend.
@@ -593,6 +624,7 @@ export class IronclawService {
         const healthy = await this.isHealthy();
         if (healthy) {
           console.log('[ironclaw-service] Startup init complete: ironclaw healthy');
+          await this.initializeRoutines();
           return;
         }
         console.warn(
