@@ -182,7 +182,17 @@ export function useIronclaw(
           specialistId: (incoming.specialist_id ?? incoming.specialistId) as string | undefined,
           specialistDisplayName: (incoming.specialist_display_name ?? incoming.specialistDisplayName) as string | undefined,
           delegatedBy: (incoming.delegated_by ?? incoming.delegatedBy) as string | undefined,
-          actionCard: (incoming.action_card ?? incoming.actionCard) as IronclawChatMessage['actionCard'],
+          actionCard: (() => {
+            const raw = (incoming.action_card ?? incoming.actionCard) as Record<string, unknown> | undefined;
+            if (!raw) return undefined;
+            return {
+              actionId: (raw.action_id ?? raw.actionId) as string,
+              actionType: (raw.action_type ?? raw.actionType) as string,
+              description: (raw.description) as string,
+              riskLevel: (raw.risk_level ?? raw.riskLevel) as string,
+              options: (raw.options) as string[],
+            };
+          })() as IronclawChatMessage['actionCard'],
           stepProgress: (incoming.step_progress ?? incoming.stepProgress) as IronclawChatMessage['stepProgress'],
           suggestion: incoming.suggestion as IronclawChatMessage['suggestion'],
           createdAt: (incoming.created_at ?? incoming.createdAt ?? new Date().toISOString()) as string,
