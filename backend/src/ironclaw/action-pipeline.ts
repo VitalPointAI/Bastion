@@ -201,12 +201,13 @@ export class ActionPipeline {
     }
 
     // No trust, non-high risk: inline confirmation
+    // Use canonical description to prevent social engineering via agent-supplied text
     return {
       status: 'confirm_required',
       action_card: {
         action_id: action.id,
         action_type: action.type,
-        description: action.description,
+        description: actionRegistry.getDescription(action.type),
         risk_level: riskLevel,
         options: ['yes', 'no', 'always'],
       },

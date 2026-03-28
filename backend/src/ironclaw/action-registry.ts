@@ -88,6 +88,21 @@ const CANONICAL_DESCRIPTIONS: Record<string, string> = {
   'bastion.graph.get_actor': 'Get full details of a specific actor node with relationships',
   'bastion.graph.query': 'Run a read-only Cypher query against the knowledge graph',
   'bastion.graph.stats': 'Get knowledge graph statistics (node counts, top actors)',
+  // Ironclaw built-in tools — plain English for non-technical users
+  'http': 'Access an external website or data source on your behalf',
+  'fetch': 'Retrieve information from an external source',
+  'web_search': 'Search the web for relevant information',
+  'web_browse': 'Visit a web page to gather information',
+  'file_read': 'Read a file from the workspace',
+  'file_write': 'Save or update a file in the workspace',
+  'file_delete': 'Delete a file from the workspace',
+  'shell': 'Run a system command',
+  'code_execute': 'Run a code snippet',
+  'slack': 'Send or read Slack messages',
+  'gmail': 'Send or read email via Gmail',
+  'github': 'Interact with GitHub (repositories, issues, PRs)',
+  'telegram': 'Send a message via Telegram',
+  'mcp': 'Use an MCP tool integration',
 };
 
 export class ActionRegistry {

@@ -34,7 +34,7 @@ export function IronclawActionCard({ card, onDecision, disabled }: IronclawActio
       {/* Header with risk badge */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-medium text-amber-300 uppercase tracking-wide">
-          Action Required
+          Authorization Required
         </span>
         <span className={`text-[10px] px-1.5 py-0.5 rounded border ${risk.classes}`}>
           {risk.label}
@@ -42,10 +42,7 @@ export function IronclawActionCard({ card, onDecision, disabled }: IronclawActio
       </div>
 
       {/* Description */}
-      <p className="text-sm text-gray-200 mb-3">{card.description}</p>
-
-      {/* Action type */}
-      <p className="text-[10px] text-gray-400 mb-2 font-mono">{card.actionType}</p>
+      <p className="text-sm text-gray-200 mb-3">Ironclaw is requesting permission to: <strong>{card.description}</strong></p>
 
       {/* Decision buttons */}
       <div className="flex gap-2">
