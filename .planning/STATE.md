@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: "Completed 60-02: MCP Tool Catalog and DID Auth Middleware"
-last_updated: "2026-03-28T14:03:29.864Z"
+stopped_at: "Completed 60-03: Per-user AgentConfig identity system with syncUserIdentity"
+last_updated: "2026-03-28T14:05:51.796Z"
 last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
   total_phases: 76
   completed_phases: 56
   total_plans: 479
-  completed_plans: 476
+  completed_plans: 477
   percent: 100
 ---
 
@@ -240,6 +240,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 59-briefing-deck-slide-and-image-specs P02 | 7 | 2 tasks | 1 files |
 | Phase 59 P03 | 10 | 2 tasks | 1 files |
 | Phase 60 P01 | 2 | 2 tasks | 4 files |
+| Phase 60-rearchitect-ironclaw-integration P03 | 6 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -1033,6 +1034,8 @@ Recent decisions affecting current work:
 - [Phase 60-rearchitect-ironclaw-integration]: Used PERSONNEL_TOOL_CLEARANCES exported map to co-locate clearance requirements with tool definitions
 - [Phase 60-rearchitect-ironclaw-integration]: resolveDIDClaims stubs from agent_vc_claims table with graceful empty fallback to avoid 60-03 bootstrap dependency
 - [Phase 60-rearchitect-ironclaw-integration]: ALL_TOOLS merged catalog preserves BASTION_TOOLS at front so legacy toolBridge routing remains unchanged
+- [Phase 60]: clearanceLevel omitted from AgentConfig — resolved from VC claims at runtime per blueprint security model
+- [Phase 60]: syncUserIdentity is fire-and-forget from handleMessage — identity sync never blocks message flow
 
 ### Roadmap Evolution
 
@@ -1755,7 +1758,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T14:03:17.451Z
-Stopped at: Completed 60-02: MCP Tool Catalog and DID Auth Middleware
+Last session: 2026-03-28T14:05:51.785Z
+Stopped at: Completed 60-03: Per-user AgentConfig identity system with syncUserIdentity
 Resume file: None
 Next action: Continue Phase 40 plan 02
