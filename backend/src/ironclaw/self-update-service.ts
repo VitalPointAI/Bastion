@@ -8,6 +8,7 @@
  */
 
 import { exec } from 'child_process';
+import http from 'http';
 import { ironclawClient } from './ironclaw-client.js';
 import { ironclawStore } from './ironclaw-store.js';
 
@@ -557,42 +558,61 @@ export class SelfUpdateService {
   }
 
   /**
-   * Execute Docker compose pull and restart for the Ironclaw container.
+   * Make a request to the Docker Engine API via the unix socket.
    */
-  private execDockerRestart(): Promise<void> {
+  private dockerApi(method: string, path: string, body?: unknown): Promise<{ status: number; body: string }> {
     return new Promise((resolve, reject) => {
-      const cmd =
-        'docker compose -f docker-compose.prod.yml pull ironclaw && ' +
-        'docker compose -f docker-compose.prod.yml up -d ironclaw';
+      const options: http.RequestOptions = {
+        socketPath: '/var/run/docker.sock',
+        path,
+        method,
+        headers: { 'Content-Type': 'application/json' },
+      };
 
-      exec(cmd, { timeout: DOCKER_RESTART_TIMEOUT_MS }, (error, stdout, stderr) => {
-        if (error) {
-          console.error('[SelfUpdateService] Docker restart error:', stderr);
-          reject(new Error(`Docker restart failed: ${error.message}`));
-          return;
-        }
-        console.log('[SelfUpdateService] Docker restart output:', stdout);
-        resolve();
+      const req = http.request(options, (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString() }));
       });
+
+      req.on('error', reject);
+      req.setTimeout(DOCKER_RESTART_TIMEOUT_MS, () => {
+        req.destroy(new Error('Docker API request timed out'));
+      });
+
+      if (body) req.write(JSON.stringify(body));
+      req.end();
     });
   }
 
   /**
-   * Attempt rollback by restarting with the previous image.
+   * Restart the Ironclaw container via Docker Engine API.
+   *
+   * Uses the /containers/{id}/restart endpoint on the unix socket.
+   * The container name is bastion-ironclaw.
    */
-  private execDockerRollback(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const cmd = 'docker compose -f docker-compose.prod.yml up -d ironclaw';
+  private async execDockerRestart(): Promise<void> {
+    const containerName = 'bastion-ironclaw';
+    console.log(`[SelfUpdateService] Restarting container ${containerName} via Docker API...`);
 
-      exec(cmd, { timeout: DOCKER_RESTART_TIMEOUT_MS }, (error) => {
-        if (error) {
-          console.error('[SelfUpdateService] Rollback error:', error.message);
-          reject(new Error(`Rollback failed: ${error.message}`));
-          return;
-        }
-        resolve();
-      });
-    });
+    const result = await this.dockerApi('POST', `/containers/${containerName}/restart?t=30`);
+    if (result.status !== 204) {
+      throw new Error(`Docker restart failed (${result.status}): ${result.body}`);
+    }
+    console.log(`[SelfUpdateService] Container ${containerName} restart initiated`);
+  }
+
+  /**
+   * Attempt rollback by restarting the container (uses previous image on disk).
+   */
+  private async execDockerRollback(): Promise<void> {
+    const containerName = 'bastion-ironclaw';
+    console.log(`[SelfUpdateService] Rolling back — restarting container ${containerName}...`);
+
+    const result = await this.dockerApi('POST', `/containers/${containerName}/restart?t=10`);
+    if (result.status !== 204) {
+      console.error(`[SelfUpdateService] Rollback restart failed (${result.status}): ${result.body}`);
+    }
   }
 
   /**
