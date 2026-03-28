@@ -4,13 +4,16 @@
  * Phase 52 Plan 01: Core MCP server using @modelcontextprotocol/sdk.
  * Exposes all BASTION_TOOLS to agents via the Model Context Protocol.
  *
+ * Phase 60 Plan 02: Extended with domain-specific tool groups (knowledge,
+ * operations, calendar, resources, personnel) and DID VC claim-based
+ * per-tool authorization. Personnel tools are clearance-gated.
+ *
  * Uses the low-level Server API to register tools from raw JSON schema
  * (BASTION_TOOLS uses JSON Schema, not Zod), avoiding any Zod conversion layer.
  *
- * Authorization: DID-based — agents must present a valid x-agent-did header
- * that exists in the allowlist. For Phase 52 MVP, the allowlist is seeded from
- * the MCP_ALLOWED_DIDS environment variable (comma-separated) or defaults to
- * allowing any non-empty DID in development mode.
+ * Authorization: DID-based — agents must present a valid x-agent-did header.
+ * Per blueprint, migrating to per-tool VC claim gating. MCP_ALLOWED_DIDS
+ * remains as a fallback allowlist for backwards compatibility.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -21,6 +24,29 @@ import {
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { BASTION_TOOLS, toolBridge } from '../ironclaw/tool-bridge.js';
 import type { MCPToolDefinition } from '../ironclaw/tool-bridge.js';
+import { knowledgeTools } from './tools/knowledge.js';
+import { operationsTools } from './tools/operations.js';
+import { calendarTools } from './tools/calendar.js';
+import { resourcesTools } from './tools/resources.js';
+import { personnelTools, PERSONNEL_TOOL_CLEARANCES } from './tools/personnel.js';
+import { resolveDIDClaims, requireClearance } from './middleware/did-auth.js';
+
+// ---------------------------------------------------------------------------
+// All registered tool groups (merged catalog)
+// ---------------------------------------------------------------------------
+
+/**
+ * Complete tool catalog: legacy BASTION_TOOLS plus domain-specific tool groups
+ * added in Phase 60 Plan 02.
+ */
+const ALL_TOOLS: MCPToolDefinition[] = [
+  ...BASTION_TOOLS,
+  ...knowledgeTools,
+  ...operationsTools,
+  ...calendarTools,
+  ...resourcesTools,
+  ...personnelTools,
+];
 
 // ---------------------------------------------------------------------------
 // DID Authorization
@@ -29,6 +55,9 @@ import type { MCPToolDefinition } from '../ironclaw/tool-bridge.js';
 /**
  * Resolve the set of authorized agent DIDs from the environment.
  * If MCP_ALLOWED_DIDS is not set, dev mode allows any non-empty DID.
+ *
+ * Per blueprint, migrating to per-tool VC claim gating. This allowlist
+ * remains for backwards compatibility with non-clearance tools.
  */
 function buildAllowlist(): Set<string> | null {
   const raw = process.env.MCP_ALLOWED_DIDS;
@@ -48,10 +77,10 @@ function isDIDAuthorized(agentDID: string | undefined): boolean {
   return ALLOWED_DIDS.has(agentDID);
 }
 
-function isToolAccessAuthorized(
+async function isToolAccessAuthorized(
   agentDID: string | undefined,
   tool: MCPToolDefinition,
-): { authorized: boolean; reason?: string } {
+): Promise<{ authorized: boolean; reason?: string }> {
   if (!agentDID) {
     return { authorized: false, reason: 'No agent DID provided in x-agent-did header' };
   }
@@ -62,6 +91,20 @@ function isToolAccessAuthorized(
       return {
         authorized: false,
         reason: `Tool "${tool.name}" requires explicit DID authorization (risk level: high). Agent DID "${agentDID}" is not in the allowlist.`,
+      };
+    }
+  }
+
+  // Per blueprint: per-tool VC claim gating for personnel tools.
+  // Resolve DID claims and check minimum clearance level.
+  const requiredClearance = PERSONNEL_TOOL_CLEARANCES[tool.name];
+  if (requiredClearance) {
+    const claims = await resolveDIDClaims(agentDID);
+    const hasClearance = requireClearance(claims, requiredClearance);
+    if (!hasClearance) {
+      return {
+        authorized: false,
+        reason: `Tool "${tool.name}" requires ${requiredClearance} clearance. Agent DID "${agentDID}" does not have a sufficient VC claim.`,
       };
     }
   }
@@ -124,7 +167,7 @@ export function createMcpServer(): Server {
   // Handler: list all registered tools
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
-      tools: BASTION_TOOLS.map((tool) => ({
+      tools: ALL_TOOLS.map((tool) => ({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
@@ -136,8 +179,8 @@ export function createMcpServer(): Server {
   server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const { name: toolName, arguments: rawArgs } = request.params;
 
-    // Find the tool definition
-    const toolDef = BASTION_TOOLS.find((t) => t.name === toolName);
+    // Find the tool definition across all registered tool groups
+    const toolDef = ALL_TOOLS.find((t) => t.name === toolName);
     if (!toolDef) {
       return {
         content: [
@@ -153,8 +196,8 @@ export function createMcpServer(): Server {
     // Extract agent DID from request meta (injected by mcp-router transport layer)
     const agentDID = (extra?._meta?.agentDID as string | undefined) ?? undefined;
 
-    // Authorization check
-    const authResult = isToolAccessAuthorized(agentDID, toolDef);
+    // Authorization check (async: may resolve DID VC claims for clearance-gated tools)
+    const authResult = await isToolAccessAuthorized(agentDID, toolDef);
     if (!authResult.authorized) {
       return {
         content: [
@@ -194,7 +237,10 @@ export function createMcpServer(): Server {
     }
   });
 
-  console.log(`[mcp-server] Registered ${BASTION_TOOLS.length} BASTION tools`);
+  console.log(
+    `[mcp-server] Registered ${ALL_TOOLS.length} tools total` +
+    ` (${BASTION_TOOLS.length} legacy BASTION_TOOLS + ${ALL_TOOLS.length - BASTION_TOOLS.length} domain tools)`,
+  );
   return server;
 }
 

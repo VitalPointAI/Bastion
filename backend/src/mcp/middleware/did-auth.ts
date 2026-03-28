@@ -75,6 +75,13 @@ function cacheClaims(did: string, claims: VCClaim[]): void {
 // Stub: fetch claims from AgentConfig (60-03 will create the table)
 // ---------------------------------------------------------------------------
 
+interface AgentVCClaimRow {
+  claim_type: string;
+  claim_value: string;
+  issuer: string;
+  issued_at: string;
+}
+
 async function fetchClaimsFromAgentConfig(did: string): Promise<VCClaim[]> {
   // TODO: Replace with NEAR blockchain DID document resolution when VC
   // infrastructure is live. This stub queries the AgentConfig table once
@@ -84,8 +91,9 @@ async function fetchClaimsFromAgentConfig(did: string): Promise<VCClaim[]> {
 
   try {
     // Dynamic import to avoid circular dependency at module load time
-    const { db } = await import('../../db/db.js');
-    const rows = await db.query<{ claim_type: string; claim_value: string; issuer: string; issued_at: string }>(
+    const { getPool } = await import('../../lib/database.js');
+    const pool = getPool();
+    const rows = await pool.query<AgentVCClaimRow>(
       `SELECT claim_type, claim_value, issuer, issued_at
          FROM agent_vc_claims
         WHERE agent_did = $1
