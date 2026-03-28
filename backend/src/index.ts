@@ -72,6 +72,7 @@ import brainSubspacesRouter from './api/brain-subspaces.js';
 import ingestRouter from './api/ingest.js';
 import decisionsRouter from './api/decisions.js';
 import { agentConfigRouter } from './api/agent-config.js';
+import { skillPacksRouter } from './api/skill-packs.js';
 
 dotenv.config();
 
@@ -263,6 +264,7 @@ app.use('/api/decisions', decisionsRouter);
 app.use('/api/ai-staff', requireAuth, aiStaffRouter);
 app.use('/api/ironclaw', requireAuth, ironclawRouter);
 app.use('/api/agent-config', requireAuth, agentConfigRouter);
+app.use('/api/skill-packs', skillPacksRouter);
 app.use('/api/validation', requireAuth, validationRouter);
 app.use('/api/discovery', discoveryRouter);
 app.use('/api/osint', osintWebhookRouter);
