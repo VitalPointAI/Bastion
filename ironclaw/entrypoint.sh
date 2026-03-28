@@ -24,6 +24,35 @@ load_token() {
 # Initial token load
 load_token
 
+# ---------------------------------------------------------------------------
+# Hot-update: if the backend placed a new binary in the shared volume,
+# swap it in before starting. This allows the self-update service to
+# download a new Ironclaw release and trigger a container restart.
+# ---------------------------------------------------------------------------
+UPDATE_BIN="/shared/tokens/ironclaw-update"
+UPDATE_VER="/shared/tokens/ironclaw-update-version"
+
+IRONCLAW_BIN="/home/ironclaw/bin/ironclaw"
+
+if [ -f "$UPDATE_BIN" ]; then
+  echo "[entrypoint] Found updated binary at ${UPDATE_BIN}"
+  mkdir -p /home/ironclaw/bin
+  cp "$UPDATE_BIN" "$IRONCLAW_BIN"
+  chmod +x "$IRONCLAW_BIN"
+  rm -f "$UPDATE_BIN"
+
+  # Update version tracking
+  if [ -f "$UPDATE_VER" ]; then
+    cp "$UPDATE_VER" /tmp/ironclaw-version
+    rm -f "$UPDATE_VER"
+  fi
+
+  echo "[entrypoint] Binary updated — will use ${IRONCLAW_BIN}"
+elif [ ! -f "$IRONCLAW_BIN" ]; then
+  # First run — no update staged, use system binary
+  IRONCLAW_BIN="ironclaw"
+fi
+
 # Export version from build-time extraction and share with backend
 if [ -f /tmp/ironclaw-version ]; then
   export IRONCLAW_VERSION="$(cat /tmp/ironclaw-version)"
@@ -35,7 +64,7 @@ echo "[entrypoint] Starting Ironclaw v${IRONCLAW_VERSION:-unknown} (token source
 
 # Start ironclaw in the background.
 # 'sleep infinity' keeps stdin open so the repl channel doesn't EOF-shutdown.
-sleep infinity | ironclaw run --no-onboard &
+sleep infinity | $IRONCLAW_BIN run --no-onboard &
 IRONCLAW_PID=$!
 
 # Store initial token fingerprint (last 8 chars) for change detection
@@ -66,7 +95,7 @@ while true; do
     wait "$IRONCLAW_PID" 2>/dev/null
 
     # Restart
-    sleep infinity | ironclaw run --no-onboard &
+    sleep infinity | $IRONCLAW_BIN run --no-onboard &
     IRONCLAW_PID=$!
     echo "[entrypoint] Ironclaw restarted with refreshed token"
   fi

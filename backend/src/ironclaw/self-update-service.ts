@@ -8,6 +8,7 @@
  */
 
 import { exec } from 'child_process';
+import { writeFileSync } from 'fs';
 import http from 'http';
 import { ironclawClient } from './ironclaw-client.js';
 import { ironclawStore } from './ironclaw-store.js';
@@ -586,20 +587,47 @@ export class SelfUpdateService {
   }
 
   /**
-   * Restart the Ironclaw container via Docker Engine API.
+   * Download the Ironclaw binary for the given version from GitHub releases,
+   * stage it in the shared volume, then restart the container.
    *
-   * Uses the /containers/{id}/restart endpoint on the unix socket.
-   * The container name is bastion-ironclaw.
+   * The entrypoint.sh checks for /shared/tokens/ironclaw-update on startup
+   * and swaps it into the running binary location.
    */
   private async execDockerRestart(): Promise<void> {
+    const version = this.availableVersion ?? 'unknown';
     const containerName = 'bastion-ironclaw';
-    console.log(`[SelfUpdateService] Restarting container ${containerName} via Docker API...`);
 
+    // 1. Download the new binary via shell (curl + tar) into the shared volume
+    console.log(`[SelfUpdateService] Downloading Ironclaw v${version} binary...`);
+    await new Promise<void>((resolve, reject) => {
+      const url = `https://github.com/nearai/ironclaw/releases/download/ironclaw-v${version}/ironclaw-x86_64-unknown-linux-gnu.tar.gz`;
+      const cmd = `mkdir -p /tmp/ironclaw-extract && ` +
+        `curl -fsSL "${url}" -o /tmp/ironclaw-update.tar.gz && ` +
+        `tar -xzf /tmp/ironclaw-update.tar.gz -C /tmp/ironclaw-extract && ` +
+        `find /tmp/ironclaw-extract -name ironclaw -type f -exec cp {} /shared/tokens/ironclaw-update \\; && ` +
+        `chmod +x /shared/tokens/ironclaw-update && ` +
+        `rm -rf /tmp/ironclaw-update.tar.gz /tmp/ironclaw-extract`;
+
+      exec(cmd, { timeout: 60_000 }, (error, _stdout, stderr) => {
+        if (error) {
+          console.error('[SelfUpdateService] Binary download error:', stderr);
+          reject(new Error(`Failed to download Ironclaw v${version}: ${error.message}`));
+          return;
+        }
+        resolve();
+      });
+    });
+
+    // 2. Write version file so entrypoint updates version tracking
+    writeFileSync('/shared/tokens/ironclaw-update-version', version);
+    console.log(`[SelfUpdateService] Binary staged, restarting container ${containerName}...`);
+
+    // 3. Restart the container — entrypoint will pick up the new binary
     const result = await this.dockerApi('POST', `/containers/${containerName}/restart?t=30`);
     if (result.status !== 204) {
       throw new Error(`Docker restart failed (${result.status}): ${result.body}`);
     }
-    console.log(`[SelfUpdateService] Container ${containerName} restart initiated`);
+    console.log(`[SelfUpdateService] Container ${containerName} restart initiated with v${version}`);
   }
 
   /**
