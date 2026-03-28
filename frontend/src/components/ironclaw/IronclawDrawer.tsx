@@ -119,8 +119,8 @@ export function IronclawDrawer({
   /** Controls which content area is shown: 'chat' or 'memory' */
   const [drawerTab, setDrawerTab] = useState<'chat' | 'memory' | 'config'>('chat');
 
-  // Fetch version from /api/ironclaw/status on mount
-  useEffect(() => {
+  // Fetch version from /api/ironclaw/status on mount + after updates
+  const fetchVersion = useCallback(() => {
     fetch('/api/ironclaw/status', { credentials: 'include' })
       .then((r) => r.ok ? r.json() : null)
       .then((d: { version?: string | null; currentVersion?: string | null } | null) => {
@@ -128,6 +128,13 @@ export function IronclawDrawer({
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetchVersion();
+    const handler = () => fetchVersion();
+    window.addEventListener('ironclaw-version-changed', handler);
+    return () => window.removeEventListener('ironclaw-version-changed', handler);
+  }, [fetchVersion]);
 
   // Measure actual header + banner height so the drawer clears them
   useEffect(() => {

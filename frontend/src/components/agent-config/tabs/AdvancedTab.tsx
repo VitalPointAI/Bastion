@@ -175,6 +175,7 @@ export function AdvancedTab({ config, updateConfig: _updateConfig, isAdmin: isAd
       if (res.ok) {
         setUpdateResult(`Update initiated — new version: ${data.version ?? 'unknown'}`);
         await fetchStatus();
+        window.dispatchEvent(new CustomEvent('ironclaw-version-changed'));
       } else {
         setUpdateResult(`Update failed: ${data.error ?? 'Unknown error'}`);
       }
