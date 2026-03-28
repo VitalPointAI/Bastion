@@ -81,6 +81,14 @@ const HEALTH_CHECK_TIMEOUT_MS = 60_000; // 60 seconds
 const DOCKER_RESTART_TIMEOUT_MS = 120_000; // 120 seconds
 const RELEASE_NOTES_MAX_LENGTH = 500;
 
+/**
+ * Normalize version strings for comparison.
+ * GitHub tags like "ironclaw-v0.23.0" or "v0.23.0" → "0.23.0"
+ */
+function normalizeVersion(v: string): string {
+  return v.replace(/^(ironclaw-)?v?/i, '');
+}
+
 // ---------------------------------------------------------------------------
 // SelfUpdateService
 // ---------------------------------------------------------------------------
@@ -122,6 +130,9 @@ export class SelfUpdateService {
     console.log(
       `[SelfUpdateService] Started, current version: ${this.currentVersion ?? 'unknown'}, polling every ${this.pollIntervalMs / 3_600_000} hours`,
     );
+
+    // Initial check on startup (delayed 30s to let services settle)
+    setTimeout(() => void this.pollForUpdate(), 30_000);
   }
 
   /**
@@ -158,11 +169,11 @@ export class SelfUpdateService {
         tag_name: string;
         body?: string;
       };
-      const latestVersion = release.tag_name;
+      const latestVersion = normalizeVersion(release.tag_name);
 
       this.lastChecked = new Date();
 
-      if (this.currentVersion && latestVersion !== this.currentVersion) {
+      if (this.currentVersion && latestVersion !== normalizeVersion(this.currentVersion)) {
         const releaseNotes = release.body
           ? release.body.slice(0, RELEASE_NOTES_MAX_LENGTH)
           : undefined;
@@ -312,10 +323,11 @@ export class SelfUpdateService {
    * Does NOT trigger an automatic update.
    */
   handleReleaseWebhook(payload: GitHubReleasePayload): void {
+    const normalized = normalizeVersion(payload.tagName);
     console.log(
-      `[SelfUpdateService] Webhook: new release ${payload.tagName} from ${payload.repoName}`,
+      `[SelfUpdateService] Webhook: new release ${normalized} from ${payload.repoName}`,
     );
-    this.availableVersion = payload.tagName;
+    this.availableVersion = normalized;
     this.updateAvailable = true;
     this.lastChecked = new Date();
 
