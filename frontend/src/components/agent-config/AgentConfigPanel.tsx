@@ -18,17 +18,19 @@ import { IdentityTab } from './tabs/IdentityTab.tsx';
 import { PersonalityTab } from './tabs/PersonalityTab.tsx';
 import { SkillsTab } from './tabs/SkillsTab.tsx';
 import { ChannelsTab } from './tabs/ChannelsTab.tsx';
+import { RoutinesTab } from './tabs/RoutinesTab.tsx';
 import { AgentPreviewChat } from './components/AgentPreviewChat.tsx';
 
 // ─── Tab Definition ───────────────────────────────────────────────────────────
 
-type TabId = 'identity' | 'personality' | 'skills' | 'channels';
+type TabId = 'identity' | 'personality' | 'skills' | 'channels' | 'routines';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'identity', label: 'Identity' },
   { id: 'personality', label: 'Personality' },
   { id: 'skills', label: 'Skills' },
   { id: 'channels', label: 'Channels' },
+  { id: 'routines', label: 'Routines' },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -180,6 +182,9 @@ export function AgentConfigPanel({ userId, showPreview = true }: AgentConfigPane
           )}
           {activeTab === 'channels' && (
             <ChannelsTab config={config} updateConfig={updateConfig} />
+          )}
+          {activeTab === 'routines' && (
+            <RoutinesTab config={config} updateConfig={updateConfig} />
           )}
         </div>
 
