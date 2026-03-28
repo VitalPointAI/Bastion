@@ -134,7 +134,7 @@ function NotificationLevelSelect({ value, onChange, label }: NotificationLevelSe
 // ---------------------------------------------------------------------------
 
 export function ChannelsTab({ config, updateConfig }: ChannelsTabProps) {
-  const { accountId } = useUser();
+  const { accountId: _accountId } = useUser();
   const [showPairWizard, setShowPairWizard] = useState(false);
 
   // ---------------------------------------------------------------------------

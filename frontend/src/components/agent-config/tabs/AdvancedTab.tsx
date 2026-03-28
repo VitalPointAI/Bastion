@@ -71,7 +71,7 @@ function SectionHeader({ label }: { label: string }) {
 // Component
 // ---------------------------------------------------------------------------
 
-export function AdvancedTab({ config, updateConfig, isAdmin: isAdminProp }: AdvancedTabProps) {
+export function AdvancedTab({ config, updateConfig: _updateConfig, isAdmin: isAdminProp }: AdvancedTabProps) {
   const { accountId } = useUser();
 
   // ---------------------------------------------------------------------------
