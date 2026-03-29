@@ -921,6 +921,17 @@ Plans:
 - [ ] 60-06-PLAN.md -- Routines + Heartbeat: RoutinesTab, RoutineEditor, knowledge sync, heartbeat directives
 - [ ] 60-07-PLAN.md -- Self-expansion + admin: AdvancedTab, WASM tools, GitHub release webhook, human verification
 
+### Phase 61: Responsive UI & Mobile Optimization
+
+**Goal:** Fix all 6 layout shell components (header, tab bar, IronclawDrawer, OrgTreeSidebar, TabLayout sidebar) for responsive behavior at 375px/768px/1024px/1280px breakpoints, then apply fluid patterns to content areas and modals.
+**Requirements**: RESP-01, RESP-02, RESP-03, RESP-04, RESP-05, RESP-06, RESP-07
+**Depends on:** Phase 60
+**Plans:** 2 plans
+
+Plans:
+- [ ] 61-01-PLAN.md -- Layout shells: App header flex, IronclawDrawer responsive CSS, tab bar scroll, OrgTreeSidebar max-w, TabLayout off-canvas
+- [ ] 61-02-PLAN.md -- Modal fluid widths, tab content clamp padding, visual verification checkpoint
+
 ---
 **MCP Tools (deterministic operations - added to MCP server):**
 
