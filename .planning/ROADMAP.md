@@ -109,7 +109,7 @@ Plans:
 **Depends on:** Phase 1
 **Research:** Required (1.1-RESEARCH.md)
 **Research topics:** Calimero Network architecture, self-sovereign application patterns, DAO compartmentalization into contained member networks, NEAR implicit accounts with Web2 linking, NEAR MPC for usability, Privy replacement strategy, foundation component impact analysis
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 **Context:**
 This urgent insertion addresses a fundamental architecture concern: moving from the centralized/managed Privy authentication service to a self-sovereign solution using NEAR accounts (implicit accounts linked to Web2 methods) and NEAR MPC for improved usability. Calimero's self-sovereign app model can compartmentalize DAOs into contained networks of approved members, significantly improving security posture.
@@ -395,7 +395,7 @@ Plans:
 ### Phase 34: Plan Tab Echelon Routing & MDMP Tactical Wiring
 
 **Goal:** Plan tab reads `echelon` from ProblemSetContext and renders the appropriate planning workflow — operational (Phase 33 JPP), tactical (existing MDMP module wired into Plan tab), or strategic (placeholder). MDMP steps get same treatment as JPP: sidebar navigation, role-gated sections, governance gates, AI agent panels.
-**Requirements**: TBD
+**Requirements**: [OSINT-63-01, OSINT-63-02, OSINT-63-03, OSINT-63-04, OSINT-63-05, OSINT-63-06, OSINT-63-07]
 **Depends on:** Phase 33, Phase 23 (echelon-aware problem sets)
 **Plans:** 2/2 plans complete
 
@@ -796,7 +796,7 @@ Plans:
 ### Phase 55: Ironclaw guided design interview for operational approach development
 
 **Goal:** Build a LangGraph-powered guided interview system where Ironclaw walks users through developing an operational approach in the Design tab, covering Problem Framing, CoG Analysis, LOEs, and Operational Approach with challenge-first questioning, red-team probing, knowledge graph references, and 4 new visualization/analysis skills
-**Requirements**: TBD
+**Requirements**: [OSINT-63-01, OSINT-63-02, OSINT-63-03, OSINT-63-04, OSINT-63-05, OSINT-63-06, OSINT-63-07]
 **Depends on:** Phase 54
 **Plans:** 6/6 plans complete
 
@@ -963,9 +963,9 @@ Plans:
 ### Phase 63: Unified OSINT Agent Ingestion
 
 **Goal:** Route OSINT feed events through the Phase 40 doc-intelligence agent team instead of the standalone osint-entity-extractor.ts. Give agents proper tools/skills for graph operations (actor MERGE, relationship creation, entity resolution, containerIds scoping). Apply trust gates, NATO quality ratings, and multi-specialist analysis to OSINT events. Retire the ad-hoc LLM extraction path that bypasses agent quality controls.
-**Requirements**: TBD
+**Requirements**: [OSINT-63-01, OSINT-63-02, OSINT-63-03, OSINT-63-04, OSINT-63-05, OSINT-63-06, OSINT-63-07]
 **Depends on:** Phase 40, Phase 62
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 **Context:**
 Currently two completely separate entity extraction paths exist:
@@ -982,7 +982,9 @@ This creates inconsistent graph quality — OSINT actors get hardcoded 0.65 conf
 - Retire osint-entity-extractor.ts once agent path is verified
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 63 to break down)
+- [ ] 63-01-PLAN.md -- Bridge module + assertedVia threading through doc-intelligence pipeline
+- [ ] 63-02-PLAN.md -- Migrate feed-poller and gap-filler callers, deprecate old extractor
+- [ ] 63-03-PLAN.md -- Source pre-registration and LLM concurrency tuning
 
 ---
 **MCP Tools (deterministic operations - added to MCP server):**
@@ -1055,7 +1057,7 @@ Plans:
 ### Phase 18: replace current login with @vitalpoint/near-phantom-auth
 
 **Goal:** Replace the entire custom passkey/magic-link/TOTP authentication system with @vitalpoint/near-phantom-auth@0.4.2 — email-required registration, HttpOnly cookie sessions, password+IPFS recovery, clean break migration
-**Requirements**: TBD
+**Requirements**: [OSINT-63-01, OSINT-63-02, OSINT-63-03, OSINT-63-04, OSINT-63-05, OSINT-63-06, OSINT-63-07]
 **Depends on:** Phase 17
 **Plans:** 6/6 plans executed (complete — human e2e verification checkpoint pending)
 
@@ -1550,7 +1552,7 @@ Plans:
 **Depends on:** Phase 4.4
 **Research:** Required (4.5-RESEARCH.md)
 **Research topics:** Cursor on Target (CoT) XML schema and message types, TAK Server architecture and API, ATAK plugin development, multicast vs unicast CoT distribution, TLS/certificate management for TAK, data package format (.zip with manifest.xml), MIL-STD-2525D symbol integration, WebTAK browser-based client
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 **Context:**
 ATAK (Android Team Awareness Kit) is the de facto standard for tactical situational awareness in military and first responder operations. Integration enables BASTION to:
