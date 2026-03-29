@@ -13,7 +13,7 @@ import { osintFeedStore } from '../jpp/osint-feed-store.js';
 import { osintEventStore } from '../graph/osint/event-store.js';
 import { notifyCOPChange } from '../cop/index.js';
 import { extractLocation, syncOSINTEventToGraph, runPostSyncResolution } from './osint-graph-sync.js';
-import { extractAndSyncToGraph } from './osint-entity-extractor.js';
+import { processOSINTEventThroughAgents } from './osint-agent-bridge.js';
 import { updateOSINTCOPLayer } from './osint-cop-pipeline.js';
 // geocodingService removed — using keyword lookup + feed source name fallback (no external API calls)
 import { getPool } from '../lib/database.js';
@@ -394,8 +394,9 @@ class FeedPoller {
 
         // Then attempt LLM-enriched extraction (throttled to avoid CPU saturation)
         enqueueLLMTask(async () => {
-          await extractAndSyncToGraph(storedEvent).catch(() => {
-            // Non-fatal — basic sync already created the node above
+          await processOSINTEventThroughAgents(storedEvent, feed).catch(err => {
+            console.warn(`[FeedPoller] Agent pipeline failed for "${item.title}":`, err);
+            // Non-fatal — basic syncOSINTEventToGraph already created the node above
           });
         });
       } catch (err) {

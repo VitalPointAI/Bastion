@@ -13,7 +13,8 @@
 
 import { brainStore } from '../brain/brain-store.js';
 import { performWebSearch } from '../doc-intelligence/web-search.js';
-import { extractAndSyncToGraph } from '../osint/osint-entity-extractor.js';
+import { processOSINTEventThroughAgents } from '../osint/osint-agent-bridge.js';
+import type { OSINTFeedConfig } from '../jpp/osint-feed-store.js';
 import { osintEventStore } from '../graph/osint/event-store.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import { pirStore } from '../design/pir-store.js';
@@ -287,8 +288,16 @@ class IronclawGapFillerService {
       workspaceId: problemSetId,
     } as unknown as Parameters<typeof osintEventStore.createEvent>[0]);
 
-    // Extract entities and sync to graph
-    const stats = await extractAndSyncToGraph(event as unknown as OSINTEvent);
+    // Extract entities and sync to graph via agent bridge
+    const syntheticFeed = {
+      problemSetId,
+      sourceName: 'Ironclaw Gap Filler',
+      sourceType: 'research',
+      id: `gap-filler-${problemSetId}`,
+    } as unknown as OSINTFeedConfig;
+    const bridgeStats = await processOSINTEventThroughAgents(event as unknown as OSINTEvent, syntheticFeed);
+    // Agent bridge does not return tensionsCreated (handled internally by specialist agents)
+    const stats = { ...bridgeStats, tensionsCreated: 0 };
 
     // Mark as researched
     this.cooldowns.set(gap.nodeId, Date.now());
