@@ -106,7 +106,7 @@ export class TEEClient {
       };
     } catch (error) {
       console.error('[TEEClient] Failed to send context to TEE:', error);
-      throw new Error(`TEE communication failed: ${error}`);
+      throw new Error(`TEE communication failed: ${error}`, { cause: error });
     }
   }
 

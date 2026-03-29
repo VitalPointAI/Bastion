@@ -399,12 +399,10 @@ export function OperationalApproachMapEditor({
   // Y.Map instances on the shared design-interview document
   const symbolsMap = useMemo(
     () => getMap<MapSymbol>('mapSymbols'),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- getMap identity changes when doc connects
     [getMap]
   );
   const measuresMap = useMemo(
     () => getMap<ControlMeasure>('controlMeasures'),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- getMap identity changes when doc connects
     [getMap]
   );
 

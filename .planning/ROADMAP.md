@@ -75,6 +75,7 @@ None
 - [ ] **Phase 50: Universal Intelligence Input & Auto-Classification** - Replace fragmented ingestion sidebar (separate document upload, OSINT modal, filter tags) with a single universal input area that accepts any content type (files, URLs, pasted text, structured data) and automatically discerns source type, classifies content, routes to appropriate specialist agents, and extracts intelligence — all orchestrated by the lead agent with robust error handling, retry logic, and user-facing status; eliminates manual source-type selection and reduces ingestion to a single drag/drop/paste/type interaction (INSERTED)
 - [x] **Phase 56: Visual Operational Approach Editor — Map-Based Military Symbology** - Interactive Leaflet map with MIL-STD-2525D military symbology overlay for operational approach development; dual editing: Ironclaw chat-driven (natural language → tool calls → map updates) and direct manipulation (drag-and-drop symbols, draw control measures, click-to-edit properties); milsymbol.js rendering; MGRS coordinate support; Ironclaw registered skills (add/move/remove/update symbols, add control measures and overlay graphics); Yjs collaborative sync; overlay persisted as part of OperationalDesign data model (INSERTED) (completed 2026-03-25)
 - [x] **Phase 57: Ironclaw Persistent Memory & Adaptive Relationship** - Long-term memory system that makes Ironclaw a true AI staff officer: per-user preference memory (working style, critique tolerance, strengths/weaknesses, communication style), interaction outcome tracking (suggestions accepted/rejected, edit patterns post-critique, valued vs dismissed input), problem set context memory (decisions, rationale, assumptions across sessions), and adaptive behavior engine that adjusts proactivity, critique frequency, draft-offering, and communication style based on accumulated interaction patterns; stored in ironclaw-postgres; memory retrieval integrated into all Ironclaw prompts for personalized, evolving relationship with each user (INSERTED) (completed 2026-03-25)
+- [ ] **Phase 62: Knowledge Graph Entity Deduplication & Auto-Resolution** - Eliminate duplicate nodes by integrating entity resolution into ingestion pipeline; name canonicalization before node creation; auto-run resolution after buildFromDocument() and OSINT sync; batch-merge existing duplicates; canonical alias registry for common name variants; dedup metrics (INSERTED)
 
 ## Phase Details
 
@@ -931,6 +932,31 @@ Plans:
 Plans:
 - [ ] 61-01-PLAN.md -- Layout shells: App header flex, IronclawDrawer responsive CSS, tab bar scroll, OrgTreeSidebar max-w, TabLayout off-canvas
 - [ ] 61-02-PLAN.md -- Modal fluid widths, tab content clamp padding, visual verification checkpoint
+
+### Phase 62: Knowledge Graph Entity Deduplication & Auto-Resolution (INSERTED)
+
+**Goal:** Eliminate duplicate nodes from the knowledge graph by integrating entity resolution into the ingestion pipeline; add name canonicalization before node creation; auto-run resolution after buildFromDocument() and OSINT sync; batch-merge existing duplicates via resolution API; add canonical alias registry for common name variants (US/USA/United States, PRC/China, etc.); wire resolution into the autonomous document intelligence team (Phase 40) extraction flow; add dedup metrics to graph stats endpoint
+**Requirements**: TBD
+**Depends on:** Phase 40, Phase 47 (leverages existing resolution-service.ts infrastructure)
+**Plans:** 0 plans
+
+**Context:**
+Investigation revealed 28,800+ nodes in the knowledge graph with significant duplication caused by:
+1. OSINT sync uses exact name match only (`MERGE (a:Actor {name: $name})`) — no normalization
+2. Graph builder's `findActorsByName()` uses substring matching but not fuzzy/embedding — "PRC" ≠ "China"
+3. Entity resolution service exists (hybrid 3-signal scoring) but is NEVER called automatically
+4. No canonical alias registry for common name variants
+5. OSINT event clustering hides duplicates visually but underlying nodes persist in Neo4j
+
+**Key files:**
+- `backend/src/graph/resolution/resolution-service.ts` — existing hybrid resolution (string + embedding + type)
+- `backend/src/graph/construction/graph-builder.ts:268-352` — actor creation without auto-resolution
+- `backend/src/osint/osint-graph-sync.ts:334` — OSINT sync with exact-name-only MERGE
+- `backend/src/graph/raft/actor-store.ts:190` — findActorsByName (substring, not fuzzy by default)
+- `backend/src/api/graph.ts:421` — existing resolution/duplicates endpoint
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 62 to break down)
 
 ---
 **MCP Tools (deterministic operations - added to MCP server):**
