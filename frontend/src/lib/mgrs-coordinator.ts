@@ -26,14 +26,14 @@ interface AOCalibration {
   east: number;
 }
 
-/** Default: Taipei Zhongzheng District (5m wide × 10m deep room) */
+/** Default: Sector Latgale, Latvia — EFDL Unmanned Engagement Area (Baltic Shield demo) */
 const DEFAULT_CALIBRATION: AOCalibration = {
   roomW: 5,
-  roomH: 10,
-  south: 25.0420,
-  north: 25.0540,
-  west: 121.5120,
-  east: 121.5180,
+  roomH: 15,
+  south: 56.840,
+  north: 56.858,
+  west: 27.688,
+  east: 27.708,
 };
 
 let calibration = DEFAULT_CALIBRATION;

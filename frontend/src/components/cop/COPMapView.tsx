@@ -274,10 +274,12 @@ function toLatLng(pos: { lat: number; lng: number }): [number, number] {
   return [pos.lat, pos.lng];
 }
 
-// ─── Default map center (Indo-Pacific — aligned with Pacific Strategy scenario) ──
+// ─── Default map center (derives from calibration profile default) ──────────
+// Aligned with Sector Latgale, Latvia (Baltic Shield demo theater).
+// The map center will auto-fly to symbol positions when layers load.
 
-const DEFAULT_CENTER: [number, number] = [25.0, 121.5];
-const DEFAULT_ZOOM = 6;
+const DEFAULT_CENTER: [number, number] = [56.849, 27.698]; // Sector Latgale AO center
+const DEFAULT_ZOOM = 13;
 
 // ─── Component ──────────────────────────────────────────────────────────────
 

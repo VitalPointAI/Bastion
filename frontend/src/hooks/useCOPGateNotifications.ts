@@ -28,6 +28,9 @@ export interface GateNotification {
   /** For map zoom — threat/mission location context */
   missionId?: string;
   threatDesignation?: string;
+  /** Threat geographic position for COP map auto-zoom (derived from payload if available) */
+  threatLat?: number;
+  threatLng?: number;
   decidedBy?: string;
   timestamp: string;
   dismissed: boolean;
@@ -120,6 +123,8 @@ export function useCOPGateNotifications(): UseCOPGateNotificationsResult {
           problemSetId: payload.problem_set_id as string ?? '',
           missionId: payload.mission_id as string | undefined,
           threatDesignation: payload.threat_designation as string | undefined,
+          threatLat: typeof payload.threat_lat === 'number' ? payload.threat_lat : undefined,
+          threatLng: typeof payload.threat_lng === 'number' ? payload.threat_lng : undefined,
           decidedBy: payload.decided_by as string | undefined,
           timestamp: new Date().toISOString(),
           dismissed: false,

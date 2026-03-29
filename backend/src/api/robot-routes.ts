@@ -886,35 +886,46 @@ robotRouter.post('/scenarios/seed-strategic-cop', async (req, res) => {
       return;
     }
 
+    // Force disposition derived from calibration profile so positions track the
+    // active operational theater rather than a hardcoded scenario.
+    const profile = calibrationService.getProfile('default');
+    const { north, south, east, west } = profile.map_bounds;
+    const centerLat = (north + south) / 2;
+    const centerLng = (east + west) / 2;
+    // Spread friendly forces within the AO using calibration-relative offsets
+    const friendly = (dlat: number, dlng: number) => ({ lat: centerLat + dlat, lng: centerLng + dlng });
+    // Adversary forces approach from the east of the AO
+    const adversary = (dlat: number, dlng: number) => ({ lat: north + dlat, lng: east + dlng });
+
     const friendlySymbols = [
-      { entityId: 'tw-6th-army', designation: '6th Army Command (ROC)', affiliation: 'friendly', sidc: '10031000001211004600', position: { lat: 25.034, lng: 121.564 }, confidence: 0.95, confidenceTier: 'high' },
-      { entityId: 'tw-10th-army-corps', designation: '10th Army Corps (ROC)', affiliation: 'friendly', sidc: '10031000001211001400', position: { lat: 24.80, lng: 120.97 }, confidence: 0.95, confidenceTier: 'high' },
-      { entityId: 'tw-8th-army-corps', designation: '8th Army Corps (ROC)', affiliation: 'friendly', sidc: '10031000001211001400', position: { lat: 22.63, lng: 120.30 }, confidence: 0.95, confidenceTier: 'high' },
-      { entityId: 'tw-269-mech-bde', designation: '269th Mechanized Inf Bde (ROC)', affiliation: 'friendly', sidc: '10031000001211001200', position: { lat: 24.15, lng: 120.68 }, confidence: 0.90, confidenceTier: 'high' },
-      { entityId: 'tw-coast-def-north', designation: 'Northern Coastal Defense Group', affiliation: 'friendly', sidc: '10031000001211001200', position: { lat: 25.15, lng: 121.74 }, confidence: 0.90, confidenceTier: 'high' },
-      { entityId: 'tw-air-def-cmd', designation: 'Air Defense Missile Command (ROC)', affiliation: 'friendly', sidc: '10031000001407001400', position: { lat: 24.99, lng: 121.23 }, confidence: 0.90, confidenceTier: 'high' },
-      { entityId: 'us-7th-fleet-csg', designation: 'CSG-5 (USS Ronald Reagan)', affiliation: 'friendly', sidc: '10033000001301000000', position: { lat: 24.50, lng: 123.80 }, confidence: 0.85, confidenceTier: 'high' },
-      { entityId: 'us-iii-mef', designation: 'III MEF (Okinawa)', affiliation: 'friendly', sidc: '10031000001211001600', position: { lat: 26.33, lng: 127.77 }, confidence: 0.90, confidenceTier: 'high' },
-      { entityId: 'us-18th-wing', designation: '18th Wing (Kadena AB)', affiliation: 'friendly', sidc: '10030500001101001400', position: { lat: 26.35, lng: 127.76 }, confidence: 0.90, confidenceTier: 'high' },
+      { entityId: 'nato-mnb-lva-hq', designation: 'NATO MNB-LVA HQ (Camp Adazi)', affiliation: 'friendly', sidc: '10031000001211001800', position: friendly(-0.003, -0.005), confidence: 0.95, confidenceTier: 'high' },
+      { entityId: 'lva-1st-mech-coy', designation: '1st Mechanized Company (LVA)', affiliation: 'friendly', sidc: '10031000001211000400', position: friendly(0.002, 0.003), confidence: 0.95, confidenceTier: 'high' },
+      { entityId: 'can-recon-pl', designation: 'Reconnaissance Platoon (CAN)', affiliation: 'friendly', sidc: '10031000001209000200', position: friendly(0.006, -0.002), confidence: 0.90, confidenceTier: 'high' },
+      { entityId: 'us-arty-bty', designation: 'Artillery Battery (US)', affiliation: 'friendly', sidc: '10031000001203000400', position: friendly(-0.004, 0.006), confidence: 0.90, confidenceTier: 'high' },
+      { entityId: 'uk-inf-pl', designation: 'Infantry Platoon (UK)', affiliation: 'friendly', sidc: '10031000001211000200', position: friendly(0.004, 0.001), confidence: 0.90, confidenceTier: 'high' },
+      { entityId: 'lva-air-def-sec', designation: 'Air Defense Section (LVA)', affiliation: 'friendly', sidc: '10031000001407000200', position: friendly(-0.001, -0.007), confidence: 0.85, confidenceTier: 'high' },
+      { entityId: 'can-eng-sec', designation: 'Engineer Section (CAN)', affiliation: 'friendly', sidc: '10031000001205000200', position: friendly(0.001, 0.008), confidence: 0.85, confidenceTier: 'high' },
+      { entityId: 'us-med-team', designation: 'Medical Team (US)', affiliation: 'friendly', sidc: '10031000001215000200', position: friendly(-0.006, 0.002), confidence: 0.90, confidenceTier: 'high' },
+      { entityId: 'nato-log-node', designation: 'Logistics Support Node (NATO)', affiliation: 'friendly', sidc: '10031000001211000200', position: friendly(-0.002, -0.009), confidence: 0.90, confidenceTier: 'high' },
     ];
 
     const adversarySymbols = [
-      { entityId: 'pla-etc-hq', designation: 'Eastern Theater Command HQ', affiliation: 'enemy', sidc: '10061000001211001800', position: { lat: 28.23, lng: 120.63 }, confidence: 0.80, confidenceTier: 'medium' },
-      { entityId: 'pla-73rd-group-army', designation: '73rd Group Army (Amphibious)', affiliation: 'enemy', sidc: '10061000001211001600', position: { lat: 26.05, lng: 119.31 }, confidence: 0.75, confidenceTier: 'medium' },
-      { entityId: 'pla-71st-group-army', designation: '71st Group Army', affiliation: 'enemy', sidc: '10061000001211001600', position: { lat: 27.90, lng: 120.50 }, confidence: 0.70, confidenceTier: 'medium' },
-      { entityId: 'pla-esf-amphib', designation: 'East Sea Fleet Amphibious Group', affiliation: 'enemy', sidc: '10063000001302000000', position: { lat: 25.80, lng: 120.10 }, confidence: 0.70, confidenceTier: 'medium' },
-      { entityId: 'pla-ssf-destroyer-grp', designation: 'South Sea Fleet Surface Action Group', affiliation: 'enemy', sidc: '10063000001301000000', position: { lat: 23.50, lng: 119.50 }, confidence: 0.65, confidenceTier: 'medium' },
-      { entityId: 'pla-sub-wolfpack', designation: 'Submarine Patrol Group', affiliation: 'enemy', sidc: '10063500001301000000', position: { lat: 24.20, lng: 122.50 }, confidence: 0.50, confidenceTier: 'low' },
-      { entityId: 'pla-air-east', designation: 'PLAAF Eastern Theater Air Force', affiliation: 'enemy', sidc: '10060500001101001600', position: { lat: 26.90, lng: 119.95 }, confidence: 0.75, confidenceTier: 'medium' },
-      { entityId: 'pla-rocket-force-base', designation: 'PLARF Base 61 (DF-15/DF-16)', affiliation: 'enemy', sidc: '10061000001409001400', position: { lat: 27.50, lng: 118.80 }, confidence: 0.65, confidenceTier: 'medium' },
-      { entityId: 'pla-marine-bde-taipei', designation: 'PLA Marine Brigade (Taipei Assault)', affiliation: 'enemy', sidc: '10061000001211001200', position: { lat: 25.13, lng: 121.46 }, confidence: 0.60, confidenceTier: 'medium' },
+      { entityId: 'opfor-btg-hq', designation: 'Opposing Force BTG HQ', affiliation: 'enemy', sidc: '10061000001211001200', position: adversary(0.25, 0.50), confidence: 0.80, confidenceTier: 'medium' },
+      { entityId: 'opfor-tank-coy', designation: 'Tank Company (OPFOR)', affiliation: 'enemy', sidc: '10061000001207000400', position: adversary(0.10, 0.30), confidence: 0.75, confidenceTier: 'medium' },
+      { entityId: 'opfor-mech-coy', designation: 'Mechanized Infantry Company (OPFOR)', affiliation: 'enemy', sidc: '10061000001211000400', position: adversary(0.15, 0.45), confidence: 0.70, confidenceTier: 'medium' },
+      { entityId: 'opfor-arty-bty', designation: 'Self-Propelled Artillery Battery (OPFOR)', affiliation: 'enemy', sidc: '10061000001203000400', position: adversary(0.30, 0.60), confidence: 0.70, confidenceTier: 'medium' },
+      { entityId: 'opfor-recon-ele', designation: 'Reconnaissance Element (OPFOR)', affiliation: 'enemy', sidc: '10061000001209000200', position: adversary(0.05, 0.20), confidence: 0.65, confidenceTier: 'medium' },
+      { entityId: 'opfor-air-def', designation: 'Short-Range Air Defense (OPFOR)', affiliation: 'enemy', sidc: '10061000001407000200', position: adversary(0.20, 0.55), confidence: 0.50, confidenceTier: 'low' },
+      { entityId: 'opfor-ew-unit', designation: 'Electronic Warfare Unit (OPFOR)', affiliation: 'enemy', sidc: '10061000001215001200', position: adversary(0.35, 0.40), confidence: 0.60, confidenceTier: 'medium' },
+      { entityId: 'opfor-eng-ele', designation: 'Combat Engineer Element (OPFOR)', affiliation: 'enemy', sidc: '10061000001205000200', position: adversary(0.12, 0.35), confidence: 0.65, confidenceTier: 'medium' },
+      { entityId: 'opfor-log-node', designation: 'Forward Logistics Node (OPFOR)', affiliation: 'enemy', sidc: '10061000001211001200', position: adversary(0.40, 0.65), confidence: 0.55, confidenceTier: 'low' },
     ];
 
     const toLayerSymbols = (symbols: typeof friendlySymbols) => symbols.map(s => ({
       ...s, linkedEntities: [], ccoClass: 'military_unit',
-      sourceAuthority: 'Pacific Strategy AY26 Exercise',
+      sourceAuthority: 'Exercise Seed (Calibration-Derived)',
       assertedVia: 'exercise_seed',
-      provenanceSummary: 'Pacific Strategy AY26 exercise scenario data',
+      provenanceSummary: 'Exercise scenario seed data derived from active calibration profile',
     }));
 
     const now = new Date().toISOString();
@@ -944,7 +955,7 @@ robotRouter.post('/scenarios/seed-strategic-cop', async (req, res) => {
           metadata: {
             generatedBy: 'strategic-cop-seed',
             generatedAt: now,
-            sourceDocumentIds: ['pacific-strategy-ay26'],
+            sourceDocumentIds: ['exercise-seed'],
             ccoValidated: false,
           },
         } as COPLayerSpec,

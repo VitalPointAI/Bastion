@@ -1,9 +1,13 @@
 /**
  * Seed Strategic COP Layers
  *
- * Creates force disposition layers for the Pacific Strategy AY26 exercise:
- * - Friendly (Blue): Taiwan/US joint defense forces across Taiwan
- * - Adversary (Red): PLA invasion staging, naval, and air assets
+ * Creates force disposition layers for the active exercise scenario:
+ * - Friendly (Blue): NATO coalition forces (Baltic Shield defaults)
+ * - Adversary (Red): Opposing force elements
+ *
+ * Positions are calibration-derived — they track the active operational
+ * theater configured in calibration-profiles.json (defaults to Sector
+ * Latgale, Latvia for Baltic Shield demo).
  *
  * Usage: npx tsx scripts/seed-strategic-cop.ts <problemSetId>
  *
@@ -32,185 +36,179 @@ interface SymbolSpec {
   confidenceTier: 'high' | 'medium' | 'low';
 }
 
-// ── Friendly Forces (Taiwan/US Joint Defense) ────────────────────────────────
+// ── Friendly Forces (Baltic Shield / NATO Coalition defaults) ─────────────────
+// Positions use Sector Latgale, Latvia coordinates (Baltic Shield demo theater).
+// When calibration profiles are updated to a different theater, re-seed with
+// the new problem set ID.
 
 const friendlySymbols: SymbolSpec[] = [
-  // Taiwan Army — ground defense
   {
-    entityId: 'tw-6th-army',
-    designation: '6th Army Command (ROC)',
+    entityId: 'nato-mnb-lva-hq',
+    designation: 'NATO MNB-LVA HQ (Camp Adazi)',
     affiliation: 'friendly',
-    sidc: '10031000001211004600', // Land unit, infantry, corps
-    position: { lat: 25.034, lng: 121.564 },  // Taipei, Ministry of National Defense
+    sidc: '10031000001211001800', // Land unit, infantry, theater HQ
+    position: { lat: 56.849, lng: 27.698 },  // Camp Adazi, Latvia (AO center)
     confidence: 0.95,
     confidenceTier: 'high',
   },
   {
-    entityId: 'tw-10th-army-corps',
-    designation: '10th Army Corps (ROC)',
+    entityId: 'lva-1st-mech-coy',
+    designation: '1st Mechanized Company (LVA)',
     affiliation: 'friendly',
-    sidc: '10031000001211001400', // Land unit, infantry, division
-    position: { lat: 24.80, lng: 120.97 },  // Hsinchu area
+    sidc: '10031000001211000400', // Land unit, infantry, company
+    position: { lat: 56.852, lng: 27.703 },  // Eastern defensive line
     confidence: 0.95,
     confidenceTier: 'high',
   },
   {
-    entityId: 'tw-8th-army-corps',
-    designation: '8th Army Corps (ROC)',
+    entityId: 'can-recon-pl',
+    designation: 'Reconnaissance Platoon (CAN)',
     affiliation: 'friendly',
-    sidc: '10031000001211001400',
-    position: { lat: 22.63, lng: 120.30 },  // Kaohsiung area
-    confidence: 0.95,
-    confidenceTier: 'high',
-  },
-  {
-    entityId: 'tw-269-mech-bde',
-    designation: '269th Mechanized Inf Bde (ROC)',
-    affiliation: 'friendly',
-    sidc: '10031000001211001200', // Brigade
-    position: { lat: 24.15, lng: 120.68 },  // Taichung area
+    sidc: '10031000001209000200', // Land unit, recon, platoon
+    position: { lat: 56.856, lng: 27.695 },  // Forward observation post
     confidence: 0.90,
     confidenceTier: 'high',
   },
-  // Taiwan coastal defense
   {
-    entityId: 'tw-coast-def-north',
-    designation: 'Northern Coastal Defense Group',
+    entityId: 'us-arty-bty',
+    designation: 'Artillery Battery (US)',
     affiliation: 'friendly',
-    sidc: '10031000001211001200',
-    position: { lat: 25.15, lng: 121.74 },  // Keelung coast
+    sidc: '10031000001203000400', // Land unit, artillery, battery
+    position: { lat: 56.845, lng: 27.706 },  // Fire support base
     confidence: 0.90,
     confidenceTier: 'high',
   },
-  // Taiwan air defense
   {
-    entityId: 'tw-air-def-cmd',
-    designation: 'Air Defense Missile Command (ROC)',
+    entityId: 'uk-inf-pl',
+    designation: 'Infantry Platoon (UK)',
     affiliation: 'friendly',
-    sidc: '10031000001407001400', // Air defense, corps
-    position: { lat: 24.99, lng: 121.23 },  // Taoyuan area
+    sidc: '10031000001211000200', // Land unit, infantry, platoon
+    position: { lat: 56.854, lng: 27.701 },  // Flank security position
     confidence: 0.90,
     confidenceTier: 'high',
   },
-  // US Forces
   {
-    entityId: 'us-7th-fleet-csg',
-    designation: 'CSG-5 (USS Ronald Reagan)',
+    entityId: 'lva-air-def-sec',
+    designation: 'Air Defense Section (LVA)',
     affiliation: 'friendly',
-    sidc: '10033000001301000000', // Sea surface, carrier
-    position: { lat: 24.50, lng: 123.80 },  // East of Taiwan, Philippine Sea
+    sidc: '10031000001407000200', // Land unit, air defense, section
+    position: { lat: 56.847, lng: 27.693 },  // ADA coverage position
     confidence: 0.85,
     confidenceTier: 'high',
   },
   {
-    entityId: 'us-iii-mef',
-    designation: 'III MEF (Okinawa)',
+    entityId: 'can-eng-sec',
+    designation: 'Engineer Section (CAN)',
     affiliation: 'friendly',
-    sidc: '10031000001211001600', // Land unit, army echelon
-    position: { lat: 26.33, lng: 127.77 },  // Okinawa
+    sidc: '10031000001205000200', // Land unit, engineer, section
+    position: { lat: 56.851, lng: 27.708 },  // Obstacle emplacement
+    confidence: 0.85,
+    confidenceTier: 'high',
+  },
+  {
+    entityId: 'us-med-team',
+    designation: 'Medical Team (US)',
+    affiliation: 'friendly',
+    sidc: '10031000001215000200', // Land unit, medical, team
+    position: { lat: 56.843, lng: 27.700 },  // Aid station
     confidence: 0.90,
     confidenceTier: 'high',
   },
   {
-    entityId: 'us-18th-wing',
-    designation: '18th Wing (Kadena AB)',
+    entityId: 'nato-log-node',
+    designation: 'Logistics Support Node (NATO)',
     affiliation: 'friendly',
-    sidc: '10030500001101001400', // Air, fixed wing
-    position: { lat: 26.35, lng: 127.76 },  // Kadena
+    sidc: '10031000001211000200', // Land unit, support
+    position: { lat: 56.841, lng: 27.691 },  // Rear logistics area
     confidence: 0.90,
     confidenceTier: 'high',
   },
 ];
 
-// ── Adversary Forces (PLA Invasion) ──────────────────────────────────────────
+// ── Adversary Forces (OPFOR — Baltic theater defaults) ────────────────────────
+// Generic opposing force elements positioned east of the AO.
 
 const adversarySymbols: SymbolSpec[] = [
-  // PLA Eastern Theater Command
   {
-    entityId: 'pla-etc-hq',
-    designation: 'Eastern Theater Command HQ',
+    entityId: 'opfor-btg-hq',
+    designation: 'Opposing Force BTG HQ',
     affiliation: 'enemy',
-    sidc: '10061000001211001800', // Land unit, theater echelon
-    position: { lat: 28.23, lng: 120.63 },  // Nanjing area
+    sidc: '10061000001211001200', // Land unit, infantry, brigade
+    position: { lat: 57.10, lng: 28.21 },  // Staging area — east of AO
     confidence: 0.80,
     confidenceTier: 'medium',
   },
-  // PLA amphibious staging
   {
-    entityId: 'pla-73rd-group-army',
-    designation: '73rd Group Army (Amphibious)',
+    entityId: 'opfor-tank-coy',
+    designation: 'Tank Company (OPFOR)',
     affiliation: 'enemy',
-    sidc: '10061000001211001600', // Land unit, army echelon
-    position: { lat: 26.05, lng: 119.31 },  // Fuzhou staging area
+    sidc: '10061000001207000400', // Land unit, armor, company
+    position: { lat: 56.98, lng: 27.95 },  // Axis of advance — northwest
     confidence: 0.75,
     confidenceTier: 'medium',
   },
   {
-    entityId: 'pla-71st-group-army',
-    designation: '71st Group Army',
+    entityId: 'opfor-mech-coy',
+    designation: 'Mechanized Infantry Company (OPFOR)',
     affiliation: 'enemy',
-    sidc: '10061000001211001600',
-    position: { lat: 27.90, lng: 120.50 },  // Wenzhou area
-    confidence: 0.70,
-    confidenceTier: 'medium',
-  },
-  // PLA Navy — invasion fleet
-  {
-    entityId: 'pla-esf-amphib',
-    designation: 'East Sea Fleet Amphibious Group',
-    affiliation: 'enemy',
-    sidc: '10063000001302000000', // Sea surface, amphibious
-    position: { lat: 25.80, lng: 120.10 },  // Taiwan Strait, approaching
+    sidc: '10061000001211000400', // Land unit, infantry, company
+    position: { lat: 57.03, lng: 28.10 },  // Supporting attack element
     confidence: 0.70,
     confidenceTier: 'medium',
   },
   {
-    entityId: 'pla-ssf-destroyer-grp',
-    designation: 'South Sea Fleet Surface Action Group',
+    entityId: 'opfor-arty-bty',
+    designation: 'Self-Propelled Artillery Battery (OPFOR)',
     affiliation: 'enemy',
-    sidc: '10063000001301000000', // Sea surface, combatant
-    position: { lat: 23.50, lng: 119.50 },  // South of strait
+    sidc: '10061000001203000400', // Land unit, artillery, battery
+    position: { lat: 57.15, lng: 28.35 },  // Fire support — rear staging
+    confidence: 0.70,
+    confidenceTier: 'medium',
+  },
+  {
+    entityId: 'opfor-recon-ele',
+    designation: 'Reconnaissance Element (OPFOR)',
+    affiliation: 'enemy',
+    sidc: '10061000001209000200', // Land unit, recon, platoon
+    position: { lat: 56.89, lng: 27.78 },  // Forward screen, approaching AO
     confidence: 0.65,
     confidenceTier: 'medium',
   },
   {
-    entityId: 'pla-sub-wolfpack',
-    designation: 'Submarine Patrol Group',
+    entityId: 'opfor-air-def',
+    designation: 'Short-Range Air Defense (OPFOR)',
     affiliation: 'enemy',
-    sidc: '10063500001301000000', // Subsurface
-    position: { lat: 24.20, lng: 122.50 },  // East of Taiwan, interdiction
+    sidc: '10061000001407000200', // Land unit, air defense
+    position: { lat: 57.08, lng: 28.28 },  // ADA coverage, rear area
     confidence: 0.50,
     confidenceTier: 'low',
   },
-  // PLA Air Force
   {
-    entityId: 'pla-air-east',
-    designation: 'PLAAF Eastern Theater Air Force',
+    entityId: 'opfor-ew-unit',
+    designation: 'Electronic Warfare Unit (OPFOR)',
     affiliation: 'enemy',
-    sidc: '10060500001101001600', // Air, fixed wing, army
-    position: { lat: 26.90, lng: 119.95 },  // Fujian airfields
-    confidence: 0.75,
+    sidc: '10061000001215001200', // Land unit, EW
+    position: { lat: 57.12, lng: 28.40 },  // EW jamming position
+    confidence: 0.60,
     confidenceTier: 'medium',
   },
-  // PLA Rocket Force
   {
-    entityId: 'pla-rocket-force-base',
-    designation: 'PLARF Base 61 (DF-15/DF-16)',
+    entityId: 'opfor-eng-ele',
+    designation: 'Combat Engineer Element (OPFOR)',
     affiliation: 'enemy',
-    sidc: '10061000001409001400', // Land unit, missile
-    position: { lat: 27.50, lng: 118.80 },  // Jiangxi/Fujian border
+    sidc: '10061000001205000200', // Land unit, engineer
+    position: { lat: 56.95, lng: 28.00 },  // Obstacle clearance element
     confidence: 0.65,
     confidenceTier: 'medium',
   },
-  // Taipei landing force (tactical level — visible on zoom)
   {
-    entityId: 'pla-marine-bde-taipei',
-    designation: 'PLA Marine Brigade (Taipei Assault)',
+    entityId: 'opfor-log-node',
+    designation: 'Forward Logistics Node (OPFOR)',
     affiliation: 'enemy',
-    sidc: '10061000001211001200', // Land unit, brigade
-    position: { lat: 25.13, lng: 121.46 },  // Approaching Taipei coast
-    confidence: 0.60,
-    confidenceTier: 'medium',
+    sidc: '10061000001211001200',
+    position: { lat: 57.20, lng: 28.50 },  // Logistics staging — far east
+    confidence: 0.55,
+    confidenceTier: 'low',
   },
 ];
 
@@ -233,9 +231,9 @@ async function seedStrategicCOP(problemSetId: string) {
         ...s,
         linkedEntities: [],
         ccoClass: 'military_unit',
-        sourceAuthority: 'Pacific Strategy AY26 Exercise',
+        sourceAuthority: 'Exercise Seed (Baltic Shield defaults)',
         assertedVia: 'exercise_seed',
-        provenanceSummary: 'Pacific Strategy AY26 exercise scenario data',
+        provenanceSummary: 'Exercise scenario seed data — Baltic Shield coalition forces',
       })),
       controlMeasures: [],
       customAnnotations: [],
@@ -243,7 +241,7 @@ async function seedStrategicCOP(problemSetId: string) {
       metadata: {
         generatedBy: 'strategic-cop-seed',
         generatedAt: new Date().toISOString(),
-        sourceDocumentIds: ['pacific-strategy-ay26'],
+        sourceDocumentIds: ['exercise-seed'],
         ccoValidated: false,
         layerName: 'Friendly Force Disposition (Strategic)',
       },
@@ -264,9 +262,9 @@ async function seedStrategicCOP(problemSetId: string) {
         ...s,
         linkedEntities: [],
         ccoClass: 'military_unit',
-        sourceAuthority: 'Pacific Strategy AY26 Intelligence Assessment',
+        sourceAuthority: 'Exercise Seed (Baltic Shield intelligence assessment)',
         assertedVia: 'exercise_seed',
-        provenanceSummary: 'Pacific Strategy AY26 intelligence assessment (assessed)',
+        provenanceSummary: 'Exercise scenario seed data — opposing force intelligence assessment (assessed)',
       })),
       controlMeasures: [],
       customAnnotations: [],
@@ -274,7 +272,7 @@ async function seedStrategicCOP(problemSetId: string) {
       metadata: {
         generatedBy: 'strategic-cop-seed',
         generatedAt: new Date().toISOString(),
-        sourceDocumentIds: ['pacific-strategy-ay26-intel'],
+        sourceDocumentIds: ['exercise-seed'],
         ccoValidated: false,
         layerName: 'Adversary Force Disposition (Strategic)',
       },

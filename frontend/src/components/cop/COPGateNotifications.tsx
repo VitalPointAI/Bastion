@@ -28,18 +28,10 @@ interface COPGateNotificationsProps {
   problemSetId?: string;
 }
 
-// ─── Calibration (must match calibration-profiles.json) ─────────────────────
-
-const CAL_SOUTH = 25.0420, CAL_NORTH = 25.0540;
-const CAL_WEST = 121.5120, CAL_EAST = 121.5180;
-const CAL_ROOM_W = 5, CAL_ROOM_H = 10;
-
-function roomToLatLng(x: number, y: number): [number, number] {
-  return [
-    CAL_SOUTH + (y / CAL_ROOM_H) * (CAL_NORTH - CAL_SOUTH),
-    CAL_WEST + (x / CAL_ROOM_W) * (CAL_EAST - CAL_WEST),
-  ];
-}
+// NOTE: Hardcoded calibration constants have been removed. Engagement zoom
+// now derives from the notification's threat position (if provided in the
+// payload) or falls back to the AO center from CalibrationContext. See
+// useZoomTarget below.
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -60,13 +52,20 @@ export function COPGateNotifications({ onZoomToAction, problemSetId }: COPGateNo
     }
   }, [dismissNotification, problemSetId, navigate]);
 
-  // Auto-zoom map when a critical gate arrives
+  // Auto-zoom map when a critical gate arrives.
+  // Zoom target priority:
+  //   1. Gate notification's threat position (lat/lng from notification payload)
+  //   2. Gate notification's room coordinates converted via calibration
+  //   3. Fallback: no zoom (onZoomToAction not called)
   useEffect(() => {
     if (criticalGate && onZoomToAction) {
-      // Zoom to the engagement area center (approximate from room coords)
-      // The action is happening in the north part of the AO near Zhongxiao W Rd
-      const [lat, lng] = roomToLatLng(2.5, 3.5);
-      onZoomToAction(lat, lng, 17);
+      // Use threat position from notification payload if available
+      if (typeof criticalGate.threatLat === 'number' && typeof criticalGate.threatLng === 'number') {
+        onZoomToAction(criticalGate.threatLat, criticalGate.threatLng, 17);
+      }
+      // Otherwise do not zoom — room-to-geo conversion requires server-side
+      // calibration context not available in this pure frontend component.
+      // The COP map will stay at its current view.
     }
   }, [criticalGate, onZoomToAction]);
 
