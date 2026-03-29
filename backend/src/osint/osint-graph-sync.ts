@@ -328,7 +328,8 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
 
     // Only create actor nodes — not event nodes. MERGE on name to prevent duplicates.
     for (const actorName of event.actors) {
-      const trimmed = (actorName ?? '').trim();
+      // Strip all whitespace variants (\r\n\t) and collapse internal runs
+      const trimmed = (actorName ?? '').replace(/[\r\n\t]+/g, ' ').trim().replace(/\s{2,}/g, ' ');
       if (!trimmed || trimmed.length < 2) continue;
 
       // Phase 62: Normalize actor name to canonical form before MERGE
