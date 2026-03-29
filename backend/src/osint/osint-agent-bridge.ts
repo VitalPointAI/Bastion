@@ -20,6 +20,8 @@ import { createWiredDocIntelligenceGraph } from '../doc-intelligence/orchestrato
 import { getProblemSetContext } from '../doc-intelligence/interview/interview-store.js';
 import type { ProblemSetContext } from '../doc-intelligence/schemas.js';
 import type { DocumentIntelligenceReport } from '../doc-intelligence/types.js';
+import { sourceStore } from '../doc-intelligence/source-registry/source-store.js';
+import type { SourceReliability } from '../doc-intelligence/source-registry/nato-ratings.js';
 
 // ============================================================================
 // Constants
@@ -27,6 +29,28 @@ import type { DocumentIntelligenceReport } from '../doc-intelligence/types.js';
 
 /** Cache TTL in milliseconds — 30 minutes */
 const GRAPH_CACHE_TTL_MS = 30 * 60 * 1000;
+
+/**
+ * Well-known news agencies with pre-established default NATO reliability ratings.
+ *
+ * By pre-registering these sources before the TrustAgent runs, we prevent them
+ * from being assessed as unknown (F/6 — Cannot Be Judged) on first encounter.
+ * TrustAgent will find the registry entry and skip full LLM re-assessment.
+ *
+ * NATO Reliability scale: A (Completely Reliable) → F (Reliability Cannot Be Judged)
+ */
+const KNOWN_NEWS_AGENCIES: Record<string, SourceReliability> = {
+  'Reuters': 'B',
+  'Associated Press': 'B',
+  'AP': 'B',
+  'BBC': 'B',
+  'BBC News': 'B',
+  'Al Jazeera': 'C',
+  'CNN': 'C',
+  'The Guardian': 'C',
+  'The New York Times': 'B',
+  'NPR': 'B',
+};
 
 // ============================================================================
 // Graph cache
@@ -49,6 +73,38 @@ const graphCache = new Map<string, CachedGraph>();
 // ============================================================================
 
 /**
+ * Ensure a feed source is registered in the source_registry table before the
+ * pipeline runs, so TrustAgent can look it up rather than treating it as unknown.
+ *
+ * Uses an UPSERT (ON CONFLICT DO NOTHING semantics via the store) so repeated
+ * calls for the same source are safe and cheap. Known news agencies receive
+ * their pre-established reliability rating; all other sources default to 'C'
+ * (Fairly Reliable) which still produces a sensible result without a full
+ * LLM assessment.
+ *
+ * @param sourceName  - Feed source name (e.g. "Reuters")
+ * @param sourceType  - Feed source type (e.g. "rss", "news")
+ * @param reliability - Default NATO reliability rating to assign
+ */
+async function ensureSourceRegistered(
+  sourceName: string,
+  sourceType: string,
+  reliability: SourceReliability,
+): Promise<void> {
+  try {
+    await sourceStore.upsertSource({
+      sourceName,
+      sourceType,
+      defaultReliability: reliability,
+      trustNotes: `Pre-registered by OSINT bridge (Phase 63). Reliability: ${reliability}.`,
+    });
+  } catch (err) {
+    // Non-fatal — TrustAgent will fall back to LLM assessment if registry lookup fails
+    console.warn(`[osint-bridge] ensureSourceRegistered failed for "${sourceName}":`, err);
+  }
+}
+
+/**
  * Build a minimal fallback ProblemSetContext when no interview has been
  * completed for the given problem set. Sufficient for TrustAgent, FactExtractor,
  * and QualityAssessor scoping without aborting those specialist runs.
@@ -58,8 +114,10 @@ function buildFallbackContext(problemSetId: string, _feed: OSINTFeedConfig): Pro
     problemSetId,
     coreProblem: 'General geopolitical intelligence monitoring',
     geographicScope: { regions: ['Global'], countries: [] },
-    temporalRange: { startDate: null, endDate: null },
-    actorFocus: { primaryActors: [], secondaryActors: [] },
+    temporalRange: {},
+    actorFocus: { primaryActors: [] },
+    classificationCeiling: 'UNCLASSIFIED',
+    echelon: 'strategic',
     version: 1,
     updatedAt: new Date().toISOString(),
   };
@@ -120,6 +178,11 @@ export async function processOSINTEventThroughAgents(
 
   // Get or create a cached compiled graph for this problem set
   const graph = await getOrCreateGraph(problemSetId, problemSetContext);
+
+  // Pre-register the feed source in the source registry so TrustAgent can look
+  // it up rather than treating it as an unknown (F/6) source on first encounter.
+  const defaultReliability: SourceReliability = KNOWN_NEWS_AGENCIES[feed.sourceName] ?? 'C';
+  await ensureSourceRegistered(feed.sourceName, feed.sourceType, defaultReliability);
 
   // Build document text from event content
   const documentText = `${event.title}\n\n${event.description ?? ''}`;
