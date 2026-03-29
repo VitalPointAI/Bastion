@@ -31,6 +31,17 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
+    include: ['react', 'react-dom', 'leaflet-draw'],
+  },
+  resolve: {
+    alias: [
+      {
+        // Only match bare 'leaflet-draw' import (not 'leaflet-draw/dist/...' paths).
+        // react-leaflet-draw does `import Draw from 'leaflet-draw'` which
+        // fails in Rolldown (no default export). Redirect to an ESM shim.
+        find: /^leaflet-draw$/,
+        replacement: '/src/shims/leaflet-draw.ts',
+      },
+    ],
   },
 })
