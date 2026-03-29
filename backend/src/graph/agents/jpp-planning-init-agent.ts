@@ -80,7 +80,7 @@ export const JPP_PLANNING_INIT_CHARACTER: AgentCharacter = {
     [
       {
         role: 'user',
-        content: 'We need to initiate planning for the Indo-Pacific contingency.',
+        content: 'We need to initiate planning for the theater contingency.',
       },
       {
         role: 'assistant',

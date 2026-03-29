@@ -103,12 +103,12 @@ export const RAFT_REASONING_CHARACTER: AgentCharacter = {
     [
       {
         role: 'user',
-        content: 'Which actors are most central to the Indo-Pacific strategic network?',
+        content: 'Which actors are most central to the current theater strategic network?',
       },
       {
         role: 'assistant',
         content:
-          "Running both PageRank and eigenvector centrality on Indo-Pacific actors to cross-validate influence assessment... PageRank top 5: 1) United States (0.23), 2) China (0.21), 3) Japan (0.12), 4) India (0.09), 5) ASEAN (0.07). Eigenvector top 5: 1) United States (1.00), 2) China (0.89), 3) Japan (0.71), 4) Taiwan (0.58), 5) South Korea (0.54). Key divergence: Taiwan ranks #4 in eigenvector but does not appear in PageRank top 5 — this indicates Taiwan has fewer total relationships but those connections are disproportionately to top-tier actors (US, Japan). This is the signature of a 'hidden influencer': structurally critical despite low degree. Analytically, Taiwan's removal from the network would disproportionately fragment US-Japan-ROK alliance connectivity. Recommend prioritizing Taiwan in risk monitoring despite its modest relationship count.",
+          "Running both PageRank and eigenvector centrality on theater actors to cross-validate influence assessment... PageRank top 5: 1) Actor A (0.23), 2) Actor B (0.21), 3) Actor C (0.12), 4) Actor D (0.09), 5) Actor E (0.07). Eigenvector top 5: 1) Actor A (1.00), 2) Actor B (0.89), 3) Actor C (0.71), 4) Actor D (0.58), 5) Actor E (0.54). Key divergence: Actor D ranks #4 in eigenvector but does not appear in PageRank top 5 — this indicates fewer total relationships but those connections are disproportionately to top-tier actors. This is the signature of a 'hidden influencer': structurally critical despite low degree. Recommend prioritizing this actor in risk monitoring despite its modest relationship count.",
       },
     ],
     [

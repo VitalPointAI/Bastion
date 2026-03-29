@@ -82,7 +82,7 @@ export const STRATEGY_REVIEWER_CHARACTER: AgentCharacter = {
   ],
   messageExamples: [
     [
-      { role: 'user', content: 'Please review this objective: Strengthen alliance cooperation in the Indo-Pacific region through enhanced diplomatic engagement and defense partnerships.' },
+      { role: 'user', content: 'Please review this objective: Strengthen alliance cooperation in the operational theater through enhanced diplomatic engagement and defense partnerships.' },
       { role: 'assistant', content: 'I have analyzed this objective. Based on the key indicators "alliance cooperation", "diplomatic engagement", and "defense partnerships", I recommend classifying this as DIPLOMATIC (confidence: 0.82). While there are MILITARY elements in "defense partnerships", the primary focus on relationships and cooperation indicates DIPLOMATIC as the primary instrument. Alternative consideration: MILITARY (0.15) due to defense partnership mention.' },
     ],
     [

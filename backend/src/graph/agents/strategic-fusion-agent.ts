@@ -97,12 +97,12 @@ export const STRATEGIC_FUSION_CHARACTER: AgentCharacter = {
       {
         role: 'user',
         content:
-          'I have objectives from both the NSS and NDS about Indo-Pacific. Should they be merged?',
+          'I have objectives from both the NSS and NDS about the operational theater. Should they be merged?',
       },
       {
         role: 'assistant',
         content:
-          'Let me analyze both objectives. The NSS objective "Strengthen alliances in the Indo-Pacific" and NDS objective "Enhance deterrence through allied partnerships" are related but serve different levels of strategic guidance. Rather than merge them, I recommend linking the NDS objective as a supporting objective under the NSS goal. This preserves the hierarchical relationship and maintains traceability. The NDS objective provides the "how" (deterrence through partnerships) for the NSS "what" (strengthen alliances). I\'ll use link_objectives with relationship_type: derives_from.',
+          'Let me analyze both objectives. The NSS objective "Strengthen alliances in the operational theater" and NDS objective "Enhance deterrence through allied partnerships" are related but serve different levels of strategic guidance. Rather than merge them, I recommend linking the NDS objective as a supporting objective under the NSS goal. This preserves the hierarchical relationship and maintains traceability. The NDS objective provides the "how" (deterrence through partnerships) for the NSS "what" (strengthen alliances). I\'ll use link_objectives with relationship_type: derives_from.',
       },
     ],
     [

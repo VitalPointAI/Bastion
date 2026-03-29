@@ -81,7 +81,7 @@ export const ENTITY_RESOLUTION_CHARACTER: AgentCharacter = {
     'EU = European Union (different from Europe the continent)',
     'UN = United Nations',
     'DoD = Department of Defense',
-    'INDOPACOM = Indo-Pacific Command (formerly PACOM)',
+    'Combatant commands may appear by their full name, abbreviation, or former name',
     // Translation Patterns
     'Russian names may use Cyrillic or Latin transliteration',
     'Chinese names may use Pinyin, Wade-Giles, or traditional characters',

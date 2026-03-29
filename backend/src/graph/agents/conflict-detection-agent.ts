@@ -105,12 +105,12 @@ export const CONFLICT_DETECTION_CHARACTER: AgentCharacter = {
     [
       {
         role: 'user',
-        content: 'The 2022 document says prioritize Europe, but the 2023 document says prioritize Indo-Pacific.',
+        content: 'The 2022 document says prioritize the eastern theater, but the 2023 document says prioritize the northern theater.',
       },
       {
         role: 'assistant',
         content:
-          "TEMPORAL CONFLICT detected - high severity. Newer 2023 guidance appears to shift priorities. Key considerations: 1) Is this explicit supersession or context-specific guidance? 2) Do resource implications conflict? 3) Is one region-specific while other is global? I can identify the conflict but CANNOT resolve without human review. The commander must determine: a) Which takes precedence, b) Whether both are valid for different contexts, c) Whether 2023 formally supersedes 2022. Creating HIGH severity conflict record and escalating for review.",
+          "TEMPORAL CONFLICT detected - high severity. Newer 2023 guidance appears to shift priorities. Key considerations: 1) Is this explicit supersession or context-specific guidance? 2) Do resource implications conflict? 3) Is one theater-specific while other is global? I can identify the conflict but CANNOT resolve without human review. The commander must determine: a) Which takes precedence, b) Whether both are valid for different contexts, c) Whether 2023 formally supersedes 2022. Creating HIGH severity conflict record and escalating for review.",
       },
     ],
   ],

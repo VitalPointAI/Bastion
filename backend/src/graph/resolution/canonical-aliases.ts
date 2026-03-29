@@ -1,3 +1,6 @@
+// Entity resolution aliases - these map document-level entity references to canonical names.
+// Scenario-specific aliases should be loaded from the active problem set's entity registry.
+
 /**
  * Canonical alias registry for common geopolitical and military name variants.
  * Maps variant → canonical form. Applied before actor node creation.
@@ -5,6 +8,10 @@
  * Keys are lowercase and whitespace-normalized for case-insensitive lookup.
  * "Republic of China" is intentionally NOT mapped to "China" — it is Taiwan (ROC),
  * a distinct geopolitical entity from the PRC.
+ *
+ * These are entity resolution reference data for resolving entity references in
+ * ingested intelligence documents — they are not scenario assumptions. The list
+ * covers widely-used abbreviations that appear across many scenarios and documents.
  */
 export const CANONICAL_ALIASES: Record<string, string> = {
   // United States variants
