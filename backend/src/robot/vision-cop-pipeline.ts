@@ -19,109 +19,13 @@ import { getConfidenceTier } from '../graph/provenance-types.js';
 import { SOURCE_WEIGHTS } from '../graph/confidence-calculator.js';
 import { entityResolutionService } from '../graph/resolution/resolution-service.js';
 import { calibrationService } from './calibration-service.js';
+import { vehicleDatabase } from './vehicle-database.js';
 
 const BASTION_CONTEXT = 'https://bastion.vitalpoint.ai/ontology/context.jsonld';
 const VISION_ASSERTED_BY = 'system:yolov8-detector';
 const VISION_SOURCE_WEIGHT = SOURCE_WEIGHTS['vision_pipeline']; // 0.70
 // Vision detections are highly perishable: 1-day half-life
 const VISION_HALF_LIFE_DAYS = 1;
-
-// ── Threat Classification ──────────────────────────────────────────────────
-
-/** Map detection class names to threat categories and military symbology */
-const THREAT_CLASS_MAP: Record<string, {
-  category: 'ground_vehicle' | 'aircraft' | 'naval' | 'personnel' | 'installation';
-  affiliation: 'hostile' | 'unknown' | 'neutral';
-  echelon: string;
-  designation: string;
-  symbolSet: string;  // MIL-STD-2525D symbol set
-  entity: string;     // Entity code
-}> = {
-  // Bastion-trained tank classes (from robot/vision/training/)
-  // MBTs — symbol set 15 (land equipment), entity 120101 (tank)
-  't-90': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'T-90 Main Battle Tank', symbolSet: '15', entity: '120104',
-  },
-  't90': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'T-90 Main Battle Tank', symbolSet: '15', entity: '120104',
-  },
-  'chn-99g': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '15', entity: '120104',
-  },
-  'chn99g': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99G Main Battle Tank (ZTZ-99G)', symbolSet: '15', entity: '120104',
-  },
-  't72': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'T-72 Main Battle Tank', symbolSet: '15', entity: '120104',
-  },
-  'ztz99': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'ZTZ-99 Main Battle Tank', symbolSet: '15', entity: '120104',
-  },
-  'type99': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99 Main Battle Tank', symbolSet: '15', entity: '120104',
-  },
-  't-99': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Type 99 Main Battle Tank', symbolSet: '15', entity: '120104',
-  },
-  // IFVs/APCs — symbol set 15 (land equipment), entity 120200 (APC/IFV)
-  'zbd-04': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'ZBD-04 Infantry Fighting Vehicle', symbolSet: '15', entity: '120200',
-  },
-  'zbd04': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'ZBD-04 Infantry Fighting Vehicle', symbolSet: '15', entity: '120200',
-  },
-  'btr-82': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'BTR-82 Armored Personnel Carrier', symbolSet: '15', entity: '120200',
-  },
-  'btr82': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'BTR-82 Armored Personnel Carrier', symbolSet: '15', entity: '120200',
-  },
-  // Generic classes
-  'tank': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Unknown Tank', symbolSet: '15', entity: '120104',
-  },
-  'military vehicle': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Military Vehicle', symbolSet: '15', entity: '120000',
-  },
-  'armored vehicle': {
-    category: 'ground_vehicle', affiliation: 'hostile', echelon: 'unit',
-    designation: 'Armored Vehicle', symbolSet: '15', entity: '120200',
-  },
-  'truck': {
-    category: 'ground_vehicle', affiliation: 'unknown', echelon: 'unit',
-    designation: 'Truck', symbolSet: '10', entity: '140000',
-  },
-  'airplane': {
-    category: 'aircraft', affiliation: 'unknown', echelon: 'unit',
-    designation: 'Fixed Wing Aircraft', symbolSet: '01', entity: '110000',
-  },
-  'helicopter': {
-    category: 'aircraft', affiliation: 'unknown', echelon: 'unit',
-    designation: 'Rotary Wing Aircraft', symbolSet: '01', entity: '110100',
-  },
-  'boat': {
-    category: 'naval', affiliation: 'unknown', echelon: 'unit',
-    designation: 'Surface Vessel', symbolSet: '30', entity: '120000',
-  },
-  'person': {
-    category: 'personnel', affiliation: 'unknown', echelon: 'individual',
-    designation: 'Personnel', symbolSet: '10', entity: '110000',
-  },
-};
 
 /** Standard Identity (positions 3-4) for MIL-STD-2525D */
 const AFFILIATION_CODE: Record<string, string> = {
@@ -216,20 +120,19 @@ export function extractThreatSymbols(
       continue;
     }
 
-    // Fallback for completely unknown classes — use static map
-    const classKey = detection.class_desc.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
-    const threat = THREAT_CLASS_MAP[classKey];
-    if (!threat) continue;
+    // Fallback for completely unknown classes — use VehicleDatabase
+    const threat = vehicleDatabase.getByClassification(detection.class_desc);
+    if (!threat || !threat.mil2525_symbol_set || !threat.mil2525_entity) continue;
 
-    const identityCode = AFFILIATION_CODE[threat.affiliation] ?? '01';
-    const sidc = `10${identityCode}${threat.symbolSet}0000${threat.entity}0000`;
+    const identityCode = AFFILIATION_CODE[threat.threat_class] ?? '01';
+    const sidc = `10${identityCode}${threat.mil2525_symbol_set}0000${threat.mil2525_entity}0000`;
 
     symbols.push({
       entityId: `DET-${randomUUID().slice(0, 8)}`,
-      designation: threat.designation,
-      type: threat.category,
-      echelon: threat.echelon,
-      affiliation: threat.affiliation,
+      designation: threat.name,
+      type: threat.category ?? 'ground_vehicle',
+      echelon: threat.echelon ?? 'unit',
+      affiliation: threat.threat_class === 'neutral' ? 'unknown' : threat.threat_class,
       sidc,
       position,
       sourceDocumentId: msg.mission_id ?? msg.robot_id,

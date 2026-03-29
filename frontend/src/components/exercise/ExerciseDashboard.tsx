@@ -34,6 +34,7 @@ import { PlanningBoard } from './PlanningBoard';
 import { ExerciseTimeline } from './ExerciseTimeline';
 import { GateControl } from './GateControl';
 import { StaffWorkspace } from './StaffWorkspace';
+import { TeamConfigProvider, useTeamConfig } from '../../context/TeamConfigProvider';
 import './ExerciseDashboard.css';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -446,7 +447,9 @@ function CreateScenarioModal({ onClose, onCreate }: CreateScenarioModalProps) {
 
 // ─── ExerciseDashboard ─────────────────────────────────────────────────────────
 
-export function ExerciseDashboard() {
+function ExerciseDashboardInner() {
+  const { blueTeamLabel, redTeamLabel } = useTeamConfig();
+
   // ── State ────────────────────────────────────────────────────────────────────
   const [scenarios, setScenarios] = useState<ExerciseScenario[]>([]);
   const [selectedScenario, setSelectedScenario] = useState<ExerciseScenario | null>(null);
@@ -630,16 +633,16 @@ export function ExerciseDashboard() {
           <button
             className={`perspective-btn ${perspective === 'blue' ? 'active--blue' : ''}`}
             onClick={() => setPerspective('blue')}
-            title="Blue Force perspective — CJTF WestPAC"
+            title={`Blue Force perspective — ${blueTeamLabel}`}
           >
-            Blue (CJTF WestPAC)
+            Blue ({blueTeamLabel})
           </button>
           <button
             className={`perspective-btn ${perspective === 'red' ? 'active--red' : ''}`}
             onClick={() => setPerspective('red')}
-            title="Red Force perspective — PRC/TCC"
+            title={`Red Force perspective — ${redTeamLabel}`}
           >
-            Red (PRC/TCC)
+            Red ({redTeamLabel})
           </button>
         </div>
 
@@ -869,5 +872,17 @@ export function ExerciseDashboard() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * ExerciseDashboard wraps the inner component with TeamConfigProvider.
+ * Later phases will pass problem set team config here.
+ */
+export function ExerciseDashboard() {
+  return (
+    <TeamConfigProvider>
+      <ExerciseDashboardInner />
+    </TeamConfigProvider>
   );
 }

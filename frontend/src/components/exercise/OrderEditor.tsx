@@ -24,6 +24,7 @@ import type {
   OPORDContent,
   FRAGOContent,
 } from '../../types/exercise';
+import { useTeamConfig } from '../../context/TeamConfigProvider';
 import './OrderEditor.css';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -724,7 +725,8 @@ interface PublishModalProps {
 }
 
 function PublishModal({ order, onConfirm, onCancel, publishing }: PublishModalProps) {
-  const teamLabel = order.team === 'blue' ? 'Blue (CJTF WestPAC)' : 'Red (PRC/TCC)';
+  const { blueTeamLabel, redTeamLabel } = useTeamConfig();
+  const teamLabel = order.team === 'blue' ? `Blue (${blueTeamLabel})` : `Red (${redTeamLabel})`;
   return (
     <div className="order-modal-overlay" onClick={onCancel}>
       <div className="order-modal" onClick={(e) => e.stopPropagation()}>
@@ -853,6 +855,8 @@ function GenerateFRAGODialog({ orders, onGenerate, onCancel, generating }: Gener
 // ─── OrderEditor ─────────────────────────────────────────────────────────────────
 
 export function OrderEditor({ scenarioId, perspective, exercisePhase }: OrderEditorProps) {
+  const { blueTeamLabel, redTeamLabel } = useTeamConfig();
+
   // ── State ────────────────────────────────────────────────────────────────────
   const [orders, setOrders] = useState<ExerciseOrder[]>([]);
   const [coas, setCoas] = useState<ScenarioCOA[]>([]);
@@ -1059,7 +1063,7 @@ export function OrderEditor({ scenarioId, perspective, exercisePhase }: OrderEdi
     : orders.filter((o) => o.orderType === typeFilter);
 
   const hasWARNORD = orders.some((o) => o.orderType === 'WARNORD');
-  const teamLabel = perspective === 'blue' ? 'Blue (CJTF WestPAC)' : 'Red (PRC/TCC)';
+  const teamLabel = perspective === 'blue' ? `Blue (${blueTeamLabel})` : `Red (${redTeamLabel})`;
 
   const currentContent = editMode && editContent ? editContent : activeOrder?.content ?? null;
 

@@ -9,47 +9,7 @@
 
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
-
-// ---------------------------------------------------------------------------
-// Known vehicle database — deterministic fast path
-// ---------------------------------------------------------------------------
-
-interface VehicleEntry {
-  designation: string;
-  affiliation: 'hostile' | 'suspect' | 'unknown' | 'friendly';
-  symbolSet: string;
-  entity: string;
-  category: 'mbt' | 'ifv' | 'apc' | 'truck' | 'artillery' | 'air' | 'naval' | 'generic';
-  notes: string;
-}
-
-const KNOWN_VEHICLES: Record<string, VehicleEntry> = {
-  // PLA vehicles
-  't-90':    { designation: 'T-90 Main Battle Tank',              affiliation: 'hostile', symbolSet: '15', entity: '120104', category: 'mbt',  notes: 'Russian MBT, composite + Kontakt-5 ERA' },
-  't90':     { designation: 'T-90 Main Battle Tank',              affiliation: 'hostile', symbolSet: '15', entity: '120104', category: 'mbt',  notes: 'Russian MBT' },
-  'chn-99g': { designation: 'Type 99G Main Battle Tank (ZTZ-99G)',affiliation: 'hostile', symbolSet: '15', entity: '120104', category: 'mbt',  notes: 'PLA advanced MBT, FY-4 ERA + APS' },
-  'chn99g':  { designation: 'Type 99G Main Battle Tank (ZTZ-99G)',affiliation: 'hostile', symbolSet: '15', entity: '120104', category: 'mbt',  notes: 'PLA advanced MBT' },
-  't72':     { designation: 'T-72 Main Battle Tank',              affiliation: 'hostile', symbolSet: '15', entity: '120104', category: 'mbt',  notes: 'Russian MBT, widely exported' },
-  'ztz99':   { designation: 'ZTZ-99 Main Battle Tank',            affiliation: 'hostile', symbolSet: '15', entity: '120104', category: 'mbt',  notes: 'PLA MBT' },
-  'type99':  { designation: 'Type 99 Main Battle Tank',           affiliation: 'hostile', symbolSet: '15', entity: '120104', category: 'mbt',  notes: 'PLA MBT' },
-  't-99':    { designation: 'Type 99 Main Battle Tank',           affiliation: 'hostile', symbolSet: '15', entity: '120104', category: 'mbt',  notes: 'PLA MBT' },
-  'zbd-04':  { designation: 'ZBD-04 Infantry Fighting Vehicle',   affiliation: 'hostile', symbolSet: '15', entity: '120200', category: 'ifv',  notes: 'PLA IFV, 100mm + 30mm' },
-  'zbd04':   { designation: 'ZBD-04 Infantry Fighting Vehicle',   affiliation: 'hostile', symbolSet: '15', entity: '120200', category: 'ifv',  notes: 'PLA IFV' },
-  'btr-82':  { designation: 'BTR-82 Armored Personnel Carrier',   affiliation: 'hostile', symbolSet: '15', entity: '120200', category: 'apc',  notes: 'Russian APC, 30mm autocannon' },
-  'btr82':   { designation: 'BTR-82 Armored Personnel Carrier',   affiliation: 'hostile', symbolSet: '15', entity: '120200', category: 'apc',  notes: 'Russian APC' },
-  'bmp-3':   { designation: 'BMP-3 Infantry Fighting Vehicle',    affiliation: 'hostile', symbolSet: '15', entity: '120200', category: 'ifv',  notes: 'Russian IFV, 100mm + 30mm' },
-  // Friendly
-  'm1':      { designation: 'M1 Abrams Main Battle Tank',         affiliation: 'friendly',symbolSet: '15', entity: '120104', category: 'mbt',  notes: 'US MBT' },
-  'lav-25':  { designation: 'LAV-25 Light Armored Vehicle',       affiliation: 'friendly',symbolSet: '15', entity: '120200', category: 'apc',  notes: 'USMC LAV' },
-  // Generic
-  'tank':            { designation: 'Unknown Tank',                affiliation: 'hostile', symbolSet: '15', entity: '120104', category: 'mbt',     notes: 'Generic tank detection' },
-  'armored vehicle': { designation: 'Armored Vehicle',             affiliation: 'hostile', symbolSet: '15', entity: '120200', category: 'generic', notes: 'Generic armored vehicle' },
-  'military vehicle':{ designation: 'Military Vehicle',            affiliation: 'hostile', symbolSet: '15', entity: '140000', category: 'truck',   notes: 'Generic military vehicle' },
-  'truck':           { designation: 'Truck',                       affiliation: 'unknown', symbolSet: '15', entity: '140000', category: 'truck',   notes: 'Transport vehicle' },
-  'airplane':        { designation: 'Fixed Wing Aircraft',         affiliation: 'unknown', symbolSet: '01', entity: '110000', category: 'air',     notes: 'Airborne platform' },
-  'helicopter':      { designation: 'Rotary Wing Aircraft',        affiliation: 'unknown', symbolSet: '01', entity: '110100', category: 'air',     notes: 'Rotary-wing platform' },
-  'boat':            { designation: 'Surface Vessel',              affiliation: 'unknown', symbolSet: '30', entity: '120000', category: 'naval',   notes: 'Surface vessel' },
-};
+import { vehicleDatabase } from '../vehicle-database.js';
 
 // Standard Identity codes (positions 3-4)
 const IDENTITY_CODES: Record<string, string> = {
@@ -91,15 +51,15 @@ export function classifyKnownVehicle(
   position?: { lat: number; lng: number },
   heading?: number,
 ): SymbolResult | null {
-  const key = detectionClass.toLowerCase().replace(/[^a-z0-9 -]/g, '').trim();
-  const entry = KNOWN_VEHICLES[key];
-  if (!entry) return null;
+  const entry = vehicleDatabase.getByClassification(detectionClass);
+  if (!entry || !entry.mil2525_symbol_set || !entry.mil2525_entity) return null;
 
   // Use the vehicle's defined affiliation — for known threat vehicles
   // (T-90, CHN-99G, etc.) the affiliation stays hostile regardless of
   // confidence. The model was specifically trained on these classes.
   // Only downgrade to unknown for very low confidence generic detections.
-  let affiliation = entry.affiliation;
+  let affiliation: 'hostile' | 'suspect' | 'unknown' | 'friendly' =
+    entry.threat_class === 'neutral' ? 'unknown' : entry.threat_class;
   if (confidence < 0.3) affiliation = 'unknown';
 
   const identityCode = IDENTITY_CODES[affiliation] ?? '01';
@@ -111,27 +71,27 @@ export function classifyKnownVehicle(
   else if (count >= 2) echelon = '13'; // section
 
   // For multiple vehicles, switch to land_unit (10) with echelon
-  const symbolSet = count > 1 ? '10' : entry.symbolSet;
+  const symbolSet = count > 1 ? '10' : entry.mil2525_symbol_set;
 
   // Build 20-character SIDC
-  const sidc = `10${identityCode}${symbolSet}00${echelon}${entry.entity}0000`;
+  const sidc = `10${identityCode}${symbolSet}00${echelon}${entry.mil2525_entity}0000`;
 
   const confidenceTier: 'high' | 'medium' | 'low' =
     confidence >= 0.85 ? 'high' : confidence >= 0.65 ? 'medium' : 'low';
 
   return {
     sidc,
-    designation: entry.designation,
+    designation: entry.name,
     affiliation,
     symbol_set: symbolSet === '10' ? 'land_unit' : symbolSet === '15' ? 'land_equipment' : symbolSet === '01' ? 'air' : 'sea_surface',
-    entity_description: entry.designation,
+    entity_description: entry.name,
     echelon: echelon === '00' ? 'individual' : echelon === '13' ? 'section' : echelon === '14' ? 'platoon' : 'company',
     status: 'present',
     quantity: count,
     confidence_tier: confidenceTier,
     position: position ?? null,
     heading: heading ?? null,
-    tactical_notes: `${entry.notes}. ${count > 1 ? `${count}x detected.` : ''} Confidence: ${(confidence * 100).toFixed(0)}%.`,
+    tactical_notes: `${entry.description ?? entry.name}. ${count > 1 ? `${count}x detected.` : ''} Confidence: ${(confidence * 100).toFixed(0)}%.`,
   };
 }
 

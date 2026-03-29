@@ -22,6 +22,7 @@ import type {
 } from '../../types/exercise';
 import { ValidityMap } from '../validity/ValidityMap';
 import { IPBLayerControls } from './IPBLayerControls';
+import { useTeamConfig } from '../../context/TeamConfigProvider';
 import './IPBPanel.css';
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
@@ -284,6 +285,8 @@ function NAIList({ nais, onZoomTo }: NAIListProps) {
 // ─── IPBPanel ──────────────────────────────────────────────────────────────────
 
 export function IPBPanel({ scenarioId, perspective, exercisePhase }: IPBPanelProps) {
+  const { blueTeamLabel, redTeamLabel } = useTeamConfig();
+
   // ── State ──────────────────────────────────────────────────────────────────
   const [assessment, setAssessment] = useState<IPBAssessment | null>(null);
   const [redMode, setRedMode] = useState<RedMode>('assessment');
@@ -460,7 +463,7 @@ export function IPBPanel({ scenarioId, perspective, exercisePhase }: IPBPanelPro
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const perspectiveLabel = perspective === 'blue' ? 'Blue Force (CJTF WestPAC)' : 'Red Force (PRC/TCC)';
+  const perspectiveLabel = perspective === 'blue' ? `Blue Force (${blueTeamLabel})` : `Red Force (${redTeamLabel})`;
 
   return (
     <div className="ipb-panel">
