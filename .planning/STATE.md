@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 63-02-PLAN.md
-last_updated: "2026-03-29T20:10:18Z"
-last_activity: "2026-03-29 - Completed 63-02: Cut over feed-poller and gap-filler to processOSINTEventThroughAgents; deprecated osint-entity-extractor"
+stopped_at: Completed 63-03-PLAN.md
+last_updated: "2026-03-29T21:15:00Z"
+last_activity: "2026-03-29 - Completed 63-03: Source pre-registration tests (OSINT-63-07) added to bridge; LLM concurrency reduced 3→2 for 12-specialist pipeline"
 progress:
   total_phases: 79
   completed_phases: 59
-  total_plans: 487
-  completed_plans: 487
+  total_plans: 488
+  completed_plans: 488
   percent: 100
 ---
 
@@ -26,10 +26,10 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 63 of 79 (Unified OSINT Agent Ingestion) — IN PROGRESS
-Plan: 2 of 2 in current phase — COMPLETE
-Status: Plan 63-02 complete — All runtime OSINT callers (feed-poller, gap-filler-service) migrated from extractAndSyncToGraph to processOSINTEventThroughAgents agent bridge. osint-entity-extractor.ts marked @deprecated with banner. reextract script annotated.
-Last activity: 2026-03-29 - Completed 63-02: Cut over feed-poller and gap-filler to processOSINTEventThroughAgents; deprecated osint-entity-extractor
+Phase: 63 of 79 (Unified OSINT Agent Ingestion) — COMPLETE
+Plan: 3 of 3 in current phase — COMPLETE
+Status: Plan 63-03 complete — Source pre-registration tests added (OSINT-63-07); known agencies (Reuters/AP/BBC) verified at B reliability; LLM concurrency reduced from 3 to 2 for heavier 12-specialist pipeline.
+Last activity: 2026-03-29 - Completed 63-03: Source pre-registration tests (OSINT-63-07) added to bridge; LLM concurrency reduced 3→2 for 12-specialist pipeline
 
 Progress: [██████████] 100% 442 plans complete
 
@@ -263,6 +263,10 @@ Progress: [██████████] 100% 442 plans complete
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+**Phase 63 Plan 03 (Source Pre-registration and Concurrency Tuning):**
+- LLM_CONCURRENCY reduced 3→2 in feed-poller: 12-specialist pipeline makes 6-8 LLM calls per event vs 1-2 for old standalone extractor
+- sourceStore mock added to all bridge tests to prevent silent try/catch swallowing — tests now assert actual call arguments
 
 **Phase 57 Plan 03 (Memory Management REST API and IronclawMemoryPanel):**
 - DELETE /memory/all registered before DELETE /memory/:key — Express literal route match must precede wildcard /:key

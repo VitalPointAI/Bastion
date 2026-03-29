@@ -965,7 +965,7 @@ Plans:
 **Goal:** Route OSINT feed events through the Phase 40 doc-intelligence agent team instead of the standalone osint-entity-extractor.ts. Give agents proper tools/skills for graph operations (actor MERGE, relationship creation, entity resolution, containerIds scoping). Apply trust gates, NATO quality ratings, and multi-specialist analysis to OSINT events. Retire the ad-hoc LLM extraction path that bypasses agent quality controls.
 **Requirements**: [OSINT-63-01, OSINT-63-02, OSINT-63-03, OSINT-63-04, OSINT-63-05, OSINT-63-06, OSINT-63-07]
 **Depends on:** Phase 40, Phase 62
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 **Context:**
 Currently two completely separate entity extraction paths exist:
