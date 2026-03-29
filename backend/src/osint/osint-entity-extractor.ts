@@ -15,6 +15,13 @@
  *   - Locations mentioned (with coordinates if extractable)
  */
 
+/**
+ * @deprecated Phase 63: This module is superseded by osint-agent-bridge.ts.
+ * All OSINT events now route through the doc-intelligence agent pipeline.
+ * This file is retained temporarily for the reextract-osint-actors.ts script.
+ * Remove entirely once reextract script is updated or no longer needed.
+ */
+
 // randomUUID removed — using deterministic relationship IDs
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { geocodingService, type GeoLocation } from '../lib/geocoding-service.js';
@@ -289,6 +296,8 @@ export async function extractEntitiesFromEvent(event: OSINTEvent): Promise<Extra
 /**
  * Full pipeline: extract entities from OSINT event, then sync to Neo4j graph.
  * Creates actor nodes, relationship edges, and tension edges.
+ *
+ * @deprecated Phase 63: Use processOSINTEventThroughAgents from osint-agent-bridge.ts instead.
  */
 export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
   actorsCreated: number;

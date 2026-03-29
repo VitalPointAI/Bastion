@@ -15,6 +15,8 @@
  */
 
 import { executeWriteQuery, executeReadQuery } from '../graph/neo4j-client.js';
+// NOTE: extractAndSyncToGraph is deprecated (Phase 63). Future re-extraction
+// should use processOSINTEventThroughAgents from osint-agent-bridge.ts instead.
 import { extractAndSyncToGraph } from '../osint/osint-entity-extractor.js';
 import { osintEventStore } from '../graph/osint/event-store.js';
 
