@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: milestone
 status: completed
-stopped_at: Completed 64-02-PLAN.md
-last_updated: "2026-03-29T22:40:05.639Z"
+stopped_at: Completed 64-03-PLAN.md
+last_updated: "2026-03-29T22:52:34.014Z"
 last_activity: "2026-03-29 - Reconciled phase status: marked 23/28/31/50/61 complete, updated roadmap and SITREP"
 progress:
   total_phases: 80
   completed_phases: 60
   total_plans: 491
-  completed_plans: 491
+  completed_plans: 492
   percent: 85
 ---
 
@@ -252,6 +252,7 @@ Progress: [████████░░] 85% — 67/79 phases complete
 | Phase 63 P01 | 5 | 2 tasks | 4 files |
 | Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo P01 | 30 | 2 tasks | 12 files |
 | Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo P02 | 18 | 2 tasks | 6 files |
+| Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo P03 | 9 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -1075,6 +1076,8 @@ Recent decisions affecting current work:
 - [Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo]: ExerciseDashboard split into inner/outer components so TeamConfigProvider wraps entire exercise tree
 - [Phase 64-02]: Kept startIronBastion() as deprecated alias for zero-breakage backward compat
 - [Phase 64-02]: DEFAULT_AREA_MAP built from buildDefaultAreaMap() factory using calibration bounds and room dimensions at module load
+- [Phase 64-03]: THEATER_DEFAULTS in ipb-service.ts converted to lazy function calling calibrationService.getProfile() to avoid import-time side effects
+- [Phase 64-03]: Gate notification zoom uses payload threatLat/threatLng; no fallback to hardcoded room coords since frontend lacks server-side calibration
 
 ### Roadmap Evolution
 
@@ -1800,7 +1803,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T22:40:05.627Z
-Stopped at: Completed 64-02-PLAN.md
+Last session: 2026-03-29T22:52:34.004Z
+Stopped at: Completed 64-03-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
