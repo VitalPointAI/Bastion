@@ -6,14 +6,14 @@
 
 FROM debian:bookworm-slim
 
-ARG IRONCLAW_VERSION=0.20.0
+ARG IRONCLAW_VERSION=0.23.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates libssl3 curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Download prebuilt binary from GitHub release
-RUN curl -fsSL "https://github.com/nearai/ironclaw/releases/download/v${IRONCLAW_VERSION}/ironclaw-x86_64-unknown-linux-gnu.tar.gz" \
+RUN curl -fsSL "https://github.com/nearai/ironclaw/releases/download/ironclaw-v${IRONCLAW_VERSION}/ironclaw-x86_64-unknown-linux-gnu.tar.gz" \
     -o /tmp/ironclaw.tar.gz \
     && tar -xzf /tmp/ironclaw.tar.gz -C /tmp \
     && find /tmp -name ironclaw -type f -exec mv {} /usr/local/bin/ironclaw \; \
