@@ -87,8 +87,8 @@ Three-layer horizontal architecture diagram showing Cloud → Bridge → Edge co
 2. **Bridge → Robot Agent:** Solid orange mDNS line, label "mDNS auto-discovery (_bastion._tcp.local)"
 3. **Bridge ↔ Robot Agent:** Solid blue command/telemetry line, bidirectional
 4. **Robot Agent → RVR+ Leader:** Solid line, label "Sphero SDK"
-5. **Leader ↔ Followers:** Dashed green UDP lines, label "UDP Broadcast Peer Mesh"
-6. **CSI Camera → detectNet:** Dotted purple line inside Jetson box, label "Vision Pipeline"
+5. **Leader ↔ Followers:** Dashed green BLE lines, label "BLE Leader-Spoke Control (dead reckoning)"
+6. **CSI Camera → YOLOv8:** Dotted purple line inside Jetson box, label "Vision Pipeline"
 7. **detectNet → Telemetry Relay:** Dotted purple line, label "Detection Events (type, confidence, position)"
 
 ## Color Legend

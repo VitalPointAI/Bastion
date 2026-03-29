@@ -54,7 +54,7 @@ A 5-tier authority model governs decision-making through on-chain proposals:
 
 ### Robot Integration
 
-A Docker-based bridge pattern connects cloud BASTION to physical robots on the local network. Python robot agents on Jetson Orin Nano provide CSI camera feeds with NVIDIA detectNet object detection. Swarm leadership coordinates heterogeneous robot formations using six doctrinal formations and four movement techniques with UDP broadcast peer mesh resilience.
+A Docker-based bridge pattern connects cloud BASTION to physical robots on the local network. Python robot agents on Jetson Orin Nano provide CSI camera feeds with YOLOv8 object detection. Swarm leadership coordinates robot formations using six doctrinal formations and four movement techniques via BLE leader-spoke control with dead-reckoned positioning.
 
 ### Resource Registry with DIDs
 
@@ -82,7 +82,7 @@ A global mode toggle implements the "train as you fight" doctrine. Training mode
 - [Resources Tab](capabilities/resources-tab.md) -- Inventory management, network device onboarding, DID registry
 - [Robot Bridge](capabilities/robot-bridge.md) -- Docker bridge architecture, WebSocket command/telemetry channel
 - [Robot Vision](capabilities/robot-vision.md) -- CSI camera, detectNet, mission behavior profiles
-- [Swarm Behavior](capabilities/swarm-behavior.md) -- Formations, movement techniques, UDP peer mesh
+- [Swarm Behavior](capabilities/swarm-behavior.md) -- Formations, movement techniques, BLE leader-spoke control
 - [Knowledge Graph](capabilities/knowledge-graph.md) -- JSON-LD brain, entity resolution, temporal reasoning
 
 ### Architecture and Infrastructure

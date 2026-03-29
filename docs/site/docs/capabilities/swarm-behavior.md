@@ -1,14 +1,15 @@
 # Swarm Behavior
 
-> Doctrinal Formations, Movement Techniques, and Peer Mesh Coordination — Phase 46
+> Doctrinal Formations, Movement Techniques, and BLE Leader-Spoke Control — Phase 46
 
 ## Purpose
 
 Swarm Behavior enables multiple Sphero RVR+ ground robots to coordinate as a
-tactical unit under DAO governance. A vision-equipped swarm leader receives
-mission assignments from BASTION, translates them into formation commands, and
-distributes them to follower robots over a UDP broadcast peer mesh. The swarm
-operates in doctrinal formations drawn from joint ground movement doctrine,
+tactical unit under DAO governance. A vision-equipped swarm leader (equipped with
+the Jetson Orin Nano) receives mission assignments from BASTION, translates them
+into formation commands, and drives headless follower platforms directly over
+Bluetooth Low Energy. Follower positions are tracked via dead reckoning. The
+swarm operates in doctrinal formations drawn from joint ground movement doctrine,
 providing a governance-bound demonstration of multi-robot autonomous coordination.
 
 ---
@@ -22,7 +23,7 @@ providing a governance-bound demonstration of multi-robot autonomous coordinatio
 - The leader receives mission orders from BASTION via the Robot Bridge.
 - The leader computes formation geometry and broadcasts position assignments to
   followers.
-- Leader shares detection events with all swarm members via the peer mesh.
+- Leader shares detection events with followers via BLE relay.
 - If the leader loses contact with BASTION, it continues the last authorized
   mission within pre-set geographic and temporal bounds.
 
@@ -55,15 +56,16 @@ compute their target position geometrically relative to the leader.
 Movement technique selection balances speed versus security based on the threat
 level conveyed in the mission order.
 
-### UDP Broadcast Peer Mesh
+### BLE Leader-Spoke Communication
 
-- Robots communicate directly via **UDP broadcast** on the local tactical network.
-- No central relay required for formation coordination — robots talk peer-to-peer.
-- Broadcast messages include: robot ID, position, heading, speed, battery, and
-  formation acknowledgment.
-- Mesh operates independently of the cloud connection — formation integrity is
-  maintained during connectivity loss.
-- Heartbeat interval: configurable (default 1 second for formation updates).
+- The leader drives headless followers directly over **Bluetooth Low Energy**.
+- No onboard compute required on followers — the leader computes formation
+  geometry and dispatches per-follower drive commands in parallel.
+- Follower positions tracked via **dead reckoning** (no GPS or external localization).
+- Communication operates independently of cloud connection — the leader carries
+  mission parameters, formation logic, and follower control locally.
+- A **UDP peer mesh** protocol (port 5807) is implemented for future expansion to
+  compute-equipped peers that can participate as autonomous swarm members.
 
 ### DAO-Driven Dynamic Swarm Membership
 

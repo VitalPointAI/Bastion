@@ -357,7 +357,7 @@ Agent outputs → Human review gates → Approved outputs
 
 **Swarm Leader (Phase 46):**
 - 6 doctrinal formations (line, wedge, column, echelon L/R, V)
-- UDP peer mesh for inter-robot communication
+- BLE leader-spoke control with dead-reckoned positioning
 - DAO-driven swarm membership changes
 
 > **[SPEAKER NOTES]** The robot integration demonstrates the edge-to-cloud architecture in physical form. Military audiences will ask: why Sphero? The answer is accessibility and repeatability for demonstration — the doctrinal capability would scale to UGVs. The key innovation is the architecture, not the specific robot platform. The bridge pattern means any robot with a Python agent can integrate — the platform is robot-agnostic. The DAO-governed swarm membership is novel: adding or removing a robot from an active swarm requires governance approval, not just technical connection.
@@ -521,7 +521,7 @@ Agent outputs → Human review gates → Approved outputs
 **Robot capabilities demonstrated:**
 - NVIDIA Jetson Orin Nano: 67 TOPS AI performance, local object detection
 - Sphero RVR+: autonomous navigation, DAO-governed engagement
-- Swarm: 3+ robots in doctrinal formation, UDP peer mesh
+- Swarm: 3 robots in doctrinal formation, BLE leader-spoke control
 
 > **[SPEAKER NOTES]** The physical demonstration is the strongest evidence that the system works end-to-end, not just as code. A simulation can be scripted to succeed. A physical robot in a physical environment cannot. When the robot identifies a target, requests authorization through the governance system, receives a coalition vote, and executes — that chain of events is not pre-scripted. Each step depends on the previous step completing correctly. Military audiences find physical demonstrations more compelling than code demonstrations. Academic audiences appreciate that the demonstration validates the theoretical framework against physical reality.
 
@@ -546,7 +546,7 @@ Agent outputs → Human review gates → Approved outputs
 
 **Swarm Scale:**
 - 3+ robots demonstrated; operational swarms may involve 100s
-- UDP peer mesh not tested under adversarial jamming conditions
+- BLE leader-spoke communication not tested under adversarial jamming conditions
 
 > **[SPEAKER NOTES]** The limitations slide is not weakness — it is credibility. Research that does not name its limitations is suspect. Each limitation here is genuine and important. The most significant is the demonstration scale gap: this is a proof-of-concept, not an operational system. The value is the architecture and governance framework, which can scale; the specific demonstration artifacts (Sphero, seeded data, local network) are proxies for operational counterparts. Frame this as the honest academic acknowledgment that every good paper requires, and note that the future work section addresses each limitation with a path forward.
 

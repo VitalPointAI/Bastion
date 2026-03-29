@@ -1,6 +1,17 @@
 {
   "default": {
     "room_width": 5,
+    "room_height": 15,
+    "map_bounds": {
+      "north": 56.8580,
+      "south": 56.8400,
+      "east": 27.7080,
+      "west": 27.6880
+    },
+    "label": "Sector Latgale, Latvia — EFDL Unmanned Engagement Area (5m × 15m)"
+  },
+  "taipei": {
+    "room_width": 5,
     "room_height": 10,
     "map_bounds": {
       "north": 25.0540,
@@ -11,3 +22,4 @@
     "label": "Taipei Zhongzheng District — Strategic Demo Area (5m × 10m)"
   }
 }
+

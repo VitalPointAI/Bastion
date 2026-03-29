@@ -121,7 +121,7 @@ These are capabilities the briefing narrative describes that may be missing, und
 | check_employment_authorized() on-chain enforcement | Complete (Phase 58) |
 | Robot bridge (Docker + Python agent + mDNS) | Complete (Phase 43) |
 | Robot vision (detectNet + ORB on Jetson Orin Nano) | Complete (Phase 44) |
-| Swarm formations (6 doctrinal) with UDP peer mesh | Complete (Phase 46) |
+| Swarm formations (6 doctrinal) with BLE leader-spoke control | Complete (Phase 46) |
 | Training/operational mode parity with EXERCISE banner | Complete (Phase 22) |
 | Ironclaw Chief of Staff with 60s decision polling | Complete (Phase 30/53) |
 | Ironclaw operational design coordination (4 JP 5-0 sections) | Complete (Phase 55) |

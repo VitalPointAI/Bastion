@@ -85,8 +85,8 @@ The user interface implements six tabs aligned to JP 5-0 joint planning process 
 | JPP 7-Step Campaign Plan | Ends-ways-means linkage, strategic guidance workflow, echelon routing (strategic/operational/tactical) | 33-36 | Complete |
 | MDMP at Tactical Level | Mission from OPORD, dual-perspective IPB, COA scoring, AI-generated WARNORD/OPORD/FRAGO | 14 | Complete |
 | Robot Bridge | Docker + Python agent, mDNS discovery, command proxy, DID assignment | 43 | Complete |
-| Robot Vision | Jetson CSI camera, detectNet detection, ORB SLAM, mission intent translation (ENGAGE/RECON/GUARD/PATROL) | 44 | Complete |
-| Swarm Leadership | 6 doctrinal formations, UDP peer mesh, DAO-governed membership | 46 | Complete |
+| Robot Vision | Jetson CSI camera, YOLOv8 detection, ORB feature matching, mission intent translation (ENGAGE/RECON/GUARD/PATROL) | 44 | Complete |
+| Swarm Leadership | 6 doctrinal formations, BLE leader-spoke control, dead reckoning, DAO-governed membership | 46 | Complete |
 | Resource Registry | did:near:resource-{id} for 5 asset types; COP integration; DAO-governed allocation | 27 | Complete |
 | Training/Operational Mode | Global toggle, EXERCISE banner, identical governance, data isolation | 22 | Complete |
 | JPP Staff Workspaces | Per-role AI agents for 31+ staff positions; cross-staff notifications; hybrid editor | 15 | Complete |
@@ -152,7 +152,7 @@ We believe in addressing these questions proactively rather than waiting for the
 
 **Field environment testing:** The current demonstration uses a tabletop area of operations. Testing the robot bridge in an outdoor field environment with actual range, terrain, and communication variability is the next physical validation step.
 
-**Adversarial resilience:** The swarm mesh has not been tested under simulated jamming conditions. UDP peer mesh robustness under adversarial electronic warfare is an open validation requirement.
+**Adversarial resilience:** The BLE leader-spoke communication has not been tested under simulated jamming conditions. BLE robustness under adversarial electronic warfare is an open validation requirement.
 
 ### 6.2 Medium-Term Research Requirements
 

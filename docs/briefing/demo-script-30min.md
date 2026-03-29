@@ -202,7 +202,7 @@ Autonomous systems execute within policy constraints. Strike authorization is th
 
 [NARRATOR: "The LLM-based intent translator parsed the mission command and mapped it to a visual_search mission type with specific area polygon, sweep pattern, and detection triggers. If the LLM is unavailable, a template fallback provides deterministic translation. Resilience at every layer."]
 
-[NARRATOR: "On DDIL resilience — if cloud connectivity drops right now, the robot continues its authorized mission with the parameters it downloaded before execution. The UDP peer mesh keeps the swarm coordinated independently of cloud. But I want to be honest: extended disconnection — hours, not minutes — is an architectural assumption we've designed for but haven't fully stress-tested. We know how the system should behave; we haven't run it through sustained worst-case disconnection and reconciliation scenarios."]
+[NARRATOR: "On DDIL resilience — if cloud connectivity drops right now, the robot continues its authorized mission with the parameters it downloaded before execution. The leader continues commanding followers over BLE using cached mission state, independently of cloud. But I want to be honest: extended disconnection — hours, not minutes — is an architectural assumption we've designed for but haven't fully stress-tested. We know how the system should behave; we haven't run it through sustained worst-case disconnection and reconciliation scenarios."]
 
 ---
 
@@ -224,7 +224,7 @@ Autonomous systems execute within policy constraints. Strike authorization is th
 
 [INJECT: Zoom to the swarm telemetry layer. Show three RVR+ positions in wedge formation with formation polygon overlay.]
 
-[NARRATOR: "Here's the swarm — three RVR+ platforms in wedge formation. The leader shares vision detections with followers over a UDP peer mesh. Formation geometry is maintained even during cloud connectivity loss."]
+[NARRATOR: "Here's the swarm — three RVR+ platforms in wedge formation. The leader drives followers directly over Bluetooth, computing formation geometry and tracking positions via dead reckoning. Formation integrity is maintained even during cloud connectivity loss because the leader carries all mission parameters locally."]
 
 [INJECT: Point to the Swarm Telemetry Panel showing per-robot battery, heading, speed. Show leader camera thumbnail.]
 

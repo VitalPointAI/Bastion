@@ -70,7 +70,7 @@ flowchart TB
     DB -->|"Command Proxy"| RA
     RA -->|"Telemetry & Detections"| DB
     DB -->|"Telemetry Relay<br/>(WebSocket)"| TDAO
-    RA -.->|"UDP Broadcast<br/>Peer Mesh"| SW
+    RA -.->|"BLE Leader-Spoke<br/>Control"| SW
     SW -.->|"Formation Status"| RA
 
     %% Styling
@@ -122,8 +122,8 @@ NEAR Protocol provides the secure foundation:
 The v0.2 architecture adds a physical execution layer below the Tactical DAO:
 
 - **Docker Bridge** (`robot/bridge/`): Runs on any Linux host with Docker. Scans the local WiFi network using mDNS (`_bastion._tcp.local`), discovers robot agents, and maintains a command proxy and telemetry relay channel to BASTION cloud over WebSocket. Acts as the secure boundary between the cloud and physically deployed assets.
-- **Python Robot Agent** (`robot/agent/`): Runs on NVIDIA Jetson Orin Nano aboard each Sphero RVR+. Connects outbound via WebSocket for command reception and telemetry push. Vision pipeline: CSI camera → detectNet object detection → ORB feature matching → COP detection events. Supports mission profiles for `recon_area`, `visual_search`, `overwatch`, and `resupply_route` mission types.
-- **Swarm Peers**: Up to N Sphero RVR+ units coordinate via UDP broadcast peer mesh. The vision-equipped leader shares detections with followers. Six doctrinal formations supported: line, wedge, column, echelon-left, echelon-right, vee. Four doctrinal movement techniques: traveling, traveling overwatch, bounding overwatch, successive bounds.
+- **Python Robot Agent** (`robot/agent/`): Runs on NVIDIA Jetson Orin Nano aboard the swarm leader (alpha). Connects outbound via WebSocket for command reception and telemetry push. Vision pipeline: CSI camera → YOLOv8 object detection → ORB feature matching → COP detection events. Supports 9 mission types including patrol, recon, find-engage, visual search, overwatch, resupply, and 3 swarm variants.
+- **Swarm Followers**: Headless Sphero RVR+ units (bravo, charlie) controlled by the leader via BLE leader-spoke architecture. The leader computes formation geometry, dispatches per-follower drive commands over Bluetooth, and tracks follower positions via dead reckoning. Six doctrinal formations supported: line, wedge, column, echelon-left, echelon-right, vee. Four doctrinal movement techniques: traveling, traveling overwatch, bounding overwatch, successive bounds. A UDP peer mesh protocol (port 5807) is implemented for future compute-equipped peers.
 
 Connection types in diagram:
 - Solid arrows (`-->`) = WebSocket (command/telemetry)

@@ -72,7 +72,7 @@ Several limitations identified in the original assessment (January 2026) have be
 
 **Limited staff organization.** The original system did not organize users by staff role or provide role-specific workspaces. The JPP staff organization (Section 3.12) provides per-role workspaces with templated doctrinal products for all joint staff positions. *(Resolved in v0.2)*
 
-**Single-platform physical demonstration.** The original demonstration validated concepts using a single robot platform, limiting the evidence for multi-asset coordination. The swarm leadership capability (Section 4.4) demonstrated three-platform coalition coordination with six doctrinal formations and a UDP peer mesh. *(Resolved in v0.2)*
+**Single-platform physical demonstration.** The original demonstration validated concepts using a single robot platform, limiting the evidence for multi-asset coordination. The swarm leadership capability (Section 4.4) demonstrated three-platform coalition coordination with six doctrinal formations via BLE leader-spoke control with dead-reckoned positioning. *(Resolved in v0.2)*
 
 **No intelligence extraction pipeline.** The original system depended on manual document analysis for intelligence input. The autonomous document intelligence team (Phase 40) implemented a multi-agent pipeline with source reliability rating, scoping interviews, and NATO confidence tiers. *(Resolved in v0.2)*
 
@@ -102,7 +102,7 @@ The following limitations apply specifically to the current v0.2 implementation 
 
 [^disc22]: Lynne E. Parker, "Multiple Mobile Robot Systems," in *Springer Handbook of Robotics*, ed. Bruno Siciliano and Oussama Khatib (Berlin: Springer, 2016), 1335-1384, https://doi.org/10.1007/978-3-319-32552-1_53.
 
-**Network dependency.** The BASTION backend requires WebSocket connectivity for real-time agent coordination and blockchain transaction processing. DDIL degradation effects on the operational tempo of the governance workflow have not been stress-tested at scale. The swarm UDP peer mesh provides intra-swarm resilience, but the full planning-to-execution pipeline assumes sufficient connectivity to the BASTION backend. Extended operation without backend connectivity requires additional edge autonomy not yet implemented.
+**Network dependency.** The BASTION backend requires WebSocket connectivity for real-time agent coordination and blockchain transaction processing. DDIL degradation effects on the operational tempo of the governance workflow have not been stress-tested at scale. The BLE leader-spoke swarm architecture provides intra-swarm resilience (the leader continues commanding followers using cached mission state during cloud disconnection), but the full planning-to-execution pipeline assumes sufficient connectivity to the BASTION backend. Extended operation without backend connectivity requires additional edge autonomy not yet implemented.
 
 **Single-user testing.** All doctrinal workflow testing used single-user sessions. Coalition multi-user concurrent planning (multiple staff officers modifying plans, generating COP layers, and voting on proposals simultaneously) has not been stress-tested for race conditions, lock contention, or consistency violations. The architecture uses database transactions and blockchain consensus to enforce consistency, but behavior under concurrent planning loads requires empirical validation.
 
@@ -264,9 +264,99 @@ What was sacrificed is model simplicity. Five tiers create boundary decisions: w
 
 BASTION's physical demonstration uses Sphero RVR+ robotic platforms (commercial gaming robots) with NVIDIA Jetson Orin Nano edge AI computing (commercial AI development hardware). Military-grade alternatives (ruggedized UGVs, military-certified edge computing platforms) were considered and deferred.
 
-Commercial hardware was chosen for accessibility, cost, and ecosystem support. The Sphero platform provides a controllable, repeatable demonstration environment without the procurement, safety, and operational complexity of military platforms. The Jetson Orin Nano provides 67 TOPS AI performance in a compact, developer-accessible package with an extensive software ecosystem (CUDA, detectNet, SLAM libraries) that accelerates implementation. For a research platform demonstrating architectural concepts, commercial proxy hardware allows the demonstration to focus on the architecture rather than on platform integration engineering.
+Commercial hardware was chosen for accessibility, cost, and ecosystem support. The Sphero platform provides a controllable, repeatable demonstration environment without the procurement, safety, and operational complexity of military platforms. The Jetson Orin Nano provides 67 TOPS AI performance in a compact, developer-accessible package with an extensive software ecosystem (CUDA, Ultralytics YOLOv8, computer vision libraries) that accelerates implementation. For a research platform demonstrating architectural concepts, commercial proxy hardware allows the demonstration to focus on the architecture rather than on platform integration engineering.
 
 What was sacrificed is the most critical limitation for military audiences. Commercial demonstration hardware does not validate performance under military operating conditions: vibration, temperature extremes, electromagnetic interference, submersion, and hostile environments that military hardware must tolerate. The Sphero platform's physical capabilities (speed, obstacle traversal, payload capacity) are not representative of operational UGVs. The Jetson's operating temperature range and shock resistance do not meet military specification. The demonstration proves the architecture on commercial hardware; it does not prove the architecture on operational hardware. Transfer validation (demonstrating that the Docker bridge pattern, DID-based identity, and DAO governance integration function on actual military platforms) is a required next step before any operational deployment claim can be made. The architecture is designed to be hardware-agnostic (the bridge pattern works with any robot that supports a Python agent); transfer validation remains empirical work to be done.
+
+### 5.4.9 Alternative Architectures for Cryptographic Governance
+
+Section 5.4.1 documented the choice of NEAR Protocol over a permissioned chain or no blockchain. This section extends that analysis by systematically evaluating whether blockchain and DAOs represent the only architecture capable of satisfying BASTION's governance requirements, or merely one architecture among credible alternatives. The honest answer strengthens rather than undermines the research contribution, because it reveals that the core thesis — cryptographic enforcement of authority over autonomous systems — is architecturally defensible regardless of the specific distributed ledger technology.
+
+#### Governance Requirements Independent of Implementation
+
+Before evaluating alternatives, it is necessary to state BASTION's governance requirements without reference to any specific technology:
+
+1. **Tamper-evident audit trail** — decisions permanently recorded and independently verifiable by all coalition partners
+2. **Policy-as-code enforcement** — governance logic that executes automatically and cannot be overridden by any single party
+3. **Decentralized identity** — no single nation controls the identity infrastructure for coalition participants or assets
+4. **Coalition authority without a central trust anchor** — no partner has to trust another partner's word alone
+5. **Caveats that travel with resources** — restrictions enforced wherever the resource is employed, regardless of which nation's systems are executing
+6. **Time-limited, expiring delegations** — authority grants with automatic revocation
+7. **Training-operational parity** — identical governance mechanism in both modes
+
+The question is whether these requirements can be satisfied by architectures other than public blockchain with DAO governance.
+
+#### Alternative 1: Permissioned Distributed Ledger (Hyperledger Fabric)
+
+Hyperledger Fabric is a permissioned blockchain where consortium membership is defined in advance — only vetted coalition partners participate. It achieves near-identical capabilities to NEAR for BASTION's use case: smart contracts (called "chaincode") with equivalent enforcement properties, an append-only cryptographically signed ledger providing equivalent auditability, per-organization certificate authorities eliminating single-provider identity dependency, no gas costs (transactions are free within the consortium), and private data collections providing scoped intelligence compartmentalization.[^alt1]
+
+Fronteddu et al. demonstrated at ICMCIS 2025 that Hyperledger Fabric can operate over tactical networks using the Anglova network emulation scenario, validating its feasibility in military communication environments with constrained bandwidth and intermittent connectivity.[^alt2] The U.S. Air Force has invested in distributed ledger technology for logistics tracking at Tinker Air Force Base using Hyperledger Fabric, demonstrating institutional willingness to adopt permissioned DLT for defense applications.[^alt3]
+
+What Hyperledger Fabric sacrifices relative to NEAR is true permissionlessness — a new coalition partner cannot join by verifying the chain state; they must be added to the consortium configuration, creating a centralized coordination dependency at coalition formation. However, for military coalitions, this tradeoff may be operationally acceptable: coalition partners are always vetted through existing bilateral agreements, NATO frameworks, and standing security arrangements before they gain access to operational systems. The "trustless" property of a public blockchain is architecturally elegant but operationally somewhat redundant in a context where pre-existing institutional trust relationships are a prerequisite for coalition membership.
+
+#### Alternative 2: TEE + BFT Consensus + XACML Policy Enforcement
+
+A more complex but standards-grounded alternative avoids blockchain entirely by combining three established technologies.
+
+**Trusted Execution Environments (TEEs)** — Intel SGX, ARM TrustZone — provide hardware-attested code execution where the executing platform can cryptographically prove to external parties that the governance logic has not been tampered with. This achieves hardware root of trust without requiring a distributed ledger. For coalition partners, TEE attestation answers the question "is the governance code I agreed to actually running?" with hardware-level certainty rather than blockchain-level consensus.
+
+**Byzantine Fault Tolerant (BFT) consensus protocols** — HotStuff, PBFT, Tendermint — achieve distributed agreement among a known set of parties without the full overhead of a blockchain. For coalition voting (BASTION's DAO governance function), BFT among the N participating nations achieves the same mathematical certainty of agreement with significantly lower latency. BFT architectures have established precedent in safety-critical military systems: the Boeing 777 and 787 flight control systems and SpaceX Dragon spacecraft use Byzantine fault tolerance for mission-critical consensus.[^alt4] DARPA has funded BFT research specifically for military applications since the 1970s, when NASA's Software Implemented Fault Tolerant (SIFT) project sought resilient systems for aircraft control.[^alt5]
+
+**XACML (eXtensible Access Control Markup Language)** provides a mature, DoD-understood standard for attribute-based access control that can model the same multi-dimensional caveat structure as BASTION's ResourceCaveats — classification, releasability, ROE tier, geographic bounds, time window — and enforce them at Policy Enforcement Points distributed across the coalition network. Every branch of the U.S. military has adopted ABAC, and the Department of Commerce has made it mandatory practice.[^alt6]
+
+This combination achieves hardware-enforced policy-as-code, distributed consensus for coalition decisions, and structured caveat enforcement — all without blockchain. What it sacrifices is audit trail elegance: signed logs provide tamper evidence, but they are not as self-evidently independently verifiable as a public ledger. Coalition partners must trust the log infrastructure more than they would trust a public chain's state.
+
+#### Alternative 3: W3C Verifiable Credentials + PKI + Signed Append-Only Logs
+
+The lightest-weight alternative builds on infrastructure that already exists in NATO. NATO operates a Public Key Infrastructure where each member nation maintains its own Certificate Authority, and the NATO PKI (NPKI) Concept of Operations defines interoperability between national PKIs and the alliance-wide infrastructure.[^alt7] W3C Verifiable Credentials can encode the same caveat data as BASTION's DID ResourceCaveats struct and cryptographically bind restrictions to the resource without requiring blockchain — VCs require only a signature from a trusted issuer.
+
+Signed, append-only logs — where each entry contains the hash of the previous entry — provide blockchain-equivalent tamper evidence. Google's Certificate Transparency system demonstrates this model at global scale: public, verifiable, append-only Merkle hash trees provide cryptographic proof of certificate issuance accountability with independent auditability.[^alt8] RFC 9162 formalizes this approach as Certificate Transparency Version 2.0.[^alt9]
+
+What this alternative sacrifices is the enforcement mechanism. VCs and PKI tell the system what is allowed; they do not automatically prevent what is not allowed in the way that a smart contract execution gate does. Achieving the equivalent "the system will not proceed" guarantee requires Policy Enforcement Points at the execution layer — achievable, but requiring more distributed infrastructure than a single smart contract deployment.
+
+#### Alternative 4: Multi-Party Computation + Threshold Signatures
+
+For BASTION's coalition authority problem specifically (the DAO governance layer), threshold cryptography provides a mathematically rigorous alternative. In threshold signature schemes, a secret key is split across multiple parties such that a defined subset (t-of-n) must cooperate to produce a valid signature. No single party can authorize alone, and the mathematics prevents it — this is not a policy constraint but a cryptographic impossibility.[^alt10]
+
+For BASTION's strike authorization requirement (100% coalition consensus), threshold signatures among coalition nation representatives achieve the same guarantee with no blockchain involvement. NIST's Multi-Party Threshold Cryptography (MPTC) program is actively standardizing these schemes, with the MPTS 2026 workshop advancing standardization of threshold ECDSA and post-quantum threshold signatures.[^alt11]
+
+What threshold cryptography sacrifices is flexibility. Voting and delegation logic must be designed into the cryptographic protocol itself, whereas smart contracts express that logic in general-purpose code. Threshold schemes handle fixed-quorum decisions elegantly; dynamic delegation, time-limited authority grants, and complex multi-tier voting rules are harder to express purely cryptographically.
+
+#### Structural Assessment
+
+The honest structural assessment is that blockchain's genuinely unique property is trustless permissionlessness — the ability for parties with no pre-existing relationship to transact with cryptographic certainty. In cryptocurrency, this property is essential. In coalition military operations, it is less critical than the architecture implies, because coalition partners are always known, vetted, and bound by pre-existing agreements before operations begin. "I don't trust this nation's cryptographic signature" is a political problem that no distributed ledger resolves.
+
+The intellectual honesty is that NEAR Protocol's public blockchain serves as a powerful research demonstration vehicle — it proves the governance pattern cleanly and provides an independently verifiable ledger that any observer can inspect. But it carries real costs for production deployment: gas fees at operational scale, public chain dependency creating availability risk, DDIL vulnerability when connectivity to chain validators is interrupted, and institutional unfamiliarity in defense procurement organizations.
+
+For a production system, the architecture that would likely warrant serious evaluation is a combination of permissioned DLT (Hyperledger Fabric or equivalent) for coalition governance with zero gas costs and better latency, W3C Verifiable Credentials for resource identity building on NATO's existing PKI infrastructure, hardware TEE attestation for device trust, and BFT consensus for coalition-level votes. This combination achieves equivalent auditability, equivalent enforcement, and infrastructure designed for the "known consortium" model that military coalitions actually are.
+
+#### Implications for the Research Contribution
+
+This analysis does not diminish BASTION's contribution; it clarifies it. BASTION is not an argument that blockchain is the only answer for military C2 governance. It is an argument that *cryptographic enforcement* — "trust terminates at mathematics, not policy" — is the right architectural pattern for governance of lethal autonomous systems in coalition operations. Blockchain and DAO governance are a clean, independently verifiable demonstration vehicle for that pattern. The production design space includes the full range of alternatives evaluated above, each of which must be assessed against operational requirements including gas costs, DDIL performance, NATO standards alignment, institutional familiarity, and security certification pathways.
+
+The right question is not "is blockchain right for military C2?" — a platform question that invites unproductive debate. The right question is "should governance of lethal autonomous systems be policy-enforced or cryptographically enforced?" On that question, the evidence from BASTION's implementation — combined with the current operational reality where AI targeting systems generate thousands of targets per day with limited audit trails — argues strongly for cryptographic enforcement as the required paradigm.
+
+[^alt1]: Hyperledger Foundation, "Hyperledger Fabric: A Distributed Operating System for Permissioned Blockchains," GitHub Repository, 2024, https://github.com/hyperledger/fabric. See also Elli Androulaki et al., "Hyperledger Fabric: A Distributed Operating System for Permissioned Blockchains," in *Proceedings of the Thirteenth EuroSys Conference* (Porto: ACM, 2018), Article 30, https://doi.org/10.1145/3190508.3190538.
+
+[^alt2]: Roberto Fronteddu, Maggie R. Breedy, Michal Jarosz, Niranjan Suri, Konrad S. Wrona, Jakub Sychowiec, and Zbigniew Zielinski, "Experimental Analysis of the Performance of the Hyperledger Fabric over Tactical Networks," in *Proceedings of the 2025 International Conference on Military Communication and Information Systems (ICMCIS)* (Oeiras, Portugal: IEEE, 2025), https://ieeexplore.ieee.org/document/11047941.
+
+[^alt3]: Vasilis Karakostas, Maria Makridaki, and Ioannis Mavridis, "Blockchain as a Cybersecurity Enabler in Federated Networks for Resilience and Interoperability," *IoT* 6, no. 2 (2025): 54, https://www.mdpi.com/2624-800X/6/2/54.
+
+[^alt4]: Leslie Lamport, Robert Shostak, and Marshall Pease, "The Byzantine Generals Problem," *ACM Transactions on Programming Languages and Systems* 4, no. 3 (1982): 382-401, https://doi.org/10.1145/357172.357176.
+
+[^alt5]: John H. Wensley et al., "SIFT: Design and Analysis of a Fault-Tolerant Computer for Aircraft Control," *Proceedings of the IEEE* 66, no. 10 (1978): 1240-1255, https://doi.org/10.1109/PROC.1978.11114.
+
+[^alt6]: Vincent C. Hu et al., *Guide to Attribute Based Access Control (ABAC) Definition and Considerations*, NIST Special Publication 800-162 (Gaithersburg, MD: National Institute of Standards and Technology, 2014), https://nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-162.pdf.
+
+[^alt7]: NATO Communications and Information Agency, "Identity Management: NATO Public Key Infrastructure," NATO Information Assurance, https://www.ia.nato.int/identitymanagement.
+
+[^alt8]: Ben Laurie, Adam Langley, and Emilia Kasper, "Certificate Transparency," *ACM Queue* 12, no. 8 (2014), https://doi.org/10.1145/2668152.2668154.
+
+[^alt9]: B. Laurie, E. Messeri, and R. Stradling, "Certificate Transparency Version 2.0," RFC 9162, Internet Engineering Task Force, December 2021, https://www.rfc-editor.org/rfc/rfc9162.html.
+
+[^alt10]: Rosario Gennaro and Steven Goldfeder, "One Round Threshold ECDSA with Identifiable Abort," in *Proceedings of the Network and Distributed System Security Symposium (NDSS)* (San Diego: Internet Society, 2024), https://www.ndss-symposium.org/ndss-paper/secure-multiparty-computation-of-threshold-signatures-made-more-efficient/.
+
+[^alt11]: National Institute of Standards and Technology, "Multi-Party Threshold Cryptography," NIST Computer Security Resource Center, 2025, https://csrc.nist.gov/projects/threshold-cryptography.
 
 ---
 
@@ -320,7 +410,7 @@ Strong research acknowledges the strongest arguments against its own conclusions
 
 **Severity:** Significant.
 
-**Mitigation Options:** The robot bridge pattern with local mission state persistence allows robots to continue executing authorized missions during cloud disconnection. The UDP peer mesh enables swarm coordination independent of cloud connectivity. Pre-authorized mission envelopes cached at edge nodes provide autonomous operation scope without real-time governance access. Configurable staleness indicators on COP data (time-since-update badges on every symbol) surface the currency of information to commanders rather than presenting stale data as current. Graceful degradation design marks stale data explicitly rather than allowing it to appear current.
+**Mitigation Options:** The robot bridge pattern with local mission state persistence allows robots to continue executing authorized missions during cloud disconnection. The BLE leader-spoke swarm architecture enables the leader to continue commanding followers using cached mission state independent of cloud connectivity. Pre-authorized mission envelopes cached at edge nodes provide autonomous operation scope without real-time governance access. Configurable staleness indicators on COP data (time-since-update badges on every symbol) surface the currency of information to commanders rather than presenting stale data as current. Graceful degradation design marks stale data explicitly rather than allowing it to appear current.
 
 **Residual Risk:** Extended DDIL degrades the system to its cached state. The gap between "designed for DDIL" and "tested under sustained DDIL" is real and significant. Extended disconnection scenarios, reconnection reconciliation (what happens when an edge node that has been operating offline reconnects with potentially conflicting state), and conflict resolution between divergent edge states have not been empirically validated in this prototype. The DDIL resilience of this system is architectural intent, not demonstrated capability under sustained disconnection. Stale data with correct staleness indicators is better than stale data presented as current; whether stale data with indicators is operationally useful depends on the tactical situation in ways that require field testing to evaluate.
 
