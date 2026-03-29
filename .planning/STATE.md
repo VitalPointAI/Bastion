@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: milestone
 status: completed
-stopped_at: Completed 64-01-PLAN.md
-last_updated: "2026-03-29T22:28:19.375Z"
+stopped_at: Completed 64-02-PLAN.md
+last_updated: "2026-03-29T22:40:05.639Z"
 last_activity: "2026-03-29 - Reconciled phase status: marked 23/28/31/50/61 complete, updated roadmap and SITREP"
 progress:
   total_phases: 80
   completed_phases: 60
   total_plans: 491
-  completed_plans: 490
+  completed_plans: 491
   percent: 85
 ---
 
@@ -251,6 +251,7 @@ Progress: [████████░░] 85% — 67/79 phases complete
 | Phase 61-responsive-ui-mobile-optimization P02 | 15 | 2 tasks | 5 files |
 | Phase 63 P01 | 5 | 2 tasks | 4 files |
 | Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo P01 | 30 | 2 tasks | 12 files |
+| Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo P02 | 18 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -1072,6 +1073,8 @@ Recent decisions affecting current work:
 - [Phase 63]: assertedVia threaded via state.metadata through orchestrator to FactExtractor avoiding new LangGraph state field
 - [Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo]: CalibrationService uses synchronous readFileSync (lazy init) — avoiding async refactoring of all callers
 - [Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo]: ExerciseDashboard split into inner/outer components so TeamConfigProvider wraps entire exercise tree
+- [Phase 64-02]: Kept startIronBastion() as deprecated alias for zero-breakage backward compat
+- [Phase 64-02]: DEFAULT_AREA_MAP built from buildDefaultAreaMap() factory using calibration bounds and room dimensions at module load
 
 ### Roadmap Evolution
 
@@ -1797,7 +1800,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T22:28:19.365Z
-Stopped at: Completed 64-01-PLAN.md
+Last session: 2026-03-29T22:40:05.627Z
+Stopped at: Completed 64-02-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02

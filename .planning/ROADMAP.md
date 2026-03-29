@@ -1040,7 +1040,7 @@ Plans:
 **Goal:** Eliminate all hardcoded scenario references from application code. Every scenario-specific value (coordinates, operation names, team labels, vehicle types, street grids, theater context) must be driven by the active problem set and calibration profile at runtime. Generalize all variable/constant names — no `ZHONGZHENG_MAP`, no `IRON_BASTION_DEFAULTS`, no `PRC/TCC` labels. The full autonomous mission sequence (HOLD → RECON → CONTACT → OVERWATCH → ADVANCE → SET → AUTHORIZE → ENGAGE) must work identically on the new Baltic Shield EFDL scenario with Latvian open terrain coordinates. Baltic Shield scenario data (OPORD, coalition forces, adversary ORBAT, knowledge graph actors/relationships/tensions, problem set hierarchy) already created in `backend/data/demo-baltic-seed/` and `scripts/demo-data/`.
 **Requirements:** [SA-64-01 through SA-64-12]
 **Depends on:** Phase 63
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 **Context:**
 52+ hardcoded scenario references found across 28 files in frontend/src/ and backend/src/. These tightly couple the application to the Pacific Strategy AY26 / Taiwan / Iron Bastion scenario. The demo is pivoting to an Eastern Flank Deterrent Line (EFDL) scenario set in eastern Latvia under NATO Multinational Brigade Latvia (MNB-LVA), Canadian-led under Operation REASSURANCE. The physical demo space (5m × 15m) maps to open agricultural terrain in the Latgale region — much better for Sphero RVR+ robots than Taipei's street grid.
