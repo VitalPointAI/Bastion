@@ -960,6 +960,30 @@ Plans:
 - [ ] 62-02-PLAN.md -- Wire normalization into OSINT sync and graph builder, auto-resolution
 - [ ] 62-03-PLAN.md -- Batch-merge endpoint and graph stats with dedup metrics
 
+### Phase 63: Unified OSINT Agent Ingestion
+
+**Goal:** Route OSINT feed events through the Phase 40 doc-intelligence agent team instead of the standalone osint-entity-extractor.ts. Give agents proper tools/skills for graph operations (actor MERGE, relationship creation, entity resolution, containerIds scoping). Apply trust gates, NATO quality ratings, and multi-specialist analysis to OSINT events. Retire the ad-hoc LLM extraction path that bypasses agent quality controls.
+**Requirements**: TBD
+**Depends on:** Phase 40, Phase 62
+**Plans:** 0 plans
+
+**Context:**
+Currently two completely separate entity extraction paths exist:
+1. **Doc-Intelligence Agent Team (Phase 40):** 11 specialists (classifier, fact extractor, trust agent, quality assessor, etc.) using graphBuilder. Has trust/flagging gates, NATO quality ratings, multi-perspective analysis. Triggered by user document uploads only.
+2. **OSINT Entity Extractor:** Standalone LLM prompt doing direct Neo4j MERGE. No trust gate, no quality assessment, no tools/skills. Triggered by feed poller. Completely bypasses the agent team.
+
+This creates inconsistent graph quality — OSINT actors get hardcoded 0.65 confidence with no source reliability assessment, while document-extracted actors get full NATO A-F/1-6 ratings. The OSINT path also lacks the trust agent gate that can block graph ingestion from flagged sources.
+
+**Approach:**
+- Create graph operation tools (MCP or LangGraph tools) that agents can use: `create_actor`, `create_relationship`, `resolve_entities`, `search_actors`
+- Add an OSINT processing mode to the doc-intelligence team (lighter weight than full document analysis but with trust gates and quality scoring)
+- Route feed-poller events through the agent team instead of osint-entity-extractor.ts
+- Apply source-tier-aware confidence scoring (not flat 0.65)
+- Retire osint-entity-extractor.ts once agent path is verified
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 63 to break down)
+
 ---
 **MCP Tools (deterministic operations - added to MCP server):**
 

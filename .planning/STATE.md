@@ -1113,6 +1113,7 @@ Recent decisions affecting current work:
 - Phase 60 added: Rearchitect Ironclaw integration - use ironclaw_bastion_blueprint_v1.3.pdf to rearchitect how Ironclaw and Bastion integrate and work together
 - Phase 61 added: Responsive UI & Mobile Optimization — Full responsive design across all screen sizes, fix wrapping/overflow in layout shells, add intermediate breakpoints, mobile-specific UX
 - Phase 62 added: Knowledge Graph Entity Deduplication & Auto-Resolution — Eliminate duplicate nodes (28,800+ found) by integrating entity resolution into ingestion pipeline, name canonicalization, canonical alias registry, batch-merge existing duplicates, dedup metrics
+- Phase 63 added: Unified OSINT Agent Ingestion — Route OSINT events through doc-intelligence agent team, give agents graph tools/skills, apply trust gates and NATO quality ratings, retire standalone osint-entity-extractor.ts
 
 **Phase 14 Plan 01 (Exercise Data Model):**
 - Information barrier via getVisibleTeams(role): exercise_control sees all teams; blue_staff sees blue+controller; red_cell sees red+controller
