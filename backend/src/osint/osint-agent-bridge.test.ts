@@ -9,6 +9,7 @@
  *   OSINT-63-02: Fallback ProblemSetContext synthesised when none exists
  *   OSINT-63-04: assertedVia: 'osint' in metadata passed to processDocument
  *   OSINT-63-05: Compiled graph cached per problemSetId (not recreated per event)
+ *   OSINT-63-07: Source pre-registered before processDocument so TrustAgent finds it
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -22,6 +23,7 @@ import type { OSINTFeedConfig } from '../jpp/osint-feed-store.js';
 const mockProcessDocument = vi.fn();
 const mockCreateWiredDocIntelligenceGraph = vi.fn();
 const mockGetProblemSetContext = vi.fn();
+const mockUpsertSource = vi.fn();
 
 vi.mock('../doc-intelligence/orchestrator-wiring.js', () => ({
   createWiredDocIntelligenceGraph: mockCreateWiredDocIntelligenceGraph,
@@ -29,6 +31,12 @@ vi.mock('../doc-intelligence/orchestrator-wiring.js', () => ({
 
 vi.mock('../doc-intelligence/interview/interview-store.js', () => ({
   getProblemSetContext: mockGetProblemSetContext,
+}));
+
+vi.mock('../doc-intelligence/source-registry/source-store.js', () => ({
+  sourceStore: {
+    upsertSource: mockUpsertSource,
+  },
 }));
 
 // ---------------------------------------------------------------------------
@@ -96,6 +104,7 @@ function setupMocks() {
   mockProcessDocument.mockResolvedValue(stubReport);
   mockCreateWiredDocIntelligenceGraph.mockResolvedValue({ processDocument: mockProcessDocument });
   mockGetProblemSetContext.mockResolvedValue(stubProblemSetContext);
+  mockUpsertSource.mockResolvedValue({});
 }
 
 // ---------------------------------------------------------------------------
@@ -121,6 +130,9 @@ describe('osint-agent-bridge', () => {
     }));
     vi.doMock('../doc-intelligence/interview/interview-store.js', () => ({
       getProblemSetContext: mockGetProblemSetContext,
+    }));
+    vi.doMock('../doc-intelligence/source-registry/source-store.js', () => ({
+      sourceStore: { upsertSource: mockUpsertSource },
     }));
 
     const { processOSINTEventThroughAgents } = await import('./osint-agent-bridge.js');
@@ -151,6 +163,9 @@ describe('osint-agent-bridge', () => {
     vi.doMock('../doc-intelligence/interview/interview-store.js', () => ({
       getProblemSetContext: mockGetProblemSetContext,
     }));
+    vi.doMock('../doc-intelligence/source-registry/source-store.js', () => ({
+      sourceStore: { upsertSource: mockUpsertSource },
+    }));
 
     const { processOSINTEventThroughAgents } = await import('./osint-agent-bridge.js');
 
@@ -173,6 +188,9 @@ describe('osint-agent-bridge', () => {
     vi.doMock('../doc-intelligence/interview/interview-store.js', () => ({
       getProblemSetContext: mockGetProblemSetContext,
     }));
+    vi.doMock('../doc-intelligence/source-registry/source-store.js', () => ({
+      sourceStore: { upsertSource: mockUpsertSource },
+    }));
 
     const { processOSINTEventThroughAgents } = await import('./osint-agent-bridge.js');
 
@@ -190,6 +208,9 @@ describe('osint-agent-bridge', () => {
     }));
     vi.doMock('../doc-intelligence/interview/interview-store.js', () => ({
       getProblemSetContext: mockGetProblemSetContext,
+    }));
+    vi.doMock('../doc-intelligence/source-registry/source-store.js', () => ({
+      sourceStore: { upsertSource: mockUpsertSource },
     }));
 
     const { processOSINTEventThroughAgents } = await import('./osint-agent-bridge.js');
@@ -218,6 +239,9 @@ describe('osint-agent-bridge', () => {
     vi.doMock('../doc-intelligence/interview/interview-store.js', () => ({
       getProblemSetContext: mockGetProblemSetContext,
     }));
+    vi.doMock('../doc-intelligence/source-registry/source-store.js', () => ({
+      sourceStore: { upsertSource: mockUpsertSource },
+    }));
 
     // Advance Date.now past 30-minute TTL between calls
     const realDateNow = Date.now;
@@ -241,5 +265,64 @@ describe('osint-agent-bridge', () => {
     expect(mockCreateWiredDocIntelligenceGraph).toHaveBeenCalledTimes(2);
 
     vi.spyOn(Date, 'now').mockImplementation(realDateNow);
+  });
+
+  it('OSINT-63-07: pre-registers feed source in source registry before calling processDocument', async () => {
+    vi.doMock('../doc-intelligence/orchestrator-wiring.js', () => ({
+      createWiredDocIntelligenceGraph: mockCreateWiredDocIntelligenceGraph,
+    }));
+    vi.doMock('../doc-intelligence/interview/interview-store.js', () => ({
+      getProblemSetContext: mockGetProblemSetContext,
+    }));
+    vi.doMock('../doc-intelligence/source-registry/source-store.js', () => ({
+      sourceStore: { upsertSource: mockUpsertSource },
+    }));
+
+    const { processOSINTEventThroughAgents } = await import('./osint-agent-bridge.js');
+
+    // Call order tracking: upsertSource must be called before processDocument
+    const callOrder: string[] = [];
+    mockUpsertSource.mockImplementation(async () => { callOrder.push('upsertSource'); return {}; });
+    mockProcessDocument.mockImplementation(async () => { callOrder.push('processDocument'); return stubReport; });
+
+    await processOSINTEventThroughAgents(stubEvent, stubFeed);
+
+    // ensureSourceRegistered (via upsertSource) must be called
+    expect(mockUpsertSource).toHaveBeenCalledOnce();
+
+    // Called with Reuters (known news agency) — should get 'B' reliability
+    const upsertCall = mockUpsertSource.mock.calls[0][0];
+    expect(upsertCall.sourceName).toBe('Reuters');
+    expect(upsertCall.sourceType).toBe('rss');
+    expect(upsertCall.defaultReliability).toBe('B');
+
+    // Pre-registration must happen before processDocument
+    expect(callOrder).toEqual(['upsertSource', 'processDocument']);
+  });
+
+  it('OSINT-63-07: unknown sources default to C (Fairly Reliable) in pre-registration', async () => {
+    vi.doMock('../doc-intelligence/orchestrator-wiring.js', () => ({
+      createWiredDocIntelligenceGraph: mockCreateWiredDocIntelligenceGraph,
+    }));
+    vi.doMock('../doc-intelligence/interview/interview-store.js', () => ({
+      getProblemSetContext: mockGetProblemSetContext,
+    }));
+    vi.doMock('../doc-intelligence/source-registry/source-store.js', () => ({
+      sourceStore: { upsertSource: mockUpsertSource },
+    }));
+
+    const { processOSINTEventThroughAgents } = await import('./osint-agent-bridge.js');
+
+    // Feed with an unknown source name
+    const unknownFeed: OSINTFeedConfig = { ...stubFeed, sourceName: 'Unknown Blog' };
+    const unknownEvent: OSINTEvent = { ...stubEvent, sourceName: 'Unknown Blog' };
+
+    await processOSINTEventThroughAgents(unknownEvent, unknownFeed);
+
+    expect(mockUpsertSource).toHaveBeenCalledOnce();
+    const upsertCall = mockUpsertSource.mock.calls[0][0];
+    expect(upsertCall.sourceName).toBe('Unknown Blog');
+    // Unknown sources default to 'C' (Fairly Reliable), not 'F' (Cannot Be Judged)
+    expect(upsertCall.defaultReliability).toBe('C');
   });
 });

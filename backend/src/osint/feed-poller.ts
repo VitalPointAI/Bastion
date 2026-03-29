@@ -74,7 +74,9 @@ const rssParser = new RSSParser();
 // ─── LLM concurrency limiter ────────────────────────────────────────────────
 // Prevent 2500 concurrent LLM calls from saturating the server CPU.
 // Queue LLM enrichment tasks and run at most N at a time.
-const LLM_CONCURRENCY = 3;
+// Reduced from 3 to 2 for Phase 63: agent pipeline uses 6-8 LLM calls per event
+// vs 1-2 for the old standalone extractor
+const LLM_CONCURRENCY = 2;
 let llmActiveCount = 0;
 const llmQueue: Array<() => Promise<void>> = [];
 
