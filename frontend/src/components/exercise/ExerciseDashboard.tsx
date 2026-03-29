@@ -69,14 +69,17 @@ const TABS: TabDefinition[] = [
   { id: 'gates',    label: 'Gates',            icon: 'lock', controllerOnly: true },
 ];
 
-// Default Pacific Strategy exercise phases (per CONTEXT.md specifics)
+// Default exercise phases using doctrinal JP 3-0 phase names.
+// These are scenario-agnostic defaults — the user can rename or add phases
+// when creating a scenario. Eventually these will load from the active
+// problem set's phase definitions.
 const DEFAULT_EXERCISE_PHASES = [
-  'Competition',
-  'Crisis',
-  'Conflict Day 4',
-  'Conflict Day 10',
-  'Conflict Day 22',
-  'Negotiation',
+  'Phase 0: Shape',
+  'Phase 1: Deter',
+  'Phase 2: Seize Initiative',
+  'Phase 3: Dominate',
+  'Phase 4: Stabilize',
+  'Phase 5: Enable Civil Authority',
 ];
 
 // ─── Role Selector ─────────────────────────────────────────────────────────────

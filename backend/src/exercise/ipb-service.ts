@@ -27,6 +27,7 @@ import type {
 } from './types.js';
 import type { LLMProvider, ProviderConfig } from '../strategic/extraction/providers/types.js';
 import { OpenAICompatibleProvider } from '../strategic/extraction/providers/openai-provider.js';
+import { calibrationService } from '../robot/calibration-service.js';
 
 // ─── Delta Summary ────────────────────────────────────────────────────────────
 
@@ -107,25 +108,44 @@ interface IPBExtractionResult {
   avenuesOfApproach: ExtractedAvenue[];
 }
 
-// ─── Default Theater Coordinates (Western Pacific) ───────────────────────────
+// ─── Default Theater Coordinates (derived from CalibrationService) ───────────
+// Coordinates are read from the active calibration profile so that IPB
+// fallback positions track the configured operational theater, not a
+// hardcoded scenario-specific location.
 
-const THEATER_DEFAULTS = {
-  center: { lat: 20, lng: 125 },
-  taiwanStrait: { lat: 24.5, lng: 120 },
-  southChinaSea: { lat: 15, lng: 115 },
-};
+function getTheaterDefaults() {
+  const profile = calibrationService.getProfile('default');
+  const { north, south, east, west } = profile.map_bounds;
+  const centerLat = (north + south) / 2;
+  const centerLng = (east + west) / 2;
+  return {
+    center: { lat: centerLat, lng: centerLng },
+    // Generic "northern approach" offset for adversary staging (e.g., eastern axis)
+    adversaryStaging: { lat: north + 0.25, lng: east + 0.5 },
+  };
+}
 
-// Build a default area-of-operations GeoJSON Polygon for Indo-Pacific theater
+// Lazy singleton so we read the profile once per service lifecycle
+let _theaterDefaults: ReturnType<typeof getTheaterDefaults> | null = null;
+function THEATER_DEFAULTS() {
+  if (!_theaterDefaults) _theaterDefaults = getTheaterDefaults();
+  return _theaterDefaults;
+}
+
+// Build a default area-of-operations GeoJSON Polygon from calibration profile bounds
 function buildDefaultAOO(): Record<string, unknown> {
-  // Western Pacific theater bounding box roughly covering Taiwan Strait + SCS
+  const profile = calibrationService.getProfile('default');
+  const { north, south, east, west } = profile.map_bounds;
+  // Add a small buffer around the calibrated map bounds
+  const buf = 0.1;
   return {
     type: 'Polygon',
     coordinates: [[
-      [110, 5],    // SW
-      [145, 5],    // SE
-      [145, 35],   // NE
-      [110, 35],   // NW
-      [110, 5],    // close
+      [west  - buf, south - buf],  // SW
+      [east  + buf, south - buf],  // SE
+      [east  + buf, north + buf],  // NE
+      [west  - buf, north + buf],  // NW
+      [west  - buf, south - buf],  // close
     ]],
   };
 }
@@ -223,22 +243,22 @@ export class IPBService {
         : `You are assembling ${team.toUpperCase()} FORCES' intelligence estimate of ${opposingTeam.toUpperCase()} — what ${team.toUpperCase()} BELIEVES about the opposing side based on ${team.toUpperCase()}'s own intelligence reports. You do NOT have access to the actual opposing side's plans; you only know what ${team.toUpperCase()}'s intel has gathered.`;
 
     // 4. Call LLM to extract IPB components
+    const theater = THEATER_DEFAULTS();
     const prompt = `${perspectiveInstruction}
 
 SCENARIO DOCUMENTS (${sourceDocs.length} documents):
 ${JSON.stringify(docSummaries, null, 2)}
 
-THEATER DEFAULTS (Indo-Pacific / Western Pacific):
-- Theater center: lat=20, lng=125
-- Taiwan Strait focus: lat=24.5, lng=120
-- South China Sea: lat=15, lng=115
+THEATER DEFAULTS (operational theater center derived from active configuration):
+- Theater center: lat=${theater.center.lat.toFixed(4)}, lng=${theater.center.lng.toFixed(4)}
+- Adversary staging axis: lat=${theater.adversaryStaging.lat.toFixed(4)}, lng=${theater.adversaryStaging.lng.toFixed(4)}
 
 Extract an IPB assessment in valid JSON matching this exact schema:
 {
   "areaOfOperations": { GeoJSON Polygon covering the operational area },
   "terrainAnalysis": {
     "observation": "Observation and fields of fire analysis",
-    "avenues": "Avenues of approach (ground and maritime)",
+    "avenues": "Avenues of approach (ground and air)",
     "keyTerrain": "Key terrain description",
     "obstacles": "Obstacles (natural and man-made)",
     "coverAndConcealment": "Cover and concealment"
@@ -249,17 +269,17 @@ Extract an IPB assessment in valid JSON matching this exact schema:
     { "name": "NAI-1", "purpose": "Why we watch here", "geometry": { GeoJSON Point or Polygon }, "triggers": "What activity triggers action" }
   ],
   "forceDispositions": [
-    { "unitName": "1st Marines", "echelon": "Division", "sidc": "", "location": {"lat": 24.5, "lng": 120}, "strength": "~15,000", "equipment": "M1A1, LAV-25" }
+    { "unitName": "1st Mechanized Company", "echelon": "Company", "sidc": "", "location": {"lat": ${theater.center.lat.toFixed(4)}, "lng": ${theater.center.lng.toFixed(4)}}, "strength": "~120", "equipment": "IFV, AT missiles" }
   ],
   "keyTerrainFeatures": [
-    { "name": "Taiwan Strait", "significance": "Key maritime chokepoint", "geometry": { GeoJSON Polygon } }
+    { "name": "Key Terrain Alpha", "significance": "Controls main avenue of approach", "geometry": { GeoJSON Polygon } }
   ],
   "avenuesOfApproach": [
-    { "name": "Maritime Avenue Alpha", "description": "Northern strait approach", "geometry": { GeoJSON LineString } }
+    { "name": "Approach Avenue Alpha", "description": "Primary ground axis", "geometry": { GeoJSON LineString } }
   ]
 }
 
-Use realistic Indo-Pacific geography. If the documents do not specify exact coordinates, use plausible Western Pacific coordinates consistent with the theater defaults above. Output ONLY valid JSON.`;
+Use coordinates consistent with the theater defaults above. If the documents do not specify exact coordinates, derive plausible positions from the theater center point. Output ONLY valid JSON.`;
 
     let extraction: IPBExtractionResult;
     try {
@@ -301,7 +321,7 @@ Use realistic Indo-Pacific geography. If the documents do not specify exact coor
       strength: unit.strength,
       position: {
         type: 'Point',
-        coordinates: [unit.location?.lng ?? THEATER_DEFAULTS.center.lng, unit.location?.lat ?? THEATER_DEFAULTS.center.lat],
+        coordinates: [unit.location?.lng ?? theater.center.lng, unit.location?.lat ?? theater.center.lat],
       },
       readiness: 'ready' as const,
       notes: unit.equipment,
@@ -311,7 +331,7 @@ Use realistic Indo-Pacific geography. If the documents do not specify exact coor
     const namedAreasOfInterest: NamedAreaOfInterest[] = (extraction.namedAreasOfInterest ?? []).map((nai, idx) => ({
       id: `nai-${idx + 1}`,
       name: nai.name,
-      geometry: nai.geometry ?? { type: 'Point', coordinates: [THEATER_DEFAULTS.center.lng, THEATER_DEFAULTS.center.lat] },
+      geometry: nai.geometry ?? { type: 'Point', coordinates: [theater.center.lng, theater.center.lat] },
       significance: nai.purpose ?? '',
       expectedActivity: nai.triggers ?? '',
     }));
@@ -414,6 +434,7 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
     }
 
     // Build updated force dispositions if present
+    const sitrepTheater = THEATER_DEFAULTS();
     const updatedForceDispositions: ForceDisposition[] = updates.updatedForceDispositions
       ? updates.updatedForceDispositions.map(unit => ({
           unitName: unit.unitName,
@@ -422,8 +443,8 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
           position: {
             type: 'Point',
             coordinates: [
-              unit.location?.lng ?? THEATER_DEFAULTS.center.lng,
-              unit.location?.lat ?? THEATER_DEFAULTS.center.lat,
+              unit.location?.lng ?? sitrepTheater.center.lng,
+              unit.location?.lat ?? sitrepTheater.center.lat,
             ],
           },
           readiness: 'ready' as const,
@@ -435,7 +456,7 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
       ? updates.updatedNAIs.map((nai, idx) => ({
           id: `nai-${idx + 1}`,
           name: nai.name,
-          geometry: nai.geometry ?? { type: 'Point', coordinates: [THEATER_DEFAULTS.center.lng, THEATER_DEFAULTS.center.lat] },
+          geometry: nai.geometry ?? { type: 'Point', coordinates: [sitrepTheater.center.lng, sitrepTheater.center.lat] },
           significance: nai.purpose ?? '',
           expectedActivity: nai.triggers ?? '',
         }))
@@ -525,6 +546,7 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
     }
 
     // 4. Build updated force dispositions and NAIs from LLM response (same as updateIPBFromSITREP)
+    const previewTheater = THEATER_DEFAULTS();
     const updatedForceDispositions: ForceDisposition[] = updates.updatedForceDispositions
       ? updates.updatedForceDispositions.map(unit => ({
           unitName: unit.unitName,
@@ -533,8 +555,8 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
           position: {
             type: 'Point',
             coordinates: [
-              unit.location?.lng ?? THEATER_DEFAULTS.center.lng,
-              unit.location?.lat ?? THEATER_DEFAULTS.center.lat,
+              unit.location?.lng ?? previewTheater.center.lng,
+              unit.location?.lat ?? previewTheater.center.lat,
             ],
           },
           readiness: 'ready' as const,
@@ -546,7 +568,7 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
       ? updates.updatedNAIs.map((nai, idx) => ({
           id: `nai-${idx + 1}`,
           name: nai.name,
-          geometry: nai.geometry ?? { type: 'Point', coordinates: [THEATER_DEFAULTS.center.lng, THEATER_DEFAULTS.center.lat] },
+          geometry: nai.geometry ?? { type: 'Point', coordinates: [previewTheater.center.lng, previewTheater.center.lat] },
           significance: nai.purpose ?? '',
           expectedActivity: nai.triggers ?? '',
         }))
@@ -795,6 +817,7 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
     });
 
     // Avenues of approach → lines
+    const overlayTheater = THEATER_DEFAULTS();
     (extraction.avenuesOfApproach ?? []).forEach((avenue, idx) => {
       layers.push({
         id: `layer-aa-${idx}`,
@@ -805,8 +828,9 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
         geometry: avenue.geometry ?? {
           type: 'LineString',
           coordinates: [
-            [THEATER_DEFAULTS.taiwanStrait.lng, THEATER_DEFAULTS.taiwanStrait.lat],
-            [THEATER_DEFAULTS.center.lng, THEATER_DEFAULTS.center.lat],
+            // Default fallback: axis from adversary staging toward theater center
+            [overlayTheater.adversaryStaging.lng, overlayTheater.adversaryStaging.lat],
+            [overlayTheater.center.lng, overlayTheater.center.lat],
           ],
         },
         properties: {
@@ -828,7 +852,7 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
         layerType: 'nai',
         geometry: nai.geometry ?? {
           type: 'Point',
-          coordinates: [THEATER_DEFAULTS.center.lng, THEATER_DEFAULTS.center.lat],
+          coordinates: [overlayTheater.center.lng, overlayTheater.center.lat],
         },
         properties: {
           purpose: nai.purpose,
@@ -846,46 +870,57 @@ Only include fields that have actually changed based on the SITREP. Preserve exi
     team: 'blue' | 'red',
     perspective: 'own' | 'enemy_assessment'
   ): IPBExtractionResult {
+    const fallbackTheater = THEATER_DEFAULTS();
+    const { center, adversaryStaging } = fallbackTheater;
     return {
       areaOfOperations: buildDefaultAOO(),
       terrainAnalysis: {
-        observation: 'Indo-Pacific theater — maritime and island-chain terrain limits ground observation; air and naval sensors primary.',
-        avenues: 'Key maritime avenues: Taiwan Strait (narrow, monitored), Philippine Sea (broad, open), South China Sea (semi-enclosed).',
-        keyTerrain: 'Taiwan island, Luzon Strait, first island chain chokepoints.',
-        obstacles: 'Natural: shallow reefs (SCS), typhoon weather, island-chain separation. Man-made: naval minefields possible.',
-        coverAndConcealment: 'Limited for surface forces in open ocean; island chains provide radar shadow corridors.',
+        observation: 'Terrain analysis pending — upload scenario documents for full IPB extraction.',
+        avenues: 'Primary avenues of approach to be determined from uploaded scenario documents.',
+        keyTerrain: 'Key terrain identification pending scenario document upload.',
+        obstacles: 'Obstacles assessment pending scenario document upload.',
+        coverAndConcealment: 'Cover and concealment assessment pending scenario document upload.',
       },
       threatAssessment:
         perspective === 'own'
-          ? `${team.toUpperCase()} forces maintain readiness posture in the Western Pacific. Detailed assessment pending document extraction.`
+          ? `${team.toUpperCase()} forces operational status pending scenario document extraction.`
           : `Assessment of opposing forces based on available ${team.toUpperCase()} intelligence. Detailed assessment pending document extraction.`,
-      civilConsiderations: 'Dense civilian populations on Taiwan, Philippines, Japan. Critical infrastructure: ports, airfields, undersea cables.',
+      civilConsiderations: 'ASCOPE analysis pending scenario document upload.',
       namedAreasOfInterest: [
         {
           name: 'NAI-1',
-          purpose: 'Monitor Taiwan Strait crossing indicators',
-          geometry: { type: 'Point', coordinates: [120.0, 24.5] },
-          triggers: 'Amphibious assault preparation, naval massing',
+          purpose: 'Primary observation area — monitor for adversary activity',
+          geometry: { type: 'Point', coordinates: [adversaryStaging.lng, adversaryStaging.lat] },
+          triggers: 'Adversary force concentration or movement toward friendly positions',
         },
       ],
       forceDispositions: [],
       keyTerrainFeatures: [
         {
-          name: 'Taiwan Strait',
-          significance: 'Critical maritime chokepoint — control determines sea lines of communication',
+          name: 'Key Terrain Alpha',
+          significance: 'Controls primary avenue of approach — must be secured or denied',
           geometry: {
             type: 'Polygon',
-            coordinates: [[[118, 22], [122, 22], [122, 27], [118, 27], [118, 22]]],
+            coordinates: [[
+              [center.lng - 0.02, center.lat - 0.02],
+              [center.lng + 0.02, center.lat - 0.02],
+              [center.lng + 0.02, center.lat + 0.02],
+              [center.lng - 0.02, center.lat + 0.02],
+              [center.lng - 0.02, center.lat - 0.02],
+            ]],
           },
         },
       ],
       avenuesOfApproach: [
         {
-          name: 'Maritime AA-1 (Northern Strait)',
-          description: 'Northern entrance to Taiwan Strait from East China Sea',
+          name: 'Approach Avenue Alpha',
+          description: 'Primary ground axis of advance toward the area of operations',
           geometry: {
             type: 'LineString',
-            coordinates: [[121, 28], [121, 25], [120, 23]],
+            coordinates: [
+              [adversaryStaging.lng, adversaryStaging.lat],
+              [center.lng, center.lat],
+            ],
           },
         },
       ],
