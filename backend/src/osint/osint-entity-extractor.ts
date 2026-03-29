@@ -20,6 +20,7 @@ import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
 import { geocodingService, type GeoLocation } from '../lib/geocoding-service.js';
 import { performWebSearch } from '../doc-intelligence/web-search.js';
 import type { OSINTEvent } from '../graph/osint/types.js';
+import { normalizeActorName } from '../graph/resolution/name-normalizer.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -276,11 +277,14 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
 
     // 1. Create/merge actor nodes — MERGE on name to prevent duplicates
     for (const actor of extraction.actors) {
-      const trimmedName = (actor.name ?? '').trim();
+      // Strip whitespace variants and normalize to canonical name
+      const trimmedName = normalizeActorName(
+        (actor.name ?? '').replace(/[\r\n\t]+/g, ' ').trim().replace(/\s{2,}/g, ' ')
+      );
       if (!trimmedName || trimmedName.length < 2) continue;
 
       const stableId = `ACT-${trimmedName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
-      actorIdMap.set(trimmedName, stableId);
+      actorIdMap.set(actor.name, stableId);
 
       // Determine actor type mapping
       const typeMap: Record<string, string> = {
@@ -309,7 +313,7 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
           a.attributes = $attributes,
           a.workspaceId = $workspaceId,
           a.sourceDocumentIds = [$docId],
-          a.containerIds = [],
+          a.containerIds = CASE WHEN $workspaceId IS NOT NULL THEN [$workspaceId] ELSE [] END,
           a.assertedVia = 'osint',
           a.confidence = 0.65,
           a.halfLifeDays = 90,
@@ -329,6 +333,11 @@ export async function extractAndSyncToGraph(event: OSINTEvent): Promise<{
             WHEN NOT $docId IN a.sourceDocumentIds
             THEN a.sourceDocumentIds + $docId
             ELSE a.sourceDocumentIds
+          END,
+          a.containerIds = CASE
+            WHEN $workspaceId IS NOT NULL AND NOT $workspaceId IN a.containerIds
+            THEN a.containerIds + $workspaceId
+            ELSE a.containerIds
           END
       `, {
         id: stableId,

@@ -194,10 +194,10 @@ async function fetchRSSFeed(feed: OSINTFeedConfig, since: Date | null): Promise<
       sourceName: feed.sourceName,
       publishedAt: pubDate,
       location,
-      actors: item.creator ? [item.creator] : [],
+      actors: [], // Actors populated by LLM entity extraction, not RSS author/creator field
       tags,
       rawContent: item.content ?? '',
-      metadata: { feedId: feed.id, guid: item.guid ?? item.link },
+      metadata: { feedId: feed.id, guid: item.guid ?? item.link, author: item.creator ?? null },
     });
   }
 

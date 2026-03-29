@@ -40,8 +40,9 @@ export interface JsonLdEntityBase extends ProvenanceProps, TemporalProps {
  * - organization: International orgs, NGOs, corporations
  * - individual: Key leaders, decision makers
  * - non_state_actor: Terrorist groups, insurgencies, militias
+ * - information_source: Journalists, authors, news agencies — provenance/confidence chain, not primary actors
  */
-export type ActorType = 'nation' | 'organization' | 'individual' | 'non_state_actor';
+export type ActorType = 'nation' | 'organization' | 'individual' | 'non_state_actor' | 'information_source';
 
 /**
  * Actor - An entity that can take action in the operational environment.
@@ -395,6 +396,7 @@ export const ACTOR_TYPE_TO_CCO_MAP: Record<string, string> = {
   organization:     'cco:Organization',
   individual:       'cco:Person',
   non_state_actor:  'cco:Organization',
+  information_source: 'cco:InformationBearingEntity',
   military_unit:    'cco:MilitaryOrganization',
   facility:         'jc3:Facility',
   equipment:        'cco:Artifact',

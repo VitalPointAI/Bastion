@@ -640,10 +640,17 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const workspaceId = getQueryString(req.query.workspaceId) || 'default';
     const atTime = getQueryString(req.query.atTime);
+    const includeInfoSources = getQueryString(req.query.includeInfoSources) === 'true';
 
     // Use containerId filtering to scope graph to problem set
     // (matches both containerIds array and workspaceId for backward compat)
     let actors = await actorStore.listActors(undefined, undefined, undefined, workspaceId);
+
+    // Exclude information_source actors from visualization by default
+    // (journalists, authors — relevant for provenance, not the geopolitical graph)
+    if (!includeInfoSources) {
+      actors = actors.filter(a => a.type !== 'information_source');
+    }
 
     // Temporal filtering
     if (atTime) {
@@ -697,9 +704,15 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
   try {
     const workspaceId = req.params.id as string;
     const atTime = getQueryString(req.query.atTime);
+    const includeInfoSources = getQueryString(req.query.includeInfoSources) === 'true';
 
     // Get actors scoped to this problem set via containerIds (+ workspaceId backward compat)
     let actors = await actorStore.listActors(undefined, undefined, undefined, workspaceId);
+
+    // Exclude information_source actors from visualization by default
+    if (!includeInfoSources) {
+      actors = actors.filter(a => a.type !== 'information_source');
+    }
 
     // Temporal filtering
     if (atTime) {
