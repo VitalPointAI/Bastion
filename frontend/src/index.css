@@ -92,3 +92,6 @@
     }
   }
 }
+
+/* Scrollbar-hidden utility for horizontal scroll containers */
+.overflow-x-auto::-webkit-scrollbar { display: none; }

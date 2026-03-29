@@ -149,9 +149,10 @@
    Responsive — collapse sidebar by default on mobile
    ============================================================================ */
 
+/* Tablet: collapse sidebar by default */
 @media (max-width: 768px) {
   .tab-sidebar {
-    width: 40px; /* collapsed by default on mobile */
+    width: 40px;
   }
 
   .tab-sidebar .sidebar-nav {
@@ -164,5 +165,29 @@
 
   .tab-sidebar.open .sidebar-nav {
     display: flex;
+  }
+}
+
+/* Mobile: off-canvas overlay sidebar */
+@media (max-width: 639px) {
+  .tab-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    z-index: 200;
+    width: 0;
+    transform: translateX(-100%);
+    transition: transform var(--transition-medium), width 0ms;
+    background: var(--bg-secondary);
+  }
+
+  .tab-sidebar.open {
+    width: 220px;
+    transform: translateX(0);
+  }
+
+  .tab-content {
+    padding: 1rem;
   }
 }

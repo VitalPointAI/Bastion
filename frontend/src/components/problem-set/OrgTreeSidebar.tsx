@@ -47,7 +47,7 @@ export function OrgTreeSidebar({ onClose }: OrgTreeSidebarProps) {
       />
 
       {/* Slide-out panel */}
-      <div className="fixed inset-y-0 right-0 w-80 bg-gray-800 border-l border-gray-700 z-50 shadow-xl flex flex-col">
+      <div className="fixed inset-y-0 right-0 w-80 max-w-[90vw] bg-gray-800 border-l border-gray-700 z-50 shadow-xl flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 shrink-0">

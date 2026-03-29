@@ -315,13 +315,14 @@ export function ProblemSetTabContainer() {
       {/* Horizontal tab bar */}
       <nav
         className={[
-          'flex border-b shrink-0',
+          'flex border-b shrink-0 overflow-x-auto',
           isTraining
             ? 'bg-amber-900/30 border-amber-700/50'
             : 'bg-gray-800 border-gray-700',
         ].join(' ')}
         role="tablist"
         aria-label="Problem Set tabs"
+        style={{ scrollbarWidth: 'none' }}
       >
         {/* Visible tabs in fixed order */}
         {PROBLEM_SET_TABS.filter((t) => visibleTabs.includes(t)).map((tab) => (
