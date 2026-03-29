@@ -176,7 +176,7 @@ class MissionSequenceOrchestrator extends EventEmitter {
    * @deprecated Use startMissionSequence() instead.
    * Kept as alias for backward compatibility.
    */
-  async startIronBastion(
+  async startMissionSequenceAlias(
     overrides?: Partial<SequenceConfig>,
   ): Promise<{ sequenceId: string; state: SequenceState }> {
     return this.startMissionSequence(overrides);
@@ -349,28 +349,28 @@ class MissionSequenceOrchestrator extends EventEmitter {
 
     const svc = getRobotMissionService();
 
-    // Road-following waypoint routes (room coords mapped to real Taipei streets)
-    // Followers start at home base (0.3, 0.5) on Hengyang Road
+    // Road-following waypoint routes (room coords mapped to AO track network)
+    // Followers start at home base (0.3, 0.5) on the western track
     //
-    // F1 (bravo) route → Xiangyang/Nanyang intersection (1.4, 2.0):
-    //   Home → N on Hengyang Rd → E on Wuchang St → N on Xiangyang → Nanyang St
+    // F1 (bravo) route → intersection at (1.4, 2.0):
+    //   Home → N on West Track → E on South Line → N on Center Track → Mid-Line intersection
     //
-    // F2 (charlie) route → Chengde/Kaifeng intersection (3.4, 3.3):
-    //   Home → N on Hengyang Rd → E on Hankou St → N on Guanqian → E on Kaifeng → Chengde
+    // F2 (charlie) route → intersection at (3.4, 3.3):
+    //   Home → N on West Track → E on South Line → N on Center Track → N Line → E on North Line → East Track
     const advanceRoutes: Array<Array<{ x: number; y: number }>> = [
-      // F1: Home → Hengyang/Wuchang → Xiangyang/Wuchang → Xiangyang/Nanyang
+      // F1: Home → West Track N → Center Track intersection → Mid-Line
       [
-        { x: 0.3, y: 1.7 },  // N on Hengyang to Wuchang St
-        { x: 1.4, y: 1.7 },  // E on Wuchang to Xiangyang Rd
-        { x: 1.4, y: 2.0 },  // N on Xiangyang to Nanyang St — FIRING POS
+        { x: 0.3, y: 1.7 },  // N on West Track to South Line
+        { x: 1.4, y: 1.7 },  // E on South Line to Center Track
+        { x: 1.4, y: 2.0 },  // N on Center Track to Mid-Line — FIRING POS
       ],
-      // F2: Home → Hengyang/Wuchang → Hankou → Guanqian/Hankou → Guanqian/Kaifeng → Chengde/Kaifeng
+      // F2: Home → West Track N → South Line E → Center Track N → North Line E → East Track
       [
-        { x: 0.3, y: 1.7 },  // N on Hengyang to Wuchang St
-        { x: 0.3, y: 2.6 },  // N on Hengyang to Hankou St
-        { x: 2.5, y: 2.6 },  // E on Hankou to Guanqian Rd
-        { x: 2.5, y: 3.3 },  // N on Guanqian to Kaifeng St
-        { x: 3.4, y: 3.3 },  // E on Kaifeng to Chengde Rd — FIRING POS
+        { x: 0.3, y: 1.7 },  // N on West Track to South Line
+        { x: 0.3, y: 2.6 },  // N on West Track toward North Line
+        { x: 2.5, y: 2.6 },  // E on traversal track to Center Track
+        { x: 2.5, y: 3.3 },  // N on Center Track toward North Line
+        { x: 3.4, y: 3.3 },  // E on North Line to East Track — FIRING POS
       ],
     ];
 

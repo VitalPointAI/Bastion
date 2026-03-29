@@ -117,7 +117,7 @@ export function generateFixture(agent: StandardAgent): TestFixture {
         ],
         context: {
           exercisePhase: 'Competition',
-          scenario: 'Pacific Strategy AY26',
+          scenario: 'the active exercise',
         },
       },
       expected: {
@@ -141,7 +141,7 @@ export function generateFixture(agent: StandardAgent): TestFixture {
         ],
         context: {
           exercisePhase: 'Crisis',
-          scenario: 'Pacific Strategy AY26',
+          scenario: 'the active exercise',
         },
       },
       expected: {

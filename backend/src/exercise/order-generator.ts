@@ -83,8 +83,8 @@ export class ExerciseOrderGenerator {
   /**
    * Generate a Warning Order for a team at the start of an exercise phase.
    *
-   * Blue WARNORD references CJTF WestPAC mission and INDOPACOM guidance.
-   * Red WARNORD references PRC/TCC campaign objectives and PLA force structure.
+   * Blue WARNORD references coalition mission and theater command guidance.
+   * Red WARNORD references opposing force campaign objectives and force structure.
    * The LLM prompt specifies which team's perspective to use so intelligence
    * from the opposing team's documents never bleeds across the barrier.
    */
@@ -107,11 +107,11 @@ export class ExerciseOrderGenerator {
     );
 
     // Build team-specific prompt context
-    const teamLabel = team === 'blue' ? 'Blue Force (CJTF WestPAC / INDOPACOM)' : 'Red Force (PRC/TCC)';
+    const teamLabel = team === 'blue' ? 'Blue Force (coalition headquarters)' : 'Red Force (OPFOR)';
     const teamGuidance =
       team === 'blue'
-        ? 'Reference CJTF WestPAC mission, INDOPACOM campaign guidance, and Coalition ALERTORDs. Blue staff plans from the Joint Force Commander perspective.'
-        : 'Reference PRC/TCC campaign objectives, PLA operational concepts, and TCC strategic directives. Red cell plans from the theater campaign perspective.';
+        ? 'Reference coalition mission, theater command guidance, and Coalition ALERTORDs. Blue staff plans from the Joint Force Commander perspective.'
+        : 'Reference adversary force campaign objectives, OPFOR operational concepts, and opposing strategic directives. Red cell plans from the theater campaign perspective.';
 
     const docSummary = this.summarizeDocuments(documents);
 
@@ -144,7 +144,7 @@ Generate a WARNORD JSON object with exactly these fields:
 }
 
 Requirements:
-- Include 3-5 initial tasks appropriate for ${team === 'blue' ? 'Blue force planning staff (mission analysis, COA development, intelligence estimate)' : 'Red cell (analyze TCC campaign objectives, develop PRC/TCC COAs, assess Blue force dispositions)'}
+- Include 3-5 initial tasks appropriate for ${team === 'blue' ? 'Blue force planning staff (mission analysis, COA development, intelligence estimate)' : 'Red cell (analyze OPFOR campaign objectives, develop Red COAs, assess Blue force dispositions)'}
 - Only reference information visible to the ${team.toUpperCase()} team — do not reference opposing force internal plans
 - Output ONLY the JSON object, no other text`;
 
@@ -209,7 +209,7 @@ Requirements:
       throw new Error(`Scenario ${scenarioId} not found`);
     }
 
-    const teamLabel = team === 'blue' ? 'Blue Force (CJTF WestPAC)' : 'Red Force (PRC/TCC)';
+    const teamLabel = team === 'blue' ? 'Blue Force (coalition headquarters)' : 'Red Force (OPFOR)';
     const docSummary = this.summarizeDocuments(documents);
     const ipbSummary = ipbEnemyAssessment
       ? this.summarizeIPB(ipbEnemyAssessment)
@@ -358,7 +358,7 @@ Requirements:
     }
 
     const baseContent = JSON.stringify(baseOrder.content, null, 2);
-    const teamLabel = baseOrder.team === 'blue' ? 'Blue Force (CJTF WestPAC)' : 'Red Force (PRC/TCC)';
+    const teamLabel = baseOrder.team === 'blue' ? 'Blue Force (coalition headquarters)' : 'Red Force (OPFOR)';
 
     const prompt = `You are a military exercise controller generating a Fragmentary Order (FRAGO) for the ${teamLabel} planning staff.
 
@@ -579,7 +579,7 @@ Named Areas of Interest: ${ipb.namedAreasOfInterest.map((n) => n.name).join(', '
         ? [
             {
               assignedTo: 'J2 Intelligence',
-              task: 'Conduct mission analysis of CJTF WestPAC AO',
+              task: 'Conduct mission analysis of assigned area of operations',
               purpose: 'Provide intelligence preparation for COA development',
             },
             {
@@ -601,7 +601,7 @@ Named Areas of Interest: ${ipb.namedAreasOfInterest.map((n) => n.name).join(', '
             },
             {
               assignedTo: 'Plans Cell',
-              task: '[Develop COAs for PRC/TCC operations]',
+              task: '[Develop COAs for OPFOR operations]',
               purpose: 'Generate courses of action for theater campaign',
             },
             {

@@ -432,11 +432,14 @@ function detectKGGaps(
 ): string[] {
   const gaps: string[] = [];
 
-  // Heuristic patterns for entities that often lack KG grounding
+  // Heuristic patterns for entities that often lack KG grounding.
+  // These detect common military/strategic actor abbreviations; the active problem set
+  // context will determine which are relevant for the current scenario.
   const actorPatterns = [
-    /\bPRC\b/i, /\bPLA\b/i, /\bPLAN\b/i, /\bPLAAF\b/i,
-    /\bROC\b/i, /\bTaiwan\b/i, /\bUSINDOPACOM\b/i,
+    /\b[A-Z]{2,6}\b/,  // Any 2-6 letter acronym — potential military actor
     /\bUN Security Council\b/i, /\bSCSO\b/i,
+    /combatant command/i, /theater command/i,
+    /coalition headquarters/i, /joint force/i,
   ];
 
   const docPatterns = [

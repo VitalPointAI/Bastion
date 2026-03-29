@@ -153,7 +153,7 @@ Return ONLY valid JSON with these possible top-level keys:
 geographicScope, temporalRange, actorFocus, coreProblem, classificationCeiling, echelon, standingRequirements, additionalNuance
 
 Only include keys where you have extracted information. For example:
-{"coreProblem": "China's militarization of the South China Sea", "geographicScope": {"regions": ["Indo-Pacific"], "countries": ["China", "Taiwan", "Philippines"]}}
+{"coreProblem": "Regional escalation and territorial disputes", "geographicScope": {"regions": ["the operational theater"], "countries": ["country A", "country B"]}}
 
 Current partial context: ${JSON.stringify(state.derivedContext)}`;
 

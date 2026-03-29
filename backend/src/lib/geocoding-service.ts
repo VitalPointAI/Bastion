@@ -19,7 +19,7 @@
  *   const primary = await geocodingService.extractPrimaryLocation(text);
  *
  *   // Geocode a single known place name
- *   const coords = await geocodingService.geocode('Taipei');
+ *   const coords = await geocodingService.geocode('Riga');
  */
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ For each location, provide:
 Use your knowledge to provide accurate coordinates. Return ONLY a JSON array.
 If no locations are found, return an empty array [].
 
-Example: [{"name": "Taipei", "latitude": 25.033, "longitude": 121.565, "country": "Taiwan"}]`;
+Example: [{"name": "Riga", "latitude": 56.946, "longitude": 24.105, "country": "Latvia"}]`;
 
 /**
  * Extract locations from text using LLM.

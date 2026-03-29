@@ -51,8 +51,8 @@ export interface MapData {
 //
 // Uses room dimensions from the active calibration profile.
 // Three N-S farm tracks and three E-W movement lines create a 9-intersection
-// grid the A* pathfinder can route on — same algorithm that worked on the
-// former Taipei street grid.
+// grid the A* pathfinder can route on — same algorithm works for any
+// configured AO map.
 //
 // Room 5m wide × 15m long (Latvia EFDL default):
 //   N-S tracks: West Track x=1.0, Center Track x=2.5, East Track x=4.2
