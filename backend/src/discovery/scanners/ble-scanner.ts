@@ -10,7 +10,8 @@ import { BaseScanner } from './scanner-interface.js';
 import type { DiscoveryEvent, ScannerConfig } from '../types.js';
 
 // Dynamic import handle for noble (may fail if native module unavailable)
-let noble: typeof import('@stoprocent/noble') | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let noble: any = null;
 
 try {
   noble = await import('@stoprocent/noble');
@@ -81,7 +82,8 @@ export class BLEScanner extends BaseScanner {
     const nobleRef = noble;
 
     // Set up discover handler
-    nobleRef.on('discover', (peripheral) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    nobleRef.on('discover', (peripheral: any) => {
       if (this._paused) return;
 
       const now = Date.now();

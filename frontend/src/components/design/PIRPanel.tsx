@@ -13,7 +13,6 @@ import type {
   PIRType,
   PIRStatus,
   PIRSuggestion,
-  CreatePIRInput,
 } from '../../lib/pir-service.ts';
 import {
   listPIRs,
@@ -95,7 +94,7 @@ interface PIRRowProps {
 
 function PIRRow({ pir, onUpdate, onDelete, onAnswer }: PIRRowProps) {
   const [expanded, setExpanded] = useState(false);
-  const statusDisplay = STATUS_DISPLAY[pir.status];
+  const _statusDisplay = STATUS_DISPLAY[pir.status];
 
   return (
     <div className="border border-gray-700 rounded-lg bg-gray-800/50 mb-2">
@@ -537,7 +536,7 @@ function FilterBar({ activeType, activeStatus, onTypeChange, onStatusChange }: F
 // Main Panel
 // ---------------------------------------------------------------------------
 
-export function PIRPanel({ problemSetId, assumptions }: PIRPanelProps) {
+export function PIRPanel({ problemSetId, assumptions: _assumptions }: PIRPanelProps) {
   const [pirs, setPirs] = useState<PIR[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -570,7 +569,11 @@ export function PIRPanel({ problemSetId, assumptions }: PIRPanelProps) {
 
   const handleUpdate = async (id: string, updates: Partial<PIR>) => {
     try {
-      await updatePIR(id, updates);
+      const cleaned: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(updates)) {
+        if (v !== null && v !== undefined) cleaned[k] = v;
+      }
+      await updatePIR(id, cleaned as Parameters<typeof updatePIR>[1]);
       await fetchPIRs();
     } catch (err) {
       console.error('Failed to update PIR:', err);
