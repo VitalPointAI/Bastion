@@ -27,8 +27,8 @@ None
 - [x] **Phase 5.1: MDMP Governance Integration** - MDMP workflow engine, assumption registry, safety matrix, 6 new AI agents, governance gates (INSERTED, completed 2026-02-11)
 - [x] **Phase 5.2: Escalation & Competition Modeling** - Adversary modeler, effect cascader, escalation modeler, deception detector, wargaming enhancement (INSERTED, completed 2026-02-13)
 - [x] **Phase 5.3: End-to-End Scenario Validation & UX Cleanup** - Sidebar cleanup, comprehensive scenario seed, persona walkthrough, gap documentation (INSERTED, completed 2026-02-23)
-- [ ] **Phase 6: Autonomous Vehicle Integration** - Set up Jetson Orin Nano, integrate Sphero RVR+, deploy edge AI models
-- [ ] **Phase 7: Tactical Execution System** - Build commander interface, mission orders, target selection, vehicle control
+- [x] **Phase 6: Autonomous Vehicle Integration** - Superseded by Phases 43-46 (robot agent, bridge, vision, swarm)
+- [x] **Phase 7: Tactical Execution System** - Superseded by Phase 44/46 tactical execution
 - [ ] **Phase 8: Sensor Fusion & Intelligence** - Create multi-level intelligence architecture and data fusion
 - [ ] **Phase 9: Assessment & Dashboard** - Build operational picture, MOE calculation, decision support
 - [ ] **Phase 10: End-to-End Integration** - Automate complete planning cycle, implement BDA feedback loops
@@ -42,18 +42,18 @@ None
 - [ ] **Phase 17: Deployment - CI/CD Pipeline & Hetzner Server** - GitHub Actions CI/CD pipeline deploying Bastion to Hetzner server, TEE-aware component separation documented for production, single-server dev deployment
 - [x] **Phase 21: AI COP Layer Agent Team** - Autonomous agent team per workspace section that parses documents/plans, derives location/resource/intent, and generates MIL-STD-2525 interactive SVG overlay layers with standard military symbology for the common operating picture; layers include image specs for model-generated SVGs, update on commit, support publish control before promotion to top-level COP, provide entity-data linkages with hover/click detail, animate movement/phasing, and render both friendly and adversary perspectives (completed 2026-03-05)
 - [x] **Phase 22: Training/Operational Global Mode** - Global app toggle switching between training (exercise) and operational modes with visual distinction, data isolation, governance weight adjustment, and reset/checkpoint capability (INSERTED) (completed 2026-03-06)
-- [ ] **Phase 23: Problem Set Model & Workspace Rename** - Rename workspaces to problem sets throughout the application, add echelon-awareness (strategic/operational/tactical), update data model, UI, routes, and API (INSERTED)
+- [x] **Phase 23: Problem Set Model & Workspace Rename** - Rename workspaces to problem sets throughout the application, add echelon-awareness (strategic/operational/tactical), update data model, UI, routes, and API (INSERTED) (completed 2026-03-06)
 - [x] **Phase 24: Doctrinal Tab Restructure** - Replace COP/Decide/Design/Campaign/Train/Overview tabs with doctrinal lifecycle flow: Understand/Design/Plan/Direct/COP/Assess — reorganize existing components into doctrinally-aligned tabs (INSERTED)
 - [x] **Phase 25: Operational Design Workspace** - Build the Design tab with problem framing, center of gravity analysis, lines of effort/operation, operational approach development, and AI-assisted design recommendations (INSERTED, completed 2026-03-06)
 - [x] **Phase 25.1: Training Package Upload & From-Scenario Integration** - Wire ScenarioPackageUpload wizard into Understand tab; add "Create from Scenario" option to CreateProblemSetWizard; integrate multi-file drag-drop upload with tag inference (team/phase/doc type) and async LLM extraction; surface upload status and extracted documents in Understand tab (INSERTED, completed 2026-03-06)
 - [ ] **Phase 25.2: Strategic Document Containers & Actor Categorization** - Organize strategic documents into nation/group containers (e.g., United States, China, NATO) with actor categories (ally, adversary, neutral, partner); persistent container-based organization for building strategic environments over time; feeds into Phase 26 strategic environment inheritance (INSERTED)
 - [ ] **Phase 25.3: AI Strategic Context & Knowledge Graph Integration** - Wire subscribed strategic environment data and container-scoped knowledge graphs into AI agent context; subscription cache materializer populates problem_set_data_cache; container-scoped RAFT graph construction with auto-trigger on document changes; graph summary injection into assembleContextNode for exercise AI agents; context size management with truncation and prioritization (INSERTED)
-- [ ] **Phase 26: Strategic Environment & Inheritance** - Strategic-level problem set as context provider with inheritance mechanism for directives, policy, and intelligence; update propagation to child problem sets (INSERTED)
+- [x] **Phase 26: Strategic Environment & Inheritance** - Strategic-level problem set as context provider with inheritance mechanism for directives, policy, and intelligence; update propagation to child problem sets (INSERTED) (completed 2026-03-06)
 - [x] **Phase 27: Resource Registry & DID Plugin Architecture** - Elevate resources to first-class entities with DIDs (did:near:resource-{id}), plugin interface for resource types, built-in plugins (autonomous, sensor, weapon, comms, logistics), registry with capabilities/status/location, COP integration (INSERTED) (completed 2026-03-07)
-- [ ] **Phase 28: Embedded DAO Governance at Decision Gates** - Move DAO governance from dedicated tab into contextual workflow decision gates; proposals trigger at natural planning decision points (objective approval, COA selection, order release) (INSERTED)
+- [x] **Phase 28: Embedded DAO Governance at Decision Gates** - Move DAO governance from dedicated tab into contextual workflow decision gates; proposals trigger at natural planning decision points (objective approval, COA selection, order release) (INSERTED) (completed 2026-03-07)
 - [ ] **Phase 29: Contextual AI Staff Integration** - Surface AI agent output contextually per tab; per-tab AI assistant aware of workflow phase; recommendation engine tied to doctrinal workflow position (INSERTED)
 - [x] **Phase 30: Ironclaw Agent Integration** - Integrate Ironclaw agent (NEAR AI) as chief-of-staff capability for system changes, code modifications via PR/CI-CD, and problem set configuration on behalf of authorized users (INSERTED) (completed 2026-03-07)
-- [ ] **Phase 31: AI Agent Validation & Compliance Testing** - Validation and testing framework to quantitatively assess AI agent integration across determinism, reliability, and doctrinal compliance dimensions (INSERTED)
+- [x] **Phase 31: AI Agent Validation & Compliance Testing** - Validation and testing framework to quantitatively assess AI agent integration across determinism, reliability, and doctrinal compliance dimensions (INSERTED) (completed 2026-03-08)
 - [x] **Phase 32: Network Device Discovery & Secure Automatic Resource Onboarding** - Automatic device discovery on local networks (Bluetooth, WiFi, USB, TAK/RF), fingerprinting, and seamless onboarding as first-class resources with DID identity and capability mapping (INSERTED)
 - [x] **Phase 33: Joint Planning Process (JPP) Campaign Plan Framework** - Full 7-step JPP workflow as collaborative planning framework within Plan tab, producing COAs and annex-based campaign plans with Ends-Ways-Means linkage to strategic objectives (INSERTED)
 - [x] **Phase 34: Plan Tab Echelon Routing & MDMP Tactical Wiring** - Plan tab reads echelon from ProblemSetContext and renders appropriate workflow (JPP for operational, MDMP for tactical, placeholder for strategic); wire existing MDMP module into Plan tab with sidebar navigation, role-gated sections, governance gates, AI agent panels
@@ -63,7 +63,7 @@ None
 - [x] **Phase 38: Inheritance Deepening** - Full context propagation with change notification, override tracking with parent visibility, OPORD update propagation to child missions, upward reporting of tactical COP/execution status to parent campaign (completed 2026-03-08)
 - [x] **Phase 39: Operational Demonstration Data Package** - Comprehensive reusable demo data package populating BASTION end-to-end with Pacific Strategy AY26 content from strategy through tactical missions, all doctrinal tabs, AI agent outputs, RAFT graph, and OSINT pipeline (INSERTED)
 - [x] **Phase 40: Autonomous Document Intelligence Team** - Multi-agent document processing team that autonomously ingests, classifies, extracts, cross-links, and validates documents with minimal user involvement; problem set scoping interview captures context boundaries and standing intelligence requirements; specialist agents (orchestrator, converter, classifier, perspective analysts, fact/objective extractors, linker, bias identifier, quality assessor) process each document adaptively; autonomous problem set researcher uses web search and OSINT to fill knowledge gaps and build strategic understanding; ExtractionTheater visualization shows full pipeline live (INSERTED) (completed 2026-03-09)
-- [ ] **Phase 41: Redesign Understanding Tab — Adaptive Brain Visualization** - Replace Understanding tab's sidebar-driven view list with neural network brain visualization centerpiece fed by unified ingestion pipeline; living adaptive graph visualizing knowledge relationships (INSERTED)
+- [x] **Phase 41: Redesign Understanding Tab — Adaptive Brain Visualization** - Replace Understanding tab's sidebar-driven view list with neural network brain visualization centerpiece fed by unified ingestion pipeline; living adaptive graph visualizing knowledge relationships (INSERTED) (completed 2026-03-10)
 - [x] **Phase 42: Resources Tab — Inventory, Discovery & Onboarding** - Add a dedicated Resources tab to the problem set tab bar; consolidate orphaned discovery components (ClientDiscoveryPanel, DiscoveryLayer, NetworkTopologyView, EMSpectrumPanel) and existing ResourceCatalog into a unified inventory and onboarding view; sub-views for equipment/personnel/consumable inventory, network device discovery and onboarding pipeline, resource group management, capability search, and registry statistics; wires existing Phase 27 (Resource Registry) and Phase 32 (Discovery) backend services into a reachable UI (INSERTED) (completed 2026-03-12)
 - [x] **Phase 43: Robot Agent & Local Discovery Bridge** - Lightweight Python robot agent for outbound self-registration/command/telemetry via WebSocket; Docker-based local network bridge for mDNS/SSDP WiFi scanning and device relay to Bastion cloud; bridge acts as command proxy; mDNS auto-discovery between robot and bridge; dual-path connectivity for resilience (INSERTED) (completed 2026-03-12)
 - [x] **Phase 44: Robot Vision Capabilities & Mission Intent Translation** - Vision capabilities (CSI camera, detectNet, ORB feature matching) for Sphero RVR+/Jetson Orin Nano; mission intent translation (LLM + template fallback); mission behavior profiles; pre-flight DID constraint validation; four vision-enabled mission types (recon_area, visual_search, overwatch, resupply_route); sweep path planning (completed 2026-03-13)
@@ -72,10 +72,15 @@ None
 - [ ] **Phase 47: JSON-LD Semantic Brain + COP Fix** - Refactor knowledge graph to JSON-LD with formal ontology alignment (BFO, CCO, DODAF/DNDAF), provenance tracking, temporal reasoning, entity resolution, confidence scoring; fix COP layer generation end-to-end (INSERTED)
 - [ ] **Phase 48: Robot Swarm Behaviour End-to-End Demo** - Complete BASTION strategy-to-autonomous-execution pipeline demo with Taiwan defense scenario, 3-robot coalition swarm, AI objective extraction, DAO-authorized missions, swarm recon, COP detections, lethal escalation gates, brain graph timeline playback (INSERTED)
 - [x] **Phase 49: Align Design Tab with Plan Tab** - Remove duplicate operational design from Plan tab, establish Design tab as single source of truth for operational design artifacts, wire Design outputs as automatic starting point for campaign planning, restructure Strategic Guidance to remove Operational Approach step and add Alignment step, build generic fork-and-merge revision system for Plan-to-Design change proposals through DAO governance (INSERTED) (completed 2026-03-17)
-- [ ] **Phase 50: Universal Intelligence Input & Auto-Classification** - Replace fragmented ingestion sidebar (separate document upload, OSINT modal, filter tags) with a single universal input area that accepts any content type (files, URLs, pasted text, structured data) and automatically discerns source type, classifies content, routes to appropriate specialist agents, and extracts intelligence — all orchestrated by the lead agent with robust error handling, retry logic, and user-facing status; eliminates manual source-type selection and reduces ingestion to a single drag/drop/paste/type interaction (INSERTED)
+- [x] **Phase 50: Universal Intelligence Input & Auto-Classification** - Replace fragmented ingestion sidebar (separate document upload, OSINT modal, filter tags) with a single universal input area that accepts any content type (files, URLs, pasted text, structured data) and automatically discerns source type, classifies content, routes to appropriate specialist agents, and extracts intelligence — all orchestrated by the lead agent with robust error handling, retry logic, and user-facing status; eliminates manual source-type selection and reduces ingestion to a single drag/drop/paste/type interaction (INSERTED) (completed 2026-03-18)
 - [x] **Phase 56: Visual Operational Approach Editor — Map-Based Military Symbology** - Interactive Leaflet map with MIL-STD-2525D military symbology overlay for operational approach development; dual editing: Ironclaw chat-driven (natural language → tool calls → map updates) and direct manipulation (drag-and-drop symbols, draw control measures, click-to-edit properties); milsymbol.js rendering; MGRS coordinate support; Ironclaw registered skills (add/move/remove/update symbols, add control measures and overlay graphics); Yjs collaborative sync; overlay persisted as part of OperationalDesign data model (INSERTED) (completed 2026-03-25)
 - [x] **Phase 57: Ironclaw Persistent Memory & Adaptive Relationship** - Long-term memory system that makes Ironclaw a true AI staff officer: per-user preference memory (working style, critique tolerance, strengths/weaknesses, communication style), interaction outcome tracking (suggestions accepted/rejected, edit patterns post-critique, valued vs dismissed input), problem set context memory (decisions, rationale, assumptions across sessions), and adaptive behavior engine that adjusts proactivity, critique frequency, draft-offering, and communication style based on accumulated interaction patterns; stored in ironclaw-postgres; memory retrieval integrated into all Ironclaw prompts for personalized, evolving relationship with each user (INSERTED) (completed 2026-03-25)
+- [x] **Phase 59: Briefing Deck Slide & Image Specs** - Comprehensive slide-by-slide specifications, image generation prompts, demo cue points, whitepaper v0.3 update (completed 2026-03-26)
+- [x] **Phase 60: Rearchitect Ironclaw Integration** - Ironclaw-Bastion integration rearchitected per blueprint v1.3 (completed 2026-03-27)
+- [x] **Phase 61: Responsive UI & Mobile Optimization** - Responsive breakpoints, touch-friendly components, viewport scaling, mobile-adapted layouts (completed 2026-03-28)
 - [x] **Phase 62: Knowledge Graph Entity Deduplication & Auto-Resolution** - Eliminate duplicate nodes by integrating entity resolution into ingestion pipeline; name canonicalization before node creation; auto-run resolution after buildFromDocument() and OSINT sync; batch-merge existing duplicates; canonical alias registry for common name variants; dedup metrics (INSERTED) (completed 2026-03-29)
+- [x] **Phase 63: Unified OSINT Agent Ingestion** - 12-specialist OSINT pipeline, source pre-registration, reliability scoring, LLM concurrency tuning (completed 2026-03-29)
+- [ ] **Phase 64: Scenario-Agnostic Refactor & Baltic Shield Demo** - Eliminate all hardcoded scenario references (Taipei coordinates, Iron Bastion names, PLA vehicle types, Pacific Strategy labels) from application code; all scenario-specific content driven by active problem set and calibration profile at runtime; generalize variable names (no ZHONGZHENG_MAP, no IRON_BASTION_DEFAULTS); preserve full autonomous mission functionality; new Baltic Shield EFDL scenario data (OPORD, coalition, ORBAT, knowledge graph) seeds the demo problem set; existing mission sequence works identically on Latvian open terrain coordinates (INSERTED)
 
 ## Phase Details
 
@@ -1029,6 +1034,56 @@ Plans:
 - `create_conflict_record(objectives, description, severity)` - Log conflict
 - `resolve_conflict(conflict_id, resolution, approver)` - Mark conflict resolved
 - `notify_reviewers(conflict_id, reviewer_ids)` - Send review notifications
+
+### Phase 64: Scenario-Agnostic Refactor & Baltic Shield Demo
+
+**Goal:** Eliminate all hardcoded scenario references from application code. Every scenario-specific value (coordinates, operation names, team labels, vehicle types, street grids, theater context) must be driven by the active problem set and calibration profile at runtime. Generalize all variable/constant names — no `ZHONGZHENG_MAP`, no `IRON_BASTION_DEFAULTS`, no `PRC/TCC` labels. The full autonomous mission sequence (HOLD → RECON → CONTACT → OVERWATCH → ADVANCE → SET → AUTHORIZE → ENGAGE) must work identically on the new Baltic Shield EFDL scenario with Latvian open terrain coordinates. Baltic Shield scenario data (OPORD, coalition forces, adversary ORBAT, knowledge graph actors/relationships/tensions, problem set hierarchy) already created in `backend/data/demo-baltic-seed/` and `scripts/demo-data/`.
+**Requirements:** [SA-64-01 through SA-64-12]
+**Depends on:** Phase 63
+**Plans:** 4 plans
+
+**Context:**
+52+ hardcoded scenario references found across 28 files in frontend/src/ and backend/src/. These tightly couple the application to the Pacific Strategy AY26 / Taiwan / Iron Bastion scenario. The demo is pivoting to an Eastern Flank Deterrent Line (EFDL) scenario set in eastern Latvia under NATO Multinational Brigade Latvia (MNB-LVA), Canadian-led under Operation REASSURANCE. The physical demo space (5m × 15m) maps to open agricultural terrain in the Latgale region — much better for Sphero RVR+ robots than Taipei's street grid.
+
+**Requirements:**
+
+- **SA-64-01: Centralized CalibrationService** — Single calibration loader used by all coordinate conversion code (robot-routes, robot-mission-service, swarm-cop-bridge, mgrs-coordinator FE+BE, COPMapView, MissionSequencePanel). Reads from calibration-profiles.json. No hardcoded coordinate fallbacks. Default profile set by active problem set.
+
+- **SA-64-02: Scenario-driven team/coalition display names** — All UI team labels ("Blue (CJTF WestPAC)" / "Red (PRC/TCC)") replaced with names loaded from coalition config on the active problem set. Consolidate the 5 duplicate locations (OrderEditor ×3, IPBPanel, ExerciseDashboard) into a single TeamConfig provider.
+
+- **SA-64-03: Shared VehicleDatabase** — Consolidate the 3 duplicated KNOWN_VEHICLES tables (symbology-skill, vision-cop-pipeline, tactical-skills) into a single VehicleDatabase service. Vehicle types loaded from adversary ORBAT on the active problem set. Symbology, vision classification, and tactical engagement data all read from the same source.
+
+- **SA-64-04: Generalized mission config** — Rename IRON_BASTION_DEFAULTS → MISSION_DEFAULTS (or similar). Mission config (home base, recon area, firing positions, threat classes, formation defaults) loaded from the active problem set's mission template. The override/merge pattern already exists — just change the defaults source. Rename `startIronBastion()` → `startMissionSequence()` or similar generic name.
+
+- **SA-64-05: Scenario area map** — Replace `ZHONGZHENG_MAP` (12 Taipei streets + 4 landmarks) with a generic `ScenarioAreaMap` loaded from the problem set. For Baltic Shield: open terrain features (tree lines, ridges, farm tracks) instead of streets. Navigation skill reads from this map. Mission simulator generates recon sweep paths from the map data instead of hardcoded 12-point waypoints.
+
+- **SA-64-06: Theater context from problem set** — IPB service `THEATER_DEFAULTS`, LLM prompt theater context, and `buildFallbackExtraction()` all read theater coordinates and geographic context from the active problem set instead of hardcoded Western Pacific/Taiwan Strait values.
+
+- **SA-64-07: Exercise phases from problem set** — `DEFAULT_EXERCISE_PHASES` (Competition/Crisis/Conflict/Negotiation) loaded from the active problem set's scenario phase definitions instead of hardcoded array.
+
+- **SA-64-08: Threat vector parameterization** — `enemy_advance_axis` in tactical-ai-service and tactical-skills reads from the adversary ORBAT movement data on the active problem set, not hardcoded "Zhongxiao West, south".
+
+- **SA-64-09: Strategic force disposition from problem set** — The hardcoded force disposition data in robot-routes (PLA Marine Brigade Taipei, etc.) loaded from the active problem set's force database.
+
+- **SA-64-10: Engagement zoom from live data** — COPGateNotifications derives zoom-to location from the live threat position in the COP, not hardcoded room coordinates (2.5, 3.5).
+
+- **SA-64-11: Simulation event parameterization** — Enemy spawn positions and simulated detection events in mission-simulator and autonomous-mission-orchestrator read from the problem set's scenario event config, not hardcoded Taipei intersection positions.
+
+- **SA-64-12: Variable/constant name cleanup** — All variable names, constant names, and comments that reference Taipei, Zhongzheng, Iron Bastion, PLA, PRC/TCC, Pacific Strategy, INDOPACOM, or Taiwan must be renamed to generic equivalents. Examples: `ZHONGZHENG_MAP` → `scenarioAreaMap`, `IRON_BASTION_DEFAULTS` → `missionDefaults`, `ironBastion` route → `mission-sequence`, team perspective labels → loaded from config. Comments updated to reference the generic concept, not a specific scenario.
+
+**Functional preservation guarantee:** The 8-phase autonomous mission sequence (HOLD → RECON → CONTACT → OVERWATCH → ADVANCE → SET → AUTHORIZE → ENGAGE), coalition caveat enforcement, corroboration threshold, DAO governance gate, vision pipeline detection, COP symbology, and brain graph provenance recording all work identically — just driven by different scenario data. Switching scenarios = changing the active problem set, not changing code.
+
+**Wave structure:**
+1. **Wave 1 — Foundation services** (SA-64-01, SA-64-02, SA-64-03): Centralize calibration, team names, vehicle database. All downstream consumers updated.
+2. **Wave 2 — Mission & map generalization** (SA-64-04, SA-64-05, SA-64-08, SA-64-11): Generic mission config, area map, threat vectors, simulation events. This is the core of preserving autonomous mission functionality.
+3. **Wave 3 — Theater & exercise context** (SA-64-06, SA-64-07, SA-64-09, SA-64-10): IPB, exercise phases, force disposition, engagement zoom.
+4. **Wave 4 — Name cleanup & verification** (SA-64-12): Rename all scenario-specific variables/constants/comments. Verify no hardcoded references remain. End-to-end test with Baltic Shield data.
+
+Plans:
+- [ ] 64-01-PLAN.md — Wave 1: CalibrationService, TeamConfig, VehicleDatabase consolidation
+- [ ] 64-02-PLAN.md — Wave 2: Mission config, area map, threat vector, simulation parameterization
+- [ ] 64-03-PLAN.md — Wave 3: Theater context, exercise phases, force disposition, engagement zoom
+- [ ] 64-04-PLAN.md — Wave 4: Variable name cleanup, comment cleanup, hardcoded reference sweep, E2E verification
 
 ### Phase 16: AI Assigned Staff Workspaces
 
@@ -2036,8 +2091,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5.1 MDMP Governance Integration | 17/17 | Complete | 2026-02-11 |
 | 5.2 Escalation & Competition Modeling | 10/10 | Complete | 2026-02-13 |
 | 5.3 Scenario Validation & UX Cleanup | 4/4 | Complete | 2026-02-23 |
-| 6. Autonomous Vehicle Integration | 2/5 | In Progress|  |
-| 7. Tactical Execution System | 0/TBD | Not started | - |
+| 6. Autonomous Vehicle Integration | 2/5 | Superseded | - |
+| 7. Tactical Execution System | 0/TBD | Superseded | - |
 | 8. Sensor Fusion & Intelligence | 0/TBD | Not started | - |
 | 9. Assessment & Dashboard | 0/TBD | Not started | - |
 | 10. End-to-End Integration | 0/TBD | Not started | - |
@@ -2054,15 +2109,15 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 20. Workspace Operational Panels | 3/9 | In progress | - |
 | 21. AI COP Layer Agent Team | 13/13 | Complete | 2026-03-05 |
 | 22. Training/Operational Global Mode | 6/6 | Complete   | 2026-03-06 |
-| 23. Problem Set Model & Rename | 9/10 | In Progress|  |
+| 23. Problem Set Model & Rename | 10/10 | Complete | 2026-03-06 |
 | 24. Doctrinal Tab Restructure | 3/3 | Complete    | 2026-03-06 |
 | 25. Operational Design Workspace | 6/6 | Complete   | 2026-03-06 |
 | 26. Strategic Environment & Inheritance | 5/5 | Complete   | 2026-03-06 |
 | 27. Resource Registry & DID Plugin | 5/5 | Complete    | 2026-03-07 |
-| 28. Embedded DAO Governance | 8/9 | In Progress|  |
+| 28. Embedded DAO Governance | 9/9 | Complete | 2026-03-07 |
 | 29. Contextual AI Staff Integration | 4/5 | In Progress|  |
 | 30. Ironclaw Agent Integration | 8/8 | Complete   | 2026-03-07 |
-| 31. AI Agent Validation & Compliance Testing | 7/7 | In Progress|  |
+| 31. AI Agent Validation & Compliance Testing | 7/7 | Complete | 2026-03-08 |
 | 40. Autonomous Document Intelligence Team | 12/12 | Complete   | 2026-03-09 |
 | 42. Resources Tab — Inventory, Discovery & Onboarding | 6/6 | Complete   | 2026-03-12 |
-| 50. Universal Intelligence Input & Auto-Classification | 6/7 | In Progress|  |
+| 50. Universal Intelligence Input & Auto-Classification | 7/7 | Complete | 2026-03-18 |
