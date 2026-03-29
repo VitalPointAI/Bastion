@@ -150,5 +150,5 @@ For final document inclusion, export this Mermaid diagram to PNG format:
 
 - Architecture description: See Section 3.2 (Architecture Overview) in `03-methodology.md`
 - Design principles justifying architecture: See Section 3.1 (Design Principles) in `03-methodology.md`
-- Background on levels of warfare: See Section 2.5 in `02-background-military.md`
-- Human authority positions background: See Section 2.9 in `02-background-ai.md`
+- Background on levels of warfare: See Section 2.6 in `02-background-military.md`
+- Human authority positions background: See Section 2.10 in `02-background-ai.md`

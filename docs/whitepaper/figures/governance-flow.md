@@ -22,11 +22,11 @@ Top-to-bottom flowchart showing the complete DAO governance decision pipeline fr
 - **Shape:** Diamond (decision node), gold (#d69e2e)
 - **Label:** "Authority Tier Check"
 - **Five branches** radiating right, labeled:
-  - Tier 1: AUTONOMOUS (green) — AI executes, logged
-  - Tier 2: AI_RECOMMENDED (light blue) — AI proposes, human confirms
-  - Tier 3: HUMAN_SUPERVISED (blue) — Human decides with AI analysis
-  - Tier 4: HUMAN_ONLY (orange) — Human decides, no AI recommendation
-  - Tier 5: COALITION_UNANIMOUS (red) — All coalition members must approve
+  - Tier 1: AUTONOMOUS (green)  --  AI executes, logged
+  - Tier 2: AI_RECOMMENDED (light blue)  --  AI proposes, human confirms
+  - Tier 3: HUMAN_SUPERVISED (blue)  --  Human decides with AI analysis
+  - Tier 4: HUMAN_ONLY (orange)  --  Human decides, no AI recommendation
+  - Tier 5: COALITION_UNANIMOUS (red)  --  All coalition members must approve
 - Each tier branch converges back to the main flow
 
 ### 3. Proposal Creation
@@ -97,4 +97,4 @@ Top-to-bottom flowchart showing the complete DAO governance decision pipeline fr
 ---
 
 *Figure specification for AI image generation. Use with Mermaid, Figma, or diagram tool.*
-*Document version: 1.0 — 2026-03-23*
+*Document version: 1.0  --  2026-03-23*

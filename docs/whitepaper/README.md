@@ -17,7 +17,6 @@ The whitepaper is organized as numbered markdown files for git-friendly version 
 | `06-conclusion.md` | Conclusion | Summary of findings, implications |
 | `07-references.md` | References | Bibliography in Chicago 18th edition format |
 | `appendix-a-sitrep.md` | Appendix A | Current implementation status report |
-| `appendix-b-demo-script.md` | Appendix B | 20-minute demonstration script |
 
 ### Figures Directory
 
@@ -62,7 +61,7 @@ Alternatively, use Pandoc for automated conversion:
 # Concatenate all sections and convert to docx
 cat 00-title-page.md 01-introduction.md 02-background.md 03-methodology.md \
     04-results.md 05-discussion.md 06-conclusion.md 07-references.md \
-    appendix-a-sitrep.md appendix-b-demo-script.md | \
+    appendix-a-sitrep.md | \
     pandoc -f markdown -t docx -o decision-overmatch-v0.1.docx
 ```
 

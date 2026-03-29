@@ -16,6 +16,8 @@ import type {
   UpdateAnnotationInput,
   CreateSnapshotInput,
   GapReport,
+  GapReportWithParentContext,
+  ParentGraphSuggestion,
   PatternAlert,
 } from './brain-types.js';
 
@@ -303,6 +305,78 @@ async function getIntelligenceGaps(problemSetId: string): Promise<GapReport> {
 }
 
 // =====================
+// Gap detection with parent context
+// =====================
+
+/**
+ * Get intelligence gaps for a problem set plus suggestions from the parent
+ * graph. Parent suggestions are actors in the parent workspace that are
+ * related (via RELATES_TO) to entities already present in the child
+ * workspace but do not themselves exist in the child workspace.
+ */
+async function getIntelligenceGapsWithParentContext(
+  problemSetId: string,
+): Promise<GapReportWithParentContext> {
+  // 1. Get local gaps via existing method
+  const localReport = await getIntelligenceGaps(problemSetId);
+
+  // 2. Look up parent problem set
+  const pool = getPool();
+  const parentResult = await pool.query(
+    'SELECT parent_problem_set_id FROM problem_sets WHERE id = $1',
+    [problemSetId],
+  );
+
+  const parentId = parentResult.rows[0]?.parent_problem_set_id as string | undefined;
+
+  if (!parentId) {
+    return { ...localReport, parentSuggestions: [] };
+  }
+
+  // 3. Find actors in the parent graph that are related to entities in the
+  //    child graph but do not themselves exist in the child graph.
+  //    This surfaces "available from parent" intelligence that may help fill gaps.
+  const parentSuggestionResult = await executeReadQuery(
+    `MATCH (parentActor:Actor {workspaceId: $parentId})-[r:RELATES_TO]-(childActor:Actor {workspaceId: $childId})
+     WHERE NOT EXISTS {
+       MATCH (existing:Actor {workspaceId: $childId})
+       WHERE existing.name = parentActor.name
+     }
+     RETURN DISTINCT
+       parentActor.id AS actorId,
+       parentActor.name AS actorName,
+       parentActor.type AS actorType,
+       childActor.name AS relatedChildActor,
+       type(r) AS relType
+     LIMIT 30`,
+    { parentId, childId: problemSetId },
+  );
+
+  const suggestions: ParentGraphSuggestion[] = parentSuggestionResult.records.map(
+    (record) => ({
+      actorId: record.get('actorId') as string,
+      actorName: record.get('actorName') as string,
+      actorType: (record.get('actorType') as string) || 'unknown',
+      relevanceReason: `Related to ${record.get('relatedChildActor')} via ${record.get('relType')} in parent graph`,
+      parentWorkspaceId: parentId,
+    }),
+  );
+
+  // Deduplicate by actorId (an actor may relate to multiple child entities)
+  const seen = new Set<string>();
+  const dedupedSuggestions = suggestions.filter((s) => {
+    if (seen.has(s.actorId)) return false;
+    seen.add(s.actorId);
+    return true;
+  });
+
+  return {
+    ...localReport,
+    parentSuggestions: dedupedSuggestions,
+  };
+}
+
+// =====================
 // Pattern alerts
 // =====================
 
@@ -439,6 +513,7 @@ export const brainStore = {
   deleteSnapshot,
   getGraphAtTime,
   getIntelligenceGaps,
+  getIntelligenceGapsWithParentContext,
   getPatternAlerts,
   getLatestSnapshot,
   getSharedAnnotationsForContext,

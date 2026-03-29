@@ -16,6 +16,114 @@ import type { EndsWaysMeans } from '../../strategic/schemas/ends-ways-means.js';
  * Tool definitions for registration in ToolRegistry
  */
 export const objectiveToolDefinitions: MCPToolInput[] = [
+  // ── Cross-scope graph & objective hierarchy tools ──────────────────────────
+  {
+    toolId: 'get_objective_hierarchy',
+    name: 'Get Objective Hierarchy',
+    description: 'Walk up the parent problem set chain and return objectives from each ancestor, grouped by echelon. Useful for understanding how higher-echelon objectives flow down.',
+    category: 'data',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problemSetId: {
+          type: 'string',
+          description: 'Problem set ID to start the parent-chain walk from',
+        },
+      },
+      required: ['problemSetId'],
+    },
+    handler: 'builtin',
+    permissions: ['tool:get_objective_hierarchy'],
+    isEnabled: true,
+  },
+  {
+    toolId: 'adopt_objective',
+    name: 'Adopt Objective',
+    description: 'Adopt an objective from a parent problem set into a target workspace. Creates a linked copy with DRAFT status.',
+    category: 'action',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sourceObjectiveId: {
+          type: 'string',
+          description: 'ID of the objective to adopt from a parent problem set',
+        },
+        targetWorkspaceId: {
+          type: 'string',
+          description: 'Problem set ID that will receive the adopted objective',
+        },
+      },
+      required: ['sourceObjectiveId', 'targetWorkspaceId'],
+    },
+    handler: 'builtin',
+    permissions: ['tool:adopt_objective'],
+    isEnabled: true,
+  },
+  {
+    toolId: 'assess_objectives_for_problem_set',
+    name: 'Assess Objectives for Problem Set',
+    description: 'Auto-assess and adopt relevant objectives from a parent problem set into a child. Skips already-adopted objectives.',
+    category: 'action',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problemSetId: {
+          type: 'string',
+          description: 'Child problem set ID to assess and populate with parent objectives',
+        },
+      },
+      required: ['problemSetId'],
+    },
+    handler: 'builtin',
+    permissions: ['tool:assess_objectives_for_problem_set'],
+    isEnabled: true,
+  },
+  {
+    toolId: 'query_global_graph',
+    name: 'Query Global Graph',
+    description: 'Query all actors across the entire knowledge graph without workspace filter. Useful for cross-problem-set situational awareness.',
+    category: 'data',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        classification: {
+          type: 'string',
+          description: 'Optional classification filter',
+        },
+        limit: {
+          type: 'integer',
+          description: 'Maximum results to return (default 50, max 200)',
+          default: 50,
+          minimum: 1,
+          maximum: 200,
+        },
+      },
+      required: [],
+    },
+    handler: 'builtin',
+    permissions: ['tool:query_global_graph'],
+    isEnabled: true,
+  },
+  {
+    toolId: 'query_parent_graph',
+    name: 'Query Parent Graph',
+    description: 'Query actors from both a problem set and its parent workspace. Returns merged nodes tagged with their source workspace ID.',
+    category: 'data',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problemSetId: {
+          type: 'string',
+          description: 'Problem set ID (will also include parent workspace actors)',
+        },
+      },
+      required: ['problemSetId'],
+    },
+    handler: 'builtin',
+    permissions: ['tool:query_parent_graph'],
+    isEnabled: true,
+  },
+  // ── Existing tools below ──────────────────────────────────────────────────
   {
     toolId: 'query_objectives',
     name: 'Query Objectives',
@@ -323,5 +431,167 @@ export const objectiveToolHandlers = {
     // Other relationship types could be stored differently (e.g., in a separate table)
     // For now, just return success as we've noted the relationship
     return { success: true };
+  },
+
+  // ── Cross-scope graph & objective hierarchy handlers ─────────────────────
+
+  /**
+   * Walk parent chain and return objectives grouped by ancestor problem set.
+   */
+  async get_objective_hierarchy(input: {
+    problemSetId: string;
+  }): Promise<{ hierarchy: unknown[] }> {
+    const hierarchy = await objectiveStore.getObjectivesForParentChain(input.problemSetId);
+    return { hierarchy };
+  },
+
+  /**
+   * Adopt an objective from a parent into a target workspace.
+   */
+  async adopt_objective(input: {
+    sourceObjectiveId: string;
+    targetWorkspaceId: string;
+  }): Promise<{ objective: unknown }> {
+    const objective = await objectiveStore.adoptObjective(
+      input.sourceObjectiveId,
+      input.targetWorkspaceId,
+    );
+    return { objective };
+  },
+
+  /**
+   * Auto-assess and adopt parent objectives into a child problem set.
+   * Replicates the logic from POST /api/strategic/objectives/assess.
+   */
+  async assess_objectives_for_problem_set(input: {
+    problemSetId: string;
+  }): Promise<{ parentObjectiveCount: number; newlyAdoptedCount: number; skippedCount: number }> {
+    const { getPool } = await import('../../lib/database.js');
+    const pool = getPool();
+
+    // Look up parent workspace
+    const parentResult = await pool.query(
+      'SELECT parent_problem_set_id FROM problem_sets WHERE id = $1',
+      [input.problemSetId],
+    );
+
+    if (parentResult.rows.length === 0 || !parentResult.rows[0].parent_problem_set_id) {
+      return { parentObjectiveCount: 0, newlyAdoptedCount: 0, skippedCount: 0 };
+    }
+
+    const parentWorkspaceId = parentResult.rows[0].parent_problem_set_id as string;
+
+    // Fetch parent objectives
+    const parentObjectives = await objectiveStore.listObjectives({
+      workspaceId: parentWorkspaceId,
+      limit: 200,
+      offset: 0,
+    });
+
+    if (parentObjectives.objectives.length === 0) {
+      return { parentObjectiveCount: 0, newlyAdoptedCount: 0, skippedCount: 0 };
+    }
+
+    // Check which are already adopted
+    const existingObjectives = await objectiveStore.listObjectives({
+      workspaceId: input.problemSetId,
+      limit: 200,
+      offset: 0,
+    });
+
+    const alreadyAdoptedParentIds = new Set(
+      existingObjectives.objectives
+        .filter((o) => o.parentObjectiveId)
+        .map((o) => o.parentObjectiveId),
+    );
+
+    // Adopt unadopted parent objectives
+    let newlyAdoptedCount = 0;
+    for (const parentObj of parentObjectives.objectives) {
+      if (alreadyAdoptedParentIds.has(parentObj.id)) continue;
+      try {
+        await objectiveStore.adoptObjective(parentObj.id, input.problemSetId);
+        newlyAdoptedCount++;
+      } catch (err) {
+        console.warn(`[assess_objectives] Failed to adopt ${parentObj.id}:`, err);
+      }
+    }
+
+    return {
+      parentObjectiveCount: parentObjectives.objectives.length,
+      newlyAdoptedCount,
+      skippedCount: parentObjectives.objectives.length - newlyAdoptedCount,
+    };
+  },
+
+  /**
+   * Query all actors across the global knowledge graph (no workspace filter).
+   */
+  async query_global_graph(input: {
+    classification?: string;
+    limit?: number;
+  }): Promise<{ actors: unknown[] }> {
+    const { executeReadQuery } = await import('../../graph/neo4j-client.js');
+    const limit = Math.min(input.limit || 50, 200);
+
+    let cypher = 'MATCH (a:Actor)';
+    const params: Record<string, unknown> = { limit };
+
+    if (input.classification) {
+      cypher += ' WHERE a.classification = $classification';
+      params.classification = input.classification;
+    }
+
+    cypher += ' OPTIONAL MATCH (a)-[r]-() RETURN a, count(r) AS relCount ORDER BY relCount DESC LIMIT $limit';
+
+    const result = await executeReadQuery(cypher, params);
+    const actors = result.records.map((rec) => {
+      const a = rec.get('a').properties;
+      return { ...a, relationshipCount: rec.get('relCount').toInt() };
+    });
+    return { actors };
+  },
+
+  /**
+   * Query actors from both a problem set and its parent workspace.
+   * Returns merged nodes tagged with sourceWorkspaceId.
+   */
+  async query_parent_graph(input: {
+    problemSetId: string;
+  }): Promise<{ nodes: unknown[] }> {
+    const { executeReadQuery } = await import('../../graph/neo4j-client.js');
+    const { getPool } = await import('../../lib/database.js');
+    const pool = getPool();
+
+    // Find parent workspace
+    const parentResult = await pool.query(
+      'SELECT parent_problem_set_id FROM problem_sets WHERE id = $1',
+      [input.problemSetId],
+    );
+    const parentId = parentResult.rows[0]?.parent_problem_set_id as string | undefined;
+
+    // Build workspace IDs to query
+    const workspaceIds = [input.problemSetId];
+    if (parentId) workspaceIds.push(parentId);
+
+    const cypher = `
+      MATCH (a:Actor)
+      WHERE a.workspaceId IN $workspaceIds
+      OPTIONAL MATCH (a)-[r]-()
+      RETURN a, count(r) AS relCount
+      ORDER BY relCount DESC
+      LIMIT 200
+    `;
+
+    const result = await executeReadQuery(cypher, { workspaceIds });
+    const nodes = result.records.map((rec) => {
+      const a = rec.get('a').properties;
+      return {
+        ...a,
+        relationshipCount: rec.get('relCount').toInt(),
+        sourceWorkspaceId: a.workspaceId,
+      };
+    });
+    return { nodes };
   },
 };

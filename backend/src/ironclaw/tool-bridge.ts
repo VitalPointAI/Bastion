@@ -222,6 +222,68 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     },
     riskLevel: 'low',
   },
+  // ── Cross-scope graph & objective hierarchy tools ──
+  {
+    name: 'bastion.graph.get_objective_hierarchy',
+    description: 'Walk up the parent problem set chain and return objectives from each ancestor, grouped by echelon. Provides cross-echelon objective visibility.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID to start the parent-chain walk from' },
+      },
+      required: ['problem_set_id'],
+    },
+    riskLevel: 'low',
+  },
+  {
+    name: 'bastion.graph.adopt_objective',
+    description: 'Adopt an objective from a parent problem set into a target workspace. Creates a linked copy with DRAFT status.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source_objective_id: { type: 'string', description: 'ID of the objective to adopt' },
+        target_workspace_id: { type: 'string', description: 'Problem set ID to receive the adopted objective' },
+      },
+      required: ['source_objective_id', 'target_workspace_id'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.graph.assess_objectives',
+    description: 'Auto-assess and adopt relevant objectives from a parent problem set into a child. Skips already-adopted objectives.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Child problem set ID to populate with parent objectives' },
+      },
+      required: ['problem_set_id'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.graph.query_global',
+    description: 'Query all actors across the entire knowledge graph without workspace filter. Returns actor nodes with relationship counts.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        classification: { type: 'string', description: 'Optional classification filter' },
+        limit: { type: 'number', description: 'Max results (default 50, max 200)' },
+      },
+    },
+    riskLevel: 'low',
+  },
+  {
+    name: 'bastion.graph.query_parent',
+    description: 'Query actors from both a problem set and its parent workspace. Returns merged nodes tagged with source workspace ID.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID (will also include parent workspace actors)' },
+      },
+      required: ['problem_set_id'],
+    },
+    riskLevel: 'low',
+  },
   {
     name: 'bastion.design.synthesize_current_state',
     description: 'Synthesize the Current State assessment for Problem Framing from knowledge graph actors, relationships, tensions, and strategic documents. Populates the Current State field with a narrative assessment.',
@@ -357,6 +419,154 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
       required: ['problem_set_id', 'graphic_type', 'label', 'coordinates'],
     },
     riskLevel: 'medium',
+  },
+
+  // -------------------------------------------------------------------------
+  // Intelligence Gap Monitoring
+  // -------------------------------------------------------------------------
+  {
+    name: 'bastion.intel.get_intelligence_gaps',
+    description: 'Return current intelligence gaps for a problem set including parent graph suggestions for cross-boundary relevance',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+      },
+      required: ['problem_set_id'],
+    },
+    riskLevel: 'low',
+  },
+  {
+    name: 'bastion.intel.get_gap_filler_status',
+    description: 'Return the gap filler service state: last run time, gaps processed, active cooldowns, next scheduled run',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+      },
+      required: ['problem_set_id'],
+    },
+    riskLevel: 'low',
+  },
+  {
+    name: 'bastion.intel.prioritize_gap_research',
+    description: 'Bump a specific intelligence gap to high priority, clear its cooldown, and optionally trigger immediate research',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        gap_node_id: { type: 'string', description: 'Node ID of the gap to prioritize' },
+        reason: { type: 'string', description: 'Reason for prioritization (audit trail)' },
+      },
+      required: ['problem_set_id', 'gap_node_id', 'reason'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.intel.request_targeted_research',
+    description: 'Request research on a specific topic or entity via the researcher specialist, creating an async pg-boss job',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        query: { type: 'string', description: 'Research topic or entity to investigate' },
+        context: { type: 'string', description: 'Additional context for why this research matters' },
+      },
+      required: ['problem_set_id', 'query', 'context'],
+    },
+    riskLevel: 'medium',
+  },
+
+  // -------------------------------------------------------------------------
+  // PIR/CCIR Management
+  // -------------------------------------------------------------------------
+  {
+    name: 'bastion.intel.get_priority_intel_requirements',
+    description: 'List active PIRs/CCIRs for a problem set ordered by priority',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        type: { type: 'string', enum: ['CCIR', 'PIR', 'FFIR', 'EEFI'], description: 'Filter by type' },
+        status: { type: 'string', enum: ['ACTIVE', 'ANSWERED', 'SUPERSEDED', 'CANCELLED'], description: 'Filter by status' },
+      },
+      required: ['problem_set_id'],
+    },
+    riskLevel: 'low',
+  },
+  {
+    name: 'bastion.intel.create_pir_from_assumption',
+    description: 'Create a PIR linked to an assumption from the operational design',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        assumption_id: { type: 'string', description: 'Assumption ID to link' },
+        assumption_text: { type: 'string', description: 'Text of the assumption' },
+        type: { type: 'string', enum: ['CCIR', 'PIR', 'FFIR', 'EEFI'], description: 'Requirement type (default PIR)' },
+        priority: { type: 'number', description: 'Priority (1=highest)' },
+      },
+      required: ['problem_set_id', 'assumption_text'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.intel.answer_pir',
+    description: 'Mark a PIR as answered with supporting evidence',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        pir_id: { type: 'string', description: 'PIR ID to answer' },
+        answer: { type: 'string', description: 'Answer text with evidence' },
+        answered_by: { type: 'string', description: 'Who answered' },
+      },
+      required: ['pir_id', 'answer'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.intel.derive_pirs_from_design',
+    description: 'Analyze operational design and recommend PIRs from assumptions, CoG analysis, LOEs, and constraints',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+      },
+      required: ['problem_set_id'],
+    },
+    riskLevel: 'low',
+  },
+
+  // -------------------------------------------------------------------------
+  // PIR Alert Tools
+  // -------------------------------------------------------------------------
+  {
+    name: 'bastion.intel.create_pir_alert',
+    description: 'Create a PIR alert decision when Ironclaw detects intelligence relevant to an active PIR. Routes to the commander for accept/reject/request-more-info.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+        pir_id: { type: 'string', description: 'ID of the active PIR this intelligence relates to' },
+        summary: { type: 'string', description: 'Brief summary of the intelligence finding' },
+        evidence: { type: 'string', description: 'Supporting evidence and source references' },
+        suggested_answer: { type: 'string', description: 'Suggested answer to the PIR based on the intelligence' },
+      },
+      required: ['problem_set_id', 'pir_id', 'summary', 'evidence', 'suggested_answer'],
+    },
+    riskLevel: 'medium',
+  },
+  {
+    name: 'bastion.intel.get_pir_alert_history',
+    description: 'Get history of PIR alert decisions and their outcomes for a problem set. Includes approved, rejected, and pending alerts.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        problem_set_id: { type: 'string', description: 'Problem set ID' },
+      },
+      required: ['problem_set_id'],
+    },
+    riskLevel: 'low',
   },
 
   // -------------------------------------------------------------------------

@@ -12,7 +12,7 @@ Three-layer horizontal architecture diagram showing Cloud → Bridge → Edge co
 
 ## Three Layers (Top to Bottom)
 
-### Layer 1: Cloud (Blue — #3182ce background band)
+### Layer 1: Cloud (Blue  --  #3182ce background band)
 
 **Components (left to right):**
 
@@ -20,17 +20,17 @@ Three-layer horizontal architecture diagram showing Cloud → Bridge → Edge co
    - Shape: Large rounded rectangle
    - Label: "BASTION Cloud Backend"
    - Internal modules shown as smaller boxes:
-     - "Mission Queue" — stores pending robot missions
-     - "WebSocket Server" — maintains bridge connections
-     - "COP Layer Engine" — renders robot telemetry as map symbols
-     - "Resource Registry" — DID-linked robot records
+     - "Mission Queue"  --  stores pending robot missions
+     - "WebSocket Server"  --  maintains bridge connections
+     - "COP Layer Engine"  --  renders robot telemetry as map symbols
+     - "Resource Registry"  --  DID-linked robot records
 
 2. **DAO Governance**
    - Shape: Hexagon (governance symbol)
    - Label: "DAO Mission Authorization"
    - Badge: "NEAR Smart Contract"
 
-### Layer 2: Bridge (Orange — #d69e2e background band)
+### Layer 2: Bridge (Orange  --  #d69e2e background band)
 
 **Components:**
 
@@ -38,12 +38,12 @@ Three-layer horizontal architecture diagram showing Cloud → Bridge → Edge co
    - Shape: Rectangle with Docker whale icon
    - Label: "Robot Bridge (Docker Compose)"
    - Internal modules:
-     - "mDNS Scanner" — discovers robot agents on LAN
-     - "Command Proxy" — relays commands from cloud to robot
-     - "Telemetry Relay" — buffers and forwards robot status
+     - "mDNS Scanner"  --  discovers robot agents on LAN
+     - "Command Proxy"  --  relays commands from cloud to robot
+     - "Telemetry Relay"  --  buffers and forwards robot status
    - Network badge: "Tactical LAN / WiFi"
 
-### Layer 3: Edge (Green — #38a169 background band)
+### Layer 3: Edge (Green  --  #38a169 background band)
 
 **Components (arranged as cluster):**
 
@@ -52,11 +52,11 @@ Three-layer horizontal architecture diagram showing Cloud → Bridge → Edge co
    - Label: "NVIDIA Jetson Orin Nano"
    - Badge: "40 TOPS AI Inference"
    - Internal modules:
-     - "Python Robot Agent" — main control software
-     - "CSI Camera Interface" — 1080p @ 30fps
-     - "detectNet Pipeline" — real-time object detection
-     - "ORB Feature Matcher" — visual re-identification
-     - "Mission Intent Translator" — LLM + template fallback
+     - "Python Robot Agent"  --  main control software
+     - "CSI Camera Interface"  --  1080p @ 30fps
+     - "detectNet Pipeline"  --  real-time object detection
+     - "ORB Feature Matcher"  --  visual re-identification
+     - "Mission Intent Translator"  --  LLM + template fallback
 
 2. **Sphero RVR+ Leader** (center, with star icon)
    - Shape: Circle with star
@@ -121,4 +121,4 @@ Three-layer horizontal architecture diagram showing Cloud → Bridge → Edge co
 ---
 
 *Figure specification for AI image generation. Use with Mermaid, Figma, or diagram tool.*
-*Document version: 1.0 — 2026-03-23*
+*Document version: 1.0  --  2026-03-23*

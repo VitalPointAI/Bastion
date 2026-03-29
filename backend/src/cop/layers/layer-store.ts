@@ -72,6 +72,7 @@ export interface ILayerStore {
   createLayer(input: CreateLayerInput): Promise<COPLayer>;
   getLayer(id: string): Promise<COPLayer | null>;
   queryLayers(filters: LayerQueryFilters): Promise<COPLayer[]>;
+  getLayersForWorkspaces(workspaceIds: string[], filters?: Omit<LayerQueryFilters, 'workspaceId'>): Promise<COPLayer[]>;
   transitionLayer(input: LayerTransitionInput): Promise<COPLayer>;
   updateLayerSpec(layerId: string, spec: COPLayerSpec): Promise<COPLayer>;
   addReviewFeedback(layerId: string, feedback: ReviewFeedback): Promise<COPLayer>;
@@ -138,6 +139,30 @@ export class LayerStoreMemory implements ILayerStore {
       results = results.filter(l => new Date(l.createdAt).getTime() < before);
     }
     if (filters.afterDate) {
+      const after = new Date(filters.afterDate).getTime();
+      results = results.filter(l => new Date(l.createdAt).getTime() > after);
+    }
+
+    return results.map(l => ({ ...l }));
+  }
+
+  async getLayersForWorkspaces(workspaceIds: string[], filters?: Omit<LayerQueryFilters, 'workspaceId'>): Promise<COPLayer[]> {
+    let results = Array.from(this.layers.values()).filter(l => workspaceIds.includes(l.workspaceId));
+
+    if (filters?.sectionId) {
+      results = results.filter(l => l.sectionId === filters.sectionId);
+    }
+    if (filters?.state) {
+      results = results.filter(l => l.state === filters.state);
+    }
+    if (filters?.layerType) {
+      results = results.filter(l => l.layerType === filters.layerType);
+    }
+    if (filters?.beforeDate) {
+      const before = new Date(filters.beforeDate).getTime();
+      results = results.filter(l => new Date(l.createdAt).getTime() < before);
+    }
+    if (filters?.afterDate) {
       const after = new Date(filters.afterDate).getTime();
       results = results.filter(l => new Date(l.createdAt).getTime() > after);
     }
@@ -394,6 +419,47 @@ export class LayerStore implements ILayerStore {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const result = await pool.query(
+      `SELECT * FROM cop_layers ${where} ORDER BY created_at DESC`,
+      params
+    );
+
+    return result.rows.map((row: Record<string, unknown>) => this.rowToLayer(row));
+  }
+
+  async getLayersForWorkspaces(workspaceIds: string[], filters?: Omit<LayerQueryFilters, 'workspaceId'>): Promise<COPLayer[]> {
+    await this.ensureInitialized();
+    if (workspaceIds.length === 0) return [];
+
+    const { getPool } = await import('../../lib/database.js');
+    const pool = getPool();
+
+    const conditions: string[] = [`workspace_id = ANY($1)`];
+    const params: unknown[] = [workspaceIds];
+    let idx = 2;
+
+    if (filters?.sectionId) {
+      conditions.push(`section_id = $${idx++}`);
+      params.push(filters.sectionId);
+    }
+    if (filters?.state) {
+      conditions.push(`state = $${idx++}`);
+      params.push(filters.state);
+    }
+    if (filters?.layerType) {
+      conditions.push(`layer_type = $${idx++}`);
+      params.push(filters.layerType);
+    }
+    if (filters?.beforeDate) {
+      conditions.push(`created_at < $${idx++}`);
+      params.push(filters.beforeDate);
+    }
+    if (filters?.afterDate) {
+      conditions.push(`created_at > $${idx}`);
+      params.push(filters.afterDate);
+    }
+
+    const where = `WHERE ${conditions.join(' AND ')}`;
     const result = await pool.query(
       `SELECT * FROM cop_layers ${where} ORDER BY created_at DESC`,
       params

@@ -184,6 +184,7 @@ export interface StrategicObjective {
   extractedBy: 'HUMAN' | 'AI';
   extractionConfidence?: number;
   humanVerified: boolean;
+  parentObjectiveId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -311,6 +312,7 @@ export interface ObjectiveFilters {
   status?: ObjectiveStatus;
   documentId?: string;
   priority?: Priority;
+  workspaceId?: string;
   humanVerified?: boolean;
 }
 

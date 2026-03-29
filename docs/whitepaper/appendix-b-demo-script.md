@@ -59,13 +59,13 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 *Narrator speaks while showing BASTION in training mode with amber EXERCISE banner*
 
-> "Welcome to the BASTION demonstration. Notice the amber EXERCISE banner across the top — we're in training mode, which uses identical governance to operational mode. This is 'train as you fight' — every vote, every approval gate, every safety constraint works exactly as it would in operations."
+> "Welcome to the BASTION demonstration. Notice the amber EXERCISE banner across the top (we're in training mode, which uses identical governance to operational mode. This is 'train as you fight') every vote, every approval gate, every safety constraint works exactly as it would in operations."
 
 *Pause for emphasis*
 
-> "In conventional coalition operations, a strategic directive might take days to translate into tactical action. Why? The document must be manually analyzed by staff officers. Extracted objectives must be coordinated through national channels. Each partner must staff recommendations through their own approval chains. By the time everyone agrees, the operational window may have closed."
+> "In conventional coalition operations, a strategic directive might take days to translate into tactical action. Why? Staff officers must manually analyze the document. They must extract objectives and coordinate them through national channels. Each partner must staff recommendations through their own approval chains. By the time everyone agrees, the operational window may have closed."
 
-> "BASTION solves this through AI-augmented decentralized autonomous organizations. Over the next twenty minutes, you'll see strategic intent flow through a doctrine-aligned workflow — Understand, Design, Plan, Decide, COP, Assess — mirroring JP 5-0 rather than imposing arbitrary software categories. You'll see 131 AI agents accelerate coordination while preserving human authority."
+> "BASTION solves this through AI-augmented decentralized autonomous organizations. Over the next twenty minutes, you'll see strategic intent flow through a doctrine-aligned workflow (Understand, Design, Plan, Decide, COP, Assess) mirroring JP 5-0 rather than imposing arbitrary software categories. You'll see 25 specialized AI agents accelerate coordination while preserving human authority."
 
 *Action:* Display the six doctrinal tabs with the Understand tab active
 
@@ -75,7 +75,7 @@ All decisions at the strategic level require explicit human approval. AI assists
 - Training mode banner and EXERCISE watermark
 - Agent status panel showing healthy agents
 
-> "Notice the tab structure follows military doctrine, not software convention. Each tab corresponds to a phase of the joint planning process. And notice the coalition partners — in a conventional system, each nation would maintain separate planning tools. BASTION provides a shared operational picture while respecting national authorities."
+> "Notice the tab structure follows military doctrine, not software convention. Each tab corresponds to a phase of the joint planning process. And notice the coalition partners: in a conventional system, each nation would maintain separate planning tools. BASTION provides a shared operational picture while respecting national authorities."
 
 ---
 
@@ -83,11 +83,11 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 *Narrator explains the Understand tab and document processing*
 
-> "We begin in the Understand tab — the doctrinal starting point. Strategic planning starts with understanding the operational environment. In conventional operations, this step is a bottleneck. Staff officers manually review documents, extract relevant objectives, and summarize them for commanders. This process can take hours or days."
+> "We begin in the Understand tab, the doctrinal starting point. Strategic planning starts with understanding the operational environment. In conventional operations, this step is a bottleneck. Staff officers manually review documents, extract relevant objectives, and summarize them for commanders. This process can take hours or days."
 
 *Action:* Upload Pacific Strategy AY26 scenario training package via ScenarioPackageUpload in the Understand tab
 
-> "We're uploading a scenario training package — multiple documents at once. Watch the AI categorize them automatically."
+> "We're uploading a scenario training package, multiple documents at once. Watch the AI categorize them automatically."
 
 *Show:*
 - Multi-file drag-drop upload in Understand tab
@@ -104,7 +104,7 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 **[INJECT - SPEED vs. CONVENTIONAL C2]**
 
-> "But here's the critical point: in a conventional system, you'd now wait for staffing. Each extracted objective would need to be validated through national channels, reconciled with partner interpretations, and formally coordinated. BASTION doesn't eliminate that coordination, it accelerates it through structured governance."
+> "But here's the critical point: in a conventional system, you'd now wait for staffing. Each extracted objective would need validation through national channels, reconciliation with partner interpretations, and formal coordination. BASTION doesn't eliminate that coordination; it accelerates it through structured governance."
 
 ---
 
@@ -132,7 +132,7 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 **[INJECT - TRANSPARENCY vs. CONVENTIONAL C2]**
 
-> "In a conventional system, this approval happens in an email chain or a meeting that no one records. Who approved what? When? Based on what information? Those questions often can't be answered months later when something goes wrong."
+> "In a conventional system, this approval happens in an email chain or a meeting that no one records. Who approved what? When? Based on what information? Those questions often cannot be answered months later when something goes wrong."
 
 *Gesture to screen*
 
@@ -177,11 +177,11 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 ---
 
-**[5:00-5:45] Design Tab — Problem Framing and CoG Analysis**
+**[5:00-5:45] Design Tab, Problem Framing and CoG Analysis**
 
 *Narrator transitions to the Design tab*
 
-> "Now we move to the Design tab — operational design. This is where commanders translate understanding into an approach. In conventional operations, this is often the weakest link: strategic guidance gets handed to planners who jump straight to courses of action without systematic problem framing."
+> "Now we move to the Design tab, operational design. This is where commanders translate understanding into an approach. In conventional operations, this is often the weakest link: strategic guidance gets handed to planners who jump straight to courses of action without systematic problem framing."
 
 *Action:* Navigate to Design tab, show problem framing canvas
 
@@ -190,7 +190,7 @@ All decisions at the strategic level require explicit human approval. AI assists
 - Center of gravity analysis using Strange's CG-CC-CR-CV framework
 - Lines of effort with linkages to strategic objectives
 
-> "The AI has identified key tensions in the strategic environment and suggested initial framings. The commander refines these — the AI provides starting points, not answers."
+> "The AI has identified key tensions in the strategic environment and suggested initial framings. The commander refines these; the AI provides starting points, not answers."
 
 *Action:* Show CoG analysis for adversary forces
 
@@ -200,7 +200,7 @@ All decisions at the strategic level require explicit human approval. AI assists
 
 *Action:* Click "Export to Plan" button
 
-> "Watch this handoff — operational design outputs flow directly into the Plan tab's mission analysis. No manual translation, no interpretation errors between the design team and the planning staff."
+> "Watch this handoff: operational design outputs flow directly into the Plan tab's mission analysis. No manual translation, no interpretation errors between the design team and the planning staff."
 
 *Show:*
 - Design outputs appearing as Plan tab inputs
@@ -342,7 +342,7 @@ Autonomous systems execute within policy constraints without real-time human app
 
 *As Sphero moves, narrator introduces simulated scenario:*
 
-> "Let's imagine something realistic. The robot encounters unexpected electronic warfare interference. In a conventional system with centralized C2, losing communication with headquarters would paralyze the platform. It can't receive orders, can't report status, can't continue its mission."
+> "Let's imagine something realistic. The robot encounters unexpected electronic warfare interference. In a conventional system with centralized C2, losing communication with headquarters would paralyze the platform. It cannot receive orders, cannot report status, cannot continue its mission."
 
 *Gesture to Sphero continuing its patrol*
 
@@ -377,7 +377,7 @@ Autonomous systems execute within policy constraints without real-time human app
 
 **[INJECT - EDGE AI vs. CLOUD DEPENDENCY]**
 
-> "In conventional architectures, this imagery would need to be transmitted to a cloud processing center for analysis. That transmission takes bandwidth, introduces latency, and creates vulnerability. If the link is jammed or degraded, analysis stops."
+> "In conventional architectures, the system would need to transmit this imagery to a cloud processing center for analysis. That transmission takes bandwidth, introduces latency, and creates vulnerability. If the link is jammed or degraded, analysis stops."
 
 > "BASTION pushes AI to the edge. The Jetson processes locally, reports results when connectivity allows, and continues operating regardless. The robot doesn't stop being useful just because it can't phone home."
 
@@ -480,13 +480,13 @@ Autonomous systems execute within policy constraints without real-time human app
 
 *Action:* Click on a symbol to show detail panel with source document linkage
 
-> "Every symbol went through a publish review cycle — AI generates, humans approve before it reaches the shared COP. Governance even for the operational picture."
+> "Every symbol went through a publish review cycle: AI generates, humans approve before it reaches the shared COP. Governance even for the operational picture."
 
 **[16:15-16:45] Resource Registry**
 
 *Action:* Show resource entries on COP with DID identifiers
 
-> "Notice these resource symbols. Each has a blockchain-anchored Decentralized Identifier — a `did:near:resource` DID. The Sphero reconnaissance asset, sensors, weapons systems — all tracked as first-class entities with real-time readiness status."
+> "Notice these resource symbols. Each has a blockchain-anchored Decentralized Identifier (a `did:near:resource` DID). The Sphero reconnaissance asset, sensors, and weapons systems are all tracked as first-class entities with real-time readiness status."
 
 *Show:*
 - Resource symbols with FMC/PMC/NMC readiness indicators
@@ -544,7 +544,7 @@ Autonomous systems execute within policy constraints without real-time human app
 
 *Show:*
 - Full loop visualization diagram
-- Strategic → Operational → Tactical → Strategic
+- Strategic > Operational > Tactical > Strategic
 - Arrows showing information flow
 
 > "This seamless coordination across all levels is what BASTION enables. Interconnected, AI-augmented DAOs that preserve human authority while eliminating coordination friction."
@@ -661,7 +661,7 @@ Quick reference for narrative injects and their connection to paper themes:
 | On-the-loop monitoring | Decision tempo | Section 1.3 |
 | Risk acknowledgment | Accountability | Section 5.3 |
 | Autonomous patrol | DDIL resilience | Section 1.3, 2.5-2.6 |
-| Edge AI processing | Cloud dependency vulnerability | Section 2.5 |
+| Edge AI processing | Cloud dependency vulnerability | Section 2.6 |
 | Strike authorization | Autonomous weapons ethics | Section 5.3 |
 | COP layer generation | AI operational picture | Section 3.9 |
 | Resource registry on COP | Resource accountability | Section 3.10 |
@@ -671,4 +671,3 @@ Quick reference for narrative injects and their connection to paper themes:
 ---
 
 *Script designed for ~20 minute presentation with narrative injects that connect demonstration to paper thesis. The story arc moves from problem framing through solution demonstration, with each inject deliberately highlighting a specific problem BASTION solves versus conventional C2 architecture.*
-

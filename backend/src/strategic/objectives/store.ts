@@ -275,28 +275,41 @@ export class ObjectiveStore {
     status?: ObjectiveStatus;
     priority?: Priority;
     instrument?: DIMEInstrument;
+    workspaceId?: string;
     limit?: number;
     offset?: number;
   } = {}): Promise<{ objectives: StrategicObjective[]; total: number }> {
     await this.ensureInitialized();
     const pool = getPool();
 
+    // When filtering by workspaceId we need to join through strategic_documents
+    const needsJoin = !!options.workspaceId;
+    const tableAlias = needsJoin ? 'so' : 'strategic_objectives';
+    const fromClause = needsJoin
+      ? 'strategic_objectives so JOIN strategic_documents sd ON so.document_id = sd.id'
+      : 'strategic_objectives';
+
     const conditions: string[] = [];
     const params: unknown[] = [];
     let paramIndex = 1;
 
+    if (options.workspaceId) {
+      conditions.push(`sd.workspace_id = $${paramIndex++}`);
+      params.push(options.workspaceId);
+    }
+
     if (options.status) {
-      conditions.push(`status = $${paramIndex++}`);
+      conditions.push(`${tableAlias}.status = $${paramIndex++}`);
       params.push(options.status);
     }
 
     if (options.priority) {
-      conditions.push(`priority = $${paramIndex++}`);
+      conditions.push(`${tableAlias}.priority = $${paramIndex++}`);
       params.push(options.priority);
     }
 
     if (options.instrument) {
-      conditions.push(`primary_instrument = $${paramIndex++}`);
+      conditions.push(`${tableAlias}.primary_instrument = $${paramIndex++}`);
       params.push(options.instrument);
     }
 
@@ -304,7 +317,7 @@ export class ObjectiveStore {
 
     // Get total count
     const countResult = await pool.query(
-      `SELECT COUNT(*) FROM strategic_objectives ${whereClause}`,
+      `SELECT COUNT(*) FROM ${fromClause} ${whereClause}`,
       params
     );
     const total = parseInt(countResult.rows[0].count, 10);
@@ -314,10 +327,10 @@ export class ObjectiveStore {
     const offset = options.offset || 0;
 
     const result = await pool.query(
-      `SELECT * FROM strategic_objectives ${whereClause}
+      `SELECT ${tableAlias}.* FROM ${fromClause} ${whereClause}
        ORDER BY
-         CASE priority WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END,
-         created_at DESC
+         CASE ${tableAlias}.priority WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END,
+         ${tableAlias}.created_at DESC
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       [...params, limit, offset]
     );
@@ -326,6 +339,83 @@ export class ObjectiveStore {
       objectives: result.rows.map(row => this.rowToObjective(row)),
       total,
     };
+  }
+
+  /**
+   * Adopt an objective from a parent problem set into a target workspace.
+   * Creates a copy with parent_objective_id linking back to the source.
+   */
+  async adoptObjective(sourceObjectiveId: string, targetWorkspaceId: string): Promise<StrategicObjective> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    // Fetch the source objective
+    const source = await this.getObjective(sourceObjectiveId);
+    if (!source) {
+      throw new Error(`Source objective not found: ${sourceObjectiveId}`);
+    }
+
+    // Find a document in the target workspace to attach the adopted objective to.
+    // Use the first document available; if none exists, throw an error.
+    const docResult = await pool.query(
+      'SELECT id FROM strategic_documents WHERE workspace_id = $1 ORDER BY created_at ASC LIMIT 1',
+      [targetWorkspaceId]
+    );
+
+    if (docResult.rows.length === 0) {
+      throw new Error(`No documents found in target workspace: ${targetWorkspaceId}`);
+    }
+
+    const targetDocumentId = docResult.rows[0].id as string;
+
+    const id = `OBJ-${randomUUID().slice(0, 8)}`;
+    const now = new Date();
+
+    await pool.query(`
+      INSERT INTO strategic_objectives (
+        id, document_id, source_reference, description, ends_ways_means,
+        primary_instrument, supporting_instruments, parent_objective_id,
+        child_objective_ids, constraints, assumptions, risks,
+        status, priority, extracted_by, extraction_confidence,
+        human_verified, midlife_category, midlife_categorized_by,
+        midlife_confidence, created_by, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+    `, [
+      id,
+      targetDocumentId,
+      source.sourceReference,
+      source.description,
+      JSON.stringify(source.endsWaysMeans),
+      source.primaryInstrument,
+      source.supportingInstruments || [],
+      sourceObjectiveId,  // parent_objective_id links to source
+      [],
+      source.constraints || [],
+      source.assumptions || [],
+      source.risks || [],
+      'DRAFT',
+      source.priority || 'MEDIUM',
+      'AI',
+      source.extractionConfidence ?? null,
+      false,
+      source.midlifeCategory ?? null,
+      source.midlifeCategorizedBy ?? null,
+      source.midlifeConfidence ?? null,
+      'system',
+      now,
+      now,
+    ]);
+
+    // Also update the source objective's child_objective_ids
+    await pool.query(`
+      UPDATE strategic_objectives
+      SET child_objective_ids = array_append(child_objective_ids, $1),
+          updated_at = NOW()
+      WHERE id = $2
+    `, [id, sourceObjectiveId]);
+
+    const adopted = await this.getObjective(id);
+    return adopted!;
   }
 
   /**
@@ -423,6 +513,69 @@ export class ObjectiveStore {
     );
 
     return (result.rowCount ?? 0) > 0;
+  }
+
+  /**
+   * Walk up the parent_problem_set_id chain and collect objectives
+   * from each ancestor workspace, tagged with source problem set info.
+   *
+   * Returns an array of per-problem-set groups in ancestor order
+   * (immediate parent first, then grandparent, etc.).
+   */
+  async getObjectivesForParentChain(problemSetId: string): Promise<Array<{
+    problemSetId: string;
+    problemSetName: string;
+    echelon: string;
+    objectives: StrategicObjective[];
+  }>> {
+    await this.ensureInitialized();
+    const pool = getPool();
+
+    const groups: Array<{
+      problemSetId: string;
+      problemSetName: string;
+      echelon: string;
+      objectives: StrategicObjective[];
+    }> = [];
+
+    // Walk up the chain starting from the given problem set
+    let currentId: string | null = problemSetId;
+    const visited = new Set<string>();
+
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
+
+      // Get problem set info and parent pointer
+      const psResult = await pool.query(
+        `SELECT id, name, echelon, parent_problem_set_id
+         FROM graph_problem_sets WHERE id = $1`,
+        [currentId]
+      );
+
+      if (psResult.rows.length === 0) break;
+
+      const row = psResult.rows[0];
+      const psName = row.name as string;
+      const psEchelon = row.echelon as string;
+      const parentPointer = row.parent_problem_set_id as string | null;
+
+      // Fetch objectives for this workspace
+      const result = await this.listObjectives({
+        workspaceId: currentId,
+        limit: 200,
+      });
+
+      groups.push({
+        problemSetId: currentId,
+        problemSetName: psName,
+        echelon: psEchelon,
+        objectives: result.objectives,
+      });
+
+      currentId = parentPointer;
+    }
+
+    return groups;
   }
 
   /**

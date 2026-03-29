@@ -79,6 +79,18 @@ export interface GapReport {
   }>;
 }
 
+export interface ParentGraphSuggestion {
+  actorId: string;
+  actorName: string;
+  actorType: string;
+  relevanceReason: string;
+  parentWorkspaceId: string;
+}
+
+export interface GapReportWithParentContext extends GapReport {
+  parentSuggestions: ParentGraphSuggestion[];
+}
+
 export interface PatternAlert {
   id: string;
   type: 'trend' | 'anomaly' | 'correlation';

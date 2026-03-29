@@ -35,9 +35,9 @@ Key flow:
 |---|---|
 | LangGraph | Agent workflow graphs, state management, checkpointing |
 | LangChain | Tool integration, prompt management, retrieval chains |
-| Per-agent model config | Each of the 131 agents can target a different LLM provider/model |
+| Per-agent model config | Each of the 25 deployed agents can target a different LLM provider/model |
 
-Agents are organized into specialized teams (J1 through J9 staff sections) with a registry that maps each agent to its role, tools, and model configuration. LangGraph manages multi-step workflows such as COA development, wargaming, and assessment cycles.
+Agents are organized into five functional categories (LangGraph analysis, COP layer, MDMP governance, escalation/competition, and Chief of Staff) with a registry that maps each agent to its role, tools, and model configuration. Ironclaw serves as a single role-adaptive coordinator that adapts to each JPP staff function contextually. LangGraph manages multi-step workflows such as COA development, wargaming, operational design coordination, and assessment cycles.
 
 ---
 

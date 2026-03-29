@@ -2,7 +2,7 @@
 
 **Blockchain Autonomous Strategy & Tactical Intelligence Operational Network**
 
-BASTION is a military command-and-control planning platform that integrates blockchain DAOs, 19 AI agent roles, 31 JPP staff roles, and NEAR blockchain for secure coalition coordination. It supports the full Joint Planning Process across the doctrinal lifecycle, from understanding the operational environment through assessing campaign outcomes — and extends to autonomous robot integration, swarm coordination, and knowledge graph intelligence.
+BASTION is a military command-and-control planning platform that integrates blockchain DAOs, 25 specialized AI agents, and NEAR blockchain for secure coalition coordination. It supports the full Joint Planning Process across the doctrinal lifecycle, from understanding the operational environment through assessing campaign outcomes — and extends to autonomous robot integration, swarm coordination, knowledge graph intelligence, and on-chain coalition caveat enforcement.
 
 ---
 
@@ -10,11 +10,14 @@ BASTION is a military command-and-control planning platform that integrates bloc
 
 | Metric | Value |
 |---|---|
-| Completed development phases | 53 |
-| Total plans generated | 441+ |
-| AI agent roles | 19 specialized + 31 JPP staff |
-| Smart contract modules | 12 |
-| Doctrinal tabs | 6 |
+| Completed development phases | 60 |
+| Total plans generated | 469+ |
+| AI agents (specialized, deployed) | 25 (8 LangGraph + 7 COP + 1 Ironclaw + 6 MDMP + 3 escalation) |
+| Smart contract modules | 14 |
+| REST API endpoints | ~572+ |
+| Doctrinal tabs | 6 (Understand / Design / Plan / Decide / COP / Assess) |
+| Resource type plugins | 5 |
+| On-chain caveat dimensions | 5 (classification, releasability, ROE tier, geo bounds, time windows) |
 
 ---
 
@@ -43,11 +46,11 @@ An adaptive force-directed neural canvas renders the full knowledge graph with J
 
 A 5-tier authority model governs decision-making through on-chain proposals:
 
-- **Tier 1** -- Commander authority (immediate decisions)
-- **Tier 2** -- Deputy/chief of staff delegation
-- **Tier 3** -- Staff section approval (J1-J9)
-- **Tier 4** -- Coalition partner consensus
-- **Tier 5** -- Full coalition vote
+- **Tier 1** -- Individual authority (bounded scope)
+- **Tier 2** -- Team-level authority
+- **Tier 3** -- Organizational authority (minimum for autonomous engagement)
+- **Tier 4** -- National DAO authority (strategic resource commitments)
+- **Tier 5** -- Coalition strategic (100% approval for strike authorization)
 
 ### Robot Integration
 

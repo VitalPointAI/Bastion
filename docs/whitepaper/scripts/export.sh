@@ -29,7 +29,6 @@ INPUT_FILES=(
   "06-conclusion.md"
   "07-references.md"
   "appendix-a-sitrep.md"
-  "appendix-b-demo-script.md"
 )
 
 # Build input file list with full paths
@@ -40,7 +39,7 @@ done
 
 # Get current date for filename
 DATE=$(date +%Y-%m-%d)
-VERSION="v0.2"
+VERSION="v0.4"
 
 export_pdf() {
   echo "Exporting to PDF..."

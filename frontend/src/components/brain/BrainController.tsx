@@ -35,7 +35,7 @@ import { ParticleOverlay } from './renderers/particleRenderer.js';
 import { BrainBreadcrumb } from './BrainBreadcrumb.js';
 import { BrainContextMenu, type ContextMenuState } from './BrainContextMenu.js';
 
-import { useBrainData } from './hooks/useBrainData.js';
+import { useBrainData, type BrainScope } from './hooks/useBrainData.js';
 import { useBrainIngestion } from './hooks/useBrainIngestion.js';
 import { useBrainClustering } from './hooks/useBrainClustering.js';
 import { useBrainAnnotations } from './hooks/useBrainAnnotations.js';
@@ -85,8 +85,11 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
     return () => ro.disconnect();
   }, []);
 
+  // ── Graph scope state (local / withParent / global) ────────────────────────
+  const [brainScope, setBrainScope] = useState<BrainScope>('local');
+
   // ── Data hooks ──────────────────────────────────────────────────────────────
-  const { data, totalNodes, totalEdges, isTruncated, loadMore, loading: dataLoading, refetch } = useBrainData(problemSetId);
+  const { data, totalNodes, totalEdges, isTruncated, loadMore, loading: dataLoading, refetch } = useBrainData(problemSetId, undefined, brainScope);
   void dataLoading; // Loading state used by parent or future spinner
   void refetch;
 
@@ -437,6 +440,8 @@ export function BrainController({ problemSetId }: BrainControllerProps) {
             }}
             gapCount={gapCount}
             onGapClick={() => { setGapPanelOpen((prev) => !prev); setSelectedNodeId(null); setSelectedNodeIds([]); }}
+            scope={brainScope}
+            onScopeChange={setBrainScope}
           />
         }
         breadcrumb={

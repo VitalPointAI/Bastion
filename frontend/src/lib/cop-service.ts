@@ -56,6 +56,8 @@ interface LayerFilters {
   sectionId?: string;
   state?: LayerState;
   layerType?: COPLayerType;
+  /** When true, also fetch layers from the parent problem set (tagged with isInherited) */
+  includeParent?: boolean;
 }
 
 // ─── Status types ────────────────────────────────────────────────────────────
@@ -131,6 +133,7 @@ class COPService {
     if (filters?.sectionId) params.append('sectionId', filters.sectionId);
     if (filters?.state) params.append('state', filters.state);
     if (filters?.layerType) params.append('layerType', filters.layerType);
+    if (filters?.includeParent) params.append('includeParent', 'true');
     return this.fetch<COPLayer[]>(`/api/cop/layers?${params.toString()}`);
   }
 

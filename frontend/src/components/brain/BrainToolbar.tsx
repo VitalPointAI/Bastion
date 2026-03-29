@@ -10,6 +10,7 @@
  */
 
 import type { BrainNode, BrainLens } from './types.js';
+import type { BrainScope } from './hooks/useBrainData.js';
 import { BrainSearch } from './BrainSearch.js';
 import { LensSelector } from './LensSelector.js';
 import './BrainToolbar.css';
@@ -37,6 +38,10 @@ export interface BrainToolbarProps {
   onStrategicEnvClick?: () => void;
   gapCount?: number;
   onGapClick?: () => void;
+  /** Current graph scope */
+  scope?: BrainScope;
+  /** Called when the user changes the graph scope */
+  onScopeChange?: (scope: BrainScope) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -56,10 +61,12 @@ export function BrainToolbar({
   onStrategicEnvClick,
   gapCount,
   onGapClick,
+  scope = 'local',
+  onScopeChange,
 }: BrainToolbarProps) {
   return (
     <div className="brain-toolbar">
-      {/* Left: lens selector (Phase 45 — replaces cluster toggle buttons) */}
+      {/* Left: lens selector (Phase 45 -- replaces cluster toggle buttons) */}
       <LensSelector
         activeLens={activeLens}
         allLenses={allLenses}
@@ -68,6 +75,32 @@ export function BrainToolbar({
         onDeleteLens={onDeleteLens}
         onCloneLens={onCloneLens}
       />
+
+      {/* Scope toggle: controls which graph data is fetched */}
+      {onScopeChange && (
+        <select
+          className="brain-toolbar-scope-select"
+          value={scope}
+          onChange={(e) => onScopeChange(e.target.value as BrainScope)}
+          title="Graph scope: which problem sets to include"
+          style={{
+            background: '#1e293b',
+            color: '#e2e8f0',
+            border: '1px solid #334155',
+            borderRadius: 6,
+            padding: '4px 8px',
+            fontSize: '0.7rem',
+            fontFamily: "'Fira Code', monospace",
+            cursor: 'pointer',
+            outline: 'none',
+            marginLeft: 8,
+          }}
+        >
+          <option value="local">My Problem Set</option>
+          <option value="withParent">With Parents</option>
+          <option value="global">Global</option>
+        </select>
+      )}
 
       {/* Center: search */}
       <BrainSearch

@@ -17,8 +17,8 @@ Split-view diagram showing data pipeline (left) and visualization output (right)
 - **Label:** "Document Ingestion"
 - **Detail:** "10-Specialist Agent Team"
 - **Subcomponents shown:**
-  - "Scoping Interview" — determines extraction strategy
-  - "ExtractionTheater" — live pipeline visualization with SSE particle animation
+  - "Scoping Interview"  --  determines extraction strategy
+  - "ExtractionTheater"  --  live pipeline visualization with SSE particle animation
 - **Color:** Light blue (#bee3f8)
 
 ### Stage 2: Entity Extraction
@@ -65,7 +65,7 @@ Split-view diagram showing data pipeline (left) and visualization output (right)
 | Circle | Actor/Entity | Red (#e53e3e) for adversary | "PLA Southern Theater Command" |
 | Circle | Actor/Entity | Blue (#3182ce) for friendly | "USS Ronald Reagan CSG" |
 | Circle | Actor/Entity | Gray (#a0aec0) for neutral | "Republic of China" |
-| Diamond | Objective | Gold (#d69e2e) | "Sea Control — Taiwan Strait" |
+| Diamond | Objective | Gold (#d69e2e) | "Sea Control  --  Taiwan Strait" |
 | Square | Document | Purple (#9f7aea) | "INDOPACOM Campaign Plan" |
 | Hexagon | Concept | Teal (#38b2ac) | "Anti-Access/Area Denial" |
 
@@ -126,11 +126,11 @@ Split-view diagram showing data pipeline (left) and visualization output (right)
 ## Cross-References
 
 - Knowledge graph architecture: See Section 3.15 in `03-methodology.md`
-- Background: See Section 2.5 in `02-background-knowledge-graphs.md`
-- Entity resolution: See Section 2.5.4 in `02-background-knowledge-graphs.md`
+- Background: See Section 2.6 in `02-background-knowledge-graphs.md`
+- Entity resolution: See Section 2.6.4 in `02-background-knowledge-graphs.md`
 - Document intelligence: See Section 3.17 in `03-methodology.md`
 
 ---
 
 *Figure specification for AI image generation. Use with Mermaid, Figma, or diagram tool.*
-*Document version: 1.0 — 2026-03-23*
+*Document version: 1.0  --  2026-03-23*

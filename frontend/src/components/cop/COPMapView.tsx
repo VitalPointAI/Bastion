@@ -82,6 +82,8 @@ interface COPMapViewProps {
   refreshKey?: number;
   /** Design overlay SVG from overlay_producer skill (design.overlay_produced event) */
   designOverlay?: DesignOverlayData | null;
+  /** When true, include layers from the parent problem set */
+  showParentLayers?: boolean;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -186,6 +188,81 @@ function createMilSymbolIconWithBadge(
   });
 }
 
+/**
+ * Create a MIL-STD-2525D marker icon for inherited (parent) symbols.
+ * Visual treatment: dashed 2px border, "P" badge in top-right corner,
+ * and 60% base opacity (further modified by confidence tier).
+ */
+function createInheritedMilSymbolIcon(
+  sidc: string,
+  designation: string | undefined,
+  tier: 'high' | 'medium' | 'low',
+  confidencePct: number,
+): L.DivIcon {
+  const baseIcon = createMilSymbolIcon(sidc);
+  const [w, h] = baseIcon.options.iconSize as [number, number];
+
+  const badgeColor =
+    tier === 'high' ? '#22c55e' :
+    tier === 'medium' ? '#f59e0b' :
+    '#ef4444';
+
+  // Dashed border ring for inherited symbols
+  const dashedRing = `<div style="position:absolute;top:-2px;left:-2px;width:${w + 4}px;height:${h + 4}px;
+       border:2px dashed #a78bfa;border-radius:4px;box-sizing:border-box;
+       pointer-events:none;"></div>`;
+
+  // "P" badge in top-right corner to indicate parent origin
+  const parentBadge = `<div style="position:absolute;top:-10px;right:-8px;
+       background:#7c3aed;color:#fff;font-size:8px;font-weight:700;
+       width:14px;height:14px;border-radius:50%;display:flex;
+       align-items:center;justify-content:center;pointer-events:none;
+       font-family:'Fira Code',monospace;line-height:1;border:1px solid #a78bfa;">P</div>`;
+
+  // Confidence badge pill (same as normal but with inherited context)
+  const badge =
+    tier !== 'high' || confidencePct < 100
+      ? `<div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+           background:${badgeColor};color:#fff;font-size:9px;font-weight:700;
+           padding:1px 4px;border-radius:9px;white-space:nowrap;pointer-events:none;
+           font-family:'Fira Code',monospace;line-height:1.4;">${confidencePct}%</div>`
+      : '';
+
+  return L.divIcon({
+    className: 'milsymbol-marker milsymbol-inherited',
+    html: `<div style="position:relative;display:inline-block;">${(baseIcon.options.html as string) ?? ''}${dashedRing}${parentBadge}${badge}</div>`,
+    iconSize: [w + 4, h + 14],
+    iconAnchor: [(w + 4) / 2, (h + 4) / 2 + 14],
+  });
+}
+
+/**
+ * Create a custom OSINT icon for inherited symbols with dashed border and "P" badge.
+ */
+function createInheritedOSINTIcon(
+  iconHtml: string,
+  _tier: 'high' | 'medium' | 'low',
+  _confidencePct: number,
+): L.DivIcon {
+  const size = 18;
+  return L.divIcon({
+    className: 'osint-marker osint-inherited',
+    html: `<div style="position:relative;display:inline-block;">
+      ${iconHtml}
+      <div style="position:absolute;top:-3px;left:-3px;width:${size + 6}px;height:${size + 6}px;
+           border:2px dashed #a78bfa;border-radius:50%;box-sizing:border-box;
+           pointer-events:none;"></div>
+      <div style="position:absolute;top:-8px;right:-8px;
+           background:#7c3aed;color:#fff;font-size:7px;font-weight:700;
+           width:12px;height:12px;border-radius:50%;display:flex;
+           align-items:center;justify-content:center;pointer-events:none;
+           font-family:'Fira Code',monospace;line-height:1;border:1px solid #a78bfa;">P</div>
+    </div>`,
+    iconSize: [size + 6, size + 6],
+    iconAnchor: [(size + 6) / 2, (size + 6) / 2],
+  });
+}
+
 /** Check if control measure is visible in current phase */
 function isInPhase(measure: COPControlMeasureSpec, currentPhase?: number): boolean {
   if (currentPhase === undefined || !measure.phaseRange) return true;
@@ -221,6 +298,7 @@ export function COPMapView({
   onMapReady,
   refreshKey,
   designOverlay,
+  showParentLayers = false,
 }: COPMapViewProps) {
   const [layers, setLayers] = useState<COPLayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -229,7 +307,7 @@ export function COPMapView({
   const fetchLayers = useCallback(async (isPolling = false) => {
     if (!isPolling) setLoading(true);
     try {
-      const allLayers = await copService.queryLayers(problemSetId);
+      const allLayers = await copService.queryLayers(problemSetId, { includeParent: showParentLayers });
       // Only update state if data actually changed (prevents unnecessary re-renders/flicker)
       setLayers((prev) => {
         const prevJson = JSON.stringify(prev);
@@ -243,7 +321,7 @@ export function COPMapView({
     } finally {
       if (!isPolling) setLoading(false);
     }
-  }, [problemSetId, onLayersLoaded]);
+  }, [problemSetId, onLayersLoaded, showParentLayers]);
 
   useEffect(() => {
     fetchLayers(false);
@@ -307,7 +385,8 @@ export function COPMapView({
               perspective={currentPerspective}
               currentPhase={currentPhase}
               confidenceThreshold={confidenceThreshold}
-              onEntityClick={onEntityClick}
+              onEntityClick={layer.isInherited ? undefined : onEntityClick}
+              isInherited={layer.isInherited ?? false}
             />
           );
         })}
@@ -500,9 +579,11 @@ interface LayerContentProps {
   /** Minimum confidence to show symbol (0 = show all) */
   confidenceThreshold?: number;
   onEntityClick?: (entityId: string) => void;
+  /** When true, layer is inherited from a parent problem set (read-only, ghosted) */
+  isInherited?: boolean;
 }
 
-function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThreshold = 0, onEntityClick }: LayerContentProps) {
+function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThreshold = 0, onEntityClick, isInherited = false }: LayerContentProps) {
   const spec = layer.spec;
   if (!spec) return null;
 
@@ -519,19 +600,20 @@ function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThr
           // Determine confidence tier and apply visual encoding
           const tier = getSymbolTier(symbol);
           const tierOpacity = getTierOpacityModifier(tier);
-          const effectiveOpacity = opacity * tierOpacity;
+          // Inherited symbols use 60% of the layer's opacity (slightly ghosted)
+          const inheritedModifier = isInherited ? 0.6 : 1.0;
+          const effectiveOpacity = opacity * tierOpacity * inheritedModifier;
 
           const confidencePct = Math.round((symbol.confidence ?? 1) * 100);
 
-          // Use custom OSINT icon when provided, otherwise milsymbol
-          const icon = symbol.iconHtml
-            ? createOSINTIcon(symbol.iconHtml, tier, confidencePct)
-            : createMilSymbolIconWithBadge(
-                symbol.sidc,
-                symbol.designation,
-                tier,
-                confidencePct,
-              );
+          // Use inherited icon variants (dashed border + "P" badge) or standard icons
+          const icon = isInherited
+            ? (symbol.iconHtml
+                ? createInheritedOSINTIcon(symbol.iconHtml, tier, confidencePct)
+                : createInheritedMilSymbolIcon(symbol.sidc, symbol.designation, tier, confidencePct))
+            : (symbol.iconHtml
+                ? createOSINTIcon(symbol.iconHtml, tier, confidencePct)
+                : createMilSymbolIconWithBadge(symbol.sidc, symbol.designation, tier, confidencePct));
 
           // Confidence badge color (amber for medium, red for low)
           const badgeColor =
@@ -545,12 +627,24 @@ function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThr
               position={toLatLng(position)}
               icon={icon}
               opacity={effectiveOpacity}
-              eventHandlers={{
+              interactive={!isInherited}
+              eventHandlers={isInherited ? {} : {
                 click: () => onEntityClick?.(symbol.entityId),
               }}
             >
               <Popup maxWidth={320}>
                 <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 300 }}>
+                  {/* Inherited badge */}
+                  {isInherited && (
+                    <div style={{
+                      fontSize: 9, padding: '2px 6px', borderRadius: 3,
+                      background: '#5b21b6', color: '#ddd6fe', marginBottom: 4,
+                      display: 'inline-block', fontWeight: 600,
+                    }}>
+                      Inherited from parent
+                    </div>
+                  )}
+
                   {/* Title */}
                   <h4 style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>
                     {symbol.designation}
@@ -715,6 +809,9 @@ function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThr
           const style = cm.style ?? {};
           const color = style.color ?? '#f59e0b';
           const weight = Number(style.weight ?? '2');
+          // Inherited control measures use 60% opacity and always dashed
+          const cmOpacity = isInherited ? opacity * 0.6 : opacity;
+          const inheritedDash = isInherited ? '6 4' : undefined;
 
           if (cm.type === 'objective_area' || cm.type === 'boundary') {
             return (
@@ -724,11 +821,17 @@ function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThr
                 pathOptions={{
                   color,
                   weight,
-                  opacity,
-                  fillOpacity: opacity * 0.15,
+                  opacity: cmOpacity,
+                  fillOpacity: cmOpacity * 0.15,
+                  dashArray: inheritedDash,
                 }}
+                interactive={!isInherited}
               >
-                <Popup><span className="text-sm">{cm.label}</span></Popup>
+                <Popup>
+                  <span className="text-sm">
+                    {isInherited ? '[Parent] ' : ''}{cm.label}
+                  </span>
+                </Popup>
               </Polygon>
             );
           }
@@ -740,11 +843,16 @@ function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThr
               pathOptions={{
                 color,
                 weight,
-                opacity,
-                dashArray: cm.type === 'phase_line' ? '8 4' : undefined,
+                opacity: cmOpacity,
+                dashArray: inheritedDash ?? (cm.type === 'phase_line' ? '8 4' : undefined),
               }}
+              interactive={!isInherited}
             >
-              <Popup><span className="text-sm">{cm.label}</span></Popup>
+              <Popup>
+                <span className="text-sm">
+                  {isInherited ? '[Parent] ' : ''}{cm.label}
+                </span>
+              </Popup>
             </Polyline>
           );
         })}

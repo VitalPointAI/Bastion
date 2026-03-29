@@ -217,6 +217,10 @@ export interface COPLayer {
   auditTrail: AuditEntry[];
   createdAt: string;
   updatedAt: string;
+  /** The workspace that owns this layer (used to distinguish inherited layers) */
+  sourceWorkspaceId?: string;
+  /** True when this layer is inherited from a parent problem set */
+  isInherited?: boolean;
 }
 
 /**

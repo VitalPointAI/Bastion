@@ -158,6 +158,10 @@ export function COPTab({ problemSetId }: COPTabProps) {
   // Robot layer state (Phase 06)
   const [robotLayerVisible, setRobotLayerVisible] = useState(true);
 
+  // Parent COP layer inheritance toggle
+  const [showParentLayers, setShowParentLayers] = useState(false);
+  const [inheritedLayers, setInheritedLayers] = useState<COPLayer[]>([]);
+
   // Refresh key — increment to force COPMapView to re-fetch layers
   const [layerRefreshKey, setLayerRefreshKey] = useState(0);
   const handleLayersChanged = useCallback(() => setLayerRefreshKey(k => k + 1), []);
@@ -212,7 +216,12 @@ export function COPTab({ problemSetId }: COPTabProps) {
   // ─── Layer callbacks (existing) ───────────────────────────────────────────
 
   const handleLayersLoaded = useCallback((loadedLayers: COPLayer[]) => {
-    setLayers(loadedLayers);
+    // Separate own layers from inherited parent layers
+    const ownLayers = loadedLayers.filter(l => !l.isInherited);
+    const parentLayers = loadedLayers.filter(l => l.isInherited);
+
+    setLayers(ownLayers);
+    setInheritedLayers(parentLayers);
 
     // Initialize visibility (all visible by default)
     setLayerVisibility((prev) => {
@@ -236,9 +245,9 @@ export function COPTab({ problemSetId }: COPTabProps) {
       return next;
     });
 
-    // Auto-select first layer if none selected
-    if (loadedLayers.length > 0) {
-      setSelectedLayerId((prev) => prev ?? loadedLayers[0].id);
+    // Auto-select first own layer if none selected
+    if (ownLayers.length > 0) {
+      setSelectedLayerId((prev) => prev ?? ownLayers[0].id);
     }
   }, []);
 
@@ -254,17 +263,17 @@ export function COPTab({ problemSetId }: COPTabProps) {
         if (status.status === 'idle' && !status.hasLayers) {
           setGenerating(true);
           try {
-            // Generation is synchronous — backend runs sub-agents and returns
+            // Generation is synchronous -- backend runs sub-agents and returns
             await copService.triggerGeneration(problemSetId, 'default');
             // Fetch all layers (including the one just created)
-            const newLayers = await copService.queryLayers(problemSetId);
+            const newLayers = await copService.queryLayers(problemSetId, { includeParent: showParentLayers });
             handleLayersLoaded(newLayers);
           } finally {
             setGenerating(false);
           }
         } else if (status.hasLayers) {
-          // Already have layers — just fetch them
-          const existingLayers = await copService.queryLayers(problemSetId);
+          // Already have layers -- just fetch them
+          const existingLayers = await copService.queryLayers(problemSetId, { includeParent: showParentLayers });
           handleLayersLoaded(existingLayers);
         }
       } catch (err) {
@@ -274,7 +283,29 @@ export function COPTab({ problemSetId }: COPTabProps) {
     }
 
     checkAndTrigger();
-  }, [problemSetId, handleLayersLoaded]);
+  }, [problemSetId, handleLayersLoaded, showParentLayers]);
+
+  // ─── Re-fetch layers when parent layers toggle changes ─────────────────
+
+  const parentToggleInitRef = useRef(true);
+  useEffect(() => {
+    // Skip the initial mount (handled by auto-trigger above)
+    if (parentToggleInitRef.current) {
+      parentToggleInitRef.current = false;
+      return;
+    }
+
+    async function refetchWithParent() {
+      try {
+        const allLayers = await copService.queryLayers(problemSetId, { includeParent: showParentLayers });
+        handleLayersLoaded(allLayers);
+      } catch (err) {
+        console.warn('[COP] Parent layer re-fetch failed:', err);
+      }
+    }
+
+    refetchWithParent();
+  }, [showParentLayers, problemSetId, handleLayersLoaded]);
 
   // ─── Subordinate mission status (Phase 38) ──────────────────────────────
 
@@ -338,10 +369,10 @@ export function COPTab({ problemSetId }: COPTabProps) {
   async function handleManualGenerate() {
     setGenerating(true);
     try {
-      // Generation is synchronous — backend runs sub-agents and returns layer
+      // Generation is synchronous -- backend runs sub-agents and returns layer
       await copService.triggerGeneration(problemSetId, 'default');
       // Refresh all layers after generation completes
-      const newLayers = await copService.queryLayers(problemSetId);
+      const newLayers = await copService.queryLayers(problemSetId, { includeParent: showParentLayers });
       handleLayersLoaded(newLayers);
     } catch (err) {
       console.error('[COP] Manual generation failed:', err);
@@ -393,6 +424,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
         return (
           <COPLayerControls
             layers={layers}
+            inheritedLayers={inheritedLayers}
             layerVisibility={layerVisibility}
             layerOpacity={layerOpacity}
             onVisibilityChange={handleVisibilityChange}
@@ -408,6 +440,8 @@ export function COPTab({ problemSetId }: COPTabProps) {
             onResourceLayerToggle={() => setResourceLayerVisible((v) => !v)}
             robotLayerVisible={robotLayerVisible}
             onRobotLayerToggle={() => setRobotLayerVisible((v) => !v)}
+            showParentLayers={showParentLayers}
+            onShowParentLayersToggle={() => setShowParentLayers((v) => !v)}
           />
         );
 
@@ -548,6 +582,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
             currentPhase={currentPhase || undefined}
             refreshKey={layerRefreshKey}
             onLayersLoaded={handleLayersLoaded}
+            showParentLayers={showParentLayers}
             resourceLayerVisible={resourceLayerVisible}
             onResourceSelect={(res) => {
               setSelectedResource(res);

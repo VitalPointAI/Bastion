@@ -1,4 +1,6 @@
-# Direct Tab
+# Direct Tab (Deprecated)
+
+> **This tab was renamed to [Decide Tab](decide-tab.md) in Phase 24/53.** The content below is retained for historical reference. See the Decide Tab for current documentation.
 
 > Command Direction & Execution — JP 3-0
 

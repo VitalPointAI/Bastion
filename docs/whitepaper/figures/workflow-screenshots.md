@@ -151,7 +151,7 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 
 ---
 
-### Screenshot 7: Understand Tab — Brain Visualization with Document Intelligence Pipeline
+### Screenshot 7: Understand Tab  --  Brain Visualization with Document Intelligence Pipeline
 
 **File:** `screenshots/07-understand-brain-visualization.png`
 
@@ -184,7 +184,7 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 
 ---
 
-### Screenshot 8: Design Tab — Center of Gravity Analysis and Lines of Effort
+### Screenshot 8: Design Tab  --  Center of Gravity Analysis and Lines of Effort
 
 **File:** `screenshots/08-design-tab-cog-analysis.png`
 
@@ -201,7 +201,7 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 1. CoG analysis panel: Strange's CC-CR-CV framework for both Friendly (blue) and Adversary (red) forces
 2. Adversary CoG: "PLA Power Projection Capability" with 3 Critical Capabilities and 2 Critical Vulnerabilities highlighted
 3. Lines of Effort: LOE-1 "Diplomatic Isolation", LOE-2 "Sea Control", LOE-3 "Airspace Dominance" with objective links
-4. Decisive point marker on LOE-2: "Strait of Taiwan Choke Point — D+4"
+4. Decisive point marker on LOE-2: "Strait of Taiwan Choke Point  --  D+4"
 5. AI Design Assistant panel: "Challenge Assumption" card active showing contested framing
 6. Design-to-Plan handoff indicator: checkmark showing Design outputs queued for Plan tab Step 2 Mission Analysis
 
@@ -215,7 +215,7 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 
 ---
 
-### Screenshot 9: Decide Tab — Decision Dashboard with RACI Matrix and PendingDecisionModal
+### Screenshot 9: Decide Tab  --  Decision Dashboard with RACI Matrix and PendingDecisionModal
 
 **File:** `screenshots/09-decide-tab-decision-dashboard.png`
 
@@ -230,8 +230,8 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 - DAO governance integration indicator showing proposal will be submitted on approval
 
 **Key Annotations:**
-1. Ironclaw banner: "2 decisions require your attention — COA Approval Gate, OPORD Release Gate" with auto-refresh timer
-2. Decision card: "COA Approval Gate — INDOPACOM Campaign Plan AY26" marked HUMAN_ONLY authority in red
+1. Ironclaw banner: "2 decisions require your attention  --  COA Approval Gate, OPORD Release Gate" with auto-refresh timer
+2. Decision card: "COA Approval Gate  --  INDOPACOM Campaign Plan AY26" marked HUMAN_ONLY authority in red
 3. RACI column: Responsible = J3 Operations, Accountable = Commander, Consulted = J2/J5, Informed = Staff
 4. PendingDecisionModal: decision summary, RACI assignment, authority tier badge, approve/reject/defer buttons
 5. DAO proposal indicator: "On approval: DAO proposal will be created and submitted for coalition vote"
@@ -247,7 +247,7 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 
 ---
 
-### Screenshot 10: Resources Tab — Inventory, Discovery Panel, and Resource Groups
+### Screenshot 10: Resources Tab  --  Inventory, Discovery Panel, and Resource Groups
 
 **File:** `screenshots/10-resources-tab-inventory.png`
 
@@ -258,13 +258,13 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 - ResourcesTab sub-navigation: Inventory | Discovery | Network | Groups tabs
 - Inventory view active: ResourceCatalog showing equipment (Sphero RVR+ ×3, Jetson Orin Nano ×2), personnel, and consumables
 - Resource cards with DID badges (`did:near:resource-...`), status indicators (FMC/PMC/NMC), plugin type icons
-- Discovery panel collapsed in sidebar showing recent discovery: "RVR+ Alpha discovered via mDNS — 192.168.1.45"
+- Discovery panel collapsed in sidebar showing recent discovery: "RVR+ Alpha discovered via mDNS  --  192.168.1.45"
 - Registry statistics row at top: 12 total resources, 6 autonomous, 3 FMC, 2 PMC, 1 NMC
 
 **Key Annotations:**
 1. Sub-navigation tabs: Inventory active, Discovery / Network / Groups available
 2. Resource card: "RVR+ Alpha (Sphero RVR+)" with DID badge, FMC status, AutonomousVehiclePlugin icon
-3. Discovery event: "RVR+ Bravo discovered via mDNS — awaiting DAO acceptance gate"
+3. Discovery event: "RVR+ Bravo discovered via mDNS  --  awaiting DAO acceptance gate"
 4. Registry statistics header: total resources, DID count, status breakdown
 5. Plugin type icons: autonomous vehicle, sensor, weapon system, comms, logistics
 6. Capability search bar with filter tags (category, status, capability, geographic)
@@ -279,7 +279,7 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 
 ---
 
-### Screenshot 11: COP Tab — MIL-STD-2525D SVG Overlays with Friendly and Adversary Layers
+### Screenshot 11: COP Tab  --  MIL-STD-2525D SVG Overlays with Friendly and Adversary Layers
 
 **File:** `screenshots/11-cop-tab-milstd-overlays.png`
 
@@ -287,17 +287,17 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 
 **Shows:**
 - COP tab active showing a Leaflet.js map centered on Taiwan Strait / Western Pacific
-- Friendly layer active (blue): US/allied naval forces with standard MIL-STD-2525D symbols — warships (surface combatant symbols), air assets (fixed-wing symbols), ground forces near Taiwan
+- Friendly layer active (blue): US/allied naval forces with standard MIL-STD-2525D symbols  --  warships (surface combatant symbols), air assets (fixed-wing symbols), ground forces near Taiwan
 - Adversary layer visible (red): PLA forces with MLCOA positioning near Fujian Province coast
 - Layer panel on right: layer list with publish status, version numbers, agent attribution
-- Phase slider at bottom: "Phase 2 — Crisis" active with playback controls
+- Phase slider at bottom: "Phase 2  --  Crisis" active with playback controls
 - Perspective toggle: "Friendly" highlighted, "Adversary" available
 
 **Key Annotations:**
 1. Map canvas: Western Pacific with Taiwan Strait visible, standard military grid reference system overlay
 2. Friendly symbols: USS Ronald Reagan Strike Group in MIL-STD-2525D naval surface track symbols (blue rectangle with warship silhouette)
 3. Adversary symbols: PLA Rocket Force units near coast in red threat track symbols
-4. Layer governance panel: "Friendly Layer v3 — Published by Ironclaw Agent | 2026-03-19 14:32"
+4. Layer governance panel: "Friendly Layer v3  --  Published by Ironclaw Agent | 2026-03-19 14:32"
 5. Phase slider: Phase 2 (Crisis) active, Phase 3 (Conflict D+4) available, playback button
 6. Perspective toggle: switching between friendly and adversary COP views
 
@@ -312,7 +312,7 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 
 ---
 
-### Screenshot 12: Swarm Telemetry View — Three Platforms in Wedge Formation
+### Screenshot 12: Swarm Telemetry View  --  Three Platforms in Wedge Formation
 
 **File:** `screenshots/12-swarm-telemetry-wedge.png`
 
@@ -323,16 +323,16 @@ This document specifies the screenshots required for the BASTION whitepaper, inc
 - Top-down view of 3 RVR+ positions in wedge formation: RVR+ Alpha (leader, front center, star icon), RVR+ Bravo (rear-left), RVR+ Charlie (rear-right)
 - Formation polygon overlay: translucent wedge shape connecting the three position markers
 - Swarm Telemetry Panel (right sidebar): per-robot status cards showing battery, heading, speed, mission state; leader vision feed thumbnail
-- Detection event overlay: colored circle on map indicating "Person detected — 0.91 confidence" from leader's camera
-- DAO authorization badge: "Mission: visual_search — DAO-authorized, HOTL active"
+- Detection event overlay: colored circle on map indicating "Person detected  --  0.91 confidence" from leader's camera
+- DAO authorization badge: "Mission: visual_search  --  DAO-authorized, HOTL active"
 
 **Key Annotations:**
 1. Leader marker: RVR+ Alpha with star icon, position at formation apex, current heading arrow
 2. Formation polygon: translucent wedge overlay connecting all three RVR+ positions
 3. Follower positions: RVR+ Bravo and Charlie with standard autonomous vehicle symbols
-4. Detection event: "Person detected — confidence: 0.91" circle marker from detectNet output
+4. Detection event: "Person detected  --  confidence: 0.91" circle marker from detectNet output
 5. Swarm Telemetry Panel: per-robot battery/heading/speed, leader vision thumbnail from CSI camera
-6. DAO authorization badge: "visual_search mission — HOTL active" with human override button
+6. DAO authorization badge: "visual_search mission  --  HOTL active" with human override button
 
 **Capture State:**
 - Three RVR+ positions visible on map in wedge formation

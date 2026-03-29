@@ -150,6 +150,11 @@ const INITIAL_NODE_LIMIT = 300;
 /** How many additional nodes to load per "load more" click */
 const LOAD_MORE_BATCH = 200;
 
+// ─── Scope type ──────────────────────────────────────────────────────────────
+
+/** Controls which graph endpoint to fetch from */
+export type BrainScope = 'local' | 'withParent' | 'global';
+
 // ─── Return type ──────────────────────────────────────────────────────────────
 
 export interface UseBrainDataReturn {
@@ -326,8 +331,9 @@ async function safeFetch<T>(url: string): Promise<T | null> {
  *
  * @param problemSetId - ID of the problem set to fetch data for
  * @param atTime - Optional ISO timestamp for temporal (historical) queries
+ * @param scope - Graph scope: 'local' (default), 'withParent', or 'global'
  */
-export function useBrainData(problemSetId: string, atTime?: string | null): UseBrainDataReturn {
+export function useBrainData(problemSetId: string, atTime?: string | null, scope: BrainScope = 'local'): UseBrainDataReturn {
   const [fullData, setFullData] = useState<BrainGraphData>({ nodes: [], edges: [] });
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_NODE_LIMIT);
   const [loading, setLoading] = useState(false);
@@ -374,7 +380,11 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
       setLoading(true);
       setError(null);
 
-      const url = `${API_BASE}/api/brain/graph-snapshot?problemSetId=${encodeURIComponent(problemSetId)}&atTime=${encodeURIComponent(atTime)}`;
+      // Respect scope for temporal queries too
+      const snapshotUrl = scope === 'global'
+        ? `${API_BASE}/api/brain/global/graph-snapshot?atTime=${encodeURIComponent(atTime)}`
+        : `${API_BASE}/api/brain/graph-snapshot?problemSetId=${encodeURIComponent(problemSetId)}&atTime=${encodeURIComponent(atTime)}`;
+      const url = snapshotUrl;
       fetch(url)
         .then((res) => {
           if (!res.ok) throw new Error(`graph-snapshot ${res.status}`);
@@ -436,20 +446,31 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
     setLoading(true);
     setError(null);
 
+    // Build graph URL based on scope
+    const graphUrl = scope === 'global'
+      ? `${API_BASE}/api/graph/global/graph`
+      : scope === 'withParent'
+        ? `${API_BASE}/api/graph/workspaces/${encodeURIComponent(problemSetId)}/graph-with-parent`
+        : `${API_BASE}/api/graph/workspaces/${encodeURIComponent(problemSetId)}/graph`;
+
+    // Build supplementary URLs that respect scope.
+    // For 'global' scope, omit the workspaceId filter so we get all actors/objectives.
+    // For 'withParent', we still use the local PS for actors/objectives/docs since the
+    // graph-with-parent endpoint already merges parent nodes into the graph response.
+    const actorsUrl = scope === 'global'
+      ? `${API_BASE}/api/graph/actors`
+      : `${API_BASE}/api/graph/actors?workspaceId=${encodeURIComponent(problemSetId)}`;
+    const objectivesUrl = scope === 'global'
+      ? `${API_BASE}/api/graph/validity/objectives`
+      : `${API_BASE}/api/graph/validity/objectives?workspaceId=${encodeURIComponent(problemSetId)}`;
+    const documentsUrl = `${API_BASE}/api/doc-intelligence/documents/${encodeURIComponent(problemSetId)}`;
+
     // Fetch all four sources in parallel
     Promise.all([
-      safeFetch<RawGraphResponse>(
-        `${API_BASE}/api/graph/workspaces/${encodeURIComponent(problemSetId)}/graph`,
-      ),
-      safeFetch<RawActorsResponse>(
-        `${API_BASE}/api/graph/actors?workspaceId=${encodeURIComponent(problemSetId)}`,
-      ),
-      safeFetch<RawObjectivesResponse>(
-        `${API_BASE}/api/graph/validity/objectives?workspaceId=${encodeURIComponent(problemSetId)}`,
-      ),
-      safeFetch<RawDocumentsResponse>(
-        `${API_BASE}/api/doc-intelligence/documents/${encodeURIComponent(problemSetId)}`,
-      ),
+      safeFetch<RawGraphResponse>(graphUrl),
+      safeFetch<RawActorsResponse>(actorsUrl),
+      safeFetch<RawObjectivesResponse>(objectivesUrl),
+      safeFetch<RawDocumentsResponse>(documentsUrl),
     ])
       .then(([graphResp, actorsResp, objectivesResp, documentsResp]) => {
         if (cancelled) return;
@@ -626,7 +647,7 @@ export function useBrainData(problemSetId: string, atTime?: string | null): UseB
     return () => {
       cancelled = true;
     };
-  }, [problemSetId, tick, atTime]);
+  }, [problemSetId, tick, atTime, scope]);
 
   return { data, totalNodes, totalEdges, isTruncated, loadMore, loading, error, refetch };
 }

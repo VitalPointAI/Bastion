@@ -1,6 +1,6 @@
 # AI Agent Architecture
 
-BASTION deploys **131 AI agents** across five categories, orchestrated by LangGraph with PostgreSQL-backed state management and strict human-in-the-loop safety controls.
+BASTION deploys **25 specialized AI agents** across five functional categories, orchestrated by LangGraph with PostgreSQL-backed state management and strict human-in-the-loop safety controls. The 25 agents comprise 8 LangGraph analysis specialists, 7 COP layer agents, 6 MDMP governance agents, 3 escalation and competition modeling agents, and Ironclaw (Chief of Staff). An additional conceptual layer of JPP staff role templates enables Ironclaw to adapt its behavior per-role context without requiring 102 separate agent processes.
 
 ## Orchestration
 
@@ -50,9 +50,11 @@ All consequential agent outputs pass through human review before taking effect. 
 
 | Category | Count | Purpose |
 |---|---|---|
-| Governance | 4 | DAO proposal screening, feasibility, and context analysis |
-| Operational Planning | 14 | MDMP support, assumption auditing, compliance checking |
-| Strategic Analysis | 4 | Document review, OSINT, threat monitoring, fusion |
-| Graph Analysis | 7 | Entity resolution, conflict detection, RAFT extraction |
-| JPP Staff | 102 | Full joint planning process staff roles (J1-J9, functional, component) |
-| **Total** | **131** | |
+| LangGraph Analysis | 8 | Document intelligence, OSINT, threat monitoring, entity resolution, fusion, strategic analysis |
+| COP Layer | 7 | MIL-STD-2525D symbol generation, entity linking, layer governance, perspective rendering |
+| MDMP Governance | 6 | Assumption Auditor, Orders Validator, Uncertainty Quantifier, Data Bias Detector, Problem Framing, ROE Compliance |
+| Escalation & Competition | 3 | Adversary Modeler (MLCOA/MDCOA), Escalation Modeler, Effect Cascader |
+| Chief of Staff | 1 | Ironclaw — role-adaptive coordinator spanning all JPP staff functions with persistent memory |
+| **Total Deployed** | **25** | |
+
+> **Note:** Earlier versions of this documentation referenced 131 agents, which included 102 JPP staff role templates. These templates are now implemented as role-adaptive context configurations within Ironclaw rather than as 102 separate agent processes. The 25-agent count reflects actually deployed, persistent agent processes.

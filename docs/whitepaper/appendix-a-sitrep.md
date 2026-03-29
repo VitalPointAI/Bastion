@@ -9,7 +9,7 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | Phase | Name | Status | Completed | Capability Summary |
 |-------|------|--------|-----------|-------------------|
 | 1 | Foundation & Infrastructure | Complete | 2026-01-13 | NEAR smart contracts, PostgreSQL hybrid storage, Docker containerization |
-| 1.1 | Calimero Self-Sovereign App Integration | Not Started | — | DAO compartmentalization research; deferred |
+| 1.1 | Calimero Self-Sovereign App Integration | Not Started |  --  | DAO compartmentalization research; deferred |
 | 1.2 | Passkey Authentication & NEAR Implicit Accounts | Complete | 2026-01-24 | WebAuthn passkeys, PRF-DID integration, magic link fallback |
 | 1.3 | NEAR Implicit Account Funding | Complete | 2026-02-06 | Account activation funding contract and admin UI |
 | 1.4 | Navigation Architecture Restructure | Complete | 2026-02-23 | Doctrine-aligned tab navigation, route restructure |
@@ -20,38 +20,38 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | 4.2 | AI Agent Teams | Complete | 2026-01-20 | Per-agent model config, agent DIDs, LangGraph orchestration |
 | 4.3 | Strategic Intelligence Fusion & RAFT Analysis | Complete | 2026-01-21 | Neo4j graph, entity resolution, OSINT validity dashboard |
 | 4.4 | Mission Context & Force Onboarding | Complete | 2026-01-25 | Participant management, command relationships, resource inventory |
-| 4.5 | ATAK/CoT Tactical Interoperability | Not Started | — | CoT protocol, TAK Server integration |
+| 4.5 | ATAK/CoT Tactical Interoperability | Not Started |  --  | CoT protocol, TAK Server integration |
 | 5 | Operational Planning Module | Complete | 2026-02-11 | JP 5-0 workflow, COA development, ROE enforcement, OPORD generation |
 | 5.1 | MDMP Governance Integration | Complete | 2026-02-11 | Five-tier authority, 18 governance gates, assumption registry |
 | 5.2 | Escalation & Competition Modeling | Complete | 2026-02-13 | Adversary modeler, escalation ladder, effects cascader, wargaming |
 | 5.3 | End-to-End Scenario Validation & UX Cleanup | Complete | 2026-02-23 | Scenario seed, persona walkthrough, sidebar cleanup |
-| 6 | Autonomous Vehicle Integration | Not Started | — | Jetson Orin Nano setup, Sphero RVR+ SDK; superseded by Phases 43-46 |
-| 7 | Tactical Execution System | Not Started | — | Commander interface, target selection; superseded by Phase 44/46 |
-| 8 | Sensor Fusion & Intelligence | Not Started | — | Multi-level intelligence architecture |
-| 9 | Assessment & Dashboard | Not Started | — | MOE/MOP calculation, decision support |
-| 10 | End-to-End Integration | Not Started | — | BDA feedback loops |
-| 11 | User Experience & Personalization | Not Started | — | Cinematic briefings, personalized command centers |
-| 12 | Coalition & Multi-Tenancy | Not Started | — | NATO classification, information sharing |
-| 12.1 | Coalition Health Monitoring | Not Started | — | Coalition health agent, national caveat tracking |
+| 6 | Autonomous Vehicle Integration | Not Started |  --  | Jetson Orin Nano setup, Sphero RVR+ SDK; superseded by Phases 43-46 |
+| 7 | Tactical Execution System | Not Started |  --  | Commander interface, target selection; superseded by Phase 44/46 |
+| 8 | Sensor Fusion & Intelligence | Not Started |  --  | Multi-level intelligence architecture |
+| 9 | Assessment & Dashboard | Not Started |  --  | MOE/MOP calculation, decision support |
+| 10 | End-to-End Integration | Not Started |  --  | BDA feedback loops |
+| 11 | User Experience & Personalization | Not Started |  --  | Cinematic briefings, personalized command centers |
+| 12 | Coalition & Multi-Tenancy | Not Started |  --  | NATO classification, information sharing |
+| 12.1 | Coalition Health Monitoring | Not Started |  --  | Coalition health agent, national caveat tracking |
 | 13 | Research Whitepaper | Complete | 2026-01-24 | Academic whitepaper v0.1, SITREP, demo script, export pipeline |
 | 14 | Friendly & Adversary IPB Complete Cycle | Complete | 2026-02-28 | Dual-perspective IPB, COA scoring, commander decision matrix, order generation |
 | 15 | JPP Staff Organization Workspaces | Complete | 2026-02-28 | Per-role workspaces, cross-staff notifications, staff AI coordination |
-| 16 | AI Assigned Staff Workspaces | Not Started | — | AI-assigned staff roles, full agent team execution |
-| 17 | Deployment — CI/CD Pipeline & Hetzner Server | Not Started | — | GitHub Actions CI/CD, Hetzner deployment |
+| 16 | AI Assigned Staff Workspaces | Not Started |  --  | AI-assigned staff roles, full agent team execution |
+| 17 | Deployment  --  CI/CD Pipeline & Hetzner Server | Not Started |  --  | GitHub Actions CI/CD, Hetzner deployment |
 | 21 | AI COP Layer Agent Team | Complete | 2026-03-05 | MIL-STD-2525D SVG overlays, entity linker, layer governance, perspective toggle |
 | 22 | Training/Operational Global Mode | Complete | 2026-03-06 | Global mode toggle, EXERCISE banner, data isolation, governance parity |
-| 23 | Problem Set Model & Workspace Rename | Not Started | — | Rename workspaces to problem sets, echelon-awareness |
+| 23 | Problem Set Model & Workspace Rename | Not Started |  --  | Rename workspaces to problem sets, echelon-awareness |
 | 24 | Doctrinal Tab Restructure | Complete | 2026-03-06 | Understand/Design/Plan/Decide/COP/Assess tabs replacing legacy layout |
 | 25 | Operational Design Workspace | Complete | 2026-03-06 | CoG analysis, LOEs, problem framing, design-to-plan handoff |
 | 25.1 | Training Package Upload & From-Scenario Integration | Complete | 2026-03-06 | ScenarioPackageUpload wizard, async LLM extraction in Understand tab |
-| 25.2 | Strategic Document Containers & Actor Categorization | Not Started | — | Nation/group containers with actor categories |
-| 25.3 | AI Strategic Context & Knowledge Graph Integration | Not Started | — | Container-scoped graph wired into AI agent context |
-| 26 | Strategic Environment & Inheritance | Not Started | — | Strategic context provider, directive inheritance |
+| 25.2 | Strategic Document Containers & Actor Categorization | Not Started |  --  | Nation/group containers with actor categories |
+| 25.3 | AI Strategic Context & Knowledge Graph Integration | Not Started |  --  | Container-scoped graph wired into AI agent context |
+| 26 | Strategic Environment & Inheritance | Not Started |  --  | Strategic context provider, directive inheritance |
 | 27 | Resource Registry & DID Plugin Architecture | Complete | 2026-03-07 | did:near:resource DIDs, 5 plugin types, COP integration, telemetry |
-| 28 | Embedded DAO Governance at Decision Gates | Not Started | — | Contextual governance at planning decision points |
-| 29 | Contextual AI Staff Integration | Not Started | — | Per-tab AI assistant, workflow-phase-aware recommendations |
+| 28 | Embedded DAO Governance at Decision Gates | Not Started |  --  | Contextual governance at planning decision points |
+| 29 | Contextual AI Staff Integration | Not Started |  --  | Per-tab AI assistant, workflow-phase-aware recommendations |
 | 30 | Ironclaw Agent Integration | Complete | 2026-03-07 | Ironclaw as chief-of-staff: code changes, problem set config, delegation |
-| 31 | AI Agent Validation & Compliance Testing | Not Started | — | Quantitative validation of AI agent integration |
+| 31 | AI Agent Validation & Compliance Testing | Not Started |  --  | Quantitative validation of AI agent integration |
 | 32 | Network Device Discovery & Secure Automatic Resource Onboarding | Complete | 2026-03-07 | BLE/WiFi/USB/TAK scanning, fingerprinting, DAO-governed acceptance |
 | 33 | JPP Campaign Plan Framework | Complete | 2026-03-08 | Full 7-step JPP workflow, ends-ways-means linkage, Argus OSINT |
 | 34 | Plan Tab Echelon Routing & MDMP Tactical Wiring | Complete | 2026-03-08 | Echelon router (strategic/operational/tactical), MDMP Plan tab |
@@ -61,21 +61,21 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | 38 | Inheritance Deepening | Complete | 2026-03-08 | Change notification, override tracking, FRAGO propagation, upward reporting |
 | 39 | Operational Demonstration Data Package | Complete | 2026-03-09 | Pacific Strategy AY26 complete seed: strategy through tactical missions |
 | 40 | Autonomous Document Intelligence Team | Complete | 2026-03-09 | 10-specialist agent team, scoping interview, NATO A-F/1-6 ratings, ExtractionTheater |
-| 41 | Redesign Understanding Tab — Adaptive Brain Visualization | Complete | 2026-03-10 | Neural brain canvas, shape-coded nodes, clustering modes, brain timeline |
-| 42 | Resources Tab — Inventory, Discovery & Onboarding | Complete | 2026-03-12 | Consolidated Resources tab: inventory, discovery, network, groups sub-views |
+| 41 | Redesign Understanding Tab  --  Adaptive Brain Visualization | Complete | 2026-03-10 | Neural brain canvas, shape-coded nodes, clustering modes, brain timeline |
+| 42 | Resources Tab  --  Inventory, Discovery & Onboarding | Complete | 2026-03-12 | Consolidated Resources tab: inventory, discovery, network, groups sub-views |
 | 43 | Robot Agent & Local Discovery Bridge | Complete | 2026-03-12 | Python robot agent, Docker bridge, mDNS auto-discovery, command proxy |
 | 44 | Robot Vision Capabilities & Mission Intent Translation | Complete | 2026-03-13 | CSI camera, detectNet, ORB matcher, 4 vision mission types, sweep planning |
-| 45 | Knowledge Graph Subspaces | Not Started | — | Container-scoped subgraphs, focus-and-expand, virtual lenses |
+| 45 | Knowledge Graph Subspaces | Not Started |  --  | Container-scoped subgraphs, focus-and-expand, virtual lenses |
 | 46 | Sphero RVR+ Swarm Leader & Doctrinal Movement Control | Complete | 2026-03-14 | Swarm leader, 6 formations, UDP peer mesh, DAO-driven membership, COP aggregation |
-| 47 | JSON-LD Semantic Brain + COP Fix | Not Started | — | JSON-LD ontology, BFO/CCO alignment, contradiction detection, COP pipeline fix |
-| 48 | Robot Swarm Behaviour End-to-End Demo | Not Started | — | Complete Taiwan scenario demo with 3-robot coalition swarm |
+| 47 | JSON-LD Semantic Brain + COP Fix | Not Started |  --  | JSON-LD ontology, BFO/CCO alignment, contradiction detection, COP pipeline fix |
+| 48 | Robot Swarm Behaviour End-to-End Demo | Not Started |  --  | Complete Taiwan scenario demo with 3-robot coalition swarm |
 | 49 | Align Design Tab with Plan Tab | Complete | 2026-03-17 | Design as single source of truth, fork-and-merge revision system |
-| 50 | Universal Intelligence Input & Auto-Classification | Not Started | — | Single universal input replacing fragmented ingestion |
+| 50 | Universal Intelligence Input & Auto-Classification | Not Started |  --  | Single universal input replacing fragmented ingestion |
 | 51 | Unified Agent Architecture | Complete | 2026-03-17 | StandardAgent base class, agent admin dashboard, team designer |
 | 52 | Agent Skills & MCP | Complete | 2026-03-18 | Standalone MCP server, skills registry, Ironclaw builder action cards |
 | 53 | DID Governance Architecture & Bug Fixes | Complete | 2026-03-19 | Decide tab, decision dashboard, RACI matrix, PendingDecisionModal, Ironclaw 60s polling |
 | 54 | Briefing Deck: Research Validation & Slide Specs | Complete | 2026-03-26 | Slide-by-slide image specifications and visual briefing standards |
-| 55 | Ironclaw Chief of Staff — Operational Design | Complete | 2026-03-25 | LangGraph JP 5-0 staff coordination: 4 sections, coverage criteria, input validation, KG gap dispatch |
+| 55 | Ironclaw Chief of Staff  --  Operational Design | Complete | 2026-03-25 | LangGraph JP 5-0 staff coordination: 4 sections, coverage criteria, input validation, KG gap dispatch |
 | 56 | Visual Operational Approach Editor | Complete | 2026-03-25 | MapOverlay data model, MIL-STD-2525D symbols + control measures, AI-directed placement, COP integration |
 | 57 | Ironclaw Persistent Memory | Complete | 2026-03-25 | Dual-scope memory (user + context), REST API, IronclawMemoryPanel, auth-scoped isolation |
 | 58 | On-Chain Resource DID Caveats | Complete | 2026-03-26 | ResourceCaveats struct, check_employment_authorized(), did.bastion.testnet deployment, 4/4 smoke tests |
@@ -85,12 +85,14 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | Metric | Value |
 |--------|-------|
 | Total phases | 75 |
-| Completed phases | 58 |
+| Completed phases | 60 |
 | Total plans | 469+ |
 | AI agents (LangGraph analysis) | 8 |
 | AI agents (COP layer) | 7 |
 | AI agents (Chief of Staff) | 1 (Ironclaw) |
-| AI agents (total deployed) | 16 |
+| AI agents (MDMP governance) | 6 |
+| AI agents (Escalation/Competition) | 3 |
+| AI agents (total specialized, deployed) | 25 |
 | Smart contract modules | 14 |
 | REST API endpoints | ~572+ |
 | Doctrinal tabs | 6 (Understand/Design/Plan/Decide/COP/Assess) |
@@ -130,17 +132,17 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 
 ### Phase 6–12: Original Phases (partially superseded)
 
-- Phases 6 (Autonomous Vehicle Integration) and 7 (Tactical Execution System) were the original vehicle integration path; superseded by Phases 43-46 (robot agent, bridge, vision, swarm) which deliver equivalent or superior capability
+- Phases 6 (Autonomous Vehicle Integration) and 7 (Tactical Execution System) followed the original vehicle integration path; Phases 43-46 (robot agent, bridge, vision, swarm) superseded them and deliver equivalent or superior capability
 - Phase 8 (Sensor Fusion), Phase 9 (Assessment Dashboard), Phase 10 (End-to-End Integration) remain as future work
-- Phase 11 (User Experience & Personalization) — cinematic briefings, personalized command centers
-- Phase 12 (Coalition & Multi-Tenancy), Phase 12.1 (Coalition Health Monitoring) — NATO classification, information sharing rules
+- Phase 11 (User Experience & Personalization): cinematic briefings, personalized command centers
+- Phase 12 (Coalition & Multi-Tenancy), Phase 12.1 (Coalition Health Monitoring): NATO classification, information sharing rules
 
 ### Phase 16: AI Assigned Staff Workspaces
 
 - AI-assigned staff roles with full agent team execution
 - Human-in-the-loop review and real-time channel observability
 
-### Phase 17: Deployment — CI/CD Pipeline & Hetzner Server
+### Phase 17: Deployment: CI/CD Pipeline & Hetzner Server
 
 - GitHub Actions CI/CD pipeline
 - TEE-aware component separation for production
@@ -242,17 +244,17 @@ Phase 30 (Ironclaw Agent Integration), Phase 46 (Sphero RVR+ Swarm Leader), Phas
 | Ironclaw Memory | Ready | Dual-scope persistent memory, REST API, management panel with auth isolation |
 | Resource Caveats | Ready | ResourceCaveats on-chain enforcement, check_employment_authorized() on did.bastion.testnet |
 | Physical Demo Hardware | Ready | Sphero RVR+ + Jetson Orin Nano operational |
-| End-to-End Pipeline | Partial | Robot detection → COP → DAO → swarm mission demonstrated; JSON-LD brain + COP fix pending Phase 47 |
+| End-to-End Pipeline | Partial | Robot detection -> COP -> DAO -> swarm mission demonstrated; JSON-LD brain + COP fix pending Phase 47 |
 | Coalition Governance | Partial | DAO governance ready; coalition multi-tenancy (Phase 12) not started |
 
 **Critical Path to Full Operational Capability:**
 
 1. Phase 47: JSON-LD Semantic Brain + COP Fix (knowledge graph foundation)
 2. Phase 48: Robot Swarm Behaviour End-to-End Demo (pipeline integration test)
-3. Phase 17: Deployment — CI/CD pipeline for production hosting
+3. Phase 17: Deployment: CI/CD pipeline for production hosting
 
-**Demo-Ready Status:** The platform is ready for academic and military-stakeholder demonstration through Phase 58. The complete strategy-to-autonomous-execution pipeline is demonstrable with Pacific Strategy AY26 scenario data, physical robot swarm, full DAO governance with human authority positions at all three tiers, and Phase 55-58 additions: Ironclaw Chief of Staff coordination for operational design, visual operational approach editor, Ironclaw persistent memory, and on-chain resource caveat enforcement.
+**Demo-Ready Status:** The platform supports academic and military-stakeholder demonstration through Phase 58. The Pacific Strategy AY26 scenario data, physical robot swarm, full DAO governance with human authority positions at all three tiers, and Phase 55-58 additions enable demonstration of the complete strategy-to-autonomous-execution pipeline: Ironclaw Chief of Staff coordination for operational design, visual operational approach editor, Ironclaw persistent memory, and on-chain resource caveat enforcement.
 
 ---
 
-*SITREP current as of March 2026, reflecting Phase 58 completion. Implementation status tracked in `.planning/STATE.md` and `.planning/ROADMAP.md`.*
+*SITREP current as of March 2026, reflecting Phase 60 completion. The `.planning/STATE.md` and `.planning/ROADMAP.md` files track implementation status.*

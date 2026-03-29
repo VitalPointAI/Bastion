@@ -935,6 +935,261 @@ const graphStats: ActionHandler = async () => {
 }
 
 // ---------------------------------------------------------------------------
+// Cross-scope Graph & Objective Hierarchy Handlers
+// ---------------------------------------------------------------------------
+
+const graphGetObjectiveHierarchy: ActionHandler = async (payload) => {
+  const { objectiveStore } = await import('../strategic/objectives/store.js');
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const hierarchy = await objectiveStore.getObjectivesForParentChain(problemSetId);
+  return { success: true, result: hierarchy };
+};
+
+const graphAdoptObjective: ActionHandler = async (payload) => {
+  const { objectiveStore } = await import('../strategic/objectives/store.js');
+  const sourceObjectiveId = (payload.source_objective_id ?? payload.sourceObjectiveId) as string;
+  const targetWorkspaceId = (payload.target_workspace_id ?? payload.targetWorkspaceId) as string;
+  if (!sourceObjectiveId || !targetWorkspaceId) {
+    return { success: false, error: 'source_objective_id and target_workspace_id are required' };
+  }
+
+  const objective = await objectiveStore.adoptObjective(sourceObjectiveId, targetWorkspaceId);
+  return { success: true, result: objective };
+};
+
+const graphAssessObjectives: ActionHandler = async (payload) => {
+  const { objectiveStore } = await import('../strategic/objectives/store.js');
+  const { getPool } = await import('../lib/database.js');
+  const pool = getPool();
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  // Look up parent workspace
+  const parentResult = await pool.query(
+    'SELECT parent_problem_set_id FROM problem_sets WHERE id = $1',
+    [problemSetId],
+  );
+
+  if (parentResult.rows.length === 0 || !parentResult.rows[0].parent_problem_set_id) {
+    return { success: true, result: { parentObjectiveCount: 0, newlyAdoptedCount: 0, skippedCount: 0 } };
+  }
+
+  const parentWorkspaceId = parentResult.rows[0].parent_problem_set_id as string;
+
+  const parentObjectives = await objectiveStore.listObjectives({
+    workspaceId: parentWorkspaceId,
+    limit: 200,
+    offset: 0,
+  });
+
+  if (parentObjectives.objectives.length === 0) {
+    return { success: true, result: { parentObjectiveCount: 0, newlyAdoptedCount: 0, skippedCount: 0 } };
+  }
+
+  const existingObjectives = await objectiveStore.listObjectives({
+    workspaceId: problemSetId,
+    limit: 200,
+    offset: 0,
+  });
+
+  const alreadyAdoptedParentIds = new Set(
+    existingObjectives.objectives
+      .filter((o) => o.parentObjectiveId)
+      .map((o) => o.parentObjectiveId),
+  );
+
+  let newlyAdoptedCount = 0;
+  for (const parentObj of parentObjectives.objectives) {
+    if (alreadyAdoptedParentIds.has(parentObj.id)) continue;
+    try {
+      await objectiveStore.adoptObjective(parentObj.id, problemSetId);
+      newlyAdoptedCount++;
+    } catch (err) {
+      console.warn(`[graphAssessObjectives] Failed to adopt ${parentObj.id}:`, err);
+    }
+  }
+
+  return {
+    success: true,
+    result: {
+      parentObjectiveCount: parentObjectives.objectives.length,
+      newlyAdoptedCount,
+      skippedCount: parentObjectives.objectives.length - newlyAdoptedCount,
+    },
+  };
+};
+
+const graphQueryGlobal: ActionHandler = async (payload) => {
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+  const classification = payload.classification as string | undefined;
+  const limit = Math.min(Number(payload.limit) || 50, 200);
+
+  let cypher = 'MATCH (a:Actor)';
+  const params: Record<string, unknown> = { limit };
+
+  if (classification) {
+    cypher += ' WHERE a.classification = $classification';
+    params.classification = classification;
+  }
+
+  cypher += ' OPTIONAL MATCH (a)-[r]-() RETURN a, count(r) AS relCount ORDER BY relCount DESC LIMIT $limit';
+
+  const result = await executeReadQuery(cypher, params);
+  const actors = result.records.map((rec) => {
+    const a = rec.get('a').properties;
+    return { ...a, relationshipCount: rec.get('relCount').toInt() };
+  });
+  return { success: true, result: actors };
+};
+
+const graphQueryParent: ActionHandler = async (payload) => {
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+  const { getPool } = await import('../lib/database.js');
+  const pool = getPool();
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  // Find parent workspace
+  const parentResult = await pool.query(
+    'SELECT parent_problem_set_id FROM problem_sets WHERE id = $1',
+    [problemSetId],
+  );
+  const parentId = parentResult.rows[0]?.parent_problem_set_id as string | undefined;
+
+  const workspaceIds = [problemSetId];
+  if (parentId) workspaceIds.push(parentId);
+
+  const cypher = `
+    MATCH (a:Actor)
+    WHERE a.workspaceId IN $workspaceIds
+    OPTIONAL MATCH (a)-[r]-()
+    RETURN a, count(r) AS relCount
+    ORDER BY relCount DESC
+    LIMIT 200
+  `;
+
+  const result = await executeReadQuery(cypher, { workspaceIds });
+  const nodes = result.records.map((rec) => {
+    const a = rec.get('a').properties;
+    return { ...a, relationshipCount: rec.get('relCount').toInt(), sourceWorkspaceId: a.workspaceId };
+  });
+  return { success: true, result: nodes };
+};
+
+// ---------------------------------------------------------------------------
+// Intelligence Gap Handlers
+// ---------------------------------------------------------------------------
+
+const intelGetGaps: ActionHandler = async (payload) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const { brainStore } = await import('../brain/brain-store.js');
+  const report = await brainStore.getIntelligenceGapsWithParentContext(problemSetId);
+  return {
+    success: true,
+    localGaps: report.gaps,
+    parentSuggestions: report.parentSuggestions,
+    totalLocalGaps: report.gaps.length,
+    totalParentSuggestions: report.parentSuggestions.length,
+  };
+};
+
+const intelGetGapFillerStatus: ActionHandler = async (payload) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const { gapFillerService } = await import('./gap-filler-service.js');
+  const status = gapFillerService.getStatus(problemSetId);
+  return { success: true, ...status };
+};
+
+const intelPrioritizeGap: ActionHandler = async (payload) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  const gapNodeId = (payload.gap_node_id ?? payload.gapNodeId) as string;
+  const reason = payload.reason as string;
+  if (!problemSetId || !gapNodeId || !reason) {
+    return { success: false, error: 'problem_set_id, gap_node_id, and reason are required' };
+  }
+
+  const { gapFillerService } = await import('./gap-filler-service.js');
+
+  // Clear cooldown so it is eligible for immediate research
+  gapFillerService.prioritizeGap(gapNodeId);
+
+  // Attempt immediate fill cycle
+  try {
+    const results = await gapFillerService.fillGapsForProblemSet(problemSetId);
+    const filled = results.find((r) => r.gapId === gapNodeId);
+    return {
+      success: true,
+      prioritized: true,
+      gapNodeId,
+      reason,
+      immediateResearchResult: filled
+        ? {
+            actorName: filled.actorName,
+            searchResultCount: filled.searchResultCount,
+            actorsCreated: filled.actorsCreated,
+            relationshipsCreated: filled.relationshipsCreated,
+          }
+        : null,
+      note: filled
+        ? 'Gap was researched immediately'
+        : 'Gap cooldown cleared; gap will be researched on next eligible cycle',
+    };
+  } catch (err) {
+    return {
+      success: true,
+      prioritized: true,
+      gapNodeId,
+      reason,
+      immediateResearchResult: null,
+      note: `Cooldown cleared but immediate research failed: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+};
+
+const intelRequestTargetedResearch: ActionHandler = async (payload) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  const query = payload.query as string;
+  const context = payload.context as string;
+  if (!problemSetId || !query) {
+    return { success: false, error: 'problem_set_id and query are required' };
+  }
+
+  try {
+    const { Researcher } = await import('../doc-intelligence/specialists/researcher.js');
+    const researcher = new Researcher();
+    const gapDescription = `${query} -- Context: ${context || 'none'}`;
+    await researcher.triggerGapResearch(
+      problemSetId,
+      [gapDescription],
+      0,
+      'ironclaw-targeted-research',
+    );
+
+    const jobId = `targeted-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    return {
+      success: true,
+      jobId,
+      problemSetId,
+      query,
+      context: context || null,
+      status: 'queued',
+      note: 'Research job queued via pg-boss. Results will appear as strategic documents.',
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: `Failed to queue research: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+};
+
+// ---------------------------------------------------------------------------
 // Team Task Assignment Handler
 // ---------------------------------------------------------------------------
 
@@ -954,6 +1209,169 @@ const teamAssignTask: ActionHandler = async (payload, userDid) => {
     status: task.status,
     stepCount: task.steps.length,
     assignedAgents: task.assignedAgents,
+  };
+};
+
+// ---------------------------------------------------------------------------
+// PIR Handlers
+// ---------------------------------------------------------------------------
+
+const intelGetPIRs: ActionHandler = async (payload) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const { pirStore } = await import('../design/pir-store.js');
+  const filters: Record<string, string> = {};
+  if (payload.type) filters.type = payload.type as string;
+  if (payload.status) filters.status = payload.status as string;
+
+  const pirs = await pirStore.listPIRs(
+    problemSetId,
+    filters as { type?: 'CCIR' | 'PIR' | 'FFIR' | 'EEFI'; status?: 'ACTIVE' | 'ANSWERED' | 'SUPERSEDED' | 'CANCELLED' },
+  );
+
+  return {
+    success: true,
+    pirs,
+    totalCount: pirs.length,
+    activeCount: pirs.filter((p) => p.status === 'ACTIVE').length,
+  };
+};
+
+const intelCreatePIRFromAssumption: ActionHandler = async (payload) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  const assumptionText = (payload.assumption_text ?? payload.assumptionText) as string;
+  if (!problemSetId || !assumptionText) {
+    return { success: false, error: 'problem_set_id and assumption_text are required' };
+  }
+
+  const { pirStore } = await import('../design/pir-store.js');
+  const pirType = ((payload.type as string) || 'PIR') as 'CCIR' | 'PIR' | 'FFIR' | 'EEFI';
+  const priority = (payload.priority as number) || 1;
+  const assumptionId = (payload.assumption_id ?? payload.assumptionId) as string | undefined;
+
+  const description =
+    `Validate assumption: "${assumptionText}" -- Determine whether this ` +
+    `assumption holds true under current operational conditions and identify ` +
+    `indicators that would confirm or deny it.`;
+
+  const pir = await pirStore.createPIR({
+    problemSetId,
+    type: pirType,
+    description,
+    priority,
+    sourceType: 'assumption',
+    sourceId: assumptionId,
+    linkedAssumptionIds: assumptionId ? [assumptionId] : [],
+    createdBy: 'ironclaw',
+  });
+
+  return { success: true, pir };
+};
+
+const intelAnswerPIR: ActionHandler = async (payload) => {
+  const pirId = (payload.pir_id ?? payload.pirId) as string;
+  const answer = payload.answer as string;
+  if (!pirId || !answer) {
+    return { success: false, error: 'pir_id and answer are required' };
+  }
+
+  const { pirStore } = await import('../design/pir-store.js');
+  const answeredBy = (payload.answered_by ?? payload.answeredBy ?? 'ironclaw') as string;
+
+  const pir = await pirStore.updatePIR(pirId, {
+    answer,
+    answeredBy,
+    status: 'ANSWERED',
+  });
+
+  if (!pir) return { success: false, error: `PIR ${pirId} not found` };
+  return { success: true, pir };
+};
+
+const intelDerivePIRsFromDesign: ActionHandler = async (payload) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const { pirToolHandlers } = await import('../graph/tools/intelligence-gap-tools.js');
+  return await pirToolHandlers.derive_pirs_from_design({ problemSetId });
+};
+
+// ---------------------------------------------------------------------------
+// PIR Alert Handlers
+// ---------------------------------------------------------------------------
+
+const intelCreatePIRAlert: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const pirId = (payload.pir_id ?? payload.pirId) as string;
+  if (!pirId) return { success: false, error: 'pir_id is required' };
+
+  const summary = payload.summary as string;
+  if (!summary) return { success: false, error: 'summary is required' };
+
+  const evidence = payload.evidence as string;
+  if (!evidence) return { success: false, error: 'evidence is required' };
+
+  const suggestedAnswer = (payload.suggested_answer ?? payload.suggestedAnswer) as string;
+  if (!suggestedAnswer) return { success: false, error: 'suggested_answer is required' };
+
+  // Fetch the PIR to get its metadata
+  const { pirStore } = await import('../design/pir-store.js');
+  const pir = await pirStore.getPIR(pirId);
+  if (!pir) return { success: false, error: `PIR ${pirId} not found` };
+  if (pir.status !== 'ACTIVE') return { success: false, error: `PIR ${pirId} is not active (status: ${pir.status})` };
+
+  const { createPIRAlertDecision } = await import('../decisions/pir-alert-handler.js');
+  const decision = await createPIRAlertDecision({
+    problemSetId,
+    pirId,
+    pirType: pir.type,
+    pirPriority: pir.priority,
+    pirDescription: pir.description,
+    suggestedAnswer,
+    linkedAssumptionIds: pir.linkedAssumptionIds,
+    linkedObjectiveIds: pir.linkedObjectiveIds,
+  });
+
+  return {
+    success: true,
+    decisionId: decision.id,
+    pirId,
+    pirType: pir.type,
+    pirPriority: pir.priority,
+    message: `PIR alert decision created (${decision.id}). Commander will be prompted to accept, reject, or request more info.`,
+  };
+};
+
+const intelGetPIRAlertHistory: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const { decisionStore } = await import('../decisions/decision-store.js');
+  const decisions = await decisionStore.getByProblemSet(problemSetId, {
+    decision_type: 'pir_alert',
+  });
+
+  return {
+    success: true,
+    alerts: decisions.map((d) => ({
+      decisionId: d.id,
+      title: d.title,
+      status: d.status,
+      pirId: (d.context_json as Record<string, unknown>).pirId,
+      pirType: (d.context_json as Record<string, unknown>).pirType,
+      pirPriority: (d.context_json as Record<string, unknown>).pirPriority,
+      suggestedAnswer: (d.context_json as Record<string, unknown>).suggestedAnswer,
+      decidedBy: d.decided_by,
+      decidedAt: d.decided_at,
+      createdAt: d.created_at,
+    })),
+    total: decisions.length,
+    pending: decisions.filter((d) => d.status === 'pending').length,
+    approved: decisions.filter((d) => d.status === 'approved').length,
+    rejected: decisions.filter((d) => d.status === 'rejected').length,
   };
 };
 
@@ -1010,6 +1428,25 @@ export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   'bastion.graph.get_actor': graphGetActor,
   'bastion.graph.query': graphQuery,
   'bastion.graph.stats': graphStats,
+  // Intelligence gap monitoring (4)
+  'bastion.intel.get_intelligence_gaps': intelGetGaps,
+  'bastion.intel.get_gap_filler_status': intelGetGapFillerStatus,
+  'bastion.intel.prioritize_gap_research': intelPrioritizeGap,
+  'bastion.intel.request_targeted_research': intelRequestTargetedResearch,
+  // PIR/CCIR management (4)
+  'bastion.intel.get_priority_intel_requirements': intelGetPIRs,
+  'bastion.intel.create_pir_from_assumption': intelCreatePIRFromAssumption,
+  'bastion.intel.answer_pir': intelAnswerPIR,
+  'bastion.intel.derive_pirs_from_design': intelDerivePIRsFromDesign,
+  // PIR Alert tools (2)
+  'bastion.intel.create_pir_alert': intelCreatePIRAlert,
+  'bastion.intel.get_pir_alert_history': intelGetPIRAlertHistory,
+  // Cross-scope graph & objective hierarchy (5)
+  'bastion.graph.get_objective_hierarchy': graphGetObjectiveHierarchy,
+  'bastion.graph.adopt_objective': graphAdoptObjective,
+  'bastion.graph.assess_objectives': graphAssessObjectives,
+  'bastion.graph.query_global': graphQueryGlobal,
+  'bastion.graph.query_parent': graphQueryParent,
 };
 
 // ---------------------------------------------------------------------------

@@ -209,6 +209,7 @@ class StrategicService {
     if (filters?.status) params.append('status', filters.status);
     if (filters?.documentId) params.append('documentId', filters.documentId);
     if (filters?.priority) params.append('priority', filters.priority);
+    if (filters?.workspaceId) params.append('workspaceId', filters.workspaceId);
     if (filters?.humanVerified !== undefined) {
       params.append('humanVerified', String(filters.humanVerified));
     }
@@ -250,6 +251,61 @@ class StrategicService {
       method: 'POST',
       body: JSON.stringify({ verified }),
     });
+  }
+
+  /**
+   * Adopt an objective from a parent problem set into a target workspace.
+   * Creates a DRAFT copy linked to the source via parent_objective_id.
+   */
+  async adoptObjective(objectiveId: string, targetWorkspaceId: string): Promise<StrategicObjective> {
+    return this.fetch<StrategicObjective>(
+      `/api/strategic/objectives/${encodeURIComponent(objectiveId)}/adopt`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ targetWorkspaceId }),
+      }
+    );
+  }
+
+  /**
+   * Trigger proactive objective assessment for a problem set.
+   * Fetches parent objectives and auto-adopts relevant ones as DRAFT.
+   */
+  async assessObjectivesForProblemSet(problemSetId: string): Promise<{
+    adopted: StrategicObjective[];
+    parentObjectiveCount: number;
+    newlyAdoptedCount: number;
+    skippedCount: number;
+  }> {
+    return this.fetch<{
+      adopted: StrategicObjective[];
+      parentObjectiveCount: number;
+      newlyAdoptedCount: number;
+      skippedCount: number;
+    }>('/api/strategic/objectives/assess', {
+      method: 'POST',
+      body: JSON.stringify({ problemSetId }),
+    });
+  }
+
+  /**
+   * Get objective hierarchy for a problem set.
+   * Returns objectives grouped by source problem set from the parent chain.
+   */
+  async getObjectiveHierarchy(problemSetId: string): Promise<{
+    problemSetId: string;
+    problemSetName: string;
+    echelon: string;
+    objectives: StrategicObjective[];
+  }[]> {
+    return this.fetch<{
+      problemSetId: string;
+      problemSetName: string;
+      echelon: string;
+      objectives: StrategicObjective[];
+    }[]>(
+      `/api/strategic/objectives/hierarchy?problemSetId=${encodeURIComponent(problemSetId)}`
+    );
   }
 
   // ============================================================================

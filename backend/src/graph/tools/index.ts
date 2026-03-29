@@ -48,6 +48,13 @@ export {
   ewmToolHandlers,
 } from './ewm-tools.js';
 
+export {
+  intelligenceGapToolDefinitions,
+  intelligenceGapToolHandlers,
+  pirToolDefinitions,
+  pirToolHandlers,
+} from './intelligence-gap-tools.js';
+
 import { objectiveToolDefinitions } from './objective-tools.js';
 import { entityToolDefinitions } from './entity-tools.js';
 import { osintToolDefinitions } from './osint-tools.js';
@@ -56,6 +63,7 @@ import { raftToolDefinitions } from './raft-tools.js';
 import { resourceToolDefinitions } from './resource-tools.js';
 import { jppToolDefinitions } from './jpp-tools.js';
 import { ewmToolDefinitions } from './ewm-tools.js';
+import { intelligenceGapToolDefinitions, pirToolDefinitions } from './intelligence-gap-tools.js';
 
 /**
  * All fusion tool definitions for registration
@@ -69,4 +77,6 @@ export const allFusionToolDefinitions = [
   ...resourceToolDefinitions,
   ...jppToolDefinitions,
   ...ewmToolDefinitions,
+  ...intelligenceGapToolDefinitions,
+  ...pirToolDefinitions,
 ];

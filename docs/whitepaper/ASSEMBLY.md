@@ -2,9 +2,9 @@
 
 ## Version Control
 
-**Current Version:** v0.3 (Draft)
-**Last Updated:** 2026-03-26
-**Status:** Major update reflecting capabilities through Phase 58
+**Current Version:** v0.4 (Draft)
+**Last Updated:** 2026-03-28
+**Status:** Alignment update, reconciled with briefing narrative, added AI-as-infrastructure argument, updated metrics through Phase 60
 
 ---
 
@@ -29,7 +29,6 @@ Assemble sections in this order:
 | 13 | `06-conclusion.md` | 6. Conclusion |
 | 14 | `07-references.md` | 7. References (Zotero-generated) |
 | 15 | `appendix-a-sitrep.md` | Appendix A: SITREP |
-| 16 | `appendix-b-demo-script.md` | Appendix B: Demo Script |
 
 ---
 
@@ -91,8 +90,7 @@ Assemble sections in this order:
      05-discussion.md \
      06-conclusion.md \
      07-references.md \
-     appendix-a-sitrep.md \
-     appendix-b-demo-script.md
+     appendix-a-sitrep.md
    ```
 
 3. Open `whitepaper.docx` in Microsoft Word
@@ -203,6 +201,7 @@ Exports are saved to `docs/whitepaper/exports/`:
 | v0.1 | 2026-01-24 | Initial draft - all sections complete |
 | v0.2 | 2026-03-23 | Major update: 16 deployed AI agents, doctrinal tabs, COP, IPB, resource DIDs, training mode, robot integration, knowledge graphs, swarm behaviors, 8 contributions |
 | v0.3 | 2026-03-26 | Added Phase 55-58 content: Ironclaw as Chief of Staff for operational design (Section 3.21), visual operational approach editor (Section 3.22), Ironclaw persistent memory (Section 3.23), on-chain resource DID caveats (Section 3.24). Phase 55-58 results added to Section 4.6. Discussion updated with v0.3 limitations and future work for each new capability. SITREP updated through Phase 58. Chicago 18th edition footnotes formalized for Phases 55-58 citations. |
+| v0.4 | 2026-03-28 | Alignment with briefing narrative: reconciled research question framing (scalable/auditable/institutionally legitimate), reconciled agent count to 25 specialized, added AI-as-infrastructure paradigm argument, added echelon-based authority tier taxonomy, strengthened robot authority escalation narrative, added "policy tells vs. contracts enforce" framing, updated all metrics. |
 
 ---
 
@@ -227,7 +226,6 @@ docs/whitepaper/
 ├── 06-conclusion.md           # Research question answer
 ├── 07-references.md           # Bibliography placeholder
 ├── appendix-a-sitrep.md       # Implementation status
-├── appendix-b-demo-script.md  # 20-minute demo script
 ├── ASSEMBLY.md                # This file
 ├── scripts/
 │   ├── export.sh              # Export script for PDF/DOCX

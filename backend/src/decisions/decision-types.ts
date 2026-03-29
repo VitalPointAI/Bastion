@@ -118,6 +118,10 @@ export const DECISION_TYPES = {
   order_release: 'order_release',
   design_revision: 'design_revision',
   escalation: 'escalation',
+  ccir_alert: 'ccir_alert',
+  pir_answered: 'pir_answered',
+  ffir_alert: 'ffir_alert',
+  eefi_alert: 'eefi_alert',
 } as const;
 
 export type DecisionType = (typeof DECISION_TYPES)[keyof typeof DECISION_TYPES];

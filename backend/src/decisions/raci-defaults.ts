@@ -144,6 +144,27 @@ export const STRATEGIC_RACI_DEFAULTS: RACIDefault[] = [
   { decision_type: DECISION_TYPES.escalation, position: 'xo', raci_role: 'C' },
   { decision_type: DECISION_TYPES.escalation, position: 'j3', raci_role: 'C' },
   { decision_type: DECISION_TYPES.escalation, position: 'j5', raci_role: 'I' },
+
+  // PIR Alert — Commander decides on intelligence relevance
+  // CCIR: Commander-critical, immediate notification to all staff
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'commander', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'xo', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'j2', raci_role: 'C' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'j3', raci_role: 'I' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'j5', raci_role: 'I' },
+  // PIR: J2 processes, commander reviews at next update
+  { decision_type: DECISION_TYPES.pir_answered, position: 'j2', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.pir_answered, position: 'commander', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.pir_answered, position: 'j3', raci_role: 'I' },
+  { decision_type: DECISION_TYPES.pir_answered, position: 'j5', raci_role: 'I' },
+  // FFIR: Reports to commander on friendly status
+  { decision_type: DECISION_TYPES.ffir_alert, position: 'j3', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.ffir_alert, position: 'commander', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.ffir_alert, position: 'j2', raci_role: 'I' },
+  // EEFI: Info we must protect from adversary
+  { decision_type: DECISION_TYPES.eefi_alert, position: 'j2', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.eefi_alert, position: 'commander', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.eefi_alert, position: 'j6', raci_role: 'C' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -263,6 +284,27 @@ export const OPERATIONAL_RACI_DEFAULTS: RACIDefault[] = [
   { decision_type: DECISION_TYPES.escalation, position: 'commander', raci_role: 'R' },
   { decision_type: DECISION_TYPES.escalation, position: 'xo', raci_role: 'C' },
   { decision_type: DECISION_TYPES.escalation, position: 'j3', raci_role: 'C' },
+
+  // PIR Alert — Commander decides on intelligence relevance
+  // CCIR: Commander-critical, immediate notification to all staff
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'commander', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'xo', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'g2', raci_role: 'C' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'g3', raci_role: 'I' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'g5', raci_role: 'I' },
+  // PIR: J2 processes, commander reviews at next update
+  { decision_type: DECISION_TYPES.pir_answered, position: 'g2', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.pir_answered, position: 'commander', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.pir_answered, position: 'g3', raci_role: 'I' },
+  { decision_type: DECISION_TYPES.pir_answered, position: 'g5', raci_role: 'I' },
+  // FFIR: Reports to commander on friendly status
+  { decision_type: DECISION_TYPES.ffir_alert, position: 'g3', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.ffir_alert, position: 'commander', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.ffir_alert, position: 'g2', raci_role: 'I' },
+  // EEFI: Info we must protect from adversary
+  { decision_type: DECISION_TYPES.eefi_alert, position: 'g2', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.eefi_alert, position: 'commander', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.eefi_alert, position: 'g6', raci_role: 'C' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -376,6 +418,27 @@ export const TACTICAL_RACI_DEFAULTS: RACIDefault[] = [
   { decision_type: DECISION_TYPES.escalation, position: 'commander', raci_role: 'R' },
   { decision_type: DECISION_TYPES.escalation, position: 'xo', raci_role: 'C' },
   { decision_type: DECISION_TYPES.escalation, position: 's3', raci_role: 'C' },
+
+  // PIR Alert — Commander decides on intelligence relevance
+  // CCIR: Commander-critical, immediate notification to all staff
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'commander', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 'xo', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 's2', raci_role: 'C' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 's3', raci_role: 'I' },
+  { decision_type: DECISION_TYPES.ccir_alert, position: 's5', raci_role: 'I' },
+  // PIR: J2 processes, commander reviews at next update
+  { decision_type: DECISION_TYPES.pir_answered, position: 's2', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.pir_answered, position: 'commander', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.pir_answered, position: 's3', raci_role: 'I' },
+  { decision_type: DECISION_TYPES.pir_answered, position: 's5', raci_role: 'I' },
+  // FFIR: Reports to commander on friendly status
+  { decision_type: DECISION_TYPES.ffir_alert, position: 's3', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.ffir_alert, position: 'commander', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.ffir_alert, position: 's2', raci_role: 'I' },
+  // EEFI: Info we must protect from adversary
+  { decision_type: DECISION_TYPES.eefi_alert, position: 's2', raci_role: 'R' },
+  { decision_type: DECISION_TYPES.eefi_alert, position: 'commander', raci_role: 'A' },
+  { decision_type: DECISION_TYPES.eefi_alert, position: 's6', raci_role: 'C' },
 ];
 
 // ---------------------------------------------------------------------------

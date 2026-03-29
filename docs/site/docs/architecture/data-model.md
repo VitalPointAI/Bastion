@@ -78,12 +78,15 @@ The plugin architecture allows new resource types to be defined without schema c
 
 ## AI Agents and Teams
 
-BASTION deploys 131 AI agents organized into two categories:
+BASTION deploys 25 specialized AI agents across five functional categories:
 
 | Category | Count | Description |
 |---|---|---|
-| Specialized agents | 31 | Purpose-built for specific capabilities (COP generation, wargaming, assessment, etc.) |
-| JPP staff agents | 102 | Mapped to Joint Planning Process staff roles across J1-J9 directorates |
+| LangGraph analysis | 8 | Document intelligence, OSINT, entity resolution, strategic analysis |
+| COP layer | 7 | MIL-STD-2525D symbol generation, entity linking, layer governance |
+| MDMP governance | 6 | Assumption Auditor, Orders Validator, Uncertainty Quantifier, Data Bias Detector, Problem Framing, ROE Compliance |
+| Escalation/Competition | 3 | Adversary Modeler, Escalation Modeler, Effect Cascader |
+| Chief of Staff | 1 | Ironclaw — role-adaptive coordinator spanning all JPP staff functions |
 
 Each agent record includes:
 

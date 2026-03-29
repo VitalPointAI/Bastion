@@ -1,6 +1,6 @@
 # Agent Catalog
 
-All 131 BASTION agents organized by category. Every agent operates at the **SemiAutonomous** authority level -- outputs require human approval before execution.
+BASTION's 25 specialized AI agents organized by category. Every agent operates within the five-tier authority model -- consequential outputs require human approval before execution. Ironclaw serves as a single role-adaptive Chief of Staff that adapts to each JPP staff function contextually, replacing the earlier model of 102 separate JPP staff role agents.
 
 ## Governance Agents
 

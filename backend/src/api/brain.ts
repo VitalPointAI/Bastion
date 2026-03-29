@@ -246,6 +246,111 @@ router.get('/graph-snapshot', async (req: Request, res: Response) => {
 });
 
 // =====================
+// GLOBAL GRAPH SNAPSHOT ENDPOINT
+// =====================
+
+// GET /api/brain/global/graph-snapshot?atTime=ISO_TIMESTAMP&classification=SECRET
+// Returns the graph state across ALL problem sets (no workspace filter).
+// Each node carries its workspaceId so the frontend can group/color by problem set.
+router.get('/global/graph-snapshot', async (req: Request, res: Response) => {
+  try {
+    const atTime = getQueryString(req.query.atTime);
+    const classification = getQueryString(req.query.classification);
+    const timestamp = atTime ?? new Date().toISOString();
+
+    // Query all actors across all workspaces (no workspaceId filter)
+    const actorResult = await executeReadQuery(
+      `MATCH (a:Actor)
+       WHERE a.createdAt <= $timestamp
+       RETURN a`,
+      { timestamp }
+    );
+
+    const actors = actorResult.records.map((r) => {
+      const props = r.get('a').properties as Record<string, unknown>;
+      return {
+        id: props.id as string,
+        label: props.name as string,
+        type: props.type as string,
+        workspaceId: props.workspaceId as string,
+        createdAt: props.createdAt as string,
+        jsonldType: props.jsonldType ?? null,
+        confidence: typeof props.confidence === 'number' ? props.confidence : 0,
+        validFrom: props.validFrom ?? props.createdAt ?? null,
+        validTo: props.validTo ?? null,
+        assertedVia: props.assertedVia ?? null,
+        assertedBy: props.assertedBy ?? null,
+        sourceWeight: props.sourceWeight ?? null,
+        halfLifeDays: props.halfLifeDays ?? null,
+        natoSourceReliability: props.natoSourceReliability ?? null,
+        natoInformationCredibility: typeof props.natoInformationCredibility === 'number' ? props.natoInformationCredibility : null,
+      };
+    });
+
+    // Optional classification filter: only include actors from matching workspaces
+    let filteredActors = actors;
+    if (classification) {
+      const { getPool } = await import('../lib/database.js');
+      const pool = getPool();
+      const classResult = await pool.query(
+        'SELECT id FROM graph_problem_sets WHERE classification = $1',
+        [classification]
+      );
+      const allowedIds = new Set(classResult.rows.map(r => r.id as string));
+      filteredActors = actors.filter(a => allowedIds.has(a.workspaceId));
+    }
+
+    // Enrich nodes with confidence tier
+    const enrichedNodes = filteredActors.map((node) => ({
+      ...node,
+      confidenceTier: getConfidenceTier(node.confidence),
+    }));
+
+    const actorIdSet = new Set(enrichedNodes.map(a => a.id));
+
+    // Query all relationships (no workspace filter)
+    let edges: Array<{
+      id: string;
+      source: string;
+      target: string;
+      type: string;
+      strength: number;
+    }> = [];
+
+    if (actorIdSet.size > 0) {
+      const relResult = await executeReadQuery(
+        `MATCH (source:Actor)-[r:RELATES_TO]->(target:Actor)
+         WHERE r.createdAt <= $timestamp
+           AND source.createdAt <= $timestamp
+           AND target.createdAt <= $timestamp
+         RETURN r, source.id AS sourceId, target.id AS targetId`,
+        { timestamp }
+      );
+
+      edges = relResult.records
+        .map((r) => {
+          const relProps = r.get('r').properties as Record<string, unknown>;
+          const sourceId = r.get('sourceId') as string;
+          const targetId = r.get('targetId') as string;
+          if (!actorIdSet.has(sourceId) || !actorIdSet.has(targetId)) return null;
+          return {
+            id: relProps.id as string,
+            source: sourceId,
+            target: targetId,
+            type: relProps.type as string,
+            strength: relProps.strength as number,
+          };
+        })
+        .filter((e): e is NonNullable<typeof e> => e !== null);
+    }
+
+    res.json({ nodes: enrichedNodes, edges });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
 // GAP DETECTION ENDPOINT
 // =====================
 

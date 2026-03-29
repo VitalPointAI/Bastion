@@ -16,7 +16,10 @@ import { performWebSearch } from '../doc-intelligence/web-search.js';
 import { extractAndSyncToGraph } from '../osint/osint-entity-extractor.js';
 import { osintEventStore } from '../graph/osint/event-store.js';
 import { getMessageBus } from '../messaging/message-bus.js';
+import { pirStore } from '../design/pir-store.js';
+import { createPIRAlertDecision } from '../decisions/pir-alert-handler.js';
 import type { OSINTEvent } from '../graph/osint/types.js';
+import type { PIR } from '../design/pir-store.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -81,6 +84,68 @@ class IronclawGapFillerService {
     console.log(`[GapFiller] Monitoring problem set: ${problemSetId}`);
   }
 
+  /** Timestamp of the last completed cycle per problem set */
+  private lastRunTimestamps = new Map<string, number>();
+
+  /** Count of gaps processed per problem set in the last cycle */
+  private lastCycleGapsProcessed = new Map<string, number>();
+
+  /**
+   * Get the current status of the gap filler service for a problem set.
+   */
+  getStatus(problemSetId: string): {
+    isMonitored: boolean;
+    isRunning: boolean;
+    lastRunAt: string | null;
+    gapsProcessedLastCycle: number;
+    activeCooldowns: Array<{ gapId: string; expiresAt: string }>;
+    monitoredProblemSets: string[];
+    intervalMs: number;
+    nextScheduledRun: string | null;
+  } {
+    const now = Date.now();
+    const isMonitored = this.monitoredProblemSets.has(problemSetId);
+    const lastRun = this.lastRunTimestamps.get(problemSetId);
+
+    const activeCooldowns: Array<{ gapId: string; expiresAt: string }> = [];
+    for (const [gapId, cooldownStart] of this.cooldowns.entries()) {
+      const expiresAt = cooldownStart + GAP_COOLDOWN_MS;
+      if (expiresAt > now) {
+        activeCooldowns.push({
+          gapId,
+          expiresAt: new Date(expiresAt).toISOString(),
+        });
+      }
+    }
+
+    let nextScheduledRun: string | null = null;
+    if (isMonitored && this.timer && lastRun) {
+      nextScheduledRun = new Date(lastRun + GAP_CHECK_INTERVAL_MS).toISOString();
+    } else if (isMonitored && this.timer) {
+      // First run pending
+      nextScheduledRun = 'pending (initial cycle)';
+    }
+
+    return {
+      isMonitored,
+      isRunning: this.timer !== null,
+      lastRunAt: lastRun ? new Date(lastRun).toISOString() : null,
+      gapsProcessedLastCycle: this.lastCycleGapsProcessed.get(problemSetId) ?? 0,
+      activeCooldowns,
+      monitoredProblemSets: [...this.monitoredProblemSets],
+      intervalMs: GAP_CHECK_INTERVAL_MS,
+      nextScheduledRun,
+    };
+  }
+
+  /**
+   * Prioritize a specific gap by clearing its cooldown so it is eligible
+   * for immediate research on the next cycle (or via fillGapsForProblemSet).
+   */
+  prioritizeGap(gapNodeId: string): void {
+    this.cooldowns.delete(gapNodeId);
+  }
+
   /**
    * Stop the gap filler service entirely.
    */
@@ -100,12 +165,15 @@ class IronclawGapFillerService {
     for (const psId of this.monitoredProblemSets) {
       try {
         const results = await this.fillGapsForProblemSet(psId);
+        this.lastRunTimestamps.set(psId, Date.now());
+        this.lastCycleGapsProcessed.set(psId, results.length);
         if (results.length > 0) {
           console.log(
             `[GapFiller] Filled ${results.length} gap(s) for ${psId}: ${results.map((r) => r.actorName).join(', ')}`,
           );
         }
       } catch (err) {
+        this.lastRunTimestamps.set(psId, Date.now());
         console.error(`[GapFiller] Cycle failed for ${psId}:`, err);
       }
     }
@@ -246,6 +314,9 @@ class IronclawGapFillerService {
       });
     } catch { /* notification is non-fatal */ }
 
+    // Check if new OSINT event matches any active PIRs
+    await this.checkPIRMatches(problemSetId, event, description, gap.nodeLabel);
+
     return {
       gapId: gap.nodeId,
       actorName: gap.nodeLabel,
@@ -254,7 +325,92 @@ class IronclawGapFillerService {
       ...stats,
     };
   }
+
+  /**
+   * Check if a newly created OSINT event matches any active PIRs.
+   * Uses keyword overlap between the PIR description and the OSINT event content.
+   * Creates a PIR_ALERT decision for each match.
+   */
+  private async checkPIRMatches(
+    problemSetId: string,
+    event: { id?: string; title?: string },
+    eventDescription: string,
+    actorName: string,
+  ): Promise<void> {
+    try {
+      const activePIRs = await pirStore.getActivePIRsForGapResearch(problemSetId);
+      if (activePIRs.length === 0) return;
+
+      const eventText = `${actorName} ${eventDescription}`.toLowerCase();
+
+      for (const pir of activePIRs) {
+        if (this.pirMatchesEvent(pir, eventText)) {
+          try {
+            await createPIRAlertDecision({
+              problemSetId,
+              pirId: pir.id,
+              pirType: pir.type,
+              pirPriority: pir.priority,
+              pirDescription: pir.description,
+              osintEventId: (event as Record<string, unknown>).id as string | undefined,
+              matchedEntityIds: [],
+              suggestedAnswer:
+                `Gap filler research on "${actorName}" produced intelligence that may address ` +
+                `this requirement. Key findings: ${eventDescription.slice(0, 500)}`,
+              linkedAssumptionIds: pir.linkedAssumptionIds,
+              linkedObjectiveIds: pir.linkedObjectiveIds,
+            });
+
+            console.log(
+              `[GapFiller] PIR match found: PIR ${pir.id} (${pir.type} #${pir.priority}) ` +
+              `matched by gap research on "${actorName}"`,
+            );
+          } catch (err) {
+            console.warn(`[GapFiller] Failed to create PIR alert for ${pir.id}:`, err);
+          }
+        }
+      }
+    } catch (err) {
+      // PIR matching is non-fatal to the gap fill cycle
+      console.warn('[GapFiller] PIR match check failed:', err);
+    }
+  }
+
+  /**
+   * Simple keyword overlap check between a PIR description and event text.
+   * Extracts significant words (3+ chars) from the PIR description and
+   * checks if enough of them appear in the event text.
+   */
+  private pirMatchesEvent(pir: PIR, eventTextLower: string): boolean {
+    const pirWords = pir.description
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length >= 3)
+      // Filter out common stop words that would cause false positives
+      .filter((w) => !PIR_MATCH_STOP_WORDS.has(w));
+
+    if (pirWords.length === 0) return false;
+
+    const matchCount = pirWords.filter((w) => eventTextLower.includes(w)).length;
+    const matchRatio = matchCount / pirWords.length;
+
+    // Require at least 30% keyword overlap and at least 2 matching words
+    return matchRatio >= 0.3 && matchCount >= 2;
+  }
 }
+
+// ---------------------------------------------------------------------------
+// PIR Match Stop Words
+// ---------------------------------------------------------------------------
+
+/** Common words filtered out during PIR keyword matching to reduce false positives. */
+const PIR_MATCH_STOP_WORDS = new Set([
+  'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'has', 'her',
+  'was', 'one', 'our', 'out', 'this', 'that', 'with', 'have', 'from', 'they',
+  'been', 'will', 'what', 'when', 'who', 'how', 'which', 'their', 'does', 'may',
+  'could', 'would', 'should', 'into', 'than', 'other', 'about', 'more', 'these',
+  'those', 'some', 'such', 'only', 'over', 'also', 'after', 'before', 'between',
+]);
 
 // ---------------------------------------------------------------------------
 // Singleton

@@ -833,11 +833,13 @@ router.get('/objectives', requireAuth, async (req, res) => {
     const status = req.query.status as string | undefined;
     const priority = req.query.priority as string | undefined;
     const instrument = req.query.instrument as string | undefined;
+    const workspaceId = req.query.workspaceId as string | undefined;
 
     const result = await objectives.listObjectives({
       status: status as ObjectiveUpdate['status'],
       priority: priority as ObjectiveUpdate['priority'],
       instrument: instrument as DIMEInstrument,
+      workspaceId,
       limit,
       offset,
     });
@@ -851,6 +853,35 @@ router.get('/objectives', requireAuth, async (req, res) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('List objectives failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/strategic/objectives/hierarchy?problemSetId=X
+ *
+ * Returns objectives from the given problem set and all its ancestors,
+ * grouped by problem set. Walks up the parent_problem_set_id chain.
+ * Each group includes: problemSetId, problemSetName, echelon, objectives[].
+ *
+ * Must be registered before /objectives/:id to avoid Express treating
+ * "hierarchy" as an :id parameter.
+ */
+router.get('/objectives/hierarchy', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const problemSetId = req.query.problemSetId as string | undefined;
+    if (!problemSetId) {
+      return res.status(400).json({ error: 'problemSetId query parameter is required' });
+    }
+
+    const hierarchy = await objectives.getObjectivesForParentChain(problemSetId);
+
+    res.json({ hierarchy });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Objectives hierarchy failed:', message);
     res.status(500).json({ error: message });
   }
 });
@@ -2707,6 +2738,116 @@ router.delete('/containers/:containerId/agents/:agentId', requireAuth, async (re
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Remove agent from container failed:', message);
     res.status(500).json({ error: 'Failed to remove agent from container' });
+  }
+});
+
+// =============================================================================
+// Objective Adoption
+// =============================================================================
+
+/**
+ * POST /api/strategic/objectives/:id/adopt - Adopt an objective into a target workspace
+ * Creates a copy of the objective linked to the source via parent_objective_id
+ */
+router.post('/objectives/:id/adopt', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const sourceObjectiveId = req.params.id as string;
+    const { targetWorkspaceId } = req.body as { targetWorkspaceId: string };
+
+    if (!targetWorkspaceId) {
+      return res.status(400).json({ error: 'targetWorkspaceId is required' });
+    }
+
+    const adopted = await objectives.adoptObjective(sourceObjectiveId, targetWorkspaceId);
+    res.json(adopted);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Adopt objective failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/strategic/objectives/assess - AI-driven objective assessment for a problem set
+ * Fetches objectives from parent problem set documents, identifies relevant ones,
+ * and auto-adopts them as DRAFT into the child problem set.
+ */
+router.post('/objectives/assess', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const { problemSetId } = req.body as { problemSetId: string };
+
+    if (!problemSetId) {
+      return res.status(400).json({ error: 'problemSetId is required' });
+    }
+
+    // Look up the parent workspace for this problem set
+    const { getPool } = await import('../lib/database.js');
+    const pool = getPool();
+    const parentResult = await pool.query(
+      'SELECT parent_problem_set_id FROM problem_sets WHERE id = $1',
+      [problemSetId]
+    );
+
+    if (parentResult.rows.length === 0 || !parentResult.rows[0].parent_problem_set_id) {
+      return res.status(404).json({ error: 'No parent problem set found for the given problem set' });
+    }
+
+    const parentWorkspaceId = parentResult.rows[0].parent_problem_set_id as string;
+
+    // Fetch all objectives from the parent workspace
+    const parentObjectives = await objectives.listObjectives({
+      workspaceId: parentWorkspaceId,
+      limit: 200,
+      offset: 0,
+    });
+
+    if (parentObjectives.objectives.length === 0) {
+      return res.json({ adopted: [], message: 'No objectives found in parent problem set' });
+    }
+
+    // Check which objectives are already adopted in this workspace
+    const existingObjectives = await objectives.listObjectives({
+      workspaceId: problemSetId,
+      limit: 200,
+      offset: 0,
+    });
+
+    const alreadyAdoptedParentIds = new Set(
+      existingObjectives.objectives
+        .filter(o => o.parentObjectiveId)
+        .map(o => o.parentObjectiveId)
+    );
+
+    // Adopt all parent objectives that have not already been adopted
+    const adopted: StrategicObjective[] = [];
+    for (const parentObj of parentObjectives.objectives) {
+      if (alreadyAdoptedParentIds.has(parentObj.id)) {
+        continue; // Skip already-adopted objectives
+      }
+
+      try {
+        const adoptedObj = await objectives.adoptObjective(parentObj.id, problemSetId);
+        adopted.push(adoptedObj);
+      } catch (adoptError) {
+        // Log but continue with remaining objectives
+        console.warn(`Failed to adopt objective ${parentObj.id}:`, adoptError);
+      }
+    }
+
+    res.json({
+      adopted,
+      parentObjectiveCount: parentObjectives.objectives.length,
+      newlyAdoptedCount: adopted.length,
+      skippedCount: parentObjectives.objectives.length - adopted.length,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Assess objectives failed:', message);
+    res.status(500).json({ error: message });
   }
 });
 

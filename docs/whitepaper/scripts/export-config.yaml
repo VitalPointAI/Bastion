@@ -9,14 +9,14 @@ standalone: true
 metadata:
   title: "Decision Overmatch: Accelerating Military Advantage with AI-Augmented Decentralized Autonomous Organizations"
   author: "Aaron Luhning"
-  date: "2026-03-08"
+  date: "2026-03-28"
 
 # Table of contents
 toc: true
 toc-depth: 3
 
 # Numbering
-number-sections: true
+number-sections: false
 
 # PDF settings (via LaTeX)
 pdf-engine: xelatex
@@ -27,4 +27,4 @@ variables:
   documentclass: article
 
 # DOCX settings
-# reference-doc: reference.docx  # Uncomment if custom template exists
+reference-doc: scripts/reference.docx

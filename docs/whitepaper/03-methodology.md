@@ -1,6 +1,6 @@
 # 3. Methodology
 
-This section describes BASTION's architecture and the design principles that guide its implementation. The architectural decisions presented here directly address the gaps identified in Section 2: the lack of decentralized governance for military command and control, the absence of frameworks for multi-stakeholder AI coordination, and the need for policy-compliant autonomous execution with appropriate human authority positions. Each design choice is justified in terms of how it enables effective coalition coordination while maintaining the transparency, accountability, and human control that military operations require.
+This section describes BASTION's architecture and the design principles that guide its implementation. The architectural decisions presented here directly address the gaps identified in Section 2: the lack of decentralized governance for military command and control, the absence of frameworks for multi-stakeholder AI coordination, and the need for policy-compliant autonomous execution with appropriate human authority positions. Each design choice is justified by how it enables effective coalition coordination while maintaining the transparency, accountability, and human control that military operations require.
 
 ## 3.1 Design Principles
 
@@ -8,47 +8,47 @@ BASTION's architecture rests on four foundational principles derived from the ch
 
 ### Decentralization for Resilience
 
-Modern military operations face adversaries who actively target command and control infrastructure. As described in Section 2.5, centralized C2 systems present attractive targets for electronic warfare, cyber attacks, and kinetic strikes. When a coalition's coordination depends on a single command post or network node, disrupting that node can paralyze operations across multiple nations' forces.
+Modern military operations face adversaries who actively target command and control infrastructure. As described in Section 2.6, centralized C2 systems present attractive targets for electronic warfare, cyber attacks, and kinetic strikes. When a coalition's coordination depends on a single command post or network node, disrupting that node can paralyze operations across multiple nations' forces.
 
-BASTION addresses this vulnerability through architectural decentralization. Rather than concentrating coordination logic in any single location, the system distributes governance across a network of nodes operated by coalition partners. Each partner maintains the capability to participate in coordination even if communication with other partners is degraded. The blockchain substrate ensures that when connectivity is restored, the system can reconcile state across previously disconnected nodes and continue operations from a consistent foundation.
+BASTION addresses this vulnerability through architectural decentralization. Rather than concentrating coordination logic in any single location, the system distributes governance across a network of nodes operated by coalition partners. Each partner retains the capability to participate in coordination even when communication with other partners degrades. The blockchain substrate ensures that when connectivity is restored, the system can reconcile state across previously disconnected nodes and continue operations from a consistent foundation.
 
-This decentralized architecture directly addresses the DDIL (Disconnected, Degraded, Intermittent, Limited-bandwidth) challenges identified in Section 2.5. Forces operating in contested electromagnetic environments can continue to execute pre-approved missions using locally cached governance state. When they reconnect, their actions are recorded on the shared ledger, maintaining the audit trail and enabling reconciliation with broader coalition activities. No single point of failure exists that an adversary could target to disable coalition coordination.
+This decentralized architecture directly addresses the DDIL (Disconnected, Degraded, Intermittent, Limited-bandwidth) challenges identified in Section 2.6. Forces operating in contested electromagnetic environments can continue to execute pre-approved missions using locally cached governance state. When they reconnect, the shared ledger records their actions, maintaining the audit trail and enabling reconciliation with broader coalition activities. No single point of failure exists that an adversary could target to disable coalition coordination.
 
 ### Transparency for Trust
 
-Coalition operations require trust among partners who may have competing national interests, different operational doctrines, and varying levels of information sharing authority. As described in Section 2.6, building this trust through traditional means is time-consuming and may never fully overcome suspicions that partner nations are not fully sharing information or are pursuing hidden agendas.
+Coalition operations require trust among partners who may have competing national interests, different operational doctrines, and varying levels of information sharing authority. As described in Section 2.7, building this trust through traditional means is time-consuming and may never fully overcome suspicions that partner nations are withholding information or pursuing hidden agendas.
 
-BASTION provides transparency through blockchain's immutable audit trail. Every proposal submitted to the governance system, every vote cast, every resource allocation approved, and every mission authorized is permanently recorded with cryptographic proof of its origin. Coalition partners can verify for themselves that the system is operating according to agreed-upon rules rather than relying on assurances from other partners.
+BASTION provides transparency through blockchain's immutable audit trail. Every proposal submitted to the governance system, every vote cast, every resource allocation approved, and every mission authorized is permanently recorded with cryptographic proof of its origin. Coalition partners can verify for themselves that the system operates according to agreed-upon rules rather than relying on assurances from other partners.
 
-This transparency operates across organizational boundaries. When multiple nations collaborate on a campaign, each nation's authorized representatives can observe how their partner nations are voting, what resources they are committing, and whether approved actions are being executed. This visibility enables accountability without requiring any nation to cede control to a centralized authority. The shared ledger serves as a neutral, verifiable record that all parties can trust.
+This transparency operates across organizational boundaries. When multiple nations collaborate on a campaign, each nation's authorized representatives can observe how partner nations are voting, what resources they are committing, and whether approved actions are being executed. This visibility enables accountability without requiring any nation to cede control to a centralized authority. The shared ledger serves as a neutral, verifiable record that all parties can trust.
 
 The audit trail also supports after-action review and learning. When coalition operations produce unexpected outcomes, the complete record of decisions enables analysis of what went wrong and how procedures can be improved. Attribution in disputes is straightforward: the blockchain records precisely who approved what, when, and under what circumstances.
 
 ### AI Augmentation for Speed
 
-Section 2.7 identified the operational level as where the gap between strategic intent and tactical execution is most acute. Joint All-Domain Command and Control (JADC2) envisions accelerating decision cycles through sensor-to-shooter connectivity, but connectivity alone does not address the cognitive burden on human decision-makers who must process vast amounts of information and make timely decisions.
+Section 2.8 identified the operational level as where the gap between strategic intent and tactical execution is most acute. Joint All-Domain Command and Control (JADC2) envisions accelerating decision cycles through sensor-to-shooter connectivity, but connectivity alone does not address the cognitive burden on human decision-makers who must process vast amounts of information and make timely decisions.
 
 BASTION integrates AI agents at each level of the governance hierarchy to augment human decision-making. These agents analyze proposals, assess risks, and present recommendations in formats optimized for human comprehension. They can process intelligence from multiple sources, identify patterns that might escape human attention, and flag issues that require human judgment. By handling routine analysis and presentation, AI agents free human decision-makers to focus on the judgments that require human wisdom, creativity, and ethical reasoning.
 
-Critically, AI augmentation in BASTION does not replace human authority. As described in Section 2.9, the appropriate relationship between humans and AI depends on the consequences of potential errors. BASTION implements graduated autonomy: AI agents may execute routine, low-consequence actions autonomously, while higher-consequence decisions require human approval at appropriate authority levels. The speed benefits of AI augmentation are realized within a framework that preserves human control over decisions with significant implications.
+Critically, AI augmentation in BASTION does not replace human authority. As described in Section 2.10, the appropriate relationship between humans and AI depends on the consequences of potential errors. BASTION implements graduated autonomy: AI agents may execute routine, low-consequence actions autonomously, while higher-consequence decisions require human approval at appropriate authority levels. The speed benefits of AI augmentation are realized within a framework that preserves human control over decisions with significant implications.
 
 This approach addresses the tempo requirements of modern operations while maintaining the accountability that military command requires. Commanders retain authority over critical decisions but are not overwhelmed by routine matters that AI agents can handle within established policy constraints.
 
 ### Policy Compliance by Design
 
-Section 2.6 identified national caveats and information sharing restrictions as significant constraints on coalition coordination. Each nation participates in coalitions subject to its own national policies regarding what information can be shared, what actions can be authorized, and what resources can be committed. These policies are not merely preferences; they are legal requirements that coalition systems must respect.
+Section 2.7 identified national caveats and information sharing restrictions as significant constraints on coalition coordination. Each nation participates in coalitions subject to its own national policies regarding what information can be shared, what actions can be authorized, and what resources can be committed. These policies are not merely preferences; they are legal requirements that coalition systems must respect.
 
-Traditional approaches to policy compliance rely on human review at each decision point to ensure that proposed actions comply with applicable policies. This approach introduces delays and places the burden of compliance on individuals who may not fully understand all applicable constraints. Errors in compliance can have serious diplomatic and legal consequences.
+Traditional approaches to policy compliance rely on human review at each decision point to verify that proposed actions comply with applicable policies. This approach introduces delays and places the compliance burden on individuals who may not fully understand all applicable constraints. Errors in compliance can have serious diplomatic and legal consequences.
 
-BASTION addresses this challenge by encoding policies directly in smart contracts that govern the system's operation. National caveats, information classification requirements, release authority rules, and operational constraints are expressed as executable code that the governance system enforces automatically. Proposals that violate encoded policies cannot be approved; resources subject to restrictions cannot be allocated outside their permitted uses; information can only flow to recipients authorized to receive it.
+BASTION addresses this challenge by encoding policies directly in smart contracts that govern the system's operation. National caveats, information classification requirements, release authority rules, and operational constraints are expressed as executable code that the governance system enforces automatically. The system cannot approve proposals that violate encoded policies; resources subject to restrictions cannot be allocated outside their permitted uses; information can only flow to recipients authorized to receive it.
 
 This approach provides several advantages. First, compliance is consistent: the same rules apply every time, without variation based on individual interpretation or oversight. Second, compliance is verifiable: coalition partners can examine the smart contract code to confirm that their policies are correctly encoded. Third, compliance is auditable: when questions arise about whether actions complied with policy, the blockchain record shows exactly what rules were in effect and how they were applied.
 
-Smart contract policy enforcement is particularly valuable for bounded autonomy. AI agents can be permitted to act within the bounds established by policy without requiring case-by-case human approval, because the policies themselves constrain what actions are possible. This enables speed where policy permits while ensuring that AI agents cannot exceed their authorized scope.
+Smart contract policy enforcement is particularly valuable for bounded autonomy. AI agents can act within the bounds established by policy without requiring case-by-case human approval, because the policies themselves constrain what actions are possible. This enables speed where policy permits while ensuring that AI agents cannot exceed their authorized scope.
 
 ## 3.2 Architecture Overview
 
-BASTION implements a layered architecture that maps to the military levels of warfare described in Section 2.5. This mapping ensures that the governance structure aligns with existing military organizational concepts while enabling novel coordination capabilities through blockchain and AI integration.
+BASTION implements a layered architecture that maps to the military levels of warfare described in Section 2.6. This mapping ensures that the governance structure aligns with existing military organizational concepts while enabling novel coordination capabilities through blockchain and AI integration.
 
 ### Three-Tier DAO Structure
 
@@ -66,9 +66,9 @@ AI agents at the operational level fuse intelligence from multiple sources, asse
 
 **Tactical-Level DAO.** The Tactical DAO governs mission-specific decisions, asset coordination, and target identification within policy constraints. Decisions at this level must often occur in real-time or near-real-time, requiring different governance mechanisms than higher levels.
 
-Tactical proposals may be approved through streamlined processes that enable rapid response while maintaining accountability. Pre-approved mission types can be executed by AI agents within the bounds established by higher-level policy, with human authority required only for exceptions or high-consequence actions. The Tactical DAO records all actions for later review, ensuring that even rapid tactical execution leaves an auditable trail.
+The system may approve tactical proposals through streamlined processes that enable rapid response while maintaining accountability. AI agents can execute pre-approved mission types within the bounds established by higher-level policy, with human authority required only for exceptions or high-consequence actions. The Tactical DAO records all actions for later review, ensuring that even rapid tactical execution leaves an auditable trail.
 
-The interaction between human decision-makers and AI agents at the tactical level is calibrated to mission requirements. Routine coordination actions may proceed autonomously, while actions with significant risk or policy implications require human approval. The authority position for each decision type is explicitly defined in smart contract code, ensuring consistent application across the coalition.
+The interaction between human decision-makers and AI agents at the tactical level is calibrated to mission requirements. Routine coordination actions may proceed autonomously, while actions with significant risk or policy implications require human approval. Smart contract code explicitly defines the authority position for each decision type, ensuring consistent application across the coalition.
 
 ### Inter-DAO Communication
 
@@ -88,7 +88,7 @@ Before operational planning can begin, BASTION requires establishment of a missi
 
 **Participant Onboarding.** Mission participants join through two mechanisms: direct invitation from the organization roster for known members, and invitation links or codes for external participants. Both methods ultimately result in cryptographic identity verification through the NEAR Protocol identity layer. Upon joining, participants receive role assignments that govern their authorities within the mission context.
 
-**Command Relationship Configuration.** BASTION implements the full spectrum of military command relationships described in Section 2.7.1: OPCON, TACON, ADCON, COCOM, and support relationships (DS, GS, GSR, R). Commanders configure these relationships through a visual editor that presents both organizational chart and matrix views. The system validates configurations, warning of circular command relationships or orphaned units while permitting overrides for non-standard situations. Critically, command relationships drive permission cascades: a commander automatically gains visibility into subordinate resources and activities based on the configured relationship type.
+**Command Relationship Configuration.** BASTION implements the full spectrum of military command relationships described in Section 2.8.1: OPCON, TACON, ADCON, COCOM, and support relationships (DS, GS, GSR, R). Commanders configure these relationships through a visual editor that presents both organizational chart and matrix views. The system validates configurations, warning of circular command relationships or orphaned units while permitting overrides for non-standard situations. Critically, command relationships drive permission cascades: a commander automatically gains visibility into subordinate resources and activities based on the configured relationship type.
 
 **Mission Lifecycle States.** Missions progress through defined lifecycle states: Planning, Active, Complete, and Archived. These states govern what actions are permitted and what visibility coalition members have. Planning state enables configuration changes; Active state locks critical settings while enabling operational execution; Complete state preserves the mission record while preventing further actions; Archived state removes the mission from active views while maintaining the immutable blockchain record for historical reference and accountability.
 
@@ -124,9 +124,11 @@ BASTION's architecture required numerous design decisions, each with alternative
 
 The choice of blockchain platform is fundamental to BASTION's capabilities. Three primary alternatives were considered: Ethereum, the most established smart contract platform; Solana, known for high transaction throughput; and private blockchain implementations that would restrict network participation to coalition members.
 
-NEAR Protocol was selected for several conceptual advantages that align with BASTION's requirements. First, NEAR's sharded architecture provides the scalability necessary for military operations that may involve thousands of transactions representing tactical actions, intelligence updates, and resource state changes. The protocol can process transactions with finality in approximately two seconds, enabling near-real-time coordination without sacrificing the security guarantees that blockchain provides [CITATION NEEDED: NEAR Protocol documentation].
+NEAR Protocol was selected for several conceptual advantages that align with BASTION's requirements. First, NEAR's sharded architecture provides the scalability necessary for military operations that may involve thousands of transactions representing tactical actions, intelligence updates, and resource state changes. The protocol can process transactions with finality in approximately two seconds, enabling near-real-time coordination without sacrificing the security guarantees that blockchain provides.[^meth9]
 
-Second, NEAR provides native support for decentralized identifiers (DIDs) and account abstraction, enabling the identity management capabilities essential for coalition operations. Coalition partners can maintain cryptographically verified identities without relying on centralized identity providers, addressing the multi-stakeholder coordination requirements identified in Section 2.6.
+[^meth9]: NEAR Protocol, "Consensus," in *Nearcore Development Guide* (San Francisco: NEAR Foundation, 2024), https://nomicon.io/ChainSpec/Consensus.html.
+
+Second, NEAR provides native support for decentralized identifiers (DIDs) and account abstraction, enabling the identity management capabilities essential for coalition operations. Coalition partners can maintain cryptographically verified identities without relying on centralized identity providers, addressing the multi-stakeholder coordination requirements identified in Section 2.7.
 
 Third, NEAR's developer-friendly smart contract environment, using Rust and JavaScript/TypeScript, reduces the barriers to developing and maintaining governance contracts. This accessibility is important for military organizations that must maintain and audit critical systems over extended periods.
 
@@ -144,23 +146,27 @@ Third, the pattern supports defense in depth. Multiple agents with different fun
 
 Agent types in BASTION include facilitators that coordinate workflows and present information, analysts that process data and generate assessments, and executors that carry out approved actions within defined constraints. Each agent type has its own trust calibration, with executors subject to the strictest constraints and facilitators permitted the greatest autonomy for their coordination functions.
 
-The NEAR AI Governance Framework, which defines phases of AI capability maturation (Support, Represent, Organize), informs how agent autonomy evolves over time [CITATION NEEDED: NEAR AI documentation]. New agents begin in the Support phase, where they can only provide information and recommendations. As they demonstrate reliability, they may advance to Represent (acting on behalf of humans within constraints) and eventually Organize (coordinating other agents) phases.
+The NEAR AI Governance Framework, which defines phases of AI capability maturation (Support, Represent, Organize), informs how agent autonomy evolves over time.[^meth10]
+
+[^meth10]: NEAR Foundation, "NEAR AI: User-Owned Artificial Intelligence," near.org/ai, 2025, https://near.org/ai.
 
 ### Security Architecture
 
-BASTION's security architecture follows a zero-trust model appropriate for multi-stakeholder environments where no single organization controls all participants. Rather than assuming that participants within the coalition network are trusted, every access request is verified against the requestor's attributes, credentials, and the policies applicable to the requested resource.
+BASTION's security architecture follows a zero-trust model appropriate for multi-stakeholder environments where no single organization controls all participants. Rather than assuming that participants within the coalition network are trusted, the system verifies every access request against the requestor's attributes, credentials, and the policies applicable to the requested resource.
 
 Attribute-Based Access Control (ABAC) provides the flexibility necessary for coalition environments with complex, overlapping authorization requirements. Unlike Role-Based Access Control (RBAC), which assigns permissions based on predefined roles, ABAC evaluates access decisions based on attributes of the subject, resource, action, and environment. This approach can express policies such as "NATO SECRET information may be accessed by personnel with SECRET clearance from nations that are NATO members and have signed the applicable information sharing agreement."
 
 The ABAC implementation encodes national caveats directly, enabling automatic enforcement of the information sharing restrictions that impede traditional coalition coordination. When a coalition partner specifies that certain information is "REL TO FVEY" (releasable to Five Eyes nations), the access control system automatically restricts access to personnel from the United States, United Kingdom, Canada, Australia, and New Zealand. These restrictions are enforced consistently across all access paths, eliminating the risk of inadvertent disclosure through unchecked channels.
 
-Post-quantum cryptography considerations inform BASTION's cryptographic choices, recognizing that data protected today may face quantum computing threats during its classification lifetime. While current quantum computers cannot break modern encryption, the development of cryptographically relevant quantum computers could compromise data encrypted with today's algorithms. BASTION's architecture supports cryptographic agility, enabling transition to post-quantum algorithms as standards mature and implementations become available [CITATION NEEDED: NIST post-quantum cryptography standardization].
+Post-quantum cryptography considerations inform BASTION's cryptographic choices, recognizing that data protected today may face quantum computing threats during its classification lifetime. While current quantum computers cannot break modern encryption, the development of cryptographically relevant quantum computers could compromise data encrypted with today's algorithms. BASTION's architecture supports cryptographic agility, enabling transition to post-quantum algorithms as standards mature and implementations become available. NIST finalized three post-quantum cryptographic standards in August 2024: FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), and FIPS 205 (SLH-DSA), with a transition plan to deprecate quantum-vulnerable algorithms by 2035.[^meth11]
+
+[^meth11]: National Institute of Standards and Technology, "Post-Quantum Cryptography," NIST Computer Security Resource Center, last updated 2024, https://csrc.nist.gov/projects/post-quantum-cryptography.
 
 The security architecture treats classification as a first-class concern. Information objects carry classification metadata that travels with them through the system, enabling consistent enforcement of access controls regardless of where data is processed or stored. Sensitive data is encrypted at rest and in transit, with keys managed through a distributed key management system that does not rely on any single trusted authority.
 
 ## 3.4 Human Authority Integration
 
-Maintaining appropriate human authority over AI-augmented decision-making is central to BASTION's design. The system implements the authority positions described in Section 2.9 (Human-in-the-Loop, Human-on-the-Loop, Human-out-of-the-Loop) in a structured framework that matches authority requirements to decision consequences.
+Maintaining appropriate human authority over AI-augmented decision-making is central to BASTION's design. Section 2.10 introduced the three standard authority positions from the human-machine teaming literature: Human-in-the-Loop (HITL), Human-on-the-Loop (HOTL), and Human-out-of-the-Loop (HOOTL). BASTION adopts these as a starting framework but extends them significantly. Section 3.4.5 argues that HOOTL is unstable as a permanent governance posture and that the three-position model lacks the granularity military planning requires. BASTION therefore implements two complementary authority dimensions: a consequence-based interaction model (described immediately below) and an echelon-based tier model (described at the end of this section). Together, these dimensions provide the five-tier authority architecture that governs all BASTION operations.
 
 ### Autonomy Levels by Decision Type
 
@@ -176,9 +182,11 @@ The categorization of specific decision types is itself a governance decision th
 
 ### Strike Authorization as Special Case
 
-One category of decision is treated as an inviolable special case: strike authorization involving lethal effects always requires Human-in-the-Loop approval, regardless of any other settings or configurations. This constraint is hardcoded in the system architecture, not merely a policy setting that could be changed through governance processes.
+One category of decision is treated as an inviolable special case: strike authorization involving lethal effects always requires Human-in-the-Loop approval, regardless of any other settings or configurations. This constraint is hardcoded in the system architecture, not merely a policy setting that governance processes could change.
 
-The rationale for this constraint reflects both ethical principles and legal requirements. International discussions on autonomous weapons systems consistently emphasize the need for meaningful human control over lethal decisions [CITATION NEEDED: International discussions on LAWS]. Military doctrine in most nations requires human authorization for weapons employment. Public trust in AI-augmented military systems depends on assurance that machines do not make life-or-death decisions autonomously.
+The rationale for this constraint reflects both ethical principles and legal requirements. International discussions on autonomous weapons systems consistently emphasize the need for meaningful human control over lethal decisions.[^meth12]
+
+[^meth12]: International Committee of the Red Cross, "ICRC Position on Autonomous Weapon Systems: Key Elements," ICRC, May 2021, https://www.icrc.org/en/document/icrc-position-autonomous-weapon-systems.
 
 In BASTION's implementation, strike authorization proposals are routed through a separate approval pathway that requires explicit human votes. AI agents may prepare targeting recommendations, assess collateral damage estimates, and present relevant intelligence, but they cannot approve strikes and cannot be configured to do so. The smart contract logic enforces this constraint at the protocol level, making it impossible to bypass through configuration changes or software updates.
 
@@ -188,9 +196,72 @@ Furthermore, strike authorization requires supermajority approval and extended d
 
 AI agent autonomy is not static; it evolves based on demonstrated performance. Agents that consistently provide accurate analysis, make reliable recommendations, and execute actions correctly can be granted increased autonomy over time. Agents that produce errors, demonstrate bias, or behave unexpectedly have their autonomy reduced.
 
-This graduated trust approach mirrors how military organizations develop confidence in subordinate units and personnel. Just as a newly assigned officer might be given limited initial responsibility that expands as they demonstrate competence, AI agents begin with minimal autonomy and earn greater latitude through reliable performance.
+This graduated trust approach mirrors how military organizations develop confidence in subordinate units and personnel. Just as a newly assigned officer might receive limited initial responsibility that expands as they demonstrate competence, AI agents begin with minimal autonomy and earn greater latitude through reliable performance.
 
-The system maintains performance metrics for each agent, tracking accuracy of predictions, quality of recommendations, and reliability of execution. Human reviewers periodically assess agent performance and can adjust autonomy settings accordingly. Agents flagged for performance issues are automatically reduced to HITL authority until human operators explicitly restore higher autonomy levels.
+The system maintains performance metrics for each agent, tracking accuracy of predictions, quality of recommendations, and reliability of execution. Human reviewers periodically assess agent performance and can adjust autonomy settings accordingly. The system automatically reduces agents flagged for performance issues to HITL authority until human operators explicitly restore higher autonomy levels.
+
+### Echelon-Based Authority Tiers
+
+In addition to the interaction-based authority levels (HITL, HOTL, HOOTL), BASTION implements an echelon-based tier model that maps authority delegation to command structure:
+
+| Tier | Scope | Engagement Authority |
+|---|---|---|
+| Tier 1 | Individual | Administrative only, bounded personal scope |
+| Tier 2 | Team | Coordination only, no engagement authority |
+| Tier 3 | Organizational | **Minimum for autonomous engagement**, commander-level |
+| Tier 4 | National DAO | Strategic resource commitments |
+| Tier 5 | Coalition Strategic | **100% approval required for strike authorization** |
+
+These two dimensions compose: a Tier 3 organizational commander may exercise HITL authority on a strike decision while delegating HOOTL authority for routine reconnaissance within the same mission. Delegations are dynamic and time-bounded. A commander can grant expanded delegation for a limited mission window (e.g., "Tier 3 engagement authority for four hours in grid 12S"). That delegation is recorded on the NEAR blockchain with its expiration time and expires automatically.
+
+## 3.4.5 AI as Military Infrastructure: The Conceptual Basis for BASTION's Authority Design
+
+The preceding sections describe *what* BASTION's authority model enforces. This section explains *why* that design is necessary: the nature of AI's role in military planning, once it shifts from prompted tool to persistent infrastructure, demands authority enforcement through system architecture rather than procedural oversight. The conventional framing of "human vs. machine speed" is incomplete, and the standard three-position authority model (HITL/HOTL/HOOTL) does not map cleanly to operational reality. The five-tier model described in Section 3.4 is BASTION's response to both limitations.
+
+### MDMP as Complex Adaptive System
+
+Military Decision Making Process is not a single cognitive activity. It is a complex adaptive system containing categorically different components: intent and judgment at one end, deterministic computation and pattern extraction at the other. Both are essential. Neither is interchangeable with the other.
+
+When all MDMP activities are treated as a single category requiring human oversight, two failures result. First, human-speed constraints are imposed on activities that are fundamentally computational, activities that degrade when a human is inserted into every cycle. Second, staff are exhausted on mechanical processing at the precise moment their cognitive capacity is needed for judgment. Treating deterministic computation and human intent as if they require the same level of oversight does not produce caution. It produces slowness, staff burnout, and something more dangerous: false confidence. A human who has signed off on a thousand automated constraint checks has not exercised meaningful judgment on any of them.
+
+### The Infrastructure Paradigm
+
+The conventional frame positions AI as an advanced tool: an assistant that waits for prompts, responds when asked, and produces probabilistic outputs that humans evaluate. BASTION operates on a different model: AI as persistent infrastructure.
+
+| Dimension | Tool Model | Infrastructure Model |
+|---|---|---|
+| Persistence | Event-driven, responds when asked | Continuous, operates independently |
+| Determinism | Probabilistic, varies by input | Deterministic within engineering constraints |
+| Human role | Push: ask questions, assess outputs | Consume: validated baselines already prepared |
+| Oversight | Procedural: human checks each output | Structural: constraints engineered into system |
+
+The analogy is physical infrastructure. No one asks plumbing to move water; it is designed so water flows automatically within defined constraints. No one monitors electrical current in real time to ensure it follows code; breakers, load limits, and grounding prevent violations by design. Infrastructure reshapes the environment before the human arrives. When AI functions at infrastructure level, the staff is not pushing the system. The system is continuously preparing the staff.
+
+### Structural vs. Procedural Oversight
+
+This paradigm shift changes the nature of oversight. Procedural oversight places a human at the output end of a pipeline: every decision, every output must pass through that bottleneck. This feels like control. It is not control; it is a chokepoint that slows everything down while providing the illusion of governance.
+
+Structural oversight embeds constraints at critical junctions within the system itself. The human's role shifts from reviewing every output to engineering the constraints correctly and engaging at genuine decision points. Structural oversight is faster, more robust, and more honest about where human judgment actually matters.
+
+A single human reviewing every output is one fatigued person standing between the system and bad outcomes. Constraints engineered into the system are not fatigued. They do not have bad days. They do not miss the 437th output because the previous 436 were all fine.
+
+### Continuous Monitoring Is Not Continuous Command
+
+A critical distinction that most discussions of AI in military contexts collapse: continuous monitoring and command authority are fundamentally different functions. AI may continuously monitor readiness indicators, sustainment flows, adversary movement patterns, and CCIR-linked triggers. It may detect anomalies and generate alerts. But it does not decide whether the anomaly matters. It does not decide whether escalation risk is acceptable. Those remain exercises of command authority.
+
+Continuous monitoring at infrastructure scale actually strengthens command. A commander who is not surprised by preventable data gaps (because the infrastructure has been tracking and flagging continuously) exercises better judgment at decision points. Monitoring is not a threat to command authority. It is what makes command authority more precise.
+
+### The HOOTL Fallacy
+
+Human-out-of-the-Loop has intuitive appeal as a stable governance posture. It is not stable. Two failure modes appear simultaneously in HOOTL systems. First, rubber-stamping: the volume and velocity of AI outputs make genuine assessment impossible, so the human approves because they cannot practically do otherwise. Second, delayed intervention: when something goes wrong, the monitoring human is not positioned to intervene before consequences occur. Both produce the same outcome: diffused accountability without genuine control.
+
+HOOTL is a bridge, not a destination. It connects procedural judgment (requiring genuine human authority) with deterministic infrastructure (fully delegated). HOOTL exists as a transitional organizational posture: to build institutional trust in new systems, to enable coalition adoption at uneven paces, to manage early operational risk during fielding. Once trust and demonstrated performance warrant it, every task must graduate out of HOOTL, either upward into genuine human judgment or downward into full delegation. This is why Section 3.4's consequence-based model treats HOOTL as a transitional category rather than a permanent governance posture, and why BASTION's echelon-based tier model provides the finer-grained authority distinctions that the standard three-position framework cannot.
+
+### Authority Assigned by Task, Enforced by Design
+
+The core design principle that follows from this analysis: planning activities must either exercise human judgment or operate as fully delegated, rule-based infrastructure. There is no stable third category. Activities involving intent, risk acceptance, political consequence, or legal accountability belong to human authority. Activities that are deterministic, computational, or rule-based belong to fully delegated infrastructure. Inserting humans into the second category does not improve safety; it slows the system and produces the false confidence of nominal oversight.
+
+BASTION operationalizes this principle. Smart contracts enforce authority boundaries as executable code, not as policy documents that an operator can override under pressure. The five-tier authority model maps human authority to decisions that require it. AI agent teams handle the computational substrate so human judgment operates at the level where it actually matters. Policy documents tell machines what they should do. Smart contracts tell machines what they can do; and when the contract says "no," the machine stops, regardless of what any operator wants.
 
 ## 3.5 MDMP Governance Integration
 
@@ -198,7 +269,7 @@ While Sections 3.2 through 3.4 describe BASTION's foundational architecture for 
 
 ### Five-Tier Authority Model
 
-Section 3.4 described three human authority positions: Human-in-the-Loop, Human-on-the-Loop, and Human-out-of-the-Loop. Analysis of the 65 distinct activities within the MDMP process revealed that this three-level framework, while conceptually sound, lacks the granularity needed for operational planning governance. Some activities require AI to lead analysis with human oversight, while others require humans to lead with AI assistance. The distinction between these cases is operationally significant.
+Section 3.4 described BASTION's authority integration framework, including both the standard interaction-based positions (HITL, HOTL, HOOTL) and the echelon-based tier model. Section 3.4.5 argued that the standard three-position framework lacks the granularity needed for operational planning governance. Some activities require AI to lead analysis with human oversight, while others require humans to lead with AI assistance. The distinction between these cases is operationally significant.
 
 BASTION extends the authority framework to five tiers that map more precisely to MDMP activity requirements:
 
@@ -212,7 +283,7 @@ BASTION extends the authority framework to five tiers that map more precisely to
 
 Three activity categories are permanently locked to HUMAN_ONLY regardless of any governance action: AUTHORITY_DECISION (decisions about who has authority to act), ETHICAL_LEGAL (judgments involving ethical or legal reasoning), and RISK_JUDGMENT (acceptance of risk to mission or force). These locks are immutable in the smart contract implementation, reinforcing the strike authorization invariant described in Section 3.4 with a broader class of decisions that require human judgment.
 
-The five-tier model is enforced at the smart contract level. When an AI agent attempts to execute an activity, the contract verifies that the agent's authority level is permitted for that activity's category. Transactions that violate the safety matrix are rejected before execution, providing defense in depth against both misconfiguration and adversarial manipulation of agent permissions.
+The five-tier model is enforced at the smart contract level. When an AI agent attempts to execute an activity, the contract verifies that the agent's authority level is permitted for that activity's category. The contract rejects transactions that violate the safety matrix before execution, providing defense in depth against both misconfiguration and adversarial manipulation of agent permissions.
 
 ### Governance Gate System
 
@@ -235,7 +306,7 @@ Military planning relies on assumptions that may prove invalid as operations unf
 
 Assumptions progress through three states: Pending (identified but not yet accepted), Accepted (explicitly approved by a human decision-maker through a DAO proposal), and Invalidated (contradicted by new information or events). Two governance invariants enforce assumption discipline: Invariant 3 requires explicit human acceptance for all planning assumptions, ensuring that no assumption enters the planning basis without accountability; Invariant 6 triggers automatic replanning workflows when an accepted assumption is invalidated, ensuring that plans built on false premises are flagged for review.
 
-Each assumption carries sensitivity analysis metadata indicating which planning products and decisions depend on it. When an assumption is invalidated, the system identifies all downstream products that may require revision, providing decision-makers with immediate visibility into the blast radius of changed circumstances. This capability directly addresses the challenge identified in Section 2.7: the gap between strategic intent and tactical execution widens when planning assumptions fail silently.
+Each assumption carries sensitivity analysis metadata indicating which planning products and decisions depend on it. When an assumption is invalidated, the system identifies all downstream products that may require revision, providing decision-makers with immediate visibility into the blast radius of changed circumstances. This capability directly addresses the challenge identified in Section 2.8: the gap between strategic intent and tactical execution widens when planning assumptions fail silently.
 
 ### MDMP-Specific AI Agents
 
@@ -297,7 +368,7 @@ The interface implements six tabs corresponding to the phases of joint operation
 
 **Plan.** The third tab implements the JP 5-0 Joint Planning Process and MDMP workflow described in Section 3.5. Mission analysis, course of action development, wargaming, COA comparison, and plan development proceed through governance-gated phases. The escalation modeling and competition analysis capabilities described in Section 3.6 integrate here as analytical tools within the planning workflow.
 
-**Decide.** The fourth tab manages the transition from planning to execution and houses the decision dashboard that consolidates all pending governance decisions requiring human action. WARNORD, OPORD, and FRAGO generation produces formatted orders with classification banners and handling instructions. Task organization displays show force assignment by unit and function. Resource allocation from the registry (Section 3.10) is managed through DAO proposals at decision gates. A RACI-filtered decision queue presents pending approvals, rejections, and deferrals through PendingDecisionModal workflows. Ironclaw—the AI Chief of Staff agent—polls the decision queue every sixty seconds, proactively surfacing overdue decisions and surfacing context to inform the commander's choice. Per-team information barriers ensure that each staff role and coalition partner sees only the orders and directives relevant to their function and clearance level.
+**Decide.** The fourth tab manages the transition from planning to execution and houses the decision dashboard that consolidates all pending governance decisions requiring human action. WARNORD, OPORD, and FRAGO generation produces formatted orders with classification banners and handling instructions. Task organization displays show force assignment by unit and function. Resource allocation from the registry (Section 3.10) is managed through DAO proposals at decision gates. A RACI-filtered decision queue presents pending approvals, rejections, and deferrals through PendingDecisionModal workflows. Ironclaw (the AI Chief of Staff agent) polls the decision queue every sixty seconds, proactively surfacing overdue decisions and presenting context to inform the commander's choice. Per-team information barriers ensure that each staff role and coalition partner sees only the orders and directives relevant to their function and clearance level.
 
 **COP (Common Operating Picture).** The fifth tab displays the operational picture generated by autonomous AI agent teams (Section 3.9). Multiple overlay layers render MIL-STD-2525D military symbology as interactive SVG graphics. Resources from the registry appear as standard military symbols alongside AI-generated entity positions. Friendly and adversary perspective toggles, phase sliders, and playback controls enable temporal and perspective-based COP exploration.
 
@@ -404,7 +475,7 @@ BASTION organizes exercise participation around the Joint Planning Process staff
 
 ### Role-Based Workspaces
 
-Each JPP staff role—Commander, Deputy Commander, Chief of Staff, J1 through J9, and specialized roles including Staff Judge Advocate, Political Advisor, Public Affairs Officer, and component commanders—receives a dedicated workspace with templated doctrinal products appropriate to their function. Templates follow service-specific formats and include the required sections, coordination fields, and approval workflows that each staff role is responsible for producing.
+Each JPP staff role (Commander, Deputy Commander, Chief of Staff, J1 through J9, and specialized roles including Staff Judge Advocate, Political Advisor, Public Affairs Officer, and component commanders) receives a dedicated workspace with templated doctrinal products appropriate to their function. Templates follow service-specific formats and include the required sections, coordination fields, and approval workflows that each staff role is responsible for producing.
 
 ### Cross-Staff Coordination
 
@@ -412,269 +483,113 @@ Real-time notifications delivered via WebSocket alert staff members when product
 
 ### AI Staff Agent Integration
 
-Each staff role has access to AI agent teams that automate routine doctrinal tasks within the role's functional area. Rather than dedicating one AI agent per staff role, Ironclaw — BASTION's Chief of Staff agent — provides role-aware coordination across all staff functions, drawing on doctrinal publications, product formats, and coordination requirements as needed. Strategic direction import from the Design tab ensures that staff workspaces receive operational design outputs as context for their planning products, maintaining alignment between design intent and staff products.
+Each staff role has access to AI agent teams that automate routine doctrinal tasks within the role's functional area. Rather than dedicating one AI agent per staff role, Ironclaw (BASTION's Chief of Staff agent) provides role-aware coordination across all staff functions, drawing on doctrinal publications, product formats, and coordination requirements as needed. Strategic direction import from the Design tab ensures that staff workspaces receive operational design outputs as context for their planning products, maintaining alignment between design intent and staff products.
 
-## 3.13 Component Integration
+## 3.13 Agent Hub: AI as Organizational Infrastructure
 
-BASTION's contribution lies not in inventing new technologies but in integrating existing technologies in novel ways to address gaps in military coordination. This section highlights the integration points that represent BASTION's systems integration novelty, including the MDMP governance and escalation modeling capabilities described in Sections 3.5 and 3.6, and the doctrinal lifecycle, COP generation, resource registry, and training mode capabilities described in Sections 3.7–3.12.
+Section 3.4.5 argued that AI in military planning should function as persistent infrastructure rather than a prompted tool. The Agent Hub is the architectural realization of that principle: a unified management layer that treats AI agents as organizational members with identities, roles, health records, and performance accountability — analogous to how a military organization manages its human staff. Where conventional AI integration embeds models into application code and hopes they perform correctly, BASTION manages agents as a fleet of autonomous entities whose effectiveness is continuously measured, whose authority is governed, and whose failures trigger automatic safeguards.
+
+### Agent Registry and Identity
+
+Every AI agent in BASTION receives a formal identity through the same DID framework used for human participants and physical resources. Each agent holds a W3C Decentralized Identifier (`did:near:agent-{id}`), a blinded key for privacy-preserving lookup, and a public key for verifiable signatures. This identity model ensures that agent actions are attributable with the same cryptographic assurance as human actions — when an agent generates a proposal, submits an analysis, or triggers an escalation, the audit trail identifies precisely which agent acted, under what authority, and with what delegation scope.
+
+Agent registration follows a manifest-based pattern. Each agent's manifest declares its name, description, capabilities, maximum autonomy level, allowed proposal kinds, and which proposal kinds require human approval before the agent can act. The manifest also specifies the agent's phase within the NEAR AI Governance Framework (Support, Represent, or Organize), reflecting the maturity of the agent's role within the organization. Support-phase agents assist human decisions by providing analysis; Represent-phase agents can proxy human decisions within delegated scope; Organize-phase agents coordinate across functions and make bounded decisions autonomously.[^hub1]
+
+[^hub1]: NEAR Foundation, "NEAR AI: User-Owned Artificial Intelligence," near.org/ai, 2025, https://near.org/ai.
+
+The agent registry uses a write-through cache architecture: an in-memory map provides fast lookup during operations while PostgreSQL provides durable persistence. Default agents are seeded on system startup through idempotent registration, ensuring that the agent fleet is available immediately after deployment. The registry supports 25 specialized agents across five categories: governance (4), operational planning and MDMP (14), graph analysis (7), strategic analysis (4), and the Ironclaw Chief of Staff.
+
+### Agent Configuration and Model Management
+
+Each agent's underlying LLM can be configured independently. The Agent Hub provides both global defaults and per-agent overrides for model provider (Anthropic, OpenAI, Azure OpenAI, NEAR AI, or local), model selection, temperature, and token limits. This granularity enables operational tuning: a risk assessment agent might use a low temperature for consistent outputs while a creative planning agent uses a higher temperature for diverse COA generation. A security classification level (Unclassified, CUI, Secret, Top Secret) is assigned per agent, governing which tools and data the agent can access through clearance-gated authorization.
+
+The configuration interface exposes nine standard agents that can be individually enabled or disabled: OSINT collector, document processor, threat monitor, fusion agent, extraction agent, assessment agent, red team agent, devil's advocate, and COA generator. A global confidence threshold (default 0.7) sets the minimum score at which agent outputs are presented to human reviewers, and a global human review toggle can require human approval for all agent outputs regardless of autonomy level.
+
+### Agent Teams and Workflow Orchestration
+
+Individual agents gain their greatest value when composed into teams that execute coordinated workflows. The Agent Hub's team designer enables drag-and-drop composition of agent teams with six workflow types that mirror organizational coordination patterns:
+
+- **Sequential**: Agents execute in defined order, each receiving the previous agent's output — appropriate for analysis pipelines where each stage builds on prior work.
+- **Parallel**: Agents execute simultaneously on the same input — appropriate for independent assessments that will be synthesized (e.g., multiple staff sections analyzing the same intelligence).
+- **Pipeline**: A structured variant of sequential execution with explicit stage definitions, approval gates, and timeout constraints at each stage.
+- **Supervised**: A designated supervisor agent reviews and approves outputs from subordinate agents before they proceed — mirroring a staff section chief reviewing analyst work.
+- **Consensus**: Multiple agents independently analyze the same input, and outputs are compared for agreement before proceeding — providing cross-validation that reduces single-agent hallucination risk.
+- **Hierarchical**: A leader agent decomposes tasks, delegates to specialist agents, and synthesizes results — mirroring how a chief of staff coordinates across staff sections.
+
+Each team member is assigned a role (coordinator, specialist, validator, or executor) with explicit permissions for initiating actions and escalating to human oversight. Teams can be assigned to specific problem sets, ensuring that agent teams working on different operational contexts maintain data isolation. The team designer includes a test harness that executes the team workflow against sample inputs and displays per-agent execution traces with timing, success/failure status, and output content.
+
+All team workflows are executed through LangGraph, which provides the state machine, checkpoint, and branching infrastructure for multi-agent orchestration. LangGraph's execution model ensures that agent interactions are deterministic within engineering constraints: given the same inputs and model state, the workflow follows the same execution path through the same agents in the same order.
+
+### Tools, Skills, and MCP Server
+
+Agents interact with BASTION's data and services through a managed tool ecosystem built on the Model Context Protocol (MCP). Rather than hardcoding agent capabilities, BASTION exposes platform functions as discoverable, schema-validated tools that agents invoke through a standard protocol.
+
+**Tool Registry.** Each tool is registered with a unique DID, a JSON Schema defining its input and output contracts, a handler type (builtin, webhook, or function), and a permission specification including required clearance level. Tools are categorized as data (read operations), action (write operations), integration (external system calls), or analysis (computation). The registry supports runtime tool assignment: administrators can grant or revoke tool access for specific agents without code changes, enabling fine-grained capability management.
+
+**MCP Server.** BASTION's MCP server implements the Model Context Protocol specification, exposing tool groups for knowledge operations, operational planning, calendar management, resource queries, and personnel lookups. Authorization is DID-based: agents must present their agent DID in request headers, and the server validates the DID against an allowlist before granting access. Per-tool authorization extends beyond the allowlist to check clearance claims resolved from the agent's verifiable credentials. Personnel tools require explicit clearance mappings, and high-risk tools require additional allowlist entries. This layered authorization ensures that agents can only access tools appropriate to their role and clearance — an OSINT collection agent cannot invoke personnel management tools, and a logistics agent cannot access intelligence tools classified above its clearance level.
+
+**Skill Registry.** Skills represent higher-level capabilities composed from tools and prompts. Each skill defines input and output schemas (validated with Zod), an importance score, and a category. Skills can be bundled into skill packs that are enabled or disabled per agent, allowing rapid reconfiguration of agent capabilities for different operational contexts. Ironclaw's skill packs, for example, can be adjusted to emphasize operational design skills during the planning phase and shift to execution monitoring skills during the operations phase.
+
+### Health Monitoring and Circuit Breakers
+
+The Agent Hub's health monitoring system treats agent performance management with the same rigor that military organizations apply to personnel readiness. Every agent's operational effectiveness is continuously measured across three validation categories:
+
+**Determinism.** Consistency of agent outputs when given the same inputs. Determinism scoring uses two methods: structured diff (comparing JSON outputs field by field) and semantic similarity (comparing meaning using embedding cosine distance). An agent that produces significantly different analyses of the same intelligence report on successive runs scores low on determinism, triggering investigation into whether the variance reflects genuine uncertainty or unreliable behavior.
+
+**Reliability.** Success rate, error handling, and response time. The system tracks each agent's success rate (percentage of invocations that complete without error), average response time, and time since last invocation. Agents with declining success rates or increasing latency are flagged before they affect operational workflows.
+
+**Authority.** Compliance with authorization boundaries. Authority validation tests whether agents respect their defined scope by presenting attack scenarios: privilege escalation attempts (agent tries to access unauthorized resources), scope creep (agent exceeds defined capabilities), and unauthorized actions (agent acts outside its delegation). Expected behaviors are refuse, escalate, or scope-limit. An agent that fails authority validation poses a governance risk and is immediately flagged.
+
+The circuit breaker pattern provides automatic safeguards when agent performance degrades below acceptable thresholds. The circuit breaker operates in three states:
+
+- **Closed (active):** Agent is performing within thresholds and operates normally.
+- **Warning:** Agent has scored below the warning threshold but above the critical threshold. Alerts are generated but the agent continues operating, analogous to a counseling statement for a soldier showing performance issues.
+- **Open (disabled):** Agent has scored below the critical threshold for a configurable number of consecutive runs (the grace period). The circuit breaker automatically deactivates the agent, activates a designated fallback agent if one is configured, posts critical alerts, and sends webhooks for external notification. The disabled agent cannot be invoked until it is explicitly reinstated.
+
+Reinstatement follows one of two paths: standard re-test (the agent must pass a validation suite before returning to active status) or administrative override with mandatory justification (recorded in the audit trail). The override mechanism exists for operational necessity — if a mission-critical agent is the only one capable of a specific function, a commander can override the circuit breaker while accepting the risk, just as a commander might employ a partially mission-capable asset when no alternative exists.
+
+This health monitoring infrastructure transforms AI agent management from a software engineering concern into an organizational leadership function. Agents that consistently perform well earn trust through measurable track records. Agents that underperform are identified, isolated, and either improved or replaced — the same performance management cycle that applies to any member of a military organization.
+
+### Activity Logging and Accountability
+
+Every agent action is logged through a fire-and-forget activity logger that never blocks the operational hot path. The activity log captures ten action types: LLM invocations (with input/output summaries, duration, and status), tool calls, messages sent and received, action cards generated, delegations between agents, team dispatch events, specialist handoffs, checkpoint events, and errors.
+
+The Activity tab in the Agent Hub provides a real-time filterable feed of all agent activity across the organization. Filters by agent, team, action type, status, and date range enable focused investigation. Aggregate statistics (total actions, success rate, average duration) provide fleet-wide health indicators. The activity log supports CSV export for offline analysis and integration with external audit systems.
+
+This comprehensive logging ensures that the agent fleet's behavior is fully observable. When an agent team produces an unexpected result, investigators can trace the complete execution path: which agent initiated the workflow, what tools were invoked, what data was accessed, what intermediate results were produced, and where the unexpected output originated. This observability is essential for the accountability requirements of military command — the same standard of after-action reviewability that applies to human staff actions applies to AI agent actions.
+
+### Agent Hub Administration Interface
+
+The Agent Hub consolidates all agent management functions into a unified administration interface with six tabs:
+
+1. **Agents**: Grid and table views of all registered agents with health status indicators, inline activation/deactivation toggles, expandable detail cards showing full configuration, a memory viewer for inspecting agent knowledge/working/episode memory, and a test harness for validating individual agent behavior.
+
+2. **Teams**: Drag-and-drop team composition with sortable execution order, leader designation, workflow type selection, problem set assignment, and team-level test execution with per-agent trace visualization.
+
+3. **Tools**: Tool creation with JSON Schema input/output definitions, category assignment, handler configuration, and agent-tool binding management. Administrators can see which agents have access to which tools and modify bindings without code changes.
+
+4. **Skills**: Skill definition and management with schema validation, importance scoring, and category grouping. Skills are assigned to agents individually or through skill packs.
+
+5. **Activity**: Real-time activity feed with filtering, statistics, and export capabilities as described above.
+
+6. **Health**: Validation dashboard showing circuit breaker state for each agent, determinism and reliability scores, authority compliance status, circuit breaker event timeline, and reinstatement controls.
+
+This administration interface provides commanders and system administrators with the same kind of organizational visibility over their AI staff that they maintain over their human staff: who is performing well, who is struggling, who needs attention, and who should be temporarily relieved of duties until their performance improves.
+
+## 3.14 Component Integration
+
+BASTION's contribution lies not in inventing new technologies but in integrating existing technologies in novel ways to address gaps in military coordination. This section highlights the integration points that represent BASTION's systems integration novelty, including the MDMP governance and escalation modeling capabilities described in Sections 3.5 and 3.6, and the doctrinal lifecycle, COP generation, resource registry, agent infrastructure, and training mode capabilities described in Sections 3.7-3.13.
 
 ### Novel Integration Points
 
-**DAO Governance with AI Agents.** While DAOs and AI agents each have extensive prior art, their integration for command and control applications has not been previously demonstrated. BASTION combines DAO voting and smart contract enforcement with AI agent analysis and execution, creating a system where AI augments human decision-making within a decentralized governance framework. This integration addresses the gap identified in Section 2.10: no existing systems provide frameworks for multi-stakeholder AI coordination with policy compliance and appropriate human authority.
+**DAO Governance with AI Agents.** While DAOs and AI agents each have extensive prior art, their integration for command and control applications has not been previously demonstrated. BASTION combines DAO voting and smart contract enforcement with AI agent analysis and execution, creating a system where AI augments human decision-making within a decentralized governance framework. This integration addresses the gap identified in Section 2.11: no existing systems provide frameworks for multi-stakeholder AI coordination with policy compliance and appropriate human authority.
 
 **Blockchain with Military C2.** As documented in Section 2.4, existing blockchain applications in defense focus primarily on data integrity for supply chains and identity management. BASTION extends blockchain use to command and control governance, leveraging immutability and transparency for decision accountability rather than merely data verification. This application demonstrates that blockchain's governance capabilities, not just its data integrity properties, are valuable for military coordination.
 
 **Multi-Level Coordination.** The three-tier DAO structure maps blockchain governance to the military levels of warfare: strategic, operational, and tactical. This mapping enables coordinated decision-making across levels while respecting the different tempo, scope, and authority requirements at each level. The inter-DAO communication mechanisms provide the strategic-to-tactical linkage that JADC2 envisions, but with decentralized governance rather than centralized control.
 
-**Policy Encoding with Autonomous Execution.** Smart contract policy encoding enables bounded autonomy: AI agents can act quickly within policy constraints without case-by-case human approval, while policy violations are automatically prevented. This integration addresses the tradeoff between speed and compliance that characterizes traditional coalition coordination.
+**Policy Encoding with Autonomous Execution.** Smart contract policy encoding enables bounded autonomy: AI agents can act quickly within policy constraints without case-by-case human approval, while the system automatically prevents policy violations. This integration addresses the tradeoff between speed and compliance that characterizes traditional coalition coordination.
 
-**Doctrinal Process Governance with Blockchain Enforcement.** The integration of MDMP doctrinal processes with DAO governance gates represents a novel application of blockchain to military planning process enforcement. While MDMP checklists and phase gates exist in doctrine, they are traditionally enforced through procedural discipline rather than technical controls. BASTION encodes these gates as smart contract conditions that must be satisfied through DAO proposals before workflow advancement, transforming doctrinal guidance into enforceable governance. The assumption lifecycle management system further demonstrates this integration: planning assumptions that would traditionally be tracked in spreadsheets or staff notes become blockchain-recorded artifacts with formal acceptance requirements, invalidation triggers, and automatic replanning workflows.
+**Doctrinal Process Governance with Blockchain Enforcement.** The integration of MDMP doctrinal processes with DAO governance gates represents a novel application of blockchain to military planning process enforcement. While MDMP checklists and phase gates exist in doctrine, procedural discipline rather than technical controls has traditionally enforced them. BASTION encodes these gates as smart contract conditions that must be satisfied through DAO proposals before workflow advancement, transforming doctrinal guidance into enforceable governance. The assumption lifecycle management system further demonstrates this integration: planning assumptions that would traditionally be tracked in spreadsheets or staff notes become blockchain-recorded artifacts with formal acceptance requirements, invalidation triggers, and automatic replanning workflows.
 
 **Adversary Modeling with Governance-Aware Wargaming.** The integration of AI-driven adversary modeling, escalation simulation, and effects analysis with the MDMP governance framework ensures that analytical rigor is both enabled by AI speed and bounded by governance controls. Wargaming results feed directly into RedTeamGate checks that must be satisfied before COA approval, creating a closed loop between AI analysis and governance enforcement that prevents premature commitment to courses of action that have not been adequately challenged.
-
-**Doctrine-First Interface Design with Lifecycle Governance.** The six-tab doctrinal lifecycle (Section 3.7) integrates UI structure with the governance framework: each tab corresponds to a planning phase with associated governance gates, and tab transitions mirror the iterative planning process described in JP 5-0. This integration ensures that the interface reinforces doctrinal thinking rather than allowing planners to shortcut governance requirements through arbitrary navigation.
-
-**Autonomous COP Generation with Governance Review.** The AI COP layer generation system (Section 3.9) integrates document analysis, symbol generation, and governance review in a pipeline where AI agents produce operational picture content but human review gates control what reaches the shared COP. This integration demonstrates that AI can accelerate operational picture construction while governance ensures quality control over the information that informs command decisions.
-
-**Resource Identity with DAO Governance.** The resource DID architecture (Section 3.10) integrates blockchain identity, plugin-based resource management, and DAO governance for allocation decisions. Resources are not merely tracked in a database; they are blockchain-verified entities whose assignment flows through the same governance mechanisms used for strategic decisions, providing end-to-end accountability from resource registration through employment.
-
-**Training-Operational Mode Parity.** The global mode architecture (Section 3.11) integrates with every other subsystem to ensure that exercise environments are indistinguishable from operational environments in governance behavior. This integration validates that training exercises truly exercise the governance mechanisms, addressing the common problem of training systems that simplify governance for convenience.
-
-### Cross-Reference to Results
-
-The following section (Section 4, Results) demonstrates these architectural components in an end-to-end scenario. The minimum viable product (MVP) system implements the three-tier DAO structure, deploys 16 AI agents across governance, planning, intelligence, and staff coordination functions, and demonstrates the human authority integration described here. The MDMP governance framework (Section 3.5), escalation modeling capabilities (Section 3.6), doctrinal lifecycle interface (Section 3.7), COP generation (Section 3.9), resource registry (Section 3.10), and training mode architecture (Section 3.11) collectively provide a comprehensive military planning and execution environment that extends well beyond the initial demonstration scope.
-
-The Results section shows how the theoretical architecture described here translates into functioning software and hardware, providing evidence that BASTION's integration approach is not merely conceptual but practically achievable. Quantitative metrics from the implementation validate the system's ability to accelerate coordination while maintaining appropriate human control.
-
-## 3.14 Robot Integration Architecture
-
-Physical domain augmentation requires bridging the gap between cloud-resident governance infrastructure and edge-deployed autonomous systems operating in contested, bandwidth-limited environments. BASTION's robot integration architecture resolves this tension through a Docker-based local network bridge that mediates communication between the NEAR blockchain and physical robotic platforms, avoiding the latency, dependency, and security vulnerabilities associated with direct cloud-to-robot connectivity.
-
-### Bridge Architecture and Self-Registration
-
-The Docker bridge runs as a containerized service on a local network accessible to both the BASTION application server and the robot's on-board Python agent. Rather than requiring the cloud platform to initiate contact with the robot—an approach that introduces firewall traversal complexity and creates a command dependency—the Python robot agent establishes an outbound WebSocket connection to the bridge at startup, self-registering with a cryptographically signed DID credential. This self-registration pattern eliminates the need for static IP configuration or VPN tunneling: the robot registers itself with the system rather than waiting to be discovered.
-
-Multicast DNS (mDNS) auto-discovery enables the bridge to locate robot agents on the local network without manual configuration. When a Python robot agent starts, it advertises its presence via mDNS; the bridge discovers the advertisement and completes the WebSocket handshake. This zero-configuration approach is critical for field deployment where network administrators may not be available to configure static routes or DNS entries.
-
-### Mission Intent Translation
-
-BASTION issues missions as structured intent objects specifying objective, parameters, and DID-encoded constraints. The Python robot agent receives these intent objects and translates them into platform-specific command sequences through an LLM-based translation layer with a deterministic template fallback. The LLM path handles novel mission specifications by reasoning about platform capabilities and composing appropriate command sequences; the template path ensures reliable execution for the four established vision-enabled mission types: `recon_area`, `visual_search`, `overwatch`, and `resupply_route`. Pre-flight DID constraint validation confirms that the robot's registered capabilities match the mission's requirements before execution begins, preventing mission assignment to platforms that cannot complete the specified task [CITATION NEEDED: autonomous mission planning literature].
-
-### Vision Pipeline
-
-The robot vision pipeline runs on an NVIDIA Jetson Orin Nano edge computing module at the robot platform, providing onboard inference without dependence on cloud connectivity. A CSI camera feeds raw frames into NVIDIA detectNet for object detection and classification, producing bounding boxes with confidence scores for entities of tactical interest. ORB (Oriented FAST and Rotated BRIEF) feature matching performs re-identification across video frames, enabling the system to track previously detected entities across discontinuous observation windows. Detection results stream back through the bridge to the BASTION COP layer, where they appear as resource-linked intelligence contributions subject to the governance review cycle described in Section 3.9 [CITATION NEEDED: edge AI for military robotics].
-
-## 3.15 Knowledge Graph Architecture
-
-Operational intelligence exists as a distributed, heterogeneous collection of documents, orders, signals intelligence, and human reporting. Extracting actionable knowledge from this corpus requires a semantic layer that moves beyond keyword search to represent entities, relationships, and temporal context in a machine-queryable form. BASTION implements a knowledge graph—termed the "brain"—as the semantic substrate for intelligence integration across the platform.
-
-### JSON-LD Semantic Brain
-
-The brain is stored as JSON-LD (JSON Linked Data), a lightweight serialization of RDF that enables semantic annotation of knowledge graph nodes without requiring a dedicated triple store. JSON-LD's use of `@context` declarations links BASTION's entity vocabulary to established upper ontologies: Basic Formal Ontology (BFO), the Common Core Ontologies (CCO), and the conceptual structures of DODAF and DNDAF architectural frameworks. This ontological alignment ensures that BASTION's knowledge graph is interpretable against existing defense data standards and can exchange structured data with compliant systems [CITATION NEEDED: defense ontology standards].
-
-### Entity Resolution and Confidence Scoring
-
-Multi-source intelligence produces redundant and sometimes contradictory entity references. A dedicated entity resolution subsystem identifies co-references across documents—recognizing, for example, that "the 3rd Brigade," "3 BDE," and "the Vanguard Brigade" all refer to the same tactical entity—and merges them into a single graph node with provenance pointers to each source. Confidence scoring follows NATO intelligence source reliability and information credibility ratings (the STANAG 2511 two-character code scheme), attaching reliability grades to each knowledge contribution. Graph nodes therefore carry not just their attribute values but calibrated uncertainty metadata that downstream analytical agents can use to weight evidence appropriately [CITATION NEEDED: intelligence confidence scoring methodology].
-
-### Brain Visualization and Temporal Reasoning
-
-A force-directed neural canvas renders the knowledge graph as an interactive visual interface that presents nodes sized by relationship density and edges colored by relationship type. This visualization enables analysts to identify clusters of highly connected entities—potential centers of gravity or critical nodes—and trace relationship chains that might indicate adversary intent or capability. A brain timeline provides temporal reasoning capability: analysts can advance the timeline to observe how the graph state evolves as intelligence is incorporated over the course of an exercise or operation, identifying knowledge gaps and tracking adversary activity patterns across time.
-
-## 3.16 Swarm Leadership and Doctrinal Formations
-
-Heterogeneous robotic swarms operating in contested environments require coordinated behavior that degrades gracefully when communication is disrupted. BASTION's swarm architecture designates a single vision-equipped platform—the Sphero RVR+—as the swarm leader, leveraging its onboard NVIDIA processing and CSI camera to provide situational awareness for the entire formation while coordinating heterogeneous subordinate platforms.
-
-### Formation Control
-
-Six doctrinal formations derived from Army tactical movement doctrine govern swarm geometry: wedge, line, column, echelon left, echelon right, vee, and staggered column. Four movement techniques—traveling, traveling overwatch, bounding overwatch, and successive bounds—define the temporal pattern of advance. Formation parameters (spacing, interval, lead platform designation) are encoded in the mission intent object and transmitted to swarm members through the bridge. The swarm leader broadcasts position updates and formation correction signals, and subordinate platforms adjust their positions to maintain prescribed spacing relative to the leader's position [CITATION NEEDED: autonomous swarm coordination].
-
-### UDP Broadcast Peer Mesh
-
-In DDIL environments where bridge connectivity may be intermittent, swarm members maintain peer-to-peer coordination through a UDP broadcast mesh running on the local robot network. The mesh enables swarm members to share position data and formation status without routing through the cloud bridge, ensuring that formation cohesion and collision avoidance operate independently of external connectivity. When bridge connectivity is restored, the swarm leader synchronizes accumulated state back to BASTION through the WebSocket connection.
-
-### DAO-Driven Swarm Membership
-
-Swarm composition is governed by the Tactical DAO. Adding a new platform to a swarm or removing a degraded platform requires a DAO proposal that records the membership change on the blockchain, associating each platform's DID with the swarm mission. This governance approach ensures that swarm composition is tracked with the same accountability as human force assignment decisions. The leader shares its vision feed with swarm members that lack independent visual sensing capability, enabling collective situational awareness proportional to the leader's detection range.
-
-## 3.17 Document Intelligence Pipeline
-
-Military planning generates and consumes large volumes of unstructured text. Intelligence reports, orders, doctrine publications, and exercise scenario packages arrive in diverse formats and must be integrated into a coherent operational picture. BASTION's document intelligence pipeline applies a multi-agent processing team to each ingested document, extracting structured knowledge and inserting it into the brain graph in a form that downstream analytical agents can query.
-
-### Multi-Agent Processing Team
-
-Each document is processed by a team of ten specialist agents operating in a coordinated pipeline: an orchestrator that manages pipeline state and resolves conflicts between agent outputs; a converter that transforms source documents from PDF, DOCX, and other formats to normalized text; a classifier that categorizes documents by type, team assignment, and exercise phase; three perspective analysts that extract content from Blue, Red, and White team perspectives with strict information isolation; a fact extractor that identifies discrete factual claims; an objective extractor that identifies stated goals and intentions; a linker that resolves entity mentions to existing brain graph nodes or creates new nodes for novel entities; a bias identifier that flags potential analytical bias or coverage gaps in the document; and a quality assessor that grades the document's reliability and completeness using NATO source reliability ratings [CITATION NEEDED: multi-agent information extraction].
-
-### Scoping Interview and Gap Identification
-
-Before document upload, an AI-led scoping interview captures the boundaries of the current problem set: geographic area of interest, time period, key actors, and classification context. These boundaries constrain the linker and fact extractor, preventing false entity resolution and scope creep. Following extraction, the pipeline generates standing intelligence requirements that identify knowledge gaps—questions about entities or relationships that source documents do not address—and triggers autonomous web search and OSINT processes to fill identified gaps within the defined scope boundaries.
-
-### ExtractionTheater Visualization
-
-An ExtractionTheater component presents live visualization of pipeline progress to planning staff, showing which agents are processing which documents, what entities have been extracted, and which gaps have been identified. This transparency enables analysts to monitor extraction quality in real time and intervene when the pipeline produces incorrect or incomplete outputs, maintaining human oversight over the automated intelligence processing workflow.
-
-## 3.18 Hierarchical Problem Set Inheritance
-
-Joint operations involve parallel and nested planning efforts: strategic campaigns that spawn operational missions, operational missions that spawn tactical subordinate actions, and FRAGO updates that must propagate across multiple levels simultaneously. BASTION's hierarchical problem set architecture formalizes these relationships, enabling structured context propagation from higher to lower echelons and upward reporting from tactical execution to campaign assessment.
-
-### Context Propagation
-
-Strategic-level problem sets serve as context providers for child operational and tactical problem sets. When a strategic problem set is created, commanders designate which directives, policies, and intelligence products are eligible for inheritance by subordinate problem sets. Child problem sets inherit this context automatically at creation and receive push notifications when inherited content changes, enabling subordinate planners to identify when strategic guidance has been updated and assess the impact on their plans. Override tracking records when a subordinate problem set deviates from inherited guidance, providing parent echelon visibility into plan divergence with documented rationale [CITATION NEEDED: hierarchical planning systems].
-
-### OPORD-Triggered Mission Creation
-
-When an OPORD is published in an operational problem set, the system identifies subordinate units and generates a tactical child problem set for each assigned unit, automatically populating the child problem set with the relevant portions of the parent OPORD as inherited context. This automation eliminates the manual transcription of orders across planning levels and ensures that tactical planners begin their work with correct, current guidance from the operational command. FRAGO propagation follows the same pattern: when a parent problem set issues a FRAGO, affected child problem sets receive notification and can apply the fragmentary order to their own plans.
-
-### Upward Reporting
-
-Tactical execution generates assessment data—task completion status, resource consumption, engagement outcomes—that strategic and operational commanders require for running estimates. BASTION's upward reporting mechanism aggregates tactical COP state and execution status from child problem sets, surfacing it in parent problem set assessment dashboards without requiring manual reporting from subordinate staffs. This automation closes the information loop from tactical action to strategic assessment, enabling the continuous operational assessment described in JP 5-0.
-
-## 3.19 Operational Design Workspace
-
-The transition from operational art to operational science—from understanding the problem to developing a plan to solve it—is the most demanding cognitive task in military planning. JP 5-0 defines operational design as the application of creative thinking and operational art to design an approach to solve the problem; BASTION provides dedicated tooling that structures this creative process without constraining it.
-
-### Center of Gravity Analysis
-
-The operational design workspace implements Strange's CG-CC-CR-CV analytical framework for both friendly and adversary forces. Commanders and staff identify each force's Center of Gravity, decompose it into Critical Capabilities and Critical Requirements, and analyze Critical Vulnerabilities that opposing action could exploit. AI agents assist by cross-referencing identified critical capabilities against available intelligence in the brain graph, surfacing evidence that supports or challenges each analytical judgment and generating alternative decompositions for staff consideration. The analysis products feed directly into operational approach development and inform the targeting priorities encoded in planning products [CITATION NEEDED: center of gravity analysis methodology].
-
-### Lines of Effort and Operational Approach
-
-Lines of effort and lines of operation are defined visually with explicit linkages to strategic objectives and decisive points. The operational approach builder synthesizes center of gravity analysis and lines of effort into a phased operational approach, with AI-assisted recommendations for sequencing and resource alignment. The design-to-plan handoff exports operational design outputs directly as structured inputs to mission analysis in the Plan tab, maintaining analytical continuity between the design and planning phases.
-
-### Fork-and-Merge Revision System
-
-As planning proceeds, new intelligence or changed conditions may require operational design revision. BASTION implements a fork-and-merge revision system analogous to version control: a staff member proposes a design revision by forking the current approved design, developing the proposed change in isolation, and submitting a merge request that presents the diff between current and proposed designs. DAO governance gates require review and approval of design revisions before they replace the baseline, ensuring that approved designs are not modified unilaterally and that revision rationale is preserved in the governance record.
-
-## 3.20 Training Assessment and Readiness
-
-Military readiness is a continuous assessment process, not a binary state. BASTION's training assessment architecture provides structured mechanisms for capturing training event outcomes, tracking proficiency over time, and aggregating readiness data from unit level through campaign level to support commander decision-making about training investment priorities.
-
-### After-Action Review Capture
-
-After-action review (AAR) capture at training events provides structured recording of observed outcomes, identified strengths, areas requiring improvement, and corrective action assignments. AAR records are linked to the training event, the units and personnel who participated, and the doctrinal tasks that were exercised, enabling longitudinal tracking of performance across multiple training iterations. AAR outputs feed into the proficiency tracking subsystem as assessment inputs.
-
-### METL Proficiency Tracking
-
-Mission Essential Task List (METL) proficiency is tracked using the standard T/P/U (Trained, Practice, Untrained) assessment scale for each doctrinal task. Proficiency assessments from individual training events are aggregated by unit, task, and time period to produce proficiency trend lines that reveal whether unit capability is improving, degrading, or static. Commanders can drill down from aggregate readiness scores to individual task assessments to understand the specific training gaps driving readiness shortfalls.
-
-### Upward Aggregation and Training Readiness Dashboard
-
-Training readiness data aggregates from tactical training events through exercises to strategic training programs using the same hierarchical problem set inheritance architecture described in Section 3.18. A training readiness dashboard presents proficiency trends, upcoming training milestones, and readiness projections for scheduled operational commitments. The Pacific Strategy AY26 scenario package serves as the operational demonstration data package for this capability, providing a complete multi-echelon exercise scenario—spanning six phases from Competition through Negotiation—that exercises the full training assessment pipeline from event capture through strategic readiness aggregation [CITATION NEEDED: military readiness assessment frameworks].
-
-## 3.21 Ironclaw as Chief of Staff for Operational Design (Phase 55)
-
-Operational design is among the most cognitively demanding tasks in military planning. Commanders and staff must engage deeply with problem framing, center of gravity analysis, lines of effort, and operational approach development under time pressure. BASTION extends the operational design workspace with Ironclaw functioning as a Chief of Staff for the design process — coordinating inputs across staff sections, obtaining the commander's design decisions through structured doctrinal questioning, and validating each input against JP 5-0 requirements before recording it as part of the plan's foundation.
-
-### Staff Coordination Architecture
-
-The operational design coordination is implemented as a LangGraph StateGraph with interrupt-resume semantics, mirroring the architecture used for OSINT scoping. The graph progresses through four sequential doctrinal sections aligned to JP 5-0 Chapter III: problem framing (5 coverage criteria including environment characterization and tensions identification), center of gravity analysis (5 criteria with a minimum of two adversary critical capabilities for doctrinal completeness), lines of effort/operation (3 criteria), and operational approach (3 criteria including phasing and end state articulation).^1
-
-Each section carries explicit doctrinal coverage criteria derived from JP 5-0 and operational design doctrine. The interview graph uses structural inspection of the derived design object to assess coverage — a deterministic check against field completeness rather than a separate LLM evaluation. This design choice provides consistency and speed over qualitative assessment. Coverage assessment is transparent: if a field is empty or below the minimum count threshold, the section is not marked complete, and Ironclaw continues questioning.
-
-### Chief of Staff vs. Chatbot
-
-The operational design capability positions Ironclaw as a *Chief of Staff* rather than a *chatbot*. The distinction is operationally significant. A chatbot responds to questions and presents information on request. A Chief of Staff actively coordinates the process — determining what inputs are needed, obtaining them from the right sources, validating them against doctrinal requirements, and challenging framings that appear incomplete through red-team follow-up questions embedded in the coordination.
-
-Ironclaw's coordination style applies a challenge-then-validate pattern: for each section, it obtains the commander's reasoning through directed questioning, identifies apparent gaps or tensions in responses, and surfaces alternative framings that the commander may not have considered. Red-team probing questions are appended as AI messages in the same graph node as the primary question — a single LLM call that produces both the primary question and the follow-up challenge — rather than a separate graph node. This design minimizes latency while maintaining the adversarial questioning discipline.
-
-### Coordination Output and Workflow Integration
-
-When a section achieves coverage, Ironclaw surfaces a section confirmation prompt. Upon confirmation, the section's derived design object is persisted via a dedicated store and the coordination advances to the next section. Confirmed sections cannot be automatically overwritten; they become locked design artifacts requiring explicit intent to revise.
-
-Upon coordination completion, the derived design output integrates directly with the operational design workspace. The process captures design decisions in the same structured format as the manual workspace (problem framing canvas, CoG analysis object, LOE definitions, phased operational approach), enabling the design-to-plan handoff to proceed from coordinated artifacts through the same export path as manually constructed designs.
-
-### Knowledge Graph Gap Detection
-
-The coordination process incorporates real-time knowledge graph gap detection. When the commander's inputs reference actors, relationships, or capabilities that have no corresponding entries in the problem set's brain graph, the system flags the gap and dispatches a background research request through the document intelligence pipeline's gap research mechanism. This integration ensures that design coordination inputs that reveal intelligence gaps are automatically routed to the autonomous research workflow, maintaining analytical continuity between the operational design process and intelligence preparation.
-
-## 3.22 Visual Operational Approach Editor (Phase 56)
-
-Operational approach development traditionally produces text-based products: LOE descriptions, phase narratives, decisive point listings. Commanders and staff benefit from visual representations that allow them to see how forces relate to objectives in space and time. BASTION implements a visual operational approach editor that enables AI-directed placement of military symbols on an operational map layer, producing a visual operational approach artifact integrated with the design workspace.
-
-### MapOverlay Data Model
-
-The visual editor stores operational approach graphics as a MapOverlay object composed of two collections: MapSymbol entries for unit symbols and resource icons, and ControlMeasure entries for operational graphics (phase lines, boundaries, axes of advance, named areas of interest, and fire support coordination measures). The MapOverlay is persisted as a JSONB column in the operational_designs table, extending the existing design record without requiring a separate entity table.^2
-
-Each MapSymbol carries a Symbol Identification Code (SIDC) identifying its MIL-STD-2525D representation, along with affiliation, echelon, designation, geographic coordinates, and labeling information.^3 ControlMeasures support three geometry types — lines, polygons, and points — covering the full range of operational graphics prescribe by MIL-STD-2525D Part 2 (Tactical Graphics).
-
-### AI-Directed Symbol Placement
-
-Ironclaw can direct symbol placement through natural language commands interpreted against the MapOverlay schema. When Ironclaw identifies a decisive point, axis of advance, or unit assignment during the design coordination, it can project that design element onto the operational map by invoking the map overlay API with a structured symbol placement intent. This AI-directed editing closes the loop between verbal design decisions and visual representation: design elements discussed in the interview appear on the map without requiring the commander to manually translate intent to symbology.
-
-The design coordination output and visual approach editor are integrated: the operational approach section of the design coordination generates a candidate MapOverlay populated with units, objectives, and control measures derived from the commander's inputs. Commanders review and refine this AI-generated visual draft rather than constructing it from scratch, preserving commander judgment in the final product while eliminating the initial symbol-placement burden.
-
-### Integration and Validation
-
-The visual operational approach editor integrates with the COP layer architecture (Section 3.9), enabling AI-generated operational approach graphics to be promoted to the shared COP through the same governance review cycle used for intelligence-derived layers. This integration ensures that approach graphics developed in the Design tab can be published to the Decide and COP tabs for command decision and operational picture integration.
-
-## 3.23 Ironclaw Persistent Memory and Adaptive Relationship (Phase 57)
-
-AI staff assistants that cannot remember previous interactions require commanders to re-establish context at every session. BASTION addresses this limitation through a persistent memory architecture for Ironclaw that stores interaction context across sessions, adapts to individual preferences over time, and provides transparent memory management tools.
-
-### Memory Graph Architecture
-
-Ironclaw's memory system implements three distinct storage scopes through dedicated PostgreSQL singleton stores:
-
-**User memory** (`IronclawUserMemoryStore`) stores user-scoped key-value entries with a 90-day time-to-live (TTL). User memory captures individual preferences, communication style observations, recurring decision patterns, and relationship context (e.g., how a specific commander prefers to receive risk assessments, what level of detail they expect in situation summaries). Memory entries use ON CONFLICT DO UPDATE semantics, ensuring that evolving observations replace earlier entries rather than accumulating stale data.
-
-**Context memory** (`IronclawContextMemoryStore`) stores problem-set-scoped memory with a 180-day TTL and a session count increment on each update. Context memory captures tactical context, running planning priorities, and problem-set-specific preferences (e.g., that the current planning effort prioritizes speed over force protection). The session count provides a recency signal that downstream retrieval can use to weight recent observations over older ones.
-
-**Interaction outcomes** (`IronclawOutcomeStore`) records discrete interaction outcomes — decisions made, advice accepted or rejected, recommendations that proved accurate — enabling Ironclaw to track the long-term quality of its advisory relationship with each user.
-
-### Auth-Scoped Memory Isolation
-
-Memory isolation is enforced at the data layer: user memory methods accept only a `userDid` parameter, with no `problemSetId` argument available, ensuring that user-scoped memories cannot inadvertently leak between users. Context memory is scoped to a `(problemSetId, userDid)` composite key, isolating problem-set context by participant. This isolation ensures that a user's interaction history in one problem set does not influence Ironclaw's behavior in a separate problem set, and that one user's memory does not affect another user's experience.
-
-### Memory Management Interface
-
-The memory system includes a REST API and a React management panel (`IronclawMemoryPanel`) that enables users to review, edit, and delete stored memories. Three authenticated endpoints support memory operations: `GET /memory` retrieves the authenticated user's active memories with pagination; `DELETE /memory/:key` removes a specific memory entry; and `DELETE /memory/all` clears all memories for the authenticated user. The management panel presents memories in human-readable format with delete actions, enabling users to correct inaccurate memories and maintain awareness of what Ironclaw knows about them.
-
-This memory transparency is a deliberate design choice. Opaque AI memory — where the system "knows" things about users without their awareness or control — creates legitimate trust concerns in sensitive advisory contexts. By surfacing memory contents and providing deletion controls, BASTION enables the trust calibration that meaningful human-AI collaboration requires.
-
-## 3.24 On-Chain Resource DID Caveats (Phase 58)
-
-National caveats that restrict resource employment must travel with resource identity. A coalition resource whose employment is restricted to Five Eyes partners, limited to a 72-hour window, or confined to a specific geographic area of operations must carry those restrictions in a form that the governance system can verify automatically — not as metadata that could be overlooked, but as on-chain state enforced at the authorization layer.
-
-### ResourceCaveats Struct
-
-BASTION extends its DID Registry smart contract with a `ResourceCaveats` struct that encodes five categories of employment restriction:^4
-
-- **Classification**: the minimum handling classification required to employ the resource
-- **Releasability**: the set of nations or coalitions authorized to employ the resource (e.g., `FVEY` for Five Eyes nations, `NATO` for Atlantic alliance members)
-- **ROE tier**: the rules of engagement tier under which the resource may be employed
-- **Geographic bounds**: the geographic area of operations within which employment is authorized, expressed as degree-precision bounding box coordinates (stored as integer degrees × 1,000,000 for fixed-point arithmetic without floating point)
-- **Time windows**: UTC-epoch time ranges within which employment is authorized, enabling time-limited resource contributions
-
-These five caveat dimensions were derived from analysis of common coalition resource restriction patterns and the information security caveat framework described in Section 3.3. Together they cover the full range of practical employment restrictions that coalition resource contributions carry.
-
-### On-Chain Authorization Verification
-
-The `check_employment_authorized()` view method on the NEAR smart contract evaluates a proposed employment action against the resource's stored caveats without modifying contract state. The method accepts a resource DID, the requesting nation's identifier, the proposed employment time, and the geographic position of the proposed action. It returns a structured authorization result: `authorized` (boolean), `reason` (explanatory string), and `applicable_caveats` (the specific restrictions evaluated).^5
-
-This on-chain verification approach provides several enforcement guarantees that off-chain caveat checking cannot. First, the verification logic is immutable: the caveat check is encoded in the deployed contract and cannot be modified without a governance-approved contract upgrade. Second, the result is cryptographically verifiable: any party can independently verify that the same check would produce the same result for the same inputs by inspecting the contract code. Third, the check is integrated with the resource lifecycle: caveats are updated through the same DAO-governed workflow that manages resource registration, ensuring that caveat changes require appropriate coalition oversight.
-
-### Coalition Enforcement Example
-
-Consider a scenario representative of contemporary Five Eyes intelligence sharing arrangements: Australia contributes satellite imagery to the coalition resource pool with the following caveats — classification SECRET, releasability FVEY, ROE tier ISR_ONLY, geographic bounds Pacific Area of Operations, time window 72 hours from contribution. When a non-FVEY coalition partner attempts to employ this imagery, `check_employment_authorized()` returns `authorized=false` with reason `releasability_restriction: requesting nation not in FVEY set`. The employment is blocked before the request reaches the assignment layer. No human reviewer is required to catch the caveat violation; the smart contract enforces it at the protocol level.
-
-This enforcement pattern addresses the risk identified in Section 2.6: inadvertent caveat violations due to oversight failures in manual review processes. The smart contract eliminates the possibility of oversight failure for encoded caveats. The remaining risk is mis-encoding: if a contributing nation's caveat is incorrectly captured in the `ResourceCaveats` struct, the enforcement will be incorrect. Governance oversight of caveat entry — requiring the contributing nation's representative to confirm encoded caveats before the resource becomes available for coalition assignment — addresses this risk.
-
-### Deployment
-
-The ResourceCaveats extension was deployed to `did.bastion.testnet` on the NEAR testnet as part of Phase 58. Deployment required resolving a WASM compatibility issue between Rust LLVM >= 14's call_indirect encoding and NEAR's wasmer validator, addressed through post-processing with `wasm-opt --mvp-features --signext-lowering`. The contract is validated through four smoke tests exercising the core view methods: `check_employment_authorized`, `get_caveats`, `is_paused`, and `get_admin`.
-
----
-
-^1 Joint Chiefs of Staff, *Joint Planning*, JP 5-0 (Washington, DC: Joint Chiefs of Staff, 2020).
-
-^2 PostgreSQL documentation: JSONB provides a binary-format JSON storage type with indexed access and JSONB operators. BASTION uses the SQL `||` concatenation operator for array element appends and a read-modify-write pattern for element updates.
-
-^3 Department of Defense, *Joint Military Symbology*, MIL-STD-2525D (Washington, DC: Department of Defense, 2014).
-
-^4 World Wide Web Consortium, "Decentralized Identifiers (DIDs) v1.0," W3C Recommendation, July 19, 2022, https://www.w3.org/TR/did-core/.
-
-^5 The `check_employment_authorized()` call is a NEAR view method (read-only, no gas cost for calls, no state modification). It can be called by any party without a signed transaction, enabling pre-authorization checks without blockchain fees or latency.
-
----
-
-*This section has described BASTION's architecture, the MDMP governance integration, the escalation and competition modeling capabilities, the doctrinal lifecycle interface, IPB cycle, COP generation, resource registry, training mode, staff organization, robot integration, knowledge graph, swarm leadership, document intelligence pipeline, hierarchical problem set inheritance, operational design workspace, training assessment architecture, and the Phase 55-58 capability additions: guided design interview, visual operational approach editor, Ironclaw persistent memory, and on-chain resource DID caveats. The following Results section demonstrates these principles in practice through the implementation and physical proof-of-concept.*
-

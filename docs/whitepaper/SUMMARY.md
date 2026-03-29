@@ -21,7 +21,6 @@
 ## Appendices
 
 * [Appendix A: SITREP](appendix-a-sitrep.md)
-* [Appendix B: Demo Script](appendix-b-demo-script.md)
 
 ## Meta
 

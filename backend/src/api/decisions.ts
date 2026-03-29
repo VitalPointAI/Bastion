@@ -13,6 +13,7 @@ import { requireAuth } from '../auth/auth-instance.js';
 import { decisionService } from '../decisions/decision-service.js';
 import { decisionStore } from '../decisions/decision-store.js';
 import { raciStore } from '../decisions/raci-store.js';
+import { handlePIRAlertAction } from '../decisions/pir-alert-handler.js';
 import type { DecisionStatus, RACIRole } from '../decisions/decision-types.js';
 
 const router = Router();
@@ -167,6 +168,17 @@ router.patch('/:problemSetId/:decisionId', async (req: Request, res: Response) =
     const actorDid = (req.headers['x-did'] as string) || 'unknown';
 
     const decision = await decisionService.actOnDecision(decisionId, action, actorDid, actor_position);
+
+    // Post-action hook: handle PIR/CCIR/FFIR/EEFI alert side effects
+    const pirAlertTypes = ['ccir_alert', 'pir_answered', 'ffir_alert', 'eefi_alert'];
+    if (pirAlertTypes.includes(decision.decision_type)) {
+      setImmediate(() => {
+        handlePIRAlertAction(decision, action, actorDid).catch((err) => {
+          console.error('[decisions] PIR/CCIR alert post-action hook failed:', err);
+        });
+      });
+    }
+
     res.json({ decision });
   } catch (err) {
     console.error('[decisions] PATCH /:problemSetId/:decisionId error:', err);

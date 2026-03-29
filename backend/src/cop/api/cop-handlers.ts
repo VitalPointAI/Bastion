@@ -224,6 +224,8 @@ export const layerHandlers = {
 
   /**
    * GET /cop/layers - Query layers with optional filters.
+   * When includeParent=true, also fetches layers from the parent problem set
+   * and tags each layer with sourceWorkspaceId and isInherited.
    */
   async queryLayers(req: Request, res: Response): Promise<void> {
     try {
@@ -231,19 +233,71 @@ export const layerHandlers = {
       const sectionId = qs(req.query.sectionId);
       const state = qs(req.query.state);
       const layerType = qs(req.query.layerType);
+      const includeParent = qs(req.query.includeParent) === 'true';
 
       if (!workspaceId) {
         res.status(400).json({ error: 'workspaceId query parameter required' });
         return;
       }
 
-      const layers = await layerStore.queryLayers({
-        workspaceId,
+      const extraFilters = {
         sectionId,
         state: state as LayerState | undefined,
         layerType: layerType as COPLayerType | undefined,
+      };
+
+      // Fetch layers for the current workspace
+      const ownLayers = await layerStore.queryLayers({
+        workspaceId,
+        ...extraFilters,
       });
-      res.json(layers);
+
+      // Tag own layers with source info
+      const taggedOwn = ownLayers.map(l => ({
+        ...l,
+        sourceWorkspaceId: workspaceId,
+        isInherited: false,
+      }));
+
+      if (!includeParent) {
+        res.json(taggedOwn);
+        return;
+      }
+
+      // Look up the parent problem set
+      let parentWorkspaceId: string | null = null;
+      try {
+        const { getPool } = await import('../../lib/database.js');
+        const pool = getPool();
+        const result = await pool.query(
+          'SELECT parent_problem_set_id FROM problem_sets WHERE id = $1',
+          [workspaceId],
+        );
+        if (result.rows.length > 0) {
+          parentWorkspaceId = result.rows[0].parent_problem_set_id as string | null;
+        }
+      } catch (err) {
+        console.warn('[COP] Failed to look up parent problem set:', err instanceof Error ? err.message : err);
+      }
+
+      if (!parentWorkspaceId) {
+        res.json(taggedOwn);
+        return;
+      }
+
+      // Fetch parent layers
+      const parentLayers = await layerStore.queryLayers({
+        workspaceId: parentWorkspaceId,
+        ...extraFilters,
+      });
+
+      const taggedParent = parentLayers.map(l => ({
+        ...l,
+        sourceWorkspaceId: parentWorkspaceId as string,
+        isInherited: true,
+      }));
+
+      res.json([...taggedOwn, ...taggedParent]);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('[COP] queryLayers error:', message);

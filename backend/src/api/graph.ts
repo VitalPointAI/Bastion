@@ -712,6 +712,180 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
 });
 
 // =====================
+// CROSS-SCOPE: GRAPH WITH PARENT ENDPOINT
+// =====================
+
+// Get graph data for a workspace merged with its parent's graph
+router.get('/workspaces/:id/graph-with-parent', async (req: Request, res: Response) => {
+  try {
+    const workspaceId = req.params.id as string;
+    const atTime = getQueryString(req.query.atTime);
+
+    // Look up parent problem set
+    const { getPool } = await import('../lib/database.js');
+    const pool = getPool();
+    const parentResult = await pool.query(
+      'SELECT parent_problem_set_id FROM graph_problem_sets WHERE id = $1',
+      [workspaceId]
+    );
+    const parentId = parentResult.rows.length > 0
+      ? (parentResult.rows[0].parent_problem_set_id as string | null)
+      : null;
+
+    // Collect workspace IDs to query
+    const workspaceIds = [workspaceId];
+    if (parentId) {
+      workspaceIds.push(parentId);
+    }
+
+    // Fetch actors from all workspaces
+    const allNodes: Array<{
+      id: string;
+      label: string;
+      type: string;
+      jsonldType: string;
+      confidence: number;
+      confidenceTier: 'high' | 'medium' | 'low';
+      workspaceId: string;
+      sourceWorkspaceId: string;
+      natoSourceReliability: string | null;
+      natoInformationCredibility: number | null;
+    }> = [];
+    const allActors: Array<{ id: string; workspaceId: string }> = [];
+
+    for (const wsId of workspaceIds) {
+      let actors = await actorStore.listActors(wsId);
+
+      if (atTime) {
+        const atMs = new Date(atTime).getTime();
+        actors = actors.filter((a) => {
+          const validFrom = a.validFrom ? new Date(a.validFrom).getTime() : 0;
+          const validTo = a.validTo ? new Date(a.validTo).getTime() : Infinity;
+          return atMs >= validFrom && atMs <= validTo;
+        });
+      }
+
+      for (const actor of actors) {
+        allActors.push({ id: actor.id, workspaceId: wsId });
+        allNodes.push({
+          id: actor.id,
+          label: actor.name,
+          type: actor.type,
+          jsonldType: actor.jsonldType ?? 'cco:Agent',
+          confidence: actor.confidence ?? 0.75,
+          confidenceTier: getConfidenceTierForValue(actor.confidence ?? 0.75),
+          workspaceId: actor.workspaceId ?? wsId,
+          sourceWorkspaceId: wsId,
+          natoSourceReliability: actor.natoSourceReliability ?? null,
+          natoInformationCredibility: actor.natoInformationCredibility ?? null,
+        });
+      }
+    }
+
+    // Get relationships
+    const nodeIdSet = new Set(allNodes.map(n => n.id));
+    const edgeSet = new Map<string, { source: string; target: string; type: string; strength: number; sourceWorkspaceId: string }>();
+
+    for (const actor of allActors) {
+      const rels = await relationshipStore.getActorRelationships(actor.id, 'out');
+      for (const rel of rels) {
+        if (!nodeIdSet.has(rel.sourceActorId) || !nodeIdSet.has(rel.targetActorId)) continue;
+        const edgeKey = `${rel.sourceActorId}-${rel.targetActorId}-${rel.type}`;
+        if (!edgeSet.has(edgeKey)) {
+          edgeSet.set(edgeKey, {
+            source: rel.sourceActorId,
+            target: rel.targetActorId,
+            type: rel.type,
+            strength: rel.strength,
+            sourceWorkspaceId: actor.workspaceId,
+          });
+        }
+      }
+    }
+
+    const edges = Array.from(edgeSet.values());
+
+    res.json({ nodes: allNodes, edges, parentId });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
+// GLOBAL GRAPH ENDPOINT
+// =====================
+
+// Get the entire graph across all workspaces (no workspaceId filter)
+router.get('/global/graph', async (req: Request, res: Response) => {
+  try {
+    const classification = getQueryString(req.query.classification);
+    const atTime = getQueryString(req.query.atTime);
+
+    // Get all actors without workspace filter
+    let actors = await actorStore.listActors(undefined);
+
+    // Temporal filtering
+    if (atTime) {
+      const atMs = new Date(atTime).getTime();
+      actors = actors.filter((a) => {
+        const validFrom = a.validFrom ? new Date(a.validFrom).getTime() : 0;
+        const validTo = a.validTo ? new Date(a.validTo).getTime() : Infinity;
+        return atMs >= validFrom && atMs <= validTo;
+      });
+    }
+
+    // If classification filter is provided, only include actors from workspaces
+    // matching that classification level
+    if (classification) {
+      const { getPool } = await import('../lib/database.js');
+      const pool = getPool();
+      const classResult = await pool.query(
+        'SELECT id FROM graph_problem_sets WHERE classification = $1',
+        [classification]
+      );
+      const allowedWorkspaceIds = new Set(classResult.rows.map(r => r.id as string));
+      actors = actors.filter(a => a.workspaceId != null && allowedWorkspaceIds.has(a.workspaceId));
+    }
+
+    const nodes = actors.map(actor => ({
+      id: actor.id,
+      label: actor.name,
+      type: actor.type,
+      jsonldType: actor.jsonldType ?? 'cco:Agent',
+      confidence: actor.confidence ?? 0.75,
+      confidenceTier: getConfidenceTierForValue(actor.confidence ?? 0.75),
+      workspaceId: actor.workspaceId,
+      natoSourceReliability: actor.natoSourceReliability ?? null,
+      natoInformationCredibility: actor.natoInformationCredibility ?? null,
+    }));
+
+    const nodeIdSet = new Set(nodes.map(n => n.id));
+    const edgeSet = new Map<string, { source: string; target: string; type: string; strength: number }>();
+
+    for (const actor of actors) {
+      const rels = await relationshipStore.getActorRelationships(actor.id, 'out');
+      for (const rel of rels) {
+        if (!nodeIdSet.has(rel.sourceActorId) || !nodeIdSet.has(rel.targetActorId)) continue;
+        if (!edgeSet.has(rel.id)) {
+          edgeSet.set(rel.id, {
+            source: rel.sourceActorId,
+            target: rel.targetActorId,
+            type: rel.type,
+            strength: rel.strength,
+          });
+        }
+      }
+    }
+
+    const edges = Array.from(edgeSet.values());
+
+    res.json({ nodes, edges });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// =====================
 // GRAPH CONSTRUCTION ENDPOINTS
 // =====================
 

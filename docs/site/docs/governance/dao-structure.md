@@ -51,6 +51,34 @@ The voting scheme is set at DAO creation and can be changed only by a governance
 
 Multi-party operations (Five Eyes, NATO, ad hoc coalitions) use coalition proposals that require approval from each participating DAO. A coalition proposal is not enacted until every designated party reaches its own approval threshold independently.
 
+## Five-Tier Authority Delegation Model
+
+BASTION implements authority delegation through five echelon-based tiers, each enforced by smart contract:
+
+| Tier | Scope | Example | Engagement Authority |
+|---|---|---|---|
+| **Tier 1** | Individual | Single operator within bounded scope | None — administrative only |
+| **Tier 2** | Team | Small unit coordination | None — coordination only |
+| **Tier 3** | Organizational | Commander-level authority | **Minimum for autonomous engagement** |
+| **Tier 4** | National DAO | National resource commitments | Strategic resource decisions |
+| **Tier 5** | Coalition Strategic | Full coalition consensus | **100% approval for strike authorization** |
+
+Delegations are **dynamic and time-bounded**. A commander can grant expanded delegation for a limited mission window (e.g., "Tier 3 engagement authority for four hours in grid 12S"). The delegation is recorded on the NEAR blockchain with its expiration time and expires automatically. No one has to remember to revoke it.
+
+### Interaction-Based Authority Levels (MDMP)
+
+In addition to echelon-based tiers, each MDMP planning activity is assigned an interaction-based authority level governing how humans and AI collaborate:
+
+| Level | Description | Example Activities |
+|---|---|---|
+| AI_AUTONOMOUS | AI executes without human involvement | Data aggregation, format validation |
+| AI_PRIMARY | AI leads with human oversight | Intelligence preparation, trend analysis |
+| HYBRID_AI_LED | AI generates, human reviews before action | COA development, risk assessment |
+| HYBRID_HUMAN_LED | Human leads with AI assistance | Mission analysis, commander's guidance |
+| HUMAN_ONLY | Human decides, AI may present information | Strike authorization, ethical judgments, risk acceptance |
+
+Three activity categories are **permanently locked** to HUMAN_ONLY: AUTHORITY_DECISION, ETHICAL_LEGAL, and RISK_JUDGMENT. These locks are immutable in the smart contract.
+
 ## Agent Integration
 
 AI agents participate in DAO workflows under safety constraints:

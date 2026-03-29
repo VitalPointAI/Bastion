@@ -51,6 +51,8 @@ const STATE_CLASSES: Record<string, string> = {
 
 interface COPLayerControlsProps {
   layers: COPLayer[];
+  /** Inherited layers from the parent problem set (read-only, toggleable) */
+  inheritedLayers?: COPLayer[];
   layerVisibility: Record<string, boolean>;
   layerOpacity: Record<string, number>;
   onVisibilityChange: (layerId: string, visible: boolean) => void;
@@ -62,6 +64,10 @@ interface COPLayerControlsProps {
   onResourceLayerToggle: () => void;
   robotLayerVisible: boolean;
   onRobotLayerToggle: () => void;
+  /** Whether parent problem set layers are shown */
+  showParentLayers?: boolean;
+  /** Toggle parent layer inheritance overlay */
+  onShowParentLayersToggle?: () => void;
   /** Current confidence threshold (0-1). Symbols below this value are hidden. */
   confidenceThreshold?: number;
   /** Callback when confidence threshold slider is adjusted */
@@ -72,6 +78,7 @@ interface COPLayerControlsProps {
 
 export function COPLayerControls({
   layers,
+  inheritedLayers = [],
   layerVisibility,
   layerOpacity,
   onVisibilityChange,
@@ -83,6 +90,8 @@ export function COPLayerControls({
   onResourceLayerToggle,
   robotLayerVisible,
   onRobotLayerToggle,
+  showParentLayers = false,
+  onShowParentLayersToggle,
   confidenceThreshold = 0,
   onConfidenceThresholdChange,
 }: COPLayerControlsProps) {
@@ -230,6 +239,87 @@ export function COPLayerControls({
           </label>
         </div>
       </div>
+
+      {/* ── Parent COP layers toggle ── */}
+      {onShowParentLayersToggle && (
+        <div className="cop-layer-group">
+          <div className="cop-layer-item">
+            <input
+              type="checkbox"
+              id="cop-layer-parent"
+              checked={showParentLayers}
+              onChange={onShowParentLayersToggle}
+              className="cop-layer-checkbox"
+            />
+            <span className="cop-layer-color-swatch" style={{ backgroundColor: '#a78bfa', border: '2px dashed #7c3aed' }} />
+            <label htmlFor="cop-layer-parent" className="cop-layer-item-label" title="Show layers inherited from the parent problem set">
+              Parent Layers
+            </label>
+          </div>
+
+          {/* Inherited layer items (when parent toggle is on) */}
+          {showParentLayers && inheritedLayers.length > 0 && (
+            <div style={{ paddingLeft: 12 }}>
+              {inheritedLayers.map((layer) => {
+                const visible = layerVisibility[layer.id] !== false;
+                const opacity = layerOpacity[layer.id] ?? 100;
+                const symbols = layer.spec?.symbols ?? [];
+                const symbolCount = symbols.length;
+                const label = `${LAYER_TYPE_LABELS[layer.layerType] ?? layer.layerType}${symbolCount > 0 ? ` (${symbolCount})` : ''}`;
+
+                return (
+                  <div key={layer.id}>
+                    <div className="cop-layer-item">
+                      <input
+                        type="checkbox"
+                        id={`cop-layer-${layer.id}`}
+                        checked={visible}
+                        onChange={(e) => onVisibilityChange(layer.id, e.target.checked)}
+                        className="cop-layer-checkbox"
+                      />
+                      <label htmlFor={`cop-layer-${layer.id}`} className="cop-layer-item-label" title={`Inherited: ${layer.id}`}>
+                        {label}
+                      </label>
+                      <span
+                        className="cop-layer-state-badge"
+                        style={{
+                          fontSize: 9,
+                          padding: '1px 4px',
+                          borderRadius: 3,
+                          backgroundColor: '#5b21b6',
+                          color: '#ddd6fe',
+                        }}
+                      >
+                        inherited
+                      </span>
+                    </div>
+                    {visible && (
+                      <div className="cop-layer-opacity">
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={opacity}
+                          onChange={(e) => onOpacityChange(layer.id, Number(e.target.value))}
+                          className="cop-layer-opacity-slider"
+                          aria-label={`Opacity for inherited ${layer.layerType}`}
+                        />
+                        <span className="cop-layer-opacity-value">{opacity}%</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {showParentLayers && inheritedLayers.length === 0 && (
+            <div style={{ paddingLeft: 24, fontSize: 11, color: '#6b7280', paddingBottom: 4 }}>
+              No parent layers found
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── COP Layer groups ── */}
       {orderedTypes.map((layerType) => {

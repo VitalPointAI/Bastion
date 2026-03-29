@@ -69,6 +69,7 @@ import { strategicGuidanceRouter } from './strategic/guidance/routes.js';
 import docIntelligenceRouter from './api/doc-intelligence.js';
 import brainRouter from './api/brain.js';
 import brainSubspacesRouter from './api/brain-subspaces.js';
+import pirRouter from './api/pir-routes.js';
 import ingestRouter from './api/ingest.js';
 import decisionsRouter from './api/decisions.js';
 import { agentConfigRouter } from './api/agent-config.js';
@@ -279,6 +280,7 @@ app.use('/api/ingest', ingestRouter);
 app.use('/api/robot', robotRouter);
 app.use('/api/brain', brainRouter);
 app.use('/api/brain', brainSubspacesRouter);
+app.use('/api/pirs', pirRouter);
 // Bridge REST routes (Phase 43): /api/admin/bridge-tokens and /api/bridge/status
 // Routes in bridgeRouter include full path prefixes, so mount at root
 app.use('/', bridgeRouter);
