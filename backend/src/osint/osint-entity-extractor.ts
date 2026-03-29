@@ -121,12 +121,33 @@ async function enrichActorDescription(
 
 const AGENT_ID = 'osint-entity-extractor';
 
-const SYSTEM_PROMPT = `You are an intelligence analyst extracting structured entities, relationships, and tensions from OSINT reports.
+const SYSTEM_PROMPT = `You are a military intelligence analyst building a knowledge graph of geopolitically significant actors for a C2 planning platform. Extract ONLY entities relevant to strategic, operational, or tactical analysis.
 
 For each report, extract:
 
-1. **actors** — nations, organizations, individuals, military units, non-state actors mentioned.
-   Each actor has: name, type (nation|organization|individual|non_state_actor|military_unit|group), aliases (optional), description (optional brief).
+1. **actors** — ONLY geopolitically significant entities that a military planner or intelligence analyst would track.
+
+   INCLUDE:
+   - Nation-states and governments (e.g., "China", "United States", "Russia")
+   - Military units and commands (e.g., "7th Fleet", "PLA Eastern Theater Command")
+   - Named political leaders and commanders (e.g., "Xi Jinping", "President Marcos")
+   - International organizations (e.g., "NATO", "ASEAN", "United Nations")
+   - Significant corporations in defense/strategic sectors (e.g., "Lockheed Martin", "TSMC")
+   - Non-state armed groups and terrorist organizations (e.g., "Houthis", "Wagner Group")
+   - Intelligence agencies and law enforcement bodies (e.g., "CIA", "FSB", "Interpol")
+
+   DO NOT INCLUDE:
+   - Journalists, reporters, or article authors
+   - News agencies or media outlets (Reuters, AP, BBC) — these are sources, not actors
+   - Unnamed/generic people ("10-year-old boy", "12 suspects", "victims", "witnesses")
+   - Age-described individuals ("14-year-old girl", "elderly woman")
+   - Numbered groups of anonymous people ("15 women professionals", "101 persons")
+   - Courts, judges, or prosecutors handling routine cases
+   - Athletes, celebrities, or entertainment figures (unless geopolitically significant)
+   - Email addresses or social media handles
+   - Production credits or bylines
+
+   Each actor has: name (proper noun, canonical form), type (nation|organization|individual|non_state_actor|military_unit|group), aliases (optional), description (optional brief).
 
 2. **relationships** — connections between extracted actors.
    Each relationship has: source (actor name), target (actor name), type (allied_with|adversarial|competing|cooperating|neutral|supports|opposes|threatens), strength (0.0-1.0), description (one sentence).
@@ -134,15 +155,16 @@ For each report, extract:
 3. **tensions** — conflict points, disputes, or friction between actors.
    Each tension has: actors (2+ names), description (one sentence), intensity (0.0-1.0 where 1.0 = active conflict), domain (military|diplomatic|economic|informational|cyber|territorial|other).
 
-4. **locations** — ALL geographic locations mentioned with coordinates.
+4. **locations** — geographic locations mentioned with coordinates.
    Each location has: name (string), latitude (number), longitude (number), region (optional), country (optional).
    Use your knowledge to provide accurate lat/lng for every location worldwide.
 
 Rules:
-- Extract ONLY what is explicitly stated or clearly implied in the text
-- Use canonical names (e.g., "China" not "PRC" unless PRC is the primary reference)
+- Quality over quantity — 3 high-confidence actors are better than 15 low-quality ones
+- Use canonical names (e.g., "China" not "PRC", "United States" not "US")
+- Individuals MUST be named (first + last name or title + name). No unnamed/anonymous actors.
+- If the article is about a local crime, traffic accident, sports event, or celebrity news with no geopolitical dimension, return empty arrays
 - Strength/intensity should reflect the text's tone (threats=high, cooperation=low tension)
-- Include at least the primary actors even if relationships aren't explicit
 - For locations, ALWAYS include latitude and longitude
 - Return valid JSON only, no explanation text
 
@@ -215,10 +237,35 @@ export async function extractEntitiesFromEvent(event: OSINTEvent): Promise<Extra
       }
     }
 
+    // Post-extraction quality filter — catch junk the LLM still lets through
+    const rawActors = Array.isArray(obj.actors) ? obj.actors as ExtractedActor[] : [];
+    const filteredActors = rawActors.filter(a => {
+      const name = (a.name ?? '').trim();
+      if (name.length < 2) return false;
+      // Reject age-described unnamed people
+      if (/\d+-(?:year|month|week|day)-old/i.test(name)) return false;
+      // Reject numeric-prefixed generic groups ("12 suspects", "101 persons")
+      if (/^\d+\s+(?:suspect|victim|person|detainee|arrest|people|woman|man|child|student|boy|girl|officer)/i.test(name)) return false;
+      // Reject email addresses
+      if (name.includes('@')) return false;
+      // Reject production credits
+      if (/^(?:presented|produced|edited|written|reported) by/i.test(name)) return false;
+      // Reject single generic words
+      if (/^(?:Unnamed|Unknown|Anonymous|Unidentified|Suspect|Victim|Witness)$/i.test(name)) return false;
+      return true;
+    });
+
+    // Filter relationships and tensions to only reference surviving actors
+    const actorNames = new Set(filteredActors.map(a => a.name));
+    const filteredRels = (Array.isArray(obj.relationships) ? obj.relationships as ExtractedRelationship[] : [])
+      .filter(r => actorNames.has(r.source) && actorNames.has(r.target));
+    const filteredTensions = (Array.isArray(obj.tensions) ? obj.tensions as ExtractedTension[] : [])
+      .filter(t => t.actors.every(a => actorNames.has(a)));
+
     return {
-      actors: Array.isArray(obj.actors) ? obj.actors as ExtractedActor[] : [],
-      relationships: Array.isArray(obj.relationships) ? obj.relationships as ExtractedRelationship[] : [],
-      tensions: Array.isArray(obj.tensions) ? obj.tensions as ExtractedTension[] : [],
+      actors: filteredActors,
+      relationships: filteredRels,
+      tensions: filteredTensions,
       locations,
     };
   } catch (err) {
