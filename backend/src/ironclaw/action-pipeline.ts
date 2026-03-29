@@ -202,16 +202,49 @@ export class ActionPipeline {
 
     // No trust, non-high risk: inline confirmation
     // Use canonical description to prevent social engineering via agent-supplied text
+    // Extract actionable detail from payload (URL, file path, resource name, etc.)
+    const detail = this.extractDetail(action);
+
     return {
       status: 'confirm_required',
       action_card: {
         action_id: action.id,
         action_type: action.type,
         description: actionRegistry.getDescription(action.type),
+        detail,
         risk_level: riskLevel,
         options: ['yes', 'no', 'always'],
       },
     };
+  }
+
+  /**
+   * Extract a human-readable detail string from the action payload.
+   * Shows the user what specifically is being accessed (URL, file, etc.).
+   */
+  private extractDetail(action: IronclawAction): string | null {
+    const p = action.payload;
+    // URL-based actions (http, fetch, web_browse)
+    if (p.url) return String(p.url);
+    if (p.uri) return String(p.uri);
+    // File operations
+    if (p.path) return String(p.path);
+    if (p.file) return String(p.file);
+    if (p.filename) return String(p.filename);
+    // Search queries
+    if (p.query) return String(p.query);
+    // Channel/recipient
+    if (p.channel) return String(p.channel);
+    if (p.to) return String(p.to);
+    if (p.recipient) return String(p.recipient);
+    // Repo/resource
+    if (p.repo) return String(p.repo);
+    if (p.repository) return String(p.repository);
+    // Command
+    if (p.command) return String(p.command);
+    // Fall back to the agent-supplied description if it has useful context
+    if (action.description && action.description.length < 200) return action.description;
+    return null;
   }
 
   /**

@@ -155,6 +155,8 @@ export interface ActionCardData {
   action_id: string;
   action_type: string;
   description: string;
+  /** Specific target of the action — URL, resource name, file path, etc. */
+  detail: string | null;
   risk_level: ActionRiskLevel;
   options: ('yes' | 'no' | 'always')[];
 }

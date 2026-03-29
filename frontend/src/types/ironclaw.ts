@@ -41,6 +41,8 @@ export interface ActionCardData {
   actionId: string;
   actionType: string;
   description: string;
+  /** Specific target — URL, file path, resource name, etc. */
+  detail?: string | null;
   riskLevel: ActionRiskLevel;
   options: TrustDecision[];
 }

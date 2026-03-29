@@ -189,6 +189,7 @@ export function useIronclaw(
               actionId: (raw.action_id ?? raw.actionId) as string,
               actionType: (raw.action_type ?? raw.actionType) as string,
               description: (raw.description) as string,
+              detail: (raw.detail) as string | null | undefined,
               riskLevel: (raw.risk_level ?? raw.riskLevel) as string,
               options: (raw.options) as string[],
             };

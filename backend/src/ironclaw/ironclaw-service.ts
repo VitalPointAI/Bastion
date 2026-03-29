@@ -428,10 +428,13 @@ export class IronclawService {
     if (parsed?.tool_call) {
       const toolCall = parsed.tool_call as Record<string, unknown>;
       const actionType = (toolCall.action_type as string) ?? '';
+      const toolPayload = (toolCall.payload ?? toolCall.args ?? toolCall) as Record<string, unknown>;
+      const toolDetail = (toolPayload.url ?? toolPayload.uri ?? toolPayload.path ?? toolPayload.query ?? toolPayload.command ?? toolPayload.channel ?? toolPayload.to ?? null) as string | null;
       actionCard = {
         action_id: (toolCall.action_id as string) ?? '',
         action_type: actionType,
         description: actionRegistry.getDescription(actionType),
+        detail: toolDetail,
         risk_level: actionRegistry.getRiskLevel(actionType),
         options: (toolCall.options as ActionCardData['options']) ?? ['yes', 'no'],
       };
@@ -452,10 +455,13 @@ export class IronclawService {
       if (approvalMatch) {
         const fallbackActionType = approvalMatch[1];
         const fallbackId = `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        // Try to extract a URL or detail from the surrounding message text
+        const urlMatch = messageContent.match(/https?:\/\/[^\s)]+/);
         actionCard = {
           action_id: fallbackId,
           action_type: fallbackActionType,
           description: actionRegistry.getDescription(fallbackActionType),
+          detail: urlMatch ? urlMatch[0] : null,
           risk_level: actionRegistry.getRiskLevel(fallbackActionType),
           options: ['yes', 'no'] as ActionCardData['options'],
         };

@@ -42,7 +42,11 @@ export function IronclawActionCard({ card, onDecision, disabled }: IronclawActio
       </div>
 
       {/* Description */}
-      <p className="text-sm text-gray-200 mb-3">Ironclaw is requesting permission to: <strong>{card.description}</strong></p>
+      <p className="text-sm text-gray-200 mb-1">Ironclaw is requesting permission to: <strong>{card.description}</strong></p>
+      {card.detail && (
+        <p className="text-xs text-slate-400 mb-3 break-all">{card.detail}</p>
+      )}
+      {!card.detail && <div className="mb-2" />}
 
       {/* Decision buttons */}
       <div className="flex gap-2">
