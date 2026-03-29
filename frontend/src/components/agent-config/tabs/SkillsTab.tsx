@@ -88,7 +88,7 @@ function CustomSkillEditor({ skill, index, onUpdate, onRemove }: CustomSkillEdit
       >
         <div className="flex items-center gap-2 min-w-0">
           <svg
-            className={`w-3 h-3 text-slate-500 flex-shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`}
+            className={`w-3 h-3 text-slate-500 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -104,7 +104,7 @@ function CustomSkillEditor({ skill, index, onUpdate, onRemove }: CustomSkillEdit
             e.stopPropagation();
             onRemove(index);
           }}
-          className="text-slate-600 hover:text-red-400 transition-colors ml-2 flex-shrink-0"
+          className="text-slate-600 hover:text-red-400 transition-colors ml-2 shrink-0"
           title="Remove skill"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,7 +380,7 @@ function SkillPackCard({ pack, enabled, recommended, onToggle }: SkillPackCardPr
         {/* Toggle */}
         <button
           onClick={() => onToggle(pack.id)}
-          className={`flex-shrink-0 mt-0.5 w-8 h-4.5 rounded-full transition-colors relative ${
+          className={`shrink-0 mt-0.5 w-8 h-4.5 rounded-full transition-colors relative ${
             enabled ? 'bg-blue-600' : 'bg-slate-700'
           }`}
           role="switch"
@@ -388,8 +388,8 @@ function SkillPackCard({ pack, enabled, recommended, onToggle }: SkillPackCardPr
           title={enabled ? 'Disable skill pack' : 'Enable skill pack'}
         >
           <span
-            className={`block w-3 h-3 rounded-full bg-white shadow transition-transform absolute top-[3px] ${
-              enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+            className={`block w-3 h-3 rounded-full bg-white shadow transition-transform absolute top-0.75 ${
+              enabled ? 'translate-x-4.5' : 'translate-x-0.75'
             }`}
           />
         </button>
@@ -410,7 +410,7 @@ function SkillPackCard({ pack, enabled, recommended, onToggle }: SkillPackCardPr
         {/* Expand toggle */}
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="flex-shrink-0 text-slate-600 hover:text-slate-400 transition-colors mt-1"
+          className="shrink-0 text-slate-600 hover:text-slate-400 transition-colors mt-1"
           title="Show trigger phrases"
         >
           <svg
