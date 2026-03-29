@@ -225,7 +225,7 @@ export function CreateProblemSetWizard({ onClose, onCreated, parentProblemSetId 
                 id="ps-name"
                 type="text"
                 className="wizard-input"
-                placeholder="e.g. Indo-Pacific Theater"
+                placeholder="e.g. Baltic Shield — Exercise AY26"
                 value={state.name}
                 onChange={(e) => update({ name: e.target.value })}
                 maxLength={80}

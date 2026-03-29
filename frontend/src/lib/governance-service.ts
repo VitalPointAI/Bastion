@@ -140,23 +140,23 @@ export interface CopilotAnalysis {
 // Mock data mode - enable for UI testing without backend data
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
-// Mock data for testing — aligned with Operation Pacific Shield scenario
+// Mock data for testing — generic coalition command structure (scenario-agnostic)
 const MOCK_DAOS: DAOMetadata[] = [
   {
-    daoId: 'indopac-coalition.bastion.near',
-    name: 'Indo-Pacific Coalition Command',
-    description: 'Coalition command authority for Operation Pacific Shield — USA (wt 3), GBR (wt 2), CAN (wt 1)',
+    daoId: 'coalition-cmd.bastion.near',
+    name: 'Coalition Command Authority',
+    description: 'Coalition command authority for the active operation — weighted by contributor nation',
     classification: Classification.Secret,
     defaultAutonomy: AutonomyLevel.NotAutonomous,
     memberCount: 6,
     activeProposalCount: 3,
     createdAt: Date.now() * 1_000_000,
-    createdBy: 'radm-chen.near',
+    createdBy: 'coalition-cmd.near',
   },
   {
-    daoId: 'fvey-intel.bastion.near',
-    name: 'Five Eyes Intel Cell',
-    description: 'Coalition intelligence sharing and coordination for Indo-Pacific theater',
+    daoId: 'intel-cell.bastion.near',
+    name: 'Coalition Intel Cell',
+    description: 'Coalition intelligence sharing and coordination for the operational theater',
     classification: Classification.TopSecret,
     defaultAutonomy: AutonomyLevel.NotAutonomous,
     memberCount: 5,
@@ -166,8 +166,8 @@ const MOCK_DAOS: DAOMetadata[] = [
   },
   {
     daoId: 'jtf-logistics.bastion.near',
-    name: 'JTF Pacific Shield Logistics',
-    description: 'Supply chain and resource allocation for Operation Pacific Shield',
+    name: 'JTF Logistics',
+    description: 'Supply chain and resource allocation for the active operation',
     classification: Classification.Secret,
     defaultAutonomy: AutonomyLevel.SemiAutonomous,
     memberCount: 8,
@@ -182,13 +182,13 @@ const hourNs = 60 * 60 * 1_000_000_000;
 const dayNs = 24 * hourNs;
 
 const MOCK_PROPOSALS: Record<string, Proposal[]> = {
-  'indopac-coalition.bastion.near': [
+  'coalition-cmd.bastion.near': [
     {
       id: 0,
-      daoId: 'indopac-coalition.bastion.near',
+      daoId: 'coalition-cmd.bastion.near',
       kind: ProposalKind.Transfer,
       proposer: 'radm-chen.near',
-      description: 'Resource allocation: Deploy CSG-7 and F-35 squadron to Operation Pacific Shield AO for 90-day rotation',
+      description: 'Resource allocation: Deploy ISR assets and air support to the area of operations for 90-day rotation',
       classification: Classification.Secret,
       status: ProposalStatus.Approved,
       votesApprove: 6,
@@ -203,10 +203,10 @@ const MOCK_PROPOSALS: Record<string, Proposal[]> = {
     },
     {
       id: 1,
-      daoId: 'indopac-coalition.bastion.near',
+      daoId: 'coalition-cmd.bastion.near',
       kind: ProposalKind.MissionOrder,
       proposer: 'ops-planner.near',
-      description: 'Mission Order: Modify patrol route for MQ-9 ISR orbit — extend coverage to Miyako Strait chokepoint',
+      description: 'Mission Order: Modify patrol route for ISR orbit — extend coverage to northern chokepoint',
       classification: Classification.Secret,
       autonomyOverride: AutonomyLevel.SemiAutonomous,
       status: ProposalStatus.InProgress,
@@ -222,10 +222,10 @@ const MOCK_PROPOSALS: Record<string, Proposal[]> = {
     },
     {
       id: 2,
-      daoId: 'indopac-coalition.bastion.near',
+      daoId: 'coalition-cmd.bastion.near',
       kind: ProposalKind.StrikeAuthorization,
       proposer: 'intel-officer.near',
-      description: 'URGENT: Strike authorization for confirmed hostile maritime militia vessel harassing Philippine resupply at Second Thomas Shoal',
+      description: 'URGENT: Strike authorization for confirmed hostile vessel harassing coalition resupply convoy in the area of operations',
       classification: Classification.Secret,
       autonomyOverride: AutonomyLevel.NotAutonomous,
       status: ProposalStatus.InProgress,
@@ -240,10 +240,10 @@ const MOCK_PROPOSALS: Record<string, Proposal[]> = {
       isUrgent: true,
     },
   ],
-  'fvey-intel.bastion.near': [
+  'intel-cell.bastion.near': [
     {
       id: 0,
-      daoId: 'fvey-intel.bastion.near',
+      daoId: 'intel-cell.bastion.near',
       kind: ProposalKind.FunctionCall,
       proposer: 'gchq.near',
       description: 'Cross-coalition intelligence share request: SIGINT data for Operation Northern Shield',
@@ -262,7 +262,7 @@ const MOCK_PROPOSALS: Record<string, Proposal[]> = {
     },
     {
       id: 1,
-      daoId: 'fvey-intel.bastion.near',
+      daoId: 'intel-cell.bastion.near',
       kind: ProposalKind.Transfer,
       proposer: 'csis.near',
       description: 'Budget allocation for joint surveillance operation',
@@ -285,7 +285,7 @@ const MOCK_PROPOSALS: Record<string, Proposal[]> = {
       daoId: 'jtf-logistics.bastion.near',
       kind: ProposalKind.Transfer,
       proposer: 'supply-officer.near',
-      description: 'JP-5 fuel allocation increase for CSG-7 extended Taiwan Strait patrol rotation',
+      description: 'JP-5 fuel allocation increase for extended patrol rotation in the area of operations',
       classification: Classification.Secret,
       status: ProposalStatus.Approved,
       votesApprove: 6,
@@ -594,7 +594,7 @@ export class GovernanceService {
   async getCoalitionStatus(daoId: string, proposalId: number): Promise<CoalitionStatus | null> {
     if (USE_MOCK_DATA) {
       // Return coalition status for coalition DAOs
-      if (daoId === 'fvey-intel.bastion.near' || daoId === 'indopac-coalition.bastion.near') {
+      if (daoId === 'intel-cell.bastion.near' || daoId === 'coalition-cmd.bastion.near') {
         return MOCK_COALITION_STATUS;
       }
       return null;

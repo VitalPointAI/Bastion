@@ -49,9 +49,14 @@ export interface CoalitionCaveatDashboardProps {
 // ─── Nation display helpers ───────────────────────────────────────────────────
 
 const NATION_FLAGS: Record<string, string> = {
-  Taiwan: '\u{1F1F9}\u{1F1FC}',           // TW
   'United States': '\u{1F1FA}\u{1F1F8}',  // US
   Australia: '\u{1F1E6}\u{1F1FA}',        // AU
+  Latvia: '\u{1F1F1}\u{1F1FB}',           // LV
+  Estonia: '\u{1F1EA}\u{1F1EA}',          // EE
+  Lithuania: '\u{1F1F1}\u{1F1F9}',        // LT
+  Germany: '\u{1F1E9}\u{1F1EA}',          // DE
+  'United Kingdom': '\u{1F1EC}\u{1F1E7}', // GB
+  Poland: '\u{1F1F5}\u{1F1F1}',           // PL
 };
 
 function nationFlag(nation: string): string {

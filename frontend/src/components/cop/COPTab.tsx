@@ -568,7 +568,7 @@ export function COPTab({ problemSetId }: COPTabProps) {
 
         {/* Map */}
         <div className="flex-1 min-h-0 relative">
-          {/* Mission Sequence Panel (Iron Bastion / Autonomous) */}
+          {/* Mission Sequence Panel (Scripted / Autonomous) */}
           <MissionSequencePanel problemSetId={problemSetId} onZoomToAO={handleZoomToAction} onLayersChanged={handleLayersChanged} />
 
           {/* Gate notifications — lethal modal + toast notifications */}

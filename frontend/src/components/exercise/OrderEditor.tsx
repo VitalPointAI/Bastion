@@ -11,7 +11,7 @@
  *
  * Per CONTEXT.md:
  * - Both AI-generated and manual authoring modes
- * - Per-team order content (Blue=CJTF WestPAC, Red=PRC/TCC)
+ * - Per-team order content (Blue=coalition headquarters, Red=OPFOR)
  * - Order sequence follows doctrine: WARNORD -> OPORD -> FRAGOs
  */
 

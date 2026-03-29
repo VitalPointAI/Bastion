@@ -127,7 +127,7 @@ export function CreateScenarioPanel({ problemSetId, problemSetName, onCreated }:
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Pacific Strategy AY26"
+            placeholder="e.g. Baltic Shield AY26"
             maxLength={100}
             autoFocus
           />

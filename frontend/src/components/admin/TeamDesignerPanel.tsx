@@ -976,7 +976,7 @@ export function TeamDesignerPanel() {
           <FormField label="Test Prompt" required>
             <textarea
               className="form-input form-textarea"
-              placeholder="Analyze the current threat environment in the Taiwan Strait..."
+              placeholder="Analyze the current threat environment in the area of operations..."
               rows={3}
               value={testPrompt}
               onChange={(e) => setTestPrompt(e.target.value)}

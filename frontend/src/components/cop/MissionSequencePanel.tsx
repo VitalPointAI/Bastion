@@ -2,12 +2,13 @@
  * MissionSequencePanel
  *
  * Floating overlay on the COP map for triggering and monitoring mission
- * sequences. Supports both scripted (Iron Bastion) and autonomous
- * (AI-driven) missions. Shows current phase, event log, AI assessment,
- * policy blocks, and commander action buttons.
+ * sequences. Supports both scripted and autonomous (AI-driven) missions.
+ * Shows current phase, event log, AI assessment, policy blocks, and
+ * commander action buttons.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { roomToLatLng } from '../../lib/mgrs-coordinator';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -74,9 +75,9 @@ const PHASE_CONFIG: Record<Phase, { color: string; bg: string; label: string }> 
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-// AO bounds for the Iron Bastion scenario (Taipei Zhongzheng District)
-// From calibration profile: 5m room → 25.042-25.048°N, 121.512-121.518°E
-const AO_CENTER: [number, number] = [25.045, 121.515];
+// AO center derived from calibration profile — center of room coordinate space.
+// Uses the active calibration so map zoom targets the correct geographic area.
+const AO_CENTER: [number, number] = roomToLatLng(2.5, 7.5);
 const AO_ZOOM = 17;
 
 interface MissionSequencePanelProps {
@@ -213,8 +214,8 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
         body: JSON.stringify({ problemSetId }),
       }).catch(() => { /* non-fatal */ });
       onLayersChanged?.();
-      // Zoom back out to world view
-      onZoomToAO?.(25, 121, 3);
+      // Zoom back out to strategic view
+      onZoomToAO?.(0, 0, 3);
       setSimSessionId(null);
       setSequenceId(null);
       setStatus(null);
@@ -228,7 +229,7 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
   const isActive = sequenceId && phase !== 'idle' && phase !== 'complete';
   const isShadow = phase === 'shadow';
 
-  const title = missionType === 'autonomous' ? 'Autonomous Mission' : 'Iron Bastion';
+  const title = missionType === 'autonomous' ? 'Autonomous Mission' : 'Mission Sequence';
 
   return (
     <div style={{

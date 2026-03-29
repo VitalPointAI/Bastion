@@ -4,23 +4,19 @@
  * Unified coordinate conversion between three domains:
  *   1. MGRS (Military Grid Reference System) — human-readable military coordinates
  *   2. Lat/Lng (WGS84) — geographic coordinates for map rendering
- *   3. Room coordinates — 5m×5m physical room for robot control
+ *   3. Room coordinates — physical room dimensions for robot control
  *
- * The operational area (Taipei Zhongzheng District) is calibrated as:
- *   Room (0,0) → (25.0420°N, 121.5120°E)
- *   Room (5,10) → (25.0540°N, 121.5180°E)
- *   Room: 5m wide × 10m deep, 1 room unit ≈ 130m on the ground
- *
- * MGRS zone: 51R (Taiwan)
+ * Calibration is loaded from the active CalibrationService profile (scenario-agnostic).
+ * The profile specifies room dimensions and map bounds for the current operational area.
  *
  * Usage:
  *   const coord = Coordinator.fromRoom(2.5, 3.3);
- *   console.log(coord.toMGRS());     // "51RQN1234567890"
- *   console.log(coord.toLatLng());   // { lat: 25.0456, lng: 121.5150 }
+ *   console.log(coord.toMGRS());     // e.g. "35ULA8000012345"
+ *   console.log(coord.toLatLng());   // { lat: ..., lng: ... }
  *   console.log(coord.toRoom());     // { x: 2.5, y: 3.3 }
  *
- *   const coord2 = Coordinator.fromMGRS("51RQN1234567890");
- *   const coord3 = Coordinator.fromLatLng(25.045, 121.515);
+ *   const coord2 = Coordinator.fromMGRS("35ULA8000012345");
+ *   const coord3 = Coordinator.fromLatLng(56.849, 27.698);
  */
 
 import mgrs from 'mgrs';

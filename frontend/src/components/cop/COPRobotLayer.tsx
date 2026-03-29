@@ -9,6 +9,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { roomToLatLng as calibratedRoomToLatLng, latLngToRoom as calibratedLatLngToRoom } from '../../lib/mgrs-coordinator';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -99,26 +100,12 @@ function createRobotIcon(state: string, heading?: number): L.DivIcon {
   });
 }
 
-// ─── Room-to-map coordinate transform (MVP linear mapping) ──────────────────
+// ─── Room-to-map coordinate transform ───────────────────────────────────────
 
-// Must match backend/data/calibration-profiles.json "default" profile
-const CAL_SOUTH = 25.0420, CAL_NORTH = 25.0540;
-const CAL_WEST = 121.5120, CAL_EAST = 121.5180;
-const CAL_ROOM_W = 5, CAL_ROOM_H = 10;
-
-function roomToLatLng(x: number, y: number): [number, number] {
-  return [
-    CAL_SOUTH + (y / CAL_ROOM_H) * (CAL_NORTH - CAL_SOUTH),
-    CAL_WEST + (x / CAL_ROOM_W) * (CAL_EAST - CAL_WEST),
-  ];
-}
-
-function latLngToRoom(lat: number, lng: number): { x: number; y: number } {
-  return {
-    x: ((lng - CAL_WEST) / (CAL_EAST - CAL_WEST)) * CAL_ROOM_W,
-    y: ((lat - CAL_SOUTH) / (CAL_NORTH - CAL_SOUTH)) * CAL_ROOM_H,
-  };
-}
+// Delegates to mgrs-coordinator which reads the active calibration profile.
+// This ensures coordinates are scenario-agnostic and driven by the loaded AO profile.
+const roomToLatLng = calibratedRoomToLatLng;
+const latLngToRoom = calibratedLatLngToRoom;
 
 // ─── Smooth marker component ──────────────────────────────────────────────
 

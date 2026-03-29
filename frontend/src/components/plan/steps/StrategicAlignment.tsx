@@ -149,7 +149,7 @@ function NationalObjectivesList({
           <input
             style={{ ...inputStyle, flex: 1 }}
             value={obj}
-            placeholder="e.g., Maintain stability in the Indo-Pacific..."
+            placeholder="e.g., Maintain stability in the operational theater..."
             onChange={(e) => {
               const updated = [...objectives];
               updated[idx] = e.target.value;

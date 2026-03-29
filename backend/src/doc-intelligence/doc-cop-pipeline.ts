@@ -85,7 +85,7 @@ function buildLayerSectionId(report: DocumentIntelligenceReport, metadata?: Reco
 
 /**
  * Build a human-readable layer display name.
- * e.g. "INTEL_ESTIMATE: Pacific Strategy Assessment (Mar 2026)"
+ * e.g. "INTEL_ESTIMATE: Theater Assessment (Mar 2026)"
  */
 export function buildLayerDisplayName(report: DocumentIntelligenceReport, metadata?: Record<string, unknown>): string {
   const docType = report.triage?.documentType ?? 'DOCUMENT';

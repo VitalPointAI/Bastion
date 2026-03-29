@@ -215,7 +215,7 @@ export function IdentityTab({ config, updateConfig }: IdentityTabProps) {
             rows={2}
             value={aorText}
             onChange={(e) => handleAorChange(e.target.value)}
-            placeholder="e.g. Indo-Pacific, Taiwan Strait, Logistics Node Alpha"
+            placeholder="e.g. Northern Theater, Maritime Approaches, Logistics Node Alpha"
           />
         </FormField>
       </FieldGroup>

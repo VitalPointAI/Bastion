@@ -1,8 +1,8 @@
 /**
  * TeamConfigProvider — Centralized team label context
  *
- * Phase 64 Plan 01: Replaces 5 hardcoded "CJTF WestPAC" / "PRC/TCC" locations
- * across OrderEditor.tsx (3 locations), IPBPanel.tsx, and ExerciseDashboard.tsx.
+ * Phase 64 Plan 01: Replaces hardcoded team labels across OrderEditor.tsx,
+ * IPBPanel.tsx, and ExerciseDashboard.tsx.
  *
  * All components that display team labels should consume useTeamConfig() rather
  * than hardcoding scenario-specific coalition names.
