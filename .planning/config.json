@@ -14,5 +14,8 @@
     "always_confirm_destructive": true,
     "always_confirm_external_services": true
   },
-  "granularity": "fine"
+  "granularity": "fine",
+  "workflow": {
+    "_auto_chain_active": false
+  }
 }
