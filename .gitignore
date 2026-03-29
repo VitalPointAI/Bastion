@@ -19,6 +19,7 @@ frontend/dist/
 near-contracts/target/
 near-contracts/*/target/
 near-contracts/node_modules/
+contracts/*/target/
 
 # Python
 __pycache__/
