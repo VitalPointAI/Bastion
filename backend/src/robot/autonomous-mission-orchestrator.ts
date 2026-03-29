@@ -23,6 +23,8 @@ import { GateType, GateEnforcement, GateStatus } from '../gates/gate-types.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import { roomToGridRef } from '../coordinates/mgrs-coordinator.js';
 import { generateTacticalPlan, type TacticalPlan, type ThreatInfo } from './tactical-ai-service.js';
+import { vehicleDatabase } from './vehicle-database.js';
+import { calibrationService } from './calibration-service.js';
 import { EventEmitter } from 'events';
 
 // ---------------------------------------------------------------------------
@@ -412,13 +414,15 @@ class AutonomousMissionOrchestrator extends EventEmitter {
         return false;
       }
 
-      // Place enemy tank at the expected first-engagement position on Chengde/Zhongxiao
-      // Use a recognized class name so the symbology skill produces a valid SIDC
+      // Place enemy threat at a position north of center in the recon area.
+      // Use a recognized class name so the symbology skill produces a valid SIDC.
+      const defaultThreatClass = vehicleDatabase.getThreatClasses()[0] ?? 't-99';
+      const profile = calibrationService.getProfile();
       const threat: ThreatInfo = {
         entityId: `MANUAL-armor-1-${Date.now()}`,
-        classDesc: 't-99',   // must match KNOWN_VEHICLES / THREAT_CLASS_MAP keys
+        classDesc: defaultThreatClass,
         confidence: 0.90,
-        detectedAt: { x: 3.4, y: 4.4 },
+        detectedAt: { x: profile.room_width * 0.68, y: profile.room_height * 0.87 },
         estimatedHeading: 180,
       };
 
@@ -491,13 +495,18 @@ class AutonomousMissionOrchestrator extends EventEmitter {
 
     this.logPhase(state, 'MANUAL TRIGGER — Commander confirms enemy in kill zone');
 
-    // If we don't have threats yet, create one
+    // If we don't have threats yet, create one using calibration-derived position
     if (state.detectedThreats.length === 0) {
+      const defaultThreatClass = vehicleDatabase.getThreatClasses()[0] ?? 't-99';
+      const profile = calibrationService.getProfile();
       const threat: ThreatInfo = {
         entityId: `MANUAL-kz-${Date.now()}`,
-        classDesc: 't-99',
+        classDesc: defaultThreatClass,
         confidence: 0.90,
-        detectedAt: { x: 3.4, y: 4.4 },
+        detectedAt: {
+          x: profile.room_width * 0.68,
+          y: profile.room_height * 0.87,
+        },
         estimatedHeading: 180,
       };
       state.detectedThreats.push(threat);
@@ -1788,10 +1797,11 @@ class AutonomousMissionOrchestrator extends EventEmitter {
     const target = AutonomousMissionOrchestrator.SECOND_TARGET;
     const targetGrid = roomToGridRef(target.x, target.y);
 
-    // Record second threat
+    // Record second threat — use vehicleDatabase for threat class to stay scenario-agnostic
+    const secondThreatClass = vehicleDatabase.getThreatClasses()[0] ?? 't-99';
     const threat2: ThreatInfo = {
       entityId: `DET-armor-2-${Date.now()}`,
-      classDesc: 't-99',   // must match KNOWN_VEHICLES for valid SIDC
+      classDesc: secondThreatClass,
       confidence: 0.85,
       detectedAt: { ...target },
     };

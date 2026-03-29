@@ -4,10 +4,10 @@
  * Choreographs multi-phase robot missions by dispatching individual missions
  * in sequence based on state transitions and vision events.
  *
- * The "Iron Bastion" scenario:
+ * Generic 8-phase sequence:
  *   1. HOLD       — All robots at home base
  *   2. RECON      — Leader sweeps AO; followers hold at base
- *   3. CONTACT    — Leader's vision detects enemy tanks → adversary COP updated
+ *   3. CONTACT    — Leader's vision detects enemy threats → adversary COP updated
  *   4. OVERWATCH  — Leader takes overwatch position
  *   5. ADVANCE    — Followers move to firing positions
  *   6. SET        — Followers in position, report ready
@@ -20,6 +20,7 @@ import { getRobotMissionService } from './robot-mission-service.js';
 import { gateService } from '../gates/gate-service.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import { EventEmitter } from 'events';
+import { calibrationService } from './calibration-service.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,47 +79,48 @@ interface SequenceState {
 }
 
 // ---------------------------------------------------------------------------
-// Default Iron Bastion scenario coordinates
+// Default mission config — derived from calibration profile (scenario-agnostic)
 // ---------------------------------------------------------------------------
 
-const IRON_BASTION_DEFAULTS: SequenceConfig = {
+// Room-coordinate proportions used to derive geo positions from any scenario's
+// calibration profile. Actual geo coords are computed at runtime via
+// calibrationService.roomToGeo(x, y).
+//
+// Room layout (5m wide × 15m long, 0=SW corner, y increases northward):
+//   homeBase      — near origin, staging area            (0.5, 1.0)
+//   reconArea     — middle-to-north sweep zone           (0.5–4.5, 5.0–13.0)
+//   overwatchPos  — northern ridge with sight lines N    (2.5, 12.0)
+//   firingPos F1  — west flank, fires north              (1.0, 11.0)
+//   firingPos F2  — east flank, fires north              (4.0, 11.0)
+
+const _profile = calibrationService.getProfile();
+
+const DEFAULT_MISSION_CONFIG: SequenceConfig = {
   leaderId: 'alpha',
   followerIds: ['bravo', 'charlie'],
   problemSetId: 'default',
 
-  // ── All positions mapped to actual Taipei Zhongzheng District streets ──
-  // Room 5×5m → geo via calibration-profiles.json (25.042-25.048°N, 121.512-121.518°E)
-  //
-  // Road grid (room coords):
-  //   N-S: Hengyang Rd x=0.3, Xiangyang Rd x=1.4, Guanqian Rd x=2.5,
-  //        Chongqing S Rd x=1.1, Chengde Rd x=3.4, Gongyuan Rd x=4.4
-  //   E-W: Wuchang St y=1.7, Nanyang St y=2.0, Hankou St y=2.6,
-  //        Xuchang St y=2.9, Kaifeng St y=3.3, Zhongxiao W Rd y=4.4
-  //
-  // Enemy tanks advancing south on Zhongxiao West Rd (y≈4.4):
-  //   T1 on Chengde Rd (3.4, 4.4), T2 on Chongqing S Rd (1.1, 4.4)
+  // Staging area near south end — scaled to active scenario room dimensions
+  homeBase: { x: _profile.room_width * 0.10, y: _profile.room_height * 0.07 },
 
-  // Home base: Hengyang Road south end
-  homeBase: { x: 0.3, y: 0.5 },
+  // Recon area: middle-to-north of room — where enemy approach is expected
+  reconArea: {
+    x_min: _profile.room_width * 0.10,
+    y_min: _profile.room_height * 0.33,
+    x_max: _profile.room_width * 0.90,
+    y_max: _profile.room_height * 0.87,
+  },
 
-  // Recon area: northern half — sweep streets where tanks are expected
-  reconArea: { x_min: 0.5, y_min: 2.5, x_max: 4.5, y_max: 4.8 },
+  // Northern ridge overwatch — elevated sightlines toward northern approach
+  overwatchPosition: {
+    x: _profile.room_width * 0.50,
+    y: _profile.room_height * 0.80,
+  },
 
-  // Overwatch: Changyang Parking Tower on Guanqian Rd — multi-storey ELEVATED
-  // position with sight lines north to Zhongxiao West Rd
-  // Fire line check:
-  //   F1 (1.4,2.0)→T2 (1.1,4.4): at OW y=2.9 → x≈1.27, OW x=2.1 → 0.8m clear ✓
-  //   F2 (3.4,3.3)→T1 (3.4,4.4): at OW y=2.9 → x=3.4,  OW x=2.1 → 1.3m clear ✓
-  overwatchPosition: { x: 2.1, y: 2.9 },
-
-  // Firing positions: on real intersections, flanking the enemy axis
-  //   F1: Xiangyang Rd / Nanyang St intersection — fires N toward T2
-  //   F2: Chengde Rd / Kaifeng St intersection — fires N toward T1
-  //   Spacing: 2.3m (different streets, mutual defilade)
-  //   Neither firing corridor passes through overwatch
+  // Flanking firing positions — west and east, south of enemy approach axis
   firingPositions: [
-    { x: 1.4, y: 2.0 },  // F1 (bravo)  — Xiangyang/Nanyang, fires N up corridor
-    { x: 3.4, y: 3.3 },  // F2 (charlie) — Chengde/Kaifeng, fires N up Chengde
+    { x: _profile.room_width * 0.20, y: _profile.room_height * 0.73 },  // F1 west flank
+    { x: _profile.room_width * 0.80, y: _profile.room_height * 0.73 },  // F2 east flank
   ],
 
   reconSpeed: 80,    // Slow for stealth recon
@@ -135,12 +137,13 @@ class MissionSequenceOrchestrator extends EventEmitter {
   private visionSubscribed = false;
 
   /**
-   * Start the Iron Bastion scenario with optional config overrides.
+   * Start a generic mission sequence with optional config overrides.
+   * Positions default to values derived from the active calibration profile.
    */
-  async startIronBastion(
+  async startMissionSequence(
     overrides?: Partial<SequenceConfig>,
   ): Promise<{ sequenceId: string; state: SequenceState }> {
-    const config: SequenceConfig = { ...IRON_BASTION_DEFAULTS, ...overrides };
+    const config: SequenceConfig = { ...DEFAULT_MISSION_CONFIG, ...overrides };
     const id = randomUUID();
 
     const state: SequenceState = {
@@ -167,6 +170,16 @@ class MissionSequenceOrchestrator extends EventEmitter {
     setTimeout(() => this.advanceToRecon(id), 3000);
 
     return { sequenceId: id, state };
+  }
+
+  /**
+   * @deprecated Use startMissionSequence() instead.
+   * Kept as alias for backward compatibility.
+   */
+  async startIronBastion(
+    overrides?: Partial<SequenceConfig>,
+  ): Promise<{ sequenceId: string; state: SequenceState }> {
+    return this.startMissionSequence(overrides);
   }
 
   /**

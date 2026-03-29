@@ -246,8 +246,13 @@ async function generateSkillDrivenPlan(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let killZoneResult: any;
   try {
+    // Use the active map's primary EW road as the default enemy advance axis
+    const { getActiveMap } = await import('./skills/navigation-skill.js');
+    const activeMap = getActiveMap();
+    const primaryRoad = activeMap.roads.find((r) => r.roadClass === 'primary' && r.axis === 'ew');
+    const advanceAxis = primaryRoad?.name ?? 'primary approach corridor';
     const raw = await killZoneTool.invoke({
-      enemy_advance_axis: { road_name: 'Zhongxiao West', direction: 'south' },
+      enemy_advance_axis: { road_name: advanceAxis, direction: 'south' },
       num_firing_positions: friendlyPositions.followers.length,
     });
     killZoneResult = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw));
@@ -298,7 +303,7 @@ async function generateSkillDrivenPlan(
   );
 
   const plan: TacticalPlan = {
-    assessment: `${threats.length} hostile armored vehicle(s) detected on Zhongxiao West Rd. Skill-driven plan: ${opResult?.best?.name ?? 'elevated'} overwatch, flanking ambush from perpendicular streets.`,
+    assessment: `${threats.length} hostile armored vehicle(s) detected on primary approach corridor. Skill-driven plan: ${opResult?.best?.name ?? 'elevated'} overwatch, flanking ambush from perpendicular tracks.`,
     overwatch: {
       position: owPos,
       reasoning: opResult?.best?.reasoning ?? 'Best available observation post',

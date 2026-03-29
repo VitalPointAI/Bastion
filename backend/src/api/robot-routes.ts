@@ -479,10 +479,11 @@ robotRouter.post('/swarms/:leaderId/remove-resource', (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /scenarios/iron-bastion — Start Iron Bastion mission sequence
+// POST /scenarios/mission-sequence — Start generic mission sequence
+// (POST /scenarios/iron-bastion is kept as a deprecated alias)
 // ---------------------------------------------------------------------------
 
-robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
+async function handleStartMissionSequence(req: import('express').Request, res: import('express').Response): Promise<void> {
   const overrides = req.body ?? {};
   const simulate = req.query.simulate === 'true' || req.body?.simulate === true;
 
@@ -495,15 +496,14 @@ robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
       simSessionId = await startSimulation({
         robotIds: [leaderId, ...followerIds],
         leaderId,
-        homeBase: overrides.homeBase ?? { x: 0.3, y: 0.5 },
-        reconArea: overrides.reconArea ?? { x_min: 0.5, y_min: 2.5, x_max: 4.5, y_max: 4.8 },
-        threatClasses: ['CHN-99G', 'T-90'],
+        homeBase: overrides.homeBase ?? calibrationService.roomToGeo(0.5, 1.0),
+        reconArea: overrides.reconArea,
         problemSetId: overrides.problemSetId,
       });
     }
 
     const orchestrator = getMissionSequenceOrchestrator();
-    const { sequenceId, state } = await orchestrator.startIronBastion(overrides);
+    const { sequenceId, state } = await orchestrator.startMissionSequence(overrides);
 
     res.json({
       sequenceId,
@@ -513,10 +513,15 @@ robotRouter.post('/scenarios/iron-bastion', async (req, res) => {
       simSessionId,
     });
   } catch (err) {
-    console.error('[robot-routes] Failed to start Iron Bastion scenario:', err);
+    console.error('[robot-routes] Failed to start mission sequence:', err);
     res.status(500).json({ error: String(err) });
   }
-});
+}
+
+robotRouter.post('/scenarios/mission-sequence', handleStartMissionSequence);
+
+/** @deprecated Use /scenarios/mission-sequence instead */
+robotRouter.post('/scenarios/iron-bastion', handleStartMissionSequence);
 
 // ---------------------------------------------------------------------------
 // GET /scenarios/:sequenceId — Get mission sequence status
