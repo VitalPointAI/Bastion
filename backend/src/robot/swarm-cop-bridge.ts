@@ -8,59 +8,9 @@
  * to connect swarm telemetry to the COP visualization pipeline.
  */
 
-import { readFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import type { SwarmTelemetryMsg } from './robot-types.js';
-import type { SwarmFormationSpec, SwarmMemberSpec, LatLng } from '../cop/layers/layer-types.js';
-
-// ---------------------------------------------------------------------------
-// Calibration helpers (mirrors robot-mission-service.ts loadDefaultCalibration)
-// ---------------------------------------------------------------------------
-
-const __bridge_filename = fileURLToPath(import.meta.url);
-const __bridge_dirname = dirname(__bridge_filename);
-const CALIBRATION_FILE = join(__bridge_dirname, '../../data/calibration-profiles.json');
-
-interface CalibrationBounds {
-  north: number;
-  south: number;
-  east: number;
-  west: number;
-}
-
-interface CalibrationProfile {
-  room_width: number;
-  room_height: number;
-  map_bounds: CalibrationBounds;
-}
-
-function loadDefaultCalibration(): CalibrationProfile {
-  try {
-    if (existsSync(CALIBRATION_FILE)) {
-      const profiles = JSON.parse(readFileSync(CALIBRATION_FILE, 'utf-8')) as Record<string, CalibrationProfile>;
-      if (profiles.default) return profiles.default;
-    }
-  } catch { /* fallback below */ }
-  return {
-    room_width: 5,
-    room_height: 10,
-    map_bounds: { north: 25.0540, south: 25.0420, east: 121.5180, west: 121.5120 },
-  };
-}
-
-/**
- * Convert room-space (x, y) meters to geo (lat, lng) using calibration profile.
- * Exported for reuse by other robot subsystems.
- */
-export function roomToGeo(x: number, y: number, calibration?: CalibrationProfile): LatLng {
-  const cal = calibration ?? loadDefaultCalibration();
-  const { north, south, east, west } = cal.map_bounds;
-  return {
-    lat: south + (y / cal.room_height) * (north - south),
-    lng: west + (x / cal.room_width) * (east - west),
-  };
-}
+import type { SwarmFormationSpec, SwarmMemberSpec } from '../cop/layers/layer-types.js';
+import { calibrationService } from './calibration-service.js';
 
 // ---------------------------------------------------------------------------
 // Formation technique lookup
@@ -100,13 +50,11 @@ export function bridgeSwarmTelemetryToCOP(
   msg: SwarmTelemetryMsg,
   emit: (event: string, data: unknown) => void,
 ): SwarmFormationSpec {
-  const cal = loadDefaultCalibration();
-
   // Build geo-coordinate member specs
   const members: SwarmMemberSpec[] = msg.members.map((m) => ({
     robotId: m.robot_id,
     role: m.robot_id === msg.leader_id ? 'leader' : 'follower',
-    position: roomToGeo(m.position.x, m.position.y, cal),
+    position: calibrationService.roomToGeo(m.position.x, m.position.y),
     slotIndex: m.slot_index ?? 0,
     batteryPct: m.battery_pct,
   }));
@@ -126,7 +74,7 @@ export function bridgeSwarmTelemetryToCOP(
     technique: inferTechnique(msg.state),
     memberCount: msg.member_count,
     members,
-    centerOfMass: roomToGeo(msg.center_of_mass.x, msg.center_of_mass.y, cal),
+    centerOfMass: calibrationService.roomToGeo(msg.center_of_mass.x, msg.center_of_mass.y),
     heading: msg.heading,
   };
 

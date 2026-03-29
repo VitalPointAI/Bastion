@@ -57,43 +57,9 @@ import {
 } from './swarm-graph-writer.js';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync } from 'fs';
 import { homedir } from 'os';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-// Calibration profile for room-to-geo coordinate transform
-const __rms_filename = fileURLToPath(import.meta.url);
-const __rms_dirname = dirname(__rms_filename);
-const CALIBRATION_FILE = join(__rms_dirname, '../../data/calibration-profiles.json');
-
-interface CalibrationBounds {
-  north: number; south: number; east: number; west: number;
-}
-
-function loadDefaultCalibration(): { room_width: number; room_height: number; map_bounds: CalibrationBounds } {
-  try {
-    if (existsSync(CALIBRATION_FILE)) {
-      const profiles = JSON.parse(readFileSync(CALIBRATION_FILE, 'utf-8'));
-      if (profiles.default) return profiles.default;
-    }
-  } catch { /* fallback below */ }
-  return {
-    room_width: 5,
-    room_height: 10,
-    map_bounds: { north: 25.0540, south: 25.0420, east: 121.5180, west: 121.5120 },
-  };
-}
-
-/** Convert room-space (x, y) meters to geo (lat, lng) using calibration profile. */
-function roomToGeo(x: number, y: number): { lat: number; lng: number } {
-  const cal = loadDefaultCalibration();
-  const { north, south, east, west } = cal.map_bounds;
-  return {
-    lat: south + (y / cal.room_height) * (north - south),
-    lng: west + (x / cal.room_width) * (east - west),
-  };
-}
+import { calibrationService } from './calibration-service.js';
 
 // ---------------------------------------------------------------------------
 // Service class
@@ -1498,7 +1464,7 @@ export class RobotMissionService {
     if (!resourceId) return;
 
     // Convert room coordinates to geo coordinates using calibration profile
-    const geo = roomToGeo(position.x, position.y);
+    const geo = calibrationService.roomToGeo(position.x, position.y);
 
     const telemetryService = getResourceTelemetryService();
     telemetryService.ingestTelemetry(resourceId, {
@@ -1585,7 +1551,7 @@ export class RobotMissionService {
     if (msg.detections.length > 0) {
       const robotTelemetry = robot?.latest_telemetry;
       const robotPosition = robotTelemetry?.position
-        ? roomToGeo(robotTelemetry.position.x, robotTelemetry.position.y)
+        ? calibrationService.roomToGeo(robotTelemetry.position.x, robotTelemetry.position.y)
         : null;
       const robotHeading = robotTelemetry?.heading;
 
@@ -1769,7 +1735,7 @@ export class RobotMissionService {
     // Forward each swarm member's position to the COP resource layer
     const telemetryService = getResourceTelemetryService();
     for (const member of members) {
-      const geo = roomToGeo(member.position.x, member.position.y);
+      const geo = calibrationService.roomToGeo(member.position.x, member.position.y);
       const robot = this.connectedRobots.get(member.robot_id);
       const resourceId = robot?.did ? this.robotResourceIds.get(robot.did) : undefined;
 

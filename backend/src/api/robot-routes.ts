@@ -8,49 +8,14 @@
 
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { MissionJSONSchema } from '../robot/robot-types.js';
 import { getRobotMissionService } from '../robot/robot-mission-service.js';
 import { getMissionSequenceOrchestrator } from '../robot/mission-sequence-orchestrator.js';
 import { getAutonomousOrchestrator } from '../robot/autonomous-mission-orchestrator.js';
 import { startSimulation, pauseSimulation, resumeSimulation, stopSimulation, resetSimulation, listSimulations } from '../robot/mission-simulator.js';
 import { loadCoalitionProfiles } from '../robot/coalition-caveat-service.js';
+import { calibrationService } from '../robot/calibration-service.js';
 import type { COPLayerSpec } from '../cop/layers/layer-types.js';
-
-// Calibration profile storage (file-based for MVP)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const CALIBRATION_DIR = join(__dirname, '../../data');
-const CALIBRATION_FILE = join(CALIBRATION_DIR, 'calibration-profiles.json');
-
-interface CalibrationProfile {
-  room_width: number;
-  room_height: number;
-  map_bounds: { north: number; south: number; east: number; west: number };
-}
-
-function loadProfiles(): Record<string, CalibrationProfile> {
-  if (!existsSync(CALIBRATION_FILE)) {
-    const defaults: Record<string, CalibrationProfile> = {
-      default: {
-        room_width: 5,
-        room_height: 10,
-        map_bounds: { north: 25.0540, south: 25.0420, east: 121.5180, west: 121.5120 },
-      },
-    };
-    if (!existsSync(CALIBRATION_DIR)) mkdirSync(CALIBRATION_DIR, { recursive: true });
-    writeFileSync(CALIBRATION_FILE, JSON.stringify(defaults, null, 2));
-    return defaults;
-  }
-  return JSON.parse(readFileSync(CALIBRATION_FILE, 'utf-8'));
-}
-
-function saveProfiles(profiles: Record<string, CalibrationProfile>): void {
-  if (!existsSync(CALIBRATION_DIR)) mkdirSync(CALIBRATION_DIR, { recursive: true });
-  writeFileSync(CALIBRATION_FILE, JSON.stringify(profiles, null, 2));
-}
 
 export const robotRouter = Router();
 
@@ -384,12 +349,12 @@ robotRouter.post('/missions/:missionId/auth', async (req, res) => {
 // ---------------------------------------------------------------------------
 
 robotRouter.get('/calibration/profiles', (_req, res) => {
-  const profiles = loadProfiles();
+  const profiles = calibrationService.loadProfiles();
   res.json(Object.keys(profiles));
 });
 
 robotRouter.get('/calibration/profiles/:name', (req, res) => {
-  const profiles = loadProfiles();
+  const profiles = calibrationService.loadProfiles();
   const profile = profiles[req.params.name];
   if (!profile) {
     res.status(404).json({ error: 'Profile not found' });
@@ -405,9 +370,9 @@ robotRouter.put('/calibration/profiles/:name', (req, res) => {
     return;
   }
 
-  const profiles = loadProfiles();
+  const profiles = calibrationService.loadProfiles();
   profiles[req.params.name] = { room_width, room_height, map_bounds };
-  saveProfiles(profiles);
+  calibrationService.saveProfiles(profiles);
   res.json({ saved: req.params.name });
 });
 

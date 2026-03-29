@@ -24,29 +24,28 @@
  */
 
 import mgrs from 'mgrs';
+import { calibrationService } from '../robot/calibration-service.js';
 const { forward, toPoint } = mgrs;
 
 // ---------------------------------------------------------------------------
-// Calibration constants
+// Calibration helpers — delegate to CalibrationService singleton
 // ---------------------------------------------------------------------------
 
-/** Room coordinate system: 5m wide × 10m deep physical room */
-const ROOM_W = 5;
-const ROOM_H = 10;
-
-/** Geographic bounds of the operational area
- *  Original 5×5 room: south=25.0420, north=25.0480 (0.006° lat range)
- *  Extended to 5×10: north pushed to 25.0540 (0.012° lat range, double)
- *  The first 5m (y=0-5) maps to the original AO; the second 5m (y=5-10)
- *  extends the battlespace north for the second engagement. */
-const CAL_SOUTH = 25.0420;
-const CAL_NORTH = 25.0540;
-const CAL_WEST = 121.5120;
-const CAL_EAST = 121.5180;
-
-/** Derived scale factors */
-const LAT_RANGE = CAL_NORTH - CAL_SOUTH; // 0.012°
-const LNG_RANGE = CAL_EAST - CAL_WEST;   // 0.006°
+/** Return current calibration bounds from the active default profile. */
+function getBounds() {
+  const profile = calibrationService.getProfile('default');
+  const { north, south, east, west } = profile.map_bounds;
+  return {
+    ROOM_W: profile.room_width,
+    ROOM_H: profile.room_height,
+    CAL_SOUTH: south,
+    CAL_NORTH: north,
+    CAL_WEST: west,
+    CAL_EAST: east,
+    LAT_RANGE: north - south,
+    LNG_RANGE: east - west,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Coordinator class
@@ -75,6 +74,7 @@ export class Coordinator {
 
   /** Create from room coordinates (0-5 range) */
   static fromRoom(x: number, y: number): Coordinator {
+    const { ROOM_W, ROOM_H, CAL_SOUTH, CAL_WEST, LAT_RANGE, LNG_RANGE } = getBounds();
     const lat = CAL_SOUTH + (y / ROOM_H) * LAT_RANGE;
     const lng = CAL_WEST + (x / ROOM_W) * LNG_RANGE;
     return new Coordinator(lat, lng);
@@ -95,6 +95,7 @@ export class Coordinator {
 
   /** Convert to room coordinates */
   toRoom(): RoomCoord {
+    const { ROOM_W, ROOM_H, CAL_SOUTH, CAL_WEST, LAT_RANGE, LNG_RANGE } = getBounds();
     return {
       x: ((this.lng - CAL_WEST) / LNG_RANGE) * ROOM_W,
       y: ((this.lat - CAL_SOUTH) / LAT_RANGE) * ROOM_H,

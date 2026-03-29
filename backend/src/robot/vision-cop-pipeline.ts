@@ -18,6 +18,7 @@ import type { COPLayerSpec, COPSymbolSpec, COPAnnotationSpec, Affiliation } from
 import { getConfidenceTier } from '../graph/provenance-types.js';
 import { SOURCE_WEIGHTS } from '../graph/confidence-calculator.js';
 import { entityResolutionService } from '../graph/resolution/resolution-service.js';
+import { calibrationService } from './calibration-service.js';
 
 const BASTION_CONTEXT = 'https://bastion.vitalpoint.ai/ontology/context.jsonld';
 const VISION_ASSERTED_BY = 'system:yolov8-detector';
@@ -164,13 +165,8 @@ export function extractThreatSymbols(
     const estPos = (detection as { estimated_position?: { x: number; y: number } }).estimated_position;
     let position: { lat: number; lng: number };
     if (estPos) {
-      // Convert room coordinates to geo (same calibration as frontend COPRobotLayer)
-      const CAL_SOUTH = 25.0420, CAL_NORTH = 25.0540, CAL_WEST = 121.5120, CAL_EAST = 121.5180;
-      const ROOM_W = 5, ROOM_H = 10;
-      position = {
-        lat: CAL_SOUTH + (estPos.y / ROOM_H) * (CAL_NORTH - CAL_SOUTH),
-        lng: CAL_WEST + (estPos.x / ROOM_W) * (CAL_EAST - CAL_WEST),
-      };
+      // Convert room coordinates to geo via CalibrationService singleton
+      position = calibrationService.roomToGeo(estPos.x, estPos.y);
     } else if (robotPosition) {
       // No estimated_position — offset threat ~1.5m in the robot's facing
       // direction so it doesn't overlap the robot marker on the COP map.
