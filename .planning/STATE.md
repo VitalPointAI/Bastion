@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.1
+milestone: v0.3
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 63-01-PLAN.md
-last_updated: "2026-03-29T20:21:55.092Z"
-last_activity: "2026-03-29 - Completed 63-03: Source pre-registration tests (OSINT-63-07) added to bridge; LLM concurrency reduced 3→2 for 12-specialist pipeline"
+status: completed
+stopped_at: Completed 64-01-PLAN.md
+last_updated: "2026-03-29T22:28:19.375Z"
+last_activity: "2026-03-29 - Reconciled phase status: marked 23/28/31/50/61 complete, updated roadmap and SITREP"
 progress:
-  total_phases: 79
+  total_phases: 80
   completed_phases: 60
-  total_plans: 487
-  completed_plans: 489
-  percent: 100
+  total_plans: 491
+  completed_plans: 490
+  percent: 85
 ---
 
 # Project State
@@ -22,16 +22,16 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 **Core value:** End-to-end AI-enabled automation of the complete planning cycle that leads to physical demonstration of strategy-to-autonomous-execution with verifiable human control over lethal decisions.
 
-**Current focus:** Phase 32 — Network Device Discovery & Secure Automatic Resource Onboarding
+**Current focus:** Phase 63 complete — next: Phase 48 (Robot Swarm End-to-End Demo) or Phase 47 (JSON-LD Brain)
 
 ## Current Position
 
 Phase: 63 of 79 (Unified OSINT Agent Ingestion) — COMPLETE
 Plan: 3 of 3 in current phase — COMPLETE
-Status: Plan 63-03 complete — Source pre-registration tests added (OSINT-63-07); known agencies (Reuters/AP/BBC) verified at B reliability; LLM concurrency reduced from 3 to 2 for heavier 12-specialist pipeline.
-Last activity: 2026-03-29 - Completed 63-03: Source pre-registration tests (OSINT-63-07) added to bridge; LLM concurrency reduced 3→2 for 12-specialist pipeline
+Status: Phase 63 complete. Reconciled phase statuses — 67 of 79 phases complete (including 6/7 superseded). Remaining: 12 phases (1.1, 4.5, 8-12, 16-17, 25.2-25.3, 29 partial, 45, 47, 48).
+Last activity: 2026-03-29 - Reconciled phase status: marked 23/28/31/50/61 complete, updated roadmap and SITREP
 
-Progress: [██████████] 100% 442 plans complete
+Progress: [████████░░] 85% — 67/79 phases complete
 
 ## Performance Metrics
 
@@ -250,6 +250,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 61 P01 | 15 | 2 tasks | 8 files |
 | Phase 61-responsive-ui-mobile-optimization P02 | 15 | 2 tasks | 5 files |
 | Phase 63 P01 | 5 | 2 tasks | 4 files |
+| Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo P01 | 30 | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -1069,6 +1070,8 @@ Recent decisions affecting current work:
 - [Phase 61-responsive-ui-mobile-optimization]: Tab content padding uses clamp(0.75rem, 2vw, 1.5rem) for fluid mobile-to-desktop scaling
 - [Phase 63]: OSINT agent bridge uses Map-based TTL cache per problemSetId to avoid StateGraph recreation per event
 - [Phase 63]: assertedVia threaded via state.metadata through orchestrator to FactExtractor avoiding new LangGraph state field
+- [Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo]: CalibrationService uses synchronous readFileSync (lazy init) — avoiding async refactoring of all callers
+- [Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo]: ExerciseDashboard split into inner/outer components so TeamConfigProvider wraps entire exercise tree
 
 ### Roadmap Evolution
 
@@ -1794,7 +1797,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T20:05:07.071Z
-Stopped at: Completed 63-01-PLAN.md
+Last session: 2026-03-29T22:28:19.365Z
+Stopped at: Completed 64-01-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
