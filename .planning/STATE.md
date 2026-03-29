@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Awaiting 60-07 human-verify checkpoint
-last_updated: "2026-03-28T14:42:13.695Z"
+stopped_at: Completed 62-01-PLAN.md
+last_updated: "2026-03-29T16:52:08.788Z"
 last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
-  total_phases: 76
+  total_phases: 78
   completed_phases: 57
-  total_plans: 479
-  completed_plans: 481
+  total_plans: 484
+  completed_plans: 482
   percent: 100
 ---
 
@@ -244,6 +244,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 60 P04 | 7 | 2 tasks | 7 files |
 | Phase 60 P06 | 5 | 2 tasks | 5 files |
 | Phase 60 P07 | 5 | 2 tasks | 6 files |
+| Phase 62-knowledge-graph-entity-deduplication-and-auto-resolution P01 | 5 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -1046,6 +1047,8 @@ Recent decisions affecting current work:
 - [Phase 60]: telegram-confirm parses PAIRED:chatId from Ironclaw response and persists chat ID server-side
 - [Phase 60]: Built-in routine definitions mirrored in frontend (not fetched from API) — static catalog data that only changes on deploy, avoiding unnecessary API calls
 - [Phase 60]: syncUserKnowledge piggybacked on existing sessionStartTimes check — fires on first message of each server session, no new in-memory state needed
+- [Phase 62-01]: normalizeActorName() maps to display-name canonical forms, not lowercase — distinct from normalizeName() in string-matcher.ts which lowercases for comparison
+- [Phase 62-01]: Republic of China intentionally NOT mapped to China — Taiwan/ROC is geopolitically distinct from PRC; only PRC and People's Republic of China map to China
 
 ### Roadmap Evolution
 
@@ -1770,7 +1773,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T14:42:13.685Z
-Stopped at: Awaiting 60-07 human-verify checkpoint
+Last session: 2026-03-29T16:52:08.774Z
+Stopped at: Completed 62-01-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
