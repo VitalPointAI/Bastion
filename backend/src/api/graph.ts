@@ -10,6 +10,7 @@ import { osintEventStore } from '../graph/osint/event-store.js';
 import { OSINTEventInputSchema } from '../graph/osint/types.js';
 import { validityService } from '../graph/osint/validity-service.js';
 import { entityResolutionService } from '../graph/resolution/resolution-service.js';
+import { executeReadQuery } from '../graph/neo4j-client.js';
 import { graphBuilder } from '../graph/construction/graph-builder.js';
 import { decisionStore } from '../graph/raft/decision-store.js';
 import type { DecisionBasis } from '../graph/raft/types.js';
@@ -438,6 +439,117 @@ router.post('/resolution/merge', async (req: Request, res: Response) => {
     res.status(400).json({ error: String(error) });
   }
 });
+
+// =====================
+// BATCH MERGE ENDPOINT
+// =====================
+
+/**
+ * Handler for POST /resolution/batch-merge
+ * Exported for unit testing without supertest.
+ *
+ * dryRun=true (default): returns candidate counts + sample without merging.
+ * dryRun=false: auto-merges high-confidence duplicates (autoMerge bucket only).
+ * Batch operations skip LLM verification — too expensive for bulk runs (Pitfall 6).
+ */
+export async function batchMergeHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const { workspaceId, dryRun = true, limit } = req.body as {
+      workspaceId?: string;
+      dryRun?: boolean;
+      limit?: number;
+    };
+    const result = await entityResolutionService.findDuplicates(workspaceId);
+
+    if (dryRun) {
+      const sampleLimit = typeof limit === 'number' ? limit : 50;
+      const sample = result.autoMerge.slice(0, sampleLimit).map(c => ({
+        actor1Name: c.actor1Name,
+        actor2Name: c.actor2Name,
+        score: c.score.score,
+      }));
+      res.json({
+        autoMergeCandidates: result.autoMerge.length,
+        reviewCandidates: result.needsReview.length,
+        totalCandidates: result.candidates.length,
+        sample,
+      });
+      return;
+    }
+
+    // Auto-merge only the high-confidence autoMerge bucket — no LLM verification
+    const merges = await entityResolutionService.autoMergeDuplicates(result);
+    res.json({
+      mergedCount: merges.length,
+      merges: merges.map(m => ({
+        canonicalActorId: m.canonicalActorId,
+        mergedActorIds: m.mergedActorIds,
+        aliasesAdded: m.aliasesAdded,
+      })),
+    });
+  } catch (err) {
+    console.error('[Graph] Batch merge failed:', err);
+    res.status(500).json({ error: 'Batch merge failed' });
+  }
+}
+
+router.post('/resolution/batch-merge', batchMergeHandler);
+
+// =====================
+// GRAPH STATS ENDPOINT
+// =====================
+
+/**
+ * Handler for GET /stats
+ * Exported for unit testing without supertest.
+ *
+ * Returns totalActors, activeActors, softDeletedActors plus dedup metrics.
+ * Dedup metrics degrade gracefully to zero if resolution scan fails.
+ */
+export async function graphStatsHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const workspaceId = getQueryString(req.query.workspaceId);
+
+    const countResult = await executeReadQuery(`
+      MATCH (a:Actor)
+      WHERE $workspaceId IS NULL OR a.workspaceId = $workspaceId
+      RETURN
+        count(a) as total,
+        count(CASE WHEN a.validTo IS NOT NULL THEN 1 END) as softDeleted,
+        count(CASE WHEN a.validTo IS NULL THEN 1 END) as active
+    `, { workspaceId: workspaceId ?? null });
+
+    const counts = countResult.records[0];
+
+    let dedupMetrics = {
+      duplicateCandidates: 0,
+      autoMergeCandidates: 0,
+      humanReviewCandidates: 0,
+    };
+    try {
+      const resolution = await entityResolutionService.findDuplicates(workspaceId ?? undefined);
+      dedupMetrics = {
+        duplicateCandidates: resolution.candidates.length,
+        autoMergeCandidates: resolution.autoMerge.length,
+        humanReviewCandidates: resolution.needsReview.length,
+      };
+    } catch (resolveErr) {
+      console.warn('[Graph] Stats: resolution scan failed, returning zero counts:', resolveErr);
+    }
+
+    res.json({
+      totalActors: counts.get('total').toNumber(),
+      activeActors: counts.get('active').toNumber(),
+      softDeletedActors: counts.get('softDeleted').toNumber(),
+      ...dedupMetrics,
+    });
+  } catch (err) {
+    console.error('[Graph] Stats failed:', err);
+    res.status(500).json({ error: 'Failed to fetch graph stats' });
+  }
+}
+
+router.get('/stats', graphStatsHandler);
 
 // =====================
 // OBJECTIVES WITH VALIDITY ENDPOINTS
