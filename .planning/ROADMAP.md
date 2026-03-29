@@ -927,7 +927,7 @@ Plans:
 **Goal:** Fix all 6 layout shell components (header, tab bar, IronclawDrawer, OrgTreeSidebar, TabLayout sidebar) for responsive behavior at 375px/768px/1024px/1280px breakpoints, then apply fluid patterns to content areas and modals.
 **Requirements**: RESP-01, RESP-02, RESP-03, RESP-04, RESP-05, RESP-06, RESP-07
 **Depends on:** Phase 60
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 61-01-PLAN.md -- Layout shells: App header flex, IronclawDrawer responsive CSS, tab bar scroll, OrgTreeSidebar max-w, TabLayout off-canvas

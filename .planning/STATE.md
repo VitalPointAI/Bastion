@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 62-03-PLAN.md
-last_updated: "2026-03-29T17:05:50.697Z"
+stopped_at: Completed 61-01-PLAN.md
+last_updated: "2026-03-29T17:17:01.956Z"
 last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
 progress:
   total_phases: 78
   completed_phases: 58
   total_plans: 484
-  completed_plans: 484
+  completed_plans: 485
   percent: 100
 ---
 
@@ -247,6 +247,7 @@ Progress: [██████████] 100% 442 plans complete
 | Phase 62-knowledge-graph-entity-deduplication-and-auto-resolution P01 | 5 | 2 tasks | 4 files |
 | Phase 62 P02 | 4 | 2 tasks | 5 files |
 | Phase 62 P03 | 8 | 1 tasks | 2 files |
+| Phase 61 P01 | 15 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -1055,6 +1056,9 @@ Recent decisions affecting current work:
 - [Phase 62]: Raw actor name added as alias when canonical differs — relationship lookups can still find canonical node via original extracted name
 - [Phase 62]: batch-merge skips LLM verification for batch operations (performance)
 - [Phase 62]: stats endpoint degrades gracefully when resolution scan fails
+- [Phase 61]: Use CSS custom property --ironclaw-width to synchronize drawer width and push-layout paddingRight — CSS var() works in inline styles
+- [Phase 61]: Convert App header from grid to flex-wrap for graceful reflow on mid-range screens
+- [Phase 61]: TabLayout mobile off-canvas pattern: position:fixed + translateX(-100%) default, translateX(0) on .open at <640px
 
 ### Roadmap Evolution
 
@@ -1779,7 +1783,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T17:00:25.708Z
-Stopped at: Completed 62-03-PLAN.md
+Last session: 2026-03-29T17:16:44.866Z
+Stopped at: Completed 61-01-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
