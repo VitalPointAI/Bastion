@@ -136,8 +136,11 @@ For each report, extract:
    - Non-state armed groups and terrorist organizations (e.g., "Houthis", "Wagner Group")
    - Intelligence agencies and law enforcement bodies (e.g., "CIA", "FSB", "Interpol")
 
-   BORDERLINE — include ONLY if the reference is specific enough to cross-reference across reports:
-   - Role-only references: "Housing Minister" alone is too vague, but "India's Housing Minister" or "Turkish Defense Minister" is identifiable across reports
+   RESOLVE ROLE REFERENCES — when the article mentions a title/role without a name, use the article's context (country, city, date, topic) and your knowledge to resolve it to the actual person:
+   - "the Housing Minister" in an article about India → extract as "Manohar Lal Khattar" (India's Housing Minister) with alias "India Housing Minister"
+   - "the Defense Secretary" in an article about the Philippines → extract as "Gilberto Teodoro" with alias "Philippine Defense Secretary"
+   - "the commander" in an article about CENTCOM operations → extract as the named CENTCOM commander
+   - If you cannot confidently resolve the role to a specific person, include it as "[Country]'s [Role]" (e.g., "Turkey's Defense Minister") so it can be cross-referenced and resolved later
    - Partial names: "General Kim" is worth including if context makes them identifiable; "a general" is not
 
    DO NOT INCLUDE:
@@ -169,6 +172,7 @@ Rules:
 - Quality over quantity — 3 high-confidence actors are better than 15 low-quality ones
 - Use canonical names (e.g., "China" not "PRC", "United States" not "US")
 - Individuals MUST be named (first + last name or title + name). No unnamed/anonymous actors.
+- RESOLVE before extracting: use the article's geographic context, date, and your world knowledge to resolve role references to real named people. Put the role as an alias.
 - If the article is about a local crime, traffic accident, sports event, or celebrity news with no geopolitical dimension, return empty arrays
 - Strength/intensity should reflect the text's tone (threats=high, cooperation=low tension)
 - For locations, ALWAYS include latitude and longitude
