@@ -12,7 +12,7 @@ import RSSParser from 'rss-parser';
 import { osintFeedStore } from '../jpp/osint-feed-store.js';
 import { osintEventStore } from '../graph/osint/event-store.js';
 import { notifyCOPChange } from '../cop/index.js';
-import { extractLocation, syncOSINTEventToGraph } from './osint-graph-sync.js';
+import { extractLocation, syncOSINTEventToGraph, runPostSyncResolution } from './osint-graph-sync.js';
 import { extractAndSyncToGraph } from './osint-entity-extractor.js';
 import { updateOSINTCOPLayer } from './osint-cop-pipeline.js';
 // geocodingService removed — using keyword lookup + feed source name fallback (no external API calls)
@@ -415,6 +415,12 @@ class FeedPoller {
 
       // 2. Also trigger full LLM COP generation (best-effort, slower)
       notifyCOPChange(feed.problemSetId, `osint-feed-${feed.sourceName}`);
+
+      // 3. Phase 62: Run entity resolution after OSINT batch to merge duplicates
+      //    Runs once per poll cycle (not per event) to avoid redundant scans
+      runPostSyncResolution(feed.problemSetId).catch(err =>
+        console.warn('[FeedPoller] Post-sync resolution failed:', err),
+      );
     }
 
     return stored;

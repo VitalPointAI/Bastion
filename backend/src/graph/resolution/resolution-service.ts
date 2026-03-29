@@ -80,8 +80,10 @@ export class EntityResolutionService {
    * Find duplicate candidates in a workspace
    */
   async findDuplicates(workspaceId?: string): Promise<ResolutionResult> {
-    const actors = await actorStore.listActors(workspaceId);
-    const candidates = findCandidateMatches(actors, this.reviewThreshold);
+    // Phase 62: Exclude soft-deleted actors to prevent re-merging previously resolved duplicates
+    // atTime: new Date() activates the temporal filter (validFrom <= now AND validTo IS NULL OR validTo > now)
+    const activeOnly = await actorStore.listActors(workspaceId, undefined, new Date());
+    const candidates = findCandidateMatches(activeOnly, this.reviewThreshold);
 
     const autoMerge: MatchCandidate[] = [];
     const needsReview: MatchCandidate[] = [];

@@ -11,6 +11,7 @@ import { actorStore } from '../raft/actor-store.js';
 import { relationshipStore } from '../raft/relationship-store.js';
 import { tensionStore } from '../raft/tension-store.js';
 import { entityResolutionService } from '../resolution/resolution-service.js';
+import { normalizeActorName } from '../resolution/name-normalizer.js';
 import { detectContradiction, type AssertionInput } from '../contradiction-detector.js';
 import { SOURCE_WEIGHTS, HALF_LIFE_DEFAULTS } from '../confidence-calculator.js';
 import type { SourceMethod } from '../provenance-types.js';
@@ -267,13 +268,24 @@ export class GraphBuilder {
       // Create or find actors
       for (const actor of extracted.actors) {
         try {
-          // Check if actor already exists (by name)
-          const existing = await actorStore.findActorsByName(actor.name, false);
+          // Phase 62: Normalize actor name to canonical form before lookup/creation
+          // e.g. "PRC" → "China", "DPRK" → "North Korea"
+          const canonicalName = normalizeActorName(actor.name);
+
+          // Check if actor already exists (by canonical name)
+          const existing = await actorStore.findActorsByName(canonicalName, false);
 
           if (existing.length > 0) {
             // Actor exists, add alias if new and link to document
             const existingActor = existing[0];
+            actorNameToId.set(canonicalName.toLowerCase(), existingActor.id);
+            // Also map the original (pre-normalization) name so relationship lookups work
             actorNameToId.set(actor.name.toLowerCase(), existingActor.id);
+
+            // If the raw name differs from canonical, add it as an alias
+            if (canonicalName !== actor.name && !existingActor.aliases.includes(actor.name)) {
+              await actorStore.addAlias(existingActor.id, actor.name);
+            }
 
             // Also map aliases
             for (const alias of actor.aliases || []) {
@@ -309,7 +321,7 @@ export class GraphBuilder {
               };
               await detectContradiction(existingAssertion, incomingAssertion).catch(() => {
                 // Non-fatal: log but continue
-                console.warn(`[Graph Builder] Contradiction check failed for actor ${actor.name}`);
+                console.warn(`[Graph Builder] Contradiction check failed for actor ${canonicalName}`);
               });
             }
           } else {
@@ -320,12 +332,18 @@ export class GraphBuilder {
                 ? HALF_LIFE_DEFAULTS['geographic']
                 : HALF_LIFE_DEFAULTS['political'];
 
-            // Create new actor with JSON-LD provenance
+            // Build initial aliases: include the raw name as an alias if it differs
+            const initialAliases = [...(actor.aliases || [])];
+            if (canonicalName !== actor.name && !initialAliases.includes(actor.name)) {
+              initialAliases.push(actor.name);
+            }
+
+            // Create new actor with canonical name and JSON-LD provenance
             const newActor = await actorStore.createActor(
               {
-                name: actor.name,
+                name: canonicalName,
                 type: actor.type,
-                aliases: actor.aliases || [],
+                aliases: initialAliases,
                 attributes: actor.role ? { role: actor.role } : {},
                 workspaceId: options.workspaceId,
                 sourceDocumentIds: [options.sourceDocumentId],
@@ -333,6 +351,8 @@ export class GraphBuilder {
               },
               { ...provenance, halfLifeDays },
             );
+            actorNameToId.set(canonicalName.toLowerCase(), newActor.id);
+            // Also map the original name for relationship lookups
             actorNameToId.set(actor.name.toLowerCase(), newActor.id);
 
             // Map aliases too
@@ -343,7 +363,7 @@ export class GraphBuilder {
             result.actorsCreated++;
             options.onEntityCreated?.({
               type: 'actor',
-              data: { id: newActor.id, name: actor.name, actorType: actor.type },
+              data: { id: newActor.id, name: canonicalName, actorType: actor.type },
             });
           }
         } catch (error) {
