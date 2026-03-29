@@ -28,3 +28,6 @@ export {
   type ResolutionResult,
   type MergeResult,
 } from './resolution-service.js';
+
+// Name canonicalization (pre-ingestion alias registry)
+export { normalizeActorName, CANONICAL_ALIASES } from './name-normalizer.js';
