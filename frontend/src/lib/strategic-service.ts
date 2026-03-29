@@ -298,14 +298,15 @@ class StrategicService {
     echelon: string;
     objectives: StrategicObjective[];
   }[]> {
-    return this.fetch<{
+    const response = await this.fetch<{ hierarchy: {
       problemSetId: string;
       problemSetName: string;
       echelon: string;
       objectives: StrategicObjective[];
-    }[]>(
+    }[] }>(
       `/api/strategic/objectives/hierarchy?problemSetId=${encodeURIComponent(problemSetId)}`
     );
+    return response.hierarchy || [];
   }
 
   // ============================================================================

@@ -39,7 +39,7 @@ export function UnderstandTab({ problemSetId }: UnderstandTabProps) {
       <DecisionGateBanner tabId="understand" />
 
       {/* Content area with sidebar navigation */}
-      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+      <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
         <TabLayout
           items={sidebarItems}
           selectedItem={selectedView}
