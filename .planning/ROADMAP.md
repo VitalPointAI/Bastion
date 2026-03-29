@@ -936,9 +936,9 @@ Plans:
 ### Phase 62: Knowledge Graph Entity Deduplication & Auto-Resolution (INSERTED)
 
 **Goal:** Eliminate duplicate nodes from the knowledge graph by integrating entity resolution into the ingestion pipeline; add name canonicalization before node creation; auto-run resolution after buildFromDocument() and OSINT sync; batch-merge existing duplicates via resolution API; add canonical alias registry for common name variants (US/USA/United States, PRC/China, etc.); wire resolution into the autonomous document intelligence team (Phase 40) extraction flow; add dedup metrics to graph stats endpoint
-**Requirements**: TBD
+**Requirements**: [DEDUP-01, DEDUP-02, DEDUP-03, DEDUP-04, DEDUP-05, DEDUP-06, DEDUP-07]
 **Depends on:** Phase 40, Phase 47 (leverages existing resolution-service.ts infrastructure)
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 **Context:**
 Investigation revealed 28,800+ nodes in the knowledge graph with significant duplication caused by:
@@ -956,7 +956,9 @@ Investigation revealed 28,800+ nodes in the knowledge graph with significant dup
 - `backend/src/api/graph.ts:421` — existing resolution/duplicates endpoint
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 62 to break down)
+- [ ] 62-01-PLAN.md -- Canonical alias registry and name normalizer (foundation)
+- [ ] 62-02-PLAN.md -- Wire normalization into OSINT sync and graph builder, auto-resolution
+- [ ] 62-03-PLAN.md -- Batch-merge endpoint and graph stats with dedup metrics
 
 ---
 **MCP Tools (deterministic operations - added to MCP server):**
