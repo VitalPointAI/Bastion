@@ -21,6 +21,9 @@ import { randomUUID } from 'crypto';
 import { getRobotMissionService } from './robot-mission-service.js';
 import type { RobotVisionMsg } from './robot-types.js';
 import { getResourceRegistry } from '../resources/resource-registry.js';
+import { calibrationService } from './calibration-service.js';
+import { vehicleDatabase } from './vehicle-database.js';
+import { getActiveMap } from './skills/navigation-skill.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -105,35 +108,38 @@ class FakeWebSocket {
         } else if (mission.params.target_location) {
           robot.waypoints = [mission.params.target_location];
         } else if (mission.params.area) {
-          // Generate a road-following sweep path for recon_area
-          // Uses actual Taipei Zhongzheng District street grid (room coords):
-          //   N-S: Hengyang x=0.3, Chongqing S x=1.1, Xiangyang x=1.4,
-          //        Guanqian x=2.5, Chengde x=3.4, Gongyuan x=4.4
-          //   E-W: Hankou y=2.6, Xuchang y=2.9, Kaifeng y=3.3, Zhongxiao W y=4.4
-          robot.waypoints = [
-            // Start: Hengyang/Hankou intersection
-            { x: 0.3, y: 2.6 },
-            // E on Hankou St to Guanqian Rd
-            { x: 2.5, y: 2.6 },
-            // N on Guanqian to Xuchang St
-            { x: 2.5, y: 2.9 },
-            // E on Xuchang to Chengde Rd
-            { x: 3.4, y: 2.9 },
-            // N on Chengde to Kaifeng St
-            { x: 3.4, y: 3.3 },
-            // W on Kaifeng to Guanqian Rd
-            { x: 2.5, y: 3.3 },
-            // N on Guanqian to Zhongxiao W Rd
-            { x: 2.5, y: 4.4 },
-            // E on Zhongxiao W to Chengde Rd (enemy axis)
-            { x: 3.4, y: 4.4 },
-            // E on Zhongxiao W to Gongyuan Rd
-            { x: 4.4, y: 4.4 },
-            // S on Gongyuan to Kaifeng St
-            { x: 4.4, y: 3.3 },
-            // W on Kaifeng back to Chengde (sweep complete)
-            { x: 3.4, y: 3.3 },
-          ];
+          // Generate a road-following sweep path for recon_area.
+          // Derives waypoints from the active area map: traverse each N-S track
+          // within the recon area bounds at regular intervals, alternating
+          // direction for a boustrophedon (back-and-forth) pattern.
+          const area = mission.params.area as { x_min: number; y_min: number; x_max: number; y_max: number };
+          const map = getActiveMap();
+          const nsTracks = map.roads
+            .filter((r) => r.axis === 'ns' && r.position >= area.x_min && r.position <= area.x_max)
+            .sort((a, b) => a.position - b.position);
+
+          const waypoints: Array<{ x: number; y: number }> = [];
+          let goingNorth = true;
+          for (const track of nsTracks) {
+            const yStart = Math.max(area.y_min, track.range[0]);
+            const yEnd   = Math.min(area.y_max, track.range[1]);
+            // Sample ~3 points along each track
+            const step = (yEnd - yStart) / 2;
+            const ys = goingNorth
+              ? [yStart, yStart + step, yEnd]
+              : [yEnd, yEnd - step, yStart];
+            for (const y of ys) {
+              waypoints.push({ x: track.position, y });
+            }
+            goingNorth = !goingNorth;
+          }
+
+          // Fallback: if no tracks in recon area, go directly to area center
+          if (waypoints.length === 0) {
+            waypoints.push({ x: (area.x_min + area.x_max) / 2, y: (area.y_min + area.y_max) / 2 });
+          }
+
+          robot.waypoints = waypoints;
         }
 
         robot.speed = mission.params.speed ?? 100; // Raw 0-255 value — scaled in simulationTick
@@ -200,7 +206,7 @@ export async function startSimulation(config: {
     paused: false,
     reconArea: config.reconArea,
     detectionTriggered: false,
-    threatClasses: config.threatClasses ?? ['CHN-99G', 'T-90'],
+    threatClasses: config.threatClasses ?? vehicleDatabase.getThreatClasses().slice(0, 2),
     homeBase: config.homeBase,
     problemSetId: config.problemSetId,
     config: { robotIds: config.robotIds, leaderId: config.leaderId },
@@ -398,20 +404,27 @@ function simulationTick(session: SimSession): void {
 }
 
 function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
-  // Enemy tanks detected at the NORTH EDGE of the map (y≈4.8), approaching south.
-  // They will advance toward the kill zone which is set up further south.
+  // Enemy threats detected approaching from the north/east edge of the room.
   // Detection at range means the COP shows them well north of friendly positions.
-  const enemyStartY = 4.8; // North edge — detected at max range
+  const profile = calibrationService.getProfile();
+  const enemyStartY = profile.room_height * 0.93; // ~93% north — detected at max range
   const enemyPositions = [
-    { x: 2.0, y: enemyStartY },  // Western lane
-    { x: 3.0, y: enemyStartY },  // Eastern lane
-    { x: 2.5, y: enemyStartY + 0.1 },  // Trailing vehicle
+    calibrationService.roomToGeo(profile.room_width * 0.40, enemyStartY),  // Western approach
+    calibrationService.roomToGeo(profile.room_width * 0.60, enemyStartY),  // Eastern approach
+    calibrationService.roomToGeo(profile.room_width * 0.50, enemyStartY + profile.room_height * 0.007), // Trailing
+  ];
+  // Also provide room-space positions for internal tracking
+  const enemyRoomPositions = [
+    { x: profile.room_width * 0.40, y: enemyStartY },
+    { x: profile.room_width * 0.60, y: enemyStartY },
+    { x: profile.room_width * 0.50, y: enemyStartY + profile.room_height * 0.007 },
   ];
 
-  console.log(`[Simulator] Leader ${robot.id} at (${robot.position.x.toFixed(1)}, ${robot.position.y.toFixed(1)}) — CONTACT! Enemy armor detected at ~4km range on Zhongxiao West Rd`);
+  console.log(`[Simulator] Leader ${robot.id} at (${robot.position.x.toFixed(1)}, ${robot.position.y.toFixed(1)}) — CONTACT! Enemy armor detected approaching from north`);
 
   session.threatClasses.forEach((classDesc, i) => {
-    const enemyPos = enemyPositions[i] ?? enemyPositions[0];
+    const enemyPos = enemyRoomPositions[i] ?? enemyRoomPositions[0];
+    void enemyPositions[i]; // geo position available for external COP layers
 
     setTimeout(() => {
       const visionMsg = {

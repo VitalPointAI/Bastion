@@ -15,6 +15,7 @@ import { getAutonomousOrchestrator } from '../robot/autonomous-mission-orchestra
 import { startSimulation, pauseSimulation, resumeSimulation, stopSimulation, resetSimulation, listSimulations } from '../robot/mission-simulator.js';
 import { loadCoalitionProfiles } from '../robot/coalition-caveat-service.js';
 import { calibrationService } from '../robot/calibration-service.js';
+import { vehicleDatabase } from '../robot/vehicle-database.js';
 import type { COPLayerSpec } from '../cop/layers/layer-types.js';
 
 export const robotRouter = Router();
@@ -493,10 +494,11 @@ async function handleStartMissionSequence(req: import('express').Request, res: i
     if (simulate) {
       const leaderId = overrides.leaderId ?? 'alpha';
       const followerIds = overrides.followerIds ?? ['bravo', 'charlie'];
+      const profile = calibrationService.getProfile();
       simSessionId = await startSimulation({
         robotIds: [leaderId, ...followerIds],
         leaderId,
-        homeBase: overrides.homeBase ?? calibrationService.roomToGeo(0.5, 1.0),
+        homeBase: overrides.homeBase ?? { x: profile.room_width * 0.10, y: profile.room_height * 0.07 },
         reconArea: overrides.reconArea,
         problemSetId: overrides.problemSetId,
       });
@@ -588,9 +590,9 @@ robotRouter.post('/scenarios/autonomous', async (req, res) => {
       simSessionId = await startSimulation({
         robotIds: [leaderId, ...followerIds],
         leaderId,
-        homeBase: overrides.homeBase ?? { x: 0.3, y: 0.5 },
-        reconArea: overrides.reconArea ?? { x_min: 0.5, y_min: 2.5, x_max: 4.5, y_max: 4.8 },
-        threatClasses: ['CHN-99G', 'T-90'],
+        homeBase: overrides.homeBase ?? (() => { const p = calibrationService.getProfile(); return { x: p.room_width * 0.10, y: p.room_height * 0.07 }; })(),
+        reconArea: overrides.reconArea,
+        threatClasses: vehicleDatabase.getThreatClasses().slice(0, 2),
         problemSetId: overrides.problemSetId,
       });
     }

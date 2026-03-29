@@ -9,6 +9,7 @@
 
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
+import { calibrationService } from '../calibration-service.js';
 
 // ---------------------------------------------------------------------------
 // Map data — loaded at startup, could be replaced with a map service
@@ -45,43 +46,61 @@ export interface MapData {
   landmarks: Landmark[];
 }
 
-// Default map: Taipei Zhongzheng District (from OpenStreetMap)
-const ZHONGZHENG_MAP: MapData = {
-  name: 'Taipei Zhongzheng District',
-  bounds: { x_min: 0, y_min: 0, x_max: 5, y_max: 5 },
-  geoBounds: { lat_min: 25.042, lat_max: 25.048, lng_min: 121.512, lng_max: 121.518 },
-  roads: [
-    // N-S roads
-    { name: 'Hengyang Road', axis: 'ns', position: 0.3, range: [0, 5], roadClass: 'tertiary', lanes: 2 },
-    { name: 'Chongqing South Road S1', axis: 'ns', position: 1.1, range: [0, 5], roadClass: 'tertiary', lanes: 2 },
-    { name: 'Xiangyang Road', axis: 'ns', position: 1.4, range: [0, 5], roadClass: 'tertiary', lanes: 2 },
-    { name: 'Guanqian Road', axis: 'ns', position: 2.5, range: [0, 5], roadClass: 'tertiary', lanes: 2 },
-    { name: 'Chengde Road S1', axis: 'ns', position: 3.4, range: [0, 5], roadClass: 'unclassified', lanes: 2 },
-    { name: 'Gongyuan Road', axis: 'ns', position: 4.4, range: [0, 5], roadClass: 'tertiary', lanes: 2 },
-    // E-W roads
-    { name: 'Wuchang Street S1', axis: 'ew', position: 1.7, range: [0, 5], roadClass: 'residential', lanes: 2 },
-    { name: 'Nanyang Street', axis: 'ew', position: 2.0, range: [0, 5], roadClass: 'residential', lanes: 2 },
-    { name: 'Hankou Street S1', axis: 'ew', position: 2.6, range: [0, 5], roadClass: 'residential', lanes: 2 },
-    { name: 'Xuchang Street', axis: 'ew', position: 2.9, range: [0, 5], roadClass: 'residential', lanes: 2 },
-    { name: 'Kaifeng Street S1', axis: 'ew', position: 3.3, range: [0, 5], roadClass: 'residential', lanes: 2 },
-    { name: 'Zhongxiao West Road', axis: 'ew', position: 4.4, range: [0, 5], roadClass: 'primary', lanes: 6 },
-  ],
-  landmarks: [
-    { name: 'Changyang Parking Tower', position: { x: 2.1, y: 2.9 }, type: 'elevated', notes: 'Multi-storey structure, provides elevated overwatch with clear sight lines north to Zhongxiao West Rd' },
-    { name: '228 Peace Memorial Park', position: { x: 2.5, y: -0.5 }, type: 'open_terrain', notes: 'Open terrain south of AO, no cover' },
-    { name: 'Taipei Main Station', position: { x: 3.1, y: 5.0 }, type: 'structure', notes: 'North edge of AO, major transit hub' },
-    { name: 'Xinguang Mitsukoshi', position: { x: 2.8, y: 3.3 }, type: 'structure', notes: 'Large commercial structure at Guanqian/Kaifeng intersection' },
-  ],
-};
+// ---------------------------------------------------------------------------
+// Default area map — open terrain track network (scenario-agnostic)
+//
+// Uses room dimensions from the active calibration profile.
+// Three N-S farm tracks and three E-W movement lines create a 9-intersection
+// grid the A* pathfinder can route on — same algorithm that worked on the
+// former Taipei street grid.
+//
+// Room 5m wide × 15m long (Latvia EFDL default):
+//   N-S tracks: West Track x=1.0, Center Track x=2.5, East Track x=4.2
+//   E-W lines:  South Line y=1.0, Mid Line y=9.5, North Line y=12.5
+//   Landmarks:  Northern Ridge, Tree Line Boundary, Staging Area, UEA Center
+// ---------------------------------------------------------------------------
 
-let activeMap: MapData = ZHONGZHENG_MAP;
+function buildDefaultAreaMap(): MapData {
+  const { room_width: w, room_height: h, map_bounds } = calibrationService.getProfile();
+  return {
+    name: 'Unmanned Engagement Area — Open Terrain',
+    bounds: { x_min: 0, y_min: 0, x_max: w, y_max: h },
+    geoBounds: {
+      lat_min: map_bounds.south,
+      lat_max: map_bounds.north,
+      lng_min: map_bounds.west,
+      lng_max: map_bounds.east,
+    },
+    roads: [
+      // N-S farm tracks
+      { name: 'West Track',   axis: 'ns', position: w * 0.20, range: [0, h], roadClass: 'unclassified', lanes: 1 },
+      { name: 'Center Track', axis: 'ns', position: w * 0.50, range: [0, h], roadClass: 'secondary',    lanes: 1 },
+      { name: 'East Track',   axis: 'ns', position: w * 0.84, range: [0, h], roadClass: 'unclassified', lanes: 1 },
+      // E-W movement lines
+      { name: 'South Line',   axis: 'ew', position: h * 0.07, range: [0, w], roadClass: 'residential',  lanes: 1 },
+      { name: 'Mid Line',     axis: 'ew', position: h * 0.63, range: [0, w], roadClass: 'secondary',    lanes: 1 },
+      { name: 'North Line',   axis: 'ew', position: h * 0.83, range: [0, w], roadClass: 'primary',      lanes: 2 },
+    ],
+    landmarks: [
+      { name: 'Northern Ridge',       position: { x: w * 0.50, y: h * 0.80 }, type: 'elevated',     notes: 'Elevated ground with clear sight lines south along center track' },
+      { name: 'Tree Line Boundary',   position: { x: w * 0.50, y: h * 0.63 }, type: 'open_terrain', notes: 'Vegetation belt — provides concealment from north' },
+      { name: 'Staging Area',         position: { x: w * 0.50, y: h * 0.07 }, type: 'structure',    notes: 'Southern staging area — robot home base' },
+      { name: 'UEA Center',           position: { x: w * 0.50, y: h * 0.50 }, type: 'intersection', notes: 'Center of Unmanned Engagement Area — mid-point reference' },
+    ],
+  };
+}
+
+/** Scenario area map — replaced via setActiveMap() when a scenario loads. */
+const DEFAULT_AREA_MAP: MapData = buildDefaultAreaMap();
+
+let scenarioAreaMap: MapData = DEFAULT_AREA_MAP;
 
 export function setActiveMap(map: MapData): void {
-  activeMap = map;
+  scenarioAreaMap = map;
 }
 
 export function getActiveMap(): MapData {
-  return activeMap;
+  return scenarioAreaMap;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,7 +258,7 @@ function computeRoute(
       }
       // Prefer residential streets for concealment
       if (options?.preferConcealment) {
-        const onPrimary = activeMap.roads.some(
+        const onPrimary = scenarioAreaMap.roads.some(
           (r) => r.roadClass === 'primary' &&
           ((r.axis === 'ns' && Math.abs(r.position - neighborIx.x) < 0.1) ||
            (r.axis === 'ew' && Math.abs(r.position - neighborIx.y) < 0.1)),
@@ -266,7 +285,7 @@ function computeRoute(
 // ---------------------------------------------------------------------------
 
 export function createNavigationTools(): DynamicStructuredTool[] {
-  const intersections = findIntersections(activeMap);
+  const intersections = findIntersections(scenarioAreaMap);
 
   const planRouteTool = new DynamicStructuredTool({
     name: 'plan_route',
@@ -310,11 +329,11 @@ export function createNavigationTools(): DynamicStructuredTool[] {
     }),
     func: async ({ start_x: _start_x, start_y, screen_line_y, ao_x_min, ao_x_max }) => {
       // Build a zigzag route across the AO using E-W roads
-      const ewRoads = activeMap.roads
+      const ewRoads = scenarioAreaMap.roads
         .filter((r) => r.axis === 'ew' && r.position >= start_y && r.position <= screen_line_y)
         .sort((a, b) => a.position - b.position);
 
-      const nsRoads = activeMap.roads
+      const nsRoads = scenarioAreaMap.roads
         .filter((r) => r.axis === 'ns' && r.position >= ao_x_min && r.position <= ao_x_max)
         .sort((a, b) => a.position - b.position);
 
@@ -355,22 +374,22 @@ export function createNavigationTools(): DynamicStructuredTool[] {
     schema: z.object({}),
     func: async () => {
       return JSON.stringify({
-        area_name: activeMap.name,
-        bounds: activeMap.bounds,
-        roads: activeMap.roads.map((r) => ({
+        area_name: scenarioAreaMap.name,
+        bounds: scenarioAreaMap.bounds,
+        roads: scenarioAreaMap.roads.map((r) => ({
           name: r.name,
           axis: r.axis,
           position: r.position,
           class: r.roadClass,
           lanes: r.lanes,
         })),
-        landmarks: activeMap.landmarks,
+        landmarks: scenarioAreaMap.landmarks,
         intersections: intersections.map((ix) => ({
           position: { x: ix.x, y: ix.y },
           roads: ix.roads,
         })),
         tactical_notes: [
-          `${activeMap.roads.find((r) => r.roadClass === 'primary')?.name ?? 'Primary road'} is the widest road — likely axis of advance for armored vehicles`,
+          `${scenarioAreaMap.roads.find((r) => r.roadClass === 'primary')?.name ?? 'Primary road'} is the widest road — likely axis of advance for armored vehicles`,
           'Residential side streets provide concealment and flanking opportunities',
           'Movement MUST follow roads — robots cannot traverse through buildings',
           'Intersections provide both cover positions and firing corridors along street axes',
