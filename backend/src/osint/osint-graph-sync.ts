@@ -346,7 +346,7 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
           a.attributes = $attributes,
           a.workspaceId = $workspaceId,
           a.sourceDocumentIds = [$docId],
-          a.containerIds = [],
+          a.containerIds = CASE WHEN $workspaceId IS NOT NULL THEN [$workspaceId] ELSE [] END,
           a.createdAt = $now,
           a.updatedAt = $now,
           a.assertedVia = 'osint',
@@ -362,6 +362,11 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
             WHEN NOT $docId IN a.sourceDocumentIds
             THEN a.sourceDocumentIds + $docId
             ELSE a.sourceDocumentIds
+          END,
+          a.containerIds = CASE
+            WHEN $workspaceId IS NOT NULL AND NOT $workspaceId IN a.containerIds
+            THEN a.containerIds + $workspaceId
+            ELSE a.containerIds
           END
       `, {
         id: actorId,

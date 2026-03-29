@@ -351,6 +351,7 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
     const graphOptions: GraphBuildOptions = {
       sourceDocumentId: options.sourceDocumentId,
       workspaceId: options.workspaceId,
+      containerIds: options.workspaceId ? [options.workspaceId] : [],
       runEntityResolution: true,
       // Doc intelligence provenance: every entity from this path is assertedVia 'doc_intelligence'
       assertedVia: 'doc_intelligence',

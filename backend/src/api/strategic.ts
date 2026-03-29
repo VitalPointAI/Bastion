@@ -592,7 +592,7 @@ router.post('/documents/:documentId/extract', requireAuth, async (req, res) => {
       graphBuilder.buildFromDocument(
         documentId,
         savedIds.map((id, i) => ({ id, description: result.objectives[i].description })),
-        { workspaceId, runEntityResolution: true },
+        { workspaceId, containerIds: workspaceId ? [workspaceId] : [], runEntityResolution: true },
       ).then((graphResult) => {
         console.log(
           `✓ Knowledge graph updated: ${graphResult.actorsCreated} actors, ` +
@@ -744,6 +744,7 @@ router.get('/documents/:documentId/extract/stream', requireAuth, async (req, res
           savedIds.map((id, i) => ({ id, description: result.objectives[i].description })),
           {
             workspaceId: document.workspaceId,
+            containerIds: document.workspaceId ? [document.workspaceId] : [],
             runEntityResolution: true,
             onEntityCreated: (entity) => {
               sendEvent('graph_entity', entity);

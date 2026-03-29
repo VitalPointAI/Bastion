@@ -414,6 +414,7 @@ For each extracted objective, provide a relevance score (0-1) indicating how clo
 
     const graphOptions: Omit<GraphBuildOptions, 'sourceDocumentId'> = {
       workspaceId: options.workspaceId,
+      containerIds: options.workspaceId ? [options.workspaceId] : [],
       runEntityResolution: true,
       onEntityCreated: (event) => {
         if (event.data.id) {

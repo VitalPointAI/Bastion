@@ -218,12 +218,17 @@ export class ActorStore {
    * @param atTime      - Optional point-in-time filter: only actors valid at this time
    *                      (validFrom <= atTime AND (validTo IS NULL OR validTo > atTime))
    */
-  async listActors(workspaceId?: string, type?: ActorType, atTime?: Date): Promise<Actor[]> {
+  async listActors(workspaceId?: string, type?: ActorType, atTime?: Date, containerId?: string): Promise<Actor[]> {
     let query = 'MATCH (a:Actor)';
     const params: Record<string, unknown> = {};
     const conditions: string[] = [];
 
-    if (workspaceId) {
+    if (containerId) {
+      // Problem-set scoping: match actors that belong to this container
+      // OR have this as their workspaceId (backward compat for actors with empty containerIds)
+      conditions.push('($containerId IN a.containerIds OR a.workspaceId = $containerId)');
+      params.containerId = containerId;
+    } else if (workspaceId) {
       conditions.push('a.workspaceId = $workspaceId');
       params.workspaceId = workspaceId;
     }
@@ -410,11 +415,15 @@ export class ActorStore {
   async listActorsWithDecay(
     workspaceId?: string,
     atTime: Date = new Date(),
+    containerId?: string,
   ): Promise<(Actor & { decayedConfidence: number })[]> {
     const conditions: string[] = [];
     const params: Record<string, unknown> = { atTimeMs: atTime.getTime() };
 
-    if (workspaceId) {
+    if (containerId) {
+      conditions.push('($containerId IN a.containerIds OR a.workspaceId = $containerId)');
+      params.containerId = containerId;
+    } else if (workspaceId) {
       conditions.push('a.workspaceId = $workspaceId');
       params.workspaceId = workspaceId;
     }

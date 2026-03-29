@@ -193,12 +193,16 @@ export class TensionStore {
     intensity?: TensionIntensity,
     domain?: TensionDomain,
     atTime?: Date,
+    containerId?: string,
   ): Promise<Tension[]> {
     let query = 'MATCH (t:Tension)';
     const params: Record<string, unknown> = {};
     const conditions: string[] = [];
 
-    if (workspaceId) {
+    if (containerId) {
+      conditions.push('($containerId IN t.containerIds OR t.workspaceId = $containerId)');
+      params.containerId = containerId;
+    } else if (workspaceId) {
       conditions.push('t.workspaceId = $workspaceId');
       params.workspaceId = workspaceId;
     }

@@ -153,7 +153,10 @@ router.get('/actors', async (req: Request, res: Response) => {
     const includeProvenanceStr = getQueryString(req.query.includeProvenance);
     const includeProvenance = includeProvenanceStr !== 'false'; // default true
 
-    const actors = await actorStore.listActors(workspaceId, type);
+    // Use containerId for problem-set scoping (matches containerIds + workspaceId)
+    const actors = workspaceId
+      ? await actorStore.listActors(undefined, type, undefined, workspaceId)
+      : await actorStore.listActors(undefined, type);
 
     // Temporal filtering: only include actors valid at the given point in time
     const filteredActors = atTime
@@ -257,7 +260,10 @@ router.get('/tensions', async (req: Request, res: Response) => {
     const includeProvenanceStr = getQueryString(req.query.includeProvenance);
     const includeProvenance = includeProvenanceStr !== 'false'; // default true
 
-    const tensions = await tensionStore.listTensions(workspaceId, intensity);
+    // Use containerId for problem-set scoping (matches containerIds + workspaceId)
+    const tensions = workspaceId
+      ? await tensionStore.listTensions(undefined, intensity, undefined, undefined, workspaceId)
+      : await tensionStore.listTensions(undefined, intensity);
 
     const shaped = tensions.map((t) => ({
       ...t,
@@ -635,7 +641,9 @@ router.get('/', async (req: Request, res: Response) => {
     const workspaceId = getQueryString(req.query.workspaceId) || 'default';
     const atTime = getQueryString(req.query.atTime);
 
-    let actors = await actorStore.listActors(workspaceId);
+    // Use containerId filtering to scope graph to problem set
+    // (matches both containerIds array and workspaceId for backward compat)
+    let actors = await actorStore.listActors(undefined, undefined, undefined, workspaceId);
 
     // Temporal filtering
     if (atTime) {
@@ -659,10 +667,13 @@ router.get('/', async (req: Request, res: Response) => {
       natoInformationCredibility: actor.natoInformationCredibility ?? null,
     }));
 
+    const nodeIdSet = new Set(nodes.map(n => n.id));
     const edgeSet = new Map<string, { source: string; target: string; type: string; strength: number }>();
     for (const actor of actors) {
       const rels = await relationshipStore.getActorRelationships(actor.id, 'out');
       for (const rel of rels) {
+        // Only include edges where both endpoints are in the scoped node set
+        if (!nodeIdSet.has(rel.sourceActorId) || !nodeIdSet.has(rel.targetActorId)) continue;
         if (!edgeSet.has(rel.id)) {
           edgeSet.set(rel.id, {
             source: rel.sourceActorId,
@@ -687,8 +698,8 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
     const workspaceId = req.params.id as string;
     const atTime = getQueryString(req.query.atTime);
 
-    // Get actors as nodes
-    let actors = await actorStore.listActors(workspaceId);
+    // Get actors scoped to this problem set via containerIds (+ workspaceId backward compat)
+    let actors = await actorStore.listActors(undefined, undefined, undefined, workspaceId);
 
     // Temporal filtering
     if (atTime) {
@@ -866,7 +877,7 @@ router.get('/workspaces/:id/graph-with-parent', async (req: Request, res: Respon
     const allActors: Array<{ id: string; workspaceId: string }> = [];
 
     for (const wsId of workspaceIds) {
-      let actors = await actorStore.listActors(wsId);
+      let actors = await actorStore.listActors(undefined, undefined, undefined, wsId);
 
       if (atTime) {
         const atMs = new Date(atTime).getTime();
@@ -1014,7 +1025,7 @@ router.post('/graph/build/:documentId', async (req: Request, res: Response) => {
     const result = await graphBuilder.buildFromDocument(
       documentId,
       objectives.map(o => ({ id: o.id, description: o.description })),
-      { workspaceId, runEntityResolution }
+      { workspaceId, containerIds: workspaceId ? [workspaceId] : [], runEntityResolution }
     );
 
     res.json(result);
