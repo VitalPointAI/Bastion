@@ -44,6 +44,7 @@ import type { BaseMessage } from '@langchain/core/messages';
 import { TriageDecisionSchema } from './schemas.js';
 import type { NATORating, SourceReliability } from './source-registry/nato-ratings.js';
 import { createLLMForAgent } from '../agents/langgraph/llm-factory.js';
+import type { SourceMethod } from '../graph/provenance-types.js';
 
 // ============================================================================
 // Triage System Prompt (same as orchestrator.ts)
@@ -422,6 +423,10 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
     // Pass NATO rating from trust agent through to graph entities
     const trustNatoRating = state.qualityRating;
 
+    // Extract assertedVia from document metadata — passed by OSINT bridge (or other callers)
+    // to override the default 'doc_intelligence' source method annotation on graph entities.
+    const assertedVia = (state.metadata?.assertedVia as SourceMethod | undefined);
+
     const extractOutput = await factExtractor.extract({
       documentText: textToExtract,
       problemSetContext: state.problemSetContext,
@@ -430,6 +435,7 @@ export async function createWiredDocIntelligenceGraph(config: WiredGraphConfig) 
       skipGraphIngestion: isFlagged,
       natoSourceReliability: trustNatoRating?.sourceReliability,
       natoInformationCredibility: trustNatoRating?.informationCredibility,
+      assertedVia,
       onProgress: (stage: string, detail: string) => {
         if (onProgress) {
           onProgress('specialist:progress', {

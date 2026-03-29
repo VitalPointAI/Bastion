@@ -19,6 +19,7 @@ import type { ProblemSetContext } from '../schemas.js';
 import type { ExtractedFact } from '../types.js';
 import { graphBuilder } from '../../graph/construction/graph-builder.js';
 import type { GraphBuildOptions, GraphEntityEvent } from '../../graph/construction/graph-builder.js';
+import type { SourceMethod } from '../../graph/provenance-types.js';
 import { createLLMForAgent } from '../../agents/langgraph/llm-factory.js';
 import { DocumentParser } from '../../strategic/ingestion/document-parser.js';
 import { getPool } from '../../lib/database.js';
@@ -60,6 +61,8 @@ export interface FactExtractorInput {
   natoSourceReliability?: string;
   /** NATO STANAG 2022 information credibility rating (1-6) from Trust Agent */
   natoInformationCredibility?: number;
+  /** Optional: provenance source method override (default: 'doc_intelligence') */
+  assertedVia?: SourceMethod;
 }
 
 export interface FactExtractorOutput {
@@ -141,7 +144,7 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
    * and write provenance records.
    */
   async extract(input: FactExtractorInput): Promise<FactExtractorOutput> {
-    const { documentText, problemSetContext, documentId, workspaceId, uploadedBy, onEntityCreated, onProgress, skipGraphIngestion, natoSourceReliability, natoInformationCredibility } = input;
+    const { documentText, problemSetContext, documentId, workspaceId, uploadedBy, onEntityCreated, onProgress, skipGraphIngestion, natoSourceReliability, natoInformationCredibility, assertedVia } = input;
 
     this.setProblemSetContext(problemSetContext);
 
@@ -188,6 +191,7 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
         sourceDocumentId: documentId,
         workspaceId,
         assertedBy: uploadedBy ?? 'system:doc-intelligence',
+        assertedVia,
         onEntityCreated,
         natoSourceReliability,
         natoInformationCredibility,
@@ -326,6 +330,7 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
       sourceDocumentId: string;
       workspaceId?: string;
       assertedBy?: string;
+      assertedVia?: SourceMethod;
       onEntityCreated?: (event: GraphEntityEvent) => void;
       natoSourceReliability?: string;
       natoInformationCredibility?: number;
@@ -353,8 +358,7 @@ Be thorough but precise. Extract all substantive facts; do not fabricate.`;
       workspaceId: options.workspaceId,
       containerIds: options.workspaceId ? [options.workspaceId] : [],
       runEntityResolution: true,
-      // Doc intelligence provenance: every entity from this path is assertedVia 'doc_intelligence'
-      assertedVia: 'doc_intelligence',
+      assertedVia: options.assertedVia ?? 'doc_intelligence',
       assertedBy: options.assertedBy ?? 'system:doc-intelligence',
       natoSourceReliability: options.natoSourceReliability,
       natoInformationCredibility: options.natoInformationCredibility,
