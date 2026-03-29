@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: milestone
 status: completed
-stopped_at: Completed 64-03-PLAN.md
-last_updated: "2026-03-29T22:52:34.014Z"
+stopped_at: Completed 64-04-PLAN.md
+last_updated: "2026-03-29T23:07:31.105Z"
 last_activity: "2026-03-29 - Reconciled phase status: marked 23/28/31/50/61 complete, updated roadmap and SITREP"
 progress:
   total_phases: 80
-  completed_phases: 60
+  completed_phases: 61
   total_plans: 491
-  completed_plans: 492
+  completed_plans: 493
   percent: 85
 ---
 
@@ -253,6 +253,7 @@ Progress: [████████░░] 85% — 67/79 phases complete
 | Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo P01 | 30 | 2 tasks | 12 files |
 | Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo P02 | 18 | 2 tasks | 6 files |
 | Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo P03 | 9 | 2 tasks | 8 files |
+| Phase 64 P04 | 11 | 3 tasks | 31 files |
 
 ## Accumulated Context
 
@@ -1078,6 +1079,8 @@ Recent decisions affecting current work:
 - [Phase 64-02]: DEFAULT_AREA_MAP built from buildDefaultAreaMap() factory using calibration bounds and room dimensions at module load
 - [Phase 64-03]: THEATER_DEFAULTS in ipb-service.ts converted to lazy function calling calibrationService.getProfile() to avoid import-time side effects
 - [Phase 64-03]: Gate notification zoom uses payload threatLat/threatLng; no fallback to hardcoded room coords since frontend lacks server-side calibration
+- [Phase 64]: Preserved canonical-aliases.ts INDOPACOM/PLA entries as entity resolution reference data — they map document-level abbreviations for ingested intel documents, not scenario assumptions
+- [Phase 64]: COPRobotLayer and MissionSequencePanel now delegate coordinate math to mgrs-coordinator which reads the active calibration profile — zero hardcoded Taipei coordinates remain
 
 ### Roadmap Evolution
 
@@ -1803,7 +1806,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T22:52:34.004Z
-Stopped at: Completed 64-03-PLAN.md
+Last session: 2026-03-29T23:07:31.096Z
+Stopped at: Completed 64-04-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
