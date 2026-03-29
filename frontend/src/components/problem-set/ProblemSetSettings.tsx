@@ -19,7 +19,7 @@ type SettingsSection = 'general' | 'team-roster';
 export function ProblemSetSettings() {
   const { problemSetId } = useParams<{ problemSetId: string }>();
   const navigate = useNavigate();
-  const { activeProblemSetId, setActiveProblemSet, refreshMemberships } = useProblemSet();
+  const { activeProblemSetId, setActiveProblemSet, refreshMemberships, refreshActiveProblemSet } = useProblemSet();
   const { userDID } = useUser();
   const { mode } = useMode();
 
@@ -74,6 +74,7 @@ export function ProblemSetSettings() {
       }, userDID);
       setDetail(updated);
       await refreshMemberships();
+      await refreshActiveProblemSet();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to save settings');
     } finally {

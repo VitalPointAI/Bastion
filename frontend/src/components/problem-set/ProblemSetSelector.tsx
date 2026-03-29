@@ -61,7 +61,7 @@ const ECHELON_LABELS: Record<string, string> = {
 
 export function ProblemSetSelector() {
   const navigate = useNavigate();
-  const { memberships, loading, refreshMemberships, setActiveProblemSet } = useProblemSet();
+  const { memberships, loading, refreshMemberships, refreshActiveProblemSet, setActiveProblemSet } = useProblemSet();
   const { userDID } = useUser();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -143,6 +143,7 @@ export function ProblemSetSelector() {
       setDetail(updated);
       setEditingName(false);
       await refreshMemberships();
+      await refreshActiveProblemSet();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to update name');
     } finally {
