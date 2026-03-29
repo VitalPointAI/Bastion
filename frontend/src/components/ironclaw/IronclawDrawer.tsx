@@ -265,7 +265,7 @@ export function IronclawDrawer({
       <div
         className="ironclaw-drawer fixed right-0 bg-slate-900 border-l border-slate-700
           flex flex-col shadow-2xl"
-        style={{ zIndex: 950, width: '420px', top: `${topOffset}px`, height: `calc(100vh - ${topOffset}px)` }}
+        style={{ zIndex: 950, top: `${topOffset}px`, height: `calc(100dvh - ${topOffset}px)` }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-900/95">

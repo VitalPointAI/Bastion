@@ -30,6 +30,7 @@
 
 .ironclaw-drawer {
   animation: ironclaw-slide-in 300ms ease-out forwards;
+  width: var(--ironclaw-width);
 }
 
 .ironclaw-drawer--closing {

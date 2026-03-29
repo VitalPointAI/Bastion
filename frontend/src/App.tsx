@@ -116,7 +116,7 @@ function AppContent() {
       <main
         className="app-main"
         style={{
-          paddingRight: ironclawOpen && PUSH_LAYOUT_TABS.has(currentTab) ? '420px' : 0,
+          paddingRight: ironclawOpen && PUSH_LAYOUT_TABS.has(currentTab) ? 'var(--ironclaw-width)' : 0,
           transition: 'padding-right 300ms ease-out',
         }}
       >
