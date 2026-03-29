@@ -10,6 +10,8 @@
 
 import type { OSINTEvent } from '../graph/osint/types.js';
 import { SOURCE_WEIGHTS } from '../graph/confidence-calculator.js';
+import { normalizeActorName } from '../graph/resolution/name-normalizer.js';
+import { entityResolutionService } from '../graph/resolution/resolution-service.js';
 
 const OSINT_SOURCE_WEIGHT = SOURCE_WEIGHTS['osint']; // 0.65
 
@@ -329,7 +331,11 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
       const trimmed = (actorName ?? '').trim();
       if (!trimmed || trimmed.length < 2) continue;
 
-      const actorId = `ACT-osint-${trimmed.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+      // Phase 62: Normalize actor name to canonical form before MERGE
+      // e.g. "PRC" → "China", "DPRK" → "North Korea"
+      const canonical = normalizeActorName(trimmed);
+
+      const actorId = `ACT-osint-${canonical.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
 
       await executeWriteQuery(`
         MERGE (a:Actor {name: $name})
@@ -359,7 +365,7 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
           END
       `, {
         id: actorId,
-        name: trimmed,
+        name: canonical,
         attributes: JSON.stringify({ source: 'osint', firstSeen: now }),
         workspaceId: event.workspaceId ?? null,
         docId: event.id,
@@ -371,5 +377,23 @@ export async function syncOSINTEventToGraph(event: OSINTEvent): Promise<void> {
   } catch (err) {
     // Non-fatal: log but don't block feed polling
     console.warn(`[OSINT→Graph] Failed to sync event "${event.title}" to graph:`, err);
+  }
+}
+
+/**
+ * Phase 62: Run entity resolution after an OSINT sync batch completes.
+ *
+ * Finds duplicate actor nodes created during ingestion and auto-merges
+ * high-confidence matches. Errors are caught and logged — resolution
+ * failures must never block OSINT ingestion.
+ *
+ * @param workspaceId - Optional workspace scope for duplicate scan
+ */
+export async function runPostSyncResolution(workspaceId?: string): Promise<void> {
+  try {
+    const result = await entityResolutionService.findDuplicates(workspaceId);
+    await entityResolutionService.autoMergeDuplicates(result);
+  } catch (err) {
+    console.error('[OSINT] Post-sync resolution failed:', err);
   }
 }
