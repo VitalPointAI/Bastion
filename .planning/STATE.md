@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 63-01-PLAN.md
-last_updated: "2026-03-29T20:05:07.086Z"
-last_activity: "2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation"
+stopped_at: Completed 63-02-PLAN.md
+last_updated: "2026-03-29T20:10:18Z"
+last_activity: "2026-03-29 - Completed 63-02: Cut over feed-poller and gap-filler to processOSINTEventThroughAgents; deprecated osint-entity-extractor"
 progress:
   total_phases: 79
   completed_phases: 59
@@ -26,10 +26,10 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 57 of 73 (Ironclaw Persistent Memory and Adaptive Relationship) — COMPLETE
-Plan: 4 of 4 in current phase — COMPLETE
-Status: Plan 57-03 complete — Three auth-scoped REST endpoints (GET /memory, DELETE /memory/:key, DELETE /memory/all) with auth isolation tests, IronclawMemoryPanel React component with human-readable memory display, individual/bulk delete with optimistic UI, and Memory tab integrated into IronclawDrawer.
-Last activity: 2026-03-25 - Completed 57-03: Memory management REST API and IronclawMemoryPanel with auth isolation
+Phase: 63 of 79 (Unified OSINT Agent Ingestion) — IN PROGRESS
+Plan: 2 of 2 in current phase — COMPLETE
+Status: Plan 63-02 complete — All runtime OSINT callers (feed-poller, gap-filler-service) migrated from extractAndSyncToGraph to processOSINTEventThroughAgents agent bridge. osint-entity-extractor.ts marked @deprecated with banner. reextract script annotated.
+Last activity: 2026-03-29 - Completed 63-02: Cut over feed-poller and gap-filler to processOSINTEventThroughAgents; deprecated osint-entity-extractor
 
 Progress: [██████████] 100% 442 plans complete
 
