@@ -93,5 +93,15 @@
   }
 }
 
-/* Scrollbar-hidden utility for horizontal scroll containers */
-.overflow-x-auto::-webkit-scrollbar { display: none; }
+/* Global responsive utilities — outside @layer so they apply unconditionally */
+
+/* Hide scrollbar on horizontal scroll containers (used by tab bar) */
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ensure all fixed/absolute overlays respect viewport bounds */
+[style*="position: fixed"],
+[style*="position:fixed"] {
+  max-width: 100vw;
+}

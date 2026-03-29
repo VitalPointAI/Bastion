@@ -120,7 +120,7 @@
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 1.5rem;
+  padding: clamp(0.75rem, 2vw, 1.5rem);  /* was fixed 1.5rem */
 }
 
 /* ============================================================================

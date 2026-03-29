@@ -108,7 +108,7 @@ export function COPResourceDetail({ resource, onClose }: COPResourceDetailProps)
       background: 'var(--bg-secondary, #1a1a24)',
       borderLeft: '1px solid var(--border-subtle, #2a2a38)',
       height: '100%',
-      width: '360px',
+      width: 'min(360px, 95vw)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',

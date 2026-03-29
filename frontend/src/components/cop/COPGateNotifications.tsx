@@ -158,7 +158,7 @@ function LethalAuthModal({
         border: '2px solid rgba(239, 68, 68, 0.8)',
         borderRadius: '12px',
         padding: '24px 32px',
-        maxWidth: '480px',
+        maxWidth: 'min(480px, 95vw)',
         width: '90%',
         animation: 'cop-gate-border-flash 1.5s ease-in-out infinite',
       }}>
@@ -328,7 +328,7 @@ function ToastStack({
       display: 'flex',
       flexDirection: 'column',
       gap: '8px',
-      maxWidth: '340px',
+      maxWidth: 'min(340px, 95vw)',
     }}>
       {notifications.slice(0, 3).map((n) => (
         <Toast key={n.id} notification={n} onApprove={onApprove} onReject={onReject} onDismiss={onDismiss} onViewInDirect={onViewInDirect} />

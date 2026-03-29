@@ -236,7 +236,7 @@ export function MissionSequencePanel({ problemSetId, onZoomToAO, onLayersChanged
       top: '12px',
       left: '12px',
       zIndex: 950,
-      width: collapsed ? 'auto' : '360px',
+      width: collapsed ? 'auto' : 'min(360px, 95vw)',
       backgroundColor: 'rgba(17, 24, 39, 0.95)',
       border: `1px solid ${isActive ? phaseCfg.color + '60' : '#374151'}`,
       borderRadius: '8px',
