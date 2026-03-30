@@ -81,6 +81,7 @@ None
 - [x] **Phase 62: Knowledge Graph Entity Deduplication & Auto-Resolution** - Eliminate duplicate nodes by integrating entity resolution into ingestion pipeline; name canonicalization before node creation; auto-run resolution after buildFromDocument() and OSINT sync; batch-merge existing duplicates; canonical alias registry for common name variants; dedup metrics (INSERTED) (completed 2026-03-29)
 - [x] **Phase 63: Unified OSINT Agent Ingestion** - 12-specialist OSINT pipeline, source pre-registration, reliability scoring, LLM concurrency tuning (completed 2026-03-29)
 - [x] **Phase 64: Scenario-Agnostic Refactor & Baltic Shield Demo** - Eliminate all hardcoded scenario references (Taipei coordinates, Iron Bastion names, PLA vehicle types, Pacific Strategy labels) from application code; all scenario-specific content driven by active problem set and calibration profile at runtime; generalize variable names (no ZHONGZHENG_MAP, no IRON_BASTION_DEFAULTS); preserve full autonomous mission functionality; new Baltic Shield EFDL scenario data (OPORD, coalition, ORBAT, knowledge graph) seeds the demo problem set; existing mission sequence works identically on Latvian open terrain coordinates (INSERTED) (completed 2026-03-29)
+- [ ] **Phase 65: Ironclaw Autonomous Operations** - Transform Ironclaw from reactive chat to autonomous Chief of Staff; leverage native OpenClaw heartbeat/routines for continuous monitoring; callback webhook (Ironclaw→Bastion) for proactive findings; event forwarding (Bastion→Ironclaw) for OSINT/doc/graph changes; replace gap filler with Ironclaw-owned intelligence gap detection via MCP tools; autonomous conflict detection, situation assessment drafting, decision surfacing; self-extending skill/routine creation; autonomous activity feed in UI; all governed by existing risk classification and decision gates (INSERTED)
 
 ## Phase Details
 
@@ -1085,6 +1086,20 @@ Plans:
 - [ ] 64-03-PLAN.md — Wave 3: Theater context, exercise phases, force disposition, engagement zoom
 - [ ] 64-04-PLAN.md — Wave 4: Variable name cleanup, comment cleanup, hardcoded reference sweep, E2E verification
 
+
+### Phase 65: Ironclaw Autonomous Operations (INSERTED)
+
+**Goal:** Transform Ironclaw from reactive chat to autonomous Chief of Staff that continuously monitors the operational environment, proactively processes intelligence, detects conflicts, surfaces decisions, and self-extends capabilities — all without waiting for user input.
+**Requirements:** SC-01 through SC-08 (from GOAL.md success criteria)
+**Depends on:** Phase 60, Phase 57, Phase 63
+**Plans:** 5 plans
+
+Plans:
+- [ ] 65-01-PLAN.md — Callback webhook endpoint on bastion-mcp + autonomous activity store
+- [ ] 65-02-PLAN.md — 7 new MCP tools for autonomous intelligence operations
+- [ ] 65-03-PLAN.md — Event forwarding hooks + HEARTBEAT.md enrichment + gap filler retirement
+- [ ] 65-04-PLAN.md — Autonomous monitoring routine registration + SOUL.md proactive identity
+- [ ] 65-05-PLAN.md — Frontend autonomous activity feed + final verification
 ### Phase 16: AI Assigned Staff Workspaces
 
 **Goal:** AI-assigned staff roles with full agent team execution, human-in-the-loop review, real-time channel observability, and cross-role AI coordination — extending Phase 15 workspaces to support Human | AI | Disabled assignment per position with a seeded library of doctrinal AI agents for all 31 staff roles.
