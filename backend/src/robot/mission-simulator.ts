@@ -380,6 +380,27 @@ function simulationTick(session: SimSession): void {
       }
     }
 
+    // ── CONTINUOUS THREAT TRACKING ──
+    // When alpha is idle at the OP (no waypoints), continuously update heading
+    // to face the nearest confirmed threat — simulates camera tracking behavior
+    // that keeps the target centered in the camera FOV.
+    if (robot.waypoints.length === 0) {
+      const threatHeading = computeThreatFacingHeading(robot, session);
+      if (threatHeading != null) {
+        // Smooth rotation toward threat — turn at most 15° per tick to simulate
+        // realistic servo/motor tracking speed
+        let delta = threatHeading - robot.heading;
+        // Normalize to [-180, 180]
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+        const maxTurnPerTick = 15; // degrees per 500ms tick
+        if (Math.abs(delta) > 1) {
+          const turn = Math.sign(delta) * Math.min(Math.abs(delta), maxTurnPerTick);
+          robot.heading = ((robot.heading + turn) + 360) % 360;
+        }
+      }
+    }
+
     // Drain battery slowly
     robot.battery = Math.max(0, robot.battery - 0.01);
 
@@ -401,6 +422,42 @@ function simulationTick(session: SimSession): void {
       triggerSimulatedDetection(session, robot);
     }
   }
+}
+
+/**
+ * Compute simulated camera center_x/center_y pixel coordinates based on how
+ * well the robot is facing the threat. When the robot heading perfectly faces
+ * the threat, center_x = 320 (middle of 640px frame). Offset proportional to
+ * the angular difference. This simulates the camera tracking keeping the target
+ * centered in the field of view.
+ */
+function computeCameraPixelOffset(
+  robot: SimRobot,
+  threatPos: { x: number; y: number },
+): { center_x: number; center_y: number } {
+  const dx = threatPos.x - robot.position.x;
+  const dy = threatPos.y - robot.position.y;
+  const bearingToThreat = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+
+  // Angular diff between robot heading and bearing to threat
+  let angleDiff = bearingToThreat - robot.heading;
+  if (angleDiff > 180) angleDiff -= 360;
+  if (angleDiff < -180) angleDiff += 360;
+
+  // Map angle to pixel offset: 0° diff = center (320px), ±45° = edge (0 or 640px)
+  // Camera FOV is ~90° horizontal (typical CSI camera)
+  const FRAME_WIDTH = 640;
+  const FRAME_HEIGHT = 480;
+  const pixelPerDeg = FRAME_WIDTH / 90;
+  const center_x = Math.round(FRAME_WIDTH / 2 + angleDiff * pixelPerDeg);
+  // Add small random jitter to simulate real camera feed
+  const jitter_x = Math.round((Math.random() - 0.5) * 10);
+  const jitter_y = Math.round((Math.random() - 0.5) * 15);
+
+  return {
+    center_x: Math.max(0, Math.min(FRAME_WIDTH, center_x + jitter_x)),
+    center_y: Math.round(FRAME_HEIGHT / 2 + jitter_y), // Vertical stays roughly centered
+  };
 }
 
 function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
@@ -426,6 +483,9 @@ function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
     const enemyPos = enemyRoomPositions[i] ?? enemyRoomPositions[0];
     void enemyPositions[i]; // geo position available for external COP layers
 
+    // Initial detection — camera may not be centered yet
+    const initialPixels = computeCameraPixelOffset(robot, enemyPos);
+
     setTimeout(() => {
       const visionMsg = {
         type: 'robot:vision',
@@ -438,8 +498,8 @@ function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
             class_desc: classDesc,
             confidence: 0.85 + Math.random() * 0.12,
             bbox: { left: 100, top: 80, right: 300, bottom: 420 },
-            center_x: 200,
-            center_y: 250,
+            center_x: initialPixels.center_x,
+            center_y: initialPixels.center_y,
             estimated_position: enemyPos,
           },
         ],
@@ -449,9 +509,55 @@ function triggerSimulatedDetection(session: SimSession, robot: SimRobot): void {
       const svc = getRobotMissionService();
       svc.handleVisionMsg(visionMsg as RobotVisionMsg);
 
-      console.log(`[Simulator] CONTACT: ${classDesc} at (${enemyPos.x.toFixed(1)}, ${enemyPos.y.toFixed(1)}) — conf ${(visionMsg.detections[0].confidence * 100).toFixed(0)}%`);
+      console.log(`[Simulator] CONTACT: ${classDesc} at (${enemyPos.x.toFixed(1)}, ${enemyPos.y.toFixed(1)}) — conf ${(visionMsg.detections[0].confidence * 100).toFixed(0)}% camera pixel (${initialPixels.center_x}, ${initialPixels.center_y})`);
     }, i * 1500);
   });
+
+  // ── CONTINUOUS TRACKING DETECTIONS ──
+  // After initial contact, alpha's camera tracks the threats. Generate ongoing
+  // detection frames showing the target progressively centering in the camera
+  // as alpha's heading servo catches up. This provides the confirmation
+  // sightings needed for the detection buffer AND simulates realistic tracking.
+  const TRACKING_INTERVAL_MS = 2000;
+  const TRACKING_DURATION_MS = 20_000; // Track for 20 seconds
+  let elapsed = 0;
+
+  const trackingTimer = setInterval(() => {
+    elapsed += TRACKING_INTERVAL_MS;
+    if (elapsed > TRACKING_DURATION_MS || !session.running || session.paused) {
+      clearInterval(trackingTimer);
+      return;
+    }
+
+    // Generate follow-up detections for each threat — camera should be
+    // converging on center as the robot's heading tracks toward the target
+    for (let i = 0; i < session.threatClasses.length; i++) {
+      const enemyPos = enemyRoomPositions[i] ?? enemyRoomPositions[0];
+      const pixels = computeCameraPixelOffset(robot, enemyPos);
+
+      const visionMsg = {
+        type: 'robot:vision',
+        robot_id: robot.id,
+        mission_id: robot.activeMissionId,
+        problem_set_id: session.problemSetId,
+        timestamp: new Date().toISOString(),
+        detections: [
+          {
+            class_desc: session.threatClasses[i],
+            confidence: 0.88 + Math.random() * 0.10,
+            bbox: { left: 100, top: 80, right: 300, bottom: 420 },
+            center_x: pixels.center_x,
+            center_y: pixels.center_y,
+            estimated_position: enemyPos,
+          },
+        ],
+        message_id: randomUUID(),
+      };
+
+      const svc = getRobotMissionService();
+      svc.handleVisionMsg(visionMsg as RobotVisionMsg);
+    }
+  }, TRACKING_INTERVAL_MS);
 }
 
 // ---------------------------------------------------------------------------
