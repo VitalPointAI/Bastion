@@ -23,6 +23,7 @@ import { createHash } from 'crypto';
 import { createWiredDocIntelligenceGraph } from '../doc-intelligence/orchestrator-wiring.js';
 import type { ProgressCallback } from '../doc-intelligence/orchestrator.js';
 import type { IngestSubmitRequest, IngestSubmitResponse, ClassificationResult } from './types.js';
+import { forwardEventToIronclaw } from '../ironclaw/event-forwarder.js';
 
 const docParser = new DocumentParser();
 
@@ -153,6 +154,18 @@ async function routeToDocIntelligence(
         } catch (copErr) {
           console.warn('[IngestRouter] COP layer creation failed (non-fatal):', copErr);
         }
+      }
+
+      // Phase 65: Forward event to Ironclaw for autonomous monitoring (batched, fire-and-forget)
+      try {
+        const docTitle = String(metadata?.originalName ?? metadata?.title ?? documentId);
+        forwardEventToIronclaw({
+          type: 'document_processed',
+          problemSetId,
+          summary: `Document processed: ${docTitle}`,
+        });
+      } catch {
+        // forwardEventToIronclaw already swallows errors; this is an extra safety guard
       }
 
       onProgress('processing:complete', {

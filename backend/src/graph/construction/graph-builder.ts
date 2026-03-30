@@ -10,6 +10,7 @@ import { createLLMForAgent } from '../../agents/langgraph/llm-factory.js';
 import { actorStore } from '../raft/actor-store.js';
 import { relationshipStore } from '../raft/relationship-store.js';
 import { tensionStore } from '../raft/tension-store.js';
+import { forwardEventToIronclaw } from '../../ironclaw/event-forwarder.js';
 import { entityResolutionService } from '../resolution/resolution-service.js';
 import { normalizeActorName } from '../resolution/name-normalizer.js';
 import { detectContradiction, type AssertionInput } from '../contradiction-detector.js';
@@ -526,6 +527,19 @@ export class GraphBuilder {
       `${combined.actorsMerged} merges, ` +
       `${combined.errors.length} errors`
     );
+
+    // Phase 65: Forward graph change event to Ironclaw for autonomous monitoring
+    if (options.workspaceId && (combined.actorsCreated > 0 || combined.relationshipsCreated > 0)) {
+      try {
+        forwardEventToIronclaw({
+          type: 'graph_changed',
+          problemSetId: options.workspaceId,
+          summary: `Graph updated: ${combined.actorsCreated} entities, ${combined.relationshipsCreated} relationships`,
+        });
+      } catch {
+        // forwardEventToIronclaw already swallows errors; this is an extra safety guard
+      }
+    }
 
     return combined;
   }

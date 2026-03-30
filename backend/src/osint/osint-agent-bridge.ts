@@ -17,6 +17,7 @@
 import type { OSINTEvent } from '../graph/osint/types.js';
 import type { OSINTFeedConfig } from '../jpp/osint-feed-store.js';
 import { createWiredDocIntelligenceGraph } from '../doc-intelligence/orchestrator-wiring.js';
+import { forwardEventToIronclaw } from '../ironclaw/event-forwarder.js';
 import { getProblemSetContext } from '../doc-intelligence/interview/interview-store.js';
 import type { ProblemSetContext } from '../doc-intelligence/schemas.js';
 import type { DocumentIntelligenceReport } from '../doc-intelligence/types.js';
@@ -209,8 +210,21 @@ export async function processOSINTEventThroughAgents(
     ?.specialistResults?.['fact-extractor'];
   const graphResult = factExtractorResult?.output?.graphResult;
 
-  return {
+  const result = {
     actorsCreated: graphResult?.actorsCreated ?? 0,
     relationshipsCreated: graphResult?.relationshipsCreated ?? 0,
   };
+
+  // Phase 65: Forward event to Ironclaw for autonomous monitoring (batched, fire-and-forget)
+  try {
+    forwardEventToIronclaw({
+      type: 'osint_ingested',
+      problemSetId,
+      summary: `OSINT event processed: ${event.title || event.sourceUrl || 'unknown'}`,
+    });
+  } catch {
+    // forwardEventToIronclaw already swallows errors; this is an extra safety guard
+  }
+
+  return result;
 }
