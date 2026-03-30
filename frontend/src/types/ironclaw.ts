@@ -109,6 +109,21 @@ export interface TrustPreference {
 }
 
 // ============================================================================
+// Autonomous Activity Feed (Plan 65-05)
+// ============================================================================
+
+export interface AutonomousActivityEntry {
+  id: string;
+  problemSetId: string;
+  activityType: string;
+  severity: 'critical' | 'urgent' | 'routine' | 'informational';
+  summary: string;
+  detail: Record<string, unknown> | null;
+  decisionId: string | null;
+  createdAt: string; // ISO string from API
+}
+
+// ============================================================================
 // User Memory (Plan 03)
 // ============================================================================
 

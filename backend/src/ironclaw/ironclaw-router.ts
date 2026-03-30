@@ -23,6 +23,7 @@ import { getTaskOrchestrator } from './task-orchestrator.js';
 import { selfUpdateService } from './self-update-service.js';
 import { memoryRetrievalService } from './ironclaw-memory-service.js';
 import { ironclawUserMemoryStore } from './ironclaw-memory-store.js';
+import { autonomousActivityStore } from './autonomous-activity-store.js';
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -1019,3 +1020,48 @@ ironclawRouter.delete('/:problemSetId/threads/:threadId', async (req: Request, r
     res.status(500).json({ error: (err as Error).message });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Autonomous Activity Feed (Plan 65-05)
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /activity/:problemSetId
+ * Retrieve autonomous activity entries for a problem set.
+ *
+ * Query params:
+ *   limit  — number of entries to return (default 50, max 200)
+ *   since  — ISO timestamp; if provided, only entries after this time are returned
+ *
+ * Returns: { activities: ActivityEntry[], total: number }
+ */
+ironclawRouter.get(
+  '/activity/:problemSetId',
+  async (req: Request, res: Response) => {
+    const problemSetId = req.params.problemSetId as string;
+
+    // Parse limit (default 50, max 200)
+    const rawLimit = req.query.limit !== undefined ? Number(req.query.limit) : 50;
+    const limit = Math.min(Math.max(1, isNaN(rawLimit) ? 50 : rawLimit), 200);
+
+    // Parse optional since timestamp
+    const sinceParam = req.query.since as string | undefined;
+    const since = sinceParam ? new Date(sinceParam) : null;
+
+    try {
+      const activities = await autonomousActivityStore.getRecent(problemSetId, limit);
+
+      // Filter by since timestamp if provided
+      const filtered = since
+        ? activities.filter((a) => a.createdAt > since)
+        : activities;
+
+      res.json({ activities: filtered, total: filtered.length });
+    } catch (err) {
+      console.error('[ironclaw-router] GET /activity/:problemSetId error:', err);
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Internal server error',
+      });
+    }
+  },
+);
