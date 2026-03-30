@@ -29,6 +29,7 @@ import { operationsTools } from './tools/operations.js';
 import { calendarTools } from './tools/calendar.js';
 import { resourcesTools } from './tools/resources.js';
 import { personnelTools, PERSONNEL_TOOL_CLEARANCES } from './tools/personnel.js';
+import { intelligenceTools } from './tools/intelligence.js';
 import { resolveDIDClaims, requireClearance } from './middleware/did-auth.js';
 
 // ---------------------------------------------------------------------------
@@ -46,6 +47,7 @@ const ALL_TOOLS: MCPToolDefinition[] = [
   ...calendarTools,
   ...resourcesTools,
   ...personnelTools,
+  ...intelligenceTools,
 ];
 
 // ---------------------------------------------------------------------------

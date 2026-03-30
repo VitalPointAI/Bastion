@@ -1376,6 +1376,482 @@ const intelGetPIRAlertHistory: ActionHandler = async (payload, _userDid) => {
 };
 
 // ---------------------------------------------------------------------------
+// Autonomous Intelligence Handlers (Phase 65 Plan 02)
+// ---------------------------------------------------------------------------
+
+const intelWebSearch: ActionHandler = async (payload, _userDid) => {
+  const query = payload.query as string;
+  if (!query) return { success: false, error: 'query is required' };
+
+  const { performWebSearch } = await import('../doc-intelligence/web-search.js');
+  const maxResults = (payload.max_results as number | undefined) ?? 5;
+  const results = await performWebSearch(query, maxResults);
+  return { success: true, results, count: results.length };
+};
+
+const intelCreateResearchEvent: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  const title = payload.title as string;
+  const content = payload.content as string;
+  if (!problemSetId || !title || !content) {
+    return { success: false, error: 'problem_set_id, title, and content are required' };
+  }
+
+  const { osintEventStore } = await import('../graph/osint/event-store.js');
+  const sourceUrl = payload.source_url as string | undefined;
+  const sourceName = (payload.source_name as string | undefined) ?? 'Ironclaw Research';
+
+  const event = await osintEventStore.createEvent({
+    title,
+    description: content,
+    sourceType: 'other',
+    sourceUrl,
+    sourceName,
+    publishedAt: new Date(),
+    actors: [],
+    tags: ['ironclaw-research'],
+    workspaceId: problemSetId,
+    metadata: { feedId: 'ironclaw-autonomous', createdBy: 'ironclaw' },
+  });
+
+  return { success: true, eventId: event.id, event };
+};
+
+const intelProcessOsintEvent: ActionHandler = async (payload, _userDid) => {
+  const eventId = (payload.event_id ?? payload.eventId) as string;
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!eventId || !problemSetId) {
+    return { success: false, error: 'event_id and problem_set_id are required' };
+  }
+
+  const { osintEventStore } = await import('../graph/osint/event-store.js');
+  const event = await osintEventStore.getEvent(eventId);
+  if (!event) return { success: false, error: `Event ${eventId} not found` };
+
+  const { processOSINTEventThroughAgents } = await import('../osint/osint-agent-bridge.js');
+
+  // Build a synthetic feed config for pipeline routing (cast: 'simulated' is a valid FeedSourceType)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const syntheticFeed: any = {
+    id: 'ironclaw-autonomous',
+    problemSetId,
+    sourceName: event.sourceName,
+    sourceType: 'simulated',
+    endpointUrl: null,
+    pollingIntervalMs: 0,
+    relevanceMode: 'ai_semantic',
+    active: true,
+    scope: 'local',
+    config: {},
+    createdAt: new Date(),
+  };
+
+  const stats = await processOSINTEventThroughAgents(event, syntheticFeed);
+  return { success: true, eventId, ...stats };
+};
+
+const intelDetectConflicts: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const entityName = payload.entity_name as string | undefined;
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+
+  // Query for relationships with opposing sentiment between actors in this PS slice
+  const actorFilter = entityName
+    ? 'AND (a.name CONTAINS $entityName OR b.name CONTAINS $entityName)'
+    : '';
+
+  const conflictQuery = `
+    MATCH (a:Actor)-[r1:RELATES_TO]->(b:Actor)
+    WHERE $psId IN a.containerIds
+      ${actorFilter}
+    WITH a, b, collect(r1) AS rels
+    WHERE size(rels) > 1
+    RETURN
+      a.name AS entityA,
+      b.name AS entityB,
+      [r IN rels | {type: r.type, sentiment: r.sentiment, source: r.source}] AS relationships
+    LIMIT 50
+  `;
+
+  const params: Record<string, unknown> = { psId: problemSetId };
+  if (entityName) params.entityName = entityName;
+
+  const result = await executeReadQuery(conflictQuery, params);
+
+  const conflicts = result.records
+    .map((rec) => {
+      const rels = rec.get('relationships') as Array<{ type: string; sentiment: string; source: string }>;
+      const sentiments = rels.map((r) => r.sentiment).filter(Boolean);
+      const hasConflict = sentiments.includes('positive') && sentiments.includes('negative');
+      if (!hasConflict) return null;
+
+      return {
+        entity: rec.get('entityA') as string,
+        relatedEntity: rec.get('entityB') as string,
+        claim_a: rels.find((r) => r.sentiment === 'positive'),
+        claim_b: rels.find((r) => r.sentiment === 'negative'),
+      };
+    })
+    .filter(Boolean);
+
+  return { success: true, conflicts, conflictCount: conflicts.length };
+};
+
+const intelDraftSituationAssessment: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const timeWindowHours = (payload.time_window_hours as number | undefined) ?? 24;
+  const focusArea = payload.focus_area as string | undefined;
+  const since = new Date(Date.now() - timeWindowHours * 60 * 60 * 1000);
+
+  // Gather recent OSINT events
+  const { osintEventStore } = await import('../graph/osint/event-store.js');
+  const { events: recentEvents } = await osintEventStore.listEvents({
+    workspaceId: problemSetId,
+    startDate: since,
+    limit: 20,
+  });
+
+  // Gather active PIRs
+  const { pirStore } = await import('../design/pir-store.js');
+  const activePIRs = await pirStore.listPIRs(problemSetId, { status: 'ACTIVE' });
+
+  // Gather recent intelligence gaps
+  const { brainStore } = await import('../brain/brain-store.js');
+  const gapReport = await brainStore.getIntelligenceGaps(problemSetId);
+
+  const keyDevelopments = recentEvents.map((e) => ({
+    title: e.title,
+    source: e.sourceName,
+    publishedAt: e.publishedAt,
+    actors: e.actors,
+  }));
+
+  const intelligenceGaps = gapReport.gaps.slice(0, 10).map((g) => ({
+    entity: g.nodeLabel,
+    nodeType: g.nodeType,
+    missingConnectionTypes: g.missingConnectionTypes,
+    actualConnections: g.actualConnections,
+  }));
+
+  const recommendedActions = activePIRs.slice(0, 5).map((p) => ({
+    pirId: p.id,
+    type: p.type,
+    description: p.description,
+    priority: p.priority,
+  }));
+
+  return {
+    success: true,
+    assessment: {
+      problemSetId,
+      timeWindow: `${timeWindowHours}h`,
+      focusArea: focusArea ?? 'general',
+      generatedAt: new Date().toISOString(),
+      keyDevelopments,
+      intelligenceGaps,
+      recommendedActions,
+      eventCount: recentEvents.length,
+      activePIRCount: activePIRs.length,
+    },
+  };
+};
+
+const autonomousLogActivity: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  const activityType = (payload.activity_type ?? payload.activityType) as string;
+  const severity = payload.severity as string;
+  const summary = payload.summary as string;
+  if (!problemSetId || !activityType || !severity || !summary) {
+    return { success: false, error: 'problem_set_id, activity_type, severity, and summary are required' };
+  }
+
+  const { autonomousActivityStore } = await import('./autonomous-activity-store.js');
+  const entry = await autonomousActivityStore.log({
+    problemSetId,
+    activityType,
+    severity: severity as 'critical' | 'urgent' | 'routine' | 'informational',
+    summary,
+    detail: (payload.detail as Record<string, unknown>) ?? {},
+  });
+
+  // Push to WebSocket via message bus
+  try {
+    const { getMessageBus } = await import('../messaging/message-bus.js');
+    const bus = getMessageBus();
+    await bus.publish({
+      sourceDid: 'did:bastion:ironclaw',
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: `ironclaw.${problemSetId}`,
+      messageType: 'ironclaw.autonomous-activity',
+      payload: { entry },
+    });
+  } catch { /* notification is non-fatal */ }
+
+  return { success: true, entryId: entry.id, entry };
+};
+
+const autonomousSendAlert: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  const message = payload.message as string;
+  const severity = payload.severity as string;
+  if (!problemSetId || !message || !severity) {
+    return { success: false, error: 'problem_set_id, message, and severity are required' };
+  }
+
+  // Always push to WebSocket
+  try {
+    const { getMessageBus } = await import('../messaging/message-bus.js');
+    const bus = getMessageBus();
+    await bus.publish({
+      sourceDid: 'did:bastion:ironclaw',
+      sourceType: 'system',
+      destinationType: 'channel',
+      destinationTarget: `ironclaw.${problemSetId}`,
+      messageType: 'ironclaw.alert',
+      payload: { message, severity, problemSetId, sentAt: new Date().toISOString() },
+    });
+  } catch { /* WebSocket push is non-fatal */ }
+
+  // Telegram for critical/urgent if requested — send to all known/paired chats
+  let telegramSent = false;
+  if (payload.telegram === true && (severity === 'critical' || severity === 'urgent')) {
+    try {
+      const { telegramBotService } = await import('./telegram-bot-service.js');
+      if (telegramBotService.isEnabled) {
+        // Publish a secondary telegram alert channel message so any subscribed
+        // commander's paired chat receives the notification
+        const { getMessageBus } = await import('../messaging/message-bus.js');
+        const bus = getMessageBus();
+        await bus.publish({
+          sourceDid: 'did:bastion:ironclaw',
+          sourceType: 'system',
+          destinationType: 'channel',
+          destinationTarget: `ironclaw.telegram.${problemSetId}`,
+          messageType: 'ironclaw.telegram-alert',
+          payload: { message: `[${severity.toUpperCase()}] ${message}`, problemSetId },
+        });
+        telegramSent = true;
+      }
+    } catch { /* Telegram failure is non-fatal */ }
+  }
+
+  return { success: true, severity, telegramSent };
+};
+
+// ---------------------------------------------------------------------------
+// Brain Curation Handlers (Phase 65 Plan 02)
+// ---------------------------------------------------------------------------
+
+const brainEvaluateRelevance: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const maxCandidates = (payload.max_candidates as number | undefined) ?? 20;
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+
+  // Find actors NOT in this PS's slice but connected to actors that ARE
+  const candidatesQuery = `
+    MATCH (sliceActor:Actor)
+    WHERE $psId IN sliceActor.containerIds
+    WITH collect(sliceActor.id) AS sliceIds, collect(sliceActor.name) AS sliceNames
+
+    MATCH (candidate:Actor)
+    WHERE NOT $psId IN coalesce(candidate.containerIds, [])
+
+    OPTIONAL MATCH (candidate)-[r:RELATES_TO]-(connected:Actor)
+    WHERE connected.id IN sliceIds
+
+    WITH candidate, count(r) AS connectionCount, sliceNames
+    WHERE connectionCount > 0
+
+    RETURN
+      candidate.id AS id,
+      candidate.name AS name,
+      candidate.type AS type,
+      connectionCount,
+      coalesce(candidate.updatedAt, '') AS updatedAt
+    ORDER BY connectionCount DESC
+    LIMIT $limit
+  `;
+
+  const result = await executeReadQuery(candidatesQuery, {
+    psId: problemSetId,
+    limit: maxCandidates,
+  });
+
+  const candidates = result.records.map((rec) => ({
+    actorId: rec.get('id') as string,
+    actorName: rec.get('name') as string,
+    actorType: rec.get('type') as string,
+    connectionCount: (rec.get('connectionCount') as { toNumber?: () => number }).toNumber?.() ?? rec.get('connectionCount') as number,
+    reason: `Connected to ${(rec.get('connectionCount') as { toNumber?: () => number }).toNumber?.() ?? rec.get('connectionCount')} actors already in this problem set's brain slice`,
+    updatedAt: rec.get('updatedAt') as string,
+  }));
+
+  return { success: true, candidates, count: candidates.length };
+};
+
+const brainAugmentSlice: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  const actorIds = payload.actor_ids as string[];
+  const reason = payload.reason as string;
+  if (!problemSetId || !actorIds || !Array.isArray(actorIds) || !reason) {
+    return { success: false, error: 'problem_set_id, actor_ids (array), and reason are required' };
+  }
+
+  const { executeWriteQuery } = await import('../graph/neo4j-client.js');
+
+  // Add problemSetId to containerIds for each actor (no duplicates)
+  const augmentQuery = `
+    UNWIND $actorIds AS actorId
+    MATCH (a:Actor {id: actorId})
+    SET a.containerIds = CASE
+      WHEN $psId IN coalesce(a.containerIds, [])
+      THEN a.containerIds
+      ELSE coalesce(a.containerIds, []) + [$psId]
+    END
+    RETURN a.id AS id, a.name AS name
+  `;
+
+  const result = await executeWriteQuery(augmentQuery, {
+    actorIds,
+    psId: problemSetId,
+  });
+
+  const augmented = result.records.map((rec) => ({
+    actorId: rec.get('id') as string,
+    actorName: rec.get('name') as string,
+  }));
+
+  // Log the augmentation
+  try {
+    const { autonomousActivityStore } = await import('./autonomous-activity-store.js');
+    await autonomousActivityStore.log({
+      problemSetId,
+      activityType: 'brain_augmentation',
+      severity: 'informational',
+      summary: `Added ${augmented.length} actor(s) to brain slice: ${reason}`,
+      detail: { actorIds, reason, augmented },
+    });
+  } catch { /* logging is non-fatal */ }
+
+  return { success: true, augmented, count: augmented.length, reason };
+};
+
+const brainPruneSlice: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  const actorIds = payload.actor_ids as string[];
+  const reason = payload.reason as string;
+  if (!problemSetId || !actorIds || !Array.isArray(actorIds) || !reason) {
+    return { success: false, error: 'problem_set_id, actor_ids (array), and reason are required' };
+  }
+
+  const { executeWriteQuery } = await import('../graph/neo4j-client.js');
+
+  // Remove problemSetId from containerIds — does NOT delete the actor globally
+  const pruneQuery = `
+    UNWIND $actorIds AS actorId
+    MATCH (a:Actor {id: actorId})
+    SET a.containerIds = [x IN coalesce(a.containerIds, []) WHERE x <> $psId]
+    RETURN a.id AS id, a.name AS name
+  `;
+
+  const result = await executeWriteQuery(pruneQuery, {
+    actorIds,
+    psId: problemSetId,
+  });
+
+  const pruned = result.records.map((rec) => ({
+    actorId: rec.get('id') as string,
+    actorName: rec.get('name') as string,
+  }));
+
+  // Log the pruning
+  try {
+    const { autonomousActivityStore } = await import('./autonomous-activity-store.js');
+    await autonomousActivityStore.log({
+      problemSetId,
+      activityType: 'brain_pruning',
+      severity: 'informational',
+      summary: `Removed ${pruned.length} actor(s) from brain slice: ${reason}`,
+      detail: { actorIds, reason, pruned },
+    });
+  } catch { /* logging is non-fatal */ }
+
+  return { success: true, pruned, count: pruned.length, reason };
+};
+
+const brainGetSliceStats: ActionHandler = async (payload, _userDid) => {
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!problemSetId) return { success: false, error: 'problem_set_id is required' };
+
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+
+  // Count actors in this slice
+  const sliceCountResult = await executeReadQuery(
+    `MATCH (a:Actor) WHERE $psId IN coalesce(a.containerIds, []) RETURN count(a) AS cnt`,
+    { psId: problemSetId },
+  );
+  const sliceActorCount = (sliceCountResult.records[0]?.get('cnt') as { toNumber?: () => number })?.toNumber?.() ?? 0;
+
+  // Count global actors
+  const globalCountResult = await executeReadQuery(
+    `MATCH (a:Actor) RETURN count(a) AS cnt`,
+    {},
+  );
+  const globalActorCount = (globalCountResult.records[0]?.get('cnt') as { toNumber?: () => number })?.toNumber?.() ?? 0;
+
+  // Count relationships in slice
+  const relCountResult = await executeReadQuery(
+    `MATCH (a:Actor)-[r:RELATES_TO]->(b:Actor)
+     WHERE $psId IN coalesce(a.containerIds, []) AND $psId IN coalesce(b.containerIds, [])
+     RETURN count(r) AS cnt`,
+    { psId: problemSetId },
+  );
+  const sliceRelCount = (relCountResult.records[0]?.get('cnt') as { toNumber?: () => number })?.toNumber?.() ?? 0;
+
+  // Oldest updatedAt in slice (staleness)
+  const stalenessResult = await executeReadQuery(
+    `MATCH (a:Actor) WHERE $psId IN coalesce(a.containerIds, [])
+     RETURN min(a.updatedAt) AS oldest`,
+    { psId: problemSetId },
+  );
+  const oldestUpdatedAt = stalenessResult.records[0]?.get('oldest') as string | null;
+
+  // Orphans (actors in slice with no relationships to other slice actors)
+  const orphanResult = await executeReadQuery(
+    `MATCH (a:Actor) WHERE $psId IN coalesce(a.containerIds, [])
+     OPTIONAL MATCH (a)-[r:RELATES_TO]-(b:Actor)
+     WHERE $psId IN coalesce(b.containerIds, [])
+     WITH a, count(r) AS rels
+     WHERE rels = 0
+     RETURN count(a) AS cnt`,
+    { psId: problemSetId },
+  );
+  const orphanCount = (orphanResult.records[0]?.get('cnt') as { toNumber?: () => number })?.toNumber?.() ?? 0;
+
+  return {
+    success: true,
+    stats: {
+      problemSetId,
+      sliceActorCount,
+      globalActorCount,
+      sliceRelationshipCount: sliceRelCount,
+      oldestUpdatedAt,
+      orphanCount,
+      coveragePercent: globalActorCount > 0
+        ? Math.round((sliceActorCount / globalActorCount) * 100 * 10) / 10
+        : 0,
+    },
+  };
+};
+
+// ---------------------------------------------------------------------------
 // Handler registry
 // ---------------------------------------------------------------------------
 
@@ -1441,6 +1917,19 @@ export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   // PIR Alert tools (2)
   'bastion.intel.create_pir_alert': intelCreatePIRAlert,
   'bastion.intel.get_pir_alert_history': intelGetPIRAlertHistory,
+  // Autonomous intelligence tools (Phase 65 Plan 02)
+  'bastion.intel.web_search': intelWebSearch,
+  'bastion.intel.create_research_event': intelCreateResearchEvent,
+  'bastion.intel.process_osint_event': intelProcessOsintEvent,
+  'bastion.intel.detect_conflicts': intelDetectConflicts,
+  'bastion.intel.draft_situation_assessment': intelDraftSituationAssessment,
+  'bastion.autonomous.log_activity': autonomousLogActivity,
+  'bastion.autonomous.send_alert': autonomousSendAlert,
+  // Brain curation tools (Phase 65 Plan 02)
+  'bastion.brain.evaluate_relevance': brainEvaluateRelevance,
+  'bastion.brain.augment_slice': brainAugmentSlice,
+  'bastion.brain.prune_slice': brainPruneSlice,
+  'bastion.brain.get_slice_stats': brainGetSliceStats,
   // Cross-scope graph & objective hierarchy (5)
   'bastion.graph.get_objective_hierarchy': graphGetObjectiveHierarchy,
   'bastion.graph.adopt_objective': graphAdoptObjective,
