@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: milestone
 status: completed
-stopped_at: Completed 65-01-PLAN.md
-last_updated: "2026-03-30T23:20:23.710Z"
+stopped_at: Completed 65-02-PLAN.md
+last_updated: "2026-03-30T23:25:16.686Z"
 last_activity: "2026-03-29 - Reconciled phase status: marked 23/28/31/50/61 complete, updated roadmap and SITREP"
 progress:
   total_phases: 82
   completed_phases: 61
   total_plans: 496
-  completed_plans: 494
+  completed_plans: 495
   percent: 85
 ---
 
@@ -255,6 +255,7 @@ Progress: [████████░░] 85% — 67/79 phases complete
 | Phase 64-scenario-agnostic-refactor-and-baltic-shield-demo P03 | 9 | 2 tasks | 8 files |
 | Phase 64 P04 | 11 | 3 tasks | 31 files |
 | Phase 65-ironclaw-autonomous-operations P01 | 8 | 2 tasks | 3 files |
+| Phase 65-ironclaw-autonomous-operations P02 | 18 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -1084,6 +1085,8 @@ Recent decisions affecting current work:
 - [Phase 64]: COPRobotLayer and MissionSequencePanel now delegate coordinate math to mgrs-coordinator which reads the active calibration profile — zero hardcoded Taipei coordinates remain
 - [Phase 65-ironclaw-autonomous-operations]: Used dynamic imports for decision-service and telegram-bot-service in callback router to defer resolution to runtime
 - [Phase 65-ironclaw-autonomous-operations]: Callback endpoint placed on bastion-mcp (not main backend) because Ironclaw can only reach ironclaw-network containers
+- [Phase 65-02]: Tool definitions duplicated between BASTION_TOOLS and intelligenceTools — BASTION_TOOLS drives action pipeline risk registration, intelligenceTools drives MCP discovery
+- [Phase 65-02]: Brain curation uses Neo4j containerIds array mutations (UNWIND + SET) for slice membership management
 
 ### Roadmap Evolution
 
@@ -1809,7 +1812,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-30T23:20:23.701Z
-Stopped at: Completed 65-01-PLAN.md
+Last session: 2026-03-30T23:25:16.676Z
+Stopped at: Completed 65-02-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02
