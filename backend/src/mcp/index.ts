@@ -9,6 +9,7 @@
 
 import express from 'express';
 import { mcpRouter } from './mcp-router.js';
+import { callbackRouter } from './ironclaw-callback-router.js';
 import { BASTION_TOOLS } from '../ironclaw/tool-bridge.js';
 
 const PORT = parseInt(process.env.MCP_PORT ?? '3334', 10);
@@ -20,6 +21,11 @@ app.use(express.json());
 
 // Mount MCP routes at /mcp
 app.use('/mcp', mcpRouter);
+
+// Mount Ironclaw callback routes at /api/ironclaw
+// POST /api/ironclaw/callback — Ironclaw pushes autonomous findings here
+// CRITICAL: Must be on bastion-mcp (port 3334) because Ironclaw can only reach this container
+app.use('/api/ironclaw', callbackRouter);
 
 // Top-level health check (container orchestration probe)
 app.get('/health', (_req, res) => {
