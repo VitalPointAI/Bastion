@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: milestone
 status: completed
-stopped_at: Completed 65-05-PLAN.md
-last_updated: "2026-03-30T23:41:13.421Z"
+stopped_at: Completed 65-05-PLAN.md — Phase 65 Ironclaw Autonomous Operations complete
+last_updated: "2026-03-30T23:52:42.322Z"
 last_activity: "2026-03-29 - Reconciled phase status: marked 23/28/31/50/61 complete, updated roadmap and SITREP"
 progress:
   total_phases: 82
@@ -26,12 +26,12 @@ See: [.planning/PROJECT.md](.planning/PROJECT.md) (updated 2026-01-11)
 
 ## Current Position
 
-Phase: 63 of 79 (Unified OSINT Agent Ingestion) — COMPLETE
-Plan: 3 of 3 in current phase — COMPLETE
-Status: Phase 63 complete. Reconciled phase statuses — 67 of 79 phases complete (including 6/7 superseded). Remaining: 12 phases (1.1, 4.5, 8-12, 16-17, 25.2-25.3, 29 partial, 45, 47, 48).
-Last activity: 2026-03-29 - Reconciled phase status: marked 23/28/31/50/61 complete, updated roadmap and SITREP
+Phase: 65 of 82 (Ironclaw Autonomous Operations) — COMPLETE
+Plan: 5 of 5 in current phase — COMPLETE
+Status: Phase 65 complete. Full autonomous operations loop: callback webhook, 7 MCP tools, OSINT/doc/graph event forwarding, HEARTBEAT.md enrichment, autonomous monitoring routines, proactive SOUL.md identity, and real-time activity feed UI.
+Last activity: 2026-03-30 - Phase 65 Plan 05 complete — activity feed with REST endpoint, WebSocket real-time updates, Chat/Activity tab toggle in IronclawDrawer
 
-Progress: [████████░░] 85% — 67/79 phases complete
+Progress: [████████░░] 85% — 68/82 phases complete
 
 ## Performance Metrics
 
@@ -258,6 +258,7 @@ Progress: [████████░░] 85% — 67/79 phases complete
 | Phase 65-ironclaw-autonomous-operations P02 | 18 | 2 tasks | 4 files |
 | Phase 65 P04 | 4 | 2 tasks | 4 files |
 | Phase 65-ironclaw-autonomous-operations P03 | 5 | 2 tasks | 7 files |
+| Phase 65-ironclaw-autonomous-operations P05 | 12 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -1094,6 +1095,9 @@ Recent decisions affecting current work:
 - [Phase 65-ironclaw-autonomous-operations]: Event forwarding uses sendMessageAsync (fire-and-forget) with 30-second batching windows per problem set to prevent pipeline blocking and forwarding storms
 - [Phase 65-ironclaw-autonomous-operations]: Gap filler service retired: start() is a no-op with deprecation notice; Ironclaw autonomous heartbeat via MCP tools is the replacement
 - [Phase 65-ironclaw-autonomous-operations]: Activity endpoint uses /activity/:problemSetId path to avoid routing conflicts with /:problemSetId/threads
+- [Phase 65-ironclaw-autonomous-operations]: Activity endpoint uses /activity/:problemSetId path to avoid routing conflicts with existing thread endpoints
+- [Phase 65-ironclaw-autonomous-operations]: Activity feed uses dedicated WebSocket connection, isolated from chat WebSocket for clean separation
+- [Phase 65-ironclaw-autonomous-operations]: Activity tab hidden in global mode — autonomous activity requires an active problem set context
 
 ### Roadmap Evolution
 
@@ -1819,7 +1823,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-30T23:41:08.622Z
-Stopped at: Completed 65-05-PLAN.md
+Last session: 2026-03-30T23:52:42.309Z
+Stopped at: Completed 65-05-PLAN.md — Phase 65 Ironclaw Autonomous Operations complete
 Resume file: None
 Next action: Continue Phase 40 plan 02
