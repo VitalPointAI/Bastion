@@ -18,6 +18,7 @@ The whitepaper claims Ironclaw and its agent teams "run continuously — process
 6. **Ironclaw self-extends** — when it identifies a recurring need or efficiency, it autonomously creates new skills/tools to address it (subject to governance gates)
 7. **All autonomous actions respect existing governance** — risk classification, decision gates, audit trails, and blockchain anchoring remain enforced
 8. **Commander can observe Ironclaw's autonomous activity** — activity log/feed showing what Ironclaw has been doing between user interactions
+9. **Ironclaw curates the problem set brain** — continuously evaluates the global knowledge graph to augment the problem set's brain slice with newly relevant actors/relationships discovered through linkage analysis, OSINT, or changing conditions; prunes actors/relationships that are no longer relevant (stale, disproven, superseded); the problem set brain is a living, focused subgraph that Ironclaw actively maintains
 
 ## Architecture
 
@@ -45,6 +46,7 @@ User types message --> Bastion HTTP POST --> Ironclaw webhook --> Response --> W
             - Gap research                   - PIR/CCIR matching
             - Situation drafts               - Entity correlation
             - Skill creation                 - Contradiction check
+            - Brain curation                 - Relevance assessment
                     |
                     v
             Callback to Bastion:
@@ -84,6 +86,12 @@ User types message --> Bastion HTTP POST --> Ironclaw webhook --> Response --> W
 - Situation assessment drafting
 - Self-extending skill/routine creation
 - Telegram alerting for autonomous findings
+- Brain curation MCP tools and heartbeat directives:
+  - `bastion.brain.evaluate_relevance` — scan global brain for actors/relationships relevant to this PS but not yet in the slice
+  - `bastion.brain.augment_slice` — pull newly relevant actors/relationships into the PS brain (adds to containerIds)
+  - `bastion.brain.prune_slice` — remove actors/relationships no longer relevant (stale, disproven, superseded)
+  - `bastion.brain.get_slice_stats` — current slice size vs global brain size, staleness metrics
+  - Heartbeat directive: periodically evaluate global brain for new relevance, augment/prune as needed
 
 ### Out of Scope
 - Changes to Ironclaw's core OpenClaw/IronClaw runtime (we configure, not modify)
