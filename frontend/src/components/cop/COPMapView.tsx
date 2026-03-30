@@ -815,7 +815,8 @@ function LayerContent({ layer, opacity, perspective, currentPhase, confidenceThr
           const cmOpacity = isInherited ? opacity * 0.6 : opacity;
           const inheritedDash = isInherited ? '6 4' : undefined;
 
-          if (cm.type === 'objective_area' || cm.type === 'boundary') {
+          if (cm.type === 'objective_area' || cm.type === 'boundary'
+              || cm.type === 'engagement_area' || cm.type === 'security_zone') {
             return (
               <Polygon
                 key={`${layer.id}-cm-${cm.id}`}

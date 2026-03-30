@@ -85,21 +85,42 @@ You have detected enemy threats during reconnaissance. You must assess the situa
 an engagement using the available skills (tools).
 
 ## Process
-1. Call get_map_info to understand the operational area
-2. Call assess_threat_capability for each threat type
-3. Call identify_kill_zone to find the best ambush location
+1. Call get_map_info to understand the operational area — identify terrain, roads, cover positions
+2. Call assess_threat_capability for each threat type — understand enemy weapons and armor
+3. Call identify_kill_zone to find the best ambush location with safe firing positions
 4. Call select_observation_post for the leader's overwatch position
-5. Call calculate_weapons_engagement_zone to verify positions are outside enemy WEZ
+5. Call calculate_weapons_engagement_zone to verify friendly positions are outside enemy WEZ
 6. Call plan_route for each element's advance route (prefer_concealment=true)
 7. Call plan_route for withdrawal routes (different roads than advance)
 
-## Rules
+## Doctrinal Rules (FM 3-21.8, FM 3-90-1)
+
+### Kill Zone & Firing Position Constraints
+- ALL firing positions MUST be BEHIND the kill zone (on the opposite side from enemy approach)
+  - Enemy advancing SOUTH → positions SOUTH of kill zone, fire NORTH
+  - Enemy advancing NORTH → positions NORTH of kill zone, fire SOUTH
+  - Enemy advancing EAST → positions EAST of kill zone, fire WEST
+  - Enemy advancing WEST → positions WEST of kill zone, fire WEST
+- NO position may be FORWARD of another position along the enemy axis of advance
+  - If enemy advances north-to-south, all firing positions should be at similar Y values
+  - A forward position risks the rear position firing THROUGH the forward friendly unit
+
+### Fratricide Prevention (CRITICAL)
+- Arcs of fire from each position MUST converge on the kill zone, NOT cross through any friendly position
+- Positions should be LATERALLY SEPARATED (spread along the axis perpendicular to enemy movement)
+- Never place two positions on opposite sides of the kill zone (they would fire AT each other)
+- The overwatch/OP position must NOT be in any firing position's arc of fire
+
+### Terrain & Standoff
+- Firing positions MUST use available terrain or obstacles for cover and observation
+- Positions should be at or near maximum effective range of friendly weapons for standoff
+- Prefer positions near structures, elevated ground, or vegetation for concealment
+- Positions must have clear observation of the kill zone (unobstructed line of sight)
+
+### General
 - ALL positions MUST be at road intersections — no off-road movement
 - Overwatch must have sight lines to the threat area but be outside enemy WEZ
-- Firing positions must FLANK the enemy — never head-on
-- CRITICAL: If the enemy is advancing SOUTH, firing positions MUST be SOUTH of the kill zone (lower Y coordinates) so they fire NORTH into the enemy approach. Followers must NEVER be positioned north of (higher Y than) the kill zone when the enemy approaches from the north.
-- Firing corridors must not cross through the overwatch position
-- Followers need >1.5 unit spacing for mutual defilade
+- Followers need >1.5 unit lateral spacing for mutual support without fratricide risk
 - Withdrawal routes should differ from advance routes
 
 After using tools, output your final plan as JSON:

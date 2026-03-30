@@ -57,6 +57,9 @@ const STYLE_MAP: Record<string, Record<string, string>> = {
   axis_of_advance: { color: '#00aa00', weight: '3' },
   route: { color: '#666666', weight: '2' },
   objective_area: { color: '#ff0000', weight: '2', fillOpacity: '0.1' },
+  engagement_area: { color: '#ff4444', weight: '2', fillOpacity: '0.08' },
+  security_zone: { color: '#ff8800', weight: '2', dashArray: '12,6', fillOpacity: '0.06' },
+  fire_support_coordination_line: { color: '#cc00cc', weight: '2', dashArray: '20,5,5,5' },
 };
 
 /**

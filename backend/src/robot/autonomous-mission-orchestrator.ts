@@ -237,21 +237,41 @@ class AutonomousMissionOrchestrator extends EventEmitter {
       }
     }
 
-    // 4. Clear adversary COP layer from previous run
+    // 4. Clear adversary COP layer and previous EFDL overlay from previous run
     try {
       const { layerStore } = await import('../cop/layers/layer-store.js');
       const layers = await layerStore.queryLayers({
         workspaceId: config.problemSetId,
-        layerType: 'force_disposition',
       });
       for (const layer of layers) {
         const meta = layer.spec?.metadata as Record<string, unknown> | undefined;
-        if (meta?.generatedBy === 'vision-detection-pipeline') {
+        if (meta?.generatedBy === 'vision-detection-pipeline' || meta?.generatedBy === 'efdl-overlay-generator') {
           await layerStore.deleteLayer(layer.id);
-          break;
         }
       }
     } catch { /* non-fatal */ }
+
+    // 4a. Create EFDL operational context overlay — shows the layered defense
+    // architecture so the commander can see where robots operate within the
+    // broader Eastern Flank Deterrent Line concept
+    try {
+      const { layerStore } = await import('../cop/layers/layer-store.js');
+      const { generateEFDLLayerSpec } = await import('./efdl-overlay.js');
+      const efdlSpec = generateEFDLLayerSpec(config.problemSetId);
+      const efdlLayer = await layerStore.createLayer({
+        workspaceId: config.problemSetId,
+        sectionId: 'efdl-operational-context',
+        layerType: 'control_measures',
+        spec: efdlSpec,
+      });
+      // Promote directly to COP state so it's immediately visible
+      await layerStore.transitionLayer({ layerId: efdlLayer.id, targetState: 'review', performedBy: 'system' });
+      await layerStore.transitionLayer({ layerId: efdlLayer.id, targetState: 'published', performedBy: 'system' });
+      await layerStore.transitionLayer({ layerId: efdlLayer.id, targetState: 'cop', performedBy: 'system' });
+      console.log(`[AutonomousOrchestrator] EFDL overlay created: ${efdlLayer.id} with ${efdlSpec.controlMeasures.length} control measures`);
+    } catch (err) {
+      console.warn('[AutonomousOrchestrator] Failed to create EFDL overlay (non-fatal):', err);
+    }
 
     // 5. Cancel pending/submitted decision gates from previous runs
     try {
@@ -2854,34 +2874,120 @@ class AutonomousMissionOrchestrator extends EventEmitter {
    * Enemy approaches from the north — followers must fire north into the approach.
    * If the LLM placed any position north of the kill zone, mirror it south.
    */
+  /**
+   * Validate firing positions are doctrinally correct:
+   * 1. All positions are BEHIND the kill zone (opposite side from enemy approach)
+   * 2. No position is significantly forward of another along the enemy axis of advance
+   * 3. No position's arc of fire sweeps through another friendly position (fratricide check)
+   *
+   * Direction-agnostic — works for any enemy axis of advance.
+   */
   private validateFiringPositionsSouthOfKillZone(state: AutoState, plan: TacticalPlan): void {
-    // Determine the kill zone Y: use the overwatch Y as reference (kill zone is near/north of overwatch)
-    // or use the midpoint between overwatch and the north edge of the recon area
-    const owY = plan.overwatch.position.y;
-    // Kill zone is typically between the overwatch and the enemy approach — use overwatch Y as the line
-    const killZoneY = owY;
+    // Determine enemy advance direction from config or default to south
+    const enemyDir: 'north' | 'south' | 'east' | 'west' =
+      (state.config as unknown as { enemyAdvanceDirection?: string }).enemyAdvanceDirection as
+      'north' | 'south' | 'east' | 'west' ?? 'south';
+
+    // Kill zone reference line — use overwatch position as the boundary
+    const owPos = plan.overwatch.position;
+
+    // Helper: get the axis coordinate relevant to enemy direction
+    const getAxisCoord = (p: { x: number; y: number }): number => {
+      return (enemyDir === 'south' || enemyDir === 'north') ? p.y : p.x;
+    };
+
+    // Helper: check if a position is "forward" of the kill zone (toward enemy approach)
+    const isForwardOfKZ = (p: { x: number; y: number }): boolean => {
+      const coord = getAxisCoord(p);
+      const kzCoord = getAxisCoord(owPos);
+      switch (enemyDir) {
+        case 'south': return coord > kzCoord; // North of KZ when enemy comes from north
+        case 'north': return coord < kzCoord;
+        case 'east':  return coord < kzCoord;
+        case 'west':  return coord > kzCoord;
+        default:      return coord > kzCoord;
+      }
+    };
+
+    // Helper: mirror a position to the correct side of the kill zone
+    const mirrorBehindKZ = (p: { x: number; y: number }): void => {
+      const kzCoord = getAxisCoord(owPos);
+      const coord = getAxisCoord(p);
+      const mirrored = kzCoord - (coord - kzCoord);
+      if (enemyDir === 'south' || enemyDir === 'north') {
+        p.y = Math.max(0.5, Math.min(mirrored, state.config.reconArea.y_max - 0.5));
+      } else {
+        p.x = Math.max(0.5, Math.min(mirrored, state.config.reconArea.x_max - 0.5));
+      }
+    };
 
     let corrected = false;
+
+    // 1. Ensure all positions are behind the kill zone
     for (const fp of plan.firingPositions) {
-      if (fp.position.y > killZoneY) {
-        // This position is NORTH of the kill zone — mirror it south
-        const oldY = fp.position.y;
-        // Mirror: same distance south of the kill zone as it was north
-        fp.position.y = killZoneY - (oldY - killZoneY);
-        // Clamp to valid room bounds
-        fp.position.y = Math.max(0.5, fp.position.y);
-        this.logPhase(state, `CORRECTED firing position from y=${oldY.toFixed(1)} to y=${fp.position.y.toFixed(1)} — must be south of kill zone`);
+      if (isForwardOfKZ(fp.position)) {
+        const oldPos = { ...fp.position };
+        mirrorBehindKZ(fp.position);
+        this.logPhase(state, `CORRECTED firing position from (${oldPos.x.toFixed(1)},${oldPos.y.toFixed(1)}) to (${fp.position.x.toFixed(1)},${fp.position.y.toFixed(1)}) — must be behind kill zone (enemy advancing ${enemyDir})`);
         corrected = true;
       }
     }
 
-    // Also correct follower routes if positions were changed
+    // 2. Check no position is significantly forward of another along enemy axis
+    if (plan.firingPositions.length >= 2) {
+      const axisCoords = plan.firingPositions.map((fp) => getAxisCoord(fp.position));
+      const maxDiff = Math.max(...axisCoords) - Math.min(...axisCoords);
+      if (maxDiff > 1.0) {
+        // Align to the position furthest behind the kill zone
+        const targetCoord = (enemyDir === 'south' || enemyDir === 'east')
+          ? Math.min(...axisCoords)
+          : Math.max(...axisCoords);
+
+        for (const fp of plan.firingPositions) {
+          const coord = getAxisCoord(fp.position);
+          if (Math.abs(coord - targetCoord) > 0.5) {
+            if (enemyDir === 'south' || enemyDir === 'north') {
+              fp.position.y = targetCoord;
+            } else {
+              fp.position.x = targetCoord;
+            }
+            corrected = true;
+            this.logPhase(state, `ALIGNED firing position to axis coord ${targetCoord.toFixed(1)} — positions must not be forward of each other along enemy advance`);
+          }
+        }
+      }
+    }
+
+    // 3. Fratricide arc check — warn if any position's arc sweeps through another
+    const kzCenter = owPos;
+    for (let a = 0; a < plan.firingPositions.length; a++) {
+      for (let b = 0; b < plan.firingPositions.length; b++) {
+        if (a === b) continue;
+        const fpA = plan.firingPositions[a].position;
+        const fpB = plan.firingPositions[b].position;
+
+        const dx = fpB.x - fpA.x;
+        const dy = fpB.y - fpA.y;
+        const distAB = Math.sqrt(dx * dx + dy * dy);
+        if (distAB < 0.1) continue;
+
+        const bearingToKZ = Math.atan2(kzCenter.x - fpA.x, kzCenter.y - fpA.y);
+        const bearingToB = Math.atan2(dx, dy);
+        let angleDiff = Math.abs(bearingToKZ - bearingToB);
+        if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+
+        if (angleDiff < Math.PI / 12) { // 15-degree arc half-angle
+          this.logPhase(state, `WARNING: Firing position ${a + 1}'s arc of fire passes near position ${b + 1} — fratricide risk. Lateral separation: ${distAB.toFixed(1)} units`);
+        }
+      }
+    }
+
+    // Correct follower routes if positions were changed
     if (corrected && plan.routes?.followerRoutes) {
       for (let i = 0; i < plan.firingPositions.length; i++) {
         const fp = plan.firingPositions[i];
         const route = plan.routes.followerRoutes[i];
         if (route && route.length > 0) {
-          // Replace the final waypoint with the corrected firing position
           route[route.length - 1] = { x: fp.position.x, y: fp.position.y };
         }
       }

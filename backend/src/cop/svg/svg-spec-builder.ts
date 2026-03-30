@@ -100,6 +100,29 @@ const CONTROL_MEASURE_STYLES: Record<
     opacity: 0.7,
     dashArray: '5 5',
   },
+  engagement_area: {
+    color: '#FF4444',
+    weight: 2,
+    opacity: 0.8,
+    fill: true,
+    fillColor: '#FF4444',
+    fillOpacity: 0.08,
+  },
+  security_zone: {
+    color: '#FF8800',
+    weight: 2,
+    opacity: 0.7,
+    dashArray: '12 6',
+    fill: true,
+    fillColor: '#FF8800',
+    fillOpacity: 0.06,
+  },
+  fire_support_coordination_line: {
+    color: '#CC00CC',
+    weight: 2,
+    opacity: 0.8,
+    dashArray: '20 5 5 5',
+  },
 };
 
 // ---------------------------------------------------------------------------

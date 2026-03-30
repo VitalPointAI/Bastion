@@ -98,7 +98,10 @@ export interface COPControlMeasureSpec {
     | 'phase_line'
     | 'objective_area'
     | 'axis_of_advance'
-    | 'route';
+    | 'route'
+    | 'engagement_area'
+    | 'security_zone'
+    | 'fire_support_coordination_line';
   points: LatLng[];
   label: string;
   style?: Record<string, string>;
