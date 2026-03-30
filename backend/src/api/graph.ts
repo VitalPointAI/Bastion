@@ -725,6 +725,8 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
       try {
         const { getProblemSetContext } = await import('../doc-intelligence/interview/interview-store.js');
         const ctx = await getProblemSetContext(workspaceId);
+        const totalBeforeFilter = actors.length;
+
         if (ctx) {
           // Build case-insensitive term set from scoping context
           const scopeTerms = new Set<string>();
@@ -741,10 +743,11 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
             }
           }
 
+          console.log(`[graph] Scope filter for ${workspaceId}: ${scopeTerms.size} terms: [${[...scopeTerms].join(', ')}]`);
+
           if (scopeTerms.size > 0) {
             // Phase 1: direct match — actor name or alias matches a scope term
             const directMatchIds = new Set<string>();
-            const nonMatchActors: typeof actors = [];
             for (const actor of actors) {
               const nameLC = actor.name.toLowerCase();
               const aliasesLC = (actor.aliases ?? []).map(a => a.toLowerCase());
@@ -754,16 +757,18 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
               );
               if (isMatch) {
                 directMatchIds.add(actor.id);
-              } else {
-                nonMatchActors.push(actor);
               }
             }
+
+            console.log(`[graph] Scope filter: ${directMatchIds.size} direct matches out of ${totalBeforeFilter} actors`);
 
             // Phase 2: 1-hop expansion — include actors that have a relationship
             // with a direct-match actor (they are contextually relevant even if
             // their name doesn't match a scope term).
+            // Cap at 200 relationship lookups to avoid N+1 query explosion.
             const connectedIds = new Set<string>();
-            for (const actorId of directMatchIds) {
+            const lookupIds = [...directMatchIds].slice(0, 200);
+            for (const actorId of lookupIds) {
               const rels = await relationshipStore.getActorRelationships(actorId, 'both');
               for (const rel of rels) {
                 connectedIds.add(rel.sourceActorId);
@@ -771,15 +776,21 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
               }
             }
 
+            console.log(`[graph] Scope filter: ${connectedIds.size} connected via 1-hop from ${lookupIds.length} lookups`);
+
             // Keep direct matches + 1-hop connected actors
             actors = actors.filter(a =>
               directMatchIds.has(a.id) || connectedIds.has(a.id),
             );
+
+            console.log(`[graph] Scope filter result: ${actors.length} actors (was ${totalBeforeFilter})`);
           }
+        } else {
+          console.log(`[graph] No scoping context found for ${workspaceId} — showing all ${totalBeforeFilter} actors`);
         }
       } catch (err) {
         // Non-blocking: if scoping context unavailable, show all actors
-        console.warn('[graph] Scoping context filter skipped:', err instanceof Error ? err.message : err);
+        console.warn('[graph] Scoping context filter error:', err instanceof Error ? err.message : err);
       }
     }
 
