@@ -52,6 +52,12 @@ interface GapFillResult {
   tensionsCreated: number;
 }
 
+/**
+ * @deprecated Phase 65: Intelligence gap detection now handled by Ironclaw autonomous heartbeat
+ * via MCP tools (bastion.intel.get_intelligence_gaps, bastion.intel.web_search,
+ * bastion.intel.create_research_event). This service is disabled.
+ * Preserved for reference only — do not call start().
+ */
 class IronclawGapFillerService {
   /** Track recently researched gaps to avoid thrashing */
   private cooldowns = new Map<string, number>();
@@ -63,26 +69,13 @@ class IronclawGapFillerService {
   private monitoredProblemSets = new Set<string>();
 
   /**
-   * Start monitoring a problem set for intelligence gaps.
+   * @deprecated Phase 65: Gap filler retired — Ironclaw handles gap detection
+   * autonomously via MCP tools. This method is a no-op.
    */
-  start(problemSetId: string): void {
-    if (this.monitoredProblemSets.has(problemSetId)) return;
-    this.monitoredProblemSets.add(problemSetId);
-
-    if (!this.timer) {
-      this.timer = setInterval(() => {
-        void this.runCycle();
-      }, GAP_CHECK_INTERVAL_MS);
-
-      // Run first cycle after 30 seconds (let other services initialize)
-      setTimeout(() => void this.runCycle(), 30_000);
-
-      console.log(
-        `[GapFiller] Started — checking every ${GAP_CHECK_INTERVAL_MS / 60_000} min`,
-      );
-    }
-
-    console.log(`[GapFiller] Monitoring problem set: ${problemSetId}`);
+  start(_problemSetId: string): void {
+    console.log(
+      '[GapFiller] DEPRECATED: Intelligence gap detection now handled by Ironclaw autonomous heartbeat. This service is disabled.',
+    );
   }
 
   /** Timestamp of the last completed cycle per problem set */

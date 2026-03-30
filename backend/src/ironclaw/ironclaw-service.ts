@@ -33,8 +33,12 @@ import {
   renderSoulMd,
   renderHeartbeatMd,
   renderAgentsMd,
+  type OperationalContext,
 } from './identity-renderer.js';
 import { routineService } from './routine-service.js';
+import { pirStore } from '../design/pir-store.js';
+import { brainStore } from '../brain/brain-store.js';
+import { decisionStore } from '../decisions/decision-store.js';
 
 // ---------------------------------------------------------------------------
 // Message Context
@@ -195,10 +199,36 @@ export class IronclawService {
     const slug = didToSlug(did);
     const base = `users/${slug}/identity`;
 
+    // Build operational context for autonomous monitoring directives in HEARTBEAT.md.
+    // Best-effort: if any source fails, we skip the operational context rather than
+    // blocking identity sync. The HEARTBEAT.md will still render without it.
+    let operationalContext: OperationalContext | undefined;
+    const primaryPsId = config.activeOperationIds[0];
+    if (primaryPsId) {
+      try {
+        const [activePIRs, gapReport, pendingDecisions] = await Promise.all([
+          pirStore.getActivePIRsForGapResearch(primaryPsId).catch(() => []),
+          brainStore.getIntelligenceGaps(primaryPsId).catch(() => ({ gaps: [] })),
+          decisionStore.getPending(primaryPsId).catch(() => []),
+        ]);
+
+        operationalContext = {
+          activePIRs: activePIRs.map((p) => ({ description: p.description, priority: p.priority })),
+          pendingDecisions: pendingDecisions.length,
+          recentOSINTCount: 0, // Not queried here — Ironclaw can query via MCP if needed
+          knownGapCount: gapReport.gaps.length,
+          callbackUrl: 'http://bastion-mcp:3334/api/ironclaw/callback',
+        };
+      } catch (err) {
+        // Non-fatal — HEARTBEAT.md will render without operational context
+        console.warn('[ironclaw-service] syncUserIdentity: failed to build operational context:', err);
+      }
+    }
+
     const files: Array<{ path: string; content: string }> = [
       { path: `${base}/USER.md`,      content: renderUserMd(config) },
       { path: `${base}/SOUL.md`,      content: renderSoulMd(config) },
-      { path: `${base}/HEARTBEAT.md`, content: renderHeartbeatMd(config) },
+      { path: `${base}/HEARTBEAT.md`, content: renderHeartbeatMd(config, operationalContext) },
       { path: `${base}/AGENTS.md`,    content: renderAgentsMd(config) },
     ];
 
