@@ -513,34 +513,11 @@ export function useBrainData(problemSetId: string, atTime?: string | null, scope
           nodeIds.add(rawNode.id);
         }
 
-        // Add any actors from the actors endpoint not already in the graph
-        for (const actor of actorsResp?.actors ?? []) {
-          if (nodeIds.has(actor.id)) continue;
-          const conf = actorConfidence(actor);
-          const aDesc = actor.actor_type
-            ? `${actor.actor_type}${actor.attributes?.role ? ` — ${actor.attributes.role}` : ''}`
-            : undefined;
-          nodes.push({
-            id: actor.id,
-            label: actor.name ?? actor.id,
-            type: 'entity',
-            actorCategory: toActorCategory(actor.actor_category),
-            dimeCategory: toDimeCategory(actor.actor_type, aDesc),
-            confidence: conf,
-            confidenceTier: computeConfidenceTier(conf),
-            sourceDocumentIds: actor.sourceDocumentIds,
-            validityScore: actor.validity_score,
-            aliases: actor.aliases,
-            role: actor.attributes?.role as string | undefined,
-            description: actor.actor_type
-              ? `${actor.actor_type}${actor.attributes?.role ? ` — ${actor.attributes.role}` : ''}`
-              : undefined,
-            createdAt: new Date().toISOString(),
-            natoSourceReliability: actor.natoSourceReliability,
-            natoInformationCredibility: actor.natoInformationCredibility,
-          });
-          nodeIds.add(actor.id);
-        }
+        // NOTE: Previously added all actors from the actors endpoint even if
+        // not in the graph response. This defeated the backend scoping filter
+        // (which reduces actors based on the problem set's scoping context).
+        // The actors endpoint is now used ONLY for enrichment of nodes already
+        // returned by the graph endpoint — not as a secondary node source.
 
         // ── 2. Objective nodes ─────────────────────────────────────────────────
         const midlifeCategorySet = new Set<string>();

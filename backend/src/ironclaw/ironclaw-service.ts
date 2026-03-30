@@ -373,13 +373,90 @@ export class IronclawService {
       const toolCall = parsed.tool_call as Record<string, unknown>;
       const actionType = (toolCall.action_type as string) ?? '';
       const toolPayload = (toolCall.payload ?? toolCall.args ?? toolCall) as Record<string, unknown>;
+      const riskLevel = actionRegistry.getRiskLevel(actionType);
+
+      // ── Auto-execute low-risk read-only tools ────────────────────────
+      // Graph queries and design synthesis are read-only operations that
+      // should execute immediately when the commander directs action.
+      // No approval card needed — just do it and send the result back.
+      if ((riskLevel === 'low' && actionType.startsWith('bastion.graph.')) || actionType === 'bastion.design.synthesize_current_state') {
+        const { executeApprovedAction } = await import('./builder-handlers.js');
+        console.log(`[ironclaw] Auto-executing low-risk tool: ${actionType}`);
+        const execResult = await executeApprovedAction(actionType, toolPayload, 'ironclaw');
+
+        // Store the initial message (Ironclaw's acknowledgement)
+        const ackContent = (parsed?.content as string) ?? (parsed?.text as string) ?? responseText;
+        const ackMsg = await ironclawStore.addMessage({
+          problem_set_id: problemSetId,
+          content: ackContent,
+          sender: 'ironclaw',
+          specialist_id: null,
+          specialist_display_name: null,
+          delegated_by: null,
+          action_card: null,
+          step_progress: null,
+          suggestion: null,
+          ...(threadId ? { thread_id: threadId } : {}),
+        });
+        await publishToChannel(problemSetId, 'ironclaw.response', ackMsg);
+
+        // Send the tool result back as a follow-up message
+        if (execResult.success) {
+          const resultContent = typeof execResult.result === 'string'
+            ? execResult.result
+            : JSON.stringify(execResult.result, null, 2);
+
+          // If the result is a field suggestion, format it properly
+          const isSynthesis = actionType === 'bastion.design.synthesize_current_state';
+          const resultMsg = await ironclawStore.addMessage({
+            problem_set_id: problemSetId,
+            content: isSynthesis
+              ? `Here is the synthesized Current State based on the knowledge graph:\n\n${resultContent}`
+              : resultContent,
+            sender: 'ironclaw',
+            specialist_id: null,
+            specialist_display_name: null,
+            delegated_by: null,
+            action_card: null,
+            step_progress: null,
+            suggestion: isSynthesis ? {
+              id: `suggestion-${Date.now()}`,
+              content: `Synthesized Current State`,
+              agent_id: 'ironclaw',
+              agent_display_name: 'Ironclaw',
+              target_field: 'design.problemFraming.currentState',
+              target_field_label: 'Current State',
+              field_value: resultContent,
+            } as SuggestionPayload : null,
+            ...(threadId ? { thread_id: threadId } : {}),
+          });
+          await publishToChannel(problemSetId, 'ironclaw.response', resultMsg);
+        } else {
+          const errMsg = await ironclawStore.addMessage({
+            problem_set_id: problemSetId,
+            content: `Tool execution failed: ${execResult.error}`,
+            sender: 'ironclaw',
+            specialist_id: null,
+            specialist_display_name: null,
+            delegated_by: null,
+            action_card: null,
+            step_progress: null,
+            suggestion: null,
+            ...(threadId ? { thread_id: threadId } : {}),
+          });
+          await publishToChannel(problemSetId, 'ironclaw.response', errMsg);
+        }
+        return; // Skip normal message flow — we handled it inline
+      }
+
+      // Non-auto-execute: create approval card for medium/high risk
       const toolDetail = (toolPayload.url ?? toolPayload.uri ?? toolPayload.path ?? toolPayload.query ?? toolPayload.command ?? toolPayload.channel ?? toolPayload.to ?? null) as string | null;
       actionCard = {
         action_id: (toolCall.action_id as string) ?? '',
         action_type: actionType,
         description: actionRegistry.getDescription(actionType),
         detail: toolDetail,
-        risk_level: actionRegistry.getRiskLevel(actionType),
+        risk_level: riskLevel,
         options: (toolCall.options as ActionCardData['options']) ?? ['yes', 'no'],
       };
     }
@@ -916,25 +993,37 @@ export class IronclawService {
       'When the commander asks you to update, draft, or generate content for a field, use the KG data',
       'to produce grounded, intelligence-backed output immediately.',
       '',
-      '## Cross-Tab Data & Workflow Mapping',
-      'The commander thinks in terms of UI tabs (Understanding, Design, Plan, etc.) but you operate at the DATA layer.',
-      'When the commander says "go to [tab] and get [data]", you DO NOT navigate tabs — you call the tool that',
-      'accesses the same underlying data. You have DIRECT access to the data behind every tab.',
+      '## Tool Calling (CRITICAL — read carefully)',
+      'You have access to BASTION tools via structured JSON. To call a tool, include a tool_call',
+      'object in your JSON response. The backend executes the tool and returns the result.',
       '',
-      'Key mappings:',
-      '- "Get the strategic environment / strat env" → call bastion.design.synthesize_current_state.',
-      '  This pulls actors, relationships, tensions, strategic docs, and problem scoping data from the graph',
-      '  and synthesizes it into the Current State field automatically.',
-      '- "Get actor / entity info" → call bastion.graph.get_actor or bastion.graph.search_actors.',
-      '- "What does the graph / brain show?" → call bastion.graph.query or bastion.graph.stats.',
-      '- "Pull data from Understanding / COP / another tab" → query the graph or design store directly.',
-      '  The data is in Neo4j and PostgreSQL, not in the UI.',
+      'IMPORTANT: When the commander asks you to do something that requires a tool, call it IMMEDIATELY.',
+      'Do NOT ask for authorization, permission, or confirmation. The commander\'s request IS the authorization.',
+      'Do NOT describe what you would do — actually do it by including the tool_call JSON.',
       '',
-      'When asked to fetch data from another tab or populate a field with external data:',
-      '1. Identify which tool provides that data (see mappings above).',
-      '2. Call the tool to retrieve the data.',
-      '3. Use the result to generate a suggestion or populate the field.',
-      'You have direct database access to all operational data — use it proactively.',
+      'Tool call format (include this in your response JSON):',
+      '{ "content": "Brief acknowledgement of what you\'re doing",',
+      '  "tool_call": { "action_type": "tool.name.here", "payload": { ... } } }',
+      '',
+      'Available tools and when to use them:',
+      '- bastion.design.synthesize_current_state → "Get the strategic environment / strat env / current state"',
+      `  Payload: { "problem_set_id": "${problemSetId}" }`,
+      '  Pulls actors, relationships, tensions, strategic docs from the graph and synthesizes into Current State.',
+      '- bastion.graph.search_actors → "Find actor / search for entity"',
+      `  Payload: { "problem_set_id": "${problemSetId}", "query": "search term" }`,
+      '- bastion.graph.get_actor → "Get details on [specific actor]"',
+      '  Payload: { "actor_id": "ACT-xxx" }',
+      '- bastion.graph.query → "What does the graph show about X?"',
+      `  Payload: { "problem_set_id": "${problemSetId}", "cypher": "MATCH (a:Actor) WHERE..." }`,
+      '- bastion.graph.stats → "Graph overview / how many actors?"',
+      `  Payload: { "problem_set_id": "${problemSetId}" }`,
+      '',
+      'Example — commander says "synthesize the current state":',
+      '{ "content": "Pulling the operational environment from the knowledge graph now, Sir.",',
+      `  "tool_call": { "action_type": "bastion.design.synthesize_current_state", "payload": { "problem_set_id": "${problemSetId}" } } }`,
+      '',
+      'The backend will execute this tool, get the result, and you\'ll receive it in a follow-up.',
+      'When the tool result comes back, use it to generate the field content.',
       '',
       '## Form Field Operations',
       'When the commander asks you to enter, fill in, draft, write, update, or generate content for any field:',
