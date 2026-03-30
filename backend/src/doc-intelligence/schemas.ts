@@ -180,10 +180,10 @@ export const ProblemSetContextSchema = z.object({
     exclusions: z.array(z.string()).optional(),
   }),
   temporalRange: z.object({
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
-    historicalDepth: z.string().optional(),
-    futureHorizon: z.string().optional(),
+    startDate: z.string().nullable().optional(),
+    endDate: z.string().nullable().optional(),
+    historicalDepth: z.string().nullable().optional(),
+    futureHorizon: z.string().nullable().optional(),
   }),
   actorFocus: z.object({
     primaryActors: z.array(z.string()),

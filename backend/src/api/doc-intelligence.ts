@@ -386,6 +386,71 @@ router.post(
         success: true,
         context,
       });
+
+      // After responding, re-process existing documents against the new scope.
+      // This re-runs objective extraction so relevance scores reflect the updated context.
+      void (async () => {
+        try {
+          const pool = getPool();
+          const docResult = await pool.query(
+            `SELECT id, content FROM strategic_documents WHERE workspace_id = $1 AND content IS NOT NULL`,
+            [problemSetId],
+          );
+
+          if (docResult.rows.length === 0) return;
+
+          console.log(`[DocIntelligence] Rescope: re-processing ${docResult.rows.length} documents for problem set ${problemSetId}`);
+
+          for (const row of docResult.rows as { id: string; content: string }[]) {
+            try {
+              const processingId = randomUUID();
+              const session: ProcessingSession = {
+                processingId,
+                documentId: row.id,
+                problemSetId: problemSetId as string,
+                status: 'processing',
+                events: [],
+                sseClients: new Set(),
+              };
+              processingSessions.set(processingId, session);
+
+              const onProgress = createSSEProgressCallback(session);
+              const graph = await createWiredDocIntelligenceGraph({
+                problemSetId: problemSetId as string,
+                problemSetContext: context,
+                onProgress,
+              });
+
+              const report = await graph.processDocument(row.id, row.content, {
+                reprocessed: true,
+                rescopeTriggered: true,
+              });
+
+              session.report = report;
+              session.status = 'complete';
+
+              await pool.query(
+                `INSERT INTO doc_intelligence_reports (document_id, problem_set_id, report, created_at)
+                 VALUES ($1, $2, $3, NOW())
+                 ON CONFLICT (document_id, problem_set_id)
+                 DO UPDATE SET report = $3, updated_at = NOW()`,
+                [row.id, problemSetId, JSON.stringify(report)],
+              );
+
+              console.log(`[DocIntelligence] Rescope: re-processed document ${row.id}`);
+
+              // Clean up session after 1 minute
+              setTimeout(() => processingSessions.delete(processingId), 60_000);
+            } catch (docErr) {
+              console.error(`[DocIntelligence] Rescope: failed to re-process document ${row.id}:`, docErr);
+            }
+          }
+
+          console.log(`[DocIntelligence] Rescope: completed re-processing for problem set ${problemSetId}`);
+        } catch (rescopeErr) {
+          console.error('[DocIntelligence] Rescope re-processing error:', rescopeErr);
+        }
+      })();
     } catch (error) {
       console.error('[DocIntelligence] Complete interview error:', error);
       res.status(500).json({
