@@ -138,7 +138,7 @@ services:
     container_name: bastion-mcp
     restart: always
     command: node dist/mcp/index.js
-    # NO host port mapping — only accessible on bastion-network
+    # NO host port mapping — only accessible on internal networks
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/coalition_ops
@@ -149,6 +149,7 @@ services:
         condition: service_healthy
     networks:
       - bastion-network
+      - ironclaw-network
 
   # ==========================================
   # Backend API Server
@@ -172,6 +173,7 @@ services:
       IRONCLAW_URL: http://ironclaw:8080
       # IRONCLAW_VERSION: auto-detected from health endpoint at startup
       IRONCLAW_SHARED_SECRET: ${IRONCLAW_SHARED_SECRET}
+      MCP_BASTION_URL: http://bastion-mcp:3334/mcp
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       SEARXNG_URL: http://searxng:8888
     depends_on:

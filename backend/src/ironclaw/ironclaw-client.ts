@@ -128,10 +128,10 @@ export class IronclawClient {
    * Called once at startup after Ironclaw health check passes.
    *
    * Sends the MCP add command via the webhook channel so Ironclaw discovers
-   * all Bastion tools at the given URL (default: http://bastion-mcp:4000/mcp).
+   * all Bastion tools at the given URL (default: http://bastion-mcp:3334/mcp).
    */
   async registerMcpServer(
-    mcpUrl: string = process.env.MCP_BASTION_URL ?? 'http://bastion-mcp:4000/mcp',
+    mcpUrl: string = process.env.MCP_BASTION_URL ?? 'http://bastion-mcp:3334/mcp',
   ): Promise<WebhookResponse> {
     return this.sendMessage(
       'mcp-registration',

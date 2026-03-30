@@ -105,8 +105,8 @@ services:
       RUST_LOG: ironclaw=debug
       # Telegram bot token for /telegram pair command
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      # MCP server registration URL — Bastion tools exposed to Ironclaw
-      MCP_BASTION_URL: http://bastion-mcp:4000/mcp
+      # MCP_BASTION_URL is set on the backend container, not here — the backend
+      # is the service that sends the MCP registration command to Ironclaw.
     volumes:
       - ironclaw-data:/home/ironclaw/.ironclaw
       - token-sync:/shared/tokens    # OAuth token file from backend
@@ -157,6 +157,7 @@ services:
         condition: service_healthy
     networks:
       - bastion-network
+      - ironclaw-network
     restart: unless-stopped
 
   # ==========================================
@@ -182,6 +183,7 @@ services:
       - IRONCLAW_URL=http://ironclaw:8080
       - IRONCLAW_VERSION=0.20.0
       - IRONCLAW_SHARED_SECRET=${IRONCLAW_SHARED_SECRET:-dev-shared-secret-change-me}
+      - MCP_BASTION_URL=http://bastion-mcp:4000/mcp
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - SEARXNG_URL=http://searxng:8888
