@@ -62,10 +62,26 @@ fi
 
 echo "[entrypoint] Starting Ironclaw v${IRONCLAW_VERSION:-unknown} (token source: ${TOKEN_FILE})"
 
-# Start ironclaw in the background.
-# 'sleep infinity' keeps stdin open so the repl channel doesn't EOF-shutdown.
-sleep infinity | $IRONCLAW_BIN run --no-onboard &
+# MCP server URL (set by docker-compose, default for production)
+MCP_URL="${MCP_BASTION_URL:-http://bastion-mcp:3334/mcp}"
+
+# Start ironclaw with a FIFO so we can write commands to its REPL.
+FIFO="/tmp/ironclaw-stdin"
+rm -f "$FIFO"
+mkfifo "$FIFO"
+
+# Keep the FIFO open for writing by holding a background fd,
+# then pipe reads from it into ironclaw's stdin.
+(tail -f "$FIFO" 2>/dev/null) | $IRONCLAW_BIN run --no-onboard &
 IRONCLAW_PID=$!
+
+# Give ironclaw time to initialise its REPL before sending commands
+sleep 5
+
+# Register the BASTION MCP server so Ironclaw discovers all domain tools.
+# This runs at every (re)start, ensuring tools survive token-triggered restarts.
+echo "/mcp add bastion-core $MCP_URL" > "$FIFO"
+echo "[entrypoint] Sent MCP registration: bastion-core → $MCP_URL"
 
 # Store initial token fingerprint (last 8 chars) for change detection
 LAST_FINGERPRINT=""
@@ -94,9 +110,16 @@ while true; do
     kill "$IRONCLAW_PID" 2>/dev/null
     wait "$IRONCLAW_PID" 2>/dev/null
 
-    # Restart
-    sleep infinity | $IRONCLAW_BIN run --no-onboard &
+    # Restart with FIFO for REPL commands
+    rm -f "$FIFO"
+    mkfifo "$FIFO"
+    (tail -f "$FIFO" 2>/dev/null) | $IRONCLAW_BIN run --no-onboard &
     IRONCLAW_PID=$!
     echo "[entrypoint] Ironclaw restarted with refreshed token"
+
+    # Re-register MCP tools after restart
+    sleep 5
+    echo "/mcp add bastion-core $MCP_URL" > "$FIFO"
+    echo "[entrypoint] Re-registered MCP tools after restart"
   fi
 done

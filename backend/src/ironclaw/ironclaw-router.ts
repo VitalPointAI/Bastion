@@ -75,6 +75,155 @@ ironclawRouter.get('/status', async (_req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// Greeting — "spring to attention" when the drawer opens
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /greeting
+ *
+ * Returns a quick, template-based military greeting for the current user.
+ * Uses stored honorific preference (Sir/Ma'am) or infers from display name.
+ * No LLM call — instant response for drawer-open UX.
+ *
+ * Query: ?problemSetName=<name>  (optional, for context-aware greeting)
+ *
+ * Returns: { greeting: string, honorific: 'Sir' | 'Ma\'am' | null }
+ *   - honorific null means we couldn't determine — frontend should ask user
+ */
+ironclawRouter.get('/greeting', async (req: Request, res: Response) => {
+  const userDid = getUserDid(req);
+  const problemSetName = (req.query.problemSetName as string) || null;
+
+  try {
+    // Check stored honorific preference
+    const stored = await ironclawUserMemoryStore.getUserMemory(userDid, 'honorific_preference');
+    let honorific: string | null = stored?.memory_value?.honorific as string | null ?? null;
+
+    if (!honorific) {
+      // Try to infer from display name via user profile
+      try {
+        const pool = getPool();
+        const profileResult = await pool.query(
+          `SELECT display_name FROM ironclaw_user_memory
+           WHERE user_did = $1 AND memory_key = 'display_name'
+           LIMIT 1`,
+          [userDid],
+        );
+        if (profileResult.rows.length > 0) {
+          const displayName = (profileResult.rows[0].display_name as string) ?? '';
+          honorific = inferHonorific(displayName);
+        }
+      } catch {
+        // Profile lookup failed — not critical
+      }
+
+      // Also try the DID itself (e.g., did:near:sarah.near)
+      if (!honorific) {
+        const nameFromDid = userDid.replace('did:near:', '').split('.')[0];
+        honorific = inferHonorific(nameFromDid);
+      }
+    }
+
+    // Build greeting
+    let greeting: string;
+    if (honorific) {
+      const greetings = [
+        `${honorific}, Ironclaw standing by. How can I assist?`,
+        `${honorific}, ready to support. What do you need?`,
+        `${honorific}, Ironclaw here. Standing by for your direction.`,
+      ];
+      greeting = greetings[Math.floor(Math.random() * greetings.length)];
+    } else {
+      greeting = 'Ironclaw standing by. Before we begin — should I address you as Sir or Ma\'am?';
+    }
+
+    // Add context awareness if we know the problem set
+    if (honorific && problemSetName) {
+      greeting += ` Current focus: ${problemSetName}.`;
+    }
+
+    res.json({ greeting, honorific });
+  } catch (err) {
+    console.error('[ironclaw-router] Greeting error:', err);
+    res.json({ greeting: 'Ironclaw standing by. Ready to assist.', honorific: null });
+  }
+});
+
+/**
+ * POST /honorific
+ *
+ * Store the user's preferred honorific (Sir/Ma'am).
+ * Body: { honorific: 'Sir' | "Ma'am" }
+ */
+ironclawRouter.post('/honorific', async (req: Request, res: Response) => {
+  const userDid = getUserDid(req);
+  const { honorific } = req.body as { honorific?: string };
+
+  if (!honorific || (honorific !== 'Sir' && honorific !== "Ma'am")) {
+    res.status(400).json({ error: "honorific must be 'Sir' or \"Ma'am\"" });
+    return;
+  }
+
+  try {
+    await ironclawUserMemoryStore.setUserMemory(
+      userDid,
+      'honorific_preference',
+      { honorific },
+      'explicit',
+      1.0,
+    );
+    res.json({ ok: true, honorific });
+  } catch (err) {
+    console.error('[ironclaw-router] Honorific save error:', err);
+    res.status(500).json({ error: 'Failed to save preference' });
+  }
+});
+
+/**
+ * Infer honorific from a display name using common first-name gender heuristics.
+ * Returns 'Sir', "Ma'am", or null if uncertain.
+ */
+function inferHonorific(name: string): string | null {
+  const first = name.trim().split(/[\s._-]/)[0]?.toLowerCase();
+  if (!first) return null;
+
+  // Common feminine names (military context)
+  const feminine = new Set([
+    'sarah', 'jennifer', 'jessica', 'ashley', 'amanda', 'stephanie', 'nicole',
+    'elizabeth', 'melissa', 'michelle', 'laura', 'emily', 'rachel', 'rebecca',
+    'catherine', 'natalie', 'heather', 'christina', 'megan', 'anna', 'maria',
+    'karen', 'patricia', 'linda', 'lisa', 'susan', 'margaret', 'dorothy',
+    'nancy', 'betty', 'helen', 'sandra', 'donna', 'carol', 'ruth', 'sharon',
+    'diane', 'janet', 'frances', 'alice', 'julie', 'deborah', 'grace',
+    'victoria', 'theresa', 'martha', 'andrea', 'ann', 'marie', 'jane',
+    'kelly', 'samantha', 'tiffany', 'allison', 'claire', 'emma', 'olivia',
+    'sophia', 'isabella', 'ava', 'mia', 'charlotte', 'amelia', 'harper',
+    'evelyn', 'abigail', 'ella', 'scarlett', 'chloe', 'lily', 'hannah',
+  ]);
+
+  // Common masculine names (military context)
+  const masculine = new Set([
+    'james', 'john', 'robert', 'michael', 'william', 'david', 'richard',
+    'joseph', 'thomas', 'charles', 'christopher', 'daniel', 'matthew',
+    'anthony', 'mark', 'donald', 'steven', 'paul', 'andrew', 'joshua',
+    'kenneth', 'kevin', 'brian', 'george', 'timothy', 'ronald', 'edward',
+    'jason', 'jeffrey', 'ryan', 'jacob', 'gary', 'nicholas', 'eric',
+    'jonathan', 'stephen', 'larry', 'justin', 'scott', 'brandon', 'benjamin',
+    'samuel', 'raymond', 'gregory', 'frank', 'alexander', 'patrick', 'jack',
+    'dennis', 'jerry', 'tyler', 'aaron', 'jose', 'adam', 'nathan', 'henry',
+    'peter', 'zachary', 'douglas', 'harold', 'carl', 'arthur', 'gerald',
+    'roger', 'keith', 'jeremy', 'terry', 'lawrence', 'sean', 'christian',
+    'albert', 'joe', 'ethan', 'austin', 'jesse', 'oscar', 'willie', 'ralph',
+    'eugene', 'roy', 'louis', 'russell', 'bobby', 'philip', 'harry', 'vincent',
+    'noah', 'liam', 'mason', 'logan', 'lucas', 'oliver', 'elijah', 'aiden',
+  ]);
+
+  if (feminine.has(first)) return "Ma'am";
+  if (masculine.has(first)) return 'Sir';
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Global (no problem set) endpoints — scoped per user
 // ---------------------------------------------------------------------------
 

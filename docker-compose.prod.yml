@@ -103,6 +103,8 @@ services:
       AGENT_NAME: ironclaw
       AGENT_USE_PLANNING: "true"
       RUST_LOG: ironclaw=info
+      # MCP server URL — entrypoint registers this with Ironclaw's REPL at startup
+      MCP_BASTION_URL: http://bastion-mcp:3334/mcp
     volumes:
       - ironclaw-data:/home/ironclaw/.ironclaw
       - token-sync:/shared/tokens    # OAuth token file from backend

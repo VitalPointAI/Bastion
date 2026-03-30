@@ -9,7 +9,6 @@
  * thread_id (keyed by problem set) for conversation continuity.
  */
 
-import { randomUUID } from 'crypto';
 import { ironclawClient, didToSlug } from './ironclaw-client.js';
 import { ironclawStore } from './ironclaw-store.js';
 import { actionRegistry } from './action-registry.js';
@@ -26,7 +25,6 @@ import type {
 } from './ironclaw-types.js';
 import { SENSITIVE_FIELDS } from './ironclaw-types.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
-import { designStore } from '../design/design-store.js';
 import { memoryRetrievalService } from './ironclaw-memory-service.js';
 import { kgContextService } from './kg-context-service.js';
 import { agentConfigStore } from './agent-config-store.js';
@@ -164,70 +162,16 @@ export class IronclawService {
    * and publish a proactive guide_me suggestion if so.
    * Only publishes once per server session per problem set.
    */
+  /**
+   * Design interview disabled — the guided interview flow was confusing to
+   * commanders and added no value in its current form.  Ironclaw should assist
+   * with operational design through normal conversation instead.
+   */
   private async checkDesignTabSuggestion(
-    problemSetId: string,
-    context: MessageContext,
+    _problemSetId: string,
+    _context: MessageContext,
   ): Promise<void> {
-    if (context.currentTab !== 'design') return;
-    if (this.designSuggestionShown.has(problemSetId)) return;
-
-    try {
-      // Query design status
-      const design = await designStore.getByProblemSetId(problemSetId);
-      const { status } = design;
-
-      const allComplete =
-        status.problemFraming === 'complete' &&
-        status.cogAnalysis === 'complete' &&
-        status.linesOfEffort === 'complete' &&
-        status.operationalApproach === 'complete';
-
-      if (allComplete) return;
-
-      // Check if any sections have partial data (revision vs new mode)
-      const anyStarted =
-        status.problemFraming !== 'not-started' ||
-        status.cogAnalysis !== 'not-started' ||
-        status.linesOfEffort !== 'not-started' ||
-        status.operationalApproach !== 'not-started';
-
-      const description = anyStarted
-        ? "I see you've started your operational design. Want me to review what you have and help fill in the gaps?"
-        : "I can walk you through operational design step by step — covering problem framing, center of gravity analysis, lines of effort, and your operational approach. Want to start?";
-
-      const suggestionPayload: SuggestionPayload = {
-        id: randomUUID(),
-        content: `**Develop Operational Approach**\n\n${description}`,
-        agent_id: 'ironclaw',
-        agent_display_name: 'Ironclaw',
-        target_field: 'start_design_interview',  // action discriminator for frontend
-        target_field_label: 'Design Interview',
-        field_value: null,
-      };
-
-      // Rate-limit: mark as shown before publishing
-      this.designSuggestionShown.add(problemSetId);
-
-      // Persist as a suggestion message and publish via WebSocket as ironclaw.response
-      // so the existing useIronclaw hook picks it up and displays in the drawer.
-      const chatMsg = await ironclawStore.addMessage({
-        problem_set_id: problemSetId,
-        content: suggestionPayload.content,
-        sender: 'ironclaw',
-        specialist_id: null,
-        specialist_display_name: null,
-        delegated_by: null,
-        action_card: null,
-        step_progress: null,
-        suggestion: suggestionPayload,
-      });
-
-      await publishToChannel(problemSetId, 'ironclaw.response', chatMsg);
-
-    } catch (err) {
-      // Non-blocking — log but don't break message flow
-      console.error('[ironclaw] Design tab suggestion check failed:', err);
-    }
+    return;
   }
 
   /**
@@ -1005,6 +949,13 @@ export class IronclawService {
       '- J5 Plans: strategic planning, campaign design, phase transitions',
       '- J6 Communications: C4ISR, network architecture, signal support',
       '',
+      '**Agent Transparency**: When delegating to a specialist or spawning an agent for a task, you MUST',
+      'explicitly announce it to the commander BEFORE the delegation. Examples:',
+      '- "Tasking J2 Intelligence to analyze the threat picture..."',
+      '- "Spinning up the J5 Plans team to develop course of action options..."',
+      '- "Assigning this to J3 Operations for scheme of maneuver development..."',
+      'The commander must always see which agents are working on their requests. Never silently delegate.',
+      '',
       'When delegating, include the specialist_id and specialist_display_name in your response.',
       'When proposing actions that modify data, include a tool_call with action_id, action_type, description, risk_level, and options.',
       '',
@@ -1036,6 +987,9 @@ export class IronclawService {
       'respond with a task_request JSON:',
       '{ "task_request": { "title": "Brief task title", "description": "What needs to be done",',
       '  "target_fields": { "field.path": "Field Label" }, "agent_hints": ["agent_id"] } }',
+      '',
+      'BEFORE issuing a task_request, always announce what you are doing and which agent(s) will be working:',
+      '"Understood. I\'m assigning J2 Intelligence and J5 Plans to develop the threat assessment. Stand by."',
       '',
       'Task-triggering requests: developing COAs, analyzing center of gravity, generating OPORDs,',
       'writing mission statements, performing threat assessments, building intelligence estimates,',

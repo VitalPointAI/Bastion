@@ -278,6 +278,24 @@ class IronclawApi {
       return false;
     }
   }
+
+  /**
+   * Get a military greeting for the drawer-open "spring to attention" UX.
+   */
+  async getGreeting(problemSetName?: string | null): Promise<{ greeting: string; honorific: string | null }> {
+    const qs = problemSetName ? `?problemSetName=${encodeURIComponent(problemSetName)}` : '';
+    return this.fetch<{ greeting: string; honorific: string | null }>(`/api/ironclaw/greeting${qs}`);
+  }
+
+  /**
+   * Store the user's preferred honorific (Sir / Ma'am).
+   */
+  async setHonorific(honorific: 'Sir' | "Ma'am"): Promise<void> {
+    await this.fetch<{ ok: boolean }>('/api/ironclaw/honorific', {
+      method: 'POST',
+      body: JSON.stringify({ honorific }),
+    });
+  }
 }
 
 /**

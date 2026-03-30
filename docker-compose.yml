@@ -105,8 +105,8 @@ services:
       RUST_LOG: ironclaw=debug
       # Telegram bot token for /telegram pair command
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      # MCP_BASTION_URL is set on the backend container, not here — the backend
-      # is the service that sends the MCP registration command to Ironclaw.
+      # MCP server URL — entrypoint registers this with Ironclaw's REPL at startup
+      MCP_BASTION_URL: http://bastion-mcp:3334/mcp
     volumes:
       - ironclaw-data:/home/ironclaw/.ironclaw
       - token-sync:/shared/tokens    # OAuth token file from backend
@@ -146,10 +146,10 @@ services:
     container_name: bastion-mcp
     command: node dist/mcp/index.js
     ports:
-      - "4000:4000"
+      - "3334:3334"
     environment:
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/coalition_ops
-      - MCP_PORT=4000
+      - MCP_PORT=3334
       - MCP_SHARED_SECRET=${MCP_SHARED_SECRET:-dev-mcp-secret}
       - NODE_ENV=${NODE_ENV:-development}
     depends_on:
@@ -183,7 +183,7 @@ services:
       - IRONCLAW_URL=http://ironclaw:8080
       - IRONCLAW_VERSION=0.20.0
       - IRONCLAW_SHARED_SECRET=${IRONCLAW_SHARED_SECRET:-dev-shared-secret-change-me}
-      - MCP_BASTION_URL=http://bastion-mcp:4000/mcp
+      - MCP_BASTION_URL=http://bastion-mcp:3334/mcp
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - SEARXNG_URL=http://searxng:8888

@@ -55,6 +55,8 @@ export interface UseIronclawResult {
   toggleDrawer: () => void;
   sendMessage: (content: string, mentionedAgent?: string) => Promise<void>;
   handleActionDecision: (actionId: string, decision: TrustDecision) => Promise<void>;
+  /** Inject a synthetic message (e.g. greeting) into the message list */
+  injectMessage: (msg: IronclawChatMessage) => void;
   // Thread management
   threads: IronclawThread[];
   currentThreadId: string | null;
@@ -347,6 +349,10 @@ export function useIronclaw(
     setIsOpen(false);
   }, []);
 
+  const injectMessage = useCallback((msg: IronclawChatMessage) => {
+    setMessages((prev) => [...prev, msg]);
+  }, []);
+
   const toggleDrawer = useCallback(() => {
     setIsOpen((prev) => {
       if (!prev) {
@@ -512,6 +518,7 @@ export function useIronclaw(
     toggleDrawer,
     sendMessage,
     handleActionDecision,
+    injectMessage,
     threads,
     currentThreadId,
     selectThread,

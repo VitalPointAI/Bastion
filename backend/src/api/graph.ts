@@ -572,12 +572,11 @@ function mapTrend(serviceTrend: 'improving' | 'declining' | 'stable'): 'up' | 'd
 // Get objectives with validity scores for a workspace
 router.get('/validity/objectives', async (req: Request, res: Response) => {
   try {
-    // workspaceId reserved for future filtering
-    void getQueryString(req.query.workspaceId);
+    const workspaceId = getQueryString(req.query.workspaceId) || undefined;
     const { objectiveStore } = await import('../strategic/objectives/store.js');
 
-    // Get all objectives (optionally filter by workspace in future)
-    const result = await objectiveStore.listObjectives({ limit: 100 });
+    // Filter objectives by workspace (via their parent document's workspace_id)
+    const result = await objectiveStore.listObjectives({ workspaceId, limit: 100 });
     const objectives = result.objectives;
 
     // Enrich with validity data
@@ -705,6 +704,7 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
     const workspaceId = req.params.id as string;
     const atTime = getQueryString(req.query.atTime);
     const includeInfoSources = getQueryString(req.query.includeInfoSources) === 'true';
+    const skipScopeFilter = getQueryString(req.query.skipScopeFilter) === 'true';
 
     // Get actors scoped to this problem set via containerIds (+ workspaceId backward compat)
     let actors = await actorStore.listActors(undefined, undefined, undefined, workspaceId);
@@ -712,6 +712,75 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
     // Exclude information_source actors from visualization by default
     if (!includeInfoSources) {
       actors = actors.filter(a => a.type !== 'information_source');
+    }
+
+    // ── Scoping-context relevance filter ────────────────────────────────
+    // When the problem set has a completed scoping interview, use the
+    // geographic scope and actor focus to surface only relevant actors.
+    // Actors that match primary actors, countries, regions, or alliance
+    // members pass directly. Then actors connected to those via relationships
+    // are included as well (1-hop expansion). This prevents 28 000+ node
+    // graphs from overwhelming the brain visualization.
+    if (!skipScopeFilter) {
+      try {
+        const { getProblemSetContext } = await import('../doc-intelligence/interview/interview-store.js');
+        const ctx = await getProblemSetContext(workspaceId);
+        if (ctx) {
+          // Build case-insensitive term set from scoping context
+          const scopeTerms = new Set<string>();
+          for (const t of ctx.actorFocus.primaryActors) scopeTerms.add(t.toLowerCase());
+          for (const c of ctx.geographicScope.countries) scopeTerms.add(c.toLowerCase());
+          for (const r of ctx.geographicScope.regions) scopeTerms.add(r.toLowerCase());
+          if (ctx.geographicScope.specificAreas) {
+            for (const a of ctx.geographicScope.specificAreas) scopeTerms.add(a.toLowerCase());
+          }
+          if (ctx.actorFocus.alliances) {
+            for (const alliance of ctx.actorFocus.alliances) {
+              scopeTerms.add(alliance.name.toLowerCase());
+              for (const m of alliance.members) scopeTerms.add(m.toLowerCase());
+            }
+          }
+
+          if (scopeTerms.size > 0) {
+            // Phase 1: direct match — actor name or alias matches a scope term
+            const directMatchIds = new Set<string>();
+            const nonMatchActors: typeof actors = [];
+            for (const actor of actors) {
+              const nameLC = actor.name.toLowerCase();
+              const aliasesLC = (actor.aliases ?? []).map(a => a.toLowerCase());
+              const allTerms = [nameLC, ...aliasesLC];
+              const isMatch = allTerms.some(term =>
+                [...scopeTerms].some(st => term.includes(st) || st.includes(term)),
+              );
+              if (isMatch) {
+                directMatchIds.add(actor.id);
+              } else {
+                nonMatchActors.push(actor);
+              }
+            }
+
+            // Phase 2: 1-hop expansion — include actors that have a relationship
+            // with a direct-match actor (they are contextually relevant even if
+            // their name doesn't match a scope term).
+            const connectedIds = new Set<string>();
+            for (const actorId of directMatchIds) {
+              const rels = await relationshipStore.getActorRelationships(actorId, 'both');
+              for (const rel of rels) {
+                connectedIds.add(rel.sourceActorId);
+                connectedIds.add(rel.targetActorId);
+              }
+            }
+
+            // Keep direct matches + 1-hop connected actors
+            actors = actors.filter(a =>
+              directMatchIds.has(a.id) || connectedIds.has(a.id),
+            );
+          }
+        }
+      } catch (err) {
+        // Non-blocking: if scoping context unavailable, show all actors
+        console.warn('[graph] Scoping context filter skipped:', err instanceof Error ? err.message : err);
+      }
     }
 
     // Temporal filtering

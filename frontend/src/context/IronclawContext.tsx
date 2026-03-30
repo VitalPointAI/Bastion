@@ -26,6 +26,7 @@ import { useLocation } from 'react-router-dom';
 import type { IronclawChatMessage, IronclawTaskData, SuggestionData, TrustDecision } from '../types/ironclaw.ts';
 import { useIronclaw } from '../hooks/useIronclaw.ts';
 import { useDesignInterview } from '../hooks/useDesignInterview.ts';
+import { ironclawApi } from '../lib/ironclaw-service.ts';
 import { useProblemSet } from './ProblemSetContext.tsx';
 import { useUser } from './UserContext.tsx';
 import { IronclawButton } from '../components/ironclaw/IronclawButton.tsx';
@@ -134,6 +135,46 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
 
   // Design interview state — active when user clicks "Guide Me" on Design tab
   const designInterview = useDesignInterview(activeProblemSetId ?? 'none');
+
+  // ─── "Spring to attention" greeting when drawer opens ──────────────────────
+  const greetingShownRef = useRef(false);
+  const prevOpenRef = useRef(false);
+  const { isOpen: drawerIsOpen, injectMessage } = ironclaw;
+
+  useEffect(() => {
+    const justOpened = drawerIsOpen && !prevOpenRef.current;
+    prevOpenRef.current = drawerIsOpen;
+
+    if (!justOpened) return;
+
+    // Only greet once per drawer-open cycle (reset on close)
+    if (greetingShownRef.current) return;
+    greetingShownRef.current = true;
+
+    let cancelled = false;
+    ironclawApi.getGreeting(activeProblemSet?.name).then((result) => {
+      if (cancelled) return;
+      const greetingMsg: IronclawChatMessage = {
+        id: `greeting-${Date.now()}`,
+        problemSetId: activeProblemSetId ?? '_global',
+        content: result.greeting,
+        sender: 'ironclaw',
+        createdAt: new Date().toISOString(),
+      };
+      injectMessage(greetingMsg);
+    }).catch(() => {
+      // Non-blocking — if greeting fails, drawer still works
+    });
+
+    return () => { cancelled = true; };
+  }, [drawerIsOpen, activeProblemSet?.name, activeProblemSetId, injectMessage]);
+
+  // Reset greeting flag when drawer closes
+  useEffect(() => {
+    if (!drawerIsOpen) {
+      greetingShownRef.current = false;
+    }
+  }, [drawerIsOpen]);
 
   // ─── Pending Decisions State (proactive surfacing) ────────────────────────
   const [pendingDecisions, setPendingDecisions] = useState<Decision[]>([]);
