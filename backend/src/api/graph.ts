@@ -786,7 +786,54 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
             console.log(`[graph] Scope filter result: ${actors.length} actors (was ${totalBeforeFilter})`);
           }
         } else {
-          console.log(`[graph] No scoping context found for ${workspaceId} — showing all ${totalBeforeFilter} actors`);
+          // No scoping interview completed — fall back to document-based scoping.
+          // Include only actors that are linked to documents belonging to this
+          // problem set. This prevents dumping 28 000+ unscoped actors into the
+          // brain visualization.
+          console.log(`[graph] No scoping context found for ${workspaceId} — falling back to document-based scoping`);
+
+          try {
+            const { getPool } = await import('../lib/database.js');
+            const pool = getPool();
+            const docResult = await pool.query(
+              `SELECT id FROM strategic_documents WHERE workspace_id = $1`,
+              [workspaceId],
+            );
+            const psDocIds = new Set(docResult.rows.map((r: { id: string }) => r.id));
+
+            if (psDocIds.size > 0) {
+              const docScopedActors = actors.filter(a => {
+                if (!a.sourceDocumentIds || a.sourceDocumentIds.length === 0) return false;
+                return a.sourceDocumentIds.some(docId => psDocIds.has(docId));
+              });
+
+              // Also include actors connected to document-scoped actors via relationships (1-hop)
+              const docScopedIds = new Set(docScopedActors.map(a => a.id));
+              const connectedIds = new Set<string>();
+              const lookupIds = [...docScopedIds].slice(0, 200);
+              for (const actorId of lookupIds) {
+                const rels = await relationshipStore.getActorRelationships(actorId, 'both');
+                for (const rel of rels) {
+                  connectedIds.add(rel.sourceActorId);
+                  connectedIds.add(rel.targetActorId);
+                }
+              }
+
+              actors = actors.filter(a =>
+                docScopedIds.has(a.id) || connectedIds.has(a.id),
+              );
+
+              console.log(`[graph] Document-based scope: ${psDocIds.size} docs → ${docScopedIds.size} direct actors + ${connectedIds.size} connected → ${actors.length} total (was ${totalBeforeFilter})`);
+            } else {
+              // No documents AND no scoping context — cap to prevent overwhelming the UI
+              console.log(`[graph] No documents or scoping context for ${workspaceId} — capping at 500 actors (was ${totalBeforeFilter})`);
+              actors = actors.slice(0, 500);
+            }
+          } catch (docErr) {
+            console.warn('[graph] Document-based scoping fallback failed:', docErr instanceof Error ? docErr.message : docErr);
+            // Last resort: cap to prevent UI crash
+            actors = actors.slice(0, 500);
+          }
         }
       } catch (err) {
         // Non-blocking: if scoping context unavailable, show all actors
