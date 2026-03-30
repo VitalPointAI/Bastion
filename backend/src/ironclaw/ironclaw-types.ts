@@ -405,6 +405,17 @@ export interface AgentConfig {
   /** Scheduled routines registered with the heartbeat system. */
   customRoutines: RoutineSpec[];
 
+  // --- Autonomous Monitoring ---
+  /**
+   * Configuration for the autonomous_monitoring heartbeat routine.
+   * When undefined or enabled=true, routine is registered for each active problem set.
+   * intervalMinutes must be >= 15 (enforced by routine-service).
+   */
+  autonomousMonitoring?: {
+    enabled: boolean;
+    intervalMinutes?: number;
+  };
+
   // --- Sync Tracking ---
   /** Last time identity files were written to Ironclaw's workspace. */
   identityLastSyncedAt: Date | null;

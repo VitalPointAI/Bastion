@@ -79,6 +79,14 @@ export const BUILT_IN_ROUTINES: BuiltInRoutine[] = [
     editable: true,
     category: 'reporting',
   },
+  {
+    id: 'autonomous_monitoring',
+    name: 'Autonomous Operational Monitoring',
+    description: 'Heartbeat-driven monitoring: conflict detection, gap research, PIR checking, situation assessment drafting. Ironclaw evaluates HEARTBEAT.md directives and takes autonomous action.',
+    defaultCron: '*/30 * * * *',  // Every 30 minutes
+    editable: true,
+    category: 'monitoring',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -267,6 +275,76 @@ ${membershipList}
     } catch (err) {
       console.error(`[routine-service] Failed to unregister routine ${routineId}:`, err instanceof Error ? err.message : err);
       throw err;
+    }
+  }
+
+  /**
+   * Register the autonomous monitoring heartbeat routine for a specific problem set.
+   *
+   * Sends `/routine register autonomous_monitoring__{psId} "{cron}"` to Ironclaw's
+   * scheduler. This makes Ironclaw fire autonomously on the given schedule to run
+   * conflict detection, gap research, PIR checking, and situation assessment.
+   *
+   * @param problemSetId - The problem set to monitor autonomously.
+   * @param cronOverride - Optional cron expression override. Defaults to every 30 min.
+   *                       Minimum interval is 15 minutes; violating crons are clamped.
+   */
+  async registerAutonomousMonitoring(problemSetId: string, cronOverride?: string): Promise<void> {
+    const DEFAULT_CRON = '*/30 * * * *';   // every 30 minutes
+    const MIN_CRON = '*/15 * * * *';       // minimum 15 minutes
+    let cron = cronOverride ?? DEFAULT_CRON;
+
+    // Enforce minimum 15-minute interval.
+    // We detect sub-15-minute schedules by checking the minute field for */N where N < 15.
+    const minuteField = cron.split(' ')[0];
+    const intervalMatch = minuteField.match(/^\*\/(\d+)$/);
+    if (intervalMatch) {
+      const intervalMinutes = parseInt(intervalMatch[1], 10);
+      if (intervalMinutes < 15) {
+        console.warn(
+          `[routine-service] registerAutonomousMonitoring: cron interval ${intervalMinutes} min is below 15-min minimum. ` +
+          `Clamping to ${MIN_CRON}.`,
+        );
+        cron = MIN_CRON;
+      }
+    }
+
+    try {
+      await ironclawClient.sendMessage(
+        'system',
+        `/routine register autonomous_monitoring__${problemSetId} "${cron}"`,
+      );
+      console.log(`[routine-service] Registered autonomous monitoring for problem set ${problemSetId} (${cron})`);
+    } catch (err) {
+      // Non-blocking: routine registration failure should not crash startup or identity sync
+      console.warn(
+        `[routine-service] Failed to register autonomous monitoring for ${problemSetId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  /**
+   * Unregister the autonomous monitoring heartbeat routine for a specific problem set.
+   *
+   * Sends `/routine unregister autonomous_monitoring__{psId}` to Ironclaw's scheduler.
+   * Call this when a problem set is archived, deleted, or monitoring is disabled.
+   *
+   * @param problemSetId - The problem set to stop monitoring.
+   */
+  async unregisterAutonomousMonitoring(problemSetId: string): Promise<void> {
+    try {
+      await ironclawClient.sendMessage(
+        'system',
+        `/routine unregister autonomous_monitoring__${problemSetId}`,
+      );
+      console.log(`[routine-service] Unregistered autonomous monitoring for problem set ${problemSetId}`);
+    } catch (err) {
+      // Non-blocking: log warning but do not throw
+      console.warn(
+        `[routine-service] Failed to unregister autonomous monitoring for ${problemSetId}:`,
+        err instanceof Error ? err.message : err,
+      );
     }
   }
 

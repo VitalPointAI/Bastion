@@ -220,6 +220,23 @@ export class IronclawService {
     } catch (err) {
       console.error('[ironclaw-service] syncUserIdentity: failed to update identityLastSyncedAt:', err);
     }
+
+    // Register autonomous monitoring heartbeat for each active problem set,
+    // unless explicitly disabled in agent config.
+    const monitoringEnabled = config.autonomousMonitoring?.enabled !== false;
+    if (monitoringEnabled && config.activeOperationIds.length > 0) {
+      const intervalMinutes = config.autonomousMonitoring?.intervalMinutes;
+      const cronOverride = intervalMinutes
+        ? `*/${intervalMinutes} * * * *`
+        : undefined;
+
+      for (const psId of config.activeOperationIds) {
+        // Fire-and-forget — monitoring registration must never block identity sync
+        routineService.registerAutonomousMonitoring(psId, cronOverride).catch((err) =>
+          console.error(`[ironclaw-service] Autonomous monitoring registration failed for ${psId}:`, err),
+        );
+      }
+    }
   }
 
   /**
