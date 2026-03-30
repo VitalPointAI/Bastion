@@ -372,11 +372,32 @@ export function renderSoulMd(config: AgentConfig): string {
   return lines.join('\n');
 }
 
+// ---------------------------------------------------------------------------
+// Operational context for autonomous heartbeat directives
+// ---------------------------------------------------------------------------
+
+/**
+ * Live operational context injected into HEARTBEAT.md on each identity sync.
+ * Tells Ironclaw what is currently happening so it can prioritize monitoring.
+ */
+export interface OperationalContext {
+  activePIRs: Array<{ description: string; priority: number }>;
+  pendingDecisions: number;
+  recentOSINTCount: number;
+  knownGapCount: number;
+  callbackUrl: string;
+}
+
 /**
  * Render HEARTBEAT.md — Proactive monitoring directives.
  * Blueprint Section 3.4: What Ironclaw watches without being asked.
+ *
+ * @param config - Agent configuration
+ * @param operationalContext - Optional live operational state for autonomous monitoring directives.
+ *   When provided, appends Autonomous Monitoring Tasks, Current Operational Status,
+ *   Callback Protocol, and Efficiency Rules sections.
  */
-export function renderHeartbeatMd(config: AgentConfig): string {
+export function renderHeartbeatMd(config: AgentConfig, operationalContext?: OperationalContext): string {
   const lines: string[] = [
     `# HEARTBEAT — Proactive Monitoring Directives`,
     ``,
@@ -408,6 +429,52 @@ export function renderHeartbeatMd(config: AgentConfig): string {
       const status = routine.enabled ? 'ENABLED' : 'DISABLED';
       lines.push(`- **${routine.name}** [${status}] — ${routine.description} (schedule: \`${routine.cron}\`)`);
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Autonomous monitoring directives — injected when operational context is available
+  // ---------------------------------------------------------------------------
+  if (operationalContext) {
+    const { activePIRs, pendingDecisions, recentOSINTCount, knownGapCount, callbackUrl } = operationalContext;
+
+    lines.push(``, `### Autonomous Monitoring Tasks`);
+    lines.push(
+      `On each heartbeat tick, evaluate the following using your MCP tools:`,
+      `1. Run conflict detection against the knowledge graph (bastion.intel.detect_conflicts)`,
+      `2. Check active PIRs against recent intelligence (bastion.intel.get_priority_intel_requirements)`,
+      `3. Assess intelligence gaps and research top-priority gaps (bastion.intel.get_intelligence_gaps → bastion.intel.web_search → bastion.intel.create_research_event)`,
+      `4. If significant intelligence accumulated since last assessment, draft situation assessment (bastion.intel.draft_situation_assessment)`,
+      `5. Check for stale decisions that need escalation`,
+    );
+
+    lines.push(``, `### Current Operational Status`);
+    lines.push(`- Active PIRs: ${activePIRs.length}`);
+    if (activePIRs.length > 0) {
+      const topPIRs = [...activePIRs]
+        .sort((a, b) => a.priority - b.priority)
+        .slice(0, 3);
+      for (const pir of topPIRs) {
+        lines.push(`  - [P${pir.priority}] ${pir.description}`);
+      }
+    }
+    lines.push(`- Pending Decisions: ${pendingDecisions}`);
+    lines.push(`- Recent OSINT Events: ${recentOSINTCount}`);
+    lines.push(`- Intelligence Gaps: ${knownGapCount}`);
+
+    lines.push(``, `### Callback Protocol`);
+    lines.push(`When you identify a finding worth reporting, POST to: ${callbackUrl}`);
+    lines.push(
+      `Body: { "type": "<type>", "problemSetId": "<ps_id>", "payload": {}, "severity": "<level>" }`,
+    );
+    lines.push(
+      `Types: intelligence_gap_detected, conflict_detected, situation_assessment, skill_creation_request, alert`,
+    );
+
+    lines.push(``, `### Efficiency Rules`);
+    lines.push(`- Do NOT run full analysis if nothing has changed since your last heartbeat`);
+    lines.push(`- Log all autonomous actions via bastion.autonomous.log_activity`);
+    lines.push(`- Use bastion.autonomous.send_alert only for urgent/critical findings`);
+    lines.push(`- Maximum 5 tool calls per heartbeat tick unless you find something significant`);
   }
 
   lines.push(``, `---`);
