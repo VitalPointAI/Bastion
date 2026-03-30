@@ -13,6 +13,7 @@ export { IronclawSuggestion } from './IronclawSuggestion.tsx';
 export { IronclawStepStream } from './IronclawStepStream.tsx';
 export { IronclawTaskPanel } from './IronclawTaskPanel.tsx';
 export { IronclawMemoryPanel } from './IronclawMemoryPanel.tsx';
+export { IronclawActivityFeed } from './IronclawActivityFeed.tsx';
 
 // Types (re-exported from types module)
 export type {
@@ -28,4 +29,5 @@ export type {
   IronclawTaskData,
   TrustPreference,
   IronclawMemoryEntry,
+  AutonomousActivityEntry,
 } from '../../types/ironclaw.ts';

@@ -390,6 +390,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         onSelectThread={ironclaw.selectThread}
         onCreateThread={ironclaw.createThread}
         onDeleteThread={ironclaw.deleteThread}
+        problemSetId={activeProblemSetId}
       />
     </IronclawContext.Provider>
   );

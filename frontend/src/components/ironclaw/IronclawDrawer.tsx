@@ -16,6 +16,7 @@ import { IronclawMessage } from './IronclawMessage.tsx';
 import { IronclawSuggestion } from './IronclawSuggestion.tsx';
 import { IronclawTaskPanel } from './IronclawTaskPanel.tsx';
 import { IronclawMemoryPanel } from './IronclawMemoryPanel.tsx';
+import { IronclawActivityFeed } from './IronclawActivityFeed.tsx';
 import type { Decision, ActOnDecisionParams } from '../../lib/decision-service.ts';
 import Markdown from 'react-markdown';
 import { AgentConfigPanel } from '../agent-config/AgentConfigPanel.tsx';
@@ -75,6 +76,8 @@ interface IronclawDrawerProps {
   onCreateThread?: (name: string) => Promise<void>;
   onRenameThread?: (threadId: string, name: string) => Promise<void>;
   onDeleteThread?: (threadId: string) => Promise<void>;
+  /** Active problem set ID — required for autonomous activity feed */
+  problemSetId?: string | null;
 }
 
 export function IronclawDrawer({
@@ -104,6 +107,7 @@ export function IronclawDrawer({
   onSelectThread,
   onCreateThread,
   onDeleteThread,
+  problemSetId,
 }: IronclawDrawerProps) {
   const [inputValue, setInputValue] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -116,8 +120,8 @@ export function IronclawDrawer({
   const [version, setVersion] = useState<string | null>(null);
   const prevMessageCountRef = useRef(0);
   const userScrolledUpRef = useRef(false);
-  /** Controls which content area is shown: 'chat' or 'memory' */
-  const [drawerTab, setDrawerTab] = useState<'chat' | 'memory' | 'config'>('chat');
+  /** Controls which content area is shown: 'chat', 'activity', 'memory', or 'config' */
+  const [drawerTab, setDrawerTab] = useState<'chat' | 'activity' | 'memory' | 'config'>('chat');
 
   // Fetch version from /api/ironclaw/status on mount + after updates
   const fetchVersion = useCallback(() => {
@@ -350,6 +354,24 @@ export function IronclawDrawer({
             </svg>
             Chat
           </button>
+          {/* Activity tab — only shown when a problem set is active */}
+          {!isGlobalMode && problemSetId && (
+            <button
+              onClick={() => setDrawerTab('activity')}
+              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
+                drawerTab === 'activity'
+                  ? 'border-emerald-500 text-emerald-300'
+                  : 'border-transparent text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              {/* Activity/pulse icon */}
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Activity
+            </button>
+          )}
           <button
             onClick={() => setDrawerTab('memory')}
             className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
@@ -424,6 +446,13 @@ export function IronclawDrawer({
                 &times;
               </button>
             )}
+          </div>
+        )}
+
+        {/* Activity tab content — autonomous operations log */}
+        {drawerTab === 'activity' && problemSetId && (
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <IronclawActivityFeed problemSetId={problemSetId} />
           </div>
         )}
 
