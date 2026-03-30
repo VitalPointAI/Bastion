@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: milestone
 status: completed
-stopped_at: Completed 65-03-PLAN.md
-last_updated: "2026-03-30T23:34:30.443Z"
+stopped_at: Completed 65-05-PLAN.md
+last_updated: "2026-03-30T23:41:13.421Z"
 last_activity: "2026-03-29 - Reconciled phase status: marked 23/28/31/50/61 complete, updated roadmap and SITREP"
 progress:
   total_phases: 82
-  completed_phases: 61
+  completed_phases: 62
   total_plans: 496
-  completed_plans: 497
+  completed_plans: 498
   percent: 85
 ---
 
@@ -1093,6 +1093,7 @@ Recent decisions affecting current work:
 - [Phase 65]: AUTONOMOUS_OPERATIONS_PROTOCOL appended to every SOUL.md to establish proactive Chief of Staff identity
 - [Phase 65-ironclaw-autonomous-operations]: Event forwarding uses sendMessageAsync (fire-and-forget) with 30-second batching windows per problem set to prevent pipeline blocking and forwarding storms
 - [Phase 65-ironclaw-autonomous-operations]: Gap filler service retired: start() is a no-op with deprecation notice; Ironclaw autonomous heartbeat via MCP tools is the replacement
+- [Phase 65-ironclaw-autonomous-operations]: Activity endpoint uses /activity/:problemSetId path to avoid routing conflicts with /:problemSetId/threads
 
 ### Roadmap Evolution
 
@@ -1818,7 +1819,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-30T23:34:30.433Z
-Stopped at: Completed 65-03-PLAN.md
+Last session: 2026-03-30T23:41:08.622Z
+Stopped at: Completed 65-05-PLAN.md
 Resume file: None
 Next action: Continue Phase 40 plan 02

@@ -81,7 +81,7 @@ None
 - [x] **Phase 62: Knowledge Graph Entity Deduplication & Auto-Resolution** - Eliminate duplicate nodes by integrating entity resolution into ingestion pipeline; name canonicalization before node creation; auto-run resolution after buildFromDocument() and OSINT sync; batch-merge existing duplicates; canonical alias registry for common name variants; dedup metrics (INSERTED) (completed 2026-03-29)
 - [x] **Phase 63: Unified OSINT Agent Ingestion** - 12-specialist OSINT pipeline, source pre-registration, reliability scoring, LLM concurrency tuning (completed 2026-03-29)
 - [x] **Phase 64: Scenario-Agnostic Refactor & Baltic Shield Demo** - Eliminate all hardcoded scenario references (Taipei coordinates, Iron Bastion names, PLA vehicle types, Pacific Strategy labels) from application code; all scenario-specific content driven by active problem set and calibration profile at runtime; generalize variable names (no ZHONGZHENG_MAP, no IRON_BASTION_DEFAULTS); preserve full autonomous mission functionality; new Baltic Shield EFDL scenario data (OPORD, coalition, ORBAT, knowledge graph) seeds the demo problem set; existing mission sequence works identically on Latvian open terrain coordinates (INSERTED) (completed 2026-03-29)
-- [ ] **Phase 65: Ironclaw Autonomous Operations** - Transform Ironclaw from reactive chat to autonomous Chief of Staff; leverage native OpenClaw heartbeat/routines for continuous monitoring; callback webhook (Ironclaw→Bastion) for proactive findings; event forwarding (Bastion→Ironclaw) for OSINT/doc/graph changes; replace gap filler with Ironclaw-owned intelligence gap detection via MCP tools; autonomous conflict detection, situation assessment drafting, decision surfacing; brain curation — continuously evaluate global knowledge graph to augment/prune problem set brain slice with newly relevant or stale actors; self-extending skill/routine creation; autonomous activity feed in UI; all governed by existing risk classification and decision gates (INSERTED)
+- [x] **Phase 65: Ironclaw Autonomous Operations** - Transform Ironclaw from reactive chat to autonomous Chief of Staff; leverage native OpenClaw heartbeat/routines for continuous monitoring; callback webhook (Ironclaw→Bastion) for proactive findings; event forwarding (Bastion→Ironclaw) for OSINT/doc/graph changes; replace gap filler with Ironclaw-owned intelligence gap detection via MCP tools; autonomous conflict detection, situation assessment drafting, decision surfacing; brain curation — continuously evaluate global knowledge graph to augment/prune problem set brain slice with newly relevant or stale actors; self-extending skill/routine creation; autonomous activity feed in UI; all governed by existing risk classification and decision gates (INSERTED) (completed 2026-03-30)
 
 ## Phase Details
 
@@ -1092,7 +1092,7 @@ Plans:
 **Goal:** Transform Ironclaw from reactive chat to autonomous Chief of Staff that continuously monitors the operational environment, proactively processes intelligence, detects conflicts, surfaces decisions, and self-extends capabilities — all without waiting for user input.
 **Requirements:** SC-01 through SC-08 (from GOAL.md success criteria)
 **Depends on:** Phase 60, Phase 57, Phase 63
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [ ] 65-01-PLAN.md — Callback webhook endpoint on bastion-mcp + autonomous activity store
@@ -2136,4 +2136,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 40. Autonomous Document Intelligence Team | 12/12 | Complete   | 2026-03-09 |
 | 42. Resources Tab — Inventory, Discovery & Onboarding | 6/6 | Complete   | 2026-03-12 |
 | 50. Universal Intelligence Input & Auto-Classification | 7/7 | Complete | 2026-03-18 |
-| 65. Ironclaw Memory Evolution & Concept Learning | 4/5 | In Progress|  |
+| 65. Ironclaw Memory Evolution & Concept Learning | 5/5 | Complete   | 2026-03-30 |
