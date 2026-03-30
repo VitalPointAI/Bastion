@@ -705,6 +705,7 @@ router.post(
       }
 
       const pool = getPool();
+      const docScope = (req.body?.scope as string) ?? (req.query.scope as string) ?? 'local';
 
       // --- Persist document to strategic_documents with processing status ---
       const title = (metadata.originalName as string) ?? `Document ${documentId.slice(0, 8)}`;
@@ -712,8 +713,8 @@ router.post(
         await pool.query(
           `INSERT INTO strategic_documents (
             id, title, original_filename, mime_type, text_content, text_length,
-            created_by, workspace_id, content_hash, processing_status, processing_started_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'processing', NOW())
+            created_by, workspace_id, content_hash, processing_status, processing_started_at, scope
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'processing', NOW(), $10)
           ON CONFLICT (id) DO UPDATE SET
             processing_status = 'processing',
             processing_started_at = NOW(),
@@ -724,6 +725,7 @@ router.post(
             (metadata.mimeType as string) ?? 'application/octet-stream',
             documentText, documentText.length,
             'system', problemSetId, contentHash,
+            docScope,
           ],
         );
       } catch (dbErr) {
@@ -985,7 +987,7 @@ router.get(
       const pool = getPool();
       let query = `SELECT id, title, original_filename, mime_type, text_length,
                           processing_status, processing_error, processing_started_at,
-                          processing_completed_at, content_hash, trust_status, created_at
+                          processing_completed_at, content_hash, trust_status, scope, created_at
                    FROM strategic_documents
                    WHERE workspace_id = $1`;
       const params: unknown[] = [problemSetId];
@@ -1010,6 +1012,7 @@ router.get(
         processingStartedAt: row.processing_started_at,
         processingCompletedAt: row.processing_completed_at,
         trustStatus: row.trust_status,
+        scope: (row.scope as string) ?? 'local',
         createdAt: row.created_at,
       }));
 

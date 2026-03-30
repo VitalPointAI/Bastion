@@ -19,6 +19,8 @@ export interface FeedPollStatus {
   consecutiveFailures: number;
 }
 
+export type FeedScope = 'global' | 'local';
+
 export interface OSINTFeedConfig {
   id: string;
   problemSetId: string;
@@ -28,6 +30,7 @@ export interface OSINTFeedConfig {
   pollingIntervalMs: number;
   relevanceMode: RelevanceMode;
   active: boolean;
+  scope: FeedScope;
   config: Record<string, unknown>;
   createdAt: string;
   pollStatus?: FeedPollStatus;
@@ -40,6 +43,7 @@ export interface CreateFeedInput {
   endpointUrl?: string;
   pollingIntervalMs?: number;
   relevanceMode?: RelevanceMode;
+  scope?: FeedScope;
   config?: Record<string, unknown>;
 }
 
@@ -50,6 +54,7 @@ export interface UpdateFeedInput {
   pollingIntervalMs?: number;
   relevanceMode?: RelevanceMode;
   active?: boolean;
+  scope?: FeedScope;
   config?: Record<string, unknown>;
 }
 

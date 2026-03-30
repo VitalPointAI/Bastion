@@ -107,6 +107,7 @@ export interface CreateStrategicDocumentInput {
   ipfsCid?: string;
   createdBy: string;
   workspaceId?: string;
+  scope?: 'global' | 'local';
 }
 
 /**

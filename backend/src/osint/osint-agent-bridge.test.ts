@@ -67,6 +67,7 @@ const stubFeed: OSINTFeedConfig = {
   pollingIntervalMs: 60000,
   relevanceMode: 'ai_semantic',
   active: true,
+  scope: 'local',
   config: {},
   createdAt: new Date('2026-01-01T00:00:00Z'),
 };

@@ -75,8 +75,8 @@ export async function storeDocument(
     INSERT INTO strategic_documents (
       id, title, level, original_filename, mime_type,
       page_count, text_content, text_length, classification,
-      ipfs_cid, created_by, workspace_id
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ipfs_cid, created_by, workspace_id, scope
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     `,
     [
       id,
@@ -91,6 +91,7 @@ export async function storeDocument(
       input.ipfsCid || null,
       input.createdBy,
       input.workspaceId || null,
+      input.scope || 'local',
     ]
   );
 

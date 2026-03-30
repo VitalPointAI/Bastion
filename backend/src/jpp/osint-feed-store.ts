@@ -21,6 +21,8 @@ import { getPool } from '../lib/database.js';
 export type FeedSourceType = 'argus_webhook' | 'rss' | 'api' | 'simulated';
 export type RelevanceMode = 'entity_objective' | 'ai_semantic';
 
+export type FeedScope = 'global' | 'local';
+
 export interface OSINTFeedConfig {
   id: string;
   problemSetId: string;
@@ -30,6 +32,7 @@ export interface OSINTFeedConfig {
   pollingIntervalMs: number;
   relevanceMode: RelevanceMode;
   active: boolean;
+  scope: FeedScope;
   config: Record<string, unknown>;
   createdAt: Date;
 }
@@ -42,6 +45,7 @@ export interface CreateFeedInput {
   pollingIntervalMs?: number;
   relevanceMode?: RelevanceMode;
   active?: boolean;
+  scope?: FeedScope;
   config?: Record<string, unknown>;
 }
 
@@ -52,6 +56,7 @@ export interface UpdateFeedInput {
   pollingIntervalMs?: number;
   relevanceMode?: RelevanceMode;
   active?: boolean;
+  scope?: FeedScope;
   config?: Record<string, unknown>;
 }
 
@@ -99,8 +104,8 @@ class OSINTFeedStore {
     const result = await pool.query(
       `INSERT INTO osint_feed_config
         (id, problem_set_id, source_name, source_type, endpoint_url,
-         polling_interval_ms, relevance_mode, active, config)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         polling_interval_ms, relevance_mode, active, scope, config)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         id,
@@ -111,6 +116,7 @@ class OSINTFeedStore {
         data.pollingIntervalMs ?? 300000,
         data.relevanceMode ?? 'entity_objective',
         data.active ?? true,
+        data.scope ?? 'local',
         JSON.stringify(data.config ?? {}),
       ]
     );
@@ -195,6 +201,10 @@ class OSINTFeedStore {
       setClauses.push(`active = $${idx++}`);
       values.push(updates.active);
     }
+    if (updates.scope !== undefined) {
+      setClauses.push(`scope = $${idx++}`);
+      values.push(updates.scope);
+    }
     if (updates.config !== undefined) {
       setClauses.push(`config = $${idx++}`);
       values.push(JSON.stringify(updates.config));
@@ -272,6 +282,7 @@ class OSINTFeedStore {
       pollingIntervalMs: row.polling_interval_ms as number,
       relevanceMode: row.relevance_mode as RelevanceMode,
       active: row.active as boolean,
+      scope: (row.scope as FeedScope) ?? 'local',
       config: (row.config as Record<string, unknown>) ?? {},
       createdAt: new Date(row.created_at as string),
     };

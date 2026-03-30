@@ -127,6 +127,7 @@ interface IngestionDocument {
   id: string;
   title: string;
   classification?: string;
+  scope?: 'global' | 'local';
   objectiveCount?: number;
   createdAt?: string;
 }
@@ -262,9 +263,10 @@ interface OSINTFeedItemProps {
   feed: OSINTFeedConfig;
   onToggle: (feedId: string, active: boolean) => void;
   onDelete: (feedId: string, name: string) => void;
+  onScopeChange?: (feedId: string, scope: 'global' | 'local') => void;
 }
 
-function OSINTFeedItem({ feed, onToggle, onDelete }: OSINTFeedItemProps) {
+function OSINTFeedItem({ feed, onToggle, onDelete, onScopeChange }: OSINTFeedItemProps) {
   const hasError = feed.pollStatus?.lastError && (feed.pollStatus?.consecutiveFailures ?? 0) > 0;
   const isOffline = (feed.pollStatus?.consecutiveFailures ?? 0) >= 3;
 
@@ -283,6 +285,24 @@ function OSINTFeedItem({ feed, onToggle, onDelete }: OSINTFeedItemProps) {
         </div>
         <div className="drawer-osint-feed-meta">
           <span className="drawer-meta-badge">{osintService.sourceTypeLabel(feed.sourceType)}</span>
+          <button
+            className="drawer-meta-badge"
+            style={{
+              cursor: 'pointer',
+              background: feed.scope === 'global' ? '#1e40af' : '#374151',
+              color: '#e5e7eb',
+              border: 'none',
+              borderRadius: '0.25rem',
+              fontSize: '0.6rem',
+              padding: '0.1rem 0.375rem',
+            }}
+            title={feed.scope === 'global'
+              ? 'Global — data shared across all problem sets. Click to make local.'
+              : 'Local — data scoped to this problem set only. Click to make global.'}
+            onClick={() => onScopeChange?.(feed.id, feed.scope === 'global' ? 'local' : 'global')}
+          >
+            {feed.scope === 'global' ? 'GLOBAL' : 'LOCAL'}
+          </button>
           {feed.endpointUrl && (
             <span className="drawer-osint-feed-url" title={feed.endpointUrl}>
               {feed.endpointUrl.length > 32 ? `${feed.endpointUrl.slice(0, 32)}...` : feed.endpointUrl}
@@ -473,6 +493,15 @@ export function IngestionDrawer({ problemSetId, isOpen, onOpen, onClose }: Inges
     try {
       await osintService.deleteFeed(feedId);
       setOsintFeeds((prev) => prev.filter((f) => f.id !== feedId));
+    } catch {
+      // Non-fatal
+    }
+  }, []);
+
+  const handleFeedScopeChange = useCallback(async (feedId: string, scope: 'global' | 'local') => {
+    try {
+      await osintService.updateFeed(feedId, { scope });
+      setOsintFeeds((prev) => prev.map((f) => f.id === feedId ? { ...f, scope } : f));
     } catch {
       // Non-fatal
     }
@@ -685,6 +714,15 @@ export function IngestionDrawer({ problemSetId, isOpen, onOpen, onClose }: Inges
                       <span className="drawer-meta-badge">
                         {doc.classification ?? 'UNCLASSIFIED'}
                       </span>
+                      <span
+                        className="drawer-meta-badge"
+                        style={{
+                          background: doc.scope === 'global' ? '#1e40af' : '#374151',
+                          color: '#e5e7eb',
+                        }}
+                      >
+                        {doc.scope === 'global' ? 'GLOBAL' : 'LOCAL'}
+                      </span>
                       {doc.objectiveCount != null && doc.objectiveCount > 0 && (
                         <span className="drawer-doc-meta-text">
                           {doc.objectiveCount} objective{doc.objectiveCount !== 1 ? 's' : ''}
@@ -748,6 +786,7 @@ export function IngestionDrawer({ problemSetId, isOpen, onOpen, onClose }: Inges
                   feed={feed}
                   onToggle={handleToggleFeed}
                   onDelete={handleDeleteFeed}
+                  onScopeChange={handleFeedScopeChange}
                 />
               ))}
             </div>
