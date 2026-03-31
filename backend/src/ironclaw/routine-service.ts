@@ -164,7 +164,7 @@ export class RoutineService {
       ) VALUES (
         $1, $2, $3, true,
         'cron', $4::jsonb,
-        'lightweight', $5::jsonb,
+        'full_job', $5::jsonb,
         $6, 1,
         NOW() + INTERVAL '30 seconds'
       )
@@ -172,10 +172,11 @@ export class RoutineService {
       DO UPDATE SET
         description = EXCLUDED.description,
         enabled = true,
+        action_type = EXCLUDED.action_type,
         trigger_config = EXCLUDED.trigger_config,
         action_config = EXCLUDED.action_config,
         cooldown_secs = EXCLUDED.cooldown_secs,
-        next_fire_at = COALESCE(routines.next_fire_at, NOW() + INTERVAL '30 seconds'),
+        next_fire_at = NOW() + INTERVAL '30 seconds',
         updated_at = NOW()
     `, [
       opts.name,
