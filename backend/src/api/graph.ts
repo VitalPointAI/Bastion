@@ -814,7 +814,9 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
         }
 
         // Signal 4: Relationship expansion (1-hop) — actors connected to any
-        // scope-matched actor are contextually relevant
+        // scope-matched actor are contextually relevant.
+        // Cap expansion to prevent cascading through highly-connected hubs.
+        const MAX_SCOPED_ACTORS = 2000;
         if (relevantIds.size > 0 && relevantIds.size < totalBeforeFilter) {
           const connectedIds = new Set<string>();
           const lookupIds = [...relevantIds].slice(0, 300);
@@ -824,17 +826,20 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
               connectedIds.add(rel.sourceActorId);
               connectedIds.add(rel.targetActorId);
             }
+            // Stop expanding if we've already reached the cap
+            if (relevantIds.size + connectedIds.size >= MAX_SCOPED_ACTORS) break;
           }
 
-          // Add connected actors to the relevant set
+          // Add connected actors to the relevant set, respecting the cap
           for (const id of connectedIds) {
+            if (relevantIds.size >= MAX_SCOPED_ACTORS) break;
             relevantIds.add(id);
           }
 
-          console.log(`[graph] Scope: ${connectedIds.size} actors via 1-hop expansion → ${relevantIds.size} total`);
+          console.log(`[graph] Scope: ${connectedIds.size} actors via 1-hop expansion → ${relevantIds.size} total (cap: ${MAX_SCOPED_ACTORS})`);
         }
 
-        // Apply the combined filter
+        // Apply the combined filter — always filter if we found relevant IDs
         if (relevantIds.size > 0 && relevantIds.size < totalBeforeFilter) {
           actors = actors.filter(a => relevantIds.has(a.id));
           console.log(`[graph] Scope filter result: ${actors.length} actors (was ${totalBeforeFilter})`);
@@ -842,8 +847,10 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
           // No scoping signals matched anything — cap to prevent UI overload
           console.log(`[graph] No scoping signals matched for ${workspaceId} — capping at 500 actors (was ${totalBeforeFilter})`);
           actors = actors.slice(0, 500);
-        } else {
-          console.log(`[graph] Scope filter matched all ${totalBeforeFilter} actors — no reduction possible`);
+        } else if (relevantIds.size >= totalBeforeFilter) {
+          // Expansion matched everything — apply hard cap to prevent dumping full graph
+          console.log(`[graph] Scope filter matched all ${totalBeforeFilter} actors — applying hard cap of ${MAX_SCOPED_ACTORS}`);
+          actors = actors.slice(0, MAX_SCOPED_ACTORS);
         }
       } catch (err) {
         console.warn('[graph] Scoping filter error:', err instanceof Error ? err.message : err);

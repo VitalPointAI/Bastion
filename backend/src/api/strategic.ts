@@ -339,6 +339,33 @@ router.get('/documents/:id', requireAuth, async (req, res) => {
 });
 
 /**
+ * PATCH /api/strategic/documents/:id/scope - Update document scope (global/local)
+ */
+router.patch('/documents/:id/scope', requireAuth, async (req, res) => {
+  try {
+    await ensureTableExists();
+
+    const documentId = req.params.id as string;
+    const { scope } = req.body as { scope?: string };
+
+    if (scope !== 'global' && scope !== 'local') {
+      return res.status(400).json({ error: 'scope must be "global" or "local"' });
+    }
+
+    const updated = await store.updateScope(documentId, scope);
+    if (!updated) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    res.json({ id: documentId, scope });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Update document scope failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
  * GET /api/strategic/documents/:id/text - Get document text content
  *
  * Query params:

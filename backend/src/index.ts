@@ -542,6 +542,25 @@ server.listen(port, async () => {
 
   // Phase 65: Gap filler retired — Ironclaw handles gap detection autonomously via MCP tools
   // (bastion.intel.get_intelligence_gaps → bastion.intel.web_search → bastion.intel.create_research_event)
+
+  // Phase 65: Register autonomous monitoring routines for all active problem sets on startup.
+  // Without this, routines only get registered when a user sends a message (syncUserIdentity),
+  // meaning Ironclaw has nothing to execute after a server restart.
+  try {
+    const pool = (await import('./lib/database.js')).getPool();
+    const { routineService } = await import('./ironclaw/routine-service.js');
+    const activePs = await pool.query<{ id: string }>(
+      `SELECT id FROM problem_sets WHERE status IN ('active', 'planning', 'in-progress') LIMIT 50`,
+    );
+    for (const row of activePs.rows) {
+      routineService.registerAutonomousMonitoring(row.id).catch(() => {/* logged inside */});
+    }
+    if (activePs.rows.length > 0) {
+      console.log(`Registered autonomous monitoring for ${activePs.rows.length} active problem sets`);
+    }
+  } catch (error) {
+    console.warn('Autonomous monitoring startup registration failed (non-fatal):', error);
+  }
   // gapFillerService.start() is now a no-op but left here as a reminder the service was retired.
   // try {
   //   const { gapFillerService } = await import('./ironclaw/gap-filler-service.js');

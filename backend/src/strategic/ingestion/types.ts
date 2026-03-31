@@ -89,6 +89,8 @@ export interface StrategicDocument {
   createdBy: string;
   /** Workspace this document belongs to */
   workspaceId?: string;
+  /** Ingestion scope: global (shared) or local (problem set only) */
+  scope?: 'global' | 'local';
   /** Creation timestamp */
   createdAt: Date;
 }

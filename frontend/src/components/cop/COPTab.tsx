@@ -148,6 +148,9 @@ export function COPTab({ problemSetId }: COPTabProps) {
   // Temporal phase state
   const [currentPhase, setCurrentPhase] = useState<number>(0);
 
+  // Bottom controls drawer collapsed state
+  const [controlsCollapsed, setControlsCollapsed] = useState(false);
+
   // Selected layer for lifecycle/version/review views
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 
@@ -630,15 +633,39 @@ export function COPTab({ problemSetId }: COPTabProps) {
           )}
         </div>
 
-        {/* Phase slider — bottom of map area */}
+        {/* Collapsible bottom controls drawer — phase slider + playbook */}
         {temporalPhases.length > 0 && (
-          <div className="shrink-0 border-t border-gray-700 bg-gray-800/95 px-4 py-2">
-            <COPPhaseSlider
-              phases={temporalPhases}
-              currentPhase={currentPhase}
-              onPhaseChange={setCurrentPhase}
-            />
+          <div
+            className="shrink-0 border-t border-gray-700 bg-gray-800/95"
+            style={{
+              maxHeight: controlsCollapsed ? '0px' : '300px',
+              overflow: 'hidden',
+              transition: 'max-height 0.25s ease',
+            }}
+          >
+            <div className="px-4 py-2">
+              <COPPhaseSlider
+                phases={temporalPhases}
+                currentPhase={currentPhase}
+                onPhaseChange={setCurrentPhase}
+              />
+            </div>
           </div>
+        )}
+
+        {/* Drawer toggle tab — always visible when phases exist */}
+        {temporalPhases.length > 0 && (
+          <button
+            onClick={() => setControlsCollapsed((v) => !v)}
+            className="shrink-0 flex items-center justify-center w-full border-t border-gray-700 bg-gray-800/95 hover:bg-gray-700/95 transition-colors cursor-pointer"
+            style={{ height: '20px', padding: 0, border: 'none', borderTop: '1px solid #374151' }}
+            title={controlsCollapsed ? 'Show timeline controls' : 'Hide timeline controls'}
+            aria-label={controlsCollapsed ? 'Show timeline controls' : 'Hide timeline controls'}
+          >
+            <span style={{ fontSize: '10px', color: '#6b7280', userSelect: 'none' }}>
+              {controlsCollapsed ? '▲ Timeline' : '▼'}
+            </span>
+          </button>
         )}
       </div>
 

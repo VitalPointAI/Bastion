@@ -507,6 +507,25 @@ export function IngestionDrawer({ problemSetId, isOpen, onOpen, onClose }: Inges
     }
   }, []);
 
+  const handleDocScopeChange = useCallback(async (docId: string, scope: 'global' | 'local') => {
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/strategic/documents/${encodeURIComponent(docId)}/scope`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ scope }),
+        },
+      );
+      if (res.ok) {
+        setDocuments((prev) => prev.map((d) => d.id === docId ? { ...d, scope } : d));
+      }
+    } catch {
+      // Non-fatal
+    }
+  }, []);
+
   // ── Poll all feeds now ───────────────────────────────────────────────────
   const handlePollNow = useCallback(async () => {
     setPolling(true);
@@ -714,15 +733,24 @@ export function IngestionDrawer({ problemSetId, isOpen, onOpen, onClose }: Inges
                       <span className="drawer-meta-badge">
                         {doc.classification ?? 'UNCLASSIFIED'}
                       </span>
-                      <span
+                      <button
                         className="drawer-meta-badge"
                         style={{
+                          cursor: 'pointer',
                           background: doc.scope === 'global' ? '#1e40af' : '#374151',
                           color: '#e5e7eb',
+                          border: 'none',
+                          borderRadius: '0.25rem',
+                          fontSize: '0.6rem',
+                          padding: '0.1rem 0.375rem',
                         }}
+                        title={doc.scope === 'global'
+                          ? 'Global — data shared across all problem sets. Click to make local.'
+                          : 'Local — data scoped to this problem set only. Click to make global.'}
+                        onClick={() => handleDocScopeChange(doc.id, doc.scope === 'global' ? 'local' : 'global')}
                       >
                         {doc.scope === 'global' ? 'GLOBAL' : 'LOCAL'}
-                      </span>
+                      </button>
                       {doc.objectiveCount != null && doc.objectiveCount > 0 && (
                         <span className="drawer-doc-meta-text">
                           {doc.objectiveCount} objective{doc.objectiveCount !== 1 ? 's' : ''}

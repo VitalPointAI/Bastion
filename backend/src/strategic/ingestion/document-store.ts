@@ -56,6 +56,12 @@ export async function initStrategicDocumentsTable(): Promise<void> {
     ON strategic_documents(workspace_id)
   `);
 
+  // Add scope column if not exists (migration for existing deployments)
+  await pool.query(`
+    ALTER TABLE strategic_documents
+    ADD COLUMN IF NOT EXISTS scope TEXT NOT NULL DEFAULT 'local'
+  `);
+
   console.log('✓ strategic_documents table initialized');
 }
 
@@ -175,14 +181,14 @@ export async function listDocuments(
     `
     SELECT d.id, d.title, d.level, d.original_filename, d.mime_type,
            d.page_count, d.text_length, d.classification, d.ipfs_cid,
-           d.created_by, d.workspace_id, d.created_at,
+           d.created_by, d.workspace_id, d.scope, d.created_at,
            COALESCE(COUNT(o.id), 0)::int as objective_count
     FROM strategic_documents d
     LEFT JOIN strategic_objectives o ON o.document_id = d.id
     WHERE ${whereClause}
     GROUP BY d.id, d.title, d.level, d.original_filename, d.mime_type,
              d.page_count, d.text_length, d.classification, d.ipfs_cid,
-             d.created_by, d.workspace_id, d.created_at
+             d.created_by, d.workspace_id, d.scope, d.created_at
     ORDER BY d.created_at DESC
     LIMIT $2 OFFSET $3
     `,
@@ -252,6 +258,7 @@ function mapRowToDocument(row: Record<string, unknown>): StrategicDocument {
     ipfsCid: row.ipfs_cid as string | undefined,
     createdBy: row.created_by as string,
     workspaceId: row.workspace_id as string | undefined,
+    scope: (row.scope as 'global' | 'local') || 'local',
     createdAt: new Date(row.created_at as string),
   };
 }
@@ -274,6 +281,7 @@ function mapRowToDocumentSummary(
     ipfsCid: row.ipfs_cid as string | undefined,
     createdBy: row.created_by as string,
     workspaceId: row.workspace_id as string | undefined,
+    scope: (row.scope as 'global' | 'local') || 'local',
     createdAt: new Date(row.created_at as string),
   };
 }
@@ -296,9 +304,25 @@ function mapRowToDocumentWithCount(
     ipfsCid: row.ipfs_cid as string | undefined,
     createdBy: row.created_by as string,
     workspaceId: row.workspace_id as string | undefined,
+    scope: (row.scope as 'global' | 'local') || 'local',
     createdAt: new Date(row.created_at as string),
     objectiveCount: row.objective_count as number,
   };
+}
+
+/**
+ * Update document scope (global/local)
+ */
+export async function updateDocumentScope(
+  documentId: string,
+  scope: 'global' | 'local',
+): Promise<boolean> {
+  const pool = getPool();
+  const result = await pool.query(
+    `UPDATE strategic_documents SET scope = $1 WHERE id = $2`,
+    [scope, documentId],
+  );
+  return (result.rowCount ?? 0) > 0;
 }
 
 /**
@@ -339,5 +363,9 @@ export class DocumentStore {
 
   async delete(documentId: string): Promise<boolean> {
     return deleteDocument(documentId);
+  }
+
+  async updateScope(documentId: string, scope: 'global' | 'local'): Promise<boolean> {
+    return updateDocumentScope(documentId, scope);
   }
 }
