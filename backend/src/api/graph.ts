@@ -153,10 +153,37 @@ router.get('/actors', async (req: Request, res: Response) => {
     const includeProvenanceStr = getQueryString(req.query.includeProvenance);
     const includeProvenance = includeProvenanceStr !== 'false'; // default true
 
-    // For the actors endpoint we need ALL actors (used for enrichment lookups),
-    // but filter by type if requested. The graph endpoint handles scoping;
-    // this endpoint is a detail lookup, not a node source.
-    const actors = await actorStore.listActors(undefined, type);
+    // When workspaceId is provided, scope actors using the same additive
+    // filter approach as the graph endpoint. This prevents the deployed
+    // frontend from using this endpoint to bypass graph scoping.
+    let actors: Awaited<ReturnType<typeof actorStore.listActors>>;
+    if (workspaceId) {
+      const allActors = await actorStore.listActors(undefined, type);
+      const scopedIds = new Set<string>();
+      for (const actor of allActors) {
+        const inContainer = Array.isArray(actor.containerIds) && actor.containerIds.includes(workspaceId);
+        const matchesWs = actor.workspaceId === workspaceId;
+        if (inContainer || matchesWs) scopedIds.add(actor.id);
+      }
+      // Also include actors from PS strategic documents
+      try {
+        const { getPool } = await import('../lib/database.js');
+        const pool = getPool();
+        const docResult = await pool.query(`SELECT id FROM strategic_documents WHERE workspace_id = $1`, [workspaceId]);
+        const psDocIds = new Set(docResult.rows.map((r: { id: string }) => r.id));
+        if (psDocIds.size > 0) {
+          for (const actor of allActors) {
+            if (scopedIds.has(actor.id)) continue;
+            if (actor.sourceDocumentIds?.some(docId => psDocIds.has(docId))) scopedIds.add(actor.id);
+          }
+        }
+      } catch { /* non-fatal */ }
+      actors = allActors.filter(a => scopedIds.has(a.id));
+      // Hard cap
+      if (actors.length > 2000) actors = actors.slice(0, 2000);
+    } else {
+      actors = await actorStore.listActors(undefined, type);
+    }
 
     // Temporal filtering: only include actors valid at the given point in time
     const filteredActors = atTime
