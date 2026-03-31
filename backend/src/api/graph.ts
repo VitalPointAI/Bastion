@@ -153,10 +153,10 @@ router.get('/actors', async (req: Request, res: Response) => {
     const includeProvenanceStr = getQueryString(req.query.includeProvenance);
     const includeProvenance = includeProvenanceStr !== 'false'; // default true
 
-    // Use containerId for problem-set scoping (matches containerIds + workspaceId)
-    const actors = workspaceId
-      ? await actorStore.listActors(undefined, type, undefined, workspaceId)
-      : await actorStore.listActors(undefined, type);
+    // For the actors endpoint we need ALL actors (used for enrichment lookups),
+    // but filter by type if requested. The graph endpoint handles scoping;
+    // this endpoint is a detail lookup, not a node source.
+    const actors = await actorStore.listActors(undefined, type);
 
     // Temporal filtering: only include actors valid at the given point in time
     const filteredActors = atTime
@@ -720,162 +720,155 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
     //
     // Hard cap: 2000 actors max per problem set view. No exceptions.
 
+    // ── Scoping config ─────────────────────────────────────────────────────
     const MAX_SCOPED_ACTORS = 2000;
     const HARD_CAP_FALLBACK = 500;
 
-    // Phase A: Start with DB-level scoped actors (containerIds/workspaceId match)
-    let actors = skipScopeFilter
-      ? await actorStore.listActors()
-      : await actorStore.listActors(undefined, undefined, undefined, workspaceId);
+    let actors: Awaited<ReturnType<typeof actorStore.listActors>>;
 
-    // Exclude information_source actors from visualization by default
-    if (!includeInfoSources) {
-      actors = actors.filter(a => a.type !== 'information_source');
-    }
+    if (skipScopeFilter) {
+      // Global view — no scoping
+      actors = await actorStore.listActors();
+      if (!includeInfoSources) actors = actors.filter(a => a.type !== 'information_source');
+    } else {
+      // ── SCOPED VIEW — build a focused slice for this problem set ──────
+      //
+      // Strategy: load the full actor list ONCE, then pick the relevant
+      // subset using three additive signals. Each signal is independently
+      // try/caught so a single failure can't bypass the filter.
+      //
+      // The key principle: we start with an EMPTY set and ADD actors that
+      // match scoping criteria, rather than starting with all 28K and
+      // trying to remove the irrelevant ones (which fails silently).
 
-    const dbScopedCount = actors.length;
-    console.log(`[graph] Phase A (DB-scoped): ${dbScopedCount} actors for ${workspaceId}`);
+      const allActors = await actorStore.listActors();
+      const relevantIds = new Set<string>();
 
-    // Phase B: If DB-level scoping returned few results, enrich with document
-    // provenance and scoping interview signals from the full graph
-    if (!skipScopeFilter && dbScopedCount < MAX_SCOPED_ACTORS) {
+      console.log(`[graph] Scoping for PS ${workspaceId} — ${allActors.length} total actors in graph`);
+
+      // Signal 1: Container/workspace tagging — actors extracted from this PS's feeds/docs
+      for (const actor of allActors) {
+        if (relevantIds.size >= MAX_SCOPED_ACTORS) break;
+        const inContainer = Array.isArray(actor.containerIds) && actor.containerIds.includes(workspaceId);
+        const matchesWs = actor.workspaceId === workspaceId;
+        if (inContainer || matchesWs) {
+          relevantIds.add(actor.id);
+        }
+      }
+      console.log(`[graph] Signal 1 (container/workspace tag): ${relevantIds.size} actors`);
+
+      // Signal 2: Document provenance — actors whose sourceDocumentIds reference this PS's documents
       try {
-        const relevantIds = new Set(actors.map(a => a.id));
-        let allActors: typeof actors | null = null;
+        const { getPool } = await import('../lib/database.js');
+        const pool = getPool();
+        const docResult = await pool.query(
+          `SELECT id FROM strategic_documents WHERE workspace_id = $1`,
+          [workspaceId],
+        );
+        const psDocIds = new Set(docResult.rows.map((r: { id: string }) => r.id));
 
-        // Signal 1: Document provenance — actors from this PS's strategic documents
-        try {
-          const { getPool } = await import('../lib/database.js');
-          const pool = getPool();
-          const docResult = await pool.query(
-            `SELECT id FROM strategic_documents WHERE workspace_id = $1`,
-            [workspaceId],
-          );
-          const psDocIds = new Set(docResult.rows.map((r: { id: string }) => r.id));
+        if (psDocIds.size > 0) {
+          for (const actor of allActors) {
+            if (relevantIds.size >= MAX_SCOPED_ACTORS) break;
+            if (relevantIds.has(actor.id)) continue;
+            if (actor.sourceDocumentIds?.some(docId => psDocIds.has(docId))) {
+              relevantIds.add(actor.id);
+            }
+          }
+        }
+        console.log(`[graph] Signal 2 (document provenance): ${relevantIds.size} actors (${psDocIds.size} docs)`);
+      } catch (err) {
+        console.warn('[graph] Signal 2 failed:', err instanceof Error ? err.message : err);
+      }
 
-          if (psDocIds.size > 0) {
-            // Only load all actors if we need to search through them
-            if (!allActors) allActors = await actorStore.listActors();
+      // Signal 3: Scoping interview context — actors whose name/aliases match scope terms
+      try {
+        const { getProblemSetContext } = await import('../doc-intelligence/interview/interview-store.js');
+        const ctx = await getProblemSetContext(workspaceId);
+
+        if (ctx && relevantIds.size < MAX_SCOPED_ACTORS) {
+          const scopeTerms = new Set<string>();
+          for (const t of ctx.actorFocus.primaryActors) scopeTerms.add(t.toLowerCase());
+          for (const c of ctx.geographicScope.countries) scopeTerms.add(c.toLowerCase());
+          for (const r of ctx.geographicScope.regions) scopeTerms.add(r.toLowerCase());
+          if (ctx.geographicScope.specificAreas) {
+            for (const a of ctx.geographicScope.specificAreas) scopeTerms.add(a.toLowerCase());
+          }
+          if (ctx.actorFocus.alliances) {
+            for (const alliance of ctx.actorFocus.alliances) {
+              scopeTerms.add(alliance.name.toLowerCase());
+              for (const m of alliance.members) scopeTerms.add(m.toLowerCase());
+            }
+          }
+
+          // Min 4 chars to avoid false positives (prc, usa, rok match too broadly)
+          const filteredTerms = [...scopeTerms].filter(t => t.length >= 4);
+          console.log(`[graph] Scope terms: [${filteredTerms.join(', ')}]`);
+
+          if (filteredTerms.length > 0) {
             for (const actor of allActors) {
               if (relevantIds.size >= MAX_SCOPED_ACTORS) break;
               if (relevantIds.has(actor.id)) continue;
-              if (actor.sourceDocumentIds?.some(docId => psDocIds.has(docId))) {
-                relevantIds.add(actor.id);
-              }
-            }
-            console.log(`[graph] Signal 1 (docs): ${relevantIds.size} actors after ${psDocIds.size} documents`);
-          }
-        } catch (docErr) {
-          console.warn('[graph] Document-based scoping failed:', docErr instanceof Error ? docErr.message : docErr);
-        }
-
-        // Signal 2: Scoping interview context — name matching against scope terms
-        try {
-          const { getProblemSetContext } = await import('../doc-intelligence/interview/interview-store.js');
-          const ctx = await getProblemSetContext(workspaceId);
-
-          if (ctx && relevantIds.size < MAX_SCOPED_ACTORS) {
-            const scopeTerms = new Set<string>();
-            for (const t of ctx.actorFocus.primaryActors) scopeTerms.add(t.toLowerCase());
-            for (const c of ctx.geographicScope.countries) scopeTerms.add(c.toLowerCase());
-            for (const r of ctx.geographicScope.regions) scopeTerms.add(r.toLowerCase());
-            if (ctx.geographicScope.specificAreas) {
-              for (const a of ctx.geographicScope.specificAreas) scopeTerms.add(a.toLowerCase());
-            }
-            if (ctx.actorFocus.alliances) {
-              for (const alliance of ctx.actorFocus.alliances) {
-                scopeTerms.add(alliance.name.toLowerCase());
-                for (const m of alliance.members) scopeTerms.add(m.toLowerCase());
-              }
-            }
-
-            // Filter out short terms (< 4 chars) — terms like "prc", "usa", "rok"
-            // cause massive false-positive matches in a 28K node graph
-            const filteredTerms = [...scopeTerms].filter(t => t.length >= 4);
-
-            console.log(`[graph] Scope terms for ${workspaceId}: [${filteredTerms.join(', ')}]`);
-
-            if (filteredTerms.length > 0) {
-              if (!allActors) allActors = await actorStore.listActors();
-              for (const actor of allActors) {
-                if (relevantIds.size >= MAX_SCOPED_ACTORS) break;
-                if (relevantIds.has(actor.id)) continue;
-                const nameLC = actor.name.toLowerCase();
-                const aliasesLC = (actor.aliases ?? []).map(a => a.toLowerCase());
-                const allNames = [nameLC, ...aliasesLC];
-
-                // Match: actor name/alias contains a scope term (one direction only)
-                const isMatch = allNames.some(name =>
-                  filteredTerms.some(st => name.includes(st)),
-                );
-                if (isMatch) {
-                  relevantIds.add(actor.id);
-                }
-              }
-            }
-
-            console.log(`[graph] Signal 2 (interview): ${relevantIds.size} actors after term matching`);
-          } else if (!ctx) {
-            console.log(`[graph] No scoping interview for ${workspaceId}`);
-          }
-        } catch (ctxErr) {
-          console.warn('[graph] Scoping interview failed:', ctxErr instanceof Error ? ctxErr.message : ctxErr);
-        }
-
-        // Signal 3: 1-hop relationship expansion (capped)
-        if (relevantIds.size > 0 && relevantIds.size < MAX_SCOPED_ACTORS) {
-          try {
-            const connectedIds = new Set<string>();
-            const lookupIds = [...relevantIds].slice(0, 200);
-            for (const actorId of lookupIds) {
-              const rels = await relationshipStore.getActorRelationships(actorId, 'both');
-              for (const rel of rels) {
-                connectedIds.add(rel.sourceActorId);
-                connectedIds.add(rel.targetActorId);
-              }
-              if (relevantIds.size + connectedIds.size >= MAX_SCOPED_ACTORS) break;
-            }
-            for (const id of connectedIds) {
-              if (relevantIds.size >= MAX_SCOPED_ACTORS) break;
-              relevantIds.add(id);
-            }
-            console.log(`[graph] Signal 3 (1-hop): ${connectedIds.size} connected → ${relevantIds.size} total`);
-          } catch (relErr) {
-            console.warn('[graph] 1-hop expansion failed:', relErr instanceof Error ? relErr.message : relErr);
-          }
-        }
-
-        // Rebuild actors array from the combined set if enrichment added new IDs
-        if (relevantIds.size > dbScopedCount) {
-          const existingIds = new Set(actors.map(a => a.id));
-          const newIds = [...relevantIds].filter(id => !existingIds.has(id));
-          if (newIds.length > 0 && allActors) {
-            const newActors = allActors.filter(a => newIds.includes(a.id));
-            actors = [...actors, ...newActors];
-            if (!includeInfoSources) {
-              actors = actors.filter(a => a.type !== 'information_source');
+              const nameLC = actor.name.toLowerCase();
+              const aliasesLC = (actor.aliases ?? []).map(a => a.toLowerCase());
+              // Actor name/alias must contain a scope term (one-direction only)
+              const isMatch = [nameLC, ...aliasesLC].some(name =>
+                filteredTerms.some(st => name.includes(st)),
+              );
+              if (isMatch) relevantIds.add(actor.id);
             }
           }
-          console.log(`[graph] Enriched: ${actors.length} actors (was ${dbScopedCount} from DB)`);
+          console.log(`[graph] Signal 3 (interview terms): ${relevantIds.size} actors`);
+        } else {
+          console.log(`[graph] No scoping interview for ${workspaceId}`);
         }
       } catch (err) {
-        console.warn('[graph] Scoping enrichment error:', err instanceof Error ? err.message : err);
-        // DB-scoped actors are still valid — don't lose them
+        console.warn('[graph] Signal 3 failed:', err instanceof Error ? err.message : err);
       }
-    }
 
-    // HARD CAP — no matter what happened above, never return more than MAX_SCOPED_ACTORS
-    if (!skipScopeFilter && actors.length > MAX_SCOPED_ACTORS) {
-      console.log(`[graph] Hard cap: ${actors.length} → ${MAX_SCOPED_ACTORS}`);
-      actors = actors.slice(0, MAX_SCOPED_ACTORS);
-    }
+      // Signal 4: 1-hop relationship expansion (capped)
+      if (relevantIds.size > 0 && relevantIds.size < MAX_SCOPED_ACTORS) {
+        try {
+          const seedIds = [...relevantIds].slice(0, 150);
+          const connectedIds = new Set<string>();
+          for (const actorId of seedIds) {
+            if (relevantIds.size + connectedIds.size >= MAX_SCOPED_ACTORS) break;
+            const rels = await relationshipStore.getActorRelationships(actorId, 'both');
+            for (const rel of rels) {
+              connectedIds.add(rel.sourceActorId);
+              connectedIds.add(rel.targetActorId);
+            }
+          }
+          for (const id of connectedIds) {
+            if (relevantIds.size >= MAX_SCOPED_ACTORS) break;
+            relevantIds.add(id);
+          }
+          console.log(`[graph] Signal 4 (1-hop): +${connectedIds.size} → ${relevantIds.size} total`);
+        } catch (err) {
+          console.warn('[graph] Signal 4 failed:', err instanceof Error ? err.message : err);
+        }
+      }
 
-    // Fallback: if we got zero actors from scoping, cap at HARD_CAP_FALLBACK from the full graph
-    if (!skipScopeFilter && actors.length === 0) {
-      console.log(`[graph] No scoped actors — fallback: loading ${HARD_CAP_FALLBACK} from full graph`);
-      const fallbackActors = await actorStore.listActors();
-      actors = (includeInfoSources ? fallbackActors : fallbackActors.filter(a => a.type !== 'information_source'))
-        .slice(0, HARD_CAP_FALLBACK);
+      // Build the scoped actor list
+      if (relevantIds.size > 0) {
+        actors = allActors.filter(a => relevantIds.has(a.id));
+      } else {
+        // No signals matched — take first HARD_CAP_FALLBACK actors as a baseline
+        console.log(`[graph] No scoping signals matched — fallback ${HARD_CAP_FALLBACK} actors`);
+        actors = allActors.slice(0, HARD_CAP_FALLBACK);
+      }
+
+      if (!includeInfoSources) {
+        actors = actors.filter(a => a.type !== 'information_source');
+      }
+
+      // HARD CAP — absolute maximum, no exceptions, no matter what
+      if (actors.length > MAX_SCOPED_ACTORS) {
+        console.log(`[graph] Hard cap: ${actors.length} → ${MAX_SCOPED_ACTORS}`);
+        actors = actors.slice(0, MAX_SCOPED_ACTORS);
+      }
+
+      console.log(`[graph] Final scoped result: ${actors.length} actors for PS ${workspaceId}`);
     }
 
     // Temporal filtering
