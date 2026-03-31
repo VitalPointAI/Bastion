@@ -698,6 +698,89 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// Diagnostic: show scoping signal breakdown for a problem set
+router.get('/workspaces/:id/scope-debug', async (req: Request, res: Response) => {
+  try {
+    const workspaceId = req.params.id as string;
+    const allActors = await actorStore.listActors();
+    const total = allActors.length;
+
+    // Signal 1: containerIds / workspaceId
+    let containerMatch = 0;
+    let workspaceMatch = 0;
+    const sampleContainerIds: string[][] = [];
+    const sampleWorkspaceIds: (string | undefined)[] = [];
+    for (const actor of allActors.slice(0, 20)) {
+      sampleContainerIds.push(actor.containerIds ?? []);
+      sampleWorkspaceIds.push(actor.workspaceId);
+    }
+    for (const actor of allActors) {
+      if (Array.isArray(actor.containerIds) && actor.containerIds.includes(workspaceId)) containerMatch++;
+      if (actor.workspaceId === workspaceId) workspaceMatch++;
+    }
+
+    // Signal 2: document provenance
+    let docMatch = 0;
+    let docCount = 0;
+    try {
+      const { getPool } = await import('../lib/database.js');
+      const pool = getPool();
+      const docResult = await pool.query(`SELECT id FROM strategic_documents WHERE workspace_id = $1`, [workspaceId]);
+      const psDocIds = new Set(docResult.rows.map((r: { id: string }) => r.id));
+      docCount = psDocIds.size;
+      for (const actor of allActors) {
+        if (actor.sourceDocumentIds?.some(docId => psDocIds.has(docId))) docMatch++;
+      }
+    } catch { /* */ }
+
+    // Signal 3: scoping interview
+    let interviewMatch = 0;
+    let interviewTerms: string[] = [];
+    try {
+      const { getProblemSetContext } = await import('../doc-intelligence/interview/interview-store.js');
+      const ctx = await getProblemSetContext(workspaceId);
+      if (ctx) {
+        const scopeTerms = new Set<string>();
+        for (const t of ctx.actorFocus.primaryActors) scopeTerms.add(t.toLowerCase());
+        for (const c of ctx.geographicScope.countries) scopeTerms.add(c.toLowerCase());
+        for (const r of ctx.geographicScope.regions) scopeTerms.add(r.toLowerCase());
+        if (ctx.geographicScope.specificAreas) for (const a of ctx.geographicScope.specificAreas) scopeTerms.add(a.toLowerCase());
+        if (ctx.actorFocus.alliances) for (const al of ctx.actorFocus.alliances) { scopeTerms.add(al.name.toLowerCase()); for (const m of al.members) scopeTerms.add(m.toLowerCase()); }
+        interviewTerms = [...scopeTerms].filter(t => t.length >= 4);
+        for (const actor of allActors) {
+          const nameLC = actor.name.toLowerCase();
+          const aliasesLC = (actor.aliases ?? []).map(a => a.toLowerCase());
+          if ([nameLC, ...aliasesLC].some(name => interviewTerms.some(st => name.includes(st)))) interviewMatch++;
+        }
+      }
+    } catch { /* */ }
+
+    res.json({
+      workspaceId,
+      totalActors: total,
+      signals: {
+        containerIds: containerMatch,
+        workspaceId: workspaceMatch,
+        combined: new Set([
+          ...allActors.filter(a => Array.isArray(a.containerIds) && a.containerIds.includes(workspaceId)).map(a => a.id),
+          ...allActors.filter(a => a.workspaceId === workspaceId).map(a => a.id),
+        ]).size,
+        documentProvenance: { documents: docCount, actorsMatched: docMatch },
+        interviewTerms: { terms: interviewTerms, actorsMatched: interviewMatch },
+      },
+      sampleActors: allActors.slice(0, 5).map(a => ({
+        id: a.id,
+        name: a.name,
+        containerIds: a.containerIds,
+        workspaceId: a.workspaceId,
+        sourceDocumentIds: a.sourceDocumentIds?.slice(0, 3),
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
 // Get graph data for a workspace (nodes and edges for visualization)
 router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
   try {
