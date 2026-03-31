@@ -151,17 +151,22 @@ export class RoutineService {
       ? `0 ${opts.cron}`
       : opts.cron;
 
+    // Set next_fire_at so Ironclaw's cron ticker picks up the routine immediately.
+    // The ticker only processes routines with a non-null next_fire_at <= NOW().
+    // We set it to NOW() + 30s so the ticker picks it up on its next 15s poll cycle.
     await pool.query(`
       INSERT INTO routines (
         name, description, user_id, enabled,
         trigger_type, trigger_config,
         action_type, action_config,
-        cooldown_secs, max_concurrent
+        cooldown_secs, max_concurrent,
+        next_fire_at
       ) VALUES (
         $1, $2, $3, true,
         'cron', $4::jsonb,
         'lightweight', $5::jsonb,
-        $6, 1
+        $6, 1,
+        NOW() + INTERVAL '30 seconds'
       )
       ON CONFLICT (user_id, name)
       DO UPDATE SET
@@ -170,6 +175,7 @@ export class RoutineService {
         trigger_config = EXCLUDED.trigger_config,
         action_config = EXCLUDED.action_config,
         cooldown_secs = EXCLUDED.cooldown_secs,
+        next_fire_at = COALESCE(routines.next_fire_at, NOW() + INTERVAL '30 seconds'),
         updated_at = NOW()
     `, [
       opts.name,
