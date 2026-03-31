@@ -228,6 +228,17 @@ app.get('/api/ironclaw/diag', async (_req, res) => {
   }
 });
 
+// Force re-initialize Ironclaw routines + trigger immediate monitoring run
+app.post('/api/ironclaw/diag/init', async (_req, res) => {
+  try {
+    const { ironclawService } = await import('./ironclaw/ironclaw-service.js');
+    await ironclawService.initializeRoutines();
+    res.json({ status: 'routines initialized' });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 // Mount API routes
 // Wire NEAR account funding to package registration completion:
 // Intercept /register/finish responses and trigger fundAccount on success
