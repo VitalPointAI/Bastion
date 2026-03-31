@@ -167,15 +167,28 @@ app.get('/api/ironclaw/diag', async (_req, res) => {
       const pg = await import('pg');
       const tmpPool = new pg.default.Pool({ connectionString: ironclawDbUrl, max: 1 });
       try {
-        const rr = await tmpPool.query<{ name: string; enabled: boolean }>(
-          `SELECT name, enabled FROM routines WHERE enabled = true ORDER BY name`,
+        const rr = await tmpPool.query(
+          `SELECT name, enabled, last_run_at, next_fire_at, run_count,
+                  consecutive_failures, trigger_config, action_config
+           FROM routines WHERE enabled = true ORDER BY name`,
         );
         routineCount = rr.rows.length;
-        routineNames = rr.rows.map((r) => r.name);
+        routineNames = rr.rows.map((r: Record<string, unknown>) => r.name as string);
 
         // Check MCP config
         const mcp = await tmpPool.query<{ value: unknown }>(
           `SELECT value FROM settings WHERE key = 'mcp_servers'`,
+        );
+
+        // Check heartbeat config
+        const hb = await tmpPool.query(
+          `SELECT key, value FROM settings WHERE key LIKE 'heartbeat%'`,
+        );
+
+        // Check routine_runs (last 5)
+        const runs = await tmpPool.query(
+          `SELECT routine_id, status, started_at, finished_at
+           FROM routine_runs ORDER BY started_at DESC LIMIT 5`,
         );
 
         // Check activity count from bastion DB
@@ -188,7 +201,9 @@ app.get('/api/ironclaw/diag', async (_req, res) => {
         res.json({
           ironclaw_healthy: healthy,
           mcp_config: mcp.rows[0]?.value ?? null,
-          routines: { count: routineCount, names: routineNames },
+          heartbeat_settings: Object.fromEntries(hb.rows.map((r: Record<string, unknown>) => [r.key, r.value])),
+          routines: { count: routineCount, details: rr.rows },
+          recent_routine_runs: runs.rows,
           activity_entries: activityCount,
           database_url_ironclaw: !!ironclawDbUrl,
         });
