@@ -112,6 +112,47 @@ configure_ironclaw() {
 configure_ironclaw
 
 # ---------------------------------------------------------------------------
+# Register built-in routines via CLI (creates full_job routines with tool
+# access). These persist in the DB — idempotent on re-runs since CLI
+# rejects duplicate names with a non-fatal error.
+# ---------------------------------------------------------------------------
+register_routines() {
+  echo "[entrypoint] Registering built-in routines..."
+
+  $IRONCLAW_BIN routines create \
+    --name "autonomous_monitoring" \
+    --schedule "0 */30 * * * *" \
+    --description "Autonomous operational monitoring: conflict detection, gap research, PIR checking, situation assessment" \
+    --prompt "Run autonomous operational monitoring. Check active problem sets for: (1) contradictions or conflicts in the knowledge graph, (2) intelligence gaps that need research, (3) PIR/IR that may have been answered by new data, (4) changes in situation that warrant a draft assessment. Use bastion tools to query current state. Log any findings as autonomous activity entries using bastion.ironclaw.log_activity." \
+    2>/dev/null && echo "[entrypoint] Registered: autonomous_monitoring" || echo "[entrypoint] autonomous_monitoring already exists or failed"
+
+  $IRONCLAW_BIN routines create \
+    --name "bastion_knowledge_sync" \
+    --schedule "0 0 */6 * * *" \
+    --description "Sync shared workspace data — problem sets, operations, tools, agent team" \
+    --prompt "Review the current BASTION_CONTEXT.md in your workspace. Use the bastion.problem_set.list tool to check for any new or updated operations. Report any changes you notice." \
+    2>/dev/null && echo "[entrypoint] Registered: bastion_knowledge_sync" || echo "[entrypoint] bastion_knowledge_sync already exists or failed"
+
+  $IRONCLAW_BIN routines create \
+    --name "daily_situation_brief" \
+    --schedule "0 0 6 * * *" \
+    --description "Generate morning situation brief — overnight intel, pending decisions, priority actions" \
+    --prompt "Generate a morning situation brief. Check active problem sets for: (1) new intelligence or OSINT events since last brief, (2) pending decisions requiring commander attention, (3) priority actions for today. Format as a concise SITREP." \
+    2>/dev/null && echo "[entrypoint] Registered: daily_situation_brief" || echo "[entrypoint] daily_situation_brief already exists or failed"
+
+  $IRONCLAW_BIN routines create \
+    --name "weekly_capability_update" \
+    --schedule "0 0 9 * * 1" \
+    --description "Weekly review of available BASTION tools, agents, and system changes" \
+    --prompt "Review the available BASTION tools and agents. List any new capabilities, updated tools, or system changes since last check. Summarize in a brief capability report." \
+    2>/dev/null && echo "[entrypoint] Registered: weekly_capability_update" || echo "[entrypoint] weekly_capability_update already exists or failed"
+
+  echo "[entrypoint] Routine registration complete"
+}
+
+register_routines
+
+# ---------------------------------------------------------------------------
 # Start the agent
 # ---------------------------------------------------------------------------
 $IRONCLAW_BIN run --no-onboard &
