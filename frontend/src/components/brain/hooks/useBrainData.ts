@@ -1,16 +1,14 @@
 /**
- * useBrainData - data hook that fetches all four node types and merges them into
- * a single BrainGraphData structure ready for ForceGraph2D rendering.
+ * useBrainData - data hook that fetches brain graph data and merges into
+ * a single BrainGraphData structure ready for ForceGraph rendering.
  *
- * Four source endpoints:
- *   1. GET /api/graph/workspaces/:id/graph        → actor nodes + relationship edges
- *   2. GET /api/graph/actors?workspaceId=:id      → actor details with categories
- *   3. GET /api/graph/validity/objectives?workspaceId=:id → strategic objectives
- *   4. GET /api/doc-intelligence/documents/:id   → strategic documents
+ * Three source endpoints:
+ *   1. GET /api/graph/workspaces/:id/graph        → scoped actor nodes (with full detail) + edges
+ *   2. GET /api/graph/validity/objectives          → strategic objectives
+ *   3. GET /api/doc-intelligence/documents/:id     → strategic documents
  *
- * NOTE: The graph API uses the parameter name "workspaceId" — this equals the
- * problemSetId passed to this hook (BASTION renamed "workspaces" → "problem sets"
- * in the UI, but the REST routes still use the legacy term).
+ * The graph endpoint is the SINGLE source of actor nodes. Scoping is enforced
+ * server-side with a hard cap of 2000 actors per problem set.
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -33,6 +31,13 @@ interface RawGraphNode {
   type?: string;
   natoSourceReliability?: string | null;
   natoInformationCredibility?: number | null;
+  // Actor detail fields (included inline by the graph endpoint)
+  actor_category?: string;
+  actor_type?: string;
+  aliases?: string[];
+  sourceDocumentIds?: string[];
+  validity_score?: number;
+  attributes?: Record<string, unknown>;
 }
 
 interface RawGraphEdge {
@@ -60,10 +65,6 @@ interface RawActor {
   validity_score?: number;
   natoSourceReliability?: string | null;
   natoInformationCredibility?: number | null;
-}
-
-interface RawActorsResponse {
-  actors?: RawActor[];
 }
 
 interface RawObjective {
@@ -453,71 +454,53 @@ export function useBrainData(problemSetId: string, atTime?: string | null, scope
         ? `${API_BASE}/api/graph/workspaces/${encodeURIComponent(problemSetId)}/graph-with-parent`
         : `${API_BASE}/api/graph/workspaces/${encodeURIComponent(problemSetId)}/graph`;
 
-    // Build supplementary URLs that respect scope.
-    // For 'global' scope, omit the workspaceId filter so we get all actors/objectives.
-    // For 'withParent', we still use the local PS for actors/objectives/docs since the
-    // graph-with-parent endpoint already merges parent nodes into the graph response.
-    const actorsUrl = scope === 'global'
-      ? `${API_BASE}/api/graph/actors`
-      : `${API_BASE}/api/graph/actors?workspaceId=${encodeURIComponent(problemSetId)}`;
+    // Supplementary URLs for objectives and documents
     const objectivesUrl = scope === 'global'
       ? `${API_BASE}/api/graph/validity/objectives`
       : `${API_BASE}/api/graph/validity/objectives?workspaceId=${encodeURIComponent(problemSetId)}`;
     const documentsUrl = `${API_BASE}/api/doc-intelligence/documents/${encodeURIComponent(problemSetId)}`;
 
-    // Fetch all four sources in parallel
+    // Fetch graph (with inline actor details), objectives, and documents.
+    // The graph endpoint is the SINGLE source of actor nodes — no separate
+    // /actors fetch needed. This ensures scoping is enforced in one place.
     Promise.all([
       safeFetch<RawGraphResponse>(graphUrl),
-      safeFetch<RawActorsResponse>(actorsUrl),
       safeFetch<RawObjectivesResponse>(objectivesUrl),
       safeFetch<RawDocumentsResponse>(documentsUrl),
     ])
-      .then(([graphResp, actorsResp, objectivesResp, documentsResp]) => {
+      .then(([graphResp, objectivesResp, documentsResp]) => {
         if (cancelled) return;
 
         const nodes: BrainNode[] = [];
         const nodeIds = new Set<string>();
 
-        // ── Build an actor detail lookup (by id) ──────────────────────────────
-        const actorMap = new Map<string, RawActor>();
-        for (const a of actorsResp?.actors ?? []) {
-          actorMap.set(a.id, a);
-        }
-
-        // ── 1. Actor nodes from graph endpoint + detail from actors endpoint ──
+        // ── 1. Actor nodes from graph endpoint (includes full detail) ─────────
         for (const rawNode of graphResp?.nodes ?? []) {
           if (nodeIds.has(rawNode.id)) continue;
-          const detail = actorMap.get(rawNode.id);
-          const category = toActorCategory(detail?.actor_category ?? rawNode.type);
-          const conf = detail ? actorConfidence(detail) : 0.3;
-          const actorDesc = detail?.actor_type
-            ? `${detail.actor_type}${detail.attributes?.role ? ` — ${detail.attributes.role}` : ''}`
+          const category = toActorCategory(rawNode.actor_category ?? rawNode.type);
+          const conf = rawNode.attributes ? actorConfidence(rawNode as unknown as RawActor) : 0.3;
+          const actorDesc = rawNode.actor_type
+            ? `${rawNode.actor_type}${rawNode.attributes?.role ? ` — ${rawNode.attributes.role}` : ''}`
             : undefined;
           nodes.push({
             id: rawNode.id,
-            label: detail?.name ?? rawNode.label ?? rawNode.name ?? rawNode.id,
+            label: rawNode.name ?? rawNode.label ?? rawNode.id,
             type: 'entity',
             actorCategory: category,
-            dimeCategory: toDimeCategory(detail?.actor_type ?? rawNode.type, actorDesc),
+            dimeCategory: toDimeCategory(rawNode.actor_type ?? rawNode.type, actorDesc),
             confidence: conf,
             confidenceTier: computeConfidenceTier(conf),
-            sourceDocumentIds: detail?.sourceDocumentIds,
-            validityScore: detail?.validity_score,
-            aliases: detail?.aliases,
-            role: detail?.attributes?.role as string | undefined,
+            sourceDocumentIds: rawNode.sourceDocumentIds,
+            validityScore: rawNode.validity_score,
+            aliases: rawNode.aliases,
+            role: rawNode.attributes?.role as string | undefined,
             description: actorDesc,
             createdAt: new Date().toISOString(),
-            natoSourceReliability: detail?.natoSourceReliability ?? rawNode.natoSourceReliability,
-            natoInformationCredibility: detail?.natoInformationCredibility ?? rawNode.natoInformationCredibility,
+            natoSourceReliability: rawNode.natoSourceReliability,
+            natoInformationCredibility: rawNode.natoInformationCredibility,
           });
           nodeIds.add(rawNode.id);
         }
-
-        // NOTE: Previously added all actors from the actors endpoint even if
-        // not in the graph response. This defeated the backend scoping filter
-        // (which reduces actors based on the problem set's scoping context).
-        // The actors endpoint is now used ONLY for enrichment of nodes already
-        // returned by the graph endpoint — not as a secondary node source.
 
         // ── 2. Objective nodes ─────────────────────────────────────────────────
         const midlifeCategorySet = new Set<string>();

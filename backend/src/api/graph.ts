@@ -1014,18 +1014,32 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
       }
     }
 
-    // Build nodes — non-OSINT actors as-is, OSINT events as clusters
-    const nodes = nonOsintActors.map(actor => ({
-      id: actor.id,
-      label: actor.name,
-      type: actor.type,
-      jsonldType: actor.jsonldType ?? 'cco:Agent',
-      confidence: actor.confidence ?? 0.75,
-      confidenceTier: getConfidenceTierForValue(actor.confidence ?? 0.75),
-      workspaceId: actor.workspaceId,
-      natoSourceReliability: actor.natoSourceReliability ?? null,
-      natoInformationCredibility: actor.natoInformationCredibility ?? null,
-    }));
+    // Build nodes — non-OSINT actors as-is, OSINT events as clusters.
+    // Include full actor detail so the frontend doesn't need a second fetch.
+    const nodes = nonOsintActors.map(actor => {
+      const attrs = typeof actor.attributes === 'string'
+        ? JSON.parse(actor.attributes) as Record<string, unknown>
+        : (actor.attributes ?? {}) as Record<string, unknown>;
+      return {
+        id: actor.id,
+        label: actor.name,
+        name: actor.name,
+        type: actor.type,
+        jsonldType: actor.jsonldType ?? 'cco:Agent',
+        confidence: actor.confidence ?? 0.75,
+        confidenceTier: getConfidenceTierForValue(actor.confidence ?? 0.75),
+        workspaceId: actor.workspaceId,
+        natoSourceReliability: actor.natoSourceReliability ?? null,
+        natoInformationCredibility: actor.natoInformationCredibility ?? null,
+        // Actor detail fields (previously required a separate /actors fetch)
+        actor_category: (attrs.actor_category as string | undefined) ?? undefined,
+        actor_type: (attrs.actor_type as string | undefined) ?? actor.type,
+        aliases: actor.aliases ?? [],
+        sourceDocumentIds: actor.sourceDocumentIds ?? [],
+        validity_score: undefined,
+        attributes: attrs,
+      };
+    });
 
     // Create cluster nodes for OSINT event groups
     const clusterMemberIds = new Set<string>();
@@ -1036,6 +1050,7 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
           nodes.push({
             id: actor.id,
             label: actor.name,
+            name: actor.name,
             type: actor.type,
             jsonldType: 'cco:InformationBearingEntity',
             confidence: actor.confidence ?? 0.65,
@@ -1043,6 +1058,12 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
             workspaceId: actor.workspaceId,
             natoSourceReliability: actor.natoSourceReliability ?? null,
             natoInformationCredibility: actor.natoInformationCredibility ?? null,
+            actor_category: undefined,
+            actor_type: actor.type,
+            aliases: [],
+            sourceDocumentIds: [],
+            validity_score: undefined,
+            attributes: {},
           });
         }
       } else {
@@ -1051,13 +1072,20 @@ router.get('/workspaces/:id/graph', async (req: Request, res: Response) => {
         nodes.push({
           id: clusterId,
           label: `${sourceName} (${eventActors.length} events)`,
-          type: 'organization' as const, // Clusters render as entity nodes in the graph
+          name: `${sourceName} (${eventActors.length} events)`,
+          type: 'organization' as const,
           jsonldType: 'cco:InformationBearingEntity',
           confidence: 0.65,
           confidenceTier: 'medium' as const,
           workspaceId: workspaceId,
           natoSourceReliability: null,
           natoInformationCredibility: null,
+          actor_category: undefined,
+          actor_type: 'organization',
+          aliases: [],
+          sourceDocumentIds: [],
+          validity_score: undefined,
+          attributes: {},
         });
         // Track which member IDs are clustered (for edge remapping)
         for (const actor of eventActors) {
