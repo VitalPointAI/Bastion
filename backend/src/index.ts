@@ -149,8 +149,65 @@ const auth = createAnonAuth({
 // Register the auth instance so route files can use requireAuth via auth-instance.ts
 setAuthInstance(auth.requireAuth, auth.middleware);
 
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// Ironclaw diagnostic — unauthenticated, returns MCP + routine + heartbeat status
+app.get('/api/ironclaw/diag', async (_req, res) => {
+  try {
+    const { ironclawClient } = await import('./ironclaw/ironclaw-client.js');
+    const healthy = await ironclawClient.healthCheck();
+
+    let routineCount = 0;
+    let routineNames: string[] = [];
+    let activityCount = 0;
+    const ironclawDbUrl = process.env.DATABASE_URL_IRONCLAW ?? process.env.IRONCLAW_DB_URL;
+    if (ironclawDbUrl) {
+      const pg = await import('pg');
+      const tmpPool = new pg.default.Pool({ connectionString: ironclawDbUrl, max: 1 });
+      try {
+        const rr = await tmpPool.query<{ name: string; enabled: boolean }>(
+          `SELECT name, enabled FROM routines WHERE enabled = true ORDER BY name`,
+        );
+        routineCount = rr.rows.length;
+        routineNames = rr.rows.map((r) => r.name);
+
+        // Check MCP config
+        const mcp = await tmpPool.query<{ value: unknown }>(
+          `SELECT value FROM settings WHERE key = 'mcp_servers'`,
+        );
+
+        // Check activity count from bastion DB
+        const bastionPool = (await import('./lib/database.js')).getPool();
+        const ac = await bastionPool.query(
+          `SELECT COUNT(*) as cnt FROM ironclaw_autonomous_activity`,
+        ).catch(() => ({ rows: [{ cnt: 0 }] }));
+        activityCount = Number(ac.rows[0].cnt);
+
+        res.json({
+          ironclaw_healthy: healthy,
+          mcp_config: mcp.rows[0]?.value ?? null,
+          routines: { count: routineCount, names: routineNames },
+          activity_entries: activityCount,
+          database_url_ironclaw: !!ironclawDbUrl,
+        });
+      } finally {
+        await tmpPool.end();
+      }
+    } else {
+      res.json({
+        ironclaw_healthy: healthy,
+        mcp_config: null,
+        routines: { count: 0, names: [] },
+        activity_entries: 0,
+        database_url_ironclaw: false,
+        error: 'DATABASE_URL_IRONCLAW not configured',
+      });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
 });
 
 // Mount API routes
