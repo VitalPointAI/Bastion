@@ -185,10 +185,12 @@ app.get('/api/ironclaw/diag', async (_req, res) => {
           `SELECT key, value FROM settings WHERE key LIKE 'heartbeat%'`,
         );
 
-        // Check routine_runs (last 5)
+        // Check routine_runs schema + last 5
+        const runCols = await tmpPool.query(
+          `SELECT column_name FROM information_schema.columns WHERE table_name = 'routine_runs' ORDER BY ordinal_position`,
+        );
         const runs = await tmpPool.query(
-          `SELECT routine_id, status, started_at, finished_at
-           FROM routine_runs ORDER BY started_at DESC LIMIT 5`,
+          `SELECT * FROM routine_runs ORDER BY started_at DESC LIMIT 5`,
         );
 
         // Check activity count from bastion DB
@@ -203,6 +205,7 @@ app.get('/api/ironclaw/diag', async (_req, res) => {
           mcp_config: mcp.rows[0]?.value ?? null,
           heartbeat_settings: Object.fromEntries(hb.rows.map((r: Record<string, unknown>) => [r.key, r.value])),
           routines: { count: routineCount, details: rr.rows },
+          routine_runs_schema: runCols.rows.map((r: Record<string, unknown>) => r.column_name),
           recent_routine_runs: runs.rows,
           activity_entries: activityCount,
           database_url_ironclaw: !!ironclawDbUrl,
