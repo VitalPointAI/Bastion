@@ -380,8 +380,10 @@ class FeedPoller {
         if (dup.rows.length > 0) continue;
       }
 
-      // Add workspace context from feed config
-      item.workspaceId = feed.problemSetId;
+      // Add workspace context from feed config.
+      // Global feeds produce actors for the shared graph — NOT tagged to any PS.
+      // Only local feeds tag actors with the problem set's ID.
+      item.workspaceId = feed.scope === 'global' ? undefined : feed.problemSetId;
 
       try {
         const storedEvent = await osintEventStore.createEvent(item);
