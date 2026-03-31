@@ -509,13 +509,22 @@ export function BrainVisualization({
   useEffect(() => {
     nodeObjCacheRef.current.clear();
     linkSpriteCacheRef.current.clear();
-    // Reheat the d3 force simulation so the graph re-renders with new data
-    // (ForceGraph3D doesn't always restart the simulation on graphData changes)
     const fg = fgRef.current;
     if (fg) {
       try { fg.d3ReheatSimulation(); } catch { /* graph not ready yet */ }
     }
   }, [data, fgRef]);
+
+  // When heat map mode toggles, clear the node cache so nodeThreeObject
+  // rebuilds each node with the new color scheme on next frame
+  useEffect(() => {
+    nodeObjCacheRef.current.clear();
+    // Nudge ForceGraph into re-calling nodeThreeObject by reheating
+    const fg = fgRef.current;
+    if (fg) {
+      try { fg.d3ReheatSimulation(); } catch { /* not ready */ }
+    }
+  }, [heatMapMode, fgRef]);
 
   // ── 3D node rendering (with per-node object caching) ────────────────────────
   //
