@@ -1,20 +1,14 @@
 /* COP Phase Slider - Temporal playback controls */
 
 .cop-phase-slider {
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  background: rgba(17, 24, 39, 0.92);
-  border: 1px solid #374151;
-  border-radius: 8px;
-  padding: 10px 16px;
+  position: relative;
+  margin: 0 auto;
+  background: transparent;
+  padding: 4px 0;
   min-width: 480px;
   max-width: 720px;
   color: #d1d5db;
   font-size: 12px;
-  backdrop-filter: blur(4px);
 }
 
 /* Phase label row */
