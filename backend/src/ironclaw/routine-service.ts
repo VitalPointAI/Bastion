@@ -164,7 +164,7 @@ export class RoutineService {
       ) VALUES (
         $1, $2, $3, true,
         'cron', $4::jsonb,
-        'lightweight', $5::jsonb,
+        'full_job', $5::jsonb,
         $6, 1,
         NOW() + INTERVAL '30 seconds'
       )
