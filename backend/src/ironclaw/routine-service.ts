@@ -164,7 +164,7 @@ export class RoutineService {
       ) VALUES (
         $1, $2, $3, true,
         'cron', $4::jsonb,
-        'full_job', $5::jsonb,
+        'lightweight', $5::jsonb,
         $6, 1,
         NOW() + INTERVAL '30 seconds'
       )
@@ -183,7 +183,12 @@ export class RoutineService {
       opts.description,
       opts.userId,
       JSON.stringify({ schedule: sixFieldCron }),
-      JSON.stringify({ prompt: opts.prompt }),
+      JSON.stringify({
+        prompt: opts.prompt,
+        max_tool_rounds: 5,
+        tools_enabled: true,
+        max_tokens: 4096,
+      }),
       opts.cooldownSecs ?? 300,
     ]);
 
