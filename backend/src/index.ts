@@ -647,81 +647,71 @@ server.listen(port, async () => {
   //   console.warn('Ironclaw gap filler failed to start (non-fatal):', error);
   // }
 
-  // One-time migration: untag actors from global-scoped OSINT feeds.
-  // Previously feed-poller tagged ALL actors with the PS ID regardless of feed scope.
-  // This removes containerIds/workspaceId from actors that came from global feeds
-  // so the brain scoping correctly shows only locally-relevant actors.
+  // One-time migration v2: Clear ALL actor containerIds/workspaceId.
+  //
+  // Previous feed-poller tagged every actor with the PS ID regardless of feed
+  // scope, making brain scoping match everything. Since we can't reliably
+  // distinguish local vs global feed events in the data, we clear all tags.
+  //
+  // The brain scoping endpoint does NOT depend on containerIds/workspaceId
+  // as its only signal — it also uses:
+  //   - Document provenance (sourceDocumentIds → strategic_documents)
+  //   - Scoping interview terms (actor name matching)
+  //   - 1-hop relationship expansion
+  //
+  // Going forward, only local-scoped feeds set workspaceId on new actors.
+  // Existing actors in the graph remain discoverable via the other signals.
   try {
     const pool = (await import('./lib/database.js')).getPool();
-    const migrationKey = 'migration_untag_global_feed_actors_v1';
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bastion_migrations (
+        key TEXT PRIMARY KEY, completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    const migrationKey = 'migration_clear_actor_ps_tags_v2';
     const already = await pool.query(
       `SELECT 1 FROM bastion_migrations WHERE key = $1`, [migrationKey],
     ).catch(() => ({ rows: [] }));
 
     if (already.rows.length === 0) {
-      console.log('[migration] Untagging actors from global-scoped OSINT feeds...');
+      console.log('[migration-v2] Clearing all actor PS tagging...');
+      const { executeWriteQuery, executeReadQuery } = await import('./graph/neo4j-client.js');
 
-      // Ensure migrations table exists
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS bastion_migrations (
-          key TEXT PRIMARY KEY,
-          completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
+      // Clear containerIds and workspaceId from all actors
+      const clearResult = await executeWriteQuery(`
+        MATCH (a:Actor)
+        WHERE size(a.containerIds) > 0 OR a.workspaceId IS NOT NULL
+        SET a.containerIds = [], a.workspaceId = null
+        RETURN count(a) AS cleared
       `);
+      const cleared = clearResult.records[0]?.get('cleared')?.toNumber?.() ?? clearResult.records[0]?.get('cleared') ?? 0;
 
-      // Find all global-scoped feeds and their problem set IDs
-      const globalFeeds = await pool.query<{ id: string; problem_set_id: string }>(
-        `SELECT id, problem_set_id FROM osint_feed_config WHERE scope = 'global'`,
+      // Re-tag actors from strategic documents (these are always PS-specific)
+      const docs = await pool.query<{ id: string; workspace_id: string }>(
+        `SELECT id, workspace_id FROM strategic_documents WHERE workspace_id IS NOT NULL`,
       );
-
-      if (globalFeeds.rows.length > 0) {
-        // Find event IDs from global feeds
-        const globalFeedIds = globalFeeds.rows.map(f => f.id);
-        const psIds = [...new Set(globalFeeds.rows.map(f => f.problem_set_id))];
-
-        // Get event IDs that came from global feeds (feedId stored in metadata)
-        const events = await pool.query<{ id: string }>(
-          `SELECT id FROM osint_events WHERE metadata->>'feedId' = ANY($1)`,
-          [globalFeedIds],
-        );
-        const globalEventIds = events.rows.map(e => e.id);
-        console.log(`[migration] Found ${globalFeeds.rows.length} global feeds, ${globalEventIds.length} events, PS IDs: [${psIds.join(', ')}]`);
-
-        if (globalEventIds.length > 0) {
-          // In Neo4j: for actors whose sourceDocumentIds contain global feed events,
-          // remove the PS ID from containerIds and clear workspaceId
-          const { executeWriteQuery } = await import('./graph/neo4j-client.js');
-
-          for (const psId of psIds) {
-            const result = await executeWriteQuery(`
-              MATCH (a:Actor)
-              WHERE a.workspaceId = $psId OR $psId IN a.containerIds
-              WITH a, [docId IN a.sourceDocumentIds WHERE docId IN $globalEventIds] AS globalDocs
-              WHERE size(globalDocs) > 0
-              WITH a,
-                   [docId IN a.sourceDocumentIds WHERE NOT docId IN $globalEventIds] AS localDocs
-              WITH a, localDocs,
-                   CASE WHEN size(localDocs) = 0 THEN true ELSE false END AS fullyGlobal
-              SET a.containerIds = [cid IN a.containerIds WHERE cid <> $psId],
-                  a.workspaceId = CASE WHEN a.workspaceId = $psId AND fullyGlobal THEN null ELSE a.workspaceId END
-              RETURN count(a) AS updated
-            `, { psId, globalEventIds });
-
-            const updated = result.records[0]?.get('updated')?.toNumber?.() ?? result.records[0]?.get('updated') ?? 0;
-            console.log(`[migration] Untagged ${updated} actors from PS ${psId}`);
-          }
-        }
-      } else {
-        console.log('[migration] No global-scoped feeds found — skipping');
+      let docTagged = 0;
+      for (const doc of docs.rows) {
+        const r = await executeWriteQuery(`
+          MATCH (a:Actor)
+          WHERE $docId IN a.sourceDocumentIds
+          SET a.containerIds = [$psId], a.workspaceId = $psId
+          RETURN count(a) AS tagged
+        `, { psId: doc.workspace_id, docId: doc.id });
+        docTagged += r.records[0]?.get('tagged')?.toNumber?.() ?? r.records[0]?.get('tagged') ?? 0;
       }
+
+      const totalResult = await executeReadQuery(`MATCH (a:Actor) RETURN count(a) AS total`);
+      const total = totalResult.records[0]?.get('total')?.toNumber?.() ?? 0;
+      console.log(`[migration-v2] Cleared ${cleared} actors. Re-tagged ${docTagged} from ${docs.rows.length} strategic docs. Total: ${total}`);
 
       await pool.query(
         `INSERT INTO bastion_migrations (key) VALUES ($1) ON CONFLICT DO NOTHING`, [migrationKey],
       );
-      console.log('[migration] Global feed actor untagging complete');
     }
   } catch (error) {
-    console.warn('[migration] Global feed actor untagging failed (non-fatal):', error);
+    console.warn('[migration-v2] Actor PS tag clearing failed (non-fatal):', error);
   }
 
   // Initialize COP module (schema, tables, triggers, agent definitions)
