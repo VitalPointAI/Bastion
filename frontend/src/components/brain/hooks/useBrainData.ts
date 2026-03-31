@@ -372,6 +372,11 @@ export function useBrainData(problemSetId: string, atTime?: string | null, scope
   const totalEdges = fullData.edges.length;
   const isTruncated = totalNodes > visibleLimit;
 
+  // Reset visible limit when scope changes so the count reflects the new data
+  useEffect(() => {
+    setVisibleLimit(INITIAL_NODE_LIMIT);
+  }, [scope]);
+
   useEffect(() => {
     if (!problemSetId) return;
 
