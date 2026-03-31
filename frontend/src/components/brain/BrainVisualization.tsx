@@ -505,11 +505,17 @@ export function BrainVisualization({
     }
   }, [graphReady, graphPayload.nodes.length]);
 
-  // Clear object caches when graph data changes
+  // Clear object caches and reheat simulation when graph data changes
   useEffect(() => {
     nodeObjCacheRef.current.clear();
     linkSpriteCacheRef.current.clear();
-  }, [data]);
+    // Reheat the d3 force simulation so the graph re-renders with new data
+    // (ForceGraph3D doesn't always restart the simulation on graphData changes)
+    const fg = fgRef.current;
+    if (fg) {
+      try { fg.d3ReheatSimulation(); } catch { /* graph not ready yet */ }
+    }
+  }, [data, fgRef]);
 
   // ── 3D node rendering (with per-node object caching) ────────────────────────
   //
