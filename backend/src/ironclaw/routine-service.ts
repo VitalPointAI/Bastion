@@ -5,13 +5,17 @@
  *
  * Manages scheduled tasks (routines) for Ironclaw. Built-in routines include
  * knowledge sync (shared and user-specific) and capability/reporting routines.
- * Custom user routines are registered with Ironclaw via webhook commands.
+ *
+ * Routines are registered by writing directly to Ironclaw's PostgreSQL
+ * `routines` table (via DATABASE_URL_IRONCLAW). The v0.23.0 runtime reads
+ * this table and fires cron-based routines automatically.
  *
  * Knowledge sync writes BASTION_CONTEXT.md to Ironclaw's shared workspace so
  * Ironclaw always has current context about active operations, agents, and tools.
  * User knowledge sync writes per-user context on first message of session.
  */
 
+import pg from 'pg';
 import { ironclawClient, didToSlug } from './ironclaw-client.js';
 import { getPool } from '../lib/database.js';
 import type { RoutineSpec } from './ironclaw-types.js';
@@ -29,6 +33,8 @@ export interface BuiltInRoutine {
   /** Whether the user can change the cron schedule. */
   editable: boolean;
   category: 'knowledge' | 'monitoring' | 'reporting';
+  /** Prompt to send to Ironclaw when this routine fires. */
+  prompt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -54,6 +60,7 @@ export const BUILT_IN_ROUTINES: BuiltInRoutine[] = [
     defaultCron: '0 */6 * * *',  // Every 6 hours
     editable: true,
     category: 'knowledge',
+    prompt: 'Review the current BASTION_CONTEXT.md in your workspace. Use the bastion.problem_set.list tool to check for any new or updated operations. Report any changes you notice.',
   },
   {
     id: 'bastion_user_knowledge_sync',
@@ -70,6 +77,7 @@ export const BUILT_IN_ROUTINES: BuiltInRoutine[] = [
     defaultCron: '0 9 * * 1',   // Monday 9am
     editable: true,
     category: 'monitoring',
+    prompt: 'Review the available BASTION tools and agents. List any new capabilities, updated tools, or system changes since last check. Summarize in a brief capability report.',
   },
   {
     id: 'daily_situation_brief',
@@ -78,6 +86,7 @@ export const BUILT_IN_ROUTINES: BuiltInRoutine[] = [
     defaultCron: '0 6 * * *',   // 6am daily
     editable: true,
     category: 'reporting',
+    prompt: 'Generate a morning situation brief. Check active problem sets for: (1) new intelligence or OSINT events since last brief, (2) pending decisions requiring commander attention, (3) priority actions for today. Format as a concise SITREP.',
   },
   {
     id: 'autonomous_monitoring',
@@ -86,14 +95,108 @@ export const BUILT_IN_ROUTINES: BuiltInRoutine[] = [
     defaultCron: '*/30 * * * *',  // Every 30 minutes
     editable: true,
     category: 'monitoring',
+    prompt: 'Run autonomous operational monitoring. Check active problem sets for: (1) contradictions or conflicts in the knowledge graph, (2) intelligence gaps that need research, (3) PIR/IR that may have been answered by new data, (4) changes in situation that warrant a draft assessment. Use bastion tools to query current state. Log any findings as autonomous activity entries using bastion.ironclaw.log_activity.',
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Ironclaw DB pool (lazy-initialized)
+// ---------------------------------------------------------------------------
+
+let ironclawPool: pg.Pool | null = null;
+
+function getIronclawPool(): pg.Pool {
+  if (!ironclawPool) {
+    const url = process.env.DATABASE_URL_IRONCLAW ?? process.env.IRONCLAW_DB_URL;
+    if (!url) {
+      throw new Error(
+        '[routine-service] DATABASE_URL_IRONCLAW not set — cannot register routines directly. ' +
+        'Add DATABASE_URL_IRONCLAW to docker-compose environment.',
+      );
+    }
+    ironclawPool = new pg.Pool({ connectionString: url, max: 3 });
+  }
+  return ironclawPool;
+}
 
 // ---------------------------------------------------------------------------
 // RoutineService
 // ---------------------------------------------------------------------------
 
 export class RoutineService {
+
+  // ─── Direct DB routine management ──────────────────────────────────────────
+
+  /**
+   * Upsert a routine into Ironclaw's `routines` table.
+   *
+   * Ironclaw v0.23.0 stores routines in PostgreSQL and fires them via an
+   * internal cron ticker. We write directly to the DB instead of sending
+   * CLI/webhook commands, since webhook `/routine` commands are not supported.
+   *
+   * Uses 6-field cron (sec min hour day month weekday) as required by Ironclaw.
+   */
+  private async upsertRoutine(opts: {
+    name: string;
+    description: string;
+    userId: string;
+    /** 5-field cron (min hour day month weekday) — will be prefixed with "0 " for 6-field. */
+    cron: string;
+    prompt: string;
+    cooldownSecs?: number;
+  }): Promise<void> {
+    const pool = getIronclawPool();
+    // Convert 5-field to 6-field cron by prepending seconds = 0
+    const sixFieldCron = opts.cron.split(' ').length === 5
+      ? `0 ${opts.cron}`
+      : opts.cron;
+
+    await pool.query(`
+      INSERT INTO routines (
+        name, description, user_id, enabled,
+        trigger_type, trigger_config,
+        action_type, action_config,
+        cooldown_secs, max_concurrent
+      ) VALUES (
+        $1, $2, $3, true,
+        'cron', $4::jsonb,
+        'lightweight', $5::jsonb,
+        $6, 1
+      )
+      ON CONFLICT (user_id, name)
+      DO UPDATE SET
+        description = EXCLUDED.description,
+        enabled = true,
+        trigger_config = EXCLUDED.trigger_config,
+        action_config = EXCLUDED.action_config,
+        cooldown_secs = EXCLUDED.cooldown_secs,
+        updated_at = NOW()
+    `, [
+      opts.name,
+      opts.description,
+      opts.userId,
+      JSON.stringify({ schedule: sixFieldCron }),
+      JSON.stringify({ prompt: opts.prompt }),
+      opts.cooldownSecs ?? 300,
+    ]);
+
+    console.log(`[routine-service] Upserted routine '${opts.name}' for user '${opts.userId}' (${sixFieldCron})`);
+  }
+
+  /**
+   * Disable a routine by name and user_id.
+   */
+  private async disableRoutine(name: string, userId: string): Promise<void> {
+    const pool = getIronclawPool();
+    await pool.query(
+      `UPDATE routines SET enabled = false, updated_at = NOW() WHERE name = $1 AND user_id = $2`,
+      [name, userId],
+    );
+    console.log(`[routine-service] Disabled routine '${name}' for user '${userId}'`);
+  }
+
+  // ─── Knowledge sync (writes files to Ironclaw workspace via webhook) ──────
+
   /**
    * Sync shared Bastion knowledge to Ironclaw's workspace.
    *
@@ -243,19 +346,28 @@ ${membershipList}
     }
   }
 
+  // ─── Routine registration (direct DB writes) ──────────────────────────────
+
   /**
-   * Register a routine with Ironclaw via webhook command.
+   * Register a built-in routine with Ironclaw.
    *
-   * Sends a routine registration command so Ironclaw's scheduler
-   * knows to run the routine on the given cron schedule.
+   * Writes directly to Ironclaw's `routines` table.
    */
   async registerRoutine(routineId: string, cron: string): Promise<void> {
+    const routine = BUILT_IN_ROUTINES.find((r) => r.id === routineId);
+    if (!routine) {
+      console.warn(`[routine-service] Unknown built-in routine: ${routineId}`);
+      return;
+    }
+
     try {
-      await ironclawClient.sendMessage(
-        'system',
-        `/routine register ${routineId} "${cron}"`,
-      );
-      console.log(`[routine-service] Registered routine: ${routineId} (${cron})`);
+      await this.upsertRoutine({
+        name: routineId,
+        description: routine.description,
+        userId: 'system',
+        cron,
+        prompt: routine.prompt ?? routine.description,
+      });
     } catch (err) {
       console.error(`[routine-service] Failed to register routine ${routineId}:`, err instanceof Error ? err.message : err);
       throw err;
@@ -267,11 +379,7 @@ ${membershipList}
    */
   async unregisterRoutine(routineId: string): Promise<void> {
     try {
-      await ironclawClient.sendMessage(
-        'system',
-        `/routine unregister ${routineId}`,
-      );
-      console.log(`[routine-service] Unregistered routine: ${routineId}`);
+      await this.disableRoutine(routineId, 'system');
     } catch (err) {
       console.error(`[routine-service] Failed to unregister routine ${routineId}:`, err instanceof Error ? err.message : err);
       throw err;
@@ -281,9 +389,8 @@ ${membershipList}
   /**
    * Register the autonomous monitoring heartbeat routine for a specific problem set.
    *
-   * Sends `/routine register autonomous_monitoring__{psId} "{cron}"` to Ironclaw's
-   * scheduler. This makes Ironclaw fire autonomously on the given schedule to run
-   * conflict detection, gap research, PIR checking, and situation assessment.
+   * Writes directly to Ironclaw's `routines` table with a per-problem-set name.
+   * Ironclaw's internal cron ticker will pick it up and fire on schedule.
    *
    * @param problemSetId - The problem set to monitor autonomously.
    * @param cronOverride - Optional cron expression override. Defaults to every 30 min.
@@ -310,10 +417,19 @@ ${membershipList}
     }
 
     try {
-      await ironclawClient.sendMessage(
-        'system',
-        `/routine register autonomous_monitoring__${problemSetId} "${cron}"`,
-      );
+      await this.upsertRoutine({
+        name: `autonomous_monitoring__${problemSetId}`,
+        description: `Autonomous operational monitoring for problem set ${problemSetId}. Checks for contradictions, intelligence gaps, unanswered PIRs, and situation changes.`,
+        userId: 'system',
+        cron,
+        prompt: `Run autonomous operational monitoring for problem set ${problemSetId}. ` +
+          `Use bastion tools to: (1) check for contradictions or conflicts in the knowledge graph, ` +
+          `(2) identify intelligence gaps that need research, ` +
+          `(3) check if any PIR/IR have been answered by new data, ` +
+          `(4) assess whether the situation has changed enough to warrant a draft assessment. ` +
+          `Log any findings as autonomous activity entries using bastion.ironclaw.log_activity with the problem_set_id '${problemSetId}'.`,
+        cooldownSecs: 900, // 15-minute cooldown minimum
+      });
       console.log(`[routine-service] Registered autonomous monitoring for problem set ${problemSetId} (${cron})`);
     } catch (err) {
       // Non-blocking: routine registration failure should not crash startup or identity sync
@@ -327,17 +443,13 @@ ${membershipList}
   /**
    * Unregister the autonomous monitoring heartbeat routine for a specific problem set.
    *
-   * Sends `/routine unregister autonomous_monitoring__{psId}` to Ironclaw's scheduler.
    * Call this when a problem set is archived, deleted, or monitoring is disabled.
    *
    * @param problemSetId - The problem set to stop monitoring.
    */
   async unregisterAutonomousMonitoring(problemSetId: string): Promise<void> {
     try {
-      await ironclawClient.sendMessage(
-        'system',
-        `/routine unregister autonomous_monitoring__${problemSetId}`,
-      );
+      await this.disableRoutine(`autonomous_monitoring__${problemSetId}`, 'system');
       console.log(`[routine-service] Unregistered autonomous monitoring for problem set ${problemSetId}`);
     } catch (err) {
       // Non-blocking: log warning but do not throw
@@ -360,10 +472,13 @@ ${membershipList}
 
     for (const routine of enabledRoutines) {
       try {
-        await ironclawClient.sendMessage(
-          'system',
-          `/routine register ${slug}:${routine.name} "${routine.cron}"`,
-        );
+        await this.upsertRoutine({
+          name: `${slug}:${routine.name}`,
+          description: routine.description ?? routine.name,
+          userId: slug,
+          cron: routine.cron,
+          prompt: routine.description ?? routine.name,
+        });
         console.log(`[routine-service] Registered user routine: ${slug}:${routine.name}`);
       } catch (err) {
         console.error(

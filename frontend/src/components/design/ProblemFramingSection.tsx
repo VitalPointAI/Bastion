@@ -115,25 +115,21 @@ export interface ProblemFramingSectionProps {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function summarize(text: string, maxLen = 60): string {
-  if (!text) return '...';
-  return text.length <= maxLen ? text : text.slice(0, maxLen).trimEnd() + '...';
-}
-
 function generateProblemStatement(data: ProblemFramingData): string {
   if (!data.currentState && !data.desiredEndState) return '';
-  const current = summarize(data.currentState);
-  const desired = summarize(data.desiredEndState);
-  const obstacleCount = data.obstacles.filter(Boolean).length;
-  const constraintCount = data.constraints.filter(Boolean).length;
-  let stmt = `How to transition from [${current}] to [${desired}]`;
-  if (obstacleCount > 0 || constraintCount > 0) {
-    const parts: string[] = [];
-    if (obstacleCount > 0) parts.push(`${obstacleCount} obstacle${obstacleCount > 1 ? 's' : ''}`);
-    if (constraintCount > 0) parts.push(`${constraintCount} constraint${constraintCount > 1 ? 's' : ''}`);
-    stmt += ` given ${parts.join(' and ')}`;
-  }
-  return stmt + '.';
+  const current = data.currentState?.trim();
+  const desired = data.desiredEndState?.trim();
+  const obstacles = data.obstacles.filter(Boolean);
+  const constraints = data.constraints.filter(Boolean);
+
+  const parts: string[] = [];
+  if (current) parts.push(`Currently, ${current}.`);
+  if (desired) parts.push(`The desired end state is ${desired}.`);
+  if (obstacles.length > 0)
+    parts.push(`Key obstacles include: ${obstacles.join('; ')}.`);
+  if (constraints.length > 0)
+    parts.push(`Operations are constrained by: ${constraints.join('; ')}.`);
+  return parts.join(' ');
 }
 
 // ─── Dynamic List Component ─────────────────────────────────────────────────
@@ -480,12 +476,9 @@ export function ProblemFramingSection({ problemSetId, initialData, onUpdate }: P
           <label className="block text-sm font-medium text-gray-300 mb-1">
             Problem Statement (Auto-generated)
           </label>
-          <textarea
-            value={formData.problemStatement}
-            readOnly
-            rows={2}
-            className="w-full bg-gray-600 border border-gray-600 text-gray-300 rounded-md p-2 text-sm cursor-not-allowed resize-none"
-          />
+          <p className="w-full bg-gray-600 border border-gray-600 text-gray-300 rounded-md p-2 text-sm">
+            {formData.problemStatement}
+          </p>
         </div>
 
         {/* Dynamic Lists */}

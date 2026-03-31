@@ -9,7 +9,7 @@ FROM debian:bookworm-slim
 ARG IRONCLAW_VERSION=0.23.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates libssl3 curl \
+    ca-certificates libssl3 curl socat \
     && rm -rf /var/lib/apt/lists/*
 
 # Download prebuilt binary from GitHub release

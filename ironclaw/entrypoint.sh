@@ -64,24 +64,66 @@ echo "[entrypoint] Starting Ironclaw v${IRONCLAW_VERSION:-unknown} (token source
 
 # MCP server URL (set by docker-compose, default for production)
 MCP_URL="${MCP_BASTION_URL:-http://bastion-mcp:3334/mcp}"
+# Extract host:port from MCP URL for the local proxy
+MCP_HOST_PORT=$(echo "$MCP_URL" | sed -E 's|https?://([^/]+).*|\1|')
+MCP_LOCAL_PORT=$(echo "$MCP_HOST_PORT" | sed -E 's/.*:([0-9]+)/\1/')
 
-# Start ironclaw with a FIFO so we can write commands to its REPL.
-FIFO="/tmp/ironclaw-stdin"
-rm -f "$FIFO"
-mkfifo "$FIFO"
+# ---------------------------------------------------------------------------
+# Local proxy: Ironclaw requires HTTPS for remote MCP servers but allows
+# localhost. Run socat to forward localhost:MCP_PORT -> bastion-mcp:MCP_PORT
+# so we can register MCP via http://localhost:<port>/mcp.
+# ---------------------------------------------------------------------------
+start_mcp_proxy() {
+  # Kill any existing proxy
+  kill "$SOCAT_PID" 2>/dev/null
+  wait "$SOCAT_PID" 2>/dev/null
 
-# Keep the FIFO open for writing by holding a background fd,
-# then pipe reads from it into ironclaw's stdin.
-(tail -f "$FIFO" 2>/dev/null) | $IRONCLAW_BIN run --no-onboard &
+  socat TCP-LISTEN:"${MCP_LOCAL_PORT}",fork,reuseaddr,bind=127.0.0.1 \
+    TCP:"${MCP_HOST_PORT}" &
+  SOCAT_PID=$!
+  echo "[entrypoint] MCP proxy: localhost:${MCP_LOCAL_PORT} → ${MCP_HOST_PORT} (pid ${SOCAT_PID})"
+}
+
+start_mcp_proxy
+
+# ---------------------------------------------------------------------------
+# Configure Ironclaw via CLI before starting the agent.
+# These settings persist in the database across restarts.
+# ---------------------------------------------------------------------------
+configure_ironclaw() {
+  # Disable sandbox (no Docker-in-Docker available)
+  $IRONCLAW_BIN config set sandbox.enabled false 2>/dev/null
+
+  # Enable heartbeat for autonomous monitoring
+  $IRONCLAW_BIN config set heartbeat.enabled true 2>/dev/null
+  $IRONCLAW_BIN config set heartbeat.interval_secs 1800 2>/dev/null
+
+  # Register BASTION MCP server via localhost proxy
+  # Remove first in case URL changed, ignore errors if not present
+  $IRONCLAW_BIN mcp remove bastion-core 2>/dev/null || true
+  $IRONCLAW_BIN mcp add bastion-core "http://localhost:${MCP_LOCAL_PORT}/mcp" 2>&1
+  if [ $? -eq 0 ]; then
+    echo "[entrypoint] MCP server registered: bastion-core → localhost:${MCP_LOCAL_PORT} → ${MCP_HOST_PORT}"
+  else
+    echo "[entrypoint] WARNING: MCP registration failed"
+  fi
+}
+
+configure_ironclaw
+
+# ---------------------------------------------------------------------------
+# Start the agent
+# ---------------------------------------------------------------------------
+$IRONCLAW_BIN run --no-onboard &
 IRONCLAW_PID=$!
+echo "[entrypoint] Ironclaw agent started (pid ${IRONCLAW_PID})"
 
-# Give ironclaw time to initialise its REPL before sending commands
+# Give agent time to initialize before verifying
 sleep 5
 
-# Register the BASTION MCP server so Ironclaw discovers all domain tools.
-# This runs at every (re)start, ensuring tools survive token-triggered restarts.
-echo "/mcp add bastion-core $MCP_URL" > "$FIFO"
-echo "[entrypoint] Sent MCP registration: bastion-core → $MCP_URL"
+# Verify MCP tools were discovered
+$IRONCLAW_BIN mcp list 2>&1
+$IRONCLAW_BIN status 2>&1
 
 # Store initial token fingerprint (last 8 chars) for change detection
 LAST_FINGERPRINT=""
@@ -110,16 +152,23 @@ while true; do
     kill "$IRONCLAW_PID" 2>/dev/null
     wait "$IRONCLAW_PID" 2>/dev/null
 
-    # Restart with FIFO for REPL commands
-    rm -f "$FIFO"
-    mkfifo "$FIFO"
-    (tail -f "$FIFO" 2>/dev/null) | $IRONCLAW_BIN run --no-onboard &
+    # Restart agent
+    $IRONCLAW_BIN run --no-onboard &
     IRONCLAW_PID=$!
-    echo "[entrypoint] Ironclaw restarted with refreshed token"
+    echo "[entrypoint] Ironclaw restarted with refreshed token (pid ${IRONCLAW_PID})"
+  fi
 
-    # Re-register MCP tools after restart
-    sleep 5
-    echo "/mcp add bastion-core $MCP_URL" > "$FIFO"
-    echo "[entrypoint] Re-registered MCP tools after restart"
+  # Check if ironclaw is still running
+  if ! kill -0 "$IRONCLAW_PID" 2>/dev/null; then
+    echo "[entrypoint] Ironclaw process died — restarting"
+    $IRONCLAW_BIN run --no-onboard &
+    IRONCLAW_PID=$!
+    echo "[entrypoint] Ironclaw restarted (pid ${IRONCLAW_PID})"
+  fi
+
+  # Check if socat proxy is still running
+  if ! kill -0 "$SOCAT_PID" 2>/dev/null; then
+    echo "[entrypoint] MCP proxy died — restarting"
+    start_mcp_proxy
   fi
 done

@@ -175,6 +175,7 @@ services:
       IRONCLAW_URL: http://ironclaw:8080
       # IRONCLAW_VERSION: auto-detected from health endpoint at startup
       IRONCLAW_SHARED_SECRET: ${IRONCLAW_SHARED_SECRET}
+      DATABASE_URL_IRONCLAW: postgresql://ironclaw:${IRONCLAW_DB_PASSWORD}@ironclaw-postgres:5432/ironclaw
       MCP_BASTION_URL: http://bastion-mcp:3334/mcp
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       SEARXNG_URL: http://searxng:8888
