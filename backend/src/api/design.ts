@@ -344,10 +344,70 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
 
     const now = new Date().toISOString();
 
-    // 1. Fetch actors with relationship counts — temporal filter excludes expired nodes
+    // ── Build scoped actor ID set using the same signals as the brain endpoint ─
+    // This ensures STRATENV synthesis uses the same focused slice as the
+    // brain visualization, not the entire global graph.
+    const { getProblemSetContext } = await import('../doc-intelligence/interview/interview-store.js');
+    const { getPool } = await import('../lib/database.js');
+    const pool = getPool();
+    const allActorResult = await executeReadQuery(`
+      MATCH (a:Actor)
+      WHERE (a.validTo IS NULL OR a.validTo > $now)
+      RETURN a.id AS id, a.name AS name, a.aliases AS aliases,
+             a.workspaceId AS workspaceId, a.containerIds AS containerIds,
+             a.sourceDocumentIds AS sourceDocumentIds
+    `, { now });
+
+    const scopedIds = new Set<string>();
+    const allActorRows = allActorResult.records;
+
+    // Signal 1: container/workspace tag
+    for (const r of allActorRows) {
+      const cids = r.get('containerIds') as string[] | null;
+      if (Array.isArray(cids) && cids.includes(problemSetId)) scopedIds.add(r.get('id') as string);
+      if (r.get('workspaceId') === problemSetId) scopedIds.add(r.get('id') as string);
+    }
+
+    // Signal 2: document provenance
+    const docResult = await pool.query(`SELECT id FROM strategic_documents WHERE workspace_id = $1`, [problemSetId]);
+    const psDocIds = new Set(docResult.rows.map((r: { id: string }) => r.id));
+    if (psDocIds.size > 0) {
+      for (const r of allActorRows) {
+        if (scopedIds.has(r.get('id') as string)) continue;
+        const srcDocs = r.get('sourceDocumentIds') as string[] | null;
+        if (srcDocs?.some(d => psDocIds.has(d))) scopedIds.add(r.get('id') as string);
+      }
+    }
+
+    // Signal 3: scoping interview terms
+    const ctx = await getProblemSetContext(problemSetId).catch(() => null);
+    if (ctx) {
+      const scopeTerms = new Set<string>();
+      for (const t of ctx.actorFocus.primaryActors) scopeTerms.add(t.toLowerCase());
+      for (const c of ctx.geographicScope.countries) scopeTerms.add(c.toLowerCase());
+      for (const r of ctx.geographicScope.regions) scopeTerms.add(r.toLowerCase());
+      if (ctx.geographicScope.specificAreas) for (const a of ctx.geographicScope.specificAreas) scopeTerms.add(a.toLowerCase());
+      if (ctx.actorFocus.alliances) for (const al of ctx.actorFocus.alliances) { scopeTerms.add(al.name.toLowerCase()); for (const m of al.members) scopeTerms.add(m.toLowerCase()); }
+      const filteredTerms = [...scopeTerms].filter(t => t.length >= 4);
+      if (filteredTerms.length > 0) {
+        for (const r of allActorRows) {
+          if (scopedIds.has(r.get('id') as string)) continue;
+          const nameLC = (r.get('name') as string).toLowerCase();
+          const aliases = (r.get('aliases') as string[] | null) ?? [];
+          const allNames = [nameLC, ...aliases.map(a => a.toLowerCase())];
+          if (allNames.some(name => filteredTerms.some(st => name.includes(st)))) {
+            scopedIds.add(r.get('id') as string);
+          }
+        }
+      }
+    }
+
+    const scopedIdList = [...scopedIds];
+
+    // 1. Fetch scoped actors with relationship counts
     const actorResult = await executeReadQuery(`
       MATCH (a:Actor)
-      WHERE (a.workspaceId = $ws OR a.workspaceId IS NULL)
+      WHERE a.id IN $scopedIds
         AND (a.validTo IS NULL OR a.validTo > $now)
       OPTIONAL MATCH (a)-[r]-()
       WHERE (r.validTo IS NULL OR r.validTo > $now)
@@ -358,12 +418,12 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
              a.confidence AS confidence, rels,
              a.updatedAt AS updatedAt, a.validFrom AS validFrom,
              a.halfLifeDays AS halfLifeDays
-    `, { ws: problemSetId, now });
+    `, { scopedIds: scopedIdList, now });
 
-    // 2. Fetch relationships between actors — exclude expired
+    // 2. Fetch relationships between scoped actors
     const relResult = await executeReadQuery(`
       MATCH (a:Actor)-[r:RELATES_TO]->(b:Actor)
-      WHERE (a.workspaceId = $ws OR a.workspaceId IS NULL)
+      WHERE a.id IN $scopedIds AND b.id IN $scopedIds
         AND (a.validTo IS NULL OR a.validTo > $now)
         AND (b.validTo IS NULL OR b.validTo > $now)
         AND (r.validTo IS NULL OR r.validTo > $now)
@@ -371,12 +431,12 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
              r.description AS desc, r.strength AS strength,
              r.updatedAt AS updatedAt
       LIMIT 50
-    `, { ws: problemSetId, now });
+    `, { scopedIds: scopedIdList, now });
 
-    // 3. Fetch tensions — exclude expired
+    // 3. Fetch tensions between scoped actors
     const tensionResult = await executeReadQuery(`
       MATCH (a:Actor)-[t:TENSION]->(b:Actor)
-      WHERE (a.workspaceId = $ws OR a.workspaceId IS NULL)
+      WHERE a.id IN $scopedIds AND b.id IN $scopedIds
         AND (a.validTo IS NULL OR a.validTo > $now)
         AND (b.validTo IS NULL OR b.validTo > $now)
         AND (t.validTo IS NULL OR t.validTo > $now)
@@ -384,7 +444,7 @@ router.post('/:problemSetId/synthesize-current-state', async (req, res) => {
              t.intensity AS intensity, t.domain AS domain,
              t.updatedAt AS updatedAt
       LIMIT 30
-    `, { ws: problemSetId, now });
+    `, { scopedIds: scopedIdList, now });
 
     // 4. Build context string from graph data — include freshness metadata
     const { computeDecayedConfidence } = await import('../graph/confidence-calculator.js');
