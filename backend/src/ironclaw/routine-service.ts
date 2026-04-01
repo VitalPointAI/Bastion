@@ -185,10 +185,8 @@ export class RoutineService {
       JSON.stringify({ schedule: sixFieldCron }),
       JSON.stringify({
         title: opts.name,
-        prompt: opts.prompt,
-        max_tool_rounds: 5,
-        tools_enabled: true,
-        max_tokens: 4096,
+        description: opts.prompt,
+        max_iterations: 25,
       }),
       opts.cooldownSecs ?? 300,
     ]);
