@@ -1065,3 +1065,171 @@ ironclawRouter.get(
     }
   },
 );
+
+// ---------------------------------------------------------------------------
+// Routine Diagnostics (v0.24 upgrade)
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /routines/diagnostics
+ * Query Ironclaw's routines table to see what's registered, whether routines
+ * are advancing (next_fire_at moving forward), and their verification state.
+ *
+ * Returns: { routines: RoutineDiagEntry[], ironclawDbReachable: boolean }
+ */
+ironclawRouter.get(
+  '/routines/diagnostics',
+  async (_req: Request, res: Response) => {
+    try {
+      const pg = await import('pg');
+      const url = process.env.DATABASE_URL_IRONCLAW ?? process.env.IRONCLAW_DB_URL;
+      if (!url) {
+        res.status(503).json({
+          error: 'DATABASE_URL_IRONCLAW not configured — cannot query Ironclaw routines table',
+          ironclawDbReachable: false,
+          routines: [],
+        });
+        return;
+      }
+
+      const pool = new pg.default.Pool({ connectionString: url, max: 1 });
+      try {
+        const result = await pool.query(`
+          SELECT
+            name,
+            description,
+            user_id,
+            enabled,
+            trigger_type,
+            trigger_config,
+            action_type,
+            action_config,
+            cooldown_secs,
+            next_fire_at,
+            state,
+            created_at,
+            updated_at
+          FROM routines
+          ORDER BY updated_at DESC
+          LIMIT 50
+        `);
+
+        res.json({
+          ironclawDbReachable: true,
+          routineCount: result.rows.length,
+          routines: result.rows.map((r: Record<string, unknown>) => ({
+            name: r.name,
+            description: r.description,
+            userId: r.user_id,
+            enabled: r.enabled,
+            triggerType: r.trigger_type,
+            triggerConfig: r.trigger_config,
+            actionType: r.action_type,
+            actionConfig: r.action_config,
+            cooldownSecs: r.cooldown_secs,
+            nextFireAt: r.next_fire_at,
+            state: r.state,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at,
+          })),
+        });
+      } finally {
+        await pool.end();
+      }
+    } catch (err) {
+      console.error('[ironclaw-router] GET /routines/diagnostics error:', err);
+      res.status(500).json({
+        ironclawDbReachable: false,
+        error: err instanceof Error ? err.message : 'Internal server error',
+        routines: [],
+      });
+    }
+  },
+);
+
+/**
+ * POST /routines/re-register
+ * Force re-registration of all autonomous monitoring routines for active
+ * problem sets. Useful after Ironclaw version upgrades or DB resets.
+ *
+ * Also re-registers the built-in global routines (knowledge sync, daily brief, etc.).
+ */
+ironclawRouter.post(
+  '/routines/re-register',
+  async (_req: Request, res: Response) => {
+    try {
+      const { routineService } = await import('./routine-service.js');
+      const { BUILT_IN_ROUTINES } = await import('./routine-service.js');
+      const bastionPool = getPool();
+
+      // Clean up stale CLI-registered routines from pre-v0.24 entrypoint.sh.
+      // These were registered without problem set IDs and may have wrong action_type.
+      const staleNames = [
+        'autonomous_monitoring',
+        'bastion_knowledge_sync',
+        'daily_situation_brief',
+        'weekly_capability_update',
+      ];
+      const cleaned: string[] = [];
+      try {
+        const pg = await import('pg');
+        const url = process.env.DATABASE_URL_IRONCLAW ?? process.env.IRONCLAW_DB_URL;
+        if (url) {
+          const ironclawPool = new pg.default.Pool({ connectionString: url, max: 1 });
+          try {
+            for (const name of staleNames) {
+              const result = await ironclawPool.query(
+                `DELETE FROM routines WHERE name = $1 AND user_id != 'system' RETURNING name`,
+                [name],
+              );
+              if (result.rowCount && result.rowCount > 0) {
+                cleaned.push(name);
+              }
+            }
+          } finally {
+            await ironclawPool.end();
+          }
+        }
+      } catch (err) {
+        console.warn('[ironclaw-router] re-register: stale cleanup failed (non-fatal):', err instanceof Error ? err.message : err);
+      }
+
+      // Re-register built-in global routines
+      const registered: string[] = [];
+      for (const routine of BUILT_IN_ROUTINES) {
+        if (!routine.defaultCron) continue;
+        try {
+          await routineService.registerRoutine(routine.id, routine.defaultCron);
+          registered.push(routine.id);
+        } catch (err) {
+          console.warn(`[ironclaw-router] re-register: failed ${routine.id}:`, err instanceof Error ? err.message : err);
+        }
+      }
+
+      // Re-register per-problem-set autonomous monitoring
+      const activePs = await bastionPool.query<{ id: string; name: string }>(
+        `SELECT id, name FROM problem_sets WHERE status IN ('active', 'planning', 'in-progress') LIMIT 50`,
+      );
+      for (const row of activePs.rows) {
+        try {
+          await routineService.registerAutonomousMonitoring(row.id);
+          registered.push(`autonomous_monitoring__${row.id}`);
+        } catch (err) {
+          console.warn(`[ironclaw-router] re-register: failed monitoring for ${row.id}:`, err instanceof Error ? err.message : err);
+        }
+      }
+
+      res.json({
+        success: true,
+        staleCleaned: cleaned,
+        registered,
+        problemSetsFound: activePs.rows.length,
+      });
+    } catch (err) {
+      console.error('[ironclaw-router] POST /routines/re-register error:', err);
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Internal server error',
+      });
+    }
+  },
+);
