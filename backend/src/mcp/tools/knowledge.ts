@@ -12,7 +12,7 @@ import type { MCPToolDefinition } from '../../ironclaw/tool-bridge.js';
 
 export const knowledgeTools: MCPToolDefinition[] = [
   {
-    name: 'bastion.knowledge.search',
+    name: 'bastion_knowledge_search',
     description:
       'Search knowledge graph entities by keyword query and optional entity type filter. ' +
       'Returns matching entities with ID, type, label, and relevance score.',
@@ -42,7 +42,7 @@ export const knowledgeTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.knowledge.get_entity',
+    name: 'bastion_knowledge_get_entity',
     description:
       'Get full details for a knowledge graph entity by its ID. ' +
       'Returns all properties, metadata, and source attribution.',
@@ -64,7 +64,7 @@ export const knowledgeTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.knowledge.get_relationships',
+    name: 'bastion_knowledge_get_relationships',
     description:
       'Get all relationships for a knowledge graph entity. ' +
       'Returns source entity, relationship type, target entity, and confidence score.',
@@ -95,7 +95,7 @@ export const knowledgeTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.knowledge.search_documents',
+    name: 'bastion_knowledge_search_documents',
     description:
       'Full-text search across BASTION documents, reports, and intelligence products. ' +
       'Returns document titles, excerpts, and source metadata.',

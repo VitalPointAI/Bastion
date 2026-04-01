@@ -7,7 +7,7 @@
  *
  * Key design decisions:
  * - Ambiguous scope triggers clarification prompt (never assumes)
- * - Tools without PS-scoped fields are only valid for 'bastion.system.*' types
+ * - Tools without PS-scoped fields are only valid for 'bastion_system_*' types
  * - Registration is non-blocking: logs warning if Ironclaw unreachable
  */
 
@@ -40,7 +40,7 @@ export interface MCPToolDefinition {
  */
 export const BASTION_TOOLS: MCPToolDefinition[] = [
   {
-    name: 'bastion.problem_set.read',
+    name: 'bastion_problem_set_read',
     description: 'Read problem set details and configuration',
     inputSchema: {
       type: 'object',
@@ -50,7 +50,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.problem_set.list_children',
+    name: 'bastion_problem_set_list_children',
     description: 'List child problem sets',
     inputSchema: {
       type: 'object',
@@ -60,7 +60,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.problem_set.update_field',
+    name: 'bastion_problem_set_update_field',
     description: 'Update a specific field on a problem set',
     inputSchema: {
       type: 'object',
@@ -74,7 +74,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.problem_set.create_child',
+    name: 'bastion_problem_set_create_child',
     description: 'Create a child problem set',
     inputSchema: {
       type: 'object',
@@ -88,7 +88,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.problem_set.configure_agents',
+    name: 'bastion_problem_set_configure_agents',
     description: 'Configure AI agents for a problem set (cannot modify Ironclaw own config)',
     inputSchema: {
       type: 'object',
@@ -101,7 +101,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'high',
   },
   {
-    name: 'bastion.resource.create',
+    name: 'bastion_resource_create',
     description: 'Create a resource in the registry',
     inputSchema: {
       type: 'object',
@@ -116,7 +116,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.resource.delete',
+    name: 'bastion_resource_delete',
     description: 'Delete a resource from the registry',
     inputSchema: {
       type: 'object',
@@ -126,7 +126,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'high',
   },
   {
-    name: 'bastion.gate.create',
+    name: 'bastion_gate_create',
     description: 'Create a decision gate for approval workflow',
     inputSchema: {
       type: 'object',
@@ -141,7 +141,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.code.create_pr',
+    name: 'bastion_code_create_pr',
     description: 'Create a GitHub PR with proposed code changes',
     inputSchema: {
       type: 'object',
@@ -156,7 +156,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'high',
   },
   {
-    name: 'bastion.design.update_section',
+    name: 'bastion_design_update_section',
     description: 'Update a specific section of the operational design from interview output',
     inputSchema: {
       type: 'object',
@@ -176,7 +176,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   // ── Knowledge Graph Tools ──
   {
-    name: 'bastion.graph.search_actors',
+    name: 'bastion_graph_search_actors',
     description: 'Search the knowledge graph for actors (nations, organizations, individuals, military units) by name or type. Returns matching nodes with their properties, relationships, and source documents.',
     inputSchema: {
       type: 'object',
@@ -190,7 +190,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.graph.get_actor',
+    name: 'bastion_graph_get_actor',
     description: 'Get full details of a specific actor node including all relationships, tensions, source documents, and linked entities.',
     inputSchema: {
       type: 'object',
@@ -202,7 +202,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.graph.query',
+    name: 'bastion_graph_query',
     description: 'Run a read-only Cypher query against the knowledge graph. Use for complex queries like finding paths between actors, counting relationships, or analyzing the graph structure.',
     inputSchema: {
       type: 'object',
@@ -214,7 +214,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.graph.stats',
+    name: 'bastion_graph_stats',
     description: 'Get knowledge graph statistics: total nodes, relationships, node types, and top actors by relationship count.',
     inputSchema: {
       type: 'object',
@@ -224,7 +224,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   // ── Cross-scope graph & objective hierarchy tools ──
   {
-    name: 'bastion.graph.get_objective_hierarchy',
+    name: 'bastion_graph_get_objective_hierarchy',
     description: 'Walk up the parent problem set chain and return objectives from each ancestor, grouped by echelon. Provides cross-echelon objective visibility.',
     inputSchema: {
       type: 'object',
@@ -236,7 +236,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.graph.adopt_objective',
+    name: 'bastion_graph_adopt_objective',
     description: 'Adopt an objective from a parent problem set into a target workspace. Creates a linked copy with DRAFT status.',
     inputSchema: {
       type: 'object',
@@ -249,7 +249,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.graph.assess_objectives',
+    name: 'bastion_graph_assess_objectives',
     description: 'Auto-assess and adopt relevant objectives from a parent problem set into a child. Skips already-adopted objectives.',
     inputSchema: {
       type: 'object',
@@ -261,7 +261,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.graph.query_global',
+    name: 'bastion_graph_query_global',
     description: 'Query all actors across the entire knowledge graph without workspace filter. Returns actor nodes with relationship counts.',
     inputSchema: {
       type: 'object',
@@ -273,7 +273,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.graph.query_parent',
+    name: 'bastion_graph_query_parent',
     description: 'Query actors from both a problem set and its parent workspace. Returns merged nodes tagged with source workspace ID.',
     inputSchema: {
       type: 'object',
@@ -285,7 +285,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.design.synthesize_current_state',
+    name: 'bastion_design_synthesize_current_state',
     description: 'Synthesize the Current State assessment for Problem Framing from knowledge graph actors, relationships, tensions, and strategic documents. Populates the Current State field with a narrative assessment.',
     inputSchema: {
       type: 'object',
@@ -297,7 +297,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.system.update_config',
+    name: 'bastion_system_update_config',
     description: 'Update system-level configuration',
     inputSchema: {
       type: 'object',
@@ -311,7 +311,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   },
   // ── Map Overlay Tools ──
   {
-    name: 'bastion.design.map.add_symbol',
+    name: 'bastion_design_map_add_symbol',
     description: 'Add a military symbol to the operational approach map overlay',
     inputSchema: {
       type: 'object',
@@ -329,7 +329,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.design.map.move_symbol',
+    name: 'bastion_design_map_move_symbol',
     description: 'Move an existing symbol to a new position on the map',
     inputSchema: {
       type: 'object',
@@ -345,7 +345,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.design.map.remove_symbol',
+    name: 'bastion_design_map_remove_symbol',
     description: 'Remove a symbol from the operational approach map',
     inputSchema: {
       type: 'object',
@@ -358,7 +358,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.design.map.update_symbol',
+    name: 'bastion_design_map_update_symbol',
     description: 'Update properties of an existing symbol',
     inputSchema: {
       type: 'object',
@@ -374,7 +374,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.design.map.add_control_measure',
+    name: 'bastion_design_map_add_control_measure',
     description: 'Add a control measure (phase line, boundary, objective, etc.) to the map',
     inputSchema: {
       type: 'object',
@@ -402,7 +402,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.design.map.add_overlay_graphic',
+    name: 'bastion_design_map_add_overlay_graphic',
     description: 'Add an annotation graphic to the map overlay',
     inputSchema: {
       type: 'object',
@@ -425,7 +425,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // Intelligence Gap Monitoring
   // -------------------------------------------------------------------------
   {
-    name: 'bastion.intel.get_intelligence_gaps',
+    name: 'bastion_intel_get_intelligence_gaps',
     description: 'Return current intelligence gaps for a problem set including parent graph suggestions for cross-boundary relevance',
     inputSchema: {
       type: 'object',
@@ -437,7 +437,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.intel.get_gap_filler_status',
+    name: 'bastion_intel_get_gap_filler_status',
     description: 'Return the gap filler service state: last run time, gaps processed, active cooldowns, next scheduled run',
     inputSchema: {
       type: 'object',
@@ -449,7 +449,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.intel.prioritize_gap_research',
+    name: 'bastion_intel_prioritize_gap_research',
     description: 'Bump a specific intelligence gap to high priority, clear its cooldown, and optionally trigger immediate research',
     inputSchema: {
       type: 'object',
@@ -463,7 +463,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.intel.request_targeted_research',
+    name: 'bastion_intel_request_targeted_research',
     description: 'Request research on a specific topic or entity via the researcher specialist, creating an async pg-boss job',
     inputSchema: {
       type: 'object',
@@ -481,7 +481,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // PIR/CCIR Management
   // -------------------------------------------------------------------------
   {
-    name: 'bastion.intel.get_priority_intel_requirements',
+    name: 'bastion_intel_get_priority_intel_requirements',
     description: 'List active PIRs/CCIRs for a problem set ordered by priority',
     inputSchema: {
       type: 'object',
@@ -495,7 +495,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.intel.create_pir_from_assumption',
+    name: 'bastion_intel_create_pir_from_assumption',
     description: 'Create a PIR linked to an assumption from the operational design',
     inputSchema: {
       type: 'object',
@@ -511,7 +511,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.intel.answer_pir',
+    name: 'bastion_intel_answer_pir',
     description: 'Mark a PIR as answered with supporting evidence',
     inputSchema: {
       type: 'object',
@@ -525,7 +525,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.intel.derive_pirs_from_design',
+    name: 'bastion_intel_derive_pirs_from_design',
     description: 'Analyze operational design and recommend PIRs from assumptions, CoG analysis, LOEs, and constraints',
     inputSchema: {
       type: 'object',
@@ -541,7 +541,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // PIR Alert Tools
   // -------------------------------------------------------------------------
   {
-    name: 'bastion.intel.create_pir_alert',
+    name: 'bastion_intel_create_pir_alert',
     description: 'Create a PIR alert decision when Ironclaw detects intelligence relevant to an active PIR. Routes to the commander for accept/reject/request-more-info.',
     inputSchema: {
       type: 'object',
@@ -557,7 +557,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.intel.get_pir_alert_history',
+    name: 'bastion_intel_get_pir_alert_history',
     description: 'Get history of PIR alert decisions and their outcomes for a problem set. Includes approved, rejected, and pending alerts.',
     inputSchema: {
       type: 'object',
@@ -573,7 +573,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // Skill Management
   // -------------------------------------------------------------------------
   {
-    name: 'bastion.skill.create',
+    name: 'bastion_skill_create',
     description: 'Create a new reusable skill that persists across sessions',
     inputSchema: {
       type: 'object',
@@ -593,7 +593,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // Agent Management
   // -------------------------------------------------------------------------
   {
-    name: 'bastion.agent.create',
+    name: 'bastion_agent_create',
     description: 'Create and register a new AI agent',
     inputSchema: {
       type: 'object',
@@ -608,7 +608,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.agent.list',
+    name: 'bastion_agent_list',
     description: 'List all registered agents with health status',
     inputSchema: {
       type: 'object',
@@ -623,7 +623,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // Team Management
   // -------------------------------------------------------------------------
   {
-    name: 'bastion.team.create',
+    name: 'bastion_team_create',
     description: 'Create a new agent team for collaborative tasks',
     inputSchema: {
       type: 'object',
@@ -638,7 +638,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.team.add_member',
+    name: 'bastion_team_add_member',
     description: 'Add an agent to an existing team',
     inputSchema: {
       type: 'object',
@@ -651,7 +651,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.team.assign_task',
+    name: 'bastion_team_assign_task',
     description: 'Assign a task to an agent team for collaborative execution',
     inputSchema: {
       type: 'object',
@@ -669,7 +669,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // Autonomous Intelligence Tools (Phase 65 Plan 02)
   // -------------------------------------------------------------------------
   {
-    name: 'bastion.intel.web_search',
+    name: 'bastion_intel_web_search',
     description: 'Search the web via SearXNG for intelligence on a topic. Returns search results with titles, URLs, and snippets.',
     inputSchema: {
       type: 'object',
@@ -682,7 +682,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.intel.create_research_event',
+    name: 'bastion_intel_create_research_event',
     description: 'Create a synthetic OSINT event from autonomous research findings. The event enters the standard ingestion pipeline.',
     inputSchema: {
       type: 'object',
@@ -698,7 +698,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.intel.process_osint_event',
+    name: 'bastion_intel_process_osint_event',
     description: 'Trigger the OSINT specialist agent pipeline to process an event, extracting entities, relationships, and tensions.',
     inputSchema: {
       type: 'object',
@@ -711,7 +711,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.intel.detect_conflicts',
+    name: 'bastion_intel_detect_conflicts',
     description: 'Scan the knowledge graph for contradictions, conflicting claims, or opposing intelligence about entities.',
     inputSchema: {
       type: 'object',
@@ -724,7 +724,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.intel.draft_situation_assessment',
+    name: 'bastion_intel_draft_situation_assessment',
     description: 'Gather raw intelligence data for a situation assessment. Returns structured data that Ironclaw synthesizes into a narrative.',
     inputSchema: {
       type: 'object',
@@ -738,7 +738,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.autonomous.log_activity',
+    name: 'bastion_autonomous_log_activity',
     description: "Log an autonomous activity entry visible in the commander's activity feed.",
     inputSchema: {
       type: 'object',
@@ -754,7 +754,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.autonomous.send_alert',
+    name: 'bastion_autonomous_send_alert',
     description: 'Send an alert to commanders via WebSocket and optionally Telegram. Use for time-sensitive findings.',
     inputSchema: {
       type: 'object',
@@ -773,7 +773,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
   // Brain Curation Tools (Phase 65 Plan 02)
   // -------------------------------------------------------------------------
   {
-    name: 'bastion.brain.evaluate_relevance',
+    name: 'bastion_brain_evaluate_relevance',
     description: 'Scan the global knowledge graph for actors/relationships relevant to this problem set but not yet in its brain slice. Returns scored candidates.',
     inputSchema: {
       type: 'object',
@@ -786,7 +786,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.brain.augment_slice',
+    name: 'bastion_brain_augment_slice',
     description: "Pull actors into this problem set's brain slice by adding to containerIds. Use when you discover globally relevant actors not yet in this problem set's view.",
     inputSchema: {
       type: 'object',
@@ -800,7 +800,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.brain.prune_slice',
+    name: 'bastion_brain_prune_slice',
     description: "Remove actors from this problem set's brain slice (removes from containerIds only — does not delete from global brain).",
     inputSchema: {
       type: 'object',
@@ -814,7 +814,7 @@ export const BASTION_TOOLS: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.brain.get_slice_stats',
+    name: 'bastion_brain_get_slice_stats',
     description: "Get statistics about the problem set's brain slice: size vs global brain, staleness, orphan count.",
     inputSchema: {
       type: 'object',
@@ -896,7 +896,7 @@ export class ToolBridge {
    * - If tool args contain a PS-scoped field matching userProblemSetId: valid.
    * - If tool args target a child PS: valid (TODO: full hierarchy check via inheritance-store).
    * - If tool args target a different PS and not a child: needsClarification (never assumes).
-   * - If no PS-scoped field in args: valid only for 'bastion.system.*' tools.
+   * - If no PS-scoped field in args: valid only for 'bastion_system_*' tools.
    */
   validateScope(
     toolName: string,
@@ -904,7 +904,7 @@ export class ToolBridge {
     userProblemSetId: string,
   ): ScopeValidationResult {
     // System-scoped tools do not require PS scope
-    if (toolName.startsWith('bastion.system.')) {
+    if (toolName.startsWith('bastion_system_')) {
       return { valid: true };
     }
 
@@ -1009,14 +1009,14 @@ export class ToolBridge {
    * Returns an error message if the action is blocked, or null if allowed.
    *
    * Blocked patterns:
-   * - bastion.system.update_config targeting any PROTECTED_CONFIG_KEYS
-   * - bastion.problem_set.configure_agents targeting Ironclaw's own config
+   * - bastion_system_update_config targeting any PROTECTED_CONFIG_KEYS
+   * - bastion_problem_set_configure_agents targeting Ironclaw's own config
    */
   private checkSelfModification(
     toolName: string,
     args: Record<string, unknown>,
   ): string | null {
-    if (toolName === 'bastion.system.update_config') {
+    if (toolName === 'bastion_system_update_config') {
       const key = args.key as string | undefined;
       if (!key) return null;
 
@@ -1033,7 +1033,7 @@ export class ToolBridge {
       }
     }
 
-    if (toolName === 'bastion.problem_set.configure_agents') {
+    if (toolName === 'bastion_problem_set_configure_agents') {
       const agentConfig = args.agent_config as Record<string, unknown> | undefined;
       if (agentConfig) {
         // Block if the config references Ironclaw's own settings

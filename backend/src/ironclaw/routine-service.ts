@@ -60,7 +60,7 @@ export const BUILT_IN_ROUTINES: BuiltInRoutine[] = [
     defaultCron: '0 */6 * * *',  // Every 6 hours
     editable: true,
     category: 'knowledge',
-    prompt: 'Review the current BASTION_CONTEXT.md in your workspace. Use the bastion.problem_set.list tool to check for any new or updated operations. Report any changes you notice.',
+    prompt: 'Review the current BASTION_CONTEXT.md in your workspace. Use the bastion_problem_set_list tool to check for any new or updated operations. Report any changes you notice.',
   },
   {
     id: 'bastion_user_knowledge_sync',
@@ -95,7 +95,7 @@ export const BUILT_IN_ROUTINES: BuiltInRoutine[] = [
     defaultCron: '*/30 * * * *',  // Every 30 minutes
     editable: true,
     category: 'monitoring',
-    prompt: 'Run autonomous operational monitoring. Check active problem sets for: (1) contradictions or conflicts in the knowledge graph, (2) intelligence gaps that need research, (3) PIR/IR that may have been answered by new data, (4) changes in situation that warrant a draft assessment. Use bastion tools to query current state. Log any findings as autonomous activity entries using bastion.ironclaw.log_activity.',
+    prompt: 'Run autonomous operational monitoring. Check active problem sets for: (1) contradictions or conflicts in the knowledge graph, (2) intelligence gaps that need research, (3) PIR/IR that may have been answered by new data, (4) changes in situation that warrant a draft assessment. Use bastion tools to query current state. Log any findings as autonomous activity entries using bastion_autonomous_log_activity.',
   },
 ];
 
@@ -440,7 +440,7 @@ ${membershipList}
           `(2) identify intelligence gaps that need research, ` +
           `(3) check if any PIR/IR have been answered by new data, ` +
           `(4) assess whether the situation has changed enough to warrant a draft assessment. ` +
-          `Log any findings as autonomous activity entries using bastion.ironclaw.log_activity with the problem_set_id '${problemSetId}'.`,
+          `Log any findings as autonomous activity entries using bastion_autonomous_log_activity with the problem_set_id '${problemSetId}'.`,
         cooldownSecs: 900, // 15-minute cooldown minimum
       });
       console.log(`[routine-service] Registered autonomous monitoring for problem set ${problemSetId} (${cron})`);

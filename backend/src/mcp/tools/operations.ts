@@ -12,7 +12,7 @@ import type { MCPToolDefinition } from '../../ironclaw/tool-bridge.js';
 
 export const operationsTools: MCPToolDefinition[] = [
   {
-    name: 'bastion.ops.get_problem_set',
+    name: 'bastion_ops_get_problem_set',
     description:
       'Read full details of a problem set including mission, commander\'s intent, ' +
       'operational environment, and current phase status.',
@@ -34,7 +34,7 @@ export const operationsTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.ops.list_problem_sets',
+    name: 'bastion_ops_list_problem_sets',
     description:
       'List all accessible problem sets with summary information. ' +
       'Returns ID, name, phase, status, and last updated timestamp.',
@@ -61,7 +61,7 @@ export const operationsTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.ops.get_operational_design',
+    name: 'bastion_ops_get_operational_design',
     description:
       'Read operational design artifacts for a problem set including operational ' +
       'approach, decisive conditions, desired end state, and lines of operation.',
@@ -84,7 +84,7 @@ export const operationsTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.ops.get_campaign_plan',
+    name: 'bastion_ops_get_campaign_plan',
     description:
       'Read campaign plan data for a problem set including phases, objectives, ' +
       'tasks, and synchronization matrix.',
@@ -110,7 +110,7 @@ export const operationsTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.ops.get_coa',
+    name: 'bastion_ops_get_coa',
     description:
       'Read course of action details including scheme of maneuver, tasks to ' +
       'subordinates, risk assessment, and supporting attachments.',

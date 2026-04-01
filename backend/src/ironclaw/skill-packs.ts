@@ -68,8 +68,8 @@ export const SKILL_PACKS: SkillPack[] = [
       'intelligence estimate',
     ],
     requiredTools: [
-      'bastion.knowledge.search',
-      'bastion.ops.get_problem_set',
+      'bastion_knowledge_search',
+      'bastion_ops_get_problem_set',
     ],
     trustLevel: 'medium',
   },
@@ -95,8 +95,8 @@ export const SKILL_PACKS: SkillPack[] = [
       'planning timeline',
     ],
     requiredTools: [
-      'bastion.ops.get_campaign_plan',
-      'bastion.ops.get_coa',
+      'bastion_ops_get_campaign_plan',
+      'bastion_ops_get_coa',
     ],
     trustLevel: 'medium',
   },
@@ -121,8 +121,8 @@ export const SKILL_PACKS: SkillPack[] = [
       'logistics estimate',
     ],
     requiredTools: [
-      'bastion.resources.list',
-      'bastion.resources.get_status',
+      'bastion_resources_list',
+      'bastion_resources_get_status',
     ],
     trustLevel: 'low',
   },
@@ -146,7 +146,7 @@ export const SKILL_PACKS: SkillPack[] = [
       'personnel estimate',
     ],
     requiredTools: [
-      'bastion.personnel.list_staff',
+      'bastion_personnel_list_staff',
     ],
     trustLevel: 'low',
   },
@@ -171,7 +171,7 @@ export const SKILL_PACKS: SkillPack[] = [
       'comms estimate',
     ],
     requiredTools: [
-      'bastion.resources.search_capabilities',
+      'bastion_resources_search_capabilities',
     ],
     trustLevel: 'medium',
   },
@@ -197,7 +197,7 @@ export const SKILL_PACKS: SkillPack[] = [
       'civil estimate',
     ],
     requiredTools: [
-      'bastion.knowledge.search',
+      'bastion_knowledge_search',
     ],
     trustLevel: 'low',
   },
@@ -223,8 +223,8 @@ export const SKILL_PACKS: SkillPack[] = [
       'decision support',
     ],
     requiredTools: [
-      'bastion.ops.get_coa',
-      'bastion.knowledge.get_relationships',
+      'bastion_ops_get_coa',
+      'bastion_knowledge_get_relationships',
     ],
     trustLevel: 'high',
   },

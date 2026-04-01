@@ -6,9 +6,9 @@
  * with the appropriate clearance level.
  *
  * Access control:
- *   - bastion.personnel.list_staff    → requires CUI+
- *   - bastion.personnel.get_member    → requires CUI+
- *   - bastion.personnel.get_clearances → requires SECRET+
+ *   - bastion_personnel_list_staff    → requires CUI+
+ *   - bastion_personnel_get_member    → requires CUI+
+ *   - bastion_personnel_get_clearances → requires SECRET+
  *
  * Blueprint Section 4.1 — Personnel domain tools (clearance-gated).
  */
@@ -20,14 +20,14 @@ import type { MCPToolDefinition } from '../../ironclaw/tool-bridge.js';
  * Consumed by mcp-server.ts to gate tool execution.
  */
 export const PERSONNEL_TOOL_CLEARANCES: Record<string, 'CUI' | 'SECRET' | 'TOP_SECRET'> = {
-  'bastion.personnel.list_staff': 'CUI',
-  'bastion.personnel.get_member': 'CUI',
-  'bastion.personnel.get_clearances': 'SECRET',
+  'bastion_personnel_list_staff': 'CUI',
+  'bastion_personnel_get_member': 'CUI',
+  'bastion_personnel_get_clearances': 'SECRET',
 };
 
 export const personnelTools: MCPToolDefinition[] = [
   {
-    name: 'bastion.personnel.list_staff',
+    name: 'bastion_personnel_list_staff',
     description:
       '[CLEARANCE REQUIRED: CUI+] List staff members with summary information ' +
       'including name, rank, position, staff section, and contact status. ' +
@@ -59,7 +59,7 @@ export const personnelTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.personnel.get_member',
+    name: 'bastion_personnel_get_member',
     description:
       '[CLEARANCE REQUIRED: CUI+] Get detailed information for a specific staff ' +
       'member including qualifications, assignments, and role history. ' +
@@ -86,7 +86,7 @@ export const personnelTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.personnel.get_clearances',
+    name: 'bastion_personnel_get_clearances',
     description:
       '[CLEARANCE REQUIRED: SECRET+] Get clearance and access information for ' +
       'a staff member or list of staff members. This tool returns sensitive ' +

@@ -125,8 +125,8 @@ export const PROTECTED_CONFIG_KEYS = new Set([
  * in the action pipeline regardless of risk level or trust.
  */
 export const SELF_GOVERNANCE_ACTIONS = new Set([
-  'bastion.system.update_config',       // Can target protected keys
-  'bastion.problem_set.configure_agents', // Can reconfigure Ironclaw itself
+  'bastion_system_update_config',       // Can target protected keys
+  'bastion_problem_set_configure_agents', // Can reconfigure Ironclaw itself
 ]) as ReadonlySet<string>;
 
 // ---------------------------------------------------------------------------

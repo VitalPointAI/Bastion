@@ -26,7 +26,7 @@ export type {
 export * from './self-update-service.js';
 export * from './audit-anchor-service.js';
 export { signRequest, verifyRequest } from './hmac-auth.js';
-// NOTE: tool-bridge.ts should import githubService for 'bastion.code.create_pr' actions
+// NOTE: tool-bridge.ts should import githubService for 'bastion_code_create_pr' actions
 
 // ---------------------------------------------------------------------------
 // Memory lifecycle initialization (Phase 57)

@@ -299,16 +299,16 @@ The problem set brain is a living, focused subgraph extracted from the global
 knowledge graph. You are responsible for keeping it current, relevant, and complete.
 
 On each heartbeat cycle:
-1. Call bastion.brain.get_slice_stats to assess the current state of the slice
-2. Call bastion.brain.evaluate_relevance to find actors in the global brain that
+1. Call bastion_brain_get_slice_stats to assess the current state of the slice
+2. Call bastion_brain_evaluate_relevance to find actors in the global brain that
    are newly relevant (connected to existing slice actors, matching scope terms,
    or linked to recent OSINT/documents for this problem set)
-3. If high-scoring candidates are found, call bastion.brain.augment_slice to pull
+3. If high-scoring candidates are found, call bastion_brain_augment_slice to pull
    them in — include a reason explaining why they are relevant
 4. Check for actors in the slice that are stale (not updated recently, no active
    relationships, contradicted by newer intelligence) and prune them with
-   bastion.brain.prune_slice
-5. Log curation actions via bastion.autonomous.log_activity so the commander
+   bastion_brain_prune_slice
+5. Log curation actions via bastion_autonomous_log_activity so the commander
    can see what changed and why
 
 The brain should grow organically as the situation develops — new alliances form,
@@ -318,10 +318,10 @@ is superseded. Your judgment determines relevance.
 
 ### Self-Extension Protocol
 When you identify a recurring task or pattern that you keep doing manually:
-1. Propose a new skill or routine by calling bastion.autonomous.send_alert with the proposal
+1. Propose a new skill or routine by calling bastion_autonomous_send_alert with the proposal
 2. This creates a medium-risk governance gate requiring commander approval
 3. Once approved, register the new routine with /routine register
-4. Log the creation via bastion.autonomous.log_activity
+4. Log the creation via bastion_autonomous_log_activity
 
 ### Decision Surfacing
 Not every finding needs a decision gate. Use judgment:
@@ -440,10 +440,10 @@ export function renderHeartbeatMd(config: AgentConfig, operationalContext?: Oper
     lines.push(``, `### Autonomous Monitoring Tasks`);
     lines.push(
       `On each heartbeat tick, evaluate the following using your MCP tools:`,
-      `1. Run conflict detection against the knowledge graph (bastion.intel.detect_conflicts)`,
-      `2. Check active PIRs against recent intelligence (bastion.intel.get_priority_intel_requirements)`,
-      `3. Assess intelligence gaps and research top-priority gaps (bastion.intel.get_intelligence_gaps → bastion.intel.web_search → bastion.intel.create_research_event)`,
-      `4. If significant intelligence accumulated since last assessment, draft situation assessment (bastion.intel.draft_situation_assessment)`,
+      `1. Run conflict detection against the knowledge graph (bastion_intel_detect_conflicts)`,
+      `2. Check active PIRs against recent intelligence (bastion_intel_get_priority_intel_requirements)`,
+      `3. Assess intelligence gaps and research top-priority gaps (bastion_intel_get_intelligence_gaps → bastion_intel_web_search → bastion_intel_create_research_event)`,
+      `4. If significant intelligence accumulated since last assessment, draft situation assessment (bastion_intel_draft_situation_assessment)`,
       `5. Check for stale decisions that need escalation`,
     );
 
@@ -472,8 +472,8 @@ export function renderHeartbeatMd(config: AgentConfig, operationalContext?: Oper
 
     lines.push(``, `### Efficiency Rules`);
     lines.push(`- Do NOT run full analysis if nothing has changed since your last heartbeat`);
-    lines.push(`- Log all autonomous actions via bastion.autonomous.log_activity`);
-    lines.push(`- Use bastion.autonomous.send_alert only for urgent/critical findings`);
+    lines.push(`- Log all autonomous actions via bastion_autonomous_log_activity`);
+    lines.push(`- Use bastion_autonomous_send_alert only for urgent/critical findings`);
     lines.push(`- Maximum 5 tool calls per heartbeat tick unless you find something significant`);
   }
 

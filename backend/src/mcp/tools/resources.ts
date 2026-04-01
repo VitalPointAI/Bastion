@@ -12,7 +12,7 @@ import type { MCPToolDefinition } from '../../ironclaw/tool-bridge.js';
 
 export const resourcesTools: MCPToolDefinition[] = [
   {
-    name: 'bastion.resources.list',
+    name: 'bastion_resources_list',
     description:
       'List resources registered in the Bastion resource registry, optionally ' +
       'filtered by type or capability. Returns resource ID, name, type, status, ' +
@@ -48,7 +48,7 @@ export const resourcesTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.resources.get_status',
+    name: 'bastion_resources_get_status',
     description:
       'Get current status and readiness information for a specific resource. ' +
       'Returns availability, readiness level, last updated timestamp, and any ' +
@@ -71,7 +71,7 @@ export const resourcesTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.resources.search_capabilities',
+    name: 'bastion_resources_search_capabilities',
     description:
       'Search resources by capability requirements. Returns resources that match ' +
       'the requested capabilities, sorted by best fit.',

@@ -426,7 +426,7 @@ export class IronclawService {
       // Graph queries and design synthesis are read-only operations that
       // should execute immediately when the commander directs action.
       // No approval card needed — just do it and send the result back.
-      if ((riskLevel === 'low' && actionType.startsWith('bastion.graph.')) || actionType === 'bastion.design.synthesize_current_state') {
+      if ((riskLevel === 'low' && actionType.startsWith('bastion_graph_')) || actionType === 'bastion_design_synthesize_current_state') {
         const { executeApprovedAction } = await import('./builder-handlers.js');
         console.log(`[ironclaw] Auto-executing low-risk tool: ${actionType}`);
         const execResult = await executeApprovedAction(actionType, toolPayload, 'ironclaw');
@@ -454,7 +454,7 @@ export class IronclawService {
             : JSON.stringify(execResult.result, null, 2);
 
           // If the result is a field suggestion, format it properly
-          const isSynthesis = actionType === 'bastion.design.synthesize_current_state';
+          const isSynthesis = actionType === 'bastion_design_synthesize_current_state';
           const resultMsg = await ironclawStore.addMessage({
             problem_set_id: problemSetId,
             content: isSynthesis
@@ -964,7 +964,7 @@ export class IronclawService {
       if (skills.length === 0) return '';
 
       const lines = skills.slice(0, 20).map((s) => `- ${s.name}: ${s.description}`);
-      return `[AVAILABLE SKILLS]\n${lines.join('\n')}\nIf the commander needs a capability not listed, create it via bastion.skill.create.`;
+      return `[AVAILABLE SKILLS]\n${lines.join('\n')}\nIf the commander needs a capability not listed, create it via bastion_skill_create.`;
     } catch {
       return '';
     }
@@ -1030,10 +1030,10 @@ export class IronclawService {
       '',
       'USE this context to ground every response. When discussing actors, tensions, or strategic dynamics,',
       'reference the KG data. When you need deeper detail beyond the summary, use your graph tools:',
-      '- bastion.graph.search_actors: Find specific actors by name or type',
-      '- bastion.graph.get_actor: Get full actor details with all relationships',
-      '- bastion.graph.query: Run custom read-only Cypher for complex traversals',
-      '- bastion.graph.stats: Get overall graph statistics',
+      '- bastion_graph_search_actors: Find specific actors by name or type',
+      '- bastion_graph_get_actor: Get full actor details with all relationships',
+      '- bastion_graph_query: Run custom read-only Cypher for complex traversals',
+      '- bastion_graph_stats: Get overall graph statistics',
       '',
       'PROACTIVELY identify insights, patterns, and potential future developments from the graph data.',
       'A good Chief of Staff does not wait to be asked — they surface what matters.',
@@ -1053,21 +1053,21 @@ export class IronclawService {
       '  "tool_call": { "action_type": "tool.name.here", "payload": { ... } } }',
       '',
       'Available tools and when to use them:',
-      '- bastion.design.synthesize_current_state → "Get the strategic environment / strat env / current state"',
+      '- bastion_design_synthesize_current_state → "Get the strategic environment / strat env / current state"',
       `  Payload: { "problem_set_id": "${problemSetId}" }`,
       '  Pulls actors, relationships, tensions, strategic docs from the graph and synthesizes into Current State.',
-      '- bastion.graph.search_actors → "Find actor / search for entity"',
+      '- bastion_graph_search_actors → "Find actor / search for entity"',
       `  Payload: { "problem_set_id": "${problemSetId}", "query": "search term" }`,
-      '- bastion.graph.get_actor → "Get details on [specific actor]"',
+      '- bastion_graph_get_actor → "Get details on [specific actor]"',
       '  Payload: { "actor_id": "ACT-xxx" }',
-      '- bastion.graph.query → "What does the graph show about X?"',
+      '- bastion_graph_query → "What does the graph show about X?"',
       `  Payload: { "problem_set_id": "${problemSetId}", "cypher": "MATCH (a:Actor) WHERE..." }`,
-      '- bastion.graph.stats → "Graph overview / how many actors?"',
+      '- bastion_graph_stats → "Graph overview / how many actors?"',
       `  Payload: { "problem_set_id": "${problemSetId}" }`,
       '',
       'Example — commander says "synthesize the current state":',
       '{ "content": "Pulling the operational environment from the knowledge graph now, Sir.",',
-      `  "tool_call": { "action_type": "bastion.design.synthesize_current_state", "payload": { "problem_set_id": "${problemSetId}" } } }`,
+      `  "tool_call": { "action_type": "bastion_design_synthesize_current_state", "payload": { "problem_set_id": "${problemSetId}" } } }`,
       '',
       'The backend will execute this tool, get the result, and you\'ll receive it in a follow-up.',
       'When the tool result comes back, use it to generate the field content.',
@@ -1105,7 +1105,7 @@ export class IronclawService {
       '## Adaptive Capability Development',
       'When the commander requests a capability not available in your current tools or skills, you SHOULD create it:',
       '1. Acknowledge the gap transparently: "I don\'t have that capability yet, but I can create it."',
-      '2. Create the skill via bastion.skill.create (requires commander confirmation via action card).',
+      '2. Create the skill via bastion_skill_create (requires commander confirmation via action card).',
       '3. Execute the new skill to fulfill the original request.',
       '',
       'This is your role — a Chief of Staff develops new staff processes when the mission demands it.',

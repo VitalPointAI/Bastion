@@ -11,7 +11,7 @@ import type { MCPToolDefinition } from '../../ironclaw/tool-bridge.js';
 
 export const calendarTools: MCPToolDefinition[] = [
   {
-    name: 'bastion.calendar.get_schedule',
+    name: 'bastion_calendar_get_schedule',
     description:
       'Get the exercise or training schedule for a problem set, including key ' +
       'events, milestones, phase transitions, and decision points.',
@@ -38,7 +38,7 @@ export const calendarTools: MCPToolDefinition[] = [
   },
 
   {
-    name: 'bastion.calendar.get_events',
+    name: 'bastion_calendar_get_events',
     description:
       'List calendar events within a date range. Returns event title, type, ' +
       'start/end times, location, and associated problem set.',

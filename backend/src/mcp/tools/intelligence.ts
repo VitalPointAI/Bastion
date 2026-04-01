@@ -14,7 +14,7 @@ import type { MCPToolDefinition } from '../../ironclaw/tool-bridge.js';
 export const intelligenceTools: MCPToolDefinition[] = [
   // ── Web Intelligence ──
   {
-    name: 'bastion.intel.web_search',
+    name: 'bastion_intel_web_search',
     description:
       'Search the web via SearXNG for intelligence on a topic. Returns search results with ' +
       'titles, URLs, and snippets.',
@@ -35,7 +35,7 @@ export const intelligenceTools: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.intel.create_research_event',
+    name: 'bastion_intel_create_research_event',
     description:
       'Create a synthetic OSINT event from autonomous research findings. ' +
       'The event enters the standard ingestion pipeline and is stored in the OSINT event log.',
@@ -68,7 +68,7 @@ export const intelligenceTools: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.intel.process_osint_event',
+    name: 'bastion_intel_process_osint_event',
     description:
       'Trigger the OSINT specialist agent pipeline to process an event, extracting entities, ' +
       'relationships, and tensions into the knowledge graph.',
@@ -91,7 +91,7 @@ export const intelligenceTools: MCPToolDefinition[] = [
 
   // ── Analysis ──
   {
-    name: 'bastion.intel.detect_conflicts',
+    name: 'bastion_intel_detect_conflicts',
     description:
       'Scan the knowledge graph for contradictions, conflicting claims, or opposing intelligence ' +
       'about entities. Returns conflicts as an array with entity, competing claims, and sources.',
@@ -112,7 +112,7 @@ export const intelligenceTools: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.intel.draft_situation_assessment',
+    name: 'bastion_intel_draft_situation_assessment',
     description:
       'Gather raw intelligence data for a situation assessment. Returns structured data ' +
       '(recent events, graph changes, active PIRs, gaps) that Ironclaw synthesizes into a narrative.',
@@ -139,7 +139,7 @@ export const intelligenceTools: MCPToolDefinition[] = [
 
   // ── Autonomous Activity ──
   {
-    name: 'bastion.autonomous.log_activity',
+    name: 'bastion_autonomous_log_activity',
     description:
       'Log an autonomous activity entry visible in the commander\'s activity feed. ' +
       'Use to record what Ironclaw is doing in the background.',
@@ -172,7 +172,7 @@ export const intelligenceTools: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.autonomous.send_alert',
+    name: 'bastion_autonomous_send_alert',
     description:
       'Send an alert to commanders via WebSocket and optionally Telegram. ' +
       'Use for time-sensitive findings that require commander attention.',
@@ -204,7 +204,7 @@ export const intelligenceTools: MCPToolDefinition[] = [
 
   // ── Brain Curation ──
   {
-    name: 'bastion.brain.evaluate_relevance',
+    name: 'bastion_brain_evaluate_relevance',
     description:
       'Scan the global knowledge graph for actors/relationships that are relevant to this ' +
       'problem set but not yet in its brain slice. Returns scored candidates with reasons for relevance.',
@@ -225,7 +225,7 @@ export const intelligenceTools: MCPToolDefinition[] = [
     riskLevel: 'low',
   },
   {
-    name: 'bastion.brain.augment_slice',
+    name: 'bastion_brain_augment_slice',
     description:
       'Pull actors into this problem set\'s brain slice. Updates containerIds so they appear ' +
       'in the problem set\'s focused view. Use when you discover actors in the global brain ' +
@@ -252,7 +252,7 @@ export const intelligenceTools: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.brain.prune_slice',
+    name: 'bastion_brain_prune_slice',
     description:
       'Remove actors from this problem set\'s brain slice that are no longer relevant ' +
       '(stale, disproven, superseded). Does not delete from the global brain — only removes ' +
@@ -279,7 +279,7 @@ export const intelligenceTools: MCPToolDefinition[] = [
     riskLevel: 'medium',
   },
   {
-    name: 'bastion.brain.get_slice_stats',
+    name: 'bastion_brain_get_slice_stats',
     description:
       'Get statistics about the problem set\'s brain slice: size vs global brain, ' +
       'staleness metrics, orphan count. Useful for deciding whether curation is needed.',
