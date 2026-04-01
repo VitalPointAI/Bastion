@@ -967,7 +967,24 @@ export class ToolBridge {
       return { status: 'denied', error: selfModCheck };
     }
 
-    // 2. Validate scope
+    // 2. Determine risk level and autonomous context
+    const toolDef = BASTION_TOOLS.find((t) => t.name === toolName);
+    const riskLevel = toolDef?.riskLevel ?? 'medium';
+    const isAutonomousContext = !userDid || userDid === 'system' || userDid === 'default';
+
+    // 3. For autonomous/MCP contexts (no real user DID), low/medium-risk tools
+    //    execute directly without scope validation or the action pipeline.
+    //    The pipeline requires interactive user confirmation which is impossible
+    //    during routine/heartbeat execution. High-risk tools are still blocked.
+    if (isAutonomousContext && riskLevel !== 'high') {
+      const execResult = await executeApprovedAction(toolName, args, userDid || 'system');
+      if (execResult.success) {
+        return { status: 'executed', result: execResult.result };
+      }
+      return { status: 'denied', error: `Execution failed: ${execResult.error}` };
+    }
+
+    // 4. Validate scope (interactive contexts only)
     const scopeResult = this.validateScope(toolName, args, problemSetId);
     if (!scopeResult.valid) {
       return {
@@ -976,7 +993,7 @@ export class ToolBridge {
       };
     }
 
-    // 3. Create action from tool call
+    // 5. Create action from tool call
     const action: IronclawAction = {
       id: `tool_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       type: toolName,
@@ -986,10 +1003,10 @@ export class ToolBridge {
       requested_by: userDid,
     };
 
-    // 4. Route through action pipeline
+    // 6. Route through action pipeline (interactive contexts)
     const result = await actionPipeline.processAction(action, userDid);
 
-    // 5. Execute builder CRUD when action pipeline approves
+    // 7. Execute builder CRUD when action pipeline approves
     if (result.status === 'executed') {
       const execResult = await executeApprovedAction(action.type, action.payload, userDid);
       if (execResult.success) {
