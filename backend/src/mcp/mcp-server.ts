@@ -83,7 +83,21 @@ async function isToolAccessAuthorized(
   agentDID: string | undefined,
   tool: MCPToolDefinition,
 ): Promise<{ authorized: boolean; reason?: string }> {
+  // When no DID is provided (e.g. Ironclaw routine/heartbeat MCP connections),
+  // allow in dev mode (no allowlist configured). Ironclaw connects to the MCP
+  // server internally on ironclaw-network without an x-agent-did header.
   if (!agentDID) {
+    if (ALLOWED_DIDS === null) {
+      // Dev mode: allow internal MCP connections without DID.
+      // High-risk tools still blocked without explicit DID.
+      if (tool.riskLevel === 'high') {
+        return {
+          authorized: false,
+          reason: `Tool "${tool.name}" requires explicit DID authorization (risk level: high). No agent DID provided.`,
+        };
+      }
+      return { authorized: true };
+    }
     return { authorized: false, reason: 'No agent DID provided in x-agent-did header' };
   }
 

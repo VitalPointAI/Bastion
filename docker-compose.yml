@@ -181,7 +181,7 @@ services:
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password}
       - IRONCLAW_URL=http://ironclaw:8080
-      - IRONCLAW_VERSION=0.23.0
+      - IRONCLAW_VERSION=0.24.0
       - IRONCLAW_SHARED_SECRET=${IRONCLAW_SHARED_SECRET:-dev-shared-secret-change-me}
       - DATABASE_URL_IRONCLAW=postgresql://ironclaw:ironclaw@ironclaw-postgres:5432/ironclaw
       - MCP_BASTION_URL=http://bastion-mcp:3334/mcp
