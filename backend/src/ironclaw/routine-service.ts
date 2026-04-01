@@ -95,7 +95,14 @@ export const BUILT_IN_ROUTINES: BuiltInRoutine[] = [
     defaultCron: '*/30 * * * *',  // Every 30 minutes
     editable: true,
     category: 'monitoring',
-    prompt: 'Run autonomous operational monitoring. Check active problem sets for: (1) contradictions or conflicts in the knowledge graph, (2) intelligence gaps that need research, (3) PIR/IR that may have been answered by new data, (4) changes in situation that warrant a draft assessment. Use bastion tools to query current state. Log any findings as autonomous activity entries using bastion_autonomous_log_activity.',
+    prompt: 'Run autonomous operational monitoring. Use ONLY these MCP tools (exact names):\n' +
+      '- bastion_ops_list_problem_sets: list active problem sets\n' +
+      '- bastion_intel_detect_conflicts: check for contradictions in the knowledge graph\n' +
+      '- bastion_intel_get_intelligence_gaps: identify intelligence gaps\n' +
+      '- bastion_intel_get_priority_intel_requirements: check PIR/IR status\n' +
+      '- bastion_intel_draft_situation_assessment: draft assessment if situation changed\n' +
+      '- bastion_autonomous_log_activity: log ALL findings (requires problem_set_id, activity_type, severity, summary)\n' +
+      'Do NOT invent or guess tool names. Only call the tools listed above.',
   },
 ];
 
@@ -434,11 +441,13 @@ ${membershipList}
         userId: 'system',
         cron,
         prompt: `Run autonomous operational monitoring for problem set ${problemSetId}. ` +
-          `Use bastion tools to: (1) check for contradictions or conflicts in the knowledge graph, ` +
-          `(2) identify intelligence gaps that need research, ` +
-          `(3) check if any PIR/IR have been answered by new data, ` +
-          `(4) assess whether the situation has changed enough to warrant a draft assessment. ` +
-          `Log any findings as autonomous activity entries using bastion_autonomous_log_activity with the problem_set_id '${problemSetId}'.`,
+          `You MUST use ONLY the following MCP tools (these are the exact tool names available to you):\n` +
+          `- bastion_intel_detect_conflicts: check for contradictions in the knowledge graph (pass problem_set_id: "${problemSetId}")\n` +
+          `- bastion_intel_get_intelligence_gaps: identify intelligence gaps (pass problem_set_id: "${problemSetId}")\n` +
+          `- bastion_intel_get_priority_intel_requirements: check PIR/IR status (pass problem_set_id: "${problemSetId}")\n` +
+          `- bastion_intel_draft_situation_assessment: draft assessment if situation changed (pass problem_set_id: "${problemSetId}")\n` +
+          `- bastion_autonomous_log_activity: log ALL findings with problem_set_id "${problemSetId}", activity_type, severity, and summary\n` +
+          `Do NOT invent or guess tool names. Only call the tools listed above.`,
         cooldownSecs: 900, // 15-minute cooldown minimum
       });
       console.log(`[routine-service] Registered autonomous monitoring for problem set ${problemSetId} (${cron})`);
