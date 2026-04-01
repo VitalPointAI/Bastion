@@ -184,6 +184,7 @@ export class RoutineService {
       opts.userId,
       JSON.stringify({ schedule: sixFieldCron }),
       JSON.stringify({
+        title: opts.name,
         prompt: opts.prompt,
         max_tool_rounds: 5,
         tools_enabled: true,
