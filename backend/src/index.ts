@@ -634,23 +634,32 @@ server.listen(port, async () => {
   // Phase 65: Gap filler retired — Ironclaw handles gap detection autonomously via MCP tools
   // (bastion.intel.get_intelligence_gaps → bastion.intel.web_search → bastion.intel.create_research_event)
 
-  // Phase 65: Register autonomous monitoring routines for all active problem sets on startup.
-  // Without this, routines only get registered when a user sends a message (syncUserIdentity),
-  // meaning Ironclaw has nothing to execute after a server restart.
+  // Register all Ironclaw routines on startup: built-in global routines +
+  // per-problem-set autonomous monitoring. This ensures routines are always
+  // current after deploys (schema changes, new routines) without manual
+  // re-registration via the /routines/re-register endpoint.
   try {
     const pool = (await import('./lib/database.js')).getPool();
-    const { routineService } = await import('./ironclaw/routine-service.js');
+    const { routineService, BUILT_IN_ROUTINES } = await import('./ironclaw/routine-service.js');
+
+    // Register built-in global routines (knowledge sync, daily brief, etc.)
+    for (const routine of BUILT_IN_ROUTINES) {
+      if (!routine.defaultCron) continue;
+      routineService.registerRoutine(routine.id, routine.defaultCron).catch(() => {/* logged inside */});
+    }
+
+    // Register per-problem-set autonomous monitoring
     const activePs = await pool.query<{ id: string }>(
       `SELECT id FROM problem_sets WHERE status IN ('active', 'planning', 'in-progress') LIMIT 50`,
     );
     for (const row of activePs.rows) {
       routineService.registerAutonomousMonitoring(row.id).catch(() => {/* logged inside */});
     }
-    if (activePs.rows.length > 0) {
-      console.log(`Registered autonomous monitoring for ${activePs.rows.length} active problem sets`);
-    }
+
+    const totalRoutines = BUILT_IN_ROUTINES.filter(r => r.defaultCron).length + activePs.rows.length;
+    console.log(`Registered ${totalRoutines} Ironclaw routines (${BUILT_IN_ROUTINES.filter(r => r.defaultCron).length} built-in + ${activePs.rows.length} problem set monitoring)`);
   } catch (error) {
-    console.warn('Autonomous monitoring startup registration failed (non-fatal):', error);
+    console.warn('Ironclaw routine startup registration failed (non-fatal):', error);
   }
   // gapFillerService.start() is now a no-op but left here as a reminder the service was retired.
   // try {
