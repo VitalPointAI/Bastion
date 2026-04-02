@@ -88,10 +88,9 @@ services:
     entrypoint: ["/usr/local/bin/entrypoint.sh"]
     restart: unless-stopped
     environment:
-      # LLM backend — Anthropic via OAuth (subscription) or API key (fallback)
+      # LLM backend — Anthropic via OAuth (subscription only, no API key fallback)
       LLM_BACKEND: anthropic
       ANTHROPIC_OAUTH_TOKEN: ${ANTHROPIC_OAUTH_TOKEN:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_MODEL: claude-haiku-4-5-20251001
       # Database (ironclaw's own pgvector instance)
       DATABASE_URL: postgresql://ironclaw:${IRONCLAW_DB_PASSWORD}@ironclaw-postgres:5432/ironclaw
