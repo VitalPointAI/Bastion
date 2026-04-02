@@ -382,7 +382,7 @@ ${membershipList}
       await this.upsertRoutine({
         name: routineId,
         description: routine.description,
-        userId: 'system',
+        userId: 'default',
         cron,
         prompt: routine.prompt ?? routine.description,
       });
@@ -397,7 +397,7 @@ ${membershipList}
    */
   async unregisterRoutine(routineId: string): Promise<void> {
     try {
-      await this.disableRoutine(routineId, 'system');
+      await this.disableRoutine(routineId, 'default');
     } catch (err) {
       console.error(`[routine-service] Failed to unregister routine ${routineId}:`, err instanceof Error ? err.message : err);
       throw err;
@@ -438,7 +438,7 @@ ${membershipList}
       await this.upsertRoutine({
         name: `autonomous_monitoring__${problemSetId}`,
         description: `Autonomous operational monitoring for problem set ${problemSetId}. Checks for contradictions, intelligence gaps, unanswered PIRs, and situation changes.`,
-        userId: 'system',
+        userId: 'default',
         cron,
         prompt: `Run autonomous operational monitoring for problem set ${problemSetId}. ` +
           `You MUST use ONLY the following MCP tools (these are the exact tool names available to you):\n` +
@@ -469,7 +469,7 @@ ${membershipList}
    */
   async unregisterAutonomousMonitoring(problemSetId: string): Promise<void> {
     try {
-      await this.disableRoutine(`autonomous_monitoring__${problemSetId}`, 'system');
+      await this.disableRoutine(`autonomous_monitoring__${problemSetId}`, 'default');
       console.log(`[routine-service] Unregistered autonomous monitoring for problem set ${problemSetId}`);
     } catch (err) {
       // Non-blocking: log warning but do not throw

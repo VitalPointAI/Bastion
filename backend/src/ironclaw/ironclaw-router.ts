@@ -1179,7 +1179,7 @@ ironclawRouter.post(
           try {
             for (const name of staleNames) {
               const result = await ironclawPool.query(
-                `DELETE FROM routines WHERE name = $1 AND user_id != 'system' RETURNING name`,
+                `DELETE FROM routines WHERE name = $1 AND user_id NOT IN ('system', 'default') RETURNING name`,
                 [name],
               );
               if (result.rowCount && result.rowCount > 0) {
