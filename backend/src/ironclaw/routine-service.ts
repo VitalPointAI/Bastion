@@ -193,7 +193,7 @@ export class RoutineService {
       JSON.stringify({
         title: opts.name,
         description: opts.prompt,
-        max_iterations: 25,
+        max_iterations: 10,
       }),
       opts.cooldownSecs ?? 300,
     ]);
