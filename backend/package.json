@@ -67,6 +67,7 @@
     "pdfkit": "^0.18.0",
     "pg": "^8.20.0",
     "pg-boss": "^12.14.0",
+    "pgvector": "^0.2.1",
     "pptxgenjs": "^4.0.1",
     "qrcode": "^1.5.4",
     "rss-parser": "^3.13.0",
