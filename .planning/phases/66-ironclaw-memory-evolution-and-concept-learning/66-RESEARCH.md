@@ -516,27 +516,31 @@ Vitest is the test framework (`npm test` = `vitest run`). No config file found â
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **pgvector in TimescaleDB image?**
    - What we know: Main Bastion postgres uses `timescale/timescaledb:latest-pg16`; ironclaw-postgres uses `pgvector/pgvector:pg16`
    - What's unclear: Whether pgvector is bundled in the TimescaleDB Docker image
    - Recommendation: Test `CREATE EXTENSION vector` against coalition_ops in Wave 0 of Plan 66-01. If it fails, proceed with Path B (ironclaw-postgres). **This is the critical blocker for Plan 66-01.**
+   - **RESOLVED:** D-01 decided to use ironclaw-postgres (Path B). No pgvector in TimescaleDB needed.
 
 2. **Ironclaw sidecar `/memory forget` command availability**
    - What we know: REPL FIFO commands are used for `/mcp add` (via `sendMessage`); sidecar is v0.24.0
    - What's unclear: Whether Ironclaw v0.24.0 supports memory management REPL commands like `/memory forget <thread_id>`
    - Recommendation: Plan 66-05 begins with investigation: send a test `/memory` command via webhook and observe response. If not supported, use REPL FIFO pattern (same as `/mcp add`) or fall back to no-op with a warning.
+   - **RESOLVED:** Plan 07 implements runtime probe with graceful fallback (`checkSidecarMemorySupport()`).
 
 3. **OpenAI API key provisioning strategy**
    - What we know: No OPENAI_API_KEY exists; existing embedding uses in entity-linker and embedding-matcher likely fail silently
    - What's unclear: Whether project wants to add OpenAI billing or find an alternative
    - Recommendation: Add OPENAI_API_KEY as a required env var with documentation in `.env.example`. Consider `text-embedding-3-small` at $0.02/1M tokens â€” very low cost for this use case.
+   - **RESOLVED:** Plan 01 adds OPENAI_API_KEY to docker-compose.yml with `user_setup` guidance.
 
 4. **Commander rating UX: thumbs up/down vs 1-5 stars**
    - What we know: DESIGN.md says "thumbs up/down + optional notes"
    - What's unclear: What integer encoding to use in the column
    - Recommendation: Use `SMALLINT` with values: 1 (positive), 0 (neutral/no rating), -1 (negative). Maps cleanly to thumbs UI and allows SQL aggregations.
+   - **RESOLVED:** D-06 decided thumbs up/down with optional comment. SMALLINT encoding: 1 (positive), -1 (negative), null (unrated).
 
 ---
 
