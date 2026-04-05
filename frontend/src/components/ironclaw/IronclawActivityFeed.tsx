@@ -158,7 +158,16 @@ function ActivityCard({ entry, problemSetId: _problemSetId, currentRating, onRat
   const color = iconColorClass(entry.severity);
 
   // Show rating controls only for activities older than 30 seconds
-  const showRating = Date.now() - new Date(entry.createdAt).getTime() > 30000;
+  const [showRating, setShowRating] = useState(
+    () => globalThis.Date.now() - new Date(entry.createdAt).getTime() > 30000,
+  );
+  useEffect(() => {
+    if (showRating) return;
+    const remaining = 30000 - (globalThis.Date.now() - new Date(entry.createdAt).getTime());
+    if (remaining <= 0) { setShowRating(true); return; }
+    const timer = setTimeout(() => setShowRating(true), remaining);
+    return () => clearTimeout(timer);
+  }, [showRating, entry.createdAt]);
 
   return (
     <div className="flex gap-3 px-3 py-2.5 border-b border-slate-700/40 hover:bg-slate-800/30 transition-colors">
