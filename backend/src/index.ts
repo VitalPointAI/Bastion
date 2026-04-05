@@ -634,6 +634,36 @@ server.listen(port, async () => {
   // Phase 65: Gap filler retired — Ironclaw handles gap detection autonomously via MCP tools
   // (bastion.intel.get_intelligence_gaps → bastion.intel.web_search → bastion.intel.create_research_event)
 
+  // Clear stale routine_runs stuck in 'running'/'dispatched' in Ironclaw's DB.
+  // These block the cron ticker (max_concurrent=1) and prevent all future runs.
+  // Runs older than 15 minutes are considered orphaned — normal runs complete in ~2 min.
+  // Also runs on a periodic interval to catch mid-flight hangs, not just startup.
+  try {
+    const pg = await import('pg');
+    const ironclawDbUrl = process.env.DATABASE_URL_IRONCLAW ?? process.env.IRONCLAW_DB_URL;
+    if (ironclawDbUrl) {
+      const ironclawPool = new pg.default.Pool({ connectionString: ironclawDbUrl, max: 1 });
+      const clearOrphans = async () => {
+        try {
+          const result = await ironclawPool.query(
+            `UPDATE routine_runs SET status = 'failed', result_summary = 'Auto-cleared: stuck > 15min', completed_at = NOW()
+             WHERE status IN ('running', 'dispatched') AND started_at < NOW() - INTERVAL '15 minutes'`,
+          );
+          if (result.rowCount && result.rowCount > 0) {
+            console.log(`[ironclaw] Cleared ${result.rowCount} orphaned routine_runs`);
+          }
+        } catch (err) {
+          console.warn('[ironclaw] Orphan cleanup failed (non-fatal):', err instanceof Error ? err.message : err);
+        }
+      };
+      await clearOrphans();
+      // Re-check every 10 minutes to catch mid-flight hangs
+      setInterval(clearOrphans, 10 * 60 * 1000);
+    }
+  } catch (error) {
+    console.warn('Ironclaw orphan cleanup failed (non-fatal):', error);
+  }
+
   // Register all Ironclaw routines on startup: built-in global routines +
   // per-problem-set autonomous monitoring. This ensures routines are always
   // current after deploys (schema changes, new routines) without manual

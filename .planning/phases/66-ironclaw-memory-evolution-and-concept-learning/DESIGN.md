@@ -1,20 +1,22 @@
-# Phase 65: Ironclaw Memory Evolution & Concept Learning
+# Phase 66: Ironclaw Memory Evolution, Concept Learning & Reinforcement
 
 **Status:** Designed (not yet planned)
-**Depends on:** Phase 57 (Persistent Memory — complete), Phase 60 (Ironclaw/Bastion Integration)
-**Priority:** High — without this, Ironclaw cannot learn from conversations
+**Depends on:** Phase 57 (Persistent Memory — complete), Phase 60 (Ironclaw/Bastion Integration), Phase 65 (Autonomous Operations — complete)
+**Priority:** High — without this, Ironclaw cannot learn from conversations or improve its autonomous performance
 
 ---
 
 ## Problem Statement
 
-Phase 57 gave Ironclaw persistent memory (user preferences, context memory, interaction outcomes). But the system is **reactive and static** — memories are overwritten, not versioned; conversations don't produce new knowledge; and the Ironclaw sidecar's pgvector database operates independently with no BASTION-side visibility or control.
+Phase 57 gave Ironclaw persistent memory (user preferences, context memory, interaction outcomes). Phase 65 gave it autonomous operations (routines, heartbeat, proactive monitoring). But the system has **no learning loop** — memories are overwritten, not versioned; conversations don't produce new knowledge; autonomous actions have no feedback mechanism; and there's no way for Ironclaw to know whether its decisions helped or wasted effort.
 
 A military Chief of Staff must:
 - **Learn from every engagement** — extracting key insights, revised assessments, and commander intent
 - **Track how understanding evolves** — "We initially assessed X, but after Thread 47 we revised to Y"
 - **Consolidate across threads** — merge fragmented knowledge from separate conversations
 - **Forget on command** — when a thread is deleted or information is retracted
+- **Learn from autonomous performance** — track which decision paths produced good outcomes and optimize over time
+- **Respond to commander feedback** — internalize steering ("focus more on X, less on Y") and adjust priorities
 
 None of this exists today.
 
@@ -220,40 +222,62 @@ When a thread is deleted:
 
 ## Plans (estimated)
 
-### Plan 65-01: Versioned Concept Store & Schema
+### Plan 66-01: Versioned Concept Store & Schema
 - Database migration for `ironclaw_concepts` table with pgvector column
 - `ConceptStore` class (CRUD, version chain queries, semantic search)
 - Concept types enum and validation
 
-### Plan 65-02: Post-Conversation Extraction Engine
+### Plan 66-02: Post-Conversation Extraction Engine
 - Idle/close detection in frontend → trigger backend extraction
 - LLM extraction prompt and response parsing
 - Concept upsert with version chain management
 - Cost control (rate limiting, thread quality filter)
 
-### Plan 65-03: Retrieval & System Prompt Injection
+### Plan 66-03: Retrieval & System Prompt Injection
 - Semantic search over concept embeddings on each message
 - `[LEARNED CONTEXT]` block assembly with evolution notes
 - Integration into `MemoryRetrievalService.assembleMemoryBlock()`
 - Budget: extend 200ms timeout to 400ms for embedding search
 
-### Plan 65-04: Cross-Thread Consolidation
+### Plan 66-04: Cross-Thread Consolidation
 - Scheduled job (6hr interval) to find multi-version concepts
 - LLM merge pass for synthesis
 - Contradiction detection and commander flagging
 - Embedding update after consolidation
 
-### Plan 65-05: Bidirectional Sidecar Sync
+### Plan 66-05: Bidirectional Sidecar Sync
 - Investigate ironclaw binary REPL commands for memory management
 - Push consolidated concepts to sidecar
 - Thread deletion → sidecar forget
 - Fallback: REPL FIFO commands if no REST API available
 
-### Plan 65-06: Commander Memory Dashboard
+### Plan 66-06: Commander Memory Dashboard
 - "What Ironclaw Knows" panel — browse concepts by type
 - Version history viewer (see how understanding evolved)
 - Edit/retract/delete individual concepts
 - Contradiction resolution UI
+
+### Plan 66-07: Autonomous Action Outcome Tracking
+- Extend `ironclaw_autonomous_activity` with outcome fields: `outcome_status` (pending, positive, negative, neutral), `commander_rating` (nullable), `commander_notes` (nullable)
+- Track what Ironclaw did → what happened next (was the PIR accepted? was the research useful? was the alert acknowledged?)
+- Frontend: add thumbs up/down + optional notes on each activity entry in the activity feed
+- Store outcome data in the activity table, not a separate table — keeps the feedback loop tight
+
+### Plan 66-08: Decision Path Memory
+- After each autonomous monitoring cycle, Ironclaw writes a structured decision log to its concept store:
+  - What it found → what it decided to do → what tools it used → what the outcome was
+- On future cycles, Ironclaw retrieves relevant past decision logs via semantic search
+- Successful patterns get reinforced: "Last time I found gaps in [topic], web search + research event ingestion produced useful results"
+- Failed patterns get deprioritized: "Last time I created a PIR for [topic], commander dismissed it — probably not worth auto-creating PIRs for that category"
+
+### Plan 66-09: Commander Steering & Priority Internalization
+- Add a "Priorities" panel in the Ironclaw config UI where commanders can set:
+  - Focus areas ("prioritize Baltic naval movements over economic data")
+  - Prohibited actions ("do not auto-create PIRs without my approval")
+  - Alert thresholds ("only alert me for critical/urgent, not routine")
+- Store as versioned concepts (type: `directive`) so Ironclaw retrieves them on each cycle
+- Ironclaw's autonomous prompt already references HEARTBEAT.md — extend to include these directives
+- Ironclaw periodically summarizes what it's been doing and asks: "Is this the right focus?"
 
 ---
 
@@ -265,6 +289,9 @@ When a thread is deleted:
 4. Cross-thread consolidation merges fragmented knowledge within 6 hours
 5. Contradictions between threads are detected and surfaced to the commander
 6. Extraction cost stays under $0.50/day at typical usage (20 threads/day)
+7. Autonomous activity entries show commander ratings; Ironclaw's subsequent cycles reflect the feedback
+8. After 10+ monitoring cycles, Ironclaw's decision patterns visibly improve — fewer dismissed alerts, higher-value research, better prioritization
+9. Commander-set priorities are reflected in Ironclaw's next monitoring cycle within 30 minutes
 
 ---
 
