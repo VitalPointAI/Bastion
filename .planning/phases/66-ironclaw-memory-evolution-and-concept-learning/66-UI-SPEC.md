@@ -56,14 +56,15 @@ Source: codebase inspection of `IronclawMemoryPanel.tsx` and `IronclawActivityFe
 |------|------|--------|-------------|
 | Body | 12px (text-xs) | 400 (regular) | 1.4 (leading-snug) |
 | Label / Meta | 10px (text-[10px]) | 400 (regular) | 1.5 |
-| Badge / Micro | 9px (text-[9px]) | 700 (bold, uppercase + tracking-wider) | 1 |
+| Badge / Micro | 9px (text-[9px]) | 600 (semibold, uppercase + tracking-wider) | 1 |
 | Section heading | 14px (text-sm) | 600 (semibold) | 1.25 |
 
 Notes:
 - 12px body at weight 400, line-height 1.4 is the established pattern for all Ironclaw panel content (`text-xs text-slate-300 leading-snug` in `IronclawActivityFeed`).
 - Section headings at 14px weight 600 for concept titles and panel headers (matching `text-sm font-medium text-slate-200` in `IronclawMemoryPanel`).
-- Badge text at 9px all-caps uppercase with `tracking-wider font-bold` — established severity and source badge pattern; apply to concept type badges.
+- Badge text at 9px all-caps uppercase with `tracking-wider font-semibold` — the uppercase and tracking-wider styling provide sufficient visual differentiation at this size without requiring a third weight. Established severity and source badge pattern; apply to concept type badges.
 - No display size used inside the drawer panels; headings cap at 14px.
+- Two weights only: 400 (body, label/meta) and 600 (section heading, badge/micro).
 
 Source: codebase inspection of `IronclawMemoryPanel.tsx`, `IronclawActivityFeed.tsx`
 
@@ -119,6 +120,8 @@ A new tab panel inside the existing `IronclawDrawer` tab strip, parallel to the 
 
 **Layout:** Vertical flex column inside the drawer's scrollable panel area.
 
+**Panel focal point (first render):** The concept card list is the focal point on first render. The most recently updated concept card appears at the top of the list with its header row fully visible — `concept_key` in `text-sm font-semibold text-slate-200` draws the eye as the largest, highest-contrast text in the panel. The filter bar sits above the list at lower visual weight (`text-[10px] text-slate-500`) so it recedes until the user needs it. On first load before data arrives, the empty state heading "No concepts learned yet" at `text-xs text-slate-300` occupies the focal position.
+
 **Subregions:**
 
 1. **Filter bar** — horizontal row of concept type filter pills (all, actor, situation, assessment, preference, lesson, intent, relationship, directive). Active pill: `bg-slate-700 text-slate-200`. Inactive pill: `text-slate-500 hover:text-slate-400`. Pill height: 24px, `text-[10px] uppercase tracking-wider font-semibold`.
@@ -158,7 +161,7 @@ A sub-panel accessible from the existing "Config" tab in the Ironclaw drawer (vi
 
 **"Add Priority" input:**
 - Text input: `bg-slate-800/60 border border-slate-700/60 rounded px-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:border-slate-500 outline-none w-full`
-- Submit button: "Add" — `px-3 py-1 text-[10px] font-semibold rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors`
+- Submit button: "Add Priority" — `px-3 py-1 text-[10px] font-semibold rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors`
 - Placeholder: "e.g. Prioritize Baltic naval movements over economic data"
 
 **Empty state:** "No priorities set. Add a priority to guide Ironclaw's focus." — `text-xs text-slate-500 italic`
@@ -200,6 +203,7 @@ Extends existing `IronclawActivityFeed` `ActivityCard` component. Add a rating r
 | Rating positive label | aria-label="Mark as helpful" (icon only visually) |
 | Rating negative label | aria-label="Mark as not helpful" (icon only visually) |
 | Knowledge tab label | "Knowledge" |
+| Directives submit button | "Add Priority" |
 
 ---
 
@@ -236,7 +240,7 @@ Extends existing `IronclawActivityFeed` `ActivityCard` component. Add a rating r
 
 ### Commander Priority Directives
 
-1. User types in "Add Priority" input, presses Enter or clicks "Add"
+1. User types in "Add Priority" input, presses Enter or clicks "Add Priority"
 2. New directive appears at top of list immediately (optimistic)
 3. On API error: remove optimistic entry, show inline error
 4. Delete: click trash icon → optimistic remove → 3-second undo window (snackbar pattern)
