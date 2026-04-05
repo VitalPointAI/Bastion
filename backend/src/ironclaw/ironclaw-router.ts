@@ -24,7 +24,6 @@ import { selfUpdateService } from './self-update-service.js';
 import { memoryRetrievalService } from './ironclaw-memory-service.js';
 import { ironclawUserMemoryStore } from './ironclaw-memory-store.js';
 import { autonomousActivityStore } from './autonomous-activity-store.js';
-import { conceptRouter } from './concept-router.js';
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -48,9 +47,6 @@ function getUserDid(req: Request): string {
 // ---------------------------------------------------------------------------
 
 export const ironclawRouter = Router();
-
-// Mount concept CRUD sub-router (Phase 66 Plan 01)
-ironclawRouter.use('/', conceptRouter);
 
 /**
  * GET /health
@@ -1066,6 +1062,36 @@ ironclawRouter.get(
       res.status(500).json({
         error: err instanceof Error ? err.message : 'Internal server error',
       });
+    }
+  },
+);
+
+/**
+ * PATCH /:problemSetId/activity/:activityId/rate
+ * Commander rates an autonomous activity as helpful (1) or not helpful (-1).
+ * Optional notes can accompany the rating.
+ *
+ * Body: { rating: 1 | -1, notes?: string }
+ * Returns: { success: true }
+ */
+ironclawRouter.patch(
+  '/:problemSetId/activity/:activityId/rate',
+  async (req: Request, res: Response) => {
+    try {
+      const { rating, notes } = req.body as { rating: number; notes?: string };
+      if (typeof rating !== 'number' || (rating !== 1 && rating !== -1)) {
+        res.status(400).json({ error: 'rating must be 1 or -1' });
+        return;
+      }
+      await autonomousActivityStore.updateOutcome(
+        req.params.activityId,
+        rating,
+        notes ?? null,
+      );
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[ironclaw] rate activity error:', err);
+      res.status(500).json({ error: 'Failed to rate activity' });
     }
   },
 );
