@@ -121,10 +121,6 @@ export interface AutonomousActivityEntry {
   detail: Record<string, unknown> | null;
   decisionId: string | null;
   createdAt: string; // ISO string from API
-  // Phase 66-02: Commander feedback fields
-  commanderRating?: number | null; // 1 = thumbs up, -1 = thumbs down, null = unrated
-  commanderNotes?: string | null;
-  outcomeStatus?: 'pending' | 'positive' | 'negative' | 'neutral';
 }
 
 // ============================================================================

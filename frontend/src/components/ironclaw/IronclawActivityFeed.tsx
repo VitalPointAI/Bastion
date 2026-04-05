@@ -10,13 +10,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { AutonomousActivityEntry } from '../../types/ironclaw.ts';
 
-// ─── Rating State ─────────────────────────────────────────────────────────────
-
-interface ActivityRatingState {
-  rating: number;
-  notes: string;
-}
-
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const WS_BASE_URL =
@@ -147,18 +140,11 @@ function iconColorClass(severity: string): string {
 
 interface ActivityCardProps {
   entry: AutonomousActivityEntry;
-  problemSetId: string;
-  currentRating: number | null;
-  onRate: (activityId: string, rating: number) => Promise<void>;
-  onNotesSubmit: (activityId: string, notes: string) => Promise<void>;
 }
 
-function ActivityCard({ entry, problemSetId: _problemSetId, currentRating, onRate, onNotesSubmit }: ActivityCardProps) {
+function ActivityCard({ entry }: ActivityCardProps) {
   const badge = SEVERITY_STYLES[entry.severity] ?? SEVERITY_STYLES.informational;
   const color = iconColorClass(entry.severity);
-
-  // Show rating controls only for activities older than 30 seconds
-  const showRating = Date.now() - new Date(entry.createdAt).getTime() > 30000;
 
   return (
     <div className="flex gap-3 px-3 py-2.5 border-b border-slate-700/40 hover:bg-slate-800/30 transition-colors">
@@ -198,55 +184,6 @@ function ActivityCard({ entry, problemSetId: _problemSetId, currentRating, onRat
             View Decision
           </a>
         )}
-
-        {/* Rating row — only show for activities older than 30 seconds */}
-        {showRating && (
-          <div className="flex items-center gap-2 mt-1.5">
-            <button
-              onClick={() => void onRate(entry.id, 1)}
-              aria-label="Mark as helpful"
-              aria-pressed={currentRating === 1}
-              className={`p-1 rounded transition-colors ${
-                currentRating === 1
-                  ? 'text-emerald-400 bg-emerald-900/20'
-                  : 'text-slate-600 hover:text-emerald-400'
-              }`}
-            >
-              {/* Thumbs-up SVG 16px */}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z M4 15h0" />
-              </svg>
-            </button>
-            <button
-              onClick={() => void onRate(entry.id, -1)}
-              aria-label="Mark as not helpful"
-              aria-pressed={currentRating === -1}
-              className={`p-1 rounded transition-colors ${
-                currentRating === -1
-                  ? 'text-red-400 bg-red-900/20'
-                  : 'text-slate-600 hover:text-red-400'
-              }`}
-            >
-              {/* Thumbs-down SVG 16px */}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M10 15V19a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z M20 9h0" />
-              </svg>
-            </button>
-            {/* Notes input — appears after rating click */}
-            {currentRating != null && (
-              <input
-                type="text"
-                placeholder="Optional note..."
-                defaultValue={entry.commanderNotes ?? ''}
-                onBlur={(e) => void onNotesSubmit(entry.id, e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && void onNotesSubmit(entry.id, (e.target as HTMLInputElement).value)}
-                className="text-[10px] text-slate-400 placeholder:text-slate-600 bg-transparent border-b border-slate-700 outline-none flex-1"
-              />
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -258,7 +195,6 @@ export function IronclawActivityFeed({ problemSetId }: IronclawActivityFeedProps
   const [activities, setActivities] = useState<AutonomousActivityEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [ratings, setRatings] = useState<Record<string, ActivityRatingState>>({});
 
   const wsRef = useRef<WebSocket | null>(null);
   const mountedRef = useRef(true);
@@ -361,50 +297,6 @@ export function IronclawActivityFeed({ problemSetId }: IronclawActivityFeedProps
     };
   }, [fetchActivity]);
 
-  // ─── Rating Handlers ──────────────────────────────────────────────────────
-
-  const handleRate = useCallback(async (activityId: string, rating: number) => {
-    // Optimistic update
-    setRatings(prev => ({
-      ...prev,
-      [activityId]: { rating, notes: prev[activityId]?.notes ?? '' },
-    }));
-    try {
-      await fetch(`/api/ironclaw/${problemSetId}/activity/${activityId}/rate`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ rating, notes: ratings[activityId]?.notes || null }),
-      });
-    } catch {
-      // Revert on error
-      setRatings(prev => {
-        const next = { ...prev };
-        delete next[activityId];
-        return next;
-      });
-    }
-  }, [problemSetId, ratings]);
-
-  const handleNotesSubmit = useCallback(async (activityId: string, notes: string) => {
-    const currentRating = ratings[activityId]?.rating ?? null;
-    if (currentRating == null) return;
-    setRatings(prev => ({
-      ...prev,
-      [activityId]: { ...prev[activityId], notes },
-    }));
-    try {
-      await fetch(`/api/ironclaw/${problemSetId}/activity/${activityId}/rate`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ rating: currentRating, notes }),
-      });
-    } catch {
-      // Silent failure for notes — rating was already saved
-    }
-  }, [problemSetId, ratings]);
-
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -467,19 +359,9 @@ export function IronclawActivityFeed({ problemSetId }: IronclawActivityFeedProps
         )}
 
         {!isLoading && !error && activities.length > 0 &&
-          activities.map((entry) => {
-            const currentRating = ratings[entry.id]?.rating ?? entry.commanderRating ?? null;
-            return (
-              <ActivityCard
-                key={entry.id}
-                entry={entry}
-                problemSetId={problemSetId}
-                currentRating={currentRating}
-                onRate={handleRate}
-                onNotesSubmit={handleNotesSubmit}
-              />
-            );
-          })
+          activities.map((entry) => (
+            <ActivityCard key={entry.id} entry={entry} />
+          ))
         }
       </div>
     </div>

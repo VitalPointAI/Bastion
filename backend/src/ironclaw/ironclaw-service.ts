@@ -26,6 +26,7 @@ import type {
 import { SENSITIVE_FIELDS } from './ironclaw-types.js';
 import { getTaskOrchestrator } from './task-orchestrator.js';
 import { memoryRetrievalService } from './ironclaw-memory-service.js';
+import { conceptRetrievalService } from './concept-retrieval.js';
 import { kgContextService } from './kg-context-service.js';
 import { agentConfigStore } from './agent-config-store.js';
 import {
@@ -357,10 +358,11 @@ export class IronclawService {
       : '';
     // Inject system prompt + personalized memory + KG context + skill inventory in parallel
     // All timeout-protected — never block message flow
-    const [memoryBlock, kgContextBlock, skillBlock] = await Promise.all([
+    const [memoryBlock, kgContextBlock, skillBlock, conceptBlock] = await Promise.all([
       memoryRetrievalService.assembleMemoryBlock(userDid, problemSetId),
       kgContextService.getContextForMessage(problemSetId, content),
       this._assembleSkillInventory(),
+      conceptRetrievalService.getLearnedContextBlock(userDid, problemSetId, content, 400),
     ]);
     // Build system prompt with current skill inventory
     const systemPrompt = this.buildSystemPrompt(problemSetId, {
@@ -368,7 +370,7 @@ export class IronclawService {
     });
     const preamble = [
       `[SYSTEM INSTRUCTIONS]\n${systemPrompt}\n[/SYSTEM INSTRUCTIONS]`,
-      memoryBlock, kgContextBlock, skillBlock, contextPrefix,
+      memoryBlock, conceptBlock, kgContextBlock, skillBlock, contextPrefix,
     ].filter(Boolean).join('\n');
     const messageForAi = preamble ? `${preamble}\n${content}` : content;
 
