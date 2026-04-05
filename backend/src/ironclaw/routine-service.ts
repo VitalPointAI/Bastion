@@ -91,18 +91,35 @@ export const BUILT_IN_ROUTINES: BuiltInRoutine[] = [
   {
     id: 'autonomous_monitoring',
     name: 'Autonomous Operational Monitoring',
-    description: 'Heartbeat-driven monitoring: conflict detection, gap research, PIR checking, situation assessment drafting. Ironclaw evaluates HEARTBEAT.md directives and takes autonomous action.',
+    description: 'Proactive Chief of Staff cycle: assess situation, act on findings, alert commanders on what matters.',
     defaultCron: '*/30 * * * *',  // Every 30 minutes
     editable: true,
     category: 'monitoring',
-    prompt: 'Run autonomous operational monitoring. Use ONLY these MCP tools (exact names):\n' +
-      '- bastion_ops_list_problem_sets: list active problem sets\n' +
-      '- bastion_intel_detect_conflicts: check for contradictions in the knowledge graph\n' +
-      '- bastion_intel_get_intelligence_gaps: identify intelligence gaps\n' +
-      '- bastion_intel_get_priority_intel_requirements: check PIR/IR status\n' +
-      '- bastion_intel_draft_situation_assessment: draft assessment if situation changed\n' +
-      '- bastion_autonomous_log_activity: log ALL findings (requires problem_set_id, activity_type, severity, summary)\n' +
-      'Do NOT invent or guess tool names. Only call the tools listed above.',
+    prompt: `You are the Chief of Staff. This is your autonomous monitoring cycle. Your job is not just to observe — it is to ACT on what you find and keep the commander informed.
+
+PHASE 1 — ASSESS the operational environment:
+- Scan for contradictions in the knowledge graph
+- Identify intelligence gaps
+- Check PIR/IR status for anything newly answerable
+- Evaluate whether the situation has materially changed
+
+PHASE 2 — ACT on your findings (this is the critical part):
+- For the highest-priority intelligence gaps: research them NOW using web search, then ingest the results as research events
+- For any PIR/IR that can be answered by new data: answer them
+- For significant developments: draft a situation assessment
+- If you discover something that should be tracked but no PIR exists: create one
+- If you find conflicts in the knowledge graph: log them with urgency so commanders are aware
+
+PHASE 3 — REPORT:
+- Log a summary of what you found AND what you did about it
+- For urgent or critical findings: send an alert so commanders are notified immediately
+- Be specific — "215 gaps identified" is useless; "Researched top 3 gaps on [topic], ingested findings, 2 PIRs answerable" is actionable
+
+CONSTRAINTS:
+- Do NOT invent tool names. Use only tools available via your MCP server (bastion-core).
+- Always pass problem_set_id when tools require it.
+- Prioritize ruthlessly — you have limited iterations. Act on the 2-3 most important things, not everything.
+- If a previous cycle already addressed something and nothing has changed, skip it.`,
   },
 ];
 
@@ -440,14 +457,26 @@ ${membershipList}
         description: `Autonomous operational monitoring for problem set ${problemSetId}. Checks for contradictions, intelligence gaps, unanswered PIRs, and situation changes.`,
         userId: 'default',
         cron,
-        prompt: `Run autonomous operational monitoring for problem set ${problemSetId}. ` +
-          `You MUST use ONLY the following MCP tools (these are the exact tool names available to you):\n` +
-          `- bastion_intel_detect_conflicts: check for contradictions in the knowledge graph (pass problem_set_id: "${problemSetId}")\n` +
-          `- bastion_intel_get_intelligence_gaps: identify intelligence gaps (pass problem_set_id: "${problemSetId}")\n` +
-          `- bastion_intel_get_priority_intel_requirements: check PIR/IR status (pass problem_set_id: "${problemSetId}")\n` +
-          `- bastion_intel_draft_situation_assessment: draft assessment if situation changed (pass problem_set_id: "${problemSetId}")\n` +
-          `- bastion_autonomous_log_activity: log ALL findings with problem_set_id "${problemSetId}", activity_type, severity, and summary\n` +
-          `Do NOT invent or guess tool names. Only call the tools listed above.`,
+        prompt: `You are the Chief of Staff. This is your autonomous monitoring cycle for problem set ${problemSetId}. Your job is not just to observe — it is to ACT on what you find and keep the commander informed.
+
+PHASE 1 — ASSESS: Scan this problem set for contradictions, intelligence gaps, PIR/IR status, and situation changes. Always pass problem_set_id: "${problemSetId}".
+
+PHASE 2 — ACT on your most important findings:
+- Research the highest-priority intelligence gaps using web search, then ingest results as research events
+- Answer any PIR/IR that new data can satisfy
+- If significant developments warrant it, draft a situation assessment
+- Create PIRs for important developments that aren't being tracked
+- Curate the brain: evaluate relevance of global graph entities, augment the slice with discoveries, prune stale entries
+
+PHASE 3 — REPORT what you found AND what you did:
+- Log a summary via activity logging with problem_set_id "${problemSetId}"
+- Send alerts for urgent/critical findings so commanders are notified immediately
+- Be specific about actions taken, not just observations
+
+CONSTRAINTS:
+- Use only tools available via your MCP server (bastion-core). Do NOT invent tool names.
+- Prioritize ruthlessly — act on the 2-3 most important things, not everything.
+- If nothing has materially changed since your last cycle, say so briefly and move on.`,
         cooldownSecs: 900, // 15-minute cooldown minimum
       });
       console.log(`[routine-service] Registered autonomous monitoring for problem set ${problemSetId} (${cron})`);
