@@ -99,6 +99,25 @@ export function useIronclaw(
     currentThreadIdRef.current = currentThreadId;
   }, [currentThreadId]);
 
+  // Idle extraction timer ref
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ─── Extraction trigger ───────────────────────────────────────────────────
+
+  /**
+   * Fire-and-forget extraction trigger.
+   * Sends a POST to /api/ironclaw/:problemSetId/extract and ignores the result.
+   * Called on idle timeout, thread switch, and drawer close.
+   */
+  const triggerExtraction = useCallback((threadId: string) => {
+    if (!threadId || !problemSetId) return;
+    fetch(`/api/ironclaw/${problemSetId}/extract`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ threadId }),
+    }).catch(() => {}); // Silent failure — fire-and-forget
+  }, [problemSetId]);
+
   // Refs for WebSocket lifecycle
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -323,6 +342,12 @@ export function useIronclaw(
         reconnectTimerRef.current = null;
       }
 
+      // Cancel idle extraction timer
+      if (idleTimerRef.current !== null) {
+        clearTimeout(idleTimerRef.current);
+        idleTimerRef.current = null;
+      }
+
       // Unsubscribe and close WebSocket
       const ws = wsRef.current;
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -347,7 +372,16 @@ export function useIronclaw(
 
   const closeDrawer = useCallback(() => {
     setIsOpen(false);
-  }, []);
+    // Extract from current thread on drawer close
+    if (currentThreadIdRef.current) {
+      triggerExtraction(currentThreadIdRef.current);
+    }
+    // Clear idle timer — drawer is closing
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+  }, [triggerExtraction]);
 
   const injectMessage = useCallback((msg: IronclawChatMessage) => {
     setMessages((prev) => [...prev, msg]);
@@ -385,12 +419,21 @@ export function useIronclaw(
           messageContextRef.current, currentThreadIdRef.current ?? undefined,
         );
         // Response will arrive via WebSocket -- isLoading cleared on ws message
+
+        // Reset idle extraction timer — 5 minutes of inactivity triggers extraction
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+        const activeThreadId = currentThreadIdRef.current;
+        if (activeThreadId) {
+          idleTimerRef.current = setTimeout(() => {
+            triggerExtraction(activeThreadId);
+          }, 5 * 60 * 1000); // 5 minutes
+        }
       } catch (err) {
         console.error('[useIronclaw] sendMessage failed:', err);
         setIsLoading(false);
       }
     },
-    [problemSetId],
+    [problemSetId, triggerExtraction],
   );
 
   // ─── Action decision ──────────────────────────────────────────────────────
@@ -460,6 +503,16 @@ export function useIronclaw(
   }, [problemSetId, currentTab]);
 
   const selectThread = useCallback(async (threadId: string) => {
+    // Extract from previous thread before switching
+    if (currentThreadIdRef.current && currentThreadIdRef.current !== threadId) {
+      triggerExtraction(currentThreadIdRef.current);
+    }
+    // Clear idle timer when switching threads
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+
     setCurrentThreadId(threadId);
     currentThreadIdRef.current = threadId;
     if (!problemSetId) return;
@@ -469,7 +522,7 @@ export function useIronclaw(
     } catch (err) {
       console.error('[useIronclaw] selectThread failed:', err);
     }
-  }, [problemSetId]);
+  }, [problemSetId, triggerExtraction]);
 
   const createThread = useCallback(async (name: string) => {
     if (!problemSetId) return;
