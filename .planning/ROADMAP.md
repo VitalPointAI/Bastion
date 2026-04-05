@@ -82,6 +82,7 @@ None
 - [x] **Phase 63: Unified OSINT Agent Ingestion** - 12-specialist OSINT pipeline, source pre-registration, reliability scoring, LLM concurrency tuning (completed 2026-03-29)
 - [x] **Phase 64: Scenario-Agnostic Refactor & Baltic Shield Demo** - Eliminate all hardcoded scenario references (Taipei coordinates, Iron Bastion names, PLA vehicle types, Pacific Strategy labels) from application code; all scenario-specific content driven by active problem set and calibration profile at runtime; generalize variable names (no ZHONGZHENG_MAP, no IRON_BASTION_DEFAULTS); preserve full autonomous mission functionality; new Baltic Shield EFDL scenario data (OPORD, coalition, ORBAT, knowledge graph) seeds the demo problem set; existing mission sequence works identically on Latvian open terrain coordinates (INSERTED) (completed 2026-03-29)
 - [x] **Phase 65: Ironclaw Autonomous Operations** - Transform Ironclaw from reactive chat to autonomous Chief of Staff; leverage native OpenClaw heartbeat/routines for continuous monitoring; callback webhook (Ironclaw→Bastion) for proactive findings; event forwarding (Bastion→Ironclaw) for OSINT/doc/graph changes; replace gap filler with Ironclaw-owned intelligence gap detection via MCP tools; autonomous conflict detection, situation assessment drafting, decision surfacing; brain curation — continuously evaluate global knowledge graph to augment/prune problem set brain slice with newly relevant or stale actors; self-extending skill/routine creation; autonomous activity feed in UI; all governed by existing risk classification and decision gates (INSERTED) (completed 2026-03-30)
+- [ ] **Phase 66: Ironclaw Memory Evolution, Concept Learning & Reinforcement** - Post-conversation extraction engine, versioned concept store with pgvector embeddings, cross-thread consolidation, semantic retrieval injection into prompts, bidirectional sidecar sync, commander memory dashboard, autonomous action outcome tracking with commander feedback, decision path memory for reinforcement learning, commander steering and priority internalization (INSERTED)
 
 ## Phase Details
 
@@ -1100,6 +1101,24 @@ Plans:
 - [ ] 65-03-PLAN.md — Event forwarding hooks + HEARTBEAT.md enrichment + gap filler retirement
 - [ ] 65-04-PLAN.md — Autonomous monitoring routine registration + SOUL.md proactive identity
 - [ ] 65-05-PLAN.md — Frontend autonomous activity feed + final verification
+
+### Phase 66: Ironclaw Memory Evolution, Concept Learning & Reinforcement (INSERTED)
+
+**Goal:** Post-conversation extraction engine, versioned concept store with pgvector embeddings, cross-thread consolidation, semantic retrieval injection into prompts, bidirectional sidecar sync, commander memory dashboard, autonomous action outcome tracking with commander feedback, decision path memory for reinforcement learning, commander steering and priority internalization
+**Depends on:** Phase 57, Phase 60, Phase 65
+**Research:** Likely (pgvector integration, embedding strategies, sidecar memory API)
+**Research topics:** pgvector setup and semantic search patterns, post-conversation extraction strategies, concept versioning and consolidation, sidecar memory management API
+**Plans:** 7 plans
+
+Plans:
+- [ ] 66-01-PLAN.md — Versioned concept store, pgvector schema, types, REST API
+- [ ] 66-02-PLAN.md — Activity outcome tracking + commander feedback UI
+- [ ] 66-03-PLAN.md — Post-conversation extraction engine + frontend triggers
+- [ ] 66-04-PLAN.md — Semantic retrieval + [LEARNED CONTEXT] prompt injection
+- [ ] 66-05-PLAN.md — Knowledge panel UI + Commander Directives panel
+- [ ] 66-06-PLAN.md — Cross-thread consolidation job + decision path memory
+- [ ] 66-07-PLAN.md — Bidirectional sidecar sync
+
 ### Phase 16: AI Assigned Staff Workspaces
 
 **Goal:** AI-assigned staff roles with full agent team execution, human-in-the-loop review, real-time channel observability, and cross-role AI coordination — extending Phase 15 workspaces to support Human | AI | Disabled assignment per position with a seeded library of doctrinal AI agents for all 31 staff roles.
