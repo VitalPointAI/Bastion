@@ -108,6 +108,47 @@ export class ConceptStore {
     if (this.pgvectorRegistered) return;
 
     const pool = getIronclawPool();
+
+    // Ensure vector extension and table exist (idempotent)
+    await pool.query(`CREATE EXTENSION IF NOT EXISTS vector`);
+    await pool.query(`
+      DO $$ BEGIN
+        CREATE TYPE ironclaw_concept_type AS ENUM (
+          'actor', 'situation', 'assessment', 'preference',
+          'lesson', 'intent', 'relationship', 'directive'
+        );
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ironclaw_concepts (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        problem_set_id  TEXT,
+        user_did        TEXT NOT NULL,
+        concept_key     TEXT NOT NULL,
+        concept_type    ironclaw_concept_type NOT NULL,
+        current_value   JSONB NOT NULL,
+        confidence      NUMERIC(4,3) NOT NULL DEFAULT 0.500,
+        source_thread_id TEXT,
+        version         INT NOT NULL DEFAULT 1,
+        supersedes_id   UUID REFERENCES ironclaw_concepts(id),
+        status          TEXT NOT NULL DEFAULT 'active',
+        embedding       vector(1536),
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        expires_at      TIMESTAMPTZ,
+        UNIQUE (problem_set_id, user_did, concept_key, version)
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ironclaw_concepts_embedding
+        ON ironclaw_concepts USING hnsw (embedding vector_cosine_ops)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ironclaw_concepts_lookup
+        ON ironclaw_concepts (user_did, problem_set_id, concept_key, status)
+    `);
+
     // Register pgvector types on each new connection in the pool
     pool.on('connect', async (client) => {
       await pgvector.registerTypes(client);

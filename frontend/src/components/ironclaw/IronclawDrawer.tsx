@@ -339,86 +339,85 @@ export function IronclawDrawer({
           </div>
         )}
 
-        {/* Drawer tab bar — Chat | Memory */}
-        <div className="flex border-b border-slate-700/60 bg-slate-800/30">
+        {/* Drawer tab bar — icon-only with tooltips */}
+        <div className="flex items-center justify-center gap-1 px-2 py-1.5 border-b border-slate-700/60 bg-slate-800/30">
           <button
             onClick={() => setDrawerTab('chat')}
-            className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
+            title="Chat"
+            aria-label="Chat"
+            className={`relative p-2 rounded-md transition-colors ${
               drawerTab === 'chat'
-                ? 'border-blue-500 text-blue-300'
-                : 'border-transparent text-slate-400 hover:text-slate-300'
+                ? 'bg-blue-500/15 text-blue-400'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/40'
             }`}
           >
-            {/* Chat bubble icon */}
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            Chat
           </button>
-          {/* Activity tab — only shown when a problem set is active */}
           {!isGlobalMode && problemSetId && (
             <button
               onClick={() => setDrawerTab('activity')}
-              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
+              title="Activity"
+              aria-label="Activity"
+              className={`relative p-2 rounded-md transition-colors ${
                 drawerTab === 'activity'
-                  ? 'border-emerald-500 text-emerald-300'
-                  : 'border-transparent text-slate-400 hover:text-slate-300'
+                  ? 'bg-emerald-500/15 text-emerald-400'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/40'
               }`}
             >
-              {/* Activity/pulse icon */}
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              Activity
             </button>
           )}
           <button
             onClick={() => setDrawerTab('memory')}
-            className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
+            title="Memory"
+            aria-label="Memory"
+            className={`relative p-2 rounded-md transition-colors ${
               drawerTab === 'memory'
-                ? 'border-blue-500 text-blue-300'
-                : 'border-transparent text-slate-400 hover:text-slate-300'
+                ? 'bg-purple-500/15 text-purple-400'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/40'
             }`}
           >
-            {/* Brain / memory icon */}
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
-            Memory
           </button>
           <button
             onClick={() => setDrawerTab('knowledge')}
-            className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
+            title="Knowledge"
+            aria-label="Knowledge"
+            className={`relative p-2 rounded-md transition-colors ${
               drawerTab === 'knowledge'
-                ? 'border-amber-500 text-amber-300'
-                : 'border-transparent text-slate-400 hover:text-slate-300'
+                ? 'bg-amber-500/15 text-amber-400'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/40'
             }`}
           >
-            {/* Book / knowledge icon */}
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
-            Knowledge
           </button>
           <button
             onClick={() => setDrawerTab('config')}
-            className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
+            title="Config"
+            aria-label="Config"
+            className={`relative p-2 rounded-md transition-colors ${
               drawerTab === 'config'
-                ? 'border-blue-500 text-blue-300'
-                : 'border-transparent text-slate-400 hover:text-slate-300'
+                ? 'bg-slate-500/15 text-slate-300'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/40'
             }`}
           >
-            {/* Cog / settings icon */}
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            Config
           </button>
         </div>
 
