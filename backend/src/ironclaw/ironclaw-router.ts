@@ -25,6 +25,7 @@ import { memoryRetrievalService } from './ironclaw-memory-service.js';
 import { ironclawUserMemoryStore } from './ironclaw-memory-store.js';
 import { autonomousActivityStore } from './autonomous-activity-store.js';
 import { conceptExtractionService } from './concept-extraction.js';
+import { conceptRouter } from './concept-router.js';
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -48,6 +49,9 @@ function getUserDid(req: Request): string {
 // ---------------------------------------------------------------------------
 
 export const ironclawRouter = Router();
+
+// Mount concept CRUD sub-router (Phase 66)
+ironclawRouter.use('/', conceptRouter);
 
 /**
  * GET /health
