@@ -20,6 +20,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { conceptStore, generateConceptEmbedding } from './concept-store.js';
 import type { ConceptEntry } from './concept-types.js';
+import { sidecarSyncService } from './sidecar-sync.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -193,7 +194,7 @@ export async function runConsolidation(): Promise<void> {
       const embedding = await generateConceptEmbedding(mergedValue);
 
       // Upsert consolidated version — creates a new version superseding the active ones
-      await conceptStore.upsertConcept({
+      const consolidatedConcept = await conceptStore.upsertConcept({
         problemSetId: latestVersion.problemSetId,
         userDid: candidate.userDid,
         conceptKey: candidate.conceptKey,
@@ -203,6 +204,9 @@ export async function runConsolidation(): Promise<void> {
         sourceThreadId: 'consolidation',
         embedding,
       });
+
+      // Push consolidated concept to sidecar (best-effort)
+      await sidecarSyncService.pushConceptToSidecar(consolidatedConcept);
 
       consolidated++;
     } catch (err) {

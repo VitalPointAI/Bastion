@@ -8,6 +8,7 @@
 
 import { getPool } from '../lib/database.js';
 import { conceptStore } from './concept-store.js';
+import { sidecarSyncService } from './sidecar-sync.js';
 import type {
   IronclawChatMessage,
   IronclawSession,
@@ -373,6 +374,11 @@ export class IronclawStore {
       console.error('[ironclaw] concept retraction on thread delete failed:', err);
       // Non-blocking — proceed with thread deletion
     }
+
+    // Sync thread forget to sidecar (Phase 66 — best-effort, fire-and-forget)
+    sidecarSyncService.forgetThread(threadId).catch((err) =>
+      console.error('[ironclaw] sidecar thread forget failed:', err),
+    );
 
     await pool.query('DELETE FROM ironclaw_chat WHERE thread_id = $1', [threadId]);
     await pool.query('DELETE FROM ironclaw_threads WHERE id = $1', [threadId]);
