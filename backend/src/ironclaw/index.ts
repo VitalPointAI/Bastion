@@ -38,6 +38,7 @@ import {
   ironclawOutcomeStore,
 } from './ironclaw-memory-store.js';
 import { registerMemoryCleanupJob } from './ironclaw-memory-cleanup.js';
+import { startConsolidationJob } from './concept-consolidation.js';
 
 /**
  * Initialize Ironclaw memory stores and register the daily cleanup job.
@@ -54,5 +55,6 @@ export async function initIronclawMemory(): Promise<void> {
   await ironclawContextMemoryStore.ensureTable();
   await ironclawOutcomeStore.ensureTable();
   await registerMemoryCleanupJob();
-  console.log('[ironclaw] Memory stores initialized');
+  startConsolidationJob();
+  console.log('[ironclaw] Memory stores and consolidation job initialized');
 }
