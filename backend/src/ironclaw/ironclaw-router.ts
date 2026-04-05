@@ -1066,36 +1066,6 @@ ironclawRouter.get(
   },
 );
 
-/**
- * PATCH /:problemSetId/activity/:activityId/rate
- * Commander rates an autonomous activity as helpful (1) or not helpful (-1).
- * Optional notes can accompany the rating.
- *
- * Body: { rating: 1 | -1, notes?: string }
- * Returns: { success: true }
- */
-ironclawRouter.patch(
-  '/:problemSetId/activity/:activityId/rate',
-  async (req: Request, res: Response) => {
-    try {
-      const { rating, notes } = req.body as { rating: number; notes?: string };
-      if (typeof rating !== 'number' || (rating !== 1 && rating !== -1)) {
-        res.status(400).json({ error: 'rating must be 1 or -1' });
-        return;
-      }
-      await autonomousActivityStore.updateOutcome(
-        req.params.activityId,
-        rating,
-        notes ?? null,
-      );
-      res.json({ success: true });
-    } catch (err) {
-      console.error('[ironclaw] rate activity error:', err);
-      res.status(500).json({ error: 'Failed to rate activity' });
-    }
-  },
-);
-
 // ---------------------------------------------------------------------------
 // Routine Diagnostics (v0.24 upgrade)
 // ---------------------------------------------------------------------------
