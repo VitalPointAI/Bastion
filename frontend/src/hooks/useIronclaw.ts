@@ -173,6 +173,33 @@ export function useIronclaw(
 
         // msg.data is a MessageEnvelope — the actual chat message is in .payload
         const envelope = msg.data as Record<string, unknown>;
+        const envelopeMessageType = (envelope.messageType ?? envelope.message_type) as string | undefined;
+
+        // Handle autonomous activity messages — surface as system notifications in chat
+        if (envelopeMessageType === 'ironclaw.autonomous-activity') {
+          const activity = (envelope.payload ?? envelope) as Record<string, unknown>;
+          const actSeverity = (activity.severity as string) ?? 'informational';
+          const actSummary = (activity.summary as string) ?? 'Autonomous activity detected';
+          const actType = (activity.activityType as string) ?? 'unknown';
+
+          // Only surface urgent/critical in chat — routine/informational stay in Activity tab
+          if (actSeverity === 'critical' || actSeverity === 'urgent') {
+            const severityIcon = actSeverity === 'critical' ? '\u{1F6A8}' : '\u26a0\ufe0f';
+            const chatMsg: IronclawChatMessage = {
+              id: (activity.activityId as string) ?? crypto.randomUUID(),
+              problemSetId: problemSetId ?? '_global',
+              content: `${severityIcon} **${actSeverity.toUpperCase()} — ${actType.replace(/_/g, ' ')}**\n\n${actSummary}`,
+              sender: 'ironclaw',
+              createdAt: (activity.createdAt as string) ?? new Date().toISOString(),
+            };
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === chatMsg.id)) return prev;
+              return [...prev, chatMsg];
+            });
+          }
+          return;
+        }
+
         const incoming = (envelope.payload ?? envelope) as Record<string, unknown>;
 
         // Check if this is a step progress update for an existing message
