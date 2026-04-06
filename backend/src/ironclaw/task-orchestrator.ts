@@ -19,6 +19,7 @@ import { ironclawStore } from './ironclaw-store.js';
 import { getAgentRegistry } from '../agents/registry.js';
 import { getMessageBus } from '../messaging/message-bus.js';
 import type { StepProgressData, SuggestionPayload } from './ironclaw-types.js';
+import { ironclawClient } from './ironclaw-client.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -209,8 +210,9 @@ export class TaskOrchestrator {
   }
 
   /**
-   * Execute a single step. In production, this dispatches to BastionSupervisor.
-   * Currently uses agent registry to find an agent and produces a placeholder result.
+   * Execute a single step by delegating to Ironclaw via webhook.
+   * Ironclaw has MCP tool access (graph queries, knowledge search, etc.)
+   * and can perform the actual analysis work.
    */
   private async executeStep(
     task: IronclawTask,
@@ -227,9 +229,48 @@ export class TaskOrchestrator {
       return `Synthesis of ${currentTask.results.length} agent results:\n${resultSummary}`;
     }
 
-    // For field-targeted steps, delegate to assigned agent
+    // Delegate to Ironclaw — it has MCP tools for graph/knowledge queries
     const agentId = task.assignedAgents[0] ?? 'ironclaw';
-    return `Agent ${agentId} analysis for "${step.label}" — pending supervisor integration`;
+    // Resolve field path from task.targetFields by step index
+    const fieldEntries = Object.entries(task.targetFields);
+    const fieldPath = fieldEntries[_stepIndex]?.[0] ?? step.label;
+
+    const prompt = [
+      `[INTERNAL TASK — do NOT output task_request JSON, respond with analysis only]`,
+      `You are acting as ${agentId} for task: "${task.title}"`,
+      task.description ? `Task description: ${task.description}` : '',
+      ``,
+      `Produce analysis for: "${step.label}" (target field: ${fieldPath})`,
+      ``,
+      `Use your MCP tools (bastion_knowledge_search, bastion_graph_query, etc.) to pull relevant data from the knowledge graph.`,
+      `Respond with ONLY the analysis content — structured markdown suitable for an operational briefing.`,
+      `Do not include JSON, do not create sub-tasks, do not ask follow-up questions.`,
+    ].filter(Boolean).join('\n');
+
+    try {
+      const client = ironclawClient;
+      // Use a dedicated thread so task execution doesn't pollute user conversation
+      const taskThreadId = `task-${task.taskId}-step-${_stepIndex}`;
+      const result = await client.sendMessage(taskThreadId, prompt);
+
+      if (result.response) {
+        // Strip any accidental JSON wrappers from the response
+        let content = result.response;
+        try {
+          const parsed = JSON.parse(content) as Record<string, unknown>;
+          content = (parsed.content as string) ?? (parsed.text as string) ?? content;
+        } catch {
+          // Not JSON — use as-is
+        }
+        return content;
+      }
+
+      return `Agent ${agentId} did not return a response for "${step.label}"`;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[task-orchestrator] Step execution failed for "${step.label}":`, msg);
+      return `Analysis for "${step.label}" could not be completed: ${msg}`;
+    }
   }
 
   /**

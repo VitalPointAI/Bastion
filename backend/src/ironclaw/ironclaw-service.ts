@@ -510,9 +510,23 @@ export class IronclawService {
       };
     }
 
-    const messageContent = parsed
-      ? (parsed.content as string) ?? (parsed.text as string) ?? responseText
-      : responseText;
+    // Extract human-readable content, stripping JSON payloads from display.
+    // When Ironclaw sends structured JSON (task_request, tool_call, etc.),
+    // show only the natural language content field — never raw JSON.
+    let messageContent: string;
+    if (parsed) {
+      messageContent = (parsed.content as string) ?? (parsed.text as string) ?? '';
+      // If task_request is present but no content field, generate a friendly message
+      if (!messageContent && parsed.task_request) {
+        const tr = parsed.task_request as Record<string, unknown>;
+        const hints = (tr.agent_hints as string[]) ?? [];
+        const agentLabel = hints.length > 0 ? hints.join(', ') : 'staff';
+        messageContent = `Tasking ${agentLabel}: ${(tr.title as string) ?? 'analysis'}. Stand by for results.`;
+      }
+    } else {
+      // Plain text — strip any embedded JSON blocks that Ironclaw may have appended
+      messageContent = responseText.replace(/\n?\{[\s\S]*"task_request"[\s\S]*\}\s*$/m, '').trim();
+    }
 
     // Fallback: detect text-based approval requests from the LLM.
     // When the agent outputs "Waiting for approval: <action_type>" as plain text

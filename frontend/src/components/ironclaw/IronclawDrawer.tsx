@@ -163,7 +163,25 @@ export function IronclawDrawer({
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Auto-scroll only when a NEW message arrives and user hasn't scrolled up
+  // Scroll to bottom when drawer opens or thread changes
+  const prevOpenRef = useRef(false);
+  const prevThreadRef = useRef(currentThreadId);
+  useEffect(() => {
+    const drawerJustOpened = isOpen && !prevOpenRef.current;
+    const threadChanged = currentThreadId !== prevThreadRef.current;
+    prevOpenRef.current = isOpen;
+    prevThreadRef.current = currentThreadId;
+
+    if ((drawerJustOpened || threadChanged) && messagesEndRef.current) {
+      // Jump to bottom immediately so user can start chatting
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      }, 50); // Small delay to let messages render
+      userScrolledUpRef.current = false;
+    }
+  }, [isOpen, currentThreadId]);
+
+  // Auto-scroll when a NEW message arrives and user hasn't scrolled up
   useEffect(() => {
     const newCount = messages.length;
     const isNewMessage = newCount > prevMessageCountRef.current;
