@@ -409,7 +409,7 @@ export async function createPIRAlertDecision(params: {
       // For PIR/FFIR/EEFI: only notify users with notification level <= 'Priority'
       const notificationFilter = isCritical
         ? "telegram_enabled = true AND telegram_chat_id IS NOT NULL"
-        : "telegram_enabled = true AND telegram_chat_id IS NOT NULL AND telegram_notification_level IN ('Flash', 'Immediate', 'Priority')";
+        : "telegram_enabled = true AND telegram_chat_id IS NOT NULL AND telegram_notification_level IN ('Critical', 'Urgent', 'Routine')";
 
       const result = await pool.query(
         `SELECT telegram_chat_id FROM agent_config WHERE ${notificationFilter}`,
