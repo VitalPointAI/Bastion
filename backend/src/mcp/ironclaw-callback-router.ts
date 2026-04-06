@@ -245,6 +245,13 @@ async function handleIntelligenceGap(
     return decision.id;
   } catch (err) {
     console.error('[ironclaw-callback] createPIRAlertDecision failed:', err);
+    console.error('[ironclaw-callback] PIR payload was:', JSON.stringify({
+      problemSetId,
+      pirId: payload.pirId,
+      pirType: payload.pirType,
+      pirPriority: payload.pirPriority,
+      pirDescription: (payload.pirDescription as string)?.slice(0, 100),
+    }));
     return undefined;
   }
 }

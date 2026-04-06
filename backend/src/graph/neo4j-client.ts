@@ -85,13 +85,21 @@ export async function executeGraphQuery<T extends RecordShape = RecordShape>(
  */
 export async function executeReadQuery<T extends RecordShape = RecordShape>(
   cypher: string,
-  params: Record<string, unknown> = {}
+  params: Record<string, unknown> = {},
+  timeoutMs = 30000,
 ): Promise<QueryResult<T>> {
   const session: Session = getNeo4jDriver().session({
     defaultAccessMode: neo4j.session.READ,
   });
   try {
-    return await session.run<T>(cypher, params);
+    // Wrap in timeout to prevent indefinite hangs on complex graph traversals
+    const result = await Promise.race([
+      session.run<T>(cypher, params),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`Neo4j query timed out after ${timeoutMs}ms`)), timeoutMs),
+      ),
+    ]);
+    return result;
   } finally {
     await session.close();
   }

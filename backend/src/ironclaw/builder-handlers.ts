@@ -873,6 +873,8 @@ const graphGetActor: ActionHandler = async (payload) => {
   const result = await executeReadQuery(`
     MATCH (a:Actor {name: $name})
     OPTIONAL MATCH (a)-[r]-(related)
+    WITH a, r, related
+    LIMIT 50
     RETURN a, collect(DISTINCT {
       name: related.name,
       type: type(r),
