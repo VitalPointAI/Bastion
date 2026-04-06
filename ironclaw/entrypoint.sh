@@ -98,6 +98,24 @@ configure_ironclaw() {
   $IRONCLAW_BIN config set heartbeat.enabled true 2>/dev/null
   $IRONCLAW_BIN config set heartbeat.interval_secs 1800 2>/dev/null
 
+  # Secrets keychain — enable if master key is provided
+  if [ -n "${IRONCLAW_SECRETS_MASTER_KEY:-}" ]; then
+    $IRONCLAW_BIN config set secrets_master_key_source env 2>/dev/null
+    echo "[entrypoint] Secrets keychain enabled (master key from env)"
+  else
+    echo "[entrypoint] WARNING: No IRONCLAW_SECRETS_MASTER_KEY — secrets keychain disabled"
+  fi
+
+  # Embeddings — NEAR AI provider (no API key needed)
+  $IRONCLAW_BIN config set embeddings.enabled true 2>/dev/null
+  $IRONCLAW_BIN config set embeddings.provider nearai 2>/dev/null
+  $IRONCLAW_BIN config set embeddings.model text-embedding-3-small 2>/dev/null
+  echo "[entrypoint] Embeddings enabled (NEAR AI text-embedding-3-small)"
+
+  # WASM tools directory — create if missing
+  mkdir -p /home/ironclaw/.ironclaw/tools 2>/dev/null
+  echo "[entrypoint] WASM tools directory ready"
+
   # Register BASTION MCP server via localhost proxy
   # Remove first in case URL changed, ignore errors if not present
   $IRONCLAW_BIN mcp remove bastion-core 2>/dev/null || true

@@ -98,6 +98,8 @@ services:
       HTTP_HOST: 0.0.0.0
       HTTP_PORT: "8080"
       HTTP_WEBHOOK_SECRET: ${IRONCLAW_SHARED_SECRET:-dev-shared-secret-change-me}
+      # Secrets keychain master key (stable across restarts)
+      IRONCLAW_SECRETS_MASTER_KEY: ${IRONCLAW_MASTER_KEY:-}
       # Agent settings
       AGENT_NAME: ironclaw
       AGENT_USE_PLANNING: "true"
