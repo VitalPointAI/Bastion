@@ -1041,6 +1041,389 @@ const knowledgeSearchDocuments: ActionHandler = async (payload) => {
 };
 
 // ---------------------------------------------------------------------------
+// Problem Set Handlers (BASTION_TOOLS — tool-bridge.ts)
+// ---------------------------------------------------------------------------
+
+const problemSetRead: ActionHandler = async (payload) => {
+  const { problemSetStore } = await import('../problem-set/problem-set-store.js');
+  const id = (payload.id ?? payload.problem_set_id) as string;
+  if (!id) return { success: false, error: 'id is required' };
+  const ps = await problemSetStore.getProblemSet(id);
+  if (!ps) return { success: false, error: `Problem set "${id}" not found` };
+  return { success: true, result: ps };
+};
+
+const problemSetListChildren: ActionHandler = async (payload) => {
+  const { problemSetStore } = await import('../problem-set/problem-set-store.js');
+  const parentId = (payload.parent_id ?? payload.parentId) as string;
+  if (!parentId) return { success: false, error: 'parent_id is required' };
+  const children = await problemSetStore.listChildProblemSets(parentId);
+  return { success: true, result: children };
+};
+
+const problemSetUpdateField: ActionHandler = async (payload) => {
+  const { problemSetStore } = await import('../problem-set/problem-set-store.js');
+  const id = (payload.id ?? payload.problem_set_id) as string;
+  const field = payload.field as string;
+  const value = payload.value;
+  if (!id || !field) return { success: false, error: 'id and field are required' };
+
+  const allowedFields = ['name', 'description', 'problemStatement', 'inviteMode', 'discoverability'];
+  // Normalize snake_case to camelCase
+  const camelField = field.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+  if (!allowedFields.includes(camelField)) {
+    return { success: false, error: `Field "${field}" is not updatable. Allowed: ${allowedFields.join(', ')}` };
+  }
+  const updated = await problemSetStore.updateProblemSet(id, { [camelField]: value });
+  return { success: true, result: updated };
+};
+
+const problemSetCreateChild: ActionHandler = async (payload, userDid) => {
+  const { problemSetStore } = await import('../problem-set/problem-set-store.js');
+  const parentId = (payload.parent_id ?? payload.parentId) as string;
+  const name = payload.name as string;
+  const echelon = (payload.echelon as string) ?? 'tactical';
+  if (!parentId || !name) return { success: false, error: 'parent_id and name are required' };
+
+  const child = await problemSetStore.createProblemSet(
+    { name, description: (payload.description as string) ?? null, echelon: echelon as 'strategic' | 'operational' | 'tactical', classification: ((payload.classification as string) ?? 'UNCLASSIFIED') as 'UNCLASSIFIED' | 'SECRET' | 'TOPSECRET', parentProblemSetId: parentId },
+    userDid,
+  );
+  return { success: true, result: child };
+};
+
+const problemSetConfigureAgents: ActionHandler = async (payload) => {
+  const { agentConfigStore } = await import('./agent-config-store.js');
+  const psId = (payload.id ?? payload.problem_set_id) as string;
+  const agentConfig = payload.agent_config as Record<string, unknown>;
+  if (!psId || !agentConfig) return { success: false, error: 'id and agent_config are required' };
+
+  const did = agentConfig.did as string | undefined;
+  if (!did) return { success: false, error: 'agent_config.did is required' };
+  const existing = await agentConfigStore.getByDid(did);
+  if (!existing) return { success: false, error: `Agent config for DID "${did}" not found` };
+
+  const updated = await agentConfigStore.upsert({ ...existing, ...agentConfig } as Parameters<typeof agentConfigStore.upsert>[0]);
+  return { success: true, result: updated };
+};
+
+// ---------------------------------------------------------------------------
+// Resource Handlers (BASTION_TOOLS + MCP resources domain)
+// ---------------------------------------------------------------------------
+
+const resourceCreate: ActionHandler = async (payload) => {
+  const { resourceStore } = await import('../resources/resource-store.js');
+  const name = payload.name as string;
+  const category = (payload.type ?? payload.category) as string;
+  const status = (payload.status as string) ?? 'available';
+  if (!name || !category) return { success: false, error: 'name and type are required' };
+
+  const resource = await resourceStore.createResource(
+    (payload.problem_set_id ?? payload.mission_id ?? '') as string,
+    name, category as Parameters<typeof resourceStore.createResource>[2], status as Parameters<typeof resourceStore.createResource>[3],
+    (payload.capabilities as Record<string, unknown>) ?? {},
+  );
+  return { success: true, result: resource };
+};
+
+const resourceDelete: ActionHandler = async (payload) => {
+  const { resourceStore } = await import('../resources/resource-store.js');
+  const id = payload.id as string;
+  if (!id) return { success: false, error: 'id is required' };
+  const deleted = await resourceStore.deleteResource(id);
+  return { success: true, result: { deleted } };
+};
+
+const resourcesList: ActionHandler = async (payload) => {
+  const { resourceStore } = await import('../resources/resource-store.js');
+  const filters: Record<string, unknown> = {};
+  if (payload.problem_set_id || payload.mission_id) filters.missionId = payload.problem_set_id ?? payload.mission_id;
+  if (payload.resource_type || payload.category) filters.category = payload.resource_type ?? payload.category;
+  if (payload.status && payload.status !== 'all') filters.status = payload.status;
+  const resources = await resourceStore.listResources(filters as Parameters<typeof resourceStore.listResources>[0]);
+  const limit = Math.min(Number(payload.limit) || 50, 200);
+  return { success: true, result: resources.slice(0, limit) };
+};
+
+const resourcesGetStatus: ActionHandler = async (payload) => {
+  const { resourceStore } = await import('../resources/resource-store.js');
+  const id = (payload.resource_id ?? payload.id) as string;
+  if (!id) return { success: false, error: 'resource_id is required' };
+  const resource = await resourceStore.getResource(id);
+  if (!resource) return { success: false, error: `Resource "${id}" not found` };
+  return { success: true, result: resource };
+};
+
+const resourcesSearchCapabilities: ActionHandler = async (payload) => {
+  const { resourceStore } = await import('../resources/resource-store.js');
+  const capabilities = (payload.capabilities as string[]) ?? [];
+  if (capabilities.length === 0) return { success: false, error: 'capabilities array is required' };
+  const resources = await resourceStore.findByCapabilities(capabilities);
+  const limit = Math.min(Number(payload.limit) || 20, 100);
+  return { success: true, result: resources.slice(0, limit) };
+};
+
+// ---------------------------------------------------------------------------
+// Gate Handlers (BASTION_TOOLS)
+// ---------------------------------------------------------------------------
+
+const gateCreate: ActionHandler = async (payload) => {
+  const { gateService } = await import('../gates/gate-service.js');
+  const problemSetId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  const gateType = (payload.gate_type ?? payload.gateType) as string;
+  const targetItemId = (payload.target_item_id ?? payload.targetItemId) as string;
+  const targetItemTitle = (payload.target_item_title ?? payload.targetItemTitle) as string;
+  if (!problemSetId || !gateType || !targetItemId || !targetItemTitle) {
+    return { success: false, error: 'problem_set_id, gate_type, target_item_id, and target_item_title are required' };
+  }
+  const gate = await gateService.createGate({
+    problem_set_id: problemSetId, gate_type: gateType as Parameters<typeof gateService.createGate>[0]['gate_type'], target_item_id: targetItemId, target_item_title: targetItemTitle,
+    target_item_type: (payload.target_item_type as string) ?? 'unknown',
+    tab: ((payload.tab as string) ?? 'design') as Parameters<typeof gateService.createGate>[0]['tab'],
+  });
+  return { success: true, result: gate };
+};
+
+// ---------------------------------------------------------------------------
+// Code / GitHub PR Handler (BASTION_TOOLS)
+// ---------------------------------------------------------------------------
+
+const codeCreatePR: ActionHandler = async (payload) => {
+  const { GitHubService } = await import('./github-service.js');
+  const ghService = new GitHubService();
+  if (!ghService.isConfigured()) {
+    return { success: false, error: 'GitHub integration is not configured (GITHUB_TOKEN / GITHUB_REPO missing)' };
+  }
+  const title = payload.title as string;
+  const description = payload.description as string;
+  const branchName = (payload.branch ?? payload.branchName) as string;
+  const files = payload.files as Array<{ path: string; content: string }>;
+  if (!title || !branchName || !files?.length) {
+    return { success: false, error: 'title, branch, and files are required' };
+  }
+  const result = await ghService.createPR({ title, description: description ?? '', branchName, files });
+  return { success: true, result };
+};
+
+// ---------------------------------------------------------------------------
+// System Config Handler (BASTION_TOOLS)
+// ---------------------------------------------------------------------------
+
+const systemUpdateConfig: ActionHandler = async (payload) => {
+  const { getPlatformSettingsStore } = await import('../auth/platform-settings-store.js');
+  const store = getPlatformSettingsStore();
+  const key = payload.key as string;
+  const value = payload.value;
+  if (!key) return { success: false, error: 'key is required' };
+
+  // Only expose safe config updates
+  if (key === 'environment') {
+    const config = await store.setEnvironment(value as Parameters<typeof store.setEnvironment>[0]);
+    return { success: true, result: config };
+  }
+  // Read-only fallback: return current config
+  if (key === 'read') {
+    const config = await store.getConfig();
+    return { success: true, result: config };
+  }
+  return { success: false, error: `Config key "${key}" is not supported via this tool` };
+};
+
+// ---------------------------------------------------------------------------
+// Operations Domain Handlers (MCP operations tools)
+// ---------------------------------------------------------------------------
+
+const opsGetProblemSet: ActionHandler = async (payload) => {
+  const { problemSetStore } = await import('../problem-set/problem-set-store.js');
+  const psId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!psId) return { success: false, error: 'problem_set_id is required' };
+  const ps = await problemSetStore.getProblemSet(psId);
+  if (!ps) return { success: false, error: `Problem set "${psId}" not found` };
+
+  const result: Record<string, unknown> = { ...ps };
+  if (payload.include_children) {
+    result.children = await problemSetStore.listChildProblemSets(psId);
+  }
+  return { success: true, result };
+};
+
+const opsListProblemSets: ActionHandler = async (payload) => {
+  const { problemSetStore } = await import('../problem-set/problem-set-store.js');
+  const parentId = (payload.parent_id ?? payload.parentId) as string | undefined;
+  if (parentId) {
+    const children = await problemSetStore.listChildProblemSets(parentId);
+    return { success: true, result: children };
+  }
+  // List by echelon or all
+  const echelons = ['strategic', 'operational', 'tactical'] as const;
+  const all: unknown[] = [];
+  for (const e of echelons) {
+    const list = await problemSetStore.listProblemSetsByEchelon(e);
+    all.push(...list);
+  }
+  const limit = Math.min(Number(payload.limit) || 50, 200);
+  return { success: true, result: all.slice(0, limit) };
+};
+
+const opsGetOperationalDesign: ActionHandler = async (payload) => {
+  const { designStore } = await import('../design/design-store.js');
+  const psId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!psId) return { success: false, error: 'problem_set_id is required' };
+  const design = await designStore.getByProblemSetId(psId);
+  return { success: true, result: design };
+};
+
+const opsGetCampaignPlan: ActionHandler = async (payload) => {
+  const { planStore } = await import('../planning/stores/plan-store.js');
+  const psId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!psId) return { success: false, error: 'problem_set_id is required' };
+  // Plans are linked via mission_id which maps to the problem set
+  const plans = await planStore.findByMission(psId);
+  if (plans.length === 0) {
+    return { success: true, result: { message: 'No campaign plans found for this problem set', plans: [] } };
+  }
+  return { success: true, result: plans };
+};
+
+const opsGetCOA: ActionHandler = async (payload) => {
+  const { coaStore } = await import('../planning/stores/coa-store.js');
+  const coaId = (payload.coa_id ?? payload.coaId) as string;
+  if (!coaId) return { success: false, error: 'coa_id is required' };
+  const coa = await coaStore.findById(coaId);
+  if (!coa) return { success: false, error: `COA "${coaId}" not found` };
+  return { success: true, result: coa };
+};
+
+// ---------------------------------------------------------------------------
+// Calendar Domain Handlers (MCP calendar tools)
+// ---------------------------------------------------------------------------
+
+const calendarGetSchedule: ActionHandler = async (payload) => {
+  const { getPool } = await import('../lib/database.js');
+  const pool = getPool();
+  const psId = (payload.problem_set_id ?? payload.problemSetId) as string;
+  if (!psId) return { success: false, error: 'problem_set_id is required' };
+
+  // Gather decision gates as schedule milestones
+  const gates = await pool.query(
+    `SELECT id, gate_type, target_item_title, status, deadline_at, created_at
+     FROM decision_gates WHERE problem_set_id = $1 ORDER BY deadline_at ASC NULLS LAST`,
+    [psId],
+  );
+  // Gather OSINT events as timeline events
+  const includePast = payload.include_past_events === true;
+  const eventSql = includePast
+    ? `SELECT id, title, source_type, published_at FROM osint_events WHERE workspace_id = $1 ORDER BY published_at DESC LIMIT 50`
+    : `SELECT id, title, source_type, published_at FROM osint_events WHERE workspace_id = $1 AND published_at >= NOW() ORDER BY published_at ASC LIMIT 50`;
+  const events = await pool.query(eventSql, [psId]);
+
+  return {
+    success: true,
+    result: {
+      decisionGates: gates.rows,
+      events: events.rows,
+    },
+  };
+};
+
+const calendarGetEvents: ActionHandler = async (payload) => {
+  const { getPool } = await import('../lib/database.js');
+  const pool = getPool();
+  const dateFrom = payload.date_from as string;
+  const dateTo = payload.date_to as string;
+  if (!dateFrom || !dateTo) return { success: false, error: 'date_from and date_to are required' };
+
+  let sql = `SELECT id, title, source_type, published_at, workspace_id, description
+    FROM osint_events WHERE published_at >= $1 AND published_at <= $2`;
+  const params: unknown[] = [dateFrom, dateTo];
+  let paramIdx = 3;
+
+  if (payload.problem_set_id) {
+    sql += ` AND workspace_id = $${paramIdx}`;
+    params.push(payload.problem_set_id);
+    paramIdx++;
+  }
+  const limit = Math.min(Number(payload.limit) || 50, 200);
+  sql += ` ORDER BY published_at ASC LIMIT $${paramIdx}`;
+  params.push(limit);
+
+  const result = await pool.query(sql, params);
+  return { success: true, result: result.rows };
+};
+
+// ---------------------------------------------------------------------------
+// Personnel Domain Handlers (MCP personnel tools — clearance-gated)
+// ---------------------------------------------------------------------------
+
+const personnelListStaff: ActionHandler = async (payload) => {
+  const { getPool } = await import('../lib/database.js');
+  const pool = getPool();
+  const section = payload.staff_section as string | undefined;
+  const psId = (payload.problem_set_id ?? payload.problemSetId) as string | undefined;
+  const limit = Math.min(Number(payload.limit) || 50, 200);
+
+  // Staff are problem_set_members with their agent_config profile
+  let sql = `SELECT m.user_did, m.role, m.status, m.joined_at,
+      c.display_name, c.rank, c.staff_section, c.position, c.unit
+    FROM problem_set_members m
+    LEFT JOIN agent_config c ON c.did = m.user_did
+    WHERE m.status = 'active'`;
+  const params: unknown[] = [];
+  let paramIdx = 1;
+
+  if (psId) {
+    sql += ` AND m.problem_set_id = $${paramIdx}`;
+    params.push(psId);
+    paramIdx++;
+  }
+  if (section && section !== 'all') {
+    sql += ` AND c.staff_section = $${paramIdx}`;
+    params.push(section);
+    paramIdx++;
+  }
+  sql += ` ORDER BY c.rank ASC NULLS LAST LIMIT $${paramIdx}`;
+  params.push(limit);
+
+  const result = await pool.query(sql, params);
+  return { success: true, result: result.rows };
+};
+
+const personnelGetMember: ActionHandler = async (payload) => {
+  const { getPool } = await import('../lib/database.js');
+  const pool = getPool();
+  const memberId = (payload.member_id ?? payload.memberId) as string;
+  if (!memberId) return { success: false, error: 'member_id is required' };
+
+  const result = await pool.query(
+    `SELECT c.*, m.role, m.problem_set_id, m.joined_at, m.status
+     FROM agent_config c
+     LEFT JOIN problem_set_members m ON m.user_did = c.did
+     WHERE c.did = $1 OR c.near_account = $1
+     LIMIT 5`,
+    [memberId],
+  );
+  if (result.rows.length === 0) {
+    return { success: false, error: `Member "${memberId}" not found` };
+  }
+  return { success: true, result: result.rows };
+};
+
+const personnelGetClearances: ActionHandler = async (payload) => {
+  const { getPool } = await import('../lib/database.js');
+  const pool = getPool();
+  const memberIds: string[] = payload.member_ids as string[]
+    ?? (payload.member_id ? [payload.member_id as string] : []);
+  if (memberIds.length === 0) return { success: false, error: 'member_id or member_ids is required' };
+
+  const result = await pool.query(
+    `SELECT p.id, p.name, p.rank, p.clearance_level, p.specialty, p.readiness_status
+     FROM personnel p WHERE p.id = ANY($1)`,
+    [memberIds],
+  );
+  return { success: true, result: result.rows };
+};
+
+// ---------------------------------------------------------------------------
 // Cross-scope Graph & Objective Hierarchy Handlers
 // ---------------------------------------------------------------------------
 
@@ -2049,6 +2432,39 @@ export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   'bastion_knowledge_get_entity': knowledgeGetEntity,
   'bastion_knowledge_get_relationships': knowledgeGetRelationships,
   'bastion_knowledge_search_documents': knowledgeSearchDocuments,
+  // Problem set CRUD (BASTION_TOOLS)
+  'bastion_problem_set_read': problemSetRead,
+  'bastion_problem_set_list_children': problemSetListChildren,
+  'bastion_problem_set_update_field': problemSetUpdateField,
+  'bastion_problem_set_create_child': problemSetCreateChild,
+  'bastion_problem_set_configure_agents': problemSetConfigureAgents,
+  // Resource tools (BASTION_TOOLS + MCP resources domain)
+  'bastion_resource_create': resourceCreate,
+  'bastion_resource_delete': resourceDelete,
+  'bastion_resources_list': resourcesList,
+  'bastion_resources_get_status': resourcesGetStatus,
+  'bastion_resources_search_capabilities': resourcesSearchCapabilities,
+  // Gate tools (BASTION_TOOLS)
+  'bastion_gate_create': gateCreate,
+  // Code / GitHub PR (BASTION_TOOLS)
+  'bastion_code_create_pr': codeCreatePR,
+  // Design section update (BASTION_TOOLS)
+  'bastion_design_update_section': designUpdateSection,
+  // System config (BASTION_TOOLS)
+  'bastion_system_update_config': systemUpdateConfig,
+  // Operations domain (MCP operations tools)
+  'bastion_ops_get_problem_set': opsGetProblemSet,
+  'bastion_ops_list_problem_sets': opsListProblemSets,
+  'bastion_ops_get_operational_design': opsGetOperationalDesign,
+  'bastion_ops_get_campaign_plan': opsGetCampaignPlan,
+  'bastion_ops_get_coa': opsGetCOA,
+  // Calendar domain (MCP calendar tools)
+  'bastion_calendar_get_schedule': calendarGetSchedule,
+  'bastion_calendar_get_events': calendarGetEvents,
+  // Personnel domain (MCP personnel tools — clearance-gated)
+  'bastion_personnel_list_staff': personnelListStaff,
+  'bastion_personnel_get_member': personnelGetMember,
+  'bastion_personnel_get_clearances': personnelGetClearances,
   // Cross-scope graph & objective hierarchy (5)
   'bastion_graph_get_objective_hierarchy': graphGetObjectiveHierarchy,
   'bastion_graph_adopt_objective': graphAdoptObjective,
@@ -2094,4 +2510,49 @@ export async function executeApprovedAction(
     console.error(`[builder-handlers] Handler failed for ${actionType}:`, message);
     return { success: false, error: message };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Startup Validation: Verify all MCP tools have handlers
+// ---------------------------------------------------------------------------
+// CONVENTION: Every tool in BASTION_TOOLS and MCP domain tools MUST have a
+// corresponding entry in BUILDER_HANDLERS. This check runs at import time
+// and logs warnings for any missing handlers so they're caught immediately.
+// ---------------------------------------------------------------------------
+
+export async function validateToolHandlerCoverage(): Promise<string[]> {
+  const { BASTION_TOOLS } = await import('./tool-bridge.js');
+  const { knowledgeTools } = await import('../mcp/tools/knowledge.js');
+  const { operationsTools } = await import('../mcp/tools/operations.js');
+  const { calendarTools } = await import('../mcp/tools/calendar.js');
+  const { resourcesTools } = await import('../mcp/tools/resources.js');
+  const { personnelTools } = await import('../mcp/tools/personnel.js');
+  const { intelligenceTools } = await import('../mcp/tools/intelligence.js');
+
+  const allTools = [
+    ...BASTION_TOOLS, ...knowledgeTools, ...operationsTools,
+    ...calendarTools, ...resourcesTools, ...personnelTools, ...intelligenceTools,
+  ];
+
+  const seen = new Set<string>();
+  const missing: string[] = [];
+  for (const tool of allTools) {
+    if (seen.has(tool.name)) continue; // skip duplicates across groups
+    seen.add(tool.name);
+    if (!BUILDER_HANDLERS[tool.name]) {
+      missing.push(tool.name);
+    }
+  }
+
+  if (missing.length > 0) {
+    console.warn(
+      `[builder-handlers] WARNING: ${missing.length} MCP tool(s) have no handler in BUILDER_HANDLERS:\n` +
+      missing.map((n) => `  - ${n}`).join('\n') +
+      '\nIronclaw will get "No builder handler registered" errors for these tools.',
+    );
+  } else {
+    console.log(`[builder-handlers] All ${seen.size} MCP tools have handler implementations.`);
+  }
+
+  return missing;
 }

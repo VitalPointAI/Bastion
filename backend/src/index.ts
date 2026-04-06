@@ -827,6 +827,14 @@ server.listen(port, async () => {
     console.error('Failed to initialize Ironclaw memory:', error);
   }
 
+  // Validate all MCP tools have handler implementations (catch stub-only tools early)
+  try {
+    const { validateToolHandlerCoverage } = await import('./ironclaw/builder-handlers.js');
+    validateToolHandlerCoverage();
+  } catch (error) {
+    console.error('Failed to validate tool handler coverage:', error);
+  }
+
   // Start OAuth token auto-refresh timer
   try {
     const { startTokenRefreshTimer } = await import('./auth/oauth-token-refresh.js');
