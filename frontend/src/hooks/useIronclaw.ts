@@ -325,11 +325,18 @@ export function useIronclaw(
 
     // Fetch history, then connect WebSocket.
     // Global mode: history response includes the per-user channel name.
+    // Problem-set mode: skip unthreaded history load — the tab thread effect
+    // handles thread-scoped history. Loading all messages here causes stale
+    // cross-thread messages to flash before being replaced.
     ironclawApi
       .getHistory(problemSetId)
       .then(({ messages: history, channel }) => {
         if (!mountedRef.current) return;
-        setMessages(history);
+        // Only set messages from this fetch in global mode (no tab threads).
+        // In problem-set mode, the tab thread effect will load correct history.
+        if (!problemSetId) {
+          setMessages(history);
+        }
         // Connect with the channel from API (global) or derived (problem set)
         connectWebSocket(channel);
       })

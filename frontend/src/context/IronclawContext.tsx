@@ -134,7 +134,8 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
   });
 
   // Design interview state — active when user clicks "Guide Me" on Design tab
-  const designInterview = useDesignInterview(activeProblemSetId ?? 'none');
+  // Design interview removed — useDesignInterview hook retained for future use
+  const _designInterview = useDesignInterview(activeProblemSetId ?? 'none');
 
   // ─── "Spring to attention" greeting when drawer opens ──────────────────────
   const greetingShownRef = useRef(false);
@@ -379,12 +380,10 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         onDismissTaskSuggestion={dismissTaskSuggestion}
         onRefineTask={refineTask}
         pendingDecisions={pendingDecisions}
-        onStartDesignInterview={async () => { await designInterview.startInterview('new'); }}
         onActOnDecision={activeProblemSetId ? async (decisionId, params) => {
           await decisionApiService.actOnDecision(activeProblemSetId, decisionId, params);
           refreshPendingDecisions();
         } : undefined}
-        interview={designInterview}
         threads={ironclaw.threads}
         currentThreadId={ironclaw.currentThreadId}
         onSelectThread={ironclaw.selectThread}

@@ -11,14 +11,12 @@ import type {
   IronclawTaskData,
   TrustDecision,
 } from '../../types/ironclaw.ts';
-import type { UseDesignInterviewResult } from '../../hooks/useDesignInterview.ts';
 import { IronclawMessage } from './IronclawMessage.tsx';
 import { IronclawSuggestion } from './IronclawSuggestion.tsx';
 import { IronclawTaskPanel } from './IronclawTaskPanel.tsx';
 import { IronclawMemoryPanel } from './IronclawMemoryPanel.tsx';
 import { IronclawActivityFeed } from './IronclawActivityFeed.tsx';
 import type { Decision, ActOnDecisionParams } from '../../lib/decision-service.ts';
-import Markdown from 'react-markdown';
 import { AgentConfigPanel } from '../agent-config/AgentConfigPanel.tsx';
 import { IronclawConceptsPanel } from './IronclawConceptsPanel.tsx';
 import { IronclawDirectivesPanel } from './IronclawDirectivesPanel.tsx';
@@ -67,10 +65,6 @@ interface IronclawDrawerProps {
   pendingDecisions?: Decision[];
   /** Act on a pending decision from the drawer */
   onActOnDecision?: (decisionId: string, params: ActOnDecisionParams) => Promise<void>;
-  /** Called when user accepts a 'start_design_interview' suggestion action */
-  onStartDesignInterview?: () => Promise<void>;
-  /** Design interview state — when active, drawer switches to interview mode */
-  interview?: UseDesignInterviewResult;
   /** Thread management */
   threads?: Array<{ id: string; name: string; message_count: number; last_message_at: string | null; created_at: string }>;
   currentThreadId?: string | null;
@@ -102,8 +96,6 @@ export function IronclawDrawer({
   onRefineTask,
   pendingDecisions,
   onActOnDecision,
-  onStartDesignInterview,
-  interview,
   threads,
   currentThreadId,
   onSelectThread,
@@ -227,12 +219,7 @@ export function IronclawDrawer({
     const trimmed = inputValue.trim();
     if (!trimmed) return;
 
-    // Route through design interview if active
-    if (interview?.isActive) {
-      interview.sendMessage(trimmed);
-    } else {
-      onSendMessage(trimmed, selectedAgent);
-    }
+    onSendMessage(trimmed, selectedAgent);
     setInputValue('');
     setSelectedAgent(undefined);
     setShowMentions(false);
@@ -583,212 +570,52 @@ export function IronclawDrawer({
           if (pinnedSuggestions.length === 0 || !onAcceptSuggestion || !onDismissSuggestion) return null;
           return (
             <div className="px-3 py-2 border-b border-slate-700/60 bg-slate-800/40 flex flex-col gap-2 max-h-[40vh] overflow-y-auto">
-              {pinnedSuggestions.map((msg) => {
-                const targetField = (msg.suggestion as unknown as { target_field?: string })?.target_field
-                  ?? msg.suggestion?.targetField;
-                return (
-                  <IronclawSuggestion
-                    key={msg.id}
-                    suggestion={msg.suggestion!}
-                    onAccept={async (id) => {
-                      if (targetField === 'start_design_interview' && onStartDesignInterview) {
-                        await onStartDesignInterview();
-                      }
-                      onAcceptSuggestion(id);
-                    }}
-                    onDismiss={onDismissSuggestion}
-                  />
-                );
-              })}
+              {pinnedSuggestions.map((msg) => (
+                <IronclawSuggestion
+                  key={msg.id}
+                  suggestion={msg.suggestion!}
+                  onAccept={onAcceptSuggestion}
+                  onDismiss={onDismissSuggestion}
+                />
+              ))}
             </div>
           );
         })()}
 
-        {/* Message list — switches to interview mode when active */}
+        {/* Message list */}
         <div ref={messagesContainerRef} className="ironclaw-messages flex-1 overflow-y-auto px-4 py-3">
 
-          {/* ── INTERVIEW MODE ── */}
-          {interview?.isActive ? (
-            <div className="flex flex-col gap-3">
-              {/* Section indicator */}
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
-                <span className="text-[10px] uppercase tracking-wider text-blue-400 font-semibold">
-                  Guided Interview
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-blue-900/40 border border-blue-500/30 text-blue-300">
-                  {interview.interviewState?.currentSection?.replace(/-/g, ' ')}
-                </span>
-                {interview.interviewState && (
-                  <span className="text-[10px] text-gray-500 ml-auto">
-                    Q{interview.interviewState.questionsAsked}
-                    {interview.interviewState.sectionCoverage[interview.interviewState.currentSection] && (
-                      <> &middot; {interview.interviewState.sectionCoverage[interview.interviewState.currentSection].metCriteria.length}/
-                      {interview.interviewState.sectionCoverage[interview.interviewState.currentSection].criteria.length} criteria</>
-                    )}
-                  </span>
-                )}
-              </div>
-
-              {/* Directed role indicator */}
-              {interview.directedRole && (
-                <div className={`text-xs px-3 py-2 rounded ${
-                  interview.isMyTurn
-                    ? 'bg-blue-900/50 border border-blue-500 text-blue-200'
-                    : 'bg-slate-800 border border-slate-700 text-gray-400'
-                }`}>
-                  {interview.isMyTurn
-                    ? `This question is directed to you (${interview.directedRole})`
-                    : `Question directed to: ${interview.directedRole}`
-                  }
-                </div>
-              )}
-
-              {/* Conversation history */}
-              {interview.chatHistory.map((entry, idx) => (
-                entry.role === 'user' ? (
-                  /* User message — right-aligned bubble */
-                  <div key={idx} className="flex justify-end">
-                    <div className="max-w-[85%] bg-blue-600/20 border border-blue-500/30 rounded-lg px-3 py-2">
-                      <p className="text-sm text-blue-200 whitespace-pre-wrap">{entry.content}</p>
-                    </div>
-                  </div>
-                ) : (
-                  /* Ironclaw message — left-aligned with avatar */
-                  <div key={idx} className="bg-slate-800/80 border border-slate-700 rounded-lg p-4">
-                    <div className="flex items-start gap-2">
-                      <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shrink-0 mt-0.5">
-                        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                      </div>
-                      <div className="text-sm text-gray-200 leading-relaxed prose prose-sm prose-invert max-w-none
-                        prose-p:my-2 prose-li:my-0.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-strong:text-blue-300
-                        prose-headings:text-blue-200 prose-headings:mt-3 prose-headings:mb-1.5">
-                        <Markdown>{entry.content.replace(/\n(?!\n)/g, '  \n')}</Markdown>
-                      </div>
-                    </div>
-                  </div>
-                )
-              ))}
-
-              {/* Fallback: show lastMessage if no history (shouldn't happen but safe guard) */}
-              {interview.chatHistory.length === 0 && interview.lastMessage && (
-                <div className="bg-slate-800/80 border border-slate-700 rounded-lg p-4">
-                  <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                    </div>
-                    <div className="text-sm text-gray-200 leading-relaxed prose prose-sm prose-invert max-w-none
-                      prose-p:my-2 prose-li:my-0.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-strong:text-blue-300
-                      prose-headings:text-blue-200 prose-headings:mt-3 prose-headings:mb-1.5">
-                      <Markdown>{interview.lastMessage.replace(/\n(?!\n)/g, '  \n')}</Markdown>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Section confirmation gate */}
-              {interview.awaitingConfirm && (
-                <div className="bg-green-900/30 border border-green-600/40 rounded-lg p-4">
-                  <p className="text-sm text-green-300 font-medium mb-3">
-                    Section complete — all criteria covered. Ready to move on?
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => interview.confirmSection()}
-                      className="px-4 py-1.5 text-xs font-medium rounded bg-green-700 hover:bg-green-600 text-white transition-colors"
-                    >
-                      Confirm &amp; Continue
-                    </button>
-                    <button
-                      onClick={() => interview.sendMessage('I want to revise some answers before moving on.')}
-                      className="px-4 py-1.5 text-xs font-medium rounded bg-slate-700 hover:bg-slate-600 text-gray-300 transition-colors"
-                    >
-                      Revise
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Error display */}
-              {interview.error && (
-                <div className="text-xs text-red-400 bg-red-900/20 border border-red-700/30 rounded px-3 py-2">
-                  {interview.error}
-                </div>
-              )}
-
-              {/* Exit interview button */}
-              <button
-                onClick={() => interview.resetInterview()}
-                className="text-[10px] text-gray-500 hover:text-gray-300 self-start transition-colors"
-              >
-                Exit interview
-              </button>
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+              <svg className="w-12 h-12 mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
+              </svg>
+              <p className="text-sm">Ironclaw is ready</p>
+              <p className="text-xs mt-1">Ask anything or use @agent for specialists</p>
             </div>
-          ) : (
-            /* ── REGULAR CHAT MODE ── */
-            <>
-              {/* Guide Me button — always available on Design tab when no interview is active */}
-              {currentTab?.toLowerCase() === 'design' && onStartDesignInterview && !interview?.isActive && (
-                <div className="mb-3">
-                  <button
-                    onClick={async () => {
-                      await onStartDesignInterview();
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 rounded-lg
-                      bg-blue-900/30 border border-blue-500/40 text-blue-300
-                      hover:bg-blue-900/50 hover:border-blue-400/60 transition-colors text-sm font-medium"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                    Start Guided Interview
-                  </button>
-                </div>
-              )}
-
-              {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                  <svg className="w-12 h-12 mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                    />
-                  </svg>
-                  <p className="text-sm">Ironclaw is ready</p>
-                  <p className="text-xs mt-1">Ask anything or use @agent for specialists</p>
-                </div>
-              )}
-
-              {messages.map((msg) => {
-                // Skip all suggestions — they're pinned above the scroll area
-                if (msg.suggestion) return null;
-
-                return (
-                  <IronclawMessage
-                    key={msg.id}
-                    message={msg}
-                    onActionDecision={onActionDecision}
-                  />
-                );
-              })}
-            </>
           )}
 
-          {/* Loading indicator */}
-          {(isLoading || interview?.isLoading) && <ThinkingIndicator />}
+          {messages.map((msg) => {
+            if (msg.suggestion) return null;
+            return (
+              <IronclawMessage
+                key={msg.id}
+                message={msg}
+                onActionDecision={onActionDecision}
+              />
+            );
+          })}
+
+          {isLoading && <ThinkingIndicator />}
 
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input area */}
         <div className="relative border-t border-slate-700 px-4 py-4 bg-slate-900/95">
-          {/* Global mode indicator */}
           {isGlobalMode && (
             <div className="text-center pb-2">
               <span className="text-[10px] text-gray-500 bg-slate-800 px-2 py-0.5 rounded-full">
@@ -797,8 +624,7 @@ export function IronclawDrawer({
             </div>
           )}
 
-          {/* Agent quick-action buttons — only in problem-set mode, hidden during interview */}
-          {!isGlobalMode && !interview?.isActive && (
+          {!isGlobalMode && (
             <div className="flex gap-1.5 pb-2 flex-wrap">
               <button
                 onClick={() => onSendMessage('List all active agents and their current status.')}
@@ -819,8 +645,7 @@ export function IronclawDrawer({
             </div>
           )}
 
-          {/* @mention dropdown — only in problem-set mode, hidden during interview */}
-          {!isGlobalMode && !interview?.isActive && showMentions && filteredSpecialists.length > 0 && (
+          {!isGlobalMode && showMentions && filteredSpecialists.length > 0 && (
             <div className="ironclaw-mention-dropdown absolute bottom-full left-4 right-4 mb-1
               bg-slate-800 border border-slate-600 rounded-lg shadow-xl overflow-hidden">
               {filteredSpecialists.map((s) => (
@@ -846,11 +671,9 @@ export function IronclawDrawer({
               value={inputValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder={interview?.isActive
-                ? 'Your response...'
-                : isGlobalMode
-                  ? 'Ask Ironclaw anything...'
-                  : 'Ask Ironclaw anything... Use @agent for direct specialist access'
+              placeholder={isGlobalMode
+                ? 'Ask Ironclaw anything...'
+                : 'Ask Ironclaw anything... Use @agent for direct specialist access'
               }
               rows={2}
               className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2.5
@@ -860,7 +683,6 @@ export function IronclawDrawer({
               style={{ maxHeight: `${5 * 24}px` }}
             />
 
-            {/* Send button */}
             <button
               onClick={handleSend}
               disabled={!inputValue.trim()}
