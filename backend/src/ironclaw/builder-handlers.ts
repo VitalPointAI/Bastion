@@ -856,7 +856,7 @@ const graphSearchActors: ActionHandler = async (payload) => {
 
   let cypher = `MATCH (a:Actor) WHERE toLower(a.name) CONTAINS toLower($query)`;
   if (type) cypher += ` AND a.type = $type`;
-  cypher += ` RETURN a, size((a)--()) AS relCount ORDER BY relCount DESC LIMIT $limit`;
+  cypher += ` RETURN a, COUNT { (a)--() } AS relCount ORDER BY relCount DESC LIMIT $limit`;
 
   const result = await executeReadQuery(cypher, { query, type: type ?? '', limit });
   const actors = result.records.map((rec) => {
@@ -935,7 +935,7 @@ const graphStats: ActionHandler = async () => {
       executeReadQuery('MATCH (n) RETURN count(n) AS count', {}),
       executeReadQuery('MATCH ()-[r]-() RETURN count(r) AS count', {}),
       executeReadQuery('MATCH (n) RETURN DISTINCT labels(n) AS labels, count(n) AS count ORDER BY count DESC', {}),
-      executeReadQuery('MATCH (a:Actor) RETURN a.name AS name, a.type AS type, size((a)--()) AS rels ORDER BY rels DESC LIMIT 15', {}),
+      executeReadQuery('MATCH (a:Actor) RETURN a.name AS name, a.type AS type, COUNT { (a)--() } AS rels ORDER BY rels DESC LIMIT 15', {}),
     ]);
 
     return {
@@ -966,7 +966,7 @@ const knowledgeSearch: ActionHandler = async (payload) => {
 
   let cypher = `MATCH (a:Actor) WHERE toLower(a.name) CONTAINS toLower($query)`;
   if (entityType) cypher += ` AND a.type = $entityType`;
-  cypher += ` RETURN a, size((a)--()) AS relCount ORDER BY relCount DESC LIMIT $limit`;
+  cypher += ` RETURN a, COUNT { (a)--() } AS relCount ORDER BY relCount DESC LIMIT $limit`;
 
   try {
     const result = await executeReadQuery(cypher, { query, entityType: entityType ?? '', limit });
@@ -1565,7 +1565,7 @@ const graphQueryGlobal: ActionHandler = async (payload) => {
     params.classification = classification;
   }
 
-  cypher += ' RETURN a, size((a)--()) AS relCount ORDER BY relCount DESC LIMIT $limit';
+  cypher += ' RETURN a, COUNT { (a)--() } AS relCount ORDER BY relCount DESC LIMIT $limit';
 
   const result = await executeReadQuery(cypher, params);
   const actors = result.records.map((rec) => {
@@ -1595,7 +1595,7 @@ const graphQueryParent: ActionHandler = async (payload) => {
   const cypher = `
     MATCH (a:Actor)
     WHERE a.workspaceId IN $workspaceIds
-    RETURN a, size((a)--()) AS relCount
+    RETURN a, COUNT { (a)--() } AS relCount
     ORDER BY relCount DESC
     LIMIT 200
   `;
