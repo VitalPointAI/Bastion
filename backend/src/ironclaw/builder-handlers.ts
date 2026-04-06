@@ -1619,27 +1619,36 @@ const autonomousSendAlert: ActionHandler = async (payload, _userDid) => {
     });
   } catch { /* WebSocket push is non-fatal */ }
 
-  // Telegram for critical/urgent if requested — send to all known/paired chats
+  // Telegram for critical/urgent — send directly to all paired chat IDs
   let telegramSent = false;
-  if (payload.telegram === true && (severity === 'critical' || severity === 'urgent')) {
+  if (severity === 'critical' || severity === 'urgent') {
     try {
       const { telegramBotService } = await import('./telegram-bot-service.js');
-      if (telegramBotService.isEnabled) {
-        // Publish a secondary telegram alert channel message so any subscribed
-        // commander's paired chat receives the notification
-        const { getMessageBus } = await import('../messaging/message-bus.js');
-        const bus = getMessageBus();
-        await bus.publish({
-          sourceDid: 'did:bastion:ironclaw',
-          sourceType: 'system',
-          destinationType: 'channel',
-          destinationTarget: `ironclaw.telegram.${problemSetId}`,
-          messageType: 'ironclaw.telegram-alert',
-          payload: { message: `[${severity.toUpperCase()}] ${message}`, problemSetId },
-        });
-        telegramSent = true;
+      const { getPool } = await import('../lib/database.js');
+      const pool = getPool();
+
+      const notificationFilter = severity === 'critical'
+        ? "telegram_enabled = true AND telegram_chat_id IS NOT NULL"
+        : "telegram_enabled = true AND telegram_chat_id IS NOT NULL AND telegram_notification_level IN ('Critical', 'Urgent', 'Routine')";
+
+      const result = await pool.query(
+        `SELECT telegram_chat_id FROM agent_config WHERE ${notificationFilter}`,
+      );
+
+      const severityEmoji = severity === 'critical' ? '\u{1F6A8}' : '\u26a0\ufe0f';
+      const title = (payload.title as string) ?? 'Ironclaw Alert';
+
+      for (const row of result.rows) {
+        const chatId = row.telegram_chat_id as string;
+        await telegramBotService.sendNotification(
+          chatId,
+          `${severityEmoji} *${severity.toUpperCase()} ALERT*\n\n${title}\n\n${message.slice(0, 1000)}\n\nReview in BASTION.`,
+        );
       }
-    } catch { /* Telegram failure is non-fatal */ }
+      telegramSent = result.rows.length > 0;
+    } catch (err) {
+      console.warn('[autonomousSendAlert] Telegram delivery failed:', err);
+    }
   }
 
   return { success: true, severity, telegramSent };
