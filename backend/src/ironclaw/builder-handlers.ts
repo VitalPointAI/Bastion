@@ -856,7 +856,7 @@ const graphSearchActors: ActionHandler = async (payload) => {
 
   let cypher = `MATCH (a:Actor) WHERE toLower(a.name) CONTAINS toLower($query)`;
   if (type) cypher += ` AND a.type = $type`;
-  cypher += ` OPTIONAL MATCH (a)-[r]-(related) RETURN a, count(r) AS relCount ORDER BY relCount DESC LIMIT $limit`;
+  cypher += ` RETURN a, size((a)--()) AS relCount ORDER BY relCount DESC LIMIT $limit`;
 
   const result = await executeReadQuery(cypher, { query, type: type ?? '', limit });
   const actors = result.records.map((rec) => {
@@ -922,7 +922,7 @@ const graphStats: ActionHandler = async () => {
     executeReadQuery('MATCH (n) RETURN count(n) AS count', {}),
     executeReadQuery('MATCH ()-[r]-() RETURN count(r) AS count', {}),
     executeReadQuery('MATCH (n) RETURN DISTINCT labels(n) AS labels, count(n) AS count ORDER BY count DESC', {}),
-    executeReadQuery('MATCH (a:Actor) OPTIONAL MATCH (a)-[r]-() RETURN a.name AS name, a.type AS type, count(r) AS rels ORDER BY rels DESC LIMIT 15', {}),
+    executeReadQuery('MATCH (a:Actor) RETURN a.name AS name, a.type AS type, size((a)--()) AS rels ORDER BY rels DESC LIMIT 15', {}),
   ]);
 
   return {
@@ -1036,7 +1036,7 @@ const graphQueryGlobal: ActionHandler = async (payload) => {
     params.classification = classification;
   }
 
-  cypher += ' OPTIONAL MATCH (a)-[r]-() RETURN a, count(r) AS relCount ORDER BY relCount DESC LIMIT $limit';
+  cypher += ' RETURN a, size((a)--()) AS relCount ORDER BY relCount DESC LIMIT $limit';
 
   const result = await executeReadQuery(cypher, params);
   const actors = result.records.map((rec) => {
@@ -1066,8 +1066,7 @@ const graphQueryParent: ActionHandler = async (payload) => {
   const cypher = `
     MATCH (a:Actor)
     WHERE a.workspaceId IN $workspaceIds
-    OPTIONAL MATCH (a)-[r]-()
-    RETURN a, count(r) AS relCount
+    RETURN a, size((a)--()) AS relCount
     ORDER BY relCount DESC
     LIMIT 200
   `;

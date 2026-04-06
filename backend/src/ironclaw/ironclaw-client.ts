@@ -169,6 +169,7 @@ export class IronclawClient {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
+        signal: AbortSignal.timeout(120_000), // 120s — generous ceiling above sidecar's internal timeout
       });
 
       if (!response.ok) {

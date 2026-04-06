@@ -18,6 +18,7 @@
 import { graphSummaryService, TTLCache } from '../exercise/graph-summary-service.js';
 import type { GraphSummary } from '../exercise/graph-summary-service.js';
 import { getPool } from '../lib/database.js';
+import { executeReadQuery } from '../graph/neo4j-client.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -27,7 +28,7 @@ import { getPool } from '../lib/database.js';
 const MESSAGE_CHAR_BUDGET = 2000;
 
 /** Timeout for context assembly (never blocks message flow). */
-const CONTEXT_TIMEOUT_MS = 300;
+const CONTEXT_TIMEOUT_MS = 500;
 
 /** TTL for problemSetId → containerId[] mapping cache. */
 const CONTAINER_MAPPING_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -53,13 +54,13 @@ export class KGContextService {
    */
   async getContextForMessage(
     problemSetId: string,
-    _userMessage?: string,
+    userMessage?: string,
   ): Promise<string> {
     try {
       const timeoutPromise = new Promise<string>((resolve) =>
         setTimeout(() => resolve(''), CONTEXT_TIMEOUT_MS),
       );
-      const buildPromise = this._buildMessageContext(problemSetId);
+      const buildPromise = this._buildMessageContext(problemSetId, userMessage);
       return await Promise.race([buildPromise, timeoutPromise]);
     } catch {
       return '';
@@ -119,13 +120,24 @@ export class KGContextService {
 
   /**
    * Build a character-budgeted KG context block from graph summaries.
+   * When a user message is provided, attempts entity-aware lookup so that
+   * Ironclaw can answer entity questions without MCP round-trips.
    */
-  private async _buildMessageContext(problemSetId: string): Promise<string> {
-    const summaries = await this._getSummaries(problemSetId);
-    if (summaries.length === 0) return '';
+  private async _buildMessageContext(problemSetId: string, userMessage?: string): Promise<string> {
+    // Run entity lookup and graph summary in parallel
+    const [entityBlock, summaries] = await Promise.all([
+      userMessage ? this._lookupMentionedEntities(userMessage) : Promise.resolve(''),
+      this._getSummaries(problemSetId),
+    ]);
 
     const parts: string[] = ['[KNOWLEDGE GRAPH — OPERATIONAL PICTURE]'];
     let charsUsed = parts[0].length;
+
+    // Entity-specific data first (most relevant to user's question)
+    if (entityBlock) {
+      parts.push(entityBlock);
+      charsUsed += entityBlock.length;
+    }
 
     for (const { name, summary } of summaries) {
       const section = this._formatSummaryCompact(name, summary);
@@ -134,7 +146,65 @@ export class KGContextService {
       charsUsed += section.length;
     }
 
-    return parts.join('\n');
+    return parts.length > 1 ? parts.join('\n') : '';
+  }
+
+  /**
+   * Search the knowledge graph for actors mentioned in the user message.
+   * Returns a formatted block with entity details + relationships.
+   * Uses size() pattern for fast relationship counting.
+   */
+  private async _lookupMentionedEntities(userMessage: string): Promise<string> {
+    try {
+      // Extract potential entity names: 2+ word capitalized sequences
+      const namePattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/g;
+      const candidates = new Set<string>();
+      let match;
+      while ((match = namePattern.exec(userMessage)) !== null) {
+        candidates.add(match[1]);
+      }
+      if (candidates.size === 0) return '';
+
+      // Search for each candidate (max 3 to stay fast)
+      const names = [...candidates].slice(0, 3);
+      const results: string[] = [];
+
+      for (const name of names) {
+        const result = await executeReadQuery(`
+          MATCH (a:Actor)
+          WHERE toLower(a.name) CONTAINS toLower($name)
+          WITH a LIMIT 1
+          OPTIONAL MATCH (a)-[r]-(related)
+          WITH a, r, related LIMIT 30
+          RETURN a,
+            collect(DISTINCT {
+              name: related.name,
+              type: type(r),
+              nodeType: related.type
+            }) AS relationships
+        `, { name }, 3000); // 3s timeout for entity lookup
+
+        if (result.records.length > 0) {
+          const rec = result.records[0];
+          const actor = rec.get('a').properties as Record<string, unknown>;
+          const rels = rec.get('relationships') as Array<Record<string, unknown>>;
+          const relLines = rels
+            .filter((r) => r.name)
+            .slice(0, 10)
+            .map((r) => `  - ${r.type}: ${r.name} (${r.nodeType})`);
+          results.push(
+            `Entity: ${actor.name} (${actor.type})${actor.description ? `\n  ${actor.description}` : ''}` +
+            (relLines.length > 0 ? `\n  Relationships:\n${relLines.join('\n')}` : ''),
+          );
+        }
+      }
+
+      return results.length > 0
+        ? `[ENTITY DETAILS]\n${results.join('\n\n')}`
+        : '';
+    } catch {
+      return ''; // Non-fatal — fall back to generic summary
+    }
   }
 
   /**
