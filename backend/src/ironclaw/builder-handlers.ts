@@ -870,27 +870,33 @@ const graphGetActor: ActionHandler = async (payload) => {
   const { executeReadQuery } = await import('../graph/neo4j-client.js');
   const name = (payload.name as string) ?? '';
 
-  const result = await executeReadQuery(`
-    MATCH (a:Actor {name: $name})
-    OPTIONAL MATCH (a)-[r]-(related)
-    WITH a, r, related
-    LIMIT 50
-    RETURN a, collect(DISTINCT {
-      name: related.name,
-      type: type(r),
-      relProps: properties(r),
-      nodeType: related.type
-    }) AS relationships
-  `, { name });
+  try {
+    const result = await executeReadQuery(`
+      MATCH (a:Actor {name: $name})
+      OPTIONAL MATCH (a)-[r]-(related)
+      WITH a, r, related
+      LIMIT 50
+      RETURN a, collect(DISTINCT {
+        name: related.name,
+        type: type(r),
+        relProps: properties(r),
+        nodeType: related.type
+      }) AS relationships
+    `, { name });
 
-  if (result.records.length === 0) {
-    return { success: false, error: `Actor "${name}" not found` };
+    if (result.records.length === 0) {
+      return { success: false, error: `Actor "${name}" not found in the knowledge graph` };
+    }
+
+    const rec = result.records[0];
+    const actor = rec.get('a').properties;
+    const rels = rec.get('relationships');
+    return { success: true, result: { ...actor, relationships: rels } };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[builder-handlers] graphGetActor failed:', msg);
+    return { success: false, error: `Actor lookup failed: ${msg}. The knowledge graph database may be temporarily unavailable — try again shortly.` };
   }
-
-  const rec = result.records[0];
-  const actor = rec.get('a').properties;
-  const rels = rec.get('relationships');
-  return { success: true, result: { ...actor, relationships: rels } };
 }
 
 const graphQuery: ActionHandler = async (payload) => {
@@ -903,37 +909,49 @@ const graphQuery: ActionHandler = async (payload) => {
     return { success: false, error: 'Write operations are not allowed. Use MATCH/RETURN only.' };
   }
 
-  const result = await executeReadQuery(cypher, {});
-  const records = result.records.map((rec) => {
-    const obj: Record<string, unknown> = {};
-    for (const key of rec.keys) {
-      const val = rec.get(key);
-      obj[key as string] = val?.properties ?? (typeof val?.toInt === 'function' ? val.toInt() : val);
-    }
-    return obj;
-  });
-  return { success: true, result: records };
+  try {
+    const result = await executeReadQuery(cypher, {});
+    const records = result.records.map((rec) => {
+      const obj: Record<string, unknown> = {};
+      for (const key of rec.keys) {
+        const val = rec.get(key);
+        obj[key as string] = val?.properties ?? (typeof val?.toInt === 'function' ? val.toInt() : val);
+      }
+      return obj;
+    });
+    return { success: true, result: records };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[builder-handlers] graphQuery failed:', msg);
+    return { success: false, error: `Graph query failed: ${msg}. The knowledge graph database may be temporarily unavailable — try again shortly.` };
+  }
 }
 
 const graphStats: ActionHandler = async () => {
   const { executeReadQuery } = await import('../graph/neo4j-client.js');
 
-  const [totalNodes, totalRels, types, topActors] = await Promise.all([
-    executeReadQuery('MATCH (n) RETURN count(n) AS count', {}),
-    executeReadQuery('MATCH ()-[r]-() RETURN count(r) AS count', {}),
-    executeReadQuery('MATCH (n) RETURN DISTINCT labels(n) AS labels, count(n) AS count ORDER BY count DESC', {}),
-    executeReadQuery('MATCH (a:Actor) RETURN a.name AS name, a.type AS type, size((a)--()) AS rels ORDER BY rels DESC LIMIT 15', {}),
-  ]);
+  try {
+    const [totalNodes, totalRels, types, topActors] = await Promise.all([
+      executeReadQuery('MATCH (n) RETURN count(n) AS count', {}),
+      executeReadQuery('MATCH ()-[r]-() RETURN count(r) AS count', {}),
+      executeReadQuery('MATCH (n) RETURN DISTINCT labels(n) AS labels, count(n) AS count ORDER BY count DESC', {}),
+      executeReadQuery('MATCH (a:Actor) RETURN a.name AS name, a.type AS type, size((a)--()) AS rels ORDER BY rels DESC LIMIT 15', {}),
+    ]);
 
-  return {
-    success: true,
-    result: {
-      totalNodes: totalNodes.records[0]?.get('count')?.toInt() ?? 0,
-      totalRelationships: totalRels.records[0]?.get('count')?.toInt() ?? 0,
-      nodeTypes: types.records.map((r) => ({ labels: r.get('labels'), count: r.get('count').toInt() })),
-      topActors: topActors.records.map((r) => ({ name: r.get('name'), type: r.get('type'), relationships: r.get('rels').toInt() })),
-    },
-  };
+    return {
+      success: true,
+      result: {
+        totalNodes: totalNodes.records[0]?.get('count')?.toInt() ?? 0,
+        totalRelationships: totalRels.records[0]?.get('count')?.toInt() ?? 0,
+        nodeTypes: types.records.map((r) => ({ labels: r.get('labels'), count: r.get('count').toInt() })),
+        topActors: topActors.records.map((r) => ({ name: r.get('name'), type: r.get('type'), relationships: r.get('rels').toInt() })),
+      },
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[builder-handlers] graphStats failed:', msg);
+    return { success: false, error: `Graph stats query failed: ${msg}. The knowledge graph database may be temporarily unavailable — try again shortly.` };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -950,12 +968,18 @@ const knowledgeSearch: ActionHandler = async (payload) => {
   if (entityType) cypher += ` AND a.type = $entityType`;
   cypher += ` RETURN a, size((a)--()) AS relCount ORDER BY relCount DESC LIMIT $limit`;
 
-  const result = await executeReadQuery(cypher, { query, entityType: entityType ?? '', limit });
-  const entities = result.records.map((rec) => {
-    const a = rec.get('a').properties as Record<string, unknown>;
-    return { id: a.id, name: a.name, type: a.type, description: a.description, relationshipCount: rec.get('relCount').toInt() };
-  });
-  return { success: true, result: entities };
+  try {
+    const result = await executeReadQuery(cypher, { query, entityType: entityType ?? '', limit });
+    const entities = result.records.map((rec) => {
+      const a = rec.get('a').properties as Record<string, unknown>;
+      return { id: a.id, name: a.name, type: a.type, description: a.description, relationshipCount: rec.get('relCount').toInt() };
+    });
+    return { success: true, result: entities };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[builder-handlers] knowledgeSearch failed:', msg);
+    return { success: false, error: `Knowledge search failed: ${msg}. The knowledge graph database may be temporarily unavailable — try again shortly.` };
+  }
 };
 
 const knowledgeGetEntity: ActionHandler = async (payload) => {
@@ -973,14 +997,20 @@ const knowledgeGetEntity: ActionHandler = async (payload) => {
        }) AS relationships`
     : `MATCH (a:Actor) WHERE a.id = $entityId OR a.name = $entityId RETURN a LIMIT 1`;
 
-  const result = await executeReadQuery(cypher, { entityId });
-  if (result.records.length === 0) {
-    return { success: false, error: `Entity "${entityId}" not found` };
+  try {
+    const result = await executeReadQuery(cypher, { entityId });
+    if (result.records.length === 0) {
+      return { success: false, error: `Entity "${entityId}" not found in the knowledge graph` };
+    }
+    const rec = result.records[0];
+    const actor = rec.get('a').properties;
+    const rels = includeRelationships ? rec.get('relationships') : [];
+    return { success: true, result: { ...actor, relationships: rels } };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[builder-handlers] knowledgeGetEntity failed:', msg);
+    return { success: false, error: `Entity lookup failed: ${msg}. The knowledge graph database may be temporarily unavailable — try again shortly.` };
   }
-  const rec = result.records[0];
-  const actor = rec.get('a').properties;
-  const rels = includeRelationships ? rec.get('relationships') : [];
-  return { success: true, result: { ...actor, relationships: rels } };
 };
 
 const knowledgeGetRelationships: ActionHandler = async (payload) => {
@@ -999,14 +1029,20 @@ const knowledgeGetRelationships: ActionHandler = async (payload) => {
   if (relType) cypher += ` WHERE type(r) = $relType`;
   cypher += ` RETURN type(r) AS relType, b.name AS target, b.type AS targetType, properties(r) AS props LIMIT $limit`;
 
-  const result = await executeReadQuery(cypher, { entityId, relType: relType ?? '', limit });
-  const rels = result.records.map((rec) => ({
-    type: rec.get('relType'),
-    target: rec.get('target'),
-    targetType: rec.get('targetType'),
-    properties: rec.get('props'),
-  }));
-  return { success: true, result: rels };
+  try {
+    const result = await executeReadQuery(cypher, { entityId, relType: relType ?? '', limit });
+    const rels = result.records.map((rec) => ({
+      type: rec.get('relType'),
+      target: rec.get('target'),
+      targetType: rec.get('targetType'),
+      properties: rec.get('props'),
+    }));
+    return { success: true, result: rels };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[builder-handlers] knowledgeGetRelationships failed:', msg);
+    return { success: false, error: `Relationship lookup failed: ${msg}. The knowledge graph database may be temporarily unavailable — try again shortly.` };
+  }
 };
 
 const knowledgeSearchDocuments: ActionHandler = async (payload) => {
@@ -1036,8 +1072,14 @@ const knowledgeSearchDocuments: ActionHandler = async (payload) => {
   sql += ` ORDER BY rank DESC LIMIT $${paramIdx}`;
   params.push(limit);
 
-  const result = await pool.query(sql, params);
-  return { success: true, result: result.rows };
+  try {
+    const result = await pool.query(sql, params);
+    return { success: true, result: result.rows };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[builder-handlers] knowledgeSearchDocuments failed:', msg);
+    return { success: false, error: `Document search failed: ${msg}. The database may be temporarily unavailable — try again shortly.` };
+  }
 };
 
 // ---------------------------------------------------------------------------
