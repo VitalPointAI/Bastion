@@ -396,12 +396,54 @@ export class IronclawService {
     responseText: string,
     threadId?: string,
   ): Promise<void> {
-    // Try to parse as structured JSON
+    // Try to parse as structured JSON.
+    // Ironclaw often embeds JSON blocks inside natural language text, e.g.:
+    //   "Sir, I'm pulling the data...\n\n{ "tool_call": { ... } }\n\nStand by."
+    // We need to extract those embedded JSON blocks for processing while
+    // stripping them from the displayed message content.
     let parsed: Record<string, unknown> | null = null;
     try {
       parsed = JSON.parse(responseText) as Record<string, unknown>;
     } catch {
-      // Plain text response — not JSON
+      // Not pure JSON — try to extract embedded JSON blocks from mixed text.
+      // Ironclaw frequently wraps tool_call/task_request in natural language.
+      // Use brace-counting to find the complete JSON object.
+      const keywords = ['"tool_call"', '"task_request"', '"suggestion"'];
+      const keywordIdx = keywords.reduce((best, kw) => {
+        const idx = responseText.indexOf(kw);
+        return idx !== -1 && (best === -1 || idx < best) ? idx : best;
+      }, -1);
+
+      if (keywordIdx !== -1) {
+        // Walk backwards from keyword to find opening brace
+        let braceStart = -1;
+        for (let i = keywordIdx - 1; i >= 0; i--) {
+          if (responseText[i] === '{') { braceStart = i; break; }
+        }
+        if (braceStart !== -1) {
+          // Walk forward counting braces to find matching close
+          let depth = 0;
+          let braceEnd = -1;
+          for (let i = braceStart; i < responseText.length; i++) {
+            if (responseText[i] === '{') depth++;
+            else if (responseText[i] === '}') { depth--; if (depth === 0) { braceEnd = i + 1; break; } }
+          }
+          if (braceEnd !== -1) {
+            try {
+              parsed = JSON.parse(responseText.substring(braceStart, braceEnd)) as Record<string, unknown>;
+              // Store the text portions (before and after JSON) for display
+              const beforeJson = responseText.substring(0, braceStart).trim();
+              const afterJson = responseText.substring(braceEnd).trim();
+              const textContent = [beforeJson, afterJson].filter(Boolean).join('\n\n');
+              if (textContent && !parsed.content) {
+                parsed.content = textContent;
+              }
+            } catch {
+              parsed = null;
+            }
+          }
+        }
+      }
     }
 
     // Determine sender and specialist attribution
@@ -524,8 +566,11 @@ export class IronclawService {
         messageContent = `Tasking ${agentLabel}: ${(tr.title as string) ?? 'analysis'}. Stand by for results.`;
       }
     } else {
-      // Plain text — strip any embedded JSON blocks that Ironclaw may have appended
-      messageContent = responseText.replace(/\n?\{[\s\S]*"task_request"[\s\S]*\}\s*$/m, '').trim();
+      // Plain text — strip any embedded JSON blocks that Ironclaw may have included
+      messageContent = responseText
+        .replace(/\n?\s*\{[\s\S]*?(?:"task_request"|"tool_call"|"suggestion")[\s\S]*?\}\s*/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
     }
 
     // Fallback: detect text-based approval requests from the LLM.
