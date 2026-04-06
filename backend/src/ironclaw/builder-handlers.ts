@@ -937,6 +937,110 @@ const graphStats: ActionHandler = async () => {
 }
 
 // ---------------------------------------------------------------------------
+// Knowledge Tool Handlers (Phase 60 Plan 02 — MCP domain tools)
+// ---------------------------------------------------------------------------
+
+const knowledgeSearch: ActionHandler = async (payload) => {
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+  const query = (payload.query as string) ?? '';
+  const entityType = payload.entity_type as string | undefined;
+  const limit = Math.min(Number(payload.limit) || 20, 100);
+
+  let cypher = `MATCH (a:Actor) WHERE toLower(a.name) CONTAINS toLower($query)`;
+  if (entityType) cypher += ` AND a.type = $entityType`;
+  cypher += ` RETURN a, size((a)--()) AS relCount ORDER BY relCount DESC LIMIT $limit`;
+
+  const result = await executeReadQuery(cypher, { query, entityType: entityType ?? '', limit });
+  const entities = result.records.map((rec) => {
+    const a = rec.get('a').properties as Record<string, unknown>;
+    return { id: a.id, name: a.name, type: a.type, description: a.description, relationshipCount: rec.get('relCount').toInt() };
+  });
+  return { success: true, result: entities };
+};
+
+const knowledgeGetEntity: ActionHandler = async (payload) => {
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+  const entityId = (payload.entity_id as string) ?? '';
+  const includeRelationships = payload.include_relationships !== false;
+
+  const cypher = includeRelationships
+    ? `MATCH (a:Actor) WHERE a.id = $entityId OR a.name = $entityId
+       WITH a LIMIT 1
+       OPTIONAL MATCH (a)-[r]-(related)
+       WITH a, r, related LIMIT 50
+       RETURN a, collect(DISTINCT {
+         name: related.name, type: type(r), relProps: properties(r), nodeType: related.type
+       }) AS relationships`
+    : `MATCH (a:Actor) WHERE a.id = $entityId OR a.name = $entityId RETURN a LIMIT 1`;
+
+  const result = await executeReadQuery(cypher, { entityId });
+  if (result.records.length === 0) {
+    return { success: false, error: `Entity "${entityId}" not found` };
+  }
+  const rec = result.records[0];
+  const actor = rec.get('a').properties;
+  const rels = includeRelationships ? rec.get('relationships') : [];
+  return { success: true, result: { ...actor, relationships: rels } };
+};
+
+const knowledgeGetRelationships: ActionHandler = async (payload) => {
+  const { executeReadQuery } = await import('../graph/neo4j-client.js');
+  const entityId = (payload.entity_id as string) ?? '';
+  const relType = payload.relationship_type as string | undefined;
+  const direction = (payload.direction as string) ?? 'both';
+  const limit = Math.min(Number(payload.limit) || 50, 200);
+
+  let matchClause: string;
+  if (direction === 'outgoing') matchClause = '(a)-[r]->(b)';
+  else if (direction === 'incoming') matchClause = '(a)<-[r]-(b)';
+  else matchClause = '(a)-[r]-(b)';
+
+  let cypher = `MATCH (a:Actor) WHERE a.id = $entityId OR a.name = $entityId WITH a LIMIT 1 MATCH ${matchClause}`;
+  if (relType) cypher += ` WHERE type(r) = $relType`;
+  cypher += ` RETURN type(r) AS relType, b.name AS target, b.type AS targetType, properties(r) AS props LIMIT $limit`;
+
+  const result = await executeReadQuery(cypher, { entityId, relType: relType ?? '', limit });
+  const rels = result.records.map((rec) => ({
+    type: rec.get('relType'),
+    target: rec.get('target'),
+    targetType: rec.get('targetType'),
+    properties: rec.get('props'),
+  }));
+  return { success: true, result: rels };
+};
+
+const knowledgeSearchDocuments: ActionHandler = async (payload) => {
+  const { getPool } = await import('../lib/database.js');
+  const pool = getPool();
+  const query = (payload.query as string) ?? '';
+  const docType = payload.document_type as string | undefined;
+  const problemSetId = payload.problem_set_id as string | undefined;
+  const limit = Math.min(Number(payload.limit) || 10, 50);
+
+  let sql = `SELECT id, title, type, source_url, created_at,
+    ts_rank(to_tsvector('english', coalesce(title,'') || ' ' || coalesce(content,'')), plainto_tsquery('english', $1)) AS rank
+    FROM documents WHERE to_tsvector('english', coalesce(title,'') || ' ' || coalesce(content,'')) @@ plainto_tsquery('english', $1)`;
+  const params: unknown[] = [query];
+  let paramIdx = 2;
+
+  if (docType) {
+    sql += ` AND type = $${paramIdx}`;
+    params.push(docType);
+    paramIdx++;
+  }
+  if (problemSetId) {
+    sql += ` AND workspace_id = $${paramIdx}`;
+    params.push(problemSetId);
+    paramIdx++;
+  }
+  sql += ` ORDER BY rank DESC LIMIT $${paramIdx}`;
+  params.push(limit);
+
+  const result = await pool.query(sql, params);
+  return { success: true, result: result.rows };
+};
+
+// ---------------------------------------------------------------------------
 // Cross-scope Graph & Objective Hierarchy Handlers
 // ---------------------------------------------------------------------------
 
@@ -1940,6 +2044,11 @@ export const BUILDER_HANDLERS: Record<string, ActionHandler> = {
   'bastion_brain_augment_slice': brainAugmentSlice,
   'bastion_brain_prune_slice': brainPruneSlice,
   'bastion_brain_get_slice_stats': brainGetSliceStats,
+  // Knowledge domain tools (Phase 60 Plan 02 MCP tools)
+  'bastion_knowledge_search': knowledgeSearch,
+  'bastion_knowledge_get_entity': knowledgeGetEntity,
+  'bastion_knowledge_get_relationships': knowledgeGetRelationships,
+  'bastion_knowledge_search_documents': knowledgeSearchDocuments,
   // Cross-scope graph & objective hierarchy (5)
   'bastion_graph_get_objective_hierarchy': graphGetObjectiveHierarchy,
   'bastion_graph_adopt_objective': graphAdoptObjective,
