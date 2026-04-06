@@ -137,10 +137,10 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
   // Design interview removed — useDesignInterview hook retained for future use
   const _designInterview = useDesignInterview(activeProblemSetId ?? 'none');
 
-  // ─── "Spring to attention" greeting when drawer opens ──────────────────────
+  // ─── Greeting on first open (per session, not per close/reopen) ────────────
   const greetingShownRef = useRef(false);
   const prevOpenRef = useRef(false);
-  const { isOpen: drawerIsOpen, injectMessage } = ironclaw;
+  const { isOpen: drawerIsOpen, injectMessage, messages: ironclawMessages } = ironclaw;
 
   useEffect(() => {
     const justOpened = drawerIsOpen && !prevOpenRef.current;
@@ -148,8 +148,15 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
 
     if (!justOpened) return;
 
-    // Only greet once per drawer-open cycle (reset on close)
+    // Only greet once per session — don't re-greet on every close/reopen cycle
     if (greetingShownRef.current) return;
+
+    // Don't greet if there are already messages (thread has history)
+    if (ironclawMessages.length > 0) {
+      greetingShownRef.current = true;
+      return;
+    }
+
     greetingShownRef.current = true;
 
     let cancelled = false;
@@ -168,14 +175,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     });
 
     return () => { cancelled = true; };
-  }, [drawerIsOpen, activeProblemSet?.name, activeProblemSetId, injectMessage]);
-
-  // Reset greeting flag when drawer closes
-  useEffect(() => {
-    if (!drawerIsOpen) {
-      greetingShownRef.current = false;
-    }
-  }, [drawerIsOpen]);
+  }, [drawerIsOpen, activeProblemSet?.name, activeProblemSetId, injectMessage, ironclawMessages.length]);
 
   // ─── Pending Decisions State (proactive surfacing) ────────────────────────
   const [pendingDecisions, setPendingDecisions] = useState<Decision[]>([]);

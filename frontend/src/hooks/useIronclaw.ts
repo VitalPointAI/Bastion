@@ -447,6 +447,13 @@ export function useIronclaw(
       setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
 
+      // Detect honorific preference from user message (e.g. "Sir", "Ma'am", "call me Sir")
+      const honorificMatch = content.match(/\b(sir|ma'am|maam)\b/i);
+      if (honorificMatch) {
+        const honorific = honorificMatch[1].toLowerCase().startsWith('s') ? 'Sir' : "Ma'am";
+        ironclawApi.setHonorific(honorific).catch(() => { /* best-effort */ });
+      }
+
       try {
         await ironclawApi.sendMessage(
           problemSetId, content, mentionedAgent,

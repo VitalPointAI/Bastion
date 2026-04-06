@@ -105,32 +105,37 @@ ironclawRouter.get('/greeting', async (req: Request, res: Response) => {
     const stored = await ironclawUserMemoryStore.getUserMemory(userDid, 'honorific_preference');
     let honorific: string | null = stored?.memory_value?.honorific as string | null ?? null;
 
+    let displayName: string | null = null;
+
     if (!honorific) {
-      // Try to infer from display name via user profile
+      // Try to infer from display name in agent_config (user profile)
       try {
         const pool = getPool();
         const profileResult = await pool.query(
-          `SELECT display_name FROM ironclaw_user_memory
-           WHERE user_did = $1 AND memory_key = 'display_name'
+          `SELECT display_name FROM agent_config
+           WHERE user_did = $1 AND display_name IS NOT NULL
            LIMIT 1`,
           [userDid],
         );
         if (profileResult.rows.length > 0) {
-          const displayName = (profileResult.rows[0].display_name as string) ?? '';
-          honorific = inferHonorific(displayName);
+          displayName = (profileResult.rows[0].display_name as string) ?? null;
+          if (displayName) {
+            honorific = inferHonorific(displayName);
+          }
         }
       } catch {
         // Profile lookup failed — not critical
       }
 
-      // Also try the DID itself (e.g., did:near:sarah.near)
+      // Also try the DID itself (e.g., did:near:aaron.near)
       if (!honorific) {
         const nameFromDid = userDid.replace('did:near:', '').split('.')[0];
         honorific = inferHonorific(nameFromDid);
+        if (!displayName) displayName = nameFromDid;
       }
     }
 
-    // Build greeting
+    // Build greeting — make an educated guess, seek confirmation only if truly ambiguous
     let greeting: string;
     if (honorific) {
       const greetings = [
@@ -139,12 +144,21 @@ ironclawRouter.get('/greeting', async (req: Request, res: Response) => {
         `${honorific}, Ironclaw here. Standing by for your direction.`,
       ];
       greeting = greetings[Math.floor(Math.random() * greetings.length)];
+    } else if (displayName) {
+      // We have a name but can't determine gender — default to Sir (military convention) and let them correct
+      honorific = 'Sir';
+      greeting = `${honorific}, Ironclaw standing by. How can I assist?`;
+      // Auto-store the default so we don't keep guessing
+      ironclawUserMemoryStore.setUserMemory(userDid, 'honorific_preference', { honorific }, 'inferred', 0.6).catch(() => {});
     } else {
-      greeting = 'Ironclaw standing by. Before we begin — should I address you as Sir or Ma\'am?';
+      // No name at all — default to Sir (military convention)
+      honorific = 'Sir';
+      greeting = `${honorific}, Ironclaw standing by. How can I assist?`;
+      ironclawUserMemoryStore.setUserMemory(userDid, 'honorific_preference', { honorific }, 'inferred', 0.6).catch(() => {});
     }
 
     // Add context awareness if we know the problem set
-    if (honorific && problemSetName) {
+    if (problemSetName) {
       greeting += ` Current focus: ${problemSetName}.`;
     }
 
