@@ -166,34 +166,68 @@ export class TaskOrchestrator {
     // Transition to agent_working
     await this.taskStore.updateTaskStatus(taskId, 'agent_working');
 
-    // Execute steps sequentially in background
+    // Execute analysis steps in parallel, then run synthesis sequentially.
+    // Field-targeted steps (CoG Friendly, CoG Adversary, etc.) are independent
+    // and can run concurrently. The final "Synthesize Results" step depends on
+    // all prior results and must run last.
     setImmediate(async () => {
       try {
-        for (let i = 0; i < task.steps.length; i++) {
-          await this.taskStore.updateTaskStep(taskId, i, {
+        const analysisSteps = task.steps.filter((s) => s.label !== 'Synthesize Results');
+        const synthesisStep = task.steps.find((s) => s.label === 'Synthesize Results');
+
+        // Mark all analysis steps as running
+        for (const step of analysisSteps) {
+          await this.taskStore.updateTaskStep(taskId, step.index, {
             status: 'running',
             startedAt: new Date().toISOString(),
           });
+        }
+        const updatedTaskForProgress = await this.taskStore.getTask(taskId);
+        if (updatedTaskForProgress) await this.publishStepProgress(updatedTaskForProgress);
 
-          // Publish step progress
-          const updatedTask = await this.taskStore.getTask(taskId);
-          if (updatedTask) {
-            await this.publishStepProgress(updatedTask);
+        // Execute analysis steps in parallel
+        const results = await Promise.allSettled(
+          analysisSteps.map(async (step) => {
+            const result = await this.executeStep(task, step, step.index);
+            await this.taskStore.updateTaskStep(taskId, step.index, {
+              status: 'complete',
+              completedAt: new Date().toISOString(),
+              result,
+            });
+            if (result) {
+              await this.handleStepComplete(taskId, step.index, result);
+            }
+            return result;
+          }),
+        );
+
+        // Log any step failures but continue — partial results are better than none
+        for (let i = 0; i < results.length; i++) {
+          if (results[i].status === 'rejected') {
+            const err = (results[i] as PromiseRejectedResult).reason;
+            console.error(`[task-orchestrator] Step "${analysisSteps[i].label}" failed:`, err);
+            await this.taskStore.updateTaskStep(taskId, analysisSteps[i].index, {
+              status: 'failed',
+              completedAt: new Date().toISOString(),
+              result: `Step failed: ${err instanceof Error ? err.message : String(err)}`,
+            });
           }
+        }
 
-          // Simulate agent work — in production this would call BastionSupervisor
-          // For now, each step produces a result based on the target field
-          const step = task.steps[i];
-          const result = await this.executeStep(task, step, i);
-
-          await this.taskStore.updateTaskStep(taskId, i, {
+        // Run synthesis step last (needs all results)
+        if (synthesisStep) {
+          await this.taskStore.updateTaskStep(taskId, synthesisStep.index, {
+            status: 'running',
+            startedAt: new Date().toISOString(),
+          });
+          const synthResult = await this.executeStep(task, synthesisStep, synthesisStep.index);
+          await this.taskStore.updateTaskStep(taskId, synthesisStep.index, {
             status: 'complete',
             completedAt: new Date().toISOString(),
-            result,
+            result: synthResult,
           });
-
-          if (result) {
-            await this.handleStepComplete(taskId, i, result);
+          if (synthResult) {
+            await this.handleStepComplete(taskId, synthesisStep.index, synthResult);
           }
         }
 
@@ -251,7 +285,8 @@ export class TaskOrchestrator {
       const client = ironclawClient;
       // Use a dedicated thread so task execution doesn't pollute user conversation
       const taskThreadId = `task-${task.taskId}-step-${_stepIndex}`;
-      const result = await client.sendMessage(taskThreadId, prompt);
+      // 5-minute timeout — Ironclaw needs time for MCP tool calls + analysis
+      const result = await client.sendMessage(taskThreadId, prompt, undefined, 300_000);
 
       if (result.response) {
         // Strip any accidental JSON wrappers from the response

@@ -155,6 +155,7 @@ export class IronclawClient {
     threadId: string,
     content: string,
     didSlug?: string,
+    timeoutMs = 120_000,
   ): Promise<WebhookResponse> {
     const dispatch = async () => {
       const body = JSON.stringify({
@@ -169,7 +170,7 @@ export class IronclawClient {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
-        signal: AbortSignal.timeout(120_000), // 120s — generous ceiling above sidecar's internal timeout
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       if (!response.ok) {
