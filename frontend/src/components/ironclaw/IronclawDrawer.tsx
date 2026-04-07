@@ -39,8 +39,9 @@ interface IronclawDrawerProps {
   messages: IronclawChatMessage[];
   onSendMessage: (content: string, mentionedAgent?: string) => void;
   onActionDecision: (actionId: string, decision: TrustDecision) => void;
-  onAcceptSuggestion?: (id: string) => void;
+  onAcceptSuggestion?: (id: string, editedValue?: string) => void;
   onDismissSuggestion?: (id: string) => void;
+  onReviseSuggestion?: (id: string, feedback: string) => void;
   isLoading?: boolean;
   /** True when WebSocket is connected */
   isConnected?: boolean;
@@ -85,6 +86,7 @@ export function IronclawDrawer({
   onActionDecision,
   onAcceptSuggestion,
   onDismissSuggestion,
+  onReviseSuggestion,
   isLoading,
   isConnected,
   isGlobalMode,
@@ -616,6 +618,7 @@ export function IronclawDrawer({
                   suggestion={msg.suggestion!}
                   onAccept={onAcceptSuggestion}
                   onDismiss={onDismissSuggestion}
+                  onRevise={onReviseSuggestion}
                 />
               ))}
             </div>

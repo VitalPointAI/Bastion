@@ -849,6 +849,97 @@ ironclawRouter.post(
   },
 );
 
+/**
+ * POST /api/ironclaw/suggestions/:id/revise
+ * Request revision of a suggestion — re-dispatches to Ironclaw with user feedback.
+ * Body: { problemSetId, feedback }
+ */
+ironclawRouter.post(
+  '/suggestions/:id/revise',
+  async (req: Request, res: Response) => {
+    const suggestionId = req.params.id as string;
+    const { problemSetId, feedback } = req.body as {
+      problemSetId?: string;
+      feedback?: string;
+    };
+
+    if (!problemSetId || typeof problemSetId !== 'string') {
+      res.status(400).json({ error: 'problemSetId is required' });
+      return;
+    }
+    if (!feedback || typeof feedback !== 'string' || !feedback.trim()) {
+      res.status(400).json({ error: 'feedback is required' });
+      return;
+    }
+
+    try {
+      // Find the suggestion's associated task
+      const pool = getPool();
+      const msgResult = await pool.query(
+        `SELECT suggestion FROM ironclaw_chat
+         WHERE suggestion->>'id' = $1
+         LIMIT 1`,
+        [suggestionId],
+      );
+      if (msgResult.rows.length === 0) {
+        res.status(404).json({ error: 'Suggestion not found' });
+        return;
+      }
+
+      const suggestion = msgResult.rows[0].suggestion as Record<string, unknown>;
+      const targetField = (suggestion.target_field as string) ?? '';
+      const targetLabel = (suggestion.target_field_label as string) ?? targetField;
+      const agentId = (suggestion.agent_id as string) ?? 'ironclaw';
+
+      // Find task containing this suggestion, or create a one-off revision task
+      const orchestrator = getTaskOrchestrator();
+      const taskStore = getTaskStore();
+      const tasks = await taskStore.getTasksForProblemSet(problemSetId);
+      const ownerTask = tasks.find((t) =>
+        t.suggestions.some((s) => s.id === suggestionId),
+      );
+
+      if (ownerTask) {
+        // Revise through existing task
+        await orchestrator.handleRefinement(ownerTask.taskId, feedback.trim(), suggestionId);
+      } else {
+        // No task context — create a targeted revision task
+        const task = await orchestrator.createTask({
+          problemSetId,
+          userDid: getUserDid(req),
+          title: `Revise: ${targetLabel}`,
+          description: `User feedback on previous suggestion: "${feedback.trim()}"\n\nOriginal suggestion by ${agentId}. Revise the analysis for ${targetLabel} incorporating this feedback.`,
+          targetFields: targetField ? { [targetField]: targetLabel } : {},
+          agentHints: [agentId],
+        });
+        orchestrator.dispatchTask(task.taskId).catch((err) =>
+          console.error(`[ironclaw] Revision task dispatch failed: ${task.taskId}`, err),
+        );
+      }
+
+      // Post a chat message so the user sees the revision was requested
+      await ironclawStore.addMessage({
+        problem_set_id: problemSetId,
+        content: `Revision requested for **${targetLabel}**: "${feedback.trim()}"\n\nRe-analyzing with your feedback. Updated suggestion will appear when ready.`,
+        sender: 'ironclaw',
+        specialist_id: null,
+        specialist_display_name: null,
+        delegated_by: null,
+        action_card: null,
+        step_progress: null,
+        suggestion: null,
+      });
+
+      res.json({ revising: true });
+    } catch (err) {
+      console.error('[ironclaw-router] Suggestion revise error:', err);
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Internal server error',
+      });
+    }
+  },
+);
+
 // ---------------------------------------------------------------------------
 // Task Orchestration Endpoints (Plan 05)
 // ---------------------------------------------------------------------------

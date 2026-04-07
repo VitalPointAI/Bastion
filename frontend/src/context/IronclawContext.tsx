@@ -90,8 +90,9 @@ interface IronclawContextValue {
   toggleDrawer: () => void;
   sendMessage: (content: string, mentionedAgent?: string) => Promise<void>;
   handleActionDecision: (actionId: string, decision: TrustDecision) => Promise<void>;
-  acceptSuggestion: (id: string) => void;
+  acceptSuggestion: (id: string, editedValue?: string) => void;
   dismissSuggestion: (id: string) => void;
+  reviseSuggestion: (id: string, feedback: string) => void;
   /** Subscribe to field write events — returns unsubscribe function */
   onFieldWrite: (listener: FieldWriteListener) => () => void;
   /** Active task for the current problem set (from orchestration loop) */
@@ -301,30 +302,33 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
   const [handledSuggestionIds, setHandledSuggestionIds] = useState<Set<string>>(new Set());
 
   // Suggestion handlers — find suggestion in messages, dispatch field write if targeted
-  const acceptSuggestion = useCallback((id: string) => {
+  const acceptSuggestion = useCallback((id: string, editedValue?: string) => {
     const msg = ironclaw.messages.find((m) => m.suggestion?.id === id);
     const suggestion: SuggestionData | undefined = msg?.suggestion;
-    if (suggestion?.targetField && suggestion?.fieldValue) {
-      // Dispatch local field write event for immediate form updates
-      const event: FieldWriteEvent = {
-        targetField: suggestion.targetField,
-        value: suggestion.fieldValue,
-        suggestionId: id,
-      };
-      fieldWriteListeners.current.forEach((fn) => fn(event));
-
-      // Notify backend of acceptance for persistence
-      fetch(`/api/ironclaw/suggestions/${id}/accept`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          problemSetId: activeProblemSetId,
+    if (suggestion?.targetField) {
+      const valueToApply = editedValue ?? suggestion.fieldValue;
+      if (valueToApply) {
+        // Dispatch local field write event for immediate form updates
+        const event: FieldWriteEvent = {
           targetField: suggestion.targetField,
-          fieldValue: suggestion.fieldValue,
-        }),
-      }).catch((err) => {
-        console.error('[ironclaw] Failed to apply suggestion:', err);
-      });
+          value: valueToApply,
+          suggestionId: id,
+        };
+        fieldWriteListeners.current.forEach((fn) => fn(event));
+
+        // Notify backend of acceptance for persistence
+        fetch(`/api/ironclaw/suggestions/${id}/accept`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            problemSetId: activeProblemSetId,
+            targetField: suggestion.targetField,
+            fieldValue: valueToApply,
+          }),
+        }).catch((err) => {
+          console.error('[ironclaw] Failed to apply suggestion:', err);
+        });
+      }
     }
     // Remove card from view
     setHandledSuggestionIds((prev) => new Set(prev).add(id));
@@ -334,12 +338,30 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
     setHandledSuggestionIds((prev) => new Set(prev).add(id));
   }, []);
 
+  const reviseSuggestion = useCallback((id: string, feedback: string) => {
+    // Find the task associated with this suggestion
+    fetch(`/api/ironclaw/suggestions/${id}/revise`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        problemSetId: activeProblemSetId,
+        feedback,
+      }),
+    }).catch((err) => {
+      console.error('[ironclaw] Failed to request revision:', err);
+    });
+    // Remove current card — revised version will arrive as new suggestion
+    setHandledSuggestionIds((prev) => new Set(prev).add(id));
+  }, [activeProblemSetId]);
+
   const contextValue: IronclawContextValue = {
     ...ironclaw,
     currentTab,
     userRole: userRoleInActive,
     acceptSuggestion,
     dismissSuggestion,
+    reviseSuggestion,
     onFieldWrite,
     activeTask,
     approveTaskSuggestion,
@@ -368,6 +390,7 @@ export function IronclawProvider({ children }: IronclawProviderProps) {
         onActionDecision={ironclaw.handleActionDecision}
         onAcceptSuggestion={acceptSuggestion}
         onDismissSuggestion={dismissSuggestion}
+        onReviseSuggestion={reviseSuggestion}
         isLoading={ironclaw.isLoading}
         isConnected={ironclaw.isConnected}
         isGlobalMode={!activeProblemSetId}
