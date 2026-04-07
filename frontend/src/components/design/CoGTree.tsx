@@ -48,6 +48,11 @@ function generateId(): string {
   return crypto.randomUUID();
 }
 
+/** Ensure children is always an array — API may return null/undefined */
+function safeChildren(node: CoGNode): CoGNode[] {
+  return Array.isArray(node.children) ? node.children : [];
+}
+
 function addChildNode(tree: CoGTreeType, parentId: string, childType: CoGNode['type']): CoGTreeType {
   if (!tree.root) return tree;
 
@@ -56,7 +61,7 @@ function addChildNode(tree: CoGTreeType, parentId: string, childType: CoGNode['t
       return {
         ...node,
         children: [
-          ...node.children,
+          ...safeChildren(node),
           {
             id: generateId(),
             type: childType,
@@ -67,7 +72,7 @@ function addChildNode(tree: CoGTreeType, parentId: string, childType: CoGNode['t
         ],
       };
     }
-    return { ...node, children: node.children.map(addToNode) };
+    return { ...node, children: safeChildren(node).map(addToNode) };
   }
 
   return { root: addToNode(tree.root) };
@@ -80,7 +85,7 @@ function updateNode(tree: CoGTreeType, nodeId: string, updates: { label: string;
     if (node.id === nodeId) {
       return { ...node, ...updates };
     }
-    return { ...node, children: node.children.map(update) };
+    return { ...node, children: safeChildren(node).map(update) };
   }
 
   return { root: update(tree.root) };
@@ -93,7 +98,7 @@ function deleteNode(tree: CoGTreeType, nodeId: string): CoGTreeType {
   function remove(node: CoGNode): CoGNode {
     return {
       ...node,
-      children: node.children.filter((c) => c.id !== nodeId).map(remove),
+      children: safeChildren(node).filter((c) => c.id !== nodeId).map(remove),
     };
   }
 
@@ -103,7 +108,7 @@ function deleteNode(tree: CoGTreeType, nodeId: string): CoGTreeType {
 function findNode(root: CoGNode | null, nodeId: string): CoGNode | null {
   if (!root) return null;
   if (root.id === nodeId) return root;
-  for (const child of root.children) {
+  for (const child of safeChildren(root)) {
     const found = findNode(child, nodeId);
     if (found) return found;
   }
@@ -125,7 +130,7 @@ function flattenTree(root: CoGNode): PositionedNode[] {
 
   function walk(node: CoGNode, level: number, parentId: string | null) {
     result.push({ node, x: 0, y: 0, level, parentId });
-    for (const child of node.children) {
+    for (const child of safeChildren(node)) {
       walk(child, level + 1, node.id);
     }
   }
