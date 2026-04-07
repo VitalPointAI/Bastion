@@ -827,6 +827,30 @@ server.listen(port, async () => {
     console.error('Failed to initialize Ironclaw memory:', error);
   }
 
+  // Clean up orphaned Ironclaw routine runs from previous container lifecycle.
+  // When Ironclaw restarts mid-routine, DB rows stay in 'running' status forever.
+  // Ironclaw's recovery loop detects them but never resolves them (binary bug),
+  // causing a 15-second log spam loop. Clean them on backend startup.
+  try {
+    const ironclawDbUrl = process.env.DATABASE_URL_IRONCLAW ?? process.env.IRONCLAW_DB_URL;
+    if (ironclawDbUrl) {
+      const pg = await import('pg');
+      const client = new pg.default.Client({ connectionString: ironclawDbUrl });
+      await client.connect();
+      const result = await client.query(
+        `UPDATE routine_runs SET status = 'failed', completed_at = NOW(),
+         result_summary = 'Recovered: orphaned after container restart'
+         WHERE status = 'running'`,
+      );
+      if (result.rowCount && result.rowCount > 0) {
+        console.log(`[startup] Cleaned up ${result.rowCount} orphaned Ironclaw routine run(s)`);
+      }
+      await client.end();
+    }
+  } catch (error) {
+    console.error('[startup] Failed to clean orphaned routine runs:', error);
+  }
+
   // Validate all MCP tools have handler implementations (catch stub-only tools early)
   try {
     const { validateToolHandlerCoverage } = await import('./ironclaw/builder-handlers.js');
