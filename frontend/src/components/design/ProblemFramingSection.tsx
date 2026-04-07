@@ -87,7 +87,7 @@ function ContentField({
             prose-p:my-3 prose-li:my-0.5 prose-ul:my-2 prose-ol:my-2 prose-strong:text-blue-300
             prose-headings:mt-4 prose-headings:mb-2 hover:border-blue-500/50 transition-colors"
         >
-          <Markdown>{value.replace(/\n(?!\n)/g, '  \n')}</Markdown>
+          <Markdown>{(value ?? '').replace(/\n(?!\n)/g, '  \n')}</Markdown>
         </div>
       ) : (
         <AutoTextarea
