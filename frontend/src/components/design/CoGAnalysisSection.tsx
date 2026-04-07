@@ -7,8 +7,61 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { CoGAnalysis, CoGTree as CoGTreeType } from '../../lib/design-service.ts';
+import type { CoGAnalysis, CoGTree as CoGTreeType, CoGNode } from '../../lib/design-service.ts';
 import { CoGTree } from './CoGTree.tsx';
+
+/**
+ * Validate that a CoGTree has the expected structure.
+ * Agent-generated data may have a completely different schema
+ * (e.g. root as a string instead of a CoGNode object).
+ */
+function normalizeCoGTree(tree: unknown): CoGTreeType {
+  if (!tree || typeof tree !== 'object') return { root: null };
+  const t = tree as Record<string, unknown>;
+  if (t.root === null || t.root === undefined) return { root: null };
+  if (typeof t.root === 'string') {
+    // Agent returned root as a label string — wrap in a valid CoGNode
+    return {
+      root: {
+        id: crypto.randomUUID(),
+        type: 'cog',
+        label: t.root as string,
+        description: (t as Record<string, unknown>).description as string ?? '',
+        children: [],
+      },
+    };
+  }
+  if (typeof t.root === 'object') {
+    // Validate it looks like a CoGNode
+    const r = t.root as Record<string, unknown>;
+    if (typeof r.id === 'string' && typeof r.label === 'string') {
+      return { root: normalizeCoGNode(r) };
+    }
+    // Has some fields but not id/label — try to salvage
+    return {
+      root: {
+        id: (r.id as string) ?? crypto.randomUUID(),
+        type: 'cog',
+        label: (r.label as string) ?? (r.name as string) ?? 'Center of Gravity',
+        description: (r.description as string) ?? '',
+        children: Array.isArray(r.children) ? r.children.map((c: unknown) => normalizeCoGNode(c as Record<string, unknown>)) : [],
+      },
+    };
+  }
+  return { root: null };
+}
+
+function normalizeCoGNode(raw: Record<string, unknown>): CoGNode {
+  return {
+    id: (raw.id as string) ?? crypto.randomUUID(),
+    type: (raw.type as CoGNode['type']) ?? 'cog',
+    label: (raw.label as string) ?? (raw.name as string) ?? '',
+    description: (raw.description as string) ?? '',
+    children: Array.isArray(raw.children)
+      ? raw.children.map((c: unknown) => normalizeCoGNode(c as Record<string, unknown>))
+      : [],
+  };
+}
 import { useIronclawContext } from '../../context/IronclawContext.tsx';
 import { useDesignInterview, getRoleColor } from '../../hooks/useDesignInterview.ts';
 import { DesignInterviewProgress } from './DesignInterviewProgress.tsx';
@@ -26,16 +79,16 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
   const designInterview = useDesignInterview(problemSetId);
   const { participants, isCollaborative, isMyTurn } = designInterview;
   const [cogAnalysis, setCogAnalysis] = useState<CoGAnalysis>(() => ({
-    friendly: initialData?.friendly ?? { root: null },
-    adversary: initialData?.adversary ?? { root: null },
+    friendly: normalizeCoGTree(initialData?.friendly),
+    adversary: normalizeCoGTree(initialData?.adversary),
   }));
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync if initialData changes externally
   useEffect(() => {
     setCogAnalysis({
-      friendly: initialData?.friendly ?? { root: null },
-      adversary: initialData?.adversary ?? { root: null },
+      friendly: normalizeCoGTree(initialData?.friendly),
+      adversary: normalizeCoGTree(initialData?.adversary),
     });
   }, [initialData]);
 
