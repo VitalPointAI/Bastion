@@ -198,9 +198,9 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
         </button>
       </div>
 
-      {/* Active tree — full width */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-4 min-h-75">
+      {/* Active tree — fills remaining height */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 bg-gray-800/50 rounded-lg border border-gray-700 p-4 overflow-auto">
           {activeTab === 'friendly' ? (
             <CoGTree
               tree={cogAnalysis.friendly}
@@ -216,8 +216,8 @@ export function CoGAnalysisSection({ problemSetId, initialData, onUpdate }: CoGA
           )}
         </div>
 
-        {/* Legend */}
-        <div className="flex flex-wrap gap-4 px-3 py-2 mt-3 bg-gray-800/30 rounded text-xs text-gray-400">
+        {/* Legend — pinned below the tree */}
+        <div className="flex flex-wrap gap-4 px-3 py-2 mt-2 shrink-0 bg-gray-800/30 rounded text-xs text-gray-400">
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }} />
             <span>CG</span>
