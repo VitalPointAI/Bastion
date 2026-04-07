@@ -263,17 +263,37 @@ export class TaskOrchestrator {
       return `Synthesis of ${currentTask.results.length} agent results:\n${resultSummary}`;
     }
 
+    // Re-read task to get latest feedback (may have been added since dispatch)
+    const freshTask = await this.taskStore.getTask(task.taskId) ?? task;
+
     // Delegate to Ironclaw — it has MCP tools for graph/knowledge queries
-    const agentId = task.assignedAgents[0] ?? 'ironclaw';
+    const agentId = freshTask.assignedAgents[0] ?? 'ironclaw';
     // Resolve field path from task.targetFields by step index
-    const fieldEntries = Object.entries(task.targetFields);
+    const fieldEntries = Object.entries(freshTask.targetFields);
     const fieldPath = fieldEntries[_stepIndex]?.[0] ?? step.label;
+
+    // Build feedback context from user revision requests
+    const feedbackLines = freshTask.userFeedback.length > 0
+      ? [
+          ``,
+          `[USER REVISION FEEDBACK — incorporate this into your analysis]`,
+          ...freshTask.userFeedback.map((f) => `- ${f.feedback}`),
+          ``,
+        ]
+      : [];
+
+    // Include previous results so the agent can improve on them
+    const priorResult = freshTask.results.find((r) => r.fieldPath === fieldPath);
+    const priorContext = priorResult
+      ? [``, `[PREVIOUS ANALYSIS — revise and improve based on feedback above]`, priorResult.output, ``]
+      : [];
 
     const prompt = [
       `[INTERNAL TASK — do NOT output task_request JSON, respond with analysis only]`,
-      `You are acting as ${agentId} for task: "${task.title}"`,
-      task.description ? `Task description: ${task.description}` : '',
-      ``,
+      `You are acting as ${agentId} for task: "${freshTask.title}"`,
+      freshTask.description ? `Task description: ${freshTask.description}` : '',
+      ...feedbackLines,
+      ...priorContext,
       `Produce analysis for: "${step.label}" (target field: ${fieldPath})`,
       ``,
       `Use your MCP tools (bastion_knowledge_search, bastion_graph_query, etc.) to pull relevant data from the knowledge graph.`,
